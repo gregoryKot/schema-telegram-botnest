@@ -38,6 +38,7 @@
 | Запрос упирается в таймаут БД, долгая операция | `src/prisma/statement-timeout.ts` (`withStatementTimeout`, `DB_STATEMENT_TIMEOUT_MS`) | data |
 | Команда или кнопка бота | `src/telegram/telegram.service.ts` и соседние `src/telegram/telegram.*.service.ts` (хендлеры регистрируются в `onModuleInit`) | telegram, texts |
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
+| Письмо: вход по ссылке, владельцу, резервный алерт; почтовая площадка | `src/auth/email.service.ts` (тексты — `src/auth/email.letters.ts`), `src/utils/admin-alert.ts`; транспорт Yandex Cloud Postbox — `src/infra/postbox-mail.ts`; что делать при отказе — [RUNBOOKS.md](RUNBOOKS.md), «Yandex Cloud Postbox — почта» | ops, texts |
 | Куда уходит уведомление (Telegram или в приложение) | `src/bot/notify-channel.ts` (выбор канала, одна функция на очередь и `GET /api/settings`), очередь — `src/telegram/telegram.schedule-queue.ts`, пуш — `src/push/push.service.ts` | backend-api, security |
 | Уведомления в приложение на сайте: тумблер «На этом устройстве», service worker | `webapp/src/push/` (`pushState.ts` — состояния, `pushSubscription.ts` — включение и отписка при выходе, `usePushDevice.ts`), строка — `webapp/src/components/settingsSheet/PushDeviceRow.tsx`, воркер — `webapp/public/sw.js` (без `fetch`: кэша нет), канал и тексты — `shared/src/settings/notifyReach.ts` | frontend, texts, ops |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |
@@ -67,7 +68,7 @@
 
 - **Один бэкенд, один фронтенд.** NestJS в `src/` отдаёт `/api/*` и статику: сайт (сборка webapp) на `/` — в Telegram и MAX кнопки бота открывают его же, старый адрес мини-аппа `/app/*` отвечает 302 в `/today` (`src/unified-frontend.middleware.ts`); игру на `/game/`. Telegram-бот (Telegraf, long polling) живёт в том же процессе.
 - **Путь запроса:** компонент → `api.метод()` (`webapp/src/api.ts`, общая часть — `shared/src/api/sharedApi.ts`) → `authedFetch` → `/api/...` → гард `src/api/telegram-auth.guard.ts` (Bearer JWT или initData Telegram/MAX) → контроллер → сервис → Prisma.
-- **Данные общие, если совпадает `userId`.** Приложение внутри Telegram входит по подписи initData: `userId = telegramId`. На сайте входят через VK и почту (внутри MAX — по его подписи) — отдельный веб-`userId`. Входа на сайт через Telegram и Google нет с 2026-11 (запрос РКН; правила — `src/auth/login-ticket/site-login.ts`; прежние аккаунты Google находятся по той же почте — `src/auth/email-login-user.ts`). Кто открывал приложение только в Telegram, добавляет там в «Аккаунте» почту (кодом из письма, `src/auth/email-link-code.ts`) или VK ID — способ входа ложится на тот же `userId`. Данные мини-аппа к веб-аккаунту подтягиваются карточкой «Подключить Telegram» в `/account` (подтверждение в боте) и подтверждённого слияния (`src/auth/merge.service.ts` переносит строки по всем `USER_OWNED_TABLES` в транзакции).
+- **Данные общие, если совпадает `userId`.** Приложение внутри Telegram входит по подписи initData: `userId = telegramId`. На сайте входят через VK, Яндекс и почту (внутри MAX — по его подписи) — отдельный веб-`userId`; аккаунт ищется только по паре «способ входа + id у площадки», совпавшая почта аккаунты не склеивает. Входа на сайт через Telegram и Google нет с 2026-11 (запрос РКН; правила — `src/auth/login-ticket/site-login.ts`; прежние аккаунты Google находятся по той же почте — `src/auth/email-login-user.ts`). Кто открывал приложение только в Telegram, добавляет там в «Аккаунте» почту (кодом из письма, `src/auth/email-link-code.ts`), VK ID или Яндекс ID — способ входа ложится на тот же `userId`. Данные мини-аппа к веб-аккаунту подтягиваются карточкой «Подключить Telegram» в `/account` (подтверждение в боте) и подтверждённого слияния (`src/auth/merge.service.ts` переносит строки по всем `USER_OWNED_TABLES` в транзакции).
 - **Слои:** логика — в `src/bot/` (доменный слой), Telegram-UI — в `src/telegram/`. Не смешивай: новая функциональность — сначала логика в `src/bot/bot.service.ts` (или соседнем сервисе), потом UI в `src/telegram/telegram.service.ts`.
 - **Хосты:** приложение — только `schemehappens.ru`; `kotlarewski.gr` — визитка практики (allow-list в `src/practice-domain.surface.ts`), всё остальное с неё 301 на канонический хост.
 - **Деплой:** push в `main` = деплой. Amvera собирает `Dockerfile` (webapp и игра собираются в образе); контейнер стартует `deploy/entrypoint.mjs`: ждёт БД → `prisma/recover-p3009.sql` → `prisma migrate deploy` → приложение.
@@ -100,7 +101,7 @@
 | `scripts/` | Гейты CI `scripts/check-*.mjs`, их бейслайны, merge-драйверы, хуки git (`scripts/git-hooks/`, ставит `scripts/setup-git-hooks.mjs`), бэкапы |
 | `deploy/` | Супервизор контейнера, бэкапы (`backup-scheduler.cjs`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
-| `game/` | Игра (Phaser), заморожена: не трогать без прямой просьбы |
+| `game/` | Игра (Phaser): под eslint- и file-size-храповиками; смок — `e2e-browser/game-smoke.spec.ts` |
 | `assets/` | Шрифты для карточек шаринга и корневой сертификат для MAX (`assets/ca/russian-trusted-root.pem`) |
 
 ## Модули бэкенда (`src/`)
@@ -121,7 +122,7 @@
 | `src/subscription/` | Подписки с рекуррентными списаниями | backend-core |
 | `src/logger/` | `AlertLogger`: `logger.error` → DM админу с троттлингом | backend-core |
 | `src/types/` | Расширение `express.Request` полями гардов | backend-core |
-| `src/auth/` | Вход (на сайте — VK и почта; внутри Telegram и MAX — по подписи мессенджера), JWT + refresh, 2FA, билеты входа, слияние | backend-platform |
+| `src/auth/` | Вход (на сайте — VK, Яндекс и почта; внутри Telegram и MAX — по подписи мессенджера), JWT + refresh, 2FA, билеты входа, слияние | backend-platform |
 | `src/api/` | Пользовательский `/api/*`: контроллеры, единый гард, троттлинг | backend-platform |
 | `src/security/` | Классификация маршрутов, CSP, спеки-трипваеры безопасности | backend-platform |
 | `src/therapy/` | Кабинет терапевта: связи, заметки, концептуализация, задания, заявки | backend-platform |

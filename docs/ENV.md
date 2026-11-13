@@ -12,8 +12,11 @@
 Секреты (значения) сюда не попадают — только имена, обязательность и формат.
 
 Что проверяется дополнительно (не сводится к формату одной переменной) — кросс-проверки
-в `src/infra/env-check.ts` (`CROSS_CHECKS`): если задан `RESEND_API_KEY`, обязаны быть
-заданы `ADMIN_EMAIL` и `EMAIL_FROM`; если задан `VK_APP_ID` — `VK_REDIRECT_URI`; если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
+в `src/infra/env-check.ts` (`CROSS_CHECKS`): ключи почты `POSTBOX_ACCESS_KEY_ID` и
+`POSTBOX_SECRET_ACCESS_KEY` задаются только парой, и вместе с ними обязаны быть
+заданы `ADMIN_EMAIL` и `EMAIL_FROM` (`src/infra/env-check.email.ts`); если задан `VK_APP_ID` — `VK_REDIRECT_URI`,
+если задан `YANDEX_CLIENT_ID` — `YANDEX_CLIENT_SECRET` и `YANDEX_REDIRECT_URI` (`src/infra/env-check.oauth.ts`: без
+полного набора вход через провайдера выключен рубильником); если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
 и `ROBOKASSA_PASSWORD2` (пустой пароль позволил бы подделать подпись вебхука); `ENCRYPTION_KEY_OLD`
 не должен совпадать с текущим `ENCRYPTION_KEY`; если задан `BACKUP_S3_BUCKET` — обязаны быть
 `BACKUP_S3_ENDPOINT`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` и `BACKUP_ENCRYPTION_KEY`
@@ -42,6 +45,9 @@
 | `SKIP_AUTH` | опциональна | oneOf(true, false) | Dev-only обход проверки initData — хардкод-запрет в проде (src/api/init-data-paths.ts), в реестре только для формата/кросс-проверки. |
 | `VK_APP_ID` | опциональна | nonEmpty | OAuth client id входа через VK ID. Рубильник: без него (или без `VK_REDIRECT_URI`) вход через VK выключен — кнопка остаётся, нажатие ведёт на экран «Вход через ВКонтакте отключён» (`src/auth/oauth-provider-switch.ts`). |
 | `VK_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата VK после входа — обязан вести на канонический хост. |
+| `YANDEX_CLIENT_ID` | опциональна | yandexClientId | ClientID приложения Яндекс ID (кабинет oauth.yandex.ru) — вход через Яндекс. Рубильник: без него (или без `YANDEX_CLIENT_SECRET`, `YANDEX_REDIRECT_URI`) вход через Яндекс выключен — нажатие ведёт на экран ошибки входа с причиной `yandex_disabled` (`src/auth/oauth-provider-switch.ts`). 32 hex-символа; приложение «Всё по схеме», права — только `login:email` и `login:info`. |
+| `YANDEX_CLIENT_SECRET` | опциональна | nonEmpty | Client secret того же приложения Яндекс ID — им сервер обменивает код входа на токен; в браузер не попадает. Утёк — перевыпустить в кабинете oauth.yandex.ru и заменить значение: вход через Яндекс не работает, пока секрет на сервере старый. |
+| `YANDEX_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата Яндекса после входа (Redirect URI в кабинете приложения) — обязан вести на канонический хост. На проде — `https://schemehappens.ru/api/auth/yandex/callback`, символ в символ как в кабинете. |
 
 ## Бот и мини-апп
 
@@ -58,9 +64,10 @@
 
 | Переменная | На проде | Формат | Назначение |
 |---|---|---|---|
-| `ADMIN_EMAIL` | опциональна | email | Почта владельца для писем о записях и резервных алертов — без неё, при заданном RESEND_API_KEY, письма молчат (инцидент 2026-09-15). |
+| `ADMIN_EMAIL` | опциональна | email | Почта владельца для писем о записях и резервных алертов — без неё, при заданных ключах Postbox, письма молчат (инцидент 2026-09-15). |
 | `EMAIL_FROM` | опциональна | nonEmpty | Адрес отправителя писем (magic-link, уведомления) — есть дефолт «Schema Happens <no-reply@schemehappens.ru>», если не задан. |
-| `RESEND_API_KEY` | опциональна | nonEmpty | Ключ Resend — без него почта пользователям и владельцу не отправляется (magic-link, письма о записях, резервные алерты). |
+| `POSTBOX_ACCESS_KEY_ID` | опциональна | accessKey | Идентификатор статического ключа доступа сервисного аккаунта Yandex Cloud с ролью postbox.sender — пара к POSTBOX_SECRET_ACCESS_KEY; без пары почта пользователям и владельцу не отправляется (вход по ссылке, письма о записях, резервные алерты). Где взять и как сменить — [RUNBOOKS.md](RUNBOOKS.md), раздел «Yandex Cloud Postbox — почта». |
+| `POSTBOX_SECRET_ACCESS_KEY` | опциональна | accessKey | Секретный ключ того же статического ключа доступа — вместе с POSTBOX_ACCESS_KEY_ID подписывает запросы на отправку писем в Yandex Cloud Postbox. Показывается в консоли один раз, при создании ключа. |
 
 ## Канал «Здоровый Взрослый»
 
@@ -107,11 +114,11 @@
 | `APP_URL` | опциональна | nonEmpty | Базовый адрес для ссылок в письмах/боте (donate, subscribe) — дефолт schemehappens.ru; допускается голый домен без схемы (normalizeBaseUrl). |
 | `BACKUP_ENCRYPTION_KEY` | опциональна | secret32 | Ключ шифрования бэкапов БД (AES-256, ≥ 32 символов) — ОТДЕЛЬНЫЙ от ENCRYPTION_KEY: утечка одного не открывает другое. Хранить ещё и вне Amvera: без него бэкап не расшифровать. |
 | `BACKUP_RETENTION_DAYS` | опциональна | retentionDays | Сколько дней хранить бэкапы в бакете (от 7 до 30, по умолчанию 30: столько обещает политика конфиденциальности) — старше удаляются после каждого успешного бэкапа. |
-| `BACKUP_S3_ACCESS_KEY_ID` | опциональна | accessKey | Access Key ID API-токена Cloudflare R2 (Object Read & Write только на бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY. |
-| `BACKUP_S3_BUCKET` | опциональна | bucketName | Имя приватного бакета R2 для зашифрованных бэкапов БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs). |
-| `BACKUP_S3_ENDPOINT` | опциональна | s3Endpoint | Адрес S3-API хранилища бэкапов без бакета: https://<id аккаунта>.r2.cloudflarestorage.com. |
-| `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к хранилищу — по умолчанию auto (так требует R2); менять только при переезде на другое S3-хранилище. |
-| `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
+| `BACKUP_S3_ACCESS_KEY_ID` | опциональна | accessKey | Идентификатор статического ключа сервисного аккаунта Yandex Cloud (права только на бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY. |
+| `BACKUP_S3_BUCKET` | опциональна | bucketName | Имя приватного бакета Yandex Object Storage для зашифрованных бэкапов БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs). |
+| `BACKUP_S3_ENDPOINT` | опциональна | s3Endpoint | Адрес S3-API без бакета: только https://storage.yandexcloud.net (за рубеж копия не уходит). |
+| `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к Yandex Object Storage — по умолчанию ru-central1; задавать не нужно. |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Секретная часть статического ключа сервисного аккаунта Yandex Cloud — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
 | `DB_STATEMENT_TIMEOUT_MS` | опциональна | целое 0…2147483647 | Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник без выкладки кода (src/prisma/statement-timeout.ts). |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
@@ -124,10 +131,10 @@
 | `VAPID_SUBJECT` | опциональна | httpsOrMailto | Контакт для push-сервисов (https-адрес или mailto:) — дефолт https://schemehappens.ru. Уходит в подпись VAPID. |
 | `WEBAPP_URL` | **обязательна** | httpsUrl | Публичный адрес сайта (schemehappens.ru) — на нём строится колбэк OAuth и фронтенд-редиректы; без него вход через сайт не работает. |
 
-**Бэкапы в R2 включаются пятью переменными сразу.** `BACKUP_S3_ENDPOINT`,
+**Бэкапы в Yandex Object Storage включаются пятью переменными сразу.** `BACKUP_S3_ENDPOINT`,
 `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`,
 `BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera копии
-делает платформа, а R2 — независимая копия по желанию. Задана только часть —
+делает платформа, а Yandex Object Storage — независимая копия по желанию. Задана только часть —
 планировщик не стартует, а проба `backupFreshness` отвечает `ok: false` с
 именами недостающих. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны.
 

@@ -1,11 +1,12 @@
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL, OPERATOR_PD_REGISTRY_NO } from '../legal/operator';
-import { FOREIGN_PROCESSORS, MEETING_NOTE, METRIKA_PROCESSOR, processorLine } from './privacy/processors';
+import { FOREIGN_PROCESSORS, processorLine } from './privacy/processors';
+import { NotCrossBorder } from './privacy/NotCrossBorder';
 import { ANALYTICS_COOKIES, TECHNICAL_COOKIES } from './privacy/cookies';
 import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
 import { inlineLink } from '../legal/legalStyles';
 import { LegalPage } from '../legal/LegalPage';
 
-const EFFECTIVE_DATE = '12 ноября 2026 г.';
+const EFFECTIVE_DATE = '13 ноября 2026 г.';
 const SITE_URL       = 'schemehappens.ru';
 
 export function PrivacyPage() {
@@ -61,7 +62,7 @@ export function PrivacyPage() {
             <P><strong>3.2. Данные веб-приложения «Всё по схеме»:</strong></P>
             <Ul items={[
               'Имя пользователя (при регистрации)',
-              'Идентификатор способа входа: адрес электронной почты, идентификатор VK ID или MAX; идентификатор Telegram – у тех, кто открывает приложение внутри Telegram',
+              'Идентификатор способа входа: адрес электронной почты, идентификатор VK ID, Яндекс ID или MAX; идентификатор Telegram – у тех, кто открывает приложение внутри Telegram',
               'Пользовательский контент: оценки состояний, дневниковые записи, ответы на опросники, заметки – вводится исключительно самим пользователем',
               'Технические данные: временная зона, дата последней активности (для корректной работы функций уведомлений)',
             ]} />
@@ -136,14 +137,13 @@ export function PrivacyPage() {
               'Требование уполномоченных государственных органов – в случаях, прямо предусмотренных законодательством РФ',
             ]} />
             <P>
-              <strong>Трансграничная передача данных.</strong> База данных и пользовательский
-              контент хранятся на серверах на территории Российской Федерации. Зашифрованные
-              резервные копии базы данных хранятся в облачном хранилище Cloudflare R2. Отдельные данные передаются
-              иностранным сервисам в объёме, минимально необходимом для работы соответствующей функции:
+              <strong>Трансграничная передача данных.</strong> База данных, пользовательский
+              контент и зашифрованные резервные копии базы данных (Yandex Object Storage) хранятся на серверах
+              на территории Российской Федерации. Отдельные данные передаются иностранному сервису
+              в объёме, минимально необходимом для работы соответствующей функции:
             </P>
             <Ul items={FOREIGN_PROCESSORS.map(processorLine)} />
-            <P>{MEETING_NOTE}</P>
-            <P><strong>Статистика посещений.</strong> {processorLine(METRIKA_PROCESSOR)}.</P>
+            <NotCrossBorder />
           </Chapter>
 
           <Chapter n="8" title="Защита данных">
@@ -154,7 +154,7 @@ export function PrivacyPage() {
               'Шифрование пользовательского контента (дневники, заметки, записи) с использованием алгоритма AES-256-GCM',
               'Передача данных по защищённому протоколу HTTPS (TLS)',
               'Ограничение доступа к базе данных: доступ только через аутентифицированные сервисы',
-              'Беспарольная аутентификация: на сайте – вход по ссылке из письма или через VK ID, внутри MAX и Telegram – по подписи мессенджера; пароли не создаются и не хранятся',
+              'Беспарольная аутентификация: на сайте – вход по ссылке из письма, через VK ID или Яндекс ID, внутри MAX и Telegram – по подписи мессенджера; пароли не создаются и не хранятся',
               'JWT-токены с ограниченным сроком действия для авторизации в приложении',
             ]} />
           </Chapter>

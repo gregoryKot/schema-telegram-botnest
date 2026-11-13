@@ -33,8 +33,8 @@ describe('loginNote', () => {
     for (const auth of [true, false]) {
       const n = loginNote('ios', auth);
       expect(n.ty).toContain('войти ещё раз');
-      expect(n.ty).toContain('Входи почтой или VK ID');
-      expect(n.vy).toContain('Входите почтой или VK ID');
+      expect(n.ty).toContain('Входи почтой, VK ID или Яндекс ID — теми, что добавлены');
+      expect(n.vy).toContain('Входите почтой, VK ID или Яндекс ID — теми, что добавлены');
       // Входа через Telegram на сайте нет (2026-11) — обещать его нельзя.
       expect(`${n.ty}${n.vy}`).not.toMatch(/через Telegram|в бота/);
     }
@@ -43,8 +43,9 @@ describe('loginNote', () => {
     expect(loginNote('android', true).vy).toContain('вашими данными');
     expect(loginNote('desktop', true).ty).toContain('твоими данными');
     const anon = loginNote('android', false);
-    expect(anon.ty).toContain('Вход — после установки, в самом приложении: почтой или VK ID');
-    expect(anon.ty).toContain('Сначала добавь там');
-    expect(anon.vy).toContain('Сначала добавьте там');
+    expect(anon.ty).toContain('Вход — после установки, в самом приложении: почтой, VK ID или Яндекс ID.');
+    expect(anon.vy).toContain('в самом приложении: почтой, VK ID или Яндекс ID.');
+    expect(anon.ty).toContain('Сначала добавь там в «Аккаунте» один из этих способов.');
+    expect(anon.vy).toContain('Сначала добавьте там в «Аккаунте» один из этих способов.');
   });
 });

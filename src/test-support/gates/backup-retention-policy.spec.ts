@@ -3,15 +3,17 @@
 //
 // Политика (`webapp/src/pages/PrivacyPage.tsx`) говорит человеку: данные
 // уничтожаются в течение 30 дней, резервные копии хранятся «не дольше 30 дней»
-// в Cloudflare R2. Держит это `scripts/backup-upload.sh` (срок по умолчанию и
-// потолок) и формат `BACKUP_RETENTION_DAYS` в реестре env. До сверки 2026-10-22
-// политика обещала 30 дней, а копии жили 90, и про R2 в ней не было ни слова:
-// скрипт и юридический текст живут в разных пакетах, и никакой гейт на них
+// в Yandex Object Storage (Россия). Держит это `scripts/backup-upload.sh` (срок
+// по умолчанию и потолок) и формат `BACKUP_RETENTION_DAYS` в реестре env. До
+// сверки политика обещала 30 дней, а копии жили 90: скрипт и юридический текст живут в разных пакетах, и никакой гейт на них
 // вместе не смотрел (тот же класс, что `booking-retention-policy.spec.ts`,
 // правило №4 — два места, обязанных совпадать, фиксируются тестом).
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
-import { BACKUP_RETENTION_MAX_DAYS as MAX } from '../../infra/backup-config';
+import {
+  BACKUP_RETENTION_MAX_DAYS as MAX,
+  BACKUP_S3_DEFAULT_REGION,
+} from '../../infra/backup-config';
 import { BACKUP_ENV_ENTRIES } from '../../infra/env-registry.entries.backup';
 
 const ROOT = resolve(__dirname, '..', '..', '..');
@@ -53,12 +55,23 @@ describe('срок бэкапов: скрипт и env ↔ политика ко
     expect(retentionFormat(String(MAX + 1))).not.toBeNull();
   });
 
-  it('хранилище бэкапов названо в главе 7 и в списке иностранных сервисов', () => {
+  it('хранилище бэкапов: Yandex Object Storage в главе 7 и среди российских получателей', () => {
     expect(read(PRIVACY_PAGE)).toContain(
-      'резервные копии базы данных хранятся в облачном хранилище Cloudflare R2',
+      'зашифрованные резервные копии базы данных (Yandex Object Storage) хранятся на серверах на территории Российской Федерации',
     );
     expect(read(PROCESSORS)).toContain(
-      "name: 'Cloudflare R2 (Cloudflare, Inc.)'",
+      "name: 'Yandex Object Storage (ООО «Яндекс.Облако»)'",
+    );
+  });
+
+  it('в политике нет Cloudflare: копии не уходят за рубеж', () => {
+    expect(read(PRIVACY_PAGE)).not.toMatch(/Cloudflare/i);
+    expect(read(PROCESSORS)).not.toMatch(/Cloudflare/i);
+  });
+
+  it('регион подписи по умолчанию: backup-config ↔ scripts/s3-api.sh (правило №4)', () => {
+    expect(read('scripts/s3-api.sh')).toContain(
+      `S3_REGION="\${BACKUP_S3_REGION:-${BACKUP_S3_DEFAULT_REGION}}"`,
     );
   });
 

@@ -48,7 +48,7 @@ export function redirectToCallbackHost(
   if (host === callbackHost) return false;
   if (isRedirectedHost(callbackHost)) {
     logger.error(
-      `адрес возврата OAuth ведёт на перенаправляемый хост ${callbackHost} — вход зациклился бы: VK_REDIRECT_URI указывает не на канонический хост`,
+      `адрес возврата OAuth ведёт на перенаправляемый хост ${callbackHost} — вход зациклился бы: *_REDIRECT_URI провайдера указывает не на канонический хост`,
     );
     return false;
   }

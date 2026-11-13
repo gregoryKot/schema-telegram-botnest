@@ -16,7 +16,6 @@ export interface CmdRow {
   group?: string;
   label: string;
   sub?: string;
-  activeToday?: boolean;
   hint?: string;
   mark: CmdMark;
   /** Текст, по которому ищется строка (подпись, подзаголовок и группа). */
@@ -28,7 +27,7 @@ function Mark({ mark }: { mark: CmdMark }) {
   if ('sign' in mark) return <span className="cmd-mark" aria-hidden="true"><SignArt sign={mark.sign} size="row" /></span>;
   return (
     <span className="cmd-mark" aria-hidden="true">
-      <span className="ds-avatar cmd-avatar" style={hueStyle(mark.hue)}>{mark.initials}</span>
+      <span className="ds-avatar ds-avatar--paper cmd-avatar" style={hueStyle(mark.hue)}>{mark.initials}</span>
     </span>
   );
 }
@@ -56,7 +55,7 @@ export function CmdList({ rows, sel, onSelect, onRun, note }: {
             <Mark mark={row.mark} />
             <span className="cmd-main">
               <span className="cmd-label">{row.label}</span>
-              {row.sub && <span className={'ds-sub cmd-sub' + (row.activeToday ? ' is-ok' : '')}>{row.sub}</span>}
+              {row.sub && <span className="ds-sub cmd-sub">{row.sub}</span>}
             </span>
             {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-kbd kbd-hint' : 'ds-sub cmd-hint'}>{row.hint}</span>}
           </div>

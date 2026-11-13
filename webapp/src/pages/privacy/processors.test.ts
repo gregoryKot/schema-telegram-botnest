@@ -1,19 +1,57 @@
 // Перечень получателей данных: у каждого есть имя, назначение и состав
 // данных (политика не должна называть сервис «в никуда»).
 import { describe, it, expect } from 'vitest';
-import { FOREIGN_PROCESSORS, MEETING_NOTE, METRIKA_PROCESSOR, processorLine } from './processors';
+import {
+  DOMESTIC_PROCESSORS, FOREIGN_PROCESSORS, MEETING_NOTE, METRIKA_PROCESSOR,
+  OBJECT_STORAGE_PROCESSOR, POSTBOX_PROCESSOR, YANDEX_ID_PROCESSOR, processorLine,
+} from './processors';
 
 describe('processors', () => {
   it('у каждого получателя заполнены имя, назначение и данные', () => {
-    for (const p of [...FOREIGN_PROCESSORS, METRIKA_PROCESSOR]) {
+    for (const p of [...FOREIGN_PROCESSORS, ...DOMESTIC_PROCESSORS, METRIKA_PROCESSOR]) {
       expect(p.name.length).toBeGreaterThan(3);
       expect(p.purpose.length).toBeGreaterThan(10);
       expect(p.data.length).toBeGreaterThan(5);
     }
   });
 
-  it('иностранные получатели — ровно Telegram, Resend, Cloudflare R2', () => {
-    expect(FOREIGN_PROCESSORS.map((p) => p.name.split(' (')[0])).toEqual(['Telegram', 'Resend', 'Cloudflare R2']);
+  it('иностранные получатели — ровно Telegram', () => {
+    expect(FOREIGN_PROCESSORS.map((p) => p.name.split(' (')[0])).toEqual(['Telegram']);
+  });
+
+  it('Cloudflare и R2 нигде нет: копии базы остаются в России', () => {
+    const all = JSON.stringify([FOREIGN_PROCESSORS, DOMESTIC_PROCESSORS, METRIKA_PROCESSOR, MEETING_NOTE]);
+    expect(all).not.toMatch(/cloudflare|\bR2\b/i);
+    expect(OBJECT_STORAGE_PROCESSOR.data).toContain('не дольше 30 дней');
+  });
+
+  // Запрос РКН №08-1063539 (2026-11): письма шлёт российский Yandex Cloud
+  // Postbox (src/infra/postbox-mail.ts), за рубеж они больше не уходят —
+  // Resend нет ни среди иностранных, ни среди российских, ни в оговорках.
+  it('Resend нет нигде', () => {
+    const all = JSON.stringify([FOREIGN_PROCESSORS, DOMESTIC_PROCESSORS, METRIKA_PROCESSOR, MEETING_NOTE]);
+    expect(all).not.toMatch(/resend|plus five five/i);
+  });
+
+  it('российские получатели — Postbox, Object Storage и Яндекс ID, у каждого своё юрлицо', () => {
+    expect(DOMESTIC_PROCESSORS).toEqual([POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, YANDEX_ID_PROCESSOR]);
+    expect(DOMESTIC_PROCESSORS.map((p) => p.name)).toEqual([
+      'Yandex Cloud Postbox (ООО «Яндекс.Облако»)',
+      'Yandex Object Storage (ООО «Яндекс.Облако»)',
+      'Яндекс ID (ООО «Яндекс»)',
+    ]);
+  });
+
+  it('Postbox: письма для входа и уведомления о записи; уходит почта, для записи — имя, контакт и время', () => {
+    expect(POSTBOX_PROCESSOR.purpose).toContain('ссылки для входа и восстановления доступа');
+    expect(POSTBOX_PROCESSOR.purpose).toContain('уведомления Оператору о новых записях на консультацию');
+    expect(POSTBOX_PROCESSOR.data).toBe('адрес электронной почты пользователя; для записи – имя, контакт и время встречи');
+  });
+
+  it('Яндекс ID: только у выбравших этот вход; названо, что узнаёт сервис и что получает Оператор', () => {
+    expect(YANDEX_ID_PROCESSOR.purpose).toContain('только у тех, кто сам выбирает этот способ входа');
+    expect(YANDEX_ID_PROCESSOR.data).toContain('сервис узнаёт о входе на сайт Оператора');
+    expect(YANDEX_ID_PROCESSOR.data).toContain('идентификатор аккаунта, адрес электронной почты и имя');
   });
 
   // Запрос РКН №08-1063539 (2026-11). Событие календаря и комната Zoom
@@ -41,8 +79,8 @@ describe('processors', () => {
     expect(JSON.stringify(FOREIGN_PROCESSORS)).not.toMatch(/google/i);
   });
 
-  it('Метрика не в иностранных — российский сервис', () => {
-    expect(FOREIGN_PROCESSORS.some((p) => /Яндекс/.test(p.name))).toBe(false);
+  it('Яндекс не в иностранных — Метрика, Postbox и Яндекс ID российские', () => {
+    expect(FOREIGN_PROCESSORS.some((p) => /Яндекс|Yandex/i.test(p.name))).toBe(false);
   });
 
   it('processorLine склеивает имя, назначение и данные', () => {

@@ -11,6 +11,7 @@ import { MODULE_METADATA } from '@nestjs/common/constants';
 import { TelegramModule } from './telegram.module';
 import { TelegramService } from './telegram.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
+import { TELEGRAF_BOT } from './telegram.constants';
 import { TelegramSettingsService } from './telegram.settings.service';
 import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
@@ -18,12 +19,16 @@ import { TelegramQuizService } from './telegram.quiz.service';
 import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
 
 describe('TelegramModule — метаданные @Module', () => {
-  it('экспортирует TelegramService и TelegramScheduleService (нужны другим модулям)', () => {
+  it('экспортирует TelegramService, TelegramScheduleService и бота (нужны другим модулям)', () => {
     const exportsList = Reflect.getMetadata(
       MODULE_METADATA.EXPORTS,
       TelegramModule,
     );
-    expect(exportsList).toEqual([TelegramService, TelegramScheduleService]);
+    expect(exportsList).toEqual([
+      TelegramService,
+      TelegramScheduleService,
+      TELEGRAF_BOT,
+    ]);
   });
 
   it('регистрирует HealthyAdultAdminController как единственный контроллер', () => {

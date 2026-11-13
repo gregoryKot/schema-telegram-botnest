@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Гейт: класс «ветка, зависящая от конфигурации, деградирует МОЛЧА» (щит,
 // волна 8). Заголовный случай — src/utils/admin-alert.ts: без
-// BOT_TOKEN/ADMIN_ID и без RESEND_API_KEY/ADMIN_EMAIL КАЖДЫЙ алерт (события
+// BOT_TOKEN/ADMIN_ID и без ключей Postbox с ADMIN_EMAIL КАЖДЫЙ алерт (события
 // безопасности, сбои платежей, сбои канала волн 2/3/7) улетает в никуда без
 // следа — и никто в системе об этом не узнаёт.
 //
@@ -161,7 +161,7 @@ if (problems.length > 0) {
   console.error(
     'Ветка вида `if (!token/key/secret/process.env.X) return …` без throw —\n' +
       'фича молча выключается, и никто в системе об этом не узнаёт (см. заголовок\n' +
-      'src/utils/admin-alert.ts — без BOT_TOKEN/ADMIN_ID и RESEND_API_KEY/ADMIN_EMAIL\n' +
+      'src/utils/admin-alert.ts — без BOT_TOKEN/ADMIN_ID и ключей Postbox с ADMIN_EMAIL\n' +
       'КАЖДЫЙ алерт улетает в никуда без следа). Заведи запись в\n' +
       'src/infra/capability-report.ts (+ REGISTERED_FILES здесь), либо, если ветка не\n' +
       'про конфигурацию или уже компенсирована в этом же файле — впиши причину:\n' +

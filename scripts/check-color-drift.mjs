@@ -54,6 +54,7 @@ export const ALLOW_BRAND_COLORS = [
   '#229ED9', // Telegram
   '#29B6F6', // Telegram
   '#0077FF', // VK
+  '#FC3F1D', // Яндекс
 ];
 
 // Файлы, где hex приходит только значением, а не может прийти токеном.

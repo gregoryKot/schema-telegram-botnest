@@ -1,12 +1,13 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа email.
 import { EnvVarSpec, formats } from './env-registry';
+import { POSTBOX_ENV_ENTRIES } from './env-registry.entries.postbox';
 
 export const EMAIL_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'ADMIN_EMAIL',
     purpose:
       'Почта владельца для писем о записях и резервных алертов — без неё, при ' +
-      'заданном RESEND_API_KEY, письма молчат (инцидент 2026-09-15).',
+      'заданных ключах Postbox, письма молчат (инцидент 2026-09-15).',
     requiredInProd: false,
     format: formats.email,
     group: 'email',
@@ -20,13 +21,5 @@ export const EMAIL_ENV_ENTRIES: EnvVarSpec[] = [
     format: formats.nonEmpty,
     group: 'email',
   },
-  {
-    name: 'RESEND_API_KEY',
-    purpose:
-      'Ключ Resend — без него почта пользователям и владельцу не отправляется ' +
-      '(magic-link, письма о записях, резервные алерты).',
-    requiredInProd: false,
-    format: formats.nonEmpty,
-    group: 'email',
-  },
+  ...POSTBOX_ENV_ENTRIES,
 ];

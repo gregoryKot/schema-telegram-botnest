@@ -8,7 +8,8 @@ import { buildCapabilityReport, isAlertChannelDead } from './capability-report';
 const ALL_CONFIGURED = {
   BOT_TOKEN: '123:abc',
   ADMIN_ID: '42',
-  RESEND_API_KEY: 're_test',
+  POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+  POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
   ADMIN_EMAIL: 'admin@example.com',
   ZOOM_ACCOUNT_ID: 'z1',
   ZOOM_CLIENT_ID: 'z2',
@@ -18,7 +19,7 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
-  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
   BACKUP_S3_BUCKET: 'b',
   BACKUP_S3_ACCESS_KEY_ID: 'k',
   BACKUP_S3_SECRET_ACCESS_KEY: 'a',
@@ -68,11 +69,34 @@ describe('buildCapabilityReport', () => {
     expect(report.find((c) => c.id === 'alertTelegram')!.on).toBe(false);
   });
 
-  it('emailDelivery независим от алерт-каналов — свой RESEND_API_KEY', () => {
-    const report = buildCapabilityReport({ RESEND_API_KEY: 're_test' });
+  it('emailDelivery независим от алерт-каналов — хватает пары ключей Postbox', () => {
+    const report = buildCapabilityReport({
+      POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+      POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
+    });
     expect(report.find((c) => c.id === 'emailDelivery')!.on).toBe(true);
     expect(report.find((c) => c.id === 'alertEmail')!.on).toBe(false);
   });
+
+  // Подпись запроса собирается из пары: один ключ почту не включает.
+  it.each(['POSTBOX_ACCESS_KEY_ID', 'POSTBOX_SECRET_ACCESS_KEY'])(
+    'только %s из пары ключей Postbox — почта и резервные алерты выключены',
+    (only) => {
+      const report = buildCapabilityReport({
+        [only]: 'x',
+        ADMIN_EMAIL: 'admin@example.com',
+      });
+      const email = report.find((c) => c.id === 'emailDelivery')!;
+      expect(email.on).toBe(false);
+      expect(email.envVars).toEqual([
+        'POSTBOX_ACCESS_KEY_ID',
+        'POSTBOX_SECRET_ACCESS_KEY',
+      ]);
+      const alert = report.find((c) => c.id === 'alertEmail')!;
+      expect(alert.on).toBe(false);
+      expect(alert.envVars).toContain('ADMIN_EMAIL');
+    },
+  );
 
   it('zoomMeetings требует все три переменные разом', () => {
     const partial = buildCapabilityReport({
@@ -134,7 +158,7 @@ describe('buildCapabilityReport', () => {
     expect(cap.on).toBe(false);
     expect(cap.critical).toBe(false);
   });
-  // Аудит D-2: бэкапы в R2 включает только полный набор переменных.
+  // Аудит D-2: бэкапы в Yandex Object Storage включает только полный набор переменных.
   it('dbBackups: нет переменных — off, причина называет их, не критично', () => {
     const cap = buildCapabilityReport({}).find((c) => c.id === 'dbBackups')!;
     expect(cap.on).toBe(false);
@@ -145,7 +169,7 @@ describe('buildCapabilityReport', () => {
 
   it('dbBackups: не хватает одной переменной — off и называет именно её', () => {
     const cap = buildCapabilityReport({
-      BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+      BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
       BACKUP_S3_BUCKET: 'b',
       BACKUP_S3_ACCESS_KEY_ID: 'k',
       BACKUP_S3_SECRET_ACCESS_KEY: 'a',

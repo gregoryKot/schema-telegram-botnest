@@ -14,7 +14,7 @@ import { HttpException } from '@nestjs/common';
 //
 // Признак узкий: `expose === true` ставит только http-errors. Числового
 // `status` мало — он есть и у ошибок исходящих клиентов (AxiosError), а чужой
-// 404 от Telegram или Resend остаётся нашей аварией (контроль — в спеке).
+// 404 от Telegram или Postbox остаётся нашей аварией (контроль — в спеке).
 const CLIENT_ERROR_MESSAGES: Record<number, string> = {
   413: 'Слишком большой запрос',
   415: 'Неподдерживаемый формат данных',

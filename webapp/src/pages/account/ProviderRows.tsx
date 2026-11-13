@@ -4,7 +4,7 @@ import { ONLY_METHOD_NOTE } from './accountMethods';
 // Строки способов входа в /account. Раньше Google, Telegram и ВКонтакте были
 // тремя почти одинаковыми блоками разметки подряд — правка доезжала до одного
 // и забывала два. Теперь строка одна, а различия — данные.
-export type ProviderId = 'google' | 'telegram' | 'vk' | 'max' | 'email';
+export type ProviderId = 'google' | 'telegram' | 'vk' | 'yandex' | 'max' | 'email';
 
 export interface AccountProvider {
   provider: ProviderId;
@@ -74,8 +74,8 @@ export function ProviderRow({
 }
 
 // Цвета логотипов ниже (#4285F4/#34A853/#FBBC05/#EA4335 — Google,
-// #2AABEE — Telegram, #0077FF — VK) — официальные брендовые цвета сторонних
-// сервисов, не токены продукта. Не заводить в контракт, не менять по теме.
+// #2AABEE — Telegram, #0077FF — VK, #FC3F1D — Яндекс) — официальные брендовые
+// цвета сторонних сервисов, не токены продукта. Не заводить в контракт, не менять по теме.
 export function GoogleIcon() {
   return (
   <div style={{ ...iconBox, background: 'rgba(var(--fg-rgb),0.04)' }}>
@@ -103,6 +103,14 @@ export function VkIcon() {
   return (
   <div style={{ ...iconBox, background: '#0077FF', color: 'white', fontSize: 14, fontWeight: 600 }}>
     VK
+  </div>
+  );
+}
+
+export function YandexIcon() {
+  return (
+  <div style={{ ...iconBox, background: '#FC3F1D', color: 'white', fontSize: 18, fontWeight: 600 }}>
+    Я
   </div>
   );
 }

@@ -30,13 +30,15 @@ SITE_URL=https://kotlarewski.gr
 
 ### Резерв уведомлений на почту (рекомендуется)
 Все админ-уведомления (записи, ошибки сервера, security-события) идут в Telegram,
-а **если Telegram недоступен — дублируются на email** через Resend:
+а **если Telegram недоступен — дублируются на email** через Yandex Cloud Postbox:
 ```
-RESEND_API_KEY=...                 # ключ Resend (resend.com)
+POSTBOX_ACCESS_KEY_ID=...          # идентификатор статического ключа сервисного аккаунта
+POSTBOX_SECRET_ACCESS_KEY=...      # секретный ключ того же ключа (роль postbox.sender)
 ADMIN_EMAIL=ты@example.com         # куда слать резервные уведомления
-EMAIL_FROM=SchemeHappens <no-reply@schemehappens.ru>
+EMAIL_FROM=Schema Happens <no-reply@schemehappens.ru>
 ```
-Без `ADMIN_EMAIL`/`RESEND_API_KEY` резерв просто не сработает (Telegram продолжит работать).
+Без `ADMIN_EMAIL` или любого из двух ключей Postbox резерв просто не сработает (Telegram
+продолжит работать). Где взять ключи — [RUNBOOKS.md](RUNBOOKS.md), раздел «Yandex Cloud Postbox — почта».
 
 ## 2. Zoom (персональная ссылка на клиента)
 
