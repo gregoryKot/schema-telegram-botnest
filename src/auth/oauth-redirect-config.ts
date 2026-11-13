@@ -14,9 +14,10 @@ export interface OauthRedirectIssue {
 
 type Env = Record<string, string | undefined>;
 
-// VK_REDIRECT_URI — явный redirect_uri провайдера.
-// WEBAPP_URL — от него строятся frontendBase-редиректы колбэка VK.
-const REDIRECT_ENV_VARS = ['VK_REDIRECT_URI', 'WEBAPP_URL'];
+// Явные redirect_uri провайдеров (VK ID, Яндекс ID) и WEBAPP_URL — от него
+// строятся frontendBase-редиректы их колбэков.
+const PROVIDER_ENV_VARS = ['VK_REDIRECT_URI', 'YANDEX_REDIRECT_URI'];
+const REDIRECT_ENV_VARS = [...PROVIDER_ENV_VARS, 'WEBAPP_URL'];
 
 function badHost(raw: string | undefined): string | null {
   if (!raw?.trim()) return null; // провайдер не настроен — не наша забота
@@ -53,8 +54,7 @@ export function buildOauthRedirectCapability(
     offReason:
       'Адрес возврата OAuth ведёт на хост, который сервер сам редиректит ' +
       'дальше (legacy/www) — вход зациклится (ERR_TOO_MANY_REDIRECTS): ' +
-      'VK_REDIRECT_URI/WEBAPP_URL указывают не на ' +
-      'канонический хост.',
+      `${REDIRECT_ENV_VARS.join('/')} указывают не на канонический хост.`,
     files: ['src/auth/oauth-host.ts'],
     critical: false,
   };

@@ -1,8 +1,8 @@
 // Блок «Настройки» для /stats (правило №8: метрика, которой нет в отчёте, —
 // невидима). Чистый форматтер поверх src/infra/capability-report.ts — щит,
 // волна 8: класс «ветка, зависящая от конфигурации, деградирует МОЛЧА».
-// Язык простой: «почта не отправляется — не задан RESEND_API_KEY», а не
-// «RESEND_API_KEY undefined».
+// Язык простой: «почта не отправляется — не заданы ключи Postbox», а не
+// «POSTBOX_ACCESS_KEY_ID undefined».
 import {
   CapabilityStatus,
   isAlertChannelDead,
@@ -20,7 +20,7 @@ export function formatCapabilityReport(report: CapabilityStatus[]): string {
   if (isAlertChannelDead(report)) {
     lines.push(
       '🔴 Алерты админу не уходят никуда: не настроены ни Telegram ' +
-        '(BOT_TOKEN/ADMIN_ID), ни почта (RESEND_API_KEY/ADMIN_EMAIL) — ' +
+        '(BOT_TOKEN/ADMIN_ID), ни почта (ключи Postbox и ADMIN_EMAIL) — ' +
         'сигнализация мертва.',
     );
   }

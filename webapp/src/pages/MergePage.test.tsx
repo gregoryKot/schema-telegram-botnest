@@ -133,6 +133,7 @@ describe('MergePage — сводка с сервера по токену', () =>
 
   it.each([
     ['vk', 'ВКонтакте'],
+    ['yandex', 'Яндекс'],
     ['telegram', 'Telegram'],
     ['max', 'MAX'],
   ])('провайдер сервера %s → «%s» из словаря, без технического id', async (id, name) => {

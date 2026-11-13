@@ -6,7 +6,7 @@ import {
   resetAlertEmailHealth,
 } from './alert-email-health';
 
-const PREFIX = 'Резервный канал алертов (Resend) не принял письмо: ';
+const PREFIX = 'Резервный канал алертов (Postbox) не принял письмо: ';
 const MSG_403 = `${PREFIX}HTTP 403`;
 const MSG_429 = `${PREFIX}HTTP 429`;
 

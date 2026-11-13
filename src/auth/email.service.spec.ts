@@ -1,5 +1,5 @@
 // Письмо со ссылкой входа несёт живой токен: в проде тело письма не должно
-// попадать в лог. HTTP-путь Resend и обёртки над send() — в
+// попадать в лог. HTTP-путь Postbox и обёртки над send() — в
 // email.service.send.spec.ts.
 import { Logger } from '@nestjs/common';
 import { EmailService } from './email.service';
@@ -10,7 +10,9 @@ describe('EmailService — не логирует секреты (M9)', () => {
   let warn: jest.SpyInstance;
   let error: jest.SpyInstance;
   const origEnv = process.env.NODE_ENV;
-  const origKey = process.env.RESEND_API_KEY;
+  const KEYS = ['POSTBOX_ACCESS_KEY_ID', 'POSTBOX_SECRET_ACCESS_KEY'] as const;
+  const origKeys = KEYS.map((name) => process.env[name]);
+  const dropKeys = () => KEYS.forEach((name) => delete process.env[name]);
 
   beforeEach(() => {
     warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
@@ -20,8 +22,10 @@ describe('EmailService — не логирует секреты (M9)', () => {
     warn.mockRestore();
     error.mockRestore();
     process.env.NODE_ENV = origEnv;
-    if (origKey === undefined) delete process.env.RESEND_API_KEY;
-    else process.env.RESEND_API_KEY = origKey;
+    KEYS.forEach((name, i) => {
+      if (origKeys[i] === undefined) delete process.env[name];
+      else process.env[name] = origKeys[i];
+    });
   });
 
   const allLogged = () =>
@@ -35,9 +39,9 @@ describe('EmailService — не логирует секреты (M9)', () => {
       'Открой https://schemehappens.ru/verify?token=SECRETTOKEN123',
     ) as Promise<void>;
 
-  it('M9: в проде без RESEND_API_KEY тело письма/токен НЕ логируются', async () => {
+  it('M9: в проде без ключей Postbox тело письма/токен НЕ логируются', async () => {
     process.env.NODE_ENV = 'production';
-    delete process.env.RESEND_API_KEY;
+    dropKeys();
     const service = new EmailService();
     await callSend(service);
     const logged = allLogged();
@@ -46,12 +50,14 @@ describe('EmailService — не логирует секреты (M9)', () => {
     expect(logged).not.toContain('a@test.com');
     // Мисконфиг всё же громко замечен (→ DM админа через AlertLogger).
     expect(error).toHaveBeenCalled();
-    expect(logged).toContain('RESEND_API_KEY not configured');
+    expect(logged).toContain(
+      'POSTBOX_ACCESS_KEY_ID/POSTBOX_SECRET_ACCESS_KEY not configured',
+    );
   });
 
   it('M9: в dev (не prod) тело по-прежнему логируется для локальной проверки', async () => {
     process.env.NODE_ENV = 'test';
-    delete process.env.RESEND_API_KEY;
+    dropKeys();
     const service = new EmailService();
     await callSend(service);
     expect(allLogged()).toContain('token=SECRETTOKEN123');

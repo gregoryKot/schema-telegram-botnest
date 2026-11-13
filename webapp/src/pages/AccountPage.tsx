@@ -62,7 +62,7 @@ export function AccountPage() {
         <div className="aa-cols">
           <SignInMethods
             providers={providers} loading={loading} busy={actions.busy} accessToken={accessToken}
-            onLink={{ vk: actions.linkVk }}
+            onLink={{ vk: actions.linkVk, yandex: actions.linkYandex }}
             onUnlink={actions.setUnlinkProvider} emailNotice={emailNotice} onLinked={() => { void refresh(); }}
           />
           <div className="aa-col">

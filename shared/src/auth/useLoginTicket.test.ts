@@ -50,6 +50,13 @@ describe('loginUrl', () => {
     );
   });
 
+  // Яндекс ID идёт тем же редиректом: код билета едет в `?ticket=`, как у VK.
+  it('Яндекс — тот же редирект бэкенда, свой маршрут', () => {
+    expect(loginUrl('yandex', 'K7M2QX94', DEPS)).toBe(
+      '/api/auth/yandex?ticket=K7M2QX94',
+    );
+  });
+
   it('учитывает свой apiBase, когда фронт живёт на другом origin', () => {
     expect(
       loginUrl('vk', 'K7M2QX94', { ...DEPS, apiBase: 'https://api.example' }),

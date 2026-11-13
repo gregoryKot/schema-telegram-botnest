@@ -116,10 +116,10 @@ describe('e2e: заявка с формы знакомства пишется в
     expect(row.anonymizedAt).toBeNull();
   });
 
-  it('доставка отмечена по факту каждого канала: бот ответил — tgDeliveredAt, ключа Resend нет — emailDeliveredAt пуст', async () => {
+  it('доставка отмечена по факту каждого канала: бот ответил — tgDeliveredAt, ключей почты нет — emailDeliveredAt пуст', async () => {
     const row = await rowBySource(`${MARK}happy`);
     expect(row.tgDeliveredAt).toBeInstanceOf(Date);
-    // В тестовой среде RESEND_API_KEY не задан: письмо не уходит и не должно
+    // В тестовой среде ключи Postbox не заданы: письмо не уходит и не должно
     // засчитываться доставленным (раньше send() молча выходил).
     expect(row.emailDeliveredAt).toBeNull();
     const dms = sendMessage.mock.calls.map((c: unknown[]) => String(c[1]));

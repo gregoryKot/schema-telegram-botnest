@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-// Способы входа на странице /login: ВКонтакте (во вкладке — прямой вход, в
-// установленном приложении — по билету из общего хука shared). Входа через
-// Telegram на сайте нет — это и проверяется первым.
+// Способы входа на странице /login: ВКонтакте и Яндекс (во вкладке — прямой
+// вход, в установленном приложении — по билету из общего хука shared). Входа
+// через Telegram на сайте нет — это и проверяется первым.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 
 const { startMock, pollMock } = vi.hoisted(() => ({
   startMock: vi.fn(),
@@ -29,6 +29,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const VK = /Войти через ВКонтакте/;
+const YANDEX = /Войти через Яндекс/;
 
 function standalone() {
   vi.stubGlobal(
@@ -80,6 +81,59 @@ describe('способы входа', () => {
     // Билет один на экран и выписан под ВКонтакте — под Telegram сервер его не даст.
     expect(startMock).toHaveBeenCalledTimes(1);
     expect(startMock).toHaveBeenCalledWith({ intent: 'login', provider: 'vk', hostId: 'web' });
+  });
+});
+
+// Яндекс ID (2026-11) — второй сервис входа, зеркало ВКонтакте: свой маршрут
+// бэкенда `/api/auth/yandex`, та же кнопка, тот же билет.
+describe('Яндекс', () => {
+  it('кнопка стоит сразу после ВКонтакте, знак — «Я», скрытый от читалки', () => {
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const links = screen.getAllByRole('link');
+    expect(links.map((a) => a.textContent)).toEqual(['VKВойти через ВКонтакте', 'ЯВойти через Яндекс']);
+    // Иначе читалка произнесла бы «Я войти через Яндекс».
+    expect(screen.getByRole('link', { name: 'Войти через Яндекс' })).toBe(links[1]);
+    expect(links.map((a) => a.className)).toEqual(['al-btn-main', 'al-btn-main']);
+  });
+
+  it('во вкладке браузера — прямой вход в той же вкладке, без билета', () => {
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const ya = screen.getByRole('link', { name: YANDEX });
+    expect(ya.getAttribute('href')).toBe('/api/auth/yandex');
+    expect(ya.getAttribute('target')).toBeNull();
+    expect(startMock).not.toHaveBeenCalled();
+  });
+
+  it('в установленном приложении несёт код того же билета и открывается снаружи', async () => {
+    standalone();
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: YANDEX }).getAttribute('href')).toBe(
+        '/api/auth/yandex?ticket=K7M2QX94',
+      ),
+    );
+    expect(screen.getByRole('link', { name: YANDEX }).getAttribute('target')).toBe('_blank');
+    // Второго билета нет: код у обеих кнопок один, подтверждает его вошедший человек.
+    expect(screen.getByRole('link', { name: VK }).getAttribute('href')).toBe('/api/auth/vk?ticket=K7M2QX94');
+    expect(startMock).toHaveBeenCalledTimes(1);
+  });
+
+  // Билет выписан до нажатия, поэтому сервис ожидания — тот, чью кнопку нажали:
+  // иначе после входа через Яндекс экран звал бы подтвердить «через ВКонтакте»
+  // и «Открыть ещё раз» вело бы на чужой сервис.
+  it.each([
+    ['Яндекс', YANDEX, '/api/auth/yandex?ticket=K7M2QX94'],
+    ['ВКонтакте', VK, '/api/auth/vk?ticket=K7M2QX94'],
+  ] as const)('ожидание называет нажатый сервис: %s', async (name, button, url) => {
+    standalone();
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const link = await screen.findByRole('link', { name: button });
+    await waitFor(() => expect(link.getAttribute('href')).toContain('ticket='));
+    link.addEventListener('click', (e) => e.preventDefault()); // jsdom не умеет открывать окна
+    fireEvent.click(link);
+    fireEvent.click(screen.getByRole('button', { name: 'Показать код входа' }));
+    expect(screen.getByText(`Осталось подтвердить вход через ${name}. Код входа:`)).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Открыть ещё раз/ }).getAttribute('href')).toBe(url);
   });
 });
 

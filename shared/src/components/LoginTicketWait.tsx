@@ -44,6 +44,7 @@ const LINK: React.CSSProperties = {
 
 const PROVIDER_NAMES: Record<string, string> = {
   vk: 'ВКонтакте',
+  yandex: 'Яндекс',
   email: 'почту',
 };
 

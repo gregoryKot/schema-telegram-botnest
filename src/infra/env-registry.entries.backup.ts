@@ -38,7 +38,7 @@ const bucketName = (value: string): string | null =>
     : 'имя бакета — 3–63 символа: строчные латинские буквы, цифры, дефис';
 
 /** Ключ доступа уходит в подпись как есть: пробел внутри — почти всегда ошибка копирования. */
-const accessKey = (value: string): string | null =>
+export const accessKey = (value: string): string | null =>
   /^\S+$/.test(value) ? null : 'пустое значение или пробел внутри ключа';
 
 export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [

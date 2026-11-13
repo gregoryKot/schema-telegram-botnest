@@ -2,7 +2,7 @@ import type { Response } from 'express';
 
 // Identity returned by any provider after successful verification.
 export interface ProviderIdentity {
-  providerId: string; // unique within the provider (telegramId, googleSub, vkId, …)
+  providerId: string; // unique within the provider (telegramId, vkId, yandexId, …)
   email?: string;
   displayName?: string; // ляжет открытым в User.firstName — только имя (S16)
 }
@@ -11,7 +11,7 @@ export interface ProviderIdentity {
 // exchangeCode) for redirect-based flows. Провайдер без них (Telegram, MAX) —
 // только имя способа входа: его подпись проверяется внутри мессенджера.
 export interface AuthProviderHandler {
-  readonly id: string; // 'google' | 'telegram' | 'vk' | …
+  readonly id: string; // 'telegram' | 'vk' | 'max' | 'yandex'
   readonly displayName: string;
   // OAuth-redirect flow: buildAuthUrl → provider redirects back with a code →
   // exchangeCode swaps it for the user's identity (server-side token exchange).
