@@ -1,5 +1,6 @@
 import { AnalyticsService } from './analytics.service';
 import type { AnalyticsEventName } from './analytics.constants';
+import { KEPT_UNTIL_ACCOUNT_DELETION } from './analytics-retention';
 
 function makePrisma(create: jest.Mock) {
   return { analyticsEvent: { create } } as never;
@@ -8,22 +9,37 @@ function makePrisma(create: jest.Mock) {
 describe('AnalyticsService.pruneOld — ретеншен (L10)', () => {
   afterEach(() => jest.restoreAllMocks());
 
+  // Фейк повторяет фильтр pruneOld: createdAt < cutoff и name вне notIn.
+  type PruneWhere = { createdAt: { lt: Date }; name?: { notIn: string[] } };
+  function fakeTable(
+    rows: Array<{ id: number; name: string; createdAt: Date }>,
+  ) {
+    return jest.fn(async ({ where }: { where: PruneWhere }) => {
+      const cutoff = where.createdAt.lt.getTime();
+      const kept = where.name?.notIn ?? [];
+      const before = rows.length;
+      for (let i = rows.length - 1; i >= 0; i--)
+        if (
+          rows[i].createdAt.getTime() < cutoff &&
+          !kept.includes(rows[i].name)
+        )
+          rows.splice(i, 1);
+      return { count: before - rows.length };
+    });
+  }
+
   it('удаляет события старше 90 дней, свежие не трогает', async () => {
     const now = new Date('2026-08-14T00:00:00.000Z').getTime();
     jest.spyOn(Date, 'now').mockReturnValue(now);
     const rows = [
-      { id: 1, createdAt: new Date(now - 100 * 86_400_000) }, // старое
-      { id: 2, createdAt: new Date(now - 10 * 86_400_000) }, // свежее
+      {
+        id: 1,
+        name: 'share_card',
+        createdAt: new Date(now - 100 * 86_400_000),
+      }, // старое
+      { id: 2, name: 'share_card', createdAt: new Date(now - 10 * 86_400_000) }, // свежее
     ];
-    const deleteMany = jest.fn(
-      async ({ where }: { where: { createdAt: { lt: Date } } }) => {
-        const cutoff = where.createdAt.lt.getTime();
-        const before = rows.length;
-        for (let i = rows.length - 1; i >= 0; i--)
-          if (rows[i].createdAt.getTime() < cutoff) rows.splice(i, 1);
-        return { count: before - rows.length };
-      },
-    );
+    const deleteMany = fakeTable(rows);
     const service = new AnalyticsService({
       analyticsEvent: { deleteMany },
     } as never);
@@ -32,6 +48,27 @@ describe('AnalyticsService.pruneOld — ретеншен (L10)', () => {
 
     expect(deleteMany).toHaveBeenCalledTimes(1);
     expect(rows.map((r) => r.id)).toEqual([2]); // только старое удалено
+  });
+
+  // Решение владельца (аудит 2026-10): след «человек забрал свои данные»
+  // хранится до удаления аккаунта, а не 90 дней.
+  it('data_export старше 90 дней остаётся, соседнее старое событие удаляется', async () => {
+    const now = new Date('2026-08-14T00:00:00.000Z').getTime();
+    jest.spyOn(Date, 'now').mockReturnValue(now);
+    const old = new Date(now - 400 * 86_400_000);
+    const rows = [
+      { id: 1, name: 'data_export', createdAt: old },
+      { id: 2, name: 'share_card', createdAt: old },
+    ];
+    const deleteMany = fakeTable(rows);
+    const service = new AnalyticsService({
+      analyticsEvent: { deleteMany },
+    } as never);
+
+    await service.pruneOld();
+
+    expect(KEPT_UNTIL_ACCOUNT_DELETION).toContain('data_export');
+    expect(rows.map((r) => r.id)).toEqual([1]);
   });
 
   it('не бросает, если deleteMany падает (ретеншен не роняет процесс)', async () => {
