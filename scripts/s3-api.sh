@@ -1,5 +1,5 @@
 #!/bin/bash
-# Общая часть работы с S3-совместимым хранилищем бэкапов (Cloudflare R2) через
+# Общая часть работы с S3-совместимым хранилищем бэкапов (Yandex Object Storage) через
 # curl, без CLI: подписанный запрос и список файлов. Подключается `source`-ом из
 # scripts/backup-upload.sh (загрузка и чистка старых) и
 # scripts/backup-fetch-latest.sh (скачивание при аварии), чтобы вход в
@@ -10,15 +10,15 @@
 # типизированный вход). curl получает готовые заголовки и шлёт адрес как есть.
 # Встроенный `curl --aws-sigv4` не годится: curl сам каноникализирует строку
 # запроса, и curl 8.18 (Ubuntu 26.04) подписывал `%2B` в курсоре листинга как
-# `%20` — R2 отвечал 403 SignatureDoesNotMatch на второй странице списка.
+# `%20` — S3-хранилище отвечало 403 SignatureDoesNotMatch на второй странице списка.
 # Что подпись сходится с тем, что реально ушло по сети, проверяет поддельный
 # S3 спеков (src/test-support/fake-s3.ts): он пересчитывает её по запросу,
 # который пришёл от curl.
 #
 # Что нужно от вызывающего:
-#   переменные BACKUP_S3_ENDPOINT (https://<id аккаунта>.r2.cloudflarestorage.com),
+#   переменные BACKUP_S3_ENDPOINT (https://storage.yandexcloud.net),
 #   BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY;
-#   необязательная BACKUP_S3_REGION (по умолчанию auto — так требует R2).
+#   необязательная BACKUP_S3_REGION (по умолчанию ru-central1 — единственный регион Yandex Object Storage).
 # Адреса path-style: <endpoint>/<бакет>/<ключ>.
 #
 # Ключ доступа и секрет уходят подписи через stdin, а заголовки с подписью —
@@ -27,7 +27,7 @@
 # строку видят и подпись, и хранилище.
 # shellcheck disable=SC2034  # EMPTY_SHA256 читают вызывающие скрипты
 
-S3_REGION="${BACKUP_S3_REGION:-auto}"
+S3_REGION="${BACKUP_S3_REGION:-ru-central1}"
 S3_BASE="${BACKUP_S3_ENDPOINT%/}/${BACKUP_S3_BUCKET:-}"
 S3_MAX_PAGES="${S3_MAX_PAGES:-100}"
 CURL_OPTS=(-sS --fail-with-body --max-time 120)

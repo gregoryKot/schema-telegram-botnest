@@ -1,4 +1,4 @@
-// Список файлов S3-совместимого бакета (Cloudflare R2) через ListObjectsV2 —
+// Список файлов S3-совместимого бакета (Yandex Object Storage) через ListObjectsV2 —
 // ответ площадки в XML. Читает его проба самопроверки backupFreshness
 // (self-check/probe-backup-freshness.ts). Разбор проверен на ответах из
 // документации AWS (test/fixtures/recorded/s3-list-objects-v2-*.xml, правило
@@ -22,7 +22,7 @@ export interface S3ListPage {
 }
 
 export interface S3Config extends SigV4Credentials {
-  /** `https://<account>.r2.cloudflarestorage.com` — без бакета в пути. */
+  /** `https://storage.yandexcloud.net` — без бакета в пути. */
   endpoint: string;
   bucket: string;
 }

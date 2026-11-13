@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { useTr } from '../utils/addressForm';
-import { inviteButtonStyle } from './InviteCodeBox';
 import { cardClaimKey, type CardClaim, type CardClaims } from './cardClaims';
 
 // Плашки сверки «Это тот же человек?» над списком клиентов кабинета (S8,
@@ -9,7 +8,8 @@ import { cardClaimKey, type CardClaim, type CardClaims } from './cardClaims';
 // каждой кнопке. Пока грузится или сверок нет — ничего: у большинства
 // терапевтов блок пуст, скелетон мигал бы на месте, где ничего не появится.
 // Вид (b29): светлый лист без контура (тень слоем и знак «тот же человек» —
-// `art`, `rowClassName` — даёт сайт), сбой — `failure` (PaperAlert сайта).
+// `art`, `rowClassName` — даёт сайт), сбой — `failure` (PaperAlert сайта). Залитая на экране одна —
+// «Новый клиент», поэтому «Да» обводочная, «Нет» — тихая ссылка с зоной 44.
 const box = {
   padding: 14,
   borderRadius: 14,
@@ -17,11 +17,6 @@ const box = {
   marginBottom: 10,
 } as const;
 const muted = { fontSize: 12, lineHeight: 1.5, color: 'var(--text-sub)' };
-const primary = {
-  ...inviteButtonStyle,
-  background: 'var(--accent)',
-  color: 'var(--on-accent)',
-} as const;
 
 /** Вопрос плашки: имена в кавычках, пропавшее имя — словами, без «null». */
 export function cardClaimQuestion(c: CardClaim): string {
@@ -70,7 +65,7 @@ function ClaimRow({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <button
           type="button"
-          style={primary}
+          className="ds-btn ds-btn--sm ds-btn--secondary"
           disabled={busy}
           onClick={() => void claims.resolve(claim, true)}
         >
@@ -78,7 +73,8 @@ function ClaimRow({
         </button>
         <button
           type="button"
-          style={inviteButtonStyle}
+          className="ds-link"
+          style={{ minHeight: 44, padding: '0 10px' }}
           disabled={busy}
           onClick={() => void claims.resolve(claim, false)}
         >

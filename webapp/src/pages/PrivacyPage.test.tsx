@@ -69,10 +69,10 @@ describe('PrivacyPage', () => {
 // D-4 / D-11 (аудит 2026-10): политика называет всех получателей данных и
 // честно описывает, где работает счётчик. Список — privacy/processors.ts.
 describe('PrivacyPage — получатели данных', () => {
-  it('называет Telegram, Cloudflare R2, Yandex Cloud Postbox, Яндекс ID и Яндекс Метрику с назначением', () => {
+  it('называет Telegram, Yandex Cloud Postbox, Yandex Object Storage, Яндекс ID и Яндекс Метрику с назначением', () => {
     render(<PrivacyPage />);
     for (const name of [
-      'Telegram (Telegram', 'Cloudflare R2 (Cloudflare', 'Yandex Cloud Postbox (ООО «Яндекс.Облако»)',
+      'Telegram (Telegram', 'Yandex Cloud Postbox (ООО «Яндекс.Облако»)', 'Yandex Object Storage (ООО «Яндекс.Облако»)',
       'Яндекс ID (ООО «Яндекс»)', 'Яндекс Метрика (ООО',
     ]) {
       expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
@@ -88,8 +88,8 @@ describe('PrivacyPage — получатели данных', () => {
     const text = container.textContent ?? '';
     expect(text).toContain('Российские сервисы. Письма и вход через Яндекс работают на серверах в России и трансграничной передачей не являются:');
     expect(text).not.toMatch(/resend|plus five five/i);
-    const order = ['Трансграничная передача данных.', 'Cloudflare R2 (Cloudflare', 'Видеовстреча консультации проходит в сервисе Zoom',
-      'Российские сервисы.', 'Yandex Cloud Postbox', 'Яндекс ID (ООО', 'Статистика посещений.'].map((s) => text.indexOf(s));
+    const order = ['Трансграничная передача данных.', 'Telegram (Telegram', 'Видеовстреча консультации проходит в сервисе Zoom',
+      'Российские сервисы.', 'Yandex Cloud Postbox', 'Yandex Object Storage (ООО', 'Яндекс ID (ООО', 'Статистика посещений.'].map((s) => text.indexOf(s));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     // Иностранный перечень (первый список главы 7 после «Трансграничная…») российских сервисов не содержит.
@@ -128,11 +128,12 @@ describe('PrivacyPage — получатели данных', () => {
 
 // Сверка 2026-10-22: документ совпадает с тем, что делает сайт.
 describe('PrivacyPage — бэкапы и cookie', () => {
-  it('резервные копии: хранятся в Cloudflare R2, зашифрованы, не дольше 30 дней', () => {
+  it('резервные копии: хранятся в России (Yandex Object Storage), зашифрованы, не дольше 30 дней', () => {
     // Срок держит scripts/backup-upload.sh (потолок BACKUP_RETENTION_MAX_DAYS);
     // число с кодом сверяет src/test-support/gates/backup-retention-policy.spec.ts.
     render(<PrivacyPage />);
-    expect(screen.getByText(/резервные копии базы данных хранятся в облачном хранилище Cloudflare R2/)).toBeTruthy();
+    expect(screen.getByText(/зашифрованные резервные копии базы данных \(Yandex Object Storage\) хранятся на серверах\s+на территории Российской Федерации/)).toBeTruthy();
+    expect(document.body.textContent ?? '').not.toMatch(/Cloudflare/i);
     expect(screen.getByText(/Резервные копии базы данных хранятся в\s+зашифрованном виде не дольше 30 дней/)).toBeTruthy();
   });
 

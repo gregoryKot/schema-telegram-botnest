@@ -105,6 +105,10 @@
     "status": "exempt",
     "reason": "Подпись Robokassa (md5 outSum:invId:pass) проверена по официальной документации площадки, но ни один настоящий ResultURL-вебхук с прода в фикстуру не сохранён — payment-webhooks.e2e-spec.ts строит подпись сам тем же алгоритмом, что и код."
   },
+  "src/booking/zoom-room.ts": {
+    "status": "exempt",
+    "reason": "Get/Update Meeting Zoom (topic, 404, 429) в спеке — авторская форма по документации Zoom API, как у meeting.service.ts; боевых Zoom-учётных данных для записи нет, разовая команда."
+  },
   "src/channel/channel-http.ts": {
     "status": "exempt",
     "reason": "Общий JSON-клиент для адаптеров канала (VK/MAX/Threads/Pinterest) — тела ответов и ошибок в тестах синтетические на каждую площадку отдельно, ни один настоящий ответ площадки не записан."

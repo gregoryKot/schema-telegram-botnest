@@ -114,8 +114,8 @@ class AudioEngine {
     if (this.timer) { clearTimeout(this.timer); this.timer = null; }
     if (this.musicGain && this.ctx) this.musicGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
   }
-  setIntensity(x: number) {
-    // x 0..1 — music swells as overwhelm builds
+  pause(on: boolean) { if (this.ctx) void (on ? this.ctx.suspend() : this.ctx.resume()); } // «поверни телефон»
+  setIntensity(x: number) { // x 0..1 — music swells as overwhelm builds
     if (this.musicGain && this.ctx) this.musicGain.gain.setTargetAtTime(0.5 + x * 0.35, this.ctx.currentTime, 0.6);
   }
   // спираль истощения: музыка чуть «расстраивается» (ниже по высоте)

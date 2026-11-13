@@ -165,7 +165,7 @@ export class MeetingService {
     return { url: data.join_url, id: String(data.id ?? '') };
   }
 
-  private async zoomToken(): Promise<string | null> {
+  async zoomToken(): Promise<string | null> {
     const basic = Buffer.from(
       `${this.zoomClientId}:${this.zoomClientSecret}`,
     ).toString('base64');

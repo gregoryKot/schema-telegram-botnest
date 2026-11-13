@@ -42,7 +42,7 @@ const front = startFront({ port: PORT, appPort: C.APP_PORT, reason: status.reaso
 let current = null;
 let shuttingDown = false;
 let cleanExit = false;
-let backup = null; // планировщик бэкапов в R2 (deploy/backup-scheduler.cjs)
+let backup = null; // планировщик бэкапов в Yandex Object Storage (deploy/backup-scheduler.cjs)
 
 function finish() {
   // Front держит event loop живым. Выходим только при чистом выходе приложения

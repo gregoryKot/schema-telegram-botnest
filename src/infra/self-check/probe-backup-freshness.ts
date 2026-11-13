@@ -3,7 +3,7 @@ import { BACKUP_RETENTION_MAX_DAYS, backupS3Config } from '../backup-config';
 import { backupMisconfigResult } from '../backup-misconfig';
 import { listObjects, S3Object } from '../s3-list-objects';
 
-// Проба «бэкапы в Cloudflare R2 действительно делаются» (аудит D-2, правило
+// Проба «бэкапы в Yandex Object Storage действительно делаются» (аудит D-2, правило
 // №21). Скрипт бэкапа молчал годами, потому что его никто не вызывал и никто
 // не спрашивал результат. Проба смотрит не на конфигурацию, а на итог: самый
 // свежий файл schemehappens-*.sql.gz.enc в бакете (ListObjectsV2 по S3-API —
@@ -56,8 +56,8 @@ export function backupFreshnessProbe(
   const uptimeSec = deps.uptimeSec ?? (() => process.uptime());
   return {
     id: 'backupFreshness',
-    title: 'Бэкапы БД в Cloudflare R2',
-    retryOnce: true, // живой листинг бакета R2 (Probe.retryOnce)
+    title: 'Бэкапы БД в Yandex Object Storage',
+    retryOnce: true, // живой листинг бакета Yandex Object Storage (Probe.retryOnce)
     async run() {
       const misconfigured = backupMisconfigResult(env);
       if (misconfigured) return misconfigured;
