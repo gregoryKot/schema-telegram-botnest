@@ -49,7 +49,7 @@ export class AnalyticsService {
     }
   }
 
-  /** Ретеншен: раз в сутки чистим события старше RETENTION_DAYS, кроме хранимых до удаления аккаунта (L10). */
+  /** Ретеншен (L10): раз в сутки удаляем старое, кроме хранимых до удаления аккаунта. */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async pruneOld(): Promise<void> {
     try {
