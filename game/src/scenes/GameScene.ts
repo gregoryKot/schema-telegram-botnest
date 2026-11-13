@@ -9,13 +9,13 @@ import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
 import { t, type MsgKey } from '../i18n';
-import { unlockChapter } from '../progress';
 import { getAssist } from '../assist';
 import { track, trackEvent } from '../analytics';
-import { openCta } from '../therapyCta';
 import { gameOver } from './game/death';
 import { storyFrame } from './game/frames';
 import { beginOverwhelm } from './game/ending';
+import { onDoorEnter, beginFinalApproach, restoreCopingButtons, sessionScene } from './game/cabinet';
+import { showBranch } from './game/cta';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -32,9 +32,6 @@ function markIntroduced(key: string) {
   introduced.add(key);
   try { localStorage.setItem(INTRO_KEY, JSON.stringify([...introduced])); } catch { /* ок */ }
 }
-// Телефон доверия: тот же, что в shared/src/utils/crisisMarkers.ts (сверка — тест
-// src/test-support/gates/game-crisis-hotline.spec.ts). Игра — отдельный пакет без shared/.
-const CRISIS_TEL = 'tel:88001004994';
 
 const RUN_SPEED = 250;
 const DASH_SPEED = 560;
@@ -129,9 +126,9 @@ export class GameScene extends Phaser.Scene {
   // Акт II «Дорога»: дверь терапевта + отговорки-заслоны, которым отвечают
   private doors: Door[] = [];
   private voices: ExcuseVoice[] = [];
-  private copingsOff = false;         // у финальной двери копинги гаснут
-  private finalApproach = false;
-  private sessionLines: Phaser.GameObjects.Text[] = []; // реплики кабинета гл.4 — гасим перед CTA
+  copingsOff = false;         // у финальной двери копинги гаснут
+  finalApproach = false;
+  sessionLines: Phaser.GameObjects.Text[] = []; // реплики кабинета гл.4 — гасим перед CTA
   frameQueue: [MsgKey, MsgKey][] = [];      // стоп-кадры, пришедшие, пока открыт другой (два триггера подряд)
   private titleCard: Phaser.GameObjects.Text[] = [];  // титул главы — гасим, если первый стоп-кадр пришёл раньше
 
@@ -159,7 +156,7 @@ export class GameScene extends Phaser.Scene {
     this.memories = []; this.memGot = 0; this.memTotal = 0;
     this.doors = []; this.voices = []; this.sessionLines = [];
     this.copingsOff = false; this.finalApproach = false;
-    this.restoreCopingButtons(); // после финальной двери прошлого захода
+    restoreCopingButtons(); // после финальной двери прошлого захода
 
     this.buildBackground();
     this.exhaustOverlay = this.add.graphics().setScrollFactor(0).setDepth(59); // виньетка истощения
@@ -176,7 +173,7 @@ export class GameScene extends Phaser.Scene {
     this.setupTriggers();
     this.buildDoors();
     // гл.4 — не платформер, а скриптовая сцена первого сеанса
-    if (this.chapter.id === 'chapter4') this.time.delayedCall(2400, () => this.sessionScene());
+    if (this.chapter.id === 'chapter4') this.time.delayedCall(2400, () => sessionScene(this));
 
     // Ассист-режим (этика для ЦА в дистрессе): больше жизней / бессмертие
     const assist = getAssist();
@@ -393,7 +390,7 @@ export class GameScene extends Phaser.Scene {
   private buildDoors() {
     if (!this.chapter.doors?.length) return;
     for (const cfg of this.chapter.doors)
-      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), this.chapter.arenaW));
+      this.doors.push(new Door(this, cfg.kind, cfg.x, () => onDoorEnter(this), this.chapter.arenaW));
     // заслоны: (x голоса, реплики, ответ) — гейт чуть дальше голоса
     const blocks: { x: number; lines: MsgKey[]; answer: MsgKey }[] = [
       { x: 880,  lines: ['m_exc_pass', 'm_exc_later'],        answer: 'm_ans_later' },
@@ -427,7 +424,7 @@ export class GameScene extends Phaser.Scene {
     }
     // финальный подход к двери терапевта: копинги гаснут один за другим
     const th = this.doors.find(d => d.kind === 'therapist');
-    if (th && !this.finalApproach && this.player.x > th.x - 420) this.beginFinalApproach();
+    if (th && !this.finalApproach && this.player.x > th.x - 420) beginFinalApproach(this);
   }
 
   private onVoiceAnswered(v: ExcuseVoice) {
@@ -436,177 +433,6 @@ export class GameScene extends Phaser.Scene {
     this.say(v.answer, 3400);
     this.burst(this.player.x, this.player.y - 30, 0x88ffcc, 10, 130);
     if (this.hearts < this.MAX_HEARTS) { this.hearts += 1; this.updateHearts(); } // ответил себе — стало легче
-  }
-
-  private onDoorEnter(_d: Door) {
-    // дверь терапевта → глава 4 «Первый сеанс»
-    trackEvent('game_chapter_done', { chapter: this.chapter.id });
-    unlockChapter('chapter4');
-    this.dead = true;
-    audio.stopMusic();
-    this.cameras.main.fade(1200, 10, 8, 14);
-    this.time.delayedCall(1300, () => this.scene.restart({ chapter: 'chapter4' }));
-  }
-
-  // У двери терапевта копинги буквально гаснут — против выбора они бессмысленны
-  private beginFinalApproach() {
-    this.finalApproach = true;
-    track('final_approach');
-    this.time.delayedCall(500, () => this.say('m_whisper_worse', 2800)); // тревога: «а вдруг хуже»
-    const ids = ['tbtn-hit', 'tbtn-avoid', 'tbtn-fawn'];
-    ids.forEach((id, i) => this.time.delayedCall(1800 + i * 900, () => {
-      const el = document.getElementById(id);
-      if (el) { el.style.transition = 'opacity 1s'; el.style.opacity = '0.12'; el.style.pointerEvents = 'none'; }
-    }));
-    this.time.delayedCall(1800, () => { this.copingsOff = true; });
-    this.time.delayedCall(4200, () => this.say('m_no_coping_here_note', 3000));
-  }
-
-  private restoreCopingButtons() {
-    for (const id of ['tbtn-hit', 'tbtn-avoid', 'tbtn-fawn']) {
-      const el = document.getElementById(id);
-      if (el) { el.style.opacity = '1'; el.style.pointerEvents = 'auto'; }
-    }
-  }
-
-  // ── Гл.4 «Первый сеанс»: payoff всей игры — впервые тихо, и кто-то рядом.
-  //    И первый ВСТРЕТИТЬ: Критик вблизи меньше, чем казался.
-  private sessionScene() {
-    this.dead = true;
-    audio.stopMusic();
-    const pb = this.player.body as Phaser.Physics.Arcade.Body;
-    pb.setVelocity(0, 0); pb.moves = false;
-    this.player.setVisible(false);          // Мистера рисуем сами, в кресле
-    setTouchControls(false); // на сеансе кнопки не нужны — совсем
-    const deep = 150;
-    // тёплая комната
-    const room = this.add.rectangle(W / 2, H / 2, W, H, 0x171008).setScrollFactor(0).setDepth(deep).setAlpha(0);
-    this.tweens.add({ targets: room, alpha: 1, duration: 900 });
-    const gfx = this.add.graphics().setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
-    gfx.fillStyle(0xffd9a0, 0.10); gfx.fillEllipse(W * 0.72, H * 0.36, 300, 220);   // свет лампы
-    gfx.fillStyle(0x2a2014, 1); gfx.fillRect(0, H - 64, W, 64);                     // пол
-    const objs: Phaser.GameObjects.GameObject[] = [gfx];
-    const put = (key: string, x: number, w: number) => {
-      if (!this.textures.exists(key)) return null;
-      const img = this.add.image(x, H - 64, key).setOrigin(0.5, 1).setScrollFactor(0).setDepth(deep + 2).setAlpha(0);
-      img.setScale(w / img.width);
-      objs.push(img); return img;
-    };
-    put('prop_couch', W * 0.30, 240);
-    put('prop_lamp', W * 0.74, 64);
-    put('prop_plant', W * 0.92, 70);
-    // Мистер и терапевт — просто сидят. никого не надо бить.
-    const mister = this.add.sprite(W * 0.26, H - 64, 'cat_idle').setOrigin(0.5, 1)
-      .setScale(1.6).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
-    const doc = this.add.sprite(W * 0.56, H - 64, 'cat_idle').setOrigin(0.5, 1)
-      .setScale(1.7).setFlipX(true).setTint(0x9ac8a8).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
-    objs.push(mister, doc);
-    this.tweens.add({ targets: objs, alpha: 1, duration: 1100, delay: 700 });
-
-    // строки — тихие, по одной
-    const font = '"Press Start 2P", "Courier New", monospace';
-    const ky = H / 540;
-    const line = (key: MsgKey, y: number, color: string, size: number, delay: number) => {
-      const ln = this.add.text(W / 2, y * ky, t(key), { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8 })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 5).setAlpha(0);
-      this.tweens.add({ targets: ln, alpha: 1, duration: 900, delay });
-      this.sessionLines.push(ln);
-      return ln;
-    };
-    line('m_cab_1', 82, '#d8c8ec', 13, 1600);
-    line('m_cab_2', 118, '#d8c8ec', 12, 3200);
-    line('m_cab_3', 154, '#e8d8c0', 12, 5200);
-    line('m_ther_q', 208, '#a8e8d0', 12, 7400);          // — кто приходит к тебе чаще всего?
-    // Критик встаёт в дверях — огромный, как всегда
-    this.time.delayedCall(9000, () => {
-      const shadow = this.add.sprite(W * 0.92, H - 64, 'cat_idle').setOrigin(0.5, 1)
-        .setScale(2.2).setTint(0x1a0030).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('p-idle');
-      shadow.setFlipX(true);
-      this.tweens.add({ targets: shadow, alpha: 0.85, duration: 900 });
-      audio.anx();
-      const prompt = this.add.text(W / 2, (H - 100), t('m_meet_prompt'), {
-        fontFamily: font, fontSize: '11px', color: '#88ffcc',
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(deep + 6).setAlpha(0);
-      this.tweens.add({ targets: prompt, alpha: { from: 0.4, to: 1 }, duration: 700, yoyo: true, repeat: -1, delay: 1100 });
-      // ВСТРЕТИТЬ — вместе: одно нажатие, и вблизи он меньше, чем казался
-      this.time.delayedCall(1400, () => {
-        let met = false;
-        const meet = () => {
-          if (met) return; // E, потом тап — раньше рисовало две CTA и слало demo_end дважды
-          met = true;
-          this.input.keyboard!.off('keydown-E', meet); this.input.off('pointerdown', meet);
-          prompt.destroy();
-          audio.gate();
-          this.tweens.add({ targets: shadow, x: W * 0.72, scale: 0.9, duration: 1700, ease: 'Sine.InOut' });
-          this.tweens.add({ targets: shadow, tint: 0x4a3060, alpha: 0.8, duration: 1700 });
-          line('m_meet_1', 250, '#e8b8c8', 12, 1900);
-          line('m_meet_2', 306, '#d8c8ec', 12, 4300);
-          line('m_meet_3', 368, '#88ffcc', 12, 6900);
-          this.time.delayedCall(10200, () => this.showTherapyCta());
-        };
-        this.input.keyboard!.once('keydown-E', meet);
-        this.input.once('pointerdown', meet);
-      });
-    });
-  }
-
-  // Финальная CTA: запись + шаринг + донат
-  private showTherapyCta() {
-    track('demo_end', { chapter: this.chapter.id });
-    trackEvent('game_chapter_done', { chapter: this.chapter.id });
-    trackEvent('game_cta_shown', { from: 'cabinet' });
-    const font = '"Press Start 2P", "Courier New", monospace';
-    const ky = H / 540, deep = 160;
-    // тексты кнопок — НАД заливкой (deep + 1): при равном depth Phaser рисует по порядку
-    // добавления, и непрозрачный прямоугольник закрывал подпись «записаться в терапию»
-    const mk = (y: number, text: string, size: number, color: string) =>
-      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8 })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
-    // реплики кабинета гасим — иначе они просвечивают сквозь затемнение под CTA
-    const old = this.sessionLines; this.sessionLines = [];
-    this.tweens.add({ targets: old, alpha: 0, duration: 500, onComplete: () => old.forEach(l => l.destroy()) });
-    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.6).setScrollFactor(0).setDepth(deep - 1).setAlpha(0);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 700 });
-
-    const top = mk(130, t('m_mister_reached'), 13, '#fff0d8');
-    const sum = mk(206, t('m_cab_final'), 11, '#c0b8e8');
-
-    const ctaTxt = mk(276, t('m_try_in_app'), 12, '#88ffcc');
-    const cta = this.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
-      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-    // вторая кнопка тише главной: честная подпись, без рамки
-    const book = mk(320, t('m_book_therapist'), 9, '#9b8fbf').setInteractive({ useHandCursor: true });
-    const shareTxt = mk(360, t('m_share'), 10, '#c0b8e8');
-    const share = this.add.rectangle(W / 2, 360 * ky, shareTxt.width + 30, 34, 0x241d3a)
-      .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-    const donTxt = mk(404, t('m_support_game'), 9, '#7a6fa0').setInteractive({ useHandCursor: true });
-    const menu = mk(442, t('m_or_back_to_menu'), 9, '#5a4f7a').setInteractive({ useHandCursor: true });
-
-    this.tweens.add({ targets: top, alpha: 1, duration: 800, delay: 300 });
-    this.tweens.add({ targets: sum, alpha: 1, duration: 700, delay: 1200 });
-    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 2000 });
-    this.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 2300 });
-    this.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2600 });
-    this.tweens.add({ targets: [donTxt, menu], alpha: 0.85, duration: 700, delay: 3100 });
-
-    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
-    cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => openCta('cabinet', 'app'));
-    book.on('pointerover', () => book.setColor('#d8c8ec'));
-    book.on('pointerout', () => book.setColor('#9b8fbf'));
-    book.on('pointerdown', () => openCta('cabinet', 'booking'));
-    share.on('pointerover', () => share.setFillStyle(0x322a52));
-    share.on('pointerout', () => share.setFillStyle(0x241d3a));
-    share.on('pointerdown', () => {
-      trackEvent('game_share', { from: 'cabinet' });
-      const url = 'https://schemehappens.ru/game/?src=share';
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(t('m_share_road'))}`, '_blank');
-    });
-    donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
-    donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
-    donTxt.on('pointerdown', () => { track('donate_click', { source: 'cabinet' }); window.open('https://schemehappens.ru/donate', '_blank'); });
-    menu.on('pointerdown', () => this.scene.start('Start'));
-    this.addCrisisLine(486 * ky, deep + 1);
   }
 
   // ── Гейты: дальше нельзя, пока не разобрался с тем, что навалилось ─────────
@@ -794,6 +620,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ── Main loop ────────────────────────────────────────────────────────────--
+  // тонкая обёртка: дёргается из e2e-browser/game-smoke.spec.ts
+  showBranch(nextChapter: string) { showBranch(this, nextChapter); }
+
   update(_t: number, delta: number) {
     if (this.dead) return;
     if (this.hitstop > 0) { this.hitstop -= delta; return; }
@@ -1184,164 +1013,6 @@ export class GameScene extends Phaser.Scene {
       c.struck = 1200; this.damage(c.img.x);
       this.sayOnce('critic_catch', 'm_you_failed_again_whatever_you_do', 3000);
     }
-  }
-
-  // Развилка конца Акта I: уйти в терапию сейчас (воронка) ИЛИ идти дальше (игра).
-  showBranch(nextChapter: string) {
-    track('act1_end', { chapter: this.chapter.id });
-    trackEvent('game_cta_shown', { from: 'act1' });
-    const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
-    const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
-      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
-
-    const top = mk(138, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
-    const sub = mk(196, t('m_and_for_the_first_time_mister'), 11, '#d8c8ec');
-
-    // Главная кнопка — попробовать в приложении (честно: справиться можно, но одному долго)
-    const ctaTxt = mk(276, t('m_try_in_app'), 12, '#88ffcc', 154);
-    const cta = this.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
-      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    // Вторая, тише — запись к терапевту
-    const book = mk(320, t('m_book_therapist'), 9, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
-    // Продолжить — смотреть путь Мистера дальше
-    const goTxt = mk(358, t('m_or_keep_going_with_mister'), 10, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
-    // Поддержать игру донатом
-    const donTxt = mk(398, t('m_support_game'), 9, '#7a6fa0', 154).setInteractive({ useHandCursor: true });
-
-    this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
-    this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
-    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1400 });
-    this.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 1800 });
-    this.tweens.add({ targets: goTxt, alpha: 0.85, duration: 700, delay: 2200 });
-    this.tweens.add({ targets: donTxt, alpha: 0.8, duration: 700, delay: 2700 });
-
-    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
-    cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => openCta('act1', 'app'));
-    book.on('pointerover', () => book.setColor('#d8c8ec'));
-    book.on('pointerout', () => book.setColor('#9b8fbf'));
-    book.on('pointerdown', () => openCta('act1', 'booking'));
-    goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
-    goTxt.on('pointerout', () => goTxt.setColor('#9b8fbf'));
-    goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); unlockChapter(nextChapter); this.scene.restart({ chapter: nextChapter }); });
-    donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
-    donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
-    donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
-    this.addCrisisLine(440 * ky, 154);
-  }
-
-  // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
-  private modeName(): string {
-    if (this.chapter.id === 'chapter1') return t('m_this_is_the_punitive_parent_a');
-    if (this.chapter.id === 'chapter2') return t('m_this_is_the_detached_protector_it');
-    return '';
-  }
-  private modeShort(): string {
-    if (this.chapter.id === 'chapter1') return t('m_punitive_parent');
-    if (this.chapter.id === 'chapter2') return t('m_detached_protector');
-    return t('m_anxiety_2');
-  }
-
-  // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
-  private contactGlimpse(onDone: () => void) {
-    const cx = W / 2, cy = H / 2, font = '"Press Start 2P", "Courier New", monospace';
-    const last = !this.chapter.next; // финал — дверь распахнута; иначе короткий проблеск-семя
-    // тёплый проблеск + силуэт «тени» (критика) рядом
-    const warm = this.add.graphics().setScrollFactor(0).setDepth(154).setAlpha(0);
-    warm.fillStyle(0xffd9a0, 0.12); warm.fillCircle(cx, cy + 30, 220);
-    warm.fillStyle(0xffd9a0, 0.08); warm.fillCircle(cx, cy + 30, 320);
-    const shadow = this.add.sprite(cx, cy + 60, 'cat_idle').setOrigin(0.5, 1).setScale(2).setTint(0x2a1d3a).setAlpha(0).setScrollFactor(0).setDepth(155).play('p-idle');
-    const ask = this.add.text(cx, 120, t('m_fought_ran_gave_in_it_s'),
-      { fontFamily: font, fontSize: '12px', color: '#ffe0b0', align: 'center', lineSpacing: 10,
-        backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 14, y: 10 } })
-      .setOrigin(0.5, 0).setScrollFactor(0).setDepth(156).setAlpha(0);
-    const prompt = this.add.text(cx, H - 70, t(IS_TOUCH ? 'm_tap_turn_to_it' : 'm_e_click_turn_to_it'),
-      { fontFamily: font, fontSize: '11px', color: '#88ffcc', backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 10, y: 7 } })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(156).setAlpha(0);
-    this.tweens.add({ targets: [warm, shadow], alpha: { from: 0, to: 1 }, duration: 1000 });
-    this.tweens.add({ targets: ask, alpha: 1, duration: 900, delay: 600 });
-    this.tweens.add({ targets: prompt, alpha: 0.9, duration: 600, delay: 1600 });
-
-    let done = false;
-    const meet = () => {
-      if (done) return; done = true;
-      track('contact_glimpse', { chapter: this.chapter.id }); // «дошёл до момента узнавания»
-      this.input.keyboard!.off('keydown', meet);
-      audio.pickup();
-      this.cameras.main.flash(500, 60, 50, 30);
-      this.tweens.add({ targets: prompt, alpha: 0, duration: 300 });
-      // тень не исчезает — становится маленькой и садится рядом, а не сверху
-      this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
-      this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
-      ask.setText(this.modeName() + t(last
-        ? 'm_you_turned_and_it_sat_beside'
-        : 'm_you_turned_and_it_s_beside'));
-      this.time.delayedCall(last ? 3200 : 2600, () => {
-        this.tweens.add({ targets: [warm, shadow, ask], alpha: 0, duration: 700,
-          onComplete: () => { [warm, shadow, ask, prompt].forEach(o => o.destroy()); onDone(); } });
-      });
-    };
-    // даём прочитать, потом ловим ввод
-    this.time.delayedCall(1700, () => {
-      this.input.keyboard!.once('keydown', meet);
-      this.input.once('pointerdown', meet);
-    });
-  }
-
-  // Мост в реальную терапию — карточка-результат + воронка + виральность
-  showCta() {
-    track('demo_end', { chapter: this.chapter.id });
-    trackEvent('game_cta_shown', { from: 'ending' });
-    const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
-    const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
-      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
-
-    // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
-    const top  = mk(196, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
-    const lbl  = mk(244, t('m_your_biggest_enemy'), 10, '#9a8fb8');
-    const mode = mk(282, this.modeShort(), 16, '#ff8aa6');
-    const sub  = mk(336, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
-
-    const ctaTxt = mk(404, t('m_try_in_app'), 11, '#88ffcc', 154);
-    const cta = this.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
-      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const shareTxt = mk(452, t('m_share'), 10, '#c0b8e8', 154);
-    const share = this.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
-      .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const menu = mk(498, t('m_or_back_to_menu'), 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
-
-    this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
-    this.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
-    this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 1100 });
-    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1600 });
-    this.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2000 });
-    this.tweens.add({ targets: menu, alpha: 0.7, duration: 700, delay: 2400 });
-
-    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
-    cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => openCta('ending', 'app'));
-    share.on('pointerover', () => share.setFillStyle(0x322a52));
-    share.on('pointerout', () => share.setFillStyle(0x241d3a));
-    share.on('pointerdown', () => {
-      trackEvent('game_share', { from: 'ending' });
-      const url = 'https://schemehappens.ru/game/?src=share';
-      const text = t('m_share_text', { enemy: this.modeShort() });
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
-    });
-    menu.on('pointerdown', () => this.scene.start('Start'));
-  }
-
-  // Кризисная строка: игра нарочно доводит до «сил не осталось» — рядом обязан быть
-  // выход (правило №7 CLAUDE.md). Тихая, но кликабельная: tel-ссылка.
-  addCrisisLine(y: number, depth: number) {
-    const ln = this.add.text(W / 2, y, t('m_crisis_line'), {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: IS_TOUCH ? '9px' : '10px', color: '#a89fd0', align: 'center',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0).setInteractive({ useHandCursor: true });
-    ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); window.location.href = CRISIS_TEL; });
-    this.tweens.add({ targets: ln, alpha: 0.9, duration: 600, delay: 900 });
-    return ln;
   }
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
