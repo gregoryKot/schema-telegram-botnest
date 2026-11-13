@@ -64,7 +64,7 @@ describe('S13: анонимный шум не глушит настоящий lo
     new Logger('PrismaService').error('Настоящая авария: запись брони упала');
     await flush();
 
-    expect(sent().some((t) => t.includes('Настоящая авария'))).toBe(true);
+    expect(sent().some((t) => t.includes('Место: PrismaService'))).toBe(true);
     // Отчёты клиента в DM не идут вовсе — только сводкой раз в час.
     expect(sent().some((t) => t.includes('[client:'))).toBe(false);
   });
@@ -80,6 +80,6 @@ describe('S13: анонимный шум не глушит настоящий lo
     new Logger('PrismaService').error('Настоящая авария: запись брони упала');
     await flush();
     expect(sent()).toHaveLength(ANON_BUDGET + 1);
-    expect(sent()[ANON_BUDGET]).toContain('Настоящая авария');
+    expect(sent()[ANON_BUDGET]).toContain('Место: PrismaService');
   });
 });
