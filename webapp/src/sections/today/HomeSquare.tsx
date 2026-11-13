@@ -1,6 +1,7 @@
 import { hueStyle } from '../../lib/tone';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../../components/art/SignArt';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
   /** Сущность плитки: бумага и знак — из ENTITY_LOOK, а не на месте. */
@@ -20,7 +21,7 @@ export function HomeSquare({ entity, title, text, meta, onClick }: Props) {
   return (
     <button type="button" className="ct-tile pp-paper pp-square" style={hueStyle(hue)} onClick={onClick}>
       <span className="pp-title">{title}</span>
-      <span className="pp-text">{text}</span>
+      <span className="pp-text">{glue(text)}</span>
       <SignArt sign={sign} size="square" />
       <span className="pp-square-foot">
         {meta === null ? <span className="pp-meta pp-meta--skeleton" aria-hidden="true" /> : <span className="pp-meta">{meta}</span>}

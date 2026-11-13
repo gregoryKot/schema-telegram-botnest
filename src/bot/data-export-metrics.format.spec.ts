@@ -2,7 +2,7 @@
 //
 // Пустое состояние проверяется первым и намеренно: на чистой базе отчёт не
 // должен показывать «0/NaN/мусор» — правило №8 требует именно этого.
-import { EVENT_RETENTION_DAYS } from '../analytics/analytics-retention';
+import { KEPT_UNTIL_ACCOUNT_DELETION } from '../analytics/analytics-retention';
 import {
   formatDataExportMetrics,
   DataExportMetrics,
@@ -20,12 +20,7 @@ describe('пустая база', () => {
   it('говорит словами, что никто не выгружал, без цифр и NaN', () => {
     const out = formatDataExportMetrics(EMPTY);
 
-    expect(out).toContain(
-      'За последние 90 дней выгрузку данных никто не запрашивал.',
-    );
-    // «Пока никто не запрашивал» читалось как «никогда», хотя события старше
-    // 90 дней удаляет pruneOld: давняя выгрузка просто не видна (аудит 2026-10).
-    expect(out).not.toContain('Пока никто');
+    expect(out).toContain('За всё время выгрузку данных никто не запрашивал.');
     expect(out).not.toMatch(/\b0\b/);
     expect(out).not.toContain('NaN');
     expect(out).not.toContain('undefined');
@@ -33,7 +28,7 @@ describe('пустая база', () => {
 });
 
 describe('обычный отчёт', () => {
-  it('показывает итог за 90 дней, за месяц и когда была последняя выгрузка', () => {
+  it('показывает итог за всё время, за месяц и когда была последняя выгрузка', () => {
     const out = formatDataExportMetrics({
       totalExports: 7,
       totalUsers: 5,
@@ -42,11 +37,7 @@ describe('обычный отчёт', () => {
       daysSinceLast: 4,
     });
 
-    expect(out).toContain(
-      'За последние 90 дней забирали данные 7 раз — 5 человек.',
-    );
-    // Подписи «за всё время» нет: события старше 90 дней удаляются.
-    expect(out).not.toContain('за всё время');
+    expect(out).toContain('За всё время забирали данные 7 раз — 5 человек.');
     expect(out).toContain('За последний месяц: 3 раза, 2 человека.');
     expect(out).toContain('Последний раз — 4 дня назад.');
   });
@@ -99,7 +90,7 @@ describe('обычный отчёт', () => {
         users30: 1,
         daysSinceLast: 0,
       }),
-    ).toContain('За последние 90 дней забирали данные 1 раз — 1 человек.');
+    ).toContain('За всё время забирали данные 1 раз — 1 человек.');
     expect(
       formatDataExportMetrics({
         totalExports: 21,
@@ -108,7 +99,7 @@ describe('обычный отчёт', () => {
         users30: 22,
         daysSinceLast: 0,
       }),
-    ).toContain('За последние 90 дней забирали данные 21 раз — 22 человека.');
+    ).toContain('За всё время забирали данные 21 раз — 22 человека.');
   });
 
   it('язык простой: без англицизмов/служебных имён события', () => {
@@ -123,12 +114,13 @@ describe('обычный отчёт', () => {
   });
 });
 
-// Подпись окна и ретеншен событий — одно число (правило №4): поменяли срок
-// хранения в analytics-retention.ts — подпись отчёта следует за ним сама.
-describe('окно подписи = срок хранения событий', () => {
-  it('число дней в тексте берётся из EVENT_RETENTION_DAYS', () => {
+// Подпись «за всё время» честна, только пока ночная чистка не трогает
+// data_export (правило №4): вернули событие под ретеншен — тест краснеет.
+describe('окно подписи = срок хранения события', () => {
+  it('data_export не чистится — подпись «За всё время»', () => {
     const out = formatDataExportMetrics(EMPTY);
-    expect(EVENT_RETENTION_DAYS).toBe(90);
-    expect(out).toContain(`За последние ${EVENT_RETENTION_DAYS} дней`);
+    expect(KEPT_UNTIL_ACCOUNT_DELETION).toContain('data_export');
+    expect(out).toContain('За всё время');
+    expect(out).not.toContain('90');
   });
 });

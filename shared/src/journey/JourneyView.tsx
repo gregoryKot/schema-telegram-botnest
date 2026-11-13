@@ -1,8 +1,8 @@
-// Тело экрана «Мой путь» — единственная копия для обоих фронтендов
-// (правило №3): hero (вёрстку даёт площадка, journeyHeroes.ts), счётчики,
-// фильтр + сортировка, таймлайн. Обёртка (BottomSheet / оверлей, заголовок)
-// — per-frontend. CSS-переменные определены в обоих фронтендах.
-import type { CSSProperties, ReactNode } from 'react';
+// Тело экрана «Мой путь» — одна копия (правило №3): герой, плитки счётчиков, чипы периода и групп,
+// лента. Вёрстку героя, плитки, чипа и знак строки даёт площадка (`kit`, journeyKit.ts); обёртка
+// (лист, заголовок) — площадки. Классы jr-* и pa-spread — webapp/src/styles/journey.css, paper-app.css:
+// на ≥1024 герой слева липнет, лента справа (разворот, docs/design/APP_2026-11.md, принцип 4).
+import type { ReactNode } from 'react';
 import {
   type JourneyItem,
   JOURNEY_FILTERS,
@@ -11,7 +11,9 @@ import {
 } from './journeyMeta';
 import type { JourneyState } from './useJourney';
 import { JourneyTimeline } from './JourneyTimeline';
-import type { JourneyHeroes } from './journeyHeroes';
+import { journeyStatLook } from './journeyLook';
+import { spreadStatTiles } from './journeyStatOrder';
+import type { JourneyKit } from './journeyKit';
 
 export interface JourneyViewProps {
   tr: (ty: string, vy: string) => string;
@@ -22,29 +24,16 @@ export interface JourneyViewProps {
   onOpenItem: (item: JourneyItem) => void;
   /** Кнопка в hero → карточка итогов («дневник 5 раз, трекер 7 раз…») */
   onShareFeed: () => void;
-  /** Вёрстка героя от площадки (journeyHeroes.ts) */
-  heroes: JourneyHeroes;
+  /** Вёрстка героя, плитки, чипа и знак строки от площадки (journeyKit.ts) */
+  kit: JourneyKit;
   /** Скелетон по форме контента — из примитивов конкретного фронтенда */
   skeleton: ReactNode;
+  /** Пустой путь — кнопка героя открывает трекер; нет — герой без кнопки. */
+  onStart?: () => void;
 }
 
-const chipStyle = (active: boolean): CSSProperties => ({
-  flexShrink: 0,
-  minHeight: 44, // палец, а не курсор: чип 34px промахивался (QA мобильной версии 2026-11, М1)
-  padding: '0 13px',
-  borderRadius: 999,
-  border: active
-    ? '1px solid transparent'
-    : '1px solid rgba(var(--fg-rgb),0.08)',
-  fontSize: 12.5,
-  fontWeight: 600,
-  fontFamily: 'inherit',
-  cursor: 'pointer',
-  background: active
-    ? 'color-mix(in srgb, var(--accent) 18%, transparent)'
-    : 'transparent',
-  color: active ? 'var(--accent)' : 'var(--text-sub)',
-});
+/** Плиток счётчиков — 2×3: самые частые занятия; остальное видно в ленте и фильтрах. */
+export const JOURNEY_STAT_TILES = 6;
 
 export function JourneyView({
   tr,
@@ -52,8 +41,9 @@ export function JourneyView({
   subtitle,
   onOpenItem,
   onShareFeed,
-  heroes,
+  kit,
   skeleton,
+  onStart,
 }: JourneyViewProps) {
   const {
     failed,
@@ -68,7 +58,7 @@ export function JourneyView({
     setSortDir,
   } = j;
   const loading = !j.data && !failed;
-  const { Hero, EmptyHero } = heroes;
+  const { Hero, EmptyHero, Stat, Chip } = kit;
 
   // Откуда это и зачем — до первого действия (правило онбординга).
   const explainer = tr(
@@ -76,156 +66,85 @@ export function JourneyView({
     'Всё, что вы делаете в приложении — трекер, дневники, практики, тесты, — собирается здесь, шаг за шагом.',
   );
 
+  if (loading) return <div className="u-mt12">{skeleton}</div>;
+  if (failed)
+    return (
+      <p className="jr-note">
+        {tr(
+          'Не получилось загрузить. Проверь интернет и открой ещё раз.',
+          'Не получилось загрузить. Проверьте интернет и откройте ещё раз.',
+        )}
+      </p>
+    );
+  if (total === 0)
+    return <EmptyHero tr={tr} explainer={explainer} onStart={onStart} />;
+
   return (
-    <>
-      {loading && <div className="u-mt12">{skeleton}</div>}
-
-      {failed && (
-        <div
-          style={{
-            marginTop: 12,
-            fontSize: 14,
-            color: 'var(--text-sub)',
-            lineHeight: 1.55,
-          }}
-        >
-          {tr(
-            'Не получилось загрузить. Проверь интернет и открой ещё раз.',
-            'Не получилось загрузить. Проверьте интернет и откройте ещё раз.',
-          )}
+    <div className="pa-spread jr-spread">
+      <div className="pa-spread-side">
+        <Hero total={total} explainer={explainer} onShareFeed={onShareFeed} />
+      </div>
+      <div className="pa-spread-main">
+        {/* Счётчики «сколько чего» — плитки бумаги со знаком занятия */}
+        <div className="jr-stats">
+          {spreadStatTiles(
+            stats.slice(0, JOURNEY_STAT_TILES),
+            (s) => journeyStatLook(s.type)?.hue,
+          ).map((s) => (
+            <Stat key={s.label} row={s} />
+          ))}
         </div>
-      )}
 
-      {!loading && !failed && total === 0 && (
-        <EmptyHero tr={tr} explainer={explainer} />
-      )}
-
-      {!loading && !failed && total > 0 && (
-        <>
-          <Hero total={total} explainer={explainer} onShareFeed={onShareFeed} />
-
-          {/* Счётчики «сколько чего» — лента мини-карточек */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 8,
-              overflowX: 'auto',
-              padding: '12px 2px 4px',
-              marginBottom: 6,
-            }}
+        {/* Период (всё время/неделя/месяц) + сортировка по времени */}
+        <div className="jr-chips">
+          {JOURNEY_PERIODS.map((p) => (
+            <Chip
+              key={p.id}
+              label={p.label}
+              on={period === p.id}
+              onToggle={() => setPeriod(p.id)}
+            />
+          ))}
+          <button
+            type="button"
+            className="ds-chip jr-sort"
+            onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
+            aria-label={sortDir === 'desc' ? 'Сначала новые' : 'Сначала старые'}
           >
-            {stats.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  flexShrink: 0,
-                  minWidth: 86,
-                  padding: '10px 12px',
-                  borderRadius: 16,
-                  background: 'rgba(var(--fg-rgb),0.04)',
-                }}
-              >
-                <div style={{ fontSize: 17, lineHeight: 1.2 }}>
-                  {s.emoji}{' '}
-                  <span style={{ fontWeight: 700, color: 'var(--text)' }}>
-                    {s.count}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    fontSize: 10.5,
-                    color: 'var(--text-faint)',
-                    marginTop: 3,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {s.label}
-                </div>
-              </div>
-            ))}
-          </div>
+            {sortDir === 'desc' ? '↓ новые' : '↑ старые'}
+          </button>
+        </div>
 
-          {/* Период (всё время/неделя/месяц) + сортировка по времени */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              margin: '6px 0 8px',
-            }}
-          >
-            {JOURNEY_PERIODS.map((pOpt) => (
-              <button
-                key={pOpt.id}
-                onClick={() => setPeriod(pOpt.id)}
-                style={chipStyle(period === pOpt.id)}
-              >
-                {pOpt.label}
-              </button>
-            ))}
-            <span style={{ marginRight: 'auto' }} />
-            <button
-              onClick={() => setSortDir(sortDir === 'desc' ? 'asc' : 'desc')}
-              aria-label={
-                sortDir === 'desc' ? 'Сначала новые' : 'Сначала старые'
-              }
-              style={{ ...chipStyle(false), flexShrink: 0 }}
-            >
-              {sortDir === 'desc' ? '↓ новые' : '↑ старые'}
-            </button>
-          </div>
+        {/* Фильтр по типу */}
+        <div className="jr-chips">
+          {JOURNEY_FILTERS.map((f) => (
+            <Chip
+              key={f.id}
+              label={f.label}
+              on={group === f.id}
+              onToggle={() => setGroup(f.id)}
+            />
+          ))}
+        </div>
 
-          {/* Фильтр по типу */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 6,
-              overflowX: 'auto',
-              margin: '0 0 12px',
-              paddingBottom: 2,
-            }}
-          >
-            {JOURNEY_FILTERS.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setGroup(f.id)}
-                style={chipStyle(group === f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {items.length === 0 ? (
-            <div
-              style={{
-                fontSize: 13,
-                color: 'var(--text-faint)',
-                padding: '10px 2px',
-              }}
-            >
-              Здесь пока пусто — в другом периоде или группе записи есть
-            </div>
-          ) : (
-            <>
-              <JourneyTimeline
-                groups={groupJourneyByMonth(items)}
-                subtitle={subtitle}
-                onOpenItem={onOpenItem}
-              />
-              <div
-                style={{
-                  fontSize: 11.5,
-                  color: 'var(--text-faint)',
-                  padding: '2px 2px 0',
-                }}
-              >
-                Тап по записи — открыть и поделиться
-              </div>
-            </>
-          )}
-        </>
-      )}
-    </>
+        {items.length === 0 ? (
+          <p className="jr-note">
+            Здесь пока пусто — в другом периоде или группе записи есть
+          </p>
+        ) : (
+          <>
+            <JourneyTimeline
+              groups={groupJourneyByMonth(items)}
+              subtitle={subtitle}
+              onOpenItem={onOpenItem}
+              rowArt={kit.rowArt}
+            />
+            <p className="jr-note jr-note--hint">
+              Тап по записи — открыть и поделиться
+            </p>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

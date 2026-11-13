@@ -83,25 +83,47 @@ describe('JourneyDeleteButton', () => {
     );
   });
 
+  // Вид — в webapp/src/styles/journey.css (тихая ссылка под «Поделиться карточкой», b22-journey).
+  const css = () =>
+    readFileSync(
+      join(__dirname, '../../../webapp/src/styles/journey.css'),
+      'utf8',
+    );
+  const rule = (sel: string) =>
+    css().match(
+      new RegExp(`${sel.replace(/\./g, '\\.')} \\{([^}]*)\\}`),
+    )?.[1] ?? '';
+
   it('тап-зона кнопки не меньше 44px (правило хитбокса)', () => {
     const item: JourneyItem = { type: 'belief_check', at: '2026-07-20', id: 9 };
     render(<JourneyDeleteButton tr={tr} item={item} del={makeDel()} />);
-    const btn = screen.getByRole('button');
-    const minHeight = parseFloat(btn.style.minHeight);
+    expect(screen.getByRole('button').className).toContain('jr-delete-btn');
+    const minHeight = parseFloat(
+      rule('.ds-link.jr-delete-btn').match(/min-height:\s*(\d+)px/)?.[1] ?? '0',
+    );
     expect(minHeight).toBeGreaterThanOrEqual(44);
   });
 
   // Свип цвета #516 прошёл мимо четырёх rgba(255,100,100,…) здесь: цвет «опасно»
-  // жил литералом и не следовал теме. Теперь — токен --accent-red и color-mix.
+  // жил литералом и не следовал теме. Теперь — токен --accent-red у подтверждения и ошибки.
   it('цвет «удалить» — из токена --accent-red, а не литералом', () => {
     const src = readFileSync(
       join(__dirname, 'JourneyDeleteButton.tsx'),
       'utf8',
     );
-    expect(src).not.toMatch(/rgba?\(\s*\d/);
-    expect(src).toMatch(/color: 'var\(--accent-red\)'/);
-    expect(src).toMatch(
-      /color-mix\(in srgb, var\(--accent-red\) \d+%, transparent\)/,
+    expect(src).not.toMatch(/rgba?\(\s*\d|#[0-9a-f]{3,8}\b/i);
+    expect(rule('.ds-link.jr-delete-btn.is-pending')).toMatch(
+      /color: var\(--accent-red\)/,
     );
+    expect(rule('.jr-delete-err')).toMatch(/color: var\(--accent-red\)/);
+  });
+
+  it('подтверждение («Точно удалить?») — красным словом, первый тап — тихим', () => {
+    const item: JourneyItem = { type: 'belief_check', at: '2026-07-20', id: 9 };
+    render(<JourneyDeleteButton tr={tr} item={item} del={makeDel()} />);
+    const btn = screen.getByRole('button');
+    expect(btn.className).not.toContain('is-pending');
+    fireEvent.click(btn);
+    expect(screen.getByRole('button').className).toContain('is-pending');
   });
 });

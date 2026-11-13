@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { NEED_EXPLAINER_TEXT } from '../../../../shared/src/portrait/portraitTexts';
 import type { PortraitNeed } from '../../../../shared/src/portrait/portraitData';
+import { GlyphChevron } from '../../components/exercises/ExGlyphs';
 import { PortraitNeedBar } from './PortraitNeedBar';
 
 export function PortraitNeedRows({ needs }: { needs: PortraitNeed[] }) {
@@ -20,7 +21,7 @@ export function PortraitNeedRows({ needs }: { needs: PortraitNeed[] }) {
             <button type="button" className="cpf-needrow" aria-expanded={isOpen}
               onClick={() => setOpenId((prev) => (prev === n.id ? null : n.id))}>
               <PortraitNeedBar n={n} maxCount={maxCount} />
-              <span aria-hidden className="cpf-needrow-chev">{isOpen ? '▲' : '▼'}</span>
+              <span aria-hidden="true" className="cpf-needrow-chev"><GlyphChevron up={isOpen} /></span>
             </button>
             {isOpen && explainer && <p className="ds-sub cpf-needrow-text">{explainer}</p>}
           </div>

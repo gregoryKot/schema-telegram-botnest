@@ -2,7 +2,8 @@
 // обоих фронтендов (правило №3). Удаляемы только упражнения с собственным
 // DELETE-роутом (journeyDelete.ts): проверка убеждения, письмо себе,
 // кризисная карточка. Двухтапное подтверждение — общий хук useConfirmTap
-// (правило «одна механика — один компонент»), стиль — как в PracticesList.tsx.
+// (правило «одна механика — один компонент»). Вид — тихая ссылка под «Поделиться карточкой»
+// (одна залитая кнопка на экран), подтверждение — красным словом (webapp/src/styles/journey.css).
 import { useConfirmTap } from '../hooks/useConfirmTap';
 import { isJourneyDeletable, type JourneyDeleteState } from './journeyDelete';
 import type { JourneyItem } from './journeyMeta';
@@ -32,42 +33,20 @@ export function JourneyDeleteButton({
       : 'Удалить запись';
 
   return (
-    <div style={{ marginTop: 10 }}>
+    <div className="jr-delete">
       {del.failed && (
-        <div
-          role="alert"
-          style={{
-            fontSize: 13,
-            color: 'var(--accent-red)',
-            marginBottom: 8,
-            lineHeight: 1.5,
-          }}
-        >
+        <p role="alert" className="jr-delete-err">
           {tr(
             'Не получилось удалить. Проверь связь и попробуй ещё раз.',
             'Не получилось удалить. Проверьте связь и попробуйте ещё раз.',
           )}
-        </div>
+        </p>
       )}
       <button
+        type="button"
+        className={'ds-link jr-delete-btn' + (pending ? ' is-pending' : '')}
         onClick={() => tap(CONFIRM_ID)}
         disabled={del.busy}
-        style={{
-          width: '100%',
-          minHeight: 44,
-          padding: '13px 0',
-          borderRadius: 14,
-          border: 'none',
-          fontFamily: 'inherit',
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: del.busy ? 'default' : 'pointer',
-          opacity: del.busy ? 0.6 : 1,
-          background: pending
-            ? 'color-mix(in srgb, var(--accent-red) 16%, transparent)'
-            : 'color-mix(in srgb, var(--accent-red) 10%, transparent)',
-          color: 'var(--accent-red)',
-        }}
       >
         {label}
       </button>

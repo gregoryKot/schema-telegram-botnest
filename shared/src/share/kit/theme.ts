@@ -1,74 +1,55 @@
-// Тема share-карточек: резолв CSS-переменных фронтенда в конкретные цвета
-// (canvas не понимает var()). Единственная копия для обоих фронтендов
-// (правило №3) — визуал строится на --bg/--sheet-bg/--fg-rgb/--accent и
-// адаптируется к светлой теме сайта и тёмной теме мини-аппа.
-
-import { luminance } from './color';
+// Тема share-карточек: геометрия, шрифты и чернила. Карточка всегда светлая «бумажная»
+// (docs/design/APP_2026-11.md, b23a): её отправляют в чужой мессенджер, и тема приложения
+// (тёмная, светлая) на неё не влияет — чернила фиксированы значениями (ink.ts).
+import { INK, inkAlpha, inkOf } from './ink';
 
 export { withAlpha, luminance } from './color';
 
 export const CARD_W = 400;
-export const CARD_PAD = 30;
+/** Внутреннее поле листа: текст и графика не выходят за [CARD_PAD, CARD_W − CARD_PAD]. */
+export const CARD_PAD = 34;
 /** Плотность растра: 3× — карточка остаётся резкой на ретине и в предпросмотре. */
 export const DPR = 3;
 
-const SANS = '-apple-system, BlinkMacSystemFont, sans-serif';
+/** Текст сайта (--font-sans): Manrope, до загрузки — системный. */
+export const SANS =
+  "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+/** Заголовки сайта (--serif): Literata, до загрузки — Georgia. */
+export const SERIF = "'Literata', Georgia, 'Times New Roman', serif";
 
-/** Шрифт канваса; family — семейство вместо системного sans (serif темы). */
+/** Шрифт канваса; family — семейство вместо Manrope (SERIF для заголовков и чисел). */
 export const cardFont = (size: number, weight?: 'bold', family = SANS) =>
   `${weight ? 'bold ' : ''}${size}px ${family}`;
 
+/** Заголовочный шрифт: Literata обычного начертания, как у героев сайта. */
+export const serifFont = (size: number) => `${size}px ${SERIF}`;
+
 export interface CardTheme {
+  /** Бумага страницы под листом. */
   bg: string;
+  /** Светлый лист внутри карточки (плитка, цитата). */
   sheetBg: string;
   accent: string;
-  /** Семейство для цитат: --serif темы (на сайте Instrument Serif), фолбэк Georgia. */
   serif: string;
-  /** Светлая тема сайта — свечения и заливки идут слабее, чем на тёмной. */
-  isLight: boolean;
+  /** Карточка всегда светлая — поле оставлено для карточек, ещё не переведённых на лист (b23b). */
+  isLight: true;
+  /** Чернила с прозрачностью. */
   fg: (alpha: number) => string;
-  /** 'var(--accent-red)' или '#hex' → конкретный цвет для canvas */
+  /** 'var(--accent-red)' или '#hex' → значение светлой темы. */
   color: (value: string) => string;
 }
 
-/** Источник CSS-переменной: DOM во фронтендах, пусто — на сервере. */
-type VarSource = (name: string) => string;
+const THEME: CardTheme = {
+  bg: INK.page,
+  sheetBg: INK.surface,
+  accent: INK.accent,
+  serif: SERIF,
+  isLight: true,
+  fg: inkAlpha,
+  color: inkOf,
+};
 
-/**
- * Тема из источника переменных. Вынесена из resolveCardTheme, потому что
- * карточку теперь рисует и бэкенд (пин фразы для Pinterest): там нет DOM, но
- * визуал обязан остаться тем же — значения по умолчанию здесь и есть тёмная
- * тема мини-аппа, на которой карточки и рисовались.
- */
-function buildTheme(read: VarSource): CardTheme {
-  // Рекурсивная подстановка: '--sheet-bg: var(--bg-elev)' → '#hex'
-  const get = (name: string, fallback: string, depth = 0): string => {
-    if (depth > 4) return fallback;
-    const raw = read(name).trim();
-    if (!raw) return fallback;
-    const m = /^var\((--[\w-]+)\)$/.exec(raw);
-    return m ? get(m[1], fallback, depth + 1) : raw;
-  };
-  const fgRgb = get('--fg-rgb', '255, 255, 255');
-  const color = (value: string): string => {
-    const m = /^var\((--[\w-]+)\)$/.exec(value.trim());
-    return m ? get(m[1], '#888') : value;
-  };
-  const bg = get('--bg', '#191b25');
-  return {
-    bg,
-    sheetBg: get('--sheet-bg', '#23252f'),
-    accent: get('--accent', '#8f86ff'),
-    serif: get('--serif', "Georgia, 'Times New Roman', serif"),
-    isLight: luminance(bg) > 0.5,
-    fg: (alpha) => `rgba(${fgRgb},${alpha})`,
-    color,
-  };
-}
-
+/** Тема карточки — одна на любую тему приложения и на сервер без DOM. */
 export function resolveCardTheme(): CardTheme {
-  // Без DOM (бэкенд рисует карточку для пина) берём дефолты buildTheme.
-  if (typeof document === 'undefined') return buildTheme(() => '');
-  const cs = getComputedStyle(document.documentElement);
-  return buildTheme((name) => cs.getPropertyValue(name));
+  return THEME;
 }

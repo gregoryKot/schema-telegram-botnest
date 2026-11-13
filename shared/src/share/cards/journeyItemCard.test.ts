@@ -1,87 +1,61 @@
 // @vitest-environment jsdom
-// Карточка одного шага «Моего пути»: journeyItemCardHeight — чистая формула
-// (зависит только от наличия уточнения sub), drawJourneyItemCard — раскладка
-// с уточнением и без.
+// Карточка одного шага «Моего пути» (b23b): journeyItemCardHeight — чистая формула (знак,
+// строки названия и уточнения), drawJourneyItemCard — лист сущности шага со знаком; незнакомый
+// тип — небо «Моего пути» без знака.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { journeyItemCardHeight, drawJourneyItemCard } from './journeyItemCard';
-
-function mockCtx() {
-  return {
-    scale: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillRect: vi.fn(),
-    fillText: vi.fn(),
-    roundRect: vi.fn(),
-    arc: vi.fn(),
-    clip: vi.fn(),
-    setTransform: vi.fn(),
-    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
-    fillStyle: '',
-    strokeStyle: '',
-    font: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-  };
-}
+import { canvasWithMockCtx } from './canvas.test-helpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const DATA = {
+  label: 'Благодарность',
+  sub: 'Привязанность',
+  day: '3 мая',
+  hue: 195,
+  sign: 'pebbles',
+};
+
 describe('journeyItemCardHeight', () => {
-  it('с уточнением выше, чем без него', () => {
-    expect(journeyItemCardHeight(true)).toBeGreaterThan(
-      journeyItemCardHeight(false),
+  it('с уточнением и со знаком выше, чем без них', () => {
+    expect(journeyItemCardHeight(true, 1, 1)).toBeGreaterThan(
+      journeyItemCardHeight(true, 1, 0),
+    );
+    expect(journeyItemCardHeight(true, 1, 0)).toBeGreaterThan(
+      journeyItemCardHeight(false, 1, 0),
+    );
+    expect(journeyItemCardHeight(true, 2, 0)).toBeGreaterThan(
+      journeyItemCardHeight(true, 1, 0),
     );
   });
 });
 
 describe('drawJourneyItemCard', () => {
-  it('с уточнением (sub) — не падает', () => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      mockCtx(),
+  it('рисует знак сущности, название и дату', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    drawJourneyItemCard(canvas, DATA);
+    const texts = ctx.printed.map((p) => p.text);
+    expect(texts).toEqual(
+      expect.arrayContaining([
+        'МОЙ ПУТЬ',
+        'Благодарность',
+        'Привязанность',
+        '3 мая',
+      ]),
     );
-    const canvas = document.createElement('canvas');
-    expect(() =>
-      drawJourneyItemCard(canvas, {
-        emoji: '🌱',
-        label: 'Дневник благодарности',
-        sub: 'Привязанность',
-        day: '3 мая',
-        hex: '#4fd18b',
-      }),
-    ).not.toThrow();
+    expect(ctx.ellipse).toHaveBeenCalled(); // камешки Pebbles
   });
 
-  it('без уточнения (sub=null) — компактнее, не падает', () => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      mockCtx(),
-    );
-    const withSub = document.createElement('canvas');
-    drawJourneyItemCard(withSub, {
-      emoji: '🌱',
-      label: 'Дневник благодарности',
-      sub: 'Привязанность',
-      day: '3 мая',
-      hex: '#4fd18b',
-    });
-    const noSub = document.createElement('canvas');
-    drawJourneyItemCard(noSub, {
-      emoji: '🌱',
-      label: 'Дневник благодарности',
-      sub: null,
-      day: '3 мая',
-      hex: '#4fd18b',
-    });
-    expect(noSub.height).toBeLessThan(withSub.height);
+  it('без уточнения — компактнее; незнакомый тип — без знака', () => {
+    const a = canvasWithMockCtx();
+    drawJourneyItemCard(a.canvas, DATA);
+    const b = canvasWithMockCtx();
+    drawJourneyItemCard(b.canvas, { ...DATA, sub: null });
+    expect(b.canvas.height).toBeLessThan(a.canvas.height);
+    const u = canvasWithMockCtx();
+    drawJourneyItemCard(u.canvas, { ...DATA, hue: null, sign: null });
+    expect(u.ctx.ellipse).not.toHaveBeenCalled();
   });
 });
