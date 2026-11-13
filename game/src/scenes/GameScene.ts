@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H, GROUND_Y, S, PHYS } from '../constants';
+import { W, H, GROUND_Y, S, PHYS, CAM_TOP } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
@@ -181,7 +181,7 @@ export class GameScene extends Phaser.Scene {
     if (assist.extraLives) { this.hearts = this.MAX_HEARTS; this.updateHearts(); }
     this.assistInvuln = assist.invuln;
 
-    this.cameras.main.setBounds(0, 0, ARENA_W, H);
+    this.cameras.main.setBounds(0, -CAM_TOP, ARENA_W, H + CAM_TOP);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.physics.world.setBounds(0, -H, ARENA_W, H * 3);
     this.cameras.main.fadeIn(600, 8, 6, 16);

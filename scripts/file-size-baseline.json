@@ -34,7 +34,7 @@
   "game/src/assist.ts": 15,
   "game/src/audio.ts": 156,
   "game/src/chapters.ts": 283,
-  "game/src/constants.ts": 13,
+  "game/src/constants.ts": 15,
   "game/src/controls.ts": 95,
   "game/src/decor.ts": 174,
   "game/src/doors.ts": 139,
