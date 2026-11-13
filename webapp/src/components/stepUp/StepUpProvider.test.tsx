@@ -136,6 +136,17 @@ describe('StepUpProvider — резервный код и пауза', () => {
     expect(send).toHaveBeenLastCalledWith('ab12cd34ef');
   });
 
+  it('лид следует за режимом поля: резервный код — без просьбы открыть приложение, и обратно', async () => {
+    setup(vi.fn().mockResolvedValue(NEED()), 'vy');
+    const dialog = await dialogOpen();
+    expect(dialog.textContent).toContain('Введите код из приложения-аутентификатора.');
+    fireEvent.click(screen.getByRole('button', { name: 'Использовать резервный код' }));
+    expect(dialog.textContent).toContain('Введите один из резервных кодов — каждый срабатывает один раз.');
+    expect(dialog.textContent).not.toContain('аутентификатор');
+    fireEvent.click(screen.getByRole('button', { name: 'Ввести код из приложения' }));
+    expect(dialog.textContent).toContain('Введите код из приложения-аутентификатора.');
+  });
+
   it('429 totp_locked — текст про паузу, поле сразу резервного кода', async () => {
     const send = vi.fn((code?: string) =>
       Promise.resolve(code === '000000' ? res(429, { reason: 'totp_locked', retryAfter: 1800 }) : NEED()));
