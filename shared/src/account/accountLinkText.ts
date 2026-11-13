@@ -67,6 +67,8 @@ export const LINK_DENIED =
   'Подтверждение отклонили — доступ никто не получил. ' +
   'Если код пришёл со стороны, подтверждать его не стоит.';
 export const LINK_EXPIRED = 'Код никто не подтвердил вовремя.';
+export const LINK_FAILED =
+  'Код не создан — сервер не ответил. Ничего не изменилось.';
 export const LINK_RETRY = 'Начать заново';
 export const LINK_COPY_HINT = 'Нажать на код, чтобы скопировать';
 export const LINK_COPIED = 'Код скопирован';

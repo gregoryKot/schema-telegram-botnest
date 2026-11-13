@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError, type ModeMapMeta, type ModeMapFull } from '../api';
 import { NODE_TYPES, EDGE_TYPES } from './modeMapRegistry';
 import { useViewerFit } from './modeMap/useViewerFit';
+import { ClientWheelProvider, type ClientModeMap } from './modeMap/ClientWheelProvider';
 import { toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
@@ -48,10 +49,9 @@ const reportViewerFailure = (what: string) => reportClientError({ message: `mode
 export function ModeMapViewer() {
   const tr = useTr();
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
-  const [active, setActive] = useState<ModeMapFull | null>(null);
+  const [active, setActive] = useState<ClientModeMap | null>(null);
   const [loading, setLoading] = useState(true);
-  // Сбой ≠ пусто: отказ списка рисовал «Карты режимов пока нет», отказ карты — пустой холст
-  // (промис карты шёл без catch — нашёл no-floating-promises, 2026-11).
+  // Сбой ≠ пусто: отказ списка — не «Карты режимов пока нет», отказ карты — не пустой холст.
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export function ModeMapViewer() {
         {loading && <div className="mm2-view-load"><ModeMapSkeleton /></div>}
         {active && (
           <ReactFlowProvider>
-            <Canvas key={active.id} map={active} />
+            <ClientWheelProvider ratings={active.needRatings}><Canvas key={active.id} map={active} /></ClientWheelProvider>
           </ReactFlowProvider>
         )}
       </div>
