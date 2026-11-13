@@ -11,10 +11,12 @@ import {
 // Живой проход «офлайн-клиент → приглашение из карточки → одна карточка»:
 // терапевт завёл карточку без аккаунта, записал в неё заметку,
 // концептуализацию, карту режимов и задание, потом позвал человека в
-// приложение из этой карточки (OfflineInviteCard). После подключения по коду
-// в кабинете одна карточка с именем из офлайн-карточки, и всё записанное
-// читается по id аккаунта (therapy-invite-attach.ts). Не зависит от
-// link*.spec: свои клиент (C2) и карточка; C2 отвязывается на старте.
+// приложение из этой карточки (OfflineInviteCard). Подключение по коду само
+// ничего не переносит (S8, therapy-invite-card-claim.ts): терапевт отвечает на
+// плашку «Это тот же человек?», и только «Да, объединить» оставляет в кабинете
+// одну карточку с именем из офлайн-карточки и открывает всё записанное по id
+// аккаунта (therapy-invite-attach.ts). Не зависит от link*.spec: свои клиент
+// (C2) и карточка; C2 отвязывается на старте.
 test.describe.serial('офлайн-клиент: приглашение из карточки', () => {
   const NAME = 'Лев К.';
   let code = '';
@@ -106,6 +108,26 @@ test.describe.serial('офлайн-клиент: приглашение из к�
     const api = await apiAs(USERS.C2);
     const rel = await (await api.get('/api/therapy/relation')).json();
     expect(rel).toMatchObject({ role: 'client', status: 'active' });
+  });
+
+  test('13б. до ответа на сверку данные карточки аккаунту не видны, «Да» объединяет', async ({
+    page: t,
+  }) => {
+    failOnPageError(t);
+    const api = await apiAs(USERS.T);
+    const before = await api.get(`/api/therapy/notes/${USERS.C2}`);
+    expect(
+      await before.text(),
+      'до ответа записи карточки на аккаунте не видны',
+    ).not.toContain('первая встреча');
+
+    await login(t, USERS.T);
+    await openCabinetDisclaimerFree(t);
+    // Плашка именно этой карточки: чужие сверки не должны мешать.
+    const claim = t.getByRole('listitem').filter({ hasText: `«${NAME}»` });
+    await expect(claim.getByText(/Это тот же человек\?/)).toBeVisible();
+    await claim.getByRole('button', { name: 'Да, объединить' }).click();
+    await expect(claim).toHaveCount(0);
   });
 
   test('14. у терапевта одна карточка «Лев К.» с данными офлайн-периода', async ({
