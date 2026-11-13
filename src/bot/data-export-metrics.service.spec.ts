@@ -85,7 +85,7 @@ describe('DataExportMetricsService.getMetrics', () => {
       },
     ]);
     await expect(service.render()).resolves.toContain(
-      'За последние 90 дней забирали данные 7 раз',
+      'За всё время забирали данные 7 раз',
     );
   });
 });
