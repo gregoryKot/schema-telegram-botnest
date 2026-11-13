@@ -259,3 +259,18 @@ test.describe('игра: смок прод-сборки', () => {
     await page.keyboard.up('KeyZ');
   });
 });
+
+// Портрета нет (#1087, решение 5): экран «поверни телефон», сцены стоят; в альбомной — снова идут.
+test.describe('игра: телефон в портрете', () => {
+  test.use({ viewport: { width: 360, height: 800 }, hasTouch: true, isMobile: true });
+  test('поверх — «поверни телефон», цикл спит; в альбомной игра идёт', async ({ page }) => {
+    await page.goto('/game/#chapter1');
+    await expect(page.locator('#rotate-hint')).toBeVisible();
+    const running = () =>
+      page.evaluate(() => (window as unknown as { __game?: { loop: { running: boolean } } }).__game?.loop.running);
+    await expect.poll(running, { timeout: 30_000 }).toBe(false);
+    await page.setViewportSize({ width: 800, height: 360 });
+    await expect(page.locator('#rotate-hint')).toBeHidden();
+    await page.waitForFunction(() => !!(window as unknown as GameWindow).__game?.scene.isActive('Game'), null, { timeout: 30_000 });
+  });
+});

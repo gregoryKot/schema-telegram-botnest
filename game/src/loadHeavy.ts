@@ -24,7 +24,8 @@ function addSmoothSheet(game: Phaser.Game, key: string, img: HTMLImageElement, f
   const canvas = document.createElement('canvas');
   canvas.width = out * n; canvas.height = out;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  const plain = () => { if (!game.textures.exists(key)) game.textures.addSpriteSheet(key, img, { frameWidth: fw, frameHeight: fh }); };
+  if (!ctx) { plain(); return; } // без даунскейла, но спрайт будет
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   for (let i = 0; i < n; i++) ctx.drawImage(img, i * fw, 0, fw, fh, i * out, 0, out, out * (fh / fw));
@@ -32,5 +33,6 @@ function addSmoothSheet(game: Phaser.Game, key: string, img: HTMLImageElement, f
   small.onload = () => {
     if (!game.textures.exists(key)) game.textures.addSpriteSheet(key, small, { frameWidth: out, frameHeight: out });
   };
+  small.onerror = plain;
   small.src = canvas.toDataURL();
 }
