@@ -93,6 +93,15 @@ export default tseslint.config(
     languageOptions: { sourceType: 'module' },
   },
   {
+    // Игра (game/) — браузерный бандл Phaser со своим tsconfig: projectService
+    // берёт ближайший game/tsconfig.json, типы phaser — из game/node_modules.
+    files: ['game/**/*.ts'],
+    languageOptions: {
+      globals: { ...globals.browser },
+      sourceType: 'module',
+    },
+  },
+  {
     // shared/vitest.config.ts — конфиг тестов shared-пакета (этап 2.2): не
     // входит ни в один tsconfig проекта, typed-линт давал (parse)-ошибку.
     files: ['shared/vitest.config.ts'],

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../api';
 import type { TherapyClientSummary, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
-import { SkeletonCard } from './Skeleton';
+import { OverviewSkeleton } from './therapist/CardSkeleton';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
@@ -29,9 +29,11 @@ interface Props {
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
+  /** Палитра «Перейти к…» — лупа в шапке списка (оболочка, ov.setCmdOpen). */
+  onOpenPalette?: () => void;
 }
 
-export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
+export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange, onOpenPalette }: Props) {
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,18 +59,17 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   const { routeTab, listTab, setListTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────────
-  useEffect(() => {
+  const loadRoster = () => { // повтор: скелетон (loading) идёт раньше алерта, loadFailed снимает ответ
     api.getTherapyClients().then(cl => {
-      setClients(cl);
-      setLoadFailed(false);
+      setClients(cl); setLoadFailed(false);
       const c = findClientByRef(cl, openClientRef);
       if (c) void detail.openClient(c, routeTab ?? 'overview'); // openClient не отклоняется: каждый источник ловит сам и шлёт отчёт
     }).catch(() => {
       setLoadFailed(true);
       reportClientError({ message: 'therapy clients load failed', section: 'therapist.clients' });
     }).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
+  useEffect(() => { loadRoster(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Sync sidebar when clients list changes (e.g. after adding a client) ──────
   useEffect(() => {
@@ -121,13 +122,11 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           animKey={animKey}
           clients={clients}
           loading={loading}
-          loadFailed={loadFailed}
-          listTab={listTab}
-          setListTab={setListTab}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
+          loadFailed={loadFailed} onRetry={() => { setLoading(true); loadRoster(); }}
+          listTab={listTab} setListTab={setListTab}
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+          filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+          onSearch={onOpenPalette}
           board={board}
           openClient={detail.openClient}
           addClient={addClient}
@@ -144,7 +143,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           <div className="therapist-scroll therapist-scroll--tabs tk-tabs-body" key={clientTab}>
 
             {tabLoading ? (
-              <div className="tk-load" aria-hidden><SkeletonCard height={96} /><SkeletonCard /></div>
+              <div aria-hidden><OverviewSkeleton tab={clientTab} /></div>
             ) : <>
 
             {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}

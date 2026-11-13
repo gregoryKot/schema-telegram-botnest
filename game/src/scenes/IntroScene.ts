@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { setTouchControls, IS_TOUCH } from '../controls';
 import { t, type MsgKey } from '../i18n';
+import { unlockChapter } from '../progress';
 
 // Текст появляется построчно, затем кнопка «Начать путь»
 const SLIDES = [
@@ -37,27 +38,27 @@ export class IntroScene extends Phaser.Scene {
     // Тонкая декоративная линия сверху
     const line = this.add.graphics();
     line.fillStyle(0xff7733, 0.3);
-    line.fillRect(W / 2 - 80, 50, 160, 1);
+    line.fillRect(W / 2 - 80, IS_TOUCH ? 20 : 50, 160, 1);
 
     // Заголовок главы
-    this.add.text(W / 2, 70, t(slide.title as MsgKey).toUpperCase(), {
+    this.add.text(W / 2, IS_TOUCH ? 36 : 70, t(slide.title as MsgKey).toUpperCase(), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
-      color: '#aa4411', letterSpacing: 6,
+      color: '#ff7733', letterSpacing: 6,
     }).setOrigin(0.5);
 
     // Подзаголовок
-    this.add.text(W / 2, 105, t(slide.subtitle as MsgKey), {
+    this.add.text(W / 2, IS_TOUCH ? 62 : 105, t(slide.subtitle as MsgKey), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px',
       color: '#fff0d8', letterSpacing: 1,
     }).setOrigin(0.5);
 
     // Линия под заголовком
     line.fillStyle(0xff7733, 0.15);
-    line.fillRect(W / 2 - 200, 130, 400, 1);
+    line.fillRect(W / 2 - 200, IS_TOUCH ? 80 : 130, 400, 1);
 
     // Текст — построчно с анимацией появления; на таче канвас ниже (H=384) — раскладка от высоты,
     // иначе кнопка ложилась на текст, а последняя строка уходила за кадр
-    const startY = IS_TOUCH ? 96 : 160;
+    const startY = IS_TOUCH ? 100 : 160;
     const lineH = IS_TOUCH ? 18 : 26;
     const btnY = Math.min(H - 40, startY + slide.lines.length * lineH + 30);
 
@@ -95,7 +96,7 @@ export class IntroScene extends Phaser.Scene {
     btn.on('pointerover', () => { btn.fillColor = 0x3a2a8f; btnTxt.setColor('#fff0d8'); });
     btn.on('pointerout',  () => { btn.fillColor = 0x3a1500; btnTxt.setColor('#ff7733'); });
     let started = false;
-    const go = () => { if (started) return; started = true; this.scene.start('Game'); };
+    const go = () => { if (started) return; started = true; unlockChapter('chapter1'); this.scene.start('Game'); };
     btn.on('pointerdown', go);
 
     // Пропуск: пробел/ввод, а на таче — тап по фону (после первой строки, чтобы не проскочить случайно)

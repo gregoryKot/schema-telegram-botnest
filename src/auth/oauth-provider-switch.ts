@@ -4,11 +4,11 @@
 // нечем. Теперь старт без конфигурации ведёт на экран «Ошибка входа» с причиной
 // `<id>_disabled`; её текст — в словаре `webapp/src/pages/service/authErrorReasons.ts`
 // (сверку держит oauth-provider-switch.spec.ts).
-//
-// Состав — те же переменные, что требует сверка env (`requiresToo` в
-// `src/infra/env-check.ts`): без любой из них вход не доходит до конца.
+// Состав — те же переменные, что требует сверка env на старте
+// (`src/infra/env-check.oauth.ts`): без любой из них вход не доходит до конца.
 export const OAUTH_PROVIDER_ENV: Readonly<Record<string, readonly string[]>> = {
   vk: ['VK_APP_ID', 'VK_REDIRECT_URI'],
+  yandex: ['YANDEX_CLIENT_ID', 'YANDEX_CLIENT_SECRET', 'YANDEX_REDIRECT_URI'],
 };
 
 /** Причина для `/auth/error?reason=` у выключенного провайдера. */

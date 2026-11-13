@@ -363,7 +363,7 @@ jobs:
       - run: node scripts/check-deploy-paths.mjs
       # Щит, волна 8: «ветка, зависящая от конфигурации, деградирует МОЛЧА».
       # Заголовный случай — src/utils/admin-alert.ts: без BOT_TOKEN/ADMIN_ID
-      # и без RESEND_API_KEY/ADMIN_EMAIL КАЖДЫЙ алерт (события безопасности,
+      # и без ключей Postbox с ADMIN_EMAIL КАЖДЫЙ алерт (события безопасности,
       # сбои платежей, сбои канала волн 2/3/7) улетает в никуда без следа —
       # позвоночник всех рантайм-наблюдателей щита молча отключается одной
       # пропущенной env-переменной. Гейт ищет форму `if (!token/key/secret/
@@ -541,7 +541,7 @@ jobs:
       # на тех же строках красная под чужим ключом и зелёная под своим.
       - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
-      # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
+      # Аренда прогона бэкапа (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql 16 ставит
       # шаг «клиент Postgres 16 из PGDG» в начале джобы.
@@ -959,9 +959,9 @@ jobs:
         timeout-minutes: 4
         run: node scripts/npm-audit.mjs shared
 
-  # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех трёх
-  # пакетов + prisma generate: typed-линт без типов зависимостей видит
-  # everything-as-any и счётчики уезжают. game/ исключён (заморожен).
+  # eslint-храповик (этап 2е, правило №9). Нужны node_modules всех пакетов
+  # (корень, webapp, shared, game) + prisma generate: typed-линт без типов
+  # зависимостей видит everything-as-any и счётчики уезжают.
   eslint:
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -975,9 +975,11 @@ jobs:
             package-lock.json
             webapp/package-lock.json
             shared/package-lock.json
+            game/package-lock.json
       - run: npm ci
       - run: npx prisma generate
       - run: npm ci --prefix webapp
+      - run: npm ci --prefix game
       # shared тоже линтуется храповиком, а зависимости ему не ставили —
       # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
       # без node_modules разрешают TS иначе, чем локально. Итог: файл
@@ -992,7 +994,7 @@ jobs:
   # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
   # после мержа — 8 ночей красного смока. Владелец одобрил время CI: сигнал
   # приходит до мержа. Ночная джоба browser-smoke остаётся: она ловит флаки
-  # на main и кричит через alarm. ~4-6 минут (сборка сайта + Chromium из кэша).
+  # на main и кричит через alarm. Сборка сайта + Chromium и WebKit из кэша.
   browser-smoke:
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -1012,17 +1014,20 @@ jobs:
       - run: npm run build --prefix webapp
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
+      # Игра — проект game в playwright.config.ts (e2e-browser/game-smoke.spec.ts).
+      - run: npm ci --prefix game
+      - run: npm run build --prefix game
       - name: версия Playwright для ключа кэша браузера
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      # С кэшем скачивание браузера пропускается, системные зависимости
-      # (apt) ставятся всегда.
-      - run: npx playwright install --with-deps chromium
-      - name: браузерный smoke прод-сборки (Chromium)
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
+      # С кэшем скачивание браузеров пропускается, системные зависимости
+      # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
+      - run: npx playwright install --with-deps chromium webkit
+      - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
       # Вид на компьютере в каждом PR: e2e-browser/desktop-layout.spec.ts снимает
       # ключевые страницы на 1280 (docs/open/frontend-ux.md, «Снимок 1280»).
@@ -1032,6 +1037,16 @@ jobs:
         with:
           name: desktop-1280
           path: test-results/**/desktop-1280.png
+          retention-days: 14
+          if-no-files-found: warn
+      # Вид на айфоне в каждом PR: e2e-browser/phone-screens.spec.ts (WebKit,
+      # iPhone 13) и кадр Telegram из telegram-dark.spec.ts.
+      - name: снимки телефона артефактом
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phone-screens
+          path: test-results/**/phone-*.png
           retention-days: 14
           if-no-files-found: warn
       - name: трейс упавшего смока артефактом

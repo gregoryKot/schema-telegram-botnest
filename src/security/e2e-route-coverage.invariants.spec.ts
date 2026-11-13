@@ -171,7 +171,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/auth/me', reason: REASON.AUTH_LOGIN },
   { route: 'DELETE /api/therapy/custom-modes/:param', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/mode-maps/map/:param', reason: REASON.THERAPY },
-  { route: 'GET /api/therapy/my-mode-maps/:param', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/clients/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/rename-client/:param', reason: REASON.THERAPY },
   { route: 'POST /api/therapy/become-therapist', reason: REASON.THERAPY },

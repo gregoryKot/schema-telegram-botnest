@@ -79,7 +79,7 @@ export function BecomeTherapistSection() {
                 Отмена
               </button>
               <button className="ds-btn ds-btn--accent" style={{ flex: 2 }} disabled={reqBusy} onClick={submitTherapistRequest}>
-                {reqBusy ? 'Отправляю...' : 'Отправить заявку'}
+                {reqBusy ? 'Отправляю…' : 'Отправить заявку'}
               </button>
             </div>
           </div>

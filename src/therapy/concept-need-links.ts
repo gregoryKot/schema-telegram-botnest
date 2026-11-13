@@ -9,8 +9,8 @@
 // modeLinks/schemaLinks. В общие списки полей concept-store.ts колесо НЕ
 // входит намеренно: полное сохранение вкладки «Концептуализация»
 // (concept-save.ts) и снимки истории версий (concept-history.ts) его не читают
-// и не пишут — вкладка не затрёт колесо, которое правит холст. Единственный
-// писатель — concept-needs.ts, единственное чтение — conceptView.
+// и не пишут — вкладка не затрёт колесо, которое правит холст. Писатель один —
+// concept-needs.ts; читают conceptView и client-mode-map.ts (клиенту — оценки).
 import { NEED_IDS } from '../bot/bot.service';
 import { decryptJson, encryptJson } from '../utils/crypto';
 

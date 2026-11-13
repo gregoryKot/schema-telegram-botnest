@@ -137,3 +137,18 @@ describe('ссылки запуска кабинета', () => {
     );
   });
 });
+
+// Игра (game/, вне jest) ведёт вторую кнопку финала на тот же адрес записи,
+// что бот (правило №4): адрес сменят здесь — игра не должна остаться на старом.
+describe('BOOKING_URL игры совпадает с ботом', () => {
+  it('game/src/therapyCta.ts держит тот же адрес записи', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readFileSync } = require('fs') as typeof import('fs');
+    const src = readFileSync(
+      require.resolve('../../game/src/therapyCta.ts'),
+      'utf8',
+    );
+    const m = /BOOKING_URL = '([^']+)'/.exec(src);
+    expect(m?.[1]).toBe(load().constants.BOOKING_URL);
+  });
+});

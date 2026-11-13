@@ -1,6 +1,8 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа auth:
-// вход (VK/MAX/Telegram), JWT, шифрование хранимых данных.
+// вход (MAX/Telegram; VK ID и Яндекс ID — env-registry.entries.oauth.ts), JWT,
+// шифрование хранимых данных.
 import { EnvVarSpec, formats } from './env-registry';
+import { OAUTH_ENV_ENTRIES } from './env-registry.entries.oauth';
 
 export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
@@ -48,20 +50,5 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
     format: formats.oneOf(['true', 'false']),
     group: 'auth',
   },
-  {
-    name: 'VK_APP_ID',
-    purpose:
-      'OAuth client id входа через VK ID. Рубильник: без него (или без `VK_REDIRECT_URI`) вход через VK выключен — кнопка остаётся, нажатие ведёт на экран «Вход через ВКонтакте отключён» (`src/auth/oauth-provider-switch.ts`).',
-    requiredInProd: false,
-    format: formats.nonEmpty,
-    group: 'auth',
-  },
-  {
-    name: 'VK_REDIRECT_URI',
-    purpose:
-      'Адрес возврата VK после входа — обязан вести на канонический хост.',
-    requiredInProd: false,
-    format: formats.httpsUrl,
-    group: 'auth',
-  },
+  ...OAUTH_ENV_ENTRIES,
 ];

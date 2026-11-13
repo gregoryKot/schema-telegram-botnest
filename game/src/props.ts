@@ -18,8 +18,6 @@ import workUrl  from './assets/prop_workload.png';
 import memUrl    from './assets/spr_memory.png';
 import lStreetUrl from './assets/ledge_street.png';
 import lRoomUrl   from './assets/ledge_room.png';
-import lStageUrl  from './assets/ledge_stage.png';
-import lGlassUrl  from './assets/ledge_glass.png';
 import sootheUrl from './assets/enemy_soothe.png';
 import bargUrl   from './assets/enemy_bargainer.png';
 import mirrorUrl from './assets/enemy_mirror.png';
@@ -32,15 +30,13 @@ export const PROP_IMAGES: Record<string, string> = {
   prop_couch: couchUrl, prop_tv: tvUrl, prop_lamp: lampUrl,
   prop_bookshelf: shelfUrl, prop_plant: plantUrl, prop_streetlamp: slampUrl,
   heartpk: heartUrl,
-  ledge_street: lStreetUrl, ledge_room: lRoomUrl, ledge_stage: lStageUrl, ledge_glass: lGlassUrl,
+  ledge_street: lStreetUrl, ledge_room: lRoomUrl,
 };
 
 // Карнизы-платформы для NineSlice: ключ + ширина торца (px текстуры, не растягивается)
 export const LEDGE: Record<string, { key: string; cap: number }> = {
   street: { key: 'ledge_street', cap: 34 },
   room:   { key: 'ledge_room',   cap: 30 },
-  stage:  { key: 'ledge_stage',  cap: 30 },
-  glass:  { key: 'ledge_glass',  cap: 34 },
 };
 
 // Анимированные враги: спрайт-лист → ключ текстуры + размеры кадра.

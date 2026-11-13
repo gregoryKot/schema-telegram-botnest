@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Приглашение добавить почту или VK ID: видно только внутри Telegram и только
+// Приглашение добавить почту, VK ID или Яндекс ID: видно только внутри Telegram и только
 // тому, у кого других способов входа нет; действие одно; «Позже» — на неделю.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -34,7 +34,7 @@ function show(form: 'ty' | 'vy' = 'ty') {
     </AddressFormContext.Provider>,
   );
 }
-const ACTION = 'Добавить почту или VK ID';
+const ACTION = 'Добавить способ входа';
 // Полный прогон грузит машину: секунды по умолчанию на ответ /api/auth/me не хватает.
 const SLOW = { timeout: 5000 };
 
@@ -55,8 +55,8 @@ describe('SiteAccessCard', () => {
     me(['telegram']);
     show();
     await screen.findByText('Добавь вход для сайта', {}, SLOW);
-    expect(screen.getByText(/вход через Telegram закрыт — туда входят почтой или VK ID/)).toBeTruthy();
-    expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'shown' });
+    expect(screen.getByText(/вход через Telegram закрыт — туда входят почтой, VK ID или Яндекс ID/)).toBeTruthy();
+    await waitFor(() => expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'shown' }), SLOW);
 
     fireEvent.click(screen.getByRole('button', { name: ACTION }));
     expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'open' });
@@ -73,7 +73,7 @@ describe('SiteAccessCard', () => {
     expect(text).not.toMatch(/Добавь (вход|один)/);
   });
 
-  it.each([[['telegram', 'email']], [['telegram', 'vk']]])('уже есть чем войти на сайт (%j) — карточки нет', async (providers) => {
+  it.each([[['telegram', 'email']], [['telegram', 'vk']], [['telegram', 'yandex']]])('уже есть чем войти на сайт (%j) — карточки нет', async (providers) => {
     me(providers);
     const { container } = show();
     await waitFor(() => expect(fetchMock).toHaveBeenCalled(), SLOW);

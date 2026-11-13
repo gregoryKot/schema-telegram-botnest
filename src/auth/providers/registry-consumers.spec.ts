@@ -86,6 +86,7 @@ describe('провайдеры входа ⇄ registry.ts ⇄ фронт', () =>
       'max',
       'telegram',
       'vk',
+      'yandex',
     ]);
   });
 

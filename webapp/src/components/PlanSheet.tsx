@@ -40,7 +40,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
   const look = needLook(needId as NeedId);
   const pick = phase === 'pick';
   // Пояснение листа плана (до b20 — подпись белой карточки «Потребность») — подписью листа-героя, вторая фраза абзацем (ревью g6).
-  const pickLede = <>{glue('Потребность восстанавливается через маленькое конкретное действие')}<span className="sk-lede-next">{glue('Один маленький конкретный шаг – уже много.')}</span></>;
+  const pickLede = <>{glue('Потребность восстанавливается через маленькое конкретное действие.')}<span className="sk-lede-next">{glue('Один маленький конкретный шаг – уже много.')}</span></>;
 
   return (
     <ExScreen
@@ -89,7 +89,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
             <textarea
               value={customText}
               onChange={e => setCustomText(e.target.value)}
-              placeholder="Что-то конкретное, маленькое..."
+              placeholder="Что-то конкретное, маленькое…"
               maxLength={200}
               rows={2}
               className="ds-textarea"

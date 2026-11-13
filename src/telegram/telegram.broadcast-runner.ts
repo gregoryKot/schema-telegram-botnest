@@ -26,7 +26,7 @@ export class BroadcastRunner {
   ): boolean {
     if (this.current) return false;
     this.current = reply(
-      `Начинаю рассылку для ${userIds.length} пользователей...`,
+      `Начинаю рассылку для ${userIds.length} пользователей…`,
     )
       .then(() => runBroadcast(deps, userIds, chatIds, text))
       .then((r) => reply(describeBroadcastResult(r)))

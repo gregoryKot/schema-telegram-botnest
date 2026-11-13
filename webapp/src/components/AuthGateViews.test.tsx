@@ -32,7 +32,7 @@ describe('ConnectionOutcome', () => {
     const onRetry = vi.fn();
     const { container, rerender } = render(<ConnectionTrouble onRetry={onRetry} Frame={ConnectionOutcome} />);
     expect(container.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe('breath');
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Сервер не отвечает');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Сервер не\u00a0отвечает'); // «не» держится со словом (glueSpaces в PaperOutcome, r1)
     fireEvent.click(screen.getByText('Повторить'));
     expect(onRetry).toHaveBeenCalledTimes(1);
     rerender(<ConnectionTrouble onRetry={onRetry} retrying Frame={ConnectionOutcome} />);

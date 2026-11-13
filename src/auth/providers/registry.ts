@@ -2,19 +2,23 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { TelegramProvider } from './telegram.provider';
 import { VkProvider } from './vk.provider';
 import { MaxProvider } from './max.provider';
+import { YandexProvider } from './yandex.provider';
 import { AuthProviderHandler } from './types';
 
-// Single place that knows about all providers. Add a new auth method by:
-//   1. Drop a new file in src/auth/providers/foo.provider.ts implementing AuthProviderHandler
-//   2. Add it to the constructor + map below
-//   3. Register the @Injectable in auth.module.ts providers
-// Controller / merge logic / linking — all of it works automatically.
+// Единственное место, знающее всех провайдеров. Новый способ входа: файл
+// foo.provider.ts → конструктор ниже → ../auth.login-providers.ts; остальное
+// — docs/architecture/backend-platform.md («Новый OAuth-провайдер»).
 @Injectable()
 export class AuthProviderRegistry {
   private readonly map = new Map<string, AuthProviderHandler>();
 
-  constructor(telegram: TelegramProvider, vk: VkProvider, max: MaxProvider) {
-    for (const p of [telegram, vk, max]) this.map.set(p.id, p);
+  constructor(
+    telegram: TelegramProvider,
+    vk: VkProvider,
+    max: MaxProvider,
+    yandex: YandexProvider,
+  ) {
+    for (const p of [telegram, vk, max, yandex]) this.map.set(p.id, p);
   }
 
   get(id: string): AuthProviderHandler {

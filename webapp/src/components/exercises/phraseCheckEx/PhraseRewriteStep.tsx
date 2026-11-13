@@ -86,15 +86,15 @@ export function PhraseRewriteStep({
 
       {saveError && (
         <PaperAlert sign="looming" className="ex2-alert" title={tr(
-          'Не удалось сохранить разбор. Проверь связь и попробуй ещё раз',
-          'Не удалось сохранить разбор. Проверьте связь и попробуйте ещё раз',
+          'Не удалось сохранить разбор. Проверь связь и попробуй ещё раз.',
+          'Не удалось сохранить разбор. Проверьте связь и попробуйте ещё раз.',
         )} />
       )}
 
       <div className="ex2-foot">
         <span className="ex2-spacer" />
         <button className="ds-btn" disabled={saving} onClick={onSave}>
-          {saving ? 'Сохраняю...' : <>Сохранить разбор <GlyphCheck /></>}
+          {saving ? 'Сохраняю…' : <>Сохранить разбор <GlyphCheck /></>}
         </button>
       </div>
     </>

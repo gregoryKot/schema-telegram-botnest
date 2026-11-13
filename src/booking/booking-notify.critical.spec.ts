@@ -9,7 +9,7 @@ function makeService(opts: { tgOk: boolean; emailFails?: boolean }) {
   const telegram = { notifyAdmin: jest.fn(async () => opts.tgOk) };
   const email = {
     sendAdminNotification: jest.fn(async () => {
-      if (opts.emailFails) throw new Error('resend 500');
+      if (opts.emailFails) throw new Error('postbox 500');
     }),
   };
   const service = new BookingNotifyService(

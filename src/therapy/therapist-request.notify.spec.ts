@@ -389,7 +389,7 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
     expect(errorSpy.mock.calls[0][0]).not.toContain('anya@example.com');
   });
 
-  it('письмо не принято (send вернул false, например нет RESEND_API_KEY) → error с номером заявки', async () => {
+  it('письмо не принято (send вернул false, например нет ключей Postbox) → error с номером заявки', async () => {
     const { svc, email } = makeService('vy', { providers: ANYA });
     email.send.mockResolvedValue(false);
     await svc.notifyApplicant(req(WEB_ID));

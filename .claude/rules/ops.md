@@ -176,7 +176,7 @@ Telegram, Resend, Google). Ни один наблюдатель не спраш�
 
 Механизм — `src/infra/env-registry*.ts`: имя, назначение, обязательность в
 проде, формат (URL, hex-ключ, id Telegram, токен бота, email…), группа; плюс
-кросс-проверки («задан `RESEND_API_KEY` — значит, и `ADMIN_EMAIL`»).
+кросс-проверки («заданы ключи Postbox — значит, и `ADMIN_EMAIL`»).
 `checkEnv()` на старте: в проде отсутствие обязательной или неверный формат —
 `error` (уходит владельцу в DM), не в проде — `warn`. Блок «Переменные» в
 `/stats`. Гейт `scripts/check-env-registry.mjs` (CI, джоба `checks`): чтение

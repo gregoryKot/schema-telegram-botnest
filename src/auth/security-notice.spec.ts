@@ -101,7 +101,7 @@ describe('SecurityNoticeService.deliver', () => {
 
   it('notify не бросает и не ждёт: сбой почты уходит в warn', async () => {
     const { svc, email } = makeService({ email: 'me@example.com' });
-    email.send.mockRejectedValue(new Error('resend down'));
+    email.send.mockRejectedValue(new Error('postbox down'));
     expect(() => svc.linked(7n, 'vk')).not.toThrow();
     await new Promise((r) => setImmediate(r));
     expect(email.send).toHaveBeenCalled();
@@ -130,6 +130,14 @@ describe('тексты уведомлений', () => {
       'ty',
     );
     expect(t.body).toContain('VK ID');
+    for (const form of ['ty', 'vy'] as const) {
+      const yandex = securityNoticeText(
+        { kind: 'provider_linked', provider: 'yandex' },
+        form,
+      );
+      expect(yandex.body).toContain('способ входа: Яндекс ID.');
+      expect(yandex.body).not.toContain('yandex');
+    }
   });
 
   it('сообщение бота собирается через renderTemplate очереди', () => {

@@ -1,11 +1,12 @@
 // Санитайзер meta событий входа: только поля из allow-list, без текста и PII
-// (правило №7). login_ticket_step пишет сервер (отчёт считает userId IS NULL).
+// (правило №7). login_ticket_step, login_oauth пишет сервер (счёт — userId IS NULL).
 import {
   LOGIN_TICKET_HOSTS,
   LOGIN_TICKET_STEPS,
 } from '../analytics/login-ticket-steps.constants';
 import { ONE_TAP_OUTCOMES } from '../analytics/login-one-tap.constants';
 import { LOGIN_METHOD_OFFER_ACTIONS } from '../analytics/login-method-offer.constants';
+import { sanitizeLoginOauthMeta } from '../analytics/login-oauth.constants';
 
 const STEP_SET = new Set<string>(LOGIN_TICKET_STEPS);
 const HOST_SET = new Set<string>(LOGIN_TICKET_HOSTS);
@@ -24,14 +25,13 @@ export function sanitizeLoginMeta(
     return OFFER_SET.has(action) ? { action } : undefined;
   if (name === 'login_one_tap' && typeof outcome === 'string')
     return OUTCOME_SET.has(outcome) ? { outcome } : undefined;
-  return undefined;
+  return name === 'login_oauth' ? sanitizeLoginOauthMeta(meta) : undefined;
 }
 
 export function sanitizeLoginTicketMeta(
   meta: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
-  const step = meta.step;
-  const host = meta.host;
+  const { step, host } = meta;
   if (
     typeof step === 'string' &&
     STEP_SET.has(step) &&

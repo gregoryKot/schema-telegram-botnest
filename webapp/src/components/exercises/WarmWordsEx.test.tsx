@@ -64,6 +64,17 @@ describe('WarmWordsEx', () => {
     });
   });
 
+  it('пусто и есть куда вести — ссылка «Открыть карточку режима →»; без перехода ссылки нет', async () => {
+    for (const k of ['getModeNotes', 'getModeDiary', 'getPhraseChecks']) mockApi[k].mockResolvedValue([]);
+    const first = renderSheet();
+    await act(async () => {});
+    expect(screen.queryByText('Открыть карточку режима →')).toBeNull();
+    first.unmount();
+    render(<MemoryRouter><WarmWordsEx onBack={vi.fn()} onOpenModeCard={vi.fn()} /></MemoryRouter>);
+    await act(async () => {});
+    expect(screen.getByRole('button', { name: 'Открыть карточку режима →' })).toBeTruthy();
+  });
+
   it('пустой ответ обоих источников — честное пустое состояние, не выдумка', async () => {
     mockApi.getModeNotes.mockResolvedValue([]);
     mockApi.getPhraseChecks.mockResolvedValue([]);

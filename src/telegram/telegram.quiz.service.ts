@@ -10,6 +10,7 @@ import {
 import { Context, Markup, Telegraf } from 'telegraf';
 import { TELEGRAF_BOT, CABINET_URL } from './telegram.constants';
 import { failCallback } from './callback-failure';
+import { registerGameCommand } from './game-command';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -25,10 +26,8 @@ import type { Quiz } from '../quiz/quiz.types';
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// Номера вариантов ответа. Полные тексты живут в СООБЩЕНИИ, кнопки — только
-// цифры: Telegram обрезает длинные подписи инлайн-кнопок («…идеал…»),
-// а варианты мини-теста — целые реплики, их нельзя резать (прод-скрин
-// 2026-07-26). Спека quiz-data гарантирует ≤9 вариантов на вопрос.
+// Номера вариантов: полные тексты — в СООБЩЕНИИ, кнопки — цифры (Telegram режет
+// длинные подписи, а вариант — целая реплика). Спека quiz-data: ≤9 вариантов.
 const NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
 
 @Injectable()
@@ -49,8 +48,8 @@ export class TelegramQuizService implements OnModuleInit {
   onModuleInit(): void {
     if (!this.bot) return;
 
-    // 'test' — алиас: единственное число набирают не реже множественного
-    // (прод-скрин 2026-07-26: «/test» ушёл в пустоту).
+    registerGameCommand(this.bot, this.logger); // /game — соседняя «лёгкая» точка входа
+    // 'test' — алиас: «/test» набирают не реже «/tests» (прод-скрин 2026-07-26).
     this.bot.command(['tests', 'test'], async (ctx) => {
       try {
         const form = await this.getForm(ctx.from?.id);

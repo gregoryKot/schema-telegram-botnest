@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "https://postbox.cloud.yandex.net/v2/email/outbound-emails",
+    "contentType": "application/json",
+    "body": "{}"
+  },
+  "responses": {
+    "unsigned": {
+      "status": 403,
+      "contentType": "text/plain; charset=utf-8",
+      "body": "Forbidden\n"
+    },
+    "badSignature": {
+      "status": 403,
+      "contentType": "text/plain; charset=utf-8",
+      "body": "Forbidden\n"
+    }
+  }
+}

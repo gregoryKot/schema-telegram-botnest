@@ -45,3 +45,8 @@
   .gr-list--tiles .gr-row .ds-list-title { font-size: 15px; }
   .gr-list--tiles .gr-row > .ds-chev { display: none; }
 }
+/* Широкий монитор: колонка кабинета до 1440 — листы и карточки встают по три, строки не растягиваются. */
+@container (min-width: 1080px) {
+  .gr-list--groups { columns: 3; }
+  .gr-list--tiles .gr-rows { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

@@ -205,7 +205,7 @@ describe('check-color-drift.mjs', () => {
 // exemptions.mjs (правило №15 CLAUDE.md: у каждого исключения есть тест на
 // своё имя, а не молчаливый пропуск).
 describe('списки-исключения check-color-drift.mjs запинены по имени', () => {
-  it('ALLOW_BRAND_COLORS содержит брендовые цвета Google и VK', () => {
+  it('ALLOW_BRAND_COLORS содержит брендовые цвета Google, VK и Яндекса', () => {
     const brands = loadStringList(
       'check-color-drift.mjs',
       'ALLOW_BRAND_COLORS',
@@ -217,6 +217,7 @@ describe('списки-исключения check-color-drift.mjs запинен
         '#FBBC05',
         '#EA4335',
         '#0077FF',
+        '#FC3F1D',
       ]),
     );
   });

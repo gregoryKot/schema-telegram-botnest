@@ -2,7 +2,7 @@
 // QA 2026-11, М2: «Отвязать» у единственного способа входа была активна —
 // подтверждение, затем отказ сервера и общее «Не удалось отвязать».
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, within } from '@testing-library/react';
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/react';
 import { SignInMethods } from './SignInMethods';
 import type { AccountProvider } from './ProviderRows';
 
@@ -11,13 +11,17 @@ afterEach(cleanup);
 const p = (provider: AccountProvider['provider']): AccountProvider => ({ provider, email: null, displayName: null });
 
 function renderMethods(providers: AccountProvider[]) {
+  const onLink = { vk: vi.fn(), yandex: vi.fn() };
+  const onUnlink = vi.fn();
   render(
     <SignInMethods
       providers={providers} loading={false} busy={false} accessToken="t"
-      onLink={{ vk: vi.fn() }} onUnlink={vi.fn()} onError={vi.fn()} onLinked={vi.fn()}
+      onLink={onLink} onUnlink={onUnlink} onLinked={vi.fn()}
     />,
   );
+  return { onLink, onUnlink };
 }
+const rowOf = (title: string) => screen.getByText(title).closest('.aa-row') as HTMLElement;
 
 describe('SignInMethods — отвязка', () => {
   it('единственный способ: «Отвязать» недоступна и сказано почему', () => {
@@ -59,8 +63,8 @@ describe('SignInMethods — отвязка', () => {
   it('Telegram: без привязки строки и «Привязать» нет, с привязкой — «Отвязать»', () => {
     renderMethods([p('email')]);
     expect(screen.queryByText('Telegram')).toBeNull();
-    // «Привязать» осталась только у ВКонтакте (почта уже привязана).
-    expect(screen.getAllByRole('button', { name: 'Привязать' })).toHaveLength(1);
+    // «Привязать» осталась только у ВКонтакте и Яндекса (почта уже привязана).
+    expect(screen.getAllByRole('button', { name: 'Привязать' })).toHaveLength(2);
     cleanup();
     renderMethods([p('telegram'), p('email')]);
     const row = screen.getByText('Telegram').closest('.aa-row') as HTMLElement;
@@ -68,9 +72,39 @@ describe('SignInMethods — отвязка', () => {
     expect(within(row).queryByText('Привязать')).toBeNull();
   });
 
-  it('только Telegram: счётчик «1 из 3» — почта и VK ID ещё не добавлены', () => {
+  it('только Telegram: счётчик «1 из 4» — почта, VK ID и Яндекс ID ещё не добавлены', () => {
     renderMethods([p('telegram')]);
+    expect(screen.getByText('1 из 4')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Привязать' })).toHaveLength(3);
+  });
+});
+
+// Яндекс ID (2026-11) — зеркало ВКонтакте: строка есть всегда, «Привязать»
+// уводит на свой маршрут, привязанный отвязывается общим механизмом.
+describe('SignInMethods — Яндекс', () => {
+  it('строка стоит сразу за ВКонтакте; «Привязать» зовёт привязку Яндекса, а не VK', () => {
+    const { onLink } = renderMethods([p('email')]);
+    const titles = [...document.querySelectorAll('.aa-row-title')].map((e) => e.textContent);
+    expect(titles.slice(0, 2)).toEqual(['ВКонтакте', 'Яндекс']);
+    fireEvent.click(within(rowOf('Яндекс')).getByRole('button', { name: 'Привязать' }));
+    expect(onLink.yandex).toHaveBeenCalledTimes(1);
+    expect(onLink.vk).not.toHaveBeenCalled();
+  });
+
+  it('привязанный: имя из аккаунта Яндекса, «Отвязать» уходит с id yandex', () => {
+    const { onUnlink } = renderMethods([{ provider: 'yandex', email: 'a@ya.ru', displayName: 'Аня' }, p('email')]);
+    const row = rowOf('Яндекс');
+    expect(within(row).getByText('Аня')).toBeTruthy();
+    expect(within(row).queryByText('Привязать')).toBeNull();
+    fireEvent.click(within(row).getByRole('button', { name: 'Отвязать' }));
+    expect(onUnlink).toHaveBeenCalledWith('yandex');
+  });
+
+  it('без имени — почта аккаунта; единственный способ — «Отвязать» недоступна', () => {
+    renderMethods([{ provider: 'yandex', email: 'a@ya.ru', displayName: null }]);
+    const row = rowOf('Яндекс');
+    expect(within(row).getByText('a@ya.ru')).toBeTruthy();
+    expect(within(row).getByRole<HTMLButtonElement>('button', { name: 'Отвязать' }).disabled).toBe(true);
     expect(screen.getByText('1 из 3')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Привязать' })).toHaveLength(2);
   });
 });
