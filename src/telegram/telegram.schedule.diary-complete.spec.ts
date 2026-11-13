@@ -132,12 +132,12 @@ describe('onDiaryComplete — базовые побочные эффекты', (
     expect(cadenceService.registerFill).toHaveBeenCalledWith(1n, FIXED_NOW);
   });
 
-  it('планирует summary с реальным текстом сводки (не заглушкой) на сегодняшний notifyLocalHour', async () => {
+  it('планирует summary без оценок в payload на сегодняшний notifyLocalHour', async () => {
     const { service, scheduled } = makeService({});
     await service.onDiaryComplete(1n);
     const summary = scheduled.find((s) => s.type === 'summary');
     expect(summary).toBeDefined();
-    expect((summary!.extra as any).text).toContain('Привязанность');
+    expect(summary!.extra).toBeUndefined();
   });
 
   it('парный триггер падает — не роняет onDiaryComplete целиком (изоляция ошибок)', async () => {
@@ -158,7 +158,7 @@ describe('onDiaryComplete — базовые побочные эффекты', (
 });
 
 describe('onDiaryComplete — comeback после перерыва ≥3 дней', () => {
-  it('gap>=3, ещё не отправляли сегодня — планирует comeback с сильнейшей потребностью из insight', async () => {
+  it('gap>=3, ещё не отправляли сегодня — планирует comeback только с числом дней, без потребности', async () => {
     const { service, scheduled } = makeService({
       gap: 5,
       totalDays: 10,
@@ -167,13 +167,7 @@ describe('onDiaryComplete — comeback после перерыва ≥3 дней
     await service.onDiaryComplete(1n);
     const comeback = scheduled.find((s) => s.type === 'comeback');
     expect(comeback).toBeDefined();
-    expect(comeback!.extra).toEqual(
-      expect.objectContaining({
-        totalDays: 10,
-        strongestNeed: 'Привязанность',
-        strongestAvg: 8.5,
-      }),
-    );
+    expect(comeback!.extra).toEqual({ totalDays: 10 });
   });
 
   it('gap>=3, но уже отправляли comeback сегодня — не дублирует', async () => {

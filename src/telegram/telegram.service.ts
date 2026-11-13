@@ -6,9 +6,10 @@ import {
   Optional,
   Logger,
 } from '@nestjs/common';
-import { Telegraf, Context } from 'telegraf';
+import { Telegraf, Context, Markup } from 'telegraf';
+import { failCallback } from './callback-failure';
+import { openDiaryButton } from '../notification/notification.buttons';
 import { TELEGRAF_BOT, DONATE_URL } from './telegram.constants';
-import { ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { AccountService } from '../bot/account.service';
@@ -358,26 +359,19 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    // Plan check-in: plan_done:<planId> / plan_skip:<planId>
+    // Кнопки «Сделано / Не получилось» (plan_done:<id>, plan_skip:<id>) из старых
+    // сообщений: ответ о практике через Telegram больше не принимаем — отметка
+    // в приложении (РКН, #1135).
     this.bot.action(/^plan_(done|skip):(\d+)$/, async (ctx) => {
       try {
-        await ctx.answerCbQuery();
-        const rawId = ctx.from?.id;
-        if (!rawId) return;
-        const userId = await this.accountService.canonicalUserId(rawId);
-        const match = ctx.match as RegExpMatchArray;
-        const done = match[1] === 'done';
-        const planId = Number(match[2]);
-        await this.practicesService.checkinPlan(userId, planId, done);
-        const reply = done
-          ? '✅ Отлично! Записал.'
-          : '❌ Бывает. Можно попробовать завтра.';
+        await ctx.answerCbQuery('Отметить можно в приложении');
         await ctx
-          .editMessageText(reply)
-          .catch(() => ctx.editMessageReplyMarkup(undefined).catch(() => null));
+          .editMessageReplyMarkup(
+            Markup.inlineKeyboard([[openDiaryButton]]).reply_markup,
+          )
+          .catch(() => null);
       } catch (err) {
-        this.logger.error('plan checkin action failed', err);
-        await ctx.editMessageText(ERROR_RETRY).catch(() => null);
+        await failCallback(this.logger, ctx, 'plan checkin', err);
       }
     });
 

@@ -112,11 +112,10 @@ describe('NotificationPlannerService — weekly/donate: граница daysSince
     expect(scheduledTypes(deps)).not.toContain('donate_reminder');
   });
 
-  it('weekly payload — ровно {text}, лишних полей нет (ObjectLiteral)', async () => {
+  it('weekly payload отсутствует — оценок и средних в очереди нет (РКН, #1135)', async () => {
     const { svc, deps } = make();
     await svc.planDay(makeUser(), SUNDAY);
-    const payload = deps.notifications.schedule.mock.calls[0][3];
-    expect(Object.keys(payload)).toEqual(['text']);
+    expect(deps.notifications.schedule.mock.calls[0][3]).toBeUndefined();
   });
 });
 
@@ -134,32 +133,26 @@ describe('NotificationPlannerService — getMissedPlans запрашиваетс
   });
 });
 
-describe('NotificationPlannerService — lowNeeds10 предпочитается lowNeeds3, когда оба непусты', () => {
-  it('10-дневная и 3-дневная серии различаются → используется именно 10-дневная (ConditionalExpression на тернарнике)', async () => {
-    const { svc, deps } = make();
-    deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-    deps.analytics.getLowStreakNeeds.mockImplementation(
-      (_uid: bigint, _n: number, days: number) =>
-        Promise.resolve(days === 10 ? ['autonomy'] : ['attachment']),
-    );
-    await svc.planDay(makeUser(), NOW);
-    const payload = deps.notifications.schedule.mock.calls[0][3];
-    expect(payload.text).toContain('Автономия'); // из 10-дневного списка
-    expect(payload.showBooking).toBe(true);
-  });
-});
-
-describe('NotificationPlannerService — weeklyStats с null avg не считаются "самой слабой"', () => {
-  it('потребность с avg=null исключается из выбора lowest (ConditionalExpression filter !==null)', async () => {
+describe('NotificationPlannerService — reminder: payload без оценок и потребностей', () => {
+  it('в payload только серия и служебные поля (РКН, #1135)', async () => {
     const { svc, deps } = make();
     deps.analytics.getWeeklyStats.mockResolvedValue([
       { needId: 'attachment', avg: null, trend: '→' },
       { needId: 'autonomy', avg: 5, trend: '→' },
     ]);
     await svc.planDay(makeUser(), NOW); // daysSince=1 → reminder, не onBreak
-    const payload = deps.notifications.schedule.mock.calls[0][3];
-    expect(payload.lowestNeedId).toBe('autonomy');
-    expect(payload.lowestNeed).toBe('Автономия');
+    const payload = deps.notifications.replacePending.mock.calls[0][3];
+    expect(Object.keys(payload).sort()).toEqual(
+      [
+        'approachingStreak',
+        'compactControls',
+        'gamified',
+        'onBreak',
+        'streak',
+        'variant',
+      ].sort(),
+    );
+    expect(deps.analytics.getWeeklyStats).not.toHaveBeenCalled();
   });
 });
 

@@ -9,7 +9,7 @@
 // принимаются на веру).
 //
 // Список продублирован во фронтенде, потому что бэкенд не может импортировать
-// shared (tsconfig rootDir=src) — как quiz-logic.ts ↔ quizEngine.ts. Паритет
+// shared (tsconfig rootDir=src) — парой файлов. Паритет
 // закреплён одинаковыми списками в phrase-check.service.spec.ts и
 // criteria.test.ts: правка одной стороны роняет тест другой.
 export const PHRASE_MARK_IDS = [

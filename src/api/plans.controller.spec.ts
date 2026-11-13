@@ -124,7 +124,7 @@ describe('PlansController.createPlan', () => {
     expect(notificationService.schedule).not.toHaveBeenCalled();
   });
 
-  it('с reminderUtcHour — планирует уведомление с текстом практики и planId', async () => {
+  it('с reminderUtcHour — планирует уведомление без текста практики в очереди', async () => {
     const { controller, notificationService } = makeController({
       practicesService: {
         createPlan: jest.fn().mockResolvedValue({ id: 77 }),
@@ -139,7 +139,6 @@ describe('PlansController.createPlan', () => {
       4n,
       'practice_reminder',
       expect.any(Date),
-      { practiceText: 'практика', needId: 'attachment', planId: 77 },
     );
   });
 });

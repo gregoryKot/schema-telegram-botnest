@@ -1,5 +1,6 @@
-// Мини-тесты в боте: /tests и колбэки qz:*. Флоу stateless — ответы едут в
-// callback_data (`qz:q:<id>:<шаг>:<цифры>`), тест доступен без онбординга.
+// Мини-тесты в боте: /tests и колбэки qz:*. Бот показывает список и интро,
+// сам тест проходят в приложении: ответы и результат в Telegram не уходят
+// (РКН, #1135). Старые кнопки `qz:q:…` ведут туда же.
 import {
   Inject,
   Injectable,
@@ -8,27 +9,22 @@ import {
   Optional,
 } from '@nestjs/common';
 import { Context, Markup, Telegraf } from 'telegraf';
-import { TELEGRAF_BOT, CABINET_URL } from './telegram.constants';
+import { TELEGRAF_BOT, APP_URL } from './telegram.constants';
 import { failCallback } from './callback-failure';
 import { registerGameCommand } from './game-command';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
-import { AnalyticsService } from '../analytics/analytics.service';
 import {
   normalizeAddressForm,
   t,
   type AddressForm,
 } from '../notification/address-form';
 import { buildQuizzes, getQuiz } from '../quiz/quiz-registry';
-import { computeQuizResult, isValidPicks } from '../quiz/quiz-logic';
-import type { Quiz } from '../quiz/quiz.types';
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// Номера вариантов: полные тексты — в СООБЩЕНИИ, кнопки — цифры (Telegram режет
-// длинные подписи, а вариант — целая реплика). Спека quiz-data: ≤9 вариантов.
-const NUM = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+const quizUrl = (id: string): string => `${APP_URL}/tests/${id}`;
 
 @Injectable()
 export class TelegramQuizService implements OnModuleInit {
@@ -39,7 +35,6 @@ export class TelegramQuizService implements OnModuleInit {
     @Optional()
     private readonly bot: Telegraf<Context> | null,
     private readonly botService: BotService,
-    private readonly analytics: AnalyticsService,
     // Адрес в Telegram и номер аккаунта расходятся после слияния: писать в БД
     // по сырому ctx.from.id нельзя, сначала спрашиваем владельца привязки.
     private readonly accountService: AccountService,
@@ -79,9 +74,9 @@ export class TelegramQuizService implements OnModuleInit {
         if (!quiz) return this.stale(ctx);
         const text =
           `${quiz.emoji} <b>${esc(quiz.title)}</b>\n\n${esc(quiz.intro)}\n\n` +
-          `${quiz.questions.length} вопросов · ~2 минуты`;
+          `${quiz.questions.length} вопросов · ~2 минуты. Ответы и результат — в приложении.`;
         const keyboard = Markup.inlineKeyboard([
-          [Markup.button.callback('▶️ Начать', `qz:q:${quiz.id}:0:`)],
+          [Markup.button.webApp('▶️ Пройти в приложении', quizUrl(quiz.id))],
           [Markup.button.callback('← Все тесты', 'qz:list')],
         ]);
         await this.show(ctx, text, keyboard);
@@ -90,86 +85,27 @@ export class TelegramQuizService implements OnModuleInit {
       }
     });
 
-    // Шаг теста: n — номер вопроса, который надо показать; picks — уже
-    // выбранные варианты (по цифре на вопрос). n === questions.length → финал.
-    this.bot.action(/^qz:q:([a-z_]+):(\d):(\d{0,9})$/, async (ctx) => {
+    // Кнопка старого сообщения (`qz:q:<id>:<шаг>:<ответы>`): ответы в боте
+    // больше не принимаются и не разбираются — только отправляем в приложение.
+    this.bot.action(/^qz:q:([a-z_]+):/, async (ctx) => {
       try {
         await ctx.answerCbQuery().catch(() => null);
-        const rawId = ctx.from?.id;
-        const form = await this.getForm(rawId);
-        const m = ctx.match as RegExpMatchArray;
-        const quiz = getQuiz(form, m[1]);
-        const n = Number(m[2]);
-        const picks = [...m[3]].map(Number);
-        if (!quiz || n !== picks.length || n > quiz.questions.length) {
-          return this.stale(ctx);
-        }
-        if (!isValidPicks(quiz, picks)) return this.stale(ctx);
-
-        if (n === 0 && rawId) {
-          // Резолвер ждём, а саму отправку события — нет (fire-and-forget).
-          const userId = await this.accountService.canonicalUserId(rawId);
-          void this.analytics.track(userId, 'quiz_started', {
-            quiz: quiz.id,
-            src: 'bot',
-          });
-        }
-        if (n === quiz.questions.length) {
-          return await this.showResult(ctx, quiz, picks, form, rawId);
-        }
-
-        const q = quiz.questions[n];
-        const text =
-          `${quiz.emoji} <b>${esc(quiz.title)}</b> — вопрос ${n + 1} из ` +
-          `${quiz.questions.length}\n\n${esc(q.text)}\n\n` +
-          q.options.map((o, idx) => `${NUM[idx]} ${esc(o.label)}`).join('\n');
+        const form = await this.getForm(ctx.from?.id);
+        const quiz = getQuiz(form, (ctx.match as RegExpMatchArray)[1]);
+        if (!quiz) return this.stale(ctx);
         const keyboard = Markup.inlineKeyboard([
-          q.options.map((o, idx) =>
-            Markup.button.callback(
-              NUM[idx],
-              `qz:q:${quiz.id}:${n + 1}:${m[3]}${idx}`,
-            ),
-          ),
-          [Markup.button.callback('⏹ Выйти из теста', 'qz:list')],
+          [Markup.button.webApp('▶️ Пройти в приложении', quizUrl(quiz.id))],
+          [Markup.button.callback('← Все тесты', 'qz:list')],
         ]);
-        await this.show(ctx, text, keyboard);
+        await this.show(
+          ctx,
+          `${quiz.emoji} <b>${esc(quiz.title)}</b>\n\nТест теперь проходят в приложении.`,
+          keyboard,
+        );
       } catch (err) {
         await failCallback(this.logger, ctx, 'qz:q', err);
       }
     });
-  }
-
-  private async showResult(
-    ctx: Context,
-    quiz: Quiz,
-    picks: number[],
-    form: AddressForm,
-    rawId: number | undefined,
-  ): Promise<void> {
-    const r = computeQuizResult(quiz, picks);
-    if (!r) return this.stale(ctx);
-    if (rawId) {
-      const userId = await this.accountService.canonicalUserId(rawId);
-      void this.analytics.track(userId, 'quiz_completed', {
-        quiz: quiz.id,
-        result: r.id,
-        src: 'bot',
-      });
-    }
-    const text =
-      `${r.emoji} <b>${esc(r.title)}</b>\n\n${esc(r.text)}\n\n💡 ${esc(r.hint)}\n\n` +
-      esc(
-        t(
-          form,
-          'Это игра-наблюдение, а не диагноз. Хочешь глубже — в приложении есть большой тест схем.',
-          'Это игра-наблюдение, а не диагноз. Хотите глубже — в приложении есть большой тест схем.',
-        ),
-      );
-    const keyboard = Markup.inlineKeyboard([
-      [Markup.button.callback('🎲 Другие тесты', 'qz:list')],
-      [Markup.button.webApp('🧠 Большой тест схем', CABINET_URL)],
-    ]);
-    await this.show(ctx, text, keyboard);
   }
 
   /** Экран списка тестов — точка входа /tests и колбэка qz:list. */
