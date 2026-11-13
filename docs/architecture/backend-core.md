@@ -70,9 +70,9 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 
 ### `src/quiz/`
 Контент и подсчёт публичных мини-тестов без регистрации (`drives`, `critic`, `voice`, `battery`) для бота и сайта.
-- Входы: `src/quiz/quiz-registry.ts` — `QUIZ_IDS`, `buildQuizzes(form)`, `getQuiz`; `src/quiz/quiz-logic.ts` — `computeQuizResult`: большинство голосов; `src/quiz/quiz.types.ts` — типы `Quiz`, `QuizQuestion`, `QuizOption`; `src/quiz/quiz-*.data.ts` — вопросы и результаты четырёх тестов.
+- Входы: `src/quiz/quiz-registry.ts` — `QUIZ_IDS`, `buildQuizzes(form)`, `getQuiz`; `src/quiz/quiz.types.ts` — типы `Quiz`, `QuizQuestion`, `QuizOption`; `src/quiz/quiz-*.data.ts` — вопросы и результаты четырёх тестов.
 - Связи: модуля и таблиц нет, чистые функции; используют `src/telegram/telegram.quiz.service.ts` (`/tests`, `qz:*`), `src/api/quiz.controller.ts` (`GET /api/quizzes`), `src/api/public-events.controller.ts` (проверка id результатов); события `quiz_started`/`quiz_completed`.
-- Подводные камни: контент строится от формы «ты/вы» через `t(form, …)` из `notification/address-form.ts`; цитаты-реплики не разводятся. `quiz-logic.ts` — зеркало `shared/src/quiz/quizEngine.ts` (бэкенд не импортирует `shared`, rootDir=src), паритет держат `quiz-logic.spec.ts` и `webapp/src/hooks/useQuizRunner.test.ts`.
+- Подводные камни: контент строится от формы «ты/вы» через `t(form, …)` из `notification/address-form.ts`; цитаты-реплики не разводятся. Подсчёт результата — только `shared/src/quiz/quizEngine.ts`: бот тест не проводит, а отправляет в приложение.
 
 ### `src/site-content/`
 Редактируемые из админки блоки лендинга: фото героя и темы бегущей строки.

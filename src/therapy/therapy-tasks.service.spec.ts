@@ -414,73 +414,25 @@ describe('TherapyTasksService — серия считается с дня наз
 });
 
 describe('TherapyTasksService — scheduleTaskNotification', () => {
-  // Баг 2026-11-05 (docs/INCIDENTS.md): карточка схемы приходила клиенту как
-  // «emotional_deprivation». Шов: payload сервиса → настоящий шаблон бота.
-  it('карточка схемы: в сообщении бота — название, а не id', async () => {
-    const { service, notificationService } = makeService();
-    await service.scheduleTaskNotification(CLIENT_A, {
-      type: 'schema_intro',
-      text: 'emotional_deprivation',
-      needId: null,
-      dueDate: null,
-    });
-    const payload = notificationService.schedule.mock.calls[0][3];
-    const msg = renderTemplate('task_assigned', payload)!.text;
-    expect(msg).toContain('Карточка схемы: Эмоциональная депривация');
-    expect(msg).not.toContain('emotional_deprivation');
-  });
-
-  // Аудит 2026-11, U2: кнопка вела на «Сегодня», где заданий нет. Шов: id
-  // задания из контроллера → payload → кнопка настоящего шаблона бота.
+  // РКН, #1135: текст задания, потребность и срок в очередь не кладём — только taskId.
+  // Аудит 2026-11, U2: кнопка ведёт к самому заданию. Шов: id → payload → шаблон бота.
   it('кнопка уведомления открывает само задание (ссылка запуска tasks_<id>)', async () => {
     const { service, notificationService } = makeService();
-    await service.scheduleTaskNotification(CLIENT_A, {
-      type: 'custom',
-      text: 'сделай практику',
-      needId: null,
-      dueDate: null,
-      taskId: 42,
-    });
+    await service.scheduleTaskNotification(CLIENT_A, 42);
     const payload = notificationService.schedule.mock.calls[0][3];
-    const kb = JSON.stringify(
-      renderTemplate('task_assigned', payload)!.keyboard,
-    );
-    expect(kb).toContain('/today?startapp=tasks_42');
+    const tpl = renderTemplate('task_assigned', payload)!;
+    expect(JSON.stringify(tpl.keyboard)).toContain('/today?startapp=tasks_42');
+    expect(tpl.text).toContain('в приложении');
   });
 
-  it('вызывает notificationService.schedule с типом task_assigned и payload задачи', async () => {
+  it('вызывает notificationService.schedule с типом task_assigned и одним taskId', async () => {
     const { service, notificationService } = makeService();
-    await service.scheduleTaskNotification(CLIENT_A, {
-      type: 'custom',
-      text: 'сделай практику',
-      needId: 'safety',
-      dueDate: '2026-08-01',
-    });
+    await service.scheduleTaskNotification(CLIENT_A, 42);
     expect(notificationService.schedule).toHaveBeenCalledWith(
       CLIENT_A,
       'task_assigned',
       expect.any(Date),
-      { text: 'сделай практику', needId: 'safety', dueDate: '2026-08-01' },
-    );
-  });
-
-  it('schema_intro: в payload название схемы, а не id (баг 2026-11-05)', async () => {
-    const { service, notificationService } = makeService();
-    await service.scheduleTaskNotification(CLIENT_A, {
-      type: 'schema_intro',
-      text: 'emotional_deprivation',
-      needId: null,
-      dueDate: null,
-    });
-    expect(notificationService.schedule).toHaveBeenCalledWith(
-      CLIENT_A,
-      'task_assigned',
-      expect.any(Date),
-      {
-        text: 'Карточка схемы: Эмоциональная депривация',
-        needId: null,
-        dueDate: null,
-      },
+      { taskId: 42 },
     );
   });
 });

@@ -107,12 +107,13 @@ describe('захват строки очереди уведомлений на �
     for (const userId of USERS)
       for (let i = 0; i < PER_USER; i++) await due(userId, `${userId}:${i}`);
 
-    const texts: string[] = [];
+    // Тексты шаблонов статичны — строки различаем по адресату (chat_id).
+    const chats: string[] = [];
     // Telegram отвечает не мгновенно: прогоны успевают перемешаться.
-    const callApi = jest.fn(async (_m: string, p: { text: string }) => {
+    const callApi = jest.fn(async (_m: string, p: { chat_id: unknown }) => {
       await new Promise((r) => setTimeout(r, 5));
-      texts.push(p.text);
-      return { message_id: texts.length };
+      chats.push(String(p.chat_id));
+      return { message_id: chats.length };
     });
     const run = () =>
       runProcessQueue({
@@ -128,10 +129,11 @@ describe('захват строки очереди уведомлений на �
 
     await Promise.all([run(), run()]);
 
+    // Ровно PER_USER отправок на человека: повторной отправки нет.
     const expected = USERS.flatMap((u) =>
-      Array.from({ length: PER_USER }, (_, i) => `${u}:${i}`),
+      Array.from({ length: PER_USER }, () => String(u)),
     );
-    expect([...texts].sort()).toEqual([...expected].sort());
+    expect([...chats].sort()).toEqual([...expected].sort());
     const left = await prisma.scheduledNotification.count({
       where: { userId: { in: USERS }, sentAt: null },
     });

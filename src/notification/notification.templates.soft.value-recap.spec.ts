@@ -1,83 +1,34 @@
-// Точечное покрытие notification.templates.soft.ts, case 'value_recap' (было
-// 76%/67% — непокрытые строки 82-101): день 14 без записей, зеркало
-// собственных данных (сильная/слабая потребность). renderTemplate неизвестные
-// типы делегирует в renderSoftTemplate — используем оба входа.
+// notification.templates.soft.ts, case 'value_recap': день 14 без записей.
+// В тексте только число дней — оценок, средних и потребностей нет (РКН, #1135).
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { renderTemplate } from './notification.templates';
 
 describe('renderSoftTemplate — value_recap', () => {
-  it('без обязательных полей (strongest/weakest/avg) — null, а не битый рендер', () => {
-    expect(renderSoftTemplate('value_recap', {})).toBeNull();
-    expect(
-      renderSoftTemplate('value_recap', { strongest: 'Привязанность' }),
-    ).toBeNull();
-    expect(
-      renderSoftTemplate('value_recap', {
-        strongest: 'Привязанность',
-        weakest: 'Автономия',
-        strongestAvg: 8,
-        // weakestAvg отсутствует
-      }),
-    ).toBeNull();
-  });
-
-  it('полный payload — рендерит сильную/слабую потребность со средними, форма "ты"', () => {
-    const result = renderSoftTemplate(
-      'value_recap',
-      {
-        totalDays: 14,
-        strongest: 'Привязанность',
-        strongestAvg: 8.333,
-        weakest: 'Автономия',
-        weakestAvg: 3.667,
-      },
-      'ty',
-    );
-    expect(result).not.toBeNull();
-    expect(result!.text).toContain('привязанность — твоя опора');
-    expect(result!.text).toContain('8.3');
-    expect(result!.text).toContain('автономия чаще проседала');
-    expect(result!.text).toContain('3.7');
-    expect(result!.text).toContain('За 14 дней наблюдений');
+  it('только totalDays, форма "ты"; кнопка в приложение', () => {
+    const result = renderSoftTemplate('value_recap', { totalDays: 14 }, 'ty');
+    expect(result!.text).toContain('За 14 дней наблюдений у тебя');
     expect(result!.text).toContain('Это твои данные');
     expect(result!.keyboard).toBeDefined();
   });
 
-  it('форма "вы" — местоимения меняются, содержимое то же', () => {
-    const result = renderSoftTemplate(
-      'value_recap',
-      {
-        totalDays: 14,
-        strongest: 'Привязанность',
-        strongestAvg: 8,
-        weakest: 'Автономия',
-        weakestAvg: 3,
-      },
-      'vy',
-    );
-    expect(result!.text).toContain('ваша опора');
+  it('форма "вы" — местоимения меняются', () => {
+    const result = renderSoftTemplate('value_recap', { totalDays: 14 }, 'vy');
+    expect(result!.text).toContain('у вас');
     expect(result!.text).toContain('Это ваши данные');
-    expect(result!.text).not.toContain('твоя опора');
+    expect(result!.text).not.toContain('твои');
   });
 
-  it('без totalDays — заголовок "За это время", не падает', () => {
-    const result = renderSoftTemplate('value_recap', {
-      strongest: 'Привязанность',
-      strongestAvg: 8,
-      weakest: 'Автономия',
-      weakestAvg: 3,
-    });
-    expect(result!.text).toContain('За это время у тебя сложилась картина');
-  });
-
-  it('доступен и через renderTemplate (диспетчер неизвестных типов → soft)', () => {
+  it('без totalDays — «За это время», не падает; старый payload с оценками не читается', () => {
     const result = renderTemplate('value_recap', {
       strongest: 'Привязанность',
-      strongestAvg: 8,
+      strongestAvg: 8.3,
       weakest: 'Автономия',
-      weakestAvg: 3,
+      weakestAvg: 3.7,
     });
-    expect(result).not.toBeNull();
+    expect(result!.text).toContain('За это время у тебя сложилась картина');
+    expect(result!.text).not.toMatch(
+      /Привязанность|привязанность|Автономия|8\.3|3\.7/,
+    );
   });
 });
 

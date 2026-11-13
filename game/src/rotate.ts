@@ -12,6 +12,7 @@ export function pauseInPortrait(game: Phaser.Game) {
     } else {
       game.loop.wake();
       audio.pause(false);
+      game.scale.refresh(); // во сне ScaleManager пропустил resize — без этого кадр остаётся портретного размера
     }
   };
   mq.addEventListener('change', apply);
