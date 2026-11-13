@@ -6,20 +6,7 @@ import { INVITE_CODE_HINT } from './therapistLinkCopy';
 // терапевт видел только ссылку t.me, и клиенту, который пользуется сайтом,
 // код приходилось вырезать из адреса. Один компонент на все места выдачи
 // приглашения — кабинет («Новый клиент», «Ссылка») и «Кабинет терапевта» в
-// настройках, на сайте и в мини-аппе. Цвета — токены, общие для обоих.
-export const inviteButtonStyle = {
-  minHeight: 44,
-  padding: '0 14px',
-  borderRadius: 10,
-  border: 'none',
-  background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-  color: 'var(--accent)',
-  fontSize: 13,
-  fontWeight: 600,
-  fontFamily: 'inherit',
-  cursor: 'pointer',
-} as const;
-
+// настройках. Кнопка — тихая обводочная дизайн-системы (ds-btn, CSS сайта).
 export const inviteCodeStyle = {
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
   fontSize: 17,
@@ -53,8 +40,8 @@ export function InviteCodeBox({
         <code style={inviteCodeStyle}>{code}</code>
         <button
           type="button"
+          className="ds-btn ds-btn--sm ds-btn--secondary"
           onClick={() => void copy(code)}
-          style={inviteButtonStyle}
         >
           {copied ? '✓ Код скопирован' : 'Скопировать код'}
         </button>
