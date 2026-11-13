@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-// Заголовок листа благодарности — разметка (две строки, вторая курсивом), glueIf листа её не склеивает. Ревью g3 r5:
-// на 390 он рвался «за которые сегодня – / спасибо» — одно слово на строке; хвост «сегодня – спасибо» держится вместе
-// (nowrap: после «–» браузер рвёт строку и при неразрывном пробеле), предлог «за» — со словом (glue).
+// Заголовок листа благодарности — разметка (две строки, вторая курсивом), glueIf листа её не склеивает.
+// Хвост «… – спасибо» держится вместе (nowrap: после «–» браузер рвёт строку и при неразрывном пробеле);
+// слова зависят от дня записи: «сегодня» или «в этот день».
 import { describe, it, expect, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,12 +12,17 @@ import { plainText } from '../../test-support/plainText';
 afterEach(cleanup);
 
 describe('GratitudeTitle', () => {
-  it('«сегодня – спасибо» одной строкой (nowrap), слова те же', () => {
-    const { container } = render(<h1><GratitudeTitle /></h1>);
+  it('запись за сегодня — «За что сегодня – спасибо», хвост одной строкой (nowrap)', () => {
+    const { container } = render(<h1><GratitudeTitle today /></h1>);
     expect(container.querySelector('.sd-grat-it .sd-grat-nowrap')!.textContent).toBe('сегодня – спасибо');
-    expect(container.querySelector('.sd-grat-it')!.textContent).toContain('за\u00a0которые');
-    expect(plainText(container.querySelector('h1'))).toBe('Три вещи,за которые сегодня – спасибо');
+    expect(plainText(container.querySelector('h1'))).toBe('За чтосегодня – спасибо');
     const css = readFileSync(join(__dirname, '../../styles/diary-gratitude.css'), 'utf8');
     expect(css).toMatch(/\.sd-grat-nowrap\s*\{\s*white-space:\s*nowrap;/);
+  });
+
+  it('запись за другой день — «За что в этот день – спасибо», без «сегодня»', () => {
+    const { container } = render(<h1><GratitudeTitle today={false} /></h1>);
+    expect(container.querySelector('.sd-grat-it .sd-grat-nowrap')!.textContent).toBe('день – спасибо');
+    expect(plainText(container.querySelector('h1'))).toBe('За чтов этот день – спасибо');
   });
 });

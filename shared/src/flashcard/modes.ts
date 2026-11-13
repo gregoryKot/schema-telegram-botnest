@@ -61,7 +61,7 @@ export const NEEDS: NeedData[] = [
   { id: 'attachment', emoji: '💙', label: 'Привязанность' },
   { id: 'autonomy', emoji: '🔑', label: 'Автономия' },
   { id: 'expression', emoji: '🎨', label: 'Выражение' },
-  { id: 'play', emoji: '🎉', label: 'Игра и радость' },
+  { id: 'play', emoji: '🎉', label: 'Спонтанность' },
   { id: 'limits', emoji: '🛡️', label: 'Границы' },
 ];
 

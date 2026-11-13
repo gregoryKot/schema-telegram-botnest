@@ -5,8 +5,8 @@ import { glue } from '../../../../shared/src/utils/typo';
 import { PaperAlert } from '../paper/PaperAlert';
 import { DiaryAside } from './DiaryStepCard';
 
-// «сегодня – спасибо» одной строкой (nowrap: после «–» браузер рвёт строку и при неразрывном пробеле), ревью g3 r5.
-export const GratitudeTitle = () => <>Три вещи,<br /><span className="it sd-grat-it">{glue('за которые')} <span className="sd-grat-nowrap">сегодня – спасибо</span></span></>;
+// Хвост «… – спасибо» одной строкой (nowrap: после «–» браузер рвёт строку и при неразрывном пробеле); запись задним числом — «в этот день».
+export const GratitudeTitle = ({ today }: { today: boolean }) => <>За что<br /><span className="it sd-grat-it">{today ? <span className="sd-grat-nowrap">сегодня – спасибо</span> : <>{glue('в этот')} <span className="sd-grat-nowrap">день – спасибо</span></>}</span></>;
 export const GratitudeLede = () => <>{glue('Даже самое маленькое. Особенно самое маленькое. Запоминается то, что удалось назвать. Хватит и одной строки.')}</>;
 export function GratitudeWhy({ hue }: { hue: number }) {
   return <DiaryAside hue={hue} eyebrow="Почему это работает" title="Мозг учится замечать"
