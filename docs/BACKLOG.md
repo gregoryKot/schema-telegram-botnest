@@ -39,6 +39,8 @@
 
 ## Следующее
 
+- ⬜ **РКН: убрать данные о состоянии и свободный текст из сообщений в Telegram** — сейчас туда уходят оценки потребностей (`src/notification/notification.templates*.ts`), текст плана практики и задания терапевта, текст запроса клиента в карточках заявок (`src/booking/booking-notify.format.ts`, `src/booking/intro-lead.format.ts`) и 300 знаков ошибок (`src/logger/alert.logger.ts`); политика п. 3.5 обещает обратное. Нужно до подачи ответа на запрос РКН №08-1063539 (до 19.11.2026), см. `docs/open/owner.md`, пункт «РКН».
+- ⬜ **РКН: перенести бэкапы из Cloudflare R2 в Yandex Object Storage** — `scripts/backup-upload.sh`, env `BACKUP_S3_*`, строка R2 в `webapp/src/pages/privacy/processors.ts`; без переноса ответ РКН подавать нельзя (ч. 5 ст. 18 152-ФЗ).
 - ⬜ **Флак теста `SiteAccessCard`** — `webapp/src/components/SiteAccessCard.test.tsx:59` проверяет `api.trackEvent('login_method_offer', shown)` сразу после `findByText`, а вызов идёт из `useEffect`: под нагрузкой полного прогона (`webapp-tz`, run 43318387662 на PR #1099) — 0 вызовов. Обернуть в `await waitFor(…, SLOW)`.
 - ⬜ **Игра: пролог противоречит себе на главной механике** — найдено при прогоне #1089, не починено: #1089 — про главы 1–4, пролог (`game/src/scenes/TutorialScene.ts`) вне её. Доказательство и строки — пункт К3 в [GAME_ANALYSIS.md](GAME_ANALYSIS.md): нажатие ИЗБЕГАЙ всегда рывок, реплики перекрывают успех, финал не листается тач-кнопками.
 - ⬜ **Первый замер видимости в нейросетях** — пройти 15 вопросов из
