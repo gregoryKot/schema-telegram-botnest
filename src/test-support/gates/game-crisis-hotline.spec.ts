@@ -17,8 +17,9 @@ const tel = /tel: '([^']+)'/.exec(hotlines)?.[1];
 
 const messages = read('game/src/i18n/messages.ts');
 const scene = read('game/src/scenes/GameScene.ts');
-// экран смерти живёт отдельным модулем сцены
-const screens = scene + read('game/src/scenes/game/death.ts');
+// экран смерти, развилка и CTA живут отдельными модулями сцены
+const cta = read('game/src/scenes/game/cta.ts');
+const screens = scene + read('game/src/scenes/game/death.ts') + cta + read('game/src/scenes/game/cabinet.ts');
 
 describe('кризисная строка игры', () => {
   it('источник правды читается', () => {
@@ -36,7 +37,7 @@ describe('кризисная строка игры', () => {
   });
 
   it('нажатие ведёт на тот же tel:, что и карточка продукта', () => {
-    expect(scene).toContain(`const CRISIS_TEL = '${tel}';`);
+    expect(cta).toContain(`const CRISIS_TEL = '${tel}';`);
   });
 
   it('строка стоит на экране смерти и на обеих финальных CTA', () => {

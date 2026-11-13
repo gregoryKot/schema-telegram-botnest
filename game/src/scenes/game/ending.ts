@@ -7,6 +7,7 @@ import { IS_TOUCH } from '../../controls';
 import { t, type MsgKey } from '../../i18n';
 import { unlockChapter } from '../../progress';
 import { trackEvent } from '../../analytics';
+import { showBranch, showCta } from './cta';
 import type { GameScene } from '../GameScene';
 
 export function beginOverwhelm(s: GameScene) {
@@ -82,7 +83,7 @@ function showRealization(s: GameScene) {
     const branch = s.chapter.branch,
       nxt = s.chapter.next;
     if (branch && CHAPTERS[branch]) {
-      s.showBranch(branch); // конец Акта I — развилка: терапия ИЛИ дальше
+      showBranch(s, branch); // конец Акта I — развилка: терапия ИЛИ дальше
     } else if (nxt && CHAPTERS[nxt]) {
       const act = IS_TOUCH ? t('m_tap') : t('m_press_any_key');
       const title = t(CHAPTERS[nxt].title);
@@ -101,7 +102,7 @@ function showRealization(s: GameScene) {
       s.input.keyboard!.once('keydown', go);
       s.input.once('pointerdown', go);
     } else {
-      s.showCta();
+      showCta(s);
     }
   };
   // Развязка идёт по таймеру, но её можно листать: тап/клавиша показывает следующую

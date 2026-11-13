@@ -6,6 +6,7 @@ import { IS_TOUCH } from '../../controls';
 import { t } from '../../i18n';
 import { getAssist, setAssist } from '../../assist';
 import { trackEvent } from '../../analytics';
+import { addCrisisLine } from './cta';
 import type { GameScene } from '../GameScene';
 
 export function gameOver(s: GameScene) {
@@ -68,7 +69,7 @@ export function gameOver(s: GameScene) {
       txt,
       t2,
       hint,
-      s.addCrisisLine(H - 28, 200),
+      addCrisisLine(s, H - 28, 200),
     ];
     // после второй смерти в главе ассист предлагается прямо здесь — спрятанный в меню
     // тумблер для новичка не существует (правило онбординга CLAUDE.md)
