@@ -86,20 +86,17 @@ export function LoginPage() {
     }
   };
 
-  if (isTelegramContext) {
-    return <TelegramRetry loading={miniAppLoading} error={error} onRetry={retryTelegramAuth} />;
-  }
+  if (isTelegramContext) return <TelegramRetry loading={miniAppLoading} error={error} onRetry={retryTelegramAuth} />;
 
   return (
     <LoginShell>
       <div className="ds-eyebrow">Вход</div>
       <h1 className="al-title">Всё по схеме</h1>
-      {/* Новичку и человеку с истёкшей сессией нужно сказать разное
-          (парная правка к LoginScreen мини-аппа, правило №3). */}
+      {/* Новичку и человеку с истёкшей сессией нужно сказать разное. */}
       <p className="al-sub" role={deleted ? 'status' : undefined}>
         {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
           ? 'Вход устарел — данные на месте, нужно войти заново'
-          : tr('Войди, чтобы продолжить', 'Войдите, чтобы продолжить')}
+          : tr('Войди, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram', 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram')}
       </p>
 
       {errorAt === 'providers' && errorAlert}
