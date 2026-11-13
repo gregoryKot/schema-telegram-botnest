@@ -291,7 +291,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
     });
     beforeEach(() => {
       tg.mockReset().mockResolvedValue(true);
-      mail.mockReset().mockResolvedValue(undefined);
+      mail.mockReset().mockResolvedValue(true);
       onConfirmed.mockClear();
       onCancelled.mockClear();
       notifyExpired.mockClear();
@@ -470,7 +470,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
     });
     beforeEach(() => {
       tg.mockReset().mockResolvedValue(true);
-      mail.mockReset().mockResolvedValue(undefined);
+      mail.mockReset().mockResolvedValue(true);
       createMeeting.mockClear();
     });
     afterAll(async () => {
@@ -656,7 +656,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       calendar = new Set();
       onPush = null;
       tg.mockReset().mockResolvedValue(true);
-      mail.mockReset().mockResolvedValue(undefined);
+      mail.mockReset().mockResolvedValue(true);
       push.mockReset().mockImplementation(async (ev: { uid: string }) => {
         // Отмена приходит, пока идёт PUT: она раньше события в календаре.
         if (onPush) await onPush(ev.uid);
@@ -882,7 +882,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       });
       beforeEach(() => {
         tg.mockReset().mockResolvedValue(true);
-        mail.mockReset().mockResolvedValue(undefined);
+        mail.mockReset().mockResolvedValue(true);
       });
       afterAll(() => {
         tg.mockRestore();
