@@ -10,7 +10,7 @@ const CLI = join(process.cwd(), 'deploy', 's3-sign.cjs');
 const KEY_ID = 'AKIDEXAMPLE';
 const SECRET = 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY';
 const LIST_URL =
-  'https://example.r2.cloudflarestorage.com/my-bucket?list-type=2&prefix=schemehappens-&continuation-token=1ue%2FX%2Bb%3D';
+  'https://storage.yandexcloud.net/my-bucket?list-type=2&prefix=schemehappens-&continuation-token=1ue%2FX%2Bb%3D';
 
 const sign = (args: string[], stdin = `${KEY_ID}\n${SECRET}\n`) =>
   spawnSync('node', [CLI, ...args], { input: stdin, encoding: 'utf8' });
@@ -32,7 +32,7 @@ const parseConfig = (out: string): Record<string, string> =>
 
 describe('deploy/s3-sign.cjs — CLI для scripts/s3-api.sh', () => {
   it('листинг с курсором /, +, =: подпись та же, что у signRequest для этого адреса и времени', () => {
-    const res = sign(['GET', LIST_URL, EMPTY_SHA256, 'auto']);
+    const res = sign(['GET', LIST_URL, EMPTY_SHA256, 'ru-central1']);
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
     const h = parseConfig(res.stdout);
@@ -50,7 +50,7 @@ describe('deploy/s3-sign.cjs — CLI для scripts/s3-api.sh', () => {
     const credentials = {
       accessKeyId: KEY_ID,
       secretAccessKey: SECRET,
-      region: 'auto',
+      region: 'ru-central1',
     };
     const expected = signRequest({
       method: 'GET',
@@ -75,27 +75,27 @@ describe('deploy/s3-sign.cjs — CLI для scripts/s3-api.sh', () => {
       'PUT',
       'http://127.0.0.1:9000/my-bucket/schemehappens-2026-11-08.sql.gz.enc',
       sha,
-      'auto',
+      'ru-central1',
     ]);
     expect(res.status).toBe(0);
     const h = parseConfig(res.stdout);
     expect(h['x-amz-content-sha256']).toBe(sha);
     expect(h.authorization).toMatch(
-      /^AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE\/\d{8}\/auto\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[0-9a-f]{64}$/,
+      /^AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE\/\d{8}\/ru-central1\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[0-9a-f]{64}$/,
     );
   });
 
   // Что скрипты не кладут ключи в аргументы node, проверяют backup-*.spec.ts
   // обёрткой node в PATH.
   it('секрета нет в выводе', () => {
-    const res = sign(['GET', LIST_URL, EMPTY_SHA256, 'auto']);
+    const res = sign(['GET', LIST_URL, EMPTY_SHA256, 'ru-central1']);
     expect(res.status).toBe(0);
     expect(res.stdout).not.toContain(SECRET);
   });
 
   it('кавычка и обратная косая черта в значении экранированы для конфига curl', () => {
     const res = sign(
-      ['GET', LIST_URL, EMPTY_SHA256, 'auto'],
+      ['GET', LIST_URL, EMPTY_SHA256, 'ru-central1'],
       `a"b\\c\n${SECRET}\n`,
     );
     expect(res.status).toBe(0);
@@ -106,20 +106,20 @@ describe('deploy/s3-sign.cjs — CLI для scripts/s3-api.sh', () => {
   });
 
   it.each([
-    ['нет ключей в stdin', ['GET', LIST_URL, EMPTY_SHA256, 'auto'], ''],
+    ['нет ключей в stdin', ['GET', LIST_URL, EMPTY_SHA256, 'ru-central1'], ''],
     [
       'только ключ без секрета',
-      ['GET', LIST_URL, EMPTY_SHA256, 'auto'],
+      ['GET', LIST_URL, EMPTY_SHA256, 'ru-central1'],
       `${KEY_ID}\n`,
     ],
     [
       'sha256 не той формы',
-      ['GET', LIST_URL, 'abc', 'auto'],
+      ['GET', LIST_URL, 'abc', 'ru-central1'],
       `${KEY_ID}\n${SECRET}\n`,
     ],
     [
       'адрес не разобрать',
-      ['GET', 'not a url', EMPTY_SHA256, 'auto'],
+      ['GET', 'not a url', EMPTY_SHA256, 'ru-central1'],
       `${KEY_ID}\n${SECRET}\n`,
     ],
     ['нет региона', ['GET', LIST_URL, EMPTY_SHA256], `${KEY_ID}\n${SECRET}\n`],

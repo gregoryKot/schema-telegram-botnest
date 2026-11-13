@@ -69,7 +69,7 @@ RUN npm prune --production
 FROM node:22-slim
 COPY deploy/install-openssl.sh /tmp/
 RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
-# pg_dump/psql 16 и curl — для зашифрованных бэкапов в R2 (deploy/backup-scheduler.cjs
+# pg_dump/psql 16 и curl — для зашифрованных бэкапов в Yandex Object Storage (deploy/backup-scheduler.cjs
 # → scripts/backup-upload.sh). Только в runtime: в build-стадии они не нужны.
 COPY deploy/install-pg-client.sh /tmp/
 RUN sh /tmp/install-pg-client.sh && rm /tmp/install-pg-client.sh
@@ -93,7 +93,7 @@ COPY --from=build --chown=node:node /app/BUILD_INFO ./
 COPY --from=build --chown=node:node /app/deploy ./deploy
 # Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-upload.sh,
 # restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
-# backup-fetch-latest.sh скачивает свежий бэкап из R2 (docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы»);
+# backup-fetch-latest.sh скачивает свежий бэкап из Yandex Object Storage (docs/RUNBOOKS.md, «Yandex Object Storage — бэкапы базы»);
 # s3-api.sh — общий вход в хранилище (подпись SigV4 — deploy/s3-sign.cjs, запрос — curl), его подключают оба.
 COPY --from=build --chown=node:node /app/scripts/backup-upload.sh /app/scripts/restore-backup.sh /app/scripts/backup-fetch-latest.sh /app/scripts/s3-api.sh ./scripts/
 

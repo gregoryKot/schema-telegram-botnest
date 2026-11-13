@@ -114,11 +114,11 @@
 | `APP_URL` | опциональна | nonEmpty | Базовый адрес для ссылок в письмах/боте (donate, subscribe) — дефолт schemehappens.ru; допускается голый домен без схемы (normalizeBaseUrl). |
 | `BACKUP_ENCRYPTION_KEY` | опциональна | secret32 | Ключ шифрования бэкапов БД (AES-256, ≥ 32 символов) — ОТДЕЛЬНЫЙ от ENCRYPTION_KEY: утечка одного не открывает другое. Хранить ещё и вне Amvera: без него бэкап не расшифровать. |
 | `BACKUP_RETENTION_DAYS` | опциональна | retentionDays | Сколько дней хранить бэкапы в бакете (от 7 до 30, по умолчанию 30: столько обещает политика конфиденциальности) — старше удаляются после каждого успешного бэкапа. |
-| `BACKUP_S3_ACCESS_KEY_ID` | опциональна | accessKey | Access Key ID API-токена Cloudflare R2 (Object Read & Write только на бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY. |
-| `BACKUP_S3_BUCKET` | опциональна | bucketName | Имя приватного бакета R2 для зашифрованных бэкапов БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs). |
-| `BACKUP_S3_ENDPOINT` | опциональна | s3Endpoint | Адрес S3-API хранилища бэкапов без бакета: https://<id аккаунта>.r2.cloudflarestorage.com. |
-| `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к хранилищу — по умолчанию auto (так требует R2); менять только при переезде на другое S3-хранилище. |
-| `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
+| `BACKUP_S3_ACCESS_KEY_ID` | опциональна | accessKey | Идентификатор статического ключа сервисного аккаунта Yandex Cloud (права только на бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY. |
+| `BACKUP_S3_BUCKET` | опциональна | bucketName | Имя приватного бакета Yandex Object Storage для зашифрованных бэкапов БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs). |
+| `BACKUP_S3_ENDPOINT` | опциональна | s3Endpoint | Адрес S3-API без бакета: только https://storage.yandexcloud.net (за рубеж копия не уходит). |
+| `BACKUP_S3_REGION` | опциональна | nonEmpty | Регион в подписи запросов к Yandex Object Storage — по умолчанию ru-central1; задавать не нужно. |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Секретная часть статического ключа сервисного аккаунта Yandex Cloud — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
 | `DB_STATEMENT_TIMEOUT_MS` | опциональна | целое 0…2147483647 | Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник без выкладки кода (src/prisma/statement-timeout.ts). |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
@@ -131,10 +131,10 @@
 | `VAPID_SUBJECT` | опциональна | httpsOrMailto | Контакт для push-сервисов (https-адрес или mailto:) — дефолт https://schemehappens.ru. Уходит в подпись VAPID. |
 | `WEBAPP_URL` | **обязательна** | httpsUrl | Публичный адрес сайта (schemehappens.ru) — на нём строится колбэк OAuth и фронтенд-редиректы; без него вход через сайт не работает. |
 
-**Бэкапы в R2 включаются пятью переменными сразу.** `BACKUP_S3_ENDPOINT`,
+**Бэкапы в Yandex Object Storage включаются пятью переменными сразу.** `BACKUP_S3_ENDPOINT`,
 `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`,
 `BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera копии
-делает платформа, а R2 — независимая копия по желанию. Задана только часть —
+делает платформа, а Yandex Object Storage — независимая копия по желанию. Задана только часть —
 планировщик не стартует, а проба `backupFreshness` отвечает `ok: false` с
 именами недостающих. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны.
 

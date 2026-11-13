@@ -1,5 +1,5 @@
 'use strict';
-// Планировщик зашифрованных бэкапов БД в Cloudflare R2 (аудит D-2: скрипт
+// Планировщик зашифрованных бэкапов БД в Yandex Object Storage (аудит D-2: скрипт
 // бэкапа годами лежал без вызывающего — бэкапов не было).
 //
 // Живёт здесь, а не в src/: код в src/** не имеет права на child_process
@@ -197,7 +197,7 @@ function startBackupScheduler(opts = {}) {
   const log = opts.log ?? { info: console.log, error: console.error };
   const missing = missingEnv(env);
   if (missing.length > 0) {
-    log.info(`[backup] бэкапы в R2 выключены: нет ${missing.join(', ')}`);
+    log.info(`[backup] бэкапы в Yandex Object Storage выключены: нет ${missing.join(', ')}`);
     return null;
   }
   const spawn = opts.spawn ?? nodeSpawn;
@@ -217,7 +217,7 @@ function startBackupScheduler(opts = {}) {
   const timer = setInterval(tick, opts.tickMs ?? HOUR_MS);
   first.unref?.();
   timer.unref?.();
-  log.info('[backup] бэкапы в R2 включены: проверка раз в час, прогон после 03:00 UTC');
+  log.info('[backup] бэкапы в Yandex Object Storage включены: проверка раз в час, прогон после 03:00 UTC');
   return {
     tick,
     stop() {

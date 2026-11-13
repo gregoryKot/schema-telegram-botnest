@@ -1,4 +1,4 @@
-// Кросс-проверки env для бэкапов БД в R2 (аудит D-2): подключаются в
+// Кросс-проверки env для бэкапов БД в Yandex Object Storage (аудит D-2): подключаются в
 // CROSS_CHECKS (env-check.ts). Отдельный файл — env-check.ts под храповиком
 // размера (правило №10).
 import type { CrossCheck } from './env-check';

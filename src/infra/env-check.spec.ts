@@ -212,7 +212,7 @@ describe('checkEnv', () => {
       );
     });
 
-    // Аудит D-2: бэкапы в R2 включаются только полным набором.
+    // Аудит D-2: бэкапы в Yandex Object Storage включаются только полным набором.
     it('BACKUP_S3_BUCKET без остальных переменных бэкапа — проблема с их именами', () => {
       const issue = checkEnv({
         ...ALL_VALID,
@@ -228,7 +228,7 @@ describe('checkEnv', () => {
     it('полный набор переменных бэкапа — без проблемы (контроль)', () => {
       const ids = checkEnv({
         ...ALL_VALID,
-        BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+        BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
         BACKUP_S3_BUCKET: 'bkt',
         BACKUP_S3_ACCESS_KEY_ID: 'k',
         BACKUP_S3_SECRET_ACCESS_KEY: 'a',
