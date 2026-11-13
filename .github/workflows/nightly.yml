@@ -238,6 +238,9 @@ jobs:
       - run: npm run build --prefix webapp
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
+      # Игра — проект game в playwright.config.ts (e2e-browser/game-smoke.spec.ts).
+      - run: npm ci --prefix game
+      - run: npm run build --prefix game
       # На раннере GitHub предустановленных браузеров нет — ставим Chromium и
       # WebKit с системными зависимостями. Путь к Chromium конфиг выбирает сам по
       # факту наличия файла: предустановленного нет, берётся скачанный.

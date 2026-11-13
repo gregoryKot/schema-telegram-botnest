@@ -79,6 +79,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'QuizPage.tsx), а не api.trackEvent; дублируется прямым server-side ' +
     'track() из бота (telegram.quiz.service.ts)',
   quiz_completed: 'та же причина, что и quiz_started — QuizPage.tsx + бот',
+  game_app_arrive:
+    'константа GAME_APP_ARRIVE_EVENT (shared/src/share/analytics.ts), шлёт ' +
+    'лендинг через api.trackPublicEvent, когда его открыла кнопка финала ' +
+    'игры (?from=game) — webapp/src/pages/landing/useGameArrival.ts',
   practice_link_click:
     'шлётся только через api.trackPublicEvent (анонимный клик с ' +
     'лендинга, practiceLink.ts), не через api.trackEvent',
@@ -361,7 +365,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // HTTP-запрос, число стёртых попыток видно только в транзакции.
     // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из
     // webapp/public, а не бандл; FRONTEND_DIRS его не видят по устройству.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(49);
+    // 50 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(50);
   });
 });
 

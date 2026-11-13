@@ -20,7 +20,7 @@ export interface MobCtx {
   player(): Phaser.Physics.Arcade.Sprite;
   frozen(): boolean;
   dashing(): boolean;
-  damage(fromX: number): void;
+  damage(fromX: number, throughFreeze?: boolean): void; // throughFreeze: залипание от этого не спасает
   sayOnce(key: string, text: MsgKey, dur: number): void;
   burst(x: number, y: number, color: number, n: number, sp: number): void;
   hitstop(ms: number): void;
@@ -269,7 +269,7 @@ export class Irritation implements HomeMob {
         const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, px, py);
         if (d < 30 && this.cd <= 0) {
           this.cd = 900;
-          this.ctx.damage(this.img.x);
+          this.ctx.damage(this.img.x, true); // злость жжёт и сквозь залипание — иначе реплика ниже врала
           this.vx = -Math.sign(px - this.img.x) * 260;
           if (this.ctx.frozen()) this.ctx.sayOnce('irrit_freeze', 'm_froze_and_still_it_burns', 2800);
           else this.ctx.sayOnce('irrit_burn', 'm_it_burns_where_s_all_this', 2600);
