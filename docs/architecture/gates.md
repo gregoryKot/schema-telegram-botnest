@@ -99,6 +99,6 @@ npx prisma generate                                # после любых пр�
 npx prisma migrate dev                             # создать миграцию на dev-БД
 npx prisma migrate deploy                          # применить миграции (в CI на пустой БД, дважды)
 npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code   # дрейф схемы и миграций
-npm run smoke                                      # playwright test (сначала собрать webapp)
+npm run smoke                                      # playwright test (сначала собрать webapp); без WebKit — npx playwright test --project=webapp
 node scripts/check-<имя>.mjs [--update]            # любой гейт; --update только если флаг есть в таблице выше
 ```

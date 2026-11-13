@@ -992,7 +992,7 @@ jobs:
   # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
   # после мержа — 8 ночей красного смока. Владелец одобрил время CI: сигнал
   # приходит до мержа. Ночная джоба browser-smoke остаётся: она ловит флаки
-  # на main и кричит через alarm. ~4-6 минут (сборка сайта + Chromium из кэша).
+  # на main и кричит через alarm. Сборка сайта + Chromium и WebKit из кэша.
   browser-smoke:
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -1012,17 +1012,20 @@ jobs:
       - run: npm run build --prefix webapp
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
+      # Игра — проект game в playwright.config.ts (e2e-browser/game-smoke.spec.ts).
+      - run: npm ci --prefix game
+      - run: npm run build --prefix game
       - name: версия Playwright для ключа кэша браузера
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      # С кэшем скачивание браузера пропускается, системные зависимости
-      # (apt) ставятся всегда.
-      - run: npx playwright install --with-deps chromium
-      - name: браузерный smoke прод-сборки (Chromium)
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
+      # С кэшем скачивание браузеров пропускается, системные зависимости
+      # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
+      - run: npx playwright install --with-deps chromium webkit
+      - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
       # Вид на компьютере в каждом PR: e2e-browser/desktop-layout.spec.ts снимает
       # ключевые страницы на 1280 (docs/open/frontend-ux.md, «Снимок 1280»).
@@ -1032,6 +1035,16 @@ jobs:
         with:
           name: desktop-1280
           path: test-results/**/desktop-1280.png
+          retention-days: 14
+          if-no-files-found: warn
+      # Вид на айфоне в каждом PR: e2e-browser/phone-screens.spec.ts (WebKit,
+      # iPhone 13) и кадр Telegram из telegram-dark.spec.ts.
+      - name: снимки телефона артефактом
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: phone-screens
+          path: test-results/**/phone-*.png
           retention-days: 14
           if-no-files-found: warn
       - name: трейс упавшего смока артефактом

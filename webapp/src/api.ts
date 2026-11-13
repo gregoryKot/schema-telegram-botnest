@@ -249,5 +249,5 @@ export const api = {
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
   // Client read-only view of their own maps
   listMyModeMaps: () => get<ModeMapMeta[]>('/api/therapy/my-mode-maps'),
-  getMyModeMap:   (mapId: number) => get<ModeMapFull>(`/api/therapy/my-mode-maps/${mapId}`),
+  getMyModeMap:   (mapId: number) => get<ModeMapFull & { needRatings?: unknown }>(`/api/therapy/my-mode-maps/${mapId}`),
 };

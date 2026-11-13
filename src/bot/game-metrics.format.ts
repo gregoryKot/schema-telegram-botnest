@@ -5,32 +5,15 @@ import {
   type GameCtaPlace,
   type GameEntrySource,
 } from '../analytics/game-events.constants';
+import {
+  GAME_CTA_TARGETS,
+  type GameCtaTarget,
+} from '../analytics/game-cta.constants';
+import type { GameMetrics } from './game-metrics.tally';
 
 // Блок «Игра» для /stats (правило №8): игра — третий фронтенд (game/,
 // Phaser), шлёт события анонимно (реестр — game-events.constants.ts). Чистый
 // форматтер (тест включает пустую БД), язык без терминов — «поделились игрой».
-
-/** Воронка одной главы: сколько начали, дошли до конца, умерло по дороге. */
-export interface GameChapterFunnel {
-  chapter: GameChapter;
-  started: number;
-  finished: number;
-  deaths: number;
-}
-
-export interface GameMetrics {
-  opens: number;
-  opensBySource: Record<GameEntrySource, number>;
-  starts: number;
-  tutorialDone: number;
-  tutorialSkipped: number;
-  /** Фиксированный порядок GAME_CHAPTERS, всегда 4 записи. */
-  chapters: GameChapterFunnel[];
-  ctaShown: number;
-  ctaClicks: number;
-  ctaClicksByPlace: Record<GameCtaPlace, number>;
-  shares: number;
-}
 
 // Человеческие подписи — то, что видит владелец в /stats, а не сырые слаги.
 const SOURCE_LABELS: Record<GameEntrySource, string> = {
@@ -39,6 +22,11 @@ const SOURCE_LABELS: Record<GameEntrySource, string> = {
   share: 'по ссылке от друга',
   direct: 'напрямую',
   other: 'с незнакомой меткой',
+};
+
+const CTA_TARGET_LABELS: Record<GameCtaTarget, string> = {
+  app: 'в приложение',
+  booking: 'на запись к терапевту',
 };
 
 const CTA_PLACE_LABELS: Record<GameCtaPlace, string> = {
@@ -57,6 +45,7 @@ const isEmpty = (m: GameMetrics): boolean =>
   m.chapters.every((c) => c.started === 0) &&
   m.ctaShown === 0 &&
   m.ctaClicks === 0 &&
+  m.appArrivals === 0 &&
   m.shares === 0;
 
 /** Текстовый блок для /stats. Чистая функция. */
@@ -100,6 +89,14 @@ export function formatGameMetrics(m: GameMetrics): string {
     lines.push(
       `Приглашение к терапии: увидели ${m.ctaShown}, нажали ${m.ctaClicks}${suffix}`,
     );
+    const targets = GAME_CTA_TARGETS.filter(
+      (to) => m.ctaClicksByTarget[to] > 0,
+    ).map((to) => `${CTA_TARGET_LABELS[to]} ${m.ctaClicksByTarget[to]}`);
+    if (targets.length > 0) lines.push(`Куда нажали: ${targets.join(', ')}`);
+  }
+
+  if (m.appArrivals > 0) {
+    lines.push(`Пришли из игры на сайт: ${m.appArrivals}`);
   }
 
   if (m.shares > 0) {
