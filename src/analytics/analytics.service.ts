@@ -7,7 +7,10 @@ import {
   type AnalyticsEventName,
 } from './analytics.constants';
 import { eventOwnerId } from './anonymous-events.constants';
-import { EVENT_RETENTION_DAYS as RETENTION_DAYS } from './analytics-retention';
+import {
+  EVENT_RETENTION_DAYS as RETENTION_DAYS,
+  prunableWhere,
+} from './analytics-retention';
 
 // Продуктовая аналитика (правило №8 CLAUDE.md): пишет факты «юзер сделал X»
 // для проверки гипотез метриками (D1/D7/D30, доля поделившихся и т.п.).
@@ -46,13 +49,12 @@ export class AnalyticsService {
     }
   }
 
-  /** Ретеншен: раз в сутки чистим события старше RETENTION_DAYS (L10). */
+  /** Ретеншен: раз в сутки чистим события старше RETENTION_DAYS, кроме хранимых до удаления аккаунта (L10). */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async pruneOld(): Promise<void> {
-    const cutoff = new Date(Date.now() - RETENTION_DAYS * 86_400_000);
     try {
       const { count } = await this.prisma.analyticsEvent.deleteMany({
-        where: { createdAt: { lt: cutoff } },
+        where: prunableWhere(Date.now()),
       });
       if (count > 0)
         this.logger.log(
