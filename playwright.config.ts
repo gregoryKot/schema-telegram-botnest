@@ -5,12 +5,8 @@
 import { existsSync } from 'fs';
 import { defineConfig, devices } from '@playwright/test';
 
-// В dev-окружении Chromium предустановлен, и его ревизия может не совпасть с
-// той, которую ждёт свежий @playwright/test (качать запрещено — см. правила
-// окружения). На CI-раннере такого браузера нет: там Playwright ставит свой,
-// и путь задавать НЕ надо. Поэтому выбираем по факту наличия файла, а не по
-// флагу окружения — так конфиг работает в обоих местах без правок.
-// Первый существующий из кандидатов: ревизия меняется с образом (1194 → 1243).
+// Предустановленный Chromium песочницы — по факту наличия файла (ревизия меняется с образом);
+// на CI-раннере его нет, и Playwright берёт скачанный.
 const PREINSTALLED_CHROMIUM = [
   '/opt/pw-browsers/chromium', // ссылка образа на текущую ревизию
   '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
@@ -19,7 +15,6 @@ const executablePath =
   process.env.PW_CHROMIUM_PATH || // локальный путь к браузеру (в CI не задан, конфиг не меняется)
   PREINSTALLED_CHROMIUM.find((p) => existsSync(p));
 
-// Общие настройки проектов.
 const commonUse = {
   trace: 'retain-on-failure' as const,
   ...devices['Desktop Chrome'],
@@ -33,9 +28,10 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list']],
   use: commonUse,
-  // Проекты за одним CI-прогоном `npx playwright test` (nightly.yml, джоба
-  // browser-smoke, без фильтра по проекту):
-  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173).
+  // Проекты за одним CI-прогоном `npx playwright test` (ci.yml и nightly.yml,
+  // джоба browser-smoke, без фильтра по проекту):
+  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173);
+  //  - webkit-iphone — замеры телефона и снимки экранов в WebKit на iPhone 13.
   projects: [
     {
       name: 'webapp',
@@ -54,27 +50,50 @@ export default defineConfig({
         'screen-customize.spec.ts',
         'sheet-scroll.spec.ts',
         'wheel-fit.spec.ts',
+        'telegram-dark.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },
+    {
+      name: 'webkit-iphone',
+      testMatch: [
+        'today-fit.spec.ts',
+        'tracker-fit.spec.ts',
+        'sheet-scroll.spec.ts',
+        'page-rhythm.spec.ts',
+        'phone-screens.spec.ts',
+      ],
+      use: {
+        trace: 'retain-on-failure',
+        ...devices['iPhone 13'],
+        baseURL: 'http://127.0.0.1:4173',
+        // Пусто: иначе проект унаследует путь к Chromium из общего `use`.
+        launchOptions: {},
+      },
+    },
+    //  - game — тоже под этим прогоном: прод-сборка игры game/ (база /game/, сборка `npm run build --prefix game`).
+    {
+      name: 'game',
+      testMatch: ['game-smoke.spec.ts'],
+      use: { ...commonUse, baseURL: 'http://127.0.0.1:4174' },
+    },
   ],
   webServer: [
-    // Отдаём готовую сборку webapp — именно тот артефакт, который уезжает в
-    // прод, а не dev-сервер с другим поведением (dev прощает то, на чём
-    // спотыкается прод: другой резолв путей, отсутствие минификации).
+    // Готовая сборка — тот артефакт, что уезжает в прод: dev прощает то, на чём спотыкается прод.
     {
-      // --host 127.0.0.1 — без него Vite биндится на "localhost" и Node сам
-      // резолвит адрес через dns.lookup(); на раннере с включённым IPv6 это
-      // "localhost" → "::1", а readiness-проверка ниже стучится строго в
-      // 127.0.0.1 (IPv4) — сервер поднимается и работает, просто не на том
-      // адресе, поэтому npx playwright test молча упирается в таймаут 60с
-      // (несовпадение подтверждено на самом раннере: он живёт на другом хосте,
-      // чем dev-песочница агента, и там localhost резолвится в IPv6 первым —
-      // правило №14 CLAUDE.md, совпадение по факту, а не по имени). Явный
-      // хост убирает резолвинг целиком.
+      // --host 127.0.0.1: без него Vite слушает "localhost", а на раннере с IPv6 это ::1,
+      // и проверка готовности в 127.0.0.1 упирается в таймаут.
       command: 'npx vite preview --port 4173 --strictPort --host 127.0.0.1',
       cwd: 'webapp',
       url: 'http://127.0.0.1:4173',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    // Игра: тот же vite preview по готовому game/dist, база /game/ из game/vite.config.ts.
+    {
+      command: 'npx vite preview --port 4174 --strictPort --host 127.0.0.1',
+      cwd: 'game',
+      url: 'http://127.0.0.1:4174/game/',
       reuseExistingServer: true,
       timeout: 60_000,
     },

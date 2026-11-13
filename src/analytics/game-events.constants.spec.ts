@@ -101,11 +101,38 @@ describe('sanitizeGameMeta: события с meta.from', () => {
   });
 });
 
+describe('sanitizeGameMeta: game_cta_click и цель кнопки (meta.to)', () => {
+  it('пропускает app/booking вместе с местом', () => {
+    for (const to of ['app', 'booking']) {
+      expect(sanitizeGameMeta('game_cta_click', { from: 'act1', to })).toEqual({
+        from: 'act1',
+        to,
+      });
+    }
+  });
+
+  it('незнакомая или пустая цель отбрасывается, событие остаётся', () => {
+    expect(
+      sanitizeGameMeta('game_cta_click', { from: 'cabinet', to: 'evil' }),
+    ).toEqual({ from: 'cabinet' });
+    expect(sanitizeGameMeta('game_cta_click', { from: 'cabinet' })).toEqual({
+      from: 'cabinet',
+    });
+  });
+
+  it('у game_cta_shown и game_share поле to не проходит', () => {
+    expect(
+      sanitizeGameMeta('game_cta_shown', { from: 'act1', to: 'app' }),
+    ).toEqual({ from: 'act1' });
+  });
+});
+
 describe('sanitizeGameMeta: события без meta', () => {
   const withoutMeta: GameEventName[] = [
     'game_start',
     'game_tutorial_done',
     'game_tutorial_skip',
+    'game_app_arrive',
   ];
 
   it.each(withoutMeta)(
