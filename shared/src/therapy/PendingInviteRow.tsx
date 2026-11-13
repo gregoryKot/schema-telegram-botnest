@@ -10,7 +10,7 @@ import type { TherapyInvite } from './therapyInvites';
 // подтверждением прямо в строке — отозванный код перестаёт работать, и
 // случайный тап по нему не должен ломать приглашение, отправленное клиенту.
 const muted = { fontSize: 12, color: 'var(--text-sub)' } as const;
-const quiet = 'ds-btn ds-btn--sm ds-btn--secondary'; // «Отозвать» — ds-link
+const quiet = 'ds-btn ds-btn--sm ds-btn--secondary'; // кнопки — ds-btn сайта, не своя плашка
 const failedStyle = { ...muted, color: 'var(--accent-red)', marginTop: 6 };
 
 /** Момент окончания — в зоне читателя (правило №25): «до 2 ноября». */
