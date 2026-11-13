@@ -17,7 +17,7 @@ export interface TriggerDef {
 export interface EndingLine { text: MsgKey; y: number; color: string; size: number; delay: number; }
 export interface ChapterPalette {
   skyTop: number; skyBot: number; glow1: number; glow2: number;
-  groundTint: number; platTint: number; fog: number; mote: number;
+  platTint: number; fog: number; mote: number;
 }
 export interface ChapterConfig {
   id: string;
@@ -107,7 +107,7 @@ const chapter1: ChapterConfig = {
   palette: {
     // сумеречная улица, но не чёрная — мягкий фиолетовый вечер
     skyTop: 0x2c2348, skyBot: 0x5e4878, glow1: 0x9a6aaa, glow2: 0xb07ab2,
-    groundTint: 0xc4b8d8, platTint: 0xbaaed0, fog: 0x2a2040, mote: 0xa898c8,
+    platTint: 0xbaaed0, fog: 0x2a2040, mote: 0xa898c8,
   },
   music: 'day',
   overwhelmAnx: 3,
@@ -178,7 +178,7 @@ const chapter2: ChapterConfig = {
   palette: {
     // тёплая «вечерняя комната при лампе», не подземелье — чтобы тёплый реквизит читался
     skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
-    groundTint: 0xe8cda0, platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
+    platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
   },
   music: 'home',
   overwhelmAnx: 0,
@@ -245,7 +245,7 @@ const chapter3: ChapterConfig = {
   ending: [],
   palette: {
     skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
-    groundTint: 0xc8bcdc, platTint: 0xc0b4d4, fog: 0x342a4a, mote: 0xb0a0d0,
+    platTint: 0xc0b4d4, fog: 0x342a4a, mote: 0xb0a0d0,
   },
   music: 'home',
   overwhelmAnx: 0,
@@ -272,7 +272,7 @@ const chapter4: ChapterConfig = {
   palette: {
     // тёплая комната при лампе — как chapter2, но спокойнее
     skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
-    groundTint: 0xe8cda0, platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
+    platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
   },
   music: 'home',
   overwhelmAnx: 0,
