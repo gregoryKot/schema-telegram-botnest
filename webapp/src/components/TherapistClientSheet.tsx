@@ -59,18 +59,17 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   const { routeTab, listTab, setListTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────────
-  useEffect(() => {
+  const loadRoster = () => { // повтор: скелетон (loading) идёт раньше алерта, loadFailed снимает ответ
     api.getTherapyClients().then(cl => {
-      setClients(cl);
-      setLoadFailed(false);
+      setClients(cl); setLoadFailed(false);
       const c = findClientByRef(cl, openClientRef);
       if (c) void detail.openClient(c, routeTab ?? 'overview'); // openClient не отклоняется: каждый источник ловит сам и шлёт отчёт
     }).catch(() => {
       setLoadFailed(true);
       reportClientError({ message: 'therapy clients load failed', section: 'therapist.clients' });
     }).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
+  useEffect(() => { loadRoster(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Sync sidebar when clients list changes (e.g. after adding a client) ──────
   useEffect(() => {
@@ -123,7 +122,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           animKey={animKey}
           clients={clients}
           loading={loading}
-          loadFailed={loadFailed}
+          loadFailed={loadFailed} onRetry={() => { setLoading(true); loadRoster(); }}
           listTab={listTab} setListTab={setListTab}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           filterStatus={filterStatus} setFilterStatus={setFilterStatus}
