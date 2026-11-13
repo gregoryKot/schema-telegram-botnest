@@ -57,7 +57,7 @@ describe('SchemaFlashcard — проход мастера и сохранени�
   // (CLAUDE.md, правило про read-after-write).
   function walkToAction() {
     renderToResponseStep();
-    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе…'), {
       target: { value: 'Побыть рядом с собой' },
     });
     fireEvent.click(screen.getByText('Дальше →'));
@@ -92,7 +92,7 @@ describe('SchemaFlashcard — проход мастера и сохранени�
     walkToAction();
     const btn = screen.getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
-    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'), {
       target: { value: 'выйти подышать' },
     });
     expect(btn.disabled).toBe(false);
@@ -100,7 +100,7 @@ describe('SchemaFlashcard — проход мастера и сохранени�
 
   it('сохранение уходит на бэк и в localStorage', () => {
     walkToAction();
-    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'), {
       target: { value: 'выйти подышать' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
@@ -124,7 +124,7 @@ describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
   label: 'отклик Здорового Взрослого',
   open: renderToResponseStep,
   enter: (text) =>
-    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), { target: { value: text } }),
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе…'), { target: { value: text } }),
 });
 describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
   label: 'шаг действия',
@@ -134,7 +134,7 @@ describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
     fireEvent.click(screen.getByText('Привязанность'));
   },
   enter: (text) =>
-    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'), {
       target: { value: text },
     }),
 });
@@ -213,7 +213,7 @@ describe('SchemaFlashcard — «Ещё одну» сбрасывает маст�
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
     fireEvent.change(
-      screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'),
+      screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'),
       { target: { value: 'выйти подышать' } },
     );
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
@@ -239,7 +239,7 @@ describe('SchemaFlashcard — «Открыть трекер →» на экра�
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
     fireEvent.change(
-      screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'),
+      screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'),
       { target: { value: 'выйти подышать' } },
     );
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
@@ -258,12 +258,12 @@ describe('SchemaFlashcard — серверная копия не доехала'
   async function saveWithServerDown() {
     mockApi.createFlashcard.mockRejectedValue(new Error('offline'));
     renderToResponseStep();
-    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе…'), {
       target: { value: 'Побыть рядом с собой' },
     });
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
-    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'), {
       target: { value: 'Позвонить другу' },
     });
     await act(async () => {
@@ -285,12 +285,12 @@ describe('SchemaFlashcard — серверная копия не доехала'
   it('успешное сохранение — без оговорок', async () => {
     mockApi.createFlashcard.mockResolvedValue({});
     renderToResponseStep();
-    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе…'), {
       target: { value: 'Текст' },
     });
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
-    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'), {
       target: { value: 'Шаг' },
     });
     await act(async () => {
@@ -306,11 +306,11 @@ describe('SchemaFlashcard — серверная копия не доехала'
 describe('SchemaFlashcard — пределы полей', () => {
   it('отклик и шаг несут предел DTO флешкарты', () => {
     renderToResponseStep();
-    const reflection = screen.getByPlaceholderText('Что хочется сказать себе...') as HTMLTextAreaElement;
+    const reflection = screen.getByPlaceholderText('Что хочется сказать себе…') as HTMLTextAreaElement;
     expect(reflection.maxLength).toBe(EXERCISE_TEXT_MAX);
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
-    const action = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...') as HTMLTextAreaElement;
+    const action = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…') as HTMLTextAreaElement;
     expect(action.maxLength).toBe(EXERCISE_TEXT_MAX);
   });
 });

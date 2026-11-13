@@ -19,7 +19,7 @@ describe('TelegramRetry', () => {
 
   it('повтор идёт: кнопка занята, заголовок на месте', () => {
     render(<TelegramRetry loading error={null} onRetry={() => {}} />);
-    const btn = screen.getByRole('button', { name: 'Загрузка...' }) as HTMLButtonElement;
+    const btn = screen.getByRole('button', { name: 'Загрузка…' }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     expect(btn.getAttribute('aria-busy')).toBe('true');
     expect(screen.getByRole('heading', { name: glueSpaces('Не удалось войти автоматически') })).toBeTruthy();

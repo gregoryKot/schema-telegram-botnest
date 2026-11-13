@@ -90,9 +90,9 @@ describe('ConfirmDialog — доступность (К4/useDialogA11y)', () => {
 
 describe('ConfirmDialog — busy/error состояния', () => {
   it('busy=true — кнопки задизейблены и показывают busyLabel', () => {
-    renderDialog({ busy: true, confirmLabel: 'Удалить', busyLabel: 'Удаляем...' });
-    expect(screen.getByText('Удаляем...')).toBeTruthy();
-    expect((screen.getByText('Удаляем...') as HTMLButtonElement).disabled).toBe(
+    renderDialog({ busy: true, confirmLabel: 'Удалить', busyLabel: 'Удаляем…' });
+    expect(screen.getByText('Удаляем…')).toBeTruthy();
+    expect((screen.getByText('Удаляем…') as HTMLButtonElement).disabled).toBe(
       true,
     );
     expect((screen.getByText('Отмена') as HTMLButtonElement).disabled).toBe(

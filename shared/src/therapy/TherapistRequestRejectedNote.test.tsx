@@ -40,7 +40,7 @@ describe('rejectedRequestText', () => {
       'нет диплома?',
       'нет диплома…',
       'нет диплома. ',
-      'нет диплома...',
+      'нет диплома…',
     ]) {
       expect(rejectedRequestText(rejected(reason), ty), reason).toBe(
         'Прошлая заявка отклонена: нет диплома. Можешь подать новую.',

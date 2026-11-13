@@ -36,7 +36,7 @@ async function openConfirm(notifyReachable: boolean, form: 'ty' | 'vy' = 'ty') {
       </AddressFormContext.Provider>,
     );
   });
-  fireEvent.change(screen.getByPlaceholderText('Что-то конкретное, маленькое...'), { target: { value: 'Позвонить маме' } });
+  fireEvent.change(screen.getByPlaceholderText('Что-то конкретное, маленькое…'), { target: { value: 'Позвонить маме' } });
   fireEvent.click(screen.getByText('Продолжить →'));
 }
 
