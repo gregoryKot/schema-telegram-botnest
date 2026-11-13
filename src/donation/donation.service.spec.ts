@@ -47,6 +47,15 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
     ).resolves.toEqual({ ok: true });
     expect(state.row.status).toBe('paid');
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    expect(notify.alertAdmin).not.toHaveBeenCalled(); // сумма совпала
+  });
+
+  it('webhook без суммы — сверять не с чем, алерта о расхождении нет', async () => {
+    const { service, notify, state } = makeService(PENDING);
+    await service.markPaidByInvId(DONATION_INVID_BASE + 10);
+    expect(state.row.status).toBe('paid');
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
   });
 
   it('повторный webhook по уже paid — ok:true БЕЗ повторного алерта', async () => {
@@ -79,11 +88,17 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
   });
 
-  it('несуществующий donation id — тихий ok:true, без падения', async () => {
+  it('несуществующий donation id — ok:true, владельцу error() с номером и суммой', async () => {
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     const { service } = makeService(PENDING);
     await expect(
       service.markPaidByInvId(DONATION_INVID_BASE + 999999, 300),
     ).resolves.toEqual({ ok: true });
+    await service.markPaidByInvId(DONATION_INVID_BASE + 999998);
+    expect(String(error.mock.calls[0][0])).toContain('#999999 (300 ₽)');
+    // Суммы нет — в DM «?», а не пустое место.
+    expect(String(error.mock.calls[1][0])).toContain('#999998 (? ₽)');
+    error.mockRestore();
   });
 
   // Проигранная гонка CAS: между чтением строки и записью её успел забрать
@@ -255,6 +270,9 @@ describe('DonationService.create — Robokassa не настроена', () => {
       ServiceUnavailableException,
     );
     expect(prisma.donation.create).not.toHaveBeenCalled();
+    expect(Logger.prototype.error).toHaveBeenCalledWith(
+      'Robokassa not configured in production: donation refused',
+    );
     expect(rows).toHaveLength(0);
     expect(notify.alertAdmin).not.toHaveBeenCalled();
     expect(notify.notifyAdminBoth).not.toHaveBeenCalled();

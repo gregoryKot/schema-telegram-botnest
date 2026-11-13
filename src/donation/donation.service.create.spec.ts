@@ -1,6 +1,7 @@
 // Покрывает DonationService.create() (валидация суммы, source, dev-путь без
 // Robokassa, оплачиваемый путь с paymentUrl) и статический isDonationInvId —
 // до этого теста покрыт был только markPaidByInvId.
+import { Logger } from '@nestjs/common';
 import { DonationService, DONATION_INVID_BASE } from './donation.service';
 
 function makeService(opts: { robokassaEnabled: boolean; appUrl?: string }) {
@@ -206,6 +207,7 @@ describe('DonationService.create — email/comment: trim и схлопывани
 // который раньше выживал бы.
 describe('DonationService.create — падение записи в БД не молчит (щит, волна 2б)', () => {
   it('prisma.donation.create() бросает → алерт админу (тот же канал notify.alertAdmin) и исключение ПРОБРАСЫВАЕТСЯ (не глотается тихим успехом)', async () => {
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     const { service, prisma, notify } = makeService({
       robokassaEnabled: false,
     });
@@ -218,8 +220,16 @@ describe('DonationService.create — падение записи в БД не м
     );
 
     expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
-    expect(notify.alertAdmin.mock.calls[0][0]).toContain('не создался');
-    expect(notify.alertAdmin.mock.calls[0][0]).toContain('300 ₽');
+    const text = notify.alertAdmin.mock.calls[0][0];
+    expect(text).toContain('не создался');
+    expect(text).toContain('300 ₽');
+    // Владельцу — что делать дальше, а не только факт ошибки.
+    expect(text).toContain('Запись не сохранилась, проверьте вручную');
+    // error() — второй канал (AlertLogger → DM): стабильный текст + причина.
+    expect(error).toHaveBeenCalledWith(
+      'Donation create() DB write failed: connection terminated',
+    );
+    error.mockRestore();
   });
 
   it('успешное создание — алерт про ошибку БД НЕ вызывается (только штатная карточка markPaid, если применимо)', async () => {
