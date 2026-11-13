@@ -1,7 +1,8 @@
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { SessionType } from '@prisma/client';
 import type { BookingNotifyService } from './booking-notify.service';
-import { lostLeadAlertText, type LostLead } from './booking-notify.format';
+import type { LostLead } from './booking-notify.format';
+import { lostLeadNotice } from './booking-owner-card';
 import type { RobokassaService } from './robokassa.service';
 
 // Что делать платным путям, когда Robokassa не настроена (аудит 2026-10-11).
@@ -50,10 +51,9 @@ export function assertPaymentAvailable(
  * Платная запись, которую нельзя принять, — отказ ДО создания брони (иначе
  * HELD-строка держала бы слот 15 минут, а владельцу пришло бы «бронь истекла
  * без оплаты»). Два случая: оплата не настроена в проде; цена платной сессии
- * не задана (`amount` меньше рубля — счёт на 0 ₽ выставлять нельзя). Имя и
- * контакт человека не теряются: заявка уходит владельцу лидом в оба канала
- * (правило №18). Бесплатное знакомство не затрагивается. `manual` — платная не
- * в рублях: Robokassa не нужна, цена ≥ 1 обязательна. `amount` — сумма из book().
+ * не задана (`amount` меньше рубля — счёт на 0 ₽ выставлять нельзя). Заявка
+ * уходит владельцу лидом: имя и контакт — в письме. Знакомство не затронуто.
+ * `manual` — платная не в рублях: Robokassa не нужна, цена ≥ 1 обязательна.
  */
 export async function assertBookingPayable(
   robokassa: Pick<RobokassaService, 'enabled'>,
@@ -66,7 +66,7 @@ export async function assertBookingPayable(
   const refuse = !manual && paymentMode(robokassa) === 'refuse';
   if (!refuse && (amount ?? 0) >= 1) return;
   await notify.notifyAdminBoth(
-    lostLeadAlertText(
+    lostLeadNotice(
       lead,
       refuse ? 'оплата не настроена' : 'цена сессии не задана',
     ),

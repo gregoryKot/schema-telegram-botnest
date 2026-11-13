@@ -101,11 +101,18 @@ describe('e2e: returning=true не отличает клиента от не-к�
     expect(rows.map((r) => r.status)).toEqual(['HELD', 'HELD']);
   });
 
-  it('пометку «контакт не найден среди клиентов» получает только админ и только про не-клиента', () => {
+  it('пометку «контакт не найден среди клиентов» получает только админ и только про не-клиента', async () => {
+    // DM владельцу — без контакта человека: брони узнаются по номеру.
+    const rows = await prisma.booking.findMany({
+      where: { startsAt: { in: [SLOT_CLIENT, SLOT_STRANGER] } },
+    });
+    const card = (at: Date) =>
+      `бронь #${rows.find((r) => r.startsAt.getTime() === at.getTime())?.id}`;
     const awaiting = adminDms().filter((t) => t.includes('ожидает оплаты'));
     expect(awaiting).toHaveLength(2);
-    const forStranger = awaiting.find((t) => t.includes(STRANGER));
-    const forClient = awaiting.find((t) => t.toLowerCase().includes(CLIENT));
+    expect(awaiting.join('\n').toLowerCase()).not.toContain('oracle-');
+    const forStranger = awaiting.find((t) => t.includes(card(SLOT_STRANGER)));
+    const forClient = awaiting.find((t) => t.includes(card(SLOT_CLIENT)));
     expect(forStranger).toContain(RETURNING_NOT_FOUND_NOTE);
     expect(forClient).toBeDefined();
     expect(forClient).not.toContain(RETURNING_NOT_FOUND_NOTE);

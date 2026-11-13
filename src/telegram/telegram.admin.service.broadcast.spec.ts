@@ -9,6 +9,7 @@ import { TelegramAdminService } from './telegram.admin.service';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
 import { AccountService } from '../bot/account.service';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 
@@ -77,18 +78,19 @@ describe('TelegramAdminService — /zayavki (только админ, фолбэ
     );
   });
 
-  it('есть заявки — каждая карточка содержит id, экранированные поля и Approve/Reject callback_data', async () => {
+  it('есть заявки — карточка: номер, дата подачи и Approve/Reject, без данных заявителя', async () => {
     process.env.ADMIN_ID = '999';
     const { service, fakeBot } = makeDeps({
       therapistRequestService: {
         listPending: jest.fn().mockResolvedValue([
           {
             id: 5,
-            userId: 42n,
-            fullName: 'Иван <script>',
-            qualification: 'КПТ',
-            contacts: '@ivan',
-            message: null,
+            userId: PII.telegramId,
+            fullName: PII.name,
+            qualification: PII.qualification,
+            contacts: PII.contact,
+            message: PII.message,
+            createdAt: new Date('2026-11-13T12:04:00Z'),
           },
         ]),
       },
@@ -96,8 +98,9 @@ describe('TelegramAdminService — /zayavki (только админ, фолбэ
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'zayavki', { from: { id: 999 } });
     const [text, opts] = ctx.reply.mock.calls[0];
-    expect(text).toContain('Заявка #5');
-    expect(text).toContain('&lt;script&gt;'); // XSS-экранирование имени
+    expect(text).toContain('Заявка на роль терапевта #5');
+    expect(text).toContain('Подана: 13.11.2026, 15:04 МСК');
+    expectNoMarkers(text, opts.reply_markup);
     const buttons = opts.reply_markup.inline_keyboard[0];
     expect(buttons).toEqual([
       { text: '✅ Approve', callback_data: 'treq:approve:5' },

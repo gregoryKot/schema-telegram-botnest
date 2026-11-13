@@ -21,6 +21,10 @@ import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { registerStatsHandlers } from './stats-command';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
+import {
+  decisionKeyboard,
+  therapistRequestCard,
+} from '../therapy/therapist-request.card';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
 import { ChannelCheckService } from '../channel/channel-check.service';
 import { adminIdNum, isAdminSender } from '../utils/admin-alert';
@@ -160,44 +164,18 @@ export class TelegramAdminService implements OnModuleInit {
           await ctx.reply('Только админ');
           return;
         }
-        const esc = (s: string) =>
-          s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        type PendingReq = {
-          id: number;
-          userId: bigint;
-          fullName: string;
-          qualification: string;
-          contacts: string;
-          message: string | null;
-        };
+        // Карточка без данных заявителя: они в письме, пришедшем при подаче.
         const pending = (await this.therapistRequestService.listPending(
           adminId,
-        )) as PendingReq[];
+        )) as Array<{ id: number; createdAt: Date }>;
         if (pending.length === 0) {
           await ctx.reply('Заявок на роль терапевта нет.');
           return;
         }
         for (const req of pending) {
-          const text =
-            `🩺 <b>Заявка #${req.id}</b>\n\n` +
-            `<b>Имя:</b> ${esc(req.fullName)}\n` +
-            `<b>Квалификация:</b> ${esc(req.qualification)}\n` +
-            `<b>Контакты:</b> ${esc(req.contacts)}\n` +
-            (req.message ? `<b>Сообщение:</b> ${esc(req.message)}\n` : '') +
-            `<b>Telegram ID:</b> <code>${req.userId}</code>`;
-          await ctx.reply(text, {
+          await ctx.reply(therapistRequestCard(req), {
             parse_mode: 'HTML',
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: '✅ Approve',
-                    callback_data: `treq:approve:${req.id}`,
-                  },
-                  { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
-                ],
-              ],
-            },
+            reply_markup: decisionKeyboard(req.id),
           });
         }
       } catch (err) {

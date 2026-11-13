@@ -97,9 +97,12 @@ describe('BookingService.book — Robokassa не настроена', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(tx.booking.create).not.toHaveBeenCalled();
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
-    const [html] = notify.notifyAdminBoth.mock.calls[0] as unknown as [string];
-    expect(html).toContain('Мария');
-    expect(html).toContain('@maria');
+    const [html] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
+      { telegram: string; email: string },
+    ];
+    expect(html.email).toContain('Мария');
+    expect(html.email).toContain('@maria');
+    expect(html.telegram).not.toContain('@maria');
     expect(notify.onConfirmed).not.toHaveBeenCalled();
   });
 

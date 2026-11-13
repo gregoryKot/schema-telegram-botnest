@@ -14,18 +14,23 @@ const b = {
 };
 
 describe('paidAfterCancelAlert — сигнал «деньги получены, а брони нет»', () => {
-  it('id брони, клиент, контакт, слот, сумма и что делать: вернуть деньги или записать заново', () => {
+  it('оба канала: id брони, слот, сумма и что делать — вернуть деньги или записать заново', () => {
     const { html } = paidAfterCancelAlert(b, 3000);
-    expect(html).toContain('#77');
-    expect(html).toContain('@maria');
-    expect(html).toContain('3000 ₽');
-    expect(html).toContain('Верните деньги');
-    expect(html).toContain('запишите его заново');
-    expect(html).toMatch(/МСК/); // слот
+    for (const text of [html.telegram, html.email]) {
+      expect(text).toContain('#77');
+      expect(text).toContain('3000 ₽');
+      expect(text).toContain('Верните деньги');
+      expect(text).toContain('запишите его заново');
+      expect(text).toMatch(/МСК/); // слот
+    }
   });
 
-  it('имя клиента экранируется (parse_mode HTML)', () => {
-    expect(paidAfterCancelAlert(b, 3000).html).toContain('Мария &lt;b&gt;');
+  it('имя и контакт — только в письме, имя экранировано', () => {
+    const { html } = paidAfterCancelAlert(b, 3000);
+    expect(html.email).toContain('@maria');
+    expect(html.email).toContain('Мария &lt;b&gt;');
+    expect(html.telegram).not.toContain('@maria');
+    expect(html.telegram).not.toContain('Мария');
   });
 
   it('тема письма без HTML и эмодзи', () => {
@@ -36,7 +41,7 @@ describe('paidAfterCancelAlert — сигнал «деньги получены,
 
   it('без суммы не пишет NaN/undefined', () => {
     const { html } = paidAfterCancelAlert(b);
-    expect(html).toContain('сумма не указана');
-    expect(html).not.toMatch(/undefined|NaN/);
+    expect(html.telegram).toContain('сумма не указана');
+    expect(`${html.telegram}${html.email}`).not.toMatch(/undefined|NaN/);
   });
 });

@@ -9,6 +9,7 @@ import {
   paymentMode,
   refusePayment,
 } from './payment-guard';
+import type { OwnerNotice } from '../utils/owner-card';
 
 const on = { enabled: true };
 const off = { enabled: false };
@@ -121,12 +122,15 @@ describe('assertBookingPayable', () => {
     );
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     const [html, subject] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
-      string,
+      OwnerNotice,
       string,
     ];
-    expect(html).toContain('Мария');
-    expect(html).toContain('@maria');
-    expect(html).toContain('оплата не настроена');
+    // Имя и контакт — в письме; в Telegram их нет, причина — в обоих.
+    expect(html.email).toContain('Мария');
+    expect(html.email).toContain('@maria');
+    expect(html.telegram).not.toContain('Мария');
+    expect(html.telegram).not.toContain('@maria');
+    expect(html.telegram).toContain('оплата не настроена');
     expect(subject).toBe('🚨 Заявка на запись не сохранилась');
     expect(errorSpy).toHaveBeenCalledWith(
       'Robokassa not configured in production: booking refused',
@@ -145,11 +149,12 @@ describe('assertBookingPayable', () => {
       ).rejects.toThrow(ServiceUnavailableException);
       expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
       const [html, subject] = notify.notifyAdminBoth.mock
-        .calls[0] as unknown as [string, string];
-      expect(html).toContain('Мария');
-      expect(html).toContain('@maria');
-      expect(html).toContain('цена сессии не задана');
-      expect(html).not.toContain('оплата не настроена');
+        .calls[0] as unknown as [OwnerNotice, string];
+      expect(html.email).toContain('Мария');
+      expect(html.email).toContain('@maria');
+      expect(html.telegram).not.toContain('Мария');
+      expect(html.telegram).toContain('цена сессии не задана');
+      expect(html.telegram).not.toContain('оплата не настроена');
       // Лог — стабильный текст без id (AlertLogger троттлит по тексту), причина — цена.
       expect(errorSpy).toHaveBeenCalledWith(
         'Paid session price is not set: booking refused',
@@ -182,7 +187,8 @@ describe('assertBookingPayable', () => {
     );
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     expect(
-      (notify.notifyAdminBoth.mock.calls[0] as unknown as [string])[0],
+      (notify.notifyAdminBoth.mock.calls[0] as unknown as [OwnerNotice])[0]
+        .telegram,
     ).toContain('оплата не настроена');
   });
 
@@ -265,10 +271,10 @@ describe('assertBookingPayable — manual (не в рублях)', () => {
         assertBookingPayable({ enabled: false }, notify, lead, amount, true),
       ).rejects.toThrow(ServiceUnavailableException);
       const [html] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
-        string,
+        OwnerNotice,
       ];
-      expect(html).toContain('цена сессии не задана');
-      expect(html).not.toContain('оплата не настроена');
+      expect(html.telegram).toContain('цена сессии не задана');
+      expect(html.telegram).not.toContain('оплата не настроена');
     },
   );
 });
