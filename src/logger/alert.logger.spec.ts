@@ -1,13 +1,16 @@
-// AlertLogger (36 строк) — граница error() → DM админу. Проверяем: триггерится
-// только на error(), троттлится 60с по нормализованному ключу (I-4, аудит
-// 2026-07: числа/uuid схлопываются, иначе массовый сбой обходит троттлинг
-// лавиной DM), старые записи вычищаются, и что AlertLogger никогда не бросает
-// исключение наружу, даже если сама доставка алерта падает.
+// AlertLogger — граница error() → DM админу. Проверяем: в DM только место, тип
+// и id без текста ошибки (РКН, #1135), полный текст — в stderr с тем же id;
+// триггерится только на error(), троттлится 60с по нормализованному ключу
+// (I-4, аудит 2026-07: числа/uuid схлопываются, иначе массовый сбой обходит
+// троттлинг лавиной DM), старые записи вычищаются, и что AlertLogger никогда
+// не бросает исключение наружу, даже если сама доставка алерта падает.
 // notifyAdminWithFallback мокается на границе модуля (как в
 // security-log.service.spec.ts) — сетевого I/O здесь не должно быть.
 import { AlertLogger } from './alert.logger';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { dbOutage } from './db-outage';
+import { alertId } from './alert-text';
+import { moneyAlert } from './money-alert';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
@@ -15,11 +18,14 @@ jest.mock('../utils/admin-alert', () => ({
 
 const mockedNotify = notifyAdminWithFallback as jest.Mock;
 const flush = () => new Promise((r) => setImmediate(r));
+/** id, под которым error(msg) логгера с контекстом 'Test' уходит в DM и в лог. */
+const idOf = (message: string) => `id: ${alertId('Test', message)}`;
 
 beforeEach(() => {
   mockedNotify.mockClear();
   dbOutage.reset();
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
 });
 
 afterEach(() => {
@@ -28,23 +34,16 @@ afterEach(() => {
 });
 
 describe('AlertLogger.error — триггерит алерт', () => {
-  it('вызывает notifyAdminWithFallback с текстом ошибки', async () => {
+  it('вызывает notifyAdminWithFallback с местом, типом и id — без текста', async () => {
     const logger = new AlertLogger('Test');
     logger.error('Something broke');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
     const [text, subject] = mockedNotify.mock.calls[0];
-    expect(text).toContain('Something broke');
+    expect(text).toBe(
+      `🚨 Ошибка на сервере\nМесто: Test\nТип: —\n${idOf('Something broke')}`,
+    );
     expect(subject).toContain('SchemeHappens');
-  });
-
-  it('обрезает сообщение до 300 символов в алерте', async () => {
-    const logger = new AlertLogger('Test');
-    logger.error('x'.repeat(500));
-    await flush();
-    const [text] = mockedNotify.mock.calls[0];
-    // "🚨 Ошибка на сервере\n" + до 300 символов сообщения
-    expect(text.length).toBeLessThanOrEqual(300 + 30);
   });
 
   it('error() ничего не возвращает синхронно и не бросает, даже пока notifyAdminWithFallback ещё выполняется', async () => {
@@ -101,7 +100,9 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('DB connection failed');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
-    expect(mockedNotify.mock.calls[0][0]).toContain('DB connection failed');
+    expect(mockedNotify.mock.calls[0][0]).toContain(
+      idOf('DB connection failed'),
+    );
   });
 
   it('после 60с то же сообщение шлёт алерт повторно', async () => {
@@ -113,8 +114,12 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('DB connection failed');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(2);
-    expect(mockedNotify.mock.calls[0][0]).toContain('DB connection failed');
-    expect(mockedNotify.mock.calls[1][0]).toContain('DB connection failed');
+    expect(mockedNotify.mock.calls[0][0]).toContain(
+      idOf('DB connection failed'),
+    );
+    expect(mockedNotify.mock.calls[1][0]).toContain(
+      idOf('DB connection failed'),
+    );
   });
 
   it('разные сообщения не троттлятся друг другом', async () => {
@@ -125,8 +130,8 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     logger.error('Error B');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(2);
-    expect(mockedNotify.mock.calls[0][0]).toContain('Error A');
-    expect(mockedNotify.mock.calls[1][0]).toContain('Error B');
+    expect(mockedNotify.mock.calls[0][0]).toContain(idOf('Error A'));
+    expect(mockedNotify.mock.calls[1][0]).toContain(idOf('Error B'));
   });
 
   it('нормализация ключа: числа схлопываются, "Failed id=1" и "Failed id=2" троттлятся как один (I-4)', async () => {
@@ -138,7 +143,9 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
     // Второй error() подавлен троттлингом — алерт остался от первого вызова.
-    expect(mockedNotify.mock.calls[0][0]).toContain('Failed to process id=1');
+    expect(mockedNotify.mock.calls[0][0]).toContain(
+      idOf('Failed to process id=1'),
+    );
   });
 
   it('нормализация ключа: uuid схлопывается в плейсхолдер, разные uuid троттлятся как один', async () => {
@@ -150,7 +157,7 @@ describe('AlertLogger — троттлинг одинаковых ошибок (
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
     expect(mockedNotify.mock.calls[0][0]).toContain(
-      'Booking a1b2c3d4-e5f6-7890-abcd-ef1234567890 confirm failed',
+      idOf('Booking a1b2c3d4-e5f6-7890-abcd-ef1234567890 confirm failed'),
     );
   });
 });
@@ -170,11 +177,11 @@ describe('AlertLogger — eviction старых записей троттлин�
     logger.error('Stale error'); // ключ должен был эвиктиться → шлёт снова
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(3);
-    expect(mockedNotify.mock.calls[0][0]).toContain('Stale error');
+    expect(mockedNotify.mock.calls[0][0]).toContain(idOf('Stale error'));
     expect(mockedNotify.mock.calls[1][0]).toContain(
-      'Another error to trigger sweep',
+      idOf('Another error to trigger sweep'),
     );
-    expect(mockedNotify.mock.calls[2][0]).toContain('Stale error');
+    expect(mockedNotify.mock.calls[2][0]).toContain(idOf('Stale error'));
   });
 });
 
@@ -203,9 +210,9 @@ describe('AlertLogger — общий потолок за окно (M4: текс�
       await flush();
     }
     expect(mockedNotify).toHaveBeenCalledTimes(15);
-    // Доставленные алерты несут реальный текст ошибки, а не мусор.
+    // Доставленные алерты — первые по порядку, каждый со своим id.
     expect(String(mockedNotify.mock.calls[0][0])).toContain(
-      'widget-redirect bad param',
+      idOf('widget-redirect bad param aaa'),
     );
   });
 
@@ -241,11 +248,11 @@ describe('AlertLogger — общий потолок за окно (M4: текс�
       await flush();
     }
     // 5 разных подсистем < 15 → ни одна не проглочена потолком, и каждая
-    // доехала своим текстом (а не схлопнулась в один общий ключ).
+    // доехала своим id (а не схлопнулась в один общий ключ).
     expect(mockedNotify).toHaveBeenCalledTimes(5);
     const delivered = mockedNotify.mock.calls.map((c) => String(c[0]));
     for (const s of subsystems) {
-      expect(delivered.some((t) => t.includes(s))).toBe(true);
+      expect(delivered.some((t) => t.includes(idOf(s)))).toBe(true);
     }
   });
 });
@@ -286,6 +293,115 @@ describe('AlertLogger — авария БД схлопывается в один
     logger.error('Telegram API 502 Bad Gateway');
     await flush();
     expect(mockedNotify).toHaveBeenCalledTimes(1);
-    expect(mockedNotify.mock.calls[0][0]).toContain('Telegram API 502');
+    expect(mockedNotify.mock.calls[0][0]).toContain(
+      idOf('Telegram API 502 Bad Gateway'),
+    );
+  });
+});
+
+// РКН (#1135): владельцу в Telegram и в письмо — только место, тип и id. Текст
+// ошибки (email, имя, ответ площадки, аргументы Prisma) остаётся в логе
+// приложения, и по id из DM строка там находится. Письмо-фолбэк получает тот
+// же текст: notifyAdminWithFallback принимает один текст на оба канала.
+describe('AlertLogger — в DM нет текста ошибки, в логе он есть с тем же id', () => {
+  const MARK = /MARK|poison|Ivanov/;
+  const logged = () =>
+    (process.stderr.write as unknown as jest.Mock).mock.calls
+      .map((c) => String(c[0]))
+      .join('');
+  const dm = () => String(mockedNotify.mock.calls[0][0]);
+
+  class PrismaClientKnownRequestError extends Error {
+    name = 'PrismaClientKnownRequestError';
+    code = 'P2002';
+  }
+
+  it('сообщение и Error с маркерами: в DM место, TypeError и id, маркеры — только в логе', async () => {
+    const message = 'Signup failed for MARK-ivan@poison.test (Ivanov)';
+    new AlertLogger('Test').error(message, new TypeError('MARK-in-message'));
+    await flush();
+    expect(dm()).toBe(
+      `🚨 Ошибка на сервере\nМесто: Test\nТип: TypeError\n${idOf(message)}`,
+    );
+    expect(dm()).not.toMatch(MARK);
+    expect(logged()).toContain(
+      `[alert ${alertId('Test', message)}] ${message}`,
+    );
+    expect(logged()).toContain('MARK-in-message');
+  });
+
+  it('Prisma-ошибка: тип — имя класса и code, без аргументов запроса', async () => {
+    const err = new PrismaClientKnownRequestError(
+      'Unique constraint failed: { email: "MARK@poison.test" }',
+    );
+    new AlertLogger('Test').error('create user failed', err);
+    await flush();
+    expect(dm()).toContain('Тип: PrismaClientKnownRequestError P2002');
+    expect(dm()).not.toMatch(MARK);
+  });
+
+  it('stack-строка вторым аргументом (Nest: message, stack, context): тип из первой строки', async () => {
+    new AlertLogger().error(
+      'uncaughtException: MARK Ivanov',
+      'TypeError: MARK-ivan@poison.test\n    at run (x.ts:1:1)',
+      'UncaughtException',
+    );
+    await flush();
+    expect(dm()).toContain('Место: UncaughtException\nТип: TypeError');
+    expect(dm()).not.toMatch(MARK);
+    expect(logged()).toContain('MARK-ivan@poison.test');
+  });
+
+  it('Error первым аргументом: тип из него, текст и stack — только в логе', async () => {
+    new AlertLogger('Test').error(new RangeError('MARK-ivan@poison.test'));
+    await flush();
+    expect(dm()).toContain('Тип: RangeError');
+    expect(dm()).not.toMatch(MARK);
+    expect(logged()).toMatch(/\[alert [0-9a-f]{8}\] RangeError: MARK-ivan/);
+  });
+
+  it('имя, code и stack, не похожие на класс ошибки, в тип не идут', async () => {
+    const err = Object.assign(new Error('x'), {
+      name: 'MARK Ivanov',
+      code: 'mark poison',
+    });
+    const logger = new AlertLogger('Test');
+    logger.error('first', err);
+    logger.error('second', 'Ivanov: MARK-poison\n    at run (x.ts:1:1)');
+    await flush();
+    const texts = mockedNotify.mock.calls.map((c) => String(c[0]));
+    expect(texts).toHaveLength(2);
+    for (const t of texts) {
+      expect(t).toContain('Тип: —');
+      expect(t).not.toMatch(MARK);
+    }
+  });
+
+  it('последний строковый аргумент не похож на имя класса — место «—»', async () => {
+    new AlertLogger().error('lookup failed', 'MARK-ivan@poison.test');
+    await flush();
+    expect(dm()).toContain('Место: —');
+    expect(dm()).not.toMatch(MARK);
+  });
+
+  it('денежный алерт уходит своим текстом (InvId и сумма) вместе с местом и id', async () => {
+    const message = moneyAlert(
+      'Robokassa: оплата доната #7 (500 ₽) без строки в БД',
+    );
+    new AlertLogger('DonationService').error(message);
+    await flush();
+    expect(dm()).toBe(
+      `🚨 Ошибка на сервере\n${message}\nМесто: DonationService\nТип: —\n` +
+        `id: ${alertId('DonationService', message)}`,
+    );
+  });
+
+  it('циклический объект первым аргументом — не бросает, DM уходит', async () => {
+    const circular: Record<string, unknown> = { note: 'MARK' };
+    circular.self = circular;
+    expect(() => new AlertLogger('Test').error(circular)).not.toThrow();
+    await flush();
+    expect(dm()).toContain('Место: Test');
+    expect(dm()).not.toMatch(MARK);
   });
 });

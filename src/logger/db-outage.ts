@@ -16,6 +16,8 @@
 import { AlertBudget } from '../utils/alert-throttle';
 import { DB_CONTEXT, STRONG_SIGNALS, WEAK_SIGNALS } from './db-outage-signals';
 
+const ALL_SIGNALS = [...STRONG_SIGNALS, ...WEAK_SIGNALS];
+
 // Тема письма-фолбэка (Telegram недоступен → e-mail). Одна на оба сообщения
 // об аварии — и на первое, и на «база снова отвечает».
 export const DB_ALERT_SUBJECT = 'База данных SchemeHappens';
@@ -76,16 +78,14 @@ export function isDbUnreachable(input: unknown): boolean {
  */
 export function isConnectionError(input: unknown): boolean {
   const lower = normalize(input);
-  return [...STRONG_SIGNALS, ...WEAK_SIGNALS].some((s) => lower.includes(s));
+  return ALL_SIGNALS.some((s) => lower.includes(s));
 }
 
-function firstLine(message: string): string {
-  return message.split('\n')[0] ?? message;
-}
-
-function formatError(message: string, max = 300): string {
-  const line = firstLine(message);
-  return line.length > max ? line.slice(0, max) : line;
+/** Сработавший признак из db-outage-signals.ts, не текст ошибки (РКН, #1135). */
+function dbSignal(message: string): string {
+  const lower = normalize(message);
+  const hit = ALL_SIGNALS.find((s) => lower.includes(s)) ?? '—';
+  return /^p\d{4}$/.test(hit) ? hit.toUpperCase() : hit;
 }
 
 function formatDuration(ms: number): string {
@@ -139,7 +139,7 @@ export class DbOutageTracker {
       this.lastNotifiedAt = now;
       return {
         text: this.emit(
-          `🚨 База данных не отвечает\n${formatError(message)}\n` +
+          `🚨 База данных не отвечает\nПризнак: ${dbSignal(message)}\n` +
             'Остальные ошибки этой аварии не шлю — сообщу, когда база вернётся.',
           now,
         ),
@@ -151,7 +151,7 @@ export class DbOutageTracker {
       return {
         text: this.emit(
           `🚨 База данных не отвечает уже ${formatDuration(now - this.openedAt)}\n` +
-            `Ошибок за это время: ${this.errorCount}\n${formatError(message)}`,
+            `Ошибок за это время: ${this.errorCount}\nПризнак: ${dbSignal(message)}`,
           now,
         ),
       };
