@@ -112,9 +112,8 @@ export class OAuthCallbackService {
         this.flow.ticketFromState(state),
       );
     } catch (err) {
-      this.logger.error(
-        `${provider} callback error: ${(err as Error).message}`,
-      );
+      const reason = (err as Error).message;
+      this.logger.error(`${provider} callback error: ${reason}`, err);
       res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
     }
   }

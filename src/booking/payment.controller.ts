@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { RobokassaService } from './robokassa.service';
 import { BookingService } from './booking.service';
 import { bookingWebhookReply } from './payment.booking-webhook';
+import { paidButFailedAlert } from './payment-failed-alert';
 import { screenResultWebhook } from './payment.result-guard';
 import { BookingNotifyService } from './booking-notify.service';
 import { DonationService } from '../donation/donation.service';
@@ -85,11 +86,9 @@ export class PaymentController {
         // Same asymmetry as booking below: the client PAID, but the charge
         // didn't get recorded. Without this alert it was invisible — only
         // this.logger.error, which nobody reads until a person complains.
-        this.logger.error(
-          `PAID but subscription mark-paid failed for InvId ${id}: ${(e as Error).message}`,
-        );
+        this.logger.error(`PAID but subscription not marked: InvId ${id}`, e);
         await this.notify.alertAdmin(
-          `🚨 <b>Оплата прошла, но подписка (InvId ${id}) не подтвердилась</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
+          paidButFailedAlert(`подписка (InvId ${id}) не подтвердилась`, e),
         );
         return `FAIL${invId}`;
       }
@@ -99,11 +98,9 @@ export class PaymentController {
       try {
         await this.donation.markPaidByInvId(id, paid);
       } catch (e) {
-        this.logger.error(
-          `PAID but donation mark-paid failed for InvId ${id}: ${(e as Error).message}`,
-        );
+        this.logger.error(`PAID but donation not marked: InvId ${id}`, e);
         await this.notify.alertAdmin(
-          `🚨 <b>Оплата прошла, но донат (InvId ${id}) не подтвердился</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
+          paidButFailedAlert(`донат (InvId ${id}) не подтвердился`, e),
         );
         return `FAIL${invId}`;
       }

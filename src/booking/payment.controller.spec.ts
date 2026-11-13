@@ -378,6 +378,30 @@ describe('PaymentController.handleResult — деньги не немые ни �
     },
   );
 
+  // РКН (#1135): текст ошибки (аргументы Prisma, ответ площадки) в Telegram не
+  // уходит — ни карточкой alertAdmin, ни первым аргументом error(), который
+  // AlertLogger шлёт в DM. Ошибка — вторым аргументом, в лог приложения.
+  it.each(RANGES)(
+    '$name: текст ошибки не попадает ни в карточку, ни в первый аргумент error()',
+    async ({ invId, mockReject }) => {
+      const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      const m = makeController();
+      const err = new TypeError('MARK { email: "ivan@poison.test" }');
+      mockReject(m, err);
+      const sig = md5(`500.00:${invId}:${PASS2}`);
+
+      await m.controller.handleResult('500.00', String(invId), sig);
+
+      const card = String(m.notify.alertAdmin.mock.calls[0][0]);
+      expect(card).toContain(String(invId));
+      expect(card).toContain('Тип ошибки: TypeError');
+      expect(card).not.toMatch(/MARK|poison/);
+      expect(String(error.mock.calls[0][0])).not.toMatch(/MARK|poison/);
+      expect(error.mock.calls[0][1]).toBe(err);
+      error.mockRestore();
+    },
+  );
+
   // Контрольный случай для той же таблицы: benign-повтор на booking-диапазоне
   // обязан остаться тихим. Без этого теста имплементация «алертить на любую
   // ошибку без разбора» тоже прошла бы it.each выше.
