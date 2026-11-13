@@ -8,7 +8,11 @@ import { EmailService } from '../auth/email.service';
 import { awaitingPaymentTitle, cancelledNotice } from './booking-admin-note';
 import { subjectFromTitle } from './booking-notify.format';
 import { bookingNotice } from './booking-owner-card';
-import { noticeChannels, type OwnerNotice } from '../utils/owner-card';
+import {
+  errorKind,
+  noticeChannels,
+  type OwnerNotice,
+} from '../utils/owner-card';
 import type { PriceFields } from './booking-notify.price';
 import { SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
@@ -110,28 +114,24 @@ export class BookingNotifyService {
     await remindWindow(deps, now + 2 * H, 'reminder2SentAt', 'через 2 часа');
   }
 
-  // Разделение (2026-09-15): события брони — оба канала всегда (деньги/
-  // заявки); alertAdmin — Telegram-first, почта как запасной ход.
   private async sendAdmin(title: string, b: PlainBooking): Promise<void> {
-    await this.notifyAdminBoth(
-      bookingNotice(title, b),
-      subjectFromTitle(title),
-    );
+    const subject = subjectFromTitle(title);
+    await this.notifyAdminBoth(bookingNotice(title, b), subject);
   }
 
-  /** Оба канала сразу; Telegram — без данных человека, письмо — полное (OwnerNotice). */
+  /** События брони — оба канала всегда; Telegram без данных человека, они в письме: его потеря — error. */
   async notifyAdminBoth(
     text: string | OwnerNotice,
     subject: string,
   ): Promise<void> {
     const { telegram, email } = noticeChannels(text);
     const plain = email.replace(/<[^>]+>/g, '');
-    await Promise.all([
+    const [, mailed] = await Promise.all([
       this.telegram.notifyAdmin(telegram),
-      this.email
-        .sendAdminNotification(subject, plain)
-        .catch((e) => this.logger.error('Critical admin e-mail failed', e)),
+      this.email.sendAdminNotification(subject, plain).catch(errorKind),
     ]);
+    if (mailed !== true)
+      this.logger.error(`Admin e-mail not delivered: ${subject} (${mailed})`);
   }
 
   /** Send to admin via Telegram; if that fails, fall back to e-mail so alerts are never lost. */

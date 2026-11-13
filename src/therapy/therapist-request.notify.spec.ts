@@ -13,14 +13,11 @@
 import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { Logger } from '@nestjs/common';
 import { isTelegramUserId } from '../auth/user-id-range';
-import * as adminAlert from '../utils/admin-alert';
 import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn(() => Promise.resolve()),
 }));
-
-const fallback = adminAlert.notifyAdminWithFallback as jest.Mock;
 
 interface Fixture {
   providers?: Array<{ provider: string; providerId: string; email?: string }>;
@@ -63,7 +60,12 @@ function makeService(
     }
     return Promise.resolve(m);
   });
-  const email = { send: jest.fn(() => Promise.resolve(true)) };
+  const email = {
+    send: jest.fn(() => Promise.resolve(true)),
+    sendAdminNotification: jest.fn((_s: string, _t: string): Promise<boolean> =>
+      Promise.resolve(true),
+    ),
+  };
   const svc = new TherapistRequestNotifyService(
     prisma,
     { telegramIdsFor } as any,
@@ -106,24 +108,31 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   // Данные заявителя несёт только письмо: оно уходит при любом исходе DM,
   // иначе владельцу не на чем решать (карточка в Telegram — номер и кнопки).
+  let email: ReturnType<typeof makeService>['email'];
+  const run = (
+    req: Parameters<TherapistRequestNotifyService['notifyAdmin']>[0],
+  ) => {
+    const made = makeService();
+    email = made.email;
+    return made.svc.notifyAdmin(req);
+  };
   const mailedOnce = () => {
-    expect(fallback).toHaveBeenCalledTimes(1);
-    const [text, subject, opts] = fallback.mock.calls[0];
+    expect(email.sendAdminNotification).toHaveBeenCalledTimes(1);
+    const [subject, text] = email.sendAdminNotification.mock.calls[0];
     expect(subject).toBe('🩺 Заявка на роль терапевта #42');
-    expect(opts).toEqual({ skipTelegram: true });
-    return text as string;
+    return text;
   };
 
   it('DM админу не прошёл (Telegram 403) → письмо с данными ушло', async () => {
     mockFetchForNotify(false);
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
     expect(mailedOnce()).toContain('#42');
   });
 
   it('ADMIN_ID не задан → пуш невозможен, письмо ушло', async () => {
     delete process.env.ADMIN_ID;
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
 
     expect(fetchMockLocal).not.toHaveBeenCalled();
     expect(mailedOnce()).toContain('Мария Иванова');
@@ -131,7 +140,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   it('DM прошёл → письмо всё равно ушло; DM — номер и кнопки, без данных заявителя', async () => {
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
 
     expect(mailedOnce()).toContain('Мария Иванова');
     expect(fetchMockLocal).toHaveBeenCalledTimes(1);
@@ -150,7 +159,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   it('данные заявителя из маркеров: ни одного в DM и кнопках, все — в письме', async () => {
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().svc.notifyAdmin({
+    await run({
       id: 42,
       userId: PII.telegramId,
       fullName: PII.name,
@@ -172,7 +181,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
     delete process.env.BOT_TOKEN;
     const fetchMockLocal = jest.fn();
     global.fetch = fetchMockLocal;
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
 
     expect(fetchMockLocal.mock.calls).toEqual([]);
     expect(mailedOnce()).toContain('#42');
@@ -180,15 +189,49 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
 
   it('сетевая ошибка fetch (не HTTP-статус, а reject) → письмо ушло', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('ECONNRESET')));
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
     expect(mailedOnce()).toContain('Мария Иванова');
   });
 
   it('сетевая ошибка fetch НЕ-Error объектом (напр. строкой) — не падает, письмо ушло', async () => {
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- намеренно не-Error reject
     global.fetch = jest.fn(() => Promise.reject('boom-string'));
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
     expect(mailedOnce()).toContain('#42');
+  });
+
+  // Данные заявителя — только в письме: его потеря обязана быть видна
+  // владельцу (error уходит алертом), но без данных человека.
+  it.each([
+    ['вернуло false', () => Promise.resolve(false), 'false'],
+    ['бросило', () => Promise.reject(new Error(PII.error)), 'Error'],
+  ])(
+    'письмо не ушло (%s) → error со стабильным текстом и номером',
+    async (_n, fail, kind) => {
+      mockFetchForNotify(true);
+      const error = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      const made = makeService();
+      made.email.sendAdminNotification.mockImplementationOnce(fail);
+      await made.svc.notifyAdmin({ ...NOTIFY_REQ, fullName: PII.name });
+      expect(error).toHaveBeenCalledWith(
+        `Therapist request #42: admin e-mail not delivered (${kind})`,
+      );
+      for (const c of error.mock.calls) expectNoMarkers(String(c[0]));
+      error.mockRestore();
+    },
+  );
+
+  it('письмо ушло — ошибки о доставке нет', async () => {
+    mockFetchForNotify(true);
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    await run(NOTIFY_REQ);
+    expect(mailedOnce()).toContain('Мария Иванова');
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 
   it('Telegram вернул не-ok без description в теле → текст письма не падает на undefined', async () => {
@@ -199,7 +242,7 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
         json: () => Promise.resolve({}),
       }),
     );
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
     expect(mailedOnce()).not.toContain('undefined');
   });
 });

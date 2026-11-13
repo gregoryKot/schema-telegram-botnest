@@ -23,13 +23,10 @@ import {
 } from '@nestjs/common';
 import { TherapistRequestService } from './therapist-request.service';
 import { TherapistRequestNotifyService } from './therapist-request.notify';
-import * as adminAlert from '../utils/admin-alert';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn(() => Promise.resolve()),
 }));
-
-const fallback = adminAlert.notifyAdminWithFallback as jest.Mock;
 
 const ADMIN_ID = 111;
 const NOT_ADMIN_ID = 222; // не совпадает с process.env.ADMIN_ID
@@ -126,10 +123,14 @@ function makeFakePrismaService() {
 function makeService() {
   const { prisma, requests, users, accountService, securityLog } =
     makeFakePrismaService();
+  const email = {
+    send: jest.fn(),
+    sendAdminNotification: jest.fn(async (_s: string, _t: string) => true),
+  };
   const notifyService = new TherapistRequestNotifyService(
     prisma,
     accountService as any,
-    { send: jest.fn() } as any,
+    email as any,
   );
   const svc = new TherapistRequestService(
     prisma,
@@ -137,7 +138,15 @@ function makeService() {
     securityLog as any,
     notifyService,
   );
-  return { svc, prisma, requests, users, accountService, securityLog };
+  return {
+    svc,
+    prisma,
+    requests,
+    users,
+    accountService,
+    securityLog,
+    email,
+  };
 }
 
 const ORIGINAL_ENV = { ...process.env };
@@ -170,7 +179,7 @@ const INPUT = {
 
 describe('TherapistRequestService.submit', () => {
   it('happy path: сохраняет pending-заявку и шлёт админу карточку с approve/reject-кнопками', async () => {
-    const { svc, requests, users, securityLog } = makeService();
+    const { svc, requests, users, securityLog, email } = makeService();
     users.push({ id: 1n, role: 'CLIENT' });
     const result = await svc.submit(1n, INPUT);
     expect(result).toEqual({ id: requests[0].id, status: 'pending' });
@@ -199,10 +208,10 @@ describe('TherapistRequestService.submit', () => {
     expect(body.text).toContain(`#${requests[0].id}`);
     expect(body.text).not.toContain(INPUT.fullName);
     expect(body.text).not.toContain(INPUT.contacts);
-    const mail = (adminAlert.notifyAdminWithFallback as jest.Mock).mock.calls;
+    const mail = email.sendAdminNotification.mock.calls;
     expect(mail).toHaveLength(1);
-    expect(mail[0][0]).toContain(INPUT.fullName);
-    expect(mail[0][0]).toContain(INPUT.contacts);
+    expect(mail[0][1]).toContain(INPUT.fullName);
+    expect(mail[0][1]).toContain(INPUT.contacts);
     expect(body.reply_markup.inline_keyboard[0]).toEqual([
       { text: '✅ Approve', callback_data: `treq:approve:${requests[0].id}` },
       { text: '❌ Reject', callback_data: `treq:reject:${requests[0].id}` },
@@ -571,7 +580,9 @@ describe('TherapistRequestService.submit — notifyAdmin падает целик
     const { svc, users, requests } = makeService();
     users.push({ id: 23n, role: 'CLIENT' });
     fetchMock.mockRejectedValue(new Error('network down'));
-    fallback.mockRejectedValueOnce(new Error('smtp down'));
+    jest
+      .spyOn(TherapistRequestNotifyService.prototype, 'notifyAdmin')
+      .mockRejectedValueOnce(new Error('smtp down'));
 
     const result = await svc.submit(23n, INPUT);
     expect(result.status).toBe('pending');
@@ -591,7 +602,9 @@ describe('TherapistRequestService.submit — notifyAdmin падает целик
     const { svc, users } = makeService();
     users.push({ id: 24n, role: 'CLIENT' });
     fetchMock.mockRejectedValue(new Error('network down'));
-    fallback.mockRejectedValueOnce('smtp-string-failure');
+    jest
+      .spyOn(TherapistRequestNotifyService.prototype, 'notifyAdmin')
+      .mockRejectedValueOnce('smtp-string-failure');
 
     const result = await svc.submit(24n, INPUT);
     expect(result.status).toBe('pending');

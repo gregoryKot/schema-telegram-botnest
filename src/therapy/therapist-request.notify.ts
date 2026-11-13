@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
 import { EmailService } from '../auth/email.service';
-import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { practiceOwnerTelegramId } from '../utils/practice-owner';
+import { errorKind } from '../utils/owner-card';
 import { DecisionRequest, deliverDecision } from './therapist-request.deliver';
 import {
   decisionKeyboard,
@@ -78,30 +78,30 @@ export class TherapistRequestNotifyService {
 
   /**
    * Заявка владельцу: письмо с данными — всегда (без него решать не на чем),
-   * Telegram — карточка без данных заявителя, с кнопками решения.
+   * Telegram — карточка без данных заявителя, с кнопками решения. Письмо не
+   * ушло — error без данных человека: иначе заявка видна только номером.
    */
   async notifyAdmin(req: TherapistRequestFull & { createdAt?: Date | null }) {
     const subject = `🩺 Заявка на роль терапевта #${req.id}`;
-    const mailed = notifyAdminWithFallback(
-      therapistRequestEmail(req),
-      subject,
-      { skipTelegram: true },
-    );
-    if (!this.adminId) {
+    const text = `${therapistRequestCard(req)}\n\nСписок заявок: /zayavki`;
+    const adminId = this.adminId;
+    const [delivered, mailed] = await Promise.all([
+      adminId !== null && this.sendTg(adminId, text, decisionKeyboard(req.id)),
+      this.email
+        .sendAdminNotification(subject, therapistRequestEmail(req))
+        .catch(errorKind),
+    ]);
+    if (adminId === null)
       this.logger.error(
         'notifyAdmin: ADMIN_ID not set — request in e-mail only',
       );
-      await mailed;
-      return;
-    }
-    const text = `${therapistRequestCard(req)}\n\nСписок заявок: /zayavki`;
-    const [delivered] = await Promise.all([
-      this.sendTg(this.adminId, text, decisionKeyboard(req.id)),
-      mailed,
-    ]);
-    if (!delivered)
+    else if (!delivered)
       this.logger.error(
         `notifyAdmin: Telegram DM to admin failed for request #${req.id} — e-mail only`,
+      );
+    if (mailed !== true)
+      this.logger.error(
+        `Therapist request #${req.id}: admin e-mail not delivered (${mailed})`,
       );
   }
 

@@ -84,8 +84,8 @@ export class IntroLeadService {
       `Intro lead create failed, lead alerted: ${errorKind(err)}`,
     );
     const msg = introLeadMessages(lead, null, 'unsaved');
-    const sent = await this.deliver(null, msg);
-    if (sent.email) return { ok: true };
+    if ((await this.deliver(null, msg)).email) return { ok: true };
+    this.logger.error(`Intro lead e-mail not delivered: ${errorKind(err)}`);
     throw new ServiceUnavailableException('Заявка не принята');
   }
 

@@ -12,6 +12,8 @@ import { BookingNotifyService } from './booking-notify.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 import { LINK_TO_FORWARD, ROOM_REPLACED } from './booking-confirmed-card';
+import { lostLeadNotice } from './booking-owner-card';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 function makeService(
   opts: {
@@ -632,16 +634,49 @@ describe('BookingNotifyService — окна напоминаний и логи �
     expect(log).toHaveBeenCalledWith('Claimed 1 reminder2SentAt reminder(s)');
   });
 
-  it('событие брони: письмо упало — error в лог, Telegram ушёл', async () => {
-    const { service, telegram, email } = makeService();
-    const smtp = new Error('smtp down');
-    email.sendAdminNotification.mockRejectedValueOnce(smtp);
+  // Данные человека — только в письме: письмо не ушло (бросило, вернуло
+  // false — пустой ADMIN_EMAIL или нет ключей Postbox) — error с темой, без данных.
+  it.each([
+    ['бросило', () => Promise.reject(new Error(PII.error)), 'Error'],
+    ['вернуло false', () => Promise.resolve(false), 'false'],
+  ])(
+    'событие брони: письмо %s — error «e-mail not delivered» с темой, Telegram ушёл',
+    async (_n, fail, kind) => {
+      const { service, telegram, email } = makeService();
+      email.sendAdminNotification.mockImplementationOnce(fail);
+      const error = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      const lead = lostLeadNotice(
+        {
+          clientName: PII.name,
+          clientContact: PII.contact,
+          startsAt: new Date('2026-12-01T17:00:00Z'),
+          durationMin: 50,
+          type: SessionType.SESSION_50,
+          message: PII.message,
+        },
+        'Error',
+        PII.error,
+      );
+      await service.notifyAdminBoth(lead, '🚨 Заявка на запись не сохранилась');
+      expect(telegram.notifyAdmin).toHaveBeenCalledWith(lead.telegram);
+      expect(error).toHaveBeenCalledWith(
+        `Admin e-mail not delivered: 🚨 Заявка на запись не сохранилась (${kind})`,
+      );
+      for (const c of error.mock.calls) expectNoMarkers(String(c[0]));
+    },
+  );
+
+  it('событие брони: письмо принято — ошибки о доставке нет', async () => {
+    const { service, email } = makeService();
+    email.sendAdminNotification.mockResolvedValueOnce(true);
     const error = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
     await service.notifyAdminBoth('<b>Бронь</b>', 'Бронь');
-    expect(telegram.notifyAdmin).toHaveBeenCalledWith('<b>Бронь</b>');
-    expect(error).toHaveBeenCalledWith('Critical admin e-mail failed', smtp);
+    expect(email.sendAdminNotification).toHaveBeenCalledWith('Бронь', 'Бронь');
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('Telegram не принял алерт — warn в лог перед запасным письмом', async () => {

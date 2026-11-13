@@ -317,13 +317,48 @@ describe('SecurityLogService — DM-бюджет по имени события'
     );
   });
 
-  it('значение длиннее 80 символов обрезается в DM (защита от раздутого/injection-подобного значения)', async () => {
+  // Ключи `source`, `target`, `host`, `provider`, `role`, `event` в DM —
+  // только из перечня (id — цифры): свободная строка под тем же ключом
+  // (Host, referrer, путь, имя) превращается в «—».
+  it.each([
+    ['source', PII.source],
+    ['target', PII.name],
+    ['userId', PII.ua],
+    ['host', PII.path],
+    ['provider', PII.email],
+    ['role', PII.qualification],
+    ['event', PII.message],
+  ])('%s со свободной строкой — в DM «—», маркера нет', async (key, marker) => {
     const service = new SecurityLogService(() => 0);
-    service.log('csrf_blocked', { event: 'x'.repeat(200) });
+    service.log('merge_confirmed', { [key]: marker });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toContain(`\nevent: ${'x'.repeat(80)}\n`);
-    expect(text).not.toContain('x'.repeat(81));
+    expectNoMarkers(text);
+    expect(text).toContain(`\n${key}: —\n`);
+  });
+
+  it('известные значения проходят как есть', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('merge_confirmed', {
+      target: 12n,
+      source: 34,
+      provider: 'vk',
+      host: 'max',
+      role: 'THERAPIST',
+      event: '2fa_enabled',
+    });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    for (const line of [
+      'target: 12',
+      'source: 34',
+      'provider: vk',
+      'host: max',
+      'role: THERAPIST',
+      'event: 2fa_enabled',
+    ]) {
+      expect(text).toContain(`\n${line}\n`);
+    }
   });
 
   // Сигнал в Telegram: ни ip, ни user-agent, ни путь, ни квалификация из
