@@ -93,10 +93,6 @@
     "status": "exempt",
     "reason": "SUMMARY с прода не сохранялся — readSummary покрыт синтетическими VEVENT по RFC 5545 (параметр LANGUAGE, экранирование спецсимволов, обрезка длинных названий до 120 символов), но ни один кейс не сверен с реальным ответом iCloud."
   },
-  "src/booking/zoom-room.ts": {
-    "status": "exempt",
-    "reason": "Get/Update Meeting Zoom (topic, 404, 429) в спеке — авторская форма по документации Zoom API, как у meeting.service.ts; боевых Zoom-учётных данных для записи нет, разовая команда."
-  },
   "src/booking/meeting.service.ts": {
     "status": "exempt",
     "reason": "Ответы Zoom S2S OAuth (access_token) и Create Meeting (join_url/id) в спеке — авторская форма по документации Zoom API, не захваченный с прода вызов; боевых Zoom-учётных данных для записи нет."
@@ -108,6 +104,10 @@
   "src/booking/robokassa.service.ts": {
     "status": "exempt",
     "reason": "Подпись Robokassa (md5 outSum:invId:pass) проверена по официальной документации площадки, но ни один настоящий ResultURL-вебхук с прода в фикстуру не сохранён — payment-webhooks.e2e-spec.ts строит подпись сам тем же алгоритмом, что и код."
+  },
+  "src/booking/zoom-room.ts": {
+    "status": "exempt",
+    "reason": "Get/Update Meeting Zoom (topic, 404, 429) в спеке — авторская форма по документации Zoom API, как у meeting.service.ts; боевых Zoom-учётных данных для записи нет, разовая команда."
   },
   "src/channel/channel-http.ts": {
     "status": "exempt",
