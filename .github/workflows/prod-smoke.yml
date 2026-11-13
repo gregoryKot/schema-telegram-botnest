@@ -121,12 +121,13 @@ jobs:
           echo "$headers" | tr -d '\r' | grep -i '^location:' | grep -q '/today?startapp=probe$'
       - name: /game/ — 200 и реально раздаёт игру, не SPA-fallback сайта
         run: |
-          # game/ заморожен и вне тестов/гейтов (SHIELD_PROMPT, «Известные
-          # дыры») — этот маркер единственный наблюдатель поверхности.
           # SPA-fallback отдаёт 200 с HTML сайта на ЛЮБОЙ путь, поэтому
-          # различает только маркер тела: заголовок игры, не сайта.
+          # различает только маркер тела. Маркер — узел, куда main.ts монтирует
+          # Phaser, а не заголовок: имя игры меняют (дважды менялось), узел —
+          # нет. Сверку с game/index.html держит src/test-support/gates/
+          # game-smoke-marker.spec.ts: переименование ломает PR, не смок.
           body=$($CURL https://schemehappens.ru/game/)
-          echo "$body" | grep -q 'Schema Runner'
+          echo "$body" | grep -qF 'id="game-container"'
 
   # Сигнализация (щит): без этой джобы красный прогон виден только тому, кто
   # сам зашёл во вкладку Actions. Issue одна открытая на воркфлоу (не плодит
