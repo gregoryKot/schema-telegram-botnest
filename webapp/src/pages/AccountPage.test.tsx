@@ -22,7 +22,7 @@ import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { AccountPage } from './AccountPage';
 
 interface Provider {
-  provider: 'google' | 'telegram' | 'vk' | 'email';
+  provider: 'google' | 'telegram' | 'vk' | 'yandex' | 'email';
   email: string | null;
   displayName: string | null;
 }
@@ -161,9 +161,9 @@ describe('AccountPage — загрузка', () => {
     renderPage();
     await screen.findByText('Аккаунт');
 
-    // Обе кнопки "Привязать" (vk, email), ни одной "Отвязать". Google и
+    // Три кнопки "Привязать" (vk, yandex, email), ни одной "Отвязать". Google и
     // Telegram без привязки не показаны вовсе: входа через них на сайте нет (2026-11).
-    expect(screen.getAllByText('Привязать').length).toBe(2);
+    expect(screen.getAllByText('Привязать').length).toBe(3);
     expect(screen.queryByText('Google')).toBeNull();
     expect(screen.queryByText('Telegram')).toBeNull();
     expect(screen.queryByText('Отвязать')).toBeNull();
@@ -172,11 +172,11 @@ describe('AccountPage — загрузка', () => {
 
   it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
     renderPage();
-    await screen.findByText('0 из 2');
+    await screen.findByText('0 из 3'); // ВКонтакте, Яндекс, почта
     cleanup();
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
-    await screen.findByText('1 из 3'); // прежняя привязка Google — своя строка
+    await screen.findByText('1 из 4'); // прежняя привязка Google — своя строка
     expect(screen.getByText('U')).toBeTruthy();
   });
 
@@ -241,6 +241,42 @@ describe('AccountPage — реальные данные провайдеров',
         url.includes('/api/auth/unlink/vk'),
       ),
     ).toBe(true);
+  });
+});
+
+// Яндекс ID (2026-11) — зеркало ВКонтакте: привязка идёт через куку
+// `link_token` и уход на свой маршрут бэкенда, отвязка — общим POST по id.
+describe('AccountPage — Яндекс', () => {
+  const original = window.location;
+  afterEach(() => Object.defineProperty(window, 'location', { configurable: true, value: original }));
+
+  it('«Привязать» у Яндекса: сначала кука привязки, потом уход на /api/auth/yandex', async () => {
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...window.location, href: '' } });
+    meProviders = [{ provider: 'email', email: 'user@example.com', displayName: null }];
+    renderPage();
+    const row = (await screen.findByText('Яндекс')).closest('.aa-row') as HTMLElement;
+    fireEvent.click(within(row).getByText('Привязать'));
+
+    await waitFor(() => expect(window.location.href).toBe('/api/auth/yandex'));
+    expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/link-token'))).toBe(true);
+  });
+
+  it('привязанный Яндекс: имя из api; отвязка спрашивает «Отвязать Яндекс?» и шлёт POST /api/auth/unlink/yandex', async () => {
+    meProviders = [
+      { provider: 'yandex', email: 'anya@yandex.ru', displayName: 'Аня Я' },
+      { provider: 'email', email: 'user@example.com', displayName: null },
+    ];
+    renderPage();
+    await screen.findByText('Аня Я');
+    expect(screen.getByText('2 из 3')).toBeTruthy();
+    fireEvent.click(unlinkBtn('Яндекс'));
+    expect(within(screen.getByRole('dialog')).getByText('Отвязать Яндекс?')).toBeTruthy();
+    confirmUnlink();
+
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([url, init]: [string, RequestInit]) =>
+        url.includes('/api/auth/unlink/yandex') && init?.method === 'POST')).toBe(true),
+    );
   });
 });
 

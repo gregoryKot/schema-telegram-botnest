@@ -1,6 +1,6 @@
 // Security-трипваер: нет SSRF через server-side fetch (security-таск
 // 2026-07-17). Все исходящие запросы сервера идут на литеральные URL
-// (IdP OAuth, Robokassa, Zoom, Resend, Telegram API) либо на адрес из
+// (IdP OAuth, Robokassa, Zoom, Postbox, Telegram API) либо на адрес из
 // конфига (APPLE_CALDAV_URL — задаёт админ/env). Если URL fetch собрать из
 // пользовательского ввода (req/body/params/query) — атакующий заставит
 // сервер ходить во внутреннюю сеть/метадату облака. Инвариант: ни один

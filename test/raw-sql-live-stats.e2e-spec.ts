@@ -102,6 +102,13 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'login_one_tap', meta: { outcome: 'signed_in' } },
   { name: 'login_one_tap', meta: { outcome: 'twofa' } },
   { name: 'login_one_tap', meta: { outcome: 'rejected' } },
+  // Вход через VK ID и Яндекс ID (2026-11): groupBy по jsonb-колонке meta в
+  // loadOauthLogin (src/bot/oauth-login-metrics.ts) — две строки одной группы
+  // обязаны сложиться, ключ e2e в meta счёту не мешает.
+  { name: 'login_oauth', meta: { provider: 'yandex', outcome: 'signed_in' } },
+  { name: 'login_oauth', meta: { provider: 'yandex', outcome: 'signed_in' } },
+  { name: 'login_oauth', meta: { provider: 'yandex', outcome: 'signed_up' } },
+  { name: 'login_oauth', meta: { provider: 'vk', outcome: 'linked' } },
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
   { name: 'client_error', meta: { section: 'assets', source: 'webapp' } },
@@ -224,6 +231,14 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(oneTap.rejected).toBeGreaterThanOrEqual(1);
     expect(product).toMatch(/Вошли одним касанием: [1-9]\d*/);
     expect(product).toMatch(/Сервер не принял вход из окна: [1-9]\d*/);
+    // Вход через внешние сервисы: группировка по jsonb meta исполнена
+    // драйвером; подделка с userId (USER_EVENTS её не содержит) не считается.
+    expect(product).toMatch(
+      /Вход через Яндекс: вошли ([3-9]|\d{2,}) раз\S* \(новых аккаунтов: [1-9]\d*\)/,
+    );
+    expect(product).toMatch(
+      /Вход через ВКонтакте: привязали к своему аккаунту: [1-9]\d*/,
+    );
     // Стёртый тест: count(DISTINCT) с FILTER по ("meta"->>'attempts')::int.
     expect(product).toMatch(
       /Стёрли результаты теста схем: [1-9]\d* раз\S* · людей: [1-9]\d*, из них проходили тест до конца: [1-9]/,

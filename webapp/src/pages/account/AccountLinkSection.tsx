@@ -70,7 +70,7 @@ export function AccountLinkSection({
   // Источник здесь — сам веб-аккаунт, поэтому берём его способ входа, а не
   // 'telegram': тот принадлежит подтверждающей стороне.
   const sourceProvider = (providers.find((p) =>
-    ['google', 'vk', 'email'].includes(p.provider),
+    ['google', 'vk', 'yandex', 'email'].includes(p.provider),
   )?.provider ?? 'email') as LoginProvider;
 
   const { state, begin, reset } = useLoginTicket({

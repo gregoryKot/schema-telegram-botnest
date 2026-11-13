@@ -54,5 +54,6 @@ export function useProviderActions(
   return {
     busy, unlinkProvider, setUnlinkProvider, performUnlink,
     linkVk: () => linkVia('/api/auth/vk'),
+    linkYandex: () => linkVia('/api/auth/yandex'),
   };
 }

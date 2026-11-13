@@ -3,13 +3,14 @@
 // привязки из мессенджера (/link). Раньше было три словаря, а /account/merge
 // показывал технический id провайдера из адреса («Аккаунт google»).
 // Бэкенд кладёт в адрес id в нижнем регистре (`src/auth/auth-flow.service.ts`,
-// `finishOAuthRedirect`): google, vk, telegram, max.
+// `finishOAuthRedirect`): google, vk, yandex, telegram, max.
 import type { ProviderId } from './ProviderRows';
 
 export const PROVIDER_NAMES: Record<ProviderId, string> = {
   google: 'Google',
   telegram: 'Telegram',
   vk: 'ВКонтакте',
+  yandex: 'Яндекс',
   max: 'MAX',
   email: 'Email',
 };

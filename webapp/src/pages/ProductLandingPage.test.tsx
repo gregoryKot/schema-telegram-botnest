@@ -57,6 +57,8 @@ describe('ProductLandingPage — неавторизованный визитор
     expect(ctas.length).toBeGreaterThan(0);
     for (const a of ctas) expect(a.getAttribute('href')).toBe('/login');
     expect(screen.queryByText(/Начать бесплатно/)).toBeNull();
+    // Под кнопками — чем входят на сайт: те же способы, что на экране входа.
+    expect(screen.getByText('Вход через ВКонтакте, Яндекс или email · регистрация не нужна')).toBeTruthy();
   });
 
   it('шапка и футер — знак продукта (тот же, что в меню и favicon), а не 🧠', () => {
@@ -147,6 +149,7 @@ describe('ProductLandingPage — авторизованный юзер', () => {
     renderPage(authValue({ isAuthenticated: true, accessToken: 'tok' }));
     expect(screen.getByText(/это происходит\?/)).toBeTruthy();
     expect(screen.queryByText('Войти')).toBeNull();
+    expect(screen.queryByText(/регистрация не нужна/)).toBeNull();
     const ctas = screen.getAllByText('Перейти в приложение →') as HTMLAnchorElement[];
     expect(ctas.length).toBe(2);
     for (const a of ctas) expect(a.getAttribute('href')).toBe('/today');

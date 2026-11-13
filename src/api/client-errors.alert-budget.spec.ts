@@ -70,7 +70,7 @@ describe('S13: анонимный шум не глушит настоящий lo
   });
 
   it('шквал анонимных ошибок входа — свой малый подбюджет, основной цел', async () => {
-    const oauth = new Logger('AuthOauthController');
+    const oauth = new Logger('OAuthCallbackService');
     for (let i = 0; i < 100; i++) {
       oauth.error(`vk callback error: ${'x'.repeat(i)}`);
     }

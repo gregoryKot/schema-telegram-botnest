@@ -26,9 +26,7 @@ import { TotpAttemptsService } from './totp-attempts';
 import { SecurityNoticeService } from './security-notice.service';
 import { StepUpService } from './step-up';
 import { EmailService } from './email.service';
-import { AuthProviderRegistry } from './providers/registry';
-import { TelegramProvider } from './providers/telegram.provider';
-import { VkProvider } from './providers/vk.provider';
+import { LOGIN_PROVIDERS } from './auth.login-providers';
 import { MaxProvider } from './providers/max.provider';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
@@ -56,10 +54,7 @@ import { NotificationModule } from '../notification/notification.module';
     TotpAttemptsService,
     StepUpService, // его берёт StepUpGuard в @UseGuards
     EmailService,
-    TelegramProvider,
-    VkProvider,
-    MaxProvider,
-    AuthProviderRegistry,
+    ...LOGIN_PROVIDERS, // площадки входа, их реестр, хвост OAuth-колбэков
   ],
   controllers: [
     AuthController,
