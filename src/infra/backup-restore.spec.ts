@@ -9,7 +9,7 @@
 // пробы (щит обязан уметь падать, не только зеленеть, правило №15).
 // Формат бэкапа (аудит D-2): стандартный `openssl enc -aes-256-cbc -pbkdf2
 // -iter 200000 -salt -pass env:BACKUP_ENCRYPTION_KEY` — ключ не в командной
-// строке, отдельный от ENCRYPTION_KEY, рядом лежит .sha256. Загрузка в R2 и
+// строке, отдельный от ENCRYPTION_KEY, рядом лежит .sha256. Загрузка в Yandex Object Storage и
 // хранение — backup-upload.spec.ts.
 // Реальный Postgres end-to-end (миграции → маркер → бэкап → restore во
 // вторую БД → сверка схемы) — nightly.yml, джоба backup-restore.

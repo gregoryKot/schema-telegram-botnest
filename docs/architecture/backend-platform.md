@@ -113,10 +113,10 @@
   - Связь брони с аккаунтом — только у записи из приложения (`Booking.userId`): удаление аккаунта отвязывает (`src/bot/account.delete.ts`), слияние переносит (`USER_OWNED_TABLES`), выгрузка — `src/account/export-policy.booking.ts`.
   - Статус (HELD→CONFIRMED→CANCELLED/COMPLETED) меняется только CAS: `updateMany` с текущим статусом в WHERE, эффекты — по `count===1`; создание — под `pg_advisory_xact_lock` (`src/booking/booking-slot-lock.ts`); HELD сгорает по крону раз в минуту под leader-lease.
   - Один вебхук `/api/payment/result` роутит по диапазону InvId (подписки, донаты, брони); без настроенной Robokassa в проде платный путь отдаёт 503 (`src/booking/payment-guard.ts`); PII брони зашифрована (`src/booking/booking.schema.ts`) и затирается через 12 мес.
-  - iCloud и Zoom — зарубежные базы (152-ФЗ, ч. 5 ст. 18): данные клиента туда не уходят, исходящие запросы целиком пинит `src/booking/foreign-egress.spec.ts`. Кто придёт, владелец видит в карточке брони (Telegram, почта) и в админке записи.
+  - iCloud и Zoom — зарубежные базы (152-ФЗ, ч. 5 ст. 18): данные клиента туда не уходят, исходящие запросы целиком пинит `src/booking/foreign-egress.spec.ts`. Созданное до обезличивания чистит разовая админ-команда `/scrub_foreign` (`go` — боевой прогон): `src/booking/foreign-scrub.command.ts`, движок `foreign-scrub.ts`, Zoom — `zoom-room.ts`. Кто придёт, владелец видит в карточке брони (Telegram, почта) и в админке записи.
 
 ### `src/infra/`
-Операционный каркас: leader-election кронов, проверка env и реестр возможностей при старте, самопроверка прода (пробы), ретеншен, HTTP-края (прокси, хост, тело), конфиг бэкапов в R2.
+Операционный каркас: leader-election кронов, проверка env и реестр возможностей при старте, самопроверка прода (пробы), ретеншен, HTTP-края (прокси, хост, тело), конфиг бэкапов в Yandex Object Storage.
 - Входы:
   - `src/infra/cron-leader.service.ts` — `claimRun(name, LEASE_WINDOW.*)`: аренда крона строкой `CronLease`
   - `src/infra/env-registry.ts` — реестр env (форматы); записи в `env-registry.entries.*.ts`
@@ -129,7 +129,7 @@
   - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-dedup.ts` (DM по смене набора упавших — аренда `self-check-alert:*` в `CronLease`; база недоступна — память процесса, `alert-tracker.ts`), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники), `src/infra/self-check/process-lives.ts` (жизни прошлых процессов в `ProcessLife`: тик, пришедшийся на них, проба `cronLeases` судит, а не прощает рестартом)
   - `src/infra/db-outage.service.ts` — закрывает аварию БД и шлёт DM о восстановлении; `src/infra/session-retention.service.ts` — чистка WebSession/EmailToken
   - HTTP-края: `src/infra/trust-proxy.ts` (один хоп), `src/infra/request-host.ts` (хост из Host), `src/infra/canonical-host.ts` (301 на apex), `src/infra/body-limit.ts` и `src/infra/body-parsers.ts` (потолок тела 256 КБ), `src/infra/static-cache.ts`
-  - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts` (типизированный вход в подпись SigV4 `deploy/s3-sign.cjs` — одна на приложение и `scripts/s3-api.sh`), `src/infra/s3-list-objects.ts` (проба свежести в Cloudflare R2; сам прогон — `deploy/backup-scheduler.cjs`)
+  - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts` (типизированный вход в подпись SigV4 `deploy/s3-sign.cjs` — одна на приложение и `scripts/s3-api.sh`), `src/infra/s3-list-objects.ts` (проба свежести в Yandex Object Storage; сам прогон — `deploy/backup-scheduler.cjs`)
   - AlertLogger — вне infra: `src/logger/alert.logger.ts`; доставка — `src/utils/admin-alert.ts` (Telegram, затем письмо через `src/infra/postbox-mail.ts`)
   - Троттлинг-хранилище — вне infra: `src/api/hybrid-throttle-storage.ts` + `src/api/postgres-throttle-storage.ts`
 - Связи: Prisma (CronLease, WebSession, EmailToken); `CronLeaderModule` — @Global, `claimRun` зовут кроны booking/, auth/, channel/, telegram/; `SelfCheckService` и `ThrottleHitModule` регистрируются в `src/app.module.ts`; `src/main.ts` вызывает boot-проверки env и capability; пробы читают `src/cli/rotate-encryption/delegates.ts` и `src/utils/alert-email-health.ts`.
@@ -189,7 +189,7 @@
   - `src/test-support/fake-prisma.spec-helper.ts` — in-memory Prisma: `createFakeTable`, `matchesWhere`, `createFakeTransaction`
   - `src/test-support/route-method-auth.ts` — AST-разбор роутов контроллера по методам; `GUARD_NAMES`
   - `src/test-support/cron-source-scan.ts` — сканер пар `@Cron` + `claimRun` в исходниках
-  - `src/test-support/fake-s3.ts` — поддельный S3/R2, сверяет подпись SigV4
+  - `src/test-support/fake-s3.ts` — поддельный S3/Yandex Object Storage, сверяет подпись SigV4
   - `src/test-support/fake-telegram-api.ts` — поддельный Bot API для шовных тестов поллинга
 - Прочее: `src/test-support/load-with-keys.ts` (модули под заданными ENCRYPTION_KEY), `src/test-support/recorded-fixture.ts` (читает `test/fixtures/recorded/**`), `src/test-support/memory-throttle-reset.ts` (сброс троттлера между e2e), `src/test-support/exit-code-leak.ts` (спек, оставивший `process.exitCode`, краснеет), `src/test-support/esm-to-cjs.transform.cjs` (переводит пакеты `@nestjs/*` 12-й версии — только ESM — в CommonJS для jest на Node 22; подключён трансформером `transform` + списком `transformIgnorePatterns` в `package.json` (jest) и `test/jest-e2e.json`; список пакетов в четырёх местах сверяет `esm-to-cjs.transform.spec.ts`; удалить вместе с обоими списками, когда CI перейдёт на Node 24.9+, где jest сам грузит ESM через require; прод на Node 22.12+ грузит их штатно через `require(esm)`), `src/test-support/subscription-update-many.ts`, `src/test-support/run-script.ts`
 - Связи: спеки всего `src/**`; `src/security/*.invariants.spec.ts` берут `route-method-auth.ts`, `src/infra/self-check/cron-lease-registry.spec.ts` — `cron-source-scan.ts`; e2e на реальном Postgres и их `fake-prisma` лежат вне src, в `test/e2e-support/`.

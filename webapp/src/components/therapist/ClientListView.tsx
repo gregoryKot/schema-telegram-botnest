@@ -27,6 +27,7 @@ interface Props {
   clients: TherapyClientSummary[];
   loading: boolean;
   loadFailed: boolean;
+  onRetry: () => void;
   listTab: 'clients' | 'kanban';
   setListTab: (t: 'clients' | 'kanban') => void;
   searchQuery: string;
@@ -45,12 +46,11 @@ const signOf = (sign: typeof INVITE_SIGN) => <span className="tc-block-sign" ari
 const blockAlert = (sign: typeof INVITE_SIGN) => (text: string) => <PaperAlert sign={sign} title={text} />;
 
 export function ClientListView({
-  animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
+  animKey, clients, loading, loadFailed, onRetry, listTab, setListTab, searchQuery, setSearchQuery,
   filterStatus, setFilterStatus, board, openClient, addClient, onSearch,
 }: Props) {
   const tr = useTr();
-  // Пустой список — онбординг: форма открыта сразу. Созданного клиента не
-  // прячем, пока терапевт не увидел ссылку-приглашение (created).
+  // Пустой список — онбординг (форма сразу); созданного клиента не прячем, пока не увидена ссылка (created).
   const noClients = !loading && !loadFailed && clients.length === 0;
   const formVisible = addClient.open || noClients || addClient.created !== null;
 
@@ -105,7 +105,7 @@ export function ClientListView({
             </div>
           ) : loadFailed ? (
             // Сбой ≠ пусто: полный ростер не должен выглядеть как «клиентов нет».
-            <PaperAlert sign="cluster" className="tc-error"
+            <PaperAlert sign="cluster" className="tc-error" onRetry={onRetry}
               title={tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')} />
           ) : clients.length === 0 ? (
             // Пустой список — одна сцена кабинета; главное действие — открытая форма выше.

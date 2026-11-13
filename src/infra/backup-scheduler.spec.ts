@@ -1,4 +1,4 @@
-// Планировщик бэкапов в R2 (deploy/backup-scheduler.cjs, аудит D-2). До него
+// Планировщик бэкапов в Yandex Object Storage (deploy/backup-scheduler.cjs, аудит D-2). До него
 // скрипт бэкапа не вызывал никто. Модуль — CommonJS именно ради
 // этого спека: jest не грузит ESM, а все внешнее (spawn, время, psql, лог)
 // подменяется, поэтому тик идёт без процессов и без часов.
@@ -36,7 +36,7 @@ const sched = jest.requireActual<Scheduler>(
 );
 
 const ENV = {
-  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
   BACKUP_S3_BUCKET: 'bkt',
   BACKUP_S3_ACCESS_KEY_ID: 'keyid',
   BACKUP_S3_SECRET_ACCESS_KEY: 'appkey-SECRET',
@@ -123,7 +123,7 @@ describe('startBackupScheduler: конфигурация', () => {
     expect(res).toBeNull();
     expect(info).toHaveBeenCalledTimes(1);
     expect(info.mock.calls[0][0]).toMatch(
-      /бэкапы в R2 выключены: нет BACKUP_S3_ENDPOINT/,
+      /бэкапы в Yandex Object Storage выключены: нет BACKUP_S3_ENDPOINT/,
     );
   });
 

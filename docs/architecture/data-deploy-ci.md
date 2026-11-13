@@ -39,7 +39,7 @@
   - `npm run build --prefix game` (`prebuild` = `i18n:check`), копия в webapp/dist/game/;
   - `npm prune --production`.
 - Стадия runtime:
-  - openssl, `postgresql-client` 16 из PGDG и curl (`deploy/install-pg-client.sh`), `NODE_ENV=production`;
+  - openssl, `postgresql-client` 17 из PGDG (мажор сервера прода) и curl (`deploy/install-pg-client.sh`), `NODE_ENV=production`;
   - копируются `package*.json`, прод `node_modules`, `dist`, `prisma/`, `prisma.config.js`, webapp/dist, `assets/`, `BUILD_INFO`;
   - `deploy/` копируется целиком (в нём и `s3-sign.cjs`, его `require`-ит `dist/infra/s3-sigv4.js`), из `scripts/` только `backup-upload.sh`, `restore-backup.sh`, `backup-fetch-latest.sh`, `s3-api.sh`;
   - `USER node`; `HEALTHCHECK` смотрит тело `/health` на `"status":"ok"`, а не код ответа;
@@ -50,7 +50,7 @@
 2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
-5. `backup-scheduler.cjs`: бэкап БД в R2 с арендой через `CronLease`, стартует только после миграций.
+5. `backup-scheduler.cjs`: бэкап БД в Yandex Object Storage с арендой через `CronLease`, стартует только после миграций.
 6. `exec node dist/main` на `APP_PORT`, с номером запуска, числом падений за сутки и решением троттла DM (`STARTUP_LAUNCH`, `STARTUP_CRASHES_DAY`, `STARTUP_NOTICE`). Рестарты до `STARTUP_MAX_FAILS`=3 падений за окно `STARTUP_CRASH_WINDOW_MS`=15 мин или `STARTUP_MAX_FAILS_HOUR`=6 за час (`crash-window.mjs`), затем техработы, пауза 5 мин (×2, потолок 1 ч) и новая серия. Рост паузы сбрасывает только прогон дольше окна.
 
 Состояние держит `supervisor-status.mjs`; парковка (упавший `migrate deploy`, исчерпанный лимит перезапусков, база не поднялась) шлёт DM владельцу через Bot API по `BOT_TOKEN`/`ADMIN_ID` с троттлом как у DM о перезапуске (1, 2, 4, 8… остановка по причине за сутки); без них молчит. Настройки из env — `entrypoint-config.mjs`. SIGTERM/SIGINT пробрасываются приложению.
