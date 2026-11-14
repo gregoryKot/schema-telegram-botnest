@@ -8,13 +8,19 @@ import { useDialogA11y } from './dialogA11y';
 afterEach(cleanup);
 
 function Sheet() {
-  return <div {...useDialogA11y()}><button>Закрыть</button></div>;
+  return (
+    <div {...useDialogA11y()}>
+      <button>Закрыть</button>
+    </div>
+  );
 }
 
 function blurInsideInert(page: HTMLElement, opener: HTMLElement) {
   opener.focus();
   page.setAttribute('inert', '');
-  opener.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+  opener.dispatchEvent(
+    new FocusEvent('focusout', { bubbles: true, relatedTarget: null }),
+  );
   opener.blur(); // jsdom сам фокус из inert не снимает
 }
 
@@ -37,10 +43,12 @@ describe('useDialogA11y — открыватель, потерявший фок�
     const other = document.body.appendChild(document.createElement('input'));
     blurInsideInert(page, opener);
     page.removeAttribute('inert');
-    other.focus(); other.blur();
+    other.focus();
+    other.blur();
     const { unmount } = render(<Sheet />);
     unmount();
     expect(document.activeElement).not.toBe(opener);
-    page.remove(); other.remove();
+    page.remove();
+    other.remove();
   });
 });

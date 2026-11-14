@@ -32,15 +32,27 @@ function focusableIn(container: HTMLElement): HTMLElement[] {
 // activeElement = body. Элемент, потерявший фокус внутри inert, — открыватель; любой новый фокус его забывает.
 let blurredByInert: HTMLElement | null = null;
 if (typeof document !== 'undefined') {
-  document.addEventListener('focusout', (e) => {
-    const t = e.target as HTMLElement | null;
-    if (!e.relatedTarget && t?.closest?.('[inert]')) blurredByInert = t;
-  }, true);
-  document.addEventListener('focusin', () => { blurredByInert = null; }, true);
+  document.addEventListener(
+    'focusout',
+    (e) => {
+      const t = e.target as HTMLElement | null;
+      if (!e.relatedTarget && t?.closest?.('[inert]')) blurredByInert = t;
+    },
+    true,
+  );
+  document.addEventListener(
+    'focusin',
+    () => {
+      blurredByInert = null;
+    },
+    true,
+  );
 }
 function openerOf(active: Element | null): HTMLElement | null {
   if (active && active !== document.body) return active as HTMLElement;
-  return blurredByInert?.isConnected ? blurredByInert : (active as HTMLElement | null);
+  return blurredByInert?.isConnected
+    ? blurredByInert
+    : (active as HTMLElement | null);
 }
 
 export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {

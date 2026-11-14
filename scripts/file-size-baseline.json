@@ -729,7 +729,7 @@
   "shared/src/utils/colorMix.ts": 9,
   "shared/src/utils/crisisMarkers.ts": 123,
   "shared/src/utils/deviceTimeZone.ts": 24,
-  "shared/src/utils/dialogA11y.ts": 96,
+  "shared/src/utils/dialogA11y.ts": 108,
   "shared/src/utils/dialogStack.ts": 94,
   "shared/src/utils/diaryFields.ts": 17,
   "shared/src/utils/drafts.ts": 77,

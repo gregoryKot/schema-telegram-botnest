@@ -130,7 +130,9 @@ for (const size of WIDE) {
       }),
     );
     // Группы встают сеткой по рядам и в WebKit: последняя — в нижнем ряду (колонками WebKit ставил её на середину).
-    const tops = await page.locator('.gr-list--groups > .sg-group').evaluateAll((gs) => gs.map((g) => g.getBoundingClientRect().top));
+    const tops = await page
+      .locator('.gr-list--groups > .sg-group')
+      .evaluateAll((gs) => gs.map((g) => g.getBoundingClientRect().top));
     expect(tops.at(-1)!).toBeGreaterThanOrEqual(Math.max(...tops) - 1);
     // Режимов больше, чем входит в окно, — иначе проверка ничего не доказывает.
     expect(scrollHeight).toBeGreaterThan(clientHeight);
