@@ -1,7 +1,7 @@
 // PricingService — источник правды для суммы, которую спишет Robokassa.
 // Ошибка тут напрямую бьёт по деньгам (списали не ту сумму / не тот прайс).
 import { SessionType } from '@prisma/client';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { PricingService } from './pricing.service';
 import { PRICE_MAX } from './price-rules';
 import { SESSION_DEFAULT_PRICE, SESSION_META } from './booking.config';
@@ -307,5 +307,21 @@ describe('PricingService.landingText', () => {
     expect(await service.landingText(LLMS)).toContain('5 200 ₽');
     // Чтение — одно до правки и одно после, а не на каждую отдачу.
     expect(prisma.bookingSetting.findUnique).toHaveBeenCalledTimes(2);
+  });
+
+  it('база не ответила — дефолт кода и предупреждение в лог, а не ошибка страницы', async () => {
+    const { service, prisma } = makeService();
+    prisma.bookingSetting.findUnique.mockRejectedValueOnce(new Error('db down'));
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    try {
+      expect(await service.landingText(LLMS)).toBe(LLMS);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Цена визитки не прочитана: Error: db down'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
