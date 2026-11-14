@@ -6,17 +6,17 @@ import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 import { CalDavService } from './caldav.service';
 import { cancelEventUid } from './booking.transitions';
 
-/** Глубина сверки: брони, отменённые за столько мс (CAS отмены двигает `updatedAt`). */
+/** Глубина сверки: брони, отменённые за столько мс. Поля «когда отменена» нет — берём `updatedAt`:
+ * его двигает CAS отмены, а поздняя правка строки (оплата, обезличивание) даст ещё сутки DELETE с 404. */
 export const RECONCILE_LOOKBACK_MS = 24 * 3_600_000;
 
 /**
- * Сверка календаря владельца с отменами. Отмена шлёт в iCloud один DELETE, а
- * PUT подтверждения, оборванный гибелью пода, может дойти ПОСЛЕ него и вернуть
- * событие: слот выглядит занятым, владелец видит несуществующую сессию. CAS
- * здесь бессилен — запрос уже в сети. Поэтому раз в 15 минут DELETE
- * повторяется по каждой брони, отменённой за сутки: uid — тот же, что у отмены
- * (`cancelEventUid`), «события нет» (404/410) — успех, повтор безопасен. Тот
- * же проход добирает DELETE отмены, упавший на сбое сети.
+ * Сверка календаря владельца с отменами. Отмена шлёт в iCloud один DELETE, а PUT подтверждения,
+ * оборванный гибелью пода, может дойти ПОСЛЕ него и вернуть событие: слот выглядит занятым,
+ * владелец видит несуществующую сессию. CAS здесь бессилен — запрос уже в сети. Поэтому раз в
+ * 15 минут DELETE повторяется по каждой брони, отменённой за сутки: uid — тот же, что у отмены
+ * (`cancelEventUid`), «события нет» (404/410) — успех, повтор безопасен. Тот же проход добирает
+ * DELETE отмены, упавший на сбое сети.
  */
 @Injectable()
 export class BookingCalendarReconcileService {
@@ -61,9 +61,9 @@ export class BookingCalendarReconcileService {
       if (uid && (await this.calDav.removeEvent(uid)) === 'deleted')
         removed.push(row.id);
     }
-    // Ошибки DELETE пишет CalDavService; следующий тик повторит их сам.
+    // Сбои пишет CalDavService. Отчёт — debug: при 2xx на уже снятое событие он повторялся бы каждый тик.
     if (removed.length)
-      this.logger.warn(
+      this.logger.debug(
         `Booking calendar reconcile: removed events of cancelled bookings ${removed.map((id) => `#${id}`).join(', ')}`,
       );
   }

@@ -19,10 +19,12 @@ const ICLOUD: Record<string, string | undefined> = {
 };
 const HOUR = 3_600_000;
 
-// Поддельный iCloud: события по адресу, PUT кладёт, DELETE снимает или 404.
+// Поддельный iCloud: события по адресу, PUT кладёт, DELETE снимает или отвечает
+// `missingStatus` (404; 204 — если iCloud не отличает снятое событие от живого).
 let events: Map<string, string>;
 let calls: { method: string; url: string }[];
 let outage: false | 503 | 'network';
+let missingStatus: number;
 function fakeICloud(url: string, init: RequestInit = {}) {
   const method = init.method ?? 'GET';
   calls.push({ method, url });
@@ -37,7 +39,7 @@ function fakeICloud(url: string, init: RequestInit = {}) {
   const key = url.slice(CAL.length);
   const body = typeof init.body === 'string' ? init.body : '';
   if (method === 'PUT') return (events.set(key, body), res(201));
-  if (method === 'DELETE') return res(events.delete(key) ? 204 : 404);
+  if (method === 'DELETE') return res(events.delete(key) ? 204 : missingStatus);
   return res(500);
 }
 
@@ -113,14 +115,17 @@ function make(rows: Booking[], { claim = true, env = ICLOUD } = {}) {
 }
 
 const originalFetch = global.fetch;
+let debug: jest.SpyInstance;
 let warn: jest.SpyInstance;
 let error: jest.SpyInstance;
 beforeEach(() => {
   events = new Map();
   calls = [];
   outage = false;
+  missingStatus = 404;
   global.fetch = jest.fn(fakeICloud);
   jest.spyOn(Logger.prototype, 'log').mockImplementation();
+  debug = jest.spyOn(Logger.prototype, 'debug').mockImplementation();
   warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
   error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
 });
@@ -157,21 +162,34 @@ describe('BookingCalendarReconcileService.reconcileCancelled', () => {
 
     expect(calls).toEqual([DELETE_42]);
     expect(events.size).toBe(0);
-    expect(String(warn.mock.calls[0][0])).toContain('#42');
+    expect(String(debug.mock.calls[0][0])).toContain('#42');
   });
 
-  it('повторный запуск идемпотентен: события уже нет (404) — успех без warn и error', async () => {
+  it('повторный запуск идемпотентен: события уже нет (404) — успех без строки в логе', async () => {
     const { service } = await cancelThenLatePut();
     await service.reconcileCancelled();
     calls = [];
-    warn.mockClear();
+    debug.mockClear();
 
     await service.reconcileCancelled();
 
     expect(calls).toEqual([DELETE_42]);
     expect(events.size).toBe(0);
+    expect(debug).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled(); // error ушёл бы владельцу DM
+  });
+
+  it('iCloud отвечает 204 и на уже снятое событие — повторы за сутки не пишут warn каждый тик', async () => {
+    const { service } = await cancelThenLatePut();
+    missingStatus = 204;
+
+    for (let tick = 0; tick < 3; tick++) await service.reconcileCancelled();
+
+    expect(calls).toEqual([DELETE_42, DELETE_42, DELETE_42]);
+    expect(debug).toHaveBeenCalledTimes(3); // неотличимо от снятия — только debug
+    expect(warn).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('сбой iCloud (503, обрыв сети) — событие ждёт следующего тика, DM владельцу не будит', async () => {
