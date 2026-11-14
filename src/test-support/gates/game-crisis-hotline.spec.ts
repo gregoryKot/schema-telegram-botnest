@@ -40,8 +40,24 @@ describe('кризисная строка игры', () => {
     expect(cta).toContain(`const CRISIS_TEL = '${tel}';`);
   });
 
-  it('строка стоит на экране смерти и на обеих финальных CTA', () => {
-    // одно объявление хелпера + три вызова: gameOver, showBranch, showTherapyCta
-    expect(screens.match(/addCrisisLine\(/g)).toHaveLength(4);
+  it('строка стоит на экране смерти и на всех трёх финальных CTA', () => {
+    // одно объявление хелпера + четыре вызова: gameOver, showBranch, showCta, showTherapyCta
+    expect(screens.match(/addCrisisLine\(/g)).toHaveLength(5);
+  });
+
+  // Тело функции верхнего уровня: от `function имя(` до первой `}` в начале строки.
+  const fnBody = (src: string, fn: string): string => {
+    const start = src.indexOf(`function ${fn}(`);
+    const end = src.indexOf('\n}\n', start);
+    return start === -1 || end === -1 ? '' : src.slice(start, end);
+  };
+
+  it.each(['showBranch', 'showCta'])('%s сам зовёт addCrisisLine', (fn) => {
+    expect(fnBody(cta, fn)).toContain('addCrisisLine(');
+  });
+
+  it('контрольный: тело функции без вызова строку не находит', () => {
+    expect(fnBody(cta, 'modeShort')).not.toBe('');
+    expect(fnBody(cta, 'modeShort')).not.toContain('addCrisisLine(');
   });
 });

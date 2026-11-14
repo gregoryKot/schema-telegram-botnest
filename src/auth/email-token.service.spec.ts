@@ -1,23 +1,15 @@
-// H1 (аудит 2026-08, docs/security/AUDIT_2026-08-12.md): consumeEmailToken
-// переехал из AuthService в EmailTokenService — magic-link LOGIN теперь
-// гейтится TOTP, если он включён у пользователя (link_email_auth — нет, это
-// подтверждение из уже своей почты, не аутентификация). Тесты перенесены
-// сюда из auth.service.spec.ts (жили как
-// `describe('AuthService — consumeEmailToken')`) и адаптированы под
-// discriminated union EmailConsumeResult; `consumeEmailLoginToken`-алиас
-// удалён вместе с методом.
+// Погашение ссылки привязки почты (EmailTokenService.consumeEmailToken).
+// Входа по ссылке на почту нет (решение владельца, ч. 10 ст. 8 149-ФЗ): сервис
+// гасит только link_email_auth и сессию не выдаёт никогда.
 //
-// Сервис под тестом собран из РЕАЛЬНЫХ коллабораторов (AuthService,
-// TotpService) поверх одной общей фейковой Prisma — consumeEmailToken
-// делегирует issueTokens/linkProviderToUser/buildTotpChallengeToken
-// настоящей логике AuthService, а 2FA-гейт читает настоящую
-// TotpService.isEnabled, а не моки.
+// Сервис под тестом собран из РЕАЛЬНОГО AuthService поверх одной общей
+// фейковой Prisma: токен выписывает настоящий linkEmailToAccount, привязку
+// делает настоящий linkProviderToUser, а не моки.
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { AuthService } from './auth.service';
-import { TotpService } from './totp.service';
 import { LinkSessionRequiredException } from './link-session-required.exception';
-import { EmailTokenService, EmailConsumeResult } from './email-token.service';
+import { EmailTokenService } from './email-token.service';
 import {
   createFakeTable,
   createFakeTransaction,
@@ -25,27 +17,20 @@ import {
 } from '../test-support/fake-prisma.spec-helper';
 import { decrypt } from '../utils/crypto';
 
-// decrypt обёрнут в jest.fn (реальная реализация по умолчанию через
-// requireActual) — нужно точечно замокать возврат null для теста на
-// LogicalOperator-мутант (`?? row.email` vs `&& row.email`): реальный
-// decrypt() никогда не возвращает null для непустой строки, поэтому иначе
-// эту ветку не отличить от `&&` (тот же приём, что в auth.service.spec.ts).
+// decrypt обёрнут в jest.fn (реальная реализация по умолчанию) — чтобы
+// точечно вернуть null и отличить `?? row.email` от `&& row.email`.
 jest.mock('../utils/crypto', () => {
   const actual = jest.requireActual('../utils/crypto');
   return { ...actual, decrypt: jest.fn(actual.decrypt) };
 });
 
-const JWT_SECRET = 'test-jwt-secret';
-const BOT_TOKEN = '12345:TEST_TOKEN';
 const FIXED_DATE = new Date('2026-07-16T12:00:00.000Z');
+const OWNER = 42n;
 
-// Тот же общий stateful-фейк, что в auth.service.spec.ts (fake-prisma.spec-helper).
-function makeFakePrisma() {
+function makeService() {
   const webSessions: Row[] = [];
   const authProviders: Row[] = [];
-  const users: Row[] = [];
   const emailTokens: Row[] = [];
-
   const emailToken = createFakeTable(emailTokens, {
     defaults: { usedAt: null },
   });
@@ -53,157 +38,124 @@ function makeFakePrisma() {
     defaults: { revokedAt: null },
   });
   const authProvider = createFakeTable(authProviders);
-  const user = createFakeTable(users);
-
+  const user = createFakeTable([]);
   // any — сервисы ждут PrismaService, тесты кастуют методы таблиц в jest.Mock.
   const prisma: any = { emailToken, webSession, authProvider, user };
   prisma.$transaction = createFakeTransaction<Row>(prisma);
 
-  return { prisma, webSessions, authProviders, users, emailTokens };
-}
-
-function makeService() {
-  const { prisma, webSessions, authProviders, users, emailTokens } =
-    makeFakePrisma();
-  const defaults = {
-    JWT_SECRET,
-    BOT_TOKEN,
+  const env: Record<string, string> = {
+    JWT_SECRET: 'test-jwt-secret',
     WEBAPP_URL: 'https://schemehappens.ru',
   };
-  const config = {
-    getOrThrow: (k: string) => defaults[k as keyof typeof defaults],
-  } as any;
-  const securityLog = { log: jest.fn() } as any;
+  const config = { getOrThrow: (k: string) => env[k] } as any;
   const emailSvc = {
-    sendLoginLink: jest.fn().mockResolvedValue(undefined),
     sendLinkEmailLetter: jest.fn().mockResolvedValue(undefined),
-  } as any;
-  const auth = new AuthService(prisma, config, securityLog, emailSvc);
-  const totp = new TotpService(prisma, {
-    lockedFor: jest.fn().mockResolvedValue(0),
-    recordFailure: jest.fn().mockResolvedValue(undefined),
-  } as never);
-  const svc = new EmailTokenService(prisma, auth, totp);
-  return {
-    svc,
-    auth,
-    totp,
-    prisma,
-    webSessions,
-    authProviders,
-    users,
-    emailTokens,
-    securityLog,
-    emailSvc,
   };
+  const securityLog = { log: jest.fn() } as any;
+  const auth = new AuthService(prisma, config, securityLog, emailSvc as any);
+  const svc = new EmailTokenService(prisma, auth);
+
+  /** Письмо привязки на `email` для `userId`; возвращает сырой токен ссылки. */
+  async function linkToken(userId: bigint, email: string): Promise<string> {
+    await auth.linkEmailToAccount(userId, email);
+    const calls = emailSvc.sendLinkEmailLetter.mock.calls;
+    const link = (calls[calls.length - 1] as string[])[1];
+    return new URL(link).searchParams.get('token')!;
+  }
+
+  return { svc, prisma, webSessions, authProviders, emailTokens, linkToken };
 }
 
-// Достаёт сырой токен из последней вызванной ссылки sendLoginLink — линк вида
-// ".../api/auth/email/callback?token=<raw>". emailSvc живёт на AuthService —
-// requestEmailLogin/linkEmailToAccount (выдача токена) там и остались.
-function extractTokenFromLink(auth: AuthService): string {
-  const emailSvc = (auth as any).emailSvc;
-  // Письмо входа и письмо привязки — разные методы (A3); берём последнее.
-  const calls = [
-    ...emailSvc.sendLoginLink.mock.calls,
-    ...emailSvc.sendLinkEmailLetter.mock.calls,
-  ];
-  const link: string = (calls[calls.length - 1] as string[])[1];
-  return new URL(link).searchParams.get('token')!;
-}
-
-function assertTokens(
-  result: EmailConsumeResult,
-): asserts result is Extract<EmailConsumeResult, { kind: 'tokens' }> {
-  if (result.kind !== 'tokens')
-    throw new Error(`expected kind=tokens, got ${result.kind}`);
-}
-
-function assertLinked(
-  result: EmailConsumeResult,
-): asserts result is Extract<EmailConsumeResult, { kind: 'linked' }> {
-  if (result.kind !== 'linked')
-    throw new Error(`expected kind=linked, got ${result.kind}`);
-}
-
-function assertChallenge(
-  result: EmailConsumeResult,
-): asserts result is Extract<EmailConsumeResult, { kind: 'totp_challenge' }> {
-  if (result.kind !== 'totp_challenge')
-    throw new Error(`expected kind=totp_challenge, got ${result.kind}`);
+/** Строка токена в обход выдачи — для старых токенов и гонок. */
+function seedToken(rows: Row[], raw: string, over: Partial<Row> = {}) {
+  rows.push({
+    id: `et-${rows.length + 1}`,
+    userId: OWNER,
+    tokenHash: createHash('sha256').update(raw).digest('hex'),
+    email: 'seed@example.com',
+    purpose: 'link_email_auth',
+    expiresAt: new Date(FIXED_DATE.getTime() + 100_000),
+    usedAt: null,
+    ...over,
+  });
 }
 
 beforeEach(() => jest.useFakeTimers({ now: FIXED_DATE }));
 
 afterEach(() => jest.useRealTimers());
 
-describe('EmailTokenService — consumeEmailToken', () => {
-  // S16 (аудит 2026-11): раньше новый пользователь получал в открытый
-  // User.firstName часть адреса до @ — то есть кусок почты, а не имя.
-  it('S16: новый пользователь по почте — firstName пуст, части адреса в нём нет', async () => {
-    const { svc, auth, users } = makeService();
-    await auth.requestEmailLogin('ivan.petrov1985@example.com');
-    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
-    assertTokens(result);
-    expect(users).toHaveLength(1);
-    expect(users[0].firstName ?? null).toBeNull();
-    const strings = Object.values(users[0]).filter(
-      (v) => typeof v === 'string',
-    );
-    expect(strings.join(' ')).not.toContain('ivan.petrov1985');
+describe('EmailTokenService — привязка почты', () => {
+  it('клик из сессии владельца → адрес привязан, возвращён его userId, сессии нет', async () => {
+    const { svc, linkToken, authProviders, webSessions, emailTokens } =
+      makeService();
+    const raw = await linkToken(OWNER, 'Mine@Example.com');
+    await expect(svc.consumeEmailToken(raw, OWNER)).resolves.toBe(OWNER);
+    expect(authProviders).toEqual([
+      expect.objectContaining({
+        userId: OWNER,
+        provider: 'email',
+        providerId: 'mine@example.com',
+      }),
+    ]);
+    expect(webSessions).toHaveLength(0);
+    expect(emailTokens[0].usedAt).not.toBeNull();
   });
 
   it('пустой токен → именно "Missing token" (не проваливается в "Token not found")', async () => {
     const { svc } = makeService();
-    await expect(svc.consumeEmailToken('')).rejects.toThrow('Missing token');
-  });
-
-  it('неизвестный токен → UnauthorizedException', async () => {
-    const { svc } = makeService();
-    await expect(svc.consumeEmailToken('garbage')).rejects.toThrow(
-      UnauthorizedException,
+    await expect(svc.consumeEmailToken('', OWNER)).rejects.toThrow(
+      'Missing token',
     );
   });
 
-  it('чужой (гарбаж) токен не находит СУЩЕСТВУЮЩИЙ в таблице чужой токен — findUnique обязан фильтровать по tokenHash, а не отдавать первую строку', async () => {
-    const { svc, auth, emailTokens } = makeService();
-    await auth.requestEmailLogin('victim@example.com'); // легитимная запись уже есть
+  it('чужой токен не находит СУЩЕСТВУЮЩИЙ — findUnique фильтрует по tokenHash', async () => {
+    const { svc, linkToken, emailTokens } = makeService();
+    await linkToken(OWNER, 'victim@example.com');
     expect(emailTokens).toHaveLength(1);
-    await expect(
-      svc.consumeEmailToken('completely-unrelated-garbage-token'),
-    ).rejects.toThrow('Token not found');
+    await expect(svc.consumeEmailToken('garbage', OWNER)).rejects.toThrow(
+      'Token not found',
+    );
   });
 
-  it('expiresAt ровно равен текущему моменту (граница) → ещё НЕ истёк, потребляется успешно', async () => {
-    const { svc, auth, emailTokens } = makeService();
-    await auth.requestEmailLogin('boundary@example.com');
+  it('expiresAt ровно сейчас (граница) → ещё НЕ истёк', async () => {
+    const { svc, linkToken, emailTokens } = makeService();
+    const raw = await linkToken(OWNER, 'boundary@example.com');
     emailTokens[0].expiresAt = new Date(FIXED_DATE.getTime());
-    const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw);
-    assertTokens(result);
-    expect(result.purpose).toBe('login');
+    await expect(svc.consumeEmailToken(raw, OWNER)).resolves.toBe(OWNER);
   });
 
-  it('второй потреблённый токен не помечает usedAt у первого (соседнего) — update обязан фильтровать по id, а не брать первую строку', async () => {
-    const { svc, auth, emailTokens } = makeService();
-    await auth.requestEmailLogin('first@example.com');
-    await auth.requestEmailLogin('second@example.com');
-    expect(emailTokens).toHaveLength(2);
-    // Достаём токен именно ВТОРОГО письма (последний вызов sendLoginLink).
-    const raw = extractTokenFromLink(auth);
-    await svc.consumeEmailToken(raw);
-    expect(emailTokens[0].usedAt).toBeNull(); // первый (соседний) не тронут
-    expect(emailTokens[1].usedAt).not.toBeNull(); // второй — потреблён
+  it('просроченный токен → UnauthorizedException, адрес не привязан', async () => {
+    const { svc, linkToken, emailTokens, authProviders } = makeService();
+    const raw = await linkToken(OWNER, 'expired@example.com');
+    emailTokens[0].expiresAt = new Date(FIXED_DATE.getTime() - 1000);
+    await expect(svc.consumeEmailToken(raw, OWNER)).rejects.toThrow(
+      'Token expired',
+    );
+    expect(authProviders).toHaveLength(0);
   });
 
-  it('гонка: два запроса с одним токеном (оба прочли usedAt=null) → одна сессия, второй «уже использован» (L3)', async () => {
-    const { svc, auth, prisma, emailTokens } = makeService();
-    await auth.requestEmailLogin('race@example.com');
-    const raw = extractTokenFromLink(auth);
+  it('второй токен не гасит соседний — updateMany фильтрует по id', async () => {
+    const { svc, linkToken, emailTokens } = makeService();
+    await linkToken(OWNER, 'first@example.com');
+    const raw = await linkToken(OWNER, 'second@example.com');
+    await svc.consumeEmailToken(raw, OWNER);
+    expect(emailTokens[0].usedAt).toBeNull();
+    expect(emailTokens[1].usedAt).not.toBeNull();
+  });
 
-    // Симулируем гонку: findUnique обоим отдаёт токен как ещё НЕ погашенный
-    // (реальная гонка — два запроса прочитали строку до того, как любой её
-    // записал). Быстрый if(row.usedAt) обходят оба; ловит только атомарный CAS.
+  it('повторное погашение → "Token already used"', async () => {
+    const { svc, linkToken } = makeService();
+    const raw = await linkToken(OWNER, 'used@example.com');
+    await svc.consumeEmailToken(raw, OWNER);
+    await expect(svc.consumeEmailToken(raw, OWNER)).rejects.toThrow(
+      'Token already used',
+    );
+  });
+
+  it('гонка: оба запроса прочли usedAt=null → второй «уже использован» (L3, CAS)', async () => {
+    const { svc, linkToken, prisma, emailTokens } = makeService();
+    const raw = await linkToken(OWNER, 'race@example.com');
+    // Быстрый if(row.usedAt) обходят оба; ловит только атомарный updateMany.
     jest
       .spyOn(prisma.emailToken, 'findUnique')
       .mockImplementation((args: any) => {
@@ -212,300 +164,94 @@ describe('EmailTokenService — consumeEmailToken', () => {
         );
         return Promise.resolve(row ? { ...row, usedAt: null } : null);
       });
-
-    const first = await svc.consumeEmailToken(raw);
-    assertTokens(first);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
+    await expect(svc.consumeEmailToken(raw, OWNER)).resolves.toBe(OWNER);
+    await expect(svc.consumeEmailToken(raw, OWNER)).rejects.toThrow(
       'Token already used',
     );
-
-    // usedAt проставлен ровно один раз — вторая сессия не выдана.
-    expect(emailTokens[0].usedAt).not.toBeNull();
   });
 
-  it('уже использованный токен → UnauthorizedException', async () => {
-    const { svc, auth } = makeService();
-    await auth.requestEmailLogin('used@example.com');
-    const raw = extractTokenFromLink(auth);
-    await svc.consumeEmailToken(raw);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('просроченный токен → UnauthorizedException', async () => {
-    const { svc, auth, emailTokens } = makeService();
-    await auth.requestEmailLogin('expired@example.com');
-    emailTokens[0].expiresAt = new Date(FIXED_DATE.getTime() - 1000);
-    const raw = extractTokenFromLink(auth);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  it('токен с неизвестным purpose → UnauthorizedException', async () => {
-    const { svc, auth, emailTokens } = makeService();
-    await auth.requestEmailLogin('badpurpose@example.com');
-    emailTokens[0].purpose = 'something_else';
-    const raw = extractTokenFromLink(auth);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
-    );
-  });
-
-  // Восстановление по запасной почте убрано (решение владельца 2026-10-22):
-  // токены 'recovery' / 'verify_email', выписанные до выкладки, по этой ручке
-  // не гасятся и сессию не дают — их отсекает белый список purpose.
-  it.each(['recovery', 'verify_email'])(
-    'старый токен восстановления (%s) не гасится → UnauthorizedException',
+  // Входа по почте нет: токен входа, выписанный до выкладки, не гасится и
+  // сессию не даёт; заодно — старые токены восстановления.
+  it.each(['login', 'recovery', 'verify_email', 'something_else'])(
+    'токен с purpose=%s → 401 "Token purpose mismatch", не погашен',
     async (purpose) => {
-      const { svc, auth, emailTokens } = makeService();
-      await auth.requestEmailLogin('legacy@example.com');
-      emailTokens[0].purpose = purpose;
-      const raw = extractTokenFromLink(auth);
-      await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-        UnauthorizedException,
+      const { svc, emailTokens, webSessions, authProviders } = makeService();
+      seedToken(emailTokens, 'old-raw', { purpose, userId: null });
+      await expect(svc.consumeEmailToken('old-raw', null)).rejects.toThrow(
+        new UnauthorizedException('Token purpose mismatch'),
       );
-      expect(emailTokens[0].usedAt).toBeFalsy();
+      expect(emailTokens[0].usedAt).toBeNull();
+      expect(webSessions).toHaveLength(0);
+      expect(authProviders).toHaveLength(0);
     },
   );
 
-  it('привязка (link_email_auth) без userId в токене → UnauthorizedException', async () => {
-    const { svc, auth, emailTokens } = makeService();
-    await auth.requestEmailLogin('nouser@example.com');
-    emailTokens[0].purpose = 'link_email_auth';
-    emailTokens[0].userId = null;
-    const raw = extractTokenFromLink(auth);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
+  it('токен входа известного адреса (userId есть) — тоже 401, даже из его сессии', async () => {
+    const { svc, emailTokens } = makeService();
+    seedToken(emailTokens, 'old-login', { purpose: 'login' });
+    await expect(svc.consumeEmailToken('old-login', OWNER)).rejects.toThrow(
+      'Token purpose mismatch',
     );
   });
 
-  // B-16 (аудит 2026-10): до погашения ссылки в БД нет ни User, ни AuthProvider
-  // — они заводятся здесь, когда человек доказал владение ящиком.
-  it('login нового адреса (userId=null) → аккаунт создаётся ПРИ погашении, токены выданы на него', async () => {
-    const { svc, auth, users, authProviders, emailTokens } = makeService();
-    await auth.requestEmailLogin('Newbie@Example.com');
-    expect(users).toHaveLength(0);
-    expect(authProviders).toHaveLength(0);
-
-    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
-    assertTokens(result);
-    expect(result.purpose).toBe('login');
-    expect(users).toHaveLength(1);
-    expect(authProviders).toHaveLength(1);
-    expect(authProviders[0]).toMatchObject({
-      provider: 'email',
-      providerId: 'newbie@example.com',
-      displayName: undefined, // S16: часть адреса — не имя
-    });
-    expect(result.userId).toBe(users[0].id);
-    expect(emailTokens[0].usedAt).not.toBeNull();
-  });
-
-  it('повторное погашение того же токена не плодит аккаунтов', async () => {
-    const { svc, auth, users, authProviders } = makeService();
-    await auth.requestEmailLogin('once@example.com');
-    const raw = extractTokenFromLink(auth);
-    await svc.consumeEmailToken(raw);
-    await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
-      UnauthorizedException,
+  it('привязка без userId в токене → UnauthorizedException', async () => {
+    const { svc, emailTokens } = makeService();
+    seedToken(emailTokens, 'no-user', { userId: null });
+    await expect(svc.consumeEmailToken('no-user', null)).rejects.toThrow(
+      'No user bound to token',
     );
-    expect(users).toHaveLength(1);
-    expect(authProviders).toHaveLength(1);
   });
 
-  it('два письма на один новый адрес → при погашении обоих получается ОДИН аккаунт', async () => {
-    const { svc, auth, users, authProviders } = makeService();
-    await auth.requestEmailLogin('twice@example.com');
-    const first = extractTokenFromLink(auth);
-    await auth.requestEmailLogin('twice@example.com');
-    const second = extractTokenFromLink(auth);
-    const r1 = await svc.consumeEmailToken(first);
-    const r2 = await svc.consumeEmailToken(second);
-    assertTokens(r1);
-    assertTokens(r2);
-    expect(r1.userId).toBe(r2.userId);
-    expect(users).toHaveLength(1);
-    expect(authProviders).toHaveLength(1);
-  });
-
-  it('login известного адреса → токены на существующий аккаунт, новых строк нет', async () => {
-    const { svc, auth, users, authProviders } = makeService();
-    users.push({ id: 77n });
-    authProviders.push({
-      id: 1,
-      userId: 77n,
-      provider: 'email',
-      providerId: 'known@example.com',
-    });
-    await auth.requestEmailLogin('known@example.com');
-    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
-    assertTokens(result);
-    expect(result.userId).toBe(77n);
-    expect(users).toHaveLength(1);
-    expect(authProviders).toHaveLength(1);
-  });
-
-  it('purpose=link_email_auth → привязывает email к целевому userId', async () => {
-    const { svc, auth, authProviders } = makeService();
-    await auth.linkEmailToAccount(42n, 'link@example.com');
-    const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw, undefined, undefined, 42n);
-    expect(result.purpose).toBe('link_email_auth');
-    expect(
-      authProviders.some(
-        (p) => p.provider === 'email' && String(p.userId) === '42',
-      ),
-    ).toBe(true);
-  });
-
-  it('decField(row.email) вернул null (напр. чужой ключ шифрования) → привязывается сырое row.email, не null (?? а не &&)', async () => {
-    const { svc, auth, authProviders } = makeService();
-    await auth.linkEmailToAccount(77n, 'decrypt-fallback@example.com');
-    const raw = extractTokenFromLink(auth);
+  it('decField(row.email) вернул null → привязывается сырое row.email (?? а не &&)', async () => {
+    const { svc, linkToken, authProviders } = makeService();
+    const raw = await linkToken(OWNER, 'decrypt-fallback@example.com');
     (decrypt as jest.Mock).mockReturnValueOnce(null);
-    const result = await svc.consumeEmailToken(raw, undefined, undefined, 77n);
-    expect(result.purpose).toBe('link_email_auth');
-    expect(
-      authProviders.some(
-        (p) =>
-          p.provider === 'email' &&
-          p.providerId === 'decrypt-fallback@example.com',
-      ),
-    ).toBe(true);
+    await svc.consumeEmailToken(raw, OWNER);
+    expect(authProviders[0].providerId).toBe('decrypt-fallback@example.com');
   });
 
-  it('purpose=link_email_auth, email привязался к другому userId между отправкой и переходом по ссылке (race) → ConflictException', async () => {
+  it('адрес успели привязать к другому аккаунту (race) → ConflictException', async () => {
     const { svc, emailTokens, authProviders } = makeService();
-    // Токен уже выпущен (пользователь получил письмо), но прежде чем он
-    // перешёл по ссылке — email успел стать AuthProvider'ом другого userId
-    // (напр. параллельный login тем же email). consumeEmailToken должен
-    // отклонить привязку, а не молча перезаписать чужой провайдер.
-    const raw = 'test-race-raw-token';
-    const tokenHash = createHash('sha256').update(raw).digest('hex');
-    emailTokens.push({
-      id: 'et-race',
-      userId: 999999n,
-      tokenHash,
-      email: 'taken@example.com',
-      purpose: 'link_email_auth',
-      expiresAt: new Date(FIXED_DATE.getTime() + 100_000),
-      usedAt: null,
-    });
+    seedToken(emailTokens, 'taken', { email: 'taken@example.com' });
     authProviders.push({
       id: 1,
       userId: 111n,
       provider: 'email',
       providerId: 'taken@example.com',
     });
-    await expect(
-      svc.consumeEmailToken(raw, undefined, undefined, 999999n),
-    ).rejects.toThrow(ConflictException);
+    await expect(svc.consumeEmailToken('taken', OWNER)).rejects.toThrow(
+      ConflictException,
+    );
   });
 });
 
 // A3 (аудит 2026-10): письмо привязки уходит на адрес, который ввёл
 // ЗАПРОСИВШИЙ, а кликнуть может кто угодно. До фикса клик жертвы привязывал
 // её адрес к аккаунту злоумышленника И выдавал жертве сессию этого аккаунта.
-describe('EmailTokenService — привязка почты требует сессии того же аккаунта (A3)', () => {
+describe('EmailTokenService — привязка требует сессии того же аккаунта (A3)', () => {
   const ATTACKER = 666n;
   const VICTIM = 777n;
 
   it('клик БЕЗ сессии → LinkSessionRequiredException, адрес не привязан, токен НЕ сожжён', async () => {
-    const { svc, auth, authProviders, emailTokens } = makeService();
-    await auth.linkEmailToAccount(ATTACKER, 'victim@example.com');
-    const raw = extractTokenFromLink(auth);
+    const { svc, linkToken, authProviders, emailTokens } = makeService();
+    const raw = await linkToken(ATTACKER, 'victim@example.com');
     await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
       LinkSessionRequiredException,
     );
-    await expect(
-      svc.consumeEmailToken(raw, undefined, undefined, null),
-    ).rejects.toThrow(LinkSessionRequiredException);
+    await expect(svc.consumeEmailToken(raw, null)).rejects.toThrow(
+      LinkSessionRequiredException,
+    );
     expect(authProviders).toHaveLength(0);
     expect(emailTokens[0].usedAt).toBeNull();
   });
 
   it('клик из сессии ДРУГОГО аккаунта (жертва) → отказ, привязки нет, сессия не выдана', async () => {
-    const { svc, auth, authProviders, webSessions } = makeService();
-    await auth.linkEmailToAccount(ATTACKER, 'victim@example.com');
-    const raw = extractTokenFromLink(auth);
-    await expect(
-      svc.consumeEmailToken(raw, '203.0.113.9', 'UA', VICTIM),
-    ).rejects.toThrow(LinkSessionRequiredException);
+    const { svc, linkToken, authProviders, webSessions } = makeService();
+    const raw = await linkToken(ATTACKER, 'victim@example.com');
+    await expect(svc.consumeEmailToken(raw, VICTIM)).rejects.toThrow(
+      LinkSessionRequiredException,
+    );
     expect(authProviders).toHaveLength(0);
     expect(webSessions).toHaveLength(0);
-  });
-
-  it('клик из сессии владельца → kind:"linked", привязка есть, сессия НЕ выдаётся', async () => {
-    const { svc, auth, authProviders, webSessions, emailTokens } =
-      makeService();
-    await auth.linkEmailToAccount(ATTACKER, 'mine@example.com');
-    const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(
-      raw,
-      undefined,
-      undefined,
-      ATTACKER,
-    );
-    assertLinked(result);
-    expect(result.userId).toBe(ATTACKER);
-    expect(result).not.toHaveProperty('tokens');
-    expect(webSessions).toHaveLength(0);
-    expect(authProviders.map((p) => String(p.userId))).toEqual(['666']);
-    expect(emailTokens[0].usedAt).not.toBeNull();
-  });
-
-  it('токен входа (login) от чужой сессии не затронут: вход по-прежнему не требует сессии', async () => {
-    const { svc, auth } = makeService();
-    await auth.requestEmailLogin('plain@example.com');
-    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
-    assertTokens(result);
-  });
-});
-
-describe('EmailTokenService — 2FA-гейт при login (H1)', () => {
-  it('purpose=login, у пользователя включён TOTP → kind:"totp_challenge", challengeToken расшифровывается на тот же userId', async () => {
-    const { svc, auth, users, authProviders, emailTokens } = makeService();
-    // Аккаунт с этим адресом уже есть (у нового адреса 2FA быть не может).
-    // isEnabled (totp.service.ts) смотрит только totpEnabledAt — totpSecret
-    // добавлен для реалистичности состояния «2FA включена».
-    users.push({
-      id: 88n,
-      totpEnabledAt: FIXED_DATE,
-      totpSecret: 'enc-secret',
-    });
-    authProviders.push({
-      id: 1,
-      userId: 88n,
-      provider: 'email',
-      providerId: 'twofa@example.com',
-    });
-    await auth.requestEmailLogin('twofa@example.com');
-    const userId = emailTokens[0].userId as bigint;
-    expect(userId).toBe(88n);
-    const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw);
-    assertChallenge(result);
-    expect(auth.verifyTotpChallengeToken(result.challengeToken).userId).toBe(
-      userId,
-    );
-    // Токен погашен, несмотря на то что сессия ещё не выдана — по той же
-    // magic-link ссылке нельзя пройти дважды.
-    expect(emailTokens[0].usedAt).not.toBeNull();
-  });
-
-  it('purpose=link_email_auth, у пользователя включён TOTP → всё равно kind:"linked" (привязка почты не гейтится 2FA)', async () => {
-    const { svc, auth, users } = makeService();
-    users.push({
-      id: 55n,
-      totpEnabledAt: FIXED_DATE,
-      totpSecret: 'enc-secret',
-    });
-    await auth.linkEmailToAccount(55n, 'linked-2fa@example.com');
-    const raw = extractTokenFromLink(auth);
-    const result = await svc.consumeEmailToken(raw, undefined, undefined, 55n);
-    assertLinked(result);
-    expect(result.purpose).toBe('link_email_auth');
   });
 });

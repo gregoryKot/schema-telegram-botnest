@@ -1,8 +1,9 @@
 // Куда ведёт кнопка финала игры (meta.to для game_cta_click), решение 2 в #1087:
 //   app     — главная «попробовать в приложении» → schemehappens.ru/?from=game;
-//   booking — вторая, тише: запись к терапевту (BOOKING_URL бота).
+//   booking — вторая, тише: запись к терапевту (BOOKING_URL бота);
+//   bot     — тихая «или открыть в Telegram» → t.me/<бот>?start=src_game.
 // Отправитель — game/src/therapyCta.ts, отчёт — блок «Игра» в /stats.
-export const GAME_CTA_TARGETS = ['app', 'booking'] as const;
+export const GAME_CTA_TARGETS = ['app', 'booking', 'bot'] as const;
 export type GameCtaTarget = (typeof GAME_CTA_TARGETS)[number];
 
 const TARGET_SET: ReadonlySet<string> = new Set(GAME_CTA_TARGETS);

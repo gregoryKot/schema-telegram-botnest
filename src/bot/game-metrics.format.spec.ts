@@ -38,7 +38,7 @@ const EMPTY: GameMetrics = {
   ctaShown: 0,
   ctaClicks: 0,
   ctaClicksByPlace: emptyPlaces(),
-  ctaClicksByTarget: { app: 0, booking: 0 },
+  ctaClicksByTarget: { app: 0, booking: 0, bot: 0 },
   appArrivals: 0,
   shares: 0,
 };
@@ -70,7 +70,7 @@ describe('полный отчёт', () => {
     ctaShown: 40,
     ctaClicks: 15,
     ctaClicksByPlace: { act1: 10, cabinet: 5, ending: 0 },
-    ctaClicksByTarget: { app: 9, booking: 4 },
+    ctaClicksByTarget: { app: 9, booking: 4, bot: 2 },
     appArrivals: 7,
     shares: 8,
   };
@@ -107,7 +107,7 @@ describe('полный отчёт', () => {
   it('показывает, куда вела кнопка финала, и сколько дошли до сайта', () => {
     const out = formatGameMetrics(FULL);
     expect(out).toContain(
-      'Куда нажали: в приложение 9, на запись к терапевту 4',
+      'Куда нажали: в приложение 9, на запись к терапевту 4, в бота в Telegram 2',
     );
     expect(out).toContain('Пришли из игры на сайт: 7');
   });

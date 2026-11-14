@@ -8,6 +8,7 @@ import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { stickyAncestorsOf, stickyClasses } from '../../test-support/stickyAncestors';
 import { allCssRules, indexCssRules } from '../../styles/cssRules.test-helpers';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
+import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -35,24 +36,28 @@ afterEach(() => {
   cleanup();
 });
 
-describeCrisisField('webapp/src/components/diary/ModeEntryForm.tsx', {
-  label: 'что произошло',
-  open: renderSheetOnFormStep,
-  enter: (text) =>
-    fireEvent.change(
-      screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».'),
-      { target: { value: text } },
-    ),
-});
+const STEPS = buildModeDiarySteps((ty: string) => ty);
+
+// Шаг мастера по номеру — через деление прогресса «Шаг N».
+function openStep(idx: number) {
+  renderSheetOnFormStep();
+  fireEvent.click(screen.getAllByRole('button', { name: /^Шаг \d+$/ })[idx]);
+}
+
+// Каждый шаг — из того же массива, что рисует мастер: шаг, выпавший из детекции, краснеет здесь.
+// Поле ищется по вопросу шага: сломанный переход не уведёт ввод в чужое поле.
+STEPS.forEach((step, i) =>
+  describeCrisisField('webapp/src/components/diary/ModeEntryForm.tsx', {
+    label: `шаг ${i + 1} «${step.title}»`,
+    open: () => openStep(i),
+    enter: (text) => fireEvent.change(screen.getByLabelText(step.title), { target: { value: text } }),
+  }),
+);
 
 // Последний шаг — ответ Здорового Взрослого, своё поле и своё состояние.
 describeCrisisField('webapp/src/components/diary/ModeEntryForm.tsx', {
   label: 'ответ Здорового Взрослого',
-  open: () => {
-    renderSheetOnFormStep();
-    const ticks = screen.getAllByRole('button', { name: /^Шаг \d+$/ });
-    fireEvent.click(ticks[ticks.length - 1]);
-  },
+  open: () => openStep(STEPS.length),
   enter: (text) => fireEvent.change(screen.getByPlaceholderText('Напиши своими словами…'), { target: { value: text } }),
 });
 

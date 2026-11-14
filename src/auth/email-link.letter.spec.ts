@@ -1,6 +1,5 @@
 // A3: письмо привязки адреса не должно выглядеть как письмо входа.
 import { linkEmailLetter } from './email-link.letter';
-import { loginLetter } from './email.letters';
 
 const LINK = 'https://schemehappens.ru/api/auth/email/callback?token=abc';
 
@@ -15,7 +14,7 @@ describe('linkEmailLetter', () => {
       );
       expect(l.subject).toContain('Привязать');
       // Не письмо входа: жертва не должна читать «Войти».
-      expect(l.subject).not.toBe(loginLetter(form, LINK).subject);
+      expect(l.subject).not.toMatch(/[Вв]ойти/);
       expect(l.body).not.toContain('чтобы войти');
     },
   );
@@ -30,17 +29,6 @@ describe('linkEmailLetter', () => {
     expect(vy).toContain('не от вас');
     expect(vy).not.toMatch(/перейди по|не от тебя|Введи его/);
   });
-
-  // Аудит 2026-10: перед «вс-» — «во», а не «в». Тема и тело
-  // письма входа — первое, что человек получает от продукта.
-  it.each(['ty', 'vy'] as const)(
-    'форма %s: письмо входа — «во «Всё по схеме»»',
-    (form) => {
-      const login = loginLetter(form, LINK);
-      expect(login.subject).toBe('Войти во «Всё по схеме»');
-      expect(login.body).toContain('чтобы войти во «Всё по схеме»:');
-    },
-  );
 
   it('предупреждает: если запрос не от получателя — не переходить', () => {
     expect(linkEmailLetter('ty', LINK).body).toContain('не переходи по ссылке');

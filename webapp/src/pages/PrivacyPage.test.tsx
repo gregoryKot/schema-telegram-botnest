@@ -150,9 +150,10 @@ describe('PrivacyPage — бэкапы и cookie', () => {
     expect(screen.queryByText(/tg_pkce_verifier/)).toBeNull();
     expect(screen.queryByText(/Сессионные cookie/)).toBeNull();
     expect(screen.getByText('Refresh-token cookie (refresh_token, refresh_cross)')).toBeTruthy();
-    expect(screen.getByText('Cookie шагов входа (oauth_state, vk_pkce, link_token, login_ticket)')).toBeTruthy();
-    // Билет входа и PKCE VK (аудит 2026-11, S9 и S21): назначение и срок названы.
-    expect(screen.getByText(/login_ticket – хеш кода устройства, начавшего вход по билету, живёт 5 минут/)).toBeTruthy();
+    expect(screen.getByText('Cookie шагов входа (oauth_state, vk_pkce, link_token)')).toBeTruthy();
+    // Куки login_ticket нет: вход по почте убран, билет сайта её не ставит.
+    expect(screen.queryByText(/login_ticket/)).toBeNull();
+    // PKCE VK (аудит 2026-11, S21): назначение и срок названы.
     expect(screen.getByText(/vk_pkce – проверка входа через VK ID, живёт 10 минут/)).toBeTruthy();
   });
 });
