@@ -276,17 +276,23 @@ describe('CSRF-трипваер auth-контроллеры', () => {
   // Куку может ставить и не контроллер: сервис или хелпер, который тот зовёт.
   // Такой писатель обязан быть заявлен здесь вместе с защитой, которую обязан
   // иметь КАЖДЫЙ его вызывающий хендлер. Новый писатель вне списка краснеет.
+  // relay — посредник: не контроллер, который зовёт писателя ВМЕСТО хендлера
+  // (2026-11: колбэки VK и Яндекса идут через общий хвост). В посреднике
+  // защита обязана стоять РАНЬШЕ вызова писателя; незаявленный посредник и
+  // вызов писателя до защиты краснеют.
   const HELPER_WRITERS: {
     file: string; // относительно src/
-    caller: RegExp; // как его зовут из хендлера
+    caller: RegExp; // как его зовут из хендлера или посредника
     guard: RegExp;
+    relay?: string; // относительно src/
     why: string;
   }[] = [
     {
       file: 'auth/auth-flow.service.ts',
       caller: /\bfinishOAuthRedirect\(/,
       guard: /\bassertOAuthStateMatches\(/,
-      why: 'OAuth-колбэк VK: state-кука сверяется до обмена кода',
+      relay: 'auth/oauth-callback.service.ts',
+      why: 'OAuth-колбэки VK и Яндекса: state-кука сверяется до обмена кода',
     },
     {
       file: 'auth/email-consume-body.ts',
@@ -314,9 +320,41 @@ describe('CSRF-трипваер auth-контроллеры', () => {
     );
   });
 
+  /** Защита стоит в коде раньше первого вызова писателя (комментарии сняты). */
+  function guardedBeforeCall(code: string, guard: RegExp, caller: RegExp) {
+    const clean = stripComments(code);
+    const at = clean.search(guard);
+    return at >= 0 && at < clean.search(caller);
+  }
+
+  it('детектор посредника: защита после вызова или только в комментарии — красное (сэндбокс)', () => {
+    const guard = /\bassertOAuthStateMatches\(/;
+    const caller = /\bfinishOAuthRedirect\(/;
+    const ok =
+      'assertOAuthStateMatches(req, s, o);\nflow.finishOAuthRedirect(x);';
+    expect(guardedBeforeCall(ok, guard, caller)).toBe(true);
+    expect(
+      guardedBeforeCall(
+        'flow.finishOAuthRedirect(x);\nassertOAuthStateMatches(req, s, o);',
+        guard,
+        caller,
+      ),
+    ).toBe(false);
+    expect(
+      guardedBeforeCall(
+        '// assertOAuthStateMatches(req, s, o);\nflow.finishOAuthRedirect(x);',
+        guard,
+        caller,
+      ),
+    ).toBe(false);
+    expect(
+      guardedBeforeCall('flow.finishOAuthRedirect(x);', guard, caller),
+    ).toBe(false);
+  });
+
   it.each(HELPER_WRITERS)(
     'вызывающие $file защищены ($why)',
-    ({ caller, guard }) => {
+    ({ file, caller, guard, relay }) => {
       const callers: string[] = [];
       const bad: string[] = [];
       for (const f of ctrlFiles) {
@@ -326,6 +364,18 @@ describe('CSRF-трипваер auth-контроллеры', () => {
           callers.push(`${f}: ${label(b)}`);
           if (!guard.test(b.body)) bad.push(`${f}: ${label(b)}`);
         }
+      }
+      // Посредники: все не-контроллеры, зовущие писателя (кроме него самого).
+      const root = join(__dirname, '..');
+      const read = (f: string) => readFileSync(join(root, f), 'utf8');
+      const relays = collectSourceFiles(root)
+        .map((p) => relative(root, p).split(sep).join('/'))
+        .filter((f) => !/\.controller\.ts$/.test(f) && f !== file)
+        .filter((f) => caller.test(stripComments(read(f))));
+      expect(relays).toEqual(relay ? [relay] : []);
+      for (const f of relays) {
+        callers.push(f);
+        if (!guardedBeforeCall(read(f), guard, caller)) bad.push(f);
       }
       expect(callers.length).toBeGreaterThan(0); // санити: хелпер кем-то зовётся
       expect(bad).toEqual([]);

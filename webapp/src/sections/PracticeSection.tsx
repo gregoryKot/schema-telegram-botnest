@@ -91,7 +91,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   // Открытое упражнение — на весь экран вместо страницы.
   if (launcher.open) {
-    return <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} />;
+    return <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} onOpenExercise={launcher.openExercise} />;
   }
 
   const therapistTasks = tasks.filter(t => t.assignedBy !== null && !t.doneToday);

@@ -75,7 +75,7 @@ describe('PlanSheet — свой текст', () => {
   it('кнопка «Продолжить →» появляется только когда есть текст, и ведёт к подтверждению', async () => {
     await act(async () => renderSheet());
     expect(screen.queryByText('Продолжить →')).toBeNull();
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Погулять в парке 20 минут' } });
     fireEvent.click(screen.getByText('Продолжить →'));
     expect(screen.getAllByText(/Погулять в парке 20 минут/).length).toBeGreaterThan(0);
@@ -103,7 +103,7 @@ describe('PlanSheet — свой текст', () => {
 describe('PlanSheet — сохранение плана', () => {
   it('«Днём» уходит местным часом 13: день и момент по поясу считает сервер (E11)', async () => {
     await act(async () => renderSheet());
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Своя практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
 
@@ -118,7 +118,7 @@ describe('PlanSheet — сохранение плана', () => {
 
   it('«Без напоминания» отправляет час = undefined', async () => {
     await act(async () => renderSheet());
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Практика без будильника' } });
     fireEvent.click(screen.getByText('Продолжить →'));
 
@@ -133,7 +133,7 @@ describe('PlanSheet — сохранение плана', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { onSaved } = renderSheet();
     await act(async () => {});
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
     await act(async () => {
@@ -162,7 +162,7 @@ describe('PlanSheet — ошибка сохранения', () => {
   it('провал api.createPlan показывает сообщение об ошибке (обе формы), а не тишину', async () => {
     mockApi.createPlan.mockRejectedValue(new Error('network'));
     await act(async () => renderSheet({}, 'vy'));
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
     await act(async () => {
@@ -176,7 +176,7 @@ describe('PlanSheet — ошибка сохранения', () => {
   it('форма «ты»: сообщение об ошибке в форме ты', async () => {
     mockApi.createPlan.mockRejectedValue(new Error('network'));
     await act(async () => renderSheet({}, 'ty'));
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
     await act(async () => {
@@ -212,7 +212,7 @@ describe('PlanSheet — .ics-экспорт (паритет с мини-аппо
     const saveFile = vi.fn();
     setHost({ id: 'web', saveFile, capabilities: { dataUrlFiles: true } } as unknown as HostBridge);
     await act(async () => renderSheet());
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Своя практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
 
@@ -228,7 +228,7 @@ describeCrisisField('webapp/src/components/PlanSheet.tsx', {
   label: 'своя практика',
   open: () => renderSheet(),
   enter: (text) =>
-    fireEvent.change(screen.getByPlaceholderText('Что-то конкретное, маленькое...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что-то конкретное, маленькое…'), {
       target: { value: text },
     }),
 });
@@ -244,13 +244,13 @@ describe('PlanSheet — useHistorySheet (браузерная «Назад»)', 
   it('на шаге подтверждения «Выбрать другое» возвращает к выбору, а НЕ закрывает лист (одна стрелка — у полосы, b20)', async () => {
     const { onClose } = renderSheet();
     await act(async () => {});
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
+    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое…');
     fireEvent.change(textarea, { target: { value: 'Практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
     expect(screen.queryByText(/←/)).toBeNull(); // «← ← Выбрать другое»: стрелка в подписи дублировала глиф полосы
     fireEvent.click(screen.getByText('Выбрать другое'));
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByPlaceholderText('Что-то конкретное, маленькое...')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Что-то конкретное, маленькое…')).toBeTruthy();
   });
 });
 

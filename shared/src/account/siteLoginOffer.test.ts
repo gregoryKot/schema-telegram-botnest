@@ -7,12 +7,13 @@ import {
   snoozeSiteLogin,
 } from './siteLoginOffer';
 
-describe('needsSiteLogin — кому звать добавить почту или VK ID', () => {
+describe('needsSiteLogin — кому звать добавить почту, VK ID или Яндекс ID', () => {
   it.each([
     [['telegram'], 'telegram', true],
     // Уже есть чем войти на сайт — звать незачем.
     [['telegram', 'email'], 'telegram', false],
     [['telegram', 'vk'], 'telegram', false],
+    [['telegram', 'yandex'], 'telegram', false],
     [['telegram', 'max'], 'telegram', false],
     // Не в Telegram: на сайте такой человек уже вошёл чем-то другим, в MAX — свой путь.
     [['telegram'], 'web', false],

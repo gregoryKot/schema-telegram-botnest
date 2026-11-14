@@ -98,13 +98,13 @@ describe('LoginPage — подзаголовок в форме человека'
         </MemoryRouter>
       </AddressFormContext.Provider>,
     );
-    expect(screen.getByText(sub)).toBeTruthy();
+    expect(screen.getByText(`${sub}. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram`)).toBeTruthy();
     expect(screen.getByTestId('login-consent-note').textContent).toMatch(consent);
   });
 
   it('без провайдера (так живёт /login) весь экран в одной форме', () => {
     renderPage();
-    expect(screen.getByText('Войди, чтобы продолжить')).toBeTruthy();
+    expect(screen.getByText(/^Войди, чтобы продолжить\. Вход через Telegram/)).toBeTruthy();
     expect(screen.getByTestId('login-consent-note').textContent).toMatch(/подтверждаешь/);
   });
 });
@@ -144,9 +144,10 @@ describe('LoginPage — уже вошедший пользователь', () =>
 });
 
 describe('LoginPage — обычный браузер (не Telegram)', () => {
-  it('показывает способы входа сайта: ВКонтакте и почту', () => {
+  it('показывает способы входа сайта: ВКонтакте, Яндекс и почту', () => {
     renderPage();
     expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Войти через Яндекс/ }).getAttribute('href')).toBe('/api/auth/yandex');
     expect(screen.getByRole('button', { name: /email/i })).toBeTruthy();
   });
 
@@ -163,7 +164,7 @@ describe('LoginPage — обычный браузер (не Telegram)', () => {
       /api\/auth\/telegram|api\/auth\/google|oauth\.telegram|start=login_/,
     );
     expect(screen.getByTestId('login-google-note').textContent).toContain('с той же почтой');
-    expect(screen.getByTestId('login-telegram-note').textContent).toContain('почту или VK ID');
+    expect(screen.getByTestId('login-telegram-note').textContent).toContain('почту, VK ID или Яндекс ID');
     // Во вкладке браузера билет входа не выписывается — страница молчит.
     expect(fetchMock).not.toHaveBeenCalled();
   });

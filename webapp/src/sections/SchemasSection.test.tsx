@@ -2,7 +2,7 @@
 // Компонентные тесты SchemasSection (экран «Мои паттерны»): реальные данные
 // профиля/YSQ (без хардкод-заглушек), пустые/скелетон-состояния, пикеры схем
 // и режимов, ты/вы-вилка (включая два дефекта, найденные и починенные в этом
-// заходе — «Пройди тест...» и «Добавь режимы...» без tr()).
+// заходе — «Пройди тест…» и «Добавь режимы…» без tr()).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -89,7 +89,7 @@ describe('SchemasSection — пустой аккаунт (без хардкод-
 });
 
 describe('SchemasSection — скелетон загрузки', () => {
-  it('пока грузится профиль — скелетон-плашки вместо "Пройди тест..." и без 0/NaN', async () => {
+  it('пока грузится профиль — скелетон-плашки вместо "Пройди тест…" и без 0/NaN', async () => {
     let resolveProfile!: (v: unknown) => void;
     mockApi.getProfile.mockReturnValue(new Promise(r => { resolveProfile = r; }));
     const { container } = renderSection();

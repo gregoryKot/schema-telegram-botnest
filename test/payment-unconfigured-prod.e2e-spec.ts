@@ -100,9 +100,13 @@ describe('e2e: прод без Robokassa не подтверждает плат�
     expect(
       await prisma.booking.count({ where: { startsAt: SLOT_REFUSED } }),
     ).toBe(0);
-    const leads = adminDms().filter((t) => t.includes(CONTACT));
+    // Лид в Telegram — без имени и контакта (они в письме): слот и причина.
+    const leads = adminDms().filter(
+      (t) => t.includes('НЕ сохранилась') && t.includes('оплата не настроена'),
+    );
     expect(leads).toHaveLength(1);
-    expect(leads[0]).toContain('Проверка оплаты');
+    expect(leads[0]).not.toContain(CONTACT);
+    expect(leads[0]).not.toContain('Проверка оплаты');
   });
 
   it('контроль: INTRO_15 в том же окружении подтверждается как раньше', async () => {

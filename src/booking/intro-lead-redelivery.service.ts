@@ -8,8 +8,8 @@ import { introLeadMessages, normalizeIntroLead } from './intro-lead.format';
 import { IntroLeadService } from './intro-lead.service';
 
 const DAY_MS = 86_400_000;
-// Повтор берёт заявки, у которых не дошёл НИ один канал; свежее 5 минут не
-// трогает (первая отправка может быть ещё в полёте), старше 7 дней бросает.
+// Повтор берёт заявки, до которых не дошло письмо (данные человека — только в
+// нём); свежее 5 минут не трогает (отправка ещё в полёте), старше 7 дней бросает.
 const RETRY_MIN_AGE_MS = 5 * 60_000;
 const RETRY_MAX_AGE_MS = 7 * DAY_MS;
 const RETRY_MAX_ATTEMPTS = 5;
@@ -30,7 +30,7 @@ export class IntroLeadRedeliveryService {
     private readonly introLead: IntroLeadService,
   ) {}
 
-  /** Повтор доставки: заявки, до которых не дошёл ни один канал. */
+  /** Повтор доставки: заявки, до которых не дошло письмо (DM — если не дошёл и он). */
   @Cron('*/15 * * * *', { name: 'introLeadRedelivery' })
   async redeliver(now = new Date()): Promise<number> {
     if (
@@ -46,7 +46,6 @@ export class IntroLeadRedeliveryService {
     try {
       const rows = await this.prisma.introLead.findMany({
         where: {
-          tgDeliveredAt: null,
           emailDeliveredAt: null,
           anonymizedAt: null,
           deliveryAttempts: { lt: RETRY_MAX_ATTEMPTS },
@@ -74,7 +73,8 @@ export class IntroLeadRedeliveryService {
           source: plain.source ?? undefined,
         });
         if (!lead) continue;
-        await this.introLead.deliver(row.id, introLeadMessages(lead, 'repeat'));
+        const msg = introLeadMessages(lead, row.id, 'repeat');
+        await this.introLead.deliver(row.id, msg, row.tgDeliveredAt != null);
         resent++;
       }
       return resent;

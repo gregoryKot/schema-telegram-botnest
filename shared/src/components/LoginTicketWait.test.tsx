@@ -58,6 +58,7 @@ describe('ожидание подтверждения', () => {
   it.each([
     ['email', 'Осталось подтвердить вход через почту. Код входа:'],
     ['vk', 'Осталось подтвердить вход через ВКонтакте. Код входа:'],
+    ['yandex', 'Осталось подтвердить вход через Яндекс. Код входа:'],
   ] as const)('%s: подсказка безличная, без «ты» и «вы»', (provider, text) => {
     const { container } = renderOpened({ ...waiting, provider });
     expect(screen.getByText(text)).toBeTruthy();

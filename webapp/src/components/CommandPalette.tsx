@@ -67,7 +67,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const rows = useMemo<CmdRow[]>(() => {
     const clientRows: CmdRow[] = screenShare ? [] : clients.map(c => ({
       label: clientDisplayName(c),
-      ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
+      ...(isActiveToday(c) ? { sub: 'Активность сегодня' } : { sub: clientStatus(c).label }),
       hint: 'Открыть карточку',
       mark: { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) },
       search: clientDisplayName(c),
@@ -132,7 +132,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder={screenShare ? 'Найти страницу или действие…' : 'Найти клиента, страницу или действие…'}
+            placeholder={userRole === 'THERAPIST' && !screenShare ? 'Клиент, страница, действие…' : 'Найти страницу или действие…'}
           />
         </div>
         {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не найдено» под ней. */}

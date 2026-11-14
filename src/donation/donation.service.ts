@@ -6,7 +6,7 @@ import { BookingNotifyService } from '../booking/booking-notify.service';
 import { assertPaymentAvailable } from '../booking/payment-guard';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { normalizeBaseUrl } from '../utils/url';
-import { escapeHtml } from '../utils/escape-html';
+import { donationPaidAlert } from './donation-owner-card';
 import { moneyAlert } from '../logger/money-alert';
 
 // Donation InvId is offset so it never collides with booking InvId (booking uses
@@ -143,12 +143,12 @@ export class DonationService {
     });
     if (claimed.count === 0) return { ok: true };
     const plain = decryptRecord(row, SCHEMA);
-    await this.notify.alertAdmin(
-      // M1 (аудит 2026-10): email/comment/source — ввод донора, уходит админу как HTML.
-      `💛 <b>Донат ${row.amount} ₽</b> (${escapeHtml(String(row.source))})` +
-        (plain.email ? `\n📬 ${escapeHtml(plain.email)}` : '') +
-        (plain.comment ? `\n💬 ${escapeHtml(plain.comment)}` : ''),
-    );
+    // Деньги — оба канала; email и комментарий донора — только в письме.
+    const { html, subject } = donationPaidAlert({
+      ...plain,
+      source: String(row.source),
+    });
+    await this.notify.notifyAdminBoth(html, subject);
     this.logger.log(`Donation ${id} PAID`);
     return { ok: true };
   }

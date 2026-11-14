@@ -184,12 +184,13 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(res).toBe('OK7');
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     const [html, subject] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
-      string,
+      { telegram: string; email: string },
       string,
     ];
-    expect(html).toContain('#7');
-    expect(html).toContain('Мария');
-    expect(html).toContain('4000 ₽');
+    expect(html.telegram).toContain('#7');
+    expect(html.telegram).toContain('4000 ₽');
+    expect(html.telegram).not.toContain('Мария'); // имя — только в письме
+    expect(html.email).toContain('Мария');
     expect(subject).toBe('Деньги получены, а брони #7 нет');
     expect(notify.alertAdmin).not.toHaveBeenCalled(); // один сигнал, не два
   });
@@ -374,6 +375,30 @@ describe('PaymentController.handleResult — деньги не немые ни �
       expect(res).toBe(`FAIL${invId}`);
       expect(m.notify.alertAdmin).toHaveBeenCalledTimes(1);
       expect(m.notify.alertAdmin.mock.calls[0][0]).toContain(String(invId));
+    },
+  );
+
+  // РКН (#1135): текст ошибки (аргументы Prisma, ответ площадки) в Telegram не
+  // уходит — ни карточкой alertAdmin, ни первым аргументом error(), который
+  // AlertLogger шлёт в DM. Ошибка — вторым аргументом, в лог приложения.
+  it.each(RANGES)(
+    '$name: текст ошибки не попадает ни в карточку, ни в первый аргумент error()',
+    async ({ invId, mockReject }) => {
+      const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      const m = makeController();
+      const err = new TypeError('MARK { email: "ivan@poison.test" }');
+      mockReject(m, err);
+      const sig = md5(`500.00:${invId}:${PASS2}`);
+
+      await m.controller.handleResult('500.00', String(invId), sig);
+
+      const card = String(m.notify.alertAdmin.mock.calls[0][0]);
+      expect(card).toContain(String(invId));
+      expect(card).toContain('Тип ошибки: TypeError');
+      expect(card).not.toMatch(/MARK|poison/);
+      expect(String(error.mock.calls[0][0])).not.toMatch(/MARK|poison/);
+      expect(error.mock.calls[0][1]).toBe(err);
+      error.mockRestore();
     },
   );
 

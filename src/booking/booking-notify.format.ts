@@ -5,7 +5,7 @@ import { clientTimeLine } from './client-timezone';
 import { contactPrefix } from './contact-channel';
 import { PriceFields, priceLine } from './booking-notify.price';
 
-// Чистые форматтеры уведомлений админу о бронировании (правило №10).
+// Полные тексты брони для ПИСЬМА владельцу; Telegram — booking-owner-card.ts.
 /** Карточка брони — общие поля для всех уведомлений админу. */
 export interface BookingCard extends PriceFields {
   clientName: string;
@@ -59,11 +59,11 @@ function timeWithClientTz(
   return line ? `${formatTime(b.startsAt)} · ${line}` : formatTime(b.startsAt);
 }
 
+/** Полная карточка (имя, контакт, текст, источник; ввод экранирован) — только для письма. */
 export function bookingCardText(title: string, b: BookingCard): string {
   return [
     title,
     '',
-    // M1 (аудит 2026-10): ввод посетителя + parse_mode HTML = экранировать.
     `👤 ${escapeHtml(b.clientName)}`,
     `📬 ${contactPrefix(b.clientChannel)}${escapeHtml(b.clientContact)}`,
     `🗓 ${timeWithClientTz(b)}`,
@@ -76,7 +76,7 @@ export function bookingCardText(title: string, b: BookingCard): string {
     .join('\n');
 }
 
-// «Заявка потеряна» (инцидент 2026-09-13) — всё, чтобы связаться руками.
+// «Заявка потеряна» — письмо: всё, чтобы связаться руками.
 export function lostLeadAlertText(lead: LostLead, reason: string): string {
   return [
     '🚨 <b>Заявка на запись НЕ сохранилась — сбой сервера</b>',

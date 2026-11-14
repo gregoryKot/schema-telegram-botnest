@@ -64,13 +64,13 @@ describe('S13: анонимный шум не глушит настоящий lo
     new Logger('PrismaService').error('Настоящая авария: запись брони упала');
     await flush();
 
-    expect(sent().some((t) => t.includes('Настоящая авария'))).toBe(true);
+    expect(sent().some((t) => t.includes('Место: PrismaService'))).toBe(true);
     // Отчёты клиента в DM не идут вовсе — только сводкой раз в час.
     expect(sent().some((t) => t.includes('[client:'))).toBe(false);
   });
 
   it('шквал анонимных ошибок входа — свой малый подбюджет, основной цел', async () => {
-    const oauth = new Logger('AuthOauthController');
+    const oauth = new Logger('OAuthCallbackService');
     for (let i = 0; i < 100; i++) {
       oauth.error(`vk callback error: ${'x'.repeat(i)}`);
     }
@@ -80,6 +80,6 @@ describe('S13: анонимный шум не глушит настоящий lo
     new Logger('PrismaService').error('Настоящая авария: запись брони упала');
     await flush();
     expect(sent()).toHaveLength(ANON_BUDGET + 1);
-    expect(sent()[ANON_BUDGET]).toContain('Настоящая авария');
+    expect(sent()[ANON_BUDGET]).toContain('Место: PrismaService');
   });
 });

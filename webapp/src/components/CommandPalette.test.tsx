@@ -82,15 +82,28 @@ describe('CommandPalette — навигация', () => {
 describe('CommandPalette — поиск', () => {
   it('фильтрует пункты по подстроке запроса (регистронезависимо)', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'дневник' } });
+    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'дневник' } });
     expect(screen.getByText('Записи')).toBeTruthy();
     expect(screen.queryByText('Сегодня')).toBeNull();
   });
 
   it('пустой результат поиска показывает «Ничего не найдено»', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'zzz-нет-такого' } });
+    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'zzz-нет-такого' } });
     expect(screen.getByText('Ничего не найдено')).toBeTruthy();
+  });
+});
+
+describe('CommandPalette — подпись поля поиска', () => {
+  it('клиенту — без слова «клиент»: клиентов у него в палитре нет', () => {
+    renderPalette({ userRole: 'CLIENT' });
+    expect(screen.getByPlaceholderText('Найти страницу или действие…')).toBeTruthy();
+  });
+
+  it('терапевту — «Клиент, страница, действие…» (короче: на 390 прежняя обрезалась)', () => {
+    getTherapyClients.mockResolvedValue([]);
+    renderPalette({ userRole: 'THERAPIST', therapistMode: true });
+    expect(screen.getByPlaceholderText('Клиент, страница, действие…')).toBeTruthy();
   });
 });
 
@@ -157,7 +170,7 @@ describe('CommandPalette — клиенты терапевта', () => {
     ]);
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
     await screen.findByText('Семён');
-    const search = screen.getByPlaceholderText('Найти клиента, страницу или действие…');
+    const search = screen.getByPlaceholderText('Клиент, страница, действие…');
     fireEvent.change(search, { target: { value: 'семен' } });
     expect(screen.getByText('Семён')).toBeTruthy();
     expect(screen.queryByText('Алена')).toBeNull();
@@ -205,7 +218,7 @@ describe('CommandPalette — клиенты терапевта', () => {
   // синхронный пересчёт `rows` (смена текста поиска), чтобы момент смены TZ
   // совпадал с моментом пересчёта «сегодня», а не терялся в микротаске.
   it('клиент, активный сегодня по календарному дню сервера, помечен в любой зоне', async () => {
-    const search = () => screen.getByPlaceholderText('Найти клиента, страницу или действие…');
+    const search = () => screen.getByPlaceholderText('Клиент, страница, действие…');
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
@@ -218,9 +231,8 @@ describe('CommandPalette — клиенты терапевта', () => {
           vi.setSystemTime(new Date(moment));
           fireEvent.change(search(), { target: { value: 'ив' } });
           fireEvent.change(search(), { target: { value: '' } });
-          // Шов текст ↔ подсветка: цвет раньше выбирался сравнением подписи
-          // с литералом, и смена текста молча гасила подсветку.
-          expect(screen.getByText('Активность сегодня').classList.contains('is-ok')).toBe(true);
+          // Подпись тихая: без сигнального зелёного класса.
+          expect(screen.getByText('Активность сегодня').classList.contains('is-ok')).toBe(false);
         });
 
         unmount();
@@ -260,7 +272,7 @@ describe('CommandPalette — быстрые действия («+» на тел�
 
   it('действия находятся поиском по названию группы и подписи', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'успокоиться' } });
+    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'успокоиться' } });
     expect(screen.getByText('Техника «Стоп»')).toBeTruthy();
     expect(screen.queryByText('Трекер потребностей')).toBeNull();
   });

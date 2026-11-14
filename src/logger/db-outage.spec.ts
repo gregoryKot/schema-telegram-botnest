@@ -90,12 +90,29 @@ describe('isConnectionError — мягкая проверка рядом со с
 });
 
 describe('DbOutageTracker — машина состояний одной аварии', () => {
-  it('первая ошибка открывает аварию и даёт DM с текстом ошибки', () => {
+  it('первая ошибка открывает аварию и даёт DM с признаком, а не с текстом ошибки', () => {
     const tracker = new DbOutageTracker();
     const { text } = tracker.note("Can't reach database server", 1_000_000);
     expect(text).toContain('База данных не отвечает');
-    expect(text).toContain("Can't reach database server");
+    expect(text).toContain("Признак: can't reach database server");
     expect(tracker.isOpen).toBe(true);
+  });
+
+  // РКН (#1135): в DM уходит сработавший признак из db-outage-signals.ts —
+  // ни хоста, ни запроса Prisma, ни данных из аргументов.
+  it('текст ошибки с маркерами в DM не попадает — ни в первом, ни в напоминании', () => {
+    const tracker = new DbOutageTracker(15 * 60_000);
+    const poisoned = (n: number) =>
+      `{"code":"P1001","meta":{"email":"MARK${n}@poison.test"}} user MARKNAME${n} at 10.9.9.${n}:5432`;
+    const first = tracker.note(poisoned(1), 1_000_000).text ?? '';
+    const reminder =
+      tracker.note(poisoned(2), 1_000_000 + 15 * 60_000).text ?? '';
+    expect(first).toContain('Признак: P1001');
+    expect(reminder).toContain('Признак: P1001');
+    expect(reminder).toContain('Ошибок за это время: 2');
+    for (const text of [first, reminder]) {
+      expect(text).not.toMatch(/MARK|poison|10\.9\.9/);
+    }
   });
 
   it('повторы во время открытой аварии молчат (text: null)', () => {
@@ -115,7 +132,7 @@ describe('DbOutageTracker — машина состояний одной ава�
     const { text } = tracker.note('err 3', start + 15 * 60_000 + 1);
     expect(text).toContain('15 мин');
     expect(text).toContain('Ошибок за это время: 3');
-    expect(text).toContain('err 3');
+    expect(text).toContain('Признак: —');
   });
 
   it('resolve() без открытой аварии — null', () => {

@@ -221,15 +221,22 @@ describe('данные клиента не уходят в iCloud и Zoom', () =
     expect(ZOOM_TOPIC).toBe('Сессия');
   });
 
-  it('владелец по-прежнему видит, кто придёт: карточка в его канале несёт имя, контакт, текст и ссылку', async () => {
+  it('владелец по-прежнему видит, кто придёт: письмо несёт имя, контакт, текст и ссылку; Telegram — только ссылку', async () => {
     captureFetch();
     const { deps, notifyAdminBoth } = makeDeps();
     await runConfirmEffects(deps, booking());
 
-    const [card] = notifyAdminBoth.mock.calls[0] as [string, string];
-    expect(card).toContain(SECRETS.name);
-    expect(card).toContain(SECRETS.contact);
-    expect(card).toContain('Текст обращения-маркер');
-    expect(card).toContain(ZOOM_URL);
+    const [card] = notifyAdminBoth.mock.calls[0] as [
+      { telegram: string; email: string },
+      string,
+    ];
+    expect(card.email).toContain(SECRETS.name);
+    expect(card.email).toContain(SECRETS.contact);
+    expect(card.email).toContain('Текст обращения-маркер');
+    expect(card.email).toContain(ZOOM_URL);
+    expect(card.telegram).toContain(ZOOM_URL);
+    for (const v of [SECRETS.name, SECRETS.contact, SECRETS.message]) {
+      expect(card.telegram).not.toContain(v);
+    }
   });
 });

@@ -1,23 +1,23 @@
-import { bookingCardText, subjectFromTitle } from './booking-notify.format';
+import { subjectFromTitle } from './booking-notify.format';
+import { bookingNotice } from './booking-owner-card';
 import type { PlainBooking } from './booking-notify.service';
+import type { OwnerAlert } from '../utils/owner-card';
 
 /**
- * Текст сигнала владельцу: деньги по ResultURL пришли, а бронь уже отменена
- * или истекла (клиент заплатил по старой ссылке; чек в «Моём налоге» выбит,
- * записи нет). Чистый форматтер; отправка — `notifyAdminBoth` (оба канала,
- * это деньги). Простыми словами: что случилось и что делать.
+ * Сигнал владельцу: деньги по ResultURL пришли, а бронь уже отменена или
+ * истекла (оплата по старой ссылке; чек выбит, записи нет). Отправка —
+ * `notifyAdminBoth`: Telegram без данных клиента, письмо полное.
  */
 export function paidAfterCancelAlert(
   b: PlainBooking,
   paidAmount?: number,
-): { html: string; subject: string } {
+): OwnerAlert {
   const title = `💸 <b>Деньги получены, а брони #${b.id} нет</b>`;
   const sum = paidAmount != null ? `${paidAmount} ₽` : 'сумма не указана';
-  const html = [
-    bookingCardText(title, b),
+  const html = bookingNotice(title, b, [
     `💰 Оплачено: ${sum}`,
     '',
     'Бронь отменена или истекла до оплаты. Верните деньги клиенту (и аннулируйте чек в «Моём налоге») либо запишите его заново вручную: слот мог уже уйти другому.',
-  ].join('\n');
+  ]);
   return { html, subject: subjectFromTitle(title) };
 }

@@ -14,6 +14,8 @@ import { DETAIL_FIELDS } from './journeyDetailFields';
 export interface JourneyResultPart {
   title?: string;
   text: string;
+  /** Голос Здорового Взрослого (метка поля) — вставка мха в детали и на карточке шаринга. */
+  healthy?: true;
 }
 
 export type YsqScore = { pct5plus: number; avg: number };
@@ -22,8 +24,17 @@ const EXCERPT = 220;
 const cut = (s: string): string =>
   s.length > EXCERPT ? `${s.slice(0, EXCERPT).trimEnd()}…` : s;
 
-const part = (text: string | null | undefined, title?: string) =>
+const part = (
+  text: string | null | undefined,
+  title?: string,
+): JourneyResultPart[] =>
   text?.trim() ? [{ title, text: cut(text.trim()) }] : [];
+/** Поле-голос Здорового Взрослого — с меткой (вставка мха в детали и на карточке). */
+const healthy = (
+  text: string | null | undefined,
+  title: string,
+): JourneyResultPart[] =>
+  part(text, title).map((p) => ({ ...p, healthy: true as const }));
 
 /**
  * Счёт теста из записи истории — для карточки-профиля всех 20 схем.
@@ -66,7 +77,7 @@ export function buildJourneyResultParts(
     case 'schema_diary':
       return [
         ...part(str('trigger'), 'Ситуация'),
-        ...part(str('healthyView'), 'Здоровый взгляд'),
+        ...healthy(str('healthyView'), 'Здоровый взгляд'),
       ];
     case 'mode_diary':
       return [
@@ -82,7 +93,7 @@ export function buildJourneyResultParts(
     case 'belief_check':
       return [
         ...part(str('belief'), 'Убеждение'),
-        ...part(str('reframe'), 'Здоровый взгляд'),
+        ...healthy(str('reframe'), 'Здоровый взгляд'),
       ];
     case 'letter':
       return part(str('text'));
@@ -110,7 +121,7 @@ export function buildJourneyResultParts(
     case 'schema_note':
       return [
         ...part(str('triggers'), 'Триггеры'),
-        ...part(str('healthyView'), 'Здоровый взгляд'),
+        ...healthy(str('healthyView'), 'Здоровый взгляд'),
         ...part(str('behavior'), 'Что помогает'),
       ];
     case 'mode_note':
@@ -145,8 +156,16 @@ export function buildJourneyDetailParts(
   const str = (k: string) => (typeof e[k] === 'string' ? e[k] : '');
   const fields = DETAIL_FIELDS[type];
   if (fields) {
-    return fields.flatMap(([k, title]) =>
-      str(k).trim() ? [{ title: title || undefined, text: str(k).trim() }] : [],
+    return fields.flatMap(([k, title, mark]) =>
+      str(k).trim()
+        ? [
+            {
+              title: title || undefined,
+              text: str(k).trim(),
+              ...(mark === 'healthy' ? { healthy: true as const } : {}),
+            },
+          ]
+        : [],
     );
   }
   if (type === 'gratitude') {

@@ -5,6 +5,7 @@ import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
 import type { useAddClient } from './useAddClient';
 import { SignArt } from '../art/SignArt';
 import { BrandMark } from '../art/BrandMark';
+import { PaperAlert } from '../paper/PaperAlert';
 import { INVITE_SIGN } from './cabinetLook';
 import '../../styles/therapist-clients.css';
 
@@ -12,9 +13,8 @@ interface Props {
   addClient: ReturnType<typeof useAddClient>;
 }
 
-// Открыта ли форма, решает useAddClient (`open`): «Добавить ещё» её оставляет, «к списку» сворачивает.
-// Вид (b29): форма — светлый лист с тенью слоем неба; итог — лист неба терапевта, у имени знак: приглашение —
-// Talk (разговор, в который зовут), офлайн-карточка — знак продукта (BrandMark), как в списке клиентов.
+// Открыта ли форма, решает useAddClient (`open`). Вид (b29): форма — светлый лист с тенью слоем неба, сбой — PaperAlert
+// без «Повторить» (повтор — та же «Создать»); итог — лист неба, у имени знак: приглашение — Talk, офлайн-карточка — BrandMark.
 export function AddClientForm({ addClient }: Props) {
   const {
     name: addName, setName: setAddName,
@@ -53,7 +53,7 @@ export function AddClientForm({ addClient }: Props) {
               <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
             </div>
           ) : (
-            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без привязки к боту.</p>
+            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без аккаунта в приложении.</p>
           )}
           <div className="tc-actions">
             <button className={`ds-btn ds-btn--sm${invite ? ' ds-btn--secondary' : ''}`} onClick={resetAddClient}>Добавить ещё</button>
@@ -87,7 +87,7 @@ export function AddClientForm({ addClient }: Props) {
       {withInvite && (
         <p className="tc-add-note">Офлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
       )}
-      {addError && <div className="tc-add-err">{addError}</div>}
+      {addError && <PaperAlert className="tc-add-err" title={addError} />}
     </div>
   );
 }

@@ -235,12 +235,12 @@ describe('SettingsSheet — удаление аккаунта: ошибка API'
 
 describe('SettingsSheet — экспорт данных для терапевта', () => {
   it('клик по «Сводка для терапевта» вызывает api.getExport и показывает текст в модалке', async () => {
-    mockApi.getExport.mockResolvedValue({ text: 'Экспорт: 30 дней данных...' });
+    mockApi.getExport.mockResolvedValue({ text: 'Экспорт: 30 дней данных…' });
     await renderSheet();
 
     fireEvent.click(screen.getByText('Сводка для терапевта'));
 
-    await screen.findByText('Экспорт: 30 дней данных...');
+    await screen.findByText('Экспорт: 30 дней данных…');
     expect(mockApi.getExport).toHaveBeenCalledTimes(1);
   });
 
@@ -284,6 +284,8 @@ describe('SettingsSheet — таймеры тоста не переживают 
       fireEvent.click(toggleForRow('Итоги дня'));
       await screen.findByText('Сохранено');
       unmount();
+      // jsdom 31 после снятия фокуса ставит одноразовый интервал фокус-фиксапа (~17 мс): прогоняем его.
+      await vi.advanceTimersByTimeAsync(50);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();
@@ -320,7 +322,7 @@ describe('SettingsSheet — сохранение переключателя ви
 
     fireEvent.click(toggle);
 
-    // Оптимистичное состояние сразу включается...
+    // Оптимистичное состояние сразу включается…
     await waitFor(() =>
       expect(toggle.getAttribute('aria-checked')).toBe('true'),
     );

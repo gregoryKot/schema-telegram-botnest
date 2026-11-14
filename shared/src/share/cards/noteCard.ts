@@ -8,10 +8,10 @@ import {
   FOOTER_H,
   beginCard,
   header,
-  headerHeight,
-  measureWrap,
-  clampLines,
+  headerLines,
+  measureClamp,
   footer,
+  type HeaderOpts,
 } from '../cardKit';
 import { fieldPanels, fieldPanelsHeight } from '../kit/fieldPanels';
 
@@ -106,6 +106,9 @@ export interface NoteCardData {
   subtitle?: string;
   /** Только заполненные поля — построй через noteCardFields. */
   fields: NoteCardField[];
+  /** Вид паттерна (patternLook): оттенок бумаги и знак; без него — бумага по color. */
+  hue?: number;
+  sign?: string;
 }
 
 const PAD_IN = 14;
@@ -116,24 +119,22 @@ function prepareFields(canvas: HTMLCanvasElement, fields: NoteCardField[]) {
   const textW = CARD_W - CARD_PAD * 2 - PAD_IN * 2;
   return fields.map((f) => ({
     label: f.label,
-    lines: clampLines(
-      measureWrap(canvas, f.text, textW, 14),
-      MAX_LINES_PER_FIELD,
-    ),
+    lines: measureClamp(canvas, f.text, textW, 14, MAX_LINES_PER_FIELD),
   }));
 }
 
 export function drawNoteCard(canvas: HTMLCanvasElement, d: NoteCardData) {
-  const maxW = CARD_W - CARD_PAD * 2;
-  const titleLines = clampLines(
-    measureWrap(canvas, d.title, maxW, 23, 'bold'),
-    2,
-  );
+  const head: HeaderOpts = {
+    eyebrow: d.subtitle,
+    title: d.title,
+    sign: d.sign,
+  };
   const shown = prepareFields(canvas, d.fields);
   const bodyH = fieldPanelsHeight(shown);
-  const H = headerHeight(titleLines.length, false) + bodyH + 10 + FOOTER_H;
-  const c = beginCard(canvas, H, { accent: d.color });
-  const y = header(c, { eyebrow: d.subtitle, title: d.title });
+  const H =
+    headerLines(canvas.getContext('2d')!, head).height + bodyH + 10 + FOOTER_H;
+  const c = beginCard(canvas, H, { hue: d.hue, accent: d.color });
+  const y = header(c, head);
 
   fieldPanels(c, shown, y);
 

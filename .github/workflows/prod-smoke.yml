@@ -94,7 +94,7 @@ jobs:
       - name: / — 200 и похоже на сайт (стабильный маркер, не весь HTML)
         run: |
           body=$($CURL https://schemehappens.ru/)
-          echo "$body" | grep -q 'Григорий Котляревский'
+          echo "$body" | grep -q 'Всё по схеме'
       # Карточка ссылки (Telegram, VK): краулер превью берёт og:image из сырого
       # HTML. До 2026-11 ссылка на продукт показывала обложку визитки — один
       # index.html на оба хоста, — а смок картинку не запрашивал
@@ -121,12 +121,12 @@ jobs:
           echo "$headers" | tr -d '\r' | grep -i '^location:' | grep -q '/today?startapp=probe$'
       - name: /game/ — 200 и реально раздаёт игру, не SPA-fallback сайта
         run: |
-          # game/ заморожен и вне тестов/гейтов (SHIELD_PROMPT, «Известные
-          # дыры») — этот маркер единственный наблюдатель поверхности.
           # SPA-fallback отдаёт 200 с HTML сайта на ЛЮБОЙ путь, поэтому
-          # различает только маркер тела: заголовок игры, не сайта.
+          # различает только маркер тела. Маркер — узел, куда main.ts монтирует
+          # Phaser, а не заголовок: имя игры меняют, узел — нет. Сверку с
+          # game/index.html держит src/test-support/gates/game-smoke-marker.spec.ts.
           body=$($CURL https://schemehappens.ru/game/)
-          echo "$body" | grep -q 'Schema Runner'
+          echo "$body" | grep -qF 'id="game-container"'
 
   # Сигнализация (щит): без этой джобы красный прогон виден только тому, кто
   # сам зашёл во вкладку Actions. Issue одна открытая на воркфлоу (не плодит

@@ -1,12 +1,9 @@
 // Подсчёт результата мини-теста (без похода на сервер). Ошибка тут = юзер
-// видит чужой результат про себя, поэтому кейсы зеркалят
-// src/quiz/quiz-logic.spec.ts (бэкенд) — те же PARITY_CASES, чтобы клиент и
-// сервер не разъехались в подсчёте (см. комментарий-паритет в quizEngine.ts).
+// видит чужой результат про себя, поэтому подсчёт закреплён кейсами.
 import { describe, expect, it } from 'vitest';
 import { computeQuizResultId, type QuizDto } from './quizEngine';
 
-// Маленький синтетический тест: 3 вопроса, голоса прозрачны (то же 'tiny'
-// из quiz-logic.spec.ts).
+// Маленький синтетический тест: 3 вопроса, голоса прозрачны.
 const TINY: QuizDto = {
   id: 'tiny',
   emoji: '🧪',
@@ -42,7 +39,7 @@ const TINY: QuizDto = {
   ],
 };
 
-// ── PARITY_CASES: не менять без зеркального изменения в quiz-logic.spec.ts ──
+// ── PARITY_CASES ──
 const PARITY_CASES: Array<{ picks: number[]; expected: string | null }> = [
   { picks: [0, 0, 0], expected: 'a' }, // единогласно
   { picks: [1, 1, 0], expected: 'b' }, // большинство
@@ -54,7 +51,7 @@ const PARITY_CASES: Array<{ picks: number[]; expected: string | null }> = [
   { picks: [0, 1, 0, 0], expected: null }, // лишний ответ
 ];
 
-describe('computeQuizResultId: паритет с бэкендом (quiz-logic.ts)', () => {
+describe('computeQuizResultId: подсчёт большинства голосов', () => {
   it.each(PARITY_CASES)(
     'кейс паритета %#: $picks → $expected',
     ({ picks, expected }) => {

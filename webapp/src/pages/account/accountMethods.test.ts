@@ -1,23 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { accountInitials, canUnlink, countMethods } from './accountMethods';
+import { accountInitials, canUnlink, countMethods, OAUTH_METHODS } from './accountMethods';
 import type { AccountProvider } from './ProviderRows';
 
 const p = (provider: AccountProvider['provider'], displayName: string | null = null, email: string | null = null): AccountProvider => ({ provider, displayName, email });
 
 describe('countMethods', () => {
-  it('чистый аккаунт — 0 из 2 (MAX, Telegram и Google без привязки не считаются)', () => {
-    expect(countMethods([])).toEqual({ linked: 0, total: 2 });
+  it('чистый аккаунт — 0 из 3 (MAX, Telegram и Google без привязки не считаются)', () => {
+    expect(countMethods([])).toEqual({ linked: 0, total: 3 });
   });
   it('считает привязанные', () => {
-    expect(countMethods([p('vk'), p('email')])).toEqual({ linked: 2, total: 2 });
+    expect(countMethods([p('vk'), p('email')])).toEqual({ linked: 2, total: 3 });
+    expect(countMethods([p('vk'), p('yandex'), p('email')])).toEqual({ linked: 3, total: 3 });
   });
-  it('аккаунт только с Telegram — 1 из 3: почта и VK ID ещё впереди', () => {
-    expect(countMethods([p('telegram')])).toEqual({ linked: 1, total: 3 });
+  it('Яндекс — своя строка: привязан — в счёт, не привязан — в знаменателе', () => {
+    expect(OAUTH_METHODS).toEqual(['vk', 'yandex']);
+    expect(countMethods([p('yandex')])).toEqual({ linked: 1, total: 3 });
+  });
+  it('аккаунт только с Telegram — 1 из 4: почта, VK ID и Яндекс ID ещё впереди', () => {
+    expect(countMethods([p('telegram')])).toEqual({ linked: 1, total: 4 });
   });
   it('привязанные MAX и прежний Google добавляют по строке', () => {
-    expect(countMethods([p('vk'), p('max')])).toEqual({ linked: 2, total: 3 });
-    expect(countMethods([p('google')])).toEqual({ linked: 1, total: 3 });
-    expect(countMethods([p('google'), p('max')])).toEqual({ linked: 2, total: 4 });
+    expect(countMethods([p('vk'), p('max')])).toEqual({ linked: 2, total: 4 });
+    expect(countMethods([p('google')])).toEqual({ linked: 1, total: 4 });
+    expect(countMethods([p('google'), p('max')])).toEqual({ linked: 2, total: 5 });
   });
 });
 

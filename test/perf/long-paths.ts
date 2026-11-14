@@ -13,7 +13,7 @@ import { Client } from 'pg';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { DEFAULT_STATEMENT_TIMEOUT_MS } from '../../src/prisma/statement-timeout';
 import { AnalyticsService } from '../../src/analytics/analytics.service';
-import { EVENT_RETENTION_DAYS } from '../../src/analytics/analytics-retention';
+import { prunableWhere } from '../../src/analytics/analytics-retention';
 import { deleteAllUserData } from '../../src/bot/account.delete';
 import { resolveWorstCaseIds } from './scenarios';
 
@@ -58,9 +58,8 @@ async function assertProdLimit(prisma: PrismaService): Promise<void> {
 }
 
 async function pruneEvents(prisma: PrismaService): Promise<void> {
-  const cutoff = new Date(Date.now() - EVENT_RETENTION_DAYS * 86_400_000);
-  const old = () =>
-    prisma.analyticsEvent.count({ where: { createdAt: { lt: cutoff } } });
+  const now = Date.now(); // тот же фильтр, что у pruneOld: data_export не в счёт
+  const old = () => prisma.analyticsEvent.count({ where: prunableWhere(now) });
   const before = await old();
   if (before === 0)
     throw new Error(

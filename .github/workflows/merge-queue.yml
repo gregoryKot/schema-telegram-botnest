@@ -1,0 +1,55 @@
+# Очередь мержа: под `strict` auto-merge ждёт ветку со свежим main, но сам её
+# не обновляет. Здесь по одному PR за раз отставший PR с auto-merge получает
+# update-branch, а его прогон CI — одобрение. Правила — шапка
+# scripts/merge-queue.mjs, тест — src/test-support/gates/merge-queue.spec.ts.
+name: Очередь мержа
+
+# Событий PR нет: у джобы запись, код PR она не чекаутит и не исполняет.
+on:
+  push:
+    branches: [main]
+  # Красный CI у PR «в работе» освобождает очередь сразу, не к следующему мержу.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  # Мерж бот-PR (auto-merge от GITHUB_TOKEN) push не порождает.
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Только показать решение, ничего не подтягивать
+        type: boolean
+        default: false
+
+# Общая группа без отмены: два прогона подряд не подтянут два PR.
+concurrency:
+  group: merge-queue
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  queue:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      checks: read
+    steps:
+      # Чекаут без `ref:` — код main (у workflow_run тоже), а не PR.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Подтянуть один отставший PR и одобрить его прогон CI
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: node scripts/merge-queue.mjs $DRY_RUN

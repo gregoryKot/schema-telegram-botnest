@@ -143,7 +143,12 @@ function makeService(
   } = {},
 ) {
   const prisma = makePrisma();
-  const calls = { alerts: [] as string[], recurring: [] as any[] };
+  // alerts — alertAdmin; paid — карточки оплаты в оба канала (Telegram-текст).
+  const calls = {
+    alerts: [] as string[],
+    paid: [] as string[],
+    recurring: [] as any[],
+  };
   const robokassa = {
     enabled: opts.robokassaEnabled ?? true,
     buildPaymentUrl: jest.fn(
@@ -158,7 +163,11 @@ function makeService(
     alertAdmin: jest.fn((msg: string) => {
       calls.alerts.push(msg);
     }),
-    notifyAdminBoth: jest.fn(async (_html: string, _subject: string) => {}),
+    notifyAdminBoth: jest.fn(
+      async (html: { telegram: string; email: string }, _subject: string) => {
+        calls.paid.push(html.telegram);
+      },
+    ),
   };
   const config = {
     get: (k: string) => {
@@ -470,8 +479,8 @@ describe('SubscriptionService.markChargePaidByInvId — расчёт следу�
     });
     await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + charge.id);
     expect(prisma.subs.get(sub.id).firstInvId).toBe(900001);
-    expect(calls.alerts.some((m) => m.includes('Продление'))).toBe(true);
-    expect(calls.alerts.some((m) => m.includes('Новая подписка'))).toBe(false);
+    expect(calls.paid.some((m) => m.includes('Продление'))).toBe(true);
+    expect(calls.paid.some((m) => m.includes('Новая подписка'))).toBe(false);
   });
 
   it('первая оплата (isFirst=true) записывает firstInvId и шлёт алерт "Новая подписка"', async () => {
@@ -485,7 +494,7 @@ describe('SubscriptionService.markChargePaidByInvId — расчёт следу�
     const invId = SUBSCRIPTION_INVID_BASE + charge.id;
     await service.markChargePaidByInvId(invId);
     expect(prisma.subs.get(sub.id).firstInvId).toBe(invId);
-    expect(calls.alerts.some((m) => m.includes('Новая подписка'))).toBe(true);
+    expect(calls.paid.some((m) => m.includes('Новая подписка'))).toBe(true);
   });
 });
 
@@ -839,10 +848,10 @@ describe('SubscriptionService — оплата и сбой списания по
     expect(row.nextChargeAt).toBeNull();
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     const [html, subject] = notify.notifyAdminBoth.mock.calls[0];
-    expect(html).toContain(`#${sub.id}`);
-    expect(html).toContain('Верните деньги');
+    expect(html.telegram).toContain(`#${sub.id}`);
+    expect(html.telegram).toContain('Верните деньги');
     expect(subject).not.toMatch(/<|💸/);
-    expect(calls.alerts.join('')).not.toContain('Продление');
+    expect(calls.paid.join('')).not.toContain('Продление');
 
     // Повтор вебхука: тишина, второго сигнала нет.
     await service.markChargePaidByInvId(invId, 300);
@@ -939,7 +948,7 @@ describe('SubscriptionService — оплата и сбой списания по
   });
 
   it('КОНТРОЛЬ: past_due + поздний платёж → active, счётчик сбоев обнулён, сигнала нет', async () => {
-    const { service, prisma, notify } = makeService();
+    const { service, prisma, notify, calls } = makeService();
     const { sub, invId } = await seed(prisma, 'past_due', {
       failedAttempts: 3,
       nextChargeAt: null,
@@ -951,17 +960,21 @@ describe('SubscriptionService — оплата и сбой списания по
     expect(row.status).toBe('active');
     expect(row.failedAttempts).toBe(0);
     expect(row.nextChargeAt).toBeInstanceOf(Date);
-    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+    // Обычная карточка оплаты, а не сигнал «деньги после отмены».
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    expect(calls.paid[0]).toContain('Продление');
+    expect(calls.paid[0]).not.toContain('подписка отменена');
   });
 
   it('КОНТРОЛЬ: обычное продление active → active, алерт «Продление»', async () => {
-    const { service, prisma, notify, calls } = makeService();
+    const { service, prisma, calls } = makeService();
     const { sub, invId } = await seed(prisma, 'active');
 
     await service.markChargePaidByInvId(invId, 300);
 
     expect(prisma.subs.get(sub.id).status).toBe('active');
-    expect(calls.alerts.join('')).toContain('Продление');
-    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
+    expect(calls.paid).toHaveLength(1);
+    expect(calls.paid[0]).toContain('Продление');
+    expect(calls.paid[0]).not.toContain('подписка отменена');
   });
 });

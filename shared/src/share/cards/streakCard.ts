@@ -1,20 +1,24 @@
-// Карточка серии дней (стрик) — для Celebration обоих фронтендов.
+// Карточка серии дней (стрик) — для Celebration: лист соломы трекера, знак Strokes
+// крупно (полоски дней), число Literata и подпись; веха — светлой плашкой.
 import {
-  drawEmoji,
+  CARD_LOOK,
   CARD_W,
   CARD_PAD,
   FOOTER_H,
+  INK,
   beginCard,
   panel,
   footer,
   drawWrapped,
   measureWrap,
   cardFont,
-  withAlpha,
+  serifFont,
+  sign,
 } from '../cardKit';
 import { getMilestoneText, pluralDays } from '../../utils/celebrationText';
 
 export const MILESTONES = [3, 7, 14, 21, 30, 60, 100];
+/** Половина ширины знака серии (знак — 2.4 × MED_R в ширину). */
 const MED_R = 44;
 // Отступы композиции сверху вниз: медальон → число → подпись → плашка вехи
 const TOP_PAD = 40;
@@ -36,52 +40,25 @@ export function drawStreakCard(canvas: HTMLCanvasElement, streak: number) {
   const panelY = captionY + GAP_TO_PANEL;
   const H = panelY + panelH + GAP_TO_FOOTER + FOOTER_H;
 
-  const c = beginCard(canvas, H, {
-    accent: 'var(--accent-orange)',
-    accent2: 'var(--accent-red)',
-  });
-  const { ctx, th } = c;
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.tracker.hue });
+  const { ctx } = c;
   const cx = c.W / 2;
-  const cy = TOP_PAD + MED_R;
 
-  // Медальон: мягкое радиальное свечение + тонкое кольцо
-  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, MED_R);
-  glow.addColorStop(0, withAlpha(c.accent, 0.3));
-  glow.addColorStop(1, withAlpha(c.accent, 0.04));
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(cx, cy, MED_R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = withAlpha(c.accent, 0.4);
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  sign(c, CARD_LOOK.tracker.sign, cx - MED_R * 1.2, TOP_PAD - 6, MED_R * 2.4);
 
-  drawEmoji(c, MILESTONES.includes(streak) ? '🏆' : '🔥', cx, cy + 16, 44, {
-    align: 'center',
-  });
-
-  ctx.font = cardFont(52, 'bold');
-  const numberText = String(streak);
-  const numberW = ctx.measureText(numberText).width;
-  const numGrad = ctx.createLinearGradient(
-    cx - numberW / 2,
-    0,
-    cx + numberW / 2,
-    0,
-  );
-  numGrad.addColorStop(0, c.accent);
-  numGrad.addColorStop(1, c.accent2);
-  ctx.fillStyle = numGrad;
-  ctx.fillText(numberText, cx, numberY);
+  ctx.font = serifFont(58);
+  ctx.fillStyle = INK.text;
+  ctx.textAlign = 'center';
+  ctx.fillText(String(streak), cx, numberY);
 
   ctx.font = cardFont(14);
-  ctx.fillStyle = th.fg(0.55);
+  ctx.fillStyle = INK.sub;
   ctx.fillText(`${pluralDays(streak)} подряд`, cx, captionY);
 
   panel(c, CARD_PAD, panelY, maxW, panelH);
   drawWrapped(c, note, cx, panelY + 16 + 13, noteMaxW, {
     size: 13,
-    color: th.fg(0.6),
+    color: INK.text,
     lineH: 18,
     maxLines: 3,
     align: 'center',

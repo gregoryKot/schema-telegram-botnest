@@ -9,18 +9,17 @@ import { onEmptyCalendars } from './caldav-empty-guard';
 import { BusyCache } from './caldav-busy-cache';
 import { busySkips, sumSkips } from './caldav-parse-skips';
 
+export type CalDeleteResult = 'deleted' | 'missing' | 'failed';
+
 /**
  * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
  * Config (env):
  *   APPLE_ID            — Apple ID e-mail            (required)
  *   APPLE_APP_PASSWORD  — app-specific password      (required)
- *   APPLE_CALDAV_URL    — optional: full calendar collection URL. If omitted,
- *                         it's auto-discovered from the Apple ID on first use.
- *   APPLE_CALENDAR_NAME — optional: which calendar to use (display name).
- *                         Defaults to the first calendar that supports events.
+ *   APPLE_CALDAV_URL    — optional calendar URL (else auto-discovered once).
+ *   APPLE_CALENDAR_NAME — optional display name (else first VEVENT calendar).
  *
- * If credentials are absent, every method is a silent no-op so the rest of the
- * booking flow keeps working without iCloud in dev.
+ * No credentials — every method is a silent no-op (dev without iCloud).
  */
 @Injectable()
 export class CalDavService {
@@ -180,11 +179,11 @@ export class CalDavService {
     }
   }
 
-  /** Delete the calendar event for a cancelled booking. */
-  async removeEvent(uid: string): Promise<void> {
-    if (!this.enabled || !uid) return;
+  /** Delete the calendar event (cancelled booking, foreign-scrub.ts); undefined — iCloud off. */
+  async removeEvent(uid: string): Promise<CalDeleteResult | undefined> {
+    if (!this.enabled || !uid) return undefined;
     const base = await this.getBase();
-    if (!base) return;
+    if (!base) return 'failed';
     const url = `${base}${uid}.ics`;
     try {
       const res = await fetch(url, {
@@ -192,13 +191,14 @@ export class CalDavService {
         headers: { Authorization: this.auth },
         signal: AbortSignal.timeout(10_000),
       });
-      if (!res.ok && res.status !== 404) {
-        this.logger.warn(`CalDAV DELETE ${res.status} for ${uid}`);
-      } else {
+      if (res.ok || res.status === 404) {
         this.logger.log(`CalDAV event removed: ${uid}`);
+        return res.ok ? 'deleted' : 'missing';
       }
+      this.logger.warn(`CalDAV DELETE ${res.status} for ${uid}`);
     } catch (e) {
       this.logger.error(`CalDAV DELETE failed: ${(e as Error).message}`);
     }
+    return 'failed';
   }
 }

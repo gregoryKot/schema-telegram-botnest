@@ -12,6 +12,8 @@ import { BookingNotifyService } from './booking-notify.service';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 import { LINK_TO_FORWARD, ROOM_REPLACED } from './booking-confirmed-card';
+import { lostLeadNotice } from './booking-owner-card';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 function makeService(
   opts: {
@@ -152,17 +154,21 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(email.sendAdminNotification).not.toHaveBeenCalled();
   });
 
-  it('уведомляет админа "Запись подтверждена" с именем/контактом/временем клиента — в ОБА канала', async () => {
+  it('«Запись подтверждена» — в ОБА канала: имя и контакт только в письме, в Telegram их нет', async () => {
     const { service, telegram, email } = makeService();
     await service.onConfirmed(booking({ meetingUrl: 'x' }));
     const text = telegram.notifyAdmin.mock.calls[0][0] as string;
     expect(text).toContain('Запись подтверждена');
-    expect(text).toContain('Мария');
-    expect(text).toContain('@maria');
-    // Правило 2026-09-15: почта уходит ВСЕГДА, а не только при сбое Telegram.
+    expect(text).not.toContain('Мария');
+    expect(text).not.toContain('@maria');
+    // Почта уходит ВСЕГДА, а не только при сбое Telegram, и несёт данные клиента.
     expect(email.sendAdminNotification).toHaveBeenCalledWith(
       'Запись подтверждена',
       expect.stringContaining('Мария'),
+    );
+    expect(email.sendAdminNotification).toHaveBeenCalledWith(
+      'Запись подтверждена',
+      expect.stringContaining('@maria'),
     );
   });
 
@@ -251,13 +257,17 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(dm).toContain(ROOM_REPLACED);
   });
 
-  it('source (атрибуция лида) попадает в уведомление с HTML-экранированием', async () => {
-    const { service, telegram } = makeService();
+  it('source (атрибуция лида) — в письме с HTML-экранированием, в Telegram его нет', async () => {
+    const { service, telegram, email } = makeService();
     await service.onConfirmed(
       booking({ meetingUrl: 'x', source: 'site/#a ← <b>ref</b>' }),
     );
     const text = telegram.notifyAdmin.mock.calls[0][0] as string;
-    expect(text).toContain('Откуда: site/#a ← &lt;b&gt;ref&lt;/b&gt;');
+    expect(text).not.toContain('Откуда');
+    expect(email.sendAdminNotification).toHaveBeenCalledWith(
+      'Запись подтверждена',
+      expect.stringContaining('Откуда: site/#a ← &lt;b&gt;ref&lt;/b&gt;'),
+    );
   });
 
   it('без source строки «Откуда» в уведомлении нет (старые брони)', async () => {
@@ -273,9 +283,11 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     calDav.pushEvent.mockResolvedValueOnce(null);
     await service.onConfirmed(booking({ meetingUrl: 'x' }));
     expect(telegram.notifyAdmin).toHaveBeenCalledTimes(2);
-    expect(telegram.notifyAdmin.mock.calls[1][0]).toContain(
-      'НЕ попала в Apple Calendar',
-    );
+    const warn = telegram.notifyAdmin.mock.calls[1][0] as string;
+    expect(warn).toContain('НЕ попала в Apple Calendar');
+    // Номер брони и время — да, имя клиента — нет.
+    expect(warn).toContain('бронь #');
+    expect(warn).not.toContain('Мария');
     expect(email.sendAdminNotification).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('Apple Calendar'),
@@ -622,16 +634,49 @@ describe('BookingNotifyService — окна напоминаний и логи �
     expect(log).toHaveBeenCalledWith('Claimed 1 reminder2SentAt reminder(s)');
   });
 
-  it('событие брони: письмо упало — error в лог, Telegram ушёл', async () => {
-    const { service, telegram, email } = makeService();
-    const smtp = new Error('smtp down');
-    email.sendAdminNotification.mockRejectedValueOnce(smtp);
+  // Данные человека — только в письме: письмо не ушло (бросило, вернуло
+  // false — пустой ADMIN_EMAIL или нет ключей Postbox) — error с темой, без данных.
+  it.each([
+    ['бросило', () => Promise.reject(new Error(PII.error)), 'Error'],
+    ['вернуло false', () => Promise.resolve(false), 'false'],
+  ])(
+    'событие брони: письмо %s — error «e-mail not delivered» с темой, Telegram ушёл',
+    async (_n, fail, kind) => {
+      const { service, telegram, email } = makeService();
+      email.sendAdminNotification.mockImplementationOnce(fail);
+      const error = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      const lead = lostLeadNotice(
+        {
+          clientName: PII.name,
+          clientContact: PII.contact,
+          startsAt: new Date('2026-12-01T17:00:00Z'),
+          durationMin: 50,
+          type: SessionType.SESSION_50,
+          message: PII.message,
+        },
+        'Error',
+        PII.error,
+      );
+      await service.notifyAdminBoth(lead, '🚨 Заявка на запись не сохранилась');
+      expect(telegram.notifyAdmin).toHaveBeenCalledWith(lead.telegram);
+      expect(error).toHaveBeenCalledWith(
+        `Admin e-mail not delivered: 🚨 Заявка на запись не сохранилась (${kind})`,
+      );
+      for (const c of error.mock.calls) expectNoMarkers(String(c[0]));
+    },
+  );
+
+  it('событие брони: письмо принято — ошибки о доставке нет', async () => {
+    const { service, email } = makeService();
+    email.sendAdminNotification.mockResolvedValueOnce(true);
     const error = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
     await service.notifyAdminBoth('<b>Бронь</b>', 'Бронь');
-    expect(telegram.notifyAdmin).toHaveBeenCalledWith('<b>Бронь</b>');
-    expect(error).toHaveBeenCalledWith('Critical admin e-mail failed', smtp);
+    expect(email.sendAdminNotification).toHaveBeenCalledWith('Бронь', 'Бронь');
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('Telegram не принял алерт — warn в лог перед запасным письмом', async () => {

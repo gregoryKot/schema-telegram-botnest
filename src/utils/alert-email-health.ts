@@ -1,4 +1,4 @@
-// Снимок последней отправки письма-фолбэка алертов через Resend (аудит
+// Снимок последней отправки письма-фолбэка алертов через Postbox (аудит
 // 2026-10-11: sendEmail не смотрел ответ, отозванный ключ и 403/429 считались
 // доставкой и не оставляли ни строки в логе). Процессный синглтон — тот же
 // приём, что у ../infra/self-check/state.ts и ../logger/db-outage.ts: admin-alert.ts
@@ -7,7 +7,7 @@
 // Лог — только уровнем warn. AlertLogger (../logger/alert.logger.ts) шлёт
 // в DM лишь error, а error отсюда зациклил бы фолбэк сам на себя: письмо не
 // ушло → error → AlertLogger → notifyAdminWithFallback → письмо не ушло.
-// В лог не попадают ни ключ, ни текст письма, ни тело ответа Resend (в нём
+// В лог не попадают ни ключ, ни текст письма, ни тело ответа Postbox (в нём
 // может быть адрес) — только HTTP-статус.
 import { Logger } from '@nestjs/common';
 
@@ -58,11 +58,11 @@ export function noteAlertEmailResult(
   if (repeat) return;
   lastLogged = { at: now, status: r.status };
   logger.warn(
-    `Резервный канал алертов (Resend) не принял письмо: ${describeAlertEmailFailure(r.status)}`,
+    `Резервный канал алертов (Postbox) не принял письмо: ${describeAlertEmailFailure(r.status)}`,
   );
 }
 
-/** Ответ Resend: смотрим только HTTP-статус, тело не читаем. */
+/** Ответ Postbox: смотрим только HTTP-статус, тело сюда не попадает. */
 export function noteAlertEmailResponse(res: {
   ok: boolean;
   status: number;

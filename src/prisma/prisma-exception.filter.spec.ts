@@ -489,7 +489,7 @@ describe('GenericExceptionFilter', () => {
     // чем нужно. Признак — `expose === true`, его ставит только http-errors.
     it('контроль: ошибка исходящего HTTP-клиента со статусом 404 остаётся аварией (500 + alert)', () => {
       // У AxiosError есть числовой `.status`, но нет `expose`. Чужой 404 от
-      // Telegram/Resend — наша авария, и она обязана разбудить владельца.
+      // Telegram/Postbox — наша авария, и она обязана разбудить владельца.
       const axiosLike = new Error('Request failed with status code 404');
       axiosLike.name = 'AxiosError';
       Object.assign(axiosLike, { status: 404, statusCode: 404 });

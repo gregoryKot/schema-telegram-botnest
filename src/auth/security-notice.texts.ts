@@ -1,8 +1,7 @@
 // Тексты уведомлений владельцу аккаунта о событиях безопасности (S11/S12,
-// аудит 2026-11): привязан или отвязан способ входа, кто-то подбирает код
-// 2FA. Один текст на оба канала — письмо (security-notice.service.ts) и
-// сообщение бота (renderTemplate, тип `security_notice`): два экземпляра
-// одной фразы разъезжаются (правило №4).
+// аудит 2026-11): привязан или отвязан способ входа, кто-то подбирает код 2FA.
+// Один текст на оба канала — письмо (security-notice.service.ts) и сообщение
+// бота (renderTemplate, `security_notice`): две копии фразы разъезжаются (№4).
 import { t, type AddressForm } from '../notification/address-form';
 
 export type SecurityNoticeKind =
@@ -17,6 +16,7 @@ const PROVIDER_NAMES: Record<string, string> = {
   telegram: 'Telegram',
   google: 'Google',
   vk: 'VK ID',
+  yandex: 'Яндекс ID',
   max: 'MAX',
   email: 'вход по почте',
 };

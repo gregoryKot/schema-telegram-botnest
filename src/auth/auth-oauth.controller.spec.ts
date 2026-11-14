@@ -1,14 +1,17 @@
-// Покрытие AuthOauthController (был 0%): маршруты vk.
+// Покрытие AuthOauthController (был 0%): маршруты vk и yandex.
 // Контроллер инстанцируется напрямую с typed test doubles (без TestingModule)
 // — стиль auth.service.spec.ts. Старт — тонкий делегат в AuthFlowService
-// (проверяем сам факт и аргументы делегирования), колбэк содержит
-// собственную PKCE/state-логику — она тестируется
-// по существу (state → cookie → provider exchange → signInOrLinkOrMerge →
-// finishOAuthRedirect), плюс основная guard-ветка (state mismatch/деним).
+// (проверяем сам факт и аргументы делегирования). Колбэк идёт через НАСТОЯЩИЙ
+// общий хвост OAuthCallbackService (2026-11: вынесен из vkCallback, им же
+// пользуется Яндекс) — PKCE/state-логика тестируется по существу (state →
+// cookie → provider exchange → signInOrLinkOrMerge → finishOAuthRedirect),
+// плюс основная guard-ветка (state mismatch/деним). Сам хвост и его событие
+// аналитики — oauth-callback.service.spec.ts.
 import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthOauthController } from './auth-oauth.controller';
+import { OAuthCallbackService } from './oauth-callback.service';
 import type { AuthProviderRegistry } from './providers/registry';
 import type { AuthFlowService, SignInOutcome } from './auth-flow.service';
 import { VkProvider } from './providers/vk.provider';
@@ -86,7 +89,19 @@ function makeController(
   flow: AuthFlowService,
   config: ConfigService = makeConfig(),
 ): AuthOauthController {
-  return new AuthOauthController(config, providers, flow);
+  // Отчёт о входе (событие login_oauth) здесь не предмет теста — заглушки.
+  const analytics = { track: jest.fn() };
+  const prisma = {
+    authProvider: { findUnique: jest.fn().mockResolvedValue(null) },
+  };
+  const callback = new OAuthCallbackService(
+    config,
+    providers,
+    flow,
+    analytics as never,
+    prisma as never,
+  );
+  return new AuthOauthController(flow, callback);
 }
 
 interface VkProviderMocks {
@@ -205,7 +220,10 @@ describe('AuthOauthController.vkCallback', () => {
     expect(resMocks.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/auth/error?reason=vk_failed`,
     );
-    expect(err).toHaveBeenCalledWith(expect.stringContaining('VK PKCE'));
+    expect(err).toHaveBeenCalledWith(
+      expect.stringContaining('VK PKCE'),
+      expect.any(Error),
+    );
     err.mockRestore();
   });
 
@@ -279,7 +297,10 @@ describe('AuthOauthController.vkCallback', () => {
       makeReq({ cookies: { oauth_state: 'state-1' } } as Partial<Request>),
       res,
     );
-    expect(err).toHaveBeenCalledWith(`vk callback error: ${logged}`);
+    expect(err).toHaveBeenCalledWith(
+      `vk callback error: ${logged}`,
+      expect.any(Error),
+    );
     err.mockRestore();
   });
 
@@ -361,5 +382,74 @@ describe('AuthOauthController — колбэки не пробрасывают �
     await expect(
       controller.vkCallback('', '', '', '', req, res),
     ).resolves.not.toThrow();
+  });
+});
+
+describe('AuthOauthController — Яндекс ID', () => {
+  it('yandexRedirect делегирует AuthFlowService.oauthRedirect', () => {
+    const { flow, mocks } = makeFlow();
+    const controller = makeController(makeProviders({}), flow);
+    const req = makeReq();
+    const { res } = makeRes();
+
+    controller.yandexRedirect(req, res);
+
+    expect(mocks.oauthRedirect).toHaveBeenCalledWith('yandex', req, res);
+  });
+
+  it('yandexCallback: code из запроса уходит в exchangeCode провайдера, исход — в общий финал', async () => {
+    const { flow, mocks } = makeFlow();
+    mocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
+    const identity: ProviderIdentity = { providerId: '1234567890' };
+    const yandex = {
+      id: 'yandex',
+      exchangeCode: jest.fn().mockResolvedValue(identity),
+      callbackOrigin: jest.fn().mockReturnValue(WEBAPP_URL),
+    };
+    const controller = makeController(makeProviders({ yandex }), flow);
+    const req = makeReq({
+      cookies: { oauth_state: 'a.b.c' },
+    } as Partial<Request>);
+    const { res, mocks: resMocks } = makeRes();
+
+    // cid и error_description площадка присылает, а хвост их не читает.
+    await controller.yandexCallback(
+      { code: 'code16chars00000', state: 'a.b.c', cid: 'x'.repeat(26) },
+      req,
+      res,
+    );
+
+    expect(yandex.exchangeCode).toHaveBeenCalledWith('code16chars00000');
+    expect(resMocks.clearCookie).toHaveBeenCalledWith('oauth_state', {
+      path: '/api/auth',
+    });
+    expect(mocks.signInOrLinkOrMerge).toHaveBeenCalledWith('yandex', identity, {
+      linkUserId: null,
+      ip: '1.2.3.4',
+      userAgent: undefined,
+    });
+    expect(mocks.finishOAuthRedirect).toHaveBeenCalledWith(
+      TOKENS_OUTCOME,
+      'yandex',
+      res,
+      WEBAPP_URL,
+      null,
+    );
+  });
+
+  it('yandexCallback с пустым запросом не бросает — экран yandex_failed', async () => {
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const { flow } = makeFlow();
+    const controller = makeController(makeProviders({ yandex: {} }), flow);
+    const { res, mocks: resMocks } = makeRes();
+
+    await expect(
+      controller.yandexCallback({}, makeReq(), res),
+    ).resolves.toBeUndefined();
+
+    expect(resMocks.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/error?reason=yandex_failed`,
+    );
+    err.mockRestore();
   });
 });

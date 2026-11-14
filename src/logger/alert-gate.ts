@@ -30,7 +30,7 @@ import { isMoneyAlert } from './money-alert';
  * alert-gate.spec.ts: переименованный класс без строки здесь роняет jest.
  */
 export const ANON_ALERT_CONTEXTS: ReadonlySet<string> = new Set([
-  'AuthOauthController', // колбэк VK: `vk callback error: …`
+  'OAuthCallbackService', // колбэки VK и Яндекса: `<id> callback error: …`
 ]);
 
 export const KEY_WINDOW_MS = 60_000;
