@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { getHost } from '../../../shared/src/host';
 import { AddHomeScreenButton } from '../../../shared/src/host/AddHomeScreenButton';
 import { api } from '../api';
 import { useAuth } from '../auth/authContext';
+import { useHostId } from '../host/useHostId';
 import { useInstallHandoff } from '../hooks/useInstallHandoff';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { InstallBlock } from '../components/installGuide/InstallBlock';
@@ -34,10 +34,11 @@ export function InstallPage() {
 function InstallContent() {
   useEffect(() => { document.title = 'Установить приложение — Всё по схеме'; }, []);
   useHandoffExchange(track);
+  const hostId = useHostId(); // SDK мессенджера может доехать после первого рендера — экран перечитывает хост
   const [installed, setInstalled] = useState(false);
   useEffect(() => subscribeAppInstalled(() => { setInstalled(true); track('added'); }), []);
 
-  if (getHost().id !== 'web') return <MessengerScreen />;
+  if (hostId !== 'web') return <MessengerScreen />;
   if (isStandalone()) return <Done title="Приложение уже установлено" lead="Значок на экране уже есть — приложение запускается с него." label="Открыть" />;
   if (installed) return <DoneAfterInstall />;
   return <MainScreen onInstalled={() => setInstalled(true)} />;
