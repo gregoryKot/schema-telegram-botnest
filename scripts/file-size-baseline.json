@@ -2738,7 +2738,7 @@
   "webapp/src/pages/OfferPage.tsx": 274,
   "webapp/src/pages/privacy/cookies.ts": 18,
   "webapp/src/pages/privacy/NotCrossBorder.tsx": 19,
-  "webapp/src/pages/privacy/processors.ts": 72,
+  "webapp/src/pages/privacy/processors.ts": 68,
   "webapp/src/pages/PrivacyPage.tsx": 236,
   "webapp/src/pages/ProductLandingPage.tsx": 136,
   "webapp/src/pages/ReviewsPage.tsx": 79,
