@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { StepUpProvider } from '../../components/stepUp/StepUpProvider';
-import { EmailLinkRow } from './EmailLinkRow';
+import { EMAIL_WHY, EmailLinkRow } from './EmailLinkRow';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -57,15 +57,13 @@ afterEach(() => {
 });
 
 describe('EmailLinkRow — когда видна форма', () => {
-  // Онбординг: до первого нажатия видно, зачем привязывать почту, — она
-  // запасной ключ (восстановления доступа по почте нет).
-  it('адрес не привязан — подсказка «зачем» видна до нажатия', () => {
+  // Онбординг: до первого нажатия видно, зачем привязывать почту, — для писем
+  // о безопасности; входа по почте нет (ч. 10 ст. 8 149-ФЗ).
+  it('адрес не привязан — подсказка «зачем» видна до нажатия и не обещает вход', () => {
     render(<Harness />);
-    expect(
-      screen.getByText(
-        'Почтой входят на сайт и в приложение на экране телефона. Пригодится и как запасной вход.',
-      ),
-    ).toBeTruthy();
+    expect(screen.getByText(EMAIL_WHY)).toBeTruthy();
+    expect(EMAIL_WHY).toMatch(/^На почту придёт письмо/);
+    expect(EMAIL_WHY).not.toMatch(/входят|запасной вход/);
   });
 
   it('адрес не привязан — «Привязать» открывает поле ввода', () => {

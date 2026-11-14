@@ -12,7 +12,8 @@ describe('emailLinkNotice — что сказать у строки Email', () =
   it('ошибка важнее успеха и несёт текст причины в форме читателя', () => {
     const n = emailLinkNotice('email', 'email_taken', pick('vy'));
     expect(n?.kind).toBe('error');
-    expect(n?.text).toMatch(/Войдите по нему/);
+    expect(n?.text).toMatch(/Привяжите сюда другой/);
+    expect(n?.text).not.toMatch(/Войд/);
   });
 
   it('ничего не пришло или чужой код — ничего не показываем', () => {

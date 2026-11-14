@@ -1,11 +1,10 @@
 // Свой экран `/auth/error` для кода (U6, аудит 2026-11): просроченная ссылка
-// из письма показывала «Вход не удался» с техническим кодом, а кнопка вела на
-// общий вход — форму почты там надо было искать заново. Здесь — заголовок и
+// из письма показывала «Вход не удался» с техническим кодом. Здесь — заголовок и
 // главная кнопка; текст — из словаря `authErrorReasons.ts`, кода на экране
 // нет (в отчёт он уходит как раньше).
 
-/** Вход с уже открытой формой почты (`LoginEmailForm` читает `via=email`). */
-export const EMAIL_FORM_PATH = '/login?via=email';
+/** Новое письмо привязки запрашивают в «Аккаунте» — входа по почте нет. */
+export const EMAIL_LINK_PATH = '/account';
 
 export interface AuthErrorScreen {
   title: string;
@@ -14,7 +13,7 @@ export interface AuthErrorScreen {
   retryLead?: (tr: (ty: string, vy: string) => string) => string;
 }
 
-const NEW_LINK = { label: 'Запросить новую ссылку', href: EMAIL_FORM_PATH };
+const NEW_LINK = { label: 'Запросить новую ссылку', href: EMAIL_LINK_PATH };
 const OTHER_WAY = { label: 'Другой способ входа', href: '/login' };
 const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
   vk_disabled: { title: 'Вход через ВКонтакте отключён', action: OTHER_WAY },
