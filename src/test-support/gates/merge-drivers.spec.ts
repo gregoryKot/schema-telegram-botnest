@@ -28,11 +28,12 @@ import { importExport } from './pattern-loader';
 const REAL_SCRIPTS = join(__dirname, '..', '..', '..', 'scripts');
 const RATCHET = 'merge-json-ratchet.mjs';
 const RULES = 'merge-json-ratchet-rules.mjs';
+const HISTORY = 'merge-json-ratchet-history.mjs';
 
-/** Драйвер вместе с модулем режимов — в `<tmp>/scripts/`, как в репозитории. */
+/** Драйвер с модулями режимов и истории — в `<tmp>/scripts/`, как в репозитории. */
 function copyDriver(tmp: string, extra: string[] = []): void {
   mkdirSync(join(tmp, 'scripts'), { recursive: true });
-  for (const name of [RATCHET, RULES, ...extra]) {
+  for (const name of [RATCHET, RULES, HISTORY, ...extra]) {
     copyFileSync(join(REAL_SCRIPTS, name), join(tmp, 'scripts', name));
   }
 }
@@ -1069,6 +1070,99 @@ describe('настоящее .gitattributes: журнал на дозапись 
     const { status, log } = twoAppends(false);
     expect(status).not.toBe(0);
     expect(log).toContain('<<<<<<<');
+  });
+});
+
+describe('sum: ветка поверх уже влитой squash-ветки не задваивает общую правку', () => {
+  // Шов #1123: ветку B отвели от ветки A, A влили в main squash-ом, B сливает
+  // main. База слияния для git — точка до A, и правка A приходит с обеих
+  // сторон. Настоящий git сам зовёт драйвер и кладёт их коммит в GITHEAD_<sha>.
+  const SIZES = 'scripts/file-size-baseline.json';
+  const GAME = 'game/src/scenes/GameScene.ts';
+  type Sizes = Record<string, number>;
+
+  /** stacked — B отведена от A (иначе от main); extraOnA — A дописали после отвода B. */
+  function mergeMainIntoB(opts: { stacked: boolean; extraOnA?: boolean }) {
+    const tmp = mkdtempSync(join(tmpdir(), 'squash-stack-'));
+    try {
+      const git = repoWithRealDrivers(tmp);
+      writeFileSync(
+        join(tmp, '.gitattributes'),
+        `${SIZES} merge=ratchet-sum\n`,
+      );
+      writeFileSync(join(tmp, 'scripts', 'check-file-size-ratchet.mjs'), '');
+      const read = (): Sizes =>
+        JSON.parse(readFileSync(join(tmp, SIZES), 'utf8')) as Sizes;
+      const edit = (patch: Sizes, message: string) => {
+        writeFileSync(
+          join(tmp, SIZES),
+          JSON.stringify({ ...read(), ...patch }, null, 2) + '\n',
+        );
+        git('commit', '-qam', message);
+      };
+      writeFileSync(
+        join(tmp, SIZES),
+        JSON.stringify({ [GAME]: 1423, 'src/other.ts': 100 }, null, 2) + '\n',
+      );
+      git('add', '-A');
+      git('commit', '-qm', 'база');
+      git('branch', '-M', 'main');
+
+      git('checkout', '-qb', 'a');
+      edit({ [GAME]: 1247, 'game/src/scenes/death.ts': 120 }, 'A: дробление');
+      git('checkout', '-qb', 'b', opts.stacked ? 'a' : 'main');
+      edit(
+        { [GAME]: opts.stacked ? 1094 : 1300, 'game/src/cabinet.ts': 150 },
+        'B',
+      );
+      if (opts.extraOnA) {
+        git('checkout', '-q', 'a');
+        edit({ [GAME]: 1240 }, 'A: правка после отвода B');
+      }
+
+      git('checkout', '-q', 'main');
+      edit({ 'src/other.ts': 110 }, 'main: чужой PR');
+      git('merge', '--squash', 'a');
+      git('commit', '-qm', 'A (#1)');
+
+      git('checkout', '-q', 'b');
+      const merge = git('merge', 'main', '-m', 'merge main');
+      return { status: merge.status, sizes: read(), stderr: merge.stderr };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  it('B поверх A: GameScene — значение B, правка A учтена один раз', () => {
+    const res = mergeMainIntoB({ stacked: true });
+    expect(res.status).toBe(0);
+    // без поправки было бы 1094 + 1247 − 1423 = 918, как в #1123
+    expect(res.sizes).toEqual({
+      [GAME]: 1094,
+      'src/other.ts': 110,
+      'game/src/scenes/death.ts': 120,
+      'game/src/cabinet.ts': 150,
+    });
+    expect(res.stderr).toContain('влитой squash-ветке');
+  });
+
+  it('контроль: B не стоит на A — обычная сумма дельт, как раньше', () => {
+    const res = mergeMainIntoB({ stacked: false });
+    expect(res.status).toBe(0);
+    expect(res.sizes[GAME]).toBe(1300 + 1247 - 1423);
+    expect(res.stderr).not.toContain('влитой squash-ветке');
+  });
+
+  it('A дописали после отвода B: поправки нет, но подсказка с командой пересчёта', () => {
+    const res = mergeMainIntoB({ stacked: true, extraOnA: true });
+    expect(res.status).toBe(0);
+    expect(res.sizes[GAME]).toBe(1094 + 1240 - 1423);
+    expect(res.stderr).toContain(
+      `${GAME}: база 1423, наша 1094, их 1240 → 911`,
+    );
+    expect(res.stderr).toContain(
+      'node scripts/check-file-size-ratchet.mjs --update',
+    );
   });
 });
 
