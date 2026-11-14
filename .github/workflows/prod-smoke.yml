@@ -39,10 +39,14 @@ jobs:
       # Исключение — переход `/app/` → `/today`: его несущая проверка —
       # код 302 и заголовок Location, там тело не читается.
       # --fail: 4xx/5xx не глотается как «успех», шаг падает громко.
-      # --retry 2 — только сетевой дребезг между раннером GitHub и прод-хостом
-      # (couple of retries), НЕ цикл: после двух неудач curl возвращает
-      # ошибку и шаг красный — настоящий даунтайм не тонет в повторах.
-      CURL: curl --fail --silent --show-error --max-time 10 --retry 2 --retry-delay 3
+      # --retry 2 --retry-all-errors — только сетевой дребезг между раннером
+      # GitHub и прод-хостом, НЕ цикл. Без --retry-all-errors curl не повторял
+      # TLS-обрыв (exit 35, «unexpected eof»), и одна вспышка красила смок
+      # здорового прода. С --fail флаг повторяет и 4xx/5xx, но после двух
+      # неудач curl всё равно выходит с кодом 22 и шаг красный — настоящий
+      # даунтайм и устойчивый 5xx не тонут в повторах. Нужен curl ≥ 7.71
+      # (на образе 26.04 — 8.18).
+      CURL: curl --fail --silent --show-error --max-time 10 --retry 2 --retry-all-errors --retry-delay 3
     steps:
       # На schedule-запуске чекаут = HEAD main (workflow_dispatch — тоже,
       # ветка выбирается на странице запуска, по умолчанию main). `git log -1
@@ -115,10 +119,14 @@ jobs:
         run: |
           # Без -L и без --fail: проверяем сам переход. Адрес /app/ вшит в
           # кнопки старых сообщений бота, ярлыки и приложение в BotFather.
-          headers=$(curl --silent --show-error --max-time 10 --retry 2 --retry-delay 3 \
-            -o /dev/null -D - 'https://schemehappens.ru/app/?startapp=probe')
-          echo "$headers" | head -n 1 | grep -q ' 302'
-          echo "$headers" | tr -d '\r' | grep -i '^location:' | grep -q '/today?startapp=probe$'
+          # Код и адрес берём из -w, не из -D -: при повторе -D печатает
+          # заголовки КАЖДОЙ попытки, и первая (503) красила бы шаг после
+          # успешного повтора; -w пишется один раз, по последней попытке.
+          result=$(curl --silent --show-error --max-time 10 --retry 2 --retry-all-errors --retry-delay 3 \
+            -o /dev/null -w '%{http_code} %{redirect_url}' 'https://schemehappens.ru/app/?startapp=probe')
+          echo "$result"
+          echo "$result" | grep -q '^302 '
+          echo "$result" | grep -q '/today?startapp=probe$'
       - name: /game/ — 200 и реально раздаёт игру, не SPA-fallback сайта
         run: |
           # SPA-fallback отдаёт 200 с HTML сайта на ЛЮБОЙ путь, поэтому
@@ -247,7 +255,9 @@ jobs:
             *)         HEAD="Смок прода: $NOTIFY." ;;
           esac
           TEXT=$(printf '%s\nСмотреть: %s' "$HEAD" "$RUN_URL")
-          curl -sS --max-time 10 \
+          # Повтор на любой ошибке связи: DM уходит один раз на смену состояния,
+          # потерянный обрывом он не повторится до следующего напоминания.
+          curl -sS --max-time 10 --retry 2 --retry-all-errors --retry-delay 3 \
             "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${ADMIN_ID}" \
             --data-urlencode "text=${TEXT}" > /dev/null
