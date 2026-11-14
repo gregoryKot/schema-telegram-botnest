@@ -95,7 +95,7 @@ describe('ArticleSeoMiddleware', () => {
     expect(next).not.toHaveBeenCalled();
     const html = getSent()!;
     expect(html).toContain(
-      '<title>18 схем Янга: полный список – Григорий Котляревский</title>',
+      '<title>18 схем Янга: полный список – Всё по схеме</title>',
     );
     expect(html).toContain(
       'content="Полный список 18 ранних дезадаптивных схем по Джеффри Янгу."',
@@ -167,6 +167,31 @@ describe('ArticleSeoMiddleware', () => {
     const html = getSent()!;
     expect(html).toContain('"datePublished":"2025-05-10T00:00:00.000Z"');
     expect(html).toContain('"dateModified":"2026-09-01T00:00:00.000Z"');
+  });
+
+  it('<title>: продукт — «Всё по схеме», визитка — имя автора', async () => {
+    const title = async (path: string, host: string) => {
+      const mw = makeMiddleware(
+        ARTICLE,
+        jest.fn().mockResolvedValue([ARTICLE]),
+      );
+      const { req, res, getSent } = mockReqRes(path, host);
+      await mw.use(req, res, () => {});
+      return /<title>([^<]*)<\/title>/.exec(getSent()!)?.[1];
+    };
+    const slug = '/articles/skhemy-yanga-spisok';
+    expect(await title(slug, 'schemehappens.ru')).toBe(
+      '18 схем Янга: полный список – Всё по схеме',
+    );
+    expect(await title(slug, 'kotlarewski.gr')).toBe(
+      '18 схем Янга: полный список – Григорий Котляревский',
+    );
+    expect(await title('/articles', 'schemehappens.ru')).toBe(
+      'Статьи о схема-терапии – Всё по схеме',
+    );
+    expect(await title('/articles', 'kotlarewski.gr')).toBe(
+      'Статьи о схема-терапии – Григорий Котляревский',
+    );
   });
 
   it('rewrites canonical host for alias domains', async () => {
@@ -251,7 +276,7 @@ describe('ArticleSeoMiddleware', () => {
     await mw.use(req, res, () => {});
     const html = getSent()!;
     expect(html).toContain(
-      '<title>КПТ &amp; «схемы» &lt;тест&gt; – Григорий Котляревский</title>',
+      '<title>КПТ &amp; «схемы» &lt;тест&gt; – Всё по схеме</title>',
     );
   });
 

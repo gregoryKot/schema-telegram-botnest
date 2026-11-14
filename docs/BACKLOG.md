@@ -45,7 +45,6 @@
 
 
 - ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml`, `nightly.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
-- ⬜ **Имя автора в заголовках статей на schemehappens.ru** — осознанно не тронуто в задаче «убрать имя из вкладки продукта»: сервер отдаёт статьям `<title>` «… – Григорий Котляревский» на обоих хостах (`src/articles/article-seo.middleware.ts:19,99`); вкладка после загрузки показывает «… | schemehappens.ru» (`ArticlesPage.tsx`), но поисковая выдача видит имя. Нужно решение владельца: продукту — суффикс «Всё по схеме», визитке — имя.
 - ⬜ **Владельцу: внести `webapp-tz` в живой ruleset `main`** — Require status checks (GitHub Actions); джоба есть в копии `.github/rulesets/main.json` с #1079, без неё `live-ruleset` в nightly красный каждую ночь и держит открытым ci-alarm #1057 (там же — проверить зелёный nightly и закрыть #1057). Запись — `docs/open/owner.md`.
 - ⬜ **Игра: реплики пролога у стены обрезаны краем, «пропустить →» на десктопе под кнопкой меню** — осталось от К3 в [GAME_ANALYSIS.md](GAME_ANALYSIS.md), вне #1117: это раскладка, а не логика — работа #1093 (`game/src/scenes/TutorialScene.ts`, `game/index.html:195-197`).
 - ⬜ **Первый замер видимости в нейросетях** — пройти 15 вопросов из
@@ -128,6 +127,8 @@
 
 ## Сделано
 
+- ✅ **Имя автора в заголовках статей** — `<title>` статей и списка на schemehappens.ru кончается «Всё по схеме»,
+  на kotlarewski.gr — именем автора (`src/articles/article-seo.middleware.ts`, тест на оба хоста). #1158.
 - ✅ **Хвост #1100: инструменты и документы** — гейт реестра возможностей видит `if (!credentials) return`,
   канцелярит ловит «являются», `npx tsc --noEmit -p shared` зелёный и стоит в джобе `shared`, раздел «VK ID» в
   `docs/RUNBOOKS.md` по нынешнему коду, состав `test/fixtures/recorded/README.md` сверяется спеком,
