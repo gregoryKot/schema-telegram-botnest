@@ -3,8 +3,9 @@ import { M } from './i18n/messages';
 import { isLongTapLabel } from './tapLabel';
 
 describe('isLongTapLabel — какой подписи тач-кнопки нужен кегль 8px', () => {
-  it('SURRENDER (9 знаков: 90px в 10px при 76px внутри рамки) — длинная', () => {
+  it('SURRENDER (9 знаков: 90px в 10px при 76px внутри рамки) — длинная, как и любые 8 знаков (80px)', () => {
     expect(isLongTapLabel(M.m_surrender.en)).toBe(true);
+    expect(isLongTapLabel('DISTRACT')).toBe(true);
   });
 
   it('УСТУПИ, ИЗБЕГАЙ (7 знаков — край), БЕЙ, AVOID, FIGHT влезают в 10px', () => {
