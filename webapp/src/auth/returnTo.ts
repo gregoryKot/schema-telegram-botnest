@@ -69,7 +69,7 @@ function forgetReturnTo(): boolean {
   }
 }
 
-/** Посмотреть адрес, не стирая; чужой адрес — null. */
+/** Посмотреть адрес, не стирая: его везёт ссылка из письма (emailReturnTo.ts). */
 export function peekReturnTo(): string | null {
   try {
     return safeReturnPath(sessionStorage.getItem(AUTH_RETURN_KEY));
