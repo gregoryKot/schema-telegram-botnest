@@ -42,8 +42,9 @@ describe('processors', () => {
     ]);
   });
 
-  it('Postbox: письма для входа и уведомления о записи; уходит почта, для записи — имя, контакт и время', () => {
-    expect(POSTBOX_PROCESSOR.purpose).toContain('ссылки для входа и восстановления доступа');
+  it('Postbox: письма привязки и безопасности, уведомления о записи; уходит почта, для записи — имя, контакт и время', () => {
+    expect(POSTBOX_PROCESSOR.purpose).toContain('подтверждение привязки адреса к аккаунту и уведомления о безопасности аккаунта');
+    expect(POSTBOX_PROCESSOR.purpose).not.toMatch(/для входа/);
     expect(POSTBOX_PROCESSOR.purpose).toContain('уведомления Оператору о новых записях на консультацию');
     expect(POSTBOX_PROCESSOR.data).toBe('адрес электронной почты пользователя; для записи – имя, контакт и время встречи');
   });

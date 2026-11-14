@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
-// Страница погашения ссылки из письма: на входе ?email_token=…, на выходе — POST
-// и переход по исходу. Главное: токен гасится ОДНИМ POST-ом (не двумя) и
-// стирается из адресной строки.
+// Страница погашения ссылки привязки почты из письма: на входе ?email_token=…,
+// на выходе — POST и переход по исходу. Главное: токен гасится ОДНИМ POST-ом
+// (не двумя) и стирается из адресной строки; входа по ссылке нет.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, waitFor, cleanup, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '../../auth/AuthProvider';
 import { useAuth } from '../../auth/authContext';
 import { AuthCallback } from '../AuthCallback';
-import { AUTH_RETURN_KEY } from '../../auth/returnTo';
 
 const json = (status: number, body: unknown) =>
   ({ ok: status < 400, status, json: () => Promise.resolve(body) }) as Response;
@@ -17,7 +16,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 let consumeReply: Response;
 
 beforeEach(() => {
-  consumeReply = json(200, { accessToken: 'AT', expiresIn: 900 });
+  consumeReply = json(200, { linked: true });
   // AuthProvider при старте сам дёргает refresh — отвечаем 401; consume — по сценарию.
   fetchMock = vi.fn((url: string) =>
     Promise.resolve(
@@ -63,32 +62,25 @@ const consumeCalls = () =>
   fetchMock.mock.calls.filter((c) => String(c[0]).endsWith('/email/consume'));
 
 describe('AuthCallback ← ссылка из письма (?email_token)', () => {
-  it('показывает «Входим…», гасит токен одним POST, стирает его из адреса, ведёт на /today', async () => {
+  it('показывает «Привязываем почту…», гасит токен одним POST, стирает его из адреса, ведёт на /account?linked=email', async () => {
     renderPage('?email_token=raw-1');
-    expect(await screen.findByText('Входим…')).toBeTruthy();
-    await screen.findByText('at:/today');
+    expect(await screen.findByText('Привязываем почту…')).toBeTruthy();
+    await screen.findByText('at:/account?linked=email');
     expect(consumeCalls()).toHaveLength(1);
     expect(JSON.parse(consumeCalls()[0][1].body)).toEqual({ token: 'raw-1' });
     expect(window.location.search).toBe('');
   });
 
-  it('с билетом входа → экран сверки /auth/confirm, а не молчаливое одобрение', async () => {
-    renderPage('?email_token=raw-1&ticket=K7M2QX94');
-    // Токена в адресе нет (login-CSRF, 2026-11): сессия ответа POST уже в AuthProvider.
-    await screen.findByText('at:/auth/confirm?code=K7M2QX94');
-    expect(screen.getByText('tok:AT')).toBeTruthy();
-  });
-
-  it('аккаунт с 2FA → /auth/2fa?token=…', async () => {
-    consumeReply = json(200, { challengeToken: 'CH' });
-    renderPage('?email_token=raw-1');
-    await screen.findByText('at:/auth/2fa?token=CH');
-  });
-
-  it('привязка почты → /account?linked=email', async () => {
-    consumeReply = json(200, { linked: true });
-    renderPage('?email_token=raw-1');
-    await screen.findByText('at:/account?linked=email');
+  // Вход по почте отключён: старая ссылка входа, на которую сервер ещё отдаёт сессию
+  // или 2FA, — экран ошибки ссылки; сессия страницей не принимается.
+  it.each([
+    ['сессия', { accessToken: 'AT', expiresIn: 900 }],
+    ['2FA', { challengeToken: 'CH' }],
+  ])('старая ссылка входа (%s) → /auth/error?reason=email_link_expired, входа нет', async (_n, body) => {
+    consumeReply = json(200, body);
+    renderPage('?email_token=raw-1&ticket=K7M2QX94&return_to=%2Fdiary');
+    await screen.findByText('at:/auth/error?reason=email_link_expired');
+    expect(screen.getByText('tok:none')).toBeTruthy();
   });
 
   it('ссылка просрочена → /auth/error?reason=email_link_expired (экран отчитывается наверх)', async () => {
@@ -117,7 +109,7 @@ describe('AuthCallback ← ссылка из письма (?email_token)', () =>
     expect(screen.getByText(/Ссылка из письма ещё действует/)).toBeTruthy();
     expect(window.location.href).not.toContain('raw-1');
     fireEvent.click(retry);
-    await screen.findByText('at:/today');
+    await screen.findByText('at:/account?linked=email');
     expect(consumeCalls().map((c) => JSON.parse(c[1].body))).toEqual([{ token: 'raw-1' }, { token: 'raw-1' }]);
   });
 
@@ -130,28 +122,6 @@ describe('AuthCallback ← ссылка из письма (?email_token)', () =>
     renderPage('?email_token=raw-2');
     await screen.findByText('at:/auth/error?reason=email_link_expired');
   });
-
-  // E14 (аудит 2026-11): письмо открывают новой вкладкой — адрес возврата едет в ссылке.
-  it('адрес возврата из ссылки письма: ведёт туда, а не на «Сегодня»', async () => {
-    sessionStorage.setItem(AUTH_RETURN_KEY, '/schemas');
-    renderPage('?email_token=raw-1&return_to=%2Fdiary%3Ftab%3Dschemas');
-    await screen.findByText('at:/diary?tab=schemas');
-    expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBeNull(); // адрес вкладки забран, не висит
-  });
-
-  it('без адреса в ссылке — запомненный во вкладке (контроль)', async () => {
-    sessionStorage.setItem(AUTH_RETURN_KEY, '/schemas');
-    renderPage('?email_token=raw-1');
-    await screen.findByText('at:/schemas');
-  });
-
-  it.each(['//evil.com', '/\\evil.com', '/..//evil.com', 'https://evil.com/x'])(
-    'чужой адрес в ссылке (%s) — не открытый редирект: «Сегодня»',
-    async (raw) => {
-      renderPage(`?email_token=raw-1&return_to=${encodeURIComponent(raw)}`);
-      await screen.findByText('at:/today');
-    },
-  );
 
   it('контрольный: без ?email_token POST не уходит (это обычный OAuth-колбэк)', async () => {
     renderPage('');

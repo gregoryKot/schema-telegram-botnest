@@ -4,11 +4,13 @@ import type { AccountProvider } from './ProviderRows';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 export interface TotpState { enabled: boolean; recoveryCodesLeft: number }
+interface AccountData { userId?: string; providers: AccountProvider[]; totp?: TotpState }
 const LOAD_FAILED = 'Не удалось загрузить способы входа';
 
-/** Загрузка /api/auth/me: способы входа и состояние 2FA. */
+/** Загрузка /api/auth/me: номер аккаунта (правило отвязки), способы входа и состояние 2FA. */
 export function useAccountData(accessToken: string | null) {
   const [providers, setProviders] = useState<AccountProvider[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [totp, setTotp] = useState<TotpState>({ enabled: false, recoveryCodesLeft: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,15 +21,19 @@ export function useAccountData(accessToken: string | null) {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) throw new Error((await readHumanError(res, LOAD_FAILED)).message);
-    return await res.json() as { providers: AccountProvider[]; totp?: TotpState };
+    return await res.json() as AccountData;
   }, [accessToken]);
+
+  const apply = useCallback((data: AccountData) => {
+    setProviders(data.providers);
+    setUserId(data.userId ?? null);
+    if (data.totp) setTotp(data.totp);
+  }, []);
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const data = await loadAccount();
-      setProviders(data.providers);
-      if (data.totp) setTotp(data.totp);
+      apply(await loadAccount());
     } catch (e) { setError(humanizeThrown(e, LOAD_FAILED)); }
     finally { setLoading(false); }
   };
@@ -39,11 +45,11 @@ export function useAccountData(accessToken: string | null) {
   useEffect(() => {
     let alive = true;
     loadAccount()
-      .then((data) => { if (alive) { setProviders(data.providers); if (data.totp) setTotp(data.totp); } })
+      .then((data) => { if (alive) apply(data); })
       .catch((e) => { if (alive) setError(humanizeThrown(e, LOAD_FAILED)); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [loadAccount]);
+  }, [loadAccount, apply]);
 
-  return { providers, totp, loading, error, setError, refresh };
+  return { userId, providers, totp, loading, error, setError, refresh };
 }

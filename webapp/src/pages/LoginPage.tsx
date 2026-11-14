@@ -7,7 +7,6 @@ import { reportClientError } from '../api';
 import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { LoginShell } from './login/LoginShell';
 import { PaperAlert } from '../components/paper/PaperAlert';
-import { LoginEmailForm } from './login/LoginEmailForm';
 import { LoginFormerNote } from './login/LoginFormerNote';
 import { TelegramRetry } from './login/TelegramRetry';
 import { LoginConsentNote } from './login/LoginConsentNote';
@@ -33,9 +32,7 @@ export function LoginPage() {
         'Вход не получился: окно входа закрылось раньше времени. Можно попробовать ещё раз.'
       : null,
   );
-  // Сбой — у того, к чему относится, выше сгиба (b26: на 390 стоял ниже согласия): у кнопок или у почты.
-  const [errorAt, setErrorAt] = useState<'providers' | 'email'>('providers');
-  const setEmailError = (e: string | null) => { setErrorAt('email'); setError(e); };
+  // Сбой — у кнопок входа, выше сгиба (b26: на 390 стоял ниже согласия).
   const errorAlert = error ? <PaperAlert title={error} sign="cup" className="al-alert" /> : null;
   const isTelegramContext = !!getHost().sessionExchange();
   const deleted = useAccountDeletedNotice(); // сразу после удаления — не «вход устарел» (К2)
@@ -96,13 +93,12 @@ export function LoginPage() {
       <p className="al-sub" role={deleted ? 'status' : undefined}>
         {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
           ? 'Вход устарел — данные на месте, нужно войти заново'
-          : tr('Войди, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram', 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram')}
+          : tr('Войди, чтобы продолжить. Первый вход сам создаст аккаунт — регистрация не нужна', 'Войдите, чтобы продолжить. Первый вход сам создаст аккаунт — регистрация не нужна')}
       </p>
 
-      {errorAt === 'providers' && errorAlert}
+      {errorAlert}
       <LoginProviderButtons onSession={enter} />
 
-      <LoginEmailForm setError={setEmailError} error={errorAt === 'email' ? errorAlert : null} />
       <LoginFormerNote />
 
       <LoginConsentNote />

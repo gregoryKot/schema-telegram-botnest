@@ -23,20 +23,20 @@ const providerFailed = (name: string) => (tr: Tr) =>
   );
 
 // Безличный: экран публичный, формы обращения у него нет (как у DonatePage).
-const providerDisabled = (name: string) => () =>
-  `Вход через ${name} временно отключён. Другой способ — почта: ` +
-  'если она привязана к аккаунту, откроется он же.';
+// Другой вход на сайте один — второй сервис; почтой не входят.
+const providerDisabled = (name: string, other: string) => () =>
+  `Вход через ${name} временно отключён. Если к аккаунту привязан ${other}, войти можно через него.`;
 
 const AUTH_ERROR_TEXTS: Record<string, (tr: Tr) => string> = {
   vk_failed: providerFailed('ВКонтакте'),
-  vk_disabled: providerDisabled('ВКонтакте'),
+  vk_disabled: providerDisabled('ВКонтакте', 'Яндекс ID'),
   yandex_failed: providerFailed('Яндекс'),
-  yandex_disabled: providerDisabled('Яндекс'),
+  yandex_disabled: providerDisabled('Яндекс', 'VK ID'),
   max_failed: providerFailed('MAX'),
   email_link_expired: (tr) =>
     tr(
-      'Ссылка из письма действует 30 минут и открывается только один раз. Запроси новую.',
-      'Ссылка из письма действует 30 минут и открывается только один раз. Запросите новую.',
+      'Ссылка из письма действует 30 минут и открывается только один раз. Запроси новую в «Аккаунте».',
+      'Ссылка из письма действует 30 минут и открывается только один раз. Запросите новую в «Аккаунте».',
     ),
   email_network: (tr) =>
     tr(

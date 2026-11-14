@@ -21,14 +21,16 @@ function show(providers: AccountProvider[], form: 'ty' | 'vy' = 'ty') {
       <SiteLoginHint providers={providers} />
     </AddressFormContext.Provider>,
   );
-  return container.textContent ?? '';
+  return (container.textContent ?? '').replace(/\u00a0/g, ' '); // PaperAlert склеивает короткие слова неразрывным пробелом
 }
 
 describe('SiteLoginHint', () => {
-  it('на сайте с одной почтой — зовёт привязать VK ID или Яндекс ID, в обеих формах', () => {
-    expect(show([p('email')])).toContain('Привяжи ниже VK ID или Яндекс ID');
+  it('на сайте с одной почтой — вход по почте отключён, зовёт привязать VK ID или Яндекс ID, в обеих формах', () => {
+    const ty = show([p('email')]);
+    expect(ty).toContain('Вход по почте отключён. Привяжи ниже VK ID или Яндекс ID — ими и будешь входить на сайт.');
+    expect(ty).not.toMatch(/скоро/);
     cleanup();
-    expect(show([p('email')], 'vy')).toContain('Привяжите ниже VK ID или Яндекс ID');
+    expect(show([p('email')], 'vy')).toContain('Привяжите ниже VK ID или Яндекс ID — ими и будете входить на сайт.');
   });
 
   it('VK ID уже есть — молчит', () => {

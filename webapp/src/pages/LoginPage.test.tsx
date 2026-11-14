@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// LoginPage: три способа входа (OAuth-редиректы, email magic-link, Telegram
-// fallback) плюс редирект уже вошедших пользователей. Мокаем global fetch
+// LoginPage: вход через VK ID и Яндекс ID (OAuth-редиректы), Telegram
+// fallback и редирект уже вошедших пользователей. Мокаем global fetch
 // напрямую (компонент ходит через fetch, не через '../api') — образец:
 // MergePage.test.tsx / AuthCallback.test.tsx. getHost() мокается целиком:
 // реальный getHost() каждый вызов заново детектит хост по window.Telegram и
@@ -98,7 +98,7 @@ describe('LoginPage — подзаголовок в форме человека'
         </MemoryRouter>
       </AddressFormContext.Provider>,
     );
-    expect(screen.getByText(`${sub}. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram`)).toBeTruthy();
+    expect(screen.getByText(`${sub}. Первый вход сам создаст аккаунт — регистрация не нужна`)).toBeTruthy();
     expect(screen.getByTestId('login-consent-note').textContent).toMatch(consent);
   });
 });
@@ -138,11 +138,18 @@ describe('LoginPage — уже вошедший пользователь', () =>
 });
 
 describe('LoginPage — обычный браузер (не Telegram)', () => {
-  it('показывает способы входа сайта: ВКонтакте, Яндекс и почту', () => {
+  it('показывает способы входа сайта: ВКонтакте и Яндекс', () => {
     renderPage();
     expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Войти через Яндекс/ }).getAttribute('href')).toBe('/api/auth/yandex');
-    expect(screen.getByRole('button', { name: /email/i })).toBeTruthy();
+  });
+
+  // Вход по почте отключён (решение владельца, ч. 10 ст. 8 149-ФЗ): ни кнопки, ни поля адреса.
+  it('входа по почте нет: ни кнопки, ни поля, ни запроса письма', () => {
+    const { container } = renderPage(authValue(), '/login?via=email');
+    expect(screen.queryByRole('button', { name: /email|почт/i })).toBeNull();
+    expect(container.querySelector('input[type="email"]')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   // Запрос РКН №08-1063539 (2026-11): пользователей из России нельзя
@@ -157,7 +164,7 @@ describe('LoginPage — обычный браузер (не Telegram)', () => {
     expect(container.innerHTML).not.toMatch(
       /api\/auth\/telegram|api\/auth\/google|oauth\.telegram|start=login_/,
     );
-    expect(screen.getByTestId('login-email-note').textContent).toContain('с той же почтой');
+    expect(screen.getByTestId('login-email-note').textContent).toContain('Вход по почте отключён');
     expect(screen.getByTestId('login-telegram-note').textContent).toContain('добавь там VK ID или Яндекс ID');
     // Во вкладке браузера билет входа не выписывается — страница молчит.
     expect(fetchMock).not.toHaveBeenCalled();
@@ -183,6 +190,15 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
     ).toBeTruthy();
   });
 
+  // Ревью b26: сбой стоит у того, к чему относится, — над кнопками входа, выше сгиба.
+  it('провал OAuth — над кнопками входа, одно сообщение', () => {
+    renderPage(authValue(), '/login?error=no_token');
+    const alert = screen.getByRole('alert');
+    const vk = screen.getByRole('link', { name: /Войти через ВКонтакте/ });
+    expect(alert.compareDocumentPosition(vk) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
   it('без ?error никакого сообщения нет', () => {
     renderPage();
     expect(screen.queryByText(/Вход не получился/)).toBeNull();
@@ -201,84 +217,6 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
     expect(payload.section).toBe('auth');
     expect(payload.message).toContain('хост=web');
     expect(payload.message).toContain('Вход не получился');
-  });
-});
-
-/** Запросы письма среди прочих: экран сам выписывает билет входа при открытии. */
-function emailCalls() {
-  return fetchMock.mock.calls.filter(([url]) =>
-    String(url).includes('/api/auth/email/link'),
-  );
-}
-
-describe('LoginPage — email magic-link', () => {
-  it('невалидный email — ошибка видна, запрос не уходит', () => {
-    const { container } = renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
-    const input = screen.getByPlaceholderText('your@email.com');
-    fireEvent.change(input, { target: { value: 'not-an-email' } });
-    // Клик по type="submit" в jsdom не инициирует нативный submit формы —
-    // сабмитим форму напрямую, как реальный браузер по Enter/клику.
-    fireEvent.submit(container.querySelector('form')!);
-    expect(screen.getByText('Адрес почты выглядит неверно')).toBeTruthy();
-    // Билет входа экран выписывает сам при открытии — считаем только запросы
-    // письма, иначе тест ловил бы чужой вызов.
-    expect(emailCalls()).toHaveLength(0);
-  });
-
-  it('валидный email → письмо отправлено, показан экран подтверждения (read-after-write)', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, {}));
-    const { container } = renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'me@example.com' } });
-    fireEvent.submit(container.querySelector('form')!);
-
-    await screen.findByText('Письмо отправлено');
-    const [, init] = emailCalls()[0];
-    expect(JSON.parse((init as RequestInit).body as string)).toEqual({ email: 'me@example.com' });
-  });
-
-  it('ошибка API при отправке письма — видна пользователю, экран успеха НЕ показывается', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(500, { message: 'Сервер недоступен' }));
-    const { container } = renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'me@example.com' } });
-    fireEvent.submit(container.querySelector('form')!);
-
-    await screen.findByText('Сервер недоступен');
-    expect(screen.queryByText('Письмо отправлено')).toBeNull();
-  });
-
-  // errorAt (ревью b26): сбой стоит у того, к чему относится. Ошибка почты — сразу под полем, над кнопкой
-  // «Отправить ссылку» (на 390 стояла под «Отменой», ниже сгиба); провал OAuth — над кнопками входа.
-  it('ошибка почты — под полем, до кнопки отправки; у кнопок входа её нет', () => {
-    const { container } = renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
-    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'nope' } });
-    fireEvent.submit(container.querySelector('form')!);
-    const alert = screen.getByRole('alert');
-    const form = container.querySelector('form.al-email')!;
-    expect(form.contains(alert)).toBe(true);
-    const input = screen.getByPlaceholderText('your@email.com');
-    const submit = screen.getByRole('button', { name: 'Отправить ссылку' });
-    expect(input.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(alert.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByRole('alert')).toHaveLength(1);
-  });
-
-  it('провал OAuth — у кнопок входа, до них, а не у почты', () => {
-    renderPage(authValue(), '/login?error=no_token');
-    const alert = screen.getByRole('alert');
-    const email = screen.getByRole('button', { name: 'Войти по email' });
-    expect(alert.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByRole('alert')).toHaveLength(1);
-  });
-
-  it('«Отмена» возвращает к списку способов входа', () => {
-    renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
-    expect(screen.getByRole('button', { name: 'Войти по email' })).toBeTruthy();
   });
 });
 
@@ -355,66 +293,10 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
 });
 
 // Аудит 2026-10, «сырой текст сервера на экранах входа»: при лимите экран
-// показывал «ThrottlerException: Too Many Requests» (или «Ошибка 429»), при
-// обрыве сети — «Failed to fetch». Ответы — настоящие Response, не подделки:
-// разбор тела идёт тем же путём, что в проде. Тело 429 — в форме, которую
-// сервер отдаёт после починки (держит src/api/throttler-module-options.spec.ts
-// на настоящем гарде), и в старой — голая JSON-строка.
-const THROTTLED_RU = 'Слишком много попыток подряд. Повторить можно через минуту';
-const throttled = () =>
-  new Response(JSON.stringify({ statusCode: 429, message: THROTTLED_RU }), { status: 429 });
+// показывал «ThrottlerException: Too Many Requests». Ответ — настоящий
+// Response в старой форме тела (голая JSON-строка): разбор идёт тем же путём, что в проде.
 const throttledLegacy = () =>
   new Response('"ThrottlerException: Too Many Requests"', { status: 429 });
-
-/** Письмо падает выбранным ответом; остальные запросы экрана — 200 {}. */
-function failEmailWith(fail: () => Response | Error) {
-  fetchMock.mockImplementation((url: string) => {
-    if (!String(url).includes('/api/auth/email/link')) {
-      return Promise.resolve(new Response('{}', { status: 200 }));
-    }
-    const out = fail();
-    return out instanceof Error ? Promise.reject(out) : Promise.resolve(out);
-  });
-}
-
-function submitEmail(container: HTMLElement) {
-  fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
-  fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'me@example.com' } });
-  fireEvent.submit(container.querySelector('form')!);
-}
-
-describe('LoginPage — ошибки письма входа человеческим текстом', () => {
-  it('контроль: 429 — русский текст сервера со сроком проходит как есть', async () => {
-    failEmailWith(throttled);
-    const { container } = renderPage();
-    submitEmail(container);
-    await screen.findByText(THROTTLED_RU);
-    expect(container.textContent).not.toMatch(/Throttler|Ошибка 429/);
-  });
-
-  it('429 старой формы — общий текст про лимит', async () => {
-    failEmailWith(throttledLegacy);
-    const { container } = renderPage();
-    submitEmail(container);
-    await screen.findByText('Слишком много попыток подряд. Повторить можно чуть позже');
-    expect(container.textContent).not.toMatch(/Throttler/);
-  });
-
-  it('обрыв сети — «Нет связи с сервером», не «Failed to fetch»', async () => {
-    failEmailWith(() => new TypeError('Failed to fetch'));
-    const { container } = renderPage();
-    submitEmail(container);
-    await screen.findByText('Нет связи с сервером');
-    expect(container.textContent).not.toMatch(/Failed to fetch/);
-  });
-
-  it('400 ValidationPipe по-английски — запасной текст экрана', async () => {
-    failEmailWith(() => new Response('{"statusCode":400,"message":["email must be an email"]}', { status: 400 }));
-    const { container } = renderPage();
-    submitEmail(container);
-    await screen.findByText('Не удалось отправить письмо');
-  });
-});
 
 describe('LoginPage — «Попробовать снова» в мессенджере: лимит и авария', () => {
   beforeEach(() => {

@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-// Вход через Google и через Telegram на сайте убран (2026-11): подсказка ведёт
+// Вход через Google, Telegram и по почте на сайте убран (2026-11): подсказка ведёт
 // прежних пользователей к их аккаунту. Строки с обращением — обе формы, без
 // рода читателя.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
-import { botUrl } from '../../utils/botConfig';
+import { botHandle, botUrl } from '../../utils/botConfig';
+import { OPERATOR_EMAIL } from '../../legal/operator';
 import { LoginFormerNote } from './LoginFormerNote';
 
 afterEach(cleanup);
@@ -39,25 +40,31 @@ describe('LoginFormerNote — прежний вход через Telegram', () =
 
   it('ссылка ведёт в чат бота, а не на вход: ни кода, ни oauth.telegram.org', () => {
     renderNote('ty');
-    const link = screen.getByRole('link');
+    const link = screen.getByRole('link', { name: botHandle });
     expect(link.getAttribute('href')).toBe(botUrl);
     expect(link.getAttribute('href')).not.toMatch(/start=|oauth/);
   });
 });
 
 describe('LoginFormerNote — прежний вход по почте или через Google', () => {
-  it('«ты»: вход по почте скоро отключится — войти той же почтой и привязать VK ID или Яндекс ID', () => {
+  it('«ты»: вход по почте отключён — привязать VK ID или Яндекс ID там, где сайт открыт, иначе написать', () => {
     const { email } = renderNote('ty');
     expect(email).toContain('Раньше вход был по почте или через Google?');
-    expect(email).toContain('Вход по почте скоро отключится');
-    expect(email).toContain('войди по email с той же почтой и привяжи в «Аккаунте» VK ID или Яндекс ID');
-    expect(email).toContain('Аккаунт и записи на месте');
-    expect(email).not.toMatch(/войдите|привяжите|входили/);
+    expect(email).toContain('Вход по почте отключён.');
+    expect(email).toContain('Если сайт открыт на другом устройстве — привяжи там в «Аккаунте» VK ID или Яндекс ID.');
+    expect(email).toContain(`Если нет — напиши на ${OPERATOR_EMAIL}`);
+    expect(email).not.toMatch(/скоро|войди по email|привяжите|напишите|входил/);
   });
 
   it('«вы»: та же подсказка во множественном числе', () => {
     const { email } = renderNote('vy');
-    expect(email).toContain('войдите по email с той же почтой и привяжите в «Аккаунте» VK ID или Яндекс ID');
-    expect(email).not.toMatch(/войди |привяжи |входил\b/);
+    expect(email).toContain('привяжите там в «Аккаунте» VK ID или Яндекс ID');
+    expect(email).toContain(`Если нет — напишите на ${OPERATOR_EMAIL}`);
+    expect(email).not.toMatch(/привяжи |напиши /);
+  });
+
+  it('адрес оператора — ссылка mailto', () => {
+    renderNote('ty');
+    expect(screen.getByRole('link', { name: OPERATOR_EMAIL }).getAttribute('href')).toBe(`mailto:${OPERATOR_EMAIL}`);
   });
 });
