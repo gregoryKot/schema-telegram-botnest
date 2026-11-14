@@ -34,6 +34,8 @@ export const SCAN_FILES = ['webapp/index.html', 'webapp/public/llms.txt', 'game/
 export const EXCLUDED = new Set([
   'webapp/src/pages/OfferPage.tsx',
   'webapp/src/pages/PrivacyPage.tsx',
+  // Глава 7 политики, вынесенная из PrivacyPage.tsx (№10): «трансграничной передачей не является» — термин 152-ФЗ.
+  'webapp/src/pages/privacy/NotCrossBorder.tsx',
 ]);
 
 // «Это не X, это Y» — не запрещённая конструкция целиком, а пустая ЕЁ форма

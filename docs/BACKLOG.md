@@ -57,17 +57,8 @@
   - зелёный исход живых проб `postbox` (400 на подписанный запрос без письма) и `yandexOAuth` (ответ на
     код-пустышку) — гипотезы по документации: сверить на проде и дозаписать ответы в
     `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`;
-  - `scripts/check-capability-registry.mjs` не видит ветку `if (!credentials) return`: регэксп ловит только
-    token/apiKey/secret/`process.env.X`;
-  - `scripts/robot-phrases-patterns.mjs:21`: `являет(?:ся|ются)` не ловит «являются»;
-  - тесты `webapp` и `shared` не проходят проверку типов: `npx tsc --noEmit -p shared` падает на
-    `apiCacheRules*.test.ts` и `LoginTicketWait.test.tsx:52`;
-  - `docs/RUNBOOKS.md`, раздел «VK ID»: «без переменных — 500 на getOrThrow» и «PKCE-verifier из JWT_SECRET»
-    устарели;
-  - `test/fixtures/recorded/README.md`, «Текущий состав»: нет `vk-id-authorize-state.json`,
-    `oauth-authorize-responses.json` и ряда других фикстур;
-  - `src/security/install-openssl.spec.ts` и `install-pg-client.spec.ts` красные на macOS: `deploy/*.sh` зовёт
-    GNU `sed -i`.
+  - тесты `webapp` проверку типов не проходят вовсе: `webapp/tsconfig.app.json` исключает `src/**/*.test.ts(x)`,
+    у `shared` такой проверки до #1154 тоже не было — завести `tsconfig` для тестов webapp и шаг в джобе `webapp`.
 
 - ⬜ **Хвост редизайна «Ещё», моста и настроек (#1073)** — баги, найденные ревью и не починенные в партии:
   - скелетон сигнальной карточки моста ниже самой карточки на 28–37px — список под ней прыгает
@@ -134,6 +125,11 @@
 из 12 пунктов и обоснования — в разделе «Что требует решения владельца» там же.
 
 ## Сделано
+
+- ✅ **Хвост #1100: инструменты и документы** — гейт реестра возможностей видит `if (!credentials) return`,
+  канцелярит ловит «являются», `npx tsc --noEmit -p shared` зелёный и стоит в джобе `shared`, раздел «VK ID» в
+  `docs/RUNBOOKS.md` по нынешнему коду, состав `test/fixtures/recorded/README.md` сверяется спеком,
+  `deploy/install-*.sh` без GNU `sed -i` (#1154).
 
 - ✅ **Выгрузка данных клиента отдаёт карты тем же видом, что приложение** — только карты видимых в кабинете авторов, узел колеса без листа, оценки колеса рядом (`SHOWN_EXPORTS` в `src/account/export-shown.ts` через `clientModeMapView`); #1149.
 - ✅ **Вход в форме обращения человека, лендинг без падения при запрете хранилища** — `/login` берёт «ты»/«вы» из кэша прошлого входа (`login/LoginRoute.tsx`); `useTheme` лендинга читает тему через `savedTheme()` (#1150).

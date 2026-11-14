@@ -126,4 +126,12 @@ describe('Dockerfile: openssl в обеих стадиях', () => {
   it('голого apt-get install openssl в образе не осталось', () => {
     expect(DOCKERFILE).not.toMatch(/apt-get install[^\n]*openssl/);
   });
+
+  it.each(['install-openssl.sh', 'install-pg-client.sh'])(
+    '%s не зовёт `sed -i`: у BSD sed на macOS флаг требует аргумент',
+    (name) => {
+      const text = readFileSync(join(__dirname, '../../deploy', name), 'utf8');
+      expect(text).not.toMatch(/^\s*sed\s+-i/m);
+    },
+  );
 });
