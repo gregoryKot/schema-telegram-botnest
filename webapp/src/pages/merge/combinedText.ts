@@ -24,11 +24,12 @@ export function combinedText(n: number | undefined, tr: Tr): string | null {
 
 /**
  * Тексты сводки: `moves` — первая фраза («всё переедет» — только когда
- * объединять нечего), `combined` — абзац про объединение или null.
+ * объединять нечего и ничего не удалится: `lost` — число строк lostLines),
+ * `combined` — абзац про объединение или null.
  */
-export function useMergeTexts(combined: number): { moves: string; combined: string | null } {
+export function useMergeTexts(combined: number, lost: number): { moves: string; combined: string | null } {
   const tr = useTr();
-  const moves = combined > 0
+  const moves = combined > 0 || lost > 0
     ? tr('Если объединить – записи из него переедут в твой текущий аккаунт.', 'Если объединить – записи из него переедут в ваш текущий аккаунт.')
     : tr('Если объединить – всё, что в нём записано, переедет в твой текущий аккаунт.', 'Если объединить – всё, что в нём записано, переедет в ваш текущий аккаунт.');
   return { moves, combined: combinedText(combined, tr) };

@@ -332,8 +332,13 @@ describe('countCombinable — число для экрана слияния', ()
 
   it('summarize отдаёт число рядом со счётчиками', async () => {
     const { db } = makeDb({ note: [note(1, TGT, 'а'), note(2, SRC, 'б')] });
+    const none = table([]); // таблицы потерь (merge-lost.ts) — пустые
     const prisma = {
       ...db,
+      rating: none,
+      childhoodRating: none,
+      ysqProgress: none,
+      therapistRequest: none,
       $queryRaw: jest.fn().mockResolvedValue([{ c: 1n }]),
       user: { findUnique: jest.fn().mockResolvedValue(null) },
     };

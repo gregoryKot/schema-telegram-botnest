@@ -124,6 +124,7 @@ function makeMerge(): MergeMock {
     merge: jest.fn().mockResolvedValue(undefined),
     summarize: jest.fn().mockResolvedValue({
       counts: { Note: 3, Rating: 12 },
+      lost: { Rating: 2 },
       twoFactorLost: false,
     }),
   };
@@ -1025,6 +1026,7 @@ describe('AuthAccountController.mergePreview', () => {
       provider: 'google',
       otherDisplay: 'Другой',
       summary: { Note: 3, Rating: 12 },
+      lost: { Rating: 2 },
       twoFactorLost: false,
     });
   });
