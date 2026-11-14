@@ -24,7 +24,7 @@ import { join } from 'path';
 import { pathToFileURL } from 'url';
 
 interface Plan {
-  mutant: { id: string };
+  mutant: { id: string; fileName?: string };
   runOptions?: { testFilter?: string[] };
 }
 interface Reporter {
@@ -38,6 +38,7 @@ interface CoveringTestFiles {
   (testPaths: string[]): Promise<{ filtered: string[] }>;
   MAP_ENV: string;
   ACTIVE_MUTANT_ENV: string;
+  OWN_SPECS: Record<string, string[]>;
   buildCoveringFiles(
     tests: { id: string; fileName?: string }[],
     plans: Plan[],
@@ -99,6 +100,59 @@ describe('covering-test-files: карта мутант → спеки', () => {
     expect(
       filter.pickTestPaths(related, ['/proj/src/a.spec.ts'], '/s'),
     ).toEqual(related);
+  });
+});
+
+// Крипто-ядро судят только свои спеки: «чужой» спек, пишущий шифрованное
+// поле, мутанта ядра больше не убивает. Список сужает и только сужает.
+describe('covering-test-files: свои спеки крипто-ядра (OWN_SPECS)', () => {
+  const tests = [
+    { id: 'own', fileName: '/proj/src/utils/crypto.spec.ts' },
+    { id: 'own', fileName: '/proj/src/auth/totp.service.spec.ts' },
+    { id: 'foreign', fileName: '/proj/src/notes/notes.service.spec.ts' },
+  ];
+  const at = (id: string, fileName: string, testFilter?: string[]): Plan => ({
+    mutant: { id, fileName },
+    runOptions: testFilter ? { testFilter } : undefined,
+  });
+  const own = ['src/auth/totp.service.spec.ts', 'src/utils/crypto.spec.ts'];
+
+  it('мутант crypto.ts / crypto-record.ts — только свои из покрывающих', () => {
+    const map = filter.buildCoveringFiles(
+      tests,
+      [
+        at('c', '/proj/src/utils/crypto.ts', ['own', 'foreign']),
+        // Путь мутанта от корня, а не абсолютный, — тот же исход.
+        at('r', 'src/utils/crypto-record.ts', ['own', 'foreign']),
+      ],
+      '/proj',
+    );
+    expect(map).toEqual({ c: own, r: own });
+  });
+
+  it('контроль: чужой файл, пустое пересечение, статический мутант — без сужения', () => {
+    const map = filter.buildCoveringFiles(
+      tests,
+      [
+        at('m', '/proj/src/auth/merge.service.ts', ['own', 'foreign']),
+        at('e', '/proj/src/utils/crypto.ts', ['foreign']),
+        at('s', '/proj/src/utils/crypto.ts'),
+      ],
+      '/proj',
+    );
+    expect(map).toEqual({
+      m: [...own, 'src/notes/notes.service.spec.ts'].sort(),
+      e: ['src/notes/notes.service.spec.ts'],
+    });
+  });
+
+  // Переименованный спек молча выпал бы из списка, и ядро судили бы снова все.
+  it('каждый путь списка — существующий файл', () => {
+    const paths = Object.entries(filter.OWN_SPECS).flatMap(([f, specs]) => [
+      f,
+      ...specs,
+    ]);
+    expect(paths.filter((f) => !existsSync(join(ROOT, f)))).toEqual([]);
   });
 });
 
