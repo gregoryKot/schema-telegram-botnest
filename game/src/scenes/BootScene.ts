@@ -36,7 +36,7 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
     // сеть оборвалась (например, в момент деплоя) — говорим честно и даём повторить
     this.load.on('loaderror', () => this.armRetry());
-    // Страховка от вечной «ЗАГРУЗКА...»: если за 12с не уехали (висящий запрос,
+    // Страховка от вечной «ЗАГРУЗКА…»: если за 12с не уехали (висящий запрос,
     // битый ассет и т.п.) — показываем честный экран с перезагрузкой.
     this.watchdog = window.setTimeout(() => { if (!this.advanced) this.armRetry(); }, 12000);
     for (const [key, s] of Object.entries(CAT_SHEETS))
