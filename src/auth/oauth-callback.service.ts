@@ -17,6 +17,7 @@ import {
   assertOAuthStateMatches,
 } from './oauth-host';
 import { oauthErrorCode } from './oauth-error-code';
+import { disabledProviderRedirect } from './oauth-provider-switch';
 import {
   isKnownLogin,
   loginOauthOutcome,
@@ -47,11 +48,9 @@ const exchangeByCode: OAuthExchange = (handler, _state, code) => {
   return handler.exchangeCode(code);
 };
 
-// Общий хвост OAuth-колбэков (VK, Яндекс) — одно место на все площадки
-// (правила №3/№11): сверка state с кукой → обмен кода → вход, привязка или
-// объединение → событие login_oauth → экран по исходу. Старт входа — парный
-// AuthFlowService.oauthRedirect. Контекст логгера назван в ANON_ALERT_CONTEXTS
-// (src/logger/alert-gate.ts): error() отсюда может вызвать аноним одним запросом.
+// Общий хвост OAuth-колбэков (VK, Яндекс; правила №3/№11): state ↔ кука → обмен
+// кода → вход/привязка/объединение → login_oauth → экран. Старт — AuthFlowService.oauthRedirect.
+// Контекст логгера в ANON_ALERT_CONTEXTS (alert-gate.ts): error() вызывает и аноним.
 @Injectable()
 export class OAuthCallbackService {
   private readonly logger = new Logger(OAuthCallbackService.name);
@@ -64,7 +63,7 @@ export class OAuthCallbackService {
     private readonly prisma: PrismaService,
   ) {}
 
-  /** Не бросает: любой отказ — строка в лог (DM владельцу) и экран `<id>_failed`. */
+  /** Не бросает: отказ — error (DM) и `<id>_failed`; выключенный провайдер — warn и `<id>_disabled`. */
   async complete(
     provider: string,
     req: Request,
@@ -73,6 +72,11 @@ export class OAuthCallbackService {
     exchange: OAuthExchange = exchangeByCode,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
+    const disabled = disabledProviderRedirect(provider, this.config);
+    if (disabled) {
+      this.logger.warn(`${provider} callback: provider disabled (env not set)`);
+      return res.redirect(disabled);
+    }
     try {
       const handler = this.providers.get(provider);
       // `?error=` присылает браузер — в лог только код (oauth-error-code.ts).

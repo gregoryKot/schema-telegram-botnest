@@ -37,8 +37,16 @@ interface ResMocks {
 }
 
 function makeConfig(): ConfigService {
-  const map: Record<string, string> = { WEBAPP_URL };
+  const map: Record<string, string> = {
+    WEBAPP_URL,
+    VK_APP_ID: '1',
+    VK_REDIRECT_URI: `${WEBAPP_URL}/api/auth/vk/callback`,
+    YANDEX_CLIENT_ID: 'id',
+    YANDEX_CLIENT_SECRET: 'secret',
+    YANDEX_REDIRECT_URI: `${WEBAPP_URL}/api/auth/yandex/callback`,
+  };
   return {
+    get: jest.fn((k: string) => map[k]),
     getOrThrow: jest.fn((k: string) => map[k]),
   } as unknown as ConfigService;
 }
