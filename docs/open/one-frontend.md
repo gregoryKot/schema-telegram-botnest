@@ -39,11 +39,6 @@
   второй раз — ничего» — смотреть сюда.
 
 **Единая версия, этап 1 — хост-слой сайта** (#755, `docs/archive/ONE_FRONTEND_PLAN.md`):
-- **`/install` читает хост один раз при рендере** (`webapp/src/pages/InstallPage.tsx`,
-  `InstallContent`: `getHost().id !== 'web'`). `telegram-web-app.js` грузится `async`; если SDK
-  доедет после первого рендера, внутри Telegram останутся шаги браузерной установки вместо
-  «Открыть в браузере». Лечится как `pages/landing/AppInstallSection.tsx`: `useHostId()` перечитывает
-  хост по `LATE_HOST_READS_MS`. Не тронуто: вне пункта волны, нужен свой тест.
 - **`ExternalLink` на iOS внутри Telegram не проверен на устройстве.** Компонент
   (`webapp/src/host/ExternalLink.tsx`) зовёт `host.openLink`, а на iOS `openLink` молча
   не срабатывает (гейт `lastTouchTimestamp`, это знал и удалённый мини-апп, #908). Проверить на живом iPhone t.me-ссылки и `/donate`
