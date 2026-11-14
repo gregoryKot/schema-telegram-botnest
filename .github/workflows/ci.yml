@@ -1059,7 +1059,8 @@ jobs:
   # (therapy-relations.service 97.95% → 94.96%) покраснел только ночью, после
   # мержа #898 (ветка без теста). Здесь Stryker идёт ТОЛЬКО по изменённым
   # файлам из `mutate` золотых конфигов (волна А — вход/шифрование, волна Б —
-  # деньги/бронирования), храповик — в режиме --partial: пол сверяется лишь у
+  # деньги/бронирования; очередь оценок и кризисная детекция в shared/ — их
+  # видела только ночь, #1057), храповик — в режиме --partial: пол сверяется лишь у
   # файлов отчёта, --update нет. PR без таких файлов — зелёный за секунды.
   # Полный ночной прогон остаётся. Выбор файлов — scripts/mutation-changed-files.mjs.
   mutation-changed:
@@ -1085,13 +1086,22 @@ jobs:
       - name: изменённые файлы волны Б (деньги, бронирования)
         id: payments
         run: node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main --github-output=files
+      # Очередь оценок и кризисная детекция — shared/, тесты vitest (command-раннер).
+      - name: изменённые файлы очереди оценок
+        id: outbox
+        run: node scripts/mutation-changed-files.mjs --config=stryker.outbox.config.json --base=origin/main --github-output=files
+      - name: изменённые файлы кризисной детекции
+        id: crisis
+        run: node scripts/mutation-changed-files.mjs --config=stryker.crisis.config.json --base=origin/main --github-output=files
       - name: нечего мутировать
-        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == ''
-        run: echo "PR не трогает файлы золотых зон (mutate в stryker.golden-*.config.json) — мутации не нужны."
-      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == '' && steps.outbox.outputs.files == '' && steps.crisis.outputs.files == ''
+        run: echo "PR не трогает файлы из mutate в stryker.golden-*, outbox, crisis — мутации не нужны."
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != '' || steps.outbox.outputs.files != '' || steps.crisis.outputs.files != ''
         run: npm ci
       - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
         run: npx prisma generate
+      - if: steps.outbox.outputs.files != '' || steps.crisis.outputs.files != ''
+        run: npm ci --prefix shared
       - name: Stryker — волна А (${{ steps.auth.outputs.files }})
         if: steps.auth.outputs.files != ''
         env:
@@ -1108,8 +1118,24 @@ jobs:
       - name: храповик мутаций — волна Б, только файлы отчёта
         if: steps.payments.outputs.files != ''
         run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
+      - name: Stryker — очередь оценок (${{ steps.outbox.outputs.files }})
+        if: steps.outbox.outputs.files != ''
+        env:
+          FILES: ${{ steps.outbox.outputs.files }}
+        run: npx stryker run stryker.outbox.config.json --mutate "$FILES"
+      - name: храповик мутаций — очередь оценок, только файлы отчёта
+        if: steps.outbox.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/outbox.json --baseline=scripts/mutation-outbox-baseline.json
+      - name: Stryker — кризисная детекция (${{ steps.crisis.outputs.files }})
+        if: steps.crisis.outputs.files != ''
+        env:
+          FILES: ${{ steps.crisis.outputs.files }}
+        run: npx stryker run stryker.crisis.config.json --mutate "$FILES"
+      - name: храповик мутаций — кризисная детекция, только файлы отчёта
+        if: steps.crisis.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/crisis.json --baseline=scripts/mutation-crisis-baseline.json
       - name: отчёт артефактом
-        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
+        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '' || steps.outbox.outputs.files != '' || steps.crisis.outputs.files != '')
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mutation-report-changed
