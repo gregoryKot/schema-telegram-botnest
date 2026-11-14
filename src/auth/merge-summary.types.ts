@@ -10,6 +10,9 @@ export interface MergeSummary {
   counts: Record<string, number>;
   /** Сколько из них объединится с записями цели по ключу (R3). */
   combined: number;
+  /** Строки переносимого аккаунта, которые при совпадении ключа удалятся без
+   * объединения: {'Rating': 3} (merge-lost.ts). */
+  lost: Record<string, number>;
   /** У источника 2FA включена, у цели — нет, значит защита пропадёт. */
   twoFactorLost: boolean;
 }
