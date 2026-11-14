@@ -1,7 +1,8 @@
 #!/bin/sh
 # Клиент Postgres 17 (pg_dump/psql) + curl для зашифрованных бэкапов в Yandex Object Storage
-# (scripts/backup-upload.sh, deploy/backup-scheduler.cjs). Ставится только в
-# runtime-стадии образа.
+# (scripts/backup-upload.sh, deploy/backup-scheduler.cjs). Ставится в
+# runtime-стадии образа и в джобах CI с живым Postgres (`migrations`,
+# `backup-restore`): один скрипт — одна версия клиента и одни ретраи.
 #
 # Версия — мажор сервера прода (Amvera CNPG — Postgres 17.5): pg_dump отказывается
 # снимать дамп с сервера новее себя. В Debian bookworm свой пакет — 15, поэтому
@@ -52,7 +53,7 @@ try_install() {
   apt-get update -y &&
     apt-get install -y --no-install-recommends ca-certificates curl &&
     mkdir -p "$(dirname "$PGDG_KEY")" &&
-    curl -fsSL --retry 2 --max-time 60 -o "$PGDG_KEY" "$pgdg_base/ACCC4CF8.asc" &&
+    curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 --max-time 60 -o "$PGDG_KEY" "$pgdg_base/ACCC4CF8.asc" &&
     echo "deb [signed-by=$PGDG_KEY] $pgdg_base $CODENAME-pgdg main" > "$PGDG_LIST" &&
     apt-get update -y &&
     apt-get install -y --no-install-recommends "postgresql-client-$PG_MAJOR"
@@ -76,7 +77,7 @@ if [ -z "$installed" ]; then
   exit 1
 fi
 
-# Проверяем, а не верим коду возврата: нужна именно 16-я версия обоих клиентов
+# Проверяем, а не верим коду возврата: нужна именно версия $PG_MAJOR обоих клиентов
 # и работающий curl (им бэкап ходит в Yandex Object Storage).
 pg_dump --version | grep -q " $PG_MAJOR[. ]" || { echo "install-pg-client: pg_dump не $PG_MAJOR-й версии" >&2; exit 1; }
 psql --version | grep -q " $PG_MAJOR[. ]" || { echo "install-pg-client: psql не $PG_MAJOR-й версии" >&2; exit 1; }

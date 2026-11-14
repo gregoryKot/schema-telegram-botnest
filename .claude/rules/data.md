@@ -181,7 +181,7 @@ EXPLAIN с записанного SQL (`test/perf/run-plans.ts`) и гейт
    которая выполняется прямо сейчас (замок Prisma занят). В Prisma 7 у `db execute`
    **нет** флага `--schema` — URL берётся из `prisma.config.js`.
 
-Механизм принуждения: CI-джоба **`migrations`** — поднимает Postgres 16 и
+Механизм принуждения: CI-джоба **`migrations`** — поднимает Postgres 17 (мажор прода) и
 гоняет `prisma migrate deploy` на пустой БД (дважды). Битый SQL роняет PR,
 а не прод.
 
