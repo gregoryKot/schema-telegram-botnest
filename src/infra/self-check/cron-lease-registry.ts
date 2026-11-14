@@ -32,6 +32,7 @@ export const CRON_LEASE_REGISTRY: Record<
   },
   introLeadRedelivery: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
   bookingConfirmRetry: { window: 'fiveMinutes', cron: '*/5 * * * *' },
+  bookingCalendarReconcile: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
   bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },
   notificationQueue: { window: 'fiveMinutes', cron: '*/5 * * * *' },

@@ -179,7 +179,8 @@ export class CalDavService {
     }
   }
 
-  /** Delete the calendar event (cancelled booking, foreign-scrub.ts); undefined — iCloud off. */
+  /** Delete the calendar event (cancelled booking, foreign-scrub.ts); undefined — iCloud off.
+   * Сбой — warn, не error: DELETE повторит крон-сверка, недоступный iCloud будит проба caldav. */
   async removeEvent(uid: string): Promise<CalDeleteResult | undefined> {
     if (!this.enabled || !uid) return undefined;
     const base = await this.getBase();
@@ -191,13 +192,15 @@ export class CalDavService {
         headers: { Authorization: this.auth },
         signal: AbortSignal.timeout(10_000),
       });
-      if (res.ok || res.status === 404) {
+      if (res.ok) {
         this.logger.log(`CalDAV event removed: ${uid}`);
-        return res.ok ? 'deleted' : 'missing';
+        return 'deleted';
       }
+      // События уже нет: повтор DELETE крон-сверкой — успех без строки в логе.
+      if (res.status === 404 || res.status === 410) return 'missing';
       this.logger.warn(`CalDAV DELETE ${res.status} for ${uid}`);
     } catch (e) {
-      this.logger.error(`CalDAV DELETE failed: ${(e as Error).message}`);
+      this.logger.warn(`CalDAV DELETE failed: ${(e as Error).message}`);
     }
     return 'failed';
   }
