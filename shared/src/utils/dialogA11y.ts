@@ -28,6 +28,33 @@ function focusableIn(container: HTMLElement): HTMLElement[] {
   ).filter((el) => !el.hasAttribute('disabled'));
 }
 
+// Ленивый лист: пока качается чанк, фон уже inert, и браузер снимает фокус с открывателя — к монтированию
+// activeElement = body. Элемент, потерявший фокус внутри inert, — открыватель; любой новый фокус его забывает.
+let blurredByInert: HTMLElement | null = null;
+if (typeof document !== 'undefined') {
+  document.addEventListener(
+    'focusout',
+    (e) => {
+      const t = e.target as HTMLElement | null;
+      if (!e.relatedTarget && t?.closest?.('[inert]')) blurredByInert = t;
+    },
+    true,
+  );
+  document.addEventListener(
+    'focusin',
+    () => {
+      blurredByInert = null;
+    },
+    true,
+  );
+}
+function openerOf(active: Element | null): HTMLElement | null {
+  if (active && active !== document.body) return active as HTMLElement;
+  return blurredByInert?.isConnected
+    ? blurredByInert
+    : (active as HTMLElement | null);
+}
+
 export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
   const ref = useRef<HTMLDivElement>(null);
   const layer = useDialogLayer(opts);
@@ -39,7 +66,7 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
     // Отдельный const с точным типом: TS не переносит сужение во вложенную
     // функцию, а повторная проверка внутри trapTab была бы недостижимой веткой.
     const container: HTMLElement = ref.current;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previouslyFocused = openerOf(document.activeElement);
     const parent =
       container.parentElement?.closest<HTMLElement>('[role="dialog"]');
     const first = focusableIn(container)[0];
