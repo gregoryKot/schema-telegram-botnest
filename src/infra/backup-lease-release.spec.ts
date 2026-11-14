@@ -17,7 +17,7 @@ const sched = jest.requireActual<Scheduler>(
 );
 
 const ENV = {
-  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
   BACKUP_S3_BUCKET: 'bkt',
   BACKUP_S3_ACCESS_KEY_ID: 'keyid',
   BACKUP_S3_SECRET_ACCESS_KEY: 'appkey-SECRET',

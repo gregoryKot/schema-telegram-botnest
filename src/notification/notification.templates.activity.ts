@@ -8,106 +8,67 @@ import type { NotificationTemplate } from './notification.templates';
 import { NotificationType } from './notification.service';
 import { AddressForm, t } from './address-form';
 import { openDiaryButton, bookingButton } from './notification.buttons';
-import { MONTHS } from './notification.template-data';
 
-// Шаблоны про активность: практики, инсайт по низкой потребности, задания
+// Шаблоны про активность: практики, подсказка про Помощь, задания
 // терапевта, активность пары, запрос теста на схемы. Вынесено из
 // notification.templates.ts (правило №10) по образцу
 // notification.templates.soft.ts — renderTemplate делегирует сюда.
+const ON_WEEKDAY = [
+  'на воскресенье',
+  'на понедельник',
+  'на вторник',
+  'на среду',
+  'на четверг',
+  'на пятницу',
+  'на субботу',
+];
+
 export function renderActivityTemplate(
   type: NotificationType,
   payload?: Record<string, unknown>,
   form: AddressForm = 'ty',
 ): NotificationTemplate | null {
   switch (type) {
-    case 'practice_reminder': {
-      const text = payload?.practiceText as string | undefined;
-      const planId = payload?.planId as number | undefined;
-      if (!text) return null;
-      const buttons =
-        planId !== undefined
-          ? [
-              [
-                Markup.button.callback('✅ Сделано', `plan_done:${planId}`),
-                Markup.button.callback(
-                  '❌ Не получилось',
-                  `plan_skip:${planId}`,
-                ),
-              ],
-              [openDiaryButton],
-            ]
-          : [[openDiaryButton]];
+    // Текст плана, текст задания и название потребности в Telegram не уходят
+    // (РКН, #1135): payload не читается, кроме числовых taskId и weekday.
+    case 'practice_reminder':
       return {
-        // Безлично: одинаково звучит в «ты» и «вы», без рода читателя.
-        text: `🎯 План на сегодня:\n\n${text}`,
-        keyboard: Markup.inlineKeyboard(buttons),
+        text: '🎯 Время для плана практики. Он ждёт в приложении.',
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
-    }
 
     case 'practice_missed': {
-      const text = payload?.practiceText as string | undefined;
-      const day = payload?.day as string | undefined; // «на пятницу», weekly.ts
-      const planId = payload?.planId as number | undefined;
-      if (!text) return null;
-      const buttons =
-        planId !== undefined
-          ? [
-              [
-                Markup.button.callback(
-                  '✅ Всё-таки сделано',
-                  `plan_done:${planId}`,
-                ),
-                Markup.button.callback('❌ Не вышло', `plan_skip:${planId}`),
-              ],
-              [openDiaryButton],
-            ]
-          : [[openDiaryButton]];
+      // День недели — индексом в таблице: строку из payload не берём.
+      const wd = payload?.weekday;
+      const day =
+        typeof wd === 'number' && Number.isInteger(wd)
+          ? ON_WEEKDAY[wd]
+          : undefined;
       return {
-        text: `🎯 ${day ? `План ${day}` : 'Вчера был план'}:\n\n${text}\n\nКак получилось?`,
-        keyboard: Markup.inlineKeyboard(buttons),
+        text: `🎯 ${day ? `План ${day}` : 'Вчера был план'}: как получилось? Отметить можно в приложении.`,
+        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
     }
 
-    case 'low_streak_insight': {
-      const text = payload?.text as string | undefined;
-      const showBooking = payload?.showBooking as boolean | undefined;
-      if (!text) return null;
-      const buttons = showBooking
-        ? [
-            [Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)],
-            [bookingButton],
-          ]
-        : [[Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)]];
+    case 'low_streak_insight':
       return {
-        text,
-        keyboard: Markup.inlineKeyboard(buttons),
+        text: t(
+          form,
+          '🌿 В приложении есть раздел Помощь: инструменты на разные случаи и запись на сессию. Загляни, когда будет минутка.',
+          '🌿 В приложении есть раздел Помощь: инструменты на разные случаи и запись на сессию. Загляните, когда будет минутка.',
+        ),
+        keyboard: Markup.inlineKeyboard([
+          [Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)],
+          [bookingButton],
+        ]),
       };
-    }
 
     case 'task_assigned': {
-      const text = payload?.text as string | undefined;
-      const needId = payload?.needId as string | undefined;
-      const dueDate = payload?.dueDate as string | undefined;
       const taskId =
         typeof payload?.taskId === 'number' ? payload.taskId : undefined;
-      if (!text) return null;
-      const NEED_LABELS: Record<string, string> = {
-        attachment: 'Привязанность',
-        autonomy: 'Автономия',
-        expression: 'Выражение чувств',
-        play: 'Спонтанность',
-        limits: 'Границы',
-      };
-      let msg = `👨‍⚕️ Терапевт назначил задание:\n\n${text}`;
-      if (needId && NEED_LABELS[needId])
-        msg += `\n\nПотребность: ${NEED_LABELS[needId]}`;
-      if (dueDate) {
-        const d = new Date(dueDate + 'T12:00:00Z'); // noon UTC — timezone-safe date parsing
-        msg += `\nСрок: ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-      }
       // Кнопка ведёт к самому заданию (U2): «Сегодня» заданий не показывает.
       return {
-        text: msg,
+        text: '📋 Новое задание от терапевта — оно в приложении.',
         keyboard: Markup.inlineKeyboard([
           [Markup.button.webApp('📋 Открыть задание', cabinetTasksUrl(taskId))],
         ]),

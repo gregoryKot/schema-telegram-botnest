@@ -35,8 +35,8 @@ export const PROP_IMAGES: Record<string, string> = {
 
 // Карнизы-платформы для NineSlice: ключ + ширина торца (px текстуры, не растягивается)
 export const LEDGE: Record<string, { key: string; cap: number }> = {
-  street: { key: 'ledge_street', cap: 34 },
-  room:   { key: 'ledge_room',   cap: 30 },
+  street: { key: 'ledge_street', cap: 16 },
+  room:   { key: 'ledge_room',   cap: 16 },
 };
 
 // Анимированные враги: спрайт-лист → ключ текстуры + размеры кадра.

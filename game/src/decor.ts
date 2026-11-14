@@ -2,6 +2,10 @@ import Phaser from 'phaser';
 import { GROUND_Y, W } from './constants';
 import { ChapterConfig } from './chapters';
 import { placeProp } from './props';
+import { addGlow } from './look';
+import farUrl from './assets/bg_street_far.png';
+import midUrl from './assets/bg_street_mid.png';
+import nearUrl from './assets/bg_street_near.png';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Декорации — характер уровня. Глава 1 — вечерняя улица (дома, фонари),
@@ -19,8 +23,7 @@ export function buildDecor(scene: Phaser.Scene, ch: ChapterConfig) {
 // деревья. Намеренно НЕ как глава 1 (плотная вечерняя улица): тут простор и путь.
 function buildRoad(scene: Phaser.Scene, ch: ChapterConfig) {
   // светлая полоса рассвета у горизонта впереди — «есть куда идти»
-  const dawn = scene.add.graphics().setScrollFactor(0).setDepth(-9);
-  dawn.fillStyle(0xffe6b0, 0.10); dawn.fillEllipse(W * 0.78, GROUND_Y - 70, W * 0.9, 150);
+  addGlow(scene, W * 0.78, GROUND_Y - 40, W * 1.1, 220, 0xffe6b0, 0.16, -8.5).setScrollFactor(0);
 
   // город позади — далёкие мелкие силуэты, РЕДЕЮТ к правому краю (уходим из него)
   const far = scene.add.container(0, 0).setScrollFactor(0.18).setDepth(-7);
@@ -77,36 +80,28 @@ function tree(scene: Phaser.Scene, x: number) {
   g.fillStyle(0x3f5036, 1); g.fillCircle(x - 12, GROUND_Y - 60, 18); g.fillCircle(x + 14, GROUND_Y - 58, 16);
 }
 
-// ── Улица: силуэты домов с окнами + фонари вдоль дороги ─────────────────────
+// ── Улица: три слоя пиксель-арта (game/art/street.py) + фонари вдоль дороги ──
+const STREET_LAYERS: [string, string, number, number][] = [
+  ['bg_street_far', farUrl, 0.15, -7], ['bg_street_mid', midUrl, 0.4, -6], ['bg_street_near', nearUrl, 0.75, -4],
+];
+export function loadStreetLayers(scene: Phaser.Scene) { // data-URI, грузит BootScene
+  for (const [key, url] of STREET_LAYERS) if (!scene.textures.exists(key)) scene.load.image(key, url);
+}
 function buildStreet(scene: Phaser.Scene, ch: ChapterConfig) {
-  const far = scene.add.container(0, 0).setScrollFactor(0.25).setDepth(-7);
-  const farW = ch.arenaW * 0.25 + W + 200;
-  let x = -80;
-  while (x < farW) {
-    const h = Phaser.Math.Between(110, 250), bw = Phaser.Math.Between(90, 160);
-    const g = scene.add.graphics();
-    g.fillStyle(0x251c3c, 1); g.fillRect(x, GROUND_Y - h, bw, h);
-    g.fillStyle(0x2e2348, 1); g.fillRect(x, GROUND_Y - h, bw, 6);
-    g.fillStyle(0xffd080, 0.45);
-    for (let wy = GROUND_Y - h + 16; wy < GROUND_Y - 24; wy += 30)
-      for (let wx = x + 12; wx < x + bw - 16; wx += 26)
-        if (Math.random() < 0.38) g.fillRect(wx, wy, 9, 12);
-    far.add(g);
-    x += bw + Phaser.Math.Between(24, 80);
+  for (const [key, , sf, depth] of STREET_LAYERS) {
+    if (!scene.textures.exists(key)) continue;
+    const src = scene.textures.get(key).getSourceImage();
+    const w = (ch.arenaW * sf + W + 64) / 2; // ширина в пикселях текстуры, показ ×2
+    scene.add.tileSprite(-32, GROUND_Y, w, src.height, key).setOrigin(0, 1).setScale(2)
+      .setScrollFactor(sf).setDepth(depth);
   }
-  // фонари — настоящий спрайт + тёплый островок света
+  // фонари — настоящий спрайт + мягкий ореол у плафона и пятно на асфальте
   for (let lx = 330; lx < ch.arenaW - 200; lx += 540) {
-    placeProp(scene, 'prop_streetlamp', lx, GROUND_Y, 46, 4);
-    const g = scene.add.graphics().setDepth(3);
-    g.fillStyle(0xffd9a0, 0.07);
-    g.fillTriangle(lx - 10, GROUND_Y - 150, lx + 10, GROUND_Y - 150, lx + 56, GROUND_Y);
-    g.fillTriangle(lx - 10, GROUND_Y - 150, lx + 10, GROUND_Y - 150, lx - 56, GROUND_Y);
-    g.fillStyle(0xffd9a0, 0.10); g.fillEllipse(lx, GROUND_Y - 2, 124, 16);
+    const lamp = placeProp(scene, 'prop_streetlamp', lx, GROUND_Y, 46, 4);
+    const headY = lamp ? lamp.y - lamp.displayHeight * 0.86 : GROUND_Y - 120;
+    addGlow(scene, lx, headY, 110, 110, 0xffd080, 0.22, 3);
+    addGlow(scene, lx, GROUND_Y - 4, 170, 34, 0xffd9a0, 0.16, 3);
   }
-  // дорожная разметка-бордюр
-  const curb = scene.add.graphics().setDepth(3);
-  curb.fillStyle(0xb8a8d0, 0.18);
-  for (let cx = 0; cx < ch.arenaW; cx += 64) curb.fillRect(cx, GROUND_Y - 2, 34, 2);
 }
 
 // ── Комната: обои, окна с ночью, диван, ТВ, торшер ──────────────────────────
@@ -153,7 +148,8 @@ function windowFrame(scene: Phaser.Scene, x: number, moon: boolean) {
 
 function couch(scene: Phaser.Scene, x: number) {
   const g = scene.add.graphics().setDepth(3);
-  g.fillStyle(0x6a3a50, 0.35); g.fillEllipse(x, GROUND_Y - 4, 300, 22);             // ковёр под диваном
+  g.fillStyle(0x3e2436, 1); g.fillRect(x - 140, GROUND_Y - 6, 280, 6);              // ковёр под диваном
+  g.fillStyle(0x5a3448, 1); g.fillRect(x - 140, GROUND_Y - 6, 280, 2);
   placeProp(scene, 'prop_couch', x, GROUND_Y, 210, 4);
 }
 
@@ -167,9 +163,9 @@ function tv(scene: Phaser.Scene, x: number) {
 }
 
 function lamp(scene: Phaser.Scene, x: number) {
-  placeProp(scene, 'prop_lamp', x, GROUND_Y, 56, 4);
-  // тёплый ореол от абажура
-  const g = scene.add.graphics().setDepth(3);
-  g.fillStyle(0xffd9a0, 0.08); g.fillTriangle(x - 16, GROUND_Y - 150, x + 16, GROUND_Y - 150, x, GROUND_Y);
-  g.fillStyle(0xffd9a0, 0.10); g.fillEllipse(x, GROUND_Y - 2, 110, 14);
+  const img = placeProp(scene, 'prop_lamp', x, GROUND_Y, 56, 4);
+  // тёплый ореол от абажура и пятно на полу
+  const headY = img ? img.y - img.displayHeight * 0.85 : GROUND_Y - 150;
+  addGlow(scene, x, headY, 130, 130, 0xffd080, 0.2, 3);
+  addGlow(scene, x, GROUND_Y - 4, 150, 30, 0xffd9a0, 0.14, 3);
 }

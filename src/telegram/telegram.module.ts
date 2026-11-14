@@ -11,6 +11,7 @@ import { TelegramSummaryToggleService } from './telegram.summary-toggle.service'
 import { TelegramQuizService } from './telegram.quiz.service';
 import { TelegramLinkService } from './telegram.link.service';
 import { TELEGRAM_PROVIDERS } from './telegram.providers';
+import { TELEGRAF_BOT } from './telegram.constants';
 import { BotModule } from '../bot/bot.module';
 import { NotificationModule } from '../notification/notification.module';
 import { TherapyModule } from '../therapy/therapy.module';
@@ -24,8 +25,7 @@ import { PushModule } from '../push/push.module';
     NotificationModule,
     TherapyModule,
     AnalyticsModule,
-    // Билет привязки: карточку сверки показывает бот (telegram.link.service).
-    AuthModule,
+    AuthModule, // билет привязки: сверку показывает бот (telegram.link.service)
     PushModule, // очередь шлёт и уведомления в приложение
   ],
   controllers: [HealthyAdultAdminController],
@@ -42,6 +42,6 @@ import { PushModule } from '../push/push.module';
     ...TELEGRAM_PROVIDERS,
     ...CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание
   ],
-  exports: [TelegramService, TelegramScheduleService],
+  exports: [TelegramService, TelegramScheduleService, TELEGRAF_BOT],
 })
 export class TelegramModule {}

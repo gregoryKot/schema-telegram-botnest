@@ -16,40 +16,12 @@ import {
 } from './ysqProfileCard';
 import { SCHEMAS, DOMAIN_ORDER } from '../../hooks/ysqSchemas';
 import { FOOTER_H } from '../cardKit';
+import { mockCardCtx as mockCtx } from './canvas.test-helpers';
 
 function allScores(avg = 2, pct5plus = 0) {
   return Object.fromEntries(
     SCHEMAS.map((s) => [s.name, { avg, pct5plus }]),
   ) as Record<string, { pct5plus: number; avg: number }>;
-}
-
-function mockCtx() {
-  return {
-    scale: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillRect: vi.fn(),
-    fillText: vi.fn(),
-    roundRect: vi.fn(),
-    arc: vi.fn(),
-    clip: vi.fn(),
-    setTransform: vi.fn(),
-    setLineDash: vi.fn(),
-    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
-    fillStyle: '',
-    strokeStyle: '',
-    font: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-  };
 }
 
 afterEach(() => {

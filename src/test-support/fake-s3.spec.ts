@@ -15,7 +15,7 @@ import {
 const CREDS = {
   accessKeyId: FAKE_S3_ACCESS_KEY_ID,
   secretAccessKey: FAKE_S3_SECRET,
-  region: 'auto',
+  region: 'ru-central1',
 };
 
 describe('FakeS3', () => {

@@ -61,6 +61,10 @@ function makeService(opts: { pendingCharge?: any; chargeRow?: any }) {
     alertAdmin: jest.fn(async (msg: string) => {
       calls.alerts.push(msg);
     }),
+    // Карточка оплаты — в оба канала; в alerts — то, что видно в Telegram.
+    notifyAdminBoth: jest.fn(async (html: { telegram: string }) => {
+      calls.alerts.push(html.telegram);
+    }),
   };
   const config = {
     get: (k: string) => (k === 'SUBSCRIPTION_ENABLED' ? 'true' : undefined),

@@ -8,7 +8,9 @@ import {
   assertCalendarFree,
   CalendarBusySource,
 } from './booking-calendar-guard';
-import { LostLead, lostLeadAlertText } from './booking-notify.format';
+import type { LostLead } from './booking-notify.format';
+import { lostLeadNotice } from './booking-owner-card';
+import { errorKind } from '../utils/owner-card';
 import type { AnalyticsService } from '../analytics/analytics.service';
 import { BOOKING_SLOT_TAKEN_EVENT } from '../analytics/booking-events.constants';
 
@@ -25,15 +27,11 @@ export interface CreateDeps {
 type BookingCreateData = Prisma.BookingCreateArgs['data'];
 
 /**
- * Создание брони под advisory-lock (P-1, аудит 2026-07: проверка занятости и
- * INSERT — в одной транзакции, иначе два клиента бронировали один слот).
- *
- * Резерв (инцидент 2026-09-13): любое НЕОЖИДАННОЕ падение здесь — ошибка
- * драйвера, БД, сети — раньше уходило клиенту 500-кой, а имя и контакт
- * человека терялись безвозвратно. Теперь заявка уходит админу как «лид» в
- * оба канала сразу (Telegram + почта), и только потом исключение
- * пробрасывается дальше: клиент не должен увидеть ложный успех. Ожидаемые
- * исходы (слот занят, невалидные данные) — HttpException — идут как шли.
+ * Создание брони под advisory-lock: проверка занятости и INSERT — в одной
+ * транзакции, иначе два клиента бронировали один слот. НЕОЖИДАННОЕ падение
+ * (драйвер, БД, сеть) — заявка уходит владельцу лидом (письмо с именем и
+ * контактом, Telegram — слот и тип ошибки), затем исключение летит дальше:
+ * клиент не должен увидеть ложный успех. HttpException идут как шли.
  */
 export async function createBookingGuarded(
   deps: CreateDeps,
@@ -55,10 +53,11 @@ export async function createBookingGuarded(
       await deps.analytics?.track(null, BOOKING_SLOT_TAKEN_EVENT);
     if (e instanceof HttpException) throw e;
     const reason = e instanceof Error ? e.message : String(e);
-    // Стабильный текст без цифр в начале — троттлинг AlertLogger по ключу.
-    deps.logger.error(`Booking create failed, lead alerted: ${reason}`);
+    // error уходит владельцу в Telegram: стабильный тип ошибки; текст — в warn.
+    deps.logger.error(`Booking create failed, lead alerted: ${errorKind(e)}`);
+    deps.logger.warn(`Booking create failure: ${reason}`);
     await deps.notify.notifyAdminBoth(
-      lostLeadAlertText(lead, reason),
+      lostLeadNotice(lead, errorKind(e), reason),
       '🚨 Заявка на запись не сохранилась',
     );
     throw e;

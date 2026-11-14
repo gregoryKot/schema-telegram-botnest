@@ -282,7 +282,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: mirror.gcr.io/library/postgres:16
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: ci
@@ -473,7 +473,7 @@ jobs:
     services:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09).
-        image: mirror.gcr.io/library/postgres:16
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: ci
@@ -507,21 +507,18 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       # Дампим и заливаем реальным клиентом, его версия обязана совпадать с
-      # сервером (postgres:16 выше). xxd ставим явно: backup-upload.sh и
-      # restore-backup.sh оба на нём завязаны.
-      # Образ ubuntu-26.04 несёт PostgreSQL 18, а сервис джобы — Postgres 16:
-      # pg_dump 17+ пишет `SET transaction_timeout`, которого в 16 нет (#789).
-      # Клиент 16 — только из PGDG (раннер удаляет репозиторий после сборки
-      # образа), и его bin — первым в PATH: обёртка pg_wrapper иначе взяла бы
-      # 18-й. Пин — src/test-support/gates/runner-pin.spec.ts.
-      - name: клиент Postgres 16 из PGDG — первым в PATH, + xxd
+      # сервером (postgres:17 выше) и с продом (Amvera, 17.5). xxd ставим
+      # явно: backup-upload.sh и restore-backup.sh оба на нём завязаны.
+      # Образ ubuntu-26.04 несёт PostgreSQL 18: клиент 17 ставит скрипт образа
+      # прода (ретраи, зеркала, проверка версии — как в джобе `migrations`), его
+      # bin — первым в PATH, иначе обёртка pg_wrapper возьмёт 18-й. Версию
+      # сверяет src/test-support/gates/runner-pin.spec.ts.
+      - name: клиент Postgres 17 из PGDG — первым в PATH, + xxd
         run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL --retry 3 -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends postgresql-client-16 xxd
-          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+          sudo apt-get -o Acquire::Retries=5 update
+          sudo apt-get -o Acquire::Retries=5 install -y --no-install-recommends xxd
+          sudo env PATH="/usr/lib/postgresql/17/bin:$PATH" sh deploy/install-pg-client.sh
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
       - name: создать исходную БД и применить миграции — ловит битые миграции тем же приёмом, что джоба migrations
         run: |
           psql -c "CREATE DATABASE backup_rehearsal_src;"

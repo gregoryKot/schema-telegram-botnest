@@ -76,7 +76,7 @@ export class EmailService {
       );
     } catch (e) {
       health.noteAlertEmailError(e);
-      this.logger.error(`Postbox error: ${(e as Error).message}`);
+      this.logger.error(`Postbox error: ${(e as Error).message}`, e);
       throw new Error('Email delivery failed', { cause: e });
     }
     health.noteAlertEmailResponse(res);

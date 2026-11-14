@@ -1,39 +1,38 @@
 import { subjectFromTitle } from '../booking/booking-notify.format';
 import type { Logger } from '@nestjs/common';
 import type { BookingNotifyService } from '../booking/booking-notify.service';
-import { escapeHtml } from '../utils/escape-html';
+import type { OwnerAlert } from '../utils/owner-card';
+import {
+  SUBSCRIBER_IN_EMAIL,
+  subPrice,
+  subscriberLines,
+  type OwnerSub,
+} from './subscription-owner-card';
 
 /**
- * Текст сигнала владельцу: деньги по ResultURL подписки пришли, а подписка
- * уже отменена (оплата по старой ссылке или списание, ушедшее в Robokassa
- * до отмены). Подписку код не оживляет, деньги засчитаны за charge.
- * Чистый форматтер; отправка — `notifyAdminBoth` (оба канала, это деньги).
+ * Сигнал владельцу: деньги по ResultURL подписки пришли, а подписка уже
+ * отменена (оплата по старой ссылке или списание, ушедшее до отмены). Подписку
+ * код не оживляет. Telegram — без email и Telegram ID, письмо — полное.
  */
-export interface PaidAfterCancelSub {
-  id: number;
-  amount: number;
-  period: string;
-  telegramId: bigint | null;
-  /** Уже расшифрованный email подписчика. */
-  email?: string | null;
-}
-
 export function subscriptionPaidAfterCancelAlert(
-  sub: PaidAfterCancelSub,
+  sub: OwnerSub,
   charge: { id: number },
   paidAmount?: number,
-): { html: string; subject: string } {
+): OwnerAlert {
   const title = `💸 <b>Деньги за подписку #${sub.id} получены, а подписка отменена</b>`;
   const sum = paidAmount != null ? `${paidAmount} ₽` : 'сумма не указана';
-  const html = [
-    title,
-    `💰 Оплачено: ${sum} (платёж #${charge.id}, подписка ${sub.amount} ₽/${sub.period === 'year' ? 'год' : 'мес'})`,
-    ...(sub.email ? [`📬 ${escapeHtml(sub.email)}`] : []),
-    ...(sub.telegramId ? [`👤 tg:${sub.telegramId}`] : []),
-    '',
-    'Подписка отменена до этой оплаты и сама не возобновилась. Верните деньги (и аннулируйте чек в «Моём налоге») либо восстановите подписку вручную.',
-  ].join('\n');
-  return { html, subject: subjectFromTitle(title) };
+  const paid = `💰 Оплачено: ${sum} (платёж #${charge.id}, подписка ${subPrice(sub)})`;
+  const who = subscriberLines(sub);
+  const tail =
+    'Подписка отменена до этой оплаты и сама не возобновилась. Верните деньги (и аннулируйте чек в «Моём налоге») либо восстановите подписку вручную.';
+  const telegram = [title, paid, ...(who.length ? [SUBSCRIBER_IN_EMAIL] : [])];
+  return {
+    html: {
+      telegram: [...telegram, '', tail].join('\n'),
+      email: [title, paid, ...who, '', tail].join('\n'),
+    },
+    subject: subjectFromTitle(title),
+  };
 }
 
 /**
@@ -46,7 +45,7 @@ export async function reportPaidAfterCancel(
     notify: Pick<BookingNotifyService, 'notifyAdminBoth'>;
     logger: Logger;
   },
-  sub: PaidAfterCancelSub,
+  sub: OwnerSub,
   charge: { id: number },
   paidAmount?: number,
 ): Promise<void> {

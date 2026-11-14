@@ -11,6 +11,7 @@ import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-libra
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { ProfileSection } from './ProfileSection';
+import { plainText } from '../test-support/plainText';
 
 vi.mock('../api', () => ({
   api: {
@@ -72,6 +73,11 @@ function emptyMocks() {
   mockApi.getPhraseChecks.mockResolvedValue([]);
 }
 
+/** Профиль с одной отметкой дня — уже не пустой (isFreshProfile): витрина, ритм дней, достижения. */
+function activeMocks(over: Record<string, unknown> = {}) {
+  mockApi.getStreak.mockResolvedValue({ currentStreak: 0, longestStreak: 1, totalDays: 1, todayDone: false, weekDots: [], ...over });
+}
+
 function renderSection(props: Partial<Parameters<typeof ProfileSection>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
   return render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
@@ -99,17 +105,38 @@ describe('ProfileSection — загрузка', () => {
 });
 
 describe('ProfileSection — чистый аккаунт (без хардкод-заглушек)', () => {
-  it('на чистом аккаунте показывает реальные нули, а не выдуманные цифры стрика', async () => {
+  it('пустой профиль: вместо стены нулей и пустых карточек — начало пути и одна кнопка «Пройти тест»', async () => {
+    const onTakeTest = vi.fn();
+    await act(async () => { renderSection({ onTakeTest }); });
+    expect(screen.getByRole('heading', { name: 'Мой портрет' })).toBeTruthy();
+    expect(document.querySelector('.cpf-start svg.scn')).not.toBeNull();
+    expect(screen.queryByText('Прогресс')).toBeNull();
+    expect(document.querySelector('.cpf-streak-num')).toBeNull();
+    expect(screen.queryByText('Достижения')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Пройти тест' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
+    expect(onTakeTest).toHaveBeenCalledTimes(1);
+  });
+
+  it('только практики и дыхание (профиль их не считает): под героем есть плитка «Мой путь», она открывает путь', async () => {
+    await act(async () => { renderSection(); });
+    expect(document.querySelector('.cpf-start')).not.toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Мои тёплые слова' })).toBeNull();
+    fireEvent.click(screen.getByText('Мой путь', { selector: 'h2' }));
+    await screen.findByTestId('journey-sheet');
+  });
+
+  it('серия прервалась — настоящий ноль серии, а не прочерк и не выдуманная цифра', async () => {
+    activeMocks();
     await act(async () => { renderSection(); });
     expect(screen.getByText('Прогресс')).toBeTruthy();
-    // Стрик = 0 — настоящий ноль, не прочерк.
     expect(document.querySelector('.cpf-streak-num')?.textContent).toBe('0');
-    // В исходнике текст с литеральным '\n' — testing-library нормализует
-    // пробелы в один при сопоставлении.
-    expect(screen.getByText('пока не начато')).toBeTruthy();
+    // В исходнике текст с литеральным '\n' — testing-library нормализует пробелы.
+    expect(screen.getByText('серия прервалась')).toBeTruthy();
   });
 
   it('без достижений блок показывает «0 из 0» и подсказку про первую запись, а не выдуманный прогресс', async () => {
+    activeMocks();
     await act(async () => { renderSection(); });
     expect(screen.getByText('Достижения')).toBeTruthy();
     expect(screen.getByText('Первое – за первую запись в дневник')).toBeTruthy();
@@ -264,7 +291,10 @@ describe('ProfileSection — сбой части загрузки (регрес�
     mockApi.getAchievements.mockResolvedValue([{ id: 'first_day', earned: true }]);
     await act(async () => { renderSection(); });
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Не удалось загрузить часть данных/);
+    expect(plainText(alert)).toMatch(/Не удалось загрузить часть данных/);
+    // Сбой на нашей стороне — исход our_side: персик 45 и `Breath` (две дуги и круг), а не лист шапки.
+    expect((alert as HTMLElement).style.getPropertyValue('--h')).toBe('45');
+    expect(alert.querySelector('.pa-alert-sign svg circle')).not.toBeNull();
     // Достижения всё же успели загрузиться и отображаются несмотря на сбой стрика.
     expect(screen.getByText('Первый шаг')).toBeTruthy();
   });
@@ -273,7 +303,7 @@ describe('ProfileSection — сбой части загрузки (регрес�
     mockApi.getInsights.mockRejectedValue(new Error('network down'));
     await act(async () => { renderSection({}, 'vy'); });
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toBe('Не удалось загрузить часть данных. Обновите страницу.');
+    expect(plainText(alert)).toBe('Не удалось загрузить часть данных. Обновите страницу.');
   });
 
   it('все фетчи успешны — баннера нет', async () => {
@@ -306,10 +336,12 @@ describe('ProfileSection — обновление (refreshKey)', () => {
 
 describe('ProfileSection — ты/вы', () => {
   it('форма «вы» звучит в тексте раздела «Мой путь»', async () => {
+    activeMocks();
     await act(async () => { renderSection({}, 'vy'); });
     expect(screen.getByText(/Вся ваша история в одном месте/)).toBeTruthy();
   });
   it('форма «ты» звучит в тексте раздела «Мой путь»', async () => {
+    activeMocks();
     await act(async () => { renderSection({}, 'ty'); });
     expect(screen.getByText(/Вся твоя история в одном месте/)).toBeTruthy();
   });
@@ -356,8 +388,9 @@ describe('ProfileSection — действия', () => {
   });
 
   it('«Мой путь» открывает JourneySheet, закрытие убирает его', async () => {
+    activeMocks();
     await act(async () => { renderSection(); });
-    fireEvent.click(screen.getByText('Мой путь'));
+    fireEvent.click(screen.getByText('Мой путь', { selector: 'h2' }));
     await screen.findByTestId('journey-sheet');
 
     fireEvent.click(screen.getByText('Закрыть путь'));
@@ -388,13 +421,22 @@ describe('ProfileSection — портрет и тёплые слова', () => {
     ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds, myModeIds,
   });
 
-  it('чистый аккаунт: портрет объясняет, что это, «Пройти тест» зовёт тест, тёплых слов нет', async () => {
+  it('портрет без схем объясняет, что это, «Пройти тест» зовёт тест и не открывает лист, тёплых слов нет', async () => {
+    activeMocks();
     const onTakeTest = vi.fn();
     await act(async () => { renderSection({ onTakeTest }); });
     expect(await screen.findByText(/Здесь соберётся твой портрет/)).toBeTruthy();
     expect(screen.queryByText('Мои тёплые слова')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
     expect(onTakeTest).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Мои схемы')).toBeNull();
+  });
+
+  it('пустое «Тёплые слова» не оставляет обёртки блока на странице (двойной зазор)', async () => {
+    activeMocks();
+    await act(async () => { renderSection(); });
+    expect(document.querySelector('.cpf-shelf-item--warm_words')).toBeNull();
+    expect(document.querySelector('.cpf-shelf')?.className).toContain('cpf-shelf--n2');
   });
 
   it('отмеченные схемы и режимы попадают в портрет, тап открывает лист «Мой портрет»', async () => {
@@ -436,7 +478,7 @@ describe('ProfileSection — портрет и тёплые слова', () => {
   it('сбой дневника — баннер ошибки, а не тихий заниженный счётчик', async () => {
     mockApi.getModeDiary.mockRejectedValue(new Error('net'));
     await act(async () => { renderSection(); });
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось загрузить часть данных/);
+    expect(plainText(await screen.findByRole('alert'))).toMatch(/Не удалось загрузить часть данных/);
   });
 
   it('сбой загрузки портрета уходит в отчёт, а не в консоль', async () => {

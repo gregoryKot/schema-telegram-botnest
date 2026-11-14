@@ -19,8 +19,8 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
-  // Бэкапы в R2 (аудит 2026-10, D-2) — тоже «настроено».
-  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  // Бэкапы в Yandex Object Storage (аудит 2026-10, D-2) — тоже «настроено».
+  BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
   BACKUP_S3_BUCKET: 'b',
   BACKUP_S3_ACCESS_KEY_ID: 'k',
   BACKUP_S3_SECRET_ACCESS_KEY: 'a',

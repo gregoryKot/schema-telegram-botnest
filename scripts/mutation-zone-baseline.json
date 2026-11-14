@@ -38,6 +38,9 @@
   "src/auth/merge-user-fields.ts": {
     "reason": "Вынесен из merge.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации слияния полей пользователя не измеряются — долг волны, а не решение."
   },
+  "src/auth/security-log-alert.ts": {
+    "reason": "Выделен из security-log.service.ts (в `mutate` golden-auth): текст DM владельцу о событии безопасности — белый список полей без данных человека. В `mutate` не включён, прогона Stryker по нему не было — мутации текста и списка полей не измеряются, их держит security-log.service.spec.ts (точный текст и маркеры PII); долг волны, а не решение."
+  },
   "src/auth/totp-challenge.ts": {
     "reason": "Класс исключения и тип вызова 2FA без ветвлений: мутировать нечего, кроме литералов; причину `challenge_expired` пинит auth.service.spec.ts (протухший и битый вызов), экран — TwoFactorChallengePage.test.tsx."
   },
@@ -62,8 +65,8 @@
   "src/booking/booking-confirm-run.ts": {
     "reason": "Кандидат с расширения гейта 2026-11 (импортёров из зоны не меньше, чем вне): тело подтверждения брони — встреча, событие календаря, DM админу. В `mutate` не включён, прогона Stryker по нему не было — мутации побочных эффектов подтверждения не измеряются; долг волны, а не решение."
   },
-  "src/booking/booking-notify.format.ts": {
-    "reason": "Чистые форматтеры текстов уведомлений админу о брони (импортёры из зоны — booking-notify.service, booking.create и ещё три, вне — шесть). В `mutate` не включён, прогона Stryker по нему не было — мутации текстов карточек не измеряются, их держит booking-notify.format.spec.ts; долг волны, а не решение."
+  "src/booking/booking-owner-card.ts": {
+    "reason": "Чистые форматтеры карточек брони владельцу в два канала (Telegram без данных человека, письмо полное); вместе с ними из зоны ушли импортёры booking-notify.format.ts. В `mutate` не включён, прогона Stryker по нему не было — мутации текстов карточек не измеряются, их держит booking-owner-card.spec.ts (маркеры PII в Telegram, данные в письме); долг волны, а не решение."
   },
   "src/booking/booking-public-view.ts": {
     "reason": "Выделен из booking.queries.ts (вошёл в `mutate` golden-payments 2026-11): публичная выдача брони по токену самоотмены без имени, контакта и ссылки на встречу. В `mutate` не включён, прогона Stryker по нему не было — мутации состава публичных полей не измеряются, их держат booking.queries.public.spec.ts и meeting-url-encryption.spec.ts; долг волны, а не решение."
@@ -79,6 +82,9 @@
   },
   "src/booking/booking.schema.ts": {
     "reason": "Константа схемы шифрования полей Booking без логики (список строковых полей): мутировать нечего, кроме литералов уровня модуля; шифрование каждого поля в БД держат meeting-url-encryption.spec.ts и booking-admin-view.spec.ts."
+  },
+  "src/booking/payment-failed-alert.ts": {
+    "reason": "Выделен из payment.controller.ts и payment.booking-webhook.ts (зона golden-payments) по правилу №10: текст карточки «оплата прошла, но … не подтвердилась» с типом ошибки вместо её текста (РКН, #1135). В `mutate` не включён, прогона Stryker по нему не было — мутации текста не измеряются, их держат payment-failed-alert.spec.ts и payment.controller.spec.ts; долг волны, а не решение."
   },
   "src/bot/account.delete.ts": {
     "reason": "Вынесен из account.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации удаления аккаунта не измеряются — долг волны, а не решение."
@@ -107,8 +113,8 @@
   "src/bot/user-data-tables.ts": {
     "reason": "Реестр имён таблиц с пользовательскими данными без логики: сверку со schema.prisma держит table-registry.spec.ts, мутации строковых литералов списка дали бы шум, а не сигнал."
   },
-  "src/logger/money-alert.ts": {
-    "reason": "Кандидат с расширения гейта 2026-11 (импортёров из зоны не меньше, чем вне): метка денежного алерта, которую AlertGate не схлопывает троттлингом. В `mutate` не включён, прогона Stryker по нему не было — мутации метки и её распознавания не измеряются; долг волны, а не решение."
+  "src/donation/donation-owner-card.ts": {
+    "reason": "Выделен из donation.service.ts (в `mutate` golden-payments): текст карточки оплаченного доната владельцу в два канала. В `mutate` не включён, прогона Stryker по нему не было — мутации текста не измеряются, их держит donation.service.spec.ts (точный текст обоих каналов и маркеры PII); долг волны, а не решение."
   },
   "src/notification/notification.weekly.ts": {
     "reason": "Кандидат с расширения гейта 2026-11 (импортёров из зоны не меньше, чем вне): сводка недели и «вчерашний план» по местному дню плана. В `mutate` не включён, прогона Stryker по нему не было — мутации окна сводки не измеряются; долг волны, а не решение."

@@ -8,7 +8,7 @@ import {
   LINK_TO_FORWARD,
   NO_LINK,
   ROOM_REPLACED,
-  confirmedCardText,
+  confirmedNotice,
   meetingDeliveryNote,
 } from './booking-confirmed-card';
 import type { PlainBooking } from './booking-notify.service';
@@ -25,30 +25,43 @@ const booking = (meetingUrl: string | null): PlainBooking => ({
   cancelToken: 'tok',
 });
 
-describe('confirmedCardText — карточка «Запись подтверждена»', () => {
-  it('со ссылкой: ссылка, контакт и строка «переслать на контакт из брони»', () => {
-    const text = confirmedCardText(booking('https://zoom.us/j/1?pwd=x'), false);
-    expect(text.startsWith('✅ <b>Запись подтверждена</b>')).toBe(true);
-    expect(text).toContain('🔗 https://zoom.us/j/1?pwd=x');
-    expect(text).toContain('maria@example.com');
-    expect(text.endsWith(LINK_TO_FORWARD)).toBe(true);
-    expect(text).not.toContain(ROOM_REPLACED);
-    expect(text).not.toContain(NO_LINK);
+const channels = (url: string | null, replaced: boolean) => {
+  const { telegram, email } = confirmedNotice(booking(url), replaced);
+  return [telegram, email];
+};
+
+describe('confirmedNotice — карточка «Запись подтверждена»', () => {
+  it('со ссылкой: ссылка и строка «переслать на контакт из брони» в обоих каналах, контакт — в письме', () => {
+    const { telegram, email } = confirmedNotice(
+      booking('https://zoom.us/j/1?pwd=x'),
+      false,
+    );
+    for (const text of [telegram, email]) {
+      expect(text.startsWith('✅ <b>Запись подтверждена</b>')).toBe(true);
+      expect(text).toContain('🔗 https://zoom.us/j/1?pwd=x');
+      expect(text.endsWith(LINK_TO_FORWARD)).toBe(true);
+      expect(text).not.toContain(ROOM_REPLACED);
+      expect(text).not.toContain(NO_LINK);
+    }
+    expect(email).toContain('maria@example.com');
+    expect(telegram).not.toContain('maria@example.com');
   });
 
   it('комната заменена: обе строки — переслать и что прежняя ссылка устарела', () => {
-    const text = confirmedCardText(booking('https://meet.jit.si/a'), true);
-    expect(text).toContain(LINK_TO_FORWARD);
-    expect(text).toContain(ROOM_REPLACED);
+    for (const text of channels('https://meet.jit.si/a', true)) {
+      expect(text).toContain(LINK_TO_FORWARD);
+      expect(text).toContain(ROOM_REPLACED);
+    }
   });
 
   it('без ссылки текст не врёт: ни «переслать ссылку», ни «комната заменена»', () => {
     for (const replaced of [false, true]) {
-      const text = confirmedCardText(booking(null), replaced);
-      expect(text).not.toContain('🔗');
-      expect(text).not.toContain(LINK_TO_FORWARD);
-      expect(text).not.toContain(ROOM_REPLACED);
-      expect(text).toContain(NO_LINK);
+      for (const text of channels(null, replaced)) {
+        expect(text).not.toContain('🔗');
+        expect(text).not.toContain(LINK_TO_FORWARD);
+        expect(text).not.toContain(ROOM_REPLACED);
+        expect(text).toContain(NO_LINK);
+      }
     }
   });
 

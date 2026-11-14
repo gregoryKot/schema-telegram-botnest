@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { taskNotificationTitle, TaskNotificationInput } from './task-title';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { encrypt, decrypt } from '../utils/crypto';
@@ -181,20 +180,16 @@ export class TherapyTasksService {
     return streakProgress(this.prisma, userId, task, tz);
   }
 
+  /** В очередь — только taskId: текст, потребность и срок в Telegram не уходят (РКН, #1135). */
   async scheduleTaskNotification(
     clientId: bigint,
-    task: TaskNotificationInput,
+    taskId?: number,
   ): Promise<void> {
     await this.notificationService.schedule(
       clientId,
       'task_assigned',
       new Date(),
-      {
-        text: taskNotificationTitle(task.type, task.text),
-        needId: task.needId,
-        dueDate: task.dueDate,
-        taskId: task.taskId,
-      },
+      { taskId },
     );
   }
 }

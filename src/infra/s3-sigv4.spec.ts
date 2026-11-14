@@ -98,14 +98,14 @@ describe('SigV4 — детали', () => {
   it('для S3 добавляет x-amz-content-sha256 и подписывает его; host наружу не отдаёт', () => {
     const h = signRequest({
       method: 'GET',
-      url: new URL('https://acc.r2.cloudflarestorage.com/bkt?list-type=2'),
-      credentials: { ...SUITE.credentials, region: 'auto' },
+      url: new URL('https://storage.yandexcloud.net/bkt?list-type=2'),
+      credentials: { ...SUITE.credentials, region: 'ru-central1' },
       now: NOW,
     });
     expect(h['x-amz-content-sha256']).toBe(EMPTY_SHA256);
     expect(h['x-amz-date']).toBe('20150830T123600Z');
     expect(h.host).toBeUndefined();
-    expect(h.authorization).toContain('/20150830/auto/s3/aws4_request');
+    expect(h.authorization).toContain('/20150830/ru-central1/s3/aws4_request');
     expect(h.authorization).toContain(
       'SignedHeaders=host;x-amz-content-sha256;x-amz-date',
     );
@@ -120,7 +120,7 @@ describe('SigV4 — детали', () => {
       headers: { host: 'h', 'x-amz-date': '20150830T123600Z' },
       payloadHash: sha256Hex('a'),
       amzDate: '20150830T123600Z',
-      region: 'auto',
+      region: 'ru-central1',
       service: 's3',
       secretAccessKey: 's1',
     };

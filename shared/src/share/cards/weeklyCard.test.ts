@@ -117,3 +117,25 @@ describe('drawWeeklyCard — числа на картинке', () => {
     expect(printed).not.toMatch(/\d\.\d/);
   });
 });
+
+describe('weekDays — семь календарных дней до последнего отмеченного', () => {
+  it('пропущенный день остаётся пустым листом, а не выпадает', async () => {
+    const { weekDays } = await import('./weeklyCard');
+    const days = weekDays([
+      { date: '2026-11-12', ratings: { attachment: 5 } },
+      { date: '2026-11-09', ratings: { attachment: 2 } },
+    ]);
+    expect(days.map((d) => d.date)).toEqual([
+      '2026-11-06',
+      '2026-11-07',
+      '2026-11-08',
+      '2026-11-09',
+      '2026-11-10',
+      '2026-11-11',
+      '2026-11-12',
+    ]);
+    expect(days[3].ratings).toEqual({ attachment: 2 });
+    expect(days[0].ratings).toBeNull();
+    expect(weekDays([])).toEqual([]);
+  });
+});

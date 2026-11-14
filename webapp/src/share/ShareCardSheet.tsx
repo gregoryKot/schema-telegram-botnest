@@ -1,11 +1,10 @@
-// Generic-шит шаринга карточки (webapp): превью канваса + «Поделиться» +
-// «Скопировать текст». Логика в shared/useShareCard
-// (правило №3), вёрстка своя.
+// Шит шаринга карточки: превью + «Поделиться» + «Скопировать текст»; логика — shared/useShareCard (№3).
+// Превью — лист бумаги без рамки, по высоте вписан под обе кнопки (share-sheet.css).
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { TherapyNote } from '../components/TherapyNote';
 import { BottomSheetShell } from '../components/BottomSheetShell';
-import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import { CheckIcon, ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useShareCard } from '../../../shared/src/share/useShareCard';
 import type { ShareCardKind } from '../../../shared/src/share/analytics';
 import { api } from '../api';
@@ -52,7 +51,7 @@ export function ShareCardSheet({
         <h2 className="ds-h3 sd-share-title">{title}</h2>
         <div className="ds-sub sd-share-sub">Картинка уйдёт вместе со ссылкой</div>
 
-        <div className="ds-card ds-card--flush sd-canvas">
+        <div className="sd-canvas">
           <canvas ref={canvasRef} className="sd-canvas-el" />
         </div>
 
@@ -63,14 +62,15 @@ export function ShareCardSheet({
           disabled={s.sharing}
           className="ds-btn sd-wide"
         >
-          <ShareIcon size={17} />
+          {s.saved ? <CheckIcon size={17} /> : <ShareIcon size={17} />}
           {s.shareLabel}
         </button>
         <button
           onClick={() => void s.copy()}
           className={'ds-btn ds-btn--secondary sd-wide sd-wide-gap' + (s.copied ? ' is-ok' : s.failed ? ' is-err' : '')}
         >
-          {s.copied ? '✓ Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
+          {s.copied && <CheckIcon size={17} />}
+          {s.copied ? 'Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>
         {therapyNote && (
           <div className="u-mt12">

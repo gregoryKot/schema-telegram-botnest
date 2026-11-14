@@ -1,5 +1,5 @@
 // Конфигурация зашифрованных бэкапов БД в S3-совместимое хранилище —
-// Cloudflare R2 (аудит D-2). Сам прогон живёт вне src/ —
+// Yandex Object Storage (аудит D-2). Сам прогон живёт вне src/ —
 // deploy/backup-scheduler.cjs (там нужен child_process, src/** его
 // использовать не вправе); здесь только общее знание «что включает бэкапы»,
 // на которое смотрят реестр возможностей, проба самопроверки и кросс-проверка
@@ -29,14 +29,14 @@ export const BACKUP_REQUIRED_ENV_VARS = [
 export const BACKUP_RETENTION_MIN_DAYS = 7;
 export const BACKUP_RETENTION_MAX_DAYS = 30;
 
-/** Необязательные: срок хранения (30 дней) и регион подписи (у R2 — `auto`). */
+/** Необязательные: срок хранения (30 дней) и регион подписи (у Yandex Object Storage — `ru-central1`). */
 export const BACKUP_OPTIONAL_ENV_VARS = [
   'BACKUP_RETENTION_DAYS',
   'BACKUP_S3_REGION',
 ] as const;
 
-/** Регион подписи по умолчанию — тот, что требует R2 (так же в scripts/s3-api.sh). */
-export const BACKUP_S3_DEFAULT_REGION = 'auto';
+/** Регион подписи по умолчанию — единственный регион Yandex Object Storage (так же в scripts/s3-api.sh). */
+export const BACKUP_S3_DEFAULT_REGION = 'ru-central1';
 
 const isSet = (env: Env, key: string): boolean => Boolean(env[key]?.trim());
 

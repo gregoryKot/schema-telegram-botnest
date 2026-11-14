@@ -1,11 +1,11 @@
-import { bookingCardText, subjectFromTitle } from './booking-notify.format';
+import { subjectFromTitle } from './booking-notify.format';
+import { bookingNotice } from './booking-owner-card';
 import type { PlainBooking } from './booking-notify.service';
+import type { OwnerNotice } from '../utils/owner-card';
 
-// DM и письмо владельцу «Запись подтверждена» (ревью починки утечки ссылки на
-// встречу, аудит 2026-10). Ссылку клиент на экране, по токену брони и в .ics
-// больше не получает: владелец — единственный канал её доставки, и карточка
-// обязана это сказать, а не оставить догадываться. Читатель — владелец, строки
-// безличные (без ты/вы и без рода).
+// DM и письмо владельцу «Запись подтверждена». Ссылку клиент на экране, по
+// токену брони и в .ics не получает: владелец — единственный канал её доставки,
+// и карточка обязана это сказать. Строки безличные (без ты/вы и без рода).
 
 export const CONFIRMED_TITLE = '✅ <b>Запись подтверждена</b>';
 export const CONFIRMED_SUBJECT = subjectFromTitle(CONFIRMED_TITLE);
@@ -26,11 +26,11 @@ export function meetingDeliveryNote(
   return replaced ? [LINK_TO_FORWARD, ROOM_REPLACED] : [LINK_TO_FORWARD];
 }
 
-/** Полный текст карточки подтверждения: общая карточка брони + строки о ссылке. */
-export function confirmedCardText(b: PlainBooking, replaced: boolean): string {
-  return [
-    bookingCardText(CONFIRMED_TITLE, b),
-    '',
-    ...meetingDeliveryNote(b.meetingUrl, replaced),
-  ].join('\n');
+/** Карточка подтверждения в оба канала: карточка брони + строки о ссылке. */
+export function confirmedNotice(
+  b: PlainBooking,
+  replaced: boolean,
+): OwnerNotice {
+  const note = meetingDeliveryNote(b.meetingUrl, replaced);
+  return bookingNotice(CONFIRMED_TITLE, b, ['', ...note]);
 }

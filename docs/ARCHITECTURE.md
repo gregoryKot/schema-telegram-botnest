@@ -39,6 +39,7 @@
 | Команда или кнопка бота | `src/telegram/telegram.service.ts` и соседние `src/telegram/telegram.*.service.ts` (хендлеры регистрируются в `onModuleInit`) | telegram, texts |
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
 | Письмо: вход по ссылке, владельцу, резервный алерт; почтовая площадка | `src/auth/email.service.ts` (тексты — `src/auth/email.letters.ts`), `src/utils/admin-alert.ts`; транспорт Yandex Cloud Postbox — `src/infra/postbox-mail.ts`; что делать при отказе — [RUNBOOKS.md](RUNBOOKS.md), «Yandex Cloud Postbox — почта» | ops, texts |
+| Сообщение владельцу в Telegram (карточка брони, заявки, доната, подписки, событие безопасности) | без данных человека — они в письме: общее `src/utils/owner-card.ts` (`OwnerNotice`, ссылка на `/admin`), форматтеры `src/**/*-owner-card.ts` и `src/therapy/therapist-request.card.ts`, `src/auth/security-log-alert.ts`; тест — маркеры `src/test-support/pii-markers.ts` | texts, security |
 | Куда уходит уведомление (Telegram или в приложение) | `src/bot/notify-channel.ts` (выбор канала, одна функция на очередь и `GET /api/settings`), очередь — `src/telegram/telegram.schedule-queue.ts`, пуш — `src/push/push.service.ts` | backend-api, security |
 | Уведомления в приложение на сайте: тумблер «На этом устройстве», service worker | `webapp/src/push/` (`pushState.ts` — состояния, `pushSubscription.ts` — включение и отписка при выходе, `usePushDevice.ts`), строка — `webapp/src/components/settingsSheet/PushDeviceRow.tsx`, воркер — `webapp/public/sw.js` (без `fetch`: кэша нет), канал и тексты — `shared/src/settings/notifyReach.ts` | frontend, texts, ops |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |
@@ -54,6 +55,7 @@
 | Статья сайта | `src/articles/articles.seed.ts` (+ поднять `SEED_VERSION` в `src/articles/articles.service.ts`), [docs/ARTICLES.md](ARTICLES.md); обложка — бумага по slug в `webapp/src/components/art/articleCoverModel.ts` и сцена в `articleCoverScenes.ts` (рисунки `ArticleScenes*.tsx`, таблица «Обложки статей» в [design/PAPER_2026-11.md](design/PAPER_2026-11.md)) | texts, telegram, frontend-visual |
 | Фраза канала «Здоровый Взрослый» | `src/bot/healthy-adult.data.ts` + миграция; площадки — `src/channel/channel.providers.ts` | telegram, texts |
 | Красный CI | [architecture/gates.md](architecture/gates.md) → строка гейта → его шапка | gates |
+| PR с auto-merge висит в BEHIND, очередь мержа | `.github/workflows/merge-queue.yml` → `scripts/merge-queue.mjs` (правила — `merge-queue-plan.mjs`); dry-run — dispatch с `dry_run` | gates |
 | Конфликт слияния | `git fetch origin main && git merge origin/main` локально | gates (№13) |
 | Прод лёг, деплой не доехал | `deploy/entrypoint.mjs`, [docs/RUNBOOKS.md](RUNBOOKS.md) (grep по сервису) | ops |
 | Задача размыта | `/grill-me` | — |
@@ -102,6 +104,7 @@
 | `deploy/` | Супервизор контейнера, бэкапы (`backup-scheduler.cjs`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
 | `game/` | Игра (Phaser): под eslint- и file-size-храповиками; смок — `e2e-browser/game-smoke.spec.ts` |
+| `game/art/` | Генератор пиксель-арта игры (Python + Pillow): `cd game/art && python3 build.py [--install]` → превью в `out/`, ассеты в `game/src/assets/` (пол — `game/src/ground.ts`, слои улицы — `loadStreetLayers` в `game/src/decor.ts`); бриф — `docs/GAME_ART_BRIEF.md` |
 | `assets/` | Шрифты для карточек шаринга и корневой сертификат для MAX (`assets/ca/russian-trusted-root.pem`) |
 
 ## Модули бэкенда (`src/`)

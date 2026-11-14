@@ -458,7 +458,7 @@ jobs:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09):
         # тот же официальный образ через зеркало Google.
-        image: mirror.gcr.io/library/postgres:16
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: ci
@@ -478,19 +478,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Образ ubuntu-26.04 несёт PostgreSQL 18, а сервис джобы — Postgres 16:
-      # pg_dump 17+ пишет `SET transaction_timeout`, которого в 16 нет (#789).
-      # Клиент 16 — только из PGDG (раннер удаляет репозиторий после сборки
-      # образа), и его bin — первым в PATH: обёртка pg_wrapper иначе взяла бы
-      # 18-й. Пин — src/test-support/gates/runner-pin.spec.ts.
-      - name: клиент Postgres 16 из PGDG — первым в PATH
+      # Образ ubuntu-26.04 несёт PostgreSQL 18, а сервис джобы и прод — 17:
+      # клиент нужен мажора сервера, иначе дамп и psql проверяются не на той
+      # версии, что в проде (#789: дамп новее сервера не заливается). Ставит его тот же
+      # скрипт, что кладёт клиент в образ прода: ретраи, зеркала и проверка
+      # версии в одном месте (флак скачивания ключа, 2026-11-13). Его bin —
+      # первым в PATH: обёртка pg_wrapper иначе взяла бы 18-й. Версию сверяет
+      # src/test-support/gates/runner-pin.spec.ts.
+      - name: клиент Postgres 17 из PGDG — первым в PATH
         run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL --retry 3 -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends postgresql-client-16
-          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+          sudo env PATH="/usr/lib/postgresql/17/bin:$PATH" sh deploy/install-pg-client.sh
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
       - name: migrate deploy на пустой БД — ловит битые миграции до прода
         run: npx prisma migrate deploy
       - name: повторный migrate deploy — все миграции зарегистрированы, состояние чистое
@@ -541,10 +539,10 @@ jobs:
       # на тех же строках красная под чужим ключом и зелёная под своим.
       - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
-      # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
+      # Аренда прогона бэкапа (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
-      # квотирование :'переменных' проверяет только живая база. psql 16 ставит
-      # шаг «клиент Postgres 16 из PGDG» в начале джобы.
+      # квотирование :'переменных' проверяет только живая база. psql 17 ставит
+      # шаг «клиент Postgres 17 из PGDG» в начале джобы.
       - name: e2e аренда бэкапа (psql) на реальном Postgres
         run: |
           npx jest --config ./test/jest-e2e.json --runInBand test/backup-lease.e2e-spec.ts
@@ -734,7 +732,7 @@ jobs:
       postgres:
         # Docker Hub режет анонимные pull с общих IP раннеров (429, 2026-10-09):
         # тот же официальный образ через зеркало Google.
-        image: mirror.gcr.io/library/postgres:16
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: ci
           POSTGRES_DB: ci

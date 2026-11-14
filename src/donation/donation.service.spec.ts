@@ -4,6 +4,8 @@
 // эмулируется через updateMany, привязанный к текущему статусу строки.
 import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { DonationService, DONATION_INVID_BASE } from './donation.service';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
+import type { OwnerNotice } from '../utils/owner-card';
 
 function makeService(row: any) {
   const state = { row: { ...row } };
@@ -20,7 +22,10 @@ function makeService(row: any) {
       }),
     },
   };
-  const notify = { alertAdmin: jest.fn(async () => undefined) };
+  const notify = {
+    alertAdmin: jest.fn(async () => undefined),
+    notifyAdminBoth: jest.fn(async (_h: OwnerNotice, _s: string) => undefined),
+  };
   const robokassa = { enabled: true };
   const config = { get: () => undefined };
   const service = new DonationService(
@@ -41,7 +46,16 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
       service.markPaidByInvId(DONATION_INVID_BASE + 10, 300),
     ).resolves.toEqual({ ok: true });
     expect(state.row.status).toBe('paid');
-    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    expect(notify.alertAdmin).not.toHaveBeenCalled(); // сумма совпала
+  });
+
+  it('webhook без суммы — сверять не с чем, алерта о расхождении нет', async () => {
+    const { service, notify, state } = makeService(PENDING);
+    await service.markPaidByInvId(DONATION_INVID_BASE + 10);
+    expect(state.row.status).toBe('paid');
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
   });
 
   it('повторный webhook по уже paid — ok:true БЕЗ повторного алерта', async () => {
@@ -50,7 +64,7 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
     await expect(
       service.markPaidByInvId(DONATION_INVID_BASE + 10, 300),
     ).resolves.toEqual({ ok: true });
-    expect(notify.alertAdmin).toHaveBeenCalledTimes(1); // не задвоилось
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1); // не задвоилось
   });
 
   it('уже paid при первом обращении (гонка двух webhook) — no-op без алерта', async () => {
@@ -59,6 +73,7 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
       service.markPaidByInvId(DONATION_INVID_BASE + 10, 300),
     ).resolves.toEqual({ ok: true });
     expect(notify.alertAdmin).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 
   it('несовпадение суммы шлёт алерт, но не блокирует зачисление (в отличие от booking.confirm)', async () => {
@@ -68,15 +83,22 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
     ).resolves.toEqual({ ok: true });
     expect(state.row.status).toBe('paid');
     // Один алерт про расхождение суммы + сообщение о самом донате.
-    expect(notify.alertAdmin).toHaveBeenCalledTimes(2);
+    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
     expect(notify.alertAdmin.mock.calls[0][0]).toContain('сумма расходится');
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
   });
 
-  it('несуществующий donation id — тихий ok:true, без падения', async () => {
+  it('несуществующий donation id — ok:true, владельцу error() с номером и суммой', async () => {
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     const { service } = makeService(PENDING);
     await expect(
       service.markPaidByInvId(DONATION_INVID_BASE + 999999, 300),
     ).resolves.toEqual({ ok: true });
+    await service.markPaidByInvId(DONATION_INVID_BASE + 999998);
+    expect(String(error.mock.calls[0][0])).toContain('#999999 (300 ₽)');
+    // Суммы нет — в DM «?», а не пустое место.
+    expect(String(error.mock.calls[1][0])).toContain('#999998 (? ₽)');
+    error.mockRestore();
   });
 
   // Проигранная гонка CAS: между чтением строки и записью её успел забрать
@@ -95,7 +117,10 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
         updateMany: jest.fn(async () => ({ count: 0 })),
       },
     };
-    const notify = { alertAdmin: jest.fn(async () => undefined) };
+    const notify = {
+      alertAdmin: jest.fn(async () => undefined),
+      notifyAdminBoth: jest.fn(async () => undefined),
+    };
     const service = new DonationService(
       prisma,
       { enabled: true } as any,
@@ -109,7 +134,7 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
 
     expect(prisma.donation.updateMany).toHaveBeenCalledTimes(1);
     // Ключевое: сообщение «Донат N ₽» шлёт тот, кто реально забрал строку.
-    expect(notify.alertAdmin).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 
   // Первая (по строке) идемпотентная защита — ДО проверки расхождения суммы.
@@ -127,41 +152,61 @@ describe('DonationService.markPaidByInvId — идемпотентность (а
   });
 });
 
-// Точный текст DM-карточки доната — mutation-прогон нашёл, что ветки «нет
-// email» / «нет комментария» (`plain.email ? ... : ''`) можно заменить на
-// непустую строку-плейсхолдер незаметно: toContain-проверки в тестах выше
-// такую подмену не ловят (искомая подстрока никуда не девалась, просто рядом
-// добавился мусор). Точный toBe ловит и лишний текст, и пропажу самого
-// email/comment из карточки.
+// Точный текст карточки доната в обоих каналах — mutation-прогон нашёл, что
+// ветки «нет email» / «нет комментария» можно заменить на непустую строку
+// незаметно для toContain. Telegram — без email и комментария донора (152-ФЗ),
+// письмо — с ними.
 describe('DonationService.markPaidByInvId — точный текст карточки при оплате', () => {
-  it('без email и без comment — карточка состоит РОВНО из суммы и источника', async () => {
+  const sent = (notify: ReturnType<typeof makeService>['notify']) => {
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    return notify.notifyAdminBoth.mock.calls[0];
+  };
+
+  it('без email и без comment — одна строка: номер, сумма, источник, статус', async () => {
     const { service, notify } = makeService({
       ...PENDING,
       email: null,
       comment: null,
     });
     await service.markPaidByInvId(DONATION_INVID_BASE + 10, 300);
-    expect(notify.alertAdmin).toHaveBeenCalledWith(
-      '💛 <b>Донат 300 ₽</b> (app)',
-    );
+    const [html, subject] = sent(notify);
+    const head = '💛 <b>Донат #10: 300 ₽</b> (app) — оплачен';
+    expect(html).toEqual({ telegram: head, email: head });
+    expect(subject).toBe('Донат #10: 300 ₽ (app) — оплачен');
   });
 
-  it('с email и comment — обе строки добавлены в заданном порядке, без лишнего текста', async () => {
+  it('с email и comment — в Telegram только указание на письмо, в письме обе строки по порядку', async () => {
     const { service, notify } = makeService({
       ...PENDING,
       email: 'a@b.ru',
       comment: 'спасибо',
     });
     await service.markPaidByInvId(DONATION_INVID_BASE + 10, 300);
-    expect(notify.alertAdmin).toHaveBeenCalledWith(
-      '💛 <b>Донат 300 ₽</b> (app)\n📬 a@b.ru\n💬 спасибо',
+    const [html] = sent(notify);
+    const head = '💛 <b>Донат #10: 300 ₽</b> (app) — оплачен';
+    expect(html.telegram).toBe(
+      `${head}\n📧 Email и комментарий донора — в письме на почте.`,
     );
+    expect(html.email).toBe(`${head}\n📬 a@b.ru\n💬 спасибо`);
+  });
+
+  it('email и комментарий из маркеров в Telegram не попадают, в письме — есть', async () => {
+    const { service, notify } = makeService({
+      ...PENDING,
+      email: PII.email,
+      comment: PII.comment,
+    });
+    await service.markPaidByInvId(DONATION_INVID_BASE + 10, 300);
+    const [html] = sent(notify);
+    expectNoMarkers(html.telegram);
+    expect(html.email).toContain(PII.email);
+    expect(html.email).toContain(PII.comment);
   });
 });
 
-// M1 (аудит 2026-10): email/comment донора уходят админу в HTML-сообщении.
-describe('DonationService.markPaidByInvId — экранирование HTML в алерте (M1)', () => {
-  it('email и comment с разметкой не доходят до DM сырыми', async () => {
+// M1 (аудит 2026-10): email/comment донора в письме экранированы, как в DM.
+describe('DonationService.markPaidByInvId — экранирование HTML в письме (M1)', () => {
+  it('email и comment с разметкой не доходят до письма сырыми', async () => {
     const evil = '<a href="https://evil/">x</a>';
     const { service, notify } = makeService({
       ...PENDING,
@@ -169,10 +214,10 @@ describe('DonationService.markPaidByInvId — экранирование HTML в
       comment: evil,
     });
     await service.markPaidByInvId(DONATION_INVID_BASE + 10, 300);
-    const text = notify.alertAdmin.mock.calls[0][0] as string;
-    expect(text).not.toContain('<a href');
-    expect(text).toContain('&lt;a href="https://evil/"&gt;x&lt;/a&gt;');
-    expect(text).toContain('<b>Донат 300 ₽</b>');
+    const { email } = notify.notifyAdminBoth.mock.calls[0][0];
+    expect(email).not.toContain('<a href');
+    expect(email).toContain('&lt;a href="https://evil/"&gt;x&lt;/a&gt;');
+    expect(email).toContain('<b>Донат #10: 300 ₽</b>');
   });
 });
 
@@ -196,7 +241,10 @@ describe('DonationService.create — Robokassa не настроена', () => {
         }),
       },
     };
-    const notify = { alertAdmin: jest.fn(async () => undefined) };
+    const notify = {
+      alertAdmin: jest.fn(async () => undefined),
+      notifyAdminBoth: jest.fn(async () => undefined),
+    };
     const robokassa = {
       enabled: robokassaEnabled,
       buildPaymentUrl: jest.fn(() => 'https://robokassa.test/pay'),
@@ -222,8 +270,12 @@ describe('DonationService.create — Robokassa не настроена', () => {
       ServiceUnavailableException,
     );
     expect(prisma.donation.create).not.toHaveBeenCalled();
+    expect(Logger.prototype.error).toHaveBeenCalledWith(
+      'Robokassa not configured in production: donation refused',
+    );
     expect(rows).toHaveLength(0);
     expect(notify.alertAdmin).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).not.toHaveBeenCalled();
   });
 
   it('контроль, не прод: донат помечается оплаченным сразу (dev-режим)', async () => {
@@ -234,7 +286,7 @@ describe('DonationService.create — Robokassa не настроена', () => {
       paymentUrl: null,
     });
     expect(rows[0].status).toBe('paid');
-    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
   });
 
   it('контроль, прод с настроенной Robokassa: ссылка на оплату, донат pending', async () => {

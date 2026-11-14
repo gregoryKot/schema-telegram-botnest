@@ -1,10 +1,10 @@
-// Тесты чистой части кита карточек: цвет с прозрачностью, яркость темы,
-// геометрия радара и расчёт высоты шапки. Canvas в jsdom нет — рисующие
+// Тесты чистой части кита карточек: цвет с прозрачностью, яркость, оттенок
+// цвета сущности и расчёт высоты шапки. Canvas в jsdom нет — рисующие
 // функции остаются за кадром, проверяем то, от чего зависит раскладка.
 import { describe, it, expect } from 'vitest';
 import { withAlpha, luminance } from './theme';
-import { axisPoint, valueRadius } from './charts';
-import { headerHeight } from './frame';
+import { oklchHue, nearestHue } from './color';
+import { headerHeight } from './header';
 
 describe('withAlpha', () => {
   it('переводит #rrggbb в rgba', () => {
@@ -36,50 +36,16 @@ describe('luminance', () => {
   });
 });
 
-describe('axisPoint', () => {
-  const cx = 100;
-  const cy = 100;
-
-  it('первая ось смотрит вверх', () => {
-    const p = axisPoint(0, 5, 50, cx, cy);
-    expect(p.x).toBeCloseTo(cx, 5);
-    expect(p.y).toBeCloseTo(cy - 50, 5);
+describe('oklchHue / nearestHue', () => {
+  it('цвет сущности уходит на ближайшую бумагу по кругу оттенков', () => {
+    const h = oklchHue('#5d6d8a');
+    expect(h).not.toBeNull();
+    expect(nearestHue(h!, [28, 70, 135, 240, 310])).toBe(240);
+    expect(nearestHue(355, [28, 310])).toBe(28);
   });
-
-  it('оси идут по часовой стрелке и равномерно', () => {
-    const p1 = axisPoint(1, 4, 50, cx, cy);
-    const p2 = axisPoint(2, 4, 50, cx, cy);
-    expect(p1.x).toBeCloseTo(cx + 50, 5);
-    expect(p1.y).toBeCloseTo(cy, 5);
-    expect(p2.y).toBeCloseTo(cy + 50, 5);
-  });
-
-  it('нулевой радиус — все оси в центре', () => {
-    for (let i = 0; i < 5; i++) {
-      const p = axisPoint(i, 5, 0, cx, cy);
-      expect(p.x).toBeCloseTo(cx, 5);
-      expect(p.y).toBeCloseTo(cy, 5);
-    }
-  });
-});
-
-describe('valueRadius', () => {
-  it('не отмеченная потребность — вершина в центре', () => {
-    expect(valueRadius(null, 10, 100)).toBe(0);
-  });
-
-  it('максимум даёт полный радиус', () => {
-    expect(valueRadius(10, 10, 100)).toBeCloseTo(100, 5);
-  });
-
-  it('ноль не схлопывается в точку — иначе полигон вырождается', () => {
-    expect(valueRadius(0, 10, 100)).toBeGreaterThan(0);
-    expect(valueRadius(0, 10, 100)).toBeLessThan(20);
-  });
-
-  it('растёт монотонно и не вылезает за радиус', () => {
-    expect(valueRadius(3, 10, 100)).toBeLessThan(valueRadius(7, 10, 100));
-    expect(valueRadius(99, 10, 100)).toBeCloseTo(100, 5);
+  it('серый и не-hex — без оттенка (null), а не выдуманный', () => {
+    expect(oklchHue('#888888')).toBeNull();
+    expect(oklchHue('var(--x)')).toBeNull();
   });
 });
 

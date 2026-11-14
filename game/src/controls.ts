@@ -21,7 +21,6 @@ class TouchState {
   jumpHeld = false;  // удержание прыжка — для вариативной высоты
   avoidHeld = false; // удержание «избегай» — тап рывок, держишь залипаешь
   private just: Record<JustAction, boolean> = { jump: false, hit: false, avoid: false, fawn: false };
-
   press(a: JustAction) { this.just[a] = true; }
   /** just-pressed: вернёт true один раз на нажатие */
   consume(a: JustAction): boolean {
@@ -29,8 +28,11 @@ class TouchState {
     this.just[a] = false;
     return v;
   }
+  // забыть нажатия до нового кадра текста, иначе они его сразу пролистают
+  drain() {
+    this.just = { jump: false, hit: false, avoid: false, fawn: false };
+  }
 }
-
 export const touch = new TouchState();
 
 // Тач-кнопки нужны только в геймплее (Game/Tutorial). На титуле и в катсценах
@@ -40,7 +42,6 @@ export function setTouchControls(visible: boolean) {
   if (!root || !IS_TOUCH) return;
   root.classList.toggle('visible', visible);
 }
-
 // Подписи статичны в HTML по-русски — переводим их на текущий язык один раз при
 // инициализации (язык переключается через reload, так что пересборки не нужно).
 function localizeTouchUI() {
@@ -53,9 +54,8 @@ function localizeTouchUI() {
   set('tbtn-hit', 'm_fight');
   const rotate = document.getElementById('rotate-hint');
   if (rotate) rotate.innerHTML =
-    `<div class="phone-icon">📱</div><div>${t('m_rotate_phone')}<br>${t('m_play_in_landscape')}</div>`;
+    `<div class="phone-icon">📱</div><div class="rotate-title">${t('m_game_title')}</div><div>${t('m_rotate_line')}</div>`;
 }
-
 export function initTouchControls() {
   const root = document.getElementById('touch-controls');
   if (!root || !IS_TOUCH) return;

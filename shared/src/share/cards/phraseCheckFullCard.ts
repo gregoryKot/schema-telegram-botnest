@@ -3,15 +3,18 @@
 // остаётся первичной — она про результат; полная показывает, из чего вердикт
 // собрался, и это более откровенный вариант шаринга (выбирается явно).
 import {
+  CARD_LOOK,
   CARD_PAD,
   FOOTER_H,
+  INK,
   beginCard,
   header,
-  headerHeight,
+  headerLines,
   panel,
   sectionLabel,
   cardFont,
   footer,
+  type HeaderOpts,
 } from '../cardKit';
 import {
   QUOTE_LABEL_BLOCK,
@@ -19,6 +22,7 @@ import {
   VOICE_CARE,
   VOICE_CRITIC,
   drawQuoteBlock,
+  markDot,
   quoteBlockHeight,
   quoteLines,
 } from './quoteBlock';
@@ -56,9 +60,14 @@ export function drawPhraseCheckFullCard(
     ? quoteLines(canvas, d.rewrite, TEXT_SIZE, MAX_LINES)
     : null;
   const marksH = QUOTE_PAD_IN * 2 + Math.max(labels.length, 1) * MARK_LINE_H;
-
+  const head: HeaderOpts = {
+    eyebrow: 'Разбор фразы',
+    title: verdict.title,
+    subtitle: `${labels.length} из ${PHRASE_CRITERIA.length} примет критика`,
+    sign: CARD_LOOK.phrase_check.sign,
+  };
   const H =
-    headerHeight(1, true) +
+    headerLines(canvas.getContext('2d')!, head).height +
     QUOTE_LABEL_BLOCK +
     quoteBlockHeight(was) +
     BLOCK_GAP +
@@ -69,18 +78,10 @@ export function drawPhraseCheckFullCard(
     10 +
     FOOTER_H;
 
-  const c = beginCard(canvas, H, {
-    accent: labels.length > 0 ? VOICE_CRITIC : VOICE_CARE,
-  });
-  const { ctx, th } = c;
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.phrase_check.hue });
+  const { ctx } = c;
   const panelW = c.W - CARD_PAD * 2;
-
-  let y = header(c, {
-    eyebrow: 'Разбор фразы',
-    title: `${verdict.emoji} ${verdict.title}`,
-    subtitle: `${labels.length} из ${PHRASE_CRITERIA.length} примет критика`,
-  });
-
+  let y = header(c, head);
   const opts = { size: TEXT_SIZE, gap: BLOCK_GAP };
   y = drawQuoteBlock(c, y, {
     label: 'Было',
@@ -100,13 +101,12 @@ export function drawPhraseCheckFullCard(
   ctx.textAlign = 'left';
   let my = y + QUOTE_PAD_IN + 12;
   if (labels.length === 0) {
-    ctx.fillStyle = th.fg(0.85);
+    ctx.fillStyle = INK.text;
     ctx.fillText('ни одной приметы критика', CARD_PAD + QUOTE_PAD_IN, my);
   } else {
     for (const label of labels) {
-      ctx.fillStyle = th.fg(0.55);
-      ctx.fillText('•', CARD_PAD + QUOTE_PAD_IN, my);
-      ctx.fillStyle = th.fg(0.85);
+      markDot(c, CARD_PAD + QUOTE_PAD_IN + 3, my - 5, VOICE_CRITIC);
+      ctx.fillStyle = INK.text;
       ctx.fillText(label, CARD_PAD + QUOTE_PAD_IN + 16, my);
       my += MARK_LINE_H;
     }

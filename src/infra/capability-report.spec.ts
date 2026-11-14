@@ -19,7 +19,7 @@ const ALL_CONFIGURED = {
   ENCRYPTION_KEY: 'k'.repeat(64),
   HEALTHY_ADULT_THREADS_TOKEN: 'tok',
   JWT_SECRET: 'jwt-secret',
-  BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+  BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
   BACKUP_S3_BUCKET: 'b',
   BACKUP_S3_ACCESS_KEY_ID: 'k',
   BACKUP_S3_SECRET_ACCESS_KEY: 'a',
@@ -158,7 +158,7 @@ describe('buildCapabilityReport', () => {
     expect(cap.on).toBe(false);
     expect(cap.critical).toBe(false);
   });
-  // Аудит D-2: бэкапы в R2 включает только полный набор переменных.
+  // Аудит D-2: бэкапы в Yandex Object Storage включает только полный набор переменных.
   it('dbBackups: нет переменных — off, причина называет их, не критично', () => {
     const cap = buildCapabilityReport({}).find((c) => c.id === 'dbBackups')!;
     expect(cap.on).toBe(false);
@@ -169,7 +169,7 @@ describe('buildCapabilityReport', () => {
 
   it('dbBackups: не хватает одной переменной — off и называет именно её', () => {
     const cap = buildCapabilityReport({
-      BACKUP_S3_ENDPOINT: 'https://acc.r2.cloudflarestorage.com',
+      BACKUP_S3_ENDPOINT: 'https://storage.yandexcloud.net',
       BACKUP_S3_BUCKET: 'b',
       BACKUP_S3_ACCESS_KEY_ID: 'k',
       BACKUP_S3_SECRET_ACCESS_KEY: 'a',

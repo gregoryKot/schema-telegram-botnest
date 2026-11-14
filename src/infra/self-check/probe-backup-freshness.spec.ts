@@ -1,4 +1,4 @@
-// Проба свежести бэкапов в R2 (аудит D-2). Ходит настоящим fetch в поддельный
+// Проба свежести бэкапов в Yandex Object Storage (аудит D-2). Ходит настоящим fetch в поддельный
 // S3 (src/test-support/fake-s3.ts), который сверяет подпись SigV4 и отдаёт
 // ListObjectsV2 постранично, — как хранилище.
 import { backupFreshnessProbe } from './probe-backup-freshness';
@@ -58,7 +58,7 @@ describe('backupFreshnessProbe', () => {
     });
     expect(s3.requests[0].query.get('prefix')).toBe('schemehappens-');
     expect(s3.requests[0].headers.authorization).toMatch(
-      /^AWS4-HMAC-SHA256 .*\/auto\/s3\/aws4_request/,
+      /^AWS4-HMAC-SHA256 .*\/ru-central1\/s3\/aws4_request/,
     );
   });
 
