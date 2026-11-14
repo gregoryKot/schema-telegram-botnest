@@ -189,6 +189,31 @@ describe('InstallPage — экраны', () => {
   });
 });
 
+// telegram-web-app.js грузится async: SDK может доехать после первого рендера.
+// Экран перечитывает хост (useHostId), а не остаётся на шагах браузерной установки.
+describe('InstallPage — хост определился после первого рендера', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('SDK Telegram доехал позже → «Открыть в браузере» вместо шагов установки', () => {
+    stubUa(IPHONE);
+    renderPage();
+    expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
+    installTelegram({ platform: 'ios' });
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(screen.getByRole('link', { name: 'Открыть в браузере' })).toBeTruthy();
+    expect(document.querySelector('.ib-steps')).toBeNull();
+  });
+
+  it('обычный браузер: поздние перечитывания хоста оставляют шаги установки', () => {
+    stubUa(IPHONE);
+    renderPage();
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
+    expect(screen.queryByRole('link', { name: 'Открыть в браузере' })).toBeNull();
+  });
+});
+
 // S15 (аудит 2026-11): после передачи сессии на публичной /install тег Метрики
 // уже стоит в документе; SPA-переход в кабинет оставил бы tag.js на клинических
 // экранах. С загруженным тегом — только полная навигация (location.assign).
