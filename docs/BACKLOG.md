@@ -65,6 +65,7 @@
 - ⬜ **Игра: устаревший размер тач-холста в комментарии** — `game/src/scenes/IntroScene.ts:59` пишет «H=384», а с #1131 холст 640×360 (`game/src/constants.ts`); старое число доехало до брифа #1194.
 - ⬜ **Кабинет терапевта: на решение владельца (#1072)** — список в разделах `### b29`–`### b31` `docs/design/APP_2026-11.md`:
   «0 активных домашних заданий» над пустым списком, `Check` у невыполненного задания и у шаблона «Дневник режима».
+- ⬜ **Безопасное место: детекция чувств списком, а поля — из массива** — `webapp/src/components/exercises/SafePlaceEx.tsx:140` зовёт `detectCrisisAny(overview, senses.see, senses.hear, senses.feel, senses.smell)`, а поля рисует `SENSES.map` (`safePlaceText.ts`): новое чувство в `SENSES` останется без карточки 8-800-100-49-94, строки `describeCrisisField` в `SafePlaceEx.test.tsx` — только у описания места и «что слышно». Чинить по образцу `ModeEntryForm.tsx`: поля детекции и строки харнесса — из `SENSES`.
 
 
 ## Идеи
