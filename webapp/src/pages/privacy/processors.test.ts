@@ -99,6 +99,23 @@ describe('processors', () => {
     expect(tg.data).toContain('без имени, контактов, текста обращения и IP-адреса');
   });
 
+  // Бот подтверждает только объединение (src/telegram/telegram.link.service.ts); ссылка на комнату —
+  // в карточке брони Оператору (src/booking/booking-owner-card.ts), уведомления безопасности — src/auth/security-notice.texts.ts.
+  it('Telegram: подтверждение объединения, а не входа; названы ссылка на комнату и уведомления безопасности', () => {
+    const tg = FOREIGN_PROCESSORS.find((p) => p.name.startsWith('Telegram'))!;
+    expect(tg.data).toContain('при подтверждении объединения аккаунтов');
+    expect(tg.data).not.toMatch(/подтверждении входа/);
+    expect(tg.data).toContain('ссылка на комнату видеовстречи');
+    expect(tg.data).toContain('сообщения о привязке или отвязке способа входа и о подборе кода двухфакторной защиты');
+  });
+
+  // На сайт входят и через MAX: билет подтверждают в мини-приложении (src/auth/login-ticket/site-login.ts).
+  it('MAX: приложение внутри MAX и вход на сайт через MAX', () => {
+    expect(MAX_PROCESSOR.purpose).toContain('работа приложения внутри MAX');
+    expect(MAX_PROCESSOR.purpose).toContain('вход на сайт через MAX, который подтверждается в приложении внутри MAX');
+    expect(MAX_PROCESSOR.data).toContain('идентификатор пользователя MAX и имя');
+  });
+
   // Вход через Google убран (2026-11, запрос РКН №08-1063539): получателя нет.
   it('Google среди получателей нет', () => {
     expect(JSON.stringify(FOREIGN_PROCESSORS)).not.toMatch(/google/i);
