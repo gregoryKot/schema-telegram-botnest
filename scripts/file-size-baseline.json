@@ -903,7 +903,7 @@
   "src/articles/article-diagrams.ts": 19,
   "src/articles/article-html-allowlist.ts": 26,
   "src/articles/article-html-sanitize.ts": 191,
-  "src/articles/article-seo.middleware.ts": 122,
+  "src/articles/article-seo.middleware.ts": 117,
   "src/articles/article-seo.render.ts": 143,
   "src/articles/article-seo.routes.ts": 21,
   "src/articles/article.dto.ts": 67,
