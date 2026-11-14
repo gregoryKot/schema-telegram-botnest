@@ -88,7 +88,7 @@ describe('SecurityNoticeService.deliver', () => {
       const { svc, email } = makeService({ form, email: 'me@example.com' });
       await svc.deliver(7n, { kind: 'provider_linked', provider: 'email' });
       const [, subject, body] = email.send.mock.calls[0] as string[];
-      expect(subject).toBe('Почта привязана к «Всё по схеме»');
+      expect(subject).toBe('Почта привязана ко «Всё по схеме»');
       expect(body).toContain('привязана почта для писем');
       expect(body).toContain(who);
       expect(body).not.toContain('способ входа');
