@@ -46,11 +46,11 @@ describe('assertSiteAccount', () => {
 });
 
 describe('assertSiteTicket', () => {
-  it.each(['vk', 'yandex'])('вход под %s — билет выписывается', (p) => {
+  it.each(['vk', 'yandex', 'max'])('вход под %s — билет выписывается', (p) => {
     expect(() => assertSiteTicket('login', p)).not.toThrow();
   });
 
-  it.each(['email', 'google', 'telegram', 'max'])('вход под %s — 400', (p) => {
+  it.each(['email', 'google', 'telegram'])('вход под %s — 400', (p) => {
     expect(() => assertSiteTicket('login', p)).toThrow(BadRequestException);
   });
 
