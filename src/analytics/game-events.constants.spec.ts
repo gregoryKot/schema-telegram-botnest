@@ -102,8 +102,8 @@ describe('sanitizeGameMeta: события с meta.from', () => {
 });
 
 describe('sanitizeGameMeta: game_cta_click и цель кнопки (meta.to)', () => {
-  it('пропускает app/booking вместе с местом', () => {
-    for (const to of ['app', 'booking']) {
+  it('пропускает app/booking/bot вместе с местом', () => {
+    for (const to of ['app', 'booking', 'bot']) {
       expect(sanitizeGameMeta('game_cta_click', { from: 'act1', to })).toEqual({
         from: 'act1',
         to,
