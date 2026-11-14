@@ -51,7 +51,7 @@ const clientNode = (node: unknown): unknown =>
     ? { ...node, data: { ...node.data, wheel: wheelView(node.data.wheel) } }
     : node;
 
-/** Шифрованные поля ModeMap — один список для кабинета и выгрузки. */
+/** Поля ModeMap под encryptRecord — один список для кабинета и выгрузки. */
 export const MODE_MAP_SCHEMA: EncryptSchema = {
   strings: ['title'],
   jsonArrays: ['nodes', 'edges'],
