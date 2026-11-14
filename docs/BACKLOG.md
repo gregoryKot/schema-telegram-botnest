@@ -33,6 +33,7 @@
 
 - ⬜ **Вход на сайт через MAX без кода 2FA** — билет MAX (#1179) подтверждают сессией мини-приложения, в `src/auth/login-ticket/` проверки TOTP нет (`grep -i totp`), а `SCOPE_TEXT` (`webapp/src/pages/account/TwoFactorScopeNote.tsx`) MAX на сайте не называет: решить — спрашивать код или сказать об этом в тексте. Тексты сайта (герой, политика, подсказка) уже называют MAX, кнопка появится с ником бота.
 - ⬜ **Комментарии про вход почтой** — `src/telegram/telegram.link.service.ts:4`, `shared/src/account/linkTarget.ts:12` и `shared/src/host/startParam.ts` говорят о входе на сайт почтой; устаревший пункт про п. 3.2 в `docs/open/owner.md` — сверить с политикой после #1186.
+- ⬜ **Сторож контекста молчит на мерже через `gh`** — сигнал «PR вмержен» хука `.claude/hooks/context-guard.mjs` подключён в `.claude/settings.json` только на `mcp__github__merge_pull_request`, а сессии мержат `gh pr merge` через Bash: в журнале `.claude/state/tool-log.jsonl` 21 такой мерж и ни одного через MCP. Нужен матчер `Bash` с отбором команды `gh pr merge` в хуке.
 
 - ⬜ **Ник MAX-бота для кнопки «Войти через MAX»** — вход через MAX на сайте есть, но `ENV VITE_MAX_BOT_USERNAME=""` в `Dockerfile` пуст, и кнопки на `/login` нет, пока туда не вписан ник бота мини-приложения (то, что после `max.ru/`); ник спросить у владельца, подача ответа РКН №08-1063539 ждёт кнопку. После правки — проверить зелёный `main` и кнопку на проде.
 
