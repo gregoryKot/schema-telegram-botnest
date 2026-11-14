@@ -44,6 +44,8 @@
 ## Следующее
 
 
+- ⬜ **Ник MAX-бота для кнопки «Войти через MAX»** — вход через MAX на сайте есть, но `ENV VITE_MAX_BOT_USERNAME=""` в `Dockerfile` пуст, и кнопки на `/login` нет, пока туда не вписан ник бота мини-приложения (то, что после `max.ru/`); ник спросить у владельца, подача ответа РКН №08-1063539 ждёт кнопку. После правки — проверить зелёный `main` и кнопку на проде.
+
 - ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml`, `nightly.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
 - ⬜ **Имя автора в заголовках статей на schemehappens.ru** — осознанно не тронуто в задаче «убрать имя из вкладки продукта»: сервер отдаёт статьям `<title>` «… – Григорий Котляревский» на обоих хостах (`src/articles/article-seo.middleware.ts:19,99`); вкладка после загрузки показывает «… | schemehappens.ru» (`ArticlesPage.tsx`), но поисковая выдача видит имя. Нужно решение владельца: продукту — суффикс «Всё по схеме», визитке — имя.
 - ⬜ **Владельцу: внести `webapp-tz` в живой ruleset `main`** — Require status checks (GitHub Actions); джоба есть в копии `.github/rulesets/main.json` с #1079, без неё `live-ruleset` в nightly красный каждую ночь и держит открытым ci-alarm #1057 (там же — проверить зелёный nightly и закрыть #1057). Запись — `docs/open/owner.md`.

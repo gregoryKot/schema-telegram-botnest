@@ -6,8 +6,10 @@ import {
   LAUNCH_KEYS, parseStartParam, takeLaunchParam, urlStartParam, type StartAction,
 } from '../../../shared/src/host/startParam';
 
-/** Куда ведёт действие само по себе, без экрана поверх: «Записи» и «Ещё» (там «Задания»). */
+/** Куда ведёт действие само по себе, без экрана поверх: «Записи», «Ещё» (там «Задания»), сверка входа на сайт. */
 const PATH_OF: Partial<Record<StartAction['kind'], string>> = { diaries: '/diary', tasks: '/more' };
+const pathOf = (a: StartAction): string | undefined =>
+  a.kind === 'login' ? `/auth/confirm?code=${a.code}` : PATH_OF[a.kind];
 
 /**
  * Параметр запуска разбирается ОДИН раз за жизнь страницы и только когда `enabled` (человек вошёл
@@ -33,7 +35,7 @@ export function useStartParam(enabled: boolean, onAction: (a: StartAction) => vo
     const hadParam = LAUNCH_KEYS.some((k) => q.has(k));
     LAUNCH_KEYS.forEach((k) => q.delete(k));
     const search = q.toString();
-    const path = action && PATH_OF[action.kind];
+    const path = action && pathOf(action);
     if (path) {
       navigate(path, { replace: true });
     } else if (hadParam) {

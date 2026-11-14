@@ -282,7 +282,7 @@ describe('события пути входа', () => {
   it('выписка билета входа — шаг «просили код» с площадкой контейнера', async () => {
     const { tickets, report } = makeDeps();
     await startLogin(tickets);
-    expect(report.step).toHaveBeenCalledWith('issued', 'web');
+    expect(report.step).toHaveBeenCalledWith('issued', 'web', 'vk');
   });
 
   it('привязка аккаунтов в воронку входа не попадает', async () => {
@@ -311,7 +311,7 @@ describe('события пути входа', () => {
     const { tickets, report } = makeDeps();
     const { userCode } = await startLogin(tickets);
     await tickets.deny(userCode);
-    expect(report.step).toHaveBeenCalledWith('denied', 'web');
+    expect(report.step).toHaveBeenCalledWith('denied', 'web', 'vk');
   });
 
   // Шаги «открыли в боте» и «не успели» писал только телеграм-путь входа,

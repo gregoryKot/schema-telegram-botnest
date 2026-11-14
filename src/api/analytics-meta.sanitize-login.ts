@@ -2,6 +2,7 @@
 // (правило №7). login_ticket_step, login_oauth пишет сервер (счёт — userId IS NULL).
 import {
   LOGIN_TICKET_HOSTS,
+  LOGIN_TICKET_PROVIDERS,
   LOGIN_TICKET_STEPS,
 } from '../analytics/login-ticket-steps.constants';
 import { ONE_TAP_OUTCOMES } from '../analytics/login-one-tap.constants';
@@ -10,6 +11,7 @@ import { sanitizeLoginOauthMeta } from '../analytics/login-oauth.constants';
 
 const STEP_SET = new Set<string>(LOGIN_TICKET_STEPS);
 const HOST_SET = new Set<string>(LOGIN_TICKET_HOSTS);
+const PROVIDER_SET = new Set<string>(LOGIN_TICKET_PROVIDERS);
 const OUTCOME_SET = new Set<string>(ONE_TAP_OUTCOMES);
 const OFFER_SET = new Set<string>(LOGIN_METHOD_OFFER_ACTIONS);
 
@@ -31,14 +33,18 @@ export function sanitizeLoginMeta(
 export function sanitizeLoginTicketMeta(
   meta: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
-  const { step, host } = meta;
+  const { step, host, provider } = meta;
   if (
-    typeof step === 'string' &&
-    STEP_SET.has(step) &&
-    typeof host === 'string' &&
-    HOST_SET.has(host)
+    typeof step !== 'string' ||
+    !STEP_SET.has(step) ||
+    typeof host !== 'string' ||
+    !HOST_SET.has(host)
   ) {
-    return { step, host };
+    return undefined;
   }
-  return undefined;
+  // Способ входа необязателен (строки до 2026-11 без него), незнакомый — отказ.
+  if (provider === undefined) return { step, host };
+  return typeof provider === 'string' && PROVIDER_SET.has(provider)
+    ? { step, host, provider }
+    : undefined;
 }

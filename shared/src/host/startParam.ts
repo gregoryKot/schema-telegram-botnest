@@ -11,7 +11,9 @@ export type StartAction =
   /** «Задания»; с taskId — сразу это задание (кнопка уведомления о новом задании). */
   | { kind: 'tasks'; taskId?: number }
   /** Тест на схемы (уведомление «терапевт просит пройти тест»). */
-  | { kind: 'ysq' };
+  | { kind: 'ysq' }
+  /** Вход на сайт через MAX: сверка кода билета на /auth/confirm. */
+  | { kind: 'login'; code: string };
 
 const JOIN_PREFIXES: ReadonlyArray<['pair' | 'therapy', string]> = [
   ['pair', 'pair_'],
@@ -19,6 +21,12 @@ const JOIN_PREFIXES: ReadonlyArray<['pair' | 'therapy', string]> = [
 ];
 
 const TASK_PREFIX = 'tasks_';
+const LOGIN_PREFIX = 'login_';
+
+/** Ссылка входа на сайт через MAX: мини-приложение откроет сверку этого кода. */
+export function maxLoginLink(bot: string, code: string): string {
+  return `https://max.ru/${encodeURIComponent(bot)}?startapp=${LOGIN_PREFIX}${code}`;
+}
 
 export function parseStartParam(
   raw: string | null | undefined,
@@ -34,6 +42,11 @@ export function parseStartParam(
   if (raw === 'tracker') return { kind: 'tracker' };
   if (raw === 'ysq') return { kind: 'ysq' };
   if (raw === 'tasks') return { kind: 'tasks' };
+  if (raw.startsWith(LOGIN_PREFIX)) {
+    // Алфавит и длина — как у кода билета (src/auth/login-ticket/ticket-user-code.ts).
+    const code = raw.slice(LOGIN_PREFIX.length);
+    return /^[A-HJKMNP-Z2-9]{8}$/.test(code) ? { kind: 'login', code } : null;
+  }
   if (raw.startsWith(TASK_PREFIX)) {
     // Только целое положительное число: «tasks_1e3», «tasks_-1» — мусор.
     const id = raw.slice(TASK_PREFIX.length);

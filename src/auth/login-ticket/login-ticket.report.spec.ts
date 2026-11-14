@@ -11,19 +11,20 @@ const build = (track = jest.fn().mockResolvedValue(undefined)) => ({
 });
 
 describe('LoginTicketReport.step', () => {
-  it('пишет одно имя события с шагом и площадкой в meta', () => {
+  it('пишет одно имя события с шагом, площадкой и способом входа в meta', () => {
     const { track, report } = build();
-    report.step('confirmed', 'telegram');
+    report.step('confirmed', 'web', 'max');
     expect(track).toHaveBeenCalledWith(null, 'login_ticket_step', {
       step: 'confirmed',
-      host: 'telegram',
+      host: 'web',
+      provider: 'max',
     });
   });
 
   it('userId всегда null — накрутить отчёт с фронта нечем', () => {
     const { track, report } = build();
-    report.step('issued', 'web');
-    report.step('taken', 'max');
+    report.step('issued', 'web', 'vk');
+    report.step('taken', 'max', 'yandex');
     for (const [userId] of track.mock.calls) expect(userId).toBeNull();
   });
 
@@ -40,7 +41,7 @@ describe('LoginTicketReport.step', () => {
     );
     const { report } = build(track);
 
-    expect(report.step('issued', 'web')).toBeUndefined();
+    expect(report.step('issued', 'web', 'vk')).toBeUndefined();
     expect(settled).toBe(false);
   });
 });
