@@ -138,7 +138,7 @@ describe('заглушка браузерного смока ↔ настоящ�
     const { deviceCode, userCode } = await startTicket();
     // Вход в браузере одобряет аккаунт со способом входа кроме Telegram.
     await prisma.authProvider.create({
-      data: { userId, provider: 'email', providerId: `e2e-stub-${userId}` },
+      data: { userId, provider: 'vk', providerId: `e2e-stub-${userId}` },
     });
     await app.get(LoginTicketService).approveLogin(userCode, userId);
     const polled = await request(app.getHttpServer())

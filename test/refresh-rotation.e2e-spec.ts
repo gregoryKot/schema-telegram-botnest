@@ -93,8 +93,8 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
     await prisma.authProvider.create({
       data: {
         userId: USER,
-        provider: 'email',
-        providerId: 'e2e-rr@example.com',
+        provider: 'vk',
+        providerId: 'e2e-rr-vk',
       },
     });
   });
