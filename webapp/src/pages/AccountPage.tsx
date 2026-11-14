@@ -10,6 +10,7 @@ import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
 import { AccountLinkSection } from './account/AccountLinkSection';
 import { SignInMethods } from './account/SignInMethods';
+import { SiteLoginHint } from './account/SiteLoginHint';
 import { AccountFooter } from './account/AccountFooter';
 import { GroupSkeleton } from './account/GroupSkeleton';
 import { accountInitials } from './account/accountMethods';
@@ -57,6 +58,7 @@ export function AccountPage() {
         </div>
 
         {error && <PaperAlert title={error} sign="limits" className="aa-alert" />}
+        {!loading && <SiteLoginHint providers={providers} />}
         <AccountLinkSection providers={providers} loading={loading} onLinked={refresh} />
 
         <div className="aa-cols">
