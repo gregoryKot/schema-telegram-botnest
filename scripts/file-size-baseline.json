@@ -182,7 +182,7 @@
   "scripts/silent-catch-money.mjs": 45,
   "scripts/silent-catch-rules.mjs": 123,
   "scripts/spelling-rules.mjs": 21,
-  "scripts/stryker/covering-test-files.cjs": 135,
+  "scripts/stryker/covering-test-files.cjs": 144,
   "scripts/stryker/covering-test-files.plugin.mjs": 22,
   "scripts/tap-targets-css.mjs": 88,
   "scripts/tap-targets-rules.mjs": 151,
