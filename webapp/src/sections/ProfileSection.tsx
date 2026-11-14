@@ -142,8 +142,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {shown && <ProfileLinks onOpenSettings={onOpenSettings} onDeleteAccount={() => setShowDeleteConfirm(true)} />}
 
-      {/* Список прячем, пока открыта деталь (трап у верхнего слоя, dialogStack) */}
-      {/* Выбор значка: список закрылся через историю (goBack(then)) — после детали он открывается снова. */}
+      {/* Список прячем, пока открыта деталь; выбор значка закрыл его через историю (goBack(then)) — после детали он снова открыт */}
       {showAchievements && achievements && !selectedAchievement && (
         <AchievementsDialog achievements={achievements} currentStreak={currentStreak} totalDays={totalDays}
           onSelect={(id) => { setShowAchievements(true); setSelectedAchievement(id); }} onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }} />
