@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   DOMESTIC_PROCESSORS, FOREIGN_PROCESSORS, MEETING_NOTE, METRIKA_PROCESSOR,
-  OBJECT_STORAGE_PROCESSOR, POSTBOX_PROCESSOR, processorLine,
+  OBJECT_STORAGE_PROCESSOR, POSTBOX_PROCESSOR, PUSH_NOTE, processorLine,
 } from './processors';
 import { MAX_PROCESSOR, VK_ID_PROCESSOR, YANDEX_ID_PROCESSOR } from './loginProcessors';
 
@@ -71,6 +71,17 @@ describe('processors', () => {
     expect(MEETING_NOTE).toContain('общим названием «Сессия»');
     expect(MEETING_NOTE).toContain('клиент подключается по ссылке сам');
     expect(MEETING_NOTE).toContain('только время и вид записи');
+  });
+
+  // Тот же запрос: Jitsi — запасная комната вместо Zoom (src/booking/meeting-jitsi.ts),
+  // web push — сервисы из src/push/push-endpoint.ts, шифрование web-push по RFC 8291.
+  it('глава 7 говорит о Jitsi и web push: данные клиента не уходят или зашифрованы', () => {
+    expect(MEETING_NOTE).toContain('Jitsi Meet (meet.jit.si)');
+    expect(MEETING_NOTE).toContain('комната получает случайное название, не связанное с именем или контактом клиента');
+    expect(PUSH_NOTE).toContain('push-сервисы браузеров – Google, Apple, Mozilla и Microsoft');
+    expect(PUSH_NOTE).toContain('шифруется ключом браузера пользователя до отправки (aes128gcm, RFC 8291)');
+    expect(PUSH_NOTE).toContain('только адрес подписки, который сам выдал браузеру, и зашифрованный пакет');
+    expect(JSON.stringify(FOREIGN_PROCESSORS)).not.toMatch(/jitsi|push/i);
   });
 
   // Тот же запрос: вход через Telegram на сайте убран — Telegram остаётся

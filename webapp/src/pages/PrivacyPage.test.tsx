@@ -7,6 +7,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { PrivacyPage } from './PrivacyPage';
+import { PUSH_NOTE } from './privacy/processors';
 
 afterEach(() => {
   cleanup();
@@ -89,6 +90,7 @@ describe('PrivacyPage — получатели данных', () => {
     expect(text).toContain('Российские сервисы. Письма и вход через Яндекс работают на серверах в России и трансграничной передачей не являются:');
     expect(text).not.toMatch(/resend|plus five five/i);
     const order = ['Трансграничная передача данных.', 'Telegram (Telegram', 'Видеовстреча консультации проходит в сервисе Zoom',
+      'Вместо Zoom встреча может проходить в сервисе Jitsi Meet', 'Уведомления в браузер, которые пользователь включает сам',
       'Российские сервисы.', 'Yandex Cloud Postbox', 'Yandex Object Storage (ООО', 'Яндекс ID (ООО', 'Статистика посещений.'].map((s) => text.indexOf(s));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
@@ -157,10 +159,14 @@ describe('PrivacyPage — бэкапы и cookie', () => {
 
 // Вход через Google убран (2026-11, запрос РКН №08-1063539): страница входа к
 // Google не обращается, cookie g_state не ставится — политика их не называет.
+// Единственное место Google — push-сервис браузера в главе 7 (PUSH_NOTE).
 describe('PrivacyPage — входа через Google нет', () => {
   it('ни получателя Google, ни его cookie в тексте политики', () => {
     const { container } = render(<PrivacyPage />);
-    expect(container.textContent).not.toMatch(/Google|g_state|gsi_nonce/);
+    const text = container.textContent ?? '';
+    expect(text).not.toMatch(/g_state|gsi_nonce/);
+    expect(text).toContain(PUSH_NOTE);
+    expect(text.split(PUSH_NOTE).join('')).not.toMatch(/Google/);
   });
 });
 
