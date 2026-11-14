@@ -3,13 +3,13 @@
 
 Середина — одинаковые столбцы (без дизеринга и деталей): NineSlice её
 растягивает, и одинаковые столбцы растягиваются без «мазни». Всё, что
-отвечает на вопрос «на чём держится» (кронштейны, верёвки), — на торцах.
+отвечает на вопрос «на чём держится» (консоли, кронштейны), — на торцах.
 Верх (строка 1) — поверхность, по которой ходит кот.
 """
 from px import Canvas, Mat, OUT_COOL, OUT_WARM
 
 W, H = 48, 16
-SLAB, LIP, BRACKET, EXTRA = 1, 2, 3, 4
+SLAB, LIP, BRACKET = 1, 2, 3
 
 def _flat(c, top, lip):
     c.rect((1, 1, W - 2, top), SLAB)
@@ -37,30 +37,6 @@ def room():
             BRACKET: Mat('#4a3228', '#6e4c3a', '#9a6e54', OUT_WARM, z=-2)}
     return c.render(mats)
 
-def stage():
-    c = Canvas(W, H)
-    _flat(c, 3, 1)
-    for x0 in (2, W - 6):                        # стойки лесов, верёвочная обвязка
-        c.rect((x0 + 1, 5, x0 + 2, 14), BRACKET)
-        c.rect((x0, 1, x0 + 3, 3), EXTRA)
-    for x in (3, W - 4):                         # свисающий конец верёвки
-        c.iline([(x + 1, 5), (x + 1, 8)], '#e8cda0')
-    mats = {SLAB: Mat('#6e4c3a', '#8a6248', '#b48a66', OUT_WARM, dither=False),
-            LIP: Mat('#4a3228', '#5a3e30', '#6e4c3a', OUT_WARM, z=-1, dither=False),
-            BRACKET: Mat('#4a3228', '#5a3e30', '#7e5a44', OUT_WARM, z=-2),
-            EXTRA: Mat('#9a7a5a', '#c4a07a', '#e8cda0', OUT_WARM, z=1)}
-    return c.render(mats)
-
-def glass():
-    c = Canvas(W, H)
-    _flat(c, 2, 1)
-    for x0 in (5, W - 8):                        # тонкие металлические держатели
-        c.rect((x0 + 1, 4, x0 + 1, 12), BRACKET)
-        c.rect((x0, 12, x0 + 2, 13), BRACKET)
-    mats = {SLAB: Mat('#4a6a8a', '#6a9ab8', '#8ad8ff', '#1a2440', dither=False),
-            LIP: Mat('#2a3a58', '#3a5272', '#4a6a8a', '#1a2440', z=-1, dither=False),
-            BRACKET: Mat('#3a3458', '#6a6a80', '#a89fd0', OUT_COOL, z=-2)}
-    return c.render(mats)
-
 def build():
-    return {f'ledge_{k}': f() for k, f in (('street', street), ('room', room), ('stage', stage), ('glass', glass))}
+    # только карнизы из LEDGE в game/src/props.ts — build.py --install кладёт в ассеты всё, что здесь
+    return {f'ledge_{k}': f() for k, f in (('street', street), ('room', room))}
