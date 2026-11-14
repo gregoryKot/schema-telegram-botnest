@@ -30,17 +30,20 @@ describe('preview — что человек видит до подтвержде
 
   // Экран привязки называет, сколько записей сольётся (волна 6): число —
   // из той же сводки, что и на /account/merge.
-  it('сколько записей сольётся — из сводки слияния; тот же аккаунт — 0', async () => {
+  it('сколько сольётся и сколько удалится — из сводки слияния; тот же аккаунт — 0 и {}', async () => {
     const { links, tickets, merge } = makeDeps();
     (merge.summarize as unknown as jest.Mock).mockResolvedValue({
       counts: { Note: 2 },
       combined: 3,
+      lost: { Rating: 2 },
       twoFactorLost: false,
     });
     const { userCode } = await startLink(tickets);
 
-    expect((await links.preview(userCode, WEB_USER)).combined).toBe(3);
-    expect((await links.preview(userCode, MAX_USER)).combined).toBe(0);
+    const other = await links.preview(userCode, WEB_USER);
+    expect([other.combined, other.lost]).toEqual([3, { Rating: 2 }]);
+    const same = await links.preview(userCode, MAX_USER);
+    expect([same.combined, same.lost]).toEqual([0, {}]);
   });
 
   // Этот поток тоже зовёт merge.merge() в approve, значит второй фактор

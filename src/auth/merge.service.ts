@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-// Реестр переносимых таблиц живёт отдельным файлом; ре-экспорт — чтобы
-// импорты спек и соседей из merge.service продолжали работать.
+// Ре-экспорт: спеки и соседи берут реестр таблиц из merge.service.
 export { USER_OWNED_TABLES } from './user-owned-tables';
 import { USER_OWNED_TABLES } from './user-owned-tables';
 import { mergeUserScalarFields } from './merge-user-fields';
@@ -16,6 +15,7 @@ import { twoFactorWillBeLost } from './merge-two-factor';
 import { remapAssignerRefs } from './merge-assigner-refs';
 import { remapRelations } from './merge-relations';
 import { combineConflicts, countCombinable } from './merge-combine';
+import { countLost } from './merge-lost';
 import type { MergeSummary } from './merge-summary.types';
 
 // Tables we DELETE rather than move during merge — moving them would carry
@@ -90,9 +90,8 @@ export class MergeService {
     private readonly securityLog: SecurityLogService,
   ) {}
 
-  // Сводка для экрана подтверждения: что есть в source, сколько из этого
-  // объединится с записями target (R3) и пропадёт ли второй фактор — флаг
-  // здесь же, рядом со счётчиками (аудит 2026-07, M4; merge-two-factor.ts).
+  // Сводка экрана подтверждения: что есть в source, что объединится с target,
+  // что удалится без объединения (merge-lost.ts) и пропадёт ли второй фактор.
   async summarize(sourceId: bigint, targetId: bigint): Promise<MergeSummary> {
     const counts: Record<string, number> = {};
     const failed: string[] = [];
@@ -108,8 +107,7 @@ export class MergeService {
         failed.push(table);
       }
     }
-    // If we couldn't count some tables, surface this — otherwise the merge
-    // UI claims "you'll move 5 rows" when actually 5000 are moving.
+    // Недосчёт молча занизил бы цифры экрана слияния — пишем в лог.
     if (failed.length > 0) {
       this.logger.error(
         `summarize partial — failed tables: ${failed.join(', ')}`,
@@ -117,12 +115,13 @@ export class MergeService {
     }
 
     const combined = await countCombinable(this.prisma, sourceId, targetId);
+    const lost = await countLost(this.prisma, sourceId, targetId);
     const twoFactorLost = await twoFactorWillBeLost(
       this.prisma,
       sourceId,
       targetId,
     );
-    return { counts, combined, twoFactorLost };
+    return { counts, combined, lost, twoFactorLost };
   }
 
   // Move all user-owned data from `source` to `target`, then delete `source`,

@@ -52,3 +52,19 @@ describe('AchievementsDialog — шаринг', () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AchievementsDialog — запись в истории', () => {
+  it('выбор значка закрывает список через историю, затем открывает деталь; Escape — только закрывает', () => {
+    const calls: string[] = [];
+    const onClose = () => calls.push('close');
+    const onSelect = (id: string) => calls.push('select:' + id);
+    const { unmount } = render(<MemoryRouter><AchievementsDialog achievements={list([true, false, false])} currentStreak={1} totalDays={1} onSelect={onSelect} onClose={onClose} /></MemoryRouter>);
+    fireEvent.click(screen.getByText('Первый шаг'));
+    expect(calls).toEqual(['close', 'select:first_day']);
+    unmount();
+    calls.length = 0;
+    render(<MemoryRouter><AchievementsDialog achievements={list([true])} currentStreak={1} totalDays={1} onSelect={onSelect} onClose={onClose} /></MemoryRouter>);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(calls).toEqual(['close']);
+  });
+});

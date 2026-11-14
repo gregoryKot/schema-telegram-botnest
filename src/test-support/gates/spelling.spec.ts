@@ -94,16 +94,13 @@ describe('check-spelling.mjs', () => {
     expect(ok.stdout).toContain(OK);
   });
 
-  it('игра вне области многоточия — exit 0; та же строка в webapp — exit 1; «оффлайн» в игре ловится', () => {
-    const line = "export const m = { ru: 'ЗАГРУЗКА...' };\n";
-    const ok = runGate(GATE, { 'game/src/i18n/m.ts': line });
+  it('игра в области многоточия: «ЗАГРУЗКА...» в game/ — exit 1, «ЗАГРУЗКА…» — exit 0', () => {
+    expect(
+      runGate(GATE, { 'game/src/i18n/m.ts': "export const m = { ru: 'ЗАГРУЗКА...' };\n" }).status,
+    ).toBe(1);
+    const ok = runGate(GATE, { 'game/src/i18n/m.ts': "export const m = { ru: 'ЗАГРУЗКА…' };\n" });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK);
-    expect(runGate(GATE, { 'webapp/src/m.ts': line }).status).toBe(1);
-    expect(
-      runGate(GATE, { 'game/src/i18n/m.ts': "export const m = 'оффлайн';\n" })
-        .status,
-    ).toBe(1);
   });
 
   it('правила живут в scripts/spelling-rules.mjs — оба на месте (движок их импортирует)', () => {

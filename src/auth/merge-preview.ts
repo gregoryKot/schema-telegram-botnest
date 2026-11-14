@@ -1,7 +1,5 @@
-// Что покажет экран `/account/merge` до подтверждения. Имя чужого аккаунта и
-// счётчики раньше ехали в query редиректа OAuth (история браузера, логи прокси,
-// страница верила адресу). Теперь в адресе только токен, провайдер и флаг 2FA,
-// остальное отдаёт сервер, сам проверив токен и того, кто спрашивает.
+// Что покажет экран `/account/merge` до подтверждения. В адресе — только токен,
+// провайдер и флаг 2FA (query оседает в истории и логах прокси), остальное — тут.
 import { ForbiddenException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { decryptAuthProviderRow } from '../utils/auth-provider-crypto';
@@ -15,6 +13,7 @@ export interface MergePreview {
   summary: Record<string, number>;
   /** Сколько записей объединится с записями текущего аккаунта (R3). */
   combined: number;
+  lost: Record<string, number>; // удалится без объединения (merge-lost.ts)
   twoFactorLost: boolean;
 }
 
@@ -50,6 +49,7 @@ export async function buildMergePreview(
     otherDisplay: plain?.displayName ?? plain?.email ?? null,
     summary: s.counts,
     combined: s.combined,
+    lost: s.lost,
     twoFactorLost: s.twoFactorLost,
   };
 }

@@ -1,7 +1,7 @@
 /* Запись клиента из приложения (#546): лист «Запись на сессию» (ClientBookingSheet) и строки
    записи в карточке «Терапевт» профиля (ClientBookingBlock). Колонка листа — как у WhySheet:
    шапка ds-sheet-head во всю ширину, содержимое — колонка до 560px. Цвета — токены. */
-.cbk-sheet { display: flex; flex-direction: column; align-items: center; }
+.cbk-sheet { --sheet-col: 560px; --sheet-pad: 20px; display: flex; flex-direction: column; align-items: center; } /* «← Закрыть» над краем колонки (.cbk-inner) */
 .cbk-head { width: 100%; }
 /* --h: небо (ENTITY_LOOK.therapist) — бумага выбранных чипов и тень билета. */
 .cbk-inner {
