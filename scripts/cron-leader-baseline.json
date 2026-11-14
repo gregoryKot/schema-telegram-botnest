@@ -11,6 +11,10 @@
     "status": "exempt",
     "reason": "deleteMany идемпотентен, второй инстанс на том же тике удалит 0 строк (уже удалены), дублирования наружу нет."
   },
+  "src/booking/booking-calendar-reconcile.service.ts::reconcileCancelled": {
+    "status": "leader",
+    "reason": "Повторный DELETE событий отменённых броней в iCloud: на двух инстансах каждый запрос к календарю уходил бы дважды за тик, а аренда даёт пробе cronLeases видеть, что сверка жива."
+  },
   "src/booking/booking-confirm-retry.service.ts::retryStalled": {
     "status": "leader",
     "reason": "Добор эффектов подтверждения брони (ссылка, календарь, DM админу) — на двух инстансах одна бронь доделывается дважды: два события в календаре и два одинаковых уведомления."

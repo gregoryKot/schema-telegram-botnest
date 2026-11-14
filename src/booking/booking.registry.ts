@@ -7,6 +7,7 @@ import { ClientBookingService } from './client-booking.service';
 import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { BookingConfirmRetryService } from './booking-confirm-retry.service';
+import { BookingCalendarReconcileService } from './booking-calendar-reconcile.service';
 import { BookingRetentionService } from './booking-retention.service';
 import { SlotService } from './slot.service';
 import { AvailabilityService } from './availability.service';
@@ -37,6 +38,7 @@ export const BOOKING_PROVIDERS = [
   ClientBookingService,
   BookingNotifyService,
   BookingConfirmRetryService,
+  BookingCalendarReconcileService,
   BookingRetentionService,
   SlotService,
   AvailabilityService,

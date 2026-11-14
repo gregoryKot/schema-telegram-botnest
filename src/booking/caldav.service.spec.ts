@@ -322,6 +322,14 @@ describe('CalDavService.removeEvent', () => {
     await expect(svc.removeEvent('x')).resolves.toBe('missing');
   });
 
+  it('410 (Gone) — тоже «missing»: повтор DELETE крон-сверкой не считается сбоем', async () => {
+    const svc = makeService({ APPLE_CALDAV_URL: 'https://p1.icloud.com/cal/' });
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: false, status: 410 }),
+    ) as any;
+    await expect(svc.removeEvent('x')).resolves.toBe('missing');
+  });
+
   it('сетевая ошибка — перехватывается, не бросает наружу', async () => {
     const svc = makeService({ APPLE_CALDAV_URL: 'https://p1.icloud.com/cal/' });
     global.fetch = jest.fn(() => {
