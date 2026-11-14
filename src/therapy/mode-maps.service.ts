@@ -5,15 +5,11 @@ import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { guardOverwrite } from '../utils/crypto-record';
 import { requireAffected } from '../utils/require-affected';
 import { clientMapAuthors } from './client-map-authors';
-import { clientModeMap } from './client-mode-map';
+import { clientModeMap, MODE_MAP_SCHEMA } from './client-mode-map';
 import { normalizeModeMapKind } from './mode-map-kinds';
 
 // Declarative encryption schemas — single source of truth, so a newly added
 // free-text field can't silently end up in plaintext (just add it here).
-const MODE_MAP_SCHEMA: EncryptSchema = {
-  strings: ['title'],
-  jsonArrays: ['nodes', 'edges'],
-};
 const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
 
 // Карты режимов (mode maps) терапевта для клиента + кастомные режимы терапевта.

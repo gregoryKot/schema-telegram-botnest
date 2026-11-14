@@ -17,6 +17,11 @@ const BASE = 'https://schemehappens.ru';
 const FAILED = `${BASE}/auth/error?reason=yandex_failed`;
 const STATE = 'eyJhbGciOiJIUzI1NiJ9.eyJraW5kIjoib2F1dGhfc3RhdGUifQ.c2ln';
 const CODE = 'code16chars00000';
+const YANDEX_ENV: Record<string, string> = {
+  YANDEX_CLIENT_ID: 'id',
+  YANDEX_CLIENT_SECRET: 'secret',
+  YANDEX_REDIRECT_URI: `${BASE}/api/auth/yandex/callback`,
+};
 const IDENTITY: ProviderIdentity = {
   providerId: '1234567890',
   email: 'user@example.com',
@@ -35,6 +40,7 @@ function setup(
     known?: boolean;
     ticket?: string | null;
     handler?: Record<string, unknown>;
+    env?: Record<string, string>;
   } = {},
 ) {
   const handler = opts.handler ?? {
@@ -51,7 +57,10 @@ function setup(
   const track = jest.fn().mockResolvedValue(undefined);
   const findUnique = jest.fn().mockResolvedValue(opts.known ? { id: 1 } : null);
   const service = new OAuthCallbackService(
-    { getOrThrow: () => BASE } as unknown as ConfigService,
+    {
+      get: (k: string) => (opts.env ?? YANDEX_ENV)[k],
+      getOrThrow: () => BASE,
+    } as unknown as ConfigService,
     { get: jest.fn(() => handler) } as unknown as AuthProviderRegistry,
     flow as unknown as AuthFlowService,
     { track } as unknown as AnalyticsService,
@@ -246,6 +255,20 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
       'yandex callback error: Yandex token error: invalid_grant (HTTP 400)',
       expect.any(Error),
     );
+  });
+
+  it('env провайдера снят — экран yandex_disabled, warn вместо error, обмена нет', async () => {
+    const warned = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const s = setup({ env: {} });
+    await s.run({ code: CODE, state: STATE });
+    expect(s.res.redirect).toHaveBeenCalledWith(
+      `${BASE}/auth/error?reason=yandex_disabled`,
+    );
+    expect(s.handler.exchangeCode).not.toHaveBeenCalled();
+    expect(s.flow.signInOrLinkOrMerge).not.toHaveBeenCalled();
+    expect(logged).not.toHaveBeenCalled();
+    expect(warned).toHaveBeenCalledTimes(1);
+    warned.mockRestore();
   });
 
   it('провайдер без обмена кода (Telegram, MAX) — отказ, а не падение', async () => {

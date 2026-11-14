@@ -119,8 +119,12 @@ describe('assertClientExportSynced', () => {
 
   it('падает и называет поле, если enc-поле уходит в файл без расшифровки', () => {
     const saved = CLIENT_EXPORT_POLICY.ModeMap;
-    if (saved.status !== 'export') throw new Error('ModeMap: export');
-    CLIENT_EXPORT_POLICY.ModeMap = { ...saved, schema: undefined };
+    // Образец: enc-поле ModeMap.title выбрано колонкой без schema.
+    CLIENT_EXPORT_POLICY.ModeMap = {
+      status: 'export',
+      select: { title: true },
+      omit: {},
+    };
     try {
       expect(() => assertClientExportSynced()).toThrow(/ModeMap\.title/);
     } finally {
