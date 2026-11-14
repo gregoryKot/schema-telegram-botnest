@@ -147,6 +147,19 @@ describe('что показано до подтверждения', () => {
     }
   });
 
+  it('сервер посчитал потери — до кнопки сказано, что удалится; тот же аккаунт — блока нет', async () => {
+    const lost = { Rating: 2, AppActivity: 5 };
+    fetchMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, lost }));
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText(/в вашем аккаунте уже есть такие же записи/)).toBeTruthy());
+    expect(screen.getByText('2 оценки потребностей за те же дни')).toBeTruthy();
+    cleanup();
+    fetchMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, sameAccount: true, summary: {}, lost }));
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText(/переносить нечего/)).toBeTruthy());
+    expect(screen.queryByText(/не переедет и удалится/)).toBeNull();
+  });
+
   it('тот же аккаунт — про перенос не врёт', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, { ...PREVIEW, sameAccount: true, summary: {} }),
