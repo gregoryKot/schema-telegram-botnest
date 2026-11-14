@@ -157,8 +157,8 @@ describe('LoginPage — обычный браузер (не Telegram)', () => {
     expect(container.innerHTML).not.toMatch(
       /api\/auth\/telegram|api\/auth\/google|oauth\.telegram|start=login_/,
     );
-    expect(screen.getByTestId('login-google-note').textContent).toContain('с той же почтой');
-    expect(screen.getByTestId('login-telegram-note').textContent).toContain('почту, VK ID или Яндекс ID');
+    expect(screen.getByTestId('login-email-note').textContent).toContain('с той же почтой');
+    expect(screen.getByTestId('login-telegram-note').textContent).toContain('добавь там VK ID или Яндекс ID');
     // Во вкладке браузера билет входа не выписывается — страница молчит.
     expect(fetchMock).not.toHaveBeenCalled();
   });

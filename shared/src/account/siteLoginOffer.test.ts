@@ -7,20 +7,27 @@ import {
   snoozeSiteLogin,
 } from './siteLoginOffer';
 
-describe('needsSiteLogin — кому звать добавить почту, VK ID или Яндекс ID', () => {
+describe('needsSiteLogin — кому звать добавить VK ID или Яндекс ID', () => {
   it.each([
     [['telegram'], 'telegram', true],
-    // Уже есть чем войти на сайт — звать незачем.
-    [['telegram', 'email'], 'telegram', false],
+    // Почта на сайт больше не впускает (решение владельца, ч. 10 ст. 8 149-ФЗ).
+    [['telegram', 'email'], 'telegram', true],
+    [['email'], 'web', true],
+    [['google', 'email'], 'web', true],
+    [['telegram', 'email'], 'web', true],
+    // Уже есть чем попасть на сайт — звать незачем.
     [['telegram', 'vk'], 'telegram', false],
     [['telegram', 'yandex'], 'telegram', false],
     [['telegram', 'max'], 'telegram', false],
-    // Не в Telegram: на сайте такой человек уже вошёл чем-то другим, в MAX — свой путь.
-    [['telegram'], 'web', false],
+    [['email', 'vk'], 'web', false],
+    [['max'], 'web', false],
+    // В MAX — свой путь: сессию передают в браузер.
     [['telegram'], 'max', false],
+    [['email'], 'max', false],
     // Ничего не знаем — не выдумываем.
     [[], 'telegram', false],
     [null, 'telegram', false],
+    [[], 'web', false],
   ] as const)('%j в %s → %s', (providers, hostId, expected) => {
     expect(
       needsSiteLogin({ providers: providers && [...providers], hostId }),

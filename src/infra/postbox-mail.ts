@@ -4,14 +4,13 @@
 // (src/utils/admin-alert.ts); проба ключа — self-check/probe-postbox.ts.
 // Документация: https://yandex.cloud/ru/docs/postbox
 //
-// Запрос подписывается AWS Signature V4 (регион ru-central1, сервис ses) —
-// той же реализацией, что и запросы к хранилищу бэкапов (s3-sigv4.ts, правило
-// №3). Ключи — статический ключ доступа сервисного аккаунта с ролью
-// postbox.sender. Письма только текстовые.
+// Подпись — AWS SigV4 (ru-central1, ses) из s3-sigv4.ts, как у бэкапов (правило
+// №3); ключ сервисного аккаунта с ролью postbox.sender. Письма только текстовые.
 //
 // Без DI (читает env сам): работает и в AlertLogger до подъёма контейнера.
 // Сетевой сбой и таймаут пробрасываются — вызывающий пишет их в снимок пробы
 // почты (src/utils/alert-email-health.ts).
+import { encodeFromName } from './email-from-name';
 import { sha256Hex, signRequest, type SigV4Credentials } from './s3-sigv4';
 
 type Env = Record<string, string | undefined>;
@@ -63,7 +62,7 @@ export function postboxCredentials(
 }
 
 export function emailFrom(): string {
-  return process.env.EMAIL_FROM?.trim() || DEFAULT_EMAIL_FROM;
+  return encodeFromName(process.env.EMAIL_FROM?.trim() || DEFAULT_EMAIL_FROM);
 }
 
 /** «Code: message» из JSON-тела ошибки; null — тело не JSON или форма не та. */

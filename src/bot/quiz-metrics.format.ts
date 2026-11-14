@@ -7,9 +7,6 @@ export interface QuizMetrics {
   started30: number;
   /** За месяц: сколько раз дошли до результата. */
   completed30: number;
-  /** Разбивка дошедших: бот / сайт (meta.src). */
-  completedBot30: number;
-  completedWeb30: number;
   /** Какие тесты доходят до результата (meta.quiz), по убыванию. */
   byQuiz30: Array<{ quiz: string; count: number }>;
 }
@@ -39,9 +36,6 @@ export function formatQuizMetrics(m: QuizMetrics): string {
       m.completed30,
       m.started30,
     )}`,
-  );
-  lines.push(
-    `Где доходят до конца: в боте ${m.completedBot30} · на сайте ${m.completedWeb30}`,
   );
   if (m.byQuiz30.length > 0) {
     lines.push(
