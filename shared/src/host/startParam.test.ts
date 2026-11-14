@@ -51,16 +51,26 @@ describe('parseStartParam', () => {
     expect(parseStartParam('ysqX')).toBeNull();
   });
   // Вход на сайт через MAX: код — 8 знаков алфавита билета, остальное — мусор.
-  it.each(['login_K7M2QX94', 'login_ABCDEFGH'])('%s — сверка входа с кодом', (raw) => {
-    expect(parseStartParam(raw)).toEqual({ kind: 'login', code: raw.slice(6) });
-  });
-
-  it.each(['login_', 'login_K7M2', 'login_K7M2QX94Z', 'login_k7m2qx94', 'login_K7M2QX9O', 'login_K7M2QX91'])(
-    '%s — битый код игнорируется',
+  it.each(['login_K7M2QX94', 'login_ABCDEFGH'])(
+    '%s — сверка входа с кодом',
     (raw) => {
-      expect(parseStartParam(raw)).toBeNull();
+      expect(parseStartParam(raw)).toEqual({
+        kind: 'login',
+        code: raw.slice(6),
+      });
     },
   );
+
+  it.each([
+    'login_',
+    'login_K7M2',
+    'login_K7M2QX94Z',
+    'login_k7m2qx94',
+    'login_K7M2QX9O',
+    'login_K7M2QX91',
+  ])('%s — битый код игнорируется', (raw) => {
+    expect(parseStartParam(raw)).toBeNull();
+  });
 
   it('ссылка входа через MAX разбирается обратно в тот же код', () => {
     const link = maxLoginLink('schemebot', 'K7M2QX94');
