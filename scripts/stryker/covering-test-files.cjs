@@ -1,32 +1,19 @@
 'use strict';
-// Прогон мутанта грузит только спеки с покрывающими тестами (ночные
-// mutation-волны с 2026-09-21 ни разу не уложились в 60 минут).
+// Прогон мутанта грузит только спеки с покрывающими тестами: фильтр jest по
+// имени теста срабатывает после загрузки, и на каждый мутант `crypto.ts`
+// грузились все 139 импортирующих его спеков (docs/INCIDENTS.md, 2026-09-21).
+// Репортёр ниже по итогам пробного прогона (coverageAnalysis: perTest) пишет
+// карту «мутант → спеки с покрывающими тестами»; этот же файл как jest
+// `filter` оставляет воркеру только их. Тест, который мутант не исполняет,
+// убить его не может — исход тот же, меняется время.
 //
-// Как было. На каждый мутант jest-раннер Stryker запускает
-// `jest --findRelatedTests <мутируемый файл> --testNamePattern <покрывающие
-// тесты>`. Фильтр по имени срабатывает ПОСЛЕ загрузки: jest поднимает каждый
-// спек, который транзитивно импортирует файл, исполняет его импорты и только
-// потом пропускает тесты. `crypto.ts` импортируют 139 спеков — и все 139
-// грузились на каждый из ~170 его мутантов (~11 с вхолостую на мутант).
-// Волне А (вход/шифрование) нужно было 65 тыс. загрузок спеков, из них с
-// покрывающими тестами — 2,9 тыс.
+// Крипто-ядро судят только свои спеки (OWN_SPECS): шифрованное поле пишут
+// десятки спеков, и каждый новый удорожал волну А. Тут исход меняется
+// осознанно — мутант, которого убивал лишь «чужой» спек, выживает.
 //
-// Как стало. Покрывающие тесты Stryker знает после пробного прогона
-// (coverageAnalysis: perTest). Репортёр ниже, когда готов план, пишет карту
-// «мутант → спеки с покрывающими тестами»; этот же файл, подключённый к jest
-// как `filter`, в воркере оставляет из связанных спеков только спеки из
-// карты. Тест, который мутант не исполняет, убить его не может — исход тот
-// же, меняется время. A/B на security-log/crypto/merge (где есть гибридные
-// мутанты): статусы совпали помутантно.
-//
-// Отказ — в сторону медленности, не тишины: нет карты, мутанта нет в карте,
-// пересечение пустое — jest получает список без изменений (как до фильтра).
-// Сломанный фильтр проявится таймаутом ночной джобы, а не «все мутанты
-// выжили» — так выглядел первый прототип, где пути песочницы не совпали с
-// путями проекта.
-//
-// Подключение — covering-test-files.plugin.mjs (плагин Stryker объявляется
-// через ESM-пакет, а jest грузит `filter` через require, отсюда два файла);
+// Отказ — в сторону медленности: нет карты, мутанта в ней или пересечения —
+// jest получает список как есть; сломанный фильтр проявится таймаутом, а не
+// «все мутанты выжили». Плагин Stryker (ESM) — covering-test-files.plugin.mjs;
 // какие конфиги обязаны его подключать — stryker-covering-test-files.spec.ts.
 const fs = require('fs');
 const os = require('os');
@@ -46,6 +33,26 @@ const defaultMapPath = (pid = process.pid) =>
 // её копии. Общее у них — путь от корня (cwd), от него и сравниваем.
 const fromRoot = (root, file) => path.relative(root, path.resolve(root, file));
 
+const CRYPTO_CORE_SPECS = [
+  'src/auth/totp.service.spec.ts',
+  'src/utils/auth-provider-crypto.spec.ts',
+  'src/utils/crypto-record.spec.ts',
+  'src/utils/crypto-record.writable.spec.ts',
+  'src/utils/crypto.spec.ts',
+];
+/** Мутируемый файл → единственные спеки, которым позволено его судить. */
+const OWN_SPECS = {
+  'src/utils/crypto.ts': CRYPTO_CORE_SPECS,
+  'src/utils/crypto-record.ts': CRYPTO_CORE_SPECS,
+};
+
+/** Покрывающие спеки ∩ свои; пустое пересечение — все покрывающие. */
+function ownSpecsOnly(mutantFile, files, root) {
+  const own = mutantFile && OWN_SPECS[fromRoot(root, mutantFile)];
+  const picked = own ? files.filter((f) => own.includes(f)) : [];
+  return picked.length > 0 ? picked : files;
+}
+
 /**
  * Карта «id мутанта → спеки с покрывающими тестами». Id теста у jest-раннера —
  * полное имя, и одно имя бывает в двух спеках: берём все.
@@ -60,14 +67,15 @@ function buildCoveringFiles(tests, mutantPlans, root = process.cwd()) {
   }
   const byMutant = {};
   for (const { mutant, runOptions } of mutantPlans) {
-    // Без testFilter мутант гоняет все тесты или не гоняется вовсе —
-    // фильтру тут делать нечего.
+    // Без testFilter (статический мутант) гоняются все тесты или ни одного —
+    // фильтру, и OWN_SPECS тоже, тут делать нечего.
     if (!runOptions?.testFilter) continue;
     const files = new Set();
     for (const id of runOptions.testFilter) {
       for (const f of filesByTest.get(id) ?? []) files.add(f);
     }
-    byMutant[mutant.id] = [...files].sort();
+    const covering = [...files].sort();
+    byMutant[mutant.id] = ownSpecsOnly(mutant.fileName, covering, root);
   }
   return byMutant;
 }
@@ -127,6 +135,7 @@ module.exports = coveringTestFilesFilter;
 Object.assign(module.exports, {
   MAP_ENV,
   ACTIVE_MUTANT_ENV,
+  OWN_SPECS,
   defaultMapPath,
   buildCoveringFiles,
   pickTestPaths,
