@@ -13,6 +13,7 @@ import { BookingService } from './booking.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
+import { bookingEventUid } from './caldav-owner-event';
 import {
   BookingConfirmRetryService,
   STALLED_AFTER_MIN,
@@ -707,7 +708,7 @@ describe('BookingService.cancel', () => {
   // Событие календаря: у CONFIRMED без записанного uid (под умер между PUT и
   // записью) DELETE идёт по детерминированному uid, у HELD события не бывает.
   it.each([
-    [BookingStatus.CONFIRMED, 'booking-5@schemehappens.ru'],
+    [BookingStatus.CONFIRMED, bookingEventUid(5)],
     [BookingStatus.HELD, null],
   ])(
     'без calDavUid: бронь %s → onCancelled получает uid %s',
