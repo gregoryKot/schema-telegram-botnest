@@ -5,9 +5,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 
-const { startMock, pollMock } = vi.hoisted(() => ({
+const { startMock, pollMock, maxBot } = vi.hoisted(() => ({
   startMock: vi.fn(),
   pollMock: vi.fn(),
+  maxBot: { name: '' },
+}));
+
+vi.mock('../../utils/botConfig', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  get maxBotUsername() {
+    return maxBot.name;
+  },
 }));
 
 vi.mock('../../../../shared/src/auth/loginTicketApi', async (orig) => ({
@@ -181,3 +189,81 @@ describe('исход (установленное приложение)', () => {
     await waitFor(() => expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy());
   });
 });
+
+// MAX (2026-11): OAuth для сайтов у MAX нет — вход подтверждают в мини-приложении.
+// Билет выписывает нажатие, код виден ДО перехода: в MAX его набирают руками.
+describe('MAX', () => {
+  const MAX = /Войти через MAX/;
+  beforeEach(() => {
+    maxBot.name = 'schemebot';
+  });
+  afterEach(() => {
+    maxBot.name = '';
+  });
+
+  it('без ника бота кнопки нет — ссылке вести некуда', () => {
+    maxBot.name = '';
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: MAX })).toBeNull();
+  });
+
+  it('во вкладке: до нажатия билета нет; нажатие — код и ссылка в мини-приложение', async () => {
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    expect(startMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: MAX }));
+    const open = await screen.findByRole('link', { name: 'Открыть MAX' });
+    expect(startMock).toHaveBeenCalledWith({ intent: 'login', provider: 'max', hostId: 'web' });
+    expect(screen.getByText('K7M2-QX94')).toBeTruthy();
+    expect(open.getAttribute('href')).toBe('https://max.ru/schemebot?startapp=login_K7M2QX94');
+    expect(open.getAttribute('target')).toBe('_blank');
+    // ВКонтакте во вкладке по-прежнему ведёт напрямую, без билета.
+    expect(screen.getByRole('link', { name: VK }).getAttribute('href')).toBe('/api/auth/vk');
+  });
+
+  it('повторное нажатие второй билет не выписывает', async () => {
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: MAX }));
+    await screen.findByRole('link', { name: 'Открыть MAX' });
+    fireEvent.click(screen.getByRole('button', { name: MAX }));
+    expect(startMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('вход подтвердили в MAX — сессия приходит в эту же вкладку', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    pollMock.mockResolvedValue({ status: 'linked', accessToken: 'a', expiresIn: 900 });
+    const onSession = vi.fn();
+    render(<LoginProviderButtons onSession={onSession} />);
+    fireEvent.click(screen.getByRole('button', { name: MAX }));
+    await vi.advanceTimersByTimeAsync(4000);
+    await waitFor(() => expect(onSession).toHaveBeenCalledWith('a', 900));
+    vi.useRealTimers();
+  });
+
+  it('код истёк — лист сбоя, повтор выписывает новый билет под MAX', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    pollMock.mockResolvedValue({ status: 'expired' });
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: MAX }));
+    await vi.advanceTimersByTimeAsync(4000);
+    const retry = await screen.findByRole('button', { name: 'Попробовать снова' });
+    vi.useRealTimers();
+    pollMock.mockResolvedValue({ status: 'pending' });
+    fireEvent.click(retry);
+    await screen.findByRole('link', { name: 'Открыть MAX' });
+    expect(startMock).toHaveBeenLastCalledWith({ intent: 'login', provider: 'max', hostId: 'web' });
+  });
+
+  it('в установленном приложении нажатие выписывает билет под MAX и показывает его код', async () => {
+    standalone();
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: VK }).getAttribute('href')).toContain('ticket='),
+    );
+    fireEvent.click(screen.getByRole('button', { name: MAX }));
+    const open = await screen.findByRole('link', { name: 'Открыть MAX' });
+    expect(startMock).toHaveBeenLastCalledWith({ intent: 'login', provider: 'max', hostId: 'web' });
+    expect(open.getAttribute('href')).toBe('https://max.ru/schemebot?startapp=login_K7M2QX94');
+    expect(screen.queryByRole('button', { name: 'Показать код входа' })).toBeNull();
+  });
+});
+

@@ -81,7 +81,7 @@ describe('POST ticket/start', () => {
   // Запрос Роскомнадзора 2026-11: на сайт через Telegram не входят. Билет
   // входа под подтверждение в боте (и под любой способ, которого на сайте
   // нет) не выписывается; привязка уже вошедшего — выписывается (ниже).
-  it.each(['telegram', 'max', 'google'])(
+  it.each(['telegram', 'google'])(
     'вход с provider=%s — 400, билет не выписан',
     async (provider) => {
       const { start, tickets } = makeCtl();
@@ -103,6 +103,16 @@ describe('POST ticket/start', () => {
     await expect(
       start({ intent: 'login', provider: 'telegram' }, makeReq()),
     ).rejects.toThrow('Этим способом на сайт не входят');
+  });
+
+  // 2026-11: MAX — российский сервис без OAuth для сайтов. Билет входа под MAX
+  // подтверждают в мини-приложении (/auth/confirm сессией MAX).
+  it('билет входа под MAX выписывается', async () => {
+    const { start, tickets } = makeCtl();
+    await start({ intent: 'login', provider: 'max' }, makeReq());
+    expect(tickets.start).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'login', provider: 'max' }),
+    );
   });
 
   it('привязка Telegram уже вошедшим — выписывается', async () => {

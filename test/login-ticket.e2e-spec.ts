@@ -289,6 +289,34 @@ describe('e2e smoke: билет входа и привязка аккаунта 
       expect(polled.body.accessToken).toBeUndefined();
     });
 
+    // Вход на сайт через MAX (2026-11): OAuth для сайтов у MAX нет — вкладка
+    // выписывает билет под MAX, человек подтверждает его в мини-приложении
+    // сессией MAX (/auth/confirm → confirm-login), вкладка забирает сессию.
+    it('MAX: выписал сайт → подтвердили сессией MAX → сессию получила вкладка', async () => {
+      const start = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'login',
+        provider: 'max',
+      });
+      expect(start.status).toBe(200);
+      const { deviceCode, userCode } = start.body as {
+        deviceCode: string;
+        userCode: string;
+      };
+
+      const approved = await call(
+        srv().post('/api/auth/ticket/confirm-login'),
+        tokenA,
+      ).send({ code: userCode });
+      expect(approved.body.ok).toBe(true);
+
+      const linked = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(linked.body.status).toBe('linked');
+      expect(linked.body.accessToken).toBeTruthy();
+      expect(String(linked.headers['set-cookie'])).toContain('refresh_token=');
+    });
+
     it('привязка без авторизации отбивается — привязывать не к чему', async () => {
       const res = await call(srv().post('/api/auth/ticket/start')).send({
         intent: 'link',

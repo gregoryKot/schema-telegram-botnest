@@ -6,6 +6,7 @@ describe('parseSourceSlug', () => {
     expect(parseSourceSlug('src_seed2')).toBe('seed2');
     expect(parseSourceSlug('src_channel')).toBe('channel');
     expect(parseSourceSlug('src_therapist')).toBe('therapist');
+    expect(parseSourceSlug('src_game')).toBe('game');
   });
 
   it('неизвестный/мусорный slug — нормализуется в other (правило №7)', () => {

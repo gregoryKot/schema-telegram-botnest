@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { IS_TOUCH } from '../controls';
-import { addGlow } from '../look';
-import { placeProp } from '../props';
+import { placeProp, FLOORLAMP_W } from '../props';
 
 // Титул: тёплая комната вечером — торшер, диван и спящий на нём Мистер.
 // Только имеющийся реквизит; спрайт сна догружается в фоне — до него кот сидит.
@@ -21,19 +20,7 @@ export function drawStartArt(scene: Phaser.Scene): Phaser.GameObjects.Sprite {
 
   const couchX = W * 0.56;
   const lampX = couchX + 200 * k; // торшер у дивана — свет падает на спящего кота
-  const lamp = placeProp(scene, 'prop_lamp', lampX, floorY, 64 * k, 2);
-  const headY = lamp ? lamp.y - lamp.displayHeight * 0.85 : floorY - 170 * k;
-  addGlow(scene, lampX, headY, 300 * k, 260 * k, 0xffd080, 0.26, 1);
-  addGlow(
-    scene,
-    lampX - 60 * k,
-    floorY - 40 * k,
-    420 * k,
-    200 * k,
-    0xffd9a0,
-    0.16,
-    1,
-  );
+  placeProp(scene, 'prop_lamp', lampX, floorY, FLOORLAMP_W * k, 2); // ореол и пятно — в спрайте
 
   const couch = placeProp(scene, 'prop_couch', couchX, floorY, 280 * k, 2);
   const seatY = couch ? floorY - couch.displayHeight * 0.4 : floorY;

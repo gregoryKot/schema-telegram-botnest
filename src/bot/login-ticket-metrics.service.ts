@@ -57,6 +57,8 @@ export class LoginTicketMetricsService {
         taken: bigint;
         too_late: bigint;
         denied: bigint;
+        max_issued: bigint;
+        max_taken: bigint;
       }>
     >`
       SELECT
@@ -65,7 +67,9 @@ export class LoginTicketMetricsService {
         count(*) FILTER (WHERE "meta"->>'step' = 'confirmed')::bigint AS confirmed,
         count(*) FILTER (WHERE "meta"->>'step' = 'taken')::bigint AS taken,
         count(*) FILTER (WHERE "meta"->>'step' = 'too_late')::bigint AS too_late,
-        count(*) FILTER (WHERE "meta"->>'step' = 'denied')::bigint AS denied
+        count(*) FILTER (WHERE "meta"->>'step' = 'denied')::bigint AS denied,
+        count(*) FILTER (WHERE "meta"->>'step' = 'issued' AND "meta"->>'provider' = 'max')::bigint AS max_issued,
+        count(*) FILTER (WHERE "meta"->>'step' = 'taken' AND "meta"->>'provider' = 'max')::bigint AS max_taken
       FROM "AnalyticsEvent"
       WHERE "userId" IS NULL
         AND "name" = 'login_ticket_step'
@@ -77,6 +81,8 @@ export class LoginTicketMetricsService {
       taken: Number(row?.taken ?? 0n),
       tooLate: Number(row?.too_late ?? 0n),
       denied: Number(row?.denied ?? 0n),
+      maxIssued: Number(row?.max_issued ?? 0n),
+      maxTaken: Number(row?.max_taken ?? 0n),
     };
   }
 }

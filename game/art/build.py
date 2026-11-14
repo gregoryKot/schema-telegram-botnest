@@ -7,14 +7,14 @@ import sys
 from PIL import Image
 from px import save, check
 from cat import restyle
-import poses, ground, ledges, street, refs
+import poses, ground, ledges, street, refs, light, doc
 
 ASSETS, OUT = '../src/assets', 'out'
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     made = {k: restyle(f'src/{k}_src.png') for k in ('cat_idle', 'cat_run')}
-    for mod in (poses, ground, ledges, street):
+    for mod in (poses, ground, ledges, street, light, doc):
         made.update(mod.build())
     for k, img in made.items():
         check(img, k)

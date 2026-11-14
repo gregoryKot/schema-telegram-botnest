@@ -9,12 +9,13 @@ import { unlockChapter } from '../../progress';
 import { trackEvent } from '../../analytics';
 import { showBranch, showCta } from './cta';
 import type { GameScene } from '../GameScene';
+import { spawnAnx } from './anx';
 
 export function beginOverwhelm(s: GameScene) {
   s.overwhelmed = true;
   audio.setIntensity(1);
   for (let i = 0; i < s.chapter.overwhelmAnx; i++)
-    s.spawnAnx(s.player.x + (i - 1) * 200 + Phaser.Math.Between(-40, 40), 1);
+    spawnAnx(s, s.player.x + (i - 1) * 200 + Phaser.Math.Between(-40, 40), 1);
   s.say(s.chapter.overwhelmSay, 3200);
   // The day collapses → the realization
   s.time.delayedCall(3600, () => {

@@ -8,7 +8,8 @@ import { unlockChapter } from '../../progress';
 import { track, trackEvent } from '../../analytics';
 import { openCta } from '../../therapyCta';
 import { addCrisisLine } from './cta';
-import { addGlow } from '../../look';
+import { FLOORLAMP_W } from '../../props';
+import { addTherapist, talk } from './therapist';
 import type { GameScene } from '../GameScene';
 
 export function onDoorEnter(s: GameScene) {
@@ -65,14 +66,12 @@ export function sessionScene(s: GameScene) {
     objs.push(img); return img;
   };
   put('prop_couch', W * 0.30, 240);
-  const lamp = put('prop_lamp', W * 0.74, 64); // свет — мягким градиентом у абажура
-  if (lamp) objs.push(addGlow(s, W * 0.74, lamp.y - lamp.displayHeight * 0.85, 220, 200, 0xffd080, 0.2, deep + 1).setScrollFactor(0).setAlpha(0));
+  put('prop_lamp', W * 0.74, FLOORLAMP_W); // ореол и пятно на полу — в спрайте
   put('prop_plant', W * 0.92, 70);
   // Мистер и терапевт — просто сидят. никого не надо бить.
   const mister = s.add.sprite(W * 0.26, H - 64, 'cat_idle').setOrigin(0.5, 1)
     .setScale(1.6).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
-  const doc = s.add.sprite(W * 0.56, H - 64, 'cat_idle').setOrigin(0.5, 1)
-    .setScale(1.7).setFlipX(true).setTint(0x9ac8a8).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
+  const doc = addTherapist(s, W * 0.56, H - 64, deep + 3);
   objs.push(mister, doc);
   s.tweens.add({ targets: objs, alpha: 1, duration: 1100, delay: 700 });
 
@@ -90,6 +89,7 @@ export function sessionScene(s: GameScene) {
   line('m_cab_2', 118, '#d8c8ec', 12, 3200);
   line('m_cab_3', 154, '#e8d8c0', 12, 5200);
   line('m_ther_q', 208, '#a8e8d0', 12, 7400);          // — кто приходит к тебе чаще всего?
+  s.time.delayedCall(7400, () => talk(s, doc, 2600));
   // Критик встаёт в дверях — огромный, как всегда
   s.time.delayedCall(9000, () => {
     const shadow = s.add.sprite(W * 0.92, H - 64, 'cat_idle').setOrigin(0.5, 1)

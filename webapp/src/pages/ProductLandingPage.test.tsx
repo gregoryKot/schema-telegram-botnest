@@ -58,7 +58,7 @@ describe('ProductLandingPage — неавторизованный визитор
     for (const a of ctas) expect(a.getAttribute('href')).toBe('/login');
     expect(screen.queryByText(/Начать бесплатно/)).toBeNull();
     // Под кнопками — чем входят на сайт: те же способы, что на экране входа.
-    expect(screen.getByText('Вход через ВКонтакте или Яндекс · регистрация не нужна')).toBeTruthy();
+    expect(screen.getByText('Вход через ВКонтакте, Яндекс или MAX · регистрация не нужна')).toBeTruthy();
   });
 
   it('шапка и футер — знак продукта (тот же, что в меню и favicon), а не 🧠', () => {

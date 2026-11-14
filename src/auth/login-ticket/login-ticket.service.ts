@@ -86,7 +86,8 @@ export class LoginTicketService {
     });
     // Только вход: привязка аккаунтов считается своими событиями
     // (account_link_*), и мешать их в одну воронку значило бы считать разное.
-    if (input.intent === 'login') this.report.step('issued', input.hostId);
+    if (input.intent === 'login')
+      this.report.step('issued', input.hostId, input.provider);
     return {
       deviceCode,
       userCode,
@@ -175,7 +176,7 @@ export class LoginTicketService {
     if ((await claimApproval(this.prisma, row, approvedUserId)) === 'repeat') {
       return;
     }
-    this.report.step('confirmed', row.hostId);
+    this.report.step('confirmed', row.hostId, row.provider);
   }
 
   /**
@@ -208,7 +209,8 @@ export class LoginTicketService {
       where: { id: row.id },
       data: { deniedAt: new Date() },
     });
-    if (row.intent === 'login') this.report.step('denied', row.hostId);
+    if (row.intent === 'login')
+      this.report.step('denied', row.hostId, row.provider);
   }
 
   /** Шаг 4: контейнер опрашивает по длинному коду и забирает сессию. */
@@ -241,7 +243,8 @@ export class LoginTicketService {
     );
     // Единственный шаг, означающий «человек внутри». Пишется после claim,
     // поэтому повторный опрос его не задваивает.
-    if (row.intent === 'login') this.report.step('taken', row.hostId);
+    if (row.intent === 'login')
+      this.report.step('taken', row.hostId, row.provider);
     return { status: 'linked', tokens };
   }
 }

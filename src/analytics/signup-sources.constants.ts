@@ -13,6 +13,7 @@
 //   channel    — органическая ссылка в закреплённом посте/описании
 //                собственного канала «Здоровый Взрослый»;
 //   therapist  — ссылка, которую партнёр-терапевт даёт своим клиентам;
+//   game       — ссылка из игры Мистера (schemehappens.ru/game);
 //   other      — неизвестный/мусорный slug либо переход без метки (обычная
 //                ссылка t.me/<bot> без ?start=).
 export const SIGNUP_SOURCES = [
@@ -20,6 +21,7 @@ export const SIGNUP_SOURCES = [
   'seed2',
   'channel',
   'therapist',
+  'game',
   'other',
 ] as const;
 
