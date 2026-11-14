@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NotificationService, PROACTIVE_TYPES } from './notification.service';
 import { decryptPayload } from './notification-payload.crypto';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
@@ -177,6 +178,39 @@ describe('NotificationService', () => {
 
       expect(row.sentAt).toEqual(new Date('2026-07-01T10:00:00Z'));
     });
+  });
+
+  // Ушедшая из очереди строка payload не хранит: у строк до #1140 в нём данные
+  // о состоянии (РКН, #1135), а читает его только getDue у ждущих.
+  describe('payload строки, ушедшей из очереди', () => {
+    const exits: [string, (s: NotificationService) => Promise<void>][] = [
+      ['markSent', (s) => s.markSent(1)],
+      ['cancel', (s) => s.cancel(BigInt(1), 'weekly')],
+      ['cancelAll', (s) => s.cancelAll(BigInt(1))],
+      ['cancelProactive', (s) => s.cancelProactive(BigInt(1))],
+      ['cancelTypes', (s) => s.cancelTypes(BigInt(1), ['weekly'])],
+      ['cancelOne', (s) => s.cancelOne(1)],
+    ];
+    it.each(exits)(
+      '%s стирает payload, чужую строку не трогает',
+      async (_, exit) => {
+        const row = (id: number, userId: bigint): Row => ({
+          id,
+          userId,
+          type: 'weekly',
+          sendAt: new Date('2026-11-13T09:00:00Z'),
+          sentAt: null,
+          cancelledAt: null,
+          payload: 'шифр: {"text":"Итоги недели: 7.2"}',
+        });
+        const mine = row(1, BigInt(1));
+        const other = row(2, BigInt(2));
+        await exit(new NotificationService(makeStatefulPrisma([mine, other])));
+        expect(mine.sentAt ?? mine.cancelledAt).toBeInstanceOf(Date);
+        expect(mine.payload).toBe(Prisma.DbNull);
+        expect(other.payload).toBe('шифр: {"text":"Итоги недели: 7.2"}');
+      },
+    );
   });
 
   describe('hasPending', () => {
