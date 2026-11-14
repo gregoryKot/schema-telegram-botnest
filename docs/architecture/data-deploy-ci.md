@@ -72,7 +72,7 @@
 | backend | tsc, coverage-храповик, jest под TZ Sydney, e2e на фейках, npm audit корня и game, 6 храповиков |
 | checks | fs-only гейты без `npm ci`, shellcheck `scripts/*.sh` |
 | docker | `docker build` прод-образа (`push: false`, кэш gha) |
-| migrations | Postgres 16: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
+| migrations | Postgres 17 (как прод), клиент 17 из `deploy/install-pg-client.sh`: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
 | perf | сид синтетики, EXPLAIN ANALYZE горячих путей, `check-query-plans.mjs` |
 | webapp | build, bundle-size, vitest+coverage, UI-гейты, npm audit |
 | webapp-tz | vitest `webapp` под TZ Sydney — отдельной джобой, параллельно `webapp` |
@@ -89,7 +89,7 @@
 - `mutation-golden-auth` — Stryker, волна А, затем `check-mutation-ratchet`.
 - `mutation-golden-payments` — Stryker, волна Б, затем кризис и outbox, каждый с храповиком.
 - `browser-smoke` — build webapp, `playwright test` (Chromium и WebKit); тот же смок идёт и в PR-CI, ночной ловит флаки на main под alarm.
-- `browser-live` — живой проход связи клиент↔терапевт: сервис Postgres 16, `migrate deploy`, стенд `test/e2e-support/live-stand.ts` в фоне (настоящий `AppModule`, `E2E_REAL_DB=1`, :3000 + вход :3001), прод-сборка сайта и `vite preview --config vite.live.config.ts` (:5174, прокси `/api`), `playwright test -c e2e-browser/live/playwright.config.ts` (Chromium); остановка стенда стоп-файлом, трейсы и логи артефактом при провале.
+- `browser-live` — живой проход связи клиент↔терапевт: сервис Postgres 17, `migrate deploy`, стенд `test/e2e-support/live-stand.ts` в фоне (настоящий `AppModule`, `E2E_REAL_DB=1`, :3000 + вход :3001), прод-сборка сайта и `vite preview --config vite.live.config.ts` (:5174, прокси `/api`), `playwright test -c e2e-browser/live/playwright.config.ts` (Chromium); остановка стенда стоп-файлом, трейсы и логи артефактом при провале.
 - `macos-build` — то же на `macos-26` (регистронезависимая ФС, как у владельца; образ прибит, гейт `runner-pin.spec.ts`): `npm ci` корня, `webapp` и `shared`, `check-filename-case`, build webapp, vitest webapp и shared. Без Playwright и Postgres: что зелено на Linux, обязано быть зелёным и здесь (инцидент 2026-11-05, #933).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
 - `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
