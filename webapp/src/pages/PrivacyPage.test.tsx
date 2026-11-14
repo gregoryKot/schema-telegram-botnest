@@ -77,7 +77,7 @@ describe('PrivacyPage — получатели данных', () => {
     ]) {
       expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
     }
-    expect(screen.getByText(/ссылки для входа и восстановления доступа/)).toBeTruthy();
+    expect(screen.getByText(/подтверждение привязки адреса к аккаунту и уведомления о безопасности аккаунта/)).toBeTruthy();
   });
 
   // Запрос РКН №08-1063539 (2026-11): письма шлёт российский Yandex Cloud
@@ -97,22 +97,26 @@ describe('PrivacyPage — получатели данных', () => {
     expect(foreign).not.toMatch(/Postbox|Яндекс ID/);
   });
 
-  it('способы входа: п. 3.2 и гл. 8 называют VK ID и Яндекс ID', () => {
+  // Вход по почте отключён (решение владельца, ч. 10 ст. 8 149-ФЗ): почта — для писем, не вход.
+  it('способы входа: п. 3.2 и гл. 8 называют VK ID, Яндекс ID и MAX; почта — только для писем', () => {
     const { container } = render(<PrivacyPage />);
     const text = container.textContent ?? '';
-    expect(text).toContain('Идентификатор способа входа: адрес электронной почты, идентификатор VK ID, Яндекс ID или MAX; идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');
-    expect(text).toContain('Беспарольная аутентификация: на сайте – вход по ссылке из письма, через VK ID или Яндекс ID, внутри MAX и Telegram – по подписи мессенджера; пароли не создаются и не хранятся');
+    expect(text).toContain('Идентификатор способа входа: идентификатор VK ID, Яндекс ID или MAX; идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');
+    expect(text).toContain('Адрес электронной почты: привязанный пользователем к аккаунту – для писем о привязке адреса и уведомлений о безопасности аккаунта');
+    expect(text).toContain('Способом входа на сайт адрес не является');
+    expect(text).toContain('Беспарольная аутентификация: на сайте – вход через VK ID, Яндекс ID или MAX, внутри MAX и Telegram – по подписи мессенджера; пароли не создаются и не хранятся');
+    expect(text).not.toMatch(/вход по ссылке из письма|ссылки для входа/);
   });
 
   // Запрос РКН №08-1063539 (2026-11): iCloud и Zoom данных клиента не получают,
   // вход через Telegram на сайте убран — политика говорит то, что делает код.
-  it('Zoom и iCloud — без данных клиента; способы входа на сайте — почта, VK ID и Яндекс ID', () => {
+  it('Zoom и iCloud — без данных клиента; способы входа на сайте — VK ID, Яндекс ID и MAX', () => {
     const { container } = render(<PrivacyPage />);
     const text = container.textContent ?? '';
     expect(text).toContain('не передаёт сервису имя, контакт или иные данные клиента');
     expect(text).toContain('В календарь Оператора (Apple iCloud) попадают только время и вид записи');
     expect(text).not.toMatch(/имя клиента в названии встречи|имя, контакт, текст обращения и время встречи/);
-    expect(text).toContain('на сайте – вход по ссылке из письма, через VK ID или Яндекс ID, внутри MAX и Telegram – по подписи мессенджера');
+    expect(text).toContain('на сайте – вход через VK ID, Яндекс ID или MAX, внутри MAX и Telegram – по подписи мессенджера');
     expect(text).toContain('идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');
     expect(text).not.toMatch(/вход через Telegram или OAuth-провайдера/);
     expect(text).toContain('для входа на сайт не используется');

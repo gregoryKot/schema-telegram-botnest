@@ -10,6 +10,7 @@ import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
 import { AccountLinkSection } from './account/AccountLinkSection';
 import { SignInMethods } from './account/SignInMethods';
+import { EmailLettersGroup } from './account/EmailLettersGroup';
 import { SiteLoginHint } from './account/SiteLoginHint';
 import { AccountFooter } from './account/AccountFooter';
 import { GroupSkeleton } from './account/GroupSkeleton';
@@ -28,7 +29,7 @@ export function AccountPage() {
   const tr = useTr();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { providers, totp, loading, error, setError, refresh } = useAccountData(accessToken);
+  const { userId, providers, totp, loading, error, setError, refresh } = useAccountData(accessToken);
   const actions = useProviderActions(accessToken, refresh, setError);
   const emailNotice = emailLinkNotice(searchParams.get('linked'), searchParams.get('error'), tr);
   const initials = accountInitials(providers);
@@ -62,11 +63,16 @@ export function AccountPage() {
         <AccountLinkSection providers={providers} loading={loading} onLinked={refresh} />
 
         <div className="aa-cols">
-          <SignInMethods
-            providers={providers} loading={loading} busy={actions.busy} accessToken={accessToken}
-            onLink={{ vk: actions.linkVk, yandex: actions.linkYandex }}
-            onUnlink={actions.setUnlinkProvider} emailNotice={emailNotice} onLinked={() => { void refresh(); }}
-          />
+          <div className="aa-col">
+            <SignInMethods
+              providers={providers} userId={userId} loading={loading} busy={actions.busy}
+              onLink={{ vk: actions.linkVk, yandex: actions.linkYandex }} onUnlink={actions.setUnlinkProvider}
+            />
+            <EmailLettersGroup
+              providers={providers} userId={userId} loading={loading} busy={actions.busy} accessToken={accessToken}
+              onUnlink={() => actions.setUnlinkProvider('email')} notice={emailNotice} onLinked={() => { void refresh(); }}
+            />
+          </div>
           <div className="aa-col">
             {!loadedOnce ? <GroupSkeleton /> : <TwoFactorSection accessToken={accessToken} totp={totp} onChanged={refresh} />}
             <TherapistRequestSection accessToken={accessToken} />
@@ -79,7 +85,7 @@ export function AccountPage() {
       {unlinkProvider && (
         <HistoryConfirmDialog
           title={`Отвязать ${PROVIDER_NAMES[unlinkProvider]}?`}
-          message="Понадобится другой способ входа в аккаунт."
+          message={unlinkProvider === 'email' ? 'Письма о безопасности аккаунта на этот адрес больше не придут.' : 'Понадобится другой способ входа в аккаунт.'}
           confirmLabel="Отвязать"
           onConfirm={() => { void actions.performUnlink(unlinkProvider); }}
           onCancel={() => actions.setUnlinkProvider(null)}

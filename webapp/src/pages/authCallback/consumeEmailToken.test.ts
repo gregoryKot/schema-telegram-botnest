@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-// Ссылка из письма (B-14 аудита 2026-10): токен гасит POST со страницы сайта.
+// Ссылка привязки почты из письма (B-14 аудита 2026-10): токен гасит POST со
+// страницы сайта. Вход по ссылке отключён — сессия в ответе исходом не считается.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { consumeEmailToken, emailConsumeNextPath } from './consumeEmailToken';
 
@@ -14,7 +15,7 @@ const reply = (status: number, body: unknown) =>
 
 describe('consumeEmailToken', () => {
   it('POST /api/auth/email/consume с куками, CSRF-заголовком и токеном в теле', async () => {
-    const f = reply(200, { accessToken: 'AT', expiresIn: 900 });
+    const f = reply(200, { linked: true });
     vi.stubGlobal('fetch', f);
     await consumeEmailToken('', 'raw-tok');
     const [url, init] = f.mock.calls[0];
@@ -25,27 +26,9 @@ describe('consumeEmailToken', () => {
     expect(JSON.parse(init.body)).toEqual({ token: 'raw-tok' });
   });
 
-  it('три успешных исхода различаются по телу', async () => {
-    vi.stubGlobal('fetch', reply(200, { accessToken: 'AT', expiresIn: 600 }));
-    await expect(consumeEmailToken('', 't')).resolves.toEqual({
-      kind: 'session',
-      accessToken: 'AT',
-      expiresIn: 600,
-    });
-    vi.stubGlobal('fetch', reply(200, { challengeToken: 'CH' }));
-    await expect(consumeEmailToken('', 't')).resolves.toEqual({
-      kind: 'twofa',
-      challengeToken: 'CH',
-    });
+  it('успех привязки — { linked: true }', async () => {
     vi.stubGlobal('fetch', reply(200, { linked: true }));
     await expect(consumeEmailToken('', 't')).resolves.toEqual({ kind: 'linked' });
-  });
-
-  it('нет expiresIn → 900 по умолчанию', async () => {
-    vi.stubGlobal('fetch', reply(200, { accessToken: 'AT' }));
-    await expect(consumeEmailToken('', 't')).resolves.toMatchObject({
-      expiresIn: 900,
-    });
   });
 
   it.each([
@@ -58,6 +41,9 @@ describe('consumeEmailToken', () => {
     ['лимит попыток', reply(429, { message: 'Too Many Requests' }), 'http_429'],
     ['сервер упал (HTML вместо JSON)', vi.fn().mockResolvedValue({ ok: false, status: 502, json: () => Promise.reject(new SyntaxError('x')) }), 'http_502'],
     ['200 без нужных полей', reply(200, {}), 'email_link_expired'],
+    // Старая ссылка входа: сервер ещё отдаёт сессию или 2FA — это не привязка.
+    ['200 с сессией (ссылка входа)', reply(200, { accessToken: 'AT', expiresIn: 900 }), 'email_link_expired'],
+    ['200 с 2FA (ссылка входа)', reply(200, { challengeToken: 'CH' }), 'email_link_expired'],
   ])('%s → error %s', async (_n, f, reason) => {
     vi.stubGlobal('fetch', f);
     await expect(consumeEmailToken('', 't')).resolves.toEqual({
@@ -68,46 +54,18 @@ describe('consumeEmailToken', () => {
 });
 
 describe('emailConsumeNextPath', () => {
-  const session = { kind: 'session', accessToken: 'AT', expiresIn: 900 } as const;
-
-  it('сессия без билета → returnTo или /today', () => {
-    expect(emailConsumeNextPath(session, null, null)).toBe('/today');
-    expect(emailConsumeNextPath(session, null, '/practice')).toBe('/practice');
+  it('привязка → /account?linked=email', () => {
+    expect(emailConsumeNextPath({ kind: 'linked' })).toBe('/account?linked=email');
   });
 
-  it('сессия с билетом → экран сверки без токена в адресе (login-CSRF, 2026-11)', () => {
-    const path = emailConsumeNextPath(session, 'K7M2QX94', '/practice');
-    expect(path).toBe('/auth/confirm?code=K7M2QX94');
-    expect(path).not.toContain('AT');
+  it('ошибки: просрочка → экран ошибки ссылки; адрес занят и чужой браузер — подсказка на аккаунте', () => {
+    expect(emailConsumeNextPath({ kind: 'error', reason: 'email_link_expired' })).toBe('/auth/error?reason=email_link_expired');
+    expect(emailConsumeNextPath({ kind: 'error', reason: 'email_taken' })).toBe('/account?error=email_taken');
+    expect(emailConsumeNextPath({ kind: 'error', reason: 'email_link_session' })).toBe('/account?error=email_link_session');
   });
 
-  it('2FA → /auth/2fa с challengeToken; привязка → /account?linked=email', () => {
-    expect(
-      emailConsumeNextPath({ kind: 'twofa', challengeToken: 'a b' }, null, null),
-    ).toBe('/auth/2fa?token=a%20b');
-    expect(emailConsumeNextPath({ kind: 'linked' }, 'T', null)).toBe(
-      '/account?linked=email',
-    );
-  });
-
-  it('ошибки: просрочка → экран ошибки входа; остальное — подсказка на аккаунте', () => {
-    expect(
-      emailConsumeNextPath({ kind: 'error', reason: 'email_link_expired' }, null, null),
-    ).toBe('/auth/error?reason=email_link_expired');
-    expect(
-      emailConsumeNextPath({ kind: 'error', reason: 'email_taken' }, null, null),
-    ).toBe('/account?error=email_taken');
-    expect(
-      emailConsumeNextPath({ kind: 'error', reason: 'email_link_session' }, null, null),
-    ).toBe('/account?error=email_link_session');
-  });
-
-  it('сеть и ответ сервера — свои коды на экране ошибки входа, не на аккаунте', () => {
-    expect(
-      emailConsumeNextPath({ kind: 'error', reason: 'email_network' }, null, null),
-    ).toBe('/auth/error?reason=email_network');
-    expect(
-      emailConsumeNextPath({ kind: 'error', reason: 'http_429' }, null, null),
-    ).toBe('/auth/error?reason=http_429');
+  it('сеть и ответ сервера — свои коды на экране ошибки, не на аккаунте', () => {
+    expect(emailConsumeNextPath({ kind: 'error', reason: 'email_network' })).toBe('/auth/error?reason=email_network');
+    expect(emailConsumeNextPath({ kind: 'error', reason: 'http_429' })).toBe('/auth/error?reason=http_429');
   });
 });

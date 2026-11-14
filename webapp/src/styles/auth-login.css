@@ -66,17 +66,11 @@
 .al-foot { font-size: 13px; color: var(--text-sub); margin: 0; }
 .al-foot--center { text-align: center; }
 .al-foot--center .al-linkbtn { align-self: auto; }
-.al-email-sent { padding: 14px 16px; background: oklch(0.95 0.015 var(--h)); border-radius: 16px; }
-.al-email-sent p { margin: 0 0 4px; font-size: 13px; color: var(--text-sub); }
-.al-email-sent p:first-child { font-size: 14px; font-weight: 600; color: var(--text); }
-.al-email { display: flex; flex-direction: column; gap: 8px; }
 .al-submit {
   min-height: 52px; border-radius: 26px; border: 0; background: var(--accent); color: var(--on-accent);
   font: 700 15px var(--sans); cursor: pointer; width: 100%;
 }
 .al-submit:disabled { opacity: .5; cursor: default; }
-/* Отправка ссылки на почту — второе действие экрана: залиты только кнопки сервисов (ВКонтакте, Яндекс). */
-.al-submit--quiet { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 
 /* Автовход в мессенджере не сработал (TelegramRetry): исход на PaperOutcome; помощь — под кнопкой. */
 .al-retry-help { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }

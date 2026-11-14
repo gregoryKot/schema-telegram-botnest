@@ -1,4 +1,4 @@
-// Привязка email в кабинете: строка способа входа, «зачем» (почтой входят на сайт),
+// Почта для писем в кабинете: строка адреса, «зачем» (какие письма придут; входа по почте нет),
 // форма адреса и экран с кодом из письма; ошибка — у своего поля (b27). После отправки не обещаем
 // «письмо отправлено»: ответ одинаков для свободного и занятого адреса (B-16).
 import { useEffect, useRef, useState } from 'react';
@@ -11,13 +11,17 @@ import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
 import { EmailLinkCodeForm } from './EmailLinkCodeForm';
 
+/** Зачем привязывать почту — до первого нажатия. Безлично: одна строка для обеих форм обращения. */
+export const EMAIL_WHY =
+  'На почту придёт письмо, если к аккаунту привяжут новый способ входа, отвяжут старый или начнут подбирать код двухфакторной защиты. Входить по почте нельзя.';
+
 export function EmailLinkRow({
   accessToken,
   linked,
   email,
   busy,
   onUnlink,
-  unlinkBlocked,
+  unlinkBlockedWhy = null,
   notice = null,
   onLinked,
 }: {
@@ -27,10 +31,11 @@ export function EmailLinkRow({
   email?: string | null;
   busy: boolean;
   onUnlink: () => void;
-  unlinkBlocked?: boolean;
+  /** Отвязать нельзя — причина под строкой (accountMethods.ts, unlinkBlockedWhy). */
+  unlinkBlockedWhy?: string | null;
   /** Возврат по ссылке из письма (?linked=email, ?error=…) — статус или причина у этой строки. */
   notice?: EmailLinkNotice | null;
-  onLinked: () => void; // адрес привязан кодом из письма — перечитать способы входа
+  onLinked: () => void; // адрес привязан кодом из письма — перечитать привязки
 }) {
   const tr = useTr();
   const [showForm, setShowForm] = useState(false);
@@ -72,12 +77,12 @@ export function EmailLinkRow({
         emptySubtitle="не привязан"
         subtitle={email ?? 'привязан'}
         onUnlink={onUnlink}
-        unlinkBlocked={unlinkBlocked}
+        unlinkBlockedWhy={unlinkBlockedWhy}
         onLink={() => { setShowForm(true); setSent(false); setValue(''); }}
       />
       {notice?.kind === 'ok' && <p role="status" className="aa-field-ok"><OkMark />{notice.text}</p>}
       {notice?.kind === 'error' && !showForm && <p role="alert" className="aa-field-err">{notice.text}</p>}
-      {!linked && <p className="aa-email-why">Почтой входят на сайт и в приложение на экране телефона. Пригодится и как запасной вход.</p>}
+      {!linked && <p className="aa-email-why">{EMAIL_WHY}</p>}
       {showForm &&
         !linked &&
         (sent ? (

@@ -1138,15 +1138,18 @@ describe('AuthService — linkProviderToUser', () => {
 });
 
 describe('AuthService — unlinkProvider / getUserProviders', () => {
+  // Веб-номер: аккаунт из Telegram (номер < WEB_USER_ID_MIN) входит через бота и без строки (unlink-provider.ts).
+  const web = WEB_USER_ID_MIN + 1n;
+
   it('unlinkProvider: единственный метод входа → ConflictException, ничего не удаляется', async () => {
     const { svc, authProviders } = makeService();
     authProviders.push({
       id: 1,
-      userId: 1n,
+      userId: web,
       provider: 'telegram',
       providerId: '1',
     });
-    await expect(svc.unlinkProvider(1n, 'telegram')).rejects.toThrow(
+    await expect(svc.unlinkProvider(web, 'telegram')).rejects.toThrow(
       ConflictException,
     );
     expect(authProviders).toHaveLength(1);
@@ -1156,11 +1159,11 @@ describe('AuthService — unlinkProvider / getUserProviders', () => {
     const { svc, authProviders } = makeService();
     // У ДРУГОГО пользователя — много провайдеров, у ЭТОГО — только один.
     authProviders.push(
-      { id: 1, userId: 1n, provider: 'telegram', providerId: '1' },
-      { id: 2, userId: 2n, provider: 'google', providerId: 'g-2' },
-      { id: 3, userId: 2n, provider: 'email', providerId: 'x@y.z' },
+      { id: 1, userId: web, provider: 'telegram', providerId: '1' },
+      { id: 2, userId: 2n, provider: 'vk', providerId: 'vk-2' },
+      { id: 3, userId: 2n, provider: 'yandex', providerId: 'ya-2' },
     );
-    await expect(svc.unlinkProvider(1n, 'telegram')).rejects.toThrow(
+    await expect(svc.unlinkProvider(web, 'telegram')).rejects.toThrow(
       ConflictException,
     );
     expect(authProviders).toHaveLength(3); // ничего не удалено

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Строка способа входа в /account (#912): у единственного способа значок
-// сжимался до ~19px, а пояснение «Единственный способ входа…» обрезалось
+// сжимался до ~19px, а пояснение, почему отвязать нельзя, обрезалось
 // многоточием — на телефоне и на компьютере. CSS в jsdom не считается, поэтому
 // проверяем инлайн-стиль плитки и пиним правила auth-account.css.
 import { describe, it, expect } from 'vitest';
@@ -8,7 +8,6 @@ import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ProviderRow, GoogleIcon, TelegramIcon, VkIcon, YandexIcon, MaxIcon } from './ProviderRows';
-import { ONLY_METHOD_NOTE } from './accountMethods';
 
 const css = readFileSync(join(__dirname, '../../styles/auth-account.css'), 'utf8');
 const rule = (sel: string) =>
@@ -26,11 +25,13 @@ describe('ProviderRow — значок и пояснение единствен�
     expect((container.firstChild as HTMLElement).style.flexShrink).toBe('0');
   });
 
-  it('пояснение «Единственный способ входа» переносится, а не режется', () => {
+  it('пояснение, почему отвязать нельзя, переносится, а не режется; кнопка недоступна', () => {
+    const why = 'Другого входа в аккаунт нет — отвязать можно, когда привязан VK ID или Яндекс ID';
     render(
-      <ProviderRow icon={<TelegramIcon />} title="Telegram" linked busy={false} onUnlink={() => {}} unlinkBlocked />,
+      <ProviderRow icon={<TelegramIcon />} title="Telegram" linked busy={false} onUnlink={() => {}} unlinkBlockedWhy={why} />,
     );
-    const note = screen.getByText(ONLY_METHOD_NOTE);
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Отвязать' }).disabled).toBe(true);
+    const note = screen.getByText(why);
     expect(note.className).toContain('aa-row-why');
     expect(rule('.aa-row-why')).toMatch(/white-space:\s*normal/);
   });

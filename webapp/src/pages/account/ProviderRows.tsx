@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { ONLY_METHOD_NOTE } from './accountMethods';
 
 // Строки способов входа в /account. Раньше Google, Telegram и ВКонтакте были
 // тремя почти одинаковыми блоками разметки подряд — правка доезжала до одного
@@ -30,7 +29,7 @@ export function ProviderRow({
   busy,
   onLink,
   onUnlink,
-  unlinkBlocked = false,
+  unlinkBlockedWhy = null,
   note,
 }: {
   icon: ReactNode;
@@ -42,8 +41,8 @@ export function ProviderRow({
   busy: boolean;
   onLink?: () => void;
   onUnlink?: () => void;
-  /** Единственный способ входа: «Отвязать» недоступна, причина — под строкой. */
-  unlinkBlocked?: boolean;
+  /** Без этого способа входа не останется: «Отвязать» недоступна, причина — под строкой. */
+  unlinkBlockedWhy?: string | null;
   /** Текст вместо кнопки — когда привязать отсюда нельзя. */
   note?: string;
 }) {
@@ -55,11 +54,11 @@ export function ProviderRow({
         <div className="aa-row-text">
           <div className="aa-row-title">{title}</div>
           {sub && <div className="aa-row-sub">{sub}</div>}
-          {linked && unlinkBlocked && <div className="aa-row-sub aa-row-why">{ONLY_METHOD_NOTE}</div>}
+          {linked && unlinkBlockedWhy && <div className="aa-row-sub aa-row-why">{unlinkBlockedWhy}</div>}
         </div>
       </div>
       {linked && onUnlink ? (
-        <button disabled={busy || unlinkBlocked} onClick={onUnlink} className="ds-btn ds-btn--sm ds-btn--secondary">
+        <button disabled={busy || !!unlinkBlockedWhy} onClick={onUnlink} className="ds-btn ds-btn--sm ds-btn--secondary">
           Отвязать
         </button>
       ) : onLink ? (

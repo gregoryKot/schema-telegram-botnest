@@ -161,7 +161,7 @@ describe('AccountPage — загрузка', () => {
     renderPage();
     await screen.findByText('Аккаунт');
 
-    // Три кнопки "Привязать" (vk, yandex, email), ни одной "Отвязать". Google и
+    // Три кнопки "Привязать" (vk, yandex и почта для писем), ни одной "Отвязать". Google и
     // Telegram без привязки не показаны вовсе: входа через них на сайте нет (2026-11).
     expect(screen.getAllByText('Привязать').length).toBe(3);
     expect(screen.queryByText('Google')).toBeNull();
@@ -172,11 +172,12 @@ describe('AccountPage — загрузка', () => {
 
   it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
     renderPage();
-    await screen.findByText('0 из 3'); // ВКонтакте, Яндекс, почта
+    await screen.findByText('0 из 2'); // ВКонтакте, Яндекс; почта — не вход, у неё своя группа
+    expect(screen.getByRole('heading', { name: 'Почта для писем' })).toBeTruthy();
     cleanup();
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
-    await screen.findByText('1 из 4'); // прежняя привязка Google — своя строка
+    await screen.findByText('1 из 3'); // прежняя привязка Google — своя строка
     expect(screen.getByText('U')).toBeTruthy();
   });
 
@@ -264,11 +265,11 @@ describe('AccountPage — Яндекс', () => {
   it('привязанный Яндекс: имя из api; отвязка спрашивает «Отвязать Яндекс?» и шлёт POST /api/auth/unlink/yandex', async () => {
     meProviders = [
       { provider: 'yandex', email: 'anya@yandex.ru', displayName: 'Аня Я' },
-      { provider: 'email', email: 'user@example.com', displayName: null },
+      { provider: 'vk', email: null, displayName: 'Аня ВК' },
     ];
     renderPage();
     await screen.findByText('Аня Я');
-    expect(screen.getByText('2 из 3')).toBeTruthy();
+    expect(screen.getByText('2 из 2')).toBeTruthy();
     fireEvent.click(unlinkBtn('Яндекс'));
     expect(within(screen.getByRole('dialog')).getByText('Отвязать Яндекс?')).toBeTruthy();
     confirmUnlink();

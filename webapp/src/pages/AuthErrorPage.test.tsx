@@ -75,7 +75,7 @@ describe('AuthErrorPage — известные коды', () => {
 
   it('email_link_expired в форме «вы» — без «ты»-строк', () => {
     const { container } = renderAt('?reason=email_link_expired', 'vy');
-    expect(screen.getByText(/Запросите новую\./)).toBeTruthy();
+    expect(screen.getByText(/Запросите новую в «Аккаунте»\./)).toBeTruthy();
     expect(container.textContent).not.toMatch(/Запроси |напиши /);
   });
 
@@ -109,16 +109,16 @@ describe('AuthErrorPage — известные коды', () => {
 });
 
 // U6 (аудит 2026-11): просроченная ссылка показывала «Вход не удался» с
-// техническим кодом, а «Попробовать снова» вела на общий вход, где форму почты
-// надо было искать заново; обрыв сети выглядел так же, как просрочка.
+// техническим кодом; обрыв сети выглядел так же, как просрочка. Входа по почте
+// нет — новое письмо привязки запрашивают в «Аккаунте».
 describe('AuthErrorPage — ссылка из письма', () => {
-  it('просрочка: «Ссылка устарела», без кода, кнопка ведёт сразу к форме почты', () => {
+  it('просрочка: «Ссылка устарела», без кода, кнопка ведёт в «Аккаунт», а не к входу по почте', () => {
     const { container } = renderAt('?reason=email_link_expired');
     expect(screen.getByRole('heading').textContent).toBe('Ссылка устарела');
-    expect(screen.getByText(/открывается только один раз\. Запроси новую\./)).toBeTruthy();
+    expect(screen.getByText(/открывается только один раз\. Запроси новую в «Аккаунте»\./)).toBeTruthy();
     expect(container.querySelector('.pa-outcome-code')).toBeNull();
     const link = screen.getByText('Запросить новую ссылку') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe('/login?via=email');
+    expect(link.getAttribute('href')).toBe('/account');
     expect(reportedMessages()[0]).toMatch(/, email_link_expired$/);
   });
 
@@ -152,7 +152,7 @@ describe('AuthErrorPage — провайдер выключен', () => {
   it.each(['ty', 'vy'] as const)('yandex_disabled (%s): свой заголовок, безличный текст, кнопка на /login', (form) => {
     const { container } = renderAt('?reason=yandex_disabled', form);
     expect(screen.getByRole('heading').textContent).toBe('Вход через Яндекс отключён');
-    expect(screen.getByText(/Вход через Яндекс временно отключён\. Другой способ — почта/)).toBeTruthy();
+    expect(screen.getByText(/Вход через Яндекс временно отключён\. Если к аккаунту привязан VK ID/)).toBeTruthy();
     expect((screen.getByText('Другой способ входа') as HTMLAnchorElement).getAttribute('href')).toBe('/login');
     expect(container.querySelector('.pa-outcome-code')).toBeNull();
     expect(container.textContent).not.toMatch(/Попробуй|напиши/);
