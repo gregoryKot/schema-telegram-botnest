@@ -53,10 +53,8 @@
   Generative AI performance (Search Console). Без первого замера правки GEO
   (robots, sitemap из БД, список статей для робота) проверить нечем.
 
+- ⬜ **Юрлица VK ID и MAX в политике** — владельцу: назвать операторов сервисов (в репозитории их нет), агенту — дописать в `name` у `VK_ID_PROCESSOR` и `MAX_PROCESSOR` (`webapp/src/pages/privacy/processors.ts`) и в тест; `docs/open/owner.md`, пункт «Политика конфиденциальности».
 - ⬜ **Хвост входа через Яндекс ID и почты Postbox (#1100)** — найдено по ходу задачи и не починено:
-  - политика не называет получателями VK ID (ООО «В Контакте») и MAX, хотя вход через них есть
-    (`webapp/src/pages/privacy/processors.ts`; grep «ВКонтакте|VK ID» по `webapp/src/pages/privacy` находит
-    только способы входа, не получателей);
   - зелёный исход живых проб `postbox` (400 на подписанный запрос без письма) и `yandexOAuth` (ответ на
     код-пустышку) — гипотезы по документации: сверить на проде и дозаписать ответы в
     `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`;
@@ -138,6 +136,7 @@
 
 ## Сделано
 
+- ✅ **Политика: VK ID и MAX среди российских получателей данных** — что узнаёт сервис и что получает Оператор (`webapp/src/pages/privacy/processors.ts`); юрлица ждут владельца (#1153).
 - ✅ **Суффикс `<title>` статей зависит от хоста** — на schemehappens.ru «… – Всё по схеме», на kotlarewski.gr «… – Григорий Котляревский», для статьи и списка (`seoTitle` в `src/articles/article-seo.title.ts`, флаг алиаса тот же, что у canonical в `article-seo.middleware.ts`); #1158.
 - ✅ **Строка очереди уведомлений теряет payload при отправке и снятии** — хвост #1166: её миграция не видит строк до #1140, которые ждали отправки и ушли из очереди позже, — их зашифрованный payload с данными о состоянии оставался. Теперь `markSent` и снятия обнуляют payload (`sentNow`/`cancelledNow` в `src/notification/notification-payload.crypto.ts`), а миграция `20261114130000_notification_payload_left_queue` повторно чистит ушедшие строки. Осознанно не закрыто: строка, которую старый инстанс отметит отправленной в минуты деплоя после миграции, сохранит payload (зашифрован, в Telegram не уходит) — окно в минуты, отдельной чистки не стоит.
 - ✅ **Мутации очереди оценок и кризисной детекции видит PR** — джоба `mutation-changed` гоняет `stryker.outbox.config.json` и `stryker.crisis.config.json` по изменённым файлам; два теста гонок `withoutSent` вернули `ratingOutbox.ts` к 95.92% (бейслайн 94.37, не поднят) (#1156).
