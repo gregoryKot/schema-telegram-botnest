@@ -9,6 +9,8 @@
 - **Кабинет Robokassa:** тестовые пароли №1/№2 отличны от боевых (S5; код теперь сам отклоняет `IsTest=1` на боевом магазине).
 - **S10 · бэкапы можно удалить из приложения.** Статический ключ сервисного аккаунта `backup-writer` (роль `storage.editor` на бакет `schemehappens-backups`) и `BACKUP_ENCRYPTION_KEY` — в env приложения, `s3_prune` в `scripts/backup-upload.sh` сам удаляет старые копии. Включить блокировку объектов в бакете ≥30 дней, удаление — правилом жизненного цикла, шифрование — асимметричное (в env только публичный ключ).
 
+**Живой ruleset `main` без `webapp-tz`** (2026-11-14, ci-alarm #1057): внести джобу `webapp-tz` (GitHub Actions) в Require status checks ruleset `main` через настройки репозитория — копия `.github/rulesets/main.json` её уже содержит, nightly `live-ruleset` красный до правки. Агент настройки безопасности не меняет.
+
 **Уведомления в приложении ждут ключей VAPID в Amvera** (2026-11-08). Код веб-пушей
 на проде, но выключен, пока в env приложения нет пары `VAPID_PUBLIC_KEY` +
 `VAPID_PRIVATE_KEY` (`docs/ENV.md`): `GET /api/push/config` отдаёт `publicKey: null`,
