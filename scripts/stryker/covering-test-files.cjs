@@ -37,6 +37,7 @@ const CRYPTO_CORE_SPECS = [
   'src/auth/totp.service.spec.ts',
   'src/utils/auth-provider-crypto.spec.ts',
   'src/utils/crypto-record.spec.ts',
+  'src/utils/crypto-record.writable.spec.ts',
   'src/utils/crypto.spec.ts',
 ];
 /** Мутируемый файл → единственные спеки, которым позволено его судить. */
