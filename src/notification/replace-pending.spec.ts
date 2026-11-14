@@ -1,6 +1,7 @@
 // Хвост E16: «снять + поставить» — одна транзакция, лок перепланировки берётся
 // первым. Что Postgres держит лок и UPDATE после него видит чужой коммит —
 // test/raw-sql-live-infra.e2e-spec.ts (мок этого не докажет, правило №18).
+import { Prisma } from '@prisma/client';
 import { replacePending, swapReminder } from './replace-pending';
 import type { PrismaService } from '../prisma/prisma.service';
 
@@ -102,7 +103,7 @@ describe('replacePending — снять и поставить под локом 
     await replacePending(prisma, 42n, 'reminder', at, { streak: 3 });
     expect(tx.scheduledNotification.updateMany).toHaveBeenCalledWith({
       where: { userId: 42n, type: 'reminder', sentAt: null, cancelledAt: null },
-      data: { cancelledAt: expect.any(Date) },
+      data: { cancelledAt: expect.any(Date), payload: Prisma.DbNull },
     });
     expect(tx.scheduledNotification.create).toHaveBeenCalledWith({
       data: {
@@ -138,7 +139,7 @@ describe('swapReminder — перерыв или сводка вместо на�
     ]);
     expect(tx.scheduledNotification.updateMany).toHaveBeenCalledWith({
       where: { userId: 42n, type: 'reminder', sentAt: null, cancelledAt: null },
-      data: { cancelledAt: expect.any(Date) },
+      data: { cancelledAt: expect.any(Date), payload: Prisma.DbNull },
     });
     expect(tx.scheduledNotification.create).toHaveBeenCalledWith({
       data: { userId: 42n, type: 'lapsing_3', sendAt: at, payload: undefined },
