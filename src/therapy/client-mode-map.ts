@@ -2,6 +2,7 @@
 // оценки колеса потребностей — только оценки: заметки листа остаются у
 // терапевта. Белый список, как в client-concept-view.ts: поле колеса, которого
 // нет в сборщиках ниже, клиенту не уходит.
+import type { ModeMap } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { clientSeesMap } from './client-map-authors';
@@ -50,6 +51,12 @@ const clientNode = (node: unknown): unknown =>
     ? { ...node, data: { ...node.data, wheel: wheelView(node.data.wheel) } }
     : node;
 
+/** Шифрованные поля ModeMap — один список для кабинета и выгрузки. */
+export const MODE_MAP_SCHEMA: EncryptSchema = {
+  strings: ['title'],
+  jsonArrays: ['nodes', 'edges'],
+};
+
 /** Карта клиента по id: узлы без заметок колеса + оценки колеса отдельным полем. */
 export async function clientModeMap(
   prisma: PrismaService,
@@ -60,6 +67,15 @@ export async function clientModeMap(
   const row = await prisma.modeMap.findUnique({ where: { id: mapId } });
   if (!row || !(await clientSeesMap(prisma, clientId, row)))
     throw new Error('Not found');
+  return clientModeMapView(prisma, row, schema);
+}
+
+/** Вид клиента для строки, которую он видит (проверка — на вызывающем). */
+export async function clientModeMapView(
+  prisma: PrismaService,
+  row: ModeMap,
+  schema: EncryptSchema,
+) {
   const map = decryptRecord(row, schema);
   const nodes: unknown = map.nodes;
   const hasWheel = Array.isArray(nodes) && nodes.some(isWheelNode);
