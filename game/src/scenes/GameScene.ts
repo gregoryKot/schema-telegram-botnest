@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { W, H, GROUND_Y, S, PHYS, CAM_TOP } from '../constants';
+import { W, H, GROUND_Y, S, CAM_TOP } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
 import { SelfSoothe, CrookedMirror, Bargainer } from '../enemies/road';
 import { Door, ExcuseVoice } from '../doors';
 import { buildDecor } from '../decor';
-import { touch, IS_TOUCH, setTouchControls } from '../controls';
+import { IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
 import { buildGroundStrip, groundKey } from '../ground';
 import { t, type MsgKey } from '../i18n';
@@ -18,6 +18,10 @@ import { storyFrame } from './game/frames';
 import { beginOverwhelm } from './game/ending';
 import { onDoorEnter, beginFinalApproach, restoreCopingButtons, sessionScene } from './game/cabinet';
 import { showBranch } from './game/cta';
+import { spawnAnx, updateAnx, type Anx } from './game/anx';
+import { spawnCritic, updateCritic, type Critic } from './game/critic';
+import { updateMoves } from './game/moves';
+import { updateAttack } from './game/attack';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -35,35 +39,7 @@ function markIntroduced(key: string) {
   try { localStorage.setItem(INTRO_KEY, JSON.stringify([...introduced])); } catch { /* ок */ }
 }
 
-const RUN_SPEED = 250;
-const DASH_SPEED = 560;
-const DASH_MS   = 170;
-const DASH_CD   = 480;
-const ATTACK_MS = 170;
-const ATTACK_CD = 300;
-const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
-const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
-// тень-критик выкрикивает это постоянно (голос Карающего Критика)
-const CRITIC_LINES: MsgKey[] = [
-  'm_you_failed_again', 'm_everyone_managed_except_you', 'm_told_you_it_won_t_work',
-  'm_every_single_time', 'm_pull_yourself_together', 'm_who_needs_you_like_this',
-  'm_ruined_it_again', 'm_you_should_be_ashamed',
-];
-// game feel
-const COYOTE_MS = 90;        // прыжок прощается N мс после схода с платформы
-const JUMP_BUFFER_MS = 130;  // прыжок, нажатый до приземления, срабатывает при касании
-const RISE_GRAVITY = -210;   // при удержании прыжка — легче (плавный взлёт)
-const FALL_GRAVITY = 520;    // при падении — тяжелее (быстрое, чёткое приземление)
 
-type AnxState = 'chase' | 'windup' | 'lunge' | 'calm';
-interface Anx {
-  img: Phaser.GameObjects.Image; halo: Phaser.GameObjects.Ellipse;
-  state: AnxState; t: number; size: number;
-  vx: number; vy: number; jit: number; calm: number; cd: number; alive: boolean;
-}
-interface Critic {
-  img: Phaser.GameObjects.Sprite; size: number; struck: number; alive: boolean;
-}
 // Боевой гейт: стена «не пройти, пока не разобрался» — падает, когда все
 // привязанные враги разрешены (убиты / успокоены / выключены).
 interface Gate {
@@ -74,17 +50,17 @@ interface Gate {
 export class GameScene extends Phaser.Scene {
   chapter!: ChapterConfig;
   player!: Phaser.Physics.Arcade.Sprite;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  keys!: Record<string, Phaser.Input.Keyboard.Key>;
 
   anx: Anx[] = [];
   critic: Critic | null = null;
-  private criticBubble: Phaser.GameObjects.Text | null = null;
-  private criticSayT = 0; private criticLine = 0;
-  private homeMobs: HomeMob[] = [];
+  criticBubble: Phaser.GameObjects.Text | null = null;
+  criticSayT = 0; criticLine = 0;
+  homeMobs: HomeMob[] = [];
   private gates: Gate[] = [];
-  private speedMult = 1;
-  private trail: { x: number; y: number; flip: boolean }[] = [];
+  speedMult = 1;
+  trail: { x: number; y: number; flip: boolean }[] = [];
 
   hearts = 3;
   private heartsText!: Phaser.GameObjects.Text;
@@ -101,26 +77,26 @@ export class GameScene extends Phaser.Scene {
   readonly MAX_HEARTS = 5;
 
   // moves
-  attacking = false; private attackT = 0; private attackCd = 0;
-  private attackHit = new Set<object>();
-  dashing = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
+  attacking = false; attackT = 0; attackCd = 0;
+  attackHit = new Set<object>();
+  dashing = false; dashT = 0; dashCd = 0; dashDir = 1;
   frozen = false; private freezePulseT = 0;
-  private coyoteT = 0; private jumpBufferT = 0; private wasOnGround = true; private jumping = false;
-  private slash!: Phaser.GameObjects.Graphics;
-  private playSprite!: Phaser.GameObjects.Sprite;
-  private sleepSprite!: Phaser.GameObjects.Sprite;
-  private lungeSprite!: Phaser.GameObjects.Sprite; // атака — выпад с красными штрихами
-  private playerLight!: Phaser.GameObjects.Image;
+  coyoteT = 0; jumpBufferT = 0; wasOnGround = true; jumping = false;
+  slash!: Phaser.GameObjects.Graphics;
+  playSprite!: Phaser.GameObjects.Sprite;
+  sleepSprite!: Phaser.GameObjects.Sprite;
+  lungeSprite!: Phaser.GameObjects.Sprite; // атака — выпад с красными штрихами
+  playerLight!: Phaser.GameObjects.Image;
 
   hitstop = 0;
-  private exhaustion = 0;                          // спираль: копинг + время → мир враждебнее
+  exhaustion = 0;                          // спираль: копинг + время → мир враждебнее
   private exhaustOverlay!: Phaser.GameObjects.Graphics;
   assistInvuln = false;                    // ассист-режим: «без урона»
   deathsInChapter = 0;                     // после второй смерти экран смерти сам предлагает ассист
   deathX = 100;                            // где умер — оттуда считаем чекпоинт
   overwhelmed = false;
   private triggers: { x: number; done: boolean; fn: () => void }[] = [];
-  private wasFrozen = false;
+  wasFrozen = false;
 
   private bubble!: Phaser.GameObjects.Text; private bubbleT = 0;
   private said = new Set<string>();
@@ -330,9 +306,9 @@ export class GameScene extends Phaser.Scene {
       x: t.x, done: false,
       fn: () => {
         const beforeA = this.anx.length, beforeH = this.homeMobs.length;
-        if (t.anx) { for (let i = 0; i < t.anx; i++) this.spawnAnx(this.player.x + 360 + i * 120, 1);
+        if (t.anx) { for (let i = 0; i < t.anx; i++) spawnAnx(this, this.player.x + 360 + i * 120, 1);
           this.introOnce('anx', 'm_anxiety', 'm_hit_it_it_splits_avoid_it'); }
-        if (t.critic) this.spawnCritic(); // у критика свой стоп-кадр
+        if (t.critic) spawnCritic(this); // у критика свой стоп-кадр
         if (t.proc) { this.homeMobs.push(new Procrastination(this.mobCtx(), t.proc, t.seat ? GROUND_Y - t.seat : undefined));
           this.introOnce('proc', 'm_procrastination', 'm_it_clings_drags_you_down_a'); }
         if (t.phone) { this.homeMobs.push(new PhoneMob(this.mobCtx(), t.phone));
@@ -350,7 +326,7 @@ export class GameScene extends Phaser.Scene {
     }));
   }
   // «привет, это —» : представляем врага стоп-кадром при первой встрече
-  private introOnce(key: string, name: MsgKey, line: MsgKey) {
+  introOnce(key: string, name: MsgKey, line: MsgKey) {
     if (introduced.has(key)) return;
     markIntroduced(key);
     storyFrame(this, name, line);
@@ -468,13 +444,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   // тревога, отколовшаяся от «гейтовой», тоже держит стену
-  private adoptIntoGate(parent: object, child: object) {
+  adoptIntoGate(parent: object, child: object) {
     const g = this.gates.find(g => !g.open && g.mobs.includes(parent as { alive: boolean }));
     if (g) g.mobs.push(child as { alive: boolean });
   }
 
   // Создать анимацию только если её спрайт-лист реально загрузился.
-  private safeAnim(key: string, sheet: string, start: number, end: number, frameRate: number, repeat: number) {
+  safeAnim(key: string, sheet: string, start: number, end: number, frameRate: number, repeat: number) {
     if (this.anims.exists(key) || !this.textures.exists(sheet)) return;
     this.anims.create({ key, frames: this.anims.generateFrameNumbers(sheet, { start, end }), frameRate, repeat });
   }
@@ -543,74 +519,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ── Spawns ───────────────────────────────────────────────────────────────--
-  spawnAnx(x: number, size: number) {
-    const s2 = size * (1 + this.exhaustion * 0.3); // спираль: чем выжатее — тем крупнее возвращается
-    // ореол позади — отделяет тёмную тучу от чёрного кота и «дышит»
-    const halo = this.add.ellipse(x, GROUND_Y - 44, 104, 78, 0x9a5ad0, 0.22).setDepth(5);
-    const img = this.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2 * ANX_SCALE).play('anx-fly');
-    this.anx.push({ img, halo, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
-  }
-  private spawnCritic() {
-    if (this.critic) return;
-    const img = this.add.sprite(this.player.x - 200, this.player.y, 'cat_idle')
-      .setOrigin(0.5, 1).setScale(1.5).setDepth(9).setTint(0x1a0030).setAlpha(0).play('p-walk');
-    this.tweens.add({ targets: img, alpha: 0.82, duration: 600 });
-    this.critic = { img, size: 1, struck: 0, alive: true };
-    // тень постоянно выкрикивает упрёки — её не заткнуть
-    this.criticBubble = this.add.text(0, 0, '', {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
-      color: '#ff8aa6', backgroundColor: 'rgba(18,6,18,0.72)', padding: { x: 6, y: 4 }, align: 'center',
-    }).setOrigin(0.5, 1).setDepth(46).setAlpha(0);
-    this.criticSayT = 2200; // первый упрёк почти сразу
-    // важный новый враг — представляем стоп-кадром один раз на игрока, иначе «просто какой-то кот»
-    this.introOnce('critic', 'm_the_inner_critic', 'm_critic_story');
-  }
 
-  // ── УСТУПИ (fawn): купить мир ценой себя — враги отстают, сердце уходит ────
-  private doFawn() {
-    if (this.invuln > 0) return; // не спамить
-    // уступать только когда есть кому — иначе V «внезапно» съедал сердце впустую
-    const nearThreat =
-      this.anx.some(m => m.alive && Phaser.Math.Distance.Between(m.img.x, m.img.y, this.player.x, this.player.y) < 260) ||
-      (this.critic?.alive && Phaser.Math.Distance.Between(this.critic.img.x, this.critic.img.y, this.player.x, this.player.y) < 280) ||
-      this.homeMobs.some(m => m.alive);
-    if (!nearThreat) { this.sayOnce('fawn_none', 'm_surrender_but_there_s_no_one', 1600); return; }
-    this.hidePlay();
-    // уступка стоит сил, но не жизни: с ассистом «без урона» — бесплатно, иначе не ниже одного сердца
-    if (!this.assistInvuln) this.hearts = Math.max(1, this.hearts - 1);
-    this.updateHearts();
-    this.invuln = 3500;
-    audio.freeze();
-    this.cameras.main.flash(160, 80, 50, 110);
-    this.burst(this.player.x, this.player.y - 24, 0xb08fd0, 12, 150);
-    this.curlUp(); // свернулся калачиком, сдался — вздох
-    for (const m of this.anx) { if (m.alive) { m.vx = Math.sign(m.img.x - this.player.x) * 320; m.vy = -120; m.cd = 2600; m.calm += 1000; } }
-    if (this.critic?.alive) {
-      // уступка — единственное, что прогоняет тень… временно
-      this.critic.struck = 8000;
-      this.say('m_gave_in_and_the_shadow_backed', 3000);
-    } else {
-      this.sayOnce('fawn', 'm_fine_fine_whatever_you_say_and', 3400);
-    }
-  }
 
-  // Мистер сворачивается калачиком (сдался), держит позу, потом встаёт
-  private curlUp() {
-    this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0); // спрайт грузится в фоне — создаём при первом использовании
-    if (!this.anims.exists('p-sleep')) return; // спрайт «сна» не доехал — без позы, кот остаётся стоять
-    this.player.setVisible(false);
-    this.sleepSprite.setVisible(true).setPosition(this.player.x, this.player.y)
-      .setFlipX(this.player.flipX).play('p-sleep');
-    const sigh = this.add.text(this.player.x, this.player.y - 30, '...',
-      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#8a8a98' })
-      .setOrigin(0.5).setDepth(46);
-    this.tweens.add({ targets: sigh, y: sigh.y - 16, alpha: 0, duration: 1600, onComplete: () => sigh.destroy() });
-    this.time.delayedCall(1500, () => {
-      if (this.dead) return;
-      this.sleepSprite.setVisible(false);
-      this.player.setVisible(true);
-    });
-  }
 
   // ── Main loop ────────────────────────────────────────────────────────────--
   // тонкая обёртка: дёргается из e2e-browser/game-smoke.spec.ts
@@ -623,10 +533,10 @@ export class GameScene extends Phaser.Scene {
     this.speedMult = 1;
     for (const m of this.homeMobs) m.update(dt);     // могут замедлить игрока на этот кадр
     this.homeMobs = this.homeMobs.filter(m => m.alive);
-    this.updateMoves(dt);
-    this.updateAttack(dt);
-    this.updateAnx(dt);
-    this.updateCritic(dt);
+    updateMoves(this, dt);
+    updateAttack(this, dt);
+    updateAnx(this, dt);
+    updateCritic(this, dt);
     this.updateTriggers();
     this.updateGates(dt);
     this.updateDoors(dt);
@@ -718,298 +628,14 @@ export class GameScene extends Phaser.Scene {
     if (this.hearts <= 0) this.gameOver();
   }
 
-  private updateMoves(dt: number) {
-    const b = this.player.body as Phaser.Physics.Arcade.Body;
-    const onGround = b.blocked.down;
-    const left  = this.cursors.left.isDown  || this.keys.A.isDown || touch.left;
-    const right = this.cursors.right.isDown || this.keys.D.isDown || touch.right;
-    const jump  = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space)
-               || Phaser.Input.Keyboard.JustDown(this.keys.W) || touch.consume('jump');
-    const jumpHeld = this.cursors.up.isDown || this.cursors.space.isDown || this.keys.W.isDown || touch.jumpHeld;
-    let hit   = Phaser.Input.Keyboard.JustDown(this.keys.X) || touch.consume('hit');
-    let fawn  = Phaser.Input.Keyboard.JustDown(this.keys.V) || touch.consume('fawn');
-    // ИЗБЕГАНИЕ — один копинг, одна кнопка: тап = рывок, удержание = залипнуть
-    let avoidPress = Phaser.Input.Keyboard.JustDown(this.keys.Z) || touch.consume('avoid');
-    let avoidHeld  = this.keys.Z.isDown || touch.avoidHeld;
-    // у двери терапевта копинги гаснут: против выбора они бессмысленны
-    if (this.copingsOff) {
-      if (hit || fawn || avoidPress || avoidHeld) this.sayOnce('nocope', 'm_no_coping_here', 2400);
-      hit = false; fawn = false; avoidPress = false; avoidHeld = false;
-    }
-    const dash = avoidPress;
-    // на кадре нажатия — это рывок, не залипание (иначе frozen гасит рывок)
-    this.frozen = avoidHeld && !avoidPress && onGround && !this.dashing && !this.attacking;
-    if (fawn && !this.dead) this.doFawn();
-    if (this.frozen && !this.wasFrozen) audio.freeze();
-    this.wasFrozen = this.frozen;
 
-    // light pool follows the cat
-    this.playerLight.x = this.player.x; this.playerLight.y = this.player.y - 22;
 
-    // record trail for the self-critic mirror
-    this.trail.push({ x: this.player.x, y: this.player.y, flip: this.player.flipX });
-    if (this.trail.length > 90) this.trail.shift();
 
-    if (this.dashCd > 0) this.dashCd -= dt;
 
-    // ── ОТВЛЕКИСЬ: показываем спрайт «играет с клубком» ──
-    if (this.frozen) {
-      b.setVelocityX(0);
-      this.showPlay();
-    } else {
-      this.hidePlay();
-    }
 
-    // ── РЫВОК (dash) — i-frames + afterimage ──
-    if (dash && this.dashCd <= 0 && !this.frozen) {
-      this.dashing = true; this.dashT = DASH_MS; this.dashCd = DASH_CD;
-      this.dashDir = (left && !right) ? -1 : (right ? 1 : (this.player.flipX ? -1 : 1));
-      this.player.setFlipX(this.dashDir < 0);
-      this.invuln = Math.max(this.invuln, DASH_MS + 40);
-      b.setAllowGravity(false); b.setVelocityY(0);
-      this.burst(this.player.x - this.dashDir * 14, this.player.y - 18, 0x9fd0ff, 6, 90);
-      audio.dash();
-    }
-    if (this.dashing) {
-      this.dashT -= dt;
-      b.setVelocityX(this.dashDir * DASH_SPEED);
-      this.ghost(); // синий шлейф i-кадров — рывок как был
-      if (this.dashT <= 0) { this.dashing = false; b.setAllowGravity(true); }
-    } else if (!this.frozen) {
-      // ── БЕГИ ──
-      const run = RUN_SPEED * this.speedMult;
-      if (this.attacking) b.setVelocityX(this.player.flipX ? -50 : 50);
-      else if (right) { b.setVelocityX(run); this.player.setFlipX(false); }
-      else if (left)  { b.setVelocityX(-run); this.player.setFlipX(true); }
-      else            { b.setVelocityX(b.velocity.x * 0.7); }
-
-      // ── ПРЫЖОК: coyote time + jump buffer + вариативная высота + дуга ──
-      if (onGround) { this.coyoteT = COYOTE_MS; if (!this.wasOnGround) this.onLand(); }
-      else this.coyoteT = Math.max(0, this.coyoteT - dt);
-      this.jumpBufferT = jump ? JUMP_BUFFER_MS : Math.max(0, this.jumpBufferT - dt);
-      if (this.jumpBufferT > 0 && this.coyoteT > 0) {
-        b.setVelocityY(PHYS.jumpVel); audio.jump();
-        this.player.setScale(1.3, 1.75); // вытягивается на отрыве, плавно к норме
-        this.tweens.add({ targets: this.player, scaleX: 1.5, scaleY: 1.5, duration: 220, ease: 'Quad.Out' });
-        this.jumping = true; this.coyoteT = 0; this.jumpBufferT = 0;
-      }
-      // отпустил на взлёте — короткий подскок
-      if (this.jumping && !jumpHeld && b.velocity.y < 0) { b.setVelocityY(b.velocity.y * 0.45); this.jumping = false; }
-      if (b.velocity.y >= 0) this.jumping = false;
-      // непараболическая дуга: вверх с удержанием — легче, вниз — тяжелее
-      if (!onGround) b.setGravityY(b.velocity.y < 0 && jumpHeld ? RISE_GRAVITY : FALL_GRAVITY);
-      else b.setGravityY(0);
-      this.wasOnGround = onGround;
-
-      if (!onGround) { if (this.player.anims.currentAnim?.key !== 'p-jump') this.player.play('p-jump', true); }
-      else if (Math.abs(b.velocity.x) > 20) this.player.play('p-walk', true);
-      else this.player.play('p-idle', true);
-      // на земле в покое и без активного твина — вернуть базовый масштаб
-      if (onGround && !this.jumping && !this.tweens.isTweening(this.player)) this.player.setScale(1.5, 1.5);
-    }
-
-    // ── БЕЙ ── (короткие i-кадры на замах — копинг сохраняет в моменте)
-    if (hit && this.attackCd <= 0 && !this.frozen && !this.dashing) {
-      this.attacking = true; this.attackT = ATTACK_MS; this.attackCd = ATTACK_CD; this.attackHit.clear();
-      this.invuln = Math.max(this.invuln, ATTACK_CD + 40); // копинг сохраняет в моменте — пробить нельзя
-    }
-
-    this.player.setAlpha(this.invuln > 0 && !this.dashing ? (Math.sin(this.invuln * 0.05) * 0.5 + 0.5) : 1);
-  }
-
-  private updateAttack(dt: number) {
-    if (this.attackCd > 0) this.attackCd -= dt;
-    this.slash.clear();
-    if (!this.attacking) return;
-    this.attackT -= dt;
-    const dir = this.player.flipX ? -1 : 1;
-    const prog = 1 - this.attackT / ATTACK_MS;
-    // выпад с красными штрихами (спрайт), на время атаки прячем обычного кота.
-    // спрайт грузится в фоне; нет — атакуем обычным котом, видны только штрихи.
-    this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    if (this.anims.exists('p-lunge')) {
-      if (!this.lungeSprite.visible) { this.lungeSprite.setVisible(true).play('p-lunge'); this.player.setVisible(false); }
-      this.lungeSprite.setPosition(this.player.x, this.player.y).setFlipX(dir < 0);
-    }
-    // следы когтей поверх — продают удар
-    const cx = this.player.x + dir * 30, cy = this.player.y - 34;
-    const len = 34 * Math.min(1, prog * 1.6);
-    const a = 1 - Math.max(0, prog - 0.45) * 1.8;
-    for (let i = 0; i < 3; i++) {
-      const ox = i * 7 * dir, oy = i * 9 - 6;
-      this.slash.lineStyle(3, i === 1 ? 0xff4455 : 0xd92b3d, Math.max(0, a));
-      this.slash.lineBetween(cx + ox, cy + oy, cx + ox + len * dir, cy + oy + len * 0.55);
-    }
-    if (prog > 0.4 && prog < 0.6) this.burst(cx + len * dir * 0.7, cy + 12, 0xff4455, 2, 60);
-    // ударная волна — кольцо ауры вокруг кота (бьёт во все стороны)
-    this.slash.lineStyle(3, 0xff5566, Math.max(0, 1 - prog) * 0.7);
-    this.slash.strokeCircle(this.player.x, this.player.y - 22, ATTACK_AURA * (0.45 + prog * 0.6));
-
-    // удар — аура вокруг кота: задевает всё в радиусе, не только спереди
-    const px = this.player.x, py = this.player.y - 22;
-    for (const m of this.anx) {
-      if (!m.alive || this.attackHit.has(m)) continue;
-      if (Math.hypot(m.img.x - px, m.img.y - py) < ATTACK_AURA) { this.attackHit.add(m); this.hitAnx(m, dir); }
-    }
-    for (const m of this.homeMobs) {
-      if (!m.alive || this.attackHit.has(m)) continue;
-      if (m.tryHit(dir, ATTACK_AURA)) this.attackHit.add(m);
-    }
-    if (this.critic && this.critic.alive && !this.attackHit.has(this.critic)) {
-      if (Math.hypot(this.critic.img.x - px, this.critic.img.y - py) < ATTACK_AURA + 20) {
-        this.attackHit.add(this.critic); this.hitCritic();
-      }
-    }
-    if (this.attackT <= 0) {
-      this.attacking = false;
-      this.lungeSprite.setVisible(false); this.player.setVisible(true);
-    }
-  }
-
-  // ── Anxiety: бить = их только больше; растворяет лишь спокойствие ──────────
-  private hitAnx(m: Anx, dir: number) {
-    m.vx = dir * 300; m.vy = -140; m.state = 'chase'; m.cd = 600;
-    this.doHitstop(55); this.cameras.main.shake(70, 0.005); audio.hit();
-    this.burst(m.img.x, m.img.y, 0xaa55cc, 8, 130);
-    const aliveCount = this.anx.filter(a => a.alive).length;
-    if (aliveCount < 7 && m.size > 0.6) {
-      // удар по тревоге — она делится (хуже). Ловушка.
-      m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size * ANX_SCALE);
-      this.spawnAnx(m.img.x, m.size);
-      const nb = this.anx[this.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
-      this.adoptIntoGate(m, nb);
-      audio.split();
-      this.sayOnce('hit', 'm_hitting_is_useless_there_s_only', 2600);
-    } else {
-      // делиться больше некуда — измотал, оседает (но любой способ это лишь оттянет)
-      m.calm += 600;
-      this.sayOnce('hit_many', 'm_worn_out_it_settles_but_not', 2800);
-    }
-  }
-
-  // ── Self-critic: его не победить. Рявкнул — притих на миг и вырос. Он же ты.
-  private hitCritic() {
-    const c = this.critic;
-    if (!c) return;
-    this.doHitstop(50); this.cameras.main.shake(90, 0.006); audio.hit();
-    this.burst(c.img.x, c.img.y - 20, 0x6a2a8a, 8, 110);
-    c.struck = 1600;                              // огрызнулся — притих на секунду
-    c.size = Math.min(2.4, c.size + 0.18);        // ...и в ответ стал больше
-    c.img.setScale(1.5 * c.size);
-    this.sayOnce('critic_hit', 'm_snapped_it_hushed_then_grew_louder', 3200);
-  }
-
-  private updateAnx(dt: number) {
-    const px = this.player.x, py = this.player.y - 24;
-    for (const m of this.anx) {
-      if (!m.alive) continue;
-      m.jit += dt * 0.02; m.cd -= dt;
-      // критик рядом — тревога подпитывается и растёт (мысли громче под его голос)
-      if (this.critic?.alive && m.state !== 'calm'
-        && Phaser.Math.Distance.Between(m.img.x, m.img.y, this.critic.img.x, this.critic.img.y) < 220) {
-        m.size = Math.min(2.0, m.size + dt * 0.0002); m.img.setScale(m.size * ANX_SCALE);
-      }
-      const dist = Phaser.Math.Distance.Between(m.img.x, m.img.y, px, py);
-      // любой копинг копит «передышку»: залипание рядом — быстрее всего,
-      // проскок рывком сквозь неё — чуть-чуть. Накопил — отступает (на время).
-      if (this.frozen && dist < 240) m.calm += dt;
-      else if (this.dashing && dist < 64) m.calm += dt * 2;
-      else if (m.state !== 'calm') m.calm = Math.max(0, m.calm - dt * 0.3);
-      if (m.calm > 800 && m.state !== 'calm') { m.state = 'calm'; m.t = 0; this.sayOnce('freeze', 'm_it_backs_off_but_it_will', 2600); }
-
-      switch (m.state) {
-        case 'chase': {
-          m.vx += Math.sign(px - m.img.x) * 14; m.vx = Phaser.Math.Clamp(m.vx, -155, 155);
-          const ty = GROUND_Y - 48 + Math.sin(m.jit) * 9; m.vy += (ty - m.img.y) * 0.04; m.vy = Phaser.Math.Clamp(m.vy, -130, 130);
-          if (dist < 155 && m.cd <= 0) { m.state = 'windup'; m.t = 0; m.vx *= 0.2; }
-          break;
-        }
-        case 'windup': {
-          m.t += dt; m.vx *= 0.85; m.vy *= 0.85;
-          m.img.setTint(m.t % 150 < 75 ? 0xff4466 : 0xffffff);
-          m.img.setScale(m.size * ANX_SCALE * (1 + Math.sin(m.t * 0.04) * 0.12));
-          if (m.t > 460) { m.state = 'lunge'; m.t = 0; m.img.clearTint().setScale(m.size * ANX_SCALE); audio.anx();
-            const a = Math.atan2(py - m.img.y, px - m.img.x); m.vx = Math.cos(a) * 450; m.vy = Math.sin(a) * 450; }
-          break;
-        }
-        case 'lunge': {
-          m.t += dt; if (m.t > 270) { m.state = 'chase'; m.cd = 680; }
-          if (dist < 30 && this.invuln <= 0) this.damage(m.img.x);
-          break;
-        }
-        case 'calm': {
-          m.t += dt; m.vx += Math.sign(m.img.x - px) * 8; m.vy -= 2;
-          m.size = Math.max(0.2, m.size - dt * 0.0004); m.img.setScale(m.size * ANX_SCALE).setAlpha(0.6);
-          if (!this.frozen && dist > 360) { m.state = 'chase'; m.calm = 0; m.img.setAlpha(1); }
-          if (m.size <= 0.2) { m.alive = false; this.tweens.add({ targets: [m.img, m.halo], alpha: 0, duration: 350, onComplete: () => m.img.destroy() }); }
-          break;
-        }
-      }
-      m.img.x += m.vx * dt / 1000; m.img.y += m.vy * dt / 1000; m.vx *= 0.96; m.vy *= 0.98;
-      m.img.x += Math.sin(m.jit * 3) * 0.8; m.img.y += Math.cos(m.jit * 4) * 0.8;
-      m.img.y = Math.min(m.img.y, GROUND_Y - 12);
-      // ореол следует и пульсирует (ярче на замахе)
-      m.halo.setPosition(m.img.x, m.img.y).setScale(m.size * (1 + Math.sin(m.jit * 2) * 0.12))
-        .setAlpha((m.state === 'calm' ? 0.1 : 0.22) + (m.state === 'windup' ? 0.18 : 0));
-    }
-    this.anx = this.anx.filter(m => {
-      if (!m.alive && !m.img.active) { m.halo.destroy(); return false; }
-      return true;
-    });
-  }
-
-  // Критик ходит тенью за тобой. Бег от него и клубок его КОРМЯТ.
-  private updateCritic(dt: number) {
-    const c = this.critic; if (!c || !c.alive) return;
-    // уступка прогнала его — стоит вдалеке, выцветший, и ждёт своего часа
-    if (c.struck > 1500) {
-      c.struck -= dt;
-      c.img.setAlpha(0.22);
-      c.img.play('p-idle', true);
-      this.criticBubble?.setAlpha(0); // притих, пока выцветший
-      if (c.struck <= 1500) this.sayOnce('critic_back', 'm_it_came_back_they_always_come', 2800);
-      return;
-    }
-    // постоянный поток упрёков над тенью — её не заткнуть
-    if (this.criticBubble) {
-      this.criticSayT += dt;
-      this.criticBubble.x = c.img.x;
-      this.criticBubble.y = c.img.y - 66 * c.size;
-      if (this.criticSayT > 2300) {
-        this.criticSayT = 0;
-        this.criticBubble.setText(t(CRITIC_LINES[this.criticLine++ % CRITIC_LINES.length])).setAlpha(0).setScale(0.85);
-        this.tweens.add({ targets: this.criticBubble, alpha: 0.95, scale: 1, duration: 260, ease: 'Back.Out' });
-      }
-    }
-    c.img.setAlpha(0.82);
-    const target = this.trail[0];   // oldest = ~1.5s behind
-    if (target) {
-      c.img.x += (target.x - c.img.x) * 0.12;
-      c.img.y += (target.y - c.img.y) * 0.18;
-      c.img.setFlipX(target.flip);
-      c.img.play(Math.abs(target.x - c.img.x) > 4 ? 'p-walk' : 'p-idle', true);
-    }
-    const dist = Phaser.Math.Distance.Between(c.img.x, c.img.y - 20, this.player.x, this.player.y - 20);
-    // убегаешь — он растёт за спиной
-    if (this.dashing || dist > 320) {
-      c.size = Math.min(2.4, c.size + dt * 0.00012);
-      if (c.size > 1.6) this.sayOnce('critic_grow', 'm_i_run_and_behind_me_it', 2800);
-    }
-    // отвлёкся на клубок при нём — кормишь его ещё быстрее
-    if (this.frozen && dist < 300) {
-      c.size = Math.min(2.4, c.size + dt * 0.0005);
-      this.sayOnce('critic_frz', 'm_the_yarn_it_s_right_behind', 2800);
-    }
-    c.img.setScale(1.5 * c.size);
-    c.struck -= dt;
-    if (dist < 34 && this.invuln <= 0 && c.struck <= 0 && !this.finalApproach) {
-      c.struck = 1200; this.damage(c.img.x);
-      this.sayOnce('critic_catch', 'm_you_failed_again_whatever_you_do', 3000);
-    }
-  }
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
-  private damage(fromX: number, throughFreeze = false) {
+  damage(fromX: number, throughFreeze = false) {
     if (this.assistInvuln) return; // ассист «не умирать»
     if (this.finalApproach) return; // у двери терапевта кнопки погашены — и урона нет, тень только шепчет
     if (this.overwhelmed) return;    // «навалилось разом» — декорация финала: смерть тут отменяла развязку
@@ -1026,42 +652,16 @@ export class GameScene extends Phaser.Scene {
 
   gameOver() { gameOver(this); } // смок зовёт его на сцене
 
-  // приземление: облачко пыли + лёгкий squash — вес и тактильность
-  private onLand() {
-    this.player.setScale(1.7, 1.3);
-    this.tweens.add({ targets: this.player, scaleX: 1.5, scaleY: 1.5, duration: 110, ease: 'Quad.Out' });
-    for (let i = 0; i < 5; i++) {
-      const dx = (Math.random() - 0.5) * 28;
-      const p = this.add.rectangle(this.player.x + dx, this.player.y - 2, 3, 3, 0xc8bcd8, 0.7).setDepth(9);
-      this.tweens.add({ targets: p, x: p.x + dx * 1.5, y: p.y - Math.random() * 8, alpha: 0, duration: 280, onComplete: () => p.destroy() });
-    }
-  }
 
   // ── Juice helpers ────────────────────────────────────────────────────────--
-  private doHitstop(ms: number) { this.hitstop = ms; }
-  private burst(x: number, y: number, color: number, n: number, sp: number) {
+  doHitstop(ms: number) { this.hitstop = ms; }
+  burst(x: number, y: number, color: number, n: number, sp: number) {
     for (let i = 0; i < n; i++) {
       const p = this.add.rectangle(x, y, 3, 3, color).setDepth(12);
       const a = Math.random() * 6.28, s = sp * (0.5 + Math.random());
       this.tweens.add({ targets: p, x: x + Math.cos(a) * s, y: y + Math.sin(a) * s, alpha: 0, scale: 0,
         duration: 260 + Math.random() * 200, onComplete: () => p.destroy() });
     }
-  }
-  private ghost() {
-    const g = this.add.image(this.player.x, this.player.y, this.player.texture.key, this.player.frame.name)
-      .setOrigin(0.5, 1).setScale(this.player.scaleX, this.player.scaleY).setFlipX(this.player.flipX)
-      .setTint(0x9fd0ff).setAlpha(0.5).setDepth(9);
-    this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
-  }
-  // «Отвлечься» = Мистер играет с клубком; мысли теряют к нему интерес
-  private showPlay() {
-    this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1); // спрайт грузится в фоне — создаём при первом использовании
-    if (!this.anims.exists('p-play')) return; // клубок не доехал — кот просто стоит, без анимации
-    if (!this.playSprite.visible) {
-      this.playSprite.setVisible(true).play('p-play');
-      this.player.setVisible(false);
-    }
-    this.playSprite.setPosition(this.player.x, this.player.y).setFlipX(this.player.flipX);
   }
   hidePlay() {
     if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
@@ -1073,7 +673,7 @@ export class GameScene extends Phaser.Scene {
     if (this.bubbleT > 900) return false;
     this.bubble.setText(t(text)).setAlpha(1); this.bubbleT = dur; return true;
   }
-  private sayOnce(key: string, text: MsgKey, dur: number) {
+  sayOnce(key: string, text: MsgKey, dur: number) {
     if (this.said.has(key)) return;
     if (this.say(text, dur)) this.said.add(key); // не «съедаем» ключ, если реплику не показали
   }
