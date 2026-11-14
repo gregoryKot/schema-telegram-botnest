@@ -114,7 +114,7 @@
 | Тихий отказ входа | `src/api/auth-failure.report.ts` + блок «Вход в мессенджере» в `/stats` |
 | Вход сайта в мессенджере не считался: блок смотрел путь мини-аппа в guard'е, а сайт меняет подпись на сессию в ручках обмена, чьи отказы шли только в журнал безопасности (находка 2026-11-08) | пара `messenger_launch` / `messenger_launch_failed` из ручек обмена `telegram/webapp` и `max/webapp` (`src/auth/exchange-failure.report.ts`: причина «устарела»/«не сошлась», строка на площадку+IP за 5 минут) + блок «Вход в мессенджере» (`src/bot/auth-health-metrics.service.ts`/`.format.ts`, разбор — `auth-health-rows.ts`) |
 | Экран-тупик без отчёта наверх | `useAuthFailureReport` (`shared/`, оба фронта) |
-| Обвал сборки из-за чужой сети | `deploy/install-openssl.sh`, `deploy/install-pg-client.sh` (клиент Postgres 16: ретраи + зеркала, проверка версии) |
+| Обвал сборки из-за чужой сети | `deploy/install-openssl.sh`, `deploy/install-pg-client.sh` (клиент Postgres 17: ретраи + зеркала, проверка версии; тем же скриптом клиент ставят джобы CI `migrations` и `backup-restore`) |
 | Молчаливая деградация merge-драйверов; бейслайн без атрибута в `.gitattributes` (до 2026-10 12 из 37 сводились текстово, `--check` смотрел только «атрибут → драйвер») | `setup-merge-drivers.mjs --check` (`scripts/merge-drivers-check.mjs`): драйвер у каждого `merge=`, строка у каждого `*-baseline.json`, протухшая строка красная; тест на реальном `.gitattributes` и настоящем `git merge` — `src/test-support/gates/merge-drivers.spec.ts` |
 | Сломанный гейт, который молча всё пропускает | тесты в `src/test-support/gates/` |
 | Тело запроса без class-validator DTO (правило №6) | `scripts/check-body-dto.mjs` |
