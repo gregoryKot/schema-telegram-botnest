@@ -8,11 +8,17 @@ export const LEASE_FEATURE_FLAG: Record<string, string> = {
   subscriptionChargeDue: 'SUBSCRIPTION_ENABLED',
 };
 
+// Имя аренды → env интеграции: крон спит, пока пуста хоть одна (CalDavService.enabled).
+export const LEASE_REQUIRED_ENV: Record<string, readonly string[]> = {
+  bookingCalendarReconcile: ['APPLE_ID', 'APPLE_APP_PASSWORD'],
+};
+
 export function expectedLeases(
   env: Record<string, string | undefined> = process.env,
 ): string[] {
   return Object.keys(CRON_LEASE_REGISTRY).filter((name) => {
     const flag = LEASE_FEATURE_FLAG[name];
-    return !flag || env[flag] === 'true';
+    if (flag && env[flag] !== 'true') return false;
+    return (LEASE_REQUIRED_ENV[name] ?? []).every((v) => Boolean(env[v]));
   });
 }
