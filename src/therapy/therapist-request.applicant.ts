@@ -84,7 +84,7 @@ export interface ApplicantProfile {
 
 /**
  * Форма обращения и почта аккаунта — по точному bigint. Порядок почты:
- * вход по почте (providerId и есть адрес, подтверждён ссылкой) → email из
+ * привязанная почта (providerId и есть адрес, подтверждён ссылкой) → email из
  * OAuth-профиля (Google/VK; в базе лежит шифротекстом — только через
  * decryptAuthProviderRow).
  */

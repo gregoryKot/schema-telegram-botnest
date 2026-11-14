@@ -18,7 +18,6 @@ const PROVIDER_NAMES: Record<string, string> = {
   vk: 'VK ID',
   yandex: 'Яндекс ID',
   max: 'MAX',
-  email: 'вход по почте',
 };
 
 function providerName(id: string | undefined): string {
@@ -26,10 +25,38 @@ function providerName(id: string | undefined): string {
   return PROVIDER_NAMES[id] ?? id;
 }
 
+// Почта — не способ входа, а адрес для писем: о ней письмо говорит отдельно.
+function emailNoticeText(
+  linked: boolean,
+  form: AddressForm,
+): { subject: string; body: string } {
+  if (linked) {
+    return {
+      subject: 'Почта привязана к «Всё по схеме»',
+      body: t(
+        form,
+        'К твоему аккаунту во «Всё по схеме» привязана почта для писем.\n\nЕсли это не ты — открой «Аккаунт» на сайте, отвяжи почту и включи двухфакторную защиту.',
+        'К вашему аккаунту во «Всё по схеме» привязана почта для писем.\n\nЕсли это не вы — откройте «Аккаунт» на сайте, отвяжите почту и включите двухфакторную защиту.',
+      ),
+    };
+  }
+  return {
+    subject: 'Почта отвязана от «Всё по схеме»',
+    body: t(
+      form,
+      'От твоего аккаунта во «Всё по схеме» отвязана почта для писем.\n\nЕсли это не ты — открой «Аккаунт» на сайте и проверь способы входа: у кого-то может быть доступ к твоей сессии.',
+      'От вашего аккаунта во «Всё по схеме» отвязана почта для писем.\n\nЕсли это не вы — откройте «Аккаунт» на сайте и проверьте способы входа: у кого-то может быть доступ к вашей сессии.',
+    ),
+  };
+}
+
 export function securityNoticeText(
   notice: SecurityNotice,
   form: AddressForm,
 ): { subject: string; body: string } {
+  if (notice.provider === 'email' && notice.kind !== 'totp_locked') {
+    return emailNoticeText(notice.kind === 'provider_linked', form);
+  }
   const p = providerName(notice.provider);
   if (notice.kind === 'provider_linked') {
     return {
