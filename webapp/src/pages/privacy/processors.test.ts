@@ -74,6 +74,13 @@ describe('processors', () => {
     expect(tg.purpose).toContain('для входа на сайт не используется');
   });
 
+  // #1135: в Telegram не уходят данные о состоянии, тексты пользователя и PII из заявок.
+  it('Telegram: без данных о состоянии и текстов пользователя', () => {
+    const tg = FOREIGN_PROCESSORS.find((p) => p.name.startsWith('Telegram'))!;
+    expect(tg.data).toContain('без оценок состояния, дневниковых записей, ответов на опросники');
+    expect(tg.data).toContain('без имени, контактов, текста обращения и IP-адреса');
+  });
+
   // Вход через Google убран (2026-11, запрос РКН №08-1063539): получателя нет.
   it('Google среди получателей нет', () => {
     expect(JSON.stringify(FOREIGN_PROCESSORS)).not.toMatch(/google/i);
