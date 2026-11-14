@@ -42,8 +42,7 @@
 - ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml`, `nightly.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
 - ⬜ **Владельцу: внести `webapp-tz` в живой ruleset `main`** — Require status checks (GitHub Actions); джоба есть в копии `.github/rulesets/main.json` с #1079, без неё `live-ruleset` в nightly красный каждую ночь и держит открытым ci-alarm #1057 (там же — проверить зелёный nightly и закрыть #1057). Запись — `docs/open/owner.md`.
 - ⬜ **Игра: нет своего раннера тестов** — `game/package.json` без vitest: раскладка `game/src/hudLayout.ts` (зажим пузыря, перевод координат кнопки меню) проверена только скриншотами Playwright (#1159); завести vitest и вынести арифметику в чистые функции.
-- ⬜ **Игра: в пиксельном шрифте нет «→»** — `game/public/fonts/ps2p-latin.woff2` (cmap без U+2192, проверено fontTools): «пропустить →» и ещё 4 строки `game/src/i18n/messages.ts` рисуют стрелку запасным шрифтом, на скриншоте — «_»; заменить знак или добавить глиф.
-- ⬜ **Игра: на телефоне «УСТУПИ»/«SURRENDER» на тач-кнопке переносится по слогам** — `game/index.html` (`.tbtn.act`): в EN «SURREND/ER» на iPhone 13 landscape (скриншот при проверке #1159).
+- ⬜ **Игра: ♥ ✦ ◀ ▶ ▲ ₽ рисуются запасным, не пиксельным шрифтом** — в `game/public/fonts/ps2p-latin.woff2` и `ps2p-cyrillic.woff2` их нет (cmap, fontTools): ♥ — жизни в HUD (`game/src/scenes/GameScene.ts:176`, `TutorialScene.ts:187`) и обучение (`m_when_it_hits_mister_copes_in`), ✦ — счётчик воспоминаний (`game/src/scenes/game/hud.ts:26`, `world.ts:60`), ◀ ▶ ▲ — подсказка `m_move_jump` (те же значки на тач-кнопках), ₽ — `game/src/enemies/road.ts:98`; эмодзи 💛 и 🐈‍⬛ в `game/src/i18n/messages.ts` — тоже. Знак из шрифта меняет смысл — нужен значок-спрайт или решение оставить.
 - ⬜ **Первый замер видимости в нейросетях** — пройти 15 вопросов из
   [GEO.md](GEO.md) в Алисе AI, ChatGPT, Perplexity и Gemini, записать в журнал
   там же; включить отчёты «Видимость сайта в Алисе AI» (Яндекс Вебмастер) и
@@ -61,7 +60,6 @@
 - ⬜ **Текстовые баги партий «Ещё», моста и настроек (#1073)** — дата в билете двух форматов, «Специалист» /
   «Стать специалистом» и другие — списком в разделах `### b24-more-bridge` и `### b25-settings`
   `docs/design/APP_2026-11.md`, ждут решения по словам.
-- ⬜ **Игра: карнизы `ledge_stage`/`ledge_glass` не в игре** — `game/art/ledges.py` рисует их, но глав с такими темами нет; `build.py --install` их не ставит (в #1160 удалены из `game/src/assets/` как неиспользуемые).
 - ⬜ **Игра: ссылки на бота с меткой `src_game` нет** — источник «Из игры» заведён в `SIGNUP_SOURCES` (#1160), но кнопки игры ведут на сайт (`/?from=game`) и на запись (`game/src/therapyCta.ts`), а не в `t.me/<бот>?start=src_game`; без такой ссылки строка в /stats пустая.
 - ⬜ **Игра: в запасном финале нет кризисной строки** — `showCta` (`game/src/scenes/game/cta.ts`) не зовёт `addCrisisLine`, хотя развилка и кабинет зовут (№7); экран доводит до «сил не осталось».
 - ⬜ **Игра: на развилке Акта I тач-кнопки остаются поверх нижних строк** — `showBranch` (`game/src/scenes/game/cta.ts`) не зовёт `setTouchControls(false)`: на телефоне 800×360 кнопки ИЗБЕГАЙ/БЕЙ стоят на высоте «поддержать игру» и кризисной строки (тот же перекрой снят в `showCta` в #1160, скриншот).

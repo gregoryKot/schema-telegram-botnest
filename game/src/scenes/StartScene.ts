@@ -52,7 +52,7 @@ export class StartScene extends Phaser.Scene {
     // вернулся — продолжай с достигнутой главы, не с нуля
     const cont = getContinueChapter();
     if (cont && CHAPTERS[cont]) {
-      const cbtn = this.add.text(W / 2, btnY + 48, t('m_continue') + ` — «${t(CHAPTERS[cont].title)}» →`, {
+      const cbtn = this.add.text(W / 2, btnY + 48, t('m_continue') + ` — «${t(CHAPTERS[cont].title)}» »`, {
         fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', letterSpacing: 0, ...HUD_STROKE,
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       cbtn.on('pointerover', () => cbtn.setColor('#fff0d8'));

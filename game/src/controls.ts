@@ -46,8 +46,8 @@ export function setTouchControls(visible: boolean) {
 // инициализации (язык переключается через reload, так что пересборки не нужно).
 function localizeTouchUI() {
   const set = (id: string, key: MsgKey) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = t(key);
+    const el = document.getElementById(id), label = t(key);
+    if (el) { el.textContent = label; el.classList.toggle('long', label.length > 7); } // кегль — .tbtn.act.long в index.html
   };
   set('tbtn-fawn', 'm_surrender');
   set('tbtn-avoid', 'm_avoid');
