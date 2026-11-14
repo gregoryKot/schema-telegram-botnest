@@ -160,9 +160,9 @@ export const PUBLIC_ANALYTICS_EVENTS = [
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
-// Откуда пришло событие мини-теста (meta.src): бот или сайт. Сайт пишет
-// 'web' на сервере (клиенту не верим), бот — 'bot' сам.
-export const QUIZ_EVENT_SOURCES = ['bot', 'web'] as const;
+// Откуда пришло событие мини-теста (meta.src): сайт пишет 'web' на сервере
+// (клиенту не верим); бот событий не шлёт (#1140), 'bot' — только в старых строках.
+export const QUIZ_EVENT_SOURCES = ['web'] as const;
 export type QuizEventSource = (typeof QUIZ_EVENT_SOURCES)[number];
 
 // Откуда кликнули по ссылке на сайт практики автора (meta.place для

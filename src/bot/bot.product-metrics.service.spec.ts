@@ -224,8 +224,7 @@ describe('ProductMetricsService.getMetrics', () => {
       getMetrics: jest.fn(async () => ({
         started30: 7,
         completed30: 5,
-        completedBot30: 3,
-        completedWeb30: 2,
+        completedLegacyBot30: 3,
         byQuiz30: [{ quiz: 'drives', count: 5 }],
       })),
     } as never;

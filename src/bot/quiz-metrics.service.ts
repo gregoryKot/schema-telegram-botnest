@@ -30,13 +30,13 @@ export class QuizMetricsService {
         GROUP BY "meta"->>'quiz'
         ORDER BY c DESC`,
     ]);
-    const srcCount = (src: string): number =>
-      Number(bySrcRows.find((r) => r.src === src)?.c ?? 0n);
+    // Бот событий больше не шлёт (#1140): 'bot' — только старые строки окна.
     return {
       started30,
       completed30,
-      completedBot30: srcCount('bot'),
-      completedWeb30: srcCount('web'),
+      completedLegacyBot30: Number(
+        bySrcRows.find((r) => r.src === 'bot')?.c ?? 0n,
+      ),
       byQuiz30: byQuizRows.map((r) => ({
         quiz: r.quiz ?? 'другое',
         count: Number(r.c),

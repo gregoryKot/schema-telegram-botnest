@@ -1,5 +1,6 @@
-// Агрегат мини-тестов: маппинг bigint→number, разбивка по meta.src и
-// meta.quiz. Prisma мокается; порядок вызовов совпадает с Promise.all.
+// Агрегат мини-тестов: маппинг bigint→number, старые события из бота
+// (meta.src = 'bot') и разбивка по meta.quiz. Prisma мокается; порядок
+// вызовов совпадает с Promise.all.
 import { QuizMetricsService } from './quiz-metrics.service';
 
 describe('QuizMetricsService.getMetrics', () => {
@@ -32,8 +33,7 @@ describe('QuizMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       started30: 200,
       completed30: 150,
-      completedBot30: 90,
-      completedWeb30: 60,
+      completedLegacyBot30: 90,
       byQuiz30: [
         { quiz: 'drives', count: 80 },
         { quiz: 'другое', count: 2 },
@@ -46,8 +46,7 @@ describe('QuizMetricsService.getMetrics', () => {
     await expect(service.getMetrics()).resolves.toEqual({
       started30: 0,
       completed30: 0,
-      completedBot30: 0,
-      completedWeb30: 0,
+      completedLegacyBot30: 0,
       byQuiz30: [],
     });
   });
