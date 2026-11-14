@@ -11,12 +11,13 @@ import {
   injectSeo,
   type SeoPage,
 } from './article-seo.render';
+import { seoTitle } from './article-seo.title';
 import { requestHost } from '../infra/request-host';
 import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
 import { practicePreviewHtml } from '../practice-preview';
 
-const LIST_TITLE = 'Статьи о схема-терапии – Григорий Котляревский';
+const LIST_TITLE = 'Статьи о схема-терапии';
 const LIST_DESCRIPTION =
   'Статьи о схема-терапии: что это за метод, кому подходит, схемы и режимы, когда стоит обратиться.';
 
@@ -60,15 +61,13 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     if (!match && path !== '/articles') return next();
 
     try {
-      const page = match
-        ? await this.articlePage(match[1])
-        : await this.listPage();
-      // Alias domains get their own canonical/og:url host and the practice
-      // link card (practice-preview.ts). Аудит 2026-10 (I3): host берётся из
-      // заголовка Host и только из allow-list алиасов, не из клиентского
-      // X-Forwarded-Host (иначе инъекция в canonical/og:url).
+      // Алиас — визитка: свой canonical/og:url, карточка и <title>. Хост — из
+      // Host и allow-list, не из X-Forwarded-Host (иначе инъекция в og:url).
       const host = requestHost(req);
       const alias = PRACTICE_ALIAS_HOSTS.has(host);
+      const page = match
+        ? await this.articlePage(match[1], alias)
+        : await this.listPage(alias);
       let out = injectSeo(alias ? practicePreviewHtml(base) : base, page);
       if (alias) {
         out = out.split(SITE_URL).join(`https://${host}`);
@@ -87,7 +86,7 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     }
   }
 
-  private async articlePage(slug: string): Promise<SeoPage> {
+  private async articlePage(slug: string, alias: boolean): Promise<SeoPage> {
     let article: Awaited<ReturnType<ArticlesService['findBySlug']>>;
     try {
       article = await this.articles.findBySlug(slug);
@@ -96,7 +95,7 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     }
     const url = `${SITE_URL}/articles/${slug}`;
     return {
-      title: `${article.title} – Григорий Котляревский`,
+      title: seoTitle(article.title, alias),
       ogTitle: article.title,
       description: article.description,
       canonicalUrl: url,
@@ -106,10 +105,10 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     };
   }
 
-  private async listPage(): Promise<SeoPage> {
+  private async listPage(alias: boolean): Promise<SeoPage> {
     const articles = await this.articles.list();
     return {
-      title: LIST_TITLE,
+      title: seoTitle(LIST_TITLE, alias),
       description: LIST_DESCRIPTION,
       canonicalUrl: `${SITE_URL}/articles`,
       ogType: 'website',

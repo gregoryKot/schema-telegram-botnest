@@ -95,7 +95,7 @@ describe('ArticleSeoMiddleware', () => {
     expect(next).not.toHaveBeenCalled();
     const html = getSent()!;
     expect(html).toContain(
-      '<title>18 схем Янга: полный список – Григорий Котляревский</title>',
+      '<title>18 схем Янга: полный список – Всё по схеме</title>',
     );
     expect(html).toContain(
       'content="Полный список 18 ранних дезадаптивных схем по Джеффри Янгу."',
@@ -251,8 +251,53 @@ describe('ArticleSeoMiddleware', () => {
     await mw.use(req, res, () => {});
     const html = getSent()!;
     expect(html).toContain(
-      '<title>КПТ &amp; «схемы» &lt;тест&gt; – Григорий Котляревский</title>',
+      '<title>КПТ &amp; «схемы» &lt;тест&gt; – Всё по схеме</title>',
     );
+  });
+
+  // #1158: суффикс <title> по хосту — продукту название приложения, визитке имя
+  // автора; поисковая выдача видит именно серверный заголовок.
+  describe('суффикс <title> зависит от хоста (#1158)', () => {
+    const titleOf = async (path: string, host: string) => {
+      const mw = makeMiddleware(ARTICLE);
+      const { req, res, getSent } = mockReqRes(path, host);
+      await mw.use(req, res, () => {});
+      return /<title>([^<]*)<\/title>/.exec(getSent()!)?.[1];
+    };
+    const ARTICLE_PATH = '/articles/skhemy-yanga-spisok';
+
+    it('статья: schemehappens.ru — «Всё по схеме», kotlarewski.gr — имя автора', async () => {
+      expect(await titleOf(ARTICLE_PATH, 'schemehappens.ru')).toBe(
+        '18 схем Янга: полный список – Всё по схеме',
+      );
+      expect(await titleOf(ARTICLE_PATH, 'kotlarewski.gr')).toBe(
+        '18 схем Янга: полный список – Григорий Котляревский',
+      );
+    });
+
+    it('список статей: schemehappens.ru — «Всё по схеме», kotlarewski.gr — имя автора', async () => {
+      expect(await titleOf('/articles', 'schemehappens.ru')).toBe(
+        'Статьи о схема-терапии – Всё по схеме',
+      );
+      expect(await titleOf('/articles', 'kotlarewski.gr')).toBe(
+        'Статьи о схема-терапии – Григорий Котляревский',
+      );
+    });
+
+    it('чужой Host и клиентский X-Forwarded-Host суффикс визитки не получают', async () => {
+      const mw = makeMiddleware(ARTICLE);
+      const { req, res, getSent } = mockReqRes(
+        ARTICLE_PATH,
+        'attacker.example',
+        {
+          'x-forwarded-host': 'kotlarewski.gr',
+        },
+      );
+      await mw.use(req, res, () => {});
+      expect(getSent()!).toContain(
+        '<title>18 схем Янга: полный список – Всё по схеме</title>',
+      );
+    });
   });
 
   it('strips <script> from article content before injecting', async () => {

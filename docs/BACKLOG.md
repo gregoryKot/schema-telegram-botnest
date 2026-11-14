@@ -45,7 +45,6 @@
 
 
 - ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml`, `nightly.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
-- ⬜ **Имя автора в заголовках статей на schemehappens.ru** — осознанно не тронуто в задаче «убрать имя из вкладки продукта»: сервер отдаёт статьям `<title>` «… – Григорий Котляревский» на обоих хостах (`src/articles/article-seo.middleware.ts:19,99`); вкладка после загрузки показывает «… | schemehappens.ru» (`ArticlesPage.tsx`), но поисковая выдача видит имя. Нужно решение владельца: продукту — суффикс «Всё по схеме», визитке — имя.
 - ⬜ **Владельцу: внести `webapp-tz` в живой ruleset `main`** — Require status checks (GitHub Actions); джоба есть в копии `.github/rulesets/main.json` с #1079, без неё `live-ruleset` в nightly красный каждую ночь и держит открытым ci-alarm #1057 (там же — проверить зелёный nightly и закрыть #1057). Запись — `docs/open/owner.md`.
 - ⬜ **Игра: реплики пролога у стены обрезаны краем, «пропустить →» на десктопе под кнопкой меню** — осталось от К3 в [GAME_ANALYSIS.md](GAME_ANALYSIS.md), вне #1117: это раскладка, а не логика — работа #1093 (`game/src/scenes/TutorialScene.ts`, `game/index.html:195-197`).
 - ⬜ **Первый замер видимости в нейросетях** — пройти 15 вопросов из
@@ -139,6 +138,7 @@
 
 ## Сделано
 
+- ✅ **Суффикс `<title>` статей зависит от хоста** — на schemehappens.ru «… – Всё по схеме», на kotlarewski.gr «… – Григорий Котляревский», для статьи и списка (`seoTitle` в `src/articles/article-seo.title.ts`, флаг алиаса тот же, что у canonical в `article-seo.middleware.ts`); #1158.
 - ✅ **Строка очереди уведомлений теряет payload при отправке и снятии** — хвост #1166: её миграция не видит строк до #1140, которые ждали отправки и ушли из очереди позже, — их зашифрованный payload с данными о состоянии оставался. Теперь `markSent` и снятия обнуляют payload (`sentNow`/`cancelledNow` в `src/notification/notification-payload.crypto.ts`), а миграция `20261114130000_notification_payload_left_queue` повторно чистит ушедшие строки. Осознанно не закрыто: строка, которую старый инстанс отметит отправленной в минуты деплоя после миграции, сохранит payload (зашифрован, в Telegram не уходит) — окно в минуты, отдельной чистки не стоит.
 - ✅ **Мутации очереди оценок и кризисной детекции видит PR** — джоба `mutation-changed` гоняет `stryker.outbox.config.json` и `stryker.crisis.config.json` по изменённым файлам; два теста гонок `withoutSent` вернули `ratingOutbox.ts` к 95.92% (бейслайн 94.37, не поднят) (#1156).
 - ✅ **Выгрузка данных клиента отдаёт карты тем же видом, что приложение** — только карты видимых в кабинете авторов, узел колеса без листа, оценки колеса рядом (`SHOWN_EXPORTS` в `src/account/export-shown.ts` через `clientModeMapView`); #1149.
