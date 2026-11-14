@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { t, type MsgKey } from './i18n';
+import { isLongTapLabel } from './tapLabel';
 
 export const IS_TOUCH =
   (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches) ||
@@ -42,12 +43,11 @@ export function setTouchControls(visible: boolean) {
   if (!root || !IS_TOUCH) return;
   root.classList.toggle('visible', visible);
 }
-// Подписи статичны в HTML по-русски — переводим их на текущий язык один раз при
-// инициализации (язык переключается через reload, так что пересборки не нужно).
+// Подписи статичны в HTML по-русски — переводим один раз при инициализации (язык меняется через reload).
 function localizeTouchUI() {
   const set = (id: string, key: MsgKey) => {
     const el = document.getElementById(id), label = t(key);
-    if (el) { el.textContent = label; el.classList.toggle('long', label.length > 7); } // кегль — .tbtn.act.long в index.html
+    if (el) { el.textContent = label; el.classList.toggle('long', isLongTapLabel(label)); }
   };
   set('tbtn-fawn', 'm_surrender');
   set('tbtn-avoid', 'm_avoid');
