@@ -258,9 +258,8 @@ describe('DataExportService.buildExport', () => {
         'Booking, Donation, ClientMeeting',
         // D2 (аудит 2026-10): данные О человеке на стороне терапевта и связи
         // с другими людьми — не в файле, и файл об этом говорит.
-        // ModeMap и TherapyRelation теперь ВЫДАЮТСЯ (A-10) — в withheld остались
-        // только рабочие материалы психолога.
-        'TherapistNote, ClientConceptualization',
+        // ModeMap и концептуализация выдаются видом клиента, остальное — в withheld.
+        'ModeMap, TherapistNote, ClientConceptualization',
         'Pair',
       ]),
     );
@@ -314,10 +313,12 @@ describe('DataExportService.buildExport', () => {
     const spies = (prisma as any).__spies;
     expect(spies.modeMapFindMany.mock.calls[0][0].where).toEqual({
       clientId: 1n,
+      therapistId: { in: [99n] },
     });
-    expect(spies.therapyRelationFindMany.mock.calls[0][0].where).toEqual({
-      clientId: 1n,
-    });
+    const relWheres = spies.therapyRelationFindMany.mock.calls.map(
+      (c: [{ where: unknown }]) => c[0].where,
+    );
+    expect(relWheres).toContainEqual({ clientId: 1n });
   });
 
   it('связь с терапевтом: кто/статус/ближайшая встреча — да; пометка терапевта и код приглашения — нет', async () => {
@@ -338,11 +339,12 @@ describe('DataExportService.buildExport', () => {
     });
     // Запрос явным select: личная пометка терапевта (clientAlias) и код
     // приглашения не запрашиваются вовсе — утечка невозможна по построению.
-    const select = (prisma as any).__spies.therapyRelationFindMany.mock
-      .calls[0][0].select;
-    expect(select).not.toHaveProperty('clientAlias');
-    expect(select).not.toHaveProperty('virtualClientName');
-    expect(select).not.toHaveProperty('code');
+    for (const [{ select }] of (prisma as any).__spies.therapyRelationFindMany
+      .mock.calls) {
+      expect(select).not.toHaveProperty('clientAlias');
+      expect(select).not.toHaveProperty('virtualClientName');
+      expect(select).not.toHaveProperty('code');
+    }
   });
 
   it('зовёт аналитику с числом таблиц и строк (правило №8), не бросает при её ошибке', async () => {

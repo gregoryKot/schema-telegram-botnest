@@ -204,10 +204,10 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     nodeType: ID,
   },
   ModeMap: {
-    title: enc(`${TH}/mode-maps.service.ts`),
+    title: enc(`${TH}/client-mode-map.ts`),
     kind: ID,
-    nodes: enc(`${TH}/mode-maps.service.ts`),
-    edges: enc(`${TH}/mode-maps.service.ts`),
+    nodes: enc(`${TH}/client-mode-map.ts`),
+    edges: enc(`${TH}/client-mode-map.ts`),
   },
   UserSchemaNote: {
     schemaId: plain('лукап-ключ карточки (@@unique userId+schemaId)'),
