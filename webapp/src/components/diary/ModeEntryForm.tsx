@@ -116,7 +116,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         />
       </DiaryStepCard>
 
-      {detectCrisisAny(v.situation, v.thoughts, v.feelings, v.bodyFeelings, v.actions, v.actualNeed, v.childhoodMemories, healthyResponse) && <CrisisCard surface="mode" />}
+      {detectCrisisAny(...steps.map(s => v[s.key]), healthyResponse) && <CrisisCard surface="mode" />}
 
       <DiaryWizardFoot
         onBack={goPrev}
