@@ -29,11 +29,11 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className,
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      onClose();
+      e.preventDefault(); onClose(); // Escape берёт меню: холст (useMapKeys) и лист под ним его пропускают
       anchorRef.current?.querySelector<HTMLElement>('button')?.focus();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true); // capture — раньше слушателей холста при любом порядке подписки
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [onClose, anchorRef]);
   useEffect(() => {
     if (role === 'menu' && pos) items(dropRef.current)[0]?.focus();
