@@ -1,10 +1,9 @@
 // Карточка одного дня трекера потребностей («заполнил день → поделись»).
-// Как weeklyCard, но значения — оценки за конкретный день, а не средние; числа — fmtIndex.
+// Лист «Готово» трекера: индекс и пять столбиков дня (needsDayCard.ts); числа — fmtIndex.
 // Чистый билдер текста экспортируется для тестов.
-import { NEED_COLORS } from '../../needs/needColors';
 import type { Need } from '../../types';
 import { fmtIndex } from '../../needs/dayIndex';
-import { drawNeedsRadarCard, type NeedsRadarRow } from './needsRadarCard';
+import { drawNeedsDayCard, type NeedsDayRow } from './needsDayCard';
 
 export function dayIndex(
   needs: Need[],
@@ -54,17 +53,16 @@ export function makeDayShare(
   };
 }
 
-/** Строки радара из потребностей и оценок — общая часть дня и «Моего пути». */
-export function dayRadarRows(
+/** Строки карточки дня из потребностей и оценок. Чистая. */
+export function dayNeedRows(
   needs: Need[],
   ratings: Record<string, number>,
-): NeedsRadarRow[] {
+): NeedsDayRow[] {
   return needs.map((n) => {
     const val = ratings[n.id];
     return {
-      emoji: n.emoji,
+      id: n.id,
       label: n.chartLabel,
-      color: NEED_COLORS[n.id] ?? '#888',
       value: val ?? null,
       valueText: val !== undefined ? String(val) : '—',
     };
@@ -78,17 +76,15 @@ export function drawDayCard(
   dateLabel: string,
 ) {
   const idx = dayIndex(needs, ratings);
-  drawNeedsRadarCard(canvas, {
+  drawNeedsDayCard(canvas, {
     eyebrow: 'Трекер потребностей',
     title: 'Мой день',
     subtitle: dateLabel,
-    rows: dayRadarRows(needs, ratings),
+    rows: dayNeedRows(needs, ratings),
     center: {
       value: fmtIndex(idx),
       caption: 'индекс',
     },
     footerLabel: 'Трекер потребностей',
-    accent: 'var(--accent-blue)',
-    accent2: 'var(--accent)',
   });
 }

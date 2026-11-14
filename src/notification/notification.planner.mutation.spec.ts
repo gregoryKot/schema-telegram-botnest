@@ -123,21 +123,21 @@ describe('NotificationPlannerService — nudge-цикл (daysSince>30 && (d-30)%
 });
 
 describe('NotificationPlannerService — value_recap: optional chaining на найденных потребностях', () => {
-  it('insight.strongest не совпадает ни с одной известной потребностью → strongest=undefined, не падает (ConditionalExpression на find-предикате)', async () => {
+  it('value_recap: в payload только totalDays, потребностей и средних нет (РКН, #1135)', async () => {
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.analytics.getDaysSinceLastFill.mockResolvedValue(14);
     deps.analytics.getProfileInsight.mockResolvedValue({
       totalDays: 5,
-      strongest: 'unknown_need_id',
+      strongest: 'attachment',
       strongestAvg: 5,
       weakest: 'autonomy',
       weakestAvg: 3,
     });
     await svc.planDay(makeUser(), NOW);
-    const payload = deps.notifications.schedule.mock.calls[0][3];
-    expect(payload.strongest).toBeUndefined();
-    expect(payload.weakest).toBe('Автономия');
+    expect(deps.notifications.schedule.mock.calls[0][3]).toEqual({
+      totalDays: 5,
+    });
   });
 
   it('value_recap отменяет reminder перед планированием (StringLiteral "reminder" в cancel)', async () => {
@@ -160,20 +160,14 @@ describe('NotificationPlannerService — value_recap: optional chaining на н�
 });
 
 describe('NotificationPlannerService — weekly/donate: seed из uid%3n, а не uid*3n', () => {
-  it('weekly: seed = Number(uid%3n), не uid*3n — выбирает практику по правильному индексу', async () => {
+  it('weekly: ставится без payload — средних и практики в очереди нет (РКН, #1135)', async () => {
     const { svc, deps } = make();
-    // avg<6 форсирует ветку buildWeeklySummaryText, которая вызывает
-    // pickPractice('attachment', seed) → list[seed % 3]. uid=44n: правильный
-    // seed = Number(44n%3n) = 2 → 3-я практика в списке. Мутация uid*3n дала
-    // бы Number(132n)=132 → 132%3=0 → 1-я практика — тексты различимы.
     deps.analytics.getWeeklyStats.mockResolvedValue([
       { needId: 'attachment', avg: 3, trend: '→' },
     ]);
-    const user = makeUser({ id: BigInt(44) });
-    await svc.planDay(user, SUNDAY);
-    const text = deps.notifications.schedule.mock.calls[0][3].text as string;
-    expect(text).toContain('Поделиться чем-то личным в разговоре');
-    expect(text).not.toContain('Написать кому-то близкому без повода');
+    await svc.planDay(makeUser({ id: BigInt(44) }), SUNDAY);
+    expect(deps.notifications.schedule.mock.calls[0][1]).toBe('weekly');
+    expect(deps.notifications.schedule.mock.calls[0][3]).toBeUndefined();
   });
 
   it('donate_reminder: seed = Number(uid%3n), payload содержит корректный диапазон 0..2', async () => {
@@ -187,7 +181,7 @@ describe('NotificationPlannerService — weekly/donate: seed из uid%3n, а н�
 });
 
 describe('NotificationPlannerService — practice_missed: точный payload и StringLiteral hasPending', () => {
-  it('несколько пропущенных практик объединяются через ", " (ArrowFunction+join)', async () => {
+  it('несколько пропущенных практик — payload только с днём недели, текстов нет', async () => {
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.practices.getMissedPlans.mockResolvedValue([
@@ -196,9 +190,8 @@ describe('NotificationPlannerService — practice_missed: точный payload �
     ]);
     await svc.planDay(makeUser(), NOW);
     const payload = deps.notifications.schedule.mock.calls[0][3];
-    expect(payload).toEqual({
-      practiceText: 'Позвонить другу, Прогулка',
-    });
+    expect(JSON.stringify(payload ?? {})).not.toMatch(/Позвонить|Прогулка/);
+    expect(Object.keys(payload ?? {})).toEqual(['weekday']);
   });
 
   it('practice_missed не дублируется при уже стоящем pending', async () => {
@@ -218,34 +211,24 @@ describe('NotificationPlannerService — practice_missed: точный payload �
 });
 
 describe('NotificationPlannerService — low_streak_insight: lowest без optional chaining на 3-дневном фолбэке', () => {
-  it('lowNeeds10 пуст, lowNeeds3 не пуст → берём lowNeeds3 (ConditionalExpression)', async () => {
+  it('есть низкая потребность за 3 дня → low_streak_insight без payload', async () => {
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
-    deps.analytics.getLowStreakNeeds.mockImplementation(
-      (_uid: bigint, _n: number, days: number) =>
-        Promise.resolve(days === 10 ? [] : ['attachment']),
-    );
+    deps.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
     await svc.planDay(makeUser(), NOW);
     expect(scheduledTypes(deps)).toEqual(['low_streak_insight']);
+    expect(deps.notifications.schedule.mock.calls[0][3]).toBeUndefined();
   });
 
-  it('оба списка пусты → тишина (низкая потребность не найдена)', async () => {
+  it('список пуст → тишина (низкая потребность не найдена)', async () => {
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.analytics.getLowStreakNeeds.mockResolvedValue([]);
     await svc.planDay(makeUser(), NOW);
-    // Обе серии (3 и 10 дней) реально запрошены — тишина не из-за того, что
-    // движок вообще не дошёл до проверки, а из-за пустого результата обеих.
     expect(deps.analytics.getLowStreakNeeds).toHaveBeenCalledWith(
       BigInt(42),
       5,
       3,
-      'Europe/Moscow',
-    );
-    expect(deps.analytics.getLowStreakNeeds).toHaveBeenCalledWith(
-      BigInt(42),
-      5,
-      10,
       'Europe/Moscow',
     );
     expect(deps.notifications.schedule).not.toHaveBeenCalled();

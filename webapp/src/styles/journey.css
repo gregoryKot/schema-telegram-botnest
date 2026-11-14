@@ -1,11 +1,115 @@
-/* «Мой путь» (JourneySheet, WebJourneyHero). Подключается сборником sheet-diary.css. */
-.sd-journey-inner { max-width: 680px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 20px) 80px; }
-.sd-journey-head { align-items: center; margin-bottom: 8px; }
-.sd-journey-head .pp-art { margin-right: auto; }
+/* «Мой путь» (JourneySheet, WebJourneyHero, JourneySigns, shared/src/journey/Journey*.tsx; b22-journey).
+   Подключается сборником sheet-diary.css. Герой — лист неба 240 со сценой SceneJourney и числом Literata
+   64; плитки счётчиков 2×3 и знак строки — бумага своей сущности (journeyLook.ts); выбранный чип —
+   бумага с галочкой (SignChip). На ≥1024 герой слева липнет, лента справа (pa-spread, paper-app.css). */
+.sd-journey { --pa-sticky-top: 24px; }
+.sd-journey-inner { max-width: 680px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 20px) 80px; box-sizing: border-box; }
+.sd-journey-head { align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .sd-journey-title { margin: 0; } /* кегль — ds-h1, без локального (#906) */
 /* Шапка листа («Мой путь», сомнение в режиме) — общая .ds-sheet-head/.ds-back из cabinet.css. */
-.sd-skel-gap { height: 8px; }
-.sd-hero { margin-top: 12px; }
-.sd-hero-num { font-size: 56px; margin-top: 8px; }
-.sd-hero-text { margin: 12px 0 0; font-size: 14px; line-height: 1.6; max-width: 460px; }
-.sd-hero-link { margin-top: 12px; min-height: 44px; font-size: 14px; }
+.jr-skel { display: flex; flex-direction: column; gap: 16px; }
+.jr-note { margin: 12px 0 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+.jr-note--hint { margin-top: 4px; font-size: 13px; }
+
+/* ── Герой ──────────────────────────────────────────────────────────────── */
+.jr-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label scene' 'num scene' 'text text' 'link link';
+  column-gap: 12px; align-items: start; box-sizing: border-box; padding: 20px 22px 14px; border-radius: 24px;
+  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h));
+}
+.jr-hero-scene { grid-area: scene; width: 150px; align-self: start; }
+.jr-hero-scene > .scn { display: block; width: 100%; height: auto; }
+.jr-hero-label { grid-area: label; padding-top: 6px; color: var(--text-sub); }
+.jr-hero-num { grid-area: num; font: 400 64px/1 var(--serif); letter-spacing: -.02em; color: var(--text); margin-top: 6px; }
+.jr-hero-text { grid-area: text; margin: 14px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.jr-hero-link { grid-area: link; margin-top: 2px; }
+.jr-hero-title { grid-area: label; align-self: center; margin: 0; font: 400 28px/1.15 var(--serif); color: var(--text); text-wrap: balance; }
+.jr-hero--empty { grid-template-areas: 'label scene' 'text text' 'cta cta'; padding-bottom: 22px; }
+.ds-btn.jr-hero-cta { grid-area: cta; margin-top: 14px; width: 100%; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .ds-btn.jr-hero-cta { justify-self: start; width: auto; padding: 0 32px; } }
+
+/* ── Плитки счётчиков 2×3, чипы ─────────────────────────────────────────── */
+.jr-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.jr-stat {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'num sign' 'label label';
+  align-items: center; row-gap: 2px; box-sizing: border-box; min-height: 92px; padding: 12px 14px 12px 16px; border-radius: 18px;
+}
+.jr-stat-sign { grid-area: sign; display: inline-flex; }
+.jr-stat-num { grid-area: num; font: 400 30px/1.1 var(--serif); color: var(--text); }
+.jr-stat-label { grid-area: label; font-size: 13px; line-height: 1.3; color: var(--text-sub); overflow-wrap: anywhere; }
+.jr-chips { --h: 240; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.jr-chips + .jr-chips { margin-top: 8px; }
+.ds-chip.jr-sort {
+  margin-left: auto; min-height: 44px; border: 0; background: none; font: 600 13px var(--sans);
+  color: var(--text-sub); cursor: pointer;
+}
+
+/* ── Лента ──────────────────────────────────────────────────────────────── */
+.jr-feed { margin-top: 20px; }
+.jr-month + .jr-month { margin-top: 20px; }
+.jr-month-title { margin: 0 0 6px 2px; color: var(--text-sub); }
+.jr-rows { display: flex; flex-direction: column; background: var(--surface); border-radius: 18px; overflow: hidden; }
+.jr-row {
+  display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; column-gap: 12px; align-items: center;
+  width: 100%; min-height: 56px; padding: 8px 14px 8px 8px; border: 0; background: none; font-family: inherit;
+  text-align: left; cursor: pointer; color: var(--text);
+}
+.jr-row + .jr-row { border-top: 1px solid var(--paper-sunk); }
+.jr-row:hover { background: var(--paper-tint); }
+.jr-sign.pp-row-art { width: 60px; height: 40px; border-radius: 12px; background: oklch(0.915 0.03 var(--h, 240)); }
+.jr-sign:not([data-sign]) { background: var(--paper-tint); }
+.jr-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jr-row-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.jr-row-sub { font-size: 13px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jr-chev { color: var(--text-faint); flex-shrink: 0; }
+
+/* ── Деталь шага ────────────────────────────────────────────────────────── */
+.ds-back.jr-back { margin-bottom: 8px; }
+.jr-detail-head { display: flex; flex-direction: column; gap: 4px; }
+.jr-detail-title { margin: 0; font: 400 26px/1.2 var(--serif); }
+.jr-detail-line { margin: 0; font-size: 14px; color: var(--text-sub); }
+.jr-detail-skel { display: flex; flex-direction: column; gap: 10px; }
+.jr-detail-skel > span { display: block; height: 14px; border-radius: 6px; background: var(--paper-sunk); }
+.jr-fields { display: flex; flex-direction: column; gap: 18px; }
+.jr-field { display: flex; flex-direction: column; gap: 6px; }
+.jr-field-label { color: var(--text-sub); }
+.jr-field-text { font-size: 16px; line-height: 1.55; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.jr-voice .pa-voice-text { white-space: pre-wrap; }
+.jr-detail-actions { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 24px; }
+.ds-btn.jr-share { width: 100%; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .jr-detail-actions { align-items: flex-start; } .ds-btn.jr-share { width: auto; padding: 0 32px; } .jr-delete { align-items: flex-start; } }
+.jr-delete { display: flex; flex-direction: column; align-items: center; }
+.ds-link.jr-delete-btn { min-height: 44px; font-size: 14px; color: var(--text-sub); }
+.ds-link.jr-delete-btn.is-pending { color: var(--accent-red); }
+.ds-link.jr-delete-btn:disabled { opacity: .6; cursor: default; }
+.jr-delete-err { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--accent-red); text-align: center; }
+
+/* Телефон: плитки ниже, чтобы начало ленты попадало на первый экран. */
+@media (max-width: 559px) {
+  .jr-stats { gap: 8px; }
+  .jr-stat { min-height: 0; padding: 8px 12px 8px 14px; row-gap: 0; }
+  .jr-stat-num { font-size: 26px; }
+}
+@media (min-width: 560px) {
+  .jr-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .jr-hero:not(.jr-hero--empty) { grid-template-areas: 'label scene' 'num scene' 'text scene' 'link link'; grid-template-rows: auto auto 1fr auto; column-gap: 24px; }
+  .jr-hero-scene { width: 200px; }
+}
+@media (max-width: 359px) {
+  .jr-hero { padding: 18px 18px 12px; }
+  .jr-hero-scene { width: 120px; }
+  .jr-hero-num { font-size: 56px; }
+}
+/* Разворот: лист шире колонки 680 — по ширине pa-spread; герой колонкой, сцена сверху. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .sd-journey-inner { max-width: 1136px; padding-top: 32px; }
+  .jr-spread .pa-spread-side .jr-hero { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'scene' 'label' 'num' 'text' 'link'; grid-template-rows: none; padding: 28px 32px 22px; }
+  .jr-spread .pa-spread-side .jr-hero-scene { width: 260px; margin-bottom: 8px; }
+  .jr-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* Колонка липнет и прокручивается сама (overflow) — поле под тень-слой листа, иначе её срезает. */
+  .jr-spread > .pa-spread-side { padding: 0 8px 10px 0; }
+  .jr-hero--empty { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: 'scene label' 'scene text' 'scene cta'; column-gap: 40px; padding: 32px 40px; align-items: center; }
+  .jr-hero--empty .jr-hero-scene { width: 100%; grid-row: 1 / span 3; }
+  .jr-hero--empty .jr-hero-title { align-self: end; font-size: 32px; }
+  .jr-hero--empty .jr-hero-text { align-self: start; }
+}

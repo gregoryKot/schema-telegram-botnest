@@ -70,9 +70,9 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 
 ### `src/quiz/`
 Контент и подсчёт публичных мини-тестов без регистрации (`drives`, `critic`, `voice`, `battery`) для бота и сайта.
-- Входы: `src/quiz/quiz-registry.ts` — `QUIZ_IDS`, `buildQuizzes(form)`, `getQuiz`; `src/quiz/quiz-logic.ts` — `computeQuizResult`: большинство голосов; `src/quiz/quiz.types.ts` — типы `Quiz`, `QuizQuestion`, `QuizOption`; `src/quiz/quiz-*.data.ts` — вопросы и результаты четырёх тестов.
+- Входы: `src/quiz/quiz-registry.ts` — `QUIZ_IDS`, `buildQuizzes(form)`, `getQuiz`; `src/quiz/quiz.types.ts` — типы `Quiz`, `QuizQuestion`, `QuizOption`; `src/quiz/quiz-*.data.ts` — вопросы и результаты четырёх тестов.
 - Связи: модуля и таблиц нет, чистые функции; используют `src/telegram/telegram.quiz.service.ts` (`/tests`, `qz:*`), `src/api/quiz.controller.ts` (`GET /api/quizzes`), `src/api/public-events.controller.ts` (проверка id результатов); события `quiz_started`/`quiz_completed`.
-- Подводные камни: контент строится от формы «ты/вы» через `t(form, …)` из `notification/address-form.ts`; цитаты-реплики не разводятся. `quiz-logic.ts` — зеркало `shared/src/quiz/quizEngine.ts` (бэкенд не импортирует `shared`, rootDir=src), паритет держат `quiz-logic.spec.ts` и `webapp/src/hooks/useQuizRunner.test.ts`.
+- Подводные камни: контент строится от формы «ты/вы» через `t(form, …)` из `notification/address-form.ts`; цитаты-реплики не разводятся. Подсчёт результата — только `shared/src/quiz/quizEngine.ts`: бот тест не проводит, а отправляет в приложение.
 
 ### `src/site-content/`
 Редактируемые из админки блоки лендинга: фото героя и темы бегущей строки.
@@ -101,7 +101,7 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 
 ### `src/logger/`
 `AlertLogger`: ошибки приложения превращаются в сообщение админу (Telegram, фолбэк e-mail) с троттлингом; авария БД сворачивается в одно сообщение.
-- Входы: `src/logger/alert.logger.ts` — `AlertLogger.error()` → `notifyAdminWithFallback`; `src/logger/db-outage.ts` — классификация «БД недоступна», один DM + recovery (признаки в тексте, включая отказ пула pg, — `src/logger/db-outage-signals.ts`).
+- Входы: `src/logger/alert.logger.ts` — `AlertLogger.error()` → `notifyAdminWithFallback`; `src/logger/alert-text.ts` — что уходит в DM (место, тип, id; текст денежного `moneyAlert` целиком) и строка `[alert <id>]` в stdout; `src/logger/db-outage.ts` — классификация «БД недоступна», один DM + recovery с сработавшим признаком вместо текста ошибки (признаки, включая отказ пула pg, — `src/logger/db-outage-signals.ts`).
 - Связи: ставится в `main.ts` (`NestFactory.create({logger})`); доставка — `src/utils/admin-alert.ts`, `src/utils/alert-throttle.ts`; `isConnectionError` использует `telegram.schedule.service.ts`.
 - Подводные камни: алерт шлёт только `logger.error`; для временных сбоев (в том числе соединения с БД) использовать `warn`. Троттлинг по тексту сообщения (цифры/uuid заменяются плейсхолдером) раз в 60 с плюс общий потолок 15 алертов за 60 с: текст `error` делать стабильным, без переменных частей.
 - Денежные алерты (`src/logger/money-alert.ts`, метка в тексте) троттлятся по полному тексту со своим бюджетом — второй платёж без строки не теряется (`alert-gate.ts`).

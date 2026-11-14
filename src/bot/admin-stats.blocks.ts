@@ -7,13 +7,12 @@ import {
   formatPairs,
   formatPeople,
 } from './admin-stats.sections';
+import { enoughRaters } from './admin-stats.raters';
 
 // Разделы «Главных цифр» /stats — каждый со своими запросами и своим блоком
-// settleBlocks. Аудит 2026-10 (infra#28): раньше все цифры шли двумя
-// Promise.all по ~10 запросам, и упавший любой гасил первое сообщение /stats
-// целиком — одной строкой-заглушкой. Теперь заглушка встаёт только на место
-// своего раздела. Вынесено из bot.admin-stats.service.ts (правило №10);
-// живая проверка SQL — test/raw-sql-live-admin-stats.e2e-spec.ts (№18).
+// settleBlocks: упавший запрос ставит заглушку только на место своего раздела,
+// а не гасит всё сообщение. Живая проверка SQL —
+// test/raw-sql-live-admin-stats.e2e-spec.ts (№18).
 
 type ActivityKey = 'month30' | 'week7' | 'churn' | 'core';
 type RetKey = 'ret1' | 'ret3' | 'ret7' | 'ret30';
@@ -108,15 +107,15 @@ async function daysFunnel(prisma: PrismaService): Promise<string> {
 
 async function noticed(prisma: PrismaService, days: ReportDays) {
   const { d7, d30 } = days;
-  const [needAvgs, perDayRows] = await Promise.all([
-    // Average score per need over last 7 days — по числу потребностей
-    // (NEED_IDS), не растёт с таблицей, take не нужен.
+  const [needAvgs, enough, perDayRows] = await Promise.all([
+    // Средняя по потребности за 7 дней — строк по числу NEED_IDS, без take.
     prisma.rating.groupBy({
       by: ['needId'],
       where: { date: { gte: d7 } },
       _avg: { value: true },
       orderBy: { _avg: { value: 'asc' } },
     }),
+    enoughRaters(prisma, d7),
     // Сколько разных людей заполняли в каждый день за 30 дней — ≤31 строки;
     // день недели считается ниже в JS, без каста строки в date в SQL.
     prisma.$queryRaw<Array<{ date: string; c: bigint }>>`
@@ -124,16 +123,17 @@ async function noticed(prisma: PrismaService, days: ReportDays) {
         FROM "Rating" WHERE date >= ${d30} GROUP BY date
       `,
   ]);
-  // День недели с наибольшим числом пар «человек–день»; на пустой базе —
-  // null, а не «вс» из массива нулей (правило №8).
+  // День недели с наибольшим числом пар «человек–день»; пустая база — null (№8).
   const dowCounts: number[] = new Array<number>(7).fill(0);
   for (const r of perDayRows) {
     dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()] += Number(r.c);
   }
   const maxDow = Math.max(...dowCounts);
   const bestDow = maxDow > 0 ? dowCounts.indexOf(maxDow) : null;
-  // Most neglected need (lowest avg this week)
-  return formatNoticed({ lowestNeed: needAvgs[0], bestDow });
+  return formatNoticed({
+    lowestNeed: enough ? needAvgs[0] : undefined,
+    bestDow,
+  });
 }
 
 /** Разделы в порядке отчёта; retention — последним, его считает сервис. */

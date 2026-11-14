@@ -191,7 +191,7 @@ describe('IntroLeadService.submit', () => {
 });
 
 describe('IntroLeadService.submit — запись в БД упала', () => {
-  it('хоть один канал дошёл — ok:true, заявка у админа с пометкой «не сохранилась в базе»', async () => {
+  it('письмо дошло — ok:true, заявка у админа с пометкой «не сохранилась в базе», контакт — только в письме', async () => {
     const { service, telegram, email } = make({
       createFails: true,
       tg: false,
@@ -201,13 +201,27 @@ describe('IntroLeadService.submit — запись в БД упала', () => {
     expect(telegram.notifyAdmin).toHaveBeenCalledWith(
       expect.stringContaining('Не сохранилась в базе'),
     );
-    expect(telegram.notifyAdmin).toHaveBeenCalledWith(
+    expect(telegram.notifyAdmin).not.toHaveBeenCalledWith(
       expect.stringContaining('@maria'),
     );
     expect(email.sendAdminNotification).toHaveBeenCalledWith(
       expect.stringContaining('не сохранилась в базе'),
       expect.stringContaining('@maria'),
     );
+  });
+
+  // DM не несёт ни имени, ни контакта: без письма и без строки в базе заявку
+  // не восстановить — человеку честная ошибка, а не ложное «принято».
+  it('дошёл только Telegram — 503 и error «e-mail not delivered»: контакт человека нигде не сохранился', async () => {
+    const { service } = make({ createFails: true, tg: true, mail: false });
+    await expect(service.submit(DTO)).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+    const messages = (Logger.prototype.error as jest.Mock).mock.calls.map((c) =>
+      String(c[0]),
+    );
+    expect(messages).toContain('Intro lead e-mail not delivered: Error P1001');
+    expect(messages.join('\n')).not.toContain('maria');
   });
 
   it('ни один канал не дошёл — 503, а не ложный ok:true', async () => {

@@ -106,7 +106,10 @@ function makeWorld(chargeResults: { ok: boolean; body: string }[]) {
     enabled: true,
     chargeRecurring: jest.fn(async () => chargeResults.shift()!),
   };
-  const notify = { alertAdmin: jest.fn(async () => undefined) };
+  const notify = {
+    alertAdmin: jest.fn(async () => undefined),
+    notifyAdminBoth: jest.fn(async () => undefined),
+  };
   const logger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
   const deps = {
     prisma,

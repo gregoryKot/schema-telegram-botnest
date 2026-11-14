@@ -87,7 +87,7 @@ describeOnRealDb('e2e: адресация уведомлений после сл
       data: {
         userId: WEB,
         type: 'summary',
-        payload: { text: 'итог дня' },
+        payload: {},
         sendAt: new Date(Date.now() - 60_000),
       },
     });
@@ -97,7 +97,10 @@ describeOnRealDb('e2e: адресация уведомлений после сл
     const callApi = app.get(TELEGRAF_BOT).telegram.callApi as jest.Mock;
     expect(callApi).toHaveBeenCalledWith(
       'sendMessage',
-      expect.objectContaining({ chat_id: Number(TG), text: 'итог дня' }),
+      expect.objectContaining({
+        chat_id: Number(TG),
+        text: expect.stringContaining('Итог дня'),
+      }),
       expect.anything(),
     );
     expect(callApi).not.toHaveBeenCalledWith(
@@ -113,7 +116,7 @@ describeOnRealDb('e2e: адресация уведомлений после сл
       data: {
         userId: WEB_ONLY,
         type: 'summary',
-        payload: { text: 'итог дня' },
+        payload: {},
         sendAt: new Date(Date.now() - 60_000),
       },
     });

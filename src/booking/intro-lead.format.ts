@@ -1,4 +1,3 @@
-import { escapeHtml } from '../utils/escape-html';
 import { contactLabelOr } from './contact-channel';
 
 // Чистые функции заявки с формы знакомства (POST /api/booking): нормализация
@@ -50,7 +49,7 @@ export interface IntroLeadMessages {
 
 const MARKS: Record<Exclude<IntroLeadMark, 'saved'>, [string, string]> = {
   unsaved: [
-    '⚠️ <b>Не сохранилась в базе</b> — сбой сервера. Свяжитесь с человеком вручную.',
+    '⚠️ <b>Не сохранилась в базе</b> — сбой сервера, связь с человеком — вручную.',
     '⚠️ Не сохранилась в базе — сбой сервера. Свяжитесь с человеком вручную.',
   ],
   repeat: [
@@ -59,21 +58,19 @@ const MARKS: Record<Exclude<IntroLeadMark, 'saved'>, [string, string]> = {
   ],
 };
 
-/** Тексты DM (HTML) и письма (plain) по заявке. Поля экранируются только в DM. */
+/** Тексты DM (HTML) и письма (plain). DM — номер и пометка, данные человека — в письме; `id` null — строки нет. */
 export function introLeadMessages(
   lead: IntroLeadFields,
+  id: number | null,
   mark: IntroLeadMark = 'saved',
 ): IntroLeadMessages {
   const label = contactLabelOr(lead.channel, 'Контакт');
   const [tgMark, mailMark] = mark === 'saved' ? [null, null] : MARKS[mark];
   const tg = [
-    '📩 <b>Новая заявка с сайта</b>',
+    `📩 <b>Новая заявка с сайта${id === null ? '' : ` #${id}`}</b>`,
     tgMark,
     '',
-    `👤 <b>Имя:</b> ${escapeHtml(lead.name)}`,
-    `📬 <b>${label}:</b> ${escapeHtml(lead.contact)}`,
-    lead.message ? `💬 <b>Запрос:</b>\n${escapeHtml(lead.message)}` : null,
-    lead.source ? `🔗 <b>Откуда:</b> ${escapeHtml(lead.source)}` : null,
+    '📧 Имя, контакт и запрос — в письме на почте.',
   ];
   const email = [
     'Новая заявка с сайта',

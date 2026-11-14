@@ -1,14 +1,10 @@
 import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
-import { BOOKING_URL, CABINET_HELP_URL } from '../telegram/telegram.constants';
-import { Need, NeedId } from '../bot/bot.service';
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
 import { renderActivityTemplate } from './notification.templates.activity';
 import { renderSecurityNotice } from '../auth/security-notice.texts';
 import {
-  MONTHS,
-  pickPractice,
   DONATE_MESSAGES,
   REMINDER_INTROS,
   BREAK_INTROS,
@@ -21,34 +17,6 @@ import {
   pauseButton,
   slowerButton,
 } from './notification.buttons';
-
-export function buildSummaryText(
-  needs: Need[],
-  ratings: Partial<Record<NeedId, number>>,
-  tz = 'Europe/Moscow',
-  form: AddressForm = 'ty',
-): string {
-  const lines = needs.map((n) => {
-    const v = ratings[n.id];
-    if (v === undefined) return `${n.emoji} ${'⬜'.repeat(10)} –`;
-    return `${n.emoji} ${'🟩'.repeat(v)}${'⬜'.repeat(10 - v)} ${v}/10`;
-  });
-  const legend = needs.map((n) => `${n.emoji} ${n.chartLabel}`).join('\n');
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    day: 'numeric',
-    month: 'numeric',
-  }).formatToParts(now);
-  const day = Number(
-    parts.find((p) => p.type === 'day')?.value ?? now.getDate(),
-  );
-  const month =
-    Number(parts.find((p) => p.type === 'month')?.value ?? now.getMonth() + 1) -
-    1;
-  const dateStr = `${day} ${MONTHS[month]}`;
-  return `📔 Трекер потребностей · ${dateStr}\n${t(form, 'Твои', 'Ваши')} оценки за сегодня 👇\n\n${lines.join('\n')}\n\n${legend}`;
-}
 
 export interface NotificationTemplate {
   text: string;
@@ -63,11 +31,7 @@ export function renderTemplate(
   switch (type) {
     case 'reminder': {
       const streak = payload?.streak as number | undefined;
-      const lowestNeedId = payload?.lowestNeedId as NeedId | undefined;
-      const lowestNeed = payload?.lowestNeed as string | undefined;
-      const yesterdayAvg = payload?.yesterdayAvg as number | undefined;
       const variant = (payload?.variant as number | undefined) ?? 0;
-      const seed = (payload?.seed as number | undefined) ?? 0;
 
       const onBreak = payload?.onBreak === true;
       const compactControls = payload?.compactControls === true;
@@ -75,19 +39,6 @@ export function renderTemplate(
       const intros = onBreak ? BREAK_INTROS : REMINDER_INTROS;
       const intro = intros[variant % intros.length];
       let text = t(form, intro[0], intro[1]);
-      // Данные «за вчера» и практику показываем только активному юзеру: на перерыве
-      // вчерашней записи нет, а лишняя нагрузка ломает мягкий тон возвращения.
-      if (!onBreak) {
-        if (yesterdayAvg !== undefined) {
-          text += `\nВчера индекс был ${yesterdayAvg.toFixed(1)}.`;
-        }
-        if (lowestNeed && lowestNeedId) {
-          const practice = pickPractice(lowestNeedId, seed);
-          text += `\n\n${lowestNeed} просит внимания. ${t(form, 'Попробуй', 'Попробуйте')}: ${practice}`;
-        } else if (lowestNeed) {
-          text += ` ${t(form, 'Обрати', 'Обратите')} внимание на ${lowestNeed}.`;
-        }
-      }
       // Игровой режим (opt-in): позитивная срочность — показываем серию с 1 дня
       // и подсвечиваем «ещё день до вехи». Для остальных — серия только с 3 дней,
       // без давления. gamified/approachingStreak кладёт planner.
@@ -167,23 +118,20 @@ export function renderTemplate(
         text: '30 дней наблюдений. Это серьёзная практика.',
       };
 
-    case 'weekly': {
-      const text = payload?.text as string | undefined;
-      if (!text) return null;
+    // Оценки, средние и тренды в Telegram не уходят (РКН, #1135): только факт
+    // и кнопка в приложение. Payload не читается — старые строки очереди
+    // с прежним text рендерятся так же.
+    case 'weekly':
       return {
-        text,
+        text: '📊 Итоги недели готовы — они ждут в приложении.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
-    }
 
-    case 'summary': {
-      const text = payload?.text as string | undefined;
-      if (!text) return null;
+    case 'summary':
       return {
-        text,
+        text: '📔 Оценки за сегодня сохранены. Итог дня — в приложении.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
-    }
 
     case 'donate_reminder': {
       const seed = (payload?.seed as number | undefined) ?? 0;
@@ -240,60 +188,4 @@ export function renderTemplate(
         renderSoftTemplate(type, payload, form)
       );
   }
-}
-
-export function buildWeeklySummaryText(
-  stats: Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>,
-  needs: Need[],
-  bestDay: string | null,
-  seed = 0,
-  form: AddressForm = 'ty',
-): string {
-  const lines = stats
-    .map(({ needId, avg, trend }) => {
-      const need = needs.find((n) => n.id === needId);
-      if (!need) return null;
-      if (avg === null) return `${need.emoji} ${need.chartLabel}  –`;
-      return `${need.emoji} ${need.chartLabel}  ${avg.toFixed(1)} ${trend}`;
-    })
-    .filter(Boolean);
-  const bestLine = bestDay ? `\nЛучший день — ${bestDay} 🌟` : '';
-
-  // Find lowest need with data and suggest a practice
-  const ratedStats = stats.filter((s) => s.avg !== null);
-  const lowest = ratedStats.sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
-  let actionLine = '';
-  if (lowest && (lowest.avg ?? 10) < 6) {
-    const need = needs.find((n) => n.id === lowest.needId);
-    if (need) {
-      const practice = pickPractice(lowest.needId, seed);
-      actionLine = `\n\n💡 На этой неделе ${t(form, 'уделяй', 'уделяйте')} внимание ${need.chartLabel.toLowerCase()}.\n${t(form, 'Попробуй', 'Попробуйте')}: ${practice}`;
-    }
-  }
-
-  return `📊 Итоги недели\n\n${lines.join('\n')}${bestLine}${actionLine}`;
-}
-
-export function renderLowStreakInsight(
-  emoji: string,
-  needLabel: string,
-  daysBelowThreshold: number,
-  form: AddressForm = 'ty',
-  bookingUrl = BOOKING_URL,
-): NotificationTemplate {
-  const showBooking = daysBelowThreshold >= 10;
-  const text = showBooking
-    ? `${emoji} ${needLabel} уже ${daysBelowThreshold} дней невысокая.\n\nЭто может быть паттерн — стоит разобраться. Раздел Помощь в приложении или сессия с терапевтом помогут.`
-    : `${emoji} ${needLabel} несколько дней невысокая.\n\nВ разделе Помощь есть инструменты для этого — ${t(form, 'попробуй', 'попробуйте')} что-нибудь прямо сегодня.`;
-  return {
-    text,
-    keyboard: Markup.inlineKeyboard(
-      showBooking
-        ? [
-            [Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)],
-            [Markup.button.url('📝 Записаться на сессию', bookingUrl)],
-          ]
-        : [[Markup.button.webApp('📱 Раздел Помощь', CABINET_HELP_URL)]],
-    ),
-  };
 }

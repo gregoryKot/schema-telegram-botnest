@@ -291,7 +291,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
     });
     beforeEach(() => {
       tg.mockReset().mockResolvedValue(true);
-      mail.mockReset().mockResolvedValue(undefined);
+      mail.mockReset().mockResolvedValue(true);
       onConfirmed.mockClear();
       onCancelled.mockClear();
       notifyExpired.mockClear();
@@ -470,7 +470,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
     });
     beforeEach(() => {
       tg.mockReset().mockResolvedValue(true);
-      mail.mockReset().mockResolvedValue(undefined);
+      mail.mockReset().mockResolvedValue(true);
       createMeeting.mockClear();
     });
     afterAll(async () => {
@@ -483,14 +483,13 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       ...tg.mock.calls.map((c) => String(c[0])),
       ...mail.mock.calls.map((c) => `${c[0]} | ${c[1]}`),
     ];
-    // Только сообщения этих сценариев: по контакту клиента.
-    const confirmedDms = () =>
+    // Только сообщения этого сценария: по номеру брони (контакта в DM нет).
+    const confirmedDms = (id: number) =>
       tg.mock.calls
         .map((c) => String(c[0]))
         .filter(
           (t) =>
-            t.includes('Запись подтверждена') &&
-            t.includes(EFFECTS_CLIENT_CONTACT),
+            t.includes('Запись подтверждена') && t.includes(`бронь #${id}`),
         );
     const alerts = (id: number) =>
       tg.mock.calls
@@ -529,7 +528,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect(afterFirst?.meetingUrl ?? null).toBeNull();
       expect(afterFirst?.confirmEffectsDoneAt ?? null).toBeNull();
       expect(afterFirst?.paidAt).toBeInstanceOf(Date);
-      expect(confirmedDms()).toEqual([]);
+      expect(confirmedDms(b.id)).toEqual([]);
       const alert = alerts(b.id).join('\n');
       expect(alert).toContain('оплачена и подтверждена');
       expect(alert).not.toContain('не подтвердилась'); // старая ложь
@@ -554,7 +553,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect(afterSecond?.status).toBe('CONFIRMED');
       expect(afterSecond?.meetingUrl).toBeTruthy();
       expect(afterSecond?.confirmEffectsDoneAt).toBeInstanceOf(Date);
-      expect(confirmedDms()).toHaveLength(1);
+      expect(confirmedDms(b.id)).toHaveLength(1);
       expect(
         mail.mock.calls
           .map((c) => String(c[1]))
@@ -579,7 +578,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect((await pay(b.id)).text).toBe(`OK${b.id}`);
       const done = await row(b.id);
       expect(done?.confirmEffectsDoneAt).toBeInstanceOf(Date);
-      expect(confirmedDms()).toHaveLength(1);
+      expect(confirmedDms(b.id)).toHaveLength(1);
       tg.mockClear();
       mail.mockClear();
       createMeeting.mockClear();
@@ -616,16 +615,12 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const done = await row(b.id);
       expect(done?.meetingUrl).toBeTruthy();
       expect(done?.confirmEffectsDoneAt).toBeInstanceOf(Date);
-      expect(confirmedDms()).toHaveLength(1);
+      expect(confirmedDms(b.id)).toHaveLength(1);
 
       tg.mockClear();
       mail.mockClear();
       await retry.retryStalled(); // второй тик: доделанное не берётся
-      expect(
-        tg.mock.calls.filter((c) =>
-          String(c[0]).includes(EFFECTS_CLIENT_CONTACT),
-        ),
-      ).toEqual([]);
+      expect(alerts(b.id)).toEqual([]);
     });
   });
 
@@ -661,7 +656,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       calendar = new Set();
       onPush = null;
       tg.mockReset().mockResolvedValue(true);
-      mail.mockReset().mockResolvedValue(undefined);
+      mail.mockReset().mockResolvedValue(true);
       push.mockReset().mockImplementation(async (ev: { uid: string }) => {
         // Отмена приходит, пока идёт PUT: она раньше события в календаре.
         if (onPush) await onPush(ev.uid);
@@ -678,10 +673,11 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
     });
 
     const row = (id: number) => prisma.booking.findUnique({ where: { id } });
-    const dms = (title: string) =>
+    // DM владельцу — без контакта клиента: бронь узнаётся по номеру.
+    const dms = (title: string, id: number) =>
       tg.mock.calls
         .map((c) => String(c[0]))
-        .filter((t) => t.includes(title) && t.includes(EFFECTS_CLIENT_CONTACT));
+        .filter((t) => t.includes(title) && t.includes(`бронь #${id}`));
     function create(token: string, status: 'HELD' | 'CONFIRMED') {
       return prisma.booking.create({
         data: {
@@ -716,8 +712,8 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect((await row(b.id))?.status).toBe('CANCELLED');
       expect([...calendar]).toEqual([]); // DELETE отмены обогнал PUT, добил confirm
       expect(remove).toHaveBeenCalledWith(bookingEventUid(b.id));
-      expect(dms('Запись подтверждена')).toEqual([]);
-      expect(dms('Запись отменена')).toHaveLength(1);
+      expect(dms('Запись подтверждена', b.id)).toEqual([]);
+      expect(dms('Запись отменена', b.id)).toHaveLength(1);
       expect((await row(b.id))?.confirmEffectsDoneAt ?? null).toBeNull();
     });
 
@@ -731,7 +727,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       });
 
       expect([...calendar]).toEqual([]);
-      expect(dms('Запись отменена')).toHaveLength(1);
+      expect(dms('Запись отменена', b.id)).toHaveLength(1);
     });
 
     it('отмена HELD-брони: события не было, DELETE в календарь не уходит, админ уведомлён', async () => {
@@ -741,7 +737,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
       expect((await row(b.id))?.status).toBe('CANCELLED');
       expect(remove).not.toHaveBeenCalled();
-      expect(dms('Запись отменена')).toHaveLength(1);
+      expect(dms('Запись отменена', b.id)).toHaveLength(1);
     });
 
     it('контроль: обычный порядок (оплата завершилась, потом отмена) — DELETE по записанному uid', async () => {
@@ -751,13 +747,13 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       const saved = (await row(b.id))?.calDavUid;
       expect(saved).toBe(bookingEventUid(b.id));
       expect([...calendar]).toEqual([saved]);
-      expect(dms('Запись подтверждена')).toHaveLength(1);
+      expect(dms('Запись подтверждена', b.id)).toHaveLength(1);
 
       await bookingSvc.cancel('bk-ct-15');
 
       expect([...calendar]).toEqual([]);
       expect(remove).toHaveBeenCalledWith(saved);
-      expect(dms('Запись отменена')).toHaveLength(1);
+      expect(dms('Запись отменена', b.id)).toHaveLength(1);
     });
   });
 
@@ -886,7 +882,7 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       });
       beforeEach(() => {
         tg.mockReset().mockResolvedValue(true);
-        mail.mockReset().mockResolvedValue(undefined);
+        mail.mockReset().mockResolvedValue(true);
       });
       afterAll(() => {
         tg.mockRestore();

@@ -122,11 +122,12 @@ describe('e2e: заявка с формы знакомства пишется в
     // В тестовой среде ключи Postbox не заданы: письмо не уходит и не должно
     // засчитываться доставленным (раньше send() молча выходил).
     expect(row.emailDeliveredAt).toBeNull();
+    // DM владельцу — номер заявки; имя, контакт и запрос — только в письме.
     const dms = sendMessage.mock.calls.map((c: unknown[]) => String(c[1]));
-    expect(dms.some((t) => t.includes('@maria_e2e'))).toBe(true);
-    expect(dms.find((t) => t.includes('@maria_e2e'))).toContain(
-      'Мария &lt;b&gt;',
+    expect(dms.some((t) => t.includes(`Новая заявка с сайта #${row.id}`))).toBe(
+      true,
     );
+    expect(dms.join('\n')).not.toMatch(/maria_e2e|Мария|Тревожно/);
   });
 
   it('неполная заявка: молча ok, строки нет', async () => {
@@ -137,15 +138,20 @@ describe('e2e: заявка с формы знакомства пишется в
     ).resolves.toBe(0);
   });
 
-  it('повтор доставки: находит недоставленную заявку, расшифровывает, шлёт и отмечает; доставленную не трогает', async () => {
+  it('повтор доставки: находит заявку без письма, расшифровывает, шлёт и отмечает; DM повторяет только недошедший; доставленную не трогает', async () => {
     const lost = await oldLead('redeliver');
-    const done = await oldLead('delivered', { tgDeliveredAt: OLD_AT });
+    const dmOnly = await oldLead('dm-only', { tgDeliveredAt: OLD_AT });
+    const done = await oldLead('delivered', {
+      tgDeliveredAt: OLD_AT,
+      emailDeliveredAt: OLD_AT,
+    });
     sendMessage.mockClear();
     const service = app.get(IntroLeadRedeliveryService);
 
     // «Сейчас» = час после заявки: окно 5 минут … 7 дней захватывает фикстуры 2000-го.
+    // Данные человека несёт только письмо — повтор берёт и заявку, чей DM дошёл.
     const hourLater = new Date(OLD_AT.getTime() + 3_600_000);
-    await expect(service.redeliver(hourLater)).resolves.toBe(1);
+    await expect(service.redeliver(hourLater)).resolves.toBe(2);
 
     const after = await prisma.introLead.findUniqueOrThrow({
       where: { id: lost.id },
@@ -153,10 +159,15 @@ describe('e2e: заявка с формы знакомства пишется в
     expect(after.deliveryAttempts).toBe(1);
     expect(after.tgDeliveredAt).toBeInstanceOf(Date);
     const dms = sendMessage.mock.calls.map((c: unknown[]) => String(c[1]));
-    expect(dms).toHaveLength(1);
+    expect(dms).toHaveLength(1); // второй DM по dm-only не шлётся
     expect(dms[0]).toContain('Повторная отправка');
-    expect(dms[0]).toContain('Имя redeliver');
+    expect(dms[0]).toContain(`#${lost.id}`);
+    expect(dms[0]).not.toContain('Имя redeliver');
 
+    const retried = await prisma.introLead.findUniqueOrThrow({
+      where: { id: dmOnly.id },
+    });
+    expect(retried.deliveryAttempts).toBe(1);
     const untouched = await prisma.introLead.findUniqueOrThrow({
       where: { id: done.id },
     });
@@ -228,7 +239,11 @@ describe('e2e: заявка с формы знакомства пишется в
     const dms = sendMessage.mock.calls
       .slice(sentBefore)
       .map((c: unknown[]) => String(c[1]));
-    expect(dms.join('\n')).not.toContain('Имя old');
+    expect(dms).toEqual([]);
+    const oldRow = await prisma.introLead.findFirstOrThrow({
+      where: { source: `${MARK}old` },
+    });
+    expect(oldRow.deliveryAttempts).toBe(0);
 
     await expect(
       app.get(IntroLeadRetentionService).anonymizeOld(NOW_2001),

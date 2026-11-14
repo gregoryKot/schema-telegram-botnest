@@ -76,7 +76,7 @@ export function MoreSection(p: Props) {
       {why && <WhySheet onClose={() => setWhy(false)} />}
       {crisis && <CrisisContactsSheet onClose={() => setCrisis(false)} />}
       {sheet}
-      {journey && <JourneySheet onClose={() => setJourney(false)} />}
+      {journey && <JourneySheet onClose={() => setJourney(false)} onOpenTracker={p.onOpenTracker} />}
       {selfMap && (
         <CaseFlowHost start="map" onClose={() => setSelfMap(false)} onOpenTracker={p.onOpenTracker} onOpenSchema={p.onOpenSchema} />
       )}

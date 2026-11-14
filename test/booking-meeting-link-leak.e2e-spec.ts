@@ -168,12 +168,15 @@ describe('e2e: анонимная запись не отдаёт ссылку н
       expect(r.meetingUrl).not.toContain('pwd=secret'); // в БД зашифрована
       expect(decrypt(r.meetingUrl)).toBe(SECRET_URL);
     }
+    // DM владельцу — без контакта клиента: брони узнаются по номеру.
     const confirmed = adminDms().filter(
       (t) =>
-        t.includes('Запись подтверждена') && t.toLowerCase().includes(VICTIM),
+        t.includes('Запись подтверждена') &&
+        rows.some((r) => t.includes(`бронь #${r.id}`)),
     );
     expect(confirmed).toHaveLength(2);
     for (const dm of confirmed) {
+      expect(dm.toLowerCase()).not.toContain(VICTIM);
       expect(dm).toContain(SECRET_URL);
       // владелец — единственный канал доставки, карточка это говорит
       expect(dm).toContain(LINK_TO_FORWARD);
@@ -241,7 +244,8 @@ describe('e2e: анонимная запись не отдаёт ссылку н
     expect(decrypt(row?.meetingUrl ?? null)).toBe(fresh);
     // клиент по старой ссылке придёт не туда — владелец узнаёт о замене из DM
     const dm = adminDms().filter(
-      (t) => t.includes('Запись подтверждена') && t.includes(LEGACY_CLIENT),
+      (t) =>
+        t.includes('Запись подтверждена') && t.includes(`бронь #${row?.id}`),
     );
     expect(dm).toHaveLength(1);
     expect(dm[0]).toContain(fresh);

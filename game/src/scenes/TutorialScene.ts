@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import { W, H, GROUND_Y, PHYS, S } from '../constants';
+import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { trackEvent } from '../analytics';
 import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
+import { buildGroundStrip } from '../ground';
 import { addGlow, HUD_STROKE } from '../look';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -103,10 +104,7 @@ export class TutorialScene extends Phaser.Scene {
     bg.fillGradientStyle(0x18142a, 0x18142a, 0x2e2440, 0x2e2440, 1, 1, 1, 1);
     bg.fillRect(0, 0, W, H); addGlow(this, W / 2, GROUND_Y, 620, 300, 0xffe9c0, 0.12, 0);
     // пол — деревянная текстура (как дома в главах), а не плоский прямоугольник
-    const TW = 16 * S;
-    for (let fx = -TW; fx <= W + TW; fx += TW)
-      this.add.image(fx, GROUND_Y, 'ground_room').setOrigin(0, 0).setDepth(1);
-    bg.fillStyle(0x2e1d10, 1); bg.fillRect(0, GROUND_Y + TW, W, H - GROUND_Y - TW);
+    buildGroundStrip(this, 'ground_room', -32, W + 32, 1, false);
 
     const floor = this.add.rectangle(W / 2, GROUND_Y + 20, W, 40, 0, 0);
     this.physics.add.existing(floor, true);
@@ -128,13 +126,13 @@ export class TutorialScene extends Phaser.Scene {
     // реально загрузилась — иначе .play() по пустой анимации роняет update-цикл
     // и игра «зависает» (так вешалось ОТВЛЕКИСЬ без клубка).
     this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
-    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
     // выпад атаки — тот же спрайт, что в игре (cat_dash), грузится в фоне
     this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setDepth(11).setVisible(false);
+    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'),

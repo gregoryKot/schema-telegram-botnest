@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H, GROUND_Y, S, PHYS } from '../constants';
+import { W, H, GROUND_Y, S, PHYS, CAM_TOP } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
 import { HomeMob, MobCtx, Procrastination, PhoneMob, Irritation } from '../enemies/home';
@@ -8,6 +8,7 @@ import { Door, ExcuseVoice } from '../doors';
 import { buildDecor } from '../decor';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { ensureEnemyAnims, LEDGE } from '../props';
+import { buildGroundStrip, groundKey } from '../ground';
 import { t, type MsgKey } from '../i18n';
 import { getAssist } from '../assist';
 import { track, trackEvent } from '../analytics';
@@ -181,7 +182,7 @@ export class GameScene extends Phaser.Scene {
     if (assist.extraLives) { this.hearts = this.MAX_HEARTS; this.updateHearts(); }
     this.assistInvuln = assist.invuln;
 
-    this.cameras.main.setBounds(0, 0, ARENA_W, H);
+    this.cameras.main.setBounds(0, -CAM_TOP, ARENA_W, H + CAM_TOP);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.physics.world.setBounds(0, -H, ARENA_W, H * 3);
     this.cameras.main.fadeIn(600, 8, 6, 16);
@@ -252,17 +253,11 @@ export class GameScene extends Phaser.Scene {
 
   private buildGround() {
     const ARENA_W = this.chapter.arenaW, pits = this.chapter.pits;
-    const tw = 16 * S, th = 16 * S;
-    const n = Math.ceil(ARENA_W / tw) + 2;
-    for (let i = 0; i < n; i++) {
-      const tx = i * tw;
-      if (pits.some(p => tx < p.e && tx + tw > p.s)) continue;
-      const groundTex = this.chapter.theme === 'room' ? 'ground_room' : 'ground';
-      this.add.image(tx + tw / 2, GROUND_Y + th / 2, groundTex).setDepth(2).setTint(this.chapter.palette.groundTint);
-    }
+    const key = groundKey(this.chapter.theme);
     const edges = [0, ...pits.flatMap(p => [p.s, p.e]), ARENA_W];
     for (let i = 0; i < edges.length - 1; i += 2) {
       const sx = edges[i], ex = edges[i + 1], w = ex - sx;
+      buildGroundStrip(this, key, sx, ex, 2);
       const r = this.add.rectangle(sx + w / 2, GROUND_Y + 20, w, 40, 0, 0);
       this.physics.add.existing(r, true);
       this.floorColliders.push(r);
@@ -275,11 +270,11 @@ export class GameScene extends Phaser.Scene {
     const P = this.chapter.platforms;
     const ledge = this.chapter.theme === 'room' ? LEDGE.room : LEDGE.street;
     const platTex = this.chapter.theme === 'room' ? 'plat_room' : 'plat';
-    const H = 24; // высота карниза; верх совпадает с поверхностью (p.y)
+    const LH = 16; // карниз 48×16 в логических пикселях, показ ×2; верх — поверхность (p.y)
     for (const p of P) {
       if (this.textures.exists(ledge.key)) {
         // настоящий карниз: торцы не тянутся, середина растягивается под ширину
-        this.add.nineslice(p.x + p.w / 2, p.y + H / 2, ledge.key, undefined, p.w, H, ledge.cap, ledge.cap, 0, 0).setDepth(2);
+        this.add.nineslice(p.x + p.w / 2, p.y + LH, ledge.key, undefined, p.w / 2, LH, ledge.cap, ledge.cap, 0, 0).setScale(2).setDepth(2);
       } else {
         const cols = Math.ceil(p.w / tw); // запасной процедурный тайл
         for (let i = 0; i < cols; i++)
@@ -510,10 +505,10 @@ export class GameScene extends Phaser.Scene {
     // иначе .play() по пустой анимации роняет update-цикл и игра «зависает».
     this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
-    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
     this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    this.lungeSprite = this.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setDepth(11).setVisible(false);
+    this.lungeSprite = this.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setScale(1.5).setDepth(11).setVisible(false);
     this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
