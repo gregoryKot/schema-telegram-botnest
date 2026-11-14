@@ -7,11 +7,11 @@
 // стояла 3 000 ₽ в трёх копиях при 4 000 ₽ при записи. Тест краснеет на
 // любом таком расхождении.
 //
-// Источник цены — бэкенд: SESSION_DEFAULT_PRICE (src/booking/booking.config.ts)
-// и последняя миграция, засевающая живую цену в BookingSetting. Фронт этот
-// модуль импортировать не может, поэтому число читается из исходника — как
-// в cancelPolicy.sync.test.ts. Правку цены в админке статика не увидит:
-// поменял цену — меняй миграцией, и этот тест покажет все копии.
+// В файлах — дефолт кода: SESSION_DEFAULT_PRICE (src/booking/booking.config.ts),
+// его же засеяла последняя миграция в BookingSetting. Фронт этот модуль
+// импортировать не может, поэтому число читается из исходника — как в
+// cancelPolicy.sync.test.ts. Цену из админки сервер ставит на место дефолта
+// при отдаче (src/booking/landing-price.ts), поэтому в файле — именно дефолт.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';

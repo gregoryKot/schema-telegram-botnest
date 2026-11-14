@@ -282,3 +282,30 @@ describe('PricingService — цены по валютам', () => {
     expect(intro?.prices).toEqual({ RUB: 0, ILS: 0, EUR: 0, USD: 0 });
   });
 });
+
+// Статика визитки (JSON-LD, llms.txt) — с ценой из админки (landing-price.ts).
+describe('PricingService.landingText', () => {
+  const LLMS = '(50 минут, 4 000 ₽) "price": "4000"';
+
+  it('строки цены в БД нет — дефолт кода, текст как в файле', async () => {
+    const { service } = makeService();
+    expect(await service.landingText(LLMS)).toBe(LLMS);
+  });
+
+  it('цена из БД — в тексте «4 500 ₽» и числом в JSON-LD', async () => {
+    const { service } = makeService({ 'price:SESSION_50': '4500' });
+    expect(await service.landingText(LLMS)).toBe(
+      '(50 минут, 4 500 ₽) "price": "4500"',
+    );
+  });
+
+  it('setPrice в админке → следующая отдача с новой ценой, без ожидания TTL', async () => {
+    const { service, prisma } = makeService({ 'price:SESSION_50': '4500' });
+    expect(await service.landingText(LLMS)).toContain('4 500 ₽');
+    await service.setPrice(SessionType.SESSION_50, 5200);
+    expect(await service.landingText(LLMS)).toContain('5 200 ₽');
+    expect(await service.landingText(LLMS)).toContain('5 200 ₽');
+    // Чтение — одно до правки и одно после, а не на каждую отдачу.
+    expect(prisma.bookingSetting.findUnique).toHaveBeenCalledTimes(2);
+  });
+});

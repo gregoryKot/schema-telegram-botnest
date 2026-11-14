@@ -66,6 +66,8 @@
 - ⬜ **Кабинет терапевта: на решение владельца (#1072)** — список в разделах `### b29`–`### b31` `docs/design/APP_2026-11.md`:
   «0 активных домашних заданий» над пустым списком, `Check` у невыполненного задания и у шаблона «Дневник режима».
 - ⬜ **Безопасное место: детекция чувств списком, а поля — из массива** — `webapp/src/components/exercises/SafePlaceEx.tsx:140` зовёт `detectCrisisAny(overview, senses.see, senses.hear, senses.feel, senses.smell)`, а поля рисует `SENSES.map` (`safePlaceText.ts`): новое чувство в `SENSES` останется без карточки 8-800-100-49-94, строки `describeCrisisField` в `SafePlaceEx.test.tsx` — только у описания места и «что слышно». Чинить по образцу `ModeEntryForm.tsx`: поля детекции и строки харнесса — из `SENSES`.
+- ⬜ **Цена визитки вне рублей в статике** — JSON-LD `webapp/index.html` (`"priceCurrency": "RUB"`) и `webapp/public/llms.txt` называют только рубли, а сессия продаётся и в ILS/EUR/USD (`DEFAULT_PRICE`, `src/booking/price-currency.ts`); подстановка из админки (`src/booking/landing-price.ts`) ставит только рублёвую цену. Нужно решение, указывать ли валюты (перенесено из `docs/open/backend.md`).
+- ⬜ **Цена визитки в окне выкладки — дефолт кода** — пока Nest не слушает порт (старт контейнера, ~20 с деплоя), `deploy/front-static.mjs` отдаёт `index.html` визитки и `llms.txt` с диска, то есть с ценой из файла, а не из админки. Осознанно не сделано: front без зависимостей и в БД не ходит; чинить, только если поисковики начнут цеплять старую цену.
 
 
 ## Идеи

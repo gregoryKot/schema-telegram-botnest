@@ -1,7 +1,14 @@
 import { ArticleSeoMiddleware } from './article-seo.middleware';
 import type { ArticlesService } from './articles.service';
+import { landingPriceText } from '../booking/landing-price';
+import type { PricingService } from '../booking/pricing.service';
 import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_PREVIEW } from '../practice-preview';
+
+// Цена сессии в админке — 4 500 ₽ (так её отдаст PricingService.landingText).
+const PRICING = {
+  landingText: (text: string) => Promise.resolve(landingPriceText(text, 4500)),
+} as unknown as PricingService;
 
 // existsSync/readFileSync экспортируются из 'fs' как non-configurable
 // свойства в текущем Node — jest.spyOn(fs, ...) падает "Cannot redefine
@@ -47,7 +54,7 @@ function makeMiddleware(
       throw new Error('not found');
     }),
   } as unknown as ArticlesService;
-  const mw = new ArticleSeoMiddleware(service);
+  const mw = new ArticleSeoMiddleware(service, PRICING);
   // Inject base HTML so the middleware doesn't read from disk.
   (mw as any).cachedHtml = BASE_HTML;
   return mw;
@@ -115,6 +122,23 @@ describe('ArticleSeoMiddleware', () => {
     expect(html).toContain('Первый текст.');
     expect(html).toContain('application/ld+json');
     expect(html).toContain('"@type":"Article"');
+  });
+
+  it('цена визитки из админки — в шаблоне страницы, текст статьи не трогается', async () => {
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      content: '<p>Сессия у частного специалиста — 4 000 ₽.</p>',
+    });
+    Object.assign(mw, {
+      cachedHtml: BASE_HTML.replace(
+        '</head>',
+        '<script type="application/ld+json">{"price": "4000"}</script></head>',
+      ),
+    });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    expect(getSent()).toContain('{"price": "4500"}');
+    expect(getSent()).toContain('частного специалиста — 4 000 ₽.');
   });
 
   it('falls through to the SPA for an unknown slug', async () => {
@@ -320,7 +344,7 @@ describe('ArticleSeoMiddleware — чтение index.html с диска (html()
       findBySlug: jest.fn(),
       list: jest.fn(),
     } as unknown as ArticlesService;
-    const mw = new ArticleSeoMiddleware(service);
+    const mw = new ArticleSeoMiddleware(service, PRICING);
     const { req, res } = mockReqRes('/articles/skhemy-yanga-spisok');
     const next = jest.fn();
 
@@ -339,7 +363,7 @@ describe('ArticleSeoMiddleware — чтение index.html с диска (html()
     const service = {
       findBySlug: jest.fn().mockResolvedValue(ARTICLE),
     } as unknown as ArticlesService;
-    const mw = new ArticleSeoMiddleware(service);
+    const mw = new ArticleSeoMiddleware(service, PRICING);
 
     const first = mockReqRes('/articles/skhemy-yanga-spisok');
     await mw.use(first.req, first.res, () => {});
