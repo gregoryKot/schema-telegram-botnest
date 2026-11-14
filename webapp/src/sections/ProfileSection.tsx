@@ -145,7 +145,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {/* Список прячем, пока открыта деталь (трап у верхнего слоя, dialogStack) */}
       {showAchievements && achievements && !selectedAchievement && (
         <AchievementsDialog achievements={achievements} currentStreak={currentStreak} totalDays={totalDays}
-          onSelect={setSelectedAchievement} onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }} />
+          onSelect={(id) => { setShowAchievements(true); setSelectedAchievement(id); }} onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }} />
       )}
 
       {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (

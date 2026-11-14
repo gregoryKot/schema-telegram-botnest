@@ -81,10 +81,10 @@ describe('TherapyNudgeCard', () => {
     history.mockReturnValue(new Promise<DayHistory[]>((r) => { resolve = r; }));
     const { container } = renderCard();
     expect(container.querySelector('[aria-hidden]')).toBeTruthy();
-    expect(screen.queryByText(/Разобраться глубже/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Скрыть' })).toBeNull(); // в силуэте текст невидим, кнопок нет
     expect(track).not.toHaveBeenCalled();
     resolve(CALM);
-    expect(await screen.findByText(/Разобраться глубже/)).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Скрыть' })).toBeTruthy();
     await waitFor(() => expect(track).toHaveBeenCalledWith('home_card', 'shown'));
     expect(track).toHaveBeenCalledTimes(1);
   });
@@ -161,6 +161,16 @@ describe('TherapyNudgeCard', () => {
     expect(link.getAttribute('href')).toBe('tg://user?id=42');
     fireEvent.click(link);
     expect(track).toHaveBeenLastCalledWith('signal_card', 'write', 'low_index');
+  });
+
+  it('силуэт загрузки у клиента с терапевтом несёт строку-подпись: высота та же, что у карточки', () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=42');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    history.mockReturnValue(new Promise<DayHistory[]>(() => {}));
+    renderCard();
+    const skel = screen.getByTestId('therapy-card-skeleton');
+    expect(skel.querySelector('.th-card-sub')?.textContent).toMatch(/повод написать/);
+    expect(screen.queryByRole('link')).toBeNull();
   });
 
   it('пользователь-терапевт ничего не видит и история не запрашивается', async () => {

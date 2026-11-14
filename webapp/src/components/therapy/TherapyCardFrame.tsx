@@ -31,6 +31,7 @@ export function TherapyCardFrame({
 }) {
   const btn = quiet ? 'ds-btn ds-btn--secondary th-btn' : 'ds-btn th-btn';
   const t = useTherapyBridgeTexts();
+  const sub = cardSub(t, target);
   return (
     <section className="pp-paper th-card" aria-label={t.cardTalk} style={{ '--h': hue } as CSSProperties}>
       <div className="th-card-head">
@@ -38,9 +39,7 @@ export function TherapyCardFrame({
         <span className="th-card-sign" aria-hidden="true">{sign}</span>
       </div>
       <h2 className="th-card-title">{glueBridge(title)}</h2>
-      {/* Свой терапевт: с каналом — повод написать, без канала — про ближайшую встречу (волна 6). */}
-      {target.write ? <p className="th-card-sub">{glue(t.cardSubTherapist)}</p>
-        : target.connected ? <p className="th-card-sub">{glue(t.cardSubTherapistNoChannel)}</p> : null}
+      {sub && <p className="th-card-sub">{glue(sub)}</p>}
       <div className="th-card-acts">
         {target.write ? (
           <ExternalLink className={btn} href={target.write.url} onClick={target.write.onClick}>
@@ -55,5 +54,26 @@ export function TherapyCardFrame({
       </div>
       {target.sheet}
     </section>
+  );
+}
+
+type Texts = ReturnType<typeof useTherapyBridgeTexts>;
+/** Свой терапевт: с каналом — повод написать, без канала — про ближайшую встречу (волна 6); нет терапевта — без строки. */
+function cardSub(t: Texts, target: TherapyTarget): string | null {
+  return target.write ? t.cardSubTherapist : target.connected ? t.cardSubTherapistNoChannel : null;
+}
+
+/** Силуэт загрузки той же разметкой, что спокойная карточка, с невидимым текстом: высота совпадает и со строкой
+ *  про своего терапевта (число в --th-card-h её не знало — список под карточкой прыгал на 28–37px). */
+export function TherapyCardSkeleton({ target }: { target: TherapyTarget }) {
+  const t = useTherapyBridgeTexts();
+  const sub = cardSub(t, target);
+  return (
+    <div className="skel th-card th-card--skel" aria-hidden="true" data-testid="therapy-card-skeleton">
+      <div className="th-card-head"><div className="ds-eyebrow">{t.cardEyebrowCalm}</div></div>
+      <div className="th-card-title">{glueBridge(t.cardTitleCalm)}</div>
+      {sub && <p className="th-card-sub">{glue(sub)}</p>}
+      <div className="th-card-acts"><span className="ds-btn th-btn">{target.write ? t.cardWrite : t.cardTalk}</span></div>
+    </div>
   );
 }
