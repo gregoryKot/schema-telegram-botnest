@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { encryptPayload, decryptPayload } from './notification-payload.crypto';
+import {
+  encryptPayload,
+  decryptPayload,
+  sentNow,
+  cancelledNow,
+} from './notification-payload.crypto';
 import { PROACTIVE_TYPES, type NotificationType } from './notification.types';
 import { claimForSend } from './notification-claim';
 import {
@@ -48,7 +53,7 @@ export class NotificationService {
   async cancel(userId: bigint, type: NotificationType) {
     await this.prisma.scheduledNotification.updateMany({
       where: { userId, type, sentAt: null, cancelledAt: null },
-      data: { cancelledAt: new Date() },
+      data: cancelledNow(),
     });
   }
 
@@ -79,7 +84,7 @@ export class NotificationService {
   async markSent(id: number) {
     await this.prisma.scheduledNotification.updateMany({
       where: { id, sentAt: null },
-      data: { sentAt: new Date() },
+      data: sentNow(),
     });
   }
 
@@ -103,7 +108,7 @@ export class NotificationService {
   async cancelAll(userId: bigint) {
     await this.prisma.scheduledNotification.updateMany({
       where: { userId, sentAt: null, cancelledAt: null },
-      data: { cancelledAt: new Date() },
+      data: cancelledNow(),
     });
   }
 
@@ -116,15 +121,12 @@ export class NotificationService {
         sentAt: null,
         cancelledAt: null,
       },
-      data: { cancelledAt: new Date() },
+      data: cancelledNow(),
     });
   }
 
-  /**
-   * Снять неотправленные уведомления этих типов; с `before` — только те, что
-   * стоят раньше этого момента (заполнение снимает напоминание на сегодня, а
-   * завтрашнее оставляет — E13, telegram.diary-complete.ts).
-   */
+  /** Снять неотправленные этих типов; с `before` — только стоящие раньше него
+   *  (заполнение снимает напоминание на сегодня, завтрашнее остаётся — E13). */
   async cancelTypes(userId: bigint, types: NotificationType[], before?: Date) {
     await this.prisma.scheduledNotification.updateMany({
       where: {
@@ -134,7 +136,7 @@ export class NotificationService {
         cancelledAt: null,
         ...(before && { sendAt: { lt: before } }),
       },
-      data: { cancelledAt: new Date() },
+      data: cancelledNow(),
     });
   }
 
@@ -176,15 +178,12 @@ export class NotificationService {
     return row?.sentAt ?? null;
   }
 
-  /**
-   * Снять одно уведомление, которое доставить некому (у аккаунта нет входа в
-   * Telegram). Именно cancelledAt, а не markSent: sentAt читает lastSentAt(),
-   * на нём стоит каденс — «отправлено» без отправки сдвинуло бы расписание.
-   */
+  /** Снять уведомление, которое некому доставить (нет входа в Telegram). Не
+   *  markSent: на sentAt (lastSentAt) стоит каденс — расписание бы сдвинулось. */
   async cancelOne(id: number) {
     await this.prisma.scheduledNotification.updateMany({
       where: { id, sentAt: null, cancelledAt: null },
-      data: { cancelledAt: new Date() },
+      data: cancelledNow(),
     });
   }
 

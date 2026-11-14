@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
-import { encryptPayload } from './notification-payload.crypto';
+import { encryptPayload, cancelledNow } from './notification-payload.crypto';
 import type { NotificationType } from './notification.types';
 
 type Db = Pick<PrismaService, '$transaction'>;
@@ -90,7 +90,7 @@ async function underRescheduleLock(
 async function cancelPending(tx: Tx, userId: bigint, type: NotificationType) {
   await tx.scheduledNotification.updateMany({
     where: { userId, type, sentAt: null, cancelledAt: null },
-    data: { cancelledAt: new Date() },
+    data: cancelledNow(),
   });
 }
 
