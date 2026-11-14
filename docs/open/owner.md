@@ -9,6 +9,8 @@
 - **Кабинет Robokassa:** тестовые пароли №1/№2 отличны от боевых (S5; код теперь сам отклоняет `IsTest=1` на боевом магазине).
 - **S10 · бэкапы можно удалить из приложения.** Статический ключ сервисного аккаунта `backup-writer` (роль `storage.editor` на бакет `schemehappens-backups`) и `BACKUP_ENCRYPTION_KEY` — в env приложения, `s3_prune` в `scripts/backup-upload.sh` сам удаляет старые копии. Включить блокировку объектов в бакете ≥30 дней, удаление — правилом жизненного цикла, шифрование — асимметричное (в env только публичный ключ).
 
+**Живой ruleset `main` без `webapp-tz`** (2026-11-14, ci-alarm #1057): внести джобу `webapp-tz` (GitHub Actions) в Require status checks ruleset `main` через настройки репозитория — копия `.github/rulesets/main.json` её уже содержит, nightly `live-ruleset` красный до правки. Агент настройки безопасности не меняет.
+
 **Уведомления в приложении ждут ключей VAPID в Amvera** (2026-11-08). Код веб-пушей
 на проде, но выключен, пока в env приложения нет пары `VAPID_PUBLIC_KEY` +
 `VAPID_PRIVATE_KEY` (`docs/ENV.md`): `GET /api/push/config` отдаёт `publicKey: null`,
@@ -259,9 +261,7 @@ Jitsi раньше вычислялся из контакта (`schemehappens-<s
 - `security.md`: «Владельцу, в env прода» (`ALLOWED_ORIGINS`).
 - `frontend-ux.md`: «Вход Telegram OIDC удалён в #725» — запрос
   `SELECT count(*) FROM "AuthProvider" WHERE provider='telegram-oidc'`.
-- `ci-tests.md`: «Мутационный замер волны А уже его реального охвата» (включать ли
-  статические мутанты) и «Волна А растёт сама» (список разрешённых спеков меняет смысл
-  замера).
+- `ci-tests.md`: «Статические мутанты не считаются» (включать ли их ночью).
 - `one-frontend.md`: «Браузерный смок PR-CI не гоняет» (Playwright в PR-CI, +1,5 мин).
 - [AUDIT_2026-10.md, «Что нужно от владельца»](../AUDIT_2026-10.md#что-нужно-от-владельца):
   п. 10 — Вебвизор в кабинете Метрики. П. 19 (старые PR) разобран — запись

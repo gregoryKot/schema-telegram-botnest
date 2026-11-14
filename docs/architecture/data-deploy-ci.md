@@ -79,7 +79,7 @@
 | shared | coverage-храповик и vitest под TZ Sydney для `shared/`, npm audit |
 | eslint | `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
 | browser-smoke | build webapp, `playwright test` (Chromium и WebKit из `actions/cache`), снимки `desktop-1280` и `phone-screens` и трейс артефактами |
-| mutation-changed | не на push; Stryker только по изменённым файлам из `mutate` золотых конфигов (`mutation-changed-files.mjs`), храповик `--partial`; без таких файлов зелёная сразу |
+| mutation-changed | не на push; Stryker только по изменённым файлам из `mutate` конфигов golden-auth, golden-payments, outbox, crisis (`mutation-changed-files.mjs`), храповик `--partial`; без таких файлов зелёная сразу |
 
 Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 4 сразу (не 1: его node отдаёт на упавшем скрипте), «реестр не ответил» — код 2 и отдельный `::error::`, «npm не может проверить» (нет lock-файла) — код 3 без повторов; реестр и `--offline=false` заданы флагами, env и `.npmrc` их не перекрывают. Разбор ответа npm — `scripts/npm-audit-report.mjs`. Шаг засчитывается гейтом, только если скрипт `run:` — одна команда (так, как его склеят YAML и `\`-продолжения shell, — `src/test-support/gates/step-script.ts`) и вызов — её исход: без `||`, `;`, `&`, `|` после него, без `exit`/`trap`/`set +e`, без своего `shell:` и `continue-on-error` с любым значением, кроме `false`. Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
 
