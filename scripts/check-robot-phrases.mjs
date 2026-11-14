@@ -28,13 +28,11 @@ const SCAN_DIRS = ['src', 'webapp/src', 'shared/src'];
 // game/: тексты игры живут только в каталоге messages.ts.
 export const SCAN_FILES = ['webapp/index.html', 'webapp/public/llms.txt', 'game/src/i18n/messages.ts'];
 
-// Юридические документы — отдельный жанр: «является публичной офертой» и
-// «обработка осуществляется в соответствии с 152-ФЗ» юридически точны, живым
-// языком их переписывать нельзя (docs/VOICE.md). Экспорт — ради теста гейта.
+// Юридические документы (оферта, политика и её глава 7 о трансграничной передаче):
+// формулировки 152-ФЗ юридически точны, живым языком их не переписать (docs/VOICE.md).
 export const EXCLUDED = new Set([
   'webapp/src/pages/OfferPage.tsx',
   'webapp/src/pages/PrivacyPage.tsx',
-  // Глава 7 политики, вынесенная из PrivacyPage.tsx (№10): «трансграничной передачей не является» — термин 152-ФЗ.
   'webapp/src/pages/privacy/NotCrossBorder.tsx',
 ]);
 
