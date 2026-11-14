@@ -42,7 +42,7 @@
 
 - ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml`, `nightly.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
 - ⬜ **Имя автора в заголовках статей на schemehappens.ru** — осознанно не тронуто в задаче «убрать имя из вкладки продукта»: сервер отдаёт статьям `<title>` «… – Григорий Котляревский» на обоих хостах (`src/articles/article-seo.middleware.ts:19,99`); вкладка после загрузки показывает «… | schemehappens.ru» (`ArticlesPage.tsx`), но поисковая выдача видит имя. Нужно решение владельца: продукту — суффикс «Всё по схеме», визитке — имя.
-- ⬜ **Мутации очереди оценок и кризисной детекции видит только ночь** — PR-джоба `mutation-changed` (`.github/workflows/ci.yml:1067`) берёт конфиги golden-auth и golden-payments, а `stryker.outbox.config.json` (`shared/src/utils/ratingOutbox.ts`) и `stryker.crisis.config.json` — нет; #1022/#1030 просадили `ratingOutbox.ts` до 89.8% (бейслайн 94.37), красный nightly 9–13.11 (#1057), PR этого не увидел
+- ⬜ **Владельцу: внести `webapp-tz` в живой ruleset `main`** — Require status checks (GitHub Actions); джоба есть в копии `.github/rulesets/main.json` с #1079, без неё `live-ruleset` в nightly красный каждую ночь и держит открытым ci-alarm #1057 (там же — проверить зелёный nightly и закрыть #1057). Запись — `docs/open/owner.md`.
 - ⬜ **Игра: реплики пролога у стены обрезаны краем, «пропустить →» на десктопе под кнопкой меню** — осталось от К3 в [GAME_ANALYSIS.md](GAME_ANALYSIS.md), вне #1117: это раскладка, а не логика — работа #1093 (`game/src/scenes/TutorialScene.ts`, `game/index.html:195-197`).
 - ⬜ **Первый замер видимости в нейросетях** — пройти 15 вопросов из
   [GEO.md](GEO.md) в Алисе AI, ChatGPT, Perplexity и Gemini, записать в журнал
@@ -135,6 +135,7 @@
 
 ## Сделано
 
+- ✅ **Мутации очереди оценок и кризисной детекции видит PR** — джоба `mutation-changed` гоняет `stryker.outbox.config.json` и `stryker.crisis.config.json` по изменённым файлам; два теста гонок `withoutSent` вернули `ratingOutbox.ts` к 95.92% (бейслайн 94.37, не поднят) (#1156).
 - ✅ **Выгрузка данных клиента отдаёт карты тем же видом, что приложение** — только карты видимых в кабинете авторов, узел колеса без листа, оценки колеса рядом (`SHOWN_EXPORTS` в `src/account/export-shown.ts` через `clientModeMapView`); #1149.
 - ✅ **Вход в форме обращения человека, лендинг без падения при запрете хранилища** — `/login` берёт «ты»/«вы» из кэша прошлого входа (`login/LoginRoute.tsx`); `useTheme` лендинга читает тему через `savedTheme()` (#1150).
 - ✅ **Merge-драйвер бейслайнов больше не задваивает правку у PR поверх влитого squash-ем PR** — `scripts/merge-json-ratchet-history.mjs`: коммит их стороны, повторяющий нашу историю бейслайна, даёт базу слияния (на истории #1123 — GameScene 1094, eslint 1405 без ручной правки); не распознал — подсказка с ключами и `--update` гейта. PR #1167.

@@ -299,6 +299,33 @@ describe('flushRatingOutbox — гонки', () => {
     expect(pendingRatingsFor('2026-07-17')).toEqual({ play: 6, safety: 8 });
   });
 
+  // Снимаются ровно доехавшие записи снимка, а не первые по счёту и не
+  // совпавшие только по ключу или только по значению.
+  it('выгрузка встала на середине — в очереди ровно недоехавшее', async () => {
+    enqueueRating(item('safety', 3, '2026-07-17'));
+    enqueueRating(item('play', 5, '2026-07-17'));
+    enqueueRating(item('safety', 5, '2026-07-17'));
+    const post = vi.fn(async (it: OutboxItem) => {
+      if (it.needId === 'play') throw new TypeError('offline');
+    });
+    await flushRatingOutbox(post);
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
+      item('play', 5, '2026-07-17'),
+    ]);
+  });
+
+  it('другая вкладка выгрузила очередь, и оценку переставили — новая остаётся', async () => {
+    enqueueRating(item('safety', 4, '2026-07-17'));
+    const post = vi.fn(async () => {
+      localStorage.setItem(
+        OUTBOX_KEY,
+        JSON.stringify([item('safety', 7, '2026-07-17')]),
+      );
+    });
+    await flushRatingOutbox(post);
+    expect(pendingRatingsFor('2026-07-17')).toEqual({ safety: 7 });
+  });
+
   it('две выгрузки сразу — один POST на оценку', async () => {
     enqueueRating(item('safety', 4, '2026-07-17'));
     enqueueRating(item('play', 6, '2026-07-17'));
