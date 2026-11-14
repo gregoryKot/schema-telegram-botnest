@@ -35,13 +35,6 @@ const DB_ROUTES: Route[] = [
     10,
   ],
   [
-    'POST /api/auth/email/link',
-    AuthAccountController,
-    AuthAccountController.prototype.emailLoginLink,
-    3,
-    10,
-  ],
-  [
     'POST /api/auth/email/link-to-account',
     AuthAccountController,
     AuthAccountController.prototype.emailLinkToAccount,

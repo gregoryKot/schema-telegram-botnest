@@ -1,8 +1,8 @@
 // Проба почты (src/infra/self-check/probe-email.ts) судит по снимку последней
-// отправки через Postbox (src/utils/alert-email-health.ts). Письма входа и
-// привязки адреса идут теми же ключами, но до 2026-11 в снимок не писали:
-// отозванный ключ ломал вход по почте, а проба оставалась зелёной, пока не
-// случится алерт (docs/open/security.md).
+// отправки через Postbox (src/utils/alert-email-health.ts). Письма привязки
+// адреса идут теми же ключами, но до 2026-11 в снимок не писали: отозванный
+// ключ ломал письма, а проба оставалась зелёной, пока не случится алерт
+// (docs/open/security.md).
 import { Logger } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { emailProbe } from '../infra/self-check/probe-email';
@@ -18,7 +18,7 @@ const KEYS = {
 };
 const env = { ...KEYS, ADMIN_EMAIL: 'owner@test.com' };
 
-describe('EmailService.send — результат письма входа виден пробе почты', () => {
+describe('EmailService.send — результат письма привязки виден пробе почты', () => {
   const origEnv = { ...process.env };
   let fetchSpy: jest.SpiedFunction<typeof fetch>;
 
@@ -35,10 +35,10 @@ describe('EmailService.send — результат письма входа ви�
     process.env = { ...origEnv };
   });
 
-  it('Postbox отклонил письмо входа (403) — проба почты красная, в снимке статус ответа', async () => {
+  it('Postbox отклонил письмо привязки (403) — проба почты красная, в снимке статус ответа', async () => {
     fetchSpy.mockResolvedValue(new Response('Forbidden\n', { status: 403 }));
     await expect(
-      new EmailService().sendLoginLink('a@test.com', 'https://x/login?t=1'),
+      new EmailService().sendLinkEmailLetter('a@test.com', 'https://x/l?t=1'),
     ).rejects.toThrow('Email delivery failed');
 
     expect(getAlertEmailHealth()).toMatchObject({ ok: false, status: 403 });
@@ -58,9 +58,9 @@ describe('EmailService.send — результат письма входа ви�
     });
   });
 
-  it('принятое письмо входа — снимок зелёный, проба видит удачную отправку', async () => {
+  it('принятое письмо привязки — снимок зелёный, проба видит удачную отправку', async () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 200 }));
-    await new EmailService().sendLoginLink('a@test.com', 'https://x/login');
+    await new EmailService().sendLinkEmailLetter('a@test.com', 'https://x/l');
     expect(getAlertEmailHealth()).toMatchObject({ ok: true, status: null });
     const res = await emailProbe(env).run();
     expect(res).toMatchObject({ ok: true });

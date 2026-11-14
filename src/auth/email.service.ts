@@ -3,9 +3,8 @@ import * as postbox from '../infra/postbox-mail';
 import { AddressForm } from '../notification/address-form';
 import * as health from '../utils/alert-email-health';
 import { linkEmailLetter } from './email-link.letter';
-import { loginLetter } from './email.letters';
 
-// Доставка писем: ссылки входа и привязки адреса (токены — AuthService),
+// Доставка писем: ссылка привязки адреса (токены — AuthService),
 // уведомления владельцу. Отправляет Yandex Cloud Postbox (infra/postbox-mail.ts);
 // без ключей (dev/CI) письмо логируется. Ответ Postbox — в снимок пробы почты
 // (alert-email-health.ts): ключи те же, что у резервных алертов.
@@ -13,18 +12,8 @@ import { loginLetter } from './email.letters';
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
-  // form: у вызывающего (AuthService) userId уже разрешён, форма обращения
-  // известна — дефолт 'ty' только на случай вызова без формы (совместимость).
-  async sendLoginLink(
-    to: string,
-    link: string,
-    form: AddressForm = 'ty',
-  ): Promise<void> {
-    const letter = loginLetter(form, link);
-    await this.send(to, letter.subject, letter.body);
-  }
-
   // Привязка адреса к существующему аккаунту — своё письмо, не «Войти» (A3).
+  // Форму обращения знает вызывающий (AuthService); 'ty' — по умолчанию.
   async sendLinkEmailLetter(
     to: string,
     link: string,

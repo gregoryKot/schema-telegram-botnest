@@ -1,6 +1,10 @@
 import { AddressForm, t } from '../notification/address-form';
-import type { Letter } from './email.letters';
 import { emailLinkCodeForLink, showEmailLinkCode } from './email-link-code';
+
+export interface Letter {
+  subject: string;
+  body: string;
+}
 
 // Письмо привязки адреса к УЖЕ существующему аккаунту (purpose=link_email_auth):
 // не «Войти» (аудит 2026-10, A3) — сказано, что делают код и ссылка. Код — для
