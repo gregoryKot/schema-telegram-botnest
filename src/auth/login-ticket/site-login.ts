@@ -8,15 +8,17 @@
 //   - одобрить билет входа из своей сессии (`confirm-login`) может только
 //     аккаунт, у которого есть способ входа кроме Telegram;
 //   - передача сессии во внешний браузер (`handoff`) — только из MAX.
+// MAX — российский сервис, но OAuth для сайтов у него нет: вход через MAX —
+// билет, который человек подтверждает в мини-приложении (`/auth/confirm`).
 // Привязка (`intent: 'link'`) остаётся: её начинает человек, уже вошедший на
-// сайт почтой, VK ID или Яндекс ID.
+// сайт почтой, VK ID, Яндекс ID или через MAX.
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { PrismaService } from '../../prisma/prisma.service';
 
-/** Способы, которыми билет входа подтверждают в браузере. */
-export const SITE_TICKET_PROVIDERS = ['vk', 'yandex', 'email'] as const;
+/** Способы, которыми подтверждают билет входа: в браузере или в мини-приложении MAX. */
+export const SITE_TICKET_PROVIDERS = ['vk', 'yandex', 'email', 'max'] as const;
 
-/** Билет входа выписывают только под подтверждение в браузере. */
+/** Билет входа выписывают только под способ, которым входят на сайт. */
 export function assertSiteTicket(intent: string, provider: string): void {
   if (intent !== 'login') return;
   if (!(SITE_TICKET_PROVIDERS as readonly string[]).includes(provider)) {

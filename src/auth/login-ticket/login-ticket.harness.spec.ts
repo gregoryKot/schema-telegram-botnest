@@ -221,7 +221,7 @@ describe('оснастка тестов билета', () => {
   it('заглушка отчёта считает шаги — иначе спеки воронки проходили бы вакуумно', async () => {
     const { tickets, report } = makeDeps();
     await startLogin(tickets);
-    expect(report.step).toHaveBeenCalledWith('issued', 'web');
+    expect(report.step).toHaveBeenCalledWith('issued', 'web', 'vk');
   });
 
   it('findUnique отдаёт копию строки, а не ссылку на неё', async () => {

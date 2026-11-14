@@ -105,7 +105,7 @@ export function AuthConfirmPage() {
         <div className="ds-eyebrow">Вход по коду</div>
         {/* Безлично: страница вне AddressFormProvider, формы взять неоткуда (как DonatePage). */}
         <h1 className="ds-h2 as-title">Это свой вход в приложение?</h1>
-        <p className="as-lead">Код показан в приложении, из которого идёт вход, — его нужно набрать здесь.</p>
+        <p className="as-lead">Код показан там, откуда идёт вход, — на сайте или в приложении. Его нужно набрать здесь.</p>
         <TicketCodeField value={typed} onChange={setTyped} matches={matches} disabled={phase === 'busy'} />
         {preview.kind === 'ok' && <p className="as-lead">Устройство: <b>{preview.deviceLabel ?? 'не определилось'}</b>, запрошено в {momentTime(preview.createdAt)}</p>}
         <p className="as-lead">

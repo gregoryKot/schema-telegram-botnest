@@ -117,6 +117,19 @@ describe('useStartParam', () => {
     expect(a.onAction).toHaveBeenCalledWith({ kind: 'tasks', taskId: 42 });
   });
 
+  // Вход на сайт через MAX: ссылка max.ru/<бот>?startapp=login_<код> открывает
+  // мини-приложение, а оно — сверку кода, где код набирают руками (S9).
+  it('login_<код> из хоста MAX уводит на сверку входа с этим кодом', () => {
+    const a = setup('login_K7M2QX94', '/today');
+    expect(a.result.current.pathname).toBe('/auth/confirm');
+    expect(a.result.current.search).toBe('?code=K7M2QX94');
+  });
+
+  it('login_ с битым кодом — никуда не уводит', () => {
+    const a = setup('login_K7M2', '/today');
+    expect(a.result.current.pathname).toBe('/today');
+  });
+
   it('ysq отдаёт действие теста, адрес остаётся на месте', () => {
     const a = setup('ysq', '/today?startapp=ysq');
     expect(a.onAction).toHaveBeenCalledWith({ kind: 'ysq' });

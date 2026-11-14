@@ -32,6 +32,8 @@ describe('LoginTicketMetricsService.getMetrics', () => {
         taken: 71n,
         too_late: 5n,
         denied: 1n,
+        max_issued: 9n,
+        max_taken: 6n,
       },
     ]);
     await expect(service.getMetrics()).resolves.toEqual({
@@ -41,6 +43,8 @@ describe('LoginTicketMetricsService.getMetrics', () => {
       taken: 71,
       tooLate: 5,
       denied: 1,
+      maxIssued: 9,
+      maxTaken: 6,
     });
   });
 
@@ -53,6 +57,8 @@ describe('LoginTicketMetricsService.getMetrics', () => {
       taken: 0,
       tooLate: 0,
       denied: 0,
+      maxIssued: 0,
+      maxTaken: 0,
     });
   });
 
