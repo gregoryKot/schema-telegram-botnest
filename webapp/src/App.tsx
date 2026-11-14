@@ -20,7 +20,7 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
-import { LoginPage } from './pages/LoginPage'; // вход и служебные — после прочих: их PaperOutcome (sceneKit) иначе переставляет CSS-чанки (b26)
+import { LoginRoute } from './pages/login/LoginRoute'; // вход и служебные — после прочих: их PaperOutcome (sceneKit) иначе переставляет CSS-чанки (b26)
 import { AuthCallback } from './pages/AuthCallback';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage'; // не ленивый: ячейки кода общие с /account (главный поток) — иначе auth-login.css уезжает в общий чанк раньше index.css (check-css-link-order)
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
@@ -106,7 +106,7 @@ const appRoutes = [
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
-  { path: '/login',          element: <LoginPage /> },
+  { path: '/login',          element: <LoginRoute /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
   { path: '/auth/confirm',   lazy: authConfirmRoute },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },

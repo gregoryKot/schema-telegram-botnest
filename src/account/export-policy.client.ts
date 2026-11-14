@@ -13,8 +13,8 @@
 //   - enc-поля из `select` обязаны быть в `schema` (расшифровываются);
 //   - `shown` — в файл уходит ровно то, что человек видит в кабинете, тем же
 //     белым списком, что и экран (что видит — то и выгружает); остальное в
-//     `withheld` с причиной. Сейчас так устроена только концептуализация:
-//     терапевт показывает клиенту схему случая тумблером.
+//     `withheld` с причиной: концептуализация (терапевт показывает схему
+//     случая тумблером) и карты режимов.
 import type { EncryptSchema } from '../utils/crypto';
 import { FIELD_POLICY } from '../utils/encryption-policy';
 
@@ -34,23 +34,14 @@ const THERAPIST_WORK_MATERIAL =
   'принимает владелец проекта по отдельному запросу';
 
 export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
-  // Клиент видит свои карты целиком (ModeMapsService.getMyModeMap), поэтому
-  // в файл они уходят расшифрованными — теми же полями, что и в приложении.
+  // Карты — тем же видом, что «Мои карты» (src/therapy/client-mode-map.ts):
+  // авторы из clientMapAuthors, узлы колеса без листа, оценки колеса рядом.
   ModeMap: {
-    status: 'export',
-    select: {
-      id: true,
-      therapistId: true,
-      title: true,
-      kind: true,
-      nodes: true,
-      edges: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    omit: { clientId: 'это сам человек — ключ выборки, не данные' },
-    // Те же поля, что MODE_MAP_SCHEMA в src/therapy/mode-maps.service.ts.
-    schema: { strings: ['title'], jsonArrays: ['nodes', 'edges'] },
+    status: 'shown',
+    reason:
+      'карты режимов: в файле те, что видны в кабинете, и тем же видом ' +
+      '(с оценками колеса); карты терапевта, от которого человек отключился ' +
+      `сам, и заметки листа колеса — ${THERAPIST_WORK_MATERIAL}`,
   },
   // Что клиент видит в «Мой терапевт»: кто, статус, ближайшая встреча; у
   // завершённой — когда и почему (сообщение о бывшем терапевте).

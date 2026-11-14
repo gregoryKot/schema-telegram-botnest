@@ -1,13 +1,14 @@
 // Часть выгрузки «данные обо мне на стороне терапевта» (A-10, аудит 2026-10):
 // модели, ключ которых clientId. Решения — в export-policy.client.ts; `shown` —
 // и строки (вид клиента), и строка в withheld о том, что осталось у терапевта.
-import { Prisma, type ClientConceptualization } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { decryptExport } from './export-decrypt';
 import {
   assertClientExportSynced,
   CLIENT_EXPORT_POLICY,
 } from './export-policy.client';
-import { clientConceptView } from '../therapy/client-concept-view';
+import type { PrismaService } from '../prisma/prisma.service';
+import { SHOWN_EXPORTS } from './export-shown';
 
 type Row = Record<string, unknown>;
 type ClientDelegate = {
@@ -15,19 +16,6 @@ type ClientDelegate = {
     where: { clientId: bigint };
     select: Record<string, true>;
   }): Prisma.PrismaPromise<Row[]>;
-};
-type ShownDelegate = {
-  findMany(args: {
-    where: { clientId: bigint; sharedWithClientAt: { not: null } };
-  }): Prisma.PrismaPromise<ClientConceptualization[]>;
-};
-
-/** `shown`-модели: вид клиента — тот же, что отдаёт экран (что видит — то и выгружает). */
-export const SHOWN_VIEWS: Record<
-  string,
-  (row: ClientConceptualization) => object | null
-> = {
-  ClientConceptualization: clientConceptView,
 };
 
 export interface ClientSideExport {
@@ -53,14 +41,10 @@ export async function exportClientSide(
     }
     if (decision.status === 'withhold') continue;
     if (decision.status === 'shown') {
-      const rows = await (prisma as Record<string, ShownDelegate>)[
-        key
-      ].findMany({
-        where: { clientId: userId, sharedWithClientAt: { not: null } },
-      });
-      data[model] = rows
-        .map((r) => SHOWN_VIEWS[model](r) as Row | null)
-        .filter((v): v is Row => v !== null);
+      data[model] = (await SHOWN_EXPORTS[model](
+        prisma as PrismaService,
+        userId,
+      )) as Row[];
       continue;
     }
     const delegate = (prisma as Record<string, ClientDelegate>)[key];
