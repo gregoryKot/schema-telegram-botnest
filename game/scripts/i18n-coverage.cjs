@@ -7,7 +7,7 @@
 // Completeness (every key has ru+en) is already guaranteed at compile time by the
 // `satisfies` in messages.ts. This guard guarantees coverage (nothing escapes it).
 //
-// Escape hatches: add `// i18n-ignore` on the line, or extend ALLOW below.
+// Escape hatches: add `// i18n-ignore` on the line, or extend ALLOW below. *.test.ts never ships — skipped.
 
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +24,7 @@ const files = [];
     const p = path.join(d, f);
     const s = fs.statSync(p);
     if (s.isDirectory()) { if (!p.endsWith(path.sep + 'i18n')) walk(p); }
-    else if (f.endsWith('.ts') && !f.endsWith('.d.ts')) files.push(p);
+    else if (f.endsWith('.ts') && !/\.(d|test)\.ts$/.test(f)) files.push(p);
   }
 })(ROOT);
 
