@@ -93,13 +93,11 @@ export default tseslint.config(
     languageOptions: { sourceType: 'module' },
   },
   {
-    // Игра (game/) — браузерный бандл Phaser со своим tsconfig: projectService
-    // берёт ближайший game/tsconfig.json, типы phaser — из game/node_modules.
+    // Игра (game/) — бандл Phaser со своим tsconfig (типы phaser — из game/node_modules).
+    // prettier выключен: компактный стиль игры, форматирование раздуло бы её на ~3000 строк (№10).
     files: ['game/**/*.ts'],
-    languageOptions: {
-      globals: { ...globals.browser },
-      sourceType: 'module',
-    },
+    languageOptions: { globals: { ...globals.browser }, sourceType: 'module' },
+    rules: { 'prettier/prettier': 'off' },
   },
   {
     // shared/vitest.config.ts — конфиг тестов shared-пакета (этап 2.2): не
