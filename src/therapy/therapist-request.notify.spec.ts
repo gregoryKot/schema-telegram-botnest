@@ -3,11 +3,9 @@
 // (правило №10 CLAUDE.md — лимит размера файла).
 //
 // Регрессия на инцидент «заявка на психолога не доходит до бота»: после
-// переезда бота (@SchemaLabBot → @SchemeHappensBot) DM админу мог молча
-// падать (админ ещё не нажал Start у нового бота), а старый sendTg только
-// писал warn в лог — заявка терялась. Фикс: при неудачной доставке в
-// Telegram уходит e-mail-фолбэк (notifyAdminWithFallback), покрыто ниже
-// в describe('TherapistRequestNotifyService.notifyAdmin — доставка заявки админу').
+// переезда бота DM админу мог молча падать, и заявка терялась. Теперь письмо
+// с данными заявителя уходит всегда (в Telegram — только номер и кнопки),
+// покрыто ниже в describe('TherapistRequestNotifyService.notifyAdmin — …').
 //
 // Регрессия на правило ты/вы (CLAUDE.md «Обращение ты/вы»): notifyApplicant
 // раньше писал заявителю только «Твоя заявка…» независимо от выбранной
@@ -15,13 +13,11 @@
 import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { Logger } from '@nestjs/common';
 import { isTelegramUserId } from '../auth/user-id-range';
-import * as adminAlert from '../utils/admin-alert';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn(() => Promise.resolve()),
 }));
-
-const fallback = adminAlert.notifyAdminWithFallback as jest.Mock;
 
 interface Fixture {
   providers?: Array<{ provider: string; providerId: string; email?: string }>;
@@ -64,7 +60,12 @@ function makeService(
     }
     return Promise.resolve(m);
   });
-  const email = { send: jest.fn(() => Promise.resolve(true)) };
+  const email = {
+    send: jest.fn(() => Promise.resolve(true)),
+    sendAdminNotification: jest.fn((_s: string, _t: string): Promise<boolean> =>
+      Promise.resolve(true),
+    ),
+  };
   const svc = new TherapistRequestNotifyService(
     prisma,
     { telegramIdsFor } as any,
@@ -105,68 +106,135 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
     process.env = ORIGINAL_ENV;
   });
 
-  it('DM админу не прошёл (Telegram 403) → e-mail-фолбэк вызван', async () => {
-    mockFetchForNotify(false);
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+  // Данные заявителя несёт только письмо: оно уходит при любом исходе DM,
+  // иначе владельцу не на чем решать (карточка в Telegram — номер и кнопки).
+  let email: ReturnType<typeof makeService>['email'];
+  const run = (
+    req: Parameters<TherapistRequestNotifyService['notifyAdmin']>[0],
+  ) => {
+    const made = makeService();
+    email = made.email;
+    return made.svc.notifyAdmin(req);
+  };
+  const mailedOnce = () => {
+    expect(email.sendAdminNotification).toHaveBeenCalledTimes(1);
+    const [subject, text] = email.sendAdminNotification.mock.calls[0];
+    expect(subject).toBe('🩺 Заявка на роль терапевта #42');
+    return text;
+  };
 
-    expect(fallback).toHaveBeenCalledTimes(1);
-    expect(fallback.mock.calls[0][0]).toContain('#42');
+  it('DM админу не прошёл (Telegram 403) → письмо с данными ушло', async () => {
+    mockFetchForNotify(false);
+    await run(NOTIFY_REQ);
+    expect(mailedOnce()).toContain('#42');
   });
 
-  it('ADMIN_ID не задан → пуш невозможен, e-mail-фолбэк вызван', async () => {
+  it('ADMIN_ID не задан → пуш невозможен, письмо ушло', async () => {
     delete process.env.ADMIN_ID;
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
 
     expect(fetchMockLocal).not.toHaveBeenCalled();
-    expect(fallback).toHaveBeenCalledTimes(1);
-    // Тот же контент заявки, что и в остальных сценариях фолбэка — не пустышка.
-    expect(fallback.mock.calls[0][0]).toContain('#42');
+    expect(mailedOnce()).toContain('Мария Иванова');
   });
 
-  it('DM админу прошёл (Telegram ok) → e-mail-фолбэк НЕ нужен', async () => {
+  it('DM прошёл → письмо всё равно ушло; DM — номер и кнопки, без данных заявителя', async () => {
     const fetchMockLocal = mockFetchForNotify(true);
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
 
-    expect(fallback).not.toHaveBeenCalled();
-    // Успешный путь — DM реально ушёл в Telegram, а не просто «раньше не дошли до фолбэка».
+    expect(mailedOnce()).toContain('Мария Иванова');
     expect(fetchMockLocal).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMockLocal.mock.calls[0];
     expect(url).toBe('https://api.telegram.org/bottest-token/sendMessage');
     const body = JSON.parse(init.body as string);
     expect(body.chat_id).toBe(999); // ADMIN_ID из process.env в этом describe
     expect(body.text).toContain('#42');
+    expect(body.text).toContain('в письме на почте');
+    expect(body.text).not.toContain('Мария');
+    expect(body.reply_markup.inline_keyboard[0]).toEqual([
+      { text: '✅ Approve', callback_data: 'treq:approve:42' },
+      { text: '❌ Reject', callback_data: 'treq:reject:42' },
+    ]);
   });
 
-  it('BOT_TOKEN не задан → sendTg не бьёт по сети, сразу e-mail-фолбэк', async () => {
+  it('данные заявителя из маркеров: ни одного в DM и кнопках, все — в письме', async () => {
+    const fetchMockLocal = mockFetchForNotify(true);
+    await run({
+      id: 42,
+      userId: PII.telegramId,
+      fullName: PII.name,
+      qualification: PII.qualification,
+      contacts: PII.contact,
+      message: PII.message,
+      createdAt: new Date('2026-11-13T12:04:00Z'),
+    });
+    const body = JSON.parse(fetchMockLocal.mock.calls[0][1].body as string);
+    expectNoMarkers(body.text, body.reply_markup);
+    expect(body.text).toContain('Подана: 13.11.2026, 15:04 МСК');
+    const mail = mailedOnce();
+    for (const m of [PII.name, PII.qualification, PII.contact, PII.message]) {
+      expect(mail).toContain(m);
+    }
+  });
+
+  it('BOT_TOKEN не задан → sendTg не бьёт по сети, письмо ушло', async () => {
     delete process.env.BOT_TOKEN;
     const fetchMockLocal = jest.fn();
     global.fetch = fetchMockLocal;
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
+    await run(NOTIFY_REQ);
 
     expect(fetchMockLocal.mock.calls).toEqual([]);
-    expect(fallback.mock.calls).toHaveLength(1);
-    expect(fallback.mock.calls[0][0]).toContain('#42');
+    expect(mailedOnce()).toContain('#42');
   });
 
-  it('сетевая ошибка fetch (не HTTP-статус, а reject) → e-mail-фолбэк', async () => {
+  it('сетевая ошибка fetch (не HTTP-статус, а reject) → письмо ушло', async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error('ECONNRESET')));
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
-
-    expect(fallback.mock.calls).toHaveLength(1);
-    expect(fallback.mock.calls[0][0]).toContain('Мария Иванова');
+    await run(NOTIFY_REQ);
+    expect(mailedOnce()).toContain('Мария Иванова');
   });
 
-  it('сетевая ошибка fetch НЕ-Error объектом (напр. строкой) — не падает, e-mail-фолбэк', async () => {
+  it('сетевая ошибка fetch НЕ-Error объектом (напр. строкой) — не падает, письмо ушло', async () => {
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- намеренно не-Error reject
     global.fetch = jest.fn(() => Promise.reject('boom-string'));
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
-
-    expect(fallback.mock.calls).toHaveLength(1);
-    expect(fallback.mock.calls[0][0]).toContain('#42');
+    await run(NOTIFY_REQ);
+    expect(mailedOnce()).toContain('#42');
   });
 
-  it('Telegram вернул не-ok без description в теле → фолбэк-текст не падает на undefined', async () => {
+  // Данные заявителя — только в письме: его потеря обязана быть видна
+  // владельцу (error уходит алертом), но без данных человека.
+  it.each([
+    ['вернуло false', () => Promise.resolve(false), 'false'],
+    ['бросило', () => Promise.reject(new Error(PII.error)), 'Error'],
+  ])(
+    'письмо не ушло (%s) → error со стабильным текстом и номером',
+    async (_n, fail, kind) => {
+      mockFetchForNotify(true);
+      const error = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      const made = makeService();
+      made.email.sendAdminNotification.mockImplementationOnce(fail);
+      await made.svc.notifyAdmin({ ...NOTIFY_REQ, fullName: PII.name });
+      expect(error).toHaveBeenCalledWith(
+        `Therapist request #42: admin e-mail not delivered (${kind})`,
+      );
+      for (const c of error.mock.calls) expectNoMarkers(String(c[0]));
+      error.mockRestore();
+    },
+  );
+
+  it('письмо ушло — ошибки о доставке нет', async () => {
+    mockFetchForNotify(true);
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    await run(NOTIFY_REQ);
+    expect(mailedOnce()).toContain('Мария Иванова');
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
+
+  it('Telegram вернул не-ok без description в теле → текст письма не падает на undefined', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: false,
@@ -174,13 +242,8 @@ describe('TherapistRequestNotifyService.notifyAdmin — доставка зая�
         json: () => Promise.resolve({}),
       }),
     );
-    await makeService().svc.notifyAdmin(NOTIFY_REQ);
-
-    // Раз delivered=false — фолбэк всё равно сработал, и текст фолбэка не
-    // содержит "undefined" (что случилось бы, интерполируй код отсутствующий
-    // err.description напрямую вместо fallback '(no description)').
-    expect(fallback.mock.calls).toHaveLength(1);
-    expect(fallback.mock.calls[0][0]).not.toContain('undefined');
+    await run(NOTIFY_REQ);
+    expect(mailedOnce()).not.toContain('undefined');
   });
 });
 

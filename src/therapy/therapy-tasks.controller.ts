@@ -66,13 +66,7 @@ export class TherapyTasksController {
       assignedBy,
     );
     if (assignedBy && targetUserId > 0n) {
-      await this.tasksService.scheduleTaskNotification(targetUserId, {
-        type: body.type,
-        text: body.text,
-        needId: body.needId ?? null,
-        dueDate: body.dueDate ?? null,
-        taskId: task.id,
-      });
+      await this.tasksService.scheduleTaskNotification(targetUserId, task.id);
     }
     return task;
   }

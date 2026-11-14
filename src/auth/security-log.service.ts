@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { AlertBudget } from '../utils/alert-throttle';
 import { redactSecurityLogData } from './security-log-redact';
+import { securityAlertText } from './security-log-alert';
 
 // Lightweight audit channel: posts security-relevant events to the admin
 // Telegram chat (with e-mail fallback), plus structured server logs. Use
@@ -133,14 +134,8 @@ export class SecurityLogService {
     suppressed: number,
   ): Promise<void> {
     const redacted = redactSecurityLogData(data);
-    const text =
-      `🔐 ${event}\n` +
-      Object.entries(redacted)
-        .map(([k, v]) => `${k}: ${String(v).slice(0, 80)}`)
-        .join('\n') +
-      // Непустой счётчик — значит, бюджет предыдущего окна упирался в
-      // потолок; сообщаем, сколько таких же DM проглотили молча.
-      (suppressed > 0 ? `\n\nещё ${suppressed} за окно` : '');
+    const at = new Date(this.now());
+    const text = securityAlertText(event, redacted, suppressed, at);
     // Telegram first, e-mail fallback so security events are never lost.
     await notifyAdminWithFallback(text, `🔐 Security: ${event}`);
   }

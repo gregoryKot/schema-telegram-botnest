@@ -281,6 +281,14 @@ test.describe('игра: телефон в портрете', () => {
     await expect.poll(running, { timeout: 30_000 }).toBe(false);
     await page.setViewportSize({ width: 800, height: 360 });
     await expect(page.locator('#rotate-hint')).toBeHidden();
+    // ScaleManager во сне пропускает resize — без refresh() кадр оставался 360×200
+    const canvasW = () =>
+      page.evaluate(() =>
+        Math.round(
+          document.querySelector('canvas')!.getBoundingClientRect().width,
+        ),
+      );
+    await expect.poll(canvasW, { timeout: 10_000 }).toBe(640);
     await page.waitForFunction(
       () => !!(window as unknown as GameWindow).__game?.scene.isActive('Game'),
       null,

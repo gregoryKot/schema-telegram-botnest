@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import { W, H, GROUND_Y, PHYS, S } from '../constants';
+import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { trackEvent } from '../analytics';
 import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
+import { buildGroundStrip } from '../ground';
 import { addGlow, HUD_STROKE } from '../look';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -58,7 +59,6 @@ export class TutorialScene extends Phaser.Scene {
   private bubbleT = 0;
   private step: Step = 'meet';
   private t = 0;
-  private said = new Set<string>();
   private narrContinue: (() => void) | null = null; // листать текст по тач-кнопке
 
   // жизни (как в игре — учим, что копинг их тратит)
@@ -68,7 +68,7 @@ export class TutorialScene extends Phaser.Scene {
   // dash
   private pile: Phaser.GameObjects.Container | null = null;
   private pileSpr: Phaser.GameObjects.Sprite | null = null;
-  private dashed = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
+  private dashed = false; private dashHold = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
   private neiSayT = 0; private neiLine = 0;
   private wrongCd = 0; private lastWrong = -1; // объяснения «не та кнопка» — троттлинг + без повтора
   private holdT = 0; // сколько держат ИЗБЕГАЙ: долгий тап новичка — ещё не «залип»
@@ -94,8 +94,8 @@ export class TutorialScene extends Phaser.Scene {
 
   create() {
     setTouchControls(true); // геймплей — тач-кнопки нужны
-    this.step = 'meet'; this.t = 0; this.said = new Set(); this.holdT = 0; this.finished = false;
-    this.moved = 0; this.jumped = false; this.pile = null; this.dashed = false;
+    this.step = 'meet'; this.t = 0; this.holdT = 0; this.finished = false;
+    this.moved = 0; this.jumped = false; this.pile = null; this.dashed = false; this.dashHold = false;
     this.worries = []; this.calmT = 0; this.colleague = null; this.colBubble = null;
     this.neighbor = null; this.neiBubble = null;
 
@@ -104,10 +104,7 @@ export class TutorialScene extends Phaser.Scene {
     bg.fillGradientStyle(0x18142a, 0x18142a, 0x2e2440, 0x2e2440, 1, 1, 1, 1);
     bg.fillRect(0, 0, W, H); addGlow(this, W / 2, GROUND_Y, 620, 300, 0xffe9c0, 0.12, 0);
     // пол — деревянная текстура (как дома в главах), а не плоский прямоугольник
-    const TW = 16 * S;
-    for (let fx = -TW; fx <= W + TW; fx += TW)
-      this.add.image(fx, GROUND_Y, 'ground_room').setOrigin(0, 0).setDepth(1);
-    bg.fillStyle(0x2e1d10, 1); bg.fillRect(0, GROUND_Y + TW, W, H - GROUND_Y - TW);
+    buildGroundStrip(this, 'ground_room', -32, W + 32, 1, false);
 
     const floor = this.add.rectangle(W / 2, GROUND_Y + 20, W, 40, 0, 0);
     this.physics.add.existing(floor, true);
@@ -129,13 +126,13 @@ export class TutorialScene extends Phaser.Scene {
     // реально загрузилась — иначе .play() по пустой анимации роняет update-цикл
     // и игра «зависает» (так вешалось ОТВЛЕКИСЬ без клубка).
     this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
-    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
     // выпад атаки — тот же спрайт, что в игре (cat_dash), грузится в фоне
     this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setDepth(11).setVisible(false);
+    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'),
@@ -179,13 +176,11 @@ export class TutorialScene extends Phaser.Scene {
 
     this.meet();
   }
-
   // Создать анимацию только если её спрайт-лист реально загрузился.
   private safeAnim(key: string, sheet: string, start: number, end: number, frameRate: number, repeat: number) {
     if (this.anims.exists(key) || !this.textures.exists(sheet)) return;
     this.anims.create({ key, frames: this.anims.generateFrameNumbers(sheet, { start, end }), frameRate, repeat });
   }
-
   private updateHearts() {
     this.heartsText.setText('♥'.repeat(Math.max(0, this.hearts)) + '·'.repeat(Math.max(0, 3 - this.hearts)));
   }
@@ -201,7 +196,6 @@ export class TutorialScene extends Phaser.Scene {
     this.time.delayedCall(180, () => this.player.clearTint());
     this.say(msg, 2600);
   }
-
   // ── Знакомство ──────────────────────────────────────────────────────────────
   private meet() {
     this.narrTell('m_this_is_mister_the_cat_lives', () => {
@@ -214,7 +208,6 @@ export class TutorialScene extends Phaser.Scene {
         });
     });
   }
-
   // Стоп-кадр для текста: мир замирает и темнеет, читаешь спокойно,
   // дальше — по тапу/клавише. Иначе внимание на коте и текст теряется.
   private narrTell(text: MsgKey, onContinue: () => void) {
@@ -242,12 +235,12 @@ export class TutorialScene extends Phaser.Scene {
     // небольшая задержка, чтобы случайный зажатый input не проскочил текст
     this.time.delayedCall(700, () => {
       if (!this.paused) return;
+      touch.drain(); // тап до кадра не листает его вслепую
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);
       this.narrContinue = go; // тап по тач-кнопке (HTML вне канваса) тоже листает
     });
   }
-
   update(_: number, dt: number) {
     this.t += dt;
     if (this.hurtT > 0) this.hurtT -= dt;
@@ -279,7 +272,6 @@ export class TutorialScene extends Phaser.Scene {
       case 'fawn':   this.updateNeighbor(dt); break;
     }
   }
-
   // ── Управление (упрощённый дубль движка) ────────────────────────────────────
   private updateMoves(dt: number) {
     const b = this.player.body as Phaser.Physics.Arcade.Body;
@@ -298,15 +290,16 @@ export class TutorialScene extends Phaser.Scene {
     // на кадре нажатия — это рывок, не залипание (иначе frozen гасит рывок)
     this.frozen = avoidHeld && !dash && onGround && this.dashT <= 0;
     this.holdT = this.frozen ? this.holdT + dt : 0;
-    // залип (ИЗБЕГАЙ держать) там, где это не работает — объясняем почему; но не за долгий тап новичка
-    if (this.frozen && this.holdT > 400 && (this.step === 'dash' || this.step === 'fight' || this.step === 'fawn')) this.wrongTry('freeze');
+    if (!avoidHeld) this.dashHold = false;
+    // залип (ИЗБЕГАЙ держать) там, где это не работает — объясняем почему; но не за долгий тап, начавшийся рывком
+    if (this.frozen && this.holdT > 400 && !this.dashHold && (this.step === 'dash' || this.step === 'fight' || this.step === 'fawn')) this.wrongTry('freeze');
     if (fawn) this.onFawn();
 
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.attackCd > 0) this.attackCd -= dt;
 
     if (dash && this.dashCd <= 0 && !this.frozen) {
-      this.dashT = 170; this.dashCd = 480;
+      this.dashT = 170; this.dashCd = 480; this.dashHold = true;
       this.dashDir = left && !right ? -1 : right ? 1 : this.player.flipX ? -1 : 1;
       audio.dash();
       this.onDash();
@@ -366,7 +359,6 @@ export class TutorialScene extends Phaser.Scene {
       if (this.attackT <= 0) { this.lungeSprite.setVisible(false); this.player.setVisible(true); }
     }
   }
-
   // мелкие частицы (как burst в игре) — для удара
   private burstAt(x: number, y: number, color: number) {
     for (let i = 0; i < 4; i++) {
@@ -375,7 +367,6 @@ export class TutorialScene extends Phaser.Scene {
       this.tweens.add({ targets: p, x: x + Math.cos(ang) * s, y: y + Math.sin(ang) * s, alpha: 0, scale: 0, duration: 300, onComplete: () => p.destroy() });
     }
   }
-
   // Снести объекты предыдущей сценки — страховка от наслоения («всё сразу»)
   private clearBeat() {
     this.pile?.destroy(); this.pile = null;
@@ -385,7 +376,6 @@ export class TutorialScene extends Phaser.Scene {
     this.sceneDecor?.destroy(); this.sceneDecor = null;
     if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
   }
-
   // Обстановка под сценку: офис / спальня-ночь / спальня-утро / дверь
   private setScene(kind: 'office' | 'night' | 'morning' | 'door') {
     this.sceneDecor?.destroy();
@@ -419,7 +409,6 @@ export class TutorialScene extends Phaser.Scene {
       prop('prop_door', W - 110, 150);
     }
   }
-
   // ── Шаг 1: походить-попрыгать ───────────────────────────────────────────────
   private checkWalk() {
     if (this.moved > 900 && this.jumped) {
@@ -433,7 +422,6 @@ export class TutorialScene extends Phaser.Scene {
       });
     }
   }
-
   // ── Шаг 2: БЕГИ — куча дел, от которой можно только увернуться ─────────────
   private spawnPile() {
     const c = this.add.container(110, GROUND_Y).setDepth(8); // на экране слева, наступает
@@ -443,7 +431,6 @@ export class TutorialScene extends Phaser.Scene {
     c.add(this.pileSpr);
     this.pile = c;
   }
-
   private updatePile(dt: number) {
     const p = this.pile; if (!p) return;
     const d = this.player.x - p.x;
@@ -468,7 +455,6 @@ export class TutorialScene extends Phaser.Scene {
     this.say(line, 2600);
     this.time.delayedCall(1500, () => this.beginFreeze());
   }
-
   // ── Шаг 3: ЗАЛИПНИ — переживания, которые нельзя ни убить, ни обогнать ───────
   private beginFreeze() {
     if (this.step !== 'dash') return;
@@ -482,7 +468,6 @@ export class TutorialScene extends Phaser.Scene {
       audio.anx();
     });
   }
-
   private updateWorries(dt: number) {
     this.orbit += dt * 0.0022;
     this.worries.forEach((w, i) => {
@@ -496,7 +481,10 @@ export class TutorialScene extends Phaser.Scene {
       this.calmT += dt;
       this.worries.forEach(w => w.setAlpha(Math.max(0.15, 1 - this.calmT / 1900)));
       if (this.calmT > 2000 && this.worries.some(w => w.active)) {
-        this.worries.forEach(w => { this.tweens.add({ targets: w, alpha: 0, scale: 0, duration: 400, onComplete: () => w.destroy() }); });
+        // иначе, пока гаснут, успех и beginFight — на каждом кадре
+        const gone = this.worries;
+        this.worries = [];
+        gone.forEach(w => { this.tweens.add({ targets: w, alpha: 0, scale: 0, duration: 400, onComplete: () => w.destroy() }); });
         this.say('m_the_yarn_matters_more_and_the', 2600);
         audio.freeze();
         this.time.delayedCall(1600, () => this.beginFight());
@@ -539,7 +527,16 @@ export class TutorialScene extends Phaser.Scene {
     if (this.step !== 'fight') { this.wrongTry('hit'); return; }
     if (!this.colleague?.active) return;
     // удар — аура вокруг кота (как в игре), а не узкий конус спереди
-    if (Math.hypot(this.colleague.x - this.player.x, this.colleague.y - (this.player.y - 22)) > 104) { this.sayOnce('alarm_far', 'm_come_closer', 2000); return; }
+    const dx = this.colleague.x - this.player.x;
+    const dy = this.colleague.y - (this.player.y - 22);
+    if (Math.hypot(dx, dy) > 104) {
+      // подсказка на каждый промах, не только на первый
+      if (this.wrongCd <= 0) {
+        this.wrongCd = 900;
+        this.say('m_come_closer', 2000);
+      }
+      return;
+    }
     audio.hit();
     this.cameras.main.shake(220, 0.015);
     const c = this.colleague; this.colleague = null;
@@ -617,6 +614,7 @@ export class TutorialScene extends Phaser.Scene {
     trackEvent('game_tutorial_done');
     this.setNarr('m_fight_avoid_surrender_should_be_enough');
     this.setPrompt(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next');
+    touch.drain(); // запоздалый тап не листает финал
     this.input.once('pointerdown', () => this.goIntro());
     this.input.keyboard!.once('keydown', () => this.goIntro());
   }
@@ -626,7 +624,6 @@ export class TutorialScene extends Phaser.Scene {
   private setNarr(s: MsgKey | '') { this.narr.setText(s === '' ? '' : t(s)); }
   private setPrompt(s: MsgKey | '') { this.prompt.setText(s === '' ? '' : t(s)); }
   private say(text: MsgKey, dur: number) { this.bubble.setText(t(text)).setAlpha(1); this.bubbleT = dur; }
-  private sayOnce(key: string, text: MsgKey, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
   // нажал «не ту» кнопку в этой сценке — объясняем, почему не сработает (разные варианты)
   private wrongTry(action: string) {
     const pool = WRONG[this.step]?.[action];

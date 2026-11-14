@@ -77,7 +77,6 @@
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
-  - `src/therapy/task-title.ts` — название задания для уведомления в боте («Карточка схемы: …»); названия схем/режимов — копия `shared` в `task-title.data.ts`, сверка `task-title.sync.spec.ts`
   - `src/therapy/streak-progress.ts` — прогресс задания-серии: дни с дня назначения по календарю клиента; один расчёт для /tasks клиента, карточки у терапевта и авто-закрытия; окно `[день назначения, + targetDays)` и просрочка — `src/therapy/streak-window.ts` (у закрытого окно замирает в `completedAt`)
   - `src/therapy/assigned-task.ts` — удаление и отметка «выполнено» задания терапевтом (офлайн-клиенту выполнить его некому); доступ — задание назначено этим терапевтом и связь активна, иначе 403
   - `src/therapy/dto/not-future-day.ts` — валидатор `NotFutureDay`: «начало терапии» не позже самого позднего «сегодня» на Земле (UTC+14)
@@ -134,7 +133,7 @@
   - Троттлинг-хранилище — вне infra: `src/api/hybrid-throttle-storage.ts` + `src/api/postgres-throttle-storage.ts`
 - Связи: Prisma (CronLease, WebSession, EmailToken); `CronLeaderModule` — @Global, `claimRun` зовут кроны booking/, auth/, channel/, telegram/; `SelfCheckService` и `ThrottleHitModule` регистрируются в `src/app.module.ts`; `src/main.ts` вызывает boot-проверки env и capability; пробы читают `src/cli/rotate-encryption/delegates.ts` и `src/utils/alert-email-health.ts`.
 - Подводные камни:
-  - `logger.error(...)` в проде = DM админу и e-mail (AlertLogger шлёт только первый аргумент, с троттлингом): в нём ни секретов, ни клиентского текста; ожидаемые сбои — `warn`.
+  - `logger.error(...)` в проде = DM админу и e-mail с троттлингом: в DM только место (контекст логгера), тип ошибки (имя класса и `code` из Error или stack-строки среди аргументов) и id; полный текст — в stdout строкой `[alert <id>] …` (`src/logger/alert-text.ts`, РКН #1135). Ошибку передавать вторым аргументом — иначе тип «—»; в логе всё равно ни секретов, ни клиентского текста; ожидаемые сбои — `warn`.
   - Новый `@Cron` с записью/рассылкой берёт `claimRun` (иначе дубль на втором инстансе; исключения — `scripts/cron-leader-baseline.json`) и вносится в `src/infra/self-check/cron-lease-registry.ts`; новая env — в `env-registry.entries.*.ts` (гейт `scripts/check-env-registry.mjs`), фича, выключаемая отсутствием env, — в `src/infra/capability-report.ts` (гейт `scripts/check-capability-registry.mjs`).
 
 ### `src/prisma/`
@@ -204,7 +203,7 @@
   - `src/test-support/gates/workflow-yaml.ts` — построчный разбор workflow (`on:`, джобы)
   - `src/test-support/gates/step-script.ts` — значение `run:` шага так, как его получит shell (склейка plain/`>`-скаляра YAML и `\`-продолжений), для гейта `lockfile-audit`
   - `src/test-support/gates/fake-npm.ts` — поддельный `npm` на PATH с записанными ответами реестра для исполнения `scripts/npm-audit.mjs` и ночного шага audit
-  - `src/test-support/gates/job-timeouts.ts`, `src/test-support/gates/dependabot-coverage.ts`, `src/test-support/gates/lockfile-audit.ts`, `src/test-support/gates/alarm-needs.ts` — правила над workflow и dependabot.yml
+  - `src/test-support/gates/job-timeouts.ts`, `src/test-support/gates/dependabot-coverage.ts`, `src/test-support/gates/lockfile-audit.ts`, `src/test-support/gates/alarm-needs.ts`, `src/test-support/gates/game-smoke-marker.ts` — правила над workflow и dependabot.yml
 - Связи: спеки запускают `scripts/check-*.mjs` и читают `scripts/*-baseline.json`, `.github/workflows/*.yml`, `.github/dependabot.yml`; те же скрипты CI вызывает шагами в `.github/workflows/ci.yml`; сами спеки идут в обычном `jest` (rootDir `src`).
 - Подводные камни:
   - Гейт-скрипт держит scan/report за `if (isMain)`, иначе `src/test-support/gates/pattern-loader.ts` получит побочные эффекты при импорте; `runGate` копирует и локальные зависимости скрипта (`withLocalDeps`).

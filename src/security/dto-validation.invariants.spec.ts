@@ -160,11 +160,11 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'api/tracker.controller.ts:177':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
-  'booking/payment.controller.ts:65':
-    "одиночное поле @Body('OutSum') — вебхук Robokassa",
   'booking/payment.controller.ts:66':
-    "одиночное поле @Body('InvId') — вебхук Robokassa",
+    "одиночное поле @Body('OutSum') — вебхук Robokassa",
   'booking/payment.controller.ts:67':
+    "одиночное поле @Body('InvId') — вебхук Robokassa",
+  'booking/payment.controller.ts:68':
     "одиночное поле @Body('SignatureValue') — вебхук Robokassa, подпись " +
     'проверяется вручную в RobokassaService',
 };

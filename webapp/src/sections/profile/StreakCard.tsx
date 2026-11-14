@@ -12,7 +12,7 @@ export function StreakCard({ streak, onOpenTracker }: Props) {
     ? `${daysWord(currentStreak)}\nподряд`
     : totalDays === 0 ? 'пока\nне начато' : 'серия\nпрервалась';
   return (
-    <section className="ds-card cpf-card cpf-streak-card">
+    <div className="cpf-streak-card">
       <h2 className="ds-h3 cpf-streak-title">Стрик</h2>
       <div className="cpf-streak-top">
         <div className="cpf-streak-main">
@@ -41,6 +41,6 @@ export function StreakCard({ streak, onOpenTracker }: Props) {
       {currentStreak === 0 && totalDays > 0 && onOpenTracker && (
         <button type="button" className="ds-btn ds-btn--secondary cpf-cta" onClick={onOpenTracker}>Заполнить сегодня →</button>
       )}
-    </section>
+    </div>
   );
 }

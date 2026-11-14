@@ -7,6 +7,8 @@
 import { ConflictException, Logger } from '@nestjs/common';
 import { SessionType } from '@prisma/client';
 import { createBookingGuarded } from './booking.create';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
+import type { OwnerNotice } from '../utils/owner-card';
 
 const LEAD = {
   clientName: 'Мария',
@@ -31,9 +33,12 @@ function makeDeps(opts: { lockError?: Error; taken?: boolean } = {}) {
     },
   };
   const prisma: any = { $transaction: jest.fn(async (fn: any) => fn(tx)) };
-  const notify = { notifyAdminBoth: jest.fn(async () => undefined) };
+  const notify = {
+    notifyAdminBoth: jest.fn(async (_t: OwnerNotice, _s: string) => undefined),
+  };
   const logger = new Logger('test');
   jest.spyOn(logger, 'error').mockImplementation(() => undefined);
+  jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
   return { deps: { prisma, notify, logger }, tx, notify, logger };
 }
 
@@ -52,22 +57,52 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     expect(tx.booking.create).not.toHaveBeenCalled();
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     const [html, subject] = notify.notifyAdminBoth.mock.calls[0];
-    expect(html).toContain('НЕ сохранилась');
-    expect(html).toContain('Мария');
-    expect(html).toContain('@maria');
-    expect(html).toContain('хочу разобраться с тревогой');
-    expect(html).toContain("column of type 'void'");
+    // Письмо — всё, чтобы связаться вручную, вместе с текстом ошибки.
+    expect(html.email).toContain('НЕ сохранилась');
+    expect(html.email).toContain('Мария');
+    expect(html.email).toContain('@maria');
+    expect(html.email).toContain('хочу разобраться с тревогой');
+    expect(html.email).toContain("column of type 'void'");
+    // Telegram — факт, слот и тип ошибки; без данных человека и её текста.
+    expect(html.telegram).toContain('НЕ сохранилась');
+    expect(html.telegram).toContain('Причина: Error');
+    expect(html.telegram).not.toContain('Мария');
+    expect(html.telegram).not.toContain('@maria');
+    expect(html.telegram).not.toContain('тревогой');
+    expect(html.telegram).not.toContain('void');
     expect(subject).toContain('не сохранилась');
   });
 
-  it('провал пишется в error стабильным текстом с причиной (мутационный замер)', async () => {
+  it('провал: в error (уходит владельцу в Telegram) — стабильный тип ошибки, её текст — в warn', async () => {
     const { deps, logger } = makeDeps({ lockError: new Error('pool closed') });
     await expect(
       createBookingGuarded(deps, { clientName: 'x' } as any, LEAD),
     ).rejects.toThrow('pool closed');
     expect(logger.error).toHaveBeenCalledWith(
-      'Booking create failed, lead alerted: pool closed',
+      'Booking create failed, lead alerted: Error',
     );
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Booking create failure: pool closed',
+    );
+  });
+
+  it('данные человека и текст ошибки не уходят ни в Telegram-карточку, ни в error', async () => {
+    const err = Object.assign(new Error(PII.error), { code: 'P1001' });
+    const { deps, notify, logger } = makeDeps({ lockError: err });
+    const lead = {
+      ...LEAD,
+      clientName: PII.name,
+      clientContact: PII.contact,
+      message: PII.message,
+    };
+    await expect(createBookingGuarded(deps, {} as any, lead)).rejects.toBe(err);
+    const [html] = notify.notifyAdminBoth.mock.calls[0];
+    expectNoMarkers(html.telegram);
+    expect(html.telegram).toContain('Error P1001');
+    expectNoMarkers(String((logger.error as jest.Mock).mock.calls[0][0]));
+    for (const m of [PII.name, PII.contact, PII.message, PII.error]) {
+      expect(html.email).toContain(m);
+    }
   });
 
   it('БД недоступна ещё до лока (сам $transaction бросает) — тоже лид админу', async () => {
@@ -80,7 +115,7 @@ describe('createBookingGuarded — резерв для заявки (инцид�
       'connection terminated',
     );
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
-    expect(notify.notifyAdminBoth.mock.calls[0][0]).toContain(
+    expect(notify.notifyAdminBoth.mock.calls[0][0].email).toContain(
       'connection terminated',
     );
   });

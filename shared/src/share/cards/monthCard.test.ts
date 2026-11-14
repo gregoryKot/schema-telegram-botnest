@@ -5,36 +5,7 @@
 // реализует canvas, см. cardKit.test.ts).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { buildMonthGrid, drawMonthCard } from './monthCard';
-
-function mockCtx() {
-  return {
-    scale: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillRect: vi.fn(),
-    fillText: vi.fn(),
-    roundRect: vi.fn(),
-    arc: vi.fn(),
-    clip: vi.fn(),
-    setTransform: vi.fn(),
-    shadowColor: '',
-    shadowBlur: 0,
-    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
-    fillStyle: '',
-    strokeStyle: '',
-    font: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-  };
-}
+import { mockCardCtx as mockCtx } from './canvas.test-helpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -98,5 +69,29 @@ describe('drawMonthCard', () => {
     expect(() =>
       drawMonthCard(canvas, grid, 0, '23 июн — 21 июл'),
     ).not.toThrow();
+  });
+});
+
+describe('drawMonthCard — клетки бумагой', () => {
+  it('день с записью — мох, пустой — тон бумаги глубже; ни градиента, ни свечения', async () => {
+    const { canvasWithMockCtx } = await import('./canvas.test-helpers');
+    const { PAPER_INK, sunkHex, CARD_LOOK } = await import('../cardKit');
+    const { canvas, ctx } = canvasWithMockCtx();
+    const fills: string[] = [];
+    ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
+    drawMonthCard(
+      canvas,
+      buildMonthGrid(new Set(['2026-07-21']), '2026-07-21'),
+      0,
+      'июль',
+    );
+    expect(
+      fills.filter((f) => f === PAPER_INK.moss).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      fills.filter((f) => f === sunkHex(CARD_LOOK.tracker.hue)),
+    ).toHaveLength(27);
+    expect(ctx.createLinearGradient).not.toHaveBeenCalled();
+    expect(ctx.shadowBlur).toBe(0);
   });
 });

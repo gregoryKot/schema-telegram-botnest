@@ -79,61 +79,127 @@ describe(`ubuntu-джобы — на ${UBUNTU}`, () => {
   });
 });
 
-// Образ ubuntu-26.04 несёт PostgreSQL 18 и удаляет репозиторий PGDG после
-// сборки, а сервис джоб — Postgres 16: pg_dump 17+ пишет `SET
-// transaction_timeout`, которого в 16 нет. `command -v psql || apt-get install
-// postgresql-client-16` на таком образе молча оставлял бы клиент 18, а пакет
-// клиента 16 без PGDG не находится. Поэтому: PGDG, затем bin 16 первым в PATH
-// (обёртка pg_wrapper иначе выберет 18-й).
-export function pgClientProblems(text: string): string[] {
+// Версия Postgres в CI = версия прода = версия клиента. Прод — Postgres 17
+// (Amvera, 17.5), и мажор клиента задаёт одна константа: `PG_MAJOR` в
+// deploy/install-pg-client.sh, тем же скриптом клиент ставится и в образ, и в
+// джобы CI. Образ ubuntu-26.04 несёт PostgreSQL 18 и удаляет репозиторий PGDG
+// после сборки, поэтому клиент ставится только из PGDG, а его bin идёт первым в
+// PATH (обёртка pg_wrapper иначе выберет 18-й). Рассинхрон версий — дамп 17 не
+// заливается в 16 (#789), миграции и восстановление проверяются не на той
+// версии, что в проде (2026-11-13: CI и nightly сидели на 16 при проде 17.5).
+const PG_SCRIPT = 'deploy/install-pg-client.sh';
+const PG_MAJOR =
+  /^PG_MAJOR=(\d+)$/m.exec(
+    readFileSync(join(process.cwd(), PG_SCRIPT), 'utf8'),
+  )?.[1] ?? '';
+
+export function pgVersionProblems(text: string, major: string): string[] {
   const bad: string[] = [];
   for (const [id, block] of Object.entries(jobBlocks(text))) {
-    if (!/postgresql-client-16/.test(block)) continue;
-    if (!/apt\.postgresql\.org/.test(block))
-      bad.push(`${id}: клиент 16 не из PGDG`);
-    if (!/echo \/usr\/lib\/postgresql\/16\/bin >> "\$GITHUB_PATH"/.test(block))
-      bad.push(`${id}: bin клиента 16 не первым в PATH`);
-    if (/command -v (?:psql|pg_dump)[^\n]*postgresql-client-16/.test(block))
+    for (const m of block.matchAll(
+      /^\s*image:[ \t]*(?:\S*\/)?postgres:(\d+)/gm,
+    )) {
+      if (m[1] !== major)
+        bad.push(`${id}: сервис postgres:${m[1]}, прод и клиент — ${major}`);
+    }
+    for (const m of block.matchAll(/\/usr\/lib\/postgresql\/(\d+)\/bin/g)) {
+      if (m[1] !== major)
+        bad.push(`${id}: bin клиента ${m[1]}, а клиент — ${major}`);
+    }
+    if (/postgresql-client-\d+/.test(block))
       bad.push(
-        `${id}: установка клиента 16 за «command -v» — на образе с 18 не сработает`,
+        `${id}: клиент ставится мимо ${PG_SCRIPT} — версия и ретраи не в одном месте`,
+      );
+    if (!block.includes('install-pg-client.sh')) continue;
+    if (
+      !new RegExp(
+        `echo /usr/lib/postgresql/${major}/bin >> "\\$GITHUB_PATH"`,
+      ).test(block)
+    )
+      bad.push(`${id}: bin клиента ${major} не первым в PATH`);
+    if (/command -v (?:psql|pg_dump)[^\n]*install-pg-client\.sh/.test(block))
+      bad.push(
+        `${id}: установка клиента за «command -v» — на образе с 18 не сработает`,
       );
   }
   return bad;
 }
 
-describe('клиент Postgres 16 на раннере', () => {
-  const job = (steps: string) =>
-    `name: X\n\non:\n  push:\n\njobs:\n  db:\n    runs-on: ${UBUNTU}\n    timeout-minutes: 5\n    steps:\n${steps}`;
+describe('версия Postgres: сервисы CI, клиент и прод', () => {
+  const job = (steps: string, image = 'mirror.gcr.io/library/postgres:17') =>
+    `name: X\n\non:\n  push:\n\njobs:\n  db:\n    runs-on: ${UBUNTU}\n    timeout-minutes: 5\n    services:\n      postgres:\n        image: ${image}\n    steps:\n${steps}`;
   const GOOD = [
     '      - run: |',
-    '          echo "deb [signed-by=k] https://apt.postgresql.org/pub/repos/apt x-pgdg main" | sudo tee l',
-    '          sudo apt-get install -y postgresql-client-16',
-    '          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"',
+    '          sudo env PATH="/usr/lib/postgresql/17/bin:$PATH" sh deploy/install-pg-client.sh',
+    '          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"',
     '',
   ].join('\n');
 
-  it('PGDG + bin 16 в GITHUB_PATH — без замечаний', () => {
-    expect(pgClientProblems(job(GOOD))).toEqual([]);
+  it('мажор прода найден в скрипте установки клиента', () => {
+    expect(PG_MAJOR).toMatch(/^\d+$/);
   });
 
-  it('старая форма «command -v psql || apt-get install» — красная по всем трём пунктам', () => {
-    const old = job(
-      '      - run: command -v psql >/dev/null || sudo apt-get install -y postgresql-client-16\n',
+  it('сервис 17 + скрипт клиента + bin 17 в GITHUB_PATH — без замечаний', () => {
+    expect(pgVersionProblems(job(GOOD), '17')).toEqual([]);
+  });
+
+  it('сервис postgres:16 при клиенте 17 — красный', () => {
+    expect(
+      pgVersionProblems(job(GOOD, 'mirror.gcr.io/library/postgres:16'), '17'),
+    ).toEqual(['db: сервис postgres:16, прод и клиент — 17']);
+  });
+
+  it('образ без зеркала и с тегом-суффиксом тоже сверяется', () => {
+    expect(
+      pgVersionProblems(job(GOOD, 'postgres:16-alpine'), '17'),
+    ).toHaveLength(1);
+    expect(pgVersionProblems(job(GOOD, 'postgres:17.5-alpine'), '17')).toEqual(
+      [],
     );
-    expect(pgClientProblems(old)).toEqual([
-      'db: клиент 16 не из PGDG',
-      'db: bin клиента 16 не первым в PATH',
-      'db: установка клиента 16 за «command -v» — на образе с 18 не сработает',
+  });
+
+  it('bin клиента другой версии — красный, и «не первым в PATH» тоже', () => {
+    const stale = GOOD.replace(/postgresql\/17\/bin/g, 'postgresql/16/bin');
+    expect(pgVersionProblems(job(stale), '17')).toEqual([
+      'db: bin клиента 16, а клиент — 17',
+      'db: bin клиента 16, а клиент — 17',
+      'db: bin клиента 17 не первым в PATH',
     ]);
   });
 
-  it('контроль: джоба без клиента 16 гейту не интересна', () => {
+  it('старая форма — apt install мимо скрипта — красная', () => {
+    const old = job(
+      '      - run: command -v psql >/dev/null || sudo apt-get install -y postgresql-client-17\n',
+    );
+    expect(pgVersionProblems(old, '17')).toEqual([
+      'db: клиент ставится мимо deploy/install-pg-client.sh — версия и ретраи не в одном месте',
+    ]);
+  });
+
+  it('скрипт клиента за «command -v» — красный', () => {
+    const guarded = job(
+      '      - run: command -v psql >/dev/null || sh deploy/install-pg-client.sh\n',
+    );
+    expect(pgVersionProblems(guarded, '17')).toEqual([
+      'db: bin клиента 17 не первым в PATH',
+      'db: установка клиента за «command -v» — на образе с 18 не сработает',
+    ]);
+  });
+
+  it('контроль: джоба без клиента и без сервиса гейту не интересна', () => {
+    const plain = `name: X\n\non:\n  push:\n\njobs:\n  db:\n    runs-on: ${UBUNTU}\n    timeout-minutes: 5\n    steps:\n      - run: npx prisma migrate deploy\n`;
+    expect(pgVersionProblems(plain, '17')).toEqual([]);
+  });
+
+  it.each(files)('%s: версии сходятся с продом', (f) => {
     expect(
-      pgClientProblems(job('      - run: npx prisma migrate deploy\n')),
+      pgVersionProblems(readFileSync(join(DIR, f), 'utf8'), PG_MAJOR),
     ).toEqual([]);
   });
 
-  it.each(files)('%s: клиент 16 ставится как надо', (f) => {
-    expect(pgClientProblems(readFileSync(join(DIR, f), 'utf8'))).toEqual([]);
+  it('гейт не вхолостую: в воркфлоу есть и сервисы postgres, и установка клиента', () => {
+    const all = files.map((f) => readFileSync(join(DIR, f), 'utf8')).join('\n');
+    expect(all).toMatch(new RegExp(`library/postgres:${PG_MAJOR}\\b`));
+    expect(all).toContain('sh deploy/install-pg-client.sh');
   });
 });

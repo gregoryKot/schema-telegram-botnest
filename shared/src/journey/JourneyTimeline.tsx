@@ -1,11 +1,11 @@
-// Таймлайн «Моего пути»: группы по месяцам, слева вертикальная линия с
-// цветными бейджами-эмодзи по группе занятия. Каждая строка — кнопка
-// «поделиться этим шагом» (карточка journeyItemCard). Единственная копия
-// для обоих фронтендов (правило №3).
+// Лента «Моего пути»: группы по месяцам (заголовок спокойной подписью), строка — знак сущности шага
+// на её бумаге (rowArt от площадки, journeyLook.ts), название, дата тоном --text-sub и шеврон SVG.
+// Строка открывает шаг целиком (деталь, «Поделиться карточкой»). Одна копия (правило №3); без rowArt
+// строка рисуется без картинки — эмодзи journeyMeta сюда не идут. Классы — webapp/src/styles/journey.css.
+import type { ReactNode } from 'react';
 import {
   type JourneyItem,
   type JourneyMonthGroup,
-  JOURNEY_GROUP_COLORS,
   formatJourneyDay,
   journeyTypeMeta,
 } from './journeyMeta';
@@ -14,129 +14,67 @@ export interface JourneyTimelineProps {
   groups: JourneyMonthGroup[];
   subtitle: (item: JourneyItem) => string | null;
   onOpenItem: (item: JourneyItem) => void;
+  /** Знак строки (webapp: SignArt по journeyItemLook на бумаге сущности). */
+  rowArt?: (item: JourneyItem) => ReactNode;
 }
 
-const BADGE = 36;
+/** Шеврон строки-перехода — SVG, а не глиф «›». */
+export const JourneyChevron = () => (
+  <svg
+    className="jr-chev"
+    viewBox="0 0 8 14"
+    width="8"
+    height="14"
+    aria-hidden="true"
+  >
+    <path
+      d="M1.5 1.5 6.5 7l-5 5.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export function JourneyTimeline({
   groups,
   subtitle,
   onOpenItem,
+  rowArt,
 }: JourneyTimelineProps) {
   return (
-    <div>
+    <div className="jr-feed">
       {groups.map((g) => (
-        <div key={g.key} className="u-mb18">
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'var(--text-faint)',
-              margin: '0 0 8px 2px',
-            }}
-          >
-            {g.label}
-          </div>
-          <div style={{ position: 'relative' }}>
-            {/* Вертикальная линия таймлайна за бейджами */}
-            <div
-              aria-hidden
-              style={{
-                position: 'absolute',
-                left: BADGE / 2 + 7,
-                top: 10,
-                bottom: 10,
-                width: 2,
-                borderRadius: 1,
-                background: 'rgba(var(--fg-rgb),0.06)',
-              }}
-            />
+        <section key={g.key} className="jr-month">
+          <h3 className="ds-label jr-month-title">{g.label}</h3>
+          <div className="jr-rows">
             {g.items.map((item, i) => {
               const meta = journeyTypeMeta(item.type);
-              const color = JOURNEY_GROUP_COLORS[meta.group];
               const sub = subtitle(item);
               return (
                 <button
+                  type="button"
                   key={`${item.type}-${item.at}-${i}`}
+                  className="jr-row"
                   onClick={() => onOpenItem(item)}
                   aria-label={`Открыть: ${meta.label}`}
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    width: '100%',
-                    minHeight: 52,
-                    padding: '7px 8px',
-                    border: 'none',
-                    borderRadius: 14,
-                    background: 'transparent',
-                    fontFamily: 'inherit',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
                 >
-                  <span
-                    aria-hidden
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: BADGE,
-                      height: BADGE,
-                      borderRadius: '50%',
-                      flexShrink: 0,
-                      fontSize: 16,
-                      background: `color-mix(in srgb, ${color.css} 16%, var(--bg))`,
-                      border: `1px solid color-mix(in srgb, ${color.css} 26%, transparent)`,
-                    }}
-                  >
-                    {meta.emoji}
-                  </span>
-                  <span style={{ minWidth: 0, flex: 1 }}>
-                    <span
-                      style={{
-                        display: 'block',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: 'var(--text)',
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {meta.label}
-                    </span>
-                    <span
-                      style={{
-                        display: 'block',
-                        fontSize: 11.5,
-                        color: 'var(--text-faint)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
+                  {rowArt?.(item)}
+                  <span className="jr-row-text">
+                    <span className="jr-row-title">{meta.label}</span>
+                    <span className="jr-row-sub">
                       {formatJourneyDay(item.at)}
                       {sub ? ` · ${sub}` : ''}
                     </span>
                   </span>
-                  <span
-                    aria-hidden
-                    style={{
-                      color: 'var(--text-faint)',
-                      opacity: 0.6,
-                      flexShrink: 0,
-                      fontSize: 18,
-                    }}
-                  >
-                    ›
-                  </span>
+                  <JourneyChevron />
                 </button>
               );
             })}
           </div>
-        </div>
+        </section>
       ))}
     </div>
   );

@@ -1,10 +1,7 @@
 // Мини-тесты без регистрации: типы ответа GET /api/quizzes и подсчёт
 // результата на клиенте (результат мгновенный, без похода на сервер).
 //
-// Зеркало бэкенда — src/quiz/quiz-logic.ts (бэкенд не может импортировать
-// shared: tsconfig rootDir=src). Паритет закреплён одинаковыми кейсами в
-// src/quiz/quiz-logic.spec.ts и webapp/src/hooks/useQuizRunner.test.ts —
-// та же схема, что у ysq.ts ↔ useYsqTest.ts.
+// Подсчёт — только здесь: бот результат не считает (тест проходят в приложении).
 
 export interface QuizOptionDto {
   label: string;

@@ -9,6 +9,7 @@
 import { Logger } from '@nestjs/common';
 import { BotAdminStatsService } from './bot.admin-stats.service';
 import { BLOCK_FAILED_MARK } from './stats-settle';
+import { MIN_RATERS_FOR_NEED_AVG } from './admin-stats.raters';
 
 const FIXED_DATE = new Date('2025-06-11T12:00:00Z'); // среда
 
@@ -419,5 +420,60 @@ describe('BotAdminStatsService.getAdminStats — разделы независи
     expect(report).toContain('Хотя бы 1 день: 9');
     expect(report).toContain('Сейчас вместе: 0');
     expect(report.split(BLOCK_FAILED_MARK)).toHaveLength(2);
+  });
+});
+
+// «Самая просевшая потребность» — средняя по всем за неделю. При 1–4 людях
+// она указывает на оценку конкретного человека: тогда строка как на пустой базе.
+describe('BotAdminStatsService.getAdminStats — средняя по потребности только при ≥5 людях', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FIXED_DATE);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const needRows = [{ needId: 'limits', _avg: { value: 3.2 } }];
+  const withPeople = (people: number) =>
+    jest.fn(({ by }: { by: string[] }) =>
+      Promise.resolve(
+        by[0] === 'userId'
+          ? Array.from({ length: people }, (_, i) => ({ userId: BigInt(i) }))
+          : needRows,
+      ),
+    );
+
+  it(`${MIN_RATERS_FOR_NEED_AVG} разных людей — средняя видна`, async () => {
+    const prisma = makePrisma({
+      rating: { groupBy: withPeople(MIN_RATERS_FOR_NEED_AVG) },
+    });
+    const report = await new BotAdminStatsService(prisma).getAdminStats();
+    expect(report).toContain(
+      'Людям больше всего не хватает: Границы (в среднем 3.2 из 10)',
+    );
+  });
+
+  it(`${MIN_RATERS_FOR_NEED_AVG - 1} человека — строка как на пустой базе, без средней`, async () => {
+    const prisma = makePrisma({
+      rating: { groupBy: withPeople(MIN_RATERS_FOR_NEED_AVG - 1) },
+    });
+    const report = await new BotAdminStatsService(prisma).getAdminStats();
+    expect(report).toContain('Пока мало данных о потребностях');
+    expect(report).not.toContain('Границы');
+  });
+
+  it('людей считает ограниченный запрос: GROUP BY userId за ту же неделю, take = порог', async () => {
+    const groupBy = withPeople(0);
+    await new BotAdminStatsService(
+      makePrisma({ rating: { groupBy } }),
+    ).getAdminStats();
+    const args = groupBy.mock.calls.map((c) => c[0]);
+    const needs = args.find((a) => a.by[0] === 'needId');
+    expect(args.find((a) => a.by[0] === 'userId')).toEqual({
+      by: ['userId'],
+      where: needs.where,
+      orderBy: { userId: 'asc' },
+      take: MIN_RATERS_FOR_NEED_AVG,
+    });
+    expect(needs.where).toEqual({ date: { gte: d(7) } });
   });
 });

@@ -109,10 +109,19 @@ describe('ShareCardSheet — подпись главной кнопки', () => 
     expect(screen.getByText('Поделиться')).toBeTruthy();
   });
 
-  it('saved=true (шэра нет, картинка скачана) — «✓ Картинка сохранена»', () => {
+  it('saved=true (шэра нет, картинка скачана) — «Картинка сохранена» с галочкой', () => {
     stateWith({ saved: true });
     renderSheet();
-    expect(screen.getByText('✓ Картинка сохранена')).toBeTruthy();
+    expect(screen.getByText('Картинка сохранена')).toBeTruthy();
     expect(screen.queryByText('Поделиться')).toBeNull();
+  });
+
+  it('текст скопирован — галочка SVG в кнопке, а не глиф ✓; превью без белой рамки ds-card', () => {
+    stateWith({ copied: true });
+    const { container } = renderSheet();
+    const btn = screen.getByText('Текст скопирован').closest('button')!;
+    expect(btn.querySelector('svg')).toBeTruthy();
+    expect(container.ownerDocument.body.textContent).not.toContain('✓');
+    expect(container.ownerDocument.querySelector('.sd-canvas.ds-card')).toBeNull();
   });
 });

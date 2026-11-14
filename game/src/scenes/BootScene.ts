@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { S } from '../constants';
 import { loadProps, ensureEnemyAnims } from '../props';
+import { loadGround } from '../ground';
+import { loadStreetLayers } from '../decor';
 import { t } from '../i18n';
 // Только обязательные спрайты (меню, пролог, базовое движение) — мелкие, их
 // Vite инлайнит data-URI прямо в главный бандл, так что они физически не могут
@@ -39,6 +41,8 @@ export class BootScene extends Phaser.Scene {
     this.watchdog = window.setTimeout(() => { if (!this.advanced) this.armRetry(); }, 12000);
     for (const [key, s] of Object.entries(CAT_SHEETS))
       this.load.spritesheet(key, s.url, { frameWidth: s.fw, frameHeight: s.fh });
+    loadGround(this); // пол — листы ground_<тема>, data-URI
+    loadStreetLayers(this);
     loadProps(this); // реквизит (будильник, кровать, диван…) — data-URI, не по сети
   }
 
@@ -46,9 +50,7 @@ export class BootScene extends Phaser.Scene {
     // Процедурные текстуры не зависят от сети — генерим ВСЕГДА, чтобы мир был
     // целым, даже если кто-то зайдёт в главу через меню при битой загрузке.
     this.tex('plat',   16, 10, g => this.drawPlat(g));
-    this.tex('ground', 16, 16, g => this.drawGround(g));
     this.tex('plat_room',   16, 10, g => this.drawPlatRoom(g));
-    this.tex('ground_room', 16, 16, g => this.drawGroundRoom(g));
     ensureEnemyAnims(this);   // idle-циклы тревоги/прокрастинации/телефона
     // обязательные спрайты кота не доехали (или доехали битыми) — экран «тапни — повторить»
     if (!this.essentialsReady()) { this.armRetry(); return; }
@@ -122,43 +124,5 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0x2e1d10, 0.6);
     g.fillRect(5*S, 1*S, 1, TH-3*S);
     g.fillRect(11*S, 1*S, 1, TH-3*S);
-  }
-
-  private drawGroundRoom(g: G) {
-    const TW = 16*S, TH = 16*S;
-    g.fillStyle(0x4a3220, 1); g.fillRect(0, 0, TW, TH);
-    g.fillStyle(0x6b4a2e, 1); g.fillRect(0, 0, TW, 3*S);
-    g.fillStyle(0x8a6238, 1); g.fillRect(0, 0, TW, 1*S);
-    // стыки досок
-    g.fillStyle(0x2e1d10, 0.8);
-    g.fillRect(7*S, 0, 1, 3*S);
-    g.fillRect(0, 3*S, TW, 1*S);
-    g.fillStyle(0x3a2816, 0.7);
-    g.fillRect(0, 8*S, TW, 1*S);
-    g.fillRect(0, 13*S, TW, 1*S);
-    g.fillRect(4*S, 4*S, 1, 4*S);
-    g.fillRect(12*S, 9*S, 1, 4*S);
-    g.fillStyle(0x9a7244, 0.35);
-    g.fillRect(2*S, 1*S, 4*S, 1);
-    g.fillRect(10*S, 2*S, 3*S, 1);
-  }
-
-  private drawGround(g: G) {
-    const TW = 16*S, TH = 16*S;
-    g.fillStyle(0x3d1a08, 1); g.fillRect(0, 0, TW, TH);
-    g.fillStyle(0x5a2a12, 1); g.fillRect(0, 3*S, TW, TH-3*S);
-    g.fillStyle(0x2d6614, 1); g.fillRect(0, 0, TW, 3*S);
-    g.fillStyle(0x4a9a22, 1); g.fillRect(0, 0, TW, 1*S);
-    g.fillStyle(0x5ab82a, 1);
-    for (let x = 1; x < 15; x += 3) g.fillRect(x*S, 0, 1, 1*S);
-    g.fillStyle(0x1a0e06, 0.5); g.fillRect(0, 3*S, TW, 1*S);
-    g.fillStyle(0x2a1008, 0.55);
-    g.fillRect(2*S, 6*S, 2*S, 1*S);
-    g.fillRect(8*S, 9*S, 2*S, 1*S);
-    g.fillRect(13*S, 5*S, 1*S, 1*S);
-    g.fillRect(5*S, 12*S, 2*S, 1*S);
-    g.fillStyle(0x4a2010, 0.2);
-    g.fillRect(0, 7*S, TW, 1*S);
-    g.fillRect(0, 12*S, TW, 1*S);
   }
 }
