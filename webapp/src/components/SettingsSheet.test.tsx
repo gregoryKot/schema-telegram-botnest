@@ -284,6 +284,8 @@ describe('SettingsSheet — таймеры тоста не переживают 
       fireEvent.click(toggleForRow('Итоги дня'));
       await screen.findByText('Сохранено');
       unmount();
+      // jsdom 31 после снятия фокуса ставит одноразовый интервал фокус-фиксапа (~17 мс): прогоняем его.
+      await vi.advanceTimersByTimeAsync(50);
       expect(vi.getTimerCount()).toBe(0);
     } finally {
       vi.useRealTimers();
