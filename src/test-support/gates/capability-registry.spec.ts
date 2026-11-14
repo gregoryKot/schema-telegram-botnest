@@ -1,7 +1,7 @@
 // Тест гейта check-capability-registry.mjs — класс «ветка, зависящая от
 // конфигурации, деградирует МОЛЧА» (щит, волна 8). Заголовный случай —
 // src/utils/admin-alert.ts: без ключей КАЖДЫЙ алерт улетает в никуда без
-// следа. Гейт ищет форму `if (!token/key/secret/process.env.X) return …`
+// следа. Гейт ищет форму `if (!token/key/secret/credentials/process.env.X) return …`
 // без throw и требует, чтобы файл был либо в REGISTERED_FILES (зеркало
 // src/infra/capability-report.ts), либо в бейслайне с причиной.
 import { runGate } from './gate-sandbox';
@@ -24,6 +24,22 @@ describe('check-capability-registry.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('src/some-new-integration.service.ts');
+  });
+
+  it('ветка `if (!credentials) return` (ключи пары, а не одной переменной) — exit 1', () => {
+    const res = runGate('check-capability-registry.mjs', {
+      'scripts/capability-registry-baseline.json': '{}',
+      'src/some-mailer.service.ts': [
+        'export async function send() {',
+        '  const credentials = readKeys();',
+        '  if (!credentials) return false;',
+        '  return true;',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('src/some-mailer.service.ts');
   });
 
   it('файл занесён в бейслайн с причиной — exit 0', () => {

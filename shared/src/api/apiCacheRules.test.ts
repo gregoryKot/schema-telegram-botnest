@@ -1,7 +1,7 @@
 // Карта «мутация → инвалидация» (apiCacheRules.ts): каждая мутация сбрасывает
 // СВОИ ключи и не трогает посторонние — иначе либо пользователь видит старые
 // данные после сохранения, либо кеш обнуляется целиком без смысла.
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { cachedGet, clearApiCache } from './apiCache';
 import { applyMutationInvalidation } from './apiCacheRules';
 
@@ -11,8 +11,8 @@ beforeEach(() => {
 
 async function seed(
   paths: string[],
-): Promise<Record<string, ReturnType<typeof vi.fn>>> {
-  const fetchers: Record<string, ReturnType<typeof vi.fn>> = {};
+): Promise<Record<string, Mock<() => Promise<unknown>>>> {
+  const fetchers: Record<string, Mock<() => Promise<unknown>>> = {};
   for (const p of paths) {
     fetchers[p] = vi.fn(() => Promise.resolve(`data:${p}`));
     await cachedGet(p, fetchers[p]);

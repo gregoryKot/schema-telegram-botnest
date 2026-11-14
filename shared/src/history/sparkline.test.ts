@@ -49,8 +49,8 @@ describe('sparklineGeometry', () => {
       { date: '2026-10-01', ratings: { autonomy: 1 } },
     ];
     const g = sparklineGeometry(win, 'autonomy');
-    expect(g.dot.left).toBe(100);
-    expect(g.dot.top).toBeCloseTo((2 / SPARK_H) * 100);
+    expect(g.dot?.left).toBe(100);
+    expect(g.dot?.top).toBeCloseTo((2 / SPARK_H) * 100);
   });
 
   it('одна точка — по центру', () => {
@@ -102,10 +102,10 @@ describe('sparklineGeometry', () => {
   });
 
   it('оценки через день: каждый день — точкой, между ними — мостики; рядом с отрезком линия остаётся', () => {
-    const rate = [5, 0, 5, 0, 5, 5, 0].map((v, i) => ({
+    const rate: DayHistory[] = [5, 0, 5, 0, 5, 5, 0].map((v, i) => ({
       date: `2026-10-0${7 - i}`,
       ratings: v ? { autonomy: v } : {},
-    }));
+    })) as DayHistory[];
     const g = sparklineGeometry(rate, 'autonomy');
     // Слева старые: –, 5·5 (отрезок), –, 5, –, 5 → линия из двух дней, две точки, два мостика.
     expect(g.line.match(/M /g)).toHaveLength(1);
