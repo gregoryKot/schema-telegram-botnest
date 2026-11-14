@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { audio } from '../../audio';
 import { t, type MsgKey } from '../../i18n';
 import type { GameScene } from '../GameScene';
+import { introOnce } from './frames';
 
 // тень-критик выкрикивает это постоянно (голос Карающего Критика)
 const CRITIC_LINES: MsgKey[] = [
@@ -28,7 +29,7 @@ export function spawnCritic(s: GameScene) {
   }).setOrigin(0.5, 1).setDepth(46).setAlpha(0);
   s.criticSayT = 2200; // первый упрёк почти сразу
   // важный новый враг — представляем стоп-кадром один раз на игрока, иначе «просто какой-то кот»
-  s.introOnce('critic', 'm_the_inner_critic', 'm_critic_story');
+  introOnce(s, 'critic', 'm_the_inner_critic', 'm_critic_story');
 }
 
 // ── Self-critic: его не победить. Рявкнул — притих на миг и вырос. Он же ты.

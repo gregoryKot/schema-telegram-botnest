@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { GROUND_Y } from '../../constants';
 import { audio } from '../../audio';
 import type { GameScene } from '../GameScene';
+import { adoptIntoGate } from './gates';
 
 const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
 
@@ -32,7 +33,7 @@ export function hitAnx(s: GameScene, m: Anx, dir: number) {
     m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size * ANX_SCALE);
     spawnAnx(s, m.img.x, m.size);
     const nb = s.anx[s.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
-    s.adoptIntoGate(m, nb);
+    adoptIntoGate(s, m, nb);
     audio.split();
     s.sayOnce('hit', 'm_hitting_is_useless_there_s_only', 2600);
   } else {

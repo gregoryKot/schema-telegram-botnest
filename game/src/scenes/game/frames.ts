@@ -71,3 +71,20 @@ export function storyFrame(s: GameScene, title: MsgKey, text: MsgKey) {
     s.input.once('pointerdown', go);
   });
 }
+
+// Стоп-кадры знакомства с врагами — один раз на игрока, а не на главу: живут вне
+// сцены и в localStorage, иначе каждая глава и каждый рестарт «представляли» заново.
+const INTRO_KEY = 'rtym_intro';
+const introduced = new Set<string>();
+try { for (const k of JSON.parse(localStorage.getItem(INTRO_KEY) ?? '[]') as unknown[]) introduced.add(String(k)); } catch { /* приватный режим — без памяти */ }
+function markIntroduced(key: string) {
+  introduced.add(key);
+  try { localStorage.setItem(INTRO_KEY, JSON.stringify([...introduced])); } catch { /* ок */ }
+}
+
+// «привет, это —» : представляем врага стоп-кадром при первой встрече
+export function introOnce(s: GameScene, key: string, name: MsgKey, line: MsgKey) {
+  if (introduced.has(key)) return;
+  markIntroduced(key);
+  storyFrame(s, name, line);
+}
