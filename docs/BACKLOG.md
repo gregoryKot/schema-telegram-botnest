@@ -51,15 +51,6 @@
   - политика не называет получателями VK ID (ООО «В Контакте») и MAX, хотя вход через них есть
     (`webapp/src/pages/privacy/processors.ts`; grep «ВКонтакте|VK ID» по `webapp/src/pages/privacy` находит
     только способы входа, не получателей);
-  - тексты бота «почту или VK ID» не знают про Яндекс ID (`src/telegram/login-payload.ts:18-20`, заголовок и
-    пустое состояние `src/bot/login-offer-metrics.ts`);
-  - колбэк провайдера со снятыми env отвечает `<id>_failed` и пишет error-лог «Configuration key … does not
-    exist» (DM владельцу): рубильник `OAUTH_PROVIDER_ENV` закрывает только старт входа
-    (`src/auth/oauth-callback.service.ts`; так же было у VK);
-  - проба `email` считает любой 400 постоянным отказом, включая суточную квоту Postbox
-    (`LimitExceededException`): красная до следующего удачного письма (`src/infra/self-check/probe-email.ts`);
-  - имя отправителя с не-ASCII символами в `EMAIL_FROM` не кодируется по RFC 2047
-    (`src/infra/postbox-mail.ts`; значение по умолчанию и прода — латиница);
   - зелёный исход живых проб `postbox` (400 на подписанный запрос без письма) и `yandexOAuth` (ответ на
     код-пустышку) — гипотезы по документации: сверить на проде и дозаписать ответы в
     `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`;

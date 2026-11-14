@@ -1,4 +1,4 @@
-// Строка «Почта или VK ID для входа на сайт» в /stats — продолжение блока
+// Строка «Почта, Яндекс ID или VK ID для входа на сайт» в /stats — продолжение блока
 // «Вход по коду» (LoginTicketMetricsService.render). Правило №8: карточка
 // SiteAccessCard зовёт людей, открывающих приложение только в Telegram,
 // добавить способ входа для сайта; без счёта не видно, доходит ли приглашение.
@@ -14,7 +14,8 @@ export interface LoginOfferMetrics {
   later: number;
 }
 
-const TITLE = '✉️ <b>Почта или VK ID для входа на сайт</b> (за неделю)';
+const TITLE =
+  '✉️ <b>Почта, Яндекс ID или VK ID для входа на сайт</b> (за неделю)';
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatLoginOffer(m: LoginOfferMetrics): string {
@@ -22,7 +23,7 @@ export function formatLoginOffer(m: LoginOfferMetrics): string {
   if (m.shown + m.open + m.later === 0) {
     lines.push(
       'За неделю приглашение никому не показывали: либо в Telegram никто не ' +
-        'заходил, либо у всех уже есть почта или VK ID.',
+        'заходил, либо у всех уже есть почта, Яндекс ID или VK ID.',
     );
     return lines.join('\n');
   }
