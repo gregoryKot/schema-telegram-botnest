@@ -4,10 +4,10 @@ import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../../schemaTherapy
 import { HistoryConfirmDialog } from '../../HistoryConfirmDialog';
 import type { ClientDetail } from '../clientSheetTypes';
 import { snapshotToConceptFields } from '../../../../../shared/src/therapy/conceptSnapshotRestore';
+import { GlyphChevron } from '../../exercises/ExGlyphs';
 
-// История версий концептуализации — содержимое раскрывашки «История версий»
-// под вкладкой (ConceptFoldouts; заголовок с числом там). Вынесено из
-// ClientConceptTab, правило №10) + «Восстановить»: паритет с мини-аппом
+// История версий концептуализации — содержимое раскрывашки «История версий» под вкладкой
+// (ConceptFoldouts; заголовок с числом там) + «Восстановить»: паритет с мини-аппом
 // (ConceptHistoryPanel). Восстановление идёт через patchConcept → обычное
 // автосохранение; текущая версия при этом сама попадает в историю на сервере,
 // поэтому откат обратим — об этом и текст подтверждения. Подтверждение — со своей
@@ -38,19 +38,19 @@ export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
             <div key={i} style={{ borderRadius: 'var(--r-8)', border: '1px solid var(--line)', overflow: 'hidden' }}>
               <button
                 onClick={() => setExpandedSnapshot(isOpen ? null : i)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '9px 12px', background: isOpen ? 'var(--surface-2)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '9px 12px', background: isOpen ? 'var(--surface-2)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               >
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-ghost)', flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: 'var(--text-sub)', flex: 1 }}>Версия {vNum}</span>
                 <span className="u-faint11">{fmtDate(momentDayKey(h.savedAt))}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-ghost)', marginLeft: 4 }}>{isOpen ? '▲' : '▼'}</span>
+                <span className="tcp-ver-chev" aria-hidden="true"><GlyphChevron up={isOpen} /></span>
               </button>
               {isOpen && (
                 <div style={{ padding: '12px 14px', borderTop: '1px solid var(--line)', background: 'var(--surface-2)' }}>
                   {/* Schema chips */}
                   {h.schemaIds.length > 0 && (
                     <div className="u-mb10">
-                      <div className="eyebrow u-mb6">Схемы</div>
+                      <div className="ds-label u-mb6">Схемы</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
                         {h.schemaIds.map((id: string) => {
                           const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
@@ -68,7 +68,7 @@ export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
                   {/* Mode chips */}
                   {h.modeIds.length > 0 && (
                     <div className="u-mb10">
-                      <div className="eyebrow u-mb6">Режимы</div>
+                      <div className="ds-label u-mb6">Режимы</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
                         {h.modeIds.map((id: string) => {
                           const m = getModeById(id);
@@ -88,7 +88,7 @@ export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
                     <div className="u-col8">
                       {textFields.map(f => (
                         <div key={f.label}>
-                          <div className="eyebrow" style={{ marginBottom: 2 }}>{f.label}</div>
+                          <div className="ds-label" style={{ marginBottom: 2 }}>{f.label}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.val}</div>
                         </div>
                       ))}
