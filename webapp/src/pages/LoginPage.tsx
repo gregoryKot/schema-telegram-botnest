@@ -29,7 +29,7 @@ export function LoginPage() {
   // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
   const [error, setError] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('error') === 'no_token'
-      ? // Безлично: /login вне AddressFormProvider, формы до входа нет (как DonatePage).
+      ? // Безлично: до входа форма — лишь догадка из кэша (LoginRoute).
         'Вход не получился: окно входа закрылось раньше времени. Можно попробовать ещё раз.'
       : null,
   );
