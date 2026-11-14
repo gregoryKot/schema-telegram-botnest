@@ -1,6 +1,11 @@
 // Таблица исходов одной отправки (push-transport.ts): от неё зависит, удалит
 // ли сервис подписку, пометит ли очередь строку отправленной и будет ли повтор.
-import { WebPushError, generateVAPIDKeys } from 'web-push';
+import { createECDH, randomBytes } from 'crypto';
+import {
+  WebPushError,
+  generateRequestDetails,
+  generateVAPIDKeys,
+} from 'web-push';
 import {
   attemptPush,
   classifyPushError,
@@ -97,5 +102,21 @@ describe('attemptPush', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+  // Политика (webapp/src/pages/privacy/processors.ts, PUSH_NOTE) обещает
+  // шифрование aes128gcm (RFC 8291): сверка с тем, что web-push реально шлёт.
+  it('содержимое уходит зашифрованным aes128gcm — как написано в политике', async () => {
+    const ecdh = createECDH('prime256v1');
+    const real = {
+      endpoint: keys.endpoint,
+      p256dh: ecdh.generateKeys().toString('base64url'),
+      auth: randomBytes(16).toString('base64url'),
+    };
+    const send = jest.fn().mockResolvedValue({ statusCode: 201 });
+    await attemptPush(send, real, '{"body":"x"}', vapid);
+    const [sub, payload, options] = send.mock.calls[0] as Parameters<SendFn>;
+    const req = generateRequestDetails(sub, payload, options);
+    expect(req.headers['Content-Encoding']).toBe('aes128gcm');
+    expect(String(req.body)).not.toContain('"body":"x"');
   });
 });
