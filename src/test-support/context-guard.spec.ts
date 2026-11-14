@@ -56,13 +56,17 @@ describe('хук context-guard.mjs', () => {
     expect(res.stdout).toContain('.claude/skills/handoff/SKILL.md');
   });
 
-  it('начатую задачу передать новой сессии, а при отказе — доводить здесь; стоп только для новой', () => {
+  it('начатую задачу передать: сама, через родителя, иначе доводить здесь; стоп только для новой', () => {
     const out = run(PROMPT, [usageLine(130_000)]).stdout;
-    expect(out).toContain('start_session (user_asked, fresh');
-    expect(out).toContain('архивируй эту');
-    expect(out).toContain(
-      'отказало в старте — доводи здесь, не останавливайся',
-    );
+    const steps = [
+      '1) start_session (user_asked, fresh',
+      '2) отказ, а тебя запустила другая сессия',
+      '«нужно продолжение: записка <путь>»',
+      '3) не вышло и это — доводи здесь до мержа',
+    ].map((step) => out.indexOf(step));
+    expect(steps.every((at) => at >= 0)).toBe(true);
+    expect(steps).toEqual([...steps].sort((a, b) => a - b));
+    expect(out).toContain('Владельца не жди ни в одном случае');
     const stops = out.split(/(?<=\.) /).filter((s) => s.includes('остановись'));
     expect(stops).toHaveLength(1);
     expect(stops[0]).toMatch(/^Новую задачу здесь не начинай/);
