@@ -12,6 +12,7 @@ import { AuthTicketHandoffController } from './auth-ticket-handoff.controller';
 import { AuthLoginConfirmController } from './auth-login-confirm.controller';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { LoginTicketReport } from './login-ticket/login-ticket.report';
+import { EmailOnlyAccountsReport } from './email-only-accounts';
 import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { TicketDeviceService } from './login-ticket/ticket-device';
 import { Auth2faController } from './auth-2fa.controller';
@@ -46,6 +47,7 @@ import { NotificationModule } from '../notification/notification.module';
     MergeService,
     LoginTicketService,
     LoginTicketReport,
+    EmailOnlyAccountsReport,
     TicketLinkService,
     TicketDeviceService,
     SecurityLogService,
