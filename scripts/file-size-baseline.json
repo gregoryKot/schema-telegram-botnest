@@ -60,7 +60,7 @@
   "game/src/scenes/IntroScene.ts": 107,
   "game/src/scenes/startArt.ts": 56,
   "game/src/scenes/StartScene.ts": 70,
-  "game/src/scenes/TutorialScene.ts": 650,
+  "game/src/scenes/TutorialScene.ts": 649,
   "game/src/sprites-heavy.ts": 16,
   "game/src/therapyCta.ts": 16,
   "game/vite.config.ts": 18,
