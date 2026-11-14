@@ -1,5 +1,5 @@
 // Сторож длинной сессии .claude/hooks/context-guard.mjs: молчит, пока сессия
-// дешёвая, и говорит агенту остановиться, когда контекст вырос или сжимался.
+// дешёвая; вырос или сжимался контекст — начатую задачу передать или довести, новую не начинать.
 import { spawnSync } from 'child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -56,6 +56,18 @@ describe('хук context-guard.mjs', () => {
     expect(res.stdout).toContain('.claude/skills/handoff/SKILL.md');
   });
 
+  it('начатую задачу передать новой сессии, а при отказе — доводить здесь; стоп только для новой', () => {
+    const out = run(PROMPT, [usageLine(130_000)]).stdout;
+    expect(out).toContain('start_session (user_asked, fresh');
+    expect(out).toContain('архивируй эту');
+    expect(out).toContain(
+      'отказало в старте — доводи здесь, не останавливайся',
+    );
+    const stops = out.split(/(?<=\.) /).filter((s) => s.includes('остановись'));
+    expect(stops).toHaveLength(1);
+    expect(stops[0]).toMatch(/^Новую задачу здесь не начинай/);
+  });
+
   it('берётся последний замер основной ветки, расход субагента не в счёт', () => {
     const res = run(PROMPT, [usageLine(40_000), usageLine(500_000, true)]);
     expect(res.stdout).toBe('');
@@ -83,7 +95,10 @@ describe('хук context-guard.mjs', () => {
     const res = run({ hook_event_name: 'PostToolUse' }, [usageLine(130_000)]);
     const out = JSON.parse(res.stdout);
     expect(out.hookSpecificOutput.hookEventName).toBe('PostToolUse');
-    expect(out.hookSpecificOutput.additionalContext).toContain('PR вмержен');
+    const ctx: string = out.hookSpecificOutput.additionalContext;
+    expect(ctx).toContain('PR вмержен: проверь деплой');
+    expect(ctx).toContain('start_session');
+    expect(ctx).not.toContain('остановись');
   });
 
   it('старт после сжатия говорит сразу, без журнала', () => {

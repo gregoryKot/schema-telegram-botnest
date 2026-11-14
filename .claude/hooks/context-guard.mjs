@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Хук-сторож длинной сессии: когда контекст вырос или уже сжимался, говорит агенту
-// остановиться. Каждый шаг сессии оплачивает весь её контекст заново.
+// Хук-сторож длинной сессии: контекст вырос или сжимался — начатую задачу передать новой
+// сессии (или довести здесь), новую не начинать. Каждый шаг оплачивает весь контекст заново.
 // События: UserPromptSubmit и SessionStart(compact) — строка в stdout;
 // PostToolUse (мерж PR) — JSON additionalContext. Ниже порога молчит, не падает.
 import { closeSync, fstatSync, openSync, readSync } from 'node:fs';
@@ -51,7 +51,7 @@ export function readTranscript(path) {
   }
 }
 
-/** Текст стоп-сигнала или пустая строка, если сессия ещё дешёвая. */
+/** Текст сигнала или пустая строка, если сессия ещё дешёвая. */
 export function verdict({ event, source, tokens, compactions }) {
   const compacted = event === 'SessionStart' && source === 'compact';
   if (!compacted && tokens < LIMIT && compactions < 1) return '';
@@ -60,22 +60,22 @@ export function verdict({ event, source, tokens, compactions }) {
     compacted || compactions ? 'контекст уже сжимался, детали потеряны' : '',
   ].filter(Boolean);
   const head = `СТОРОЖ СЕССИИ: ${why.join('; ')} — каждый шаг здесь оплачивает всё это заново.`;
-  const stop =
-    'оставь записку по .claude/skills/handoff/SKILL.md, скажи владельцу одной строкой, ' +
-    'что продолжение дешевле в новой сессии, и остановись.';
-  if (event === 'PostToolUse') return `${head} PR вмержен: остаток плана здесь не продолжай — ${stop}`;
-  return `${head} Текущий шаг доведи до конца. Новую задачу здесь не начинай — ${stop} Владелец написал «продолжай здесь» — продолжай.`;
+  const pass =
+    'Остаток начатой задачи передай: записка по .claude/skills/handoff/SKILL.md, ' +
+    'start_session (user_asked, fresh, бриф со ссылкой на записку), затем архивируй эту ' +
+    'сессию. Приложение отказало в старте — доводи здесь, не останавливайся и владельца не жди.';
+  if (event === 'PostToolUse') return `${head} PR вмержен: проверь деплой. ${pass}`;
+  return (
+    `${head} Начатая задача не новая: её доводят до мержа и деплоя; осталась пара шагов ` +
+    `(CI, мерж) — доведи здесь. ${pass} Новую задачу здесь не начинай — запусти её в новой ` +
+    'сессии; не дают — скажи владельцу одной строкой и остановись. ' +
+    'Владелец написал «продолжай здесь» — продолжай.'
+  );
 }
 
 function main() {
   try {
-    let raw = '';
-    try {
-      raw = readStdin();
-    } catch {
-      return;
-    }
-    const input = JSON.parse(raw || '{}');
+    const input = JSON.parse(readStdin() || '{}');
     const event = input.hook_event_name ?? '';
     let measured = { tokens: 0, compactions: 0 };
     try {
