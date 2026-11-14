@@ -442,8 +442,10 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
         deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
         deps.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
         await svc.planDay(makeUser(over), NOW);
-        expect(deps.notifications.schedule).not.toHaveBeenCalled();
-        expect(deps.notifications.swapReminder).not.toHaveBeenCalled();
+        expect(scheduledTypes(deps)).toEqual([]);
+        expect(deps.notifications.swapReminder.mock.calls).toEqual([]);
+        // Оценки для того, кому инсайт не дойдёт, даже не читаются.
+        expect(deps.analytics.getLowStreakNeeds.mock.calls).toEqual([]);
       },
     );
 
