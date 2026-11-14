@@ -125,7 +125,6 @@ function makeService(
   } as any;
   const securityLog = { log: jest.fn() } as any;
   const emailSvc = {
-    sendLoginLink: jest.fn().mockResolvedValue(undefined),
     sendLinkEmailLetter: jest.fn().mockResolvedValue(undefined),
   } as any;
   const svc = new AuthService(prisma, config, securityLog, emailSvc);
@@ -852,7 +851,7 @@ describe('AuthService — verifyTelegramWebAppData: битый user JSON', () =>
   });
 });
 
-describe('AuthService — requestEmailLogin', () => {
+describe('AuthService — linkEmailToAccount', () => {
   it.each([
     ['без @', 'not-an-email'],
     ['без домена', 'a@b'],
@@ -864,120 +863,49 @@ describe('AuthService — requestEmailLogin', () => {
     // хвост" проходит как валидный префикс.
     ['мусор после адреса (нет $ — пропустил бы)', 'xx@yy.com trailing'],
   ])('невалидный email (%s) → BadRequestException', async (_name, email) => {
-    const { svc } = makeService();
-    await expect(svc.requestEmailLogin(email)).rejects.toThrow(
+    const { svc, emailTokens } = makeService();
+    await expect(svc.linkEmailToAccount(1n, email)).rejects.toThrow(
       BadRequestException,
     );
+    expect(emailTokens).toHaveLength(0);
   });
 
   it('email ровно 254 символа (граница <= 254) → валиден, не бросает', async () => {
     const { svc } = makeService();
     const email = 'a'.repeat(248) + '@bb.co'; // 248 + 6 = 254
     expect(email).toHaveLength(254);
-    await expect(svc.requestEmailLogin(email)).resolves.toEqual({ ok: true });
+    await expect(svc.linkEmailToAccount(1n, email)).resolves.toEqual({
+      ok: true,
+    });
   });
 
-  // B-16 (аудит 2026-10): запрос ссылки заводил User+AuthProvider для ЛЮБОГО
-  // адреса до подтверждения — захват чужого адреса и неограниченный рост таблиц.
-  it('новый адрес → НИ User, НИ AuthProvider не создаются; emailToken с userId=null и письмо со ссылкой', async () => {
-    const { svc, users, emailTokens, emailSvc, authProviders } = makeService();
-    const result = await svc.requestEmailLogin('User@Example.com');
-    expect(result).toEqual({ ok: true });
-    expect(users).toHaveLength(0);
-    expect(authProviders).toHaveLength(0);
+  it('токен привязки: purpose link_email_auth, userId аккаунта, TTL ровно 30 минут', async () => {
+    const { svc, emailTokens } = makeService();
+    await svc.linkEmailToAccount(9n, 'User@Example.com');
     expect(emailTokens).toHaveLength(1);
-    expect(emailTokens[0].purpose).toBe('login');
-    expect(emailTokens[0].userId).toBeNull();
-    expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
-      'user@example.com',
-      expect.stringContaining('/api/auth/email/callback?token='),
-      'ty',
-    );
-    // TTL магической ссылки — ровно 30 минут (EMAIL_TOKEN_TTL_MS), не 0.5мс
-    // и не 1.8мс, как дала бы поломанная арифметика.
+    expect(emailTokens[0]).toMatchObject({
+      purpose: 'link_email_auth',
+      userId: 9n,
+    });
+    // TTL — ровно EMAIL_TOKEN_TTL_MS, не 0.5мс и не 1.8мс поломанной арифметики.
     expect(emailTokens[0].expiresAt.getTime()).toBe(
       FIXED_DATE.getTime() + 30 * 60 * 1000,
     );
   });
 
-  it('WEBAPP_URL с trailing slash → ссылка без двойного слэша и без мусора вместо него', async () => {
-    const { svc, emailSvc } = makeService({
-      WEBAPP_URL: 'https://schemehappens.ru/',
-    });
-    await svc.requestEmailLogin('slash@example.com');
-    const link = emailSvc.sendLoginLink.mock.calls[0][1] as string;
-    expect(link).toMatch(
-      /^https:\/\/schemehappens\.ru\/api\/auth\/email\/callback\?token=/,
-    );
-  });
-
-  // E14 (аудит 2026-11): письмо открывают новой вкладкой, где адреса возврата нет.
-  it('адрес возврата и билет едут в ссылке письма', async () => {
+  it('в ссылке письма только токен — ни билета, ни адреса возврата', async () => {
     const { svc, emailSvc } = makeService();
-    await svc.requestEmailLogin('ret@example.com', {
-      ticket: 'K7M2QX94',
-      returnTo: '/link?code=AB',
-    });
-    const link = new URL(emailSvc.sendLoginLink.mock.calls[0][1] as string);
-    expect(link.searchParams.get('ticket')).toBe('K7M2QX94');
-    expect(link.searchParams.get('return_to')).toBe('/link?code=AB');
+    await svc.linkEmailToAccount(1n, 'only-token@example.com');
+    const link = new URL(emailSvc.sendLinkEmailLetter.mock.calls[0][1]);
+    expect([...link.searchParams.keys()]).toEqual(['token']);
   });
 
-  it('повторные запросы для нового адреса по-прежнему ничего не создают (счётчик строк не растёт)', async () => {
-    const { svc, users, authProviders } = makeService();
-    await svc.requestEmailLogin('same@example.com');
-    await svc.requestEmailLogin('same@example.com');
-    expect(users).toHaveLength(0);
-    expect(authProviders).toHaveLength(0);
-  });
-
-  it('известный адрес → токен сразу привязан к его аккаунту, нового пользователя нет', async () => {
-    const { svc, users, authProviders, emailTokens } = makeService();
-    authProviders.push({
-      id: 1,
-      userId: 333n,
-      provider: 'email',
-      providerId: 'known@example.com',
-    });
-    await svc.requestEmailLogin('Known@Example.com');
-    expect(users).toHaveLength(0);
-    expect(emailTokens[0].userId).toBe(333n);
-  });
-
-  it('падение отправки письма не роняет запрос (fire-and-forget) — ok:true всё равно возвращается', async () => {
+  it('падение отправки письма не роняет запрос (fire-and-forget) — ok:true всё равно', async () => {
     const { svc, emailSvc } = makeService();
-    emailSvc.sendLoginLink.mockRejectedValueOnce(new Error('smtp down'));
-    await expect(svc.requestEmailLogin('fails@example.com')).resolves.toEqual({
-      ok: true,
-    });
-  });
-
-  it('падение отправки письма логируется через logger.error (.catch реально исполняется, не заглушен)', async () => {
-    const { svc, emailSvc } = makeService();
-    emailSvc.sendLoginLink.mockRejectedValueOnce(new Error('smtp down'));
-    const errorSpy = jest.spyOn((svc as any).logger, 'error');
-    await svc.requestEmailLogin('logfail@example.com');
-    await Promise.resolve(); // дать микротаске .catch() отработать
-    await Promise.resolve();
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('sendLoginLink failed: smtp down'),
-    );
-  });
-
-  it('encField вернул null (напр. сбой шифрования) → в БД сохраняется читаемый email как fallback, не null (?? а не &&)', async () => {
-    const { svc, emailTokens } = makeService();
-    (encrypt as jest.Mock).mockReturnValueOnce(null);
-    await svc.requestEmailLogin('fallback@example.com');
-    expect(emailTokens[0].email).toBe('fallback@example.com');
-  });
-});
-
-describe('AuthService — linkEmailToAccount', () => {
-  it('невалидный email → BadRequestException', async () => {
-    const { svc } = makeService();
-    await expect(svc.linkEmailToAccount(1n, 'nope')).rejects.toThrow(
-      BadRequestException,
-    );
+    emailSvc.sendLinkEmailLetter.mockRejectedValueOnce(new Error('smtp down'));
+    await expect(
+      svc.linkEmailToAccount(1n, 'fails@example.com'),
+    ).resolves.toEqual({ ok: true });
   });
 
   // B-16: 409 «уже привязан» по ответу различал занятый адрес от свободного —
@@ -995,7 +923,6 @@ describe('AuthService — linkEmailToAccount', () => {
       svc.linkEmailToAccount(222n, 'busy@example.com'),
     ).resolves.toEqual({ ok: true });
     expect(emailSvc.sendLinkEmailLetter).not.toHaveBeenCalled();
-    expect(emailSvc.sendLoginLink).not.toHaveBeenCalled();
     expect(emailTokens).toHaveLength(0);
     expect(securityLog.log).toHaveBeenCalledWith('email_link_conflict', {
       userId: 222n,
@@ -1057,15 +984,14 @@ describe('AuthService — linkEmailToAccount', () => {
     await Promise.resolve();
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining(
-        'linkEmailToAccount sendLoginLink failed: smtp down',
+        'linkEmailToAccount sendLinkEmailLetter failed: smtp down',
       ),
     );
   });
 
-  // A3 (аудит 2026-10): привязка шлёт СВОЁ письмо. Раньше уходило письмо
-  // «Войти в…», и адресат, которому чужой аккаунт привязывал его адрес,
-  // кликал «войти», не понимая, что именно подтверждает.
-  it('шлёт письмо привязки, а НЕ письмо входа (A3)', async () => {
+  // A3 (аудит 2026-10): привязка шлёт СВОЁ письмо, не «Войти в…»: адресат,
+  // которому чужой аккаунт привязывал адрес, не понимал, что подтверждает.
+  it('шлёт письмо привязки со ссылкой на email/callback (A3)', async () => {
     const { svc, emailSvc } = makeService();
     await svc.linkEmailToAccount(1n, 'who@example.com');
     expect(emailSvc.sendLinkEmailLetter).toHaveBeenCalledWith(
@@ -1073,18 +999,6 @@ describe('AuthService — linkEmailToAccount', () => {
       expect.stringContaining('/api/auth/email/callback?token='),
       'ty',
     );
-    expect(emailSvc.sendLoginLink).not.toHaveBeenCalled();
-  });
-
-  it('обычный вход по почте по-прежнему шлёт письмо входа, не привязки', async () => {
-    const { svc, emailSvc } = makeService();
-    await svc.requestEmailLogin('login@example.com');
-    expect(emailSvc.sendLoginLink).toHaveBeenCalledWith(
-      'login@example.com',
-      expect.stringContaining('/api/auth/email/callback?token='),
-      expect.anything(),
-    );
-    expect(emailSvc.sendLinkEmailLetter).not.toHaveBeenCalled();
   });
 });
 

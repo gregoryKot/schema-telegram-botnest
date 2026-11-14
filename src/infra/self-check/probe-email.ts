@@ -36,7 +36,7 @@ function isPermanent(status: AlertEmailFailure): boolean {
  * Выключенный канал — не авария; настроенный и не принимающий — авария (№21).
  *
  * Снимок в памяти процесса: сбой на соседнем инстансе виден только его warn-логом.
- * Письма входа (auth/email.service.ts) пишут в тот же снимок — ключи общие.
+ * Письма привязки адреса (auth/email.service.ts) пишут в тот же снимок — ключи общие.
  */
 export function emailProbe(
   env: Env = process.env,

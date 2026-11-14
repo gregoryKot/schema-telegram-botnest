@@ -162,7 +162,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/journey', reason: REASON.JOURNEY },
   { route: 'POST /api/auth/2fa/disable', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/2fa/recovery-codes', reason: REASON.AUTH_LOGIN },
-  { route: 'POST /api/auth/email/link', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/email/link-to-account', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/merge', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/unlink/:param', reason: REASON.AUTH_LOGIN },

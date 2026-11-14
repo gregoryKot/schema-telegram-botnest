@@ -8,6 +8,7 @@ import { generateSync } from 'otplib';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { SecurityLogService } from '../src/auth/security-log.service';
 import { AuthService } from '../src/auth/auth.service';
+import { EmailService } from '../src/auth/email.service';
 import { signAccessToken } from './e2e-support/jwt';
 import { emailLinkCode } from '../src/auth/email-link-code';
 
@@ -71,25 +72,6 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     request(app.getHttpServer())
       .post('/api/auth/telegram/webapp')
       .send({ initData: buildTelegramInitData(telegramId, botToken()) });
-
-  // Вход на сайте, который спрашивает второй фактор: ссылка из письма
-  // (входа виджетом Telegram на сайте нет с 2026-11).
-  const loginViaEmailLink = async (userId: bigint, raw: string) => {
-    await prisma.emailToken.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId,
-        tokenHash: hashToken(raw),
-        email: 'e2e-2fa@example.com',
-        purpose: 'login',
-        expiresAt: new Date(Date.now() + 30 * 60_000),
-      },
-    });
-    return request(app.getHttpServer())
-      .post('/api/auth/email/consume')
-      .set('x-requested-with', 'XMLHttpRequest')
-      .send({ token: raw });
-  };
 
   // Seeds a WebSession row like AuthService.issueTokens would (skips the throttle).
   function seedSession(
@@ -295,12 +277,12 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         .send({ code: stepCode(-1) });
       expect(enable.status).toBe(200);
       expect(enable.body.recoveryCodes).toHaveLength(10);
-      // A fresh login on the site (email link) now returns a challenge, not tokens.
-      const login2 = await loginViaEmailLink(910_401n, 'e2e-2fa-login-token');
-      expect(login2.status).toBe(200);
-      expect(login2.body.accessToken).toBeUndefined();
-      expect(extractSetCookie(login2, 'refresh_token')).toBeUndefined();
-      const challengeToken = login2.body.challengeToken;
+      // Вход на сайте (колбэк VK ID / Яндекс ID, auth-flow.service.ts) при
+      // включённом TOTP отдаёт челлендж, а не сессию: OAuth в e2e не пройти,
+      // челлендж выписывается тем же методом сервиса.
+      const challengeToken = app
+        .get(AuthService)
+        .buildTotpChallengeToken(910_401n);
       const wrongCode = await post('/api/auth/2fa/challenge').send({
         challengeToken,
         code: '000000',
@@ -339,73 +321,95 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
-  // B-14 + B-16 (аудит 2026-10): ссылка из письма — двухшаговая. GET только
-  // перенаправляет (сканер почты токен не сожжёт и сессию не украдёт), гасит
-  // POST email/consume со страницы сайта; аккаунт заводится при погашении.
-  describe('email magic-link: GET → страница → POST consume', () => {
-    const seedLoginToken = (raw: string, userId: bigint | null = null) =>
-      prisma.emailToken.create({
+  // Входа по ссылке на почту нет (решение владельца, ч. 10 ст. 8 149-ФЗ):
+  // письмо — только привязка адреса к аккаунту, в который уже вошли. B-14
+  // (аудит 2026-10): GET по ссылке только перенаправляет (сканер почты токен
+  // не сожжёт), гасит POST email/consume со страницы сайта.
+  describe('почта: входа нет, привязка — письмо → GET → POST consume', () => {
+    const OWNER = 910_701n;
+    const tokenRow = (raw: string): any =>
+      prisma.emailToken._rows.find((r: any) => r.tokenHash === hashToken(raw));
+
+    it('POST email/link (вход по почте) → 404, токена и письма нет', async () => {
+      const before = prisma.emailToken._rows.length;
+      const res = await post('/api/auth/email/link').send({
+        email: 'e2e-squat@example.com',
+      });
+      expect(res.status).toBe(404);
+      expect(prisma.emailToken._rows).toHaveLength(before);
+    });
+
+    it('токен входа, выписанный до выкладки, → 401: ни сессии, ни аккаунта', async () => {
+      await prisma.emailToken.create({
         data: {
           id: crypto.randomUUID(),
-          userId,
-          tokenHash: hashToken(raw),
-          email: 'e2e-new@example.com',
+          userId: null,
+          tokenHash: hashToken('e2e-old-login'),
+          email: 'e2e-old@example.com',
           purpose: 'login',
           expiresAt: new Date(Date.now() + 30 * 60_000),
         },
       });
-    const tokenRow = (raw: string): any =>
-      prisma.emailToken._rows.find((r: any) => r.tokenHash === hashToken(raw));
-
-    it('запрос ссылки для нового адреса НЕ создаёт ни User, ни AuthProvider', async () => {
-      const usersBefore = prisma.user._rows.length;
-      const providersBefore = prisma.authProvider._rows.length;
-      const res = await post('/api/auth/email/link').send({
-        email: 'e2e-squat@example.com',
-      });
-      expect(res.status).toBe(200);
-      expect(prisma.user._rows).toHaveLength(usersBefore);
-      expect(prisma.authProvider._rows).toHaveLength(providersBefore);
-      expect(prisma.emailToken._rows.some((r: any) => r.userId === null)).toBe(
-        true,
-      );
-    });
-
-    it('GET callback → 302 на страницу сайта; токен НЕ погашен, кука НЕ выдана', async () => {
-      await seedLoginToken('e2e-raw-token-1');
-      const res = await request(app.getHttpServer())
-        .get('/api/auth/email/callback?token=e2e-raw-token-1')
-        .redirects(0);
-      expect(res.status).toBe(302);
-      expect(res.headers.location).toContain(
-        '/auth/callback?email_token=e2e-raw-token-1',
-      );
-      expect(extractSetCookie(res, 'refresh_token')).toBeUndefined();
-      expect(tokenRow('e2e-raw-token-1').usedAt ?? null).toBeNull();
-    });
-
-    it('POST consume: токены + кука, аккаунт создан при погашении; повтор → 401', async () => {
-      await seedLoginToken('e2e-raw-token-2');
-      const usersBefore = prisma.user._rows.length;
+      const users = prisma.user._rows.length;
       const res = await post('/api/auth/email/consume').send({
-        token: 'e2e-raw-token-2',
+        token: 'e2e-old-login',
       });
-      expect(res.status).toBe(200);
-      expect(res.body.accessToken).toEqual(expect.any(String));
-      expect(extractSetCookie(res, 'refresh_token')).toBeDefined();
-      expect(prisma.user._rows).toHaveLength(usersBefore + 1);
-      expect(
-        prisma.authProvider._rows.some(
-          (r: any) =>
-            r.provider === 'email' && r.providerId === 'e2e-new@example.com',
-        ),
-      ).toBe(true);
+      expect(res.status).toBe(401);
+      expect(res.body.accessToken).toBeUndefined();
+      expect(extractSetCookie(res, 'refresh_token')).toBeUndefined();
+      expect(prisma.user._rows).toHaveLength(users);
+      expect(tokenRow('e2e-old-login').usedAt ?? null).toBeNull();
+    });
 
-      const again = await post('/api/auth/email/consume').send({
-        token: 'e2e-raw-token-2',
+    it('привязка: письмо → GET → POST consume из своей сессии → почта в /me', async () => {
+      await prisma.user.upsert({
+        where: { id: OWNER },
+        update: {},
+        create: { id: OWNER, firstName: 'E2E' },
       });
-      expect(again.status).toBe(401);
-      expect(prisma.user._rows).toHaveLength(usersBefore + 1);
+      const bearer = `Bearer ${signAccessToken(OWNER, process.env.JWT_SECRET as string)}`;
+      const letters = jest
+        .spyOn(app.get(EmailService), 'sendLinkEmailLetter')
+        .mockResolvedValue(undefined);
+      const asked = await post('/api/auth/email/link-to-account')
+        .set('Authorization', bearer)
+        .send({ email: 'E2E-Link@Example.com' });
+      expect(asked.status).toBe(200);
+      const link = new URL(letters.mock.calls[0][1]);
+      letters.mockRestore();
+      expect(link.pathname).toBe('/api/auth/email/callback');
+      expect([...link.searchParams.keys()]).toEqual(['token']);
+      const raw = link.searchParams.get('token') as string;
+
+      const opened = await request(app.getHttpServer())
+        .get(`/api/auth/email/callback?token=${raw}`)
+        .redirects(0);
+      expect(opened.status).toBe(302);
+      expect(opened.headers.location).toContain(
+        `/auth/callback?email_token=${raw}`,
+      );
+      expect(extractSetCookie(opened, 'refresh_token')).toBeUndefined();
+      expect(tokenRow(raw).usedAt ?? null).toBeNull();
+
+      await seedSession(OWNER, 'e2e-link-refresh');
+      const consume = () =>
+        post('/api/auth/email/consume')
+          .set('Cookie', 'refresh_token=e2e-link-refresh')
+          .send({ token: raw });
+      const done = await consume();
+      expect(done.status).toBe(200);
+      expect(done.body).toEqual({ linked: true });
+      expect(extractSetCookie(done, 'refresh_token')).toBeUndefined();
+
+      const me = await request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Authorization', bearer);
+      expect(me.body.providers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ provider: 'email' }),
+        ]),
+      );
+      expect((await consume()).status).toBe(401);
     });
 
     it('POST consume без токена / с не-строкой → 400 (TokenBodyDto)', async () => {
@@ -655,13 +659,9 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
   });
 
   describe('malformed bodies → 400, not 500', () => {
-    // Neither route uses a DTO (manual `@Body('x')` guards) — empty body → 400.
-    it.each([['/api/auth/email/link'], ['/api/auth/merge']])(
-      'POST %s with an empty body → 400',
-      async (url) => {
-        expect((await post(url).send({})).status).toBe(400);
-      },
-    );
+    it('POST /api/auth/merge with an empty body → 400', async () => {
+      expect((await post('/api/auth/merge').send({})).status).toBe(400);
+    });
 
     it('2fa/enable: missing code → 400, numeric code → 400 (TwoFaCodeDto, not 500)', async () => {
       const login = await loginViaTelegramWebapp(910_501);

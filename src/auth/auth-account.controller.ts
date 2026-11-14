@@ -21,12 +21,10 @@ import { MergeService } from './merge.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SecurityLogService } from './security-log.service';
 import { emailCallbackRedirectUrl } from './email-callback-redirect';
-import { emailConsumeBody, type EmailConsumeBody } from './email-consume-body';
 import { EmailTokenService } from './email-token.service';
 import { buildMergePreview, type MergePreview } from './merge-preview';
 import { SecurityNoticeService } from './security-notice.service';
 import { StepUpGuard } from './step-up';
-import { TicketDeviceService } from './login-ticket/ticket-device';
 import {
   EmailBodyDto,
   InitDataBodyDto,
@@ -63,43 +61,24 @@ export class AuthAccountController {
     private readonly emailTokens: EmailTokenService,
     private readonly identity: CallerIdentityService,
     private readonly totp: TotpService,
-    private readonly tickets: TicketDeviceService,
     private readonly notice: SecurityNoticeService,
     private readonly analytics: AnalyticsService,
   ) {}
 
-  // ─── Email magic-link login ───────────────────────────────────────────────
+  // ─── Привязка почты: ссылка из письма ─────────────────────────────────────
 
-  @Post('email/link')
-  @PersistentThrottleLimit(STRICT_THROTTLE)
-  @HttpCode(200)
-  async emailLoginLink(
-    @Body() dto: EmailBodyDto,
-    @Req() req: Request,
-  ): Promise<{ ok: true }> {
-    requireCsrf(req, 'email/link', this.securityLog);
-    // S9: чужой билет в письме — фишинг настоящим письмом (ticket-device.ts).
-    if (dto.ticket) await this.tickets.assertOwnPendingLogin(req, dto.ticket);
-    const { ticket, returnTo } = dto; // адрес возврата едет в ссылке (E14)
-    return this.auth.requestEmailLogin(dto.email, { ticket, returnTo });
-  }
-
-  // Ссылка из письма (B-14): только 302 на страницу сайта, токен не гасится —
-  // его гасит POST email/consume. См. email-callback-redirect.ts.
+  // Ссылка из письма привязки (B-14): только 302 на страницу сайта, токен не
+  // гасится — его гасит POST email/consume. См. email-callback-redirect.ts.
   @Get('email/callback')
-  emailLoginCallback(
-    @Query('token') token: unknown,
-    @Query('ticket') ticket: unknown,
-    @Query('return_to') returnTo: unknown,
-    @Res() res: Response,
-  ): void {
+  emailCallback(@Query('token') token: unknown, @Res() res: Response): void {
     res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
     const base = this.config.getOrThrow<string>('WEBAPP_URL');
-    res.redirect(302, emailCallbackRedirectUrl(base, token, ticket, returnTo));
+    res.redirect(302, emailCallbackRedirectUrl(base, token));
   }
 
-  // Погашение токена со страницы сайта. Анонимный роут (человек входит), но с
-  // CSRF-заголовком и троттлингом; токен — 256 бит, лимит против шума.
+  // Погашение токена привязки со страницы сайта. Анонимный роут (чья сессия —
+  // решает refresh-кука, A3), но с CSRF-заголовком и троттлингом; токен — 256
+  // бит, лимит против шума. Сессию не выдаёт.
   @Post('email/consume')
   @Throttle({
     short: { limit: 10, ttl: 60_000 },
@@ -109,17 +88,14 @@ export class AuthAccountController {
   async emailConsume(
     @Body() dto: TokenBodyDto,
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<EmailConsumeBody> {
+  ): Promise<{ linked: true }> {
     requireCsrf(req, 'email/consume', this.securityLog);
-    const r = await this.emailTokens.consumeEmailToken(
+    const userId = await this.emailTokens.consumeEmailToken(
       dto.token,
-      req.ip,
-      req.headers['user-agent'],
       await this.identity.resolve(req), // A3: чья сессия в этом браузере
     );
-    if (r.kind === 'linked') this.notice.linked(r.userId, 'email');
-    return emailConsumeBody(r, res);
+    this.notice.linked(userId, 'email');
+    return { linked: true };
   }
 
   // ─── Link email to existing account ──────────────────────────────────────

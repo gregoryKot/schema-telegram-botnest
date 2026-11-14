@@ -6,15 +6,19 @@
 // (подпись initData), а всё, что переносит личность оттуда в браузер, закрыто:
 //   - билет входа (`intent: 'login'`) с подтверждением в боте — удалён;
 //   - одобрить билет входа из своей сессии (`confirm-login`) может только
-//     аккаунт, у которого есть способ входа кроме Telegram;
+//     аккаунт со входом VK ID, Яндекс ID или MAX;
 //   - передача сессии во внешний браузер (`handoff`) — только из MAX.
-// Привязка (`intent: 'link'`) остаётся: её начинает человек, уже вошедший на
-// сайт почтой, VK ID или Яндекс ID.
+// Вход по ссылке на почту тоже убран (решение владельца, ч. 10 ст. 8 149-ФЗ):
+// почта остаётся для писем, а не для входа. Привязка (`intent: 'link'`)
+// остаётся: её начинает человек, уже вошедший на сайт VK ID или Яндекс ID.
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 /** Способы, которыми билет входа подтверждают в браузере. */
-export const SITE_TICKET_PROVIDERS = ['vk', 'yandex', 'email'] as const;
+export const SITE_TICKET_PROVIDERS = ['vk', 'yandex'] as const;
+
+/** Чьей сессии можно одобрить вход в браузер: VK ID, Яндекс ID, MAX. */
+const SITE_ACCOUNT_PROVIDERS = ['vk', 'yandex', 'max'];
 
 /** Билет входа выписывают только под подтверждение в браузере. */
 export function assertSiteTicket(intent: string, provider: string): void {
@@ -27,18 +31,19 @@ export function assertSiteTicket(intent: string, provider: string): void {
 async function hasProvider(
   prisma: PrismaService,
   userId: bigint,
-  provider: string | { not: string },
+  provider: string | { in: string[] },
 ): Promise<boolean> {
   const n = await prisma.authProvider.count({ where: { userId, provider } });
   return n > 0;
 }
 
-/** Одобрить вход в браузер может аккаунт со способом входа кроме Telegram. */
+/** Одобрить вход в браузер может только аккаунт со входом VK ID, Яндекс ID, MAX. */
 export async function assertSiteAccount(
   prisma: PrismaService,
   userId: bigint,
 ): Promise<void> {
-  if (!(await hasProvider(prisma, userId, { not: 'telegram' }))) {
+  const provider = { in: SITE_ACCOUNT_PROVIDERS };
+  if (!(await hasProvider(prisma, userId, provider))) {
     throw new BadRequestException('Этот аккаунт открывается в Telegram');
   }
 }

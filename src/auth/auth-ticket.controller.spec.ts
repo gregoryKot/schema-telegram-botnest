@@ -9,11 +9,6 @@ import { AuthTicketController } from './auth-ticket.controller';
 import type { LoginTicketService } from './login-ticket/login-ticket.service';
 import type { TicketLinkService } from './login-ticket/ticket-link.service';
 import type { SecurityLogService } from './security-log.service';
-import {
-  TICKET_DEVICE_COOKIE,
-  TicketDeviceService,
-} from './login-ticket/ticket-device';
-import { hashToken } from './email.util';
 
 const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) Version/17.5 Mobile/15E148 Safari/604.1';
@@ -49,8 +44,7 @@ function makeCtl() {
     approve: jest.fn().mockResolvedValue({ merged: true }),
   } as unknown as TicketLinkService;
   const securityLog = { log: jest.fn() } as unknown as SecurityLogService;
-  const device = new TicketDeviceService({} as never, securityLog);
-  const ctl = new AuthTicketController(tickets, links, securityLog, device);
+  const ctl = new AuthTicketController(tickets, links, securityLog);
   const res = makeRes();
   return {
     tickets,
@@ -59,7 +53,7 @@ function makeCtl() {
     ctl,
     res,
     start: (body: Parameters<AuthTicketController['start']>[0], req: Request) =>
-      ctl.start(body, req, res),
+      ctl.start(body, req),
   };
 }
 
@@ -80,8 +74,9 @@ describe('POST ticket/start', () => {
 
   // Запрос Роскомнадзора 2026-11: на сайт через Telegram не входят. Билет
   // входа под подтверждение в боте (и под любой способ, которого на сайте
-  // нет) не выписывается; привязка уже вошедшего — выписывается (ниже).
-  it.each(['telegram', 'max', 'google'])(
+  // нет) не выписывается; привязка уже вошедшего — выписывается (ниже). Почта
+  // — тоже не вход (решение владельца, ч. 10 ст. 8 149-ФЗ).
+  it.each(['telegram', 'max', 'google', 'email'])(
     'вход с provider=%s — 400, билет не выписан',
     async (provider) => {
       const { start, tickets } = makeCtl();
@@ -145,24 +140,6 @@ describe('POST ticket/start', () => {
     // прежнего хозяина.
     expect(tickets.start).toHaveBeenCalledWith(
       expect.objectContaining({ requesterUserId: null }),
-    );
-  });
-
-  // S9 (аудит 2026-11): браузер, выписавший билет, получает httpOnly-куку с
-  // хешем длинного секрета — по ней письмо входа примет только СВОЙ билет.
-  it('ставит куку билета: хеш deviceCode, httpOnly, strict, /api/auth, TTL билета', async () => {
-    const { start, res } = makeCtl();
-    await start({ intent: 'login', provider: 'email' }, makeReq());
-    expect(res.cookie).toHaveBeenCalledWith(
-      TICKET_DEVICE_COOKIE,
-      hashToken('d'.repeat(64)),
-      expect.objectContaining({
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
-        path: '/api/auth',
-        maxAge: 300_000,
-      }),
     );
   });
 

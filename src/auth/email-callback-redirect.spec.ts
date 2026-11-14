@@ -10,59 +10,28 @@ const BASE = 'https://schemehappens.ru';
 
 describe('emailCallbackRedirectUrl', () => {
   it('уводит на страницу-погашение с токеном в query', () => {
-    expect(emailCallbackRedirectUrl(BASE, 'abc_DEF-123', undefined)).toBe(
+    expect(emailCallbackRedirectUrl(BASE, 'abc_DEF-123')).toBe(
       `${BASE}${EMAIL_CONSUME_PATH}?${EMAIL_CONSUME_PARAM}=abc_DEF-123`,
     );
   });
 
-  it('билет входа едет следом', () => {
-    expect(emailCallbackRedirectUrl(BASE, 't', 'AbCd1234')).toBe(
-      `${BASE}/auth/callback?email_token=t&ticket=AbCd1234`,
-    );
-  });
-
   it('токен кодируется — лишние символы не ломают адрес и не добавляют параметров', () => {
-    const url = emailCallbackRedirectUrl(BASE, 'a&b=c#d', undefined);
+    const url = emailCallbackRedirectUrl(BASE, 'a&b=c#d');
     expect(url).toBe(`${BASE}/auth/callback?email_token=a%26b%3Dc%23d`);
     expect(new URL(url).searchParams.get('email_token')).toBe('a&b=c#d');
   });
 
   it('завершающий слэш базы не удваивается', () => {
-    expect(emailCallbackRedirectUrl(`${BASE}/`, 't', undefined)).toBe(
+    expect(emailCallbackRedirectUrl(`${BASE}/`, 't')).toBe(
       `${BASE}/auth/callback?email_token=t`,
     );
   });
 
-  it('без токена — экран ошибки входа, а не пустая страница-погашение', () => {
-    expect(emailCallbackRedirectUrl(BASE, undefined, 'AbCd1234')).toBe(
-      `${BASE}/auth/error?reason=email_link_expired`,
-    );
-    expect(emailCallbackRedirectUrl(BASE, '', undefined)).toBe(
-      `${BASE}/auth/error?reason=email_link_expired`,
-    );
-  });
-
-  it('адрес возврата (E14) едет следом; без токена — не едет', () => {
-    expect(
-      emailCallbackRedirectUrl(BASE, 't', undefined, '/link?code=AB'),
-    ).toBe(`${BASE}/auth/callback?email_token=t&return_to=%2Flink%3Fcode%3DAB`);
-    expect(emailCallbackRedirectUrl(BASE, undefined, undefined, '/x')).toBe(
-      `${BASE}/auth/error?reason=email_link_expired`,
-    );
-  });
-
-  it.each([
-    '//evil.com',
-    '/\\evil.com',
-    '/\t/evil.com',
-    'https://evil.com',
-    '/..//evil.com',
-    ['/a'],
-  ])(
-    'чужой адрес возврата (%j) отбрасывается, вход по ссылке остаётся',
+  it.each([undefined, '', ['a', 'b']])(
+    'нет токена или он не строка (%j) — экран ошибки, а не пустая страница-погашение',
     (raw) => {
-      expect(emailCallbackRedirectUrl(BASE, 't', undefined, raw)).toBe(
-        `${BASE}/auth/callback?email_token=t`,
+      expect(emailCallbackRedirectUrl(BASE, raw)).toBe(
+        `${BASE}/auth/error?reason=email_link_expired`,
       );
     },
   );
