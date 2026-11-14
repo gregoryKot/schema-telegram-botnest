@@ -25,7 +25,7 @@ describe('MergeSummary — что удалится без объединения
     renderFromServer({ ...BODY, lost: { Rating: 3, YsqProgress: 1, AppActivity: 2 } });
     expect(screen.getByText(/не переедет и удалится – в твоём аккаунте уже есть такие же записи/)).toBeTruthy();
     expect(screen.getByText('3 оценки потребностей за те же дни')).toBeTruthy();
-    expect(screen.getByText('незаконченное прохождение теста на схемы')).toBeTruthy();
+    expect(screen.getByText('незаконченный тест на схемы')).toBeTruthy();
     expect(screen.queryByText(/AppActivity/)).toBeNull();
     expect(screen.queryByText(/всё, что в нём записано/)).toBeNull();
     expect(screen.getByText(/записи из него переедут/)).toBeTruthy();
@@ -44,5 +44,16 @@ describe('MergeSummary — что удалится без объединения
       expect(screen.getByText(/всё, что в нём записано/)).toBeTruthy();
       cleanup();
     }
+  });
+
+  it('сводка не загрузилась — без обещания «всё переедет», общее предупреждение про дубли', () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MergeSummary preview={{ kind: 'failed' }} />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.queryByText(/всё, что в нём записано/)).toBeNull();
+    expect(screen.getByText(/записи из него переедут/)).toBeTruthy();
+    expect(screen.getByText(/останутся записи текущего аккаунта, а дубли из второго удалятся/)).toBeTruthy();
   });
 });

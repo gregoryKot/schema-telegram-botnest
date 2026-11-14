@@ -5,7 +5,7 @@ import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 const LINES: Array<[string, (n: number) => string]> = [
   ['Rating', (n) => `${n} ${pluralRu(n, 'оценка', 'оценки', 'оценок')} потребностей за те же дни`],
   ['ChildhoodRating', (n) => `${n} ${pluralRu(n, 'оценка', 'оценки', 'оценок')} в колесе детства`],
-  ['YsqProgress', () => 'незаконченное прохождение теста на схемы'],
+  ['YsqProgress', () => 'незаконченный тест на схемы'],
   ['TherapistRequest', () => 'заявка на роль терапевта'],
 ];
 

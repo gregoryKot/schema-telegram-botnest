@@ -1,6 +1,15 @@
 // Что удалится при слиянии без объединения: только известные категории сервера.
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { lostLines } from './lostText';
+
+// Сверка с src/auth/merge-lost.ts (правило №4): сайт не импортирует бэкендовый модуль.
+const server = readFileSync(resolve(__dirname, '../../../../src/auth/merge-lost.ts'), 'utf8');
+const keysOf = (name: string): string[] => {
+  const body = server.match(new RegExp(`export const ${name}[^=]*= \\{([\\s\\S]*?)\\n\\}`))?.[1] ?? '';
+  return [...body.matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
+};
 
 describe('lostLines', () => {
   it.each([
@@ -16,7 +25,7 @@ describe('lostLines', () => {
     expect(lostLines({ TherapistRequest: 1, YsqProgress: 1, ChildhoodRating: 3, Rating: 2 })).toEqual([
       '2 оценки потребностей за те же дни',
       '3 оценки в колесе детства',
-      'незаконченное прохождение теста на схемы',
+      'незаконченный тест на схемы',
       'заявка на роль терапевта',
     ]);
   });
@@ -29,5 +38,14 @@ describe('lostLines', () => {
   it('пусто или поля нет — []', () => {
     expect(lostLines({})).toEqual([]);
     expect(lostLines(undefined)).toEqual([]);
+  });
+
+  it('сверка с сервером: каждая таблица LOST_ON_CONFLICT — своя строка, LOST_UNSHOWN — ни одной', () => {
+    const shown = keysOf('LOST_ON_CONFLICT');
+    const unshown = keysOf('LOST_UNSHOWN');
+    expect(shown.length).toBeGreaterThan(0);
+    expect(unshown.length).toBeGreaterThan(0);
+    for (const table of shown) expect(lostLines({ [table]: 1 }), table).toHaveLength(1);
+    expect(lostLines(Object.fromEntries(unshown.map((t) => [t, 1])))).toEqual([]);
   });
 });

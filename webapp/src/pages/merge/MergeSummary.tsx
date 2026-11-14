@@ -1,5 +1,6 @@
 import { totalItems } from '../../utils/mergeLabels';
 import { Skeleton } from '../../components/Skeleton';
+import { WarnNote } from '../../components/WarnNote';
 import { MergeRows } from './MergeRows';
 import { providerName } from '../account/providerNames';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
@@ -10,10 +11,10 @@ import { LostOnMergeNote } from './LostOnMergeNote';
 
 // Чей второй аккаунт, что из него переедет и что объединится — только из ответа
 // сервера (useMergePreview). Грузится — силуэт абзаца и строк; не загрузилось —
-// нейтрально «найден ещё один аккаунт», без имён и цифр.
+// нейтрально «найден ещё один аккаунт», без имён и цифр и без обещания «всё переедет».
 export function MergeSummary({ preview }: { preview: MergePreviewState }) {
   const ok = preview.kind === 'ok';
-  const { moves, combined } = useMergeTexts(ok ? preview.combined : 0, ok ? lostLines(preview.lost).length : 0);
+  const { moves, combined } = useMergeTexts(ok ? preview.combined : 0, ok ? lostLines(preview.lost).length > 0 : true);
   if (preview.kind === 'loading') {
     return (
       <div className="am-skel" aria-hidden="true">
@@ -23,7 +24,16 @@ export function MergeSummary({ preview }: { preview: MergePreviewState }) {
       </div>
     );
   }
-  if (preview.kind === 'failed') return <p className="am-lead">Найден ещё один аккаунт. {moves}</p>;
+  if (preview.kind === 'failed') {
+    return (
+      <>
+        <p className="am-lead">Найден ещё один аккаунт. {moves}</p>
+        <WarnNote>
+          Если в обоих аккаунтах есть одинаковые записи – оценка той же потребности за тот же день, незаконченный тест на схемы, – останутся записи текущего аккаунта, а дубли из второго удалятся.
+        </WarnNote>
+      </>
+    );
+  }
   const name = providerName(preview.provider);
   const total = totalItems(preview.summary);
   return (
