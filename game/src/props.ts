@@ -33,6 +33,10 @@ export const PROP_IMAGES: Record<string, string> = {
   ledge_street: lStreetUrl, ledge_room: lRoomUrl,
 };
 
+// Фонарь 64x116 и торшер 72x116 со светом внутри спрайта — показ ×1.5, как кот.
+export const LAMP_W = 64 * 1.5;
+export const FLOORLAMP_W = 72 * 1.5;
+
 // Карнизы-платформы для NineSlice: ключ + ширина торца (px текстуры, не растягивается)
 export const LEDGE: Record<string, { key: string; cap: number }> = {
   street: { key: 'ledge_street', cap: 16 },
