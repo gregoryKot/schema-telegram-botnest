@@ -1,7 +1,8 @@
 // Выгрузка клиентской стороны (data-export.client-side.ts): концептуализация
 // уходит в файл только показанной клиенту и только видом клиента — что видит в
 // «Мой терапевт», то и выгружает; остальное перечислено в withheld.
-import { exportClientSide, SHOWN_VIEWS } from './data-export.client-side';
+import { exportClientSide } from './data-export.client-side';
+import { SHOWN_EXPORTS } from './export-shown';
 import { CLIENT_EXPORT_POLICY } from './export-policy.client';
 import { encryptConceptFields } from '../therapy/concept-store';
 
@@ -72,7 +73,7 @@ describe('exportClientSide — концептуализация', () => {
     const out = await exportClientSide(prisma, 555n);
     expect(out.withheld).toEqual([
       expect.objectContaining({
-        table: 'TherapistNote, ClientConceptualization',
+        table: 'ModeMap, TherapistNote, ClientConceptualization',
       }),
     ]);
     expect(out.withheld[0].reason).toContain('истоки, задачи терапии');
@@ -82,9 +83,9 @@ describe('exportClientSide — концептуализация', () => {
     const shown = Object.entries(CLIENT_EXPORT_POLICY)
       .filter(([, d]) => d.status === 'shown')
       .map(([m]) => m);
-    expect(shown.filter((m) => !SHOWN_VIEWS[m])).toEqual([]);
-    expect(Object.keys(SHOWN_VIEWS).filter((m) => !shown.includes(m))).toEqual(
-      [],
-    );
+    expect(shown.filter((m) => !SHOWN_EXPORTS[m])).toEqual([]);
+    expect(
+      Object.keys(SHOWN_EXPORTS).filter((m) => !shown.includes(m)),
+    ).toEqual([]);
   });
 });

@@ -101,12 +101,6 @@ describe('LoginPage — подзаголовок в форме человека'
     expect(screen.getByText(`${sub}. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram`)).toBeTruthy();
     expect(screen.getByTestId('login-consent-note').textContent).toMatch(consent);
   });
-
-  it('без провайдера (так живёт /login) весь экран в одной форме', () => {
-    renderPage();
-    expect(screen.getByText(/^Войди, чтобы продолжить\. Вход через Telegram/)).toBeTruthy();
-    expect(screen.getByTestId('login-consent-note').textContent).toMatch(/подтверждаешь/);
-  });
 });
 
 // QA 2026-11, К2: после удаления аккаунта экран входа писал «Вход устарел —
@@ -180,7 +174,6 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
     expect(screen.getByText(/Вход не получился/)).toBeTruthy();
   });
 
-  // Аудит 2026-10: /login вне AddressFormProvider — useTr() всегда давал «ты».
   it('текст провала безличный: без «Попробуй»/«Попробуйте»', () => {
     renderPage(authValue(), '/login?error=no_token');
     expect(

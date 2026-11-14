@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../../utils/admin-alert';
 import {
+  noteAlertEmailResponse,
   noteAlertEmailResult,
   resetAlertEmailHealth,
 } from '../../utils/alert-email-health';
@@ -81,6 +82,30 @@ describe('emailProbe', () => {
       expect((await emailProbe(ENV, () => NOW).run()).ok).toBe(false);
     },
   );
+
+  it('суточная квота (400 LimitExceededException) — временный сбой, а не постоянный отказ', async () => {
+    noteAlertEmailResponse({
+      ok: false,
+      status: 400,
+      error: 'LimitExceededException: Daily message quota exceeded',
+    });
+    const t = Date.now();
+    const fresh = await emailProbe(ENV, () => t).run();
+    expect(fresh.ok).toBe(false);
+    expect(fresh.detail).toContain('квота');
+    const old = await emailProbe(ENV, () => t + TRANSIENT_WINDOW_MS + H).run();
+    expect(old.ok).toBe(true);
+  });
+
+  it('другой 400 (домен не подтверждён) — красный и после окна', async () => {
+    noteAlertEmailResponse({
+      ok: false,
+      status: 400,
+      error: 'MailFromDomainNotVerifiedException: domain not verified',
+    });
+    const later = Date.now() + TRANSIENT_WINDOW_MS + H;
+    expect((await emailProbe(ENV, () => later).run()).ok).toBe(false);
+  });
 
   it('отказ, затем успех — ok', async () => {
     noteAlertEmailResult({ ok: false, status: 401 }, NOW - 5 * H);

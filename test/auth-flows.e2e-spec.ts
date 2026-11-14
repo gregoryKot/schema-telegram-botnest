@@ -462,10 +462,10 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
   // (площадка внешняя) — он на записанных ответах в src/auth/providers и
   // src/auth/oauth-callback.seam.spec.ts. Через HTTP проверяется то, чего
   // юнит не видит: маршруты примонтированы, DTO запроса и глобальный
-  // ValidationPipe не отвечают 400 на то, что присылает площадка, а любой
-  // отказ колбэка — это экран ошибки входа, а не JSON и не 500.
+  // ValidationPipe не отвечают 400 на то, что присылает площадка, а колбэк
+  // выключенного провайдера (env не задан) — экран yandex_disabled, а не JSON и не 500.
   describe('вход через Яндекс ID', () => {
-    const FAILED = 'https://schemehappens.ru/auth/error?reason=yandex_failed';
+    const SCREEN = 'https://schemehappens.ru/auth/error?reason=yandex_disabled';
     const get = (url: string) =>
       request(app.getHttpServer()).get(url).set('Host', 'schemehappens.ru');
 
@@ -478,12 +478,12 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
     });
 
-    it('колбэк той же формы, что присылает Яндекс (state, code, cid), — 302 на yandex_failed, не 400', async () => {
+    it('колбэк той же формы, что присылает Яндекс (state, code, cid), — 302 на экран ошибки, не 400', async () => {
       const res = await get(
         `/api/auth/yandex/callback?state=a.b-c_d.e&code=abcdefgh12345678&cid=${'c'.repeat(26)}`,
       );
       expect(res.status).toBe(302);
-      expect(res.headers.location).toBe(FAILED);
+      expect(res.headers.location).toBe(SCREEN);
       expect(extractSetCookie(res, 'refresh_token')).toBeFalsy();
     });
 
@@ -492,11 +492,11 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         '/api/auth/yandex/callback?error=access_denied&error_description=User%20denied%20access&state=a.b.c',
       );
       expect(denied.status).toBe(302);
-      expect(denied.headers.location).toBe(FAILED);
+      expect(denied.headers.location).toBe(SCREEN);
 
       const empty = await get('/api/auth/yandex/callback');
       expect(empty.status).toBe(302);
-      expect(empty.headers.location).toBe(FAILED);
+      expect(empty.headers.location).toBe(SCREEN);
     });
 
     it('незнакомый параметр срезается; повторённый code — 400 от DTO, до обмена не доходит', async () => {
@@ -504,7 +504,7 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         '/api/auth/yandex/callback?state=s&code=c&scope=login:email&new_param=1',
       );
       expect(extra.status).toBe(302);
-      expect(extra.headers.location).toBe(FAILED);
+      expect(extra.headers.location).toBe(SCREEN);
 
       const repeated = await get(
         '/api/auth/yandex/callback?state=s&code=a&code=b',

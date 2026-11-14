@@ -17,7 +17,7 @@ describe('loginClosedText', () => {
     for (const form of ['ty', 'vy'] as const) {
       const text = loginClosedText(form);
       expect(text).toContain('Вход на сайт через Telegram закрыт');
-      expect(text).toContain('почту или VK ID');
+      expect(text).toContain('почту, Яндекс ID или VK ID');
     }
     expect(loginClosedText('ty')).toContain('Открой приложение');
     expect(loginClosedText('vy')).toContain('Откройте приложение');

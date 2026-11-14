@@ -1,17 +1,14 @@
-// Снимок последней отправки письма-фолбэка алертов через Postbox (аудит
-// 2026-10-11: sendEmail не смотрел ответ, отозванный ключ и 403/429 считались
-// доставкой и не оставляли ни строки в логе). Процессный синглтон — тот же
-// приём, что у ../infra/self-check/state.ts и ../logger/db-outage.ts: admin-alert.ts
-// пишет, проба самопроверки (../infra/self-check/probe-email.ts) читает.
+// Снимок последней отправки письма через Postbox — процессный синглтон, как
+// self-check/state.ts: admin-alert.ts и email.service.ts пишут, probe-email.ts читает.
 //
 // Лог — только уровнем warn. AlertLogger (../logger/alert.logger.ts) шлёт
 // в DM лишь error, а error отсюда зациклил бы фолбэк сам на себя: письмо не
 // ушло → error → AlertLogger → notifyAdminWithFallback → письмо не ушло.
-// В лог не попадают ни ключ, ни текст письма, ни тело ответа Postbox (в нём
-// может быть адрес) — только HTTP-статус.
+// В лог не попадают ни ключ, ни текст письма, ни тело ответа Postbox — только статус.
 import { Logger } from '@nestjs/common';
 
-export type AlertEmailFailure = number | 'network' | 'timeout';
+/** 'quota' — 400 с LimitExceededException: суточная квота Postbox, сбросится сама. */
+export type AlertEmailFailure = number | 'network' | 'timeout' | 'quota';
 export type AlertEmailAttempt =
   { ok: true } | { ok: false; status: AlertEmailFailure };
 
@@ -40,6 +37,7 @@ let lastLogged: { at: number; status: AlertEmailFailure } | null = null;
 
 export function describeAlertEmailFailure(status: AlertEmailFailure): string {
   if (typeof status === 'number') return `HTTP ${status}`;
+  if (status === 'quota') return 'исчерпана суточная квота (HTTP 400)';
   return status === 'timeout' ? 'таймаут' : 'сеть';
 }
 
@@ -62,14 +60,17 @@ export function noteAlertEmailResult(
   );
 }
 
-/** Ответ Postbox: смотрим только HTTP-статус, тело сюда не попадает. */
+const QUOTA_ERROR = /LimitExceeded/;
+
+/** Ответ Postbox: HTTP-статус и код ошибки (только чтобы узнать квоту), тело в лог не идёт. */
 export function noteAlertEmailResponse(res: {
   ok: boolean;
   status: number;
+  error?: string;
 }): void {
-  noteAlertEmailResult(
-    res.ok ? { ok: true } : { ok: false, status: res.status },
-  );
+  if (res.ok) return noteAlertEmailResult({ ok: true });
+  const quota = res.status === 400 && QUOTA_ERROR.test(res.error ?? '');
+  noteAlertEmailResult({ ok: false, status: quota ? 'quota' : res.status });
 }
 
 /** fetch не дошёл до ответа: таймаут (AbortSignal.timeout) или сеть. */
