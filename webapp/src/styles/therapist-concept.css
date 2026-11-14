@@ -87,6 +87,9 @@
 .ds-fold.tcp-fold + .tcp-fold { border-top: 1px solid var(--paper-sunk); }
 /* «Ещё N» сверки с YSQ: короткая ссылка, зона нажатия 44×44. */
 .ds-link.tcp-ysq-more { min-width: 44px; min-height: 44px; text-align: left; }
+/* Шеврон строки «Истории версий»: SVG из ExGlyphs, размер задаёт место. */
+.tcp-ver-chev { display: inline-flex; flex-shrink: 0; margin-left: 4px; color: var(--text-ghost); }
+.tcp-ver-chev svg { width: 10px; height: 10px; }
 
 /* ── «Главное»: кнопка в шапке и экран с самым важным (2026-11) ── */
 .tcp-brief-btn { height: 44px; padding: 0 16px; }
