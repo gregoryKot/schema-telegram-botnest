@@ -65,6 +65,7 @@
 - ⬜ **Игра: устаревший размер тач-холста в комментарии** — `game/src/scenes/IntroScene.ts:59` пишет «H=384», а с #1131 холст 640×360 (`game/src/constants.ts`); старое число доехало до брифа #1194.
 - ⬜ **Кабинет терапевта: на решение владельца (#1072)** — список в разделах `### b29`–`### b31` `docs/design/APP_2026-11.md`:
   «0 активных домашних заданий» над пустым списком, `Check` у невыполненного задания и у шаблона «Дневник режима».
+- ⬜ **Безопасное место: детекция чувств списком, а поля — из массива** — `webapp/src/components/exercises/SafePlaceEx.tsx:140` зовёт `detectCrisisAny(overview, senses.see, senses.hear, senses.feel, senses.smell)`, а поля рисует `SENSES.map` (`safePlaceText.ts`): новое чувство в `SENSES` останется без карточки 8-800-100-49-94, строки `describeCrisisField` в `SafePlaceEx.test.tsx` — только у описания места и «что слышно». Чинить по образцу `ModeEntryForm.tsx`: поля детекции и строки харнесса — из `SENSES`.
 
 
 ## Идеи
@@ -91,6 +92,7 @@
 
 ## Сделано
 
+- ✅ **Кризисная детекция дневника режимов — по массиву шагов** — `webapp/src/components/diary/ModeEntryForm.tsx` отдаёт в `detectCrisisAny` поля из `buildModeDiarySteps`, как и сам мастер, а `ModeEntrySheet.test.tsx` гоняет `describeCrisisField` на каждый шаг и на ответ Здорового Взрослого: шаг без карточки 8-800-100-49-94 и 8-800-2000-122 краснеет (#1195).
 - ✅ **Игра: финальные экраны — кризисная строка, тач-кнопки, ссылка на бота** — запасной финал `showCta` зовёт `addCrisisLine`, его 10 строк разведены под оба холста (960×540 и тач 640×360, зазор ≥8); развилка `showBranch` прячет тач-кнопки («дальше» → restart вернёт их); на обоих экранах под главной кнопкой «или открыть в Telegram» → `BOT_URL` с `?start=src_game` (`game/src/therapyCta.ts`, `to: bot` в /stats, ник сверяет `bot-username-sources.spec.ts`) (#1194).
 - ✅ **Вход на сайт — VK ID, Яндекс ID и MAX, вход по почте убран** — решение владельца 2026-11-14 (ч. 10 ст. 8 149-ФЗ). #1163 — подсказка привязать VK ID или Яндекс ID; #1186 — сайт: без формы входа по почте, почта — группа «Почта для писем», отвязка оставляет вход; #1188 — бэкенд: ручка `email/link` и токены входа по почте удалены, `email/consume` гасит только ссылку привязки, письма зовут почту «почтой для писем». N в логах Amvera не прочитано (Chrome 14.11 блокировал сайты).
 - ✅ **Политика, глава 7: web push и Jitsi** — рядом с Zoom (`MEETING_NOTE`) названы запасная комната Jitsi Meet (имя случайное, сервер к meet.jit.si не обращается — `src/booking/meeting-jitsi.ts`) и push-сервисы Google, Apple, Mozilla, Microsoft (хосты — `src/push/push-endpoint.ts`; содержимое шифрует `web-push`, aes128gcm по RFC 8291) — `PUSH_NOTE` в `webapp/src/pages/privacy/processors.ts`, тесты `processors.test.ts` и `PrivacyPage.test.tsx`, сверка aes128gcm — `src/push/push-transport.spec.ts` (запрос РКН №08-1063539, #1190).
