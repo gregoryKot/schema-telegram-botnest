@@ -21,15 +21,15 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className,
     const r = anchorRef.current?.getBoundingClientRect();
     if (!r) return;
     const WIDTH = Math.min(width, window.innerWidth - 16), MARGIN = 8;
-    let left = r.left;
-    if (left + WIDTH > window.innerWidth - MARGIN) left = window.innerWidth - MARGIN - WIDTH;
-    if (left < MARGIN) left = MARGIN;
+    const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - MARGIN - WIDTH));
     setPos({ left, top: r.bottom + 4 });
   }, [anchorRef, width]);
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      e.preventDefault(); onClose(); // Escape берёт меню: холст (useMapKeys) и лист под ним его пропускают
+      // Escape берёт меню: холст (useMapKeys) и лист под ним его пропускают
+      e.preventDefault();
+      onClose();
       anchorRef.current?.querySelector<HTMLElement>('button')?.focus();
     };
     window.addEventListener('keydown', onKey, true); // capture — раньше слушателей холста при любом порядке подписки
