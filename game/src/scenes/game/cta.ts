@@ -1,7 +1,7 @@
 // Развилка конца Акта I, CTA финала и кризисная строка.
 import Phaser from 'phaser';
 import { W, H } from '../../constants';
-import { IS_TOUCH } from '../../controls';
+import { IS_TOUCH, setTouchControls } from '../../controls';
 import { t } from '../../i18n';
 import { unlockChapter } from '../../progress';
 import { track, trackEvent } from '../../analytics';
@@ -67,35 +67,42 @@ function modeShort(s: GameScene): string {
 export function showCta(s: GameScene) {
   track('demo_end', { chapter: s.chapter.id });
   trackEvent('game_cta_shown', { from: 'ending' });
+  setTouchControls(false); // тач-кнопки на телефоне закрывали «поделиться» и «в меню»
   const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
   const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
     s.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
   // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
-  const top  = mk(196, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
-  const lbl  = mk(244, t('m_your_biggest_enemy'), 11, '#a89fd0');
-  const mode = mk(282, modeShort(s), 16, '#ff8aa6');
-  const sub  = mk(336, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
+  // карточка выше, чем была: под главной кнопкой — место для тихой записи к терапевту
+  const top  = mk(150, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
+  const lbl  = mk(196, t('m_your_biggest_enemy'), 11, '#a89fd0');
+  const mode = mk(232, modeShort(s), 16, '#ff8aa6');
+  const sub  = mk(284, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
 
-  const ctaTxt = mk(404, t('m_try_in_app'), 11, '#88ffcc', 154);
-  const cta = s.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
+  const ctaTxt = mk(350, t('m_try_in_app'), 11, '#88ffcc', 154);
+  const cta = s.add.rectangle(W / 2, 350 * ky, ctaTxt.width + 34, 38, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  const shareTxt = mk(452, t('m_share'), 11, '#c0b8e8', 154);
-  const share = s.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
+  const book = mk(396, t('m_book_therapist'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const shareTxt = mk(444, t('m_share'), 11, '#c0b8e8', 154);
+  const share = s.add.rectangle(W / 2, 444 * ky, shareTxt.width + 30, 34, 0x241d3a)
     .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  const menu = mk(498, t('m_or_back_to_menu'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const menu = mk(490, t('m_or_back_to_menu'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: [top], alpha: 1, duration: 800 });
   s.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
   s.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 1100 });
   s.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1600 });
+  s.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 1900 });
   s.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2000 });
   s.tweens.add({ targets: menu, alpha: 0.7, duration: 700, delay: 2400 });
 
   cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
   cta.on('pointerout', () => cta.setFillStyle(0x153028));
   cta.on('pointerdown', () => openCta('ending', 'app'));
+  book.on('pointerover', () => book.setColor('#d8c8ec'));
+  book.on('pointerout', () => book.setColor('#9b8fbf'));
+  book.on('pointerdown', () => openCta('ending', 'booking'));
   share.on('pointerover', () => share.setFillStyle(0x322a52));
   share.on('pointerout', () => share.setFillStyle(0x241d3a));
   share.on('pointerdown', () => {

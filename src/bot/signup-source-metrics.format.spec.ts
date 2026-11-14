@@ -41,6 +41,7 @@ describe('обычный отчёт', () => {
         { src: 'seed2', count7: 0, count30: 0 },
         { src: 'channel', count7: 1, count30: 2 },
         { src: 'therapist', count7: 0, count30: 0 },
+        { src: 'game', count7: 1, count30: 1 },
         { src: 'other', count7: 0, count30: 0 },
       ],
     });
@@ -48,6 +49,7 @@ describe('обычный отчёт', () => {
     expect(out).toContain('Всего пришло по ссылкам: 12 за месяц, 4 за неделю');
     expect(out).toContain('Посев №1: 10 за месяц, 3 за неделю');
     expect(out).toContain('Свой канал: 2 за месяц, 1 за неделю');
+    expect(out).toContain('Из игры: 1 за месяц, 1 за неделю');
   });
 
   it('источник без событий за месяц не попадает в список (нет мусорных нулей)', () => {

@@ -32,6 +32,7 @@ const SOURCE_LABELS: Record<SignupSource, string> = {
   seed2: 'Посев №2',
   channel: 'Свой канал',
   therapist: 'От терапевтов-партнёров',
+  game: 'Из игры',
   other: 'Без метки/непонятно откуда',
 };
 
