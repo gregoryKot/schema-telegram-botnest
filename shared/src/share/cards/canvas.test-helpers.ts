@@ -70,7 +70,8 @@ export function mockCardCtx() {
     shadowBlur: 0,
     textAlign: 'left' as CanvasTextAlign,
   };
-  return ctx;
+  // Мок реализует лишь рисуемое карточками подмножество, но проходит как настоящий контекст.
+  return ctx as unknown as typeof ctx & CanvasRenderingContext2D;
 }
 
 export type MockCtx = ReturnType<typeof mockCardCtx>;
@@ -79,9 +80,7 @@ export type MockCtx = ReturnType<typeof mockCardCtx>;
 export function canvasWithMockCtx() {
   const canvas = document.createElement('canvas');
   const ctx = mockCardCtx();
-  vi.spyOn(canvas, 'getContext').mockReturnValue(
-    ctx as unknown as CanvasRenderingContext2D,
-  );
+  vi.spyOn(canvas, 'getContext').mockReturnValue(ctx);
   return { canvas, ctx };
 }
 

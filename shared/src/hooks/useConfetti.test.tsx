@@ -60,7 +60,9 @@ describe('useConfetti', () => {
   it('полный прогон: канвас размечен под окно, кадры очищаются и рисуются, по завершении канвас стёрт и кадры больше не просятся', () => {
     vi.spyOn(reducedMotion, 'isReducedMotion').mockReturnValue(false);
     const ctx = fakeCtx();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
     // Синхронный raf: каждый кадр гонится сразу же, без реальных таймеров —
     // анимация из ~80 частиц с угасанием после 60-го кадра завершается
     // за конечное число рекурсивных вызовов.
@@ -105,7 +107,7 @@ describe('useConfetti', () => {
   it('размонтирование до завершения анимации отменяет именно тот requestAnimationFrame, что был запущен', () => {
     vi.spyOn(reducedMotion, 'isReducedMotion').mockReturnValue(false);
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      fakeCtx(),
+      fakeCtx() as unknown as CanvasRenderingContext2D,
     );
     // На этот раз raf ничего не выполняет — просто выдаёт id, как в браузере
     // между кадрами: анимация «подвисает» на первом кадре, что и проверяем.
