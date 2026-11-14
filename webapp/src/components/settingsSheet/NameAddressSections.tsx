@@ -25,7 +25,7 @@ export function NameSection({ value, onChange, displayName, onNameChanged, onSav
   return (
     <SSection id="s-name" label="Имя">
       <div className="st-row-name">
-        <input className="ds-input" value={value} onChange={e => onChange(e.target.value)}
+        <input className="ds-input" aria-label="Имя" value={value} onChange={e => onChange(e.target.value)}
           placeholder={tr('Твоё имя', 'Ваше имя')} maxLength={50} />
         {value !== (displayName ?? '') && (
           <button className="ds-btn ds-btn--sm" disabled={saving || !value.trim()} onClick={save}>

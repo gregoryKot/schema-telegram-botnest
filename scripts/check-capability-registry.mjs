@@ -5,7 +5,7 @@
 // безопасности, сбои платежей, сбои канала волн 2/3/7) улетает в никуда без
 // следа — и никто в системе об этом не узнаёт.
 //
-// Проверяется форма `if (!token/key/secret/process.env.X) return …` (без
+// Проверяется форма `if (!token/key/secret/credentials/process.env.X) return …` (без
 // `throw` в теле ветки) — код, который при отсутствующей env-переменной
 // просто ничего не делает вместо явного отказа. Каждый файл с такой веткой
 // обязан быть либо
@@ -44,7 +44,7 @@ export const REGISTERED_FILES = new Set([
 
 const TEST = /\.(spec|test)\.tsx?$/;
 const IF_RE = /^\s*(?:}\s*else\s+)?if\s*\(!/;
-const KEY_RE = /\b(token|apiKey|secret|encryptionKey)\b|process\.env\.[A-Z0-9_]+/i;
+const KEY_RE = /\b(token|apiKey|secret|encryptionKey|credentials)\b|process\.env\.[A-Z0-9_]+/i;
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -159,7 +159,7 @@ if (problems.length > 0) {
   console.error('❌ гейт реестра возможностей:');
   for (const p of problems) console.error(p);
   console.error(
-    'Ветка вида `if (!token/key/secret/process.env.X) return …` без throw —\n' +
+    'Ветка вида `if (!token/key/secret/credentials/process.env.X) return …` без throw —\n' +
       'фича молча выключается, и никто в системе об этом не узнаёт (см. заголовок\n' +
       'src/utils/admin-alert.ts — без BOT_TOKEN/ADMIN_ID и ключей Postbox с ADMIN_EMAIL\n' +
       'КАЖДЫЙ алерт улетает в никуда без следа). Заведи запись в\n' +

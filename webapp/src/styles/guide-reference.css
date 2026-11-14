@@ -24,13 +24,12 @@
 .gr-part-head.sg-head { margin-bottom: 8px; }
 .gr-part-head .sg-sign, .gr-part-head .sg-sign .pp-art--square { width: 44px; }
 /* Силуэт загрузки: подпись и строки группы — в тех же колонках, что листы. */
-.gr-skel-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; break-inside: avoid; }
+.gr-skel-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
 @container (min-width: 640px) {
-  /* Режимы и схемы: листы в две колонки, лист не рвётся между ними (break-inside — у .sg-group). */
-  .gr-list--groups { display: block; columns: 2; column-gap: 16px; }
-  .gr-list--groups > .sg-group, .gr-list--groups > .gr-skel-group { margin-bottom: 16px; }
-  .gr-list--groups > .sg-group:last-child { margin-bottom: 0; }
+  /* Режимы и схемы: листы сеткой по рядам — колонки (columns) WebKit делил неровно: последняя группа вставала
+     на середине высоты, под ней — пустая колонка (как у .sg-cols--rows в sheet-schemas.css). */
+  .gr-list--groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 
   /* Техники и «Для терапевта»: белые карточки по две в ряд на листе — знак, название, суть. */
   .gr-list--tiles .gr-rows {
@@ -47,6 +46,6 @@
 }
 /* Широкий монитор: колонка кабинета до 1440 — листы и карточки встают по три, строки не растягиваются. */
 @container (min-width: 1080px) {
-  .gr-list--groups { columns: 3; }
+  .gr-list--groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .gr-list--tiles .gr-rows { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

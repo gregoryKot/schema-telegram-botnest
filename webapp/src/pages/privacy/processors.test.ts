@@ -3,8 +3,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   DOMESTIC_PROCESSORS, FOREIGN_PROCESSORS, MEETING_NOTE, METRIKA_PROCESSOR,
-  OBJECT_STORAGE_PROCESSOR, POSTBOX_PROCESSOR, YANDEX_ID_PROCESSOR, processorLine,
+  OBJECT_STORAGE_PROCESSOR, POSTBOX_PROCESSOR, processorLine,
 } from './processors';
+import { MAX_PROCESSOR, VK_ID_PROCESSOR, YANDEX_ID_PROCESSOR } from './loginProcessors';
 
 describe('processors', () => {
   it('у каждого получателя заполнены имя, назначение и данные', () => {
@@ -33,12 +34,17 @@ describe('processors', () => {
     expect(all).not.toMatch(/resend|plus five five/i);
   });
 
-  it('российские получатели — Postbox, Object Storage и Яндекс ID, у каждого своё юрлицо', () => {
-    expect(DOMESTIC_PROCESSORS).toEqual([POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, YANDEX_ID_PROCESSOR]);
+  // Юрлица VK ID и MAX не подтверждены владельцем (docs/open/owner.md) — пока без них.
+  it('российские получатели — Postbox, Object Storage и все способы входа: Яндекс ID, VK ID, MAX', () => {
+    expect(DOMESTIC_PROCESSORS).toEqual([
+      POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, YANDEX_ID_PROCESSOR, VK_ID_PROCESSOR, MAX_PROCESSOR,
+    ]);
     expect(DOMESTIC_PROCESSORS.map((p) => p.name)).toEqual([
       'Yandex Cloud Postbox (ООО «Яндекс.Облако»)',
       'Yandex Object Storage (ООО «Яндекс.Облако»)',
       'Яндекс ID (ООО «Яндекс»)',
+      'VK ID',
+      'Мессенджер MAX',
     ]);
   });
 

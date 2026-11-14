@@ -16,9 +16,6 @@ import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
 
 const SKIN: ConceptSkin = {
   seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
-  chip: 'sk-chip',
-  tag: 'sk-tag',
-  dot: 'sk-dot',
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',

@@ -13,7 +13,7 @@ import type { JourneyStatRow } from '../../journey/journeyStats';
 import { headerHeight, hueInkHex, paperHex } from '../cardKit';
 
 function mockCtx() {
-  return {
+  const ctx = {
     scale: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
@@ -41,6 +41,7 @@ function mockCtx() {
     globalAlpha: 1,
     textAlign: 'left' as CanvasTextAlign,
   };
+  return ctx as unknown as typeof ctx & CanvasRenderingContext2D;
 }
 
 afterEach(() => {

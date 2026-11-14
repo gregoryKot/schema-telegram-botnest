@@ -33,7 +33,7 @@ describe('ConnectionTrouble', () => {
   it('retrying=true — кнопка отключена и меняет подпись', () => {
     const onRetry = vi.fn();
     render(<ConnectionTrouble onRetry={onRetry} retrying />);
-    const btn = screen.getByText('Проверяем…');
+    const btn = screen.getByText<HTMLButtonElement>('Проверяем…');
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
     expect(onRetry).not.toHaveBeenCalled();

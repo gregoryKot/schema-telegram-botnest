@@ -3,6 +3,7 @@
 import '../styles/sheet-diary.css';
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useTr } from '../utils/addressForm';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { Skeleton, SkeletonList } from './Skeleton';
@@ -25,6 +26,7 @@ const jp = makeJourneyProps(api, { getModeById, getSchemaById });
 export function JourneySheet({ onClose, onOpenTracker }: { onClose: () => void; onOpenTracker?: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y(); // диктор узнаёт об открытом листе, фокус — внутрь
   const j = useJourney(jp.deps);
   const sh = useJourneyShare(j, jp.subtitle, botShortUrl, jp.fetchResult);
   const detail = useJourneyDetail(jp.fetchDetail);
@@ -36,7 +38,7 @@ export function JourneySheet({ onClose, onOpenTracker }: { onClose: () => void; 
   });
 
   return (
-    <div className="u-sheet sd-journey">
+    <div {...dialogA11y} aria-label="Мой путь" className="u-sheet sd-journey">
       {!detail.item && <div className="ds-sheet-head sd-top"><button type="button" className="ds-back" onClick={goBack}>← Назад</button></div>}
       <div className="sd-journey-inner">
         {detail.item ? (

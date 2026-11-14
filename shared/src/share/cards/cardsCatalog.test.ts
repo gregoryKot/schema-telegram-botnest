@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 // @vitest-environment jsdom
 // Каталог всех карточек шаринга (b23a): каждая draw*-функция из ./*Card.ts рисуется на
 // подменённом контексте с длинными реальными по форме данными, и
@@ -259,10 +260,9 @@ function render(draw: Draw) {
 
 describe('каталог карточек', () => {
   it('у каждой draw*Card из ./*Card.ts есть строка в CATALOG', () => {
-    const mods = import.meta.glob('./*Card.ts', { eager: true }) as Record<
-      string,
-      Record<string, unknown>
-    >;
+    const mods = import.meta.glob<Record<string, unknown>>('./*Card.ts', {
+      eager: true,
+    });
     const draws = Object.values(mods).flatMap((m) =>
       Object.keys(m).filter((k) => /^draw\w+Card$/.test(k)),
     );

@@ -10,7 +10,7 @@ afterEach(cleanup);
 
 const waiting = {
   kind: 'waiting' as const,
-  provider: 'email' as const,
+  provider: 'email' as 'email' | 'vk' | 'yandex',
   code: 'K7M2QX94',
   url: '/api/auth/vk?ticket=K7M2QX94',
 };

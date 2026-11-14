@@ -26,6 +26,9 @@ export interface LinkPreview {
   /** Сколько записей сольётся с записями этого аккаунта, а не переедет рядом
    * (merge-combine.ts). 0 при sameAccount. Экран привязки называет число. */
   combined: number;
+  /** Что удалится без объединения: у этого аккаунта уже есть запись с тем же
+   * ключом (merge-lost.ts). Пусто при sameAccount. */
+  lost: Record<string, number>;
   /** Второй фактор переносимого аккаунта не переедет (merge-user-rules.ts,
    * totpSecret: skip). Этот поток тоже зовёт merge.merge(), поэтому говорим
    * это вслух и здесь, не только на /account/merge. Пусто при sameAccount. */

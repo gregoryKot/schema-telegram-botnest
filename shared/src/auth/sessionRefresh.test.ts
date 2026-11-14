@@ -39,7 +39,7 @@ describe('renewWithRetries', () => {
 
   it('успех с первой попытки — без ретраев', async () => {
     const attempt = vi
-      .fn<[], Promise<RenewAttemptResult>>()
+      .fn<() => Promise<RenewAttemptResult>>()
       .mockResolvedValue({ ok: true });
     await expect(renewWithRetries(attempt)).resolves.toEqual({ ok: true });
     expect(attempt).toHaveBeenCalledTimes(1);
@@ -47,7 +47,7 @@ describe('renewWithRetries', () => {
 
   it('dead-исход останавливает цикл немедленно, без задержки', async () => {
     const attempt = vi
-      .fn<[], Promise<RenewAttemptResult>>()
+      .fn<() => Promise<RenewAttemptResult>>()
       .mockResolvedValue({ ok: false, dead: true });
     const result = await renewWithRetries(attempt);
     expect(result).toEqual({ ok: false, dead: true });
@@ -56,7 +56,7 @@ describe('renewWithRetries', () => {
 
   it('transient ретраится с бэкоффом и в итоге может выйти успехом', async () => {
     const attempt = vi
-      .fn<[], Promise<RenewAttemptResult>>()
+      .fn<() => Promise<RenewAttemptResult>>()
       .mockResolvedValueOnce({ ok: false, dead: false })
       .mockResolvedValueOnce({ ok: false, dead: false })
       .mockResolvedValueOnce({ ok: true });
@@ -72,7 +72,7 @@ describe('renewWithRetries', () => {
 
   it('transient, ретраи исчерпаны — итог false с dead:false (сессия жива, просто сети нет)', async () => {
     const attempt = vi
-      .fn<[], Promise<RenewAttemptResult>>()
+      .fn<() => Promise<RenewAttemptResult>>()
       .mockResolvedValue({ ok: false, dead: false });
     const promise = renewWithRetries(attempt);
     for (const delay of REFRESH_RETRY_DELAYS_MS) {

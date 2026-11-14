@@ -8,18 +8,18 @@ import { createPracticeSessionsApi } from './practiceSessionsApi';
 import type { ApiTransport } from './sharedApi';
 
 const calls: { verb: string; path: string; body?: unknown }[] = [];
-const t: ApiTransport = {
-  get: vi.fn(<T>(path: string) => {
+const t = {
+  get: vi.fn((path: string) => {
     calls.push({ verb: 'get', path });
-    return Promise.resolve({ breathing: 1, grounding: 2, stop: 3 } as T);
+    return Promise.resolve({ breathing: 1, grounding: 2, stop: 3 });
   }),
   post: vi.fn(() => Promise.resolve()),
-  postJson: vi.fn(<T>(path: string, body: unknown) => {
+  postJson: vi.fn((path: string, body: unknown) => {
     calls.push({ verb: 'postJson', path, body });
-    return Promise.resolve({ ok: true, count: 4 } as T);
+    return Promise.resolve({ ok: true, count: 4 });
   }),
   del: vi.fn(() => Promise.resolve()),
-};
+} as unknown as ApiTransport;
 const api = createPracticeSessionsApi(t);
 
 beforeEach(() => {

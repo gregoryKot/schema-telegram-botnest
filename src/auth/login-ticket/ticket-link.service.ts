@@ -46,9 +46,9 @@ export class TicketLinkService {
         })
       : null;
     // Этот поток тоже зовёт merge.merge(): 2FA переносимого аккаунта пропадает.
-    const { counts, combined, twoFactorLost } =
+    const { counts, combined, lost, twoFactorLost } =
       sameAccount || !row.userId
-        ? { counts: {}, combined: 0, twoFactorLost: false }
+        ? { counts: {}, combined: 0, lost: {}, twoFactorLost: false }
         : await this.merge.summarize(row.userId, targetUserId);
     return {
       provider: row.provider,
@@ -58,6 +58,7 @@ export class TicketLinkService {
       sameAccount,
       summary: counts,
       combined: combined ?? 0,
+      lost,
       twoFactorLost,
     };
   }

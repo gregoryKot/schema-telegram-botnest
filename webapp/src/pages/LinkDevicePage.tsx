@@ -11,6 +11,7 @@ import { MergeSpread } from './merge/MergeSpread';
 import { LinkOutcome } from './merge/LinkOutcome';
 import { linkAckText, useLinkTicket } from './merge/useLinkTicket';
 import { combinedText } from './merge/combinedText';
+import { LostOnMergeNote } from './merge/LostOnMergeNote';
 import { providerName } from './account/providerNames';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
@@ -100,6 +101,7 @@ function LinkDeviceContent({ code }: { code: string }) {
             </>
           )}
           {combined && <p className="am-lead">{combined}</p>}
+          {!preview.sameAccount && <LostOnMergeNote lost={preview.lost} />}
 
           {preview.twoFactorLost && <TwoFactorLossNote />}
 

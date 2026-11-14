@@ -12,12 +12,13 @@ import type { PairsData } from '../apiTypes';
 const EMPTY: PairsData = { partners: [], pendingCode: null };
 const URL1 = 'https://t.me/bot?startapp=pair_AB12';
 
-const api = {
+const mocks = {
   getPair: vi.fn(),
   createPairInvite: vi.fn(),
   joinPair: vi.fn(),
   leavePair: vi.fn(),
 } satisfies Record<keyof PairApi, ReturnType<typeof vi.fn>>;
+const api = mocks as unknown as PairApi & typeof mocks;
 
 beforeEach(() => {
   vi.clearAllMocks();

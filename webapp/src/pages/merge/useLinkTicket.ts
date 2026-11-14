@@ -17,6 +17,7 @@ export interface LinkPreview {
   sameAccount: boolean;
   summary: Record<string, number>;
   combined?: number; // сколько записей объединится с этим аккаунтом (R3), как в merge/preview
+  lost?: Record<string, number>; // что удалится без объединения; ответ не разбирается — фильтрует lostLines
   twoFactorLost: boolean;
 }
 

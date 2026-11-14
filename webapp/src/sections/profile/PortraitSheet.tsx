@@ -7,6 +7,7 @@
 import { SsSheet, SsHead } from '../../components/schemaSheets/SsSheet';
 import { ScenePortrait } from '../../components/art/ScenePortrait';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useDialogA11y } from '../../../../shared/src/utils/dialogA11y';
 import { useTr } from '../../utils/addressForm';
 import { api } from '../../api';
 import { usePatternLayer } from '../schemas/usePatternLayer';
@@ -27,6 +28,7 @@ interface Props {
 export function PortraitSheet({ aboutMe, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y(); // диктор узнаёт об открытом листе, фокус — внутрь
   const pat = usePatternLayer({ ...aboutMe, ready: aboutMe.diaries === 'ready' });
   const txt = portraitTexts(tr);
   const isEmpty = aboutMe.mySchemaIds.length === 0 && aboutMe.myModeIds.length === 0;
@@ -47,7 +49,7 @@ export function PortraitSheet({ aboutMe, onClose }: Props) {
 
   return (
     <>
-      <SsSheet onBack={goBack} hero={hero} spread>
+      <SsSheet onBack={goBack} hero={hero} spread dialog={{ ...dialogA11y, 'aria-label': txt.title }}>
         {isEmpty && <p className="ds-sub cpf-sheet-empty">{txt.emptySheet}</p>}
         <PortraitNeedRows needs={aboutMe.portrait.needs} />
         <div className="cpf-sheet-lists">

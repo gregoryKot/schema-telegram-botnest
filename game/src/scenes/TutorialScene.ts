@@ -7,6 +7,7 @@ import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
 import { buildGroundStrip } from '../ground';
 import { addGlow, HUD_STROKE } from '../look';
+import { pinBubble, pinLeftOfMenu } from '../hudLayout';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Мистером и управлением. Четыре сценки, у каждой одна
@@ -155,8 +156,9 @@ export class TutorialScene extends Phaser.Scene {
       .setScrollFactor(0).setDepth(60);
     this.updateHearts();
 
-    const skip = this.add.text(W - 78, 16, t('m_skip'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0' })
+    const skip = this.add.text(W - 18, 16, t('m_skip'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0' })
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
+    pinLeftOfMenu(this, skip);
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
     skip.on('pointerout', () => skip.setColor('#a89fd0'));
     skip.on('pointerdown', () => { trackEvent('game_tutorial_skip'); this.scene.start('Intro'); }); // манифест видят и те, кто пропустил
@@ -518,8 +520,8 @@ export class TutorialScene extends Phaser.Scene {
     c.setAngle(Math.sin(this.t * 0.04) * 9); // трясётся от звона
     const d = Math.abs(this.player.x - c.x);
     if (this.colBubble?.active) {
-      this.colBubble.x = c.x; this.colBubble.y = c.y - 70 + Math.sin(this.t * 0.04) * 3;
       this.colBubble.setText(t((['m_ring_ring_ring', 'm_wake_up', 'm_riiing'] as const)[Math.floor(this.t / 1400) % 3]));
+      pinBubble(this.colBubble, c.x, c.y - 70 + Math.sin(this.t * 0.04) * 3);
     }
   }
 
@@ -579,9 +581,9 @@ export class TutorialScene extends Phaser.Scene {
     if (Math.abs(d) > 66) n.x += Math.sign(d) * dt * 0.13;
     n.setFlipX(d < 0); // кот слева → смотрит влево
     if (this.neiBubble?.active) {
-      this.neiBubble.x = n.x; this.neiBubble.y = n.y - 54;
       this.neiSayT += dt;
       if (this.neiSayT > 2200) { this.neiSayT = 0; this.neiBubble.setText(t(NEI_LINES[this.neiLine++ % NEI_LINES.length])); }
+      pinBubble(this.neiBubble, n.x, n.y - 54);
     }
   }
 
@@ -636,11 +638,9 @@ export class TutorialScene extends Phaser.Scene {
   }
   private updateBubble(dt: number) {
     if (this.bubbleT <= 0) return;
-    // если рядом говорит NPC (соседка/будильник) — реплику кота поднимаем ВЫШЕ,
-    // чтобы пузыри стояли стопкой, а не наезжали (и ничего не «исчезало»)
+    // рядом говорит NPC (соседка/будильник) — реплика кота выше: пузыри стопкой, не внахлёст
     const npcTalking = (this.neiBubble?.active) || (this.colBubble?.active);
-    const hw = this.bubble.width / 2 + 6;
-    this.bubble.x = Phaser.Math.Clamp(this.player.x, hw, W - hw); this.bubble.y = this.player.y - (npcTalking ? 104 : 64);
+    pinBubble(this.bubble, this.player.x, this.player.y - (npcTalking ? 104 : 64));
     this.bubbleT -= dt;
     if (this.bubbleT < 300) this.bubble.setAlpha(Math.max(0, this.bubbleT / 300));
   }

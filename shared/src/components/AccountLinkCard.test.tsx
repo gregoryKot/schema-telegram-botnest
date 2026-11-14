@@ -77,7 +77,7 @@ describe('приглашение', () => {
     // Белый темой не меняется: в тёмной теме акцент светлый, и пара разъезжалась.
     // С b27 вид — классы (alc-*, auth-account.css), а не инлайн-стили.
     show();
-    const btn = screen.getByText('Подключить Telegram');
+    const btn = screen.getByText<HTMLButtonElement>('Подключить Telegram');
     expect(btn.className).toContain('ds-btn');
     expect(btn.getAttribute('style')).toBeNull();
   });
@@ -97,7 +97,7 @@ describe('приглашение', () => {
   it('пока билет выписывается — кнопка погашена, второй запрос не уходит', () => {
     const onStart = vi.fn();
     show({ onStart, state: { kind: 'starting', provider: 'email' } });
-    const btn = screen.getByText('Подключить Telegram');
+    const btn = screen.getByText<HTMLButtonElement>('Подключить Telegram');
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
     expect(onStart).not.toHaveBeenCalled();

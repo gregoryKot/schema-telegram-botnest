@@ -938,6 +938,9 @@ jobs:
           cache: npm
           cache-dependency-path: shared/package-lock.json
       - run: npm ci --prefix shared
+      # Типы тестов тоже: vitest их не проверяет, и ошибки копились незаметно.
+      - run: npx tsc --noEmit -p .
+        working-directory: shared
       - run: node scripts/check-frontend-coverage-ratchet.mjs --package shared
       # Тот же пакет под НЕ-UTC зоной, по образцу второго прогона jest в
       # джобе backend (инцидент 2026-07-20). Инцидент 2026-09-17 показал, что

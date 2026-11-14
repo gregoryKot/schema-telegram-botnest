@@ -6,24 +6,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildSharedApi, type ApiTransport } from './sharedApi';
 
 const calls: { verb: string; path: string; body?: unknown }[] = [];
-const t: ApiTransport = {
-  get: vi.fn(<T>(path: string) => {
+const t = {
+  get: vi.fn((path: string) => {
     calls.push({ verb: 'get', path });
-    return Promise.resolve(null as T);
+    return Promise.resolve(null);
   }),
   post: vi.fn((path: string, body?: unknown) => {
     calls.push({ verb: 'post', path, body });
     return Promise.resolve();
   }),
-  postJson: vi.fn(<T>(path: string, body: unknown) => {
+  postJson: vi.fn((path: string, body: unknown) => {
     calls.push({ verb: 'postJson', path, body });
-    return Promise.resolve(null as T);
+    return Promise.resolve(null);
   }),
   del: vi.fn((path: string, body?: unknown) => {
     calls.push({ verb: 'del', path, body });
     return Promise.resolve();
   }),
-};
+} as unknown as ApiTransport;
 const api = buildSharedApi(t);
 
 beforeEach(() => {
@@ -61,10 +61,10 @@ describe('ветвящиеся методы', () => {
   });
 
   it('trackEvent: fire-and-forget, ошибка транспорта не пробрасывается', () => {
-    const bad: ApiTransport = {
+    const bad = {
       ...t,
       post: () => Promise.reject(new Error('сеть упала')),
-    };
+    } as unknown as ApiTransport;
     const a = buildSharedApi(bad);
     expect(() => a.trackEvent('share_card', { place: 'test' })).not.toThrow();
   });

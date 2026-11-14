@@ -9,7 +9,7 @@ export function WarnNote({ children }: { children: ReactNode }) {
   return (
     <div className="pp-paper am-warn" style={{ '--h': 45 } as CSSProperties}>
       <span className="am-warn-sign" aria-hidden="true"><SignArt sign="limits" size="row" /></span>
-      <p className="am-warn-text">{children}</p>
+      <div className="am-warn-text">{children}</div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { telegramChatUrl } from '../../../../shared/src/utils/therapistContact';
 import { fmtIndex } from '../../../../shared/src/needs/dayIndex';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
+import { glue } from '../../../../shared/src/utils/typo';
 
 type Partner = PairsData['partners'][number];
 
@@ -61,7 +62,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
         </div>
       )}
 
-      <div className="st-text">{partnerContextText(name, done, idx ?? 0)}</div>
+      <div className="st-text">{glue(partnerContextText(name, done, idx ?? 0))}</div>
 
       {leaveError && <div className="st-err">{tr('Не удалось выйти из пары. Попробуй ещё раз', 'Не удалось выйти из пары. Попробуйте ещё раз')}</div>}
 

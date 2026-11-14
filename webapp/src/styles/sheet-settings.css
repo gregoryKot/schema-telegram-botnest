@@ -214,6 +214,13 @@
 .st-links { display: flex; flex-direction: column; border-top: 1px solid var(--panel-line); }
 .st-links > .ds-list-row:last-child { border-bottom: 1px solid var(--panel-line); }
 .st-link-to { font-size: 14px; color: var(--accent); text-align: right; white-space: nowrap; }
+/* Узкий телефон: знак в строку с названием, описание — на всю ширину (колонкой 230px рядом со знаком строки рвались). */
+@media (max-width: 360px) {
+  .st-need { row-gap: var(--space-4); align-items: center; }
+  .st-need > .pp-row-art { margin-top: 0; }
+  .st-need-body { display: contents; }
+  .st-need-body > .st-text { grid-column: 1 / -1; }
+}
 @media (max-width: 360px) { /* адрес — под подписью: в строку подпись рвалась («Канал о схема-/терапии») */
   .st-links > .ds-list-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .st-link-to { text-align: left; }
