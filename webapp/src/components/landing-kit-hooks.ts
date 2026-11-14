@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api, type ArticleSummary } from '../api';
-import { applyTheme } from '../utils/theme';
+import { applyTheme, savedTheme } from '../utils/theme';
 
 // Shared non-component primitives for landing pages (tokens + hooks). Split out
 // of landing-kit.tsx so that file exports only components (Fast Refresh).
@@ -55,9 +55,8 @@ export function useRecentArticles(limit = 3) {
 
 // ─── Theme toggle state ───────────────────────────────────────────────────────
 export function useTheme() {
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
-    return localStorage.getItem('app_theme') === 'dark' ? 'dark' : 'light';
-  });
+  // savedTheme() не бросает при заблокированном хранилище — лендинг не падает.
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => (savedTheme() === 'dark' ? 'dark' : 'light'));
   const toggle = useCallback(() => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setThemeState(next);
