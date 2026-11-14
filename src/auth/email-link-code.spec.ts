@@ -69,7 +69,6 @@ function build() {
         webappUrl: 'https://schemehappens.ru',
         encryptEmail: (e) => e,
         addressForm: () => Promise.resolve('ty'),
-        send: () => Promise.reject(new Error('это не письмо входа')),
         sendLink: (to, link, form) => {
           letters.push({ email: to, body: linkEmailLetter(form, link).body });
           return Promise.resolve();
@@ -80,7 +79,6 @@ function build() {
       },
       userId,
       email,
-      'link_email_auth',
     );
     const body = letters[letters.length - 1].body;
     return /: ([A-Z2-9]{4}-[A-Z2-9]{4})\n/.exec(body)![1];

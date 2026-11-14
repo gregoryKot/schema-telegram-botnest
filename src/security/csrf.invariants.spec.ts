@@ -294,12 +294,6 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       relay: 'auth/oauth-callback.service.ts',
       why: 'OAuth-колбэки VK и Яндекса: state-кука сверяется до обмена кода',
     },
-    {
-      file: 'auth/email-consume-body.ts',
-      caller: /\bemailConsumeBody\(/,
-      guard: /\brequireCsrf\(/,
-      why: 'email/consume: токен из письма меняется на сессию fetch-ом',
-    },
   ];
 
   function srcFilesWithWriters(): string[] {

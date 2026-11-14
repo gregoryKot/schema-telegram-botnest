@@ -1,4 +1,4 @@
-// Куда уводит GET /api/auth/email/callback — ссылка из письма.
+// Куда уводит GET /api/auth/email/callback — ссылка из письма привязки почты.
 //
 // Аудит 2026-10, B-14: раньше этот GET сам погашал токен и ставил куку сессии.
 // Почтовые сканеры, превью ссылок в мессенджерах и антивирусы открывают ссылки
@@ -14,31 +14,21 @@
 // Побочно уходит прежний «отскок» (email-link-bounce.ts): ссылка привязки
 // требовала живой refresh-куки, а на переход с чужого сайта SameSite=strict её
 // не отдаёт. POST со страницы нашего же сайта — same-site, кука едет сама.
-import { RETURN_TO_PARAM, safeReturnTo } from './email-link-params';
 
 /** Путь страницы-погашения и имя параметра с токеном (общие с webapp). */
 export const EMAIL_CONSUME_PATH = '/auth/callback';
 export const EMAIL_CONSUME_PARAM = 'email_token';
 
-const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
-
 /** Куда вести браузер со ссылки из письма. Токен НЕ погашается. */
 export function emailCallbackRedirectUrl(
   frontendBase: string,
   rawToken: unknown,
-  rawTicket: unknown,
-  rawReturnTo?: unknown,
 ): string {
   const base = frontendBase.replace(/\/$/, '');
-  const [token, ticket] = [str(rawToken), str(rawTicket)];
-  const returnTo = safeReturnTo(rawReturnTo); // свой путь (E14), иначе без него
-  // Нет токена — явный редирект на экран ошибки входа, а не пустая страница.
-  const q = new URLSearchParams(token ? { [EMAIL_CONSUME_PARAM]: token } : {});
-  // Билет входа едет дальше как есть: после погашения страница уведёт на
-  // экран сверки, а не молча одобрит его (device-code phishing, 2026-08-31).
-  if (token && ticket) q.set('ticket', ticket);
-  if (token && returnTo) q.set(RETURN_TO_PARAM, returnTo);
-  return token
-    ? `${base}${EMAIL_CONSUME_PATH}?${q.toString()}`
-    : `${base}/auth/error?reason=email_link_expired`;
+  // Нет токена (или их два: ?token=a&token=b) — экран ошибки, а не пустая страница.
+  if (typeof rawToken !== 'string' || !rawToken) {
+    return `${base}/auth/error?reason=email_link_expired`;
+  }
+  const q = new URLSearchParams({ [EMAIL_CONSUME_PARAM]: rawToken });
+  return `${base}${EMAIL_CONSUME_PATH}?${q.toString()}`;
 }

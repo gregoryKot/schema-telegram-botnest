@@ -1,5 +1,5 @@
 // Уведомление владельцу о событии безопасности (S11/S12, аудит 2026-11):
-// существующими каналами — письмо (если есть вход по почте) и очередь бота
+// существующими каналами — письмо (если привязана почта) и очередь бота
 // (если есть вход через Telegram). Тексты — в обеих формах обращения, и
 // сообщение бота рендерится тем же путём, что и в очереди (renderTemplate).
 import { renderTemplate } from '../notification/notification.templates';
@@ -77,9 +77,22 @@ describe('SecurityNoticeService.deliver', () => {
     ]);
     expect(email.send).toHaveBeenCalledWith(
       'old@example.com',
-      'Способ входа отвязан от «Всё по схеме»',
-      expect.stringContaining('отвязан способ входа: вход по почте'),
+      'Почта отвязана от «Всё по схеме»',
+      expect.stringContaining('отвязана почта для писем'),
     );
+  });
+
+  // Почта — не вход (решение владельца, ч. 10 ст. 8 149-ФЗ): письмо не зовёт её способом входа.
+  it('привязка почты: «почта для писем», без «способа входа», в обеих формах', async () => {
+    for (const [form, who] of [['ty', 'Если это не ты'], ['vy', 'Если это не вы']] as const) {
+      const { svc, email } = makeService({ form, email: 'me@example.com' });
+      await svc.deliver(7n, { kind: 'provider_linked', provider: 'email' });
+      const [, subject, body] = email.send.mock.calls[0] as string[];
+      expect(subject).toBe('Почта привязана ко «Всё по схеме»');
+      expect(body).toContain('привязана почта для писем');
+      expect(body).toContain(who);
+      expect(body).not.toContain('способ входа');
+    }
   });
 
   it('адрес и в аккаунте, и в alsoTo — одно письмо, не два', async () => {

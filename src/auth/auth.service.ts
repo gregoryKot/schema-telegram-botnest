@@ -13,7 +13,7 @@ import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
-import { sendMagicLink, type MagicLinkParams } from './magic-link';
+import { sendMagicLink } from './magic-link';
 import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя — PII
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
@@ -75,29 +75,7 @@ export class AuthService {
     }
   }
 
-  // ─── Email magic-link login ───────────────────────────────────────────────
-
-  async requestEmailLogin(
-    email: string,
-    link: MagicLinkParams = {},
-  ): Promise<{ ok: true }> {
-    if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
-    const lower = email.toLowerCase().trim();
-
-    // B-16: до подтверждения адреса ничего не создаём — аккаунт появится при
-    // погашении ссылки. Известный адрес — токен сразу на его аккаунт.
-    const known = await this.prisma.authProvider.findUnique({
-      where: { provider_providerId: { provider: 'email', providerId: lower } },
-    });
-    await this.sendMagicLink(
-      known?.userId ?? null,
-      lower,
-      'login',
-      'sendLoginLink',
-      link,
-    );
-    return { ok: true };
-  }
+  // ─── Привязка почты ───────────────────────────────────────────────────────
 
   // Magic link привязки почты (purpose='link_email_auth'), не новый вход.
   async linkEmailToAccount(
@@ -116,12 +94,7 @@ export class AuthService {
       return { ok: true };
     }
 
-    await this.sendMagicLink(
-      targetUserId,
-      lower,
-      'link_email_auth',
-      'linkEmailToAccount sendLoginLink',
-    );
+    await this.sendMagicLink(targetUserId, lower);
     return { ok: true };
   }
 
@@ -529,27 +502,21 @@ export class AuthService {
     return normalizeAddressForm(owner?.addressForm);
   }
   // Тонкая обёртка над magic-link.ts: сервис только собирает зависимости.
-  private sendMagicLink(
-    userId: bigint | null,
-    lower: string,
-    purpose: 'login' | 'link_email_auth',
-    logLabel: string,
-    link?: MagicLinkParams,
-  ): Promise<void> {
+  private sendMagicLink(userId: bigint, lower: string): Promise<void> {
     return sendMagicLink(
       {
         prisma: this.prisma,
         webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
         encryptEmail: (e) => encField(e) ?? e,
         addressForm: (id) => this.userAddressForm(id),
-        send: (e, l, f) => this.emailSvc.sendLoginLink(e, l, f),
         sendLink: (e, l, f) => this.emailSvc.sendLinkEmailLetter(e, l, f),
-        onSendError: (m) => this.logger.error(`${logLabel} failed: ${m}`),
+        onSendError: (m) =>
+          this.logger.error(
+            `linkEmailToAccount sendLinkEmailLetter failed: ${m}`,
+          ),
       },
       userId,
       lower,
-      purpose,
-      link,
     );
   }
 }

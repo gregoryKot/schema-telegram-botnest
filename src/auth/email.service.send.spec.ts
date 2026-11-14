@@ -1,4 +1,4 @@
-// Покрывает публичные обёртки над приватным send() — sendLoginLink,
+// Покрывает публичные обёртки над приватным send() — sendLinkEmailLetter,
 // sendAdminNotification — и сам HTTP-путь send() через Postbox (успех/ошибка
 // ответа/сетевая ошибка), до этого теста непокрытый совсем
 // (email.service.spec.ts мокал send() на границе, сюда не заходил). Отказ
@@ -26,19 +26,19 @@ function clearPostboxEnv() {
   for (const name of KEY_NAMES) delete process.env[name];
 }
 
-describe('EmailService.sendLoginLink', () => {
-  it('отправляет письмо со ссылкой через send() (subject/text содержат ссылку)', async () => {
+describe('EmailService.sendLinkEmailLetter', () => {
+  it('отправляет письмо привязки со ссылкой через send() (subject/text содержат ссылку)', async () => {
     const service = new EmailService();
     const spy = jest.spyOn(service as any, 'send').mockResolvedValue(undefined);
 
-    await service.sendLoginLink(
+    await service.sendLinkEmailLetter(
       'a@test.com',
       'https://schemehappens.ru/x?token=abc',
     );
 
     expect(spy).toHaveBeenCalledWith(
       'a@test.com',
-      expect.stringContaining('Войти'),
+      expect.stringContaining('Привязать'),
       expect.stringContaining('https://schemehappens.ru/x?token=abc'),
     );
   });
