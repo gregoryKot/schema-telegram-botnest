@@ -1,13 +1,12 @@
 import { totalItems } from '../../utils/mergeLabels';
 import { Skeleton } from '../../components/Skeleton';
-import { WarnNote } from '../../components/WarnNote';
 import { MergeRows } from './MergeRows';
 import { providerName } from '../account/providerNames';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import type { MergePreviewState } from './useMergePreview';
 import { useMergeTexts } from './combinedText';
 import { lostLines } from './lostText';
-import { LostOnMergeNote } from './LostOnMergeNote';
+import { LostOnMergeNote, LostUnknownNote } from './LostOnMergeNote';
 
 // Чей второй аккаунт, что из него переедет и что объединится — только из ответа
 // сервера (useMergePreview). Грузится — силуэт абзаца и строк; не загрузилось —
@@ -24,16 +23,7 @@ export function MergeSummary({ preview }: { preview: MergePreviewState }) {
       </div>
     );
   }
-  if (preview.kind === 'failed') {
-    return (
-      <>
-        <p className="am-lead">Найден ещё один аккаунт. {moves}</p>
-        <WarnNote>
-          Если в обоих аккаунтах есть одинаковые записи – оценка той же потребности за тот же день, незаконченный тест на схемы, – останутся записи текущего аккаунта, а дубли из второго удалятся.
-        </WarnNote>
-      </>
-    );
-  }
+  if (preview.kind === 'failed') return <><p className="am-lead">Найден ещё один аккаунт. {moves}</p><LostUnknownNote /></>;
   const name = providerName(preview.provider);
   const total = totalItems(preview.summary);
   return (

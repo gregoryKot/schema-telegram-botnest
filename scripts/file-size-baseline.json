@@ -2724,7 +2724,7 @@
   "webapp/src/pages/merge/linkFailModel.ts": 17,
   "webapp/src/pages/merge/LinkOutcome.tsx": 50,
   "webapp/src/pages/merge/linkPreviewReport.ts": 23,
-  "webapp/src/pages/merge/LostOnMergeNote.tsx": 22,
+  "webapp/src/pages/merge/LostOnMergeNote.tsx": 31,
   "webapp/src/pages/merge/lostText.ts": 19,
   "webapp/src/pages/merge/MergeRows.tsx": 22,
   "webapp/src/pages/merge/MergeSpread.tsx": 25,
