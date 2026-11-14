@@ -1,13 +1,11 @@
 import Phaser from 'phaser';
 import { W } from './constants';
-
-const EDGE = 6;
+import { BUBBLE_EDGE, clampBubbleX, hudRightEdge } from './hudMath';
 
 /** Пузырь реплики над точкой x, но целиком внутри кадра: у стены он сдвигается, а не режется краем. */
 export function pinBubble(b: Phaser.GameObjects.Text, x: number, y: number): void {
-  if (b.style.wordWrapWidth !== W - 2 * EDGE) b.setWordWrapWidth(W - 2 * EDGE);
-  const hw = b.width / 2 + EDGE;
-  b.setPosition(Phaser.Math.Clamp(x, hw, W - hw), y);
+  if (b.style.wordWrapWidth !== W - 2 * BUBBLE_EDGE) b.setWordWrapWidth(W - 2 * BUBBLE_EDGE);
+  b.setPosition(clampBubbleX(x, b.width, W), y);
 }
 
 /**
@@ -16,10 +14,7 @@ export function pinBubble(b: Phaser.GameObjects.Text, x: number, y: number): voi
  */
 export function rightClearOfMenu(scene: Phaser.Scene, margin = 18): number {
   const menu = document.getElementById('menu-btn')?.getBoundingClientRect();
-  const cv = scene.game.canvas.getBoundingClientRect();
-  if (!menu || !cv.width || menu.width === 0) return W - margin;
-  const menuLeft = ((menu.left - cv.left) * W) / cv.width;
-  return Math.min(W - margin, menuLeft - 10);
+  return hudRightEdge(menu, scene.game.canvas.getBoundingClientRect(), W, margin);
 }
 
 /** Держит текст у правого края, левее кнопки меню, и при смене размера окна. */
