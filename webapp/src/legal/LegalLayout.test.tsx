@@ -18,7 +18,7 @@ describe('LegalLayout Table', () => {
   it('колонка подписи не фиксирована в 220px и сжимается на узком экране', () => {
     expect(TABLE_ROW_COLUMNS).not.toMatch(/^220px\b/);
     expect(TABLE_ROW_COLUMNS).toMatch(/^min\(220px, \d+%\)/);
-    expect(TABLE_ROW_COLUMNS).toMatch(/minmax\(0, 1fr\)$/);
+    expect(TABLE_ROW_COLUMNS).toMatch(/minmax\(0px, 1fr\)$/);
   });
 
   it('обе ячейки переносят длинное неразрывное значение', () => {
