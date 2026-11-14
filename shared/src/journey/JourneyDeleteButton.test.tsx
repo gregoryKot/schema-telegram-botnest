@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // @vitest-environment jsdom
 // JourneyDeleteButton: не рендерится для недоступных типов, требует два
 // тапа (первый — только подтверждение, действие не вызывается), busy
@@ -52,7 +53,7 @@ describe('JourneyDeleteButton', () => {
     render(
       <JourneyDeleteButton tr={tr} item={item} del={makeDel({ remove })} />,
     );
-    const btn = screen.getByRole('button');
+    const btn = screen.getByRole<HTMLButtonElement>('button');
     fireEvent.click(btn);
     fireEvent.click(btn);
     expect(remove).toHaveBeenCalledTimes(1);
@@ -64,7 +65,7 @@ describe('JourneyDeleteButton', () => {
     render(
       <JourneyDeleteButton tr={tr} item={item} del={makeDel({ busy: true })} />,
     );
-    const btn = screen.getByRole('button');
+    const btn = screen.getByRole<HTMLButtonElement>('button');
     expect(btn.disabled).toBe(true);
     expect(screen.getByText('Удаляю…')).not.toBeNull();
   });
@@ -121,7 +122,7 @@ describe('JourneyDeleteButton', () => {
   it('подтверждение («Точно удалить?») — красным словом, первый тап — тихим', () => {
     const item: JourneyItem = { type: 'belief_check', at: '2026-07-20', id: 9 };
     render(<JourneyDeleteButton tr={tr} item={item} del={makeDel()} />);
-    const btn = screen.getByRole('button');
+    const btn = screen.getByRole<HTMLButtonElement>('button');
     expect(btn.className).not.toContain('is-pending');
     fireEvent.click(btn);
     expect(screen.getByRole('button').className).toContain('is-pending');

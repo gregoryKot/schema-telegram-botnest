@@ -51,6 +51,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('PortraitSheet', () => {
+  it('лист — диалог с именем для диктора, фокус внутри', async () => {
+    renderSheet(aboutMe([], []));
+    const dlg = screen.getByRole('dialog', { name: 'Мой портрет' });
+    expect(dlg.contains(document.activeElement)).toBe(true);
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+  });
+
   it('пусто: подсказка отметить схемы или пройти тест, форма «вы» — без «ты»; дневники сам не читает', async () => {
     renderSheet(aboutMe([], []), vi.fn(), 'vy');
     expect(screen.getByText(/Отметьте схемы и режимы, которые узнаёте/)).toBeTruthy();

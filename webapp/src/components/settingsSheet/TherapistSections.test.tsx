@@ -106,6 +106,13 @@ describe('MyTherapistSection — подключение и отключение'
     expect(screen.queryByText(/усмотрение/)).toBeNull();
   });
 
+  it('подключились по коду — фокус на заголовке терапевта, а не на body (кнопка ушла с формой)', () => {
+    getFormerTherapist.mockResolvedValue(null);
+    const { rerender } = render(<MyTherapistSection rel={rel(null)} settings={settings} patch={patch} />);
+    rerender(<MyTherapistSection rel={rel(ACTIVE, { join: { joined: true } })} settings={settings} patch={patch} />);
+    expect(document.activeElement?.textContent).toBe('Терапевт: Анна Терапевт');
+  });
+
   it('«Отключиться от терапевта» сначала спрашивает — сам тап связь не рвёт', () => {
     const r = rel(ACTIVE);
     render(<MyTherapistSection rel={r} settings={settings} patch={patch} />);

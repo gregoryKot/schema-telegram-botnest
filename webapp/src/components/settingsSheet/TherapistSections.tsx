@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { api } from '../../api';
 import type { UserSettings } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
@@ -22,13 +23,17 @@ export function MyTherapistSection({ rel, settings, patch }: {
   const tr = useTr();
   const { therapyRelation, join, leave } = rel;
   const leaveCopy = leaveTherapyCopy(tr);
+  const active = therapyRelation?.status === 'active';
+  // «Подключиться» уходит вместе с формой кода — фокус на заголовок подключённого терапевта, а не на body.
+  const titleRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (active && join.joined) titleRef.current?.focus(); }, [active, join.joined]);
   return (
     <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={therapistSectionHint(therapyRelation?.status === 'active')}>
       {therapyRelation === undefined ? (
         <SRow title="Загрузка…" />
-      ) : therapyRelation?.status === 'active' ? (
+      ) : active ? (
         <div className="st-body-block">
-          <div className="st-strong">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
+          <div className="st-strong" ref={titleRef} tabIndex={-1}>{therapistConnectedTitle(therapyRelation.partnerName)}</div>
           {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr, true)}</p>}
           <div className="st-rows st-rows--ruled">
             <SRow title={CARDS.title} sub={CARDS.sub} right={<Toggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />

@@ -19,7 +19,7 @@ describe('LimitedTextarea', () => {
         rows={3}
       />,
     );
-    const area = screen.getByPlaceholderText('Текст');
+    const area = screen.getByPlaceholderText<HTMLTextAreaElement>('Текст');
     expect(area.maxLength).toBe(200);
     expect(area.rows).toBe(3);
   });

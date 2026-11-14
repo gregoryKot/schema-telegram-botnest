@@ -18,7 +18,7 @@ Object.defineProperty(navigator, 'clipboard', {
   configurable: true,
 });
 
-function setup(over: Partial<Parameters<typeof useShareCard>[0]> = {}) {
+function setup(over: Partial<Parameters<typeof useShareCard>[1]> = {}) {
   const track = vi.fn();
   const opts = {
     draw: vi.fn(),

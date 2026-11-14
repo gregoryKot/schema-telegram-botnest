@@ -10,7 +10,7 @@ import type { Need } from '../types';
 const needs: Need[] = [
   { id: 'safety', name: 'Безопасность', emoji: '🛡' },
   { id: 'autonomy', name: 'Автономия', emoji: '🕊' },
-] as Need[];
+] as unknown as Need[];
 const INKS: Record<string, string> = {
   safety: 'var(--c-clay)',
   autonomy: 'var(--c-amber-strong)',
@@ -154,7 +154,9 @@ describe('NeedsWheel', () => {
   });
 
   it('потребность без цвета в реестре красится запасным токеном --text-sub, а не hex-литералом', () => {
-    const alien = [{ id: 'unknown_need', name: 'X', emoji: '❓' }] as Need[];
+    const alien = [
+      { id: 'unknown_need', name: 'X', emoji: '❓' },
+    ] as unknown as Need[];
     const { container } = render(
       <NeedsWheel ink={INK} needs={alien} ratings={{ unknown_need: 9 }} />,
     );

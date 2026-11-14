@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CONCEPT_TECHNIQUE_MARKS_MAX } from '../../limits/textLimits';
 import { forEachTimeZone } from '../../utils/timeZone.test-helpers';
 import {
+  type MarkedLink,
   isMarkedOn,
   normalizeTechniqueMarks,
   techniqueMarkHistory,
@@ -50,7 +51,10 @@ describe('normalizeTechniqueMarks', () => {
 });
 
 describe('toggleLinkMark — «Делали сегодня» и повторный тап', () => {
-  const link = { modeId: 'vulnerable_child', alias: 'Маленькая' };
+  const link: MarkedLink & { modeId: string; alias: string } = {
+    modeId: 'vulnerable_child',
+    alias: 'Маленькая',
+  };
 
   it('отметки дня нет — ставится, остальные поля связи на месте', () => {
     const r = toggleLinkMark(link, 'chairwork', '2026-11-07');
