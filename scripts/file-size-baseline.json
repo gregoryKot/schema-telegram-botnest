@@ -2673,7 +2673,7 @@
   "webapp/src/pages/install/InstallFrame.tsx": 26,
   "webapp/src/pages/install/installLogic.ts": 48,
   "webapp/src/pages/install/useHandoffExchange.ts": 44,
-  "webapp/src/pages/InstallPage.tsx": 118,
+  "webapp/src/pages/InstallPage.tsx": 119,
   "webapp/src/pages/landing/AppInstallSection.tsx": 64,
   "webapp/src/pages/landing/AppPreview.tsx": 51,
   "webapp/src/pages/landing/ArticleCard.tsx": 32,
