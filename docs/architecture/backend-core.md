@@ -82,7 +82,7 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 
 ### `src/account/`
 Выгрузка «всех моих данных» (право на переносимость, 152-ФЗ/GDPR); пара к удалению аккаунта `src/bot/account.delete.ts`.
-- Входы: `src/account/data-export.service.ts` — сбор выгрузки по `userId`; `src/account/export-policy.ts` — реестр: отдаём или withhold по моделям; `src/account/export-policy.client.ts` — то же для моделей с `clientId`; `src/account/data-export.client-side.ts` — данные о человеке на стороне терапевта; `src/account/export-decrypt.ts` — расшифровка, нечитаемое в `_unreadableFields`.
+- Входы: `src/account/data-export.service.ts` — сбор выгрузки по `userId`; `src/account/export-policy.ts` — реестр: отдаём или withhold по моделям; `src/account/export-policy.client.ts` — то же для моделей с `clientId`; `src/account/data-export.client-side.ts` — данные о человеке на стороне терапевта; `src/account/export-shown.ts` — `shown`-модели (концептуализация, карты режимов) тем же видом, что экран кабинета; `src/account/export-decrypt.ts` — расшифровка, нечитаемое в `_unreadableFields`.
 - Связи: `DataExportService` регистрирует `src/api/account-api.module.ts`; эндпоинт `GET /api/account/export` (`TelegramAuthGuard`, 1/мин, 5/сутки); контур таблиц — `src/bot/user-data-tables.ts`, параллельно `src/auth/merge.service.ts`.
 - Подводные камни: каждая модель с `userId` или `clientId` обязана быть классифицирована в `export-policy*.ts`, иначе падает гейт-спек; enc-поля сверяются с `FIELD_POLICY` (`src/utils/encryption-policy.ts`). Кнопка выгрузки — «Скачать мои данные» в настройках сайта (`webapp/src/components/settingsSheet/DataSection.tsx`, хук `shared/src/account/useDataExport.ts`).
 

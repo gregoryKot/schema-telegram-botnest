@@ -3,6 +3,7 @@
 // ответ площадки (test/fixtures/recorded/postbox-send-email-denied.json,
 // правило №23), а не догадка: он пришёл text/plain, не JSON.
 import { loadRecordedFixture } from '../test-support/recorded-fixture';
+import { encodeFromName } from './email-from-name';
 import {
   DEFAULT_EMAIL_FROM,
   emailFrom,
@@ -101,6 +102,20 @@ describe('emailFrom', () => {
   it('EMAIL_FROM задан — берётся он', () => {
     process.env.EMAIL_FROM = 'Bot <bot@example.com>';
     expect(emailFrom()).toBe('Bot <bot@example.com>');
+  });
+
+  it('имя с кириллицей — словом RFC 2047, адрес как есть', () => {
+    process.env.EMAIL_FROM = 'Схема <bot@example.com>';
+    const word = Buffer.from('Схема', 'utf8').toString('base64');
+    expect(emailFrom()).toBe(`=?UTF-8?B?${word}?= <bot@example.com>`);
+  });
+
+  it('имя в кавычках — кавычки снимаются перед кодированием; голый адрес не трогается', () => {
+    const word = Buffer.from('Схема Х', 'utf8').toString('base64');
+    expect(encodeFromName('"Схема Х" <a@b.ru>')).toBe(
+      `=?UTF-8?B?${word}?= <a@b.ru>`,
+    );
+    expect(encodeFromName('a@b.ru')).toBe('a@b.ru');
   });
 });
 

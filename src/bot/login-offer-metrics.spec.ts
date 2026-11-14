@@ -4,7 +4,7 @@ import { formatLoginOffer, loadLoginOffer } from './login-offer-metrics';
 describe('formatLoginOffer', () => {
   it('пустая БД — честная строка, без нулевой воронки', () => {
     const text = formatLoginOffer({ shown: 0, open: 0, later: 0 });
-    expect(text).toContain('Почта или VK ID для входа на сайт');
+    expect(text).toContain('Почта, Яндекс ID или VK ID для входа на сайт');
     expect(text).toContain('приглашение никому не показывали');
     expect(text).not.toContain('Пошли добавлять');
   });
