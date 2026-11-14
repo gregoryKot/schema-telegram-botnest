@@ -16,28 +16,32 @@ const CRISIS_TEL = 'tel:88001004994';
 export function showBranch(s: GameScene, nextChapter: string) {
   track('act1_end', { chapter: s.chapter.id });
   trackEvent('game_cta_shown', { from: 'act1' });
+  // тач-кнопки на телефоне стояли поверх нижних строк; «дальше» → restart, create() вернёт их
+  setTouchControls(false);
   const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
   const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
     s.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
-  const top = mk(138, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
-  const sub = mk(196, t('m_and_for_the_first_time_mister'), 11, '#d8c8ec');
+  const top = mk(126, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
+  const sub = mk(184, t('m_and_for_the_first_time_mister'), 11, '#d8c8ec');
 
   // Главная кнопка — попробовать в приложении (честно: справиться можно, но одному долго)
-  const ctaTxt = mk(276, t('m_try_in_app'), 12, '#88ffcc', 154);
-  const cta = s.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
+  const ctaTxt = mk(264, t('m_try_in_app'), 12, '#88ffcc', 154);
+  const cta = s.add.rectangle(W / 2, 264 * ky, ctaTxt.width + 40, 42, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  // Вторая, тише — запись к терапевту
-  const book = mk(320, t('m_book_therapist'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  // Тише — то же в боте (метка src_game), затем запись к терапевту
+  const bot = mk(319, t('m_open_in_telegram'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const book = mk(355, t('m_book_therapist'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
   // Продолжить — смотреть путь Мистера дальше
-  const goTxt = mk(358, t('m_or_keep_going_with_mister'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const goTxt = mk(391, t('m_or_keep_going_with_mister'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
   // Поддержать игру донатом
-  const donTxt = mk(398, t('m_support_game'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const donTxt = mk(427, t('m_support_game'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: [top], alpha: 1, duration: 800 });
   s.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
   s.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1400 });
+  s.tweens.add({ targets: bot, alpha: 0.85, duration: 700, delay: 1600 });
   s.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 1800 });
   s.tweens.add({ targets: goTxt, alpha: 0.85, duration: 700, delay: 2200 });
   s.tweens.add({ targets: donTxt, alpha: 0.8, duration: 700, delay: 2700 });
@@ -45,6 +49,9 @@ export function showBranch(s: GameScene, nextChapter: string) {
   cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
   cta.on('pointerout', () => cta.setFillStyle(0x153028));
   cta.on('pointerdown', () => openCta('act1', 'app'));
+  bot.on('pointerover', () => bot.setColor('#d8c8ec'));
+  bot.on('pointerout', () => bot.setColor('#9b8fbf'));
+  bot.on('pointerdown', () => openCta('act1', 'bot'));
   book.on('pointerover', () => book.setColor('#d8c8ec'));
   book.on('pointerout', () => book.setColor('#9b8fbf'));
   book.on('pointerdown', () => openCta('act1', 'booking'));
@@ -54,7 +61,7 @@ export function showBranch(s: GameScene, nextChapter: string) {
   donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
   donTxt.on('pointerout', () => donTxt.setColor('#9b8fbf'));
   donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
-  addCrisisLine(s, 440 * ky, 154);
+  addCrisisLine(s, 466 * ky, 154);
 }
 
 function modeShort(s: GameScene): string {
@@ -74,25 +81,27 @@ export function showCta(s: GameScene) {
       .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
   // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
-  // карточка выше, чем была: под главной кнопкой — место для тихой записи к терапевту
-  const top  = mk(150, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
-  const lbl  = mk(196, t('m_your_biggest_enemy'), 11, '#a89fd0');
-  const mode = mk(232, modeShort(s), 16, '#ff8aa6');
-  const sub  = mk(284, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
+  // y — под 540; на тач-холсте 640×360 они ×2/3, а кегль и кнопки — нет: зазоры посчитаны под оба холста
+  const top  = mk(55, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
+  const lbl  = mk(95, t('m_your_biggest_enemy'), 11, '#a89fd0');
+  const mode = mk(129, modeShort(s), 16, '#ff8aa6');
+  const sub  = mk(183, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
 
-  const ctaTxt = mk(350, t('m_try_in_app'), 11, '#88ffcc', 154);
-  const cta = s.add.rectangle(W / 2, 350 * ky, ctaTxt.width + 34, 38, 0x153028)
+  const ctaTxt = mk(254, t('m_try_in_app'), 11, '#88ffcc', 154);
+  const cta = s.add.rectangle(W / 2, 254 * ky, ctaTxt.width + 34, 38, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  const book = mk(396, t('m_book_therapist'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
-  const shareTxt = mk(444, t('m_share'), 11, '#c0b8e8', 154);
-  const share = s.add.rectangle(W / 2, 444 * ky, shareTxt.width + 30, 34, 0x241d3a)
+  const bot = mk(305, t('m_open_in_telegram'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const book = mk(341, t('m_book_therapist'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const shareTxt = mk(394, t('m_share'), 11, '#c0b8e8', 154);
+  const share = s.add.rectangle(W / 2, 394 * ky, shareTxt.width + 30, 34, 0x241d3a)
     .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  const menu = mk(490, t('m_or_back_to_menu'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const menu = mk(445, t('m_or_back_to_menu'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: [top], alpha: 1, duration: 800 });
   s.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
   s.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 1100 });
   s.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1600 });
+  s.tweens.add({ targets: bot, alpha: 0.85, duration: 700, delay: 1750 });
   s.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 1900 });
   s.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2000 });
   s.tweens.add({ targets: menu, alpha: 0.7, duration: 700, delay: 2400 });
@@ -100,6 +109,9 @@ export function showCta(s: GameScene) {
   cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
   cta.on('pointerout', () => cta.setFillStyle(0x153028));
   cta.on('pointerdown', () => openCta('ending', 'app'));
+  bot.on('pointerover', () => bot.setColor('#d8c8ec'));
+  bot.on('pointerout', () => bot.setColor('#9b8fbf'));
+  bot.on('pointerdown', () => openCta('ending', 'bot'));
   book.on('pointerover', () => book.setColor('#d8c8ec'));
   book.on('pointerout', () => book.setColor('#9b8fbf'));
   book.on('pointerdown', () => openCta('ending', 'booking'));
@@ -112,6 +124,7 @@ export function showCta(s: GameScene) {
     window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
   });
   menu.on('pointerdown', () => s.scene.start('Start'));
+  addCrisisLine(s, 484 * ky, 154);
 }
 
 // Кризисная строка: игра нарочно доводит до «сил не осталось» — рядом обязан быть

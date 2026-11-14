@@ -67,12 +67,14 @@ describe('e2e smoke: билет входа и привязка аккаунта 
         create: { id, firstName: 'E2E' },
       });
     }
-    // Способы входа (site-login.ts): A открыт в MAX, B входит почтой, у C —
-    // только Telegram: он проверяет, что личность из Telegram в браузер не едет.
+    // Способы входа (site-login.ts): A открыт в MAX, B входит VK ID, у C —
+    // Telegram и почта: ни личность из Telegram, ни почта (решение владельца,
+    // ч. 10 ст. 8 149-ФЗ) вход в браузер не одобряют.
     for (const [userId, provider] of [
       [USER_A, 'max'],
-      [USER_B, 'email'],
+      [USER_B, 'vk'],
       [USER_C, 'telegram'],
+      [USER_C, 'email'],
     ] as const) {
       await prisma.authProvider.create({
         data: { userId, provider, providerId: `e2e-lt-${provider}-${userId}` },
@@ -264,16 +266,21 @@ describe('e2e smoke: билет входа и привязка аккаунта 
       expect(res.body.userCode).toHaveLength(8);
     });
 
-    it('билет входа под Telegram не выписывается — на сайт через Telegram не входят', async () => {
-      const res = await call(srv().post('/api/auth/ticket/start')).send({
-        intent: 'login',
-        provider: 'telegram',
-      });
-      expect(res.status).toBe(400);
-      expect(res.body).not.toHaveProperty('deviceCode');
-    });
+    // Через Telegram на сайт не входят; по почте — тоже (решение владельца,
+    // ч. 10 ст. 8 149-ФЗ).
+    it.each(['telegram', 'email'])(
+      'билет входа под %s не выписывается — 400',
+      async (provider) => {
+        const res = await call(srv().post('/api/auth/ticket/start')).send({
+          intent: 'login',
+          provider,
+        });
+        expect(res.status).toBe(400);
+        expect(res.body).not.toHaveProperty('deviceCode');
+      },
+    );
 
-    it('аккаунт только с Telegram вход в браузер не одобряет: сессия не выдана', async () => {
+    it('аккаунт с Telegram и почтой (без VK ID, Яндекс ID, MAX) вход в браузер не одобряет', async () => {
       const { deviceCode, userCode } = await issue();
       const approved = await call(
         srv().post('/api/auth/ticket/confirm-login'),
@@ -447,33 +454,6 @@ describe('e2e smoke: билет входа и привязка аккаунта 
         tokenB,
       ).send({ code: link.userCode });
       expect(notLogin.status).toBe(404);
-    });
-
-    // S9: чужой билет в письме входа — фишинг настоящим письмом. Письмо с
-    // билетом уходит только браузеру, который этот билет выписал (кука).
-    it('email/link принимает билет только с куки браузера, выписавшего его', async () => {
-      const started = await call(srv().post('/api/auth/ticket/start')).send({
-        intent: 'login',
-        provider: 'email',
-      });
-      expect(started.status).toBe(200);
-      const setCookie = (
-        started.headers['set-cookie'] as unknown as string[]
-      ).find((c) => c.startsWith('login_ticket='));
-      expect(setCookie).toMatch(/HttpOnly/i);
-      const ticket = started.body.userCode as string;
-
-      const foreign = await call(srv().post('/api/auth/email/link')).send({
-        email: 'victim@example.com',
-        ticket,
-      });
-      expect(foreign.status).toBe(400);
-      expect(foreign.body.reason).toBe('ticket_foreign');
-
-      const own = await call(srv().post('/api/auth/email/link'))
-        .set('Cookie', String(setCookie).split(';')[0])
-        .send({ email: 'me@example.com', ticket });
-      expect(own.status).toBe(200);
     });
 
     it('deny-login («это не я») требует сессии и гасит билет', async () => {

@@ -37,7 +37,7 @@ type Where = Record<string, unknown>;
 
 export function makeDeps() {
   const rows: Row[] = [];
-  // Аккаунты, у которых способ входа только Telegram (остальным хватает).
+  // Аккаунты без входа VK ID, Яндекс ID или MAX (остальным хватает).
   const telegramOnly = new Set<bigint>();
   let seq = 0;
   const providers = [
@@ -121,11 +121,12 @@ export function makeDeps() {
   const prisma = {
     loginTicket,
     authProvider: {
-      // site-login.ts: «есть ли вход из MAX» и «есть ли вход кроме Telegram».
+      // site-login.ts: «есть ли вход из MAX» и «есть ли вход VK ID, Яндекс ID,
+      // MAX»; сам фильтр второго проверяет site-login.spec.ts.
       count: ({
         where,
       }: {
-        where: { userId: bigint; provider: string | { not: string } };
+        where: { userId: bigint; provider: string | { in: string[] } };
       }) =>
         Promise.resolve(
           typeof where.provider === 'string'

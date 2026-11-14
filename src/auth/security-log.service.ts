@@ -62,7 +62,6 @@ export type SecurityEvent =
   // строк на один userId/ip; жёсткий предел ставят @Throttle на самих ручках.
   | 'totp_failed'
   | 'totp_locked' // 10 промахов 2FA за сутки на аккаунт (S11): подбор, DM
-  | 'login_ticket_foreign' // билет письма входа — с чужого браузера (S9)
   // Отказ по ключу админки (x-admin-key: неверный/слабый/не задан), см.
   // booking/admin-key-audit.interceptor.ts. Только лог, не DM.
   | 'admin_key_rejected'

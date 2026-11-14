@@ -344,7 +344,7 @@ describe('check-persistent-throttle.mjs', () => {
     const res = gate({ 'src/auth/a.controller.ts': stripped }, baseline);
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('POST /api/auth/merge');
-    expect(res.stderr).not.toContain('POST /api/auth/email/link');
+    expect(res.stderr).not.toContain('POST /api/auth/email/link-to-account');
   });
 
   // Шаг, ради которого расширен TRIGGERS: снять и лимит, и метку с ручки,

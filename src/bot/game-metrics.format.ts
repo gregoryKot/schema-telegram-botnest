@@ -27,6 +27,7 @@ const SOURCE_LABELS: Record<GameEntrySource, string> = {
 const CTA_TARGET_LABELS: Record<GameCtaTarget, string> = {
   app: 'в приложение',
   booking: 'на запись к терапевту',
+  bot: 'в бота в Telegram',
 };
 
 const CTA_PLACE_LABELS: Record<GameCtaPlace, string> = {

@@ -453,8 +453,8 @@ describe('LoginTicketService — границы под мутационным з
 });
 
 // Запрос Роскомнадзора 2026-11: на сайт через Telegram не входят. Одобрить
-// билет входа (экран сверки в браузере) может только аккаунт, у которого есть
-// способ входа кроме Telegram, — иначе личность из Telegram уехала бы в браузер.
+// билет входа (экран сверки в браузере) может только аккаунт со входом VK ID,
+// Яндекс ID или MAX, — иначе личность из Telegram уехала бы в браузер.
 describe('approveLogin — аккаунт только с Telegram на сайт не впускает', () => {
   it('отказ: билет не подтверждён, опрос сессию не выдаёт', async () => {
     const { tickets, rows, telegramOnly, auth } = makeDeps();
@@ -470,7 +470,7 @@ describe('approveLogin — аккаунт только с Telegram на сайт
     expect(auth.issueTokens).not.toHaveBeenCalled();
   });
 
-  it('контроль: тот же аккаунт с почтой или VK ID — подтверждает', async () => {
+  it('контроль: тот же аккаунт с VK ID — подтверждает', async () => {
     const { tickets, rows } = makeDeps();
     const { userCode, deviceCode } = await startLogin(tickets);
     await tickets.approveLogin(userCode, TG_USER);

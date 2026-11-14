@@ -27,7 +27,7 @@
     "reason": "Выделен из login-ticket.service.ts (вошёл в `mutate` golden-auth 2026-11): кому разрешено действовать по карточке сверки в Telegram. В `mutate` не включён, прогона Stryker по нему не было — мутации проверки зрителя карточки не измеряются, их держит ticket-viewer.spec.ts; долг волны, а не решение."
   },
   "src/auth/magic-link.ts": {
-    "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации выдачи ссылки входа по почте не измеряются — долг волны, а не решение."
+    "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации выдачи ссылки привязки почты не измеряются — долг волны, а не решение."
   },
   "src/auth/merge-assigner-refs.ts": {
     "reason": "Вынесен из merge.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации висячих ссылок при слиянии не измеряются — долг волны, а не решение."
@@ -49,6 +49,9 @@
   },
   "src/auth/unlink-provider.ts": {
     "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации отвязки способа входа не измеряются — долг волны, а не решение."
+  },
+  "src/auth/user-id-range.ts": {
+    "reason": "Две константы диапазона userId и два сравнения; импортёров в зоне столько же, сколько вне (auth.service, account.service, send-settings против parse-user-id, notify-channel, client-id.decorator), — кандидатом стал, когда ушёл вне-зонный email-only-accounts.ts. В `mutate` не включён, прогона Stryker по нему не было; границу с MIN пинят user-id-range.spec.ts и user-id-range.parity.spec.ts — долг волны, а не решение."
   },
   "src/auth/user-owned-tables.ts": {
     "reason": "Реестр имён таблиц без логики: сверку со schema.prisma держит table-registry.spec.ts, мутации по строковым литералам списка дали бы шум, а не сигнал."

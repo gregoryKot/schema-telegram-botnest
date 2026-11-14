@@ -111,16 +111,17 @@ describe('GameMetricsService.getMetrics', () => {
     expect(m.ctaClicksByPlace.cabinet).toBe(5);
   });
 
-  it('cta_click: цель app/booking в разбивке, мусорная и пустая — только в totals', async () => {
+  it('cta_click: цель app/booking/bot в разбивке, мусорная и пустая — только в totals', async () => {
     const { service } = build([
       row('game_cta_click', 4, { place: 'cabinet', target: 'app' }),
       row('game_cta_click', 2, { place: 'act1', target: 'booking' }),
+      row('game_cta_click', 5, { place: 'ending', target: 'bot' }),
       row('game_cta_click', 3, { place: 'act1', target: 'menu' }),
       row('game_cta_click', 1, { place: 'act1' }),
     ]);
     const m = await service.getMetrics();
-    expect(m.ctaClicks).toBe(10);
-    expect(m.ctaClicksByTarget).toEqual({ app: 4, booking: 2 });
+    expect(m.ctaClicks).toBe(15);
+    expect(m.ctaClicksByTarget).toEqual({ app: 4, booking: 2, bot: 5 });
   });
 
   it('game_app_arrive считается отдельным счётчиком', async () => {

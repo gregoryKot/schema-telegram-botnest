@@ -109,35 +109,6 @@ describe('AuthService — запросы читают только нужные 
       'vy',
     );
   });
-
-  it('вход по почте: известный адрес ищется по паре provider+providerId в нижнем регистре', async () => {
-    const providerFindUnique = jest.fn().mockResolvedValue(null);
-    const sendLoginLink = jest.fn().mockResolvedValue(undefined);
-    const svc = make(
-      {
-        authProvider: { findUnique: providerFindUnique },
-        emailToken: { create: jest.fn().mockResolvedValue({}) },
-      },
-      { sendLoginLink },
-    );
-
-    await svc.requestEmailLogin('User@Example.com');
-
-    expect(providerFindUnique).toHaveBeenCalledWith({
-      where: {
-        provider_providerId: {
-          provider: 'email',
-          providerId: 'user@example.com',
-        },
-      },
-    });
-    // Адрес неизвестен — письмо уходит по форме «ты» (аккаунта ещё нет).
-    expect(sendLoginLink).toHaveBeenCalledWith(
-      'user@example.com',
-      expect.any(String),
-      'ty',
-    );
-  });
 });
 
 describe('AuthService — ветки, которые мок Prisma не различал', () => {
