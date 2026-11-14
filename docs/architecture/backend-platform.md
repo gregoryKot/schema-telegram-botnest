@@ -96,6 +96,7 @@
   - `src/booking/client-key.ts` + `contact-normal-form.ts` — ключ клиента из контакта (телефон с «+», почта); `client-key-rekey.service.ts` — проход на старте, переносит строки со старых ключей «только цифры»
   - `src/booking/whole-price.ts` — строгий разбор целой цены (`1e+22`, мусор → отказ); на нём `parsePrice` и `src/subscription/subscription-price.ts`
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
+  - `src/booking/booking-calendar-reconcile.service.ts` — крон раз в 15 минут под арендой: повторный DELETE в iCloud по броням, отменённым за сутки (оборванный PUT после DELETE отмены, упавший DELETE)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV
   - `src/booking/slot-range.ts` — диапазон публичного `/slots` (прошлое, перевёрнутый, за горизонтом 92 дня — 400) и окно занятости; `caldav-busy-cache.ts` — одно широкое окно iCloud раз в 60 с, ответы нарезаются из него (S17)
   - `src/booking/session-event.ts` — длина события сессии (CalDAV, .ics, страница записи): знакомство 15 минут, слот сетки занят целиком (`Booking.durationMin`)
