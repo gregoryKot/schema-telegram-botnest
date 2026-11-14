@@ -318,6 +318,7 @@ export const M = {
   // финальная CTA
   m_mister_reached: { ru: "Мистер дошёл за двадцать минут.\nв жизни это — один клик.", en: "Mister got here in twenty minutes.\nin real life it's one click." },
   m_share_road: { ru: "«Сквозь голову»: Мистер дошёл до терапевта за 20 минут. Проверь, дойдёшь ли ты:", en: "Mister reached the therapist in 20 minutes. See if you can:" },
+  m_open_in_telegram: { ru: "или открыть в Telegram", en: "or open in Telegram" },
   // кризисная строка (правило №7 CLAUDE.md): номер — тот же, что в shared/src/utils/crisisMarkers.ts;
   // дубль держит в согласии тест src/test-support/gates/game-crisis-hotline.spec.ts
   m_crisis_line: { ru: "если тяжело прямо сейчас — 8-800-100-49-94, бесплатно", en: "if it's hard right now — 8-800-100-49-94, free (Russia)" },
