@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useId } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { markSheetOpen } from './openSheets';
 import { useDialogLayer } from '../../../shared/src/utils/dialogStack';
@@ -49,23 +49,25 @@ export function useHistorySheet(onClose: () => void) {
   useEffect(() => markSheetOpen(id), [id]);
   useEffect(() => layer.join(), [layer]);
 
+  const closeSelf = useCallback((after: (() => void) | null) => {
+    if (closing.current || (ready.current && !sheetStackOf(loc.current.state).includes(id))) return;
+    closing.current = true;
+    then.current = after;
+    navigate(-backDepth(loc.current.state, id));
+  }, [id, navigate]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || !layer.ownsEscape()) return;
-      navigate(-backDepth(loc.current.state, id));
+      closeSelf(null); // тот же гард, что у goBack: Escape + goBack из сохранения — один шаг назад
     };
     document.addEventListener('keydown', handler); // всплытие: поле ввода может погасить Escape
     return () => document.removeEventListener('keydown', handler);
-  }, [id, navigate, layer]);
+  }, [closeSelf, layer]);
 
   // goBack закрывает СВОЙ лист: снимает его запись и всё, что легло сверху (запись
   // ребёнка, в том числе брошенную без goBack). Повтор до прихода перехода (dblclick)
   // и вызов при уже снятой записи (`await save(); goBack()` после «Назад») — no-op,
   // иначе уход на запись дальше, вплоть до ухода со страницы.
-  return (next?: unknown) => {
-    if (closing.current || (ready.current && !sheetStackOf(loc.current.state).includes(id))) return;
-    closing.current = true;
-    then.current = typeof next === 'function' ? (next as () => void) : null;
-    navigate(-backDepth(loc.current.state, id));
-  };
+  return (next?: unknown) => closeSelf(typeof next === 'function' ? (next as () => void) : null);
 }

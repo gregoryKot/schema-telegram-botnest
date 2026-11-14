@@ -1,10 +1,11 @@
+/// <reference types="node" />
 // Карта инвалидации кабинета терапевта (apiCacheRules.therapy.ts) и
 // офлайн-клиенты. Их id отрицательный (-TherapyRelation.id), а шаблоны `\d+`
 // минус не брали: после удаления офлайн-клиент висел в списке, «Сегодня» и
 // сайдбаре, заметка и новое имя не показывались до 2 минут (QA 2026-10-26).
 // Полноту держим от источника истины — декораторов контроллеров, а не от
 // списка в этом файле: новая ручка с :clientId без правила краснеет здесь.
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RULES } from './apiCacheRules.data';
@@ -84,8 +85,8 @@ describe('мутации с :clientId — офлайн-клиент (-57) сбр
 
 async function seed(
   paths: string[],
-): Promise<Record<string, ReturnType<typeof vi.fn>>> {
-  const fetchers: Record<string, ReturnType<typeof vi.fn>> = {};
+): Promise<Record<string, Mock<() => Promise<unknown>>>> {
+  const fetchers: Record<string, Mock<() => Promise<unknown>>> = {};
   for (const p of paths) {
     fetchers[p] = vi.fn(() => Promise.resolve(`data:${p}`));
     await cachedGet(p, fetchers[p]);
@@ -95,7 +96,7 @@ async function seed(
 
 /** Сколько раз ключ сходил в сеть после мутации: 2 — сброшен, 1 — остался в кеше. */
 async function refetched(
-  f: Record<string, ReturnType<typeof vi.fn>>,
+  f: Record<string, Mock<() => Promise<unknown>>>,
 ): Promise<Record<string, number>> {
   const out: Record<string, number> = {};
   for (const p of Object.keys(f)) {

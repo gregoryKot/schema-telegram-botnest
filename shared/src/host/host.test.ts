@@ -875,7 +875,7 @@ describe('MAX: стартовые параметры из адреса', () => {
 describe('детект хоста при всегда загруженном SDK Telegram', () => {
   /** Так выглядит их SDK вне мессенджера: объект есть, платформа unknown. */
   function telegramSdkOutsideTelegram() {
-    window.Telegram = {
+    (window as unknown as { Telegram?: unknown }).Telegram = {
       WebApp: { platform: 'unknown', initData: '' },
     };
   }
@@ -898,14 +898,14 @@ describe('детект хоста при всегда загруженном SDK
   });
 
   it('настоящий Telegram (платформа заполнена) определяется по-прежнему', () => {
-    window.Telegram = {
+    (window as unknown as { Telegram?: unknown }).Telegram = {
       WebApp: { platform: 'ios', initData: 'user=%7B%22id%22%3A1%7D' },
     };
     expect(detectHostId()).toBe('telegram');
   });
 
   it('платформы нет, но подпись есть — тоже Telegram', () => {
-    window.Telegram = {
+    (window as unknown as { Telegram?: unknown }).Telegram = {
       WebApp: { initData: 'user=%7B%22id%22%3A1%7D' },
     };
     expect(detectHostId()).toBe('telegram');

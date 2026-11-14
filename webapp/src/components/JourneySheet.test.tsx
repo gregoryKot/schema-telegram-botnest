@@ -107,6 +107,11 @@ describe('JourneySheet — список', () => {
     fireEvent.click(back);
     expect(onClose).toHaveBeenCalled();
   });
+  it('лист — диалог «Мой путь» для диктора, фокус на «Назад»', () => {
+    renderSheet();
+    expect(screen.getByRole('dialog', { name: 'Мой путь' })).toBeTruthy();
+    expect(document.activeElement?.textContent).toBe('← Назад');
+  });
 });
 
 describe('JourneySheet — деталь записи', () => {
