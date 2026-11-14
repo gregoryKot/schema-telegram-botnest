@@ -981,6 +981,8 @@ jobs:
       - run: npx prisma generate
       - run: npm ci --prefix webapp
       - run: npm ci --prefix game
+      # vitest игры (node, модули без Phaser и DOM): зависимости игры здесь уже стоят — падает до долгого линта.
+      - run: npm test --prefix game
       # shared тоже линтуется храповиком, а зависимости ему не ставили —
       # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
       # без node_modules разрешают TS иначе, чем локально. Итог: файл
