@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GROUND_Y, W } from './constants';
 import { ChapterConfig } from './chapters';
-import { placeProp } from './props';
+import { placeProp, LAMP_W, FLOORLAMP_W } from './props';
 import { addGlow } from './look';
 import farUrl from './assets/bg_street_far.png';
 import midUrl from './assets/bg_street_mid.png';
@@ -95,13 +95,8 @@ function buildStreet(scene: Phaser.Scene, ch: ChapterConfig) {
     scene.add.tileSprite(-32, GROUND_Y, w, src.height, key).setOrigin(0, 1).setScale(2)
       .setScrollFactor(sf).setDepth(depth);
   }
-  // фонари — настоящий спрайт + мягкий ореол у плафона и пятно на асфальте
-  for (let lx = 330; lx < ch.arenaW - 200; lx += 540) {
-    const lamp = placeProp(scene, 'prop_streetlamp', lx, GROUND_Y, 46, 4);
-    const headY = lamp ? lamp.y - lamp.displayHeight * 0.86 : GROUND_Y - 120;
-    addGlow(scene, lx, headY, 110, 110, 0xffd080, 0.22, 3);
-    addGlow(scene, lx, GROUND_Y - 4, 170, 34, 0xffd9a0, 0.16, 3);
-  }
+  // фонари: ореол и пятно на асфальте нарисованы в спрайте (game/art/light.py), показ ×1.5
+  for (let lx = 330; lx < ch.arenaW - 200; lx += 540) placeProp(scene, 'prop_streetlamp', lx, GROUND_Y, LAMP_W, 4);
 }
 
 // ── Комната: обои, окна с ночью, диван, ТВ, торшер ──────────────────────────
@@ -163,9 +158,5 @@ function tv(scene: Phaser.Scene, x: number) {
 }
 
 function lamp(scene: Phaser.Scene, x: number) {
-  const img = placeProp(scene, 'prop_lamp', x, GROUND_Y, 56, 4);
-  // тёплый ореол от абажура и пятно на полу
-  const headY = img ? img.y - img.displayHeight * 0.85 : GROUND_Y - 150;
-  addGlow(scene, x, headY, 130, 130, 0xffd080, 0.2, 3);
-  addGlow(scene, x, GROUND_Y - 4, 150, 30, 0xffd9a0, 0.14, 3);
+  placeProp(scene, 'prop_lamp', x, GROUND_Y, FLOORLAMP_W, 4); // свет — в спрайте
 }

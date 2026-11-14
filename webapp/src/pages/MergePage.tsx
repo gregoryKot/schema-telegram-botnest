@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
-import { WarnNote } from '../components/WarnNote';
 import { PaperAlert } from '../components/paper/PaperAlert';
 import { useMergeConfirm } from './merge/useMergeConfirm';
 import { MergeSpread } from './merge/MergeSpread';
@@ -34,10 +33,6 @@ export function MergePage() {
       <div className="ds-eyebrow">Аккаунт</div>
       <h1 className="ds-h2 am-title">Объединить аккаунты?</h1>
       <MergeSummary preview={preview} />
-
-      <WarnNote>
-        Совпадающие оценки (одна и та же потребность за один день) и незаконченные черновики остаются из текущего аккаунта, дубль из второго удаляется. <b>Действие необратимо.</b>
-      </WarnNote>
 
       {twoFactorLost && <TwoFactorLossNote />}
 

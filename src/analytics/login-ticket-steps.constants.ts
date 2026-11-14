@@ -31,3 +31,6 @@ export type LoginTicketStep = (typeof LOGIN_TICKET_STEPS)[number];
 /** Где открыт контейнер, попросивший билет. Тот же набор, что у StartTicketDto. */
 export const LOGIN_TICKET_HOSTS = ['web', 'telegram', 'max'] as const;
 export type LoginTicketHost = (typeof LOGIN_TICKET_HOSTS)[number];
+
+/** Чем подтверждают билет входа (meta.provider); SITE_TICKET_PROVIDERS обязан входить сюда — сверка в спеке санитайзера. */
+export const LOGIN_TICKET_PROVIDERS = ['vk', 'yandex', 'email', 'max'] as const;

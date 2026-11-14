@@ -15,6 +15,8 @@ const m = (over: Partial<LoginTicketMetrics> = {}): LoginTicketMetrics => ({
   taken: 0,
   tooLate: 0,
   denied: 0,
+  maxIssued: 0,
+  maxTaken: 0,
   ...over,
 });
 
@@ -68,6 +70,17 @@ describe('formatLoginTicket', () => {
     );
     expect(text).toContain('Не успели вовремя: 7');
     expect(text).toContain('Сказали «это не я»: 2');
+  });
+
+  it('вход через MAX — своя строка, только когда кнопку нажимали', () => {
+    const quiet = formatLoginTicket(
+      m({ issued: 30, confirmed: 20, taken: 20 }),
+    );
+    expect(quiet).not.toContain('MAX');
+    const text = formatLoginTicket(
+      m({ issued: 30, confirmed: 20, taken: 20, maxIssued: 4, maxTaken: 3 }),
+    );
+    expect(text).toContain('Через MAX: нажали 4, вошли 3');
   });
 
   it.each([

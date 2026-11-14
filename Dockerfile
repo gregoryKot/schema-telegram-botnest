@@ -55,6 +55,8 @@ RUN npm run build
 # Build webapp (website) — output → webapp/dist/ → served at /
 # VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
 ENV VITE_BOT_USERNAME=SchemeHappensBot
+# Ник бота мини-приложения MAX (ссылка max.ru/<ник>): без него кнопки «Войти через MAX» нет
+ENV VITE_MAX_BOT_USERNAME=""
 RUN npm run build --prefix webapp
 
 # Build the game (vite base '/game/') → served at /game by the same ServeStatic

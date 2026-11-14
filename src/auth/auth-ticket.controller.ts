@@ -76,7 +76,7 @@ export class AuthTicketController {
     if (body.intent === 'link' && !requesterUserId) {
       throw new UnauthorizedException('Привязка требует входа');
     }
-    assertSiteTicket(body.intent, body.provider); // вход — VK ID, Яндекс ID
+    assertSiteTicket(body.intent, body.provider); // вход — VK ID, Яндекс ID, MAX
     return this.tickets.start({
       intent: body.intent,
       provider: body.provider,

@@ -22,7 +22,7 @@ export class LoginTicketReport {
    * ошибки сам, глушитель здесь был бы лишним и попал бы в гейт тихих catch.
    * Отчёт о пути входа не имеет права задерживать сам вход.
    */
-  step(step: LoginTicketStep, hostId: string): void {
-    void this.analytics.track(null, EVENT, { step, host: hostId });
+  step(step: LoginTicketStep, hostId: string, provider: string): void {
+    void this.analytics.track(null, EVENT, { step, host: hostId, provider });
   }
 }

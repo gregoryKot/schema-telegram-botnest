@@ -12,3 +12,8 @@ export const botHandle = `@${BOT_USERNAME}`;
 export const botUrl = `https://t.me/${BOT_USERNAME}`;
 // Без схемы — для plain-text шаринга (Telegram сам оформит ссылку).
 export const botShortUrl = `t.me/${BOT_USERNAME}`;
+
+// Ник бота мини-приложения MAX (VITE_MAX_BOT_USERNAME, вшивает Dockerfile).
+// Пусто — входа через MAX на странице входа нет: ссылке вести некуда.
+export const maxBotUsername =
+  (import.meta.env.VITE_MAX_BOT_USERNAME as string | undefined)?.trim() ?? '';

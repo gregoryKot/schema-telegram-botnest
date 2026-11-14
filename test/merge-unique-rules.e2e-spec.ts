@@ -21,6 +21,7 @@ import {
   SECURITY_SENSITIVE_TABLES,
 } from '../src/auth/merge.service';
 import { COMBINE_TABLES } from '../src/auth/merge-combine';
+import { LOST_ON_CONFLICT, LOST_UNSHOWN } from '../src/auth/merge-lost';
 import { BotService } from '../src/bot/bot.service';
 import { DiaryService } from '../src/bot/diary.service';
 import { NotesService } from '../src/bot/notes.service';
@@ -121,6 +122,11 @@ describeOnRealDb('e2e: UNIQUE_RULES против живого Postgres', () => {
         const other = await d.create({ data: data(SRC, 'b', '33') });
         otherMark = markOf(other);
       }
+      // Сводка до merge считает ровно то, что удалит DELETE…EXISTS (merge-lost.ts).
+      const shown = table in LOST_ON_CONFLICT;
+      expect(shown || table in LOST_UNSHOWN).toBe(true);
+      const { lost } = await app.get(MergeService).summarize(SRC, TGT);
+      expect(lost).toEqual(shown ? { [table]: 1 } : {});
 
       await app.get(MergeService).merge(SRC, TGT); // не бросает 23505
 

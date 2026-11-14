@@ -56,7 +56,7 @@ const SAFE_PLACE_SCHEMA: EncryptSchema = {
 };
 
 /** Пары [цель, источник] с одним ключом; rows — строки обоих аккаунтов. */
-function pairs<R extends { userId: bigint }>(
+export function pairs<R extends { userId: bigint }>(
   rows: R[],
   src: bigint,
   key: (r: R) => string,

@@ -46,6 +46,7 @@ const PROVIDER_NAMES: Record<string, string> = {
   vk: 'ВКонтакте',
   yandex: 'Яндекс',
   email: 'почту',
+  max: 'MAX',
 };
 
 export function LoginTicketWait({

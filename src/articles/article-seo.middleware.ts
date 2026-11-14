@@ -16,24 +16,18 @@ import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
 import { practicePreviewHtml } from '../practice-preview';
 
-const LIST_TITLE = 'Статьи о схема-терапии – Григорий Котляревский';
+// Продукт подписывает вкладку своим именем, визитка (алиас) — именем автора.
+const PRODUCT_SUFFIX = 'Всё по схеме';
+const PRACTICE_SUFFIX = 'Григорий Котляревский';
+const LIST_HEADING = 'Статьи о схема-терапии';
 const LIST_DESCRIPTION =
   'Статьи о схема-терапии: что это за метод, кому подходит, схемы и режимы, когда стоит обратиться.';
 
 /**
- * Server-side SEO injection for /articles and /articles/:slug.
- *
- * The site is a client-rendered SPA: without this, every /articles/* URL is
- * served the same static index.html with an identical <title>/description, so
- * search engines (especially Yandex, which barely runs JS) and AI crawlers see
- * the article pages as empty duplicates of the homepage and never rank them.
- *
- * This middleware runs BEFORE ServeStatic. For an article URL it fetches the
- * article from the DB and injects a real per-page <title>, meta description,
- * canonical, Open Graph tags, an Article JSON-LD block, AND the article text
- * into #root — so a crawler receives fully-formed HTML. The list page gets the
- * same treatment with a plain list of links. React still mounts normally
- * (createRoot replaces #root), so users get the usual SPA.
+ * Server-side SEO для /articles и /articles/:slug (до ServeStatic): сайт — SPA,
+ * и без этого поисковики (особенно Яндекс) видят статьи пустыми дублями главной.
+ * Вставляет <title>, description, canonical, OG, JSON-LD и текст статьи в #root;
+ * React потом монтируется как обычно (createRoot заменяет #root).
  */
 @Injectable()
 export class ArticleSeoMiddleware implements NestMiddleware {
@@ -60,15 +54,16 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     if (!match && path !== '/articles') return next();
 
     try {
-      const page = match
-        ? await this.articlePage(match[1])
-        : await this.listPage();
       // Alias domains get their own canonical/og:url host and the practice
       // link card (practice-preview.ts). Аудит 2026-10 (I3): host берётся из
       // заголовка Host и только из allow-list алиасов, не из клиентского
       // X-Forwarded-Host (иначе инъекция в canonical/og:url).
       const host = requestHost(req);
       const alias = PRACTICE_ALIAS_HOSTS.has(host);
+      const suffix = alias ? PRACTICE_SUFFIX : PRODUCT_SUFFIX;
+      const page = match
+        ? await this.articlePage(match[1], suffix)
+        : await this.listPage(suffix);
       let out = injectSeo(alias ? practicePreviewHtml(base) : base, page);
       if (alias) {
         out = out.split(SITE_URL).join(`https://${host}`);
@@ -87,7 +82,7 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     }
   }
 
-  private async articlePage(slug: string): Promise<SeoPage> {
+  private async articlePage(slug: string, suffix: string): Promise<SeoPage> {
     let article: Awaited<ReturnType<ArticlesService['findBySlug']>>;
     try {
       article = await this.articles.findBySlug(slug);
@@ -96,7 +91,7 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     }
     const url = `${SITE_URL}/articles/${slug}`;
     return {
-      title: `${article.title} – Григорий Котляревский`,
+      title: `${article.title} – ${suffix}`,
       ogTitle: article.title,
       description: article.description,
       canonicalUrl: url,
@@ -106,10 +101,10 @@ export class ArticleSeoMiddleware implements NestMiddleware {
     };
   }
 
-  private async listPage(): Promise<SeoPage> {
+  private async listPage(suffix: string): Promise<SeoPage> {
     const articles = await this.articles.list();
     return {
-      title: LIST_TITLE,
+      title: `${LIST_HEADING} – ${suffix}`,
       description: LIST_DESCRIPTION,
       canonicalUrl: `${SITE_URL}/articles`,
       ogType: 'website',

@@ -563,7 +563,7 @@ describe('MergeService — лог длительности merge', () => {
 // строк 95-126 хоть раз исполнялись тестом). ────────────────────────────────
 type CountSpec = number | 'THROW' | 'EMPTY_ROWS';
 
-/** Делегаты объединяемых таблиц (merge-combine.ts) без пар source↔target. */
+/** Делегаты таблиц, где ищутся пары (merge-combine.ts, merge-lost.ts), без пар. */
 const noCombinePairs = () =>
   Object.fromEntries(
     [
@@ -573,6 +573,10 @@ const noCombinePairs = () =>
       'userModeNote',
       'userSafePlace',
       'ysqResult',
+      'rating',
+      'childhoodRating',
+      'ysqProgress',
+      'therapistRequest',
     ].map((d) => [d, { findMany: jest.fn().mockResolvedValue([]) }]),
   );
 

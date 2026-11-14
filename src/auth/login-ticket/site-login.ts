@@ -9,18 +9,20 @@
 //     аккаунт со входом VK ID, Яндекс ID или MAX;
 //   - передача сессии во внешний браузер (`handoff`) — только из MAX.
 // Вход по ссылке на почту тоже убран (решение владельца, ч. 10 ст. 8 149-ФЗ):
-// почта остаётся для писем, а не для входа. Привязка (`intent: 'link'`)
-// остаётся: её начинает человек, уже вошедший на сайт VK ID или Яндекс ID.
+// почта остаётся для писем, а не для входа. MAX — российский сервис, но OAuth
+// для сайтов у него нет: вход через MAX — билет, который человек подтверждает
+// в мини-приложении (`/auth/confirm`). Привязка (`intent: 'link'`) остаётся:
+// её начинает человек, уже вошедший на сайт VK ID, Яндекс ID или через MAX.
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { PrismaService } from '../../prisma/prisma.service';
 
-/** Способы, которыми билет входа подтверждают в браузере. */
-export const SITE_TICKET_PROVIDERS = ['vk', 'yandex'] as const;
+/** Способы, которыми подтверждают билет входа: в браузере или в мини-приложении MAX. */
+export const SITE_TICKET_PROVIDERS = ['vk', 'yandex', 'max'] as const;
 
 /** Чьей сессии можно одобрить вход в браузер: VK ID, Яндекс ID, MAX. */
 const SITE_ACCOUNT_PROVIDERS = ['vk', 'yandex', 'max'];
 
-/** Билет входа выписывают только под подтверждение в браузере. */
+/** Билет входа выписывают только под способ, которым входят на сайт. */
 export function assertSiteTicket(intent: string, provider: string): void {
   if (intent !== 'login') return;
   if (!(SITE_TICKET_PROVIDERS as readonly string[]).includes(provider)) {

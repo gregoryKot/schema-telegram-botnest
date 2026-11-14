@@ -9,8 +9,10 @@ import {
 import { sanitizeMeta } from './analytics-meta.sanitize';
 import {
   LOGIN_TICKET_HOSTS,
+  LOGIN_TICKET_PROVIDERS,
   LOGIN_TICKET_STEPS,
 } from '../analytics/login-ticket-steps.constants';
+import { SITE_TICKET_PROVIDERS } from '../auth/login-ticket/site-login';
 
 describe('sanitizeLoginTicketMeta', () => {
   it.each(LOGIN_TICKET_STEPS)('пропускает известный шаг «%s»', (step) => {
@@ -25,6 +27,28 @@ describe('sanitizeLoginTicketMeta', () => {
       step: 'issued',
       host,
     });
+  });
+
+  it.each(LOGIN_TICKET_PROVIDERS)(
+    'пропускает способ входа «%s»',
+    (provider) => {
+      expect(
+        sanitizeLoginTicketMeta({ step: 'taken', host: 'web', provider }),
+      ).toEqual({ step: 'taken', host: 'web', provider });
+    },
+  );
+
+  it('незнакомый способ входа — не пишем ничего', () => {
+    expect(
+      sanitizeLoginTicketMeta({ step: 'taken', host: 'web', provider: 'ok' }),
+    ).toBeUndefined();
+  });
+
+  // Правило №4: способ, которым входят на сайт, обязан доезжать до отчёта.
+  it('каждый способ входа на сайт есть в списке санитайзера', () => {
+    for (const p of SITE_TICKET_PROVIDERS) {
+      expect(LOGIN_TICKET_PROVIDERS).toContain(p);
+    }
   });
 
   it('лишние поля не доезжают до базы', () => {
