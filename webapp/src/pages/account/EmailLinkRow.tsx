@@ -11,7 +11,7 @@ import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
 import { EmailLinkCodeForm } from './EmailLinkCodeForm';
 
-/** Зачем привязывать почту — до первого нажатия. Безлично: одна строка для «ты» и «вы». */
+/** Зачем привязывать почту — до первого нажатия. Безлично: одна строка для обеих форм обращения. */
 export const EMAIL_WHY =
   'На почту придёт письмо, если к аккаунту привяжут новый способ входа, отвяжут старый или начнут подбирать код двухфакторной защиты. Входить по почте нельзя.';
 

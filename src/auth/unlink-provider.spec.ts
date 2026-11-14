@@ -102,9 +102,9 @@ describe('unlinkProviderSafely', () => {
       { id: 2, userId: WEB, provider: 'email' },
     ];
     const first = makeRacingPrisma(vkEmail());
-    await expect(
-      unlinkProviderSafely(first.prisma, WEB, 'vk'),
-    ).rejects.toThrow(LAST_METHOD_MESSAGE);
+    await expect(unlinkProviderSafely(first.prisma, WEB, 'vk')).rejects.toThrow(
+      LAST_METHOD_MESSAGE,
+    );
     expect(first.store).toHaveLength(2);
     const second = makeRacingPrisma(vkEmail());
     await unlinkProviderSafely(second.prisma, WEB, 'email');

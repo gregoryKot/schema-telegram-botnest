@@ -28,11 +28,22 @@ export const LAST_METHOD_MESSAGE =
  * Почта (вход отключён, ч. 10 ст. 8 149-ФЗ) и Google входом не считаются.
  * Копия — webapp/src/pages/account/accountMethods.ts (сверка — accountMethods.test.ts).
  */
-export const LOGIN_PROVIDERS: readonly string[] = ['vk', 'yandex', 'telegram', 'max'];
+export const LOGIN_PROVIDERS: readonly string[] = [
+  'vk',
+  'yandex',
+  'telegram',
+  'max',
+];
 
 /** Останется ли вход: строка из LOGIN_PROVIDERS или номер из Telegram (входит через бота и без строки). */
-function keepsLogin(userId: bigint, rows: Array<{ provider: string }>): boolean {
-  return isTelegramUserId(userId) || rows.some((r) => LOGIN_PROVIDERS.includes(r.provider));
+function keepsLogin(
+  userId: bigint,
+  rows: Array<{ provider: string }>,
+): boolean {
+  return (
+    isTelegramUserId(userId) ||
+    rows.some((r) => LOGIN_PROVIDERS.includes(r.provider))
+  );
 }
 
 export async function unlinkProviderSafely(

@@ -14,8 +14,7 @@ export interface LoginOfferMetrics {
   later: number;
 }
 
-const TITLE =
-  '🔑 <b>Яндекс ID или VK ID для входа на сайт</b> (за неделю)';
+const TITLE = '🔑 <b>Яндекс ID или VK ID для входа на сайт</b> (за неделю)';
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatLoginOffer(m: LoginOfferMetrics): string {
