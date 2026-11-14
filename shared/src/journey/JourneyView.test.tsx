@@ -62,8 +62,9 @@ function baseState(overrides: Partial<JourneyState> = {}): JourneyState {
     stats: [],
     total: 0,
     items: [],
+    reload: vi.fn(),
     ...overrides,
-  };
+  } as unknown as JourneyState;
 }
 
 describe('JourneyView — состояния загрузки', () => {
@@ -163,7 +164,6 @@ describe('JourneyView — заполненный путь', () => {
           stats: [
             {
               type: 'gratitude',
-              emoji: '🌱',
               label: 'Благодарности',
               count: 5,
             },

@@ -165,7 +165,7 @@ describe('JourneyItemDetail', () => {
 
   const detailOf = (
     item: typeof ITEM,
-    parts: { title?: string; text: string }[],
+    parts: { title?: string; text: string; healthy?: true }[],
   ) => ({
     item,
     parts,

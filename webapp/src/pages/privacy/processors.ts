@@ -4,7 +4,7 @@
 // истины — код бэкенда: что именно уходит каждому, написано по
 // `src/infra/postbox-mail.ts` (Yandex Cloud Postbox; через него шлют письма
 // `src/auth/email.service.ts` и `src/utils/admin-alert.ts`),
-// `src/auth/providers/yandex.provider.ts` (вход через Яндекс ID), `scripts/backup-upload.sh`
+// способы входа — `loginProcessors.ts`, `scripts/backup-upload.sh`
 // (Yandex Object Storage; срок копий сверяет `src/test-support/gates/backup-retention-policy.spec.ts`).
 // Новая интеграция с данными пользователя — новая строка здесь в том же PR.
 // Resend не используется с 2026-11 (запрос РКН №08-1063539): письма за рубеж
@@ -17,6 +17,8 @@
 // уведомление о трансграничной передаче и письмо об изменениях
 // (pd.rkn.gov.ru), иначе сведения в реестре разойдутся с политикой;
 // см. `docs/open/owner.md`.
+
+import { LOGIN_PROCESSORS } from './loginProcessors';
 
 export interface Processor {
   name: string;
@@ -53,19 +55,13 @@ export const POSTBOX_PROCESSOR: Processor = {
   data: 'адрес электронной почты пользователя; для записи – имя, контакт и время встречи',
 };
 
-export const YANDEX_ID_PROCESSOR: Processor = {
-  name: 'Яндекс ID (ООО «Яндекс»)',
-  purpose: 'вход на сайт через аккаунт Яндекса – только у тех, кто сам выбирает этот способ входа',
-  data: 'сервис узнаёт о входе на сайт Оператора; Оператор получает от него идентификатор аккаунта, адрес электронной почты и имя',
-};
-
 export const OBJECT_STORAGE_PROCESSOR: Processor = {
   name: 'Yandex Object Storage (ООО «Яндекс.Облако»)',
   purpose: 'хранение резервных копий базы данных для восстановления после сбоя',
   data: 'полная копия базы, зашифрованная ключом Оператора до отправки; ключа у сервиса нет, прочитать копию он не может; копии хранятся не дольше 30 дней',
 };
 
-export const DOMESTIC_PROCESSORS: readonly Processor[] = [POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, YANDEX_ID_PROCESSOR];
+export const DOMESTIC_PROCESSORS: readonly Processor[] = [POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, ...LOGIN_PROCESSORS];
 
 export function processorLine(p: Processor): string {
   return `${p.name} – ${p.purpose} (${p.data})`;

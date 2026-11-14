@@ -41,7 +41,8 @@ pgdg_base=$PGDG_URL
 use_mirror() {
   for f in $SOURCES; do
     if [ -f "$f" ]; then
-      sed -i "s|http://deb.debian.org|$MIRROR|g" "$f"
+      # Без `sed -i`: у BSD sed (macOS, где гоняют спеки) другой синтаксис флага.
+      sed "s|http://deb.debian.org|$MIRROR|g" "$f" > "$f.tmp" && cat "$f.tmp" > "$f" && rm -f "$f.tmp"
     fi
   done
   pgdg_base=$PGDG_MIRROR_URL
