@@ -60,8 +60,11 @@
     .tbtn.act {
       width: 78px; height: 58px; border-radius: 12px;
       font-size: 10px; letter-spacing: 0; overflow: hidden;
-      line-height: 1.3; word-break: break-word; text-align: center;
+      line-height: 1.3; text-align: center;
     }
+    /* Знак шрифта = 1em, внутри рамки 76px: в 10px влезает 7 знаков (ИЗБЕГАЙ — 70px),
+       длиннее — класс long (порог — game/src/tapLabel.ts), 8px (SURRENDER — 72px); слово не рвётся. */
+    .tbtn.act.long { font-size: 8px; }
     .tbtn {
       width: 58px; height: 58px;
       background: rgba(106,90,255,0.15);
