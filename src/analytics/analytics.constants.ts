@@ -30,7 +30,8 @@
 //                         (без meta);
 //   quiz_started        — начал мини-тест (meta.quiz + meta.src);
 //   quiz_completed      — дошёл до результата мини-теста (meta.quiz +
-//                         meta.result + meta.src). С сайта идут анонимно
+//                         meta.result + meta.src). Шлёт только сайт (бот ведёт
+//                         в приложение), src = 'web' пишет сервер; анонимно
 //                         (userId = null) через POST /api/public-event.
 //   practice_link_click — кликнул ссылку на сайт практики автора с
 //                         продуктового лендинга (meta.place). Всегда анонимно
@@ -159,11 +160,6 @@ export const PUBLIC_ANALYTICS_EVENTS = [
   ...ASSET_RECOVERY_EVENTS, // public/asset-recovery.js работает до входа
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
-
-// Откуда пришло событие мини-теста (meta.src): бот или сайт. Сайт пишет
-// 'web' на сервере (клиенту не верим), бот — 'bot' сам.
-export const QUIZ_EVENT_SOURCES = ['bot', 'web'] as const;
-export type QuizEventSource = (typeof QUIZ_EVENT_SOURCES)[number];
 
 // Откуда кликнули по ссылке на сайт практики автора (meta.place для
 // practice_link_click): блок «Кто это делает», подвал лендинга, ответ FAQ,
