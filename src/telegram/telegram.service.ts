@@ -37,8 +37,7 @@ import { isLinkPayload } from './link-payload';
 import { TelegramLinkService } from './telegram.link.service';
 import { snoozeReminder, snoozeFailText } from './telegram.snooze';
 import { setupBotMenu } from './telegram.menu-setup';
-import { practiceOwnerTelegramId } from '../utils/practice-owner';
-import { sendOnce } from './telegram.send-once';
+import { adminChat, sendAdminDm } from './admin-notify';
 import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
 import {
@@ -434,19 +433,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
   }
 
-  /** Сообщение администратору; true — доставлено. 429 — ожидание и повтор (send-once). */
-  async notifyAdmin(text: string): Promise<boolean> {
-    const adminId = practiceOwnerTelegramId();
-    const bot = this.bot;
-    if (adminId === null || !bot) return false;
-    try {
-      const opts = { parse_mode: 'HTML' } as const;
-      await sendOnce(() => bot.telegram.sendMessage(adminId, text, opts));
-      return true;
-    } catch (err) {
-      this.logger.error('notifyAdmin failed', err);
-      return false;
-    }
+  /** Канал к владельцу настроен (бот и ADMIN_ID); без него notifyAdmin — false без попытки. */
+  canNotifyAdmin(): boolean {
+    return adminChat(this.bot) !== null;
+  }
+
+  /** Сообщение администратору; true — доставлено (admin-notify.ts). */
+  notifyAdmin(text: string): Promise<boolean> {
+    return sendAdminDm(this.bot, text, this.logger);
   }
 
   onModuleDestroy() {
