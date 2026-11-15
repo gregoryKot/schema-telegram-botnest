@@ -2,23 +2,19 @@
 // спиннер). Примитив для webapp; шиммер глушится глобальным reduced-motion блоком index.css.
 import type { CSSProperties } from 'react';
 
-export function Skeleton({
-  width = '100%',
-  height = 14,
-  radius = 8,
-  style,
-}: {
-  width?: number | string;
-  height?: number | string;
-  radius?: number;
-  style?: CSSProperties;
-}) {
+type SkeletonProps = { width?: number | string; height?: number | string; radius?: number; style?: CSSProperties; className?: string };
+
+/** Плашка. className — форма из CSS по точкам перелома: с height="auto" — пропорция, как у обложки статьи. */
+export function Skeleton({ width = '100%', height = 14, radius = 8, style, className }: SkeletonProps) {
+  return <div className={className ? `skel ${className}` : 'skel'} aria-hidden style={{ width, height, borderRadius: radius, ...style }} />;
+}
+
+/** Строки текста: по плашке высотой кегля на строку, ширина — длина строки (последняя у абзаца короче). */
+export function SkeletonLines({ widths, height = 12, gap = 10 }: { widths: (number | string)[]; height?: number; gap?: number }) {
   return (
-    <div
-      className="skel"
-      aria-hidden
-      style={{ width, height, borderRadius: radius, ...style }}
-    />
+    <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap }}>
+      {widths.map((w, i) => <Skeleton key={i} width={w} height={height} />)}
+    </div>
   );
 }
 

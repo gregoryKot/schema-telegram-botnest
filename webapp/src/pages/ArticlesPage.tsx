@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { api, ApiError } from '../api';
@@ -10,8 +10,26 @@ import { siteTitleSuffix } from '../utils/domainChrome';
 import { Btn } from '../components/landing-kit';
 import { ArticleCover } from '../components/art/ArticleCover';
 import { ArticleCard } from './landing/ArticleCard';
+import { ArticleGridSkeleton, ArticleSkeleton } from './ArticleSkeletons';
 import { backLink } from '../legal/legalStyles';
 import { formatDateString, utcCalendarDay } from '../../../shared/src/utils/calendarDate';
+import '../styles/article-card.css';
+// Шапки и лист записи — бумажные примитивы (pp-block, ds-eyebrow, ds-h1), раскладка — styles/article-card.css.
+
+/** Лист записи под списком и под статьёй: блок между линиями — главное действие страницы. */
+function BookCta({ label, text, more = false }: { label: string; text: string; more?: boolean }) {
+  return (
+    <section className="pp-block art-cta">
+      <div className="ds-eyebrow">{label}</div>
+      <p className="art-text">{text}</p>
+      <div className="art-cta-actions">
+        <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
+        {more && <Btn variant="ghost" href="/articles">Читать ещё</Btn>}
+      </div>
+    </section>
+  );
+}
+
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
   // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
@@ -24,52 +42,45 @@ export function ArticlesListPage() {
   }, []);
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
-      <div className="art-page" style={{ maxWidth: 980, margin: '0 auto' }}>
+    <div className="art-root">
+      <div className="art-page">
         <a href="/" style={backLink}>← На главную</a>
-        <p style={eyebrow}>Статьи</p>
-        <h1 style={h1}>Схема-терапия:<br /><span style={{ fontStyle: 'italic' }}>читайте и разбирайтесь</span></h1>
-        <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 48px', maxWidth: 560 }}>
-          Объясняю, как работают схемы, режимы и паттерны – простым языком.
-        </p>
+        <header className="pp-block pp-block--head art-head">
+          <div className="ds-eyebrow">Статьи</div>
+          <h1 className="ds-h1">Схема-терапия:<br /><i>читайте и разбирайтесь</i></h1>
+          <p className="art-text">Объясняю, как работают схемы, режимы и паттерны – простым языком.</p>
+        </header>
 
         {failed ? (
-          <div role="alert">
-            <p style={{ color: 'var(--text-sub)', margin: '0 0 16px' }}>Не удалось загрузить статьи. Проверьте соединение.</p>
+          <div role="alert" className="art-alert">
+            <p className="art-text">Не удалось загрузить статьи. Проверьте соединение.</p>
             <Btn onClick={() => { void reload(); }}>Попробовать ещё раз</Btn>
           </div>
-        ) : articles === null ? (
-          <p className="u-faint">Загрузка…</p>
-        ) : null}
-
-        {!failed && articles && (
+        ) : articles === null ? <ArticleGridSkeleton /> : (
           <div className="art-grid">
             {articles.map((a, i) => <ArticleCard key={a.slug} a={a} index={i} titleAs="h2" withYear />)}
           </div>
         )}
 
-        <style>{`
-          .art-page { padding: 64px 40px 96px; }
-          .art-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
-          @media (max-width: 720px) {
-            .art-page { padding: 40px 20px 72px; }
-            .art-grid { grid-template-columns: 1fr; gap: 20px; }
-          }
-        `}</style>
-
-        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Хотите разобраться глубже?</p>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
-            Первая встреча – 15 минут, бесплатно. Расскажете о запросе, я расскажу о подходе.
-          </p>
-          <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
-        </div>
+        <BookCta label="Хотите разобраться глубже?" text="Первая встреча – 15 минут, бесплатно. Расскажете о запросе, я расскажу о подходе." />
       </div>
     </div>
   );
 }
 
 // ─── Single article page ──────────────────────────────────────────────────────
+/** Колонка статьи с «← Все статьи» — одна на загрузку и на текст: силуэт стоит там же, где статья. */
+function ReadFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="art-root">
+      <div className="art-page art-page--read">
+        <a href="/articles" style={backLink}>← Все статьи</a>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function ArticlePage() {
   const { slug } = useParams<{ slug: string }>();
 
@@ -97,28 +108,22 @@ export function ArticlePage() {
 
   if (failed) {
     return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div role="alert" style={{ textAlign: 'center', padding: '0 20px' }}>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', margin: '0 0 20px' }}>Не удалось загрузить статью. Проверьте соединение.</p>
+      <div className="art-root art-center">
+        <div role="alert" className="art-alert">
+          <p className="art-text">Не удалось загрузить статью. Проверьте соединение.</p>
           <Btn onClick={() => { void reload(); }}>Попробовать ещё раз</Btn>
         </div>
       </div>
     );
   }
 
-  if (article === undefined) {
-    return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p className="u-faint">Загрузка…</p>
-      </div>
-    );
-  }
+  if (article === undefined) return <ReadFrame><ArticleSkeleton /></ReadFrame>;
 
   if (!article) {
     return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="u-tc">
-          <p style={{ fontSize: 48, margin: '0 0 16px' }}>404</p>
+      <div className="art-root art-center">
+        <div className="art-alert">
+          <p className="art-404">404</p>
           <a href="/articles" className="u-accent">← К статьям</a>
         </div>
       </div>
@@ -159,87 +164,61 @@ export function ArticlePage() {
   });
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', flex: 1, minWidth: 0, overflowX: 'hidden' }}>
-      <div className="art-page" style={{ maxWidth: 720, margin: '0 auto' }}>
-        <a href="/articles" style={backLink}>← Все статьи</a>
+    <ReadFrame>
+      <header className="pp-block pp-block--head art-head">
+        <p className="art-meta">
+          <span>{formatDateString(utcCalendarDay(article.date), { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span aria-hidden="true">·</span>
+          <span>{article.readMin} минут чтения</span>
+        </p>
+        <h1 className="ds-h1">{article.title}</h1>
+        <p className="art-text">{article.description}</p>
+      </header>
 
-        <div className="u-mb40">
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20 }}>
-            <span className="u-faint12">
-              {formatDateString(utcCalendarDay(article.date), { day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
-            <span className="u-faint12">·</span>
-            <span className="u-faint12">{article.readMin} минут чтения</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 400, lineHeight: 1.15, margin: '0 0 20px', letterSpacing: '-.01em' }}>
-            {article.title}
-          </h1>
-          <p style={{ fontSize: 17, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0, maxWidth: 600 }}>
-            {article.description}
-          </p>
-        </div>
+      <ArticleCover slug={article.slug} className="ac-cover ac-cover--hero" />
 
-        <ArticleCover slug={article.slug} className="ac-cover ac-cover--hero" />
+      <div className="article-content" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+      <style>{`
+        .article-content h2 { font-family: var(--serif); font-size: 26px; font-weight: 400; color: var(--text); margin: 48px 0 16px; padding-top: 40px; border-top: 1px solid var(--line); letter-spacing: -.01em; }
+        .article-content h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+        .article-content h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; color: var(--text); margin: 32px 0 12px; letter-spacing: -.01em; }
+        .article-content p { font-size: 15px; color: var(--text-sub); line-height: 1.9; margin: 0 0 12px; }
+        .article-content strong { color: var(--text); font-weight: 600; }
+        .article-content ul, .article-content ol { padding-left: 20px; margin: 8px 0 16px; }
+        .article-content li { font-size: 15px; color: var(--text-sub); line-height: 1.8; margin-bottom: 6px; }
+        .article-content hr { border: none; border-top: 1px solid var(--line); margin: 32px 0; }
+        .article-content table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--text-sub); margin: 24px 0; }
+        .article-content th { padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--line); font-weight: 700; color: var(--text); font-size: 13px; }
+        .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; }
+        .article-content a { color: var(--accent); }
+        /* ── Inline diagrams ── */
+        .article-content figure.dg { margin: 32px 0; padding: 24px 20px 18px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 20px; }
+        .article-content figure.dg svg { display: block; width: 100%; height: auto; }
+        .article-content figure.dg figcaption { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); text-align: center; }
+        .article-content figure.dg figcaption b { color: var(--text); font-weight: 600; }
+        .dg-node { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+        .dg-chip { fill: var(--accent-soft); stroke: none; }
+        .dg-accent { fill: var(--accent); stroke: var(--accent); }
+        .dg-t { fill: var(--text); font-family: var(--sans); font-weight: 700; font-size: 15px; }
+        .dg-t-on { fill: #fff; font-family: var(--sans); font-weight: 700; font-size: 15px; }
+        .dg-t-acc { fill: var(--accent); font-family: var(--sans); font-weight: 700; font-size: 14px; }
+        .dg-s { fill: var(--text-sub); font-family: var(--sans); font-size: 12px; }
+        .dg-s-on { fill: rgba(255,255,255,.86); font-family: var(--sans); font-size: 12px; }
+        .dg-cap { fill: var(--text-faint); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+        .dg-cap-acc { fill: var(--accent); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+        .dg-cap-on { fill: rgba(255,255,255,.8); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
+        .dg-flow { stroke: var(--accent); stroke-width: 2; fill: none; }
+        .dg-flow-soft { stroke: var(--text-faint); stroke-width: 1.6; fill: none; stroke-dasharray: 5 5; }
+        .dg-head { fill: var(--accent); }
+        .dg-head-soft { fill: var(--text-faint); }
+        .dg-lbl { fill: var(--accent); font-family: var(--sans); font-size: 12px; font-weight: 600; }
+        .dg-water { fill: var(--accent-soft); }
+        .dg-waterline { stroke: var(--accent); stroke-width: 1.5; opacity: .5; }
+        .dg-ice { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
+        .dg-ice-sub { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; opacity: .92; }
+      `}</style>
 
-        <div className="article-content" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-        <style>{`
-          .art-page { padding: 64px 40px 96px; }
-          @media (max-width: 640px) { .art-page { padding: 40px 20px 72px; } }
-          .article-content h2 { font-family: var(--serif); font-size: 26px; font-weight: 400; color: var(--text); margin: 48px 0 16px; padding-top: 40px; border-top: 1px solid var(--line); letter-spacing: -.01em; }
-          .article-content h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
-          .article-content h3 { font-family: var(--serif); font-size: 20px; font-weight: 400; color: var(--text); margin: 32px 0 12px; letter-spacing: -.01em; }
-          .article-content p { font-size: 15px; color: var(--text-sub); line-height: 1.9; margin: 0 0 12px; }
-          .article-content strong { color: var(--text); font-weight: 600; }
-          .article-content ul, .article-content ol { padding-left: 20px; margin: 8px 0 16px; }
-          .article-content li { font-size: 15px; color: var(--text-sub); line-height: 1.8; margin-bottom: 6px; }
-          .article-content hr { border: none; border-top: 1px solid var(--line); margin: 32px 0; }
-          .article-content table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--text-sub); margin: 24px 0; }
-          .article-content th { padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--line); font-weight: 700; color: var(--text); font-size: 13px; }
-          .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--line); line-height: 1.6; }
-          .article-content a { color: var(--accent); }
-          /* ── Inline diagrams ── */
-          .article-content figure.dg { margin: 32px 0; padding: 24px 20px 18px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 20px; }
-          .article-content figure.dg svg { display: block; width: 100%; height: auto; }
-          .article-content figure.dg figcaption { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); text-align: center; }
-          .article-content figure.dg figcaption b { color: var(--text); font-weight: 600; }
-          .dg-node { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
-          .dg-chip { fill: var(--accent-soft); stroke: none; }
-          .dg-accent { fill: var(--accent); stroke: var(--accent); }
-          .dg-t { fill: var(--text); font-family: var(--sans); font-weight: 700; font-size: 15px; }
-          .dg-t-on { fill: #fff; font-family: var(--sans); font-weight: 700; font-size: 15px; }
-          .dg-t-acc { fill: var(--accent); font-family: var(--sans); font-weight: 700; font-size: 14px; }
-          .dg-s { fill: var(--text-sub); font-family: var(--sans); font-size: 12px; }
-          .dg-s-on { fill: rgba(255,255,255,.86); font-family: var(--sans); font-size: 12px; }
-          .dg-cap { fill: var(--text-faint); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
-          .dg-cap-acc { fill: var(--accent); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
-          .dg-cap-on { fill: rgba(255,255,255,.8); font-family: var(--sans); font-size: 11.5px; font-weight: 700; letter-spacing: .08em; }
-          .dg-flow { stroke: var(--accent); stroke-width: 2; fill: none; }
-          .dg-flow-soft { stroke: var(--text-faint); stroke-width: 1.6; fill: none; stroke-dasharray: 5 5; }
-          .dg-head { fill: var(--accent); }
-          .dg-head-soft { fill: var(--text-faint); }
-          .dg-lbl { fill: var(--accent); font-family: var(--sans); font-size: 12px; font-weight: 600; }
-          .dg-water { fill: var(--accent-soft); }
-          .dg-waterline { stroke: var(--accent); stroke-width: 1.5; opacity: .5; }
-          .dg-ice { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; }
-          .dg-ice-sub { fill: var(--surface); stroke: var(--accent-line); stroke-width: 1.5; opacity: .92; }
-        `}</style>
-
-        <div style={{ marginTop: 64, padding: '32px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 10px' }}>Разобраться на практике</p>
-          <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 20px' }}>
-            Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос, и я расскажу, как схема-терапия работает в вашем случае.
-          </p>
-          <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap' }}>
-            <Btn href={PRACTICE_BOOKING_URL} newTab={false}>Записаться →</Btn>
-            <a href="/articles" style={{ display: 'inline-block', padding: '12px 20px', background: 'transparent', border: '1.5px solid var(--line-strong)', color: 'var(--text-sub)', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
-              Читать ещё
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+      <BookCta label="Разобраться на практике" text="Первая встреча – 15 минут, бесплатно. Обсудим ваш запрос, и я расскажу, как схема-терапия работает в вашем случае." more />
+    </ReadFrame>
   );
 }
-
-const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' };
-const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-.01em' };
