@@ -15,7 +15,7 @@ import { Pool } from 'pg';
 import { PERF_ID_BASE as B, PERF_SEED_MARK } from './seed-profile';
 import { BOOKING_CLEANUP_SQL } from './seed-booking';
 import { json } from './seed-sql';
-import { buildSteps } from './seed-steps';
+import { buildSteps, THERAPY_AFTER } from './seed-steps';
 
 export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
 
@@ -28,7 +28,7 @@ const NO_FK_TABLES = ['ClientConceptualization.therapistId', 'UserTask.userId', 
 // в ~половину времени.
 const WORKERS = 4;
 // Зависят от строк других шагов (читают Rating / TherapyRelation) — вторая волна.
-const AFTER = new Set(['AppActivity', 'ClientConceptualization', 'Booking']);
+const AFTER = new Set(['AppActivity', 'Booking', ...THERAPY_AFTER]);
 
 async function inParallel<T>(items: T[], run: (item: T) => Promise<void>) {
   const queue = [...items];

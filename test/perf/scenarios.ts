@@ -11,7 +11,6 @@ import { BLOCK_FAILED_MARK } from '../../src/bot/stats-settle';
 import { BotAnalyticsService } from '../../src/bot/bot.analytics.service';
 import { BotClientOverviewService } from '../../src/bot/bot.client-overview.service';
 import { TherapyRelationsService } from '../../src/therapy/therapy-relations.service';
-import { getFormerTherapistInfo } from '../../src/therapy/former-therapist-info';
 import { NotificationService } from '../../src/notification/notification.service';
 import { proactiveBudgetSpent } from '../../src/notification/notification.budget';
 import { buildStatsReport } from '../e2e-support/stats-report.factory';
@@ -22,6 +21,7 @@ import type { AnalyticsService } from '../../src/analytics/analytics.service';
 import { AccountService } from '../../src/bot/account.service';
 import { ConfigService } from '@nestjs/config';
 import { vapidEnv, withEnv } from './scenario-env';
+import { THERAPY_SCENARIOS } from './scenarios-therapy';
 import type { ScenarioContext } from './worst-case-ids';
 
 export { resolveWorstCaseIds, type ScenarioContext } from './worst-case-ids';
@@ -78,14 +78,7 @@ export const SCENARIOS: Scenario[] = [
     run: ({ prisma, heavyUserId }: ScenarioContext) =>
       new BotAnalyticsService(prisma).getHistoryRatings(heavyUserId, days),
   })),
-  {
-    name: 'former-therapist',
-    title: 'Бывший терапевт клиента (GET /api/therapy/former-therapist)',
-    // Уходит при каждом открытии профиля сайта у клиента без терапевта. Связей
-    // `ended` в синтетике нет (docs/open/therapy.md) — меряется частый путь.
-    run: ({ prisma, unattachedUserId }) =>
-      getFormerTherapistInfo(prisma, unattachedUserId),
-  },
+  ...THERAPY_SCENARIOS, // кабинет терапевта: бывший терапевт, заметки, карточка
   {
     name: 'proactive-budget',
     title: 'Дневной бюджет проактивных (pair_activity: постановка и очередь)',
