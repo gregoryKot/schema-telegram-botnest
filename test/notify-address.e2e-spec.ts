@@ -19,6 +19,7 @@ import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { MergeService } from '../src/auth/merge.service';
 import { AccountService } from '../src/bot/account.service';
+import { BotService } from '../src/bot/bot.service';
 import { TelegramScheduleService } from '../src/telegram/telegram.schedule.service';
 import { EmailService } from '../src/auth/email.service';
 import { TherapistRequestService } from '../src/therapy/therapist-request.service';
@@ -57,8 +58,12 @@ describeOnRealDb('e2e: адресация уведомлений после сл
     );
   });
 
-  async function seedTelegramUser(userId: bigint, telegramId: bigint) {
-    await prisma.user.create({ data: { id: userId } });
+  async function seedTelegramUser(
+    userId: bigint,
+    telegramId: bigint,
+    disclaimerAccepted = false,
+  ) {
+    await prisma.user.create({ data: { id: userId, disclaimerAccepted } });
     await prisma.authProvider.create({
       data: {
         userId,
@@ -132,16 +137,32 @@ describeOnRealDb('e2e: адресация уведомлений после сл
     expect(user?.botBlockedAt).toBeNull();
   });
 
-  it('планировщик даже не рассматривает аккаунт без входа в Telegram', async () => {
-    await prisma.user.create({ data: { id: WEB_ONLY } });
-    await seedTelegramUser(TG, TG);
-
-    const ids = (await app.get(AccountService).getAllUsersWithSettings()).map(
+  const plannerIds = async () =>
+    (await app.get(AccountService).getAllUsersWithSettings()).map(
       (u: { id: bigint }) => String(u.id),
     );
 
+  it('планировщик даже не рассматривает аккаунт без входа в Telegram', async () => {
+    await prisma.user.create({
+      data: { id: WEB_ONLY, disclaimerAccepted: true },
+    });
+    await seedTelegramUser(TG, TG, true);
+
+    const ids = await plannerIds();
+
     expect(ids).toContain(String(TG));
     expect(ids).not.toContain(String(WEB_ONLY));
+  });
+
+  // Согласие — основание напоминаний (РКН №08-1063539), а User заводится на
+  // /start до кнопки согласия: до неё человека в обходе нет, после — есть.
+  it('планировщик не рассматривает того, кто не принял условия: принял → в выборке', async () => {
+    await seedTelegramUser(TG, TG);
+    expect(await plannerIds()).not.toContain(String(TG));
+
+    await app.get(BotService).acceptDisclaimer(TG);
+
+    expect(await plannerIds()).toContain(String(TG));
   });
 
   it('после слияния /start не воссоздаёт аккаунт по сырому telegramId', async () => {
