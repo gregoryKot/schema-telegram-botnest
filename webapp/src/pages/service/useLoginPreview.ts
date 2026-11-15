@@ -6,6 +6,9 @@
 // createdAt} или 404 (мёртвый, чужой по назначению или неизвестный код).
 import { useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
+import { reportClientError } from '../../api';
+import { ApiError } from '../../apiClient';
+import { describeFailure } from '../../../../shared/src/api/describeFailure';
 
 export type LoginPreview =
   | { kind: 'idle' }
@@ -32,7 +35,8 @@ export function useLoginPreview(
     void (async () => {
       try {
         const bearer = await token.current();
-        if (!bearer) throw new Error('no session');
+        // Имя класса — то, что увидит отчёт (describeFailure): «сессии нет» отличимо от прочих сбоев.
+        if (!bearer) throw Object.assign(new Error('no session'), { name: 'NoSession' });
         const res = await fetch(`${API_BASE}/api/auth/ticket/login-preview`, {
           method: 'POST',
           credentials: 'include',
@@ -40,13 +44,15 @@ export function useLoginPreview(
           body: JSON.stringify({ code }),
         });
         if (res.status === 404) { setState({ kind: 'notfound' }); return; }
-        if (!res.ok) throw new Error(`http_${res.status}`);
+        if (!res.ok) throw new ApiError(res.status, 'login preview');
         const body = (await res.json()) as { deviceLabel?: unknown; createdAt?: unknown };
-        if (typeof body.createdAt !== 'string') throw new Error('bad body');
+        if (typeof body.createdAt !== 'string') throw new SyntaxError('bad body'); // чужая форма — как битое тело
         const deviceLabel = typeof body.deviceLabel === 'string' ? body.deviceLabel : null;
         setState({ kind: 'ok', deviceLabel, createdAt: body.createdAt });
-      } catch {
+      } catch (e) {
         setState({ kind: 'failed' });
+        // Сверка не удалась — отчёт наверх (№14): статус или тип сбоя, без кода билета.
+        if (alive) reportClientError({ message: `login preview failed: ${describeFailure(e)}`, section: 'login.preview' });
       }
     })();
     return () => { alive = false; };

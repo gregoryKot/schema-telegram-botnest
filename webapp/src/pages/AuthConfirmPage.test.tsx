@@ -149,7 +149,8 @@ describe('AuthConfirmPage', () => {
     fireEvent.click(screen.getByText(/впустить/i));
 
     await waitFor(() => expect(screen.getByText(/Код не найден/)).toBeTruthy());
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Ни сверки, ни подтверждения без токена; уходит только отчёт наверх о сбое сверки (№14).
+    expect(callsTo('/api/auth/ticket')).toHaveLength(0);
   });
 
   it('сверка ответила 404 (код мёртв) — «код не найден» сразу, подтверждать нечего', async () => {

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { api, type UserTask, type UserId } from '../../api';
+import { api, reportClientError, type UserTask, type UserId } from '../../api';
+import { describeFailure } from '../../../../shared/src/api/describeFailure';
 
 export type BoardTasks = { clientId: UserId; clientName: string; tasks: UserTask[] }[];
 
@@ -10,7 +11,7 @@ export type BoardTasks = { clientId: UserId; clientName: string; tasks: UserTask
 // страницы (QA 2026-11). Теперь любое изменение заданий зовёт invalidate():
 // доска, которую уже открывали, перечитывается сразу, пока терапевт в карточке.
 // Ответ, ушедший до изменения, доску не перезапишет (generation).
-// Сбой ≠ пусто: отказ запроса — `failed`, а не пустая доска.
+// Сбой ≠ пусто: отказ запроса — `failed`, а не пустая доска, и отчёт наверх (№14).
 export function useTasksBoard(fetchAll: () => Promise<BoardTasks> = api.getAllTherapyTasks) {
   const [tasks, setTasks] = useState<BoardTasks | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,11 @@ export function useTasksBoard(fetchAll: () => Promise<BoardTasks> = api.getAllTh
     setLoading(true);
     fetchAll()
       .then(r => { if (current()) setTasks(r); })
-      .catch(() => { if (current()) setFailed(true); })
+      .catch((e: unknown) => {
+        if (!current()) return; // устаревший отказ: доску перечитывает свежий запрос
+        setFailed(true);
+        reportClientError({ message: `tasks board load failed: ${describeFailure(e)}`, section: 'therapist.tasks' });
+      })
       .finally(() => { if (current()) setLoading(false); });
   }
 

@@ -50,8 +50,7 @@
     "status": "reports"
   },
   "webapp/src/components/modeMap/useCustomModes.ts::setModes": {
-    "status": "debt",
-    "reason": "долг: список своих режимов на карте при отказе загрузки помечен «failed» без отчёта наверх"
+    "status": "reports"
   },
   "webapp/src/components/modeMap/useGenerateFromConcept.ts::setFailed": {
     "status": "reports"
@@ -106,8 +105,7 @@
     "via": "createConceptMap"
   },
   "webapp/src/components/therapist/useTasksBoard.ts::setFailed": {
-    "status": "debt",
-    "reason": "долг: доска заданий терапевта при отказе загрузки показывает ошибку без отчёта наверх"
+    "status": "reports"
   },
   "webapp/src/pages/AdminPage.tsx::setKeyError": {
     "status": "exempt",
@@ -137,8 +135,7 @@
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); «неверный код» — ввод человека, а не поломка"
   },
   "webapp/src/pages/account/useAccountData.ts::setError": {
-    "status": "debt",
-    "reason": "долг: загрузка страницы «Аккаунт» падает в текст ошибки без отчёта наверх — отказ сети и разбора ответа сервер не видит"
+    "status": "reports"
   },
   "webapp/src/pages/account/useProviderActions.ts::setError": {
     "status": "exempt",
@@ -194,12 +191,10 @@
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
   },
   "webapp/src/pages/merge/useMergePreview.ts::settle": {
-    "status": "debt",
-    "reason": "долг: предпросмотр слияния аккаунтов при отказе рисует нейтральный тупик без отчёта наверх"
+    "status": "reports"
   },
   "webapp/src/pages/service/useLoginPreview.ts::setState": {
-    "status": "debt",
-    "reason": "долг: предпросмотр входа с другого устройства при отказе рисует тупик без отчёта наверх"
+    "status": "reports"
   },
   "webapp/src/pages/subscribe/useSubscriptionCancel.ts::setPhase": {
     "status": "reports"
