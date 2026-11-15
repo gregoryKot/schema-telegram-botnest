@@ -93,14 +93,14 @@ export async function swapReminder(
 
 /** Одна транзакция под локом перепланировки человека — у замен и у отметки
  *  плана (missed-plan.ts). */
-export async function underRescheduleLock<T>(
+export async function underRescheduleLock(
   prisma: Db,
   userId: bigint,
-  job: (tx: Tx) => Promise<T>,
-): Promise<T> {
-  return prisma.$transaction(async (tx) => {
+  job: (tx: Tx) => Promise<void>,
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
     await lockReschedule(tx, userId);
-    return job(tx);
+    await job(tx);
   });
 }
 

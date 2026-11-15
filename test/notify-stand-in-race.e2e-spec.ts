@@ -7,6 +7,7 @@
 // а проверка после него видит чужой коммит, — свойство Postgres, не нашего
 // кода; фейк ответил бы что угодно (правила №4, №18). Тот же шов на базе в
 // памяти — src/notification/missed-plan.spec.ts и replace-pending.spec.ts.
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { NotificationService } from '../src/notification/notification.service';
 import { PracticesService } from '../src/bot/practices.service';
@@ -53,7 +54,10 @@ describe('сообщение дня и отметка плана под локо
     });
 
   /** «Соседняя транзакция»: взяла лок человека, работу сделает по сигналу. */
-  function neighbour(userId: bigint, work: (tx: never) => Promise<unknown>) {
+  function neighbour(
+    userId: bigint,
+    work: (tx: Prisma.TransactionClient) => Promise<unknown>,
+  ) {
     let release!: () => void;
     const held = new Promise<void>((r) => (release = r));
     let locked!: () => void;
@@ -63,7 +67,7 @@ describe('сообщение дня и отметка плана под локо
         await lockReschedule(tx, userId);
         locked();
         await held;
-        await work(tx as never);
+        await work(tx);
       },
       { timeout: 15_000 },
     );
@@ -91,8 +95,8 @@ describe('сообщение дня и отметка плана под локо
       'дыхание',
       day,
     );
-    const walk = neighbour(PLAN_USER, (tx: never) =>
-      (tx as PrismaService).scheduledNotification.create({
+    const walk = neighbour(PLAN_USER, (tx) =>
+      tx.scheduledNotification.create({
         data: {
           userId: PLAN_USER,
           type: 'practice_missed',
@@ -122,8 +126,8 @@ describe('сообщение дня и отметка плана под локо
       'дыхание',
       day,
     );
-    const checkin = neighbour(PLAN_USER, (tx: never) =>
-      (tx as PrismaService).practicePlan.update({
+    const checkin = neighbour(PLAN_USER, (tx) =>
+      tx.practicePlan.update({
         where: { id: plan.id },
         data: { done: true, checkedAt: new Date() },
       }),
