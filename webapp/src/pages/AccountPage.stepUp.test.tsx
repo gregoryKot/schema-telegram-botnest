@@ -43,8 +43,9 @@ afterEach(() => {
 });
 
 const auth: AuthState = {
-  accessToken: 'tok123', isLoading: false, isAuthenticated: true,
-  setAccessToken: vi.fn(), logout: vi.fn().mockResolvedValue(undefined), refreshToken: vi.fn().mockResolvedValue(true),
+  accessToken: 'tok123', isLoading: false, isAuthenticated: true, authError: null,
+  setAccessToken: vi.fn(), getAccessToken: () => auth.accessToken,
+  logout: vi.fn().mockResolvedValue(undefined), refreshToken: vi.fn().mockResolvedValue(true),
 };
 
 function renderPage() {

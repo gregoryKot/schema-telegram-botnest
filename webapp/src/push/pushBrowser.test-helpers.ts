@@ -44,7 +44,7 @@ export function installPushBrowser(o: Options = {}) {
   if (o.subscription) current = makeSub(DEFAULT_ENDPOINT, o.subscriptionKey ?? null);
   const pushManager = {
     getSubscription: vi.fn(async () => current),
-    subscribe: vi.fn(async (opts: { applicationServerKey: Uint8Array }) => {
+    subscribe: vi.fn(async (opts: { userVisibleOnly: boolean; applicationServerKey: Uint8Array }) => {
       current = makeSub(NEW_ENDPOINT, opts.applicationServerKey);
       return current;
     }),

@@ -13,7 +13,7 @@ import { setScreenShare } from '../appShell/screenShareMode';
 
 const CLIENT = {
   telegramId: 42, name: 'Иван', clientAlias: null, streak: 3, lastActiveDate: null, todayIndex: null,
-  recentIndexHistory: [], relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null,
+  recentIndexHistory: [], relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null, meetingDays: [], schemaIds: [],
 } as TherapyClientSummary;
 vi.mock('../../api', () => ({ api: { getTherapyClients: () => Promise.resolve([CLIENT]) } }));
 
@@ -25,7 +25,7 @@ function Harness() {
   return (
     <MemoryRouter>
       <ClientListHero count={1} formVisible={false} onToggle={() => {}} onSearch={() => setOpen(true)} />
-      {open && <CommandPalette onNavigate={vi.fn()} onClose={() => setOpen(false)} userRole="THERAPIST" therapistMode />}
+      {open && <CommandPalette section="today" onNavigate={vi.fn()} onClose={() => setOpen(false)} userRole="THERAPIST" therapistMode />}
     </MemoryRouter>
   );
 }

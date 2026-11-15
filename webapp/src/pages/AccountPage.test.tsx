@@ -5,7 +5,7 @@
 // образец подмены: AuthCallback.test.tsx (сайт), SettingsSheet.test.tsx
 // (мок API-слоя). AuthContext подставляем напрямую, не через AuthProvider —
 // AuthProvider сам делает refresh-fetch на маунте, что зашумило бы мок.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import {
   render,
   screen,
@@ -35,7 +35,7 @@ function jsonResponse(status: number, body: unknown): Response {
   } as unknown as Response;
 }
 
-let fetchMock: ReturnType<typeof vi.fn>;
+let fetchMock: Mock<(url: string, init?: RequestInit) => Promise<Response>>;
 let meProviders: Provider[];
 let meFails: boolean;
 
@@ -81,15 +81,18 @@ function routeFetch(url: string, init?: RequestInit): Promise<Response> {
 }
 
 function authValue(overrides: Partial<AuthState> = {}): AuthState {
-  return {
+  const value: AuthState = {
     accessToken: 'tok123',
     isLoading: false,
     isAuthenticated: true,
+    authError: null,
     setAccessToken: vi.fn(),
+    getAccessToken: () => value.accessToken,
     logout: vi.fn().mockResolvedValue(undefined),
     refreshToken: vi.fn().mockResolvedValue(true),
     ...overrides,
   };
+  return value;
 }
 
 beforeEach(() => {
@@ -238,7 +241,7 @@ describe('AccountPage — реальные данные провайдеров',
 
     await waitFor(() => expect(screen.queryByText('@petya')).toBeTruthy());
     expect(
-      fetchMock.mock.calls.some(([url]: [string]) =>
+      fetchMock.mock.calls.some(([url]) =>
         url.includes('/api/auth/unlink/vk'),
       ),
     ).toBe(true);
@@ -259,7 +262,7 @@ describe('AccountPage — Яндекс', () => {
     fireEvent.click(within(row).getByText('Привязать'));
 
     await waitFor(() => expect(window.location.href).toBe('/api/auth/yandex'));
-    expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/link-token'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('/api/auth/link-token'))).toBe(true);
   });
 
   it('привязанный Яндекс: имя из api; отвязка спрашивает «Отвязать Яндекс?» и шлёт POST /api/auth/unlink/yandex', async () => {
@@ -275,7 +278,7 @@ describe('AccountPage — Яндекс', () => {
     confirmUnlink();
 
     await waitFor(() =>
-      expect(fetchMock.mock.calls.some(([url, init]: [string, RequestInit]) =>
+      expect(fetchMock.mock.calls.some(([url, init]) =>
         url.includes('/api/auth/unlink/yandex') && init?.method === 'POST')).toBe(true),
     );
   });
@@ -295,7 +298,7 @@ describe('AccountPage — отвязка провайдера', () => {
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(within(dialog).getByText('Отвязать Google?')).toBeTruthy();
     expect(
-      fetchMock.mock.calls.some(([url]: [string]) =>
+      fetchMock.mock.calls.some(([url]) =>
         url.includes('/api/auth/unlink/'),
       ),
     ).toBe(false);
@@ -315,13 +318,13 @@ describe('AccountPage — отвязка провайдера', () => {
     meProviders = [{ provider: 'telegram', email: null, displayName: '@petya' }];
 
     await waitFor(() => expect(screen.queryByText('user@gmail.com')).toBeNull());
-    const unlinkCall = fetchMock.mock.calls.find(([url]: [string]) =>
+    const unlinkCall = fetchMock.mock.calls.find(([url]) =>
       url.includes('/api/auth/unlink/google'),
     );
     expect(unlinkCall).toBeTruthy();
     expect(unlinkCall![1]).toMatchObject({ method: 'POST' });
     expect(
-      (unlinkCall![1].headers as Record<string, string>).Authorization,
+      (unlinkCall![1]?.headers as Record<string, string>).Authorization,
     ).toBe('Bearer tok123');
   });
 
@@ -340,7 +343,7 @@ describe('AccountPage — отвязка провайдера', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      fetchMock.mock.calls.some(([url]: [string]) =>
+      fetchMock.mock.calls.some(([url]) =>
         url.includes('/api/auth/unlink/'),
       ),
     ).toBe(false);
@@ -359,7 +362,7 @@ describe('AccountPage — отвязка провайдера', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(
-      fetchMock.mock.calls.some(([url]: [string]) =>
+      fetchMock.mock.calls.some(([url]) =>
         url.includes('/api/auth/unlink/'),
       ),
     ).toBe(false);
@@ -397,7 +400,7 @@ describe('AccountPage — отвязка провайдера', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.queryByText('сегодня')).toBeNull();
     expect(screen.getByText('user@gmail.com')).toBeTruthy();
-    expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/unlink/'))).toBe(false);
+    expect(fetchMock.mock.calls.some(([url]) => url.includes('/api/auth/unlink/'))).toBe(false);
   });
 
   it('ошибка API при отвязке показывает причину и оставляет провайдер привязанным', async () => {
@@ -441,11 +444,11 @@ describe('AccountPage — привязка email', () => {
     await screen.findByText(/письмо придёт в течение минуты/);
     expect(screen.getByText('me@example.com')).toBeTruthy();
 
-    const linkCall = fetchMock.mock.calls.find(([url]: [string]) =>
+    const linkCall = fetchMock.mock.calls.find(([url]) =>
       url.includes('/api/auth/email/link-to-account'),
     );
     expect(linkCall).toBeTruthy();
-    expect(JSON.parse(linkCall![1].body as string)).toEqual({
+    expect(JSON.parse(linkCall![1]?.body as string)).toEqual({
       email: 'me@example.com',
     });
   });
@@ -502,7 +505,7 @@ describe('AccountPage — карточка объединения аккаунт
       expect(screen.queryByText('Данные из Telegram')).toBeNull(),
     );
     expect(
-      fetchMock.mock.calls.some(([url]: [string]) =>
+      fetchMock.mock.calls.some(([url]) =>
         String(url).includes('/api/auth/ticket/start'),
       ),
     ).toBe(false);

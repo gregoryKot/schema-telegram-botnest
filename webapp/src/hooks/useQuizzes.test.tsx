@@ -27,11 +27,12 @@ afterEach(() => {
 });
 
 function auth(overrides: Partial<AuthState> = {}): AuthState {
-  return {
-    accessToken: null, isLoading: false, isAuthenticated: false,
-    setAccessToken: vi.fn(), logout: vi.fn(), refreshToken: vi.fn(),
+  const value: AuthState = {
+    accessToken: null, isLoading: false, isAuthenticated: false, authError: null,
+    setAccessToken: vi.fn(), getAccessToken: () => value.accessToken, logout: vi.fn(), refreshToken: vi.fn(),
     ...overrides,
   };
+  return value;
 }
 
 function wrapper(value: AuthState) {

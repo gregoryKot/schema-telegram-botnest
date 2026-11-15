@@ -19,8 +19,7 @@ export function installFlowTestPolyfills() {
     unobserve() { /* noop */ }
     disconnect() { /* noop */ }
   }
-  // @ts-expect-error — тестовый полифилл, не полная реализация DOM API
-  global.ResizeObserver = ResizeObserverStub;
+  globalThis.ResizeObserver = ResizeObserverStub;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     // Условие телефона (utils/phoneLayout) в jsdom — по innerWidth, как до перехода на matchMedia.
     matches: query === PHONE_MEDIA ? window.innerWidth < 768 : false, media: query,
