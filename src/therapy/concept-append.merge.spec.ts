@@ -10,6 +10,8 @@ import {
   APPEND_SCHEMA_LINKS_MAX,
 } from './concept-append-links';
 import { ConceptualizationDto } from './dto/conceptualization.dto';
+import { ConceptSaveDto } from './dto/concept-save.dto';
+import { CONCEPT_SCHEMA_IDS_MAX } from '../utils/text-limits';
 
 const empty = (): ConceptAppendState => ({
   modeIds: [],
@@ -155,6 +157,39 @@ describe('mergeConceptAppend', () => {
     });
     const errs = await validate(over, { whitelist: true });
     expect(errs.map((e) => e.property)).toContain('modeLinks');
+  });
+
+  // Сверх потолка общего списка следующее сохранение полей (ConceptSaveDto)
+  // падало валидацией — правка терапевта терялась.
+  it('общий список схем не растёт сверх CONCEPT_SCHEMA_IDS_MAX: сохранение после дописывания проходит', async () => {
+    const have = Array.from(
+      { length: CONCEPT_SCHEMA_IDS_MAX - 1 },
+      (_, i) => `s${i}`,
+    );
+    const patch = mergeConceptAppend(
+      { ...empty(), schemaIds: have },
+      {
+        schemaIds: ['s39'],
+        modeLinks: [{ modeId: 'm', schemaIds: ['s40'] }],
+        schemaLinks: [{ schemaId: 's41', needIds: ['play'] }],
+      },
+    );
+    expect(patch.schemaIds).toEqual([...have, 's39']);
+    const ok = plainToInstance(ConceptSaveDto, { schemaIds: patch.schemaIds });
+    await expect(validate(ok, { whitelist: true })).resolves.toEqual([]);
+    // Список полон — дописывать некуда, поле в патч не попадает.
+    expect(
+      mergeConceptAppend(
+        { ...empty(), schemaIds: patch.schemaIds! },
+        { schemaIds: ['s42'] },
+      ),
+    ).toEqual({});
+    // Контрольный образец: на одну схему больше — сохранение отказало бы.
+    const over = plainToInstance(ConceptSaveDto, {
+      schemaIds: [...patch.schemaIds!, 'extra'],
+    });
+    const errs = await validate(over, { whitelist: true });
+    expect(errs.map((e) => e.property)).toContain('schemaIds');
   });
 });
 
