@@ -6,13 +6,15 @@
 // естественно бьёт по каскаду shareCanvasImage, событие ok:false).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
+  act,
   render,
   screen,
   fireEvent,
   cleanup,
   waitFor,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { useEffect } from 'react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
 import type { Need, DayHistory } from '../types';
@@ -40,6 +42,13 @@ const NEEDS: Need[] = [
 ];
 const HISTORY: DayHistory[] = [{ date: '2020-01-10', ratings: { safety: 7 } }];
 
+const navRef = { go: null as ReturnType<typeof useNavigate> | null };
+function NavProbe() {
+  const navigate = useNavigate();
+  useEffect(() => { navRef.go = navigate; });
+  return null;
+}
+
 function renderSheet(
   history: DayHistory[] = HISTORY,
   onClose = vi.fn(),
@@ -47,7 +56,8 @@ function renderSheet(
 ) {
   return render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/', '/x']} initialIndex={1}>
+        <NavProbe />
         <WeeklyCardSheet needs={NEEDS} history={history} onClose={onClose} />
       </MemoryRouter>
     </AddressFormContext.Provider>,
@@ -162,6 +172,17 @@ describe('WeeklyCardSheet — шаринг: отказ показывает те
     expect(screen.getByText('Сводка за неделю: индекс 6.4')).toBeTruthy();
 
     vi.unstubAllGlobals();
+  });
+
+  it('«Назад» браузера закрывает шторку «Поделиться текстом», лист остаётся', async () => {
+    const onClose = vi.fn();
+    renderSheet(HISTORY, onClose);
+    fireEvent.click(screen.getByText('Поделиться'));
+    await screen.findByText('Поделиться текстом');
+    await act(async () => {}); // запись истории шторки доезжает после рендера
+    act(() => navRef.go!(-1));
+    await waitFor(() => expect(screen.queryByText('Поделиться текстом')).toBeNull());
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('кнопка «Скопировать» в фолбэке копирует текст в буфер', async () => {

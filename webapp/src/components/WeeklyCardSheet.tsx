@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
 import { TherapyNote } from './TherapyNote';
-import { BottomSheetShell } from './BottomSheetShell';
+import { FallbackTextSheet } from './FallbackTextSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
 import {
@@ -12,8 +12,8 @@ import {
   buildWeeklyShareText,
 } from '../../../shared/src/share/cards/weeklyCard';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
-import { useCardFontsReady } from '../../../shared/src/share/useCardFonts';
 import { CheckIcon } from '../../../shared/src/share/ShareIcon';
+import { useCardFontsReady } from '../../../shared/src/share/useCardFonts';
 import {
   SHARE_CARD_EVENT,
   SHARE_RESULT_EVENT,
@@ -130,17 +130,12 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       )}
 
       {fallbackText && (
-        <BottomSheetShell goBack={() => setFallbackText(null)} zIndex={300}>
-          <h2 className="ds-h3 sd-share-title">Поделиться текстом</h2>
-          <pre className="sd-pre">{fallbackText}</pre>
-          <button
-            onClick={() => void copyFallback(fallbackText)}
-            className={'ds-btn ds-btn--secondary sd-wide' + (fallbackCopied ? ' is-ok' : '')}
-          >
-            {fallbackCopied && <CheckIcon size={17} />}
-            {fallbackCopied ? 'Скопировано' : 'Скопировать'}
-          </button>
-        </BottomSheetShell>
+        <FallbackTextSheet
+          text={fallbackText}
+          copied={fallbackCopied}
+          onCopy={() => void copyFallback(fallbackText)}
+          onClose={() => setFallbackText(null)}
+        />
       )}
     </ExScreen>
   );
