@@ -55,6 +55,27 @@ const patternSheet = (shellTag: string) =>
     '',
   ].join('\n');
 
+// Обёртка .u-sheet живёт в CSS shared (удвоенный селектор), а модалка 300 —
+// в одном файле с примитивами настроек (как settingsSheet/ui.tsx).
+const USHEET = {
+  'shared/src/theme/utilities.css':
+    '.u-sheet.u-sheet {\n  position: fixed;\n  inset: 0;\n  z-index: 80;\n}\n' +
+    '.u-sheet-grid.u-sheet-grid { position: fixed; inset: 0; z-index: 80; display: grid; }\n',
+  'webapp/src/styles/sheet-modal.css':
+    '.sheet-modal { position: fixed; inset: 0; z-index: 300; }\n',
+  'webapp/src/components/About.tsx':
+    'export function About() { return <div className="u-sheet-grid">о приложении</div>; }\n',
+  'webapp/src/components/ui.tsx': [
+    'export function SSection({ children }: { children: React.ReactNode }) {',
+    '  return <section className="st-section">{children}</section>;',
+    '}',
+    'export function InfoModal({ children }: { children: React.ReactNode }) {',
+    '  return <div className="sheet-modal">{children}</div>;',
+    '}',
+    '',
+  ].join('\n'),
+};
+
 describe('check-overlay-stack.mjs', () => {
   it('родитель zIndex={205}, ленивый под-лист .ex2-screen 200 — exit 1 с путём и строкой', () => {
     const res = runGate('check-overlay-stack.mjs', {
@@ -88,16 +109,96 @@ describe('check-overlay-stack.mjs', () => {
     );
   });
 
-  // Разбор вынесен в scripts/overlay-stack-scan.mjs (лимит размера, правило
-  // №10); песочница копирует его вместе с гейтом — иначе гейт в тесте падал
-  // бы с ERR_MODULE_NOT_FOUND, а движок был бы кодом без теста
-  // (check-unwatched-code).
-  it('движок scripts/overlay-stack-scan.mjs уезжает в песочницу вместе с гейтом', () => {
+  // Обёртка — свой контекст наложения: лист 200 внутри неё лежит ПОД экраном
+  // паттерна (b15, 2026-11-10).
+  it('.u-sheet (80) после оболочки 200 и лист на .u-sheet-grid под оболочкой 300 — exit 1', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      ...USHEET,
+      'webapp/src/components/PatternSheet.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { ModeEx } from './FlashcardEx';",
+        'export function PatternSheet({ sub }: { sub: boolean }) {',
+        '  return (',
+        '    <>',
+        '      <SsSheet>Покинутость</SsSheet>',
+        '      {sub && (',
+        '        <div className="u-sheet">',
+        '          <ModeEx />',
+        '        </div>',
+        '      )}',
+        '    </>',
+        '  );',
+        '}',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Settings.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { About } from './About';",
+        'export function Settings({ open }: { open: boolean }) {',
+        '  return <><SsSheet zIndex={300}>настройки</SsSheet>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/components/PatternSheet.tsx:8: <div> z=80 под родителем z=200',
+    );
+    expect(res.stderr).toContain(
+      'webapp/src/components/Settings.tsx:4: <About> z=80 под родителем z=300',
+    );
+  });
+
+  // z компонента — по его объявлению: модалка из файла с примитивами остаётся
+  // оболочкой, а помощник, которого компонент возвращает, — его z.
+  it('модалка из ui.tsx и помощник `return <PickerModal />` сохраняют свой z — exit 1', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      ...USHEET,
+      'webapp/src/components/Data.tsx': [
+        "import { SSection, InfoModal } from './ui';",
+        "import { About } from './About';",
+        'export function Data({ open }: { open: boolean }) {',
+        '  return <><SSection>данные</SSection><InfoModal>политика</InfoModal>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Picker.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        'export function Picker() { return <PickerModal />; }',
+        'function PickerModal() { return <SsSheet zIndex={300}>обращение</SsSheet>; }',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Top.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { Picker } from './Picker';",
+        'export function Top() { return <><SsSheet zIndex={400}>вход</SsSheet><Picker /></>; }',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/components/Data.tsx:4: <About> z=80 под родителем z=300',
+    );
+    expect(res.stderr).toContain(
+      'webapp/src/components/Top.tsx:3: <Picker> z=300 под родителем z=400',
+    );
+  });
+
+  // Разбор вынесен в модули (лимит размера, правило №10); песочница копирует
+  // их вместе с гейтом — иначе ERR_MODULE_NOT_FOUND, а движок был бы кодом
+  // без теста (check-unwatched-code).
+  it('модули разбора уезжают в песочницу вместе с гейтом', () => {
     const res = runGate('check-overlay-stack.mjs', CSS, { keepTmp: true });
     try {
-      expect(existsSync(join(res.tmp, 'scripts/overlay-stack-scan.mjs'))).toBe(
-        true,
-      );
+      for (const mod of [
+        'scripts/overlay-stack-scan.mjs',
+        'scripts/overlay-stack-css.mjs',
+      ])
+        expect(existsSync(join(res.tmp, mod))).toBe(true);
       expect(res.status).toBe(0);
     } finally {
       cleanupTmp(res.tmp);
@@ -135,6 +236,59 @@ describe('check-overlay-stack.mjs', () => {
       'webapp/src/components/Bad.test.tsx': patternSheet(
         '<SsSheet zIndex={205}>',
       ),
+    });
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(OK);
+  });
+
+  it('ЧИСТОЕ ДЕРЕВО .u-sheet: обёртка над страницей, под-лист выше, примитив рядом с модалкой — exit 0', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      ...USHEET,
+      // Обёртка над страницей, а не над листом (ModeExOverlay): страница не оверлей.
+      'webapp/src/components/ModeExOverlay.tsx': [
+        "import { ModeEx } from './FlashcardEx';",
+        'export function ModeExOverlay() { return <div className="u-sheet"><ModeEx /></div>; }',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Patterns.tsx': [
+        "import { ModeExOverlay } from './ModeExOverlay';",
+        'export function Patterns() { return <main><h1>Мои паттерны</h1><ModeExOverlay /></main>; }',
+        '',
+      ].join('\n'),
+      // Лист на .u-sheet открывает под-лист 200 — ребёнок выше родителя.
+      'webapp/src/components/Journey.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        'export function Journey({ open }: { open: boolean }) {',
+        '  return <div className="u-sheet">путь{open && <SsSheet>шаг</SsSheet>}</div>;',
+        '}',
+        '',
+      ].join('\n'),
+      // <SSection> — примитив, а не модалка из того же ui.tsx: раздел настроек
+      // оболочкой 300 не становится, лист «О приложении» (80) рядом законен.
+      'webapp/src/components/AboutSection.tsx': [
+        "import { SSection } from './ui';",
+        "import { About } from './About';",
+        'export function AboutSection({ open }: { open: boolean }) {',
+        '  return <><SSection>о приложении</SSection>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+      // То же через lazy: компонент берётся по имени из `.then((m) => …)`.
+      'webapp/src/components/LazySection.tsx': [
+        "import { lazy } from 'react';",
+        "import { About } from './About';",
+        "const Section = lazy(() => import('./ui').then((m) => ({ default: m.SSection })));",
+        'export function LazySection({ open }: { open: boolean }) {',
+        '  return <><Section>о приложении</Section>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+      // `style={{ zIndex }}` на своём теге перебивает z класса.
+      'webapp/src/components/ShareLocal.tsx':
+        'export function ShareLocal({ zIndex = 320 }: { zIndex?: number }) { return <div className="ss-sheet" style={{ zIndex }}>карточка</div>; }\n',
     });
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
