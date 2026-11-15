@@ -9,7 +9,10 @@ import {
   APPEND_MODE_LINKS_MAX,
   APPEND_SCHEMA_LINKS_MAX,
 } from './concept-append-links';
-import { ConceptualizationDto } from './dto/conceptualization.dto';
+import {
+  ConceptualizationDto,
+  CONCEPT_MODE_IDS_MAX,
+} from './dto/conceptualization.dto';
 import { ConceptSaveDto } from './dto/concept-save.dto';
 import { CONCEPT_SCHEMA_IDS_MAX } from '../utils/text-limits';
 
@@ -190,6 +193,37 @@ describe('mergeConceptAppend', () => {
     });
     const errs = await validate(over, { whitelist: true });
     expect(errs.map((e) => e.property)).toContain('schemaIds');
+  });
+
+  it('общий список режимов не растёт сверх CONCEPT_MODE_IDS_MAX: сохранение после дописывания проходит', async () => {
+    const have = Array.from(
+      { length: CONCEPT_MODE_IDS_MAX - 1 },
+      (_, i) => `m${i}`,
+    );
+    const patch = mergeConceptAppend(
+      { ...empty(), modeIds: have },
+      {
+        modeIds: ['m99', 'm100'],
+        modeLinks: [{ modeId: 'm101', schemaIds: [] }],
+      },
+    );
+    expect(patch.modeIds).toEqual([...have, 'm99']);
+    const ok = plainToInstance(ConceptualizationDto, {
+      modeIds: patch.modeIds,
+    });
+    await expect(validate(ok, { whitelist: true })).resolves.toEqual([]);
+    expect(
+      mergeConceptAppend(
+        { ...empty(), modeIds: patch.modeIds! },
+        { modeIds: ['x'] },
+      ),
+    ).toEqual({});
+    // Контрольный образец: на один режим больше — сохранение отказало бы.
+    const over = plainToInstance(ConceptualizationDto, {
+      modeIds: [...patch.modeIds!, 'extra'],
+    });
+    const errs = await validate(over, { whitelist: true });
+    expect(errs.map((e) => e.property)).toContain('modeIds');
   });
 });
 
