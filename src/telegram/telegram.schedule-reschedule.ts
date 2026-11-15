@@ -1,6 +1,5 @@
 // Перепланировать напоминание одного человека после смены настроек (сайт,
-// /settings бота, «Сегодня не могу»). Вынесено из telegram.schedule.service.ts
-// (правило №10).
+// /settings бота, «Сегодня не могу»); вынесено из telegram.schedule.service.ts.
 import type { BotService } from '../bot/bot.service';
 import type { NotificationService } from '../notification/notification.service';
 import type { NotificationPlannerService } from '../notification/notification.planner.service';
@@ -22,7 +21,8 @@ export async function rescheduleForUser(
   // «Итоги дня» выключены — уже стоящая сводка дня тоже не уходит (R2).
   if (s?.notifySummaryEnabled === false)
     await notificationService.cancel(userId, 'summary');
-  if (!s?.notifyEnabled || !s.notifyReminderEnabled) {
+  // Без согласия напоминаний нет, как и в ночном обходе (getAllUsersWithSettings).
+  if (!s?.notifyEnabled || !s.notifyReminderEnabled || !s.disclaimerAccepted) {
     await notificationService.cancel(userId, 'reminder');
     return;
   }

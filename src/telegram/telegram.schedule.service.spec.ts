@@ -251,6 +251,7 @@ describe('rescheduleForUser', () => {
     botService.getUserSettings.mockResolvedValue({
       notifyEnabled: true,
       notifyReminderEnabled: true,
+      disclaimerAccepted: true,
       notifyPausedUntil: new Date(Date.now() + 86_400_000),
       notifyTimezone: 'Europe/Moscow',
     });
@@ -265,6 +266,7 @@ describe('rescheduleForUser', () => {
     botService.getUserSettings.mockResolvedValue({
       notifyEnabled: true,
       notifyReminderEnabled: true,
+      disclaimerAccepted: true,
       notifyTimezone: 'Europe/Moscow',
       notifyNextRemindDate: '2020-01-01',
       notifyLocalHour: 21,
@@ -287,6 +289,7 @@ describe('rescheduleForUser', () => {
     botService.getUserSettings.mockResolvedValue({
       notifyEnabled: true,
       notifyReminderEnabled: true,
+      disclaimerAccepted: true,
       notifyTimezone: 'Europe/Moscow',
       notifyNextRemindDate: farFuture,
       notifyLocalHour: 21,
@@ -309,6 +312,7 @@ describe('rescheduleForUser', () => {
     botService.getUserSettings.mockResolvedValue({
       notifyEnabled: true,
       notifyReminderEnabled: true,
+      disclaimerAccepted: true,
       notifyTimezone: 'Europe/Moscow',
       notifyNextRemindDate: farFuture,
       notifyLocalHour: 21,
