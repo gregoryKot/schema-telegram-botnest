@@ -1,9 +1,10 @@
-import { R, INK_ON_DARK } from './landing-kit-hooks';
+import { R } from './landing-kit-hooks';
 
 // Shared component primitives for landing pages (LandingPage — терапевт,
 // ProductLandingPage — продукт). Tokens/hooks live in ./landing-kit-hooks.
 
 // ─── Button – single source for all CTAs ─────────────────────────────────────
+// Вид варианта и наведение — классы .lk-btn* в index.css: инлайн-цвет перебил бы :hover.
 type BtnVariant = 'primary' | 'ghost' | 'dark';
 type BtnSize = 'sm' | 'md' | 'lg';
 const BTN_PAD: Record<BtnSize, string> = { sm: '8px 18px', md: '13px 24px', lg: '15px 30px' };
@@ -26,43 +27,20 @@ export function Btn({
   /** Override new-tab behaviour. Defaults to true for http links, false for relative. */
   newTab?: boolean;
 }) {
-  const variants: Record<BtnVariant, React.CSSProperties> = {
-    // Цвет следует за --accent (продукт: терракота; личный сайт: изолированный
-    // индиго). Свечения-тени нет: на бумажном сайте кнопка плоская.
-    primary: { background: 'var(--accent)', color: 'var(--on-accent)' },
-    ghost:   { background: 'transparent', borderColor: 'var(--line-strong)', color: 'var(--text-sub)', fontWeight: 500 },
-    dark:    { background: 'rgba(255,255,255,.1)', borderColor: 'rgba(255,255,255,.2)', color: INK_ON_DARK },
-  };
+  const className = `lk-btn lk-btn--${variant}${disabled ? ' is-disabled' : ''}`;
   const css: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-8)',
-    padding: BTN_PAD[size], fontSize: BTN_FS[size], fontWeight: 600, fontFamily: 'inherit',
+    padding: BTN_PAD[size], fontSize: BTN_FS[size],
     borderRadius: radius === 'pill' ? R.pill : R.btn,
-    border: '1.5px solid transparent', boxSizing: 'border-box',
-    cursor: disabled ? 'default' : 'pointer', textDecoration: 'none',
-    width: full ? '100%' : undefined, opacity: disabled ? 0.4 : 1,
-    transition: 'transform .15s, background .15s, border-color .15s, color .15s',
-    ...variants[variant], ...style,
-  };
-  const enter = (e: React.MouseEvent) => {
-    if (disabled) return;
-    const el = e.currentTarget as HTMLElement;
-    if (variant === 'primary') { el.style.transform = 'translateY(-1px)'; }
-    else if (variant === 'ghost') { el.style.borderColor = 'var(--text)'; el.style.color = 'var(--text)'; }
-    else { el.style.background = 'rgba(255,255,255,.18)'; }
-  };
-  const leave = (e: React.MouseEvent) => {
-    const el = e.currentTarget as HTMLElement;
-    el.style.transform = '';
-    if (variant === 'ghost') { el.style.borderColor = 'var(--line-strong)'; el.style.color = 'var(--text-sub)'; }
-    if (variant === 'dark') { el.style.background = 'rgba(255,255,255,.1)'; }
+    width: full ? '100%' : undefined,
+    ...style,
   };
   if (href) {
     const ext = href.startsWith('http');
     const openNewTab = newTab !== undefined ? newTab : ext;
     return <a href={href} target={openNewTab ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined}
-      style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</a>;
+      className={className} style={css}>{children}</a>;
   }
-  return <button type={type} onClick={onClick} disabled={disabled} style={css} onMouseEnter={enter} onMouseLeave={leave}>{children}</button>;
+  return <button type={type} onClick={onClick} disabled={disabled} className={className} style={css}>{children}</button>;
 }
 
 // ─── Theme toggle icon – crisp sun/moon (no unicode glyph rendering issues) ──

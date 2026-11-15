@@ -2131,7 +2131,7 @@
   "webapp/src/components/journey/webJourneyKit.ts": 17,
   "webapp/src/components/JourneySheet.tsx": 84,
   "webapp/src/components/landing-kit-hooks.ts": 66,
-  "webapp/src/components/landing-kit.tsx": 80,
+  "webapp/src/components/landing-kit.tsx": 58,
   "webapp/src/components/MetrikaTracker.tsx": 28,
   "webapp/src/components/modeMap/autoLayout.ts": 52,
   "webapp/src/components/modeMap/CanvasEmpty.tsx": 17,

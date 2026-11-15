@@ -162,7 +162,7 @@
   на 413 называет причину — «текст слишком длинный» (`webapp/src/components/useModeMapAutosave.ts`).
   Общий потолок не поднимать — разбор в `src/infra/body-limit.ts`.
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 14 литералов в 6 файлах (сверка 2026-11-15,
+- Таяние долга `check-color-drift.mjs`: 13 литералов в 6 файлах (сверка 2026-11-15,
   `scripts/color-drift-baseline.json`; админка, `indexColor` и цвета групп режимов переведены на токены).
   Остаток по ролям: визитка (`webapp/src/pages/LandingPage.tsx`, `landing/ContentSections.tsx`,
   `landing-kit-hooks.ts`, `landing/constants.ts` — свой стиль, тёмная секция без токенов, решение владельца
