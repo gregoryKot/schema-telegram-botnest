@@ -1,6 +1,7 @@
 // Распознавание «оверлея» для гейта check-history-sheet.mjs: чистые функции
 // над текстом, без файловой системы. Вынесено из движка гейта (правило №10:
 // движок не растёт вместе со списком правил); тест — history-sheet.spec.ts.
+// Классы из CSS — history-sheet-css.mjs, сверка с бейслайном — history-sheet-judge.mjs.
 import { stripComments } from './gate-strip-comments.mjs';
 
 const FIXED_RE = /\bposition\s*:\s*['"]?fixed\b/g;
@@ -13,6 +14,11 @@ const SIDES = ['top', 'left', 'right', 'bottom'];
 /** Объявления покрывают весь экран: `inset: 0` либо все четыре стороны в нуле. */
 export function coversViewport(decls) {
   return INSET_ZERO_RE.test(decls) || SIDES.every((s) => SIDES_ZERO_RE(s).test(decls));
+}
+
+/** Объявления делают элемент оверлеем: `position: fixed` и весь экран. */
+export function isOverlayDecls(decls) {
+  return new RegExp(FIXED_RE.source).test(decls) && coversViewport(decls);
 }
 
 /** Индекс символа после строкового литерала, начатого в i (кавычка в src[i]). */
@@ -53,7 +59,7 @@ function enclosingOpenBrace(src, pos) {
   return -1;
 }
 
-function lineAt(src, index) {
+export function lineAt(src, index) {
   return src.slice(0, index).split('\n').length;
 }
 
@@ -78,30 +84,8 @@ export function inlineOverlays(rawSrc) {
   return found;
 }
 
-/**
- * Классы, правило которых в CSS делает элемент оверлеем (fixed + весь экран).
- * Псевдоэлементы (`::before` — декор) и составные селекторы разбираются по
- * последнему классу последнего компонента селектора.
- */
-export function overlayClasses(rawCss) {
-  const css = stripComments(rawCss, true);
-  const classes = new Set();
-  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    const decls = m[2];
-    FIXED_RE.lastIndex = 0;
-    if (!FIXED_RE.test(decls) || !coversViewport(decls)) continue;
-    for (const sel of m[1].split(',')) {
-      if (/::|:before|:after/.test(sel)) continue;
-      const last = sel.trim().split(/[\s>+~]+/).pop() ?? '';
-      const tokens = [...last.matchAll(/\.([A-Za-z_][\w-]*)/g)].map((t) => t[1]);
-      if (tokens.length) classes.add(tokens[tokens.length - 1]);
-    }
-  }
-  return classes;
-}
-
-/** Текст значений className=… / className: … в .tsx (строка или выражение в {}). */
-function classNameValues(src) {
+/** Текст значений className=… / className: … в .tsx без комментариев (строка или выражение в {}). */
+export function classNameValues(src) {
   const values = [];
   for (const m of src.matchAll(/\bclassName\s*[=:]\s*/g)) {
     const start = m.index + m[0].length;
@@ -116,24 +100,10 @@ function classNameValues(src) {
   return values;
 }
 
-/** Классы-оверлеи, реально проставленные файлу в className. */
-export function classOverlays(rawSrc, overlayClassSet) {
-  const src = stripComments(rawSrc, false);
-  const found = [];
-  for (const { at, text } of classNameValues(src)) {
-    for (const cls of overlayClassSet) {
-      if (new RegExp(`(?<![\\w-])${cls}(?![\\w-])`).test(text)) {
-        found.push({ line: lineAt(src, at), what: `класс «${cls}» (CSS: fixed + весь экран)` });
-      }
-    }
-  }
-  return found;
-}
-
 // Рамки рисуют fixed-оболочку сами (в бейслайне), у потребителя своего fixed нет: файл с тегом
-// рамки — тоже оверлей (2026-11: «О советах» поверх листа жила с локальным onClose). Dialog не
-// в списке: его потребители-подтверждения закрываются кнопками и Escape (стек диалогов).
-export const FRAME_TAGS = ['ExScreen', 'BottomSheetShell'];
+// рамки — тоже оверлей. Dialog и ConfirmDialog — тоже: подтверждение поверх листа без хука —
+// запись бейслайна с причиной, а не слепая зона (HistoryConfirmDialog вызывает хук сам).
+export const FRAME_TAGS = ['ExScreen', 'BottomSheetShell', 'Dialog', 'ConfirmDialog'];
 
 /** Теги рамок-оверлеев в .tsx (`<ExScreen`, но не `<ExScreenSkeleton`). */
 export function frameOverlays(rawSrc) {
@@ -146,9 +116,11 @@ export function frameOverlays(rawSrc) {
   );
 }
 
+const hookCalls = (src) => (src.match(/\buseHistorySheet\s*\(/g) ?? []).length;
+
 /** Вызывает ли файл хук (в коде, не в комментарии). */
 export function callsHistorySheet(rawSrc) {
-  return /\buseHistorySheet\s*\(/.test(stripComments(rawSrc, false));
+  return hookCalls(stripComments(rawSrc, false)) > 0;
 }
 
 // Объявление верхнего уровня — с нулевым отступом (так форматирует prettier):
@@ -157,7 +129,7 @@ const TOP_DECL =
   /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s*\*?\s*([A-Za-z_$][\w$]*)|(?:const|let)\s+([A-Za-z_$][\w$]*)\s*[:=])/;
 
 /**
- * Компоненты файла: объявления верхнего уровня со строками и признаком вызова
+ * Компоненты файла: объявления верхнего уровня со строками и числом вызовов
  * хука в СВОЁМ теле. Хук соседнего компонента оверлей не закрывает: лист с
  * хуком и чек-ин без него в одном файле — два решения, а не одно.
  */
@@ -170,20 +142,21 @@ export function topLevelComponents(rawSrc) {
   });
   return comps.map((c, i) => {
     const end = i + 1 < comps.length ? comps[i + 1].start - 1 : lines.length;
-    return { ...c, end, hook: callsHistorySheet(lines.slice(c.start - 1, end).join('\n')) };
+    const calls = hookCalls(lines.slice(c.start - 1, end).join('\n'));
+    return { ...c, end, hook: calls > 0, calls };
   });
 }
 
 /**
- * Оверлеи файла по компонентам: [{ name, hook, hits }]. Находка выше первого
- * объявления относится к псевдокомпоненту «(модуль)» без хука.
+ * Оверлеи файла по компонентам: [{ name, hook, calls, hits }]. Находка выше
+ * первого объявления относится к псевдокомпоненту «(модуль)» без хука.
  */
 export function overlaysByComponent(rawSrc, hits) {
   const comps = topLevelComponents(rawSrc);
   const out = new Map();
   for (const h of hits) {
-    const c = comps.filter((x) => x.start <= h.line).pop() ?? { name: '(модуль)', hook: false };
-    if (!out.has(c.name)) out.set(c.name, { name: c.name, hook: c.hook, hits: [] });
+    const c = comps.filter((x) => x.start <= h.line).pop() ?? { name: '(модуль)', hook: false, calls: 0 };
+    if (!out.has(c.name)) out.set(c.name, { name: c.name, hook: c.hook, calls: c.calls, hits: [] });
     out.get(c.name).hits.push(h);
   }
   return [...out.values()];

@@ -1,11 +1,9 @@
-// Разметка празднования серии на сайте — диалог (общий Dialog) с листом бумаги сверху.
-// Поведение — конфетти, веха, шаринг, события — в shared/src/hooks/useCelebration;
-// платформенное (tr, ссылка бота, трекинг) приходит пропсами из тонкой обёртки
-// Celebration.tsx. onDone зовут только действия человека.
-// Вид (редизайн 2026-11, b07): сверху сцена SceneCheckIn на соломе — лист сегодняшнего дня
-// поверх листов прошлых дней серии (из ежедневных отметок складывается картина); его пять полосок —
-// сегодняшние оценки (dayStrokeValues → ValueStrokes, как на главной; неоценённая — пустым тоном); число серии —
-// Literata на бумажной наклейке цветом текста, а не красной цифрой; веха — персик и Leaf (рост).
+// Празднование серии — общий Dialog с листом бумаги сверху; поведение (конфетти, веха, шаринг) —
+// shared/src/hooks/useCelebration, платформенное приходит пропсами из обёртки Celebration.tsx.
+// «Закрыть», Escape и фон — goBack; onDone зовёт useHistorySheet, когда запись снята, поэтому лист из
+// onDone («Колесо детства» в AppShell) кладёт свою запись после go(-1), как goBack(then).
+// Вид (b07): сцена SceneCheckIn — лист сегодняшнего дня поверх листов прошлых дней, пять полосок —
+// сегодняшние оценки (dayStrokeValues, неоценённая — пустым тоном); число серии — Literata на наклейке.
 import type { CSSProperties } from 'react';
 import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
 import { useCelebration } from '../../../shared/src/hooks/useCelebration';
@@ -16,6 +14,7 @@ import { SignArt } from './art/SignArt';
 import { dayStrokeValues } from '../../../shared/src/needs/dayStrokes';
 import { glue } from '../../../shared/src/utils/typo';
 import { Dialog } from './Dialog';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 interface Props {
   streak: number;
@@ -29,13 +28,14 @@ interface Props {
 }
 
 export function CelebrationDialog({ streak, onDone, insight, ratings, tr, botShortUrl, trackEvent }: Props) {
+  const goBack = useHistorySheet(onDone);
   const { canvasRef, copied, failed, share, isMilestone } = useCelebration(streak, botShortUrl, trackEvent);
   const hue = isMilestone ? ENTITY_LOOK.diary.hue : ENTITY_LOOK.tracker.hue;
 
   return (
     <Dialog
       label={`${streak} ${pluralDays(streak)} подряд`}
-      onClose={onDone}
+      onClose={goBack}
       closeOnEscape
       zIndex={500} maxWidth={420}
       center
@@ -56,7 +56,7 @@ export function CelebrationDialog({ streak, onDone, insight, ratings, tr, botSho
         {copied ? 'Скопировано!' : 'Поделиться'}
       </button>
       <CopyFailedHint show={failed} tr={tr} marginTop={10} />
-      <button className="ds-link sk-dialog-link" onClick={onDone}>Закрыть</button>
+      <button className="ds-link sk-dialog-link" onClick={goBack}>Закрыть</button>
     </Dialog>
   );
 }

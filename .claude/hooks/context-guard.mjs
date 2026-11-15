@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // Хук-сторож длинной сессии: контекст вырос или сжимался — начатую задачу передать новой
 // сессии (или довести здесь), новую не начинать. Каждый шаг оплачивает весь контекст заново.
-// События: UserPromptSubmit и SessionStart(compact) — строка в stdout;
-// PostToolUse (мерж PR) — JSON additionalContext. Ниже порога молчит, не падает.
-import { closeSync, fstatSync, openSync, readSync } from 'node:fs';
+// События: UserPromptSubmit и SessionStart(compact) — строка в stdout; PostToolUse (мерж PR:
+// MCP или `gh pr merge` в Bash, gh-merge.mjs) — JSON additionalContext. Ниже порога молчит.
+import { closeSync, fstatSync, openSync, readFileSync, readSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bashMerge } from './gh-merge.mjs';
 
 export const LIMIT = Number(process.env.CLAUDE_CONTEXT_GUARD_TOKENS) || 120_000;
+const AUTO_MERGE = 'PR вмержен или ждёт автомержа: дождись мержа и проверь деплой.';
 const TAIL = 512 * 1024;
 const BOUNDARY = '"subtype":"compact_boundary"';
 
@@ -52,7 +54,7 @@ export function readTranscript(path) {
 }
 
 /** Текст сигнала или пустая строка, если сессия ещё дешёвая. */
-export function verdict({ event, source, tokens, compactions }) {
+export function verdict({ event, source, tokens, compactions, merge }) {
   const compacted = event === 'SessionStart' && source === 'compact';
   if (!compacted && tokens < LIMIT && compactions < 1) return '';
   const why = [
@@ -64,7 +66,8 @@ export function verdict({ event, source, tokens, compactions }) {
     'Остаток начатой задачи передай: записка по .claude/skills/handoff/SKILL.md, затем 1) start_session (user_asked, fresh, бриф со ссылкой на записку) и архив этой сессии; ' +
     '2) отказ, а тебя запустила другая сессия — закончи ход отчётом «нужно продолжение: записка <путь>», продолжение запустит она; ' +
     '3) не вышло и это — доводи здесь до мержа. Владельца не жди ни в одном случае.';
-  if (event === 'PostToolUse') return `${head} PR вмержен: проверь деплой. ${pass}`;
+  const merged = merge === 'auto' ? AUTO_MERGE : 'PR вмержен: проверь деплой.';
+  if (event === 'PostToolUse') return `${head} ${merged} ${pass}`;
   return (
     `${head} Начатая задача не новая: её доводят до мержа и деплоя; осталась пара шагов ` +
     `(CI, мерж) — доведи здесь. ${pass} Новую задачу здесь не начинай — запусти её в новой ` +
@@ -75,15 +78,17 @@ export function verdict({ event, source, tokens, compactions }) {
 
 function main() {
   try {
-    const input = JSON.parse(readStdin() || '{}');
+    const input = JSON.parse(readFileSync(0, 'utf8') || '{}');
     const event = input.hook_event_name ?? '';
+    const merge = input.tool_name === 'Bash' ? bashMerge(input) : 'merged';
+    if (!merge) return; // прочие Bash-вызовы — молча и до чтения журнала
     let measured = { tokens: 0, compactions: 0 };
     try {
       if (input.transcript_path) measured = readTranscript(input.transcript_path);
     } catch {
       // Журнала ещё нет — судим только по событию.
     }
-    const text = verdict({ event, source: input.source, ...measured });
+    const text = verdict({ event, source: input.source, merge, ...measured });
     if (!text) return;
     if (event === 'PostToolUse') {
       process.stdout.write(
@@ -94,16 +99,6 @@ function main() {
     }
   } catch {
     // Сторож не имеет права мешать работе: любая ошибка — молча.
-  }
-}
-
-function readStdin() {
-  const buf = Buffer.alloc(1024 * 1024);
-  let out = '';
-  for (;;) {
-    const n = readSync(0, buf, 0, buf.length, null);
-    if (n <= 0) return out;
-    out += buf.toString('utf8', 0, n);
   }
 }
 
