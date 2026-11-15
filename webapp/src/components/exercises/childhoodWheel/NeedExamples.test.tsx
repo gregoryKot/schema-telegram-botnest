@@ -31,4 +31,27 @@ describe('NeedExamples — раскрывашки', () => {
     expect(head.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByText(first.text)).toBeTruthy();
   });
+
+  it('открыт один пример; закрытие списка сбрасывает выбор', () => {
+    render(<NeedExamples needId="attachment" />);
+    const toggle = screen.getByRole('button', { name: /Примеры/ });
+    fireEvent.click(toggle);
+    const [a, b] = CHILDHOOD_EXAMPLES.attachment;
+    const headA = () => screen.getByRole('button', { name: `≈${a.score}/10` });
+    const headB = () => screen.getByRole('button', { name: `≈${b.score}/10` });
+    fireEvent.click(headA());
+    fireEvent.click(headB());
+    expect(headA().getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText(a.text)).toBeNull();
+    expect(screen.getByText(b.text)).toBeTruthy();
+    fireEvent.click(headB());
+    expect(screen.queryByText(b.text)).toBeNull();
+    fireEvent.click(headB());
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('button', { name: `≈${b.score}/10` })).toBeNull();
+    fireEvent.click(toggle);
+    expect(headB().getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText(b.text)).toBeNull();
+  });
 });

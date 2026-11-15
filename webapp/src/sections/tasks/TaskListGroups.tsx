@@ -15,6 +15,10 @@ import { taskStatus } from '../../../../shared/src/tasks/taskStatus';
 import { TaskStatusBadge } from '../../components/TaskStatusBadge';
 import { pluralRu as plural } from '../../../../shared/src/utils/pluralRu';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
+import { Disclosure, type DisclosureClasses } from '../../../../shared/src/components/Disclosure';
+
+// Раскрывашка «Выполнено» — общая Disclosure; keepMounted держит строки истории в DOM под hidden.
+const DONE: DisclosureClasses = { root: 'sk-group sk-task-group sk-done-group', btn: 'sk-done-toggle', label: 'sk-group-title', chev: 'sk-done-chev', body: 'sk-list' };
 
 interface Props {
   groups: TaskGroups;
@@ -56,27 +60,21 @@ export function TaskListGroups({ groups, today, phone, onOpen, onComplete }: Pro
         </section>
       )}
       {groups.done.length > 0 && (
-        <section className="sk-group sk-task-group sk-done-group">
-          <button type="button" className="sk-done-toggle" aria-expanded={doneOpen} onClick={() => setToggled(!doneOpen)}>
-            <span className="sk-group-title">Выполнено</span>
-            <span className="ds-sub">{groups.done.length}</span>
-            <span className="sk-done-chev" aria-hidden="true"><GlyphChevron up={doneOpen} /></span>
-          </button>
-          <div className="sk-list" hidden={!doneOpen}>
-            {groups.done.map(t => (
-              <div key={t.id} className="ds-card ds-card--row sk-task is-past">
-                <span className="pp-row-art"><TaskSign task={t} /></span>
-                <div className="sk-task-main">
-                  <div className="sk-task-text">{glueSpaces(resolveTaskDisplayText(t, 'compact'))}</div>
-                  <div className="sk-task-meta">
-                    <TaskStatusBadge status={taskStatus(t, today)} />
-                    {t.completedAt && <span>{fmtDate(momentDayKey(t.completedAt))}</span>}
-                  </div>
+        <Disclosure classes={DONE} title="Выполнено" sub={<span className="ds-sub">{groups.done.length}</span>}
+          chev={<GlyphChevron />} open={doneOpen} onToggle={() => setToggled(!doneOpen)} keepMounted>
+          {groups.done.map(t => (
+            <div key={t.id} className="ds-card ds-card--row sk-task is-past">
+              <span className="pp-row-art"><TaskSign task={t} /></span>
+              <div className="sk-task-main">
+                <div className="sk-task-text">{glueSpaces(resolveTaskDisplayText(t, 'compact'))}</div>
+                <div className="sk-task-meta">
+                  <TaskStatusBadge status={taskStatus(t, today)} />
+                  {t.completedAt && <span>{fmtDate(momentDayKey(t.completedAt))}</span>}
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
+          ))}
+        </Disclosure>
       )}
     </>
   );
