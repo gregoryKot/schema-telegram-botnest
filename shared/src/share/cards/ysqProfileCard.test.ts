@@ -16,7 +16,10 @@ import {
 } from './ysqProfileCard';
 import { SCHEMAS, DOMAIN_ORDER } from '../../hooks/ysqSchemas';
 import { FOOTER_H } from '../cardKit';
-import { mockCardCtx as mockCtx } from './canvas.test-helpers';
+import {
+  canvasWithMockCtx,
+  mockCardCtx as mockCtx,
+} from './canvas.test-helpers';
 
 function allScores(avg = 2, pct5plus = 0) {
   return Object.fromEntries(
@@ -93,6 +96,19 @@ describe('drawYsqProfileCard', () => {
         dateLabel: '3 мая 2026',
       }),
     ).not.toThrow();
+  });
+
+  it('средний балл схемы — с десятичной запятой («4,3», не «4.3»)', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    const scores = allScores(2, 0);
+    scores['Уязвимость'] = { avg: 4.3, pct5plus: 0 };
+    drawYsqProfileCard(canvas, buildYsqProfile(scores), {
+      headline: '1 выраженная схема',
+      dateLabel: null,
+    });
+    const texts = ctx.printed.map((p) => p.text);
+    expect(texts).toContain('4,3');
+    expect(texts).not.toContain('4.3');
   });
 
   it('пустой профиль — «ни одна схема не выделилась», не падает', () => {

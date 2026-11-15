@@ -74,9 +74,10 @@ describe('PatternsCard', () => {
     ],
     bestDayOfWeek: 'суббота', worstDayOfWeek: 'понедельник', totalDays: 10,
   };
-  it('строки с данными: значение, стрелка и полоса по среднему; без данных — нет строки', () => {
+  it('строки с данными: значение с десятичной запятой, стрелка и полоса по среднему; без данных — нет строки', () => {
     const { container } = render(<PatternsCard insights={insights} onBestDayInfo={() => {}} />);
-    expect(screen.getByText('4.0')).toBeTruthy();
+    expect(screen.getByText('4,0')).toBeTruthy();
+    expect(screen.getByText('6,8')).toBeTruthy();
     expect(screen.queryByText('Автономия')).toBeNull();
     const widths = [...container.querySelectorAll<HTMLElement>('.cpf-prog-fill')].map(e => e.style.width);
     expect(widths).toEqual(['40%', '68%']);
