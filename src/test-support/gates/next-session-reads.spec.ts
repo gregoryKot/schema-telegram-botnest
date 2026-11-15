@@ -28,8 +28,14 @@ describe('check-next-session-reads.mjs', () => {
     ],
     ['optional chaining', 'const at = client?.nextSession ?? null;'],
     ['деструктуризация', 'const { nextSession, meetingDays } = relation;'],
-    ['деструктуризация в for-of', 'for (const { nextSession } of rels) use(nextSession);'],
-    ['деструктуризация в for-of с переименованием', 'for (const { nextSession: ns } of rels) use(ns);'],
+    [
+      'деструктуризация в for-of',
+      'for (const { nextSession } of rels) use(nextSession);',
+    ],
+    [
+      'деструктуризация в for-of с переименованием',
+      'for (const { nextSession: ns } of rels) use(ns);',
+    ],
     ['деструктуризация с переименованием', 'let { nextSession: ns } = client;'],
     ['сравнение, а не присваивание', 'if (a.nextSession == b) return;'],
     [

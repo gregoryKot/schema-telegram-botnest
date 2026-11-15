@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { glyphTexture } from '../glyphs';
 import { GROUND_Y } from '../constants';
 import { audio } from '../audio';
 import { MobCtx, HomeMob } from './home';
@@ -68,7 +69,7 @@ export class Bargainer implements HomeMob {
   private base = 0.82;
   private size = 1;
   private throwT = 0;
-  private tags: Phaser.GameObjects.Text[] = [];
+  private tags: Phaser.GameObjects.Image[] = [];
 
   constructor(private ctx: MobCtx, private x: number) {
     const s = ctx.scene;
@@ -95,10 +96,7 @@ export class Bargainer implements HomeMob {
   private throwTag(px: number) {
     const s = this.ctx.scene;
     const dir = Math.sign(px - this.x) || 1;
-    const g = s.add.text(this.x + dir * 22, GROUND_Y - 52, '₽', {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#ffe08a',
-      backgroundColor: '#5a3a12', padding: { x: 4, y: 3 },
-    }).setOrigin(0.5).setDepth(7);
+    const g = s.add.image(this.x + dir * 22, GROUND_Y - 52, glyphTexture(s, 'ruble', '#ffe08a', 2, 4, '#5a3a12')).setOrigin(0.5).setDepth(7);
     g.setData('vx', dir * 170);
     this.tags.push(g);
     audio.split();
