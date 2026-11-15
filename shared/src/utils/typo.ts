@@ -61,6 +61,6 @@ export function glue(text: string): string {
 export const glueSpaces = glueWords;
 
 /** Проп, который бывает и не строкой (ReactNode): строку склеивает, остальное (JSX, число) отдаёт как есть.
- *  Одна функция у g2 и g3 (APP_2026-11.md, «Сведение с g2»): EntitySheet, DoneSheet, шаг мастера клеят сами. */
+ *  Одна функция у g2 и g3 (docs/archive/APP_2026-11.md, «Сведение с g2»): EntitySheet, DoneSheet, шаг мастера клеят сами. */
 export const glueIf = <T>(text: T): T | string =>
   typeof text === 'string' ? glue(text) : text;

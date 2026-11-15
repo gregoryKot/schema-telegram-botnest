@@ -1,5 +1,5 @@
 /* Справочник и тест YSQ (SchemaInfoSheet, SchemaDetailSheet, YSQTestSheet, ysq/*, DomainMark) на живой
-   бумаге (редизайн 2026-11, docs/design/APP_2026-11.md, b16): лист потребности, домена, группы режима —
+   бумаге (редизайн 2026-11, docs/archive/APP_2026-11.md, b16): лист потребности, домена, группы режима —
    oklch(0.915 0.03 var(--h)) со знаком у подписи; строки — белые листы без контура; тень — сплошным
    сдвинутым слоем. Мелкий текст на цветной бумаге — --text-sub. Подключается из sheet-schemas.css. */
 .ss-actions { display: flex; flex-direction: column; gap: 10px; }

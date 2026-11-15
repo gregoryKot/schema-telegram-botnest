@@ -77,7 +77,7 @@
 - Обложка — не фото, а сцена стиля сайта по slug: бумага в
   `webapp/src/components/art/articleCoverModel.ts`, сцена в `articleCoverScenes.ts`,
   рисунок в `ArticleScenes*.tsx` и
-  строка в таблице «Обложки статей» ([design/PAPER_2026-11.md](design/PAPER_2026-11.md)).
+  строка в таблице «Обложки статей» ([design/PAPER_MOTIFS_2026-11.md](design/PAPER_MOTIFS_2026-11.md)).
   Статья сида без сцены краснит `articleCoverModel.test.tsx`; статья из админки без сцены
   получает листы веером.
 

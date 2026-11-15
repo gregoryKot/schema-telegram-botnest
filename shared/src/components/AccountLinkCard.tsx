@@ -24,7 +24,7 @@ import {
 
 // Вид — классы alc-* (webapp/src/styles/auth-account.css), а не инлайн-стили: shared не
 // импортирует CSS, стили лежат у сайта, как у NeedsWheel (history.css). Действие — общая
-// залитая кнопка ds-btn: на /account она одна (docs/design/APP_2026-11.md, b27).
+// залитая кнопка ds-btn: на /account она одна (docs/archive/APP_2026-11.md, b27).
 
 export interface AccountLinkCardProps {
   target: LinkTarget;

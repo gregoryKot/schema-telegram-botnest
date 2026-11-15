@@ -1,7 +1,7 @@
 /* Аккаунт (/account), привязка мессенджера (/link) и объединение (/account/merge). Префиксы aa-, am-,
    alc- (карточка AccountLinkCard из shared: shared CSS не импортирует, классы живут здесь).
    Примитивы ds-* и токены — cabinet.css / index.css. Страницы живут вне AppShell, корни сами держат
-   светлую тему и растягиваются на всю ширину ряда #root (flex: 1). Язык — docs/design/APP_2026-11.md,
+   светлую тему и растягиваются на всю ширину ряда #root (flex: 1). Язык — docs/archive/APP_2026-11.md,
    b27: /account — рабочая форма без картинок, плоские группы с --panel-line, одна залитая кнопка
    (карточка «Данные из Telegram»); /link и /merge — лист-герой со сценой SceneMerge + форма. */
 .aa-root { --sheet-col: 880px; --sheet-pad: 32px; flex: 1 1 auto; align-self: flex-start; min-width: 0; padding-top: var(--safe-top); min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }

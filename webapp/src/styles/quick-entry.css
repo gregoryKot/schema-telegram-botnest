@@ -1,6 +1,6 @@
 /* «Дневник одной страницей» (components/diary/QuickEntrySheet.tsx, quickEntry/*). Префикс qe-;
    оболочка и шапка — .tk2-overlay / .tq-* (sheet-tracker.css, flow-frame.css), лист-герой и
-   «готово» — EntitySheet / DoneSheet (paper-app.css). Редизайн 2026-11 (APP_2026-11.md, b10a):
+   «готово» — EntitySheet / DoneSheet (paper-app.css). Редизайн 2026-11 (docs/archive/APP_2026-11.md, b10a):
    поле — общий поле-лист .pa-field на персике героя, глубина — сплошным сдвинутым слоем, без blur. */
 
 /* Колонка потока: на телефоне во всю ширину, на компьютере — лист 920 по центру, а не узкая
