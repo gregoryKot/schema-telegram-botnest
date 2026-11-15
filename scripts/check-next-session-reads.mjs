@@ -6,25 +6,29 @@
 // стареет, как только встреча прошла. Ближайшую встречу экраны обязаны брать
 // через `shared/src/therapy/upcomingSession.ts` (дата из прошлого заменяется
 // ближайшим днём из `meetingDays`). Карточка клиента показывала «Следующая
-// сессия: Сб, 17 окт» 26-го числа (#867, #869); пятый экран, прочитавший
-// `relation.nextSession` напрямую, молча вернул бы прошедшую дату — держали
-// только тесты четырёх экранов.
+// сессия: Сб, 17 окт» 26-го числа (#867, #869); экран, бот или письмо,
+// прочитавшие `nextSession` напрямую, молча назовут прошедшую дату.
 //
-// В `webapp/src/**`, `shared/src/**` (без тестов) каждое чтение `.nextSession`
-// / `?.nextSession` обязано быть первым аргументом `upcomingSession(…)`;
-// деструктуризация в объявлении (`const { nextSession } = …`) — тоже чтение. Запись
-// (`x.nextSession = …`, ключ объекта `{ nextSession: … }`) и типы не
-// считаются. Исключения — `EXEMPT_FILES`: форма правки показывает сохранённую
-// дату как есть, чтобы её поправить. Бейслайна нет: класс вычищен.
+// В `webapp/src/**`, `shared/src/**`, `src/**` (без тестов) каждое чтение
+// `nextSession` обязано быть первым аргументом `upcomingSession(…)`; что
+// считается чтением — `next-session-reads-rules.mjs`. Исключения —
+// `EXEMPT_FILES`: им нужна сохранённая дата как есть. Бейслайна нет: класс вычищен.
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { stripComments } from './gate-strip-comments.mjs';
-import { lineAt } from './gate-balance.mjs';
+import { directReads } from './next-session-reads-rules.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 
-export const EXEMPT_FILES = ['shared/src/therapy/useSessionAliasEditing.ts'];
+export const EXEMPT_FILES = [
+  'shared/src/therapy/useSessionAliasEditing.ts', // форма правки даты
+  // Сервер отдаёт дату в API как есть, ближайшую считает сайт; слияние карточки
+  // и правка терапевтом переносят сохранённое значение.
+  'src/therapy/therapy-relations.service.ts',
+  'src/therapy/therapy-relation-info.ts',
+  'src/therapy/therapy-invite-attach.ts',
+  'src/therapy/therapy-client-data.service.ts',
+];
 
 function walk(rel, acc = []) {
   if (!existsSync(join(ROOT, rel))) return acc;
@@ -37,27 +41,9 @@ function walk(rel, acc = []) {
   return acc;
 }
 
-/** Прямые чтения nextSession мимо upcomingSession: номера строк. */
-export function directReads(rawSrc) {
-  const src = stripComments(rawSrc);
-  const lines = [];
-  for (const m of src.matchAll(/\??\.nextSession\b/g)) {
-    const before = src.slice(0, m.index);
-    const after = src.slice(m.index + m[0].length);
-    if (/upcomingSession\s*\(\s*[\w$?.[\]]*$/.test(before)) continue;
-    if (/^\s*=(?!=)/.test(after)) continue;
-    lines.push(lineAt(src, m.index));
-  }
-  // Деструктуризация в объявлении: `const { nextSession } = rel`, `let { nextSession: ns } = …`.
-  for (const m of src.matchAll(/\b(?:const|let|var)\s*\{[^{}]*\bnextSession\b[^{}]*\}\s*(?::[^=]+)?=(?!=)/g)) {
-    lines.push(lineAt(src, m.index));
-  }
-  return [...new Set(lines)].sort((a, b) => a - b);
-}
-
 function main() {
   const problems = [];
-  for (const rel of [...walk('webapp/src'), ...walk('shared/src')]) {
+  for (const rel of ['webapp/src', 'shared/src', 'src'].flatMap((d) => walk(d))) {
     if (EXEMPT_FILES.includes(rel)) continue;
     const raw = readFileSync(join(ROOT, rel), 'utf8');
     if (!raw.includes('nextSession')) continue;
@@ -69,11 +55,11 @@ function main() {
     console.error(
       '\nБлижайшая встреча — upcomingSession(x.nextSession, x.meetingDays)\n' +
         '(shared/src/therapy/upcomingSession.ts): прошедшая дата заменяется ближайшим днём встреч.\n' +
-        'Форма правки, которой нужна сохранённая дата как есть, — EXEMPT_FILES с образцом в спеке.',
+        'Файл, которому нужна сохранённая дата как есть (форма правки, проброс в API), — EXEMPT_FILES с образцом в спеке.',
     );
     process.exit(1);
   }
-  console.log('✓ nextSession: все чтения во фронтах идут через upcomingSession.');
+  console.log('✓ nextSession: все чтения в сайте, shared и сервере идут через upcomingSession.');
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

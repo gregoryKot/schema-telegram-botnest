@@ -1,7 +1,8 @@
-// Тест гейта check-zero-coverage.mjs: файл src/** с нулём покрытых строк —
-// красный, если не записан в бейслайн с причиной; долг тает через --update,
-// который только вычёркивает. Образец класса — src/api/throttle-hit.cleanup.ts
-// жил с 0%, пока пол каталога src/api был зелёным.
+// Тест гейта check-zero-coverage.mjs: файл src/** с нулём или почти нулём
+// покрытых строк — красный, если не записан в бейслайн с причиной; причина
+// «покрыто e2e» называет спек, который есть и гоняется e2e-шагом ci.yml; долг
+// тает через --update, который только вычёркивает. Образец класса —
+// src/api/throttle-hit.cleanup.ts жил с 0%, пока пол каталога src/api был зелёным.
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { cleanupTmp, runGate } from './gate-sandbox';
@@ -16,17 +17,23 @@ const entry = (total: number, covered: number) => ({
   } as Lines,
 });
 const SUMMARY = 'coverage/coverage-summary.json';
+interface RunOpts {
+  args?: string[];
+  keepTmp?: boolean;
+  /** Прочие файлы песочницы: e2e-спеки, .github/workflows/ci.yml. */
+  extra?: Record<string, string>;
+}
 const run = (
   files: Record<string, { lines: Lines }>,
   baseline: Record<string, string>,
-  args: string[] = [],
-  keepTmp = false,
+  { args = [], keepTmp = false, extra = {} }: RunOpts = {},
 ) =>
   runGate(
     'check-zero-coverage.mjs',
     {
       [SUMMARY]: JSON.stringify({ total: entry(1, 1), ...files }),
       'scripts/zero-coverage-baseline.json': JSON.stringify(baseline),
+      ...extra,
     },
     { args, keepTmp },
   );
@@ -36,7 +43,22 @@ describe('check-zero-coverage.mjs', () => {
     const red = run({ 'src/api/cleanup.ts': entry(10, 0) }, {});
     expect(red.status).toBe(1);
     expect(red.stderr).toContain('src/api/cleanup.ts: 0% строк');
-    expect(run({ 'src/api/cleanup.ts': entry(10, 1) }, {}).status).toBe(0);
+    expect(run({ 'src/api/cleanup.ts': entry(10, 5) }, {}).status).toBe(0);
+  });
+
+  it('почти ноль: 5% строк без записи — красный, с причиной — зелёный; ровно 10% — уже не почти ноль', () => {
+    const f = 'src/api/big.service.ts';
+    const red = run({ [f]: entry(40, 2) }, {});
+    expect(red.status).toBe(1);
+    expect(red.stderr).toContain(
+      `${f}: 5.0% строк (2 из 40) — ниже порога 10%`,
+    );
+    const reason = { [f]: 'обёртка над SDK без ветвлений, логика в адаптере' };
+    expect(run({ [f]: entry(40, 2) }, reason).status).toBe(0);
+    expect(run({ [f]: entry(40, 4) }, {}).status).toBe(0);
+    expect(run({ [f]: entry(1000, 99) }, {}).stderr).toContain(
+      `${f}: 9.9% строк`,
+    );
   });
 
   it('абсолютный путь из summary jest сводится к src/… песочницы', () => {
@@ -93,7 +115,7 @@ describe('check-zero-coverage.mjs', () => {
     );
     expect(res.status).toBe(0);
     expect(res.stdout).toContain(
-      'src/a.ts: в бейслайне нулей, но покрыт или удалён',
+      'src/a.ts: в бейслайне нулей, но покрыт от 10% строк или удалён',
     );
   });
 
@@ -103,7 +125,7 @@ describe('check-zero-coverage.mjs', () => {
     const red = run(files, base);
     expect(red.status).toBe(1);
     expect(red.stderr).toContain('src/b.ts: 0% строк');
-    const upd = run(files, base, ['--update'], true);
+    const upd = run(files, base, { args: ['--update'], keepTmp: true });
     try {
       expect(upd.status).toBe(1);
       expect(upd.stderr).toContain(
@@ -131,7 +153,7 @@ describe('check-zero-coverage.mjs', () => {
 
   it('EXEMPT_PATTERNS: ровно модуль и точка входа', () => {
     const patterns = loadRegexList(
-      'check-zero-coverage.mjs',
+      'zero-coverage-rules.mjs',
       'EXEMPT_PATTERNS',
     ).map((p) => new RegExp(p.source, p.flags));
     const hit = (s: string) => patterns.some((re) => re.test(s));
@@ -139,5 +161,57 @@ describe('check-zero-coverage.mjs', () => {
     expect(hit('src/main.ts')).toBe(true);
     expect(hit('src/api/module-options.ts')).toBe(false);
     expect(hit('src/cli/main.ts')).toBe(false);
+  });
+});
+
+describe('check-zero-coverage.mjs: причина «покрыто e2e»', () => {
+  const SPEC = 'test/client-booking-ownership.e2e-spec.ts';
+  const CTL = 'src/booking/client-booking.controller.ts';
+  const zero = { [CTL]: entry(13, 0) };
+  const base = {
+    [CTL]: `контроллер под e2e-смоком ${SPEC}, вне юнит-подсчёта`,
+  };
+  // e2e-шаг джобы backend: токен jest — префикс пути, как в настоящем ci.yml.
+  const ci = (lines: string) => ({
+    '.github/workflows/ci.yml': `jobs:\n  backend:\n    steps:\n${lines}`,
+  });
+  const E2E_STEP =
+    '      - run: npx jest --config ./test/jest-e2e.json test/app-auth test/client-booking-ownership\n';
+
+  it('спек есть и его гоняет e2e-шаг ci.yml — зелёный', () => {
+    const res = run(zero, base, { extra: { [SPEC]: '', ...ci(E2E_STEP) } });
+    expect(res.status).toBe(0);
+  });
+
+  it('спека нет в репозитории — красный, хотя ci.yml его называет', () => {
+    const res = run(zero, base, { extra: ci(E2E_STEP) });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      `бейслайн ${CTL}: спека ${SPEC} нет в репозитории`,
+    );
+  });
+
+  it('спек есть, но в ci.yml он только в комментарии — красный', () => {
+    const lines =
+      `      # ${SPEC} — гоняется ниже\n` +
+      '      - run: npx jest --config ./test/jest-e2e.json test/app-auth\n';
+    const res = run(zero, base, { extra: { [SPEC]: '', ...ci(lines) } });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      `${SPEC} не гоняет ни один e2e-шаг .github/workflows/ci.yml`,
+    );
+  });
+
+  it('слово e2e без пути спека — красный; причина без e2e спека не требует', () => {
+    const f = 'src/booking/booking.registry.ts';
+    const z = { [f]: entry(25, 0) };
+    const vague = run(z, {
+      [f]: 'модуль поднимается e2e на AppModule вне подсчёта',
+    });
+    expect(vague.status).toBe(1);
+    expect(vague.stderr).toContain(
+      `бейслайн ${f}: причина ссылается на e2e, но не называет спек`,
+    );
+    expect(run(z, { [f]: 'реестр провайдеров без ветвлений' }).status).toBe(0);
   });
 });

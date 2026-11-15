@@ -255,7 +255,7 @@ jobs:
       # telegramIdsFor): userId — чат лишь у телеграм-входа (класс #456).
       # Бейслайна нет, исключения — EXEMPT_FILES в самом гейте.
       - run: node scripts/check-telegram-chat-id.mjs
-      # Ближайшая встреча во фронтах — только upcomingSession(x.nextSession, …):
+      # Ближайшая встреча в сайте, shared и сервере — только upcomingSession(x.nextSession, …):
       # настенная дата стареет (класс 17 INCIDENTS, #867/#869). Без бейслайна.
       - run: node scripts/check-next-session-reads.mjs
       # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
