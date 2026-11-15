@@ -10,8 +10,10 @@ import type { TherapyRelationInfo } from '../../api';
 
 const { getMyConcept, trackEvent, reportClientError, FakeApiError } = vi.hoisted(() => {
   class FakeApiError extends Error {
-    constructor(readonly status: number) {
+    readonly status: number;
+    constructor(status: number) {
       super(`HTTP ${status}`);
+      this.status = status;
     }
   }
   return { getMyConcept: vi.fn(), trackEvent: vi.fn(), reportClientError: vi.fn(), FakeApiError };

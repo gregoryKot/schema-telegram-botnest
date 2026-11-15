@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ClientDetail } from './clientSheetTypes';
+import type { ConceptModeLink, ConceptSchemaLink } from '../../../../shared/src/apiTypes';
 import { TechniqueJournalBlock } from './TechniqueJournalBlock';
 import { emptyModeLink } from '../../../../shared/src/therapy/conceptGraph/modeLinks';
 import { emptySchemaLink } from '../../../../shared/src/therapy/conceptGraph/schemaLinks';
@@ -38,7 +39,7 @@ const critic = {
 };
 const abandonment = { ...emptySchemaLink('abandonment'), done: [{ techniqueId: 'chairwork', day: '2026-11-05' }] };
 
-function setup({ modeLinks = [critic], schemaLinks = [abandonment], failed = false, conceptLink = true, takeFocus = undefined as (() => boolean) | undefined } = {}) {
+function setup({ modeLinks = [critic] as ConceptModeLink[], schemaLinks = [abandonment] as ConceptSchemaLink[], failed = false, conceptLink = true, takeFocus = undefined as (() => boolean) | undefined } = {}) {
   const onOpenConcept = vi.fn();
   const detail = {
     concept: { schemaIds: [], modeIds: [], modeLinks, schemaLinks },
