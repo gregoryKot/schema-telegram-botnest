@@ -93,7 +93,7 @@ export interface DiaryEntryLike {
 export interface DiaryPreviewRow {
   /** Тип записи — знак строки (noteLook). */
   type: DiaryEntryLike['type'];
-  typeLabel: string;
+  typeLabel: string | null;
   title: string;
   excerpt: string;
   date: string;
@@ -101,7 +101,7 @@ export interface DiaryPreviewRow {
 
 const flatSchemas = SCHEMA_DOMAINS.flatMap((d) => d.schemas);
 
-/** Последние записи клиента для строк превью: тип (знак и тихая подпись), заголовок, фрагмент. */
+/** Последние записи клиента для строк превью: тип (знак и тихая подпись; у благодарности тип и есть заголовок — без подписи), заголовок, фрагмент. */
 export function diaryPreview(entries: readonly DiaryEntryLike[], limit = 5): DiaryPreviewRow[] {
   return entries.slice(0, limit).map((e) => {
     if (e.type === 'schema') {
@@ -114,7 +114,7 @@ export function diaryPreview(entries: readonly DiaryEntryLike[], limit = 5): Dia
       const mode = getModeById(e.modeId ?? '');
       return { type: 'mode', typeLabel: 'Режим-дневник', title: mode ? mode.name : (e.modeId ?? 'Режим'), excerpt: e.excerpt, date: e.date };
     }
-    return { type: 'gratitude', typeLabel: 'Благодарность', title: 'Благодарность', excerpt: e.excerpt, date: e.date };
+    return { type: 'gratitude', typeLabel: null, title: 'Благодарность', excerpt: e.excerpt, date: e.date };
   });
 }
 

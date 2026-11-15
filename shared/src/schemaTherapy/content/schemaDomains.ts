@@ -198,6 +198,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
       {
         id: 'punitiveness_self',
         name: 'Пунитивность (на себя)',
+        fullName: 'Пунитивность (направленная на себя)',
         emoji: '⚔️',
         desc: 'Жёсткое наказание себя за ошибки, сложность прощать себя',
         libraryDesc:
@@ -206,6 +207,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
       {
         id: 'punitiveness_others',
         name: 'Пунитивность (на других)',
+        fullName: 'Пунитивность (направленная на других)',
         emoji: '⚖️',
         desc: 'Нетерпимость к чужим ошибкам, убеждение что они должны нести суровые последствия',
         libraryDesc:
