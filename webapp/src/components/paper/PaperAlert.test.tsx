@@ -3,7 +3,7 @@
 // «Повторить» второстепенной кнопкой; повтор идёт — кнопка неактивна; без onRetry кнопки нет.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { PAPER_HUE, OUTCOME_LOOK } from '../../../../shared/src/theme/entityLook';
+import { OUTCOME_LOOK } from '../../../../shared/src/theme/entityLook';
 import { PaperAlert } from './PaperAlert';
 import { readCss } from '../../styles/cssRules.test-helpers';
 
@@ -14,9 +14,7 @@ describe('PaperAlert', () => {
     const { container } = render(<PaperAlert title="Записи не загрузились" text="Сервер не ответил" />);
     const alert = screen.getByRole('alert');
     expect(alert.className).toBe('pp-paper pa-alert');
-    // дефолт — литерал (не рантайм-импорт палитры, см. PaperAlert.tsx), сверка с палитрой здесь
-    expect(alert.style.getPropertyValue('--h')).toBe(String(PAPER_HUE.straw));
-    expect(OUTCOME_LOOK.wait.hue).toBe(PAPER_HUE.straw);
+    expect(alert.style.getPropertyValue('--h')).toBe(String(OUTCOME_LOOK.wait.hue));
     expect(alert.querySelector('.pa-alert-title')?.textContent).toBe('Записи не\u00a0загрузились');
     expect(alert.querySelector('.pa-alert-text')?.textContent).toBe('Сервер не\u00a0ответил');
     expect(container.querySelector('button')).toBeNull();

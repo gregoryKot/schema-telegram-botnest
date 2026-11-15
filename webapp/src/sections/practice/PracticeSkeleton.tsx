@@ -1,16 +1,16 @@
 // Силуэт «Практик» по форме раздела (SectionSkeleton по адресу /practice; до него — общий ScreenSkeleton): шапка,
 // вводная «Здесь и сейчас», герой дыхания, квадраты быстрых практик и бенто библиотеки. Тихая бумага — в оттенках
-// героя и квадратов (их набор и порядок постоянны, сверка с QUICK_LOOK и PRACTICE_LOOK — в тесте); плитки
-// библиотеки без оттенка: набор и порядок настраивает человек, чужой цвет мигал бы до экрана. Раскладка —
-// client-practice-skeleton.css: силуэт рисуется до чанка «Практик», и их CSS к нему ещё не приехал.
+// героя и квадратов из ENTITY_LOOK (их набор и порядок постоянны); плитки библиотеки без оттенка: набор и порядок
+// настраивает человек, чужой цвет мигал бы до экрана. Раскладка — client-practice-skeleton.css: силуэт рисуется
+// до чанка «Практик», и их CSS к нему ещё не приехал.
 import type { CSSProperties } from 'react';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
 import { Skeleton, SkeletonLines } from '../../components/Skeleton';
 import '../../styles/client-practice-skeleton.css';
 
 /** Оттенки квадратов по порядку: заземление, «Стоп», «Мне плохо» (его квадрат — только на компьютере). */
-const SQUARE_HUES = [135, 70, 25];
-const BREATH_HUE = 195;
+const SQUARE_HUES = [ENTITY_LOOK.grounding.hue, ENTITY_LOOK.stop.hue, ENTITY_LOOK.sos.hue];
 
 /** Лист со знаком: квадрат быстрой практики или плитка библиотеки (у плитки знак сверху — в CSS). */
 function Leaf({ className, style }: { className: string; style?: CSSProperties }) {
@@ -35,7 +35,7 @@ export function PracticeSkeleton() {
       <div className="cpk-here">
         <span className="cpk-h2"><Skeleton width={220} height="100%" /></span>
         <SkeletonLines widths={['95%', '91%', '93%', '34%']} gap={9} />
-        <div className="pp-paper sks-paper cpk-hero" style={hueStyle(BREATH_HUE)}>
+        <div className="pp-paper sks-paper cpk-hero" style={hueStyle(ENTITY_LOOK.breathing.hue)}>
           <div className="cpk-hero-in">
             <Skeleton className="cpk-scene" height="auto" radius={20} />
             <div className="cpk-hero-body">

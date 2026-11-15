@@ -5,7 +5,7 @@ import { TherapyLine } from '../components/therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
 import { JourneySheet } from '../components/JourneySheet';
 import { PaperAlert } from '../components/paper/PaperAlert';
-import { OUTCOME_LOOK_LIT } from '../components/paper/outcomeLook';
+import { OUTCOME_LOOK } from '../../../shared/src/theme/entityLook';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import '../styles/client-profile.css'; import '../styles/client-profile-mobile.css';
@@ -34,7 +34,7 @@ import { hasPortraitData } from '../../../shared/src/portrait/portraitData';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 /** Сбой загрузки — на нашей стороне: `Breath` на персике 45 (исходы служебных страниц, OUTCOME_LOOK). */
-const OUR_SIDE = OUTCOME_LOOK_LIT.our_side;
+const OUR_SIDE = OUTCOME_LOOK.our_side;
 
 interface Props {
   onOpenSettings?: () => void; onOpenTracker?: () => void; onTakeTest?: () => void;

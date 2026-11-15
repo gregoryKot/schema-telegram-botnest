@@ -1,6 +1,6 @@
 // Квадраты «Здесь и сейчас» под героем дыхания — как два квадрата «Сегодня»: заземление, «Стоп» и на
 // компьютере «Мне плохо» (на телефоне «Мне плохо» — в листе кризисных строк, PhoneHelpRows). Бумага и
-// знак — сущностей ENTITY_LOOK (practiceLook: Grounded, Pause, Heart), внизу мета из данных (useQuickCounts) и стрелка;
+// знак — сущностей ENTITY_LOOK (Grounded, Pause, Heart), внизу мета из данных (useQuickCounts) и стрелка;
 // квадрат — общая плитка QuickTile (у «Что поможет» экрана паттерна — она же без счётчика).
 // Заменили верхний ряд из трёх плиток, повторявший героя, и строки «Если нужно больше» с одним
 // Breath на три разные практики (аудит b14).
@@ -8,7 +8,7 @@ import { practiceCountLabel } from '../../../../shared/src/practices/practiceCou
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
 import { QuickTile } from '../../components/practice/QuickTile';
 import type { QuickCount, QuickCounts } from './useQuickCounts';
-import { PRACTICE_LOOK } from './practiceLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 type QuickId = 'grounding' | 'stop';
 
@@ -24,8 +24,8 @@ const meta = (count: QuickCount) => (count === undefined ? undefined : practiceC
 export function QuickSquares({ counts, onOpen, onSos }: { counts: QuickCounts; onOpen: (id: QuickId) => void; onSos?: () => void }) {
   return (
     <div className={'pp-squares cp-squares' + (onSos ? ' cp-squares--3' : '')}>
-      {SQUARES.map((s) => <QuickTile key={s.id} look={PRACTICE_LOOK[s.id]} title={s.title} text={s.text} meta={meta(counts[s.id])} onClick={() => onOpen(s.id)} />)}
-      {onSos && <QuickTile look={PRACTICE_LOOK.sos} title={FLASHCARD_TITLE} text={FLASHCARD_SUB} meta={meta(counts.sos)} onClick={onSos} />}
+      {SQUARES.map((s) => <QuickTile key={s.id} look={ENTITY_LOOK[s.id]} title={s.title} text={s.text} meta={meta(counts[s.id])} onClick={() => onOpen(s.id)} />)}
+      {onSos && <QuickTile look={ENTITY_LOOK.sos} title={FLASHCARD_TITLE} text={FLASHCARD_SUB} meta={meta(counts.sos)} onClick={onSos} />}
     </div>
   );
 }
