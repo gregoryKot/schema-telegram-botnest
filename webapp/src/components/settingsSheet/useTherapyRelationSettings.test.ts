@@ -115,6 +115,7 @@ describe('useTherapyRelationSettings — сбой загрузки связи', 
     act(() => result.current.load.retry());
     expect(result.current.load.failed).toBe(false);
     await waitFor(() => expect(result.current.therapyRelation).toEqual(REL));
+    expect(mockApi.getTherapyRelation).toHaveBeenCalledTimes(2);
     expect(reportClientError).toHaveBeenCalledTimes(1);
   });
 });
