@@ -23,8 +23,9 @@ vi.mock('../../api', () => ({
     leaveTherapy: vi.fn(),
     createTherapyInvite: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const REL: TherapyRelationInfo = {
@@ -100,5 +101,20 @@ describe('useTherapyRelationSettings — кэш «Написать терапе�
     expect(result.current.leave.failed).toBe(true);
     expect(result.current.therapyRelation).toEqual(REL);
     expect(hasConnectedTherapist()).toBe(true);
+  });
+});
+
+describe('useTherapyRelationSettings — сбой загрузки связи', () => {
+  it('отказ — сбой с отчётом наверх, а не «терапевта нет»; «Повторить» перечитывает', async () => {
+    mockApi.getTherapyRelation.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useTherapyRelationSettings('CLIENT'), { wrapper });
+    await waitFor(() => expect(result.current.load.failed).toBe(true));
+    expect(result.current.therapyRelation).toBeUndefined();
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'therapy relation load failed: network', section: 'settings' });
+    mockApi.getTherapyRelation.mockResolvedValue(REL);
+    act(() => result.current.load.retry());
+    expect(result.current.load.failed).toBe(false);
+    await waitFor(() => expect(result.current.therapyRelation).toEqual(REL));
+    expect(reportClientError).toHaveBeenCalledTimes(1);
   });
 });
