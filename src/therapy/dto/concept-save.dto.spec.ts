@@ -8,6 +8,7 @@
 // CONCEPT_TECHNIQUE_MARKS_MAX. Текст — кириллицей (2 байта на знак в UTF-8),
 // как пересчёт в src/infra/body-limit.ts. Спек проверяет обе стороны: тело
 // проходит DTO (значит, оно правда на пределе, а не меньше) и меньше потолка.
+// Эмодзи (4 байта) худший патч перерастает — его отказ закреплён честным 413.
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { ConceptSaveDto } from './concept-save.dto';
@@ -18,6 +19,7 @@ import { CONCEPT_PATCH_LINKS_MAX } from './concept-save.dto';
 import { CONCEPT_TECHNIQUE_MARKS_MAX } from '../../utils/text-limits';
 import {
   cyrIds,
+  EMOJI,
   worstFullBody,
   worstModeLink,
   worstPatchBody,
@@ -39,6 +41,17 @@ describe('ConceptSaveDto — худшее тело против потолка �
 
   it('худший патч меньше BODY_LIMIT_BYTES', () => {
     expect(bytes(worstPatchBody())).toBeLessThan(BODY_LIMIT_BYTES);
+  });
+
+  // @MaxLength считает эмодзи одним знаком, а в UTF-8 он — 4 байта: такой
+  // патч — ~350 КБ при потолке 256 КБ. Отказ — 413 парсера тела (не 400:
+  // каждое поле в пределе DTO; e2e — test/concept-save-patch.e2e-spec.ts),
+  // сайт на 413 пишет «Сохранится, если сократить» (webapp
+  // ClientConceptTab.save.test.tsx).
+  it('худший патч эмодзи проходит DTO, но больше потолка — честный 413', async () => {
+    const body = worstPatchBody(CONCEPT_PATCH_LINKS_MAX, EMOJI);
+    await expect(errorsFor(body)).resolves.toEqual([]);
+    expect(bytes(body)).toBeGreaterThan(BODY_LIMIT_BYTES);
   });
 
   it('связей сверх CONCEPT_PATCH_LINKS_MAX в одном запросе — отказ', async () => {

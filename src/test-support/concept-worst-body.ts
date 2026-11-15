@@ -1,7 +1,8 @@
 // Тела сохранения концептуализации на пределе DTO — для сверки с потолком
 // тела запроса (src/therapy/dto/concept-save.dto.spec.ts) и e2e
 // (test/concept-save-patch.e2e-spec.ts). Текст — кириллицей: 2 байта на знак
-// в UTF-8, как пересчёт в src/infra/body-limit.ts.
+// в UTF-8, как пересчёт в src/infra/body-limit.ts; `EMOJI` — 4 байта, а
+// @MaxLength (validator.js) считает пару суррогатов одним знаком.
 import {
   CONCEPT_FIELD_TEXT_MAX,
   CONCEPT_MODE_ALIAS_MAX,
@@ -12,7 +13,8 @@ import {
 } from '../utils/text-limits';
 import { CONCEPT_PATCH_LINKS_MAX } from '../therapy/dto/concept-save.dto';
 
-const cyr = (n: number) => 'ж'.repeat(n);
+const CYR = 'ж';
+export const EMOJI = '😀';
 const id = (prefix: string, i: number) => `${prefix}${i}`.padEnd(64, 'x');
 
 /** n разных id по 64 знака (предел DTO). */
@@ -35,48 +37,52 @@ const TEXT_FIELDS = [
   'modeTransitions',
 ];
 
-/** Семь текстовых полей, каждое до CONCEPT_FIELD_TEXT_MAX. */
-export const conceptTextFields = () =>
-  Object.fromEntries(TEXT_FIELDS.map((f) => [f, cyr(CONCEPT_FIELD_TEXT_MAX)]));
+/** Семь текстовых полей, каждое до CONCEPT_FIELD_TEXT_MAX знаков `ch`. */
+export const conceptTextFields = (ch = CYR) =>
+  Object.fromEntries(
+    TEXT_FIELDS.map((f) => [f, ch.repeat(CONCEPT_FIELD_TEXT_MAX)]),
+  );
 
 export const worstModeLink = (
   i: number,
   done = CONCEPT_TECHNIQUE_MARKS_MAX,
+  ch = CYR,
 ) => ({
   modeId: id('m', i),
-  alias: cyr(CONCEPT_MODE_ALIAS_MAX),
+  alias: ch.repeat(CONCEPT_MODE_ALIAS_MAX),
   schemaIds: cyrIds('s', 20),
   needIds: cyrIds('n', 20),
-  origin: cyr(CONCEPT_MODE_TEXT_MAX),
-  manifest: cyr(CONCEPT_MODE_TEXT_MAX),
-  strategy: cyr(CONCEPT_MODE_TEXT_MAX),
+  origin: ch.repeat(CONCEPT_MODE_TEXT_MAX),
+  manifest: ch.repeat(CONCEPT_MODE_TEXT_MAX),
+  strategy: ch.repeat(CONCEPT_MODE_TEXT_MAX),
   done: marks(done),
 });
 
 export const worstSchemaLink = (
   i: number,
   done = CONCEPT_TECHNIQUE_MARKS_MAX,
+  ch = CYR,
 ) => ({
   schemaId: id('s', i),
-  belief: cyr(CONCEPT_SCHEMA_TEXT_MAX),
-  origin: cyr(CONCEPT_SCHEMA_TEXT_MAX),
+  belief: ch.repeat(CONCEPT_SCHEMA_TEXT_MAX),
+  origin: ch.repeat(CONCEPT_SCHEMA_TEXT_MAX),
   needIds: cyrIds('n', 5),
   done: marks(done),
 });
 
-/** Худший патч: всё до предела, по `links` связей каждого вида. */
-export function worstPatchBody(links = CONCEPT_PATCH_LINKS_MAX) {
+/** Худший патч: всё до предела знаками `ch`, по `links` связей каждого вида. */
+export function worstPatchBody(links = CONCEPT_PATCH_LINKS_MAX, ch = CYR) {
+  const marksMax = CONCEPT_TECHNIQUE_MARKS_MAX;
+  const upsert = <L>(link: (i: number, done: number, text: string) => L) =>
+    Array.from({ length: links }, (_, i) => link(i, marksMax, ch));
   return {
     baseVersion: '2026-11-08T10:00:00.000Z',
-    ...conceptTextFields(),
+    ...conceptTextFields(ch),
     schemaIds: cyrIds('s', CONCEPT_SCHEMA_IDS_MAX),
     modeIds: cyrIds('m', 100),
-    modeLinksPatch: {
-      upsert: Array.from({ length: links }, (_, i) => worstModeLink(i)),
-      remove: cyrIds('r', 40),
-    },
+    modeLinksPatch: { upsert: upsert(worstModeLink), remove: cyrIds('r', 40) },
     schemaLinksPatch: {
-      upsert: Array.from({ length: links }, (_, i) => worstSchemaLink(i)),
+      upsert: upsert(worstSchemaLink),
       remove: cyrIds('r', 20),
     },
   };

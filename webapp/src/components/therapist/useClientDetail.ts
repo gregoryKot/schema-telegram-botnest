@@ -179,7 +179,8 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     // Handlers
     openClient, deleteClient, requestDeleteClient, cancelDeleteClient,
     addNote: notes.addNote, removeNote: notes.removeNote, onTaskAssigned,
-    patchConcept: conceptSave.patchConcept, toggleSchemaId: conceptSave.toggleSchemaId, toggleModeId: conceptSave.toggleModeId,
+    patchConcept: conceptSave.patchConcept, restoreConcept: conceptSave.restoreConcept,
+    toggleSchemaId: conceptSave.toggleSchemaId, toggleModeId: conceptSave.toggleModeId,
     saveAlias: sa.saveAlias, saveSessionInfo: sa.saveSessionInfo,
     handleRequestYsq, handleExport,
   };

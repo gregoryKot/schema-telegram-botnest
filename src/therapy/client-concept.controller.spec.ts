@@ -34,9 +34,11 @@ function makeController(
     },
     clientConceptualization: {
       findUnique: jest.fn().mockResolvedValue(concept),
-      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      update: jest.fn().mockResolvedValue(concept),
       upsert: jest.fn().mockResolvedValue(concept),
     },
+    // Serializable-транзакция тумблера (concept-share.ts) — на самом фейке.
+    $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
   };
   const relations = {
     assertHasClient: jest.fn(() =>
@@ -81,6 +83,7 @@ describe('ClientConceptController.share', () => {
       ForbiddenException,
     );
     expect(relations.assertHasClient).not.toHaveBeenCalled();
+    expect(prisma.clientConceptualization.update).not.toHaveBeenCalled();
     expect(prisma.clientConceptualization.upsert).not.toHaveBeenCalled();
   });
 
@@ -89,6 +92,7 @@ describe('ClientConceptController.share', () => {
     await expect(ctrl.share(req, '7', { shared: true })).rejects.toThrow(
       new ForbiddenException('No active relation with this client'),
     );
+    expect(prisma.clientConceptualization.update).not.toHaveBeenCalled();
     expect(prisma.clientConceptualization.upsert).not.toHaveBeenCalled();
   });
 
