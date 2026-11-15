@@ -1,6 +1,6 @@
 /* Карточка статьи (components/ArticleCard.tsx) — одна на лендинг (сетка .pl2-3) и список
    /articles, и обложка шапки статьи. Обложка — сцена статьи на цветной бумаге по --h
-   (components/art/ArticleCover.tsx; docs/design/PAPER_2026-11.md, «Обложки статей»).
+   (components/art/ArticleCover.tsx; docs/design/PAPER_MOTIFS_2026-11.md, «Обложки статей»).
    Префикс ac-. Раскладку 601–900 на лендинге держит product-landing.css. */
 .ac-card { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
 .ac-cover {

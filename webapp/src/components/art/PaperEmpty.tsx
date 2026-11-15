@@ -8,7 +8,7 @@ import type { ArtProps } from './paper';
  * что делать дальше; без `children` остаётся один заголовок («Записи»).
  * `art` — знак сущности вместо чашки, когда пусто место одной сущности и её знака
  * рядом нет (вкладки карточки клиента: карта — Cluster, сессии — Talk; таблица
- * «Мотив → смысл» в docs/design/PAPER_2026-11.md). По умолчанию — чашка.
+ * «Мотив → смысл» в docs/design/PAPER_MOTIFS_2026-11.md). По умолчанию — чашка.
  */
 export function PaperEmpty({ title, art: Art = Cup, children }: { title?: ReactNode; art?: ComponentType<ArtProps>; children?: ReactNode }) {
   return (
