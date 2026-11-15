@@ -9,20 +9,18 @@ export const EMAIL_LINK_PATH = '/account';
 export interface AuthErrorScreen {
   title: string;
   action: { label: string; href: string };
-  /** Текст, когда рядом «Повторить» (ссылка из письма цела, токен ещё в памяти). */
-  retryLead?: (tr: (ty: string, vy: string) => string) => string;
+  /** Текст, когда рядом «Повторить» (ссылка из письма цела, токен ещё в памяти); безличный, как словарь. */
+  retryLead?: string;
 }
 
 const NEW_LINK = { label: 'Запросить новую ссылку', href: EMAIL_LINK_PATH };
 const OTHER_WAY = { label: 'Другой способ входа', href: '/login' };
+const NETWORK_RETRY = 'Ссылка из письма ещё действует. Как только интернет вернётся, сработает «Повторить».';
 const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
   vk_disabled: { title: 'Вход через ВКонтакте отключён', action: OTHER_WAY },
   yandex_disabled: { title: 'Вход через Яндекс отключён', action: OTHER_WAY },
   email_link_expired: { title: 'Ссылка устарела', action: NEW_LINK },
-  email_network: { title: 'Нет связи', action: NEW_LINK, retryLead: (tr) => tr(
-    'Ссылка из письма ещё действует: проверь интернет и нажми «Повторить».',
-    'Ссылка из письма ещё действует: проверьте интернет и нажмите «Повторить».',
-  ) },
+  email_network: { title: 'Нет связи', action: NEW_LINK, retryLead: NETWORK_RETRY },
 };
 
 /** Исход листа `/auth/error` (docs/design/APP_2026-11.md, «Исходы служебных страниц»): подожди или

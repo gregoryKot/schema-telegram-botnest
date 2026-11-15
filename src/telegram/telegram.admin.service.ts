@@ -194,7 +194,7 @@ export class TelegramAdminService implements OnModuleInit {
           ?.slice('/broadcast '.length)
           .trim();
         if (!text) {
-          await ctx.reply('Укажи текст: /broadcast <сообщение>');
+          await ctx.reply('Текст пустой. Формат: /broadcast <сообщение>');
           return;
         }
         const userIds = await this.accountService.getBroadcastUserIds();
