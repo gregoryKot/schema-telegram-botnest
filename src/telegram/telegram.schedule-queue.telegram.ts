@@ -4,12 +4,17 @@
 //
 // Строка уже захвачена этим прогоном (notification-claim.ts). Исходы:
 //   нет адреса   → «некому доставить» (cancelledAt, telegram.schedule-queue.nowhere.ts);
+//   только в приложение (PUSH_ONLY_TYPES) → снято, в Telegram не уходит;
 //   нет шаблона  → помечено отправленным в renderForQueue, причина в логе;
 //   ушло         → markSent;
 //   stop         → Telegram просит ждать дольше, чем осталось прогону, или
 //                  кончился бюджет: строку и хвост подберёт следующий тик.
 // Ошибки отправки пробрасываются — их разбирает handleSendError.
 import type { DueNotification } from '../notification/notification.service';
+import {
+  PUSH_ONLY_TYPES,
+  type NotificationType,
+} from '../notification/notification.types';
 import type { SendSettings } from '../bot/send-settings';
 import type { QueueDeps } from './telegram.schedule-queue';
 import type { NoAddressRows } from './telegram.schedule-queue.nowhere';
@@ -28,6 +33,11 @@ export async function sendRowByTelegram(
 ): Promise<Extract<RowStep, 'done' | 'stop'>> {
   if (s.chatId === null) {
     await nowhere.cancel(notif);
+    return 'done';
+  }
+  // Сюда приходят и строки, у которых пропала подписка (gone в ...queue.push.ts).
+  if (PUSH_ONLY_TYPES.includes(notif.type as NotificationType)) {
+    await deps.notificationService.cancelOne(notif.id);
     return 'done';
   }
   const msg = await renderForQueue(deps, notif, s.form);

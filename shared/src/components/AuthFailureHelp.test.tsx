@@ -16,10 +16,18 @@ describe('AuthFailureHelp', () => {
   it('вместо «напиши нам» показывает адрес и ведёт по нему', () => {
     render(<AuthFailureHelp hostId="telegram" />);
     const link = screen.getByRole('link', {
-      name: /Написать автору → @kotlarewski/,
+      name: /Написать автору: @kotlarewski/,
     });
     expect(link.getAttribute('href')).toBe('https://t.me/kotlarewski');
     expect(screen.queryByText(/напиши нам/)).toBeNull();
+  });
+
+  // Принцип 7 docs/design/APP_2026-11.md: стрелка — SVG, а не глиф в тексте.
+  it('стрелка у ссылки — svg без имени, глифа «→» в тексте нет', () => {
+    render(<AuthFailureHelp hostId="telegram" />);
+    const link = screen.getByRole('link', { name: /Написать автору/ });
+    expect(link.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(link.textContent).not.toContain('→');
   });
 
   it('в MAX адрес — почта: телеграмной ссылки там не открыть', () => {

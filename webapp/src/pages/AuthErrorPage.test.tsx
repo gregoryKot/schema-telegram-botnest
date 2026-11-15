@@ -11,17 +11,18 @@ vi.mock('../../../shared/src/host', () => ({
 vi.mock('../api', () => ({ reportClientError: vi.fn() }));
 
 import { reportClientError } from '../api';
+import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
-import { AuthErrorPage } from './AuthErrorPage';
+import { AuthErrorPage, AuthErrorView } from './AuthErrorPage';
 import { glueSpaces } from '../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 
-function renderAt(search: string, form: AddressForm = 'ty') {
+const GENERIC_LEAD = 'Можно попробовать ещё раз, а если снова не выйдет — написать нам в Telegram.';
+
+/** Без `form` — как в жизни: экран вне AddressFormProvider. */
+function renderAt(search: string, form?: AddressForm, ui: ReactElement = <AuthErrorPage />) {
   window.history.replaceState(null, '', `/auth/error${search}`);
-  return render(
-    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <AuthErrorPage />
-    </AddressFormContext.Provider>,
-  );
+  if (!form) return render(ui);
+  return render(<AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>{ui}</AddressFormContext.Provider>);
 }
 
 const reportedMessages = () =>
@@ -41,7 +42,7 @@ describe('AuthErrorPage — чужой текст из адреса', () => {
     expect(container.textContent).not.toContain('заблокирован');
     expect(container.querySelector('.pa-outcome-code')).toBeNull();
     expect(screen.getByText('Вход не удался')).toBeTruthy();
-    expect(screen.getByText('Попробуй ещё раз или напиши нам в Telegram.')).toBeTruthy();
+    expect(screen.getByText(GENERIC_LEAD)).toBeTruthy();
     expect(reportedMessages()).toHaveLength(1);
     expect(reportedMessages()[0]).toMatch(/, unknown$/);
     expect(reportedMessages()[0]).not.toContain('8-900');
@@ -62,21 +63,11 @@ describe('AuthErrorPage — известные коды', () => {
     expect(reportedMessages()[0]).toMatch(/хост=web, .*, vk_failed$/);
   });
 
-  it.each([['ty', /Попробуй ещё раз или выбери другой способ/], ['vy', /Попробуйте ещё раз или выберите другой способ/]] as const)(
-    'yandex_failed (%s): называет Яндекс, код для поддержки и в отчёте',
-    (form, tail) => {
-      const { container } = renderAt('?reason=yandex_failed', form);
-      expect(screen.getByText(/Вход через Яндекс не прошёл/)).toBeTruthy();
-      expect(screen.getByText(tail)).toBeTruthy();
-      expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('yandex_failed');
-      expect(reportedMessages()[0]).toMatch(/, yandex_failed$/);
-    },
-  );
-
-  it('email_link_expired в форме «вы» — без «ты»-строк', () => {
-    const { container } = renderAt('?reason=email_link_expired', 'vy');
-    expect(screen.getByText(/Запросите новую в «Аккаунте»\./)).toBeTruthy();
-    expect(container.textContent).not.toMatch(/Запроси |напиши /);
+  it('yandex_failed: называет Яндекс, код для поддержки и в отчёте', () => {
+    const { container } = renderAt('?reason=yandex_failed');
+    expect(screen.getByText(/Вход через Яндекс не прошёл\. Можно повторить попытку или выбрать другой способ/)).toBeTruthy();
+    expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('yandex_failed');
+    expect(reportedMessages()[0]).toMatch(/, yandex_failed$/);
   });
 
   it('http_429 — про частые попытки; прочий http-статус — общий текст с кодом', () => {
@@ -84,7 +75,7 @@ describe('AuthErrorPage — известные коды', () => {
     expect(screen.getByText(/Слишком много попыток подряд/)).toBeTruthy();
     cleanup();
     const { container } = renderAt('?reason=http_403');
-    expect(screen.getByText('Попробуй ещё раз или напиши нам в Telegram.')).toBeTruthy();
+    expect(screen.getByText(GENERIC_LEAD)).toBeTruthy();
     expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('http_403');
   });
 
@@ -115,7 +106,7 @@ describe('AuthErrorPage — ссылка из письма', () => {
   it('просрочка: «Ссылка устарела», без кода, кнопка ведёт в «Аккаунт», а не к входу по почте', () => {
     const { container } = renderAt('?reason=email_link_expired');
     expect(screen.getByRole('heading').textContent).toBe('Ссылка устарела');
-    expect(screen.getByText(/открывается только один раз\. Запроси новую в «Аккаунте»\./)).toBeTruthy();
+    expect(screen.getByText(/открывается только один раз\. Новую можно запросить в «Аккаунте»\./)).toBeTruthy();
     expect(container.querySelector('.pa-outcome-code')).toBeNull();
     const link = screen.getByText('Запросить новую ссылку') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/account');
@@ -125,14 +116,9 @@ describe('AuthErrorPage — ссылка из письма', () => {
   it('обрыв сети: «Нет связи» и свой текст, а не «ссылка устарела»', () => {
     const { container } = renderAt('?reason=email_network');
     expect(screen.getByRole('heading').textContent).toBe('Нет связи');
-    expect(screen.getByText('Нет связи, попробуй ещё раз: проверь интернет и снова открой ссылку из письма.')).toBeTruthy();
+    expect(screen.getByText('Запрос не дошёл до сервера, ссылка из письма цела. Когда интернет вернётся, её можно открыть ещё раз.')).toBeTruthy();
     expect(container.textContent).not.toContain('устарел');
     expect(reportedMessages()[0]).toMatch(/, email_network$/);
-  });
-
-  it('обрыв сети на «вы»', () => {
-    renderAt('?reason=email_network', 'vy');
-    expect(screen.getByText(/попробуйте ещё раз: проверьте интернет и снова откройте ссылку/)).toBeTruthy();
   });
 });
 
@@ -149,8 +135,8 @@ describe('AuthErrorPage — провайдер выключен', () => {
     expect(reportedMessages()[0]).toMatch(/, vk_disabled$/);
   });
 
-  it.each(['ty', 'vy'] as const)('yandex_disabled (%s): свой заголовок, безличный текст, кнопка на /login', (form) => {
-    const { container } = renderAt('?reason=yandex_disabled', form);
+  it('yandex_disabled: свой заголовок, безличный текст, кнопка на /login', () => {
+    const { container } = renderAt('?reason=yandex_disabled');
     expect(screen.getByRole('heading').textContent).toBe('Вход через Яндекс отключён');
     expect(screen.getByText(/Вход через Яндекс временно отключён\. Если к аккаунту привязан VK ID/)).toBeTruthy();
     expect((screen.getByText('Другой способ входа') as HTMLAnchorElement).getAttribute('href')).toBe('/login');
@@ -164,10 +150,22 @@ describe('AuthErrorPage — провайдер выключен', () => {
     renderAt('?reason=google_disabled');
     expect(screen.getByRole('heading').textContent).toBe(glueSpaces('Вход не удался'));
   });
+});
 
-  it('vk_disabled в форме «вы» — тот же безличный текст', () => {
-    const { container } = renderAt('?reason=vk_disabled', 'vy');
-    expect(screen.getByRole('heading').textContent).toBe('Вход через ВКонтакте отключён');
-    expect(container.textContent).not.toMatch(/Попробуй|напиши/);
+// Провайдер формы есть только внутри RequireAuth: вилка tr() здесь всегда
+// показывала «ты». Экран безличный — текст не зависит от формы обращения.
+describe('AuthErrorPage — без обращения на «ты» и на «вы»', () => {
+  const TY_IMPERATIVE = /(?:попробуй|напиши|запроси|проверь|нажми|подожди|выбери)(?![а-яё])/i;
+  const cases: Array<[string, string, ReactElement?]> = [
+    ['без причины', ''], ['неизвестная причина', '?reason=zzz'], ['vk_failed', '?reason=vk_failed'],
+    ['yandex_disabled', '?reason=yandex_disabled'], ['email_link_expired', '?reason=email_link_expired'],
+    ['email_network', '?reason=email_network'], ['http_429', '?reason=http_429'], ['http_503', '?reason=http_503'],
+    ['повтор на месте', '', <AuthErrorView reason="email_network" onRetry={() => undefined} />],
+  ];
+  it.each(cases)('%s: тот же текст без провайдера и в форме «вы»', (_name, search, ui) => {
+    const plain = renderAt(search, undefined, ui).container.textContent;
+    cleanup();
+    expect(renderAt(search, 'vy', ui).container.textContent).toBe(plain);
+    expect(plain).not.toMatch(TY_IMPERATIVE);
   });
 });

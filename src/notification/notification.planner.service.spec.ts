@@ -428,10 +428,26 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       const { svc, deps } = make();
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
       deps.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
-      await svc.planDay(makeUser(), NOW);
+      await svc.planDay(makeUser({ hasPush: true }), NOW);
       expect(scheduledTypes(deps)).toEqual(['low_streak_insight']);
       expect(deps.notifications.schedule.mock.calls[0][3]).toBeUndefined();
     });
+
+    // Инсайт выведен из оценок — в Telegram не уходит (PUSH_ONLY_TYPES): без
+    // подписки в приложении его не ставят, и напоминание он не вытесняет.
+    it.each([[{ hasPush: false }], [{}]])(
+      'без подписки в приложении (%j) низкая потребность — тишина',
+      async (over) => {
+        const { svc, deps } = make();
+        deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+        deps.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
+        await svc.planDay(makeUser(over), NOW);
+        expect(scheduledTypes(deps)).toEqual([]);
+        expect(deps.notifications.swapReminder.mock.calls).toEqual([]);
+        // Оценки для того, кому инсайт не дойдёт, даже не читаются.
+        expect(deps.analytics.getLowStreakNeeds.mock.calls).toEqual([]);
+      },
+    );
 
     // Хвост волны 9: донат, план и инсайт ставились мимо замены напоминания —
     // правка настроек до обхода оставляла напоминание рядом. Теперь все три
@@ -466,7 +482,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
         const deps = prep(makeDeps());
         deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
         const { svc } = make(deps);
-        await svc.planDay(makeUser(), now);
+        await svc.planDay(makeUser({ hasPush: true }), now);
         expect(
           deps.notifications.swapReminder.mock.calls.map(
             (c: unknown[]) => c[1],

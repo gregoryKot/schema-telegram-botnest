@@ -9,7 +9,11 @@ import { BookingStatus, SessionType } from '@prisma/client';
 import { runConfirmEffects } from './booking-confirm-run';
 import { CalDavService } from './caldav.service';
 import { MeetingService, ZOOM_TOPIC } from './meeting.service';
-import { buildOwnerVcalendar, ownerEventFor } from './caldav-owner-event';
+import {
+  bookingEventUid,
+  buildOwnerVcalendar,
+  ownerEventFor,
+} from './caldav-owner-event';
 import type { PlainBooking } from './booking-notify.service';
 
 const SECRETS = {
@@ -154,15 +158,18 @@ describe('данные клиента не уходят в iCloud и Zoom', () =
       for (const marker of markers()) expect(req.text).not.toContain(marker);
   });
 
-  it('в iCloud уходит только время, тип записи и номер брони', async () => {
+  it('в iCloud уходят только время и тип записи: номера брони нет ни в UID, ни в адресе', async () => {
     const sent = captureFetch();
     const { deps } = makeDeps();
     await runConfirmEffects(deps, booking());
 
     const put = sent.find((r) => r.method === 'PUT')!;
+    const uid = bookingEventUid(42);
+    expect(uid).toMatch(/^[0-9a-f]{32}@schemehappens\.ru$/);
     expect(put.url).toBe(
-      'https://p1-caldav.icloud.com/1/calendars/work/booking-42@schemehappens.ru.ics',
+      `https://p1-caldav.icloud.com/1/calendars/work/${uid}.ics`,
     );
+    expect(`${put.url}${put.body}`).not.toContain('booking-42');
     const lines = put.body
       .split('\r\n')
       .filter((l) => l && !l.startsWith('DTSTAMP:'));
@@ -174,7 +181,7 @@ describe('данные клиента не уходят в iCloud и Zoom', () =
       'METHOD:PUBLISH',
       'X-WR-CALNAME:Запись на сессии',
       'BEGIN:VEVENT',
-      'UID:booking-42@schemehappens.ru',
+      `UID:${uid}`,
       'DTSTART:20261201T170000Z',
       'DTEND:20261201T175000Z',
       'SUMMARY:Сессия (50 мин)',
@@ -186,7 +193,7 @@ describe('данные клиента не уходят в iCloud и Zoom', () =
   it('знакомство называется по типу записи, без имени', () => {
     const ev = ownerEventFor(booking({ type: SessionType.INTRO_15 }));
     expect(ev).toEqual({
-      uid: 'booking-42@schemehappens.ru',
+      uid: bookingEventUid(42),
       startsAt: new Date('2026-12-01T17:00:00Z'),
       durationMin: 15, // знакомство короче слота: session-event.ts
       summary: 'Знакомство (15 мин)',

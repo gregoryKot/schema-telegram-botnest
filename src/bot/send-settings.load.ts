@@ -9,10 +9,17 @@ import {
   toSendSettings,
   type SendSettings,
 } from './send-settings';
+/** У кого есть подписка на уведомления в приложении; без ключей VAPID — ни у кого. */
+export async function pushedUserIds(
+  prisma: Pick<PrismaService, 'pushSubscription'>,
+  ids: bigint[],
+): Promise<Set<string>> {
+  return pushReady() ? subscribedUserIds(prisma, ids) : new Set<string>();
+}
+
 /**
  * Настройки отправки пачки людей: адрес в Telegram и наличие подписки на
- * уведомления в приложении (если ключи VAPID не заданы — подписки не в счёт:
- * слать в них нечем). Два запроса параллельно, оба по индексу.
+ * уведомления в приложении (pushedUserIds). Два запроса параллельно, оба по индексу.
  */
 export async function loadSendSettings(
   prisma: Pick<PrismaService, 'user' | 'pushSubscription'>,
@@ -24,7 +31,7 @@ export async function loadSendSettings(
       where: { id: { in: ids } },
       select: SEND_SETTINGS_SELECT,
     }),
-    pushReady() ? subscribedUserIds(prisma, ids) : new Set<string>(),
+    pushedUserIds(prisma, ids),
   ]);
   return new Map(
     rows.map((r) => [

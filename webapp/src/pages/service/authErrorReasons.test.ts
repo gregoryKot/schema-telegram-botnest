@@ -7,9 +7,6 @@ import {
   reportedAuthErrorReason,
 } from './authErrorReasons';
 
-const ty = (a: string) => a;
-const vy = (_a: string, b: string) => b;
-
 describe('knownAuthErrorReason', () => {
   it.each(['vk_failed', 'vk_disabled', 'yandex_failed', 'yandex_disabled', 'max_failed', 'email_link_expired', 'email_network', 'http_401', 'http_503'])(
     '%s — известный код',
@@ -34,32 +31,30 @@ describe('reportedAuthErrorReason', () => {
 describe('authErrorText', () => {
   it('у каждого кода словаря есть текст; у неизвестного — нет', () => {
     for (const code of ['vk_failed', 'yandex_failed', 'yandex_disabled', 'max_failed', 'email_link_expired', 'email_network', 'http_429', 'http_502']) {
-      expect(authErrorText(code, ty), code).toBeTruthy();
+      expect(authErrorText(code), code).toBeTruthy();
     }
-    expect(authErrorText('http_403', ty)).toBeNull();
-    expect(authErrorText(null, ty)).toBeNull();
+    expect(authErrorText('http_403')).toBeNull();
+    expect(authErrorText(null)).toBeNull();
+    expect(authErrorText('toString')).toBeNull();
   });
 
   // Яндекс ID (2026-11) — те же два кода, что у ВКонтакте: сбой входа
   // (`yandex_failed`) и рубильник (`yandex_disabled`), с именем своего сервиса.
-  it('yandex_failed — в обеих формах обращения, называет Яндекс', () => {
-    expect(authErrorText('yandex_failed', ty)).toBe('Вход через Яндекс не прошёл. Попробуй ещё раз или выбери другой способ.');
-    expect(authErrorText('yandex_failed', vy)).toBe('Вход через Яндекс не прошёл. Попробуйте ещё раз или выберите другой способ.');
+  it('yandex_failed — называет Яндекс и зовёт к другому способу', () => {
+    expect(authErrorText('yandex_failed')).toBe('Вход через Яндекс не прошёл. Можно повторить попытку или выбрать другой способ.');
   });
 
   // Почтой на сайт не входят: другой вход при рубильнике — второй сервис.
-  it('yandex_disabled — безличный: одна строка для «ты» и «вы», зовёт войти через VK ID', () => {
-    const text = authErrorText('yandex_disabled', ty);
-    expect(text).toBe('Вход через Яндекс временно отключён. Если к аккаунту привязан VK ID, войти можно через него.');
-    expect(authErrorText('yandex_disabled', vy)).toBe(text);
+  it('yandex_disabled зовёт войти через VK ID', () => {
+    expect(authErrorText('yandex_disabled')).toBe('Вход через Яндекс временно отключён. Если к аккаунту привязан VK ID, войти можно через него.');
   });
 
   it('vk_disabled зовёт к Яндекс ID; про почту ни слова', () => {
-    expect(authErrorText('vk_disabled', ty)).toBe('Вход через ВКонтакте временно отключён. Если к аккаунту привязан Яндекс ID, войти можно через него.');
-    for (const code of ['vk_disabled', 'yandex_disabled']) expect(authErrorText(code, ty)).not.toMatch(/почт/);
+    expect(authErrorText('vk_disabled')).toBe('Вход через ВКонтакте временно отключён. Если к аккаунту привязан Яндекс ID, войти можно через него.');
+    for (const code of ['vk_disabled', 'yandex_disabled']) expect(authErrorText(code)).not.toMatch(/почт/);
   });
 
   it('сбой входа Яндекса и ВКонтакте различается только именем сервиса', () => {
-    expect(authErrorText('yandex_failed', vy)).toBe(authErrorText('vk_failed', vy)!.replace('ВКонтакте', 'Яндекс'));
+    expect(authErrorText('yandex_failed')).toBe(authErrorText('vk_failed')!.replace('ВКонтакте', 'Яндекс'));
   });
 });
