@@ -25,6 +25,8 @@ const MOCKED_API_METHODS = [
   'getBeliefChecks', 'createBeliefCheck',
   // SchemaFlashcard.test.tsx
   'getFlashcards', 'createFlashcard',
+  // sections/practice/HereAndNowBlock*.test.tsx, useQuickCounts.test.ts — число карточек на квадрате «Мне плохо»
+  'getFlashcardsCount',
   // NoteSheet.test.tsx
   'getNote', 'saveNote',
   // CrisisCard.test.tsx, многие другие — fire-and-forget аналитика

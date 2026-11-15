@@ -151,6 +151,11 @@ export class ExercisesController {
     });
   }
 
+  @Get('flashcards/count') // выше flashcards/:id, иначе «count» уйдёт в :id → 400
+  countFlashcards(@Req() req: AuthRequest) {
+    return this.exercisesService.countFlashcards(uid(req));
+  }
+
   @Get('flashcards/:id')
   getFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.exercisesService.getFlashcard(uid(req), id32(id));

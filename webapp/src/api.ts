@@ -172,6 +172,7 @@ export const api = {
   getSafePlace:         () => get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
   saveSafePlace:        (description: string) => post('/api/safe-place', { description }),
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
+  getFlashcardsCount:   () => get<{ count: number }>('/api/flashcards/count'), // квадрат «Мне плохо»: число без самих карточек
   getFlashcard:         (id: number) => get<FlashcardEntry>(`/api/flashcards/${id}`),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
