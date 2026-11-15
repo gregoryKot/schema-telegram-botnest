@@ -47,14 +47,31 @@ export class PushSubscriptionDto {
   keys!: PushKeysDto;
 }
 
-/** POST /api/push/unsubscribe. */
-export class PushUnsubscribeDto {
+/** POST /api/push/status — адрес подписки этого браузера (в теле: он секрет). */
+export class PushEndpointDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(PUSH_ENDPOINT_MAX)
   endpoint!: string;
+}
 
+/** POST /api/push/unsubscribe. */
+export class PushUnsubscribeDto extends PushEndpointDto {
   @IsOptional()
   @IsIn(PUSH_UNSUBSCRIBE_REASONS)
   reason?: PushUnsubscribeReason;
+}
+
+/** POST /api/push/rotate — браузер сменил подписку сам (pushsubscriptionchange). */
+export class PushRotateDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(PUSH_ENDPOINT_MAX)
+  oldEndpoint!: string;
+
+  @IsDefined()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => PushSubscriptionDto)
+  subscription!: PushSubscriptionDto;
 }

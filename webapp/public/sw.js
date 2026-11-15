@@ -89,3 +89,53 @@ self.addEventListener('notificationclick', function (event) {
   var data = event.notification.data || {};
   event.waitUntil(openOrFocus(targetHref(data.url)));
 });
+
+// Браузер сам сменил подписку (истекла, push-сервис её сбросил) — новую надо
+// отдать серверу, иначе уведомления молча перестанут приходить. Сессии у
+// воркера нет (JWT живёт только во вкладке): доказательство владения — старый
+// адрес, он секрет. POST /api/push/rotate ищет строку ровно по нему; адреса —
+// в теле, не в URL. Старой подписки нет — доказать нечем: строка «На этом
+// устройстве» покажет «выключено», и человек включит заново.
+function subscriptionBody(sub) {
+  var json = sub && typeof sub.toJSON === 'function' ? sub.toJSON() : null;
+  var keys = json && json.keys;
+  if (!json || typeof json.endpoint !== 'string' || !keys || !keys.p256dh || !keys.auth) return null;
+  return { endpoint: json.endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } };
+}
+
+// Браузер не подписал заново сам — подписываемся тем же ключом сервера.
+function nextSubscription(event, old) {
+  if (event.newSubscription) return Promise.resolve(event.newSubscription);
+  var key = old.options && old.options.applicationServerKey;
+  if (!key) return Promise.resolve(null);
+  return self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+}
+
+function rotateSubscription(event) {
+  var old = event.oldSubscription;
+  if (!old || typeof old.endpoint !== 'string' || !old.endpoint) return Promise.resolve();
+  return Promise.resolve()
+    .then(function () {
+      return nextSubscription(event, old);
+    })
+    .then(function (sub) {
+      var body = subscriptionBody(sub);
+      if (!body) return null;
+      return self.fetch('/api/push/rotate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit',
+        body: JSON.stringify({ oldEndpoint: old.endpoint, subscription: body }),
+      });
+    })
+    .then(function (res) {
+      if (res && !res.ok) console.warn('push: сервер не принял новую подписку, HTTP ' + res.status);
+    })
+    .catch(function (e) {
+      console.warn('push: новую подписку не удалось отдать серверу', e);
+    });
+}
+
+self.addEventListener('pushsubscriptionchange', function (event) {
+  event.waitUntil(rotateSubscription(event));
+});

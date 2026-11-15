@@ -19,4 +19,6 @@ export const pushApi = {
     postJson<{ ok: true; delivered: boolean }>('/api/push/subscription', body),
   unsubscribe: (endpoint: string, reason: PushUnsubscribeReason) =>
     post('/api/push/unsubscribe', { endpoint, reason }),
+  /** Знает ли сервер подписку этого браузера. Адрес — в теле: он секрет, в URL ему не место. */
+  status: (endpoint: string) => postJson<{ known: boolean }>('/api/push/status', { endpoint }),
 };
