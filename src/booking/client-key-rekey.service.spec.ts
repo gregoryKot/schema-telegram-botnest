@@ -447,7 +447,15 @@ describe('ClientKeyRekeyService.run', () => {
 
 // Шифр под ключом, которого в env нет, и свежий реестр приложения: троттл
 // алерта decrypt не взведён соседними тестами (это проверяет контроль в конце).
-function foreignKeyApp() {
+// Загрузка — в beforeAll, не в `it`: иначе Stryker (perTest) приписывает код
+// уровня модулей тесту, и статические мутанты волны А становятся гибридными.
+function useForeignKeyApp() {
+  const ctx = {} as ReturnType<typeof loadForeignKeyApp>;
+  beforeAll(() => Object.assign(ctx, loadForeignKeyApp()));
+  return ctx;
+}
+
+function loadForeignKeyApp() {
   const foreign = loadWithKeys(
     { key: 'cd'.repeat(32) },
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -461,6 +469,10 @@ function foreignKeyApp() {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     nest: require('@nestjs/common') as Nest,
   }));
+  return { foreign, app };
+}
+
+function spyLogs(app: ReturnType<typeof loadForeignKeyApp>['app']) {
   const { prototype } = app.nest.Logger;
   const error = jest
     .spyOn(prototype, 'error')
@@ -468,12 +480,14 @@ function foreignKeyApp() {
   const warn = jest
     .spyOn(prototype, 'warn')
     .mockImplementation(() => undefined);
-  return { foreign, app, error, warn };
+  return { error, warn };
 }
 
 describe('ClientKeyRekeyService.run — брони под ключом, которого нет в env', () => {
+  const fx = useForeignKeyApp();
   it('алерта decrypt нет, итог — одна строка warn с числом; живая бронь переносится', async () => {
-    const { foreign, app, error, warn } = foreignKeyApp();
+    const { foreign, app } = fx;
+    const { error, warn } = spyLogs(app);
     const lost = foreign.encrypt('gone@x.ru') as string;
     const C = 'live@x.ru';
     const { service, rows } = setup(
@@ -509,8 +523,10 @@ describe('ClientKeyRekeyService.run — брони под ключом, кото
 // Ротация дошла до броней, но не до комнат. Строку нового формата (телефон без
 // `+`) ветка сирот не удаляет — алерт decrypt по ней звучал бы на каждом старте.
 describe('ClientKeyRekeyService.run — комната под ключом, которого нет в env', () => {
+  const fx = useForeignKeyApp();
   it('при читаемой брони того же клиента алерта нет: комната в счёт прохода и не удаляется', async () => {
-    const { foreign, app, error, warn } = foreignKeyApp();
+    const { foreign, app } = fx;
+    const { error, warn } = spyLogs(app);
     const LIVE = 'live@x.ru';
     const lostKey = keys.clientKey('4951234567');
     const lostUrl = foreign.encrypt(ROOM) as string;
