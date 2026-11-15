@@ -1,9 +1,8 @@
 import { HEAD_H } from './diagramSections';
 import type { DiagramSection } from './diagramTypes';
 import { useConceptSkin } from '../conceptSkin';
-import { LINK_BTN } from '../conceptInlineStyles';
 
-// Зона кнопки — всегда; вид — классом skin.link (сайт: ds-link), без skin — LINK_BTN.
+// Зона кнопки 44 — инлайном: у ds-link отступов нет; вид — классом skin.link (сайт: ds-link).
 const BOX = { flexShrink: 0, minHeight: 44, padding: '0 12px' } as const;
 
 /**
@@ -57,7 +56,7 @@ export function DiagramSectionHeader({
           aria-expanded={open}
           onClick={onAdd}
           className={skin?.link}
-          style={skin ? BOX : { ...LINK_BTN, ...BOX }}
+          style={BOX}
         >
           {open ? 'Свернуть' : section.add}
         </button>

@@ -1,14 +1,11 @@
 #!/usr/bin/env node
-// Пофайловый гейт нулевого покрытия бэкенда (аудит 2026-10).
-// check-coverage-ratchet.mjs держит сумму и полы по каталогам, а отдельный
-// файл не видит: десять непокрытых строк пол `src/api` не роняют. Так жил
-// `src/api/throttle-hit.cleanup.ts` — единственный код, удаляющий из общего
-// счётчика денежных ручек, — пока аудит не нашёл его глазами.
+// Пофайловый гейт нулевого покрытия бэкенда. check-coverage-ratchet.mjs
+// держит сумму и полы по каталогам, а отдельный файл не видит: так жил
+// без тестов `src/api/throttle-hit.cleanup.ts`, пока аудит не нашёл его глазами.
 //
-// Читает `coverage/coverage-summary.json`, который пишет прогон jest с
-// покрытием в шаге check-coverage-ratchet.mjs (джоба backend, шаг сразу после
-// него; сам jest не гоняет). Файл `src/**`, у которого покрыто меньше
-// NEAR_ZERO_PCT строк (ноль — частный случай), — красный, если его нет в
+// Читает `coverage/coverage-summary.json` шага check-coverage-ratchet.mjs
+// (джоба backend; сам jest не гоняет). Файл `src/**` «почти ноль» (меньше
+// NEAR_ZERO_PCT строк или ни одной вызванной функции) — красный, если его нет в
 // `scripts/zero-coverage-baseline.json` («путь» → причина). Причина «покрыто
 // e2e» называет спек, а гейт сверяет, что спек есть и его гоняет ci.yml.
 // Порог, исключения и сверка e2e — zero-coverage-rules.mjs.
@@ -30,10 +27,13 @@ const UPDATE = process.argv.includes('--update');
 const summaryArg = process.argv.find((a) => a.startsWith('--summary='));
 const SUMMARY_PATH = summaryArg ? resolve(summaryArg.slice(10)) : join(ROOT, 'coverage', 'coverage-summary.json');
 
-const lowLine = ({ rel, covered, total }) =>
-  covered === 0
-    ? `${rel}: 0% строк — новый файл без единого теста`
-    : `${rel}: ${((covered / total) * 100).toFixed(1)}% строк (${covered} из ${total}) — ниже порога ${NEAR_ZERO_PCT}%`;
+const pct = ({ covered, total }) => `${((covered / total) * 100).toFixed(1)}% строк`;
+const lowLine = (f) =>
+  f.covered === 0
+    ? `${f.rel}: 0% строк — новый файл без единого теста`
+    : f.covered * 100 >= NEAR_ZERO_PCT * f.total
+      ? `${f.rel}: ни одной вызванной функции (${pct(f)} — исполнена только загрузка модуля)`
+      : `${f.rel}: ${pct(f)} (${f.covered} из ${f.total}) — ниже порога ${NEAR_ZERO_PCT}%`;
 
 function main() {
   if (!existsSync(SUMMARY_PATH)) {
@@ -75,7 +75,7 @@ function main() {
     process.exit(1);
   }
   const zeros = low.filter((f) => f.covered === 0).length;
-  console.log(`✓ нули покрытия: ${low.length} файлов ниже ${NEAR_ZERO_PCT}% строк (${zeros} с 0%), все в бейслайне с причиной.`);
+  console.log(`✓ нули покрытия: ${low.length} файлов «почти ноль» (${zeros} с 0% строк), все в бейслайне с причиной.`);
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

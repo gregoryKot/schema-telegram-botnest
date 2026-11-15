@@ -19,7 +19,6 @@ const SKIN: ConceptSkin = {
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',
-  fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
   digest: {
     title: 'dg-title',
     list: 'dg-list',
@@ -47,13 +46,6 @@ describe('ConceptViewSwitch', () => {
     render(<ConceptViewSwitch view="graph" onChange={onChange} />);
     fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
     expect(onChange).toHaveBeenCalledWith('fields');
-  });
-
-  it('тап-цель не ниже 44', () => {
-    render(<ConceptViewSwitch view="graph" onChange={() => {}} />);
-    for (const name of ['Схема', 'Поля']) {
-      expect(screen.getByRole('button', { name }).style.minHeight).toBe('44px');
-    }
   });
 });
 

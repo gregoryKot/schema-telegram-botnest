@@ -14,7 +14,6 @@ const SKIN: ConceptSkin = {
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',
-  fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
   digest: {
     title: 'dg-title',
     list: 'dg-list',

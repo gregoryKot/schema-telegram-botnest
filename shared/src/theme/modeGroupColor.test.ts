@@ -1,47 +1,34 @@
-/// <reference types="node" />
-// Сверка пары цвета группы режимов (правило №4): токен tokens.css (DOM) и hex (canvas шаринга) —
-// один цвет; у каждого --mode-* светлого блока есть пара, у каждой пары — токен.
+// Сверка hex группы режимов (canvas, SVG листа «Схема — это что?») с таблицей тонов MODE_GROUP_HUE (правило №4).
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { MODE_GROUP_COLOR } from './modeGroupColor';
-import { oklchHex } from './entityHue';
+import { MODE_GROUP_HUE, oklchHex } from './entityHue';
 
-/** --mode-* из блока `:root, [data-theme='light'], .light-lock` в tokens.css. */
-function lightModeTokens(): Record<string, string> {
-  const css = readFileSync(join(__dirname, 'tokens.css'), 'utf8').replace(
-    /\/\*[\s\S]*?\*\//g,
-    '',
-  );
-  const start = css.search(
-    /:root,\s*\[data-theme='light'\],\s*\.light-lock\s*\{/,
-  );
-  expect(start).toBeGreaterThan(-1);
-  const block = css.slice(start, css.indexOf('\n}', start));
-  return Object.fromEntries(
-    [...block.matchAll(/(--mode-[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [
-      m[1],
-      m[2].trim(),
-    ]),
-  );
-}
+/** Группа MODE_GROUP_COLOR → группы MODE_GROUP_HUE с её тоном: три копинга делят один. */
+const HUE_GROUPS: Record<keyof typeof MODE_GROUP_COLOR, string[]> = {
+  child: ['child'],
+  coping: ['coping_surrender', 'coping_avoidance', 'coping_overcompensation'],
+  critic: ['critic'],
+  healthy: ['healthy'],
+};
 
-const tokens = lightModeTokens();
-const varName = (css: string) => /^var\((--[\w-]+)\)$/.exec(css)?.[1] ?? css;
-
-describe('MODE_GROUP_COLOR: токен ↔ hex', () => {
-  it.each(Object.entries(MODE_GROUP_COLOR))(
-    '%s: hex для canvas — тот же цвет, что токен в tokens.css',
-    (_group, { css, hex }) => {
-      const value = tokens[varName(css)] ?? '';
-      const m = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(value);
-      expect(m, `${varName(css)}: ${value || 'не объявлен'}`).not.toBeNull();
-      expect(oklchHex(Number(m![1]), Number(m![2]), Number(m![3]))).toBe(hex);
+describe('MODE_GROUP_COLOR ↔ MODE_GROUP_HUE', () => {
+  it.each(Object.entries(HUE_GROUPS))(
+    '%s: hex — тон .tone-fill с hue каждой своей группы',
+    (group, hueGroups) => {
+      const { hex } = MODE_GROUP_COLOR[group as keyof typeof MODE_GROUP_COLOR];
+      expect(hex).toMatch(/^#[0-9a-f]{6}$/);
+      for (const g of hueGroups) {
+        expect(oklchHex(0.58, 0.12, MODE_GROUP_HUE[g])).toBe(hex);
+      }
     },
   );
 
-  it('токены --mode-* и пары совпадают списком: без токена-сироты и пары без токена', () => {
-    const paired = Object.values(MODE_GROUP_COLOR).map((c) => varName(c.css));
-    expect(Object.keys(tokens).sort()).toEqual(paired.sort());
+  it('каждая группа MODE_GROUP_HUE покрыта ровно одним цветом, лишнего цвета нет', () => {
+    expect(Object.keys(HUE_GROUPS).sort()).toEqual(
+      Object.keys(MODE_GROUP_COLOR).sort(),
+    );
+    expect(Object.values(HUE_GROUPS).flat().sort()).toEqual(
+      Object.keys(MODE_GROUP_HUE).sort(),
+    );
   });
 });

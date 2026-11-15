@@ -38,16 +38,15 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 400,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
-            return 'vendor-react';
-          }
-          if (id.includes('schemaTherapyData') || id.includes('needData')) return 'schema-data';
+        // Группа забирает рантайм-зависимости своих модулей; общий модуль берёт группа с большим priority.
+        codeSplitting: { groups: [
+          { name: 'vendor-react', test: /[\\/]node_modules[\\/](react[\w-]*|scheduler)[\\/]/, priority: 3 },
           // Таблицы вида — стартовый чанк без зависимостей (почему — docs/architecture/frontends.md, «Подводные камни»).
-          if (/[\\/]shared[\\/]src[\\/]theme[\\/](entityLook|entityLookMaps|entityHue|signKeys)\.ts$/.test(id)) return 'entity-look';
-        },
+          { name: 'entity-look', test: /[\\/]shared[\\/]src[\\/]theme[\\/](entityLook|entityLookMaps|entityHue|signKeys)\.ts$/, priority: 2 },
+          { name: 'schema-data', test: /schemaTherapyData|needData/, priority: 1 },
+        ] },
       },
     },
   },
