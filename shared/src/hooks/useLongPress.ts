@@ -1,12 +1,9 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import type { PointerEvent as ReactPointerEvent, MouseEvent } from 'react';
 import { haptic } from '../host/haptic';
 
-// Долгое нажатие на блок главного экрана → «Настроить экран». Быстрый путь
-// для тех, кто уже освоился; шестерёнка в шапке остаётся основным, видимым
-// способом (правило CLAUDE.md: жест без аффорданса не может быть единственным
-// входом — про него рассказывают в онбординге, и он ничего не делает
-// необратимого, только открывает лист настройки).
+// Долгое нажатие на блок главного экрана → «Настроить экран». Быстрый путь;
+// шестерёнка в шапке остаётся основным способом (жест без аффорданса не единственный вход).
 //
 // Одна механика — один хук: не копируй таймер/отмену по карточкам.
 
@@ -38,6 +35,7 @@ export function useLongPress(onLongPress: () => void): LongPressProps {
     origin.current = null;
   }, []);
 
+  useEffect(() => cancel, [cancel]); // снят посреди удержания — не зовём
   const start = useCallback(
     (e: ReactPointerEvent) => {
       // Только основная кнопка/палец: правый клик и мультитач — не жест.

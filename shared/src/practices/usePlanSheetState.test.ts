@@ -271,6 +271,25 @@ describe('usePlanSheetState — handleSave', () => {
     expect(result.current.savedOk).toBe(true);
   });
 
+  it('лист снят до закрытия по таймеру — onSaved не зовётся', async () => {
+    vi.useFakeTimers();
+    try {
+      const onSaved = vi.fn();
+      const { result, unmount } = renderHook(() =>
+        usePlanSheetState('attachment', 'Привязанность', makeApi(), onSaved),
+      );
+      act(() => result.current.selectText('Новая практика'));
+      await act(async () => {
+        await result.current.handleSave();
+      });
+      unmount();
+      vi.advanceTimersByTime(2000);
+      expect(onSaved).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('без напоминания (localHour=null) — час не передаётся', async () => {
     const noReminderIdx = REMINDER_OPTIONS.findIndex(
       (o) => o.localHour === null,
