@@ -56,12 +56,9 @@
 **Редизайн кабинета — хвосты** (#746, `docs/design/REDESIGN_2026-10.md`):
 - **Лендинг, визитка (`kotlarewski.gr`), статьи и админка** намеренно в старом виде
   (решение владельца 2026-10-16) — токены старой палитры в `index.css` нужны им.
-  Старые классы `.btn*`, `.chip*`, `.section`, `.aside-card` этим страницам не нужны и
-  удалены 2026-11-08 вместе с последними потребителями в кабинете (сверка
-  `webapp/src/styles/legacyClasses.test.ts`). Остались старые `.eyebrow` (`selfMap/SelfMapScreen.tsx`,
-  `NeedAdviceModal.tsx`, `concept/ConceptVersionHistory.tsx`)
-  и `.ex-btn`/`.ex-btn-ghost` (`NeedAdviceModal.tsx`): `NeedAdviceModal` и `ConceptVersionHistory` в ту
-  же волну правила другая ветка, перевод на `ds-label`/`ds-btn--secondary` — следующим заходом.
+  Старые классы `.btn*`, `.chip*`, `.section`, `.aside-card`, `.eyebrow`, `.ex-btn*` этим страницам
+  не нужны и удалены в 2026-11 вместе с последними потребителями в кабинете (сверка
+  `webapp/src/styles/legacyClasses.test.ts`).
 
 **Запись листа в истории — остаток** (`webapp/src/hooks/useHistorySheet.ts`):
 - `useHistorySheet` и два листа, смонтированные в одном коммите (родитель сразу
