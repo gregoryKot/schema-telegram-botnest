@@ -58,14 +58,6 @@
 
 **Нечитаемые шифрованные данные — остаток после D-8** (проба `encryptionReadable`,
 `src/utils/crypto-record.ts`):
-- **Два эквивалентных мутанта в `tryDecrypt` (`src/utils/crypto.ts`) не убиваются ничем:**
-  `{ authTagLength: 16 }` → `{}` у `createDecipheriv` (тег всегда `subarray(12, 28)` = 16 байт)
-  и `'utf8'` → `''` у `decipher.final` (GCM отдаёт пустой буфер, в строке — `''`). Остальных
-  выживших добил `src/utils/crypto-record.writable.spec.ts` (прогон Stryker по
-  `crypto.ts:69-121` + `crypto-record.ts:130-162`: 10 выживших → 2). Полы
-  `scripts/mutation-golden-auth-baseline.json` не подняты: счёт по файлу целиком даёт только
-  полный прогон волны А (`npm run mutation:golden-auth`, затем `check-mutation-ratchet.mjs
-  --update` с `--report=`/`--baseline=` волны) — часы CPU, в эту правку не вошёл.
 - **Проба смотрит последние 200 строк каждой таблицы, а не всю базу** — осознанно:
   провал ключа бьёт по всем строкам сразу, а полный обход дневников раз в час дороже
   пользы. Частичная порча старых строк (одна запись из 10 000 раньше первых 200) её не
