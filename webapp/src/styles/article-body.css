@@ -8,7 +8,7 @@
 .article-content li { font-size: 15px; color: var(--text-sub); line-height: 1.8; margin-bottom: 6px; }
 .article-content hr { border: none; border-top: 1px solid var(--paper-sunk); margin: 32px 0; }
 .article-content table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--text-sub); margin: 24px 0; }
-.article-content th { padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--line); font-weight: 700; color: var(--text); font-size: 13px; }
+.article-content th { padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--paper-sunk); font-weight: 700; color: var(--text); font-size: 13px; }
 .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--paper-sunk); line-height: 1.6; }
 .article-content a { color: var(--accent); }
 /* ── Inline diagrams ── */
