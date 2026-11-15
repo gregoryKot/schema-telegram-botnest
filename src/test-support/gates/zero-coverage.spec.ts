@@ -50,11 +50,15 @@ describe('check-zero-coverage.mjs', () => {
     const f = 'src/api/big.service.ts';
     const red = run({ [f]: entry(40, 2) }, {});
     expect(red.status).toBe(1);
-    expect(red.stderr).toContain(`${f}: 5.0% строк (2 из 40) — ниже порога 10%`);
+    expect(red.stderr).toContain(
+      `${f}: 5.0% строк (2 из 40) — ниже порога 10%`,
+    );
     const reason = { [f]: 'обёртка над SDK без ветвлений, логика в адаптере' };
     expect(run({ [f]: entry(40, 2) }, reason).status).toBe(0);
     expect(run({ [f]: entry(40, 4) }, {}).status).toBe(0);
-    expect(run({ [f]: entry(1000, 99) }, {}).stderr).toContain(`${f}: 9.9% строк`);
+    expect(run({ [f]: entry(1000, 99) }, {}).stderr).toContain(
+      `${f}: 9.9% строк`,
+    );
   });
 
   it('абсолютный путь из summary jest сводится к src/… песочницы', () => {
@@ -164,7 +168,9 @@ describe('check-zero-coverage.mjs: причина «покрыто e2e»', () =>
   const SPEC = 'test/client-booking-ownership.e2e-spec.ts';
   const CTL = 'src/booking/client-booking.controller.ts';
   const zero = { [CTL]: entry(13, 0) };
-  const base = { [CTL]: `контроллер под e2e-смоком ${SPEC}, вне юнит-подсчёта` };
+  const base = {
+    [CTL]: `контроллер под e2e-смоком ${SPEC}, вне юнит-подсчёта`,
+  };
   // e2e-шаг джобы backend: токен jest — префикс пути, как в настоящем ci.yml.
   const ci = (lines: string) => ({
     '.github/workflows/ci.yml': `jobs:\n  backend:\n    steps:\n${lines}`,
@@ -180,7 +186,9 @@ describe('check-zero-coverage.mjs: причина «покрыто e2e»', () =>
   it('спека нет в репозитории — красный, хотя ci.yml его называет', () => {
     const res = run(zero, base, { extra: ci(E2E_STEP) });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain(`бейслайн ${CTL}: спека ${SPEC} нет в репозитории`);
+    expect(res.stderr).toContain(
+      `бейслайн ${CTL}: спека ${SPEC} нет в репозитории`,
+    );
   });
 
   it('спек есть, но в ci.yml он только в комментарии — красный', () => {
@@ -197,7 +205,9 @@ describe('check-zero-coverage.mjs: причина «покрыто e2e»', () =>
   it('слово e2e без пути спека — красный; причина без e2e спека не требует', () => {
     const f = 'src/booking/booking.registry.ts';
     const z = { [f]: entry(25, 0) };
-    const vague = run(z, { [f]: 'модуль поднимается e2e на AppModule вне подсчёта' });
+    const vague = run(z, {
+      [f]: 'модуль поднимается e2e на AppModule вне подсчёта',
+    });
     expect(vague.status).toBe(1);
     expect(vague.stderr).toContain(
       `бейслайн ${f}: причина ссылается на e2e, но не называет спек`,
