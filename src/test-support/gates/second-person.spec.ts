@@ -113,6 +113,34 @@ describe('check-second-person.mjs', () => {
     expect(res.status).toBe(0);
   });
 
+  // «Подтверди»/«Укажи»: обе формы вне tr() — долг; вилка и инфинитив — нет.
+  it.each([
+    ['Подтверди вход', '[imperative-ty] Подтверди'],
+    ['Укажи текст рассылки', '[imperative-ty] Укажи'],
+    ['Подтвердите почту', '[imperative-vy] Подтвердите'],
+    ['Укажите контакт', '[imperative-vy] Укажите'],
+  ])('«%s» вне tr() — exit 1', (text, hit) => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/telegram/x.service.ts': `export const x = '${text}';\n`,
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(hit);
+  });
+
+  it('КОНТРОЛЬ: «Подтверди/Укажи» внутри tr(), «Подтвердить», «указать», «подтверждение» — exit 0', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'webapp/src/components/X.tsx':
+        [
+          "export const a = tr('Подтверди вход', 'Подтвердите вход');",
+          "export const b = tr('Укажи контакт', 'Укажите контакт');",
+          "export const c = 'Подтвердить вход; указать контакт; подтверждение пришло';",
+        ].join('\n') + '\n',
+    });
+    expect(res.status).toBe(0);
+  });
+
   it('КОНТРОЛЬ: «поддержи/поддержите» внутри tr() и инфинитив «Поддержать» — exit 0', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
@@ -209,6 +237,9 @@ describe('check-second-person.mjs', () => {
       'scripts/second-person-baseline.json': JSON.stringify({}),
       'webapp/src/components/booking/BookingSlotsSection.tsx':
         "export const msg = 'Выберите другое время';\n",
+      // Форма визитки гостя — «вы» без вилки законно: формы до входа нет.
+      'webapp/src/components/booking/fieldHints.ts':
+        "export const hint = 'Укажите, где вам ответить';\n",
     });
     expect(res.status).toBe(0);
   });
