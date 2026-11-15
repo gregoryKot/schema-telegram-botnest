@@ -1,5 +1,6 @@
 import { ExScreen } from '../ExScreen';
-import { TherapyNote } from '../../TherapyNote';
+import { TherapyLine } from '../../therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../../therapy/useTherapyBridgeTexts';
 import { pluralRu } from '../../../../../shared/src/utils/pluralRu';
 import {
   childhoodAverage,
@@ -34,6 +35,7 @@ export function ChildhoodResult({
 }) {
   const avg = childhoodAverage(ratings);
   const lowIds = lowNeedIds(ratings);
+  const bridge = useTherapyBridgeTexts();
 
   return (
     <ExScreen
@@ -63,9 +65,7 @@ export function ChildhoodResult({
 
       <NextToday onOpen={onOpenToday} />
 
-      <div className="chw-note">
-        <TherapyNote compact />
-      </div>
+      <TherapyLine place="childhood_result" text={bridge.lineChildhood} className="chw-note" />
 
       <div className="ex2-foot">
         <button type="button" className="ds-btn ds-btn--secondary" onClick={onEdit}>

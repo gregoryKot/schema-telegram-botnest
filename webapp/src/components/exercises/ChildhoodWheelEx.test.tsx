@@ -116,6 +116,14 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
     expect(mockApi.saveChildhoodRatings).not.toHaveBeenCalled();
   });
 
+  it('под итогом строка «Колесо детства — самопомощь…», показ уходит с местом childhood_result', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValue(SAVED);
+    renderEx();
+    await screen.findByText(/Среднее 6.4\/10/);
+    expect(screen.getByText(/^Колесо детства — самопомощь, не замена терапии\./)).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'childhood_result', action: 'shown' });
+  });
+
   it('«Изменить» открывает ползунки с СОХРАНЁННЫМИ значениями, а не с пятёрками', async () => {
     mockApi.getChildhoodRatings.mockResolvedValue(SAVED);
     renderEx();
