@@ -29,6 +29,16 @@ async function loadPublicKey(): Promise<string | null> {
   }
 }
 
+/** Знает ли сервер подписку этого браузера; null — сверка не ответила, судим по каналу. */
+async function loadKnown(endpoint: string): Promise<boolean | null> {
+  try {
+    return (await pushApi.status(endpoint)).known;
+  } catch (e) {
+    console.warn('push: POST /api/push/status не ответил — сверяем по каналу', e);
+    return null;
+  }
+}
+
 /** channel — notifyChannel из настроек (сверка, reconcilePushState); onChanged — перечитать
  *  настройки: после включения и выключения канал другой. */
 export function usePushDevice(channel: NotifyChannel | null, onChanged: () => Promise<void> | void): PushDevice {
@@ -36,6 +46,7 @@ export function usePushDevice(channel: NotifyChannel | null, onChanged: () => Pr
   const [early] = useState(() => preliminaryPushState(readPushEnv()));
   const [state, setState] = useState<PushDeviceState | null>(early === 'unsupported' ? early : null);
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [known, setKnown] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<PushNotice | null>(null);
 
@@ -45,9 +56,12 @@ export function usePushDevice(channel: NotifyChannel | null, onChanged: () => Pr
     void (async () => {
       const key = await loadPublicKey();
       const sub = key ? await currentPushSubscription() : null;
+      const next = pushDeviceState(readPushEnv(), key, sub !== null);
+      const isKnown = next === 'on' && sub ? await loadKnown(sub.endpoint) : null;
       if (!alive) return;
       setPublicKey(key);
-      setState(pushDeviceState(readPushEnv(), key, sub !== null));
+      setKnown(isKnown);
+      setState(next);
     })();
     return () => { alive = false; };
   }, [early]);
@@ -64,6 +78,7 @@ export function usePushDevice(channel: NotifyChannel | null, onChanged: () => Pr
     if (outcome.kind === 'error') setNotice('enable-failed');
     if (outcome.kind !== 'on') return;
     if (!outcome.delivered) setNotice('not-delivered');
+    setKnown(true); // сервер только что принял подписку этого браузера
     try {
       await onChanged(); // сначала новый канал, иначе сверка на миг показала бы «выключено»
     } finally {
@@ -83,7 +98,7 @@ export function usePushDevice(channel: NotifyChannel | null, onChanged: () => Pr
     await onChanged();
   }, [onChanged]);
 
-  const shown = reconcilePushState(state, channel);
+  const shown = reconcilePushState(state, channel, known);
   const toggle = useCallback(() => {
     if (busy || !publicKey || (shown !== 'on' && shown !== 'off')) return;
     setBusy(true);

@@ -15,12 +15,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { PushUnsubscribeReason } from '../analytics/push-events.constants';
 import { vapidState, type VapidState } from './push-config';
-import { checkPushEndpoint, pushServiceOf } from './push-endpoint';
+import {
+  checkPushEndpoint,
+  pushServiceOf,
+  type EndpointVerdict,
+} from './push-endpoint';
 import { attemptPush, type PushAttempt, type SendFn } from './push-transport';
 import { PUSH_TITLE, type PushPayload } from './push-payload';
 import {
   deleteOwnSubscription,
   deleteSubscription,
+  hasOwnSubscription,
+  replaceSubscription,
   saveSubscription,
   subscribedUserIds,
   subscriptionsOf,
@@ -92,17 +98,7 @@ export class PushService {
         'Уведомления в приложении не настроены',
       );
     }
-    const verdict = checkPushEndpoint(keys.endpoint);
-    if (!verdict.ok) {
-      // Хост — не секрет, весь адрес — секрет: по логу расширяют список.
-      this.logger.warn(
-        `Подписка отклонена: хост ${verdict.host ?? '(адрес не разобран)'} не из списка push-сервисов`,
-      );
-      throw new BadRequestException('Адрес подписки не принят');
-    }
-    if (!validPushKeys(keys.p256dh, keys.auth)) {
-      throw new BadRequestException('Ключи подписки не приняты');
-    }
+    const verdict = this.acceptable(keys);
     const stored = await saveSubscription(this.prisma, userId, keys);
     const result = await this.deliverOne(
       userId,
@@ -115,6 +111,24 @@ export class PushService {
       service: verdict.service,
     });
     return { delivered };
+  }
+
+  /**
+   * Браузер сменил подписку сам (pushsubscriptionchange в webapp/public/sw.js).
+   * Сессии у воркера нет: доказательство — старый адрес, он секрет. Новую
+   * подписку проверяем до поиска старой — ответ не зависит от того, нашлась ли
+   * она; неизвестный адрес — молча ничего.
+   */
+  async rotate(oldEndpoint: string, next: PushKeys): Promise<void> {
+    const verdict = this.acceptable(next);
+    if (await replaceSubscription(this.prisma, oldEndpoint, next)) {
+      this.logger.log(`Браузер сменил подписку: ${verdict.host}`);
+    }
+  }
+
+  /** Знает ли сервер подписку этого браузера за человеком (сверка вкладки). */
+  isKnown(userId: bigint, endpoint: string): Promise<boolean> {
+    return hasOwnSubscription(this.prisma, userId, endpoint);
   }
 
   /** Удалить подписку, только если она этого человека; иначе — молча. */
@@ -143,6 +157,22 @@ export class PushService {
       subs.map((s) => this.deliverOne(userId, s, body)),
     );
     return mergeOutcomes(results);
+  }
+
+  /** Адрес из списка push-сервисов и ключи RFC 8291 — иначе 400. */
+  private acceptable(keys: PushKeys): Extract<EndpointVerdict, { ok: true }> {
+    const verdict = checkPushEndpoint(keys.endpoint);
+    if (!verdict.ok) {
+      // Хост — не секрет, весь адрес — секрет: по логу расширяют список.
+      this.logger.warn(
+        `Подписка отклонена: хост ${verdict.host ?? '(адрес не разобран)'} не из списка push-сервисов`,
+      );
+      throw new BadRequestException('Адрес подписки не принят');
+    }
+    if (!validPushKeys(keys.p256dh, keys.auth)) {
+      throw new BadRequestException('Ключи подписки не приняты');
+    }
+    return verdict;
   }
 
   private async deliverOne(

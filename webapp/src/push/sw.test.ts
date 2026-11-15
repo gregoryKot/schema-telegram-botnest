@@ -2,7 +2,9 @@
 // импортирует — тест читает его с диска и исполняет с поддельным `self`, как
 // это делает браузер (правило №14, образец — maxBridgeLoader.test.ts).
 // Проверяет: показ уведомления из payload, битый payload, переход по клику
-// только внутри сайта, фокус открытого окна против нового окна, отсутствие fetch.
+// только внутри сайта, фокус открытого окна против нового окна, отсутствие fetch,
+// смену подписки браузером (pushsubscriptionchange → POST /api/push/rotate).
+// Что сервер принимает это тело — шов в test/push-ownership.e2e-spec.ts.
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -23,7 +25,11 @@ function boot(windows: FakeWindow[] = []) {
     location: { origin: ORIGIN },
     addEventListener: (type: string, fn: Handler) => { handlers[type] = fn; },
     skipWaiting: vi.fn(),
-    registration: { showNotification: vi.fn().mockResolvedValue(undefined) },
+    fetch: vi.fn().mockResolvedValue({ ok: true, status: 200 }),
+    registration: {
+      showNotification: vi.fn().mockResolvedValue(undefined),
+      pushManager: { subscribe: vi.fn() },
+    },
     clients: {
       claim: vi.fn().mockResolvedValue(undefined),
       matchAll: vi.fn().mockResolvedValue(windows),
@@ -142,7 +148,67 @@ describe('sw.js: жизненный цикл и кэш', () => {
 
   it('обработчика fetch нет: приватные данные не попадают в Cache Storage', () => {
     const { handlers } = boot();
-    expect(Object.keys(handlers).sort()).toEqual(['activate', 'install', 'notificationclick', 'push']);
+    expect(Object.keys(handlers).sort()).toEqual(['activate', 'install', 'notificationclick', 'push', 'pushsubscriptionchange']);
     expect(SOURCE).not.toMatch(/caches\./);
+  });
+});
+
+const OLD = 'https://fcm.googleapis.com/fcm/send/old';
+const NEW = 'https://fcm.googleapis.com/fcm/send/new';
+const KEYS = { p256dh: 'P256DH', auth: 'AUTH' };
+const browserSub = (endpoint: string, keys: Partial<typeof KEYS> = KEYS) => ({ endpoint, toJSON: () => ({ endpoint, keys }) });
+
+type Self = ReturnType<typeof boot>['self'];
+
+async function change(init: { oldSubscription?: unknown; newSubscription?: unknown }, setup?: (self: Self) => void) {
+  const sw = boot();
+  setup?.(sw.self);
+  const e = event(init);
+  sw.handlers.pushsubscriptionchange(e);
+  await Promise.all(e.pending);
+  const calls = sw.self.fetch.mock.calls as Array<[string, RequestInit]>;
+  return { ...sw, calls, sent: calls.map(([, req]) => JSON.parse(String(req.body)) as unknown) };
+}
+
+describe('sw.js: браузер сменил подписку (pushsubscriptionchange)', () => {
+  it('новая подписка от браузера — POST /api/push/rotate без сессии; старый адрес и новая подписка в теле, не в URL', async () => {
+    const { calls, sent } = await change({ oldSubscription: browserSub(OLD), newSubscription: browserSub(NEW) });
+    expect(calls).toEqual([['/api/push/rotate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'omit', body: expect.any(String),
+    }]]);
+    expect(sent).toEqual([{ oldEndpoint: OLD, subscription: { endpoint: NEW, keys: KEYS } }]);
+  });
+
+  it('новой браузер не дал — подписывается заново ключом сервера из старой и отдаёт её', async () => {
+    const key = new Uint8Array([4, 1, 2]).buffer;
+    const { self, sent } = await change({ oldSubscription: { endpoint: OLD, options: { applicationServerKey: key } } }, (s) => {
+      s.registration.pushManager.subscribe.mockResolvedValue(browserSub(NEW));
+    });
+    expect(self.registration.pushManager.subscribe).toHaveBeenCalledWith({ userVisibleOnly: true, applicationServerKey: key });
+    expect(sent).toEqual([{ oldEndpoint: OLD, subscription: { endpoint: NEW, keys: KEYS } }]);
+  });
+
+  it.each([
+    ['старой подписки нет — доказать нечем', { newSubscription: browserSub(NEW) }],
+    ['у старой нет адреса', { oldSubscription: { endpoint: '' }, newSubscription: browserSub(NEW) }],
+    ['новой нет и ключа сервера в старой нет', { oldSubscription: { endpoint: OLD, options: {} } }],
+    ['у новой нет ключей шифрования', { oldSubscription: browserSub(OLD), newSubscription: browserSub(NEW, { p256dh: 'P256DH' }) }],
+  ])('%s — запроса нет', async (_name, init) => {
+    const { self, calls } = await change(init);
+    expect(calls).toEqual([]);
+    expect(self.registration.pushManager.subscribe).not.toHaveBeenCalled();
+  });
+
+  const both = { oldSubscription: browserSub(OLD), newSubscription: browserSub(NEW) };
+  const keyOnly = { oldSubscription: { endpoint: OLD, options: { applicationServerKey: new ArrayBuffer(1) } } };
+  it.each([
+    ['сеть упала', both, (s: Self) => s.fetch.mockRejectedValue(new TypeError('Failed to fetch'))],
+    ['сервер отказал', both, (s: Self) => s.fetch.mockResolvedValue({ ok: false, status: 429 })],
+    ['подписаться заново не дали', keyOnly, (s: Self) => s.registration.pushManager.subscribe.mockRejectedValue(new Error('NotAllowedError'))],
+  ])('%s — событие не падает, предупреждение в консоли воркера', async (_name, init, setup) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await change(init, setup);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 });
