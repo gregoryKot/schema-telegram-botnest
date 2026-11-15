@@ -269,9 +269,9 @@ describe('FlashcardEx — предел поля карточки', () => {
 describe('FlashcardEx (SchemaEx) — выбор, герой домена, «готово»', () => {
   it('выбор: группа на бумаге домена со знаком, описания в две строки; тап — герой домена', async () => {
     const { container } = render(<MemoryRouter><SchemaEx onBack={vi.fn()} /></MemoryRouter>);
-    const blocks = [...container.querySelectorAll<HTMLElement>('.sd-group-block')];
+    const blocks = [...container.querySelectorAll<HTMLElement>('.sd-groups > .sg-group')];
     expect(blocks.length).toBeGreaterThan(3);
-    expect(blocks.every((b) => b.querySelector('.sd-group-sign svg'))).toBe(true);
+    expect(blocks.every((b) => b.querySelector('.sg-head .sg-sign svg'))).toBe(true);
     expect(container.querySelector('.sd-groups.is-clamped')).not.toBeNull();
     fireEvent.click(screen.getByText('Эмоциональная депривация'));
     const hero = container.querySelector<HTMLElement>('.ex2-hero')!;

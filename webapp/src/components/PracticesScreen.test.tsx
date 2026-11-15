@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { PracticesScreen } from './PracticesScreen';
 import { sheetStackOf } from '../hooks/historySheetStack';
 import { AddressFormContext } from '../utils/addressForm';
+import { getNeedData } from '../needData';
 import { describeCrisisField } from '../test-support/crisisCardHarness';
 
 const getPractices = vi.fn();
@@ -124,6 +125,20 @@ describe('PracticesScreen — список практик', () => {
     renderScreen();
     expect(
       await screen.findByText(/хороший момент, чтобы что-то сделать/),
+    ).toBeTruthy();
+  });
+
+  it('подсказка по оценке называет потребность именем из её данных, своей копии названий нет', async () => {
+    ratingsMock.mockResolvedValue({ attachment: 3, autonomy: 6 });
+    renderScreen();
+    const names = getNeedData('ty');
+    const low = await screen.findByText(/хороший момент, чтобы что-то сделать/);
+    expect(low.textContent).toBe(
+      `Сегодня ${names.attachment.name} на 3/10 – хороший момент, чтобы что-то сделать для этой потребности.`,
+    );
+    fireEvent.click(screen.getByText(names.autonomy.name));
+    expect(
+      await screen.findByText(`Сегодня ${names.autonomy.name} – 6/10. Есть куда расти.`),
     ).toBeTruthy();
   });
 });
