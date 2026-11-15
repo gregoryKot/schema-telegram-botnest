@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // «Восстановить версию» концептуализации на сайте (паритет с мини-аппом,
-// этап 3): подтверждение → поля версии уходят в автосохранение (настоящий
-// useClientDetail, мок только сети). Отмена не пишет ничего. Подтверждение
+// этап 3): подтверждение → поля версии уходят в автосохранение с флагом
+// restore (настоящий useClientDetail, мок только сети). Отмена не пишет ничего. Подтверждение
 // держит свою запись истории (HistoryConfirmDialog): «Назад» закрывает его,
 // а не уводит из карточки клиента.
 import { useEffect, useRef } from 'react';
@@ -160,6 +160,8 @@ describe('ClientConceptTab: восстановление версии', () => {
     expect(screen.getByText('Восстановить версию 1?')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Восстановить' }));
     await waitFor(() => expect(saved()).toBeTruthy(), { timeout: 2500 });
+    // Флаг «Восстановить»: сервер кладёт нынешнее состояние в историю даже в окне склейки.
+    expect(saved().restore).toBe(true);
     expect(saved().schemaIds).toEqual(['abandonment']);
     expect(saved().modeIds).toEqual(['vulnerable_child']);
     expect(saved().earlyExperience).toBe('старый опыт');

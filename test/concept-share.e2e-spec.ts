@@ -205,4 +205,21 @@ describe('e2e ownership: схема случая клиенту (concept share)'
     const own = await agentAs(T1).get(`/api/therapy/conceptualization/${C1}`);
     expect(own.body.sharedWithClientAt ?? null).toBeNull();
   });
+
+  // Показ — не правка содержимого: версия строки, от которой вкладка считает
+  // патч, не двигается, и её следующее сохранение идёт без 409 и перечитывания.
+  it('тумблер не двигает версию строки: сохранение вкладки от прежней версии проходит', async () => {
+    const url = `/api/therapy/conceptualization/${C1}`;
+    const before = (await agentAs(T1).get(url)).body.updatedAt as string;
+    for (const shared of [true, false]) {
+      const r = await agentAs(T1).patch(`${url}/share`, { shared });
+      expect(r.status).toBe(200);
+    }
+    expect((await agentAs(T1).get(url)).body.updatedAt).toBe(before);
+    const saved = await agentAs(T1).post(url, {
+      baseVersion: before,
+      goals: 'ЗАДАЧА ТЕРАПИИ: опора и границы',
+    });
+    expect(saved.status).toBeLessThan(300);
+  });
 });
