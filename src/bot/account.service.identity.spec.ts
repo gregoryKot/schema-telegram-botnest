@@ -206,7 +206,7 @@ describe('AccountService.markUserBlocked', () => {
 });
 
 describe('AccountService.getBroadcastUserIds', () => {
-  it('исключает удалённых и заблокировавших бота и отдаёт id как bigint, без округления', async () => {
+  it('исключает удалённых, заблокировавших бота и не принявших условия; id — bigint без округления', async () => {
     const prisma = makePrisma();
     const big = 2n ** 53n + 1n;
     prisma.user.findMany.mockResolvedValue([{ id: 3n }, { id: big }]);
@@ -216,7 +216,8 @@ describe('AccountService.getBroadcastUserIds', () => {
 
     expect(ids).toEqual([3n, big]);
     expect(prisma.user.findMany).toHaveBeenCalledWith({
-      where: { deletedAt: null, botBlockedAt: null },
+      // Согласие — основание рассылки, как и напоминаний (РКН №08-1063539).
+      where: { deletedAt: null, botBlockedAt: null, disclaimerAccepted: true },
       select: { id: true },
     });
   });

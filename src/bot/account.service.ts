@@ -91,10 +91,10 @@ export class AccountService {
     });
   }
 
-  /** Кому рассылка вообще адресована. bigint как есть: номер не округляется. */
+  /** Кому рассылка адресована: только принявшим условия. bigint как есть: номер не округляется. */
   async getBroadcastUserIds(): Promise<bigint[]> {
     const users = await this.prisma.user.findMany({
-      where: { deletedAt: null, botBlockedAt: null },
+      where: { deletedAt: null, botBlockedAt: null, disclaimerAccepted: true },
       select: { id: true },
     });
     return users.map((u) => u.id);
