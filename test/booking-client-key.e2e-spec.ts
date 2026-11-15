@@ -233,6 +233,7 @@ describe('e2e: ключ комнаты клиента не склеивает р
       moved: 0,
       dropped: 0,
       purged: 0,
+      unreadable: 0,
       shared: [],
       stale: [],
     });

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { decryptRecord } from '../utils/crypto';
 import { INTRO_LEAD_SCHEMA } from './intro-lead.schema';
 import { introLeadMessages, normalizeIntroLead } from './intro-lead.format';
@@ -28,6 +29,7 @@ export class IntroLeadRedeliveryService {
     private readonly prisma: PrismaService,
     private readonly cronLeader: CronLeaderService,
     private readonly introLead: IntroLeadService,
+    private readonly telegram: TelegramService,
   ) {}
 
   /** Повтор доставки: заявки, до которых не дошло письмо (DM — если не дошёл и он). */
@@ -57,8 +59,17 @@ export class IntroLeadRedeliveryService {
         orderBy: { createdAt: 'asc' },
         take: RETRY_BATCH,
       });
+      // Без канала к владельцу (бот, ADMIN_ID) DM не уйдёт, и это не сбой Telegram:
+      // заявка без DM ждёт настройки вместе с письмом, попытка не списывается.
+      const tgReady = this.telegram.canNotifyAdmin();
       let resent = 0;
+      let waiting = 0;
       for (const row of rows) {
+        const tgDone = row.tgDeliveredAt != null;
+        if (!tgDone && !tgReady) {
+          waiting++;
+          continue;
+        }
         // Счётчик — до отправки: падение посреди не даст слать вечно.
         await this.prisma.introLead.update({
           where: { id: row.id },
@@ -74,9 +85,13 @@ export class IntroLeadRedeliveryService {
         });
         if (!lead) continue;
         const msg = introLeadMessages(lead, row.id, 'repeat');
-        await this.introLead.deliver(row.id, msg, row.tgDeliveredAt != null);
+        await this.introLead.deliver(row.id, msg, tgDone);
         resent++;
       }
+      if (waiting > 0)
+        this.logger.log(
+          `introLeadRedelivery: канала к владельцу нет (бот, ADMIN_ID), ждут заявок: ${waiting}`,
+        );
       return resent;
     } catch (err) {
       this.logger.error('intro lead redelivery failed', err as Error);
