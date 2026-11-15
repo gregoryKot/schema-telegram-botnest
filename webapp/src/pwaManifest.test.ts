@@ -85,7 +85,7 @@ describe('цвет оболочки PWA — один на все места', ()
     expect(metaDynamic).toBe(bgToken);
   });
 
-  // theme.ts своего литерала не держит: после смены темы читает --bg (theme.test.ts).
+  // theme.ts своего литерала не держит: читает --bg; theme.test.ts берёт его значения из index.css.
   it('тёмная meta theme-color в index.html = --bg тёмного блока', () => {
     expect(bgDark).toBeTruthy();
     expect(metaDark).toBe(bgDark);
