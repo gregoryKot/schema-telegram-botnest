@@ -168,7 +168,7 @@ describe('check-mutation-ratchet.mjs', () => {
     const res = runGate(
       'check-mutation-ratchet.mjs',
       {
-        'scripts/mutation-baseline-bot.json': JSON.stringify({
+        'scripts/mutation-bot-baseline.json': JSON.stringify({
           total: 90,
           files: { 'src/bot/bot.service.ts': 90 },
         }),
@@ -182,7 +182,7 @@ describe('check-mutation-ratchet.mjs', () => {
       {
         args: [
           '--report=reports/mutation/bot.json',
-          '--baseline=scripts/mutation-baseline-bot.json',
+          '--baseline=scripts/mutation-bot-baseline.json',
         ],
       },
     );
