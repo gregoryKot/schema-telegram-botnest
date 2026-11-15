@@ -261,6 +261,37 @@ describe('useAboutMe — сбои уходят в reportError, а не в кон
     await waitFor(() => expect(bad.result.current.diaries).toBe('failed'));
     expect(reportError).toHaveBeenCalledWith('getModeDiary failed');
   });
+
+  // История теста — тоже единственное чтение профиля: счётчик прохождений берёт её длину,
+  // а сбой виден флагом к готовности портрета (профиль показывает баннер, а не тихий ноль).
+  it('ysqCount — длина истории; сбой — ysqHistoryFailed к portraitReady, повтор с ответом его снимает', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockRejectedValue(new Error('x'));
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+    const { result, rerender } = renderHook(
+      ({ refreshKey }) => useAboutMe(api, { refreshKey, reportError }),
+      { initialProps: { refreshKey: 1 } },
+    );
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+    expect(result.current.ysqHistoryFailed).toBe(true);
+    expect(result.current.ysqCount).toBe(0);
+    expect(reportError).toHaveBeenCalledWith('getYsqHistory failed');
+
+    mockApi.getYsqHistory.mockResolvedValue(
+      [1, 2].map((id) => ({
+        id,
+        completedAt: '2026-08-01T00:00:00.000Z',
+        scores: [],
+      })),
+    );
+    rerender({ refreshKey: 2 });
+    await waitFor(() => expect(result.current.ysqCount).toBe(2));
+    expect(result.current.ysqHistoryFailed).toBe(false);
+    expect(mockApi.getYsqHistory).toHaveBeenCalledTimes(2);
+  });
 });
 
 // Нечитаемый на сервере список (unreadableLists) приходит `[]` — это «не

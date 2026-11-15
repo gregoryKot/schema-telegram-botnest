@@ -1,7 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useYsqLocalState } from '../../../shared/src/hooks/ysqProgressStore';
-import { TherapyNote } from './TherapyNote';
+import { TherapyLine } from './therapy/TherapyLine';
+import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
 import { api } from '../api';
 import { useYsqRequested } from '../../../shared/src/tasks/ysqRequestMark';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
@@ -24,6 +25,7 @@ const SCHEMA_TABS: { key: Tab; label: string }[] = [
 
 export function SchemaInfoContent({ initialTab, highlight }: { initialTab?: Tab; highlight?: string }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'needs');
+  const bridge = useTherapyBridgeTexts();
   return (
     <div className="ss-pane">
       <div className="ds-tabs ss-tabs">
@@ -36,7 +38,7 @@ export function SchemaInfoContent({ initialTab, highlight }: { initialTab?: Tab;
       {tab === 'needs'   && <NeedsTab />}
       {tab === 'schemas' && <SchemasTab highlight={highlight} />}
       {tab === 'modes'   && <ModesTab />}
-      <TherapyNote />
+      <TherapyLine place="schema_info" text={bridge.lineHome} />
     </div>
   );
 }
