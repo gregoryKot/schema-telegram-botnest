@@ -9,7 +9,6 @@
 .cp-page { max-width: 1100px; }
 .cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
 .cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
-.cp-block .section { margin: 0; }
 .cp-here { gap: 18px; container: cp-here / inline-size; }
 .cp-here-text { margin: 0; max-width: 78ch; line-height: 1.6; text-wrap: pretty; }
 
