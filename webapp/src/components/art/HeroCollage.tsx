@@ -99,9 +99,9 @@ export function HeroCollage({ compact = false }: { compact?: boolean }) {
       <Canvas cls="pl2-hero-collage pl2-hero-collage--xs" box="0 0 288 512">
         <Cut cls="hc-sky" x={2} y={4} w={70} h={52} deg={-6} rx={14} />
         <Cut cls="hc-sage" x={4} y={440} w={72} h={50} deg={-8} rx={14} />
-        <Cut cls="hc-peach" x={10} y={16} w={266} h={446} deg={-2} rx={26} />
+        <Cut cls="hc-peach" x={10} y={16} w={262} h={446} deg={-2} rx={26} />
         <Lift by={5}>
-          <path d="M168 484 C192 456 238 458 242 478 C245 494 218 495 214 481 C210 467 242 456 284 464" {...ribbon} strokeWidth={13} />
+          <path d="M168 484 C192 456 238 458 242 478 C245 494 218 495 214 481 C210 467 238 456 276 462" {...ribbon} strokeWidth={13} />
         </Lift>
       </Canvas>
     </>
