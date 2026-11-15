@@ -90,6 +90,28 @@ describe('formatTherapyNudge', () => {
     expect(out).not.toMatch(/\bwhy\b/);
   });
 
+  it('итог «Колеса детства», профиль, «Поделиться», справочник, карточка недели: подписи словами', () => {
+    const counts: Record<string, number> = {
+      childhood_result: 5,
+      profile: 4,
+      share: 3,
+      schema_info: 2,
+      weekly_card: 1,
+    };
+    const out = formatTherapyNudge(
+      metrics({
+        shownByPlace: THERAPY_NUDGE_PLACES.map((place) => ({
+          place,
+          count: counts[place] ?? 0,
+        })),
+      }),
+    );
+    expect(out).toContain(
+      'Показали строку: на итоге «Колеса детства» 5, в профиле 4, в листе «Поделиться» 3, в справочнике «Как это работает» 2, на карточке недели 1.',
+    );
+    for (const id of Object.keys(counts)) expect(out).not.toContain(id);
+  });
+
   // Место без подписи молча пропадает из отчёта (nonZero идёт по подписям):
   // каждое место реестра, кроме карточки по сигналу со своей строкой, подписано.
   it('у каждого места реестра есть подпись, кроме карточки по сигналу', () => {

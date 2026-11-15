@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, reportClientError } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
-import { TherapyNote } from '../components/TherapyNote';
+import { TherapyLine } from '../components/therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
 import { JourneySheet } from '../components/JourneySheet';
 import { PaperAlert } from '../components/paper/PaperAlert';
 import { OUTCOME_LOOK_LIT } from '../components/paper/outcomeLook';
@@ -42,8 +43,9 @@ interface Props {
 
 export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName, onTakeTest }: Props) {
   const tr = useTr();
+  const bridge = useTherapyBridgeTexts();
   const blocks = useScreenBlocks('profile');
-  // Дневники схем и режимов читает только useAboutMe — счётчик записей, портрет и его лист берут их оттуда.
+  // Дневники схем и режимов и историю теста читает только useAboutMe — счётчики, портрет и его лист берут их оттуда.
   const aboutMe = useAboutMe(api, { refreshKey, reportError: (message) => reportClientError({ message, section: 'profile-about' }) });
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
@@ -58,7 +60,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [loadError, setLoadError] = useState(false);
   const [relation, setRelation] = useState<TherapyRelationInfo | null>(null);
   const [gratitudeCount, setGratitudeCount] = useState<number>(0);
-  const [ysqCount, setYsqCount] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Refresh → back to loading. State is adjusted during render (not in an effect) to stay off set-state-in-effect.
@@ -67,7 +68,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     setSeenRefresh(refreshKey); setReady(false); setStreak(null); setAchievements(null); setInsights(null); setLoadError(false);
   }
 
-  // Сбой любого фетча (и дневников useAboutMe) виден PaperAlert, а не молчаливыми нулями.
+  // Сбой любого фетча (и дневников или истории теста в useAboutMe) виден PaperAlert, а не молчаливыми нулями.
   useEffect(() => {
     Promise.all([
       api.getStreak().then(setStreak),
@@ -76,13 +77,13 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       api.history(112).then(h => setLevels(buildLevelMap(h))),
       api.getTherapyRelation().then(r => setRelation(r)),
       api.getGratitudeDiary().then(g => setGratitudeCount(g.length)),
-      api.getYsqHistory().then(h => setYsqCount(h.length)),
     ]).catch(() => setLoadError(true)).finally(() => setReady(true));
   }, [refreshKey]);
 
   // Силуэт держится, пока не готово всё: пустой профиль от полного отличается только по всем данным сразу.
   const shown = ready && aboutMe.diaries !== 'loading' && aboutMe.portraitReady && aboutMe.warmWordsReady;
-  const failed = loadError || aboutMe.diaries === 'failed';
+  const failed = loadError || aboutMe.diaries === 'failed' || aboutMe.ysqHistoryFailed;
+  const ysqCount = aboutMe.ysqCount;
   const diaryCount = aboutMe.schemaEntries.length + aboutMe.modeEntries.length + gratitudeCount;
   const activeDates = useMemo(() => new Set(levels.keys()), [levels]);
   const currentStreak = streak?.currentStreak ?? 0;
@@ -138,7 +139,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {shown && <TherapistCard relation={relation} />}
 
-      <TherapyNote compact />
+      <TherapyLine place="profile" text={bridge.lineHome} />
 
       {shown && <ProfileLinks onOpenSettings={onOpenSettings} onDeleteAccount={() => setShowDeleteConfirm(true)} />}
 
