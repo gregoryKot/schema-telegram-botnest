@@ -1,6 +1,6 @@
 import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 import type { YsqHistoryEntry } from '../../../../../shared/src/apiTypes';
-import { historyScoresByName } from '../../../../../shared/src/hooks/ysqScoring';
+import { historyScoresById } from '../../../../../shared/src/hooks/ysqScoring';
 import { rankExpressed, type ExpressedSchema } from '../../../sections/schemas/schemasModel';
 
 export interface CrossCheckItem extends ExpressedSchema { inConcept: boolean }
@@ -13,7 +13,7 @@ export interface CrossCheckItem extends ExpressedSchema { inConcept: boolean }
  * по выраженности, и остальные молча отрезались (QA 2026-10-26).
  */
 export function crossCheckItems(ysqActiveIds: string[], latest: YsqHistoryEntry | undefined, conceptSchemaIds: string[]): CrossCheckItem[] {
-  const scores = latest ? historyScoresByName(latest) : {};
+  const scores = latest ? historyScoresById(latest) : {};
   return rankExpressed(SCHEMA_DOMAINS, ysqActiveIds, scores)
     .map(s => ({ ...s, inConcept: conceptSchemaIds.includes(s.id) }));
 }
