@@ -125,8 +125,8 @@ export function sessionScene(s: GameScene) {
 
 // Финальная CTA: запись + шаринг + донат
 function showTherapyCta(s: GameScene) {
-  track('demo_end', { chapter: s.chapter.id });
   setTouchControls(false); // тач-кнопки закрывали «в меню» и кризисную строку
+  track('demo_end', { chapter: s.chapter.id });
   trackEvent('game_chapter_done', { chapter: s.chapter.id });
   trackEvent('game_cta_shown', { from: 'cabinet' });
   const font = '"Press Start 2P", "Courier New", monospace';
