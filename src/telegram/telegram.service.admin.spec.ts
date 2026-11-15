@@ -1,4 +1,4 @@
-// notifyAdmin(), onModuleDestroy() и режима BOT_REDIRECT_USERNAME.
+// notifyAdmin() и canNotifyAdmin() (admin-notify.ts), onModuleDestroy() и режима BOT_REDIRECT_USERNAME.
 // /zv, /stats, /testdonate, /zayavki, /broadcast, treq — вынесены на
 // TelegramAdminService (правило №10 CLAUDE.md — лимит размера файла), см.
 // telegram.admin.service.*.spec.ts.
@@ -12,7 +12,7 @@ import { BOT_COMMANDS } from './telegram.constants';
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 const OLD_REDIRECT = process.env.BOT_REDIRECT_USERNAME;
 
-function makeDeps(overrides: Record<string, any> = {}) {
+function makeDeps(overrides: Record<string, any> = {}, withBot = true) {
   const botService = {
     getUserSettings: jest.fn().mockResolvedValue(null),
     hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true),
@@ -47,7 +47,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
   };
   const fakeBot = makeFakeBot();
   const service = new TelegramService(
-    fakeBot.bot,
+    withBot ? fakeBot.bot : null,
     botService,
     analyticsService,
     accountService,
@@ -119,11 +119,46 @@ describe('TelegramService — notifyAdmin', () => {
   });
 
   it('sendMessage падает — возвращает false, ошибка залогирована, не бросает', async () => {
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     process.env.ADMIN_ID = '999';
     const { service, fakeBot } = makeDeps();
-    fakeBot.telegram.sendMessage.mockRejectedValueOnce(new Error('blocked'));
+    const failure = new Error('blocked');
+    fakeBot.telegram.sendMessage.mockRejectedValueOnce(failure);
     await expect(service.notifyAdmin('x')).resolves.toBe(false);
+    expect(error).toHaveBeenCalledWith('notifyAdmin failed', failure);
+  });
+
+  it('бота нет (провайдер не подключён) — false без попытки, ошибки в логе нет', async () => {
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    process.env.ADMIN_ID = '999';
+    const { service } = makeDeps({}, false);
+    await expect(service.notifyAdmin('x')).resolves.toBe(false);
+    expect(error).not.toHaveBeenCalled();
+  });
+});
+
+// Повтор заявки (intro-lead-redelivery) спрашивает канал до отправки: false —
+// ровно те случаи, где notifyAdmin отвечает false без попытки.
+describe('TelegramService — canNotifyAdmin', () => {
+  it('бот и ADMIN_ID есть — true', () => {
+    process.env.ADMIN_ID = '999';
+    expect(makeDeps().service.canNotifyAdmin()).toBe(true);
+  });
+
+  it('ADMIN_ID не задан или мусор — false', () => {
+    delete process.env.ADMIN_ID;
+    expect(makeDeps().service.canNotifyAdmin()).toBe(false);
+    process.env.ADMIN_ID = 'abc';
+    expect(makeDeps().service.canNotifyAdmin()).toBe(false);
+  });
+
+  it('бота нет — false даже с ADMIN_ID', () => {
+    process.env.ADMIN_ID = '999';
+    expect(makeDeps({}, false).service.canNotifyAdmin()).toBe(false);
   });
 });
 
