@@ -6,6 +6,7 @@
 // jsdom раскладку не считает, поэтому замер — здесь, на прод-сборке: у содержимого
 // листа есть своя прокрутка, и последний элемент после неё виден в окне.
 import { test, expect } from './support/test';
+import { asTherapist } from './support/therapistCabinet';
 import { localDateStr } from '../shared/src/utils/format';
 
 const NEEDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
@@ -57,6 +58,49 @@ for (const phone of PHONES) {
   });
 }
 
+// Листы .ex-screen (сомнение в режиме, «Карта себя», «Разбор фразы», совет по потребности)
+// держит на телефоне одно правило styles/ex-legacy.css: `.ex-screen .page` возвращает себе
+// прокрутку поверх телефонного `.page { overflow: visible }` (класс 24 docs/INCIDENTS.md).
+// Замер тот же, на листе «Сравни с похожими» (diary/ModeDoubtSheet.tsx): последняя карточка
+// после прокрутки видна целиком (нижняя «Оставляю: …» липкая и видна всегда — не мерило).
+for (const phone of PHONES) {
+  test(`${phone.name}: лист .ex-screen «Сравни с похожими» прокручивается до конца`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => localStorage.setItem('why_seen_v1', '1'));
+    await page.setViewportSize({ width: phone.width, height: phone.height });
+    await page.goto('/diary');
+    await page.getByRole('button', { name: 'Записать' }).click();
+    const entry = page.getByRole('dialog', { name: 'Дневник' });
+    await entry.getByRole('radio', { name: 'Режим' }).click();
+    await entry.getByRole('button', { name: 'Заполнить подробно →' }).click();
+    await page
+      .getByRole('button', { name: 'Знаю режим – выбрать из списка' })
+      .click();
+    await page.getByRole('button', { name: /^Уязвимый Ребёнок/ }).click();
+    await page
+      .getByRole('button', { name: 'Сомневаешься? Сравни с похожими' })
+      .click();
+
+    const scroller = page.locator('.ex-screen > .page');
+    await expect(scroller.getByText('сейчас выбран')).toBeVisible();
+    const { overflowY, scrollHeight, clientHeight } = await scroller.evaluate(
+      (el) => ({
+        overflowY: getComputedStyle(el).overflowY,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      }),
+    );
+    // Карточек сравнения больше, чем входит в окно, — иначе проверка ничего не доказывает.
+    expect(scrollHeight).toBeGreaterThan(clientHeight);
+    expect(['auto', 'scroll']).toContain(overflowY);
+
+    await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    const last = scroller.getByRole('button', { name: 'Это ближе' }).last();
+    await expect(last).toBeInViewport({ ratio: 1 });
+  });
+}
+
 // «Справочник» терапевта прокручивается на планшете и компьютере (редизайн 2026-11, b35).
 // Раздел рисовал .ds-page прямо в .canvas (overflow: hidden) без .page: на ≥768 колесо не
 // двигало страницу, группы ниже окна («Здоровые режимы») были недоступны; на телефоне
@@ -67,51 +111,13 @@ const WIDE = [
   { name: 'компьютер 1280', width: 1280, height: 800 },
 ];
 
-// Сессия терапевта поверх чистого клиента: роль в профиле (полная форма UserProfile)
-// и пустой кабинет — списки без строк (src/api/therapy*.controller.ts).
-const THERAPIST: [string, unknown][] = [
-  [
-    'GET /api/profile',
-    {
-      name: 'Терапевт',
-      role: 'THERAPIST',
-      ysq: { completedAt: null, activeSchemaIds: [] },
-      notifications: {
-        enabled: true,
-        reminderEnabled: true,
-        timezone: 'Europe/Moscow',
-        localHour: 21,
-      },
-      streak: 0,
-      lastActivity: {
-        needsTracker: null,
-        schemaDiary: null,
-        modeDiary: null,
-        gratitudeDiary: null,
-      },
-      mySchemaIds: [],
-      myModeIds: [],
-      unreadableLists: [],
-    },
-  ],
-  ['GET /api/therapy/clients', []],
-  ['GET /api/therapy/invites', []],
-  ['GET /api/therapy/card-claims', []],
-  ['GET /api/therapy/tasks/all', []],
-  ['POST /api/therapy/therapist-view', { ok: true }],
-];
-
 for (const size of WIDE) {
   test(`${size.name}: «Справочник» терапевта прокручивается до последней группы`, async ({
     page,
     api,
     isMobile,
   }) => {
-    for (const [key, body] of THERAPIST) api.overrides.set(key, body);
-    await page.addInitScript(() => {
-      localStorage.setItem('why_seen_v1', '1');
-      localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
-    });
+    await asTherapist(page, api); // кабинет с офлайн-клиентом (support/therapistCabinet.ts)
     await page.setViewportSize({ width: size.width, height: size.height });
     await page.goto('/cabinet/guide');
     await expect(
