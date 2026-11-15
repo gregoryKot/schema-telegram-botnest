@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const hostId = vi.hoisted(() => ({ current: 'telegram' }));
 vi.mock('../../../shared/src/host', () => ({ getHost: () => ({ id: hostId.current }) }));
-vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
+vi.mock('../api', () => ({ api: { trackEvent: vi.fn() }, reportClientError: vi.fn() }));
 vi.mock('../auth/authContext', () => ({ useAuth: () => ({ accessToken: 't' }) }));
 
 import { api } from '../api';
