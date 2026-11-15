@@ -1,4 +1,4 @@
-import { cachedUnlessEmpty } from './caldav-retry';
+import { cachedUnlessEmpty } from './retry-cache';
 
 describe('cachedUnlessEmpty', () => {
   it('непустой результат кэшируется, пустой — нет', async () => {

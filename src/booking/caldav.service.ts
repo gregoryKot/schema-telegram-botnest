@@ -7,7 +7,7 @@ import { readBusy } from './caldav-busy-read';
 import { calDavHealth } from './caldav-health';
 import { onEmptyCalendars } from './caldav-empty-guard';
 import { BusyCache } from './caldav-busy-cache';
-import { cachedUnlessEmpty } from './caldav-retry';
+import { cachedUnlessEmpty } from './retry-cache';
 import { busySkips, sumSkips } from './caldav-parse-skips';
 
 export type CalDeleteResult = 'deleted' | 'missing' | 'failed';
