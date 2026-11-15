@@ -7,13 +7,20 @@
 // свежий пользователь, чтобы POST не менял ответ соседних GET.
 // Карты подхватываются сами: любой экспорт-объект с ключами «МЕТОД /путь»,
 // кроме STATUS (там статусы). Карта с ANON/PUBLIC в имени уходит без токена —
-// так сверяются и ответы гостю (e2e-browser/support/stubPublic.ts).
+// так сверяются и ответы гостю (e2e-browser/support/stubPublic.ts). Кабинет
+// (CABINET_FIXTURES, e2e-browser/support/therapistCabinet.ts) уходит от имени
+// терапевта с офлайн-клиентом — оба заводятся так же, свежими на каждую ручку.
 // Живая база (buildRealDbTestApp, джоба `migrations`). Фейковая Prisma тут не
 // годится: на ней часть ручек отвечает не так, как сервер.
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as stubFixtures from '../e2e-browser/support/stubFixtures';
 import { PUBLIC_FIXTURES } from '../e2e-browser/support/stubPublic';
+import {
+  CABINET_FIXTURES,
+  OFFLINE_CLIENT,
+  THERAPIST_NAME,
+} from '../e2e-browser/support/therapistCabinet';
 import { ANALYTICS_EVENTS } from '../src/analytics/analytics.constants';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
 import { TestApp } from './e2e-support/build-test-app';
@@ -54,6 +61,11 @@ const VOLATILE: Record<string, Record<string, string>> = {
     deviceCode: 'случайные 64 hex на каждый билет',
     userCode: 'случайный код подтверждения на каждый билет',
   },
+  'GET /api/therapy/clients': {
+    '*.telegramId': 'офлайн-клиент — минус id связи, его выдаёт база',
+    '*.urlCode': 'случайный код адреса карточки',
+    '*.relationCreatedAt': 'время создания связи',
+  },
 };
 
 // Валидные тела POST по DTO. Ручки без записи здесь — красное, не пропуск.
@@ -76,6 +88,7 @@ const BODIES: Record<string, unknown> = {
   // deviceCode подставляется из настоящего старта: на неизвестный код сервер
   // отвечает expired, а стаб изображает билет, который ещё никто не подтвердил.
   'POST /api/auth/ticket/poll': {},
+  'POST /api/therapy/therapist-view': { on: true }, // переключатель «Клиент / Терапевт»
 };
 
 // Ручки, которым без query сервер отвечает 400: стаб матчит путь без query.
@@ -113,14 +126,19 @@ describe('заглушка браузерного смока ↔ настоящ�
     Object.entries(map).map(([key, fixture]) => ({ name, key, fixture })),
   );
   const ids = cases.map((_, i) => BASE + BigInt(i + 1));
+  const cabinet = Object.entries(CABINET_FIXTURES).map(
+    ([key, fixture], i) =>
+      [key, fixture, BASE + 1_000n + BigInt(i + 1)] as const,
+  );
+  const allIds = [...ids, ...cabinet.map(([, , id]) => id)];
 
   beforeAll(async () => {
     // Всегда живая база, не по флагу окружения: на фейке спек ничего не доказывает.
     ({ app, prisma } = await buildRealDbTestApp());
-    await cleanupOwnershipFixtures(prisma, ids);
+    await cleanupOwnershipFixtures(prisma, allIds);
   });
   afterAll(async () => {
-    await cleanupOwnershipFixtures(prisma, ids);
+    await cleanupOwnershipFixtures(prisma, allIds);
     await app.close();
   });
 
@@ -149,15 +167,57 @@ describe('заглушка браузерного смока ↔ настоящ�
     return raw.find((c) => c.startsWith('refresh_token='))!.split(';')[0];
   }
 
+  /** Ручка от имени `token` (null — гость), как её зовёт сайт; статус и тело — как у стаба. */
+  async function expectLikeStub(
+    key: string,
+    fixture: unknown,
+    opts: {
+      path: string;
+      token: string | null;
+      body?: unknown;
+      cookie?: string | null;
+      status?: number;
+    },
+  ): Promise<void> {
+    const method = key.split(' ')[0];
+    let req = request(app.getHttpServer())[method === 'GET' ? 'get' : 'post'](
+      opts.path + (QUERIES[key] ?? ''),
+    );
+    if (opts.token) req = req.set('Authorization', `Bearer ${opts.token}`);
+    if (method !== 'GET') {
+      if (!(key in BODIES)) {
+        throw new Error(`${key}: нет валидного тела в BODIES спека сверки`);
+      }
+      // CSRF как у сайта (requireCsrf): заголовок x-requested-with.
+      req = req
+        .set('x-requested-with', 'webapp')
+        .send((opts.body ?? BODIES[key]) as object);
+    }
+    if (opts.cookie) req = req.set('Cookie', opts.cookie);
+    const res = await req;
+
+    const status =
+      opts.status ?? STATUS[key] ?? (method === 'POST' ? 201 : 200);
+    expect({ key, status: res.status }).toEqual({ key, status });
+    if (fixture === null) {
+      expect({ key, body: res.text }).toEqual({ key, body: '' });
+    } else {
+      expect({ key, body: masked(key, res.body) }).toEqual({
+        key,
+        body: masked(key, fixture),
+      });
+    }
+  }
+
   it('карты фикстур найдены и непусты', () => {
     expect(MAPS.map(([n]) => n)).toContain('FIXTURES');
     expect(cases.length).toBeGreaterThan(0);
+    expect(cabinet.length).toBeGreaterThan(0);
   });
 
   it.each(cases.map((c, i) => [c.key, c, ids[i]] as const))(
     '%s',
     async (key, { name, fixture }, userId) => {
-      const [method, path] = key.split(' ');
       await prisma.user.create({
         data: {
           id: userId,
@@ -172,42 +232,46 @@ describe('заглушка браузерного смока ↔ настоящ�
       const body =
         key === 'POST /api/auth/ticket/poll'
           ? { deviceCode: (await startTicket()).deviceCode }
-          : BODIES[key];
-      let req = request(app.getHttpServer())[method === 'GET' ? 'get' : 'post'](
-        path + (QUERIES[key] ?? ''),
-      );
-      if (!isGuest(name)) {
-        req = req.set(
-          'Authorization',
-          `Bearer ${signAccessToken(userId, secret())}`,
-        );
-      }
-      if (method !== 'GET') {
-        if (!(key in BODIES)) {
-          throw new Error(`${key}: нет валидного тела в BODIES спека сверки`);
-        }
-        // CSRF как у сайта (requireCsrf): заголовок x-requested-with.
-        req = req.set('x-requested-with', 'webapp').send(body as object);
-      }
-      if (cookie) req = req.set('Cookie', cookie);
-      const res = await req;
-
-      // Публичные ручки — GET и @HttpCode(200): стаб отвечает на них 200.
-      const expectedStatus = isGuest(name)
-        ? 200
-        : (STATUS[key] ?? (method === 'POST' ? 201 : 200));
-      expect({ key, status: res.status }).toEqual({
-        key,
-        status: expectedStatus,
+          : undefined;
+      await expectLikeStub(key, fixture, {
+        path: key.split(' ')[1],
+        token: isGuest(name) ? null : signAccessToken(userId, secret()),
+        body,
+        cookie,
+        // Публичные ручки — GET и @HttpCode(200): стаб отвечает на них 200.
+        status: isGuest(name) ? 200 : undefined,
       });
-      if (fixture === null) {
-        expect({ key, body: res.text }).toEqual({ key, body: '' });
-      } else {
-        expect({ key, body: masked(key, res.body) }).toEqual({
-          key,
-          body: masked(key, fixture),
-        });
-      }
     },
   );
+
+  // Кабинет: у каждой ручки свой терапевт (роль и therapistMode — как после одобрения заявки)
+  // и офлайн-клиент, заведённый ручкой «Новый клиент». Номер клиента выдаёт база: он встаёт в
+  // путь вместо номера фикстуры, а в теле номер, код и время связи сверяются по типу (VOLATILE).
+  it.each(cabinet)('кабинет: %s', async (key, fixture, therapistId) => {
+    await prisma.user.create({
+      data: {
+        id: therapistId,
+        role: 'THERAPIST',
+        therapistMode: true,
+        firstName: THERAPIST_NAME,
+        addressForm: 'ty',
+        disclaimerAccepted: true,
+      },
+    });
+    const token = signAccessToken(therapistId, secret());
+    const added = await request(app.getHttpServer())
+      .post('/api/therapy/clients/virtual')
+      .set('Authorization', `Bearer ${token}`)
+      .set('x-requested-with', 'webapp')
+      .send({ name: OFFLINE_CLIENT.name });
+    expect(added.status).toBe(201);
+    const [{ telegramId }] = added.body as { telegramId: number }[];
+    const path = key
+      .split(' ')[1]
+      .replace(
+        new RegExp(`/${OFFLINE_CLIENT.telegramId}(?=/|$)`),
+        `/${telegramId}`,
+      );
+    await expectLikeStub(key, fixture, { path, token });
+  });
 });

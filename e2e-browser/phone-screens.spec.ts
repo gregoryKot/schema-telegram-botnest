@@ -2,7 +2,7 @@
 // `phone-screens` джобы browser-smoke): вид на айфоне виден без устройства. Сверки с эталоном нет.
 import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from './support/test';
-import { FIXTURES } from './support/stubFixtures';
+import { asTherapist, OFFLINE_CLIENT } from './support/therapistCabinet';
 
 // Снимок — видимая область: на длинном снимке закреплённая нижняя панель рисуется посреди страницы.
 async function shoot(page: Page, testInfo: TestInfo, name: string) {
@@ -42,19 +42,45 @@ test('лист записи: первый шаг', async ({ page }, testInfo) =>
   await shoot(page, testInfo, 'entry');
 });
 
-test('кабинет терапевта', async ({ page, api }, testInfo) => {
-  // Роль поверх профиля чистого клиента и пустой кабинет — как в sheet-scroll.spec.ts.
-  const profile = FIXTURES['GET /api/profile'] as Record<string, unknown>;
-  api.overrides.set('GET /api/profile', { ...profile, role: 'THERAPIST' });
+test('кабинет терапевта: клиентов ещё нет', async ({ page, api }, testInfo) => {
+  await asTherapist(page, api);
   api.overrides.set('GET /api/therapy/clients', []);
-  api.overrides.set('GET /api/therapy/invites', []);
-  api.overrides.set('GET /api/therapy/card-claims', []);
-  api.overrides.set('GET /api/therapy/tasks/all', []);
-  api.overrides.set('POST /api/therapy/therapist-view', { ok: true });
-  await page.addInitScript(() =>
-    localStorage.setItem('therapist_privacy_disclaimer_seen', '1'),
-  );
   await page.goto('/cabinet');
   await expect(page.getByRole('heading', { name: 'Клиенты' })).toBeVisible();
   await shoot(page, testInfo, 'therapist');
 });
+
+// Кабинет с офлайн-клиентом (support/therapistCabinet.ts). «Графические карты» на телефоне —
+// строка «откройте на компьютере» вместо холста (modeMap/ModeMapTab.tsx).
+const CARD = `/cabinet/${OFFLINE_CLIENT.urlCode}`;
+const CABINET = [
+  {
+    title: 'список клиентов',
+    shot: 'therapist-clients',
+    path: '/cabinet',
+    ready: (p: Page) =>
+      p.getByRole('button', { name: new RegExp(OFFLINE_CLIENT.name) }),
+  },
+  {
+    title: '«Обзор» клиента',
+    shot: 'therapist-client',
+    path: CARD,
+    ready: (p: Page) => p.getByRole('heading', { name: 'Следующая сессия' }),
+  },
+  {
+    title: '«Графические карты»',
+    shot: 'therapist-maps',
+    path: `${CARD}/maps`,
+    ready: (p: Page) =>
+      p.getByText(/^Графические карты открываются на компьютере/),
+  },
+];
+
+for (const s of CABINET) {
+  test(`кабинет терапевта: ${s.title}`, async ({ page, api }, testInfo) => {
+    await asTherapist(page, api);
+    await page.goto(s.path);
+    await expect(s.ready(page)).toBeVisible();
+    await shoot(page, testInfo, s.shot);
+  });
+}
