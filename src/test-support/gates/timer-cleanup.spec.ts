@@ -242,7 +242,11 @@ describe('check-timer-cleanup.mjs', () => {
       '  return { go: () => { timer = setTimeout(() => send(), 100); }, leave: send };',
       '}',
     ].join('\n');
-    const res = run({ 'webapp/src/A.tsx': bad, 'webapp/src/B.tsx': good, 'shared/src/C.ts': factory });
+    const res = run({
+      'webapp/src/A.tsx': bad,
+      'webapp/src/B.tsx': good,
+      'shared/src/C.ts': factory,
+    });
     expect(res.status).toBe(1);
     expect(keysIn(res.stderr)).toEqual(['webapp/src/A.tsx::tick']);
   });
@@ -266,16 +270,19 @@ describe('check-timer-cleanup.mjs', () => {
   });
 
   it('класс: this.setState без componentWillUnmount — красный, с ним — зелёный', () => {
-    const cls = (unmount: string) => [
-      'class A extends Component {',
-      '  timer = 0;',
-      '  show() { this.timer = setTimeout(() => this.setState({ shown: false }), 100); }',
-      unmount,
-      '}',
-    ].join('\n');
+    const cls = (unmount: string) =>
+      [
+        'class A extends Component {',
+        '  timer = 0;',
+        '  show() { this.timer = setTimeout(() => this.setState({ shown: false }), 100); }',
+        unmount,
+        '}',
+      ].join('\n');
     const res = run({
       'webapp/src/Bad.tsx': cls(''),
-      'webapp/src/Good.tsx': cls('  componentWillUnmount() { clearTimeout(this.timer); }'),
+      'webapp/src/Good.tsx': cls(
+        '  componentWillUnmount() { clearTimeout(this.timer); }',
+      ),
     });
     expect(res.status).toBe(1);
     expect(keysIn(res.stderr)).toEqual(['webapp/src/Bad.tsx::this.setState']);
