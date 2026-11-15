@@ -5,15 +5,17 @@ import { Client } from 'pg';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { PRACTICE_OWNER } from './seed-booking';
 import { STREAK_COHORT } from './seed-streaks';
+import {
+  resolveTherapyCaseIds,
+  type TherapyCaseIds,
+} from './worst-case-therapy';
 
-export interface ScenarioContext {
+export interface ScenarioContext extends TherapyCaseIds {
   prisma: PrismaService;
   /** Терапевт с самым длинным списком клиентов в синтетике. */
   therapistId: bigint;
   /** Пользователь с самой длинной историей оценок. */
   heavyUserId: bigint;
-  /** Ничей не клиент — так профиль сайта видит клиента без терапевта. */
-  unattachedUserId: bigint;
   /** Больше всех строк в очереди уведомлений (отправленные + снятые + ждущие). */
   notifiedUserId: bigint;
   /** Живая семья сессий с самой длинной цепочкой ротаций — её строки гвард
@@ -46,11 +48,6 @@ export async function resolveWorstCaseIds(
     `SELECT "userId"::text AS id FROM "Rating" WHERE "userId" < ${STREAK_COHORT.base}
       GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
   );
-  // В синтетике это терапевт (клиенты — все остальные); план от роли не зависит.
-  const unattachedUserId = await first(
-    `SELECT u."id"::text AS id FROM "User" u WHERE NOT EXISTS (
-      SELECT 1 FROM "TherapyRelation" r WHERE r."clientId" = u."id") ORDER BY 1 LIMIT 1`,
-  );
   const notifiedUserId = await first(
     `SELECT "userId"::text AS id FROM "ScheduledNotification"
       GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
@@ -77,7 +74,6 @@ export async function resolveWorstCaseIds(
   const ids = {
     therapistId,
     heavyUserId,
-    unattachedUserId,
     notifiedUserId,
     streakTherapistId,
   };
@@ -95,11 +91,12 @@ export async function resolveWorstCaseIds(
   return {
     ...(Object.fromEntries(
       Object.entries(ids).map(([k, v]) => [k, BigInt(v)]),
-    ) as Omit<ScenarioContext, 'prisma' | 'session' | 'bookingClient'>),
+    ) as Record<keyof typeof ids, bigint>),
     session: { userId: BigInt(session.id), family: session.family },
     bookingClient: {
       userId: BigInt(bookingClient.id),
       ownerTelegramId: bookingClient.owner,
     },
+    ...(await resolveTherapyCaseIds(client, String(therapistId))),
   };
 }

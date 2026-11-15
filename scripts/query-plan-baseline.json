@@ -9,7 +9,7 @@
       "msCeiling": 500
     },
     "former-therapist": {
-      "blocks": 4,
+      "blocks": 16,
       "msCeiling": 500
     },
     "history-30d": {
@@ -32,6 +32,10 @@
       "blocks": 69644,
       "msCeiling": 10000
     },
+    "therapist-client-data": {
+      "blocks": 45,
+      "msCeiling": 500
+    },
     "therapist-clients": {
       "blocks": 2817,
       "msCeiling": 1500
@@ -39,6 +43,10 @@
     "therapist-clients-long-streaks": {
       "blocks": 3813,
       "msCeiling": 1500
+    },
+    "therapist-notes": {
+      "blocks": 174,
+      "msCeiling": 500
     }
   },
   "seqScanAllowed": {}
