@@ -51,13 +51,15 @@ function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {
 }
 
 // Как в AppShell: onDone закрывает окно и открывает следующий лист со своей записью («Колесо детства»).
+// doneAt — глубина стека на каждом вызове onDone: Probe стоит в дереве раньше окна и видит переход первым.
+const doneAt: number[] = [];
 function Wheel({ onClose }: { onClose: () => void }) {
   useHistorySheet(onClose);
   return <p>колесо</p>;
 }
 function CelebrationThenWheel() {
   const [stage, setStage] = useState<'party' | 'wheel' | 'none'>('party');
-  if (stage === 'party') return <Celebration streak={5} onDone={() => setStage('wheel')} />;
+  if (stage === 'party') return <Celebration streak={5} onDone={() => { doneAt.push(nav.depth); setStage('wheel'); }} />;
   return stage === 'wheel' ? <Wheel onClose={() => setStage('none')} /> : null;
 }
 
@@ -141,7 +143,8 @@ describe('Celebration — закрытие через запись в истор
     ['«Закрыть»', () => fireEvent.click(screen.getByText('Закрыть'))],
     ['Escape', () => fireEvent.keyDown(document, { key: 'Escape' })],
     ['фон', () => fireEvent.click(screen.getByRole('presentation'))],
-  ])('%s снимает запись окна до onDone: лист из onDone — единственная запись', (_how, close) => {
+  ])('%s снимает запись окна до onDone: onDone один раз, лист из onDone — единственная запись', (_how, close) => {
+    doneAt.length = 0;
     renderInRouter(<CelebrationThenWheel />);
     expect(screen.getByRole('dialog').getAttribute('aria-modal')).toBe('true');
     expect(nav.depth).toBe(1);
@@ -152,6 +155,7 @@ describe('Celebration — закрытие через запись в истор
     act(() => nav.go!(-1));
     expect(screen.queryByText('колесо')).toBeNull();
     expect(nav.depth).toBe(0);
+    expect(doneAt).toEqual([0]); // onDone до снятия записи окна видел бы глубину 1
   });
 
   it('«Назад» браузера закрывает окно', () => {
