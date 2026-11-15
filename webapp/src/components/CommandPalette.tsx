@@ -18,7 +18,6 @@ import { useScreenShare } from './appShell/screenShareMode';
 import '../styles/command-palette.css';
 
 interface Props {
-  section: Section;
   onNavigate: (s: Section) => void;
   onClose: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
