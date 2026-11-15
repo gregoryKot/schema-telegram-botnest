@@ -15,7 +15,7 @@ export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphChevron, GlyphPlus, G
 // Подпись без «←»: имя кнопки ищут тесты потребителей; без backLabel её задаёт хост (exBackLabel.ts).
 // Герой (look, ExHead) и раскладки редизайна 2026-11 — по желанию экрана, без них DOM прежний:
 //  • hintBeforeField — на ≤900 подсказка (aside) между шапкой и полем, а не после «Сохранить»;
-//  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева колонкой, форма справа;
+//  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева, форма справа; уже — aside после формы, кроме ExHint;
 //  • «самопомощь» у героя — наклейкой под кнопками (принцип 5), cautionAt="head" — под лист; без look — под шапкой.
 interface ExScreenProps extends ExHeadProps {
   /** Предупреждение «самопомощь» — только на первом экране. */
