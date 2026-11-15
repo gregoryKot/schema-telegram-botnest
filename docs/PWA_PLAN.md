@@ -169,14 +169,17 @@ media-гейтов пустой.
 > Модель `PushSubscription` с глобальным unique по `endpointHash` (sha256
 > адреса; один браузер — один аккаунт, вход другим аккаунтом переносит
 > подписку); ручки `GET /api/push/config`, `POST /api/push/subscription`
-> (сразу шлёт пробное уведомление), `POST /api/push/unsubscribe`
-> (`src/push/push.controller.ts`). **Пуш выигрывает у Telegram** (пункт 4.4
+> (сразу шлёт пробное уведомление), `POST /api/push/unsubscribe`,
+> `POST /api/push/status` (знает ли сервер подписку этого браузера — сверка
+> строки «На этом устройстве») и анонимная `POST /api/push/rotate` (подписку,
+> сменённую браузером, отдаёт воркер по `pushsubscriptionchange`; доказательство —
+> старый адрес) (`src/push/push.controller.ts`). **Пуш выигрывает у Telegram** (пункт 4.4
 > плана говорил обратное) — решение агента по курсу владельца «не привязывать
 > приложение к Telegram» (2026-11-05): человек сам включил уведомления в
 > приложении, экран говорит «вместо Telegram»; развернуть — одна функция
 > `src/bot/notify-channel.ts`. Список push-сервисов против SSRF —
 > `src/push/push-endpoint.ts`; ключи — `docs/ENV.md`. Сайт: воркер
-> `webapp/public/sw.js` (без `fetch`, ничего не кэширует), состояние
+> `webapp/public/sw.js` (без обработчика `fetch`, ничего не кэширует), состояние
 > устройства и подписка — `webapp/src/push/`, строка «На этом устройстве» —
 > `webapp/src/components/settingsSheet/PushDeviceRow.tsx`. Кнопок под
 > уведомлением (отложить, пауза) у пуша нет: у воркера нет сессии.

@@ -37,6 +37,8 @@ const deviceSwitch = () => screen.findByRole('switch', { name: 'На этом у
 
 beforeEach(() => {
   vi.spyOn(pushApi, 'config').mockResolvedValue({ publicKey: 'BAEC' });
+  // Сверка адреса не отвечает — строка судит по каналу; ответ сервера задают тесты сверки.
+  vi.spyOn(pushApi, 'status').mockRejectedValue(new TypeError('Failed to fetch'));
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
@@ -150,6 +152,19 @@ describe('сверка с сервером', () => {
     renderSection(settings(UNREACHABLE), 'ty', PUSH);
     const sw = await deviceSwitch();
     expect(sw.getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(sw);
+    await waitFor(() => expect(sw.getAttribute('aria-checked')).toBe('true'));
+    expect(subscribe).toHaveBeenCalledWith(expect.objectContaining({ endpoint: 'https://fcm.googleapis.com/fcm/send/old' }));
+  });
+
+  it('канал push, но адрес этого браузера сервер не знает (пуши включены на другом устройстве) — «выключено», клик переотправляет', async () => {
+    installPushBrowser({ subscription: true, permission: 'granted', subscriptionKey: new Uint8Array([4, 1, 2]) });
+    const status = vi.spyOn(pushApi, 'status').mockResolvedValue({ known: false });
+    const subscribe = vi.spyOn(pushApi, 'subscribe').mockResolvedValue({ ok: true, delivered: true });
+    renderSection(settings(PUSH));
+    const sw = await deviceSwitch();
+    expect(sw.getAttribute('aria-checked')).toBe('false');
+    expect(status).toHaveBeenCalledWith('https://fcm.googleapis.com/fcm/send/old');
     fireEvent.click(sw);
     await waitFor(() => expect(sw.getAttribute('aria-checked')).toBe('true'));
     expect(subscribe).toHaveBeenCalledWith(expect.objectContaining({ endpoint: 'https://fcm.googleapis.com/fcm/send/old' }));
