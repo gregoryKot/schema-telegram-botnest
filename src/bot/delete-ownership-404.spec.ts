@@ -11,10 +11,16 @@ import { deleteOwned, requireAffected } from '../utils/require-affected';
 const fake = (count: number) => ({
   deleteMany: jest.fn(async () => ({ count })),
   updateMany: jest.fn(async () => ({ count })),
+  // Чек-ин плана ищет строку (id, userId) и считает неотмеченные планы дня
+  // (src/notification/missed-plan.ts).
+  findFirst: jest.fn(async () =>
+    count ? { scheduledDate: '2026-07-20' } : null,
+  ),
+  count: jest.fn(async () => count),
 });
 
 function prismaWith(count: number) {
-  return {
+  const prisma: Record<string, unknown> = {
     schemaDiaryEntry: fake(count),
     modeDiaryEntry: fake(count),
     gratitudeDiaryEntry: fake(count),
@@ -23,7 +29,11 @@ function prismaWith(count: number) {
     userFlashcard: fake(count),
     userPractice: fake(count),
     practicePlan: fake(count),
-  } as never;
+    // Чек-ин — транзакция под локом перепланировки (replace-pending.ts).
+    $executeRaw: jest.fn(async () => 0),
+  };
+  prisma.$transaction = (job: (tx: unknown) => Promise<unknown>) => job(prisma);
+  return prisma as never;
 }
 
 const CASES: Array<[string, (p: never) => Promise<unknown>]> = [
