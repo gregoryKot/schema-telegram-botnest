@@ -34,7 +34,7 @@ function userTable(row: Row) {
   return table;
 }
 
-function make() {
+function make(disclaimerAccepted = true) {
   const user = userTable({
     id: 1n,
     notifyEnabled: true,
@@ -48,6 +48,7 @@ function make() {
     notifyGamified: false,
     notifyPausedUntil: null,
     notifyNextRemindDate: null,
+    disclaimerAccepted,
     addressForm: 'ty',
     mySchemaIds: [],
     myModeIds: [],
@@ -105,7 +106,7 @@ function make() {
     queue._rows.filter(
       (r) => r.type === type && r.sentAt == null && r.cancelledAt == null,
     );
-  return { controller, schedule, req, live };
+  return { controller, schedule, botService, req, live };
 }
 
 beforeEach(() => {
@@ -149,5 +150,20 @@ describe('тумблеры «Напоминания» и «Итоги дня» (
     expect(live('summary')).toHaveLength(1);
     await controller.updateSettings(req, { notifySummaryEnabled: false });
     expect(live('summary')).toEqual([]);
+  });
+});
+
+// Согласие — основание напоминаний (запрос РКН №08-1063539): обход его требует,
+// а настройки открыты и до кнопки согласия — перепланировка требует тоже.
+describe('согласие и перепланировка напоминания', () => {
+  it('не принял условия → правка настроек напоминание не ставит; принял → ставит', async () => {
+    const { controller, botService, req, live } = make(false);
+    await controller.updateSettings(req, { notifyLocalHour: 20 });
+    expect(live('reminder')).toEqual([]);
+
+    await botService.acceptDisclaimer(1n);
+    await controller.updateSettings(req, { notifyLocalHour: 20 });
+
+    expect(live('reminder')).toHaveLength(1);
   });
 });
