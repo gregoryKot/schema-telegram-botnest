@@ -6,7 +6,7 @@
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
-import { loadStringList } from './pattern-loader';
+import { importExport, loadStringList } from './pattern-loader';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const run = (src: string, path = 'src/x/notify.ts') =>
@@ -133,6 +133,13 @@ describe('check-telegram-chat-id.mjs', () => {
     ],
   ])('контроль через параметр, зелёный: %s', (_name, files) => {
     expect(runGate('check-telegram-chat-id.mjs', files).status).toBe(0);
+  });
+
+  it('отправщики по имени: sendTg(адрес, …) и sendBounded(бот, адрес, …)', () => {
+    const seeds: unknown = JSON.parse(
+      importExport('telegram-chat-id-flow.mjs', 'SEED_SENDERS', '(s) => s'),
+    );
+    expect(seeds).toEqual({ sendTg: 0, sendBounded: 1 });
   });
 
   it('спеки и EXEMPT_FILES не проверяются, но отправщик из EXEMPT_FILES разбирается', () => {

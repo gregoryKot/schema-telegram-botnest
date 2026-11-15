@@ -5,7 +5,7 @@
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
-import { loadStringList } from './pattern-loader';
+import { importExport, loadStringList } from './pattern-loader';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const run = (src: string, path = 'webapp/src/sections/Card.tsx') =>
@@ -82,6 +82,22 @@ describe('check-next-session-reads.mjs', () => {
     ],
   ])('контроль, зелёный: %s', (_name, line) => {
     expect(run(`export function f() {\n  ${line}\n}\n`).status).toBe(0);
+  });
+
+  it('directReads сводит три вида чтения по строкам: по одной на строку, по порядку', () => {
+    const src = [
+      'const a = rel.nextSession;',
+      'const pick = ({ nextSession }: R) => upcomingSession(rel.nextSession, []);',
+      'const { nextSession } = rel; const b = c?.nextSession;',
+    ].join('\n');
+    const lines: unknown = JSON.parse(
+      importExport(
+        'next-session-reads-rules.mjs',
+        'directReads',
+        `(fn) => fn(${JSON.stringify(src)})`,
+      ),
+    );
+    expect(lines).toEqual([1, 2, 3]);
   });
 
   it('shared/src и src тоже под гейтом; тесты и EXEMPT_FILES — нет', () => {
