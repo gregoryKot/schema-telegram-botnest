@@ -10,7 +10,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
-import { callExport } from './pattern-loader';
+import { callExport, importExport } from './pattern-loader';
 
 const GATE = 'check-history-sheet.mjs';
 const REAL_BASELINE = JSON.parse(
@@ -425,5 +425,114 @@ describe('history-sheet-detect.mjs — чистые функции', () => {
     const hits = call('inlineOverlays', INLINE_NO_HOOK) as { line: number }[];
     expect(hits).toHaveLength(1);
     expect(hits[0].line).toBe(3);
+  });
+});
+
+describe('check-history-sheet.mjs — style, спред и класс одного элемента складываются', () => {
+  const run = (tsx: string[]) =>
+    runGate(GATE, {
+      'webapp/src/utils.css':
+        '.u-fill { inset: 0; }\n.u-fixed { position: fixed; }\n',
+      'webapp/src/Sheet.tsx': [...tsx, ''].join('\n'),
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+
+  it('position: fixed в style + inset: 0 в классе — красный, с классом в сообщении', () => {
+    const res = run([
+      'export const Sheet = () => (',
+      '  <div className="u-fill" style={{ position: \'fixed\', zIndex: 400 }} />',
+      ');',
+    ]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/Sheet.tsx › Sheet');
+    expect(res.stderr).toContain('style + классы «u-fill»');
+  });
+
+  it('класс fixed + inset: 0 в style — красный', () => {
+    const res = run([
+      'export const Sheet = () => (',
+      '  <div className="u-fixed" style={{ inset: 0 }} />',
+      ');',
+    ]);
+    expect(res.status).toBe(1);
+  });
+
+  it('спред константы того же файла + position: fixed — красный', () => {
+    const res = run([
+      'const FULL: React.CSSProperties = { inset: 0, zIndex: 400 };',
+      'export const Sheet = () => (',
+      "  <div style={{ ...FULL, position: 'fixed' }} />",
+      ');',
+    ]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('style + спред константы');
+  });
+
+  it('контроль: только fixed без inset (style + класс) — не оверлей', () => {
+    const res = run([
+      'const PAD = { padding: 8 };',
+      'export const Fab = () => (',
+      '  <button className="u-fixed" style={{ ...PAD, bottom: 16, right: 16 }}>+</button>',
+      ');',
+    ]);
+    expect(res.status).toBe(0);
+  });
+
+  it('контроль: fixed в style, класс inset: 0 у вложенного элемента — не оверлей', () => {
+    const res = run([
+      'export const Fab = () => (',
+      "  <div style={{ position: 'fixed', bottom: 0 }}>",
+      '    <i className="u-fill" />',
+      '  </div>',
+      ');',
+    ]);
+    expect(res.status).toBe(0);
+  });
+
+  it('оверлей в одном style не считается второй раз — хук закрывает его один', () => {
+    const res = run([
+      "import { useHistorySheet } from '../hooks/useHistorySheet';",
+      'export function Sheet({ onClose }: { onClose: () => void }) {',
+      '  const goBack = useHistorySheet(onClose);',
+      '  return <div className="u-fill" style={{ position: \'fixed\', inset: 0 }} onClick={goBack} />;',
+      '}',
+    ]);
+    expect(res.status).toBe(0);
+  });
+});
+
+describe('history-sheet-jsx.mjs — elementOverlays', () => {
+  const hits = (src: string, decls: string) =>
+    JSON.parse(
+      importExport(
+        'history-sheet-jsx.mjs',
+        'elementOverlays',
+        `(fn) => fn(${JSON.stringify(src)}, ${decls})`,
+      ),
+    ) as { line: number; what: string }[];
+  const DECLS =
+    "new Map([['u-fill', 'inset: 0;'], ['whole', 'position: fixed; inset: 0;']])";
+
+  it('style + класс одного элемента — находка со строкой тега; источник-оверлей сам по себе — нет', () => {
+    const src = [
+      'const a = useState<number>(0);',
+      'const B = <div className="u-fill" style={{ position: \'fixed\' }} />;',
+      'const C = <div className="whole" style={{ position: \'fixed\' }} />;',
+    ].join('\n');
+    expect(hits(src, DECLS)).toEqual([
+      {
+        line: 2,
+        what: '<div>: style + классы «u-fill» (fixed + весь экран вместе)',
+      },
+    ]);
+  });
+
+  it('style={CONST} и спред вложенного элемента не путаются с атрибутами тега', () => {
+    const src = [
+      "const S = { position: 'fixed' } as const;",
+      'const D = <div className="u-fill" style={S} />;',
+      'const E = <div className="x" icon={<i style={{ position: \'fixed\' }} />} />;',
+    ].join('\n');
+    expect(hits(src, DECLS).map((h) => h.line)).toEqual([2]);
   });
 });
