@@ -1,21 +1,13 @@
+import { useEscapeClose } from './modeMap/useEscapeClose';
 import '../styles/sheet-modemap.css';
+export interface MenuItem { label: string; onClick: () => void; danger?: boolean }
 
-export interface MenuItem {
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}
-
-interface Props {
-  x: number; y: number;
-  items: MenuItem[];
-  onClose: () => void;
-}
+interface Props { x: number; y: number; items: MenuItem[]; onClose: () => void }
 
 export function ModeMapContextMenu({ x, y, items, onClose }: Props) {
+  useEscapeClose(onClose);
   return (
     <>
-      {/* Backdrop to close on any click */}
       <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
         onContextMenu={e => { e.preventDefault(); onClose(); }}

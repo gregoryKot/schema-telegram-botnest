@@ -16,6 +16,7 @@ import {
 } from './concept-store';
 import { conceptStale } from './concept-save';
 import { CONCEPT_SCHEMA_IDS_MAX } from '../utils/text-limits';
+import { CONCEPT_MODE_IDS_MAX } from './dto/conceptualization.dto';
 import {
   linksOf,
   mergeModeLinks,
@@ -51,16 +52,13 @@ export function mergeConceptAppend(
   add: ConceptAppendInput,
 ): Partial<ConceptAppendState> {
   const links = add.modeLinks ?? [];
-  const modeIds = union(cur.modeIds, [
-    ...(add.modeIds ?? []),
-    ...links.map((l) => l.modeId),
-  ]);
+  const modeIds = union(cur.modeIds, [...(add.modeIds ?? []), ...links.map((l) => l.modeId)], CONCEPT_MODE_IDS_MAX);
+  // Потолки ConceptualizationDto: сверх них следующее сохранение полей — 400.
   const addSchemas = [
     ...(add.schemaIds ?? []),
     ...links.flatMap((l) => l.schemaIds),
     ...(add.schemaLinks ?? []).map((l) => l.schemaId),
   ];
-  // Потолок ConceptualizationDto: сверх него следующее сохранение полей — 400.
   const schemaIds = union(cur.schemaIds, addSchemas, CONCEPT_SCHEMA_IDS_MAX);
   const modeLinks = mergeModeLinks(cur.modeLinks, links);
   const schemaLinks = mergeSchemaLinks(cur.schemaLinks, add.schemaLinks);
