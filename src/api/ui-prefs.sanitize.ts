@@ -2,12 +2,14 @@ import {
   QUICK_ACTION_IDS,
   SCREEN_BLOCK_IDS,
 } from '../analytics/analytics.constants';
+import { CONCEPT_BRIEF_BLOCK_IDS } from './concept-brief-blocks.constants';
 
 // Множества — из констант, а не из dto/analytics.dto.ts: там декораторы
 // class-validator, а этот санитайзер берёт и стаб браузерного смока
 // (e2e-browser/support/stubSettings.ts) — «сервер» смока чистит uiPrefs так же.
 const QUICK_ACTION_ID_SET: ReadonlySet<string> = new Set(QUICK_ACTION_IDS);
 const SCREEN_BLOCK_ID_SET: ReadonlySet<string> = new Set(SCREEN_BLOCK_IDS);
+const BRIEF_BLOCK_SET: ReadonlySet<string> = new Set(CONCEPT_BRIEF_BLOCK_IDS);
 
 // Реестр ключей кастомизации экранов, синхронизируемых с сервером
 // (User.uiPrefs). Парная константа на фронте — SYNCED_PREF_KEYS в
@@ -22,6 +24,7 @@ export const SYNCED_PREF_KEYS = [
   'screen_order_profile',
   'screen_order_patterns',
   'why_seen_v1',
+  'concept_brief_blocks',
 ] as const;
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];
 
@@ -32,7 +35,7 @@ const BOOLEAN_FLAG_KEYS: ReadonlySet<SyncedPrefKey> = new Set(['why_seen_v1']);
 // mode: 'strict' — весь ключ отбрасывается, если хоть один элемент вне allow
 // (текущее поведение quick actions — их id ничего в этом PR не убирал).
 // mode: 'filter' — элементы вне allow тихо выкидываются, известные остаются
-// (screen_*: правило CLAUDE.md «удаление блока не должно ронять устройство,
+// (screen_*, concept_brief_blocks: «удаление блока не должно ронять устройство,
 // уже сохранившее старый порядок с этим id» — см.
 // src/api/ui-prefs.sanitize.spec.ts, кейс «частично устаревший массив»).
 type ArrayMode = 'strict' | 'filter';
@@ -68,6 +71,7 @@ const ID_ARRAY_KEYS: Partial<Record<SyncedPrefKey, ArraySpec>> =
       16,
       'filter',
     ),
+    ...arraySpecsFor(['concept_brief_blocks'], BRIEF_BLOCK_SET, 16, 'filter'),
   ]);
 
 // Разбор JSON-массива id: не JSON/не массив/сверх maxLen/не-строковый

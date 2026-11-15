@@ -41,7 +41,8 @@
     },
     "concept_brief_blocks": {
       "owner": "webapp/src/components/therapist/concept/useBriefBlocks.ts",
-      "kind": "local"
+      "kind": "mirror",
+      "source": "User.uiPrefs (SYNCED_PREF_KEYS, uiPrefsSync, server wins)"
     },
     "cookie_consent": {
       "owner": "webapp/src/components/CookieBanner.tsx",
@@ -265,6 +266,14 @@
       "owner": "webapp/src/components/trackerOverlay/TrackerOriginNote.tsx",
       "kind": "local"
     },
+    "ui_prefs_dirty": {
+      "owner": "shared/src/prefs/uiPrefsSync.ts",
+      "kind": "local"
+    },
+    "ui_prefs_migrated": {
+      "owner": "shared/src/prefs/uiPrefsSync.ts",
+      "kind": "local"
+    },
     "why_seen_v1": {
       "owner": "webapp/src/sections/today/whySeen.ts",
       "kind": "mirror",
@@ -288,7 +297,10 @@
     },
     "shared/src/prefs/uiPrefsSync.ts": {
       "functions": [],
-      "reason": "слой синхронизации uiPrefs: пишет ключи SYNCED_PREF_KEYS значениями сервера (server wins) через интерфейс PrefStorage; маркеры ui_prefs_migrated и ui_prefs_dirty тоже идут через него и гейту не видны"
+      "storageVars": [
+        "storage"
+      ],
+      "reason": "слой синхронизации uiPrefs: пишет ключи SYNCED_PREF_KEYS значениями сервера (server wins) через интерфейс PrefStorage; свои маркеры ui_prefs_migrated и ui_prefs_dirty — через тот же storage (storageVars)"
     },
     "shared/src/quickActions/quickActionOrder.ts": {
       "functions": [
