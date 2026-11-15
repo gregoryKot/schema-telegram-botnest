@@ -1,9 +1,10 @@
 // Шов «вызывающий воркфлоу → alarm.yml» (правило №24). Джоба alarm в
 // nightly.yml и mutation-bot.yml — вызов переиспользуемого воркфлоу: без
 // `if: always()` она не стартует после красной джобы, без `secrets: inherit`
-// DM-шагу нечем писать, а права вызова — потолок для alarm.yml (просит больше —
-// прогон не стартует вовсе). Общий заголовок issue у двух вызывающих вернул бы
-// класс «зелёный mutation-bot закрывает тревогу nightly». Шаги — alarm-workflow.spec.ts.
+// DM-шагу нечем писать, а права вызова — потолок для alarm.yml (просит
+// больше — прогон не стартует вовсе). Общий заголовок у двух вызывающих
+// вернул бы класс «зелёный mutation-bot закрывает тревогу nightly».
+// Исполнение шагов — alarm-workflow.spec.ts.
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { jobBlocks, triggerBlocks } from '../test-support/gates/workflow-yaml';
