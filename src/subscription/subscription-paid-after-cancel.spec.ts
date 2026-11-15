@@ -2,6 +2,7 @@ import {
   reportPaidAfterCancel,
   subscriptionPaidAfterCancelAlert,
 } from './subscription-paid-after-cancel';
+import { SUBSCRIBER_IN_EMAIL } from './subscription-owner-card';
 import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 const SUB = {
@@ -30,7 +31,23 @@ describe('subscriptionPaidAfterCancelAlert', () => {
     expect(html.email).toContain('tg:42');
     expect(html.telegram).not.toContain('a@b.ru');
     expect(html.telegram).not.toContain('tg:');
-    expect(html.telegram).toContain('в письме на почте');
+    // Контакты — отдельными строками письма, в Telegram вместо них пометка;
+    // «что делать» отбит пустой строкой.
+    expect(html.telegram.split('\n')).toEqual([
+      expect.stringContaining('#7'),
+      expect.stringContaining('Оплачено: 300 ₽'),
+      SUBSCRIBER_IN_EMAIL,
+      '',
+      expect.stringContaining('Верните деньги'),
+    ]);
+    expect(html.email.split('\n')).toEqual([
+      expect.stringContaining('#7'),
+      expect.stringContaining('Оплачено: 300 ₽'),
+      '📬 a@b.ru',
+      '👤 tg:42',
+      '',
+      expect.stringContaining('Верните деньги'),
+    ]);
     expect(subject).toBe('Деньги за подписку #7 получены, а подписка отменена');
   });
 
@@ -63,6 +80,7 @@ describe('subscriptionPaidAfterCancelAlert', () => {
     expect(html.telegram).toContain('₽/год');
     for (const text of [html.telegram, html.email]) {
       expect(text).not.toMatch(/NaN|undefined|null|tg:|📬|📧/);
+      expect(text.split('\n')).toHaveLength(4); // заголовок, оплата, '', что делать
     }
   });
 });
