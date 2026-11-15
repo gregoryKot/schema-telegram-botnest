@@ -125,6 +125,7 @@
 
 ## Сделано
 
+- ✅ **Сессия Telegram Web продлевается: refresh-кука для чужого iframe** (PR #1281) — вход узнаёт iframe по платформе `weba`/`webk`/`web` (Sec-Fetch-Site из фрейма — same-origin), кросс-сайтовая пара (и у MAX) — `SameSite=None; Partitioned`, пара до CHIPS сносится по метке; живой сценарий `e2e-browser/live/telegram-frame.spec.ts`. Остаток — браузер без CHIPS (Safari), `docs/open/audit-2026-10.md`.
 - ✅ **Игра: финал кабинета гл.4 догнал развилку** (PR #1269) — `showTherapyCta`: тач-кнопки прячутся, добавлено «открыть в Telegram», раскладка по y как у запасного финала.
 - ✅ **Игра: eslint `cta.ts` чист, комментарий про размер холста** (PR #1269) — убран `IS_TOUCH`, `stopPropagation` типизирован; в `IntroScene.ts` H=360.
 - ✅ **Планки гейта планов — по замеру CI на Postgres 17** (К27, #1266) — `query-plan-baseline.json` пересчитан по артефакту `query-plans` main (`--update --report`), было выше замера в 1,5–10 раз; `PERF_PLANS.md` обновлён.
