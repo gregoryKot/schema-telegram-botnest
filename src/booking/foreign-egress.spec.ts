@@ -1,7 +1,7 @@
 // 152-ФЗ, ч. 5 ст. 18 (запрос Роскомнадзора №08-1063539 от 11.11.2026):
 // iCloud (CalDAV) и Zoom — зарубежные базы, данные клиента туда не уходят.
-// Тест идёт через шов: настоящие runConfirmEffects + CalDavService +
-// MeetingService, подменён только fetch. Бронь несёт узнаваемые значения, и ни
+// Тест идёт через шов: настоящие runConfirmEffects (и чистка ForeignScrubCommand) +
+// CalDavService + MeetingService, подменён только fetch. Бронь несёт узнаваемые значения, и ни
 // одно из них не должно встретиться в исходящих запросах ЦЕЛИКОМ — адрес,
 // заголовки, тело (после раскладки переноса строк RFC 5545).
 import { ConfigService } from '@nestjs/config';
@@ -9,6 +9,7 @@ import { BookingStatus, SessionType } from '@prisma/client';
 import { runConfirmEffects } from './booking-confirm-run';
 import { CalDavService } from './caldav.service';
 import { MeetingService, ZOOM_TOPIC } from './meeting.service';
+import { ForeignScrubCommand } from './foreign-scrub.command';
 import {
   bookingEventUid,
   buildOwnerVcalendar,
@@ -226,6 +227,59 @@ describe('данные клиента не уходят в iCloud и Zoom', () =
       settings: { join_before_host: true, waiting_room: true },
     });
     expect(ZOOM_TOPIC).toBe('Сессия');
+  });
+
+  it('чистка комнат вне базы: в Zoom уходят только id комнаты и ZOOM_TOPIC', async () => {
+    // Старая тема с именем клиента приходит из списка Zoom — наружу её нет.
+    const named = `Сессии — ${SECRETS.name}`;
+    const sent: Sent[] = [];
+    global.fetch = jest.fn((url: string, init: RequestInit = {}) => {
+      const body = typeof init.body === 'string' ? init.body : '';
+      const text = [url, JSON.stringify(init.headers ?? {}), body].join('\n');
+      sent.push({ url, method: init.method ?? 'GET', text, body });
+      const json = url.includes('oauth/token')
+        ? { access_token: 'tok' }
+        : {
+            next_page_token: '',
+            meetings: [
+              { id: 81000000001, topic: named, type: 3 },
+              { id: 81000000002, topic: named, type: 3 },
+            ],
+          };
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(json) });
+    });
+    // Комнату …002 держит живая бронь (данные клиента — и мимо select).
+    const link = 'https://zoom.us/j/81000000002?pwd=x';
+    const prisma = {
+      booking: {
+        findMany: jest.fn((q: { where: object }) =>
+          Promise.resolve(
+            'anonymizedAt' in q.where
+              ? [{ ...booking(), meetingUrl: link }]
+              : [],
+          ),
+        ),
+      },
+      clientMeeting: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const { deps } = makeDeps();
+    const cmd = new ForeignScrubCommand(
+      null,
+      prisma as never,
+      deps.calDav,
+      deps.meeting,
+    );
+    cmd.pauseMs = 0;
+    await cmd.report(true, new Date('2026-11-15T10:00:00Z'));
+
+    const zoom = sent.filter((r) => r.url.startsWith('https://api.zoom.us/'));
+    expect(zoom.map((r) => `${r.method} ${r.url} ${r.body}`.trim())).toEqual([
+      'GET https://api.zoom.us/v2/users/me/meetings?type=scheduled&page_size=300',
+      'DELETE https://api.zoom.us/v2/meetings/81000000001?schedule_for_reminder=false',
+      'PATCH https://api.zoom.us/v2/meetings/81000000002 {"topic":"Сессия"}',
+    ]);
+    for (const req of sent)
+      for (const marker of markers()) expect(req.text).not.toContain(marker);
   });
 
   it('владелец по-прежнему видит, кто придёт: письмо несёт имя, контакт, текст и ссылку; Telegram — только ссылку', async () => {
