@@ -1,50 +1,48 @@
 // @vitest-environment jsdom
 // Компонентные тесты TherapistRequestSection: статусы заявки на роль
 // психолога (pending/approved/rejected), валидация полей, ошибка отправки.
+// Сеть — api-слой (мок); шов с транспортом — therapistRequest.seam.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TherapistRequestSection } from './TherapistRequestSection';
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { THERAPIST_REQUEST_PENDING } from '../../../../shared/src/therapy/therapistRequestCopy';
 
-function jsonResponse(status: number, body: unknown): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
-  } as unknown as Response;
-}
-
-let fetchMock: ReturnType<typeof vi.fn>;
+vi.mock('../../api', () => ({
+  api: {
+    getTherapistRequest: vi.fn(),
+    submitTherapistRequest: vi.fn(),
+  },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 beforeEach(() => {
-  fetchMock = vi.fn();
-  vi.stubGlobal('fetch', fetchMock);
+  vi.clearAllMocks();
 });
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
 describe('TherapistRequestSection — загрузка статуса', () => {
   it('ничего не рендерит, пока GET /api/therapy/request не ответил (нет "мигания" пустой кнопкой)', () => {
-    fetchMock.mockReturnValue(new Promise(() => {})); // висит
-    const { container } = render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockReturnValue(new Promise(() => {})); // висит
+    const { container } = render(<TherapistRequestSection />);
     expect(container.textContent).toBe('');
   });
 
   it('без заявки (null) — кнопка «Я психолог — подать заявку»', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, null));
-    render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockResolvedValue(null);
+    render(<TherapistRequestSection />);
     await screen.findByText('Я психолог — подать заявку');
   });
 });
 
 describe('TherapistRequestSection — статусы существующей заявки', () => {
   it('pending — сообщение "на рассмотрении", без формы', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'pending', rejectReason: null, createdAt: '2026-07-01', reviewedAt: null }));
-    render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockResolvedValue({ id: 1, status: 'pending', rejectReason: null });
+    render(<TherapistRequestSection />);
     const note = await screen.findByText(/на рассмотрении/);
     expect(screen.queryByText('ФИО')).toBeNull();
     // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
@@ -57,15 +55,15 @@ describe('TherapistRequestSection — статусы существующей з
   });
 
   it('approved — сообщение "одобрена"', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'approved', rejectReason: null, createdAt: '2026-07-01', reviewedAt: '2026-07-02' }));
-    render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockResolvedValue({ id: 1, status: 'approved', rejectReason: null });
+    render(<TherapistRequestSection />);
     await screen.findByText(/Заявка одобрена/);
   });
 
   // До 2026-11 причина была видна только внутри раскрытой формы.
   it('rejected — причина видна сразу и остаётся при открытой форме', async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, status: 'rejected', rejectReason: 'Не хватает подтверждения квалификации', createdAt: '2026-07-01', reviewedAt: '2026-07-02' }));
-    render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockResolvedValue({ id: 1, status: 'rejected', rejectReason: 'Не хватает подтверждения квалификации' });
+    render(<TherapistRequestSection />);
     await screen.findByText(/Не хватает подтверждения квалификации/);
     fireEvent.click(screen.getByText('Я психолог — подать заявку'));
 
@@ -76,8 +74,8 @@ describe('TherapistRequestSection — статусы существующей з
 
 describe('TherapistRequestSection — отправка заявки', () => {
   async function openForm() {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, null));
-    render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockResolvedValue(null);
+    render(<TherapistRequestSection />);
     fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
     await screen.findByPlaceholderText('ФИО');
   }
@@ -87,12 +85,12 @@ describe('TherapistRequestSection — отправка заявки', () => {
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     expect(await screen.findByText('Заполни ФИО, квалификацию и контакты')).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledTimes(1); // только начальный GET, без POST
+    expect(mockApi.submitTherapistRequest).not.toHaveBeenCalled();
   });
 
-  it('заполненная форма отправляет POST с обрезанными полями и показывает "на рассмотрении"', async () => {
+  it('заполненная форма отправляет заявку с обрезанными полями и показывает "на рассмотрении"', async () => {
     await openForm();
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, {}));
+    mockApi.submitTherapistRequest.mockResolvedValue({ ok: true });
 
     fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: '  Иван Иванов  ' } });
     fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог, 5 лет' } });
@@ -100,14 +98,14 @@ describe('TherapistRequestSection — отправка заявки', () => {
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText(/на рассмотрении/);
-    const [, init] = fetchMock.mock.calls[1];
-    const body = JSON.parse((init as RequestInit).body as string);
-    expect(body).toEqual({ fullName: 'Иван Иванов', qualification: 'Психолог, 5 лет', contacts: '@ivan' });
+    expect(mockApi.submitTherapistRequest).toHaveBeenCalledWith({
+      fullName: 'Иван Иванов', qualification: 'Психолог, 5 лет', contacts: '@ivan', message: undefined,
+    });
   });
 
   it('ошибка API показывает сообщение и оставляет форму открытой (не тишина)', async () => {
     await openForm();
-    fetchMock.mockResolvedValueOnce(jsonResponse(400, { message: 'Уже есть активная заявка' }));
+    mockApi.submitTherapistRequest.mockRejectedValue(new Error('Уже есть активная заявка'));
 
     fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: 'Иван' } });
     fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог' } });
@@ -123,14 +121,14 @@ describe('TherapistRequestSection — отправка заявки', () => {
     fireEvent.click(screen.getByText('Отмена'));
 
     await waitFor(() => expect(screen.queryByPlaceholderText('ФИО')).toBeNull());
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(mockApi.submitTherapistRequest).not.toHaveBeenCalled();
   });
 });
 
 describe('TherapistRequestSection — пределы длины (один источник с DTO сервера)', () => {
   it('поля держат maxLength из shared; у textarea есть счётчик остатка', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, null));
-    render(<TherapistRequestSection accessToken="tok" />);
+    mockApi.getTherapistRequest.mockResolvedValue(null);
+    render(<TherapistRequestSection />);
     fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
     const max = (placeholder: string) =>
       screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
