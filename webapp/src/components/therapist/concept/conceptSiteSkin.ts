@@ -6,6 +6,5 @@ export const CONCEPT_SITE_SKIN: ConceptSkin = {
   label: 'ds-label',
   link: 'ds-link',
   card: 'pp-paper tcp-digest',
-  fold: { root: 'ds-fold', btn: 'ds-fold-btn', chev: 'ds-fold-chev', body: 'ds-fold-body' },
   digest: { title: 'tcp-dg-title', list: 'tcp-dg-list', row: 'tcp-dg-row', term: 'tcp-dg-term', value: 'tcp-dg-value' },
 };

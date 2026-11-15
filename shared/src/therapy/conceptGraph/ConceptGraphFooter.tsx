@@ -1,7 +1,6 @@
-import { Disclosure } from '../../components/Disclosure';
+import { DS_FOLD, Disclosure } from '../../components/Disclosure';
 import { ConceptGaps } from './ConceptGaps';
 import type { ConceptGraphModel } from './conceptGraphTypes';
-import { useFoldClasses } from './conceptSkin';
 import { hintStyle } from './graphStyles';
 
 /**
@@ -19,7 +18,6 @@ export function ConceptGraphFooter({
   /** Подсказки — терапевту; на схеме клиента (только чтение) их нет. */
   hints?: boolean;
 }) {
-  const classes = useFoldClasses();
   return (
     <>
       {graph.sequence && (
@@ -31,7 +29,7 @@ export function ConceptGraphFooter({
         <div data-export-skip>
           <Disclosure
             title={`Подсказки по схеме · ${graph.gaps.length}`}
-            classes={classes}
+            classes={DS_FOLD}
           >
             <ConceptGaps gaps={graph.gaps} />
           </Disclosure>

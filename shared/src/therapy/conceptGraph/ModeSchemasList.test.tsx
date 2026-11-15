@@ -11,7 +11,6 @@ const SKIN: ConceptSkin = {
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',
-  fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
   digest: {
     title: 'dg-title',
     list: 'dg-list',
@@ -104,7 +103,9 @@ describe('ModeSchemasList', () => {
         )}
       </ConceptSkinContext.Provider>,
     );
-    expect(screen.getByText('Схемы за режимами').className).toBe('sk-label');
+    expect(screen.getByText('Схемы за режимами').className).toBe(
+      'sk-label u-mb6',
+    );
     expect(
       screen
         .getByText('Карающий Критик')
