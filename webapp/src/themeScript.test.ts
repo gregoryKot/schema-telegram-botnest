@@ -8,6 +8,10 @@ import { resolve } from 'node:path';
 
 const SOURCE = readFileSync(resolve(__dirname, '../public/theme.js'), 'utf8');
 const INDEX_HTML = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+// Фон до загрузки CSS обязан совпадать с --bg обеих тем (правило №4): литералы сверяются с index.css.
+const CSS = readFileSync(resolve(__dirname, './index.css'), 'utf8');
+const BG_LIGHT = /--bg:\s*(#[0-9a-f]{6});/i.exec(CSS)?.[1];
+const BG_DARK = /html\[data-theme="dark"\]\s*\{[^}]*?--bg:\s*(#[0-9a-f]{6});/i.exec(CSS)?.[1];
 
 function runTheme(storage: { getItem: (k: string) => string | null }) {
   const attrs: Record<string, string> = {};
@@ -23,24 +27,29 @@ function runTheme(storage: { getItem: (k: string) => string | null }) {
 }
 
 describe('theme.js (public)', () => {
+  it('значения --bg обеих тем найдены в index.css', () => {
+    expect(BG_LIGHT).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(BG_DARK).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
   it('тёмная тема — data-theme=dark, тёмный фон и color-scheme', () => {
     const { attrs, style } = runTheme({ getItem: () => 'dark' });
     expect(attrs['data-theme']).toBe('dark');
-    expect(style.background).toBe('#14141a');
+    expect(style.background).toBe(BG_DARK);
     expect(style.colorScheme).toBe('dark');
   });
 
   it('светлая тема — атрибут не ставится, фон светлый', () => {
     const { attrs, style } = runTheme({ getItem: () => 'light' });
     expect(attrs['data-theme']).toBeUndefined();
-    expect(style.background).toBe('#f5f2eb');
+    expect(style.background).toBe(BG_LIGHT);
     expect(style.colorScheme).toBe('light');
   });
 
   it('ничего не сохранено — светлый фон по умолчанию', () => {
     const { attrs, style } = runTheme({ getItem: () => null });
     expect(attrs['data-theme']).toBeUndefined();
-    expect(style.background).toBe('#f5f2eb');
+    expect(style.background).toBe(BG_LIGHT);
   });
 
   it('localStorage бросает (приватный режим) — скрипт не падает, светлая тема', () => {
@@ -49,7 +58,7 @@ describe('theme.js (public)', () => {
         throw new Error('SecurityError');
       },
     });
-    expect(style.background).toBe('#f5f2eb');
+    expect(style.background).toBe(BG_LIGHT);
     expect(style.colorScheme).toBe('light');
   });
 
