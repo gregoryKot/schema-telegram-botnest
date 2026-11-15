@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-// Поделиться разбором «Критик или забота?» + блок ShareTwoOptions (webapp ↔
-// miniapp, правило №3): лист и кнопка приходят инъекцией, здесь — поддельные.
+// Поделиться разбором «Критик или забота?» + блок ShareTwoOptions: одна
+// ссылка «Поделиться →», выбор карточки — в шторке. Лист, шторка и ссылка
+// приходят инъекцией площадки, здесь — поддельные.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PhraseCheckShare } from './PhraseCheckShare';
 import type { ShareCardSheetProps } from './shareCardSheetProps';
+import type { SharePickSheetProps } from './ShareTwoOptions';
 
 afterEach(cleanup);
 
@@ -14,7 +16,18 @@ const Sheet = (p: ShareCardSheetProps) => (
     <button onClick={p.onClose}>закрыть</button>
   </div>
 );
-const Pill = ({ label, onClick }: { label: string; onClick: () => void }) => (
+const Picker = (p: SharePickSheetProps) => (
+  <div data-testid="picker" data-z={p.zIndex}>
+    {p.title}
+    {p.options.map((o) => (
+      <button key={o.id} onClick={() => p.onPick(o.id)}>
+        {o.label}: {o.hint}
+      </button>
+    ))}
+    <button onClick={p.onClose}>закрыть шторку</button>
+  </div>
+);
+const Link = ({ label, onClick }: { label: string; onClick: () => void }) => (
   <button onClick={onClick}>{label}</button>
 );
 
@@ -26,33 +39,59 @@ const wrap = (rewrite?: string) =>
       rewrite={rewrite}
       link="t.me/x"
       Sheet={Sheet}
-      Pill={Pill}
+      Picker={Picker}
+      Link={Link}
       zIndex={330}
     />,
   );
 
+const openLink = () => fireEvent.click(screen.getByText('Поделиться →'));
+
 describe('PhraseCheckShare', () => {
-  it('с переписанной фразой — обе кнопки; краткая открывает лист с zIndex и закрывается', () => {
+  it('одна ссылка; с переписанной фразой — шторка выбора, краткая карточка открывает свой лист', () => {
     wrap('бывает, поправимо');
-    expect(
-      screen.getByText('На карточке — только две реплики: было и стало.'),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByText('Поделиться карточкой'));
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    openLink();
+    expect(screen.getByTestId('picker').getAttribute('data-z')).toBe('330');
+    expect(screen.getByText('Чем поделиться?')).toBeTruthy();
+    fireEvent.click(
+      screen.getByText(
+        'Краткая карточка: На карточке — только две реплики: было и стало.',
+      ),
+    );
+    expect(screen.queryByTestId('picker')).toBeNull();
+    expect(screen.getByTestId('sheet').textContent).toContain(
+      'Сохранить карточку',
+    );
     expect(screen.getByTestId('sheet').getAttribute('data-z')).toBe('330');
     fireEvent.click(screen.getByText('закрыть'));
     expect(screen.queryByTestId('sheet')).toBeNull();
   });
 
-  it('полный разбор открывает свой лист', () => {
+  it('«Весь разбор» отдаёт полную карточку', () => {
     wrap('бывает, поправимо');
-    fireEvent.click(screen.getByText('Поделиться всем разбором'));
-    expect(screen.getByTestId('sheet')).toBeTruthy();
+    openLink();
+    fireEvent.click(screen.getByText(/^Весь разбор: На полной карточке/));
+    expect(screen.getByTestId('sheet').textContent).toContain(
+      'Поделиться разбором',
+    );
   });
 
-  it('без переписанной фразы краткой кнопки нет', () => {
+  it('шторку можно закрыть без выбора — ничего не открыто', () => {
+    wrap('бывает, поправимо');
+    openLink();
+    fireEvent.click(screen.getByText('закрыть шторку'));
+    expect(screen.queryByTestId('picker')).toBeNull();
+    expect(screen.queryByTestId('sheet')).toBeNull();
+  });
+
+  it('без переписанной фразы ссылка сразу открывает полный разбор, без шторки', () => {
     wrap();
-    expect(screen.queryByText('Поделиться карточкой')).toBeNull();
-    expect(screen.getByText('Поделиться всем разбором')).toBeTruthy();
+    openLink();
+    expect(screen.queryByTestId('picker')).toBeNull();
+    expect(screen.getByTestId('sheet').textContent).toContain(
+      'Поделиться разбором',
+    );
   });
 
   it('нет ни фразы, ни разбора — блок пуст', () => {
@@ -62,7 +101,8 @@ describe('PhraseCheckShare', () => {
         marks={[]}
         link="t.me/x"
         Sheet={Sheet}
-        Pill={Pill}
+        Picker={Picker}
+        Link={Link}
       />,
     );
     expect(container.textContent).toBe('');

@@ -1,22 +1,20 @@
-// Поделиться разбором «Критик или забота?» — общий для обоих фронтендов
-// (правило №3): краткая карточка «было → стало» первична, вторая опция — весь
-// разбор с приметами. Ветвление и пропсы считает phraseCheckShareOptions,
-// вёрстку даёт ShareTwoOptions; лист и кнопку площадки передаёт обёртка.
-import type { ComponentProps } from 'react';
-import { ShareTwoOptions } from './ShareTwoOptions';
+// Поделиться разбором «Критик или забота?» (правило №3): краткая карточка
+// «было → стало» или весь разбор с приметами. Ветвление и пропсы считает
+// phraseCheckShareOptions, вёрстку даёт ShareTwoOptions; лист, шторку выбора и
+// ссылку площадки передаёт обёртка.
+import { ShareTwoOptions, type ShareTwoOptionsProps } from './ShareTwoOptions';
 import { usePhraseCheckShare } from './usePhraseCheckShare';
 import type { PhraseMarkId } from '../phraseCheck/criteria';
 
-type Platform = Pick<ComponentProps<typeof ShareTwoOptions>, 'Sheet' | 'Pill'>;
+type Platform = Pick<ShareTwoOptionsProps, 'Sheet' | 'Picker' | 'Link'>;
 
 export function PhraseCheckShare({
   phrase,
   marks,
   rewrite,
   link,
-  Sheet,
-  Pill,
   zIndex,
+  ...platform
 }: Platform & {
   phrase: string;
   marks: PhraseMarkId[];
@@ -36,11 +34,11 @@ export function PhraseCheckShare({
       setShare={setShare}
       shortProps={shortProps}
       fullProps={fullProps}
+      shortLabel="Краткая карточка"
       shortHint="На карточке — только две реплики: было и стало."
-      fullLabel="Поделиться всем разбором"
+      fullLabel="Весь разбор"
       zIndex={zIndex}
-      Sheet={Sheet}
-      Pill={Pill}
+      {...platform}
     />
   );
 }

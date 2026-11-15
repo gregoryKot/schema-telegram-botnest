@@ -30,7 +30,7 @@ export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker, onOp
   return (
     <ExBackLabelContext.Provider value={backLabel}>
     <Suspense fallback={<ExScreenSkeleton onBack={onBack} hue={exerciseHue(open)} spread={exerciseSpread(open)} />}>
-      {open.ex === 'belief' && <BeliefCheckEx onBack={onBack} onComplete={onComplete} />}
+      {open.ex === 'belief' && <BeliefCheckEx onBack={onBack} onComplete={onComplete} onOpenSchemaCard={onOpenExercise && (() => onOpenExercise({ ex: 'schema' }))} />}
       {open.ex === 'schema' && <SchemaEx onBack={onBack} initialSchemaId={open.id} onComplete={onComplete} />}
       {open.ex === 'mode' && <ModeEx onBack={onBack} initialModeId={open.id} onComplete={onComplete} />}
       {open.ex === 'letter' && <LetterEx onBack={onBack} onComplete={onComplete} />}
