@@ -55,9 +55,9 @@
 /* «Самопомощь» у героя — под кнопками (ExScreen, по умолчанию); под листом — только по cautionAt="head". */
 .ex2-main > .ex2-hero + .th-caution { margin-top: -12px; margin-bottom: 28px; }
 .ex2-body--spread .pa-spread-main > .th-caution { margin-top: 0; }
-/* hintBeforeField: шапка, подсказка и поле — отдельные ячейки. На компьютере подсказка справа
-   на обе строки (лишняя высота уходит во вторую строку, а не в зазор под шапкой), на ≤900 —
-   между шапкой и полем: «С чего начать» стоит до «Запечатать письмо», а не после. */
+/* hintBeforeField (шаги примет разбора фразы): шапка, подсказка и поле — отдельные ячейки. На компьютере
+   подсказка справа на обе строки (лишняя высота уходит во вторую строку, а не в зазор под шапкой), на ≤900 —
+   между шапкой и полем: «Примета N из 9» стоит до вариантов ответа, а не под «самопомощью». */
 .ex2-body--split { grid-template-areas: 'head aside' 'main aside'; grid-template-rows: auto 1fr; row-gap: 28px; }
 .ex2-body--split > .ex2-head { grid-area: head; min-width: 0; }
 .ex2-body--split > .ex2-main { grid-area: main; }
@@ -67,6 +67,13 @@
    отдельно (липнет вся колонка, ниже шапки упражнения). */
 .ex2-body--spread { display: block; max-width: 1180px; --pa-sticky-top: 80px; }
 .ex2-body--spread .ex2-aside { position: static; }
+/* Уже 1024 разворот — колонкой: лист, строка ExHint (до поля, ExHint.test.tsx), форма, остальное из aside — после неё
+   (принцип 5). Колонка и aside раскрываются в поток; :where не перебивает display у aside экрана («Что собрали»). */
+@media (max-width: 1023px), (pointer: coarse) and (max-height: 500px) {
+  .ex2-body--spread .pa-spread-side, :where(.ex2-body--spread .pa-spread-side) > .ex2-aside { display: contents; }
+  .ex2-body--spread .pa-spread-main { order: 2; }
+  .ex2-body--spread .ex2-aside > :not(.ex2-hint) { order: 3; position: static; }
+}
 @media (max-width: 900px) {
   .ex2-body--split { grid-template-areas: 'head' 'aside' 'main'; grid-template-rows: none; row-gap: 24px; }
 }
