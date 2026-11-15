@@ -1,5 +1,6 @@
 // HUD: титул главы, сердца и воспоминания, подсказка клавиш, плашка реплики кота.
 import Phaser from 'phaser';
+import { buildHearts, glyphTexture } from '../../glyphs';
 import { W, H } from '../../constants';
 import { IS_TOUCH } from '../../controls';
 import { t } from '../../i18n';
@@ -19,11 +20,11 @@ export function showTitleCard(s: GameScene) {
 }
 
 export function buildHUD(s: GameScene) {
-  s.heartsText = s.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577', ...HUD_STROKE })
-    .setScrollFactor(0).setDepth(100);
+  s.heartImgs = buildHearts(s, 18, 14, s.MAX_HEARTS, 100);
   s.updateHearts();
   // счётчик воспоминаний — только если они есть в главе
-  s.memText = s.add.text(18, 48, s.memTotal ? `✦ 0/${s.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', color: '#ffd86a', ...HUD_STROKE })
+  s.memIcon = s.add.image(18, 48, glyphTexture(s, 'spark', '#ffd86a', 2)).setOrigin(0, 0).setScrollFactor(0).setDepth(100).setVisible(!!s.memTotal);
+  s.memText = s.add.text(18 + 14 + 8, 48, s.memTotal ? `0/${s.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', color: '#ffd86a', ...HUD_STROKE })
     .setScrollFactor(0).setDepth(100);
   if (!IS_TOUCH)
     s.add.text(W / 2, H - 20, t('m_x_fight_z_avoid_tap_dash'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0', ...HUD_STROKE })
