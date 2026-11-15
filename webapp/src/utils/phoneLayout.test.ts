@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { PHONE_MEDIA, DESKTOP_MEDIA } from './phoneLayout';
-import { SPREAD_MEDIA, SPREAD_COLUMN_MEDIA } from '../styles/cssRules.test-helpers';
+import { SPREAD_MEDIA, SPREAD_COLUMN_MEDIA, parseRules, type Rule } from '../styles/cssRules.test-helpers';
 
 const SRC = path.resolve(__dirname, '..');
 /** Общие стили shared/ сайт подключает так же, как свои: условие то же. */
@@ -90,5 +90,33 @@ describe('phoneLayout: CSS и JS говорят одно и то же', () => {
     for (const d of [...DEVICES.map(([, , dev]) => dev), { w: 1100, h: 480, pointer: 'coarse' as const }]) {
       expect(matches(SPREAD_MEDIA, d), JSON.stringify(d)).toBe(!matches(SPREAD_COLUMN_MEDIA, d));
     }
+  });
+});
+
+// Блоки ≤340 (320–340): каскад по исходникам — блок стоит после ≤640/≤767, иначе их правило перебьёт его.
+describe('узкие экраны ≤340: свой коллаж первого экрана и кегль вопроса теста схем', () => {
+  const read = (f: string) => parseRules(fs.readFileSync(path.join(SRC, 'styles', f), 'utf8'));
+  /** Значение свойства у селектора по каскаду: последнее объявление среди правил с выполненным медиа. */
+  const pick = (rules: Rule[], sel: string, prop: string, d: Device) => rules
+    .filter((r) => r.selectors.includes(sel) && (!r.media || matches(r.media, d)))
+    .flatMap((r) => [...r.body.matchAll(new RegExp(`(?:^|;)\\s*${prop}:\\s*([^;]+)`, 'g'))].map((m) => m[1].trim()))
+    .at(-1);
+  const at = (w: number): Device => ({ w, h: 700, pointer: w < 768 ? 'coarse' : 'fine' });
+  const hero = read('product-landing-hero.css');
+  const shown = (rules: Rule[], w: number) =>
+    ['wide', 'narrow', 'xs'].filter((k) => pick(rules, `.pl2-hero-collage--${k}`, 'display', at(w)) !== 'none');
+
+  it.each<[number, string]>([[320, 'xs'], [340, 'xs'], [341, 'narrow'], [375, 'narrow'], [640, 'narrow'], [641, 'wide'], [1000, 'narrow'], [1280, 'wide']])(
+    'коллаж на %ipx — один холст %s', (w, k) => {
+      expect(shown(hero, w)).toEqual([k]);
+    });
+
+  it('контрольный образец: без блока ≤340 на 320 виден узкий холст — тот, что уходил под мокап', () => {
+    expect(shown(hero.filter((r) => !r.media.includes('340px')), 320)).toEqual(['narrow']);
+  });
+
+  it('вопрос теста: 20px на 320–340, 22px до 767, 26px на компьютере', () => {
+    const ysq = read('schema-library.css');
+    expect([320, 340, 341, 767, 1280].map((w) => pick(ysq, '.ss-q-text', 'font-size', at(w)))).toEqual(['20px', '20px', '22px', '22px', '26px']);
   });
 });
