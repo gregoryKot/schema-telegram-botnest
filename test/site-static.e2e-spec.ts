@@ -4,8 +4,17 @@
 // держал только src/infra/site-static.spec.ts на отдельном модуле. Здесь — тот
 // же AppModule с middleware, фильтрами и helmet, что у прода; корень —
 // сборка-фикстура test/fixtures/site-dist.
+//
+// ADMIN_BOOKING_KEY — до buildTestApp(): ConfigService читает env при сборке
+// AppModule. Нужен кейсу «цена из админки → статика без деплоя».
+process.env.ADMIN_BOOKING_KEY = 'e2e-site-static-admin-key-0123456789abcdef';
+
 import request from 'supertest';
+import { REVALIDATE } from '../src/infra/static-cache';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+
+const ADMIN_KEY = process.env.ADMIN_BOOKING_KEY;
+const APP_HOST = 'schemehappens.ru';
 
 describe('статика сайта через AppModule', () => {
   let t: TestApp;
@@ -40,5 +49,37 @@ describe('статика сайта через AppModule', () => {
     const res = await http().get('/api/no-such-route').expect(404);
     expect(res.headers['content-type']).toMatch(/json/);
     expect(res.text).not.toContain('data-e2e-site');
+  });
+
+  // Правка цены в админке доходит до JSON-LD и llms.txt без деплоя (№4):
+  // в файлах сборки — дефолт кода, сервер подставляет цену при отдаче.
+  it('сменили цену в админке → index.html, страница визитки и llms.txt с новой', async () => {
+    const page = (path: string, host = APP_HOST) =>
+      http().get(path).set('Host', host).expect(200);
+    expect((await page('/today')).text).toContain('"price": "4000"');
+
+    await http()
+      .patch('/api/booking/admin/price')
+      .set('Host', APP_HOST)
+      .set('x-admin-key', ADMIN_KEY)
+      .send({ type: 'SESSION_50', amount: 4500 })
+      .expect(200);
+
+    for (const [path, host] of [
+      ['/today', APP_HOST], // SPA-фолбэк ServeStatic
+      ['/index.html', APP_HOST],
+      ['/reviews', 'kotlarewski.gr'], // страница визитки
+    ]) {
+      const { text } = await page(path, host);
+      expect([path, text.includes('"price": "4500"')]).toEqual([path, true]);
+      expect([path, text.includes('(50 минут) – 4 500 ₽.')]).toEqual([
+        path,
+        true,
+      ]);
+    }
+    const llms = await page('/llms.txt');
+    expect(llms.headers['content-type']).toBe('text/plain; charset=utf-8');
+    expect(llms.headers['cache-control']).toBe(REVALIDATE);
+    expect(llms.text).toContain('(50 минут, 4 500 ₽)');
   });
 });
