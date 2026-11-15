@@ -23,3 +23,18 @@ export function therapistRequestApprovedText(tr: Tr): string {
     'Заявка одобрена. Перезайдите в приложение, чтобы появился кабинет терапевта.',
   );
 }
+
+/** Отказ: причина от администратора и то, что подать можно снова. Не отказ — null.
+ *  Оба экрана рисуют его одним листом FieldError (webapp/src/components/paper/FieldError.tsx). */
+export function rejectedRequestText(
+  req: { status: string; rejectReason: string | null } | null | undefined,
+  tr: Tr,
+): string | null {
+  if (req?.status !== 'rejected') return null;
+  // Точку ставит шаблон: хвостовая пунктуация причины дала бы «..» или «!.».
+  const reason = req.rejectReason?.trim().replace(/[.!?…\s]+$/u, '');
+  return (
+    `Прошлая заявка отклонена${reason ? `: ${reason}` : ''}. ` +
+    tr('Можешь подать новую.', 'Можете подать новую.')
+  );
+}
