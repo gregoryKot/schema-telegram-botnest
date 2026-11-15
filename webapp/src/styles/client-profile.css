@@ -205,6 +205,9 @@
 .cpf-needrow { display: flex; align-items: center; gap: var(--space-8); width: 100%; min-height: 48px; padding: var(--space-6) var(--space-2); background: none; border: none; border-bottom: 1px solid var(--paper-sunk); cursor: pointer; text-align: left; font: inherit; color: inherit; }
 .cpf-needrow-chev { display: inline-flex; width: 12px; height: 12px; color: var(--text-faint); flex-shrink: 0; }
 .cpf-needrow-chev svg { width: 12px; height: 12px; }
+/* Подпись Disclosure не ломает раскладку строки: полоса остаётся прямым flex-потомком кнопки. */
+.cpf-needrow-label { display: contents; }
+.cpf-needrow[aria-expanded="true"] > .cpf-needrow-chev { transform: rotate(180deg); }
 .cpf-needrow-text { margin: var(--space-8) 0 var(--space-12) 52px; line-height: 1.6; }
 .cpf-sheet-empty { margin: 0 0 var(--space-16); line-height: 1.6; }
 .cpf-sheet-lists { display: flex; flex-direction: column; gap: var(--space-24); }
