@@ -38,6 +38,17 @@ describe('ModeMapContextMenu', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it('Escape закрывает меню и не доходит до остальных слушателей (выбор узла остаётся)', () => {
+    const onClose = vi.fn();
+    const other = vi.fn();
+    window.addEventListener('keydown', other);
+    render(<ModeMapContextMenu x={0} y={0} items={[]} onClose={onClose} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    window.removeEventListener('keydown', other);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(other).not.toHaveBeenCalled();
+  });
+
   it('повторный правый клик по фону тоже закрывает меню (не открывает браузерное контекстное)', () => {
     const onClose = vi.fn();
     render(<ModeMapContextMenu x={0} y={0} items={[]} onClose={onClose} />);

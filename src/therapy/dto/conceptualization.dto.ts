@@ -16,11 +16,11 @@ import {
   CONCEPT_SCHEMA_IDS_MAX,
 } from '../../utils/text-limits';
 
-// Сколько связей режимов и схем держит концептуализация — одно число на
-// полное тело, патч (concept-save.dto.ts, concept-save.ts) и дописывание
-// с холста (concept-append.ts), правило №4.
+// Потолки связей и режимов концептуализации — одно число на полное тело, патч
+// (concept-save.dto.ts, concept-save.ts) и дописывание с холста, правило №4.
 export const CONCEPT_MODE_LINKS_MAX = 40;
 export const CONCEPT_SCHEMA_LINKS_MAX = 20;
+export const CONCEPT_MODE_IDS_MAX = 100;
 
 /**
  * DTO для карты концептуализации терапевта (аудит 2026-07, 2г / правило
@@ -40,7 +40,7 @@ export class ConceptualizationDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(100) // режимы модели и свои режимы терапевта
+  @ArrayMaxSize(CONCEPT_MODE_IDS_MAX) // режимы модели и свои; его же держит дописывание с холста
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   modeIds?: string[];
