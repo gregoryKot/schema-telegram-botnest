@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { isUniqueViolation } from '../prisma/unique-violation';
 import { TelegramService } from '../telegram/telegram.service';
-import { decrypt, tryDecrypt } from '../utils/crypto';
+import { tryDecrypt } from '../utils/crypto';
 import { clientKey, clientKeySources, isLegacyKey } from './client-key';
 import {
   rekeyReport,
@@ -60,7 +60,7 @@ interface Row {
 }
 
 // decrypt() без алерта: шифротекст, которого не открыл ни один ключ из env, —
-// undefined (бронь идёт в счёт прохода), легаси-текст — как есть.
+// undefined (бронь или комната идёт в счёт прохода), легаси-текст — как есть.
 function readable(value: string | null): string | null | undefined {
   if (!value) return value;
   const r = tryDecrypt(value);
@@ -69,10 +69,10 @@ function readable(value: string | null): string | null | undefined {
 }
 
 /** Претенденты, в чьих бронях лежит ссылка именно на комнату этой строки. */
-function holders(row: Row, claims: Claim[] | undefined): Claim[] {
-  if (!claims) return [];
-  const url = decrypt(row.meetingUrl);
-  return claims.filter((c) => !!c.url && c.url === url);
+function holders(row: Row, stats: RekeyStats, claims?: Claim[]): Claim[] {
+  const url = claims ? readable(row.meetingUrl) : null;
+  if (url === undefined) stats.unreadable += 1;
+  return claims?.filter((c) => !!c.url && c.url === url) ?? [];
 }
 
 @Injectable()
@@ -110,7 +110,7 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
     const cutoff = new Date(now.getTime() - ORPHAN_MIN_AGE_MS);
     const orphans: string[] = [];
     for (const row of rows) {
-      const list = holders(row, claims.get(row.clientKey));
+      const list = holders(row, stats, claims.get(row.clientKey));
       if (list.length > 0) await this.moveRow(row, list, stats);
       else if (isLegacyKey(row.clientKey) && row.createdAt < cutoff)
         orphans.push(row.clientKey);

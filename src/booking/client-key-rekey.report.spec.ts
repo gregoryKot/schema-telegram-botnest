@@ -33,10 +33,10 @@ describe('rekeyReport — служебное сообщение владельц
   });
 });
 
-describe('unreadableNote — брони под ключом, которого нет в env', () => {
-  it('одна строка с числом; без таких броней — ничего', () => {
+describe('unreadableNote — брони и комнаты под ключом, которого нет в env', () => {
+  it('одна строка с числом; без таких броней и комнат — ничего', () => {
     expect(unreadableNote(0)).toBeNull();
-    expect(unreadableNote(3)).toContain('не расшифровано броней: 3');
+    expect(unreadableNote(3)).toContain('не расшифровано броней и комнат: 3');
   });
 
   it('в DM не попадает: иначе он уходил бы на каждом старте', () => {
