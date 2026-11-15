@@ -4,23 +4,47 @@
    Префикс ac-. Раскладку 601–900 на лендинге держит product-landing.css. */
 .ac-card { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
 .ac-cover {
-  display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden; background: oklch(0.9 0.045 var(--h));
 }
+/* Пропорция — одним правилом у обложки и у её силуэта загрузки (ArticlesPage): форма не прыгает. */
+.ac-cover, .ac-skel-cover { aspect-ratio: 16 / 9; }
 .ac-cover .scn { width: auto; height: 88%; }
 .ac-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 18px 20px 20px; }
 .ac-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.25; color: var(--text); }
 .ac-desc { flex: 1; margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .ac-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
 
-/* Шапка статьи: та же обложка, шире и со скруглением, как блок страницы. */
-.ac-cover--hero { aspect-ratio: 5 / 2; border-radius: var(--r-20); margin: 0 0 44px; }
+/* Шапка статьи: та же обложка, шире и со скруглением, как блок страницы; у силуэта — та же рамка. */
+.ac-cover--hero, .ac-skel-hero { aspect-ratio: 5 / 2; border-radius: var(--r-20); margin: 0 0 44px; }
 
 /* Телефон: обложка карточки ниже, сцена крупнее поля — лента обложек не тянется пустым
    цветом; шапка статьи остаётся 16:9 и показывает сцену целиком. */
 @media (max-width: 640px) {
-  .ac-cover { aspect-ratio: 3 / 1; }
+  .ac-cover, .ac-skel-cover { aspect-ratio: 3 / 1; }
   .ac-cover .scn { height: 130%; }
-  .ac-cover--hero { aspect-ratio: 16 / 9; margin-bottom: 32px; }
+  .ac-cover--hero, .ac-skel-hero { aspect-ratio: 16 / 9; margin-bottom: 32px; }
   .ac-cover--hero .scn { height: 88%; }
+}
+
+/* Страница /articles и статья (pages/ArticlesPage.tsx): шапка — pp-block с ds-eyebrow и ds-h1, лист записи —
+   блок между линиями (pp-block); здесь — колонка страницы, ритм шапки, текст и сбой загрузки. Префикс art-. */
+.art-root { flex: 1; min-width: 0; min-height: 100dvh; overflow-x: hidden; background: var(--bg); color: var(--text); }
+.art-page { max-width: 980px; margin: 0 auto; padding: 64px 40px 96px; }
+.art-page--read { max-width: 720px; }
+.pp-block.art-head { gap: 12px; margin-bottom: 40px; }
+.art-head > .ds-h1 { margin: 0 0 8px; line-height: 1.1; text-wrap: balance; } /* заголовок статьи — в две-три строки */
+.art-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-faint); }
+.art-text { margin: 0; max-width: 600px; font-size: 16px; line-height: 1.7; color: var(--text-sub); }
+.art-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.pp-block.art-cta { gap: 12px; margin-top: 64px; }
+.art-cta-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+/* Сбой загрузки и 404: текст и действие; у статьи — посреди экрана. */
+.art-alert { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.art-center { display: flex; align-items: center; justify-content: center; }
+.art-center .art-alert { align-items: center; padding: 0 20px; text-align: center; }
+.art-404 { font-size: 48px; }
+@media (max-width: 720px) {
+  .art-page { padding: 40px 20px 72px; }
+  .art-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 }

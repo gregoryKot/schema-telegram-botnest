@@ -1,0 +1,73 @@
+/* Силуэт «Практик» (sections/practice/PracticeSkeleton.tsx): те же места, что у раздела, — шапка
+   (practice-selfhelp.css), вводная «Здесь и сейчас», герой дыхания (breathing.css: на узком листе сцена над
+   текстом, на широком — справа, на телефоне — 124px рядом с заголовком), квадраты и бенто библиотеки
+   (client-practice.css). Подключается самим силуэтом: он рисуется до чанка «Практик». Пороги контейнеров и
+   колонки совпадают с разделом (practiceSkeleton.test.ts); телефон — по окну, как .cp-page--phone, который
+   раздел ставит по useIsMobile (то же условие PHONE_MEDIA). Префикс cpk-. */
+.cpk-page { max-width: 1100px; }
+.cpk-head { display: flex; flex-direction: column; gap: 10px; }
+/* Строки шапки высотой строки экрана (ds-h1, ds-h2), плашка — по высоте строки за вычетом полей. */
+.cpk-h1 { display: block; height: 55px; padding: 8px 0; }
+.cpk-h2 { display: block; height: 31px; padding: 4px 0; }
+.cpk-here { display: flex; flex-direction: column; gap: 18px; container: cpk-here / inline-size; }
+
+/* Герой — лист дыхания, как .qb: на узком листе сцена над текстом, на широком справа. */
+.cpk-hero { container: cpk-hero / inline-size; padding: 18px 20px 16px; }
+.pp-paper.cpk-hero { border-radius: 24px; }
+.cpk-hero-in { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.cpk-scene { justify-self: center; max-width: 248px; aspect-ratio: 320 / 260; }
+.cpk-hero-body { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+@container cpk-hero (min-width: 560px) {
+  .cpk-hero-in { grid-template-columns: minmax(0, 1fr) clamp(220px, 40%, 290px); column-gap: 32px; }
+  .cpk-scene { grid-column: 2; grid-row: 1; align-self: center; max-width: none; }
+  .cpk-hero-body { grid-column: 1; grid-row: 1; align-self: center; }
+  .cpk-hero-btn { max-width: 220px; }
+}
+
+/* Квадраты (pp-square, тихая бумага): три в ряд; в узкой колонке — два, «Мне плохо» под ними вширь, знак справа. */
+.cpk-squares { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pp-square.cpk-sq { min-height: 0; }
+.cpk-sign { max-width: 118px; aspect-ratio: 112 / 94; margin-top: auto; }
+.cpk-foot { margin-top: 10px; }
+@container cpk-here (max-width: 640px) {
+  .cpk-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cpk-sq:last-child { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 104px; column-gap: 16px; align-content: start; }
+  .cpk-sq:last-child > .cpk-sign { grid-column: 2; grid-row: 1 / span 2; align-self: center; margin: 0; }
+  .cpk-sq:last-child > :not(.cpk-sign) { grid-column: 1; }
+}
+
+/* Библиотека — бенто плиток без оттенка: три колонки, в колонке уже 720 — две. */
+.cpk-lib-block { display: flex; flex-direction: column; gap: 14px; container: cpk-lib / inline-size; }
+.cpk-lib { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cpk-ex {
+  display: flex; flex-direction: column; gap: 8px; min-height: 236px;
+  padding: 18px 22px 16px; border-radius: 22px; background: var(--paper-sunk);
+}
+.cpk-ex > .cpk-sign { order: -1; max-width: 104px; margin: 0 0 4px; }
+.cpk-ex > .cpk-foot { margin-top: auto; }
+@container cpk-lib (max-width: 719px) {
+  .cpk-lib { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Телефон: заголовок блока несёт шапка, герой компактный — сцена 124px справа от надписи и заголовка, кнопка
+   во всю ширину; два квадрата («Мне плохо» — в листе кризисных строк), плитки теснее. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cpk-h1 { height: 34px; padding: 4px 0; }
+  .cpk-here { gap: 12px; }
+  .cpk-h2 { display: none; }
+  .cpk-hero-in { grid-template-columns: minmax(0, 1fr) 124px; column-gap: 12px; }
+  .cpk-hero-body { display: contents; }
+  .cpk-scene { grid-column: 2; grid-row: 1 / span 2; align-self: center; max-width: none; }
+  .cpk-hero-label { grid-column: 1; grid-row: 1; align-self: end; }
+  .cpk-hero-title { grid-column: 1; grid-row: 2; align-self: start; }
+  .cpk-hero-body > :not(.cpk-hero-label):not(.cpk-hero-title) { grid-column: 1 / -1; }
+  .cpk-hero-btn { max-width: none; }
+  .cpk-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cpk-sq:last-child { display: none; }
+  .pp-square.cpk-sq { padding: 18px 16px 14px; gap: 6px; }
+  .cpk-sign { max-width: 92px; }
+  .cpk-lib-block { gap: 10px; }
+  .cpk-lib { gap: 10px; }
+  .cpk-ex { min-height: 0; padding: 14px 14px 12px 16px; border-radius: 18px; }
+  .cpk-ex > .cpk-sign { max-width: 78px; }
+}
