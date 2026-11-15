@@ -1134,7 +1134,7 @@
   "src/booking/landing-price.ts": 72,
   "src/booking/legacy-uid-reissue.command.ts": 94,
   "src/booking/legacy-uid-reissue.ts": 147,
-  "src/booking/meeting-jitsi.ts": 54,
+  "src/booking/meeting-jitsi.ts": 70,
   "src/booking/meeting-link.ts": 10,
   "src/booking/meeting.providers.ts": 13,
   "src/booking/meeting.service.ts": 188,
