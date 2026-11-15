@@ -138,6 +138,29 @@ describe('SubscriptionService.markChargePaidByInvId — идемпотентно
     expect(prisma.subscription.updateMany).toHaveBeenCalledTimes(1); // не задвоилось
     expect(calls.alerts.length).toBe(alertsAfterFirst);
   });
+
+  it('ретрай прочитал pending до коммита первого — CAS отсекает: OK без второй активации и алерта', async () => {
+    const row = {
+      id: 55,
+      subscriptionId: 1,
+      amount: 300,
+      status: 'pending',
+      isFirst: true,
+    };
+    const { service, prisma, calls } = makeService({ chargeRow: row });
+    await expect(
+      service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + 55, 300),
+    ).resolves.toEqual({ ok: true });
+    const alertsAfterFirst = calls.alerts.length;
+    // Снимок строки, прочитанный вторым вебхуком до коммита первого.
+    prisma.subscriptionCharge.findUnique.mockResolvedValueOnce({ ...row });
+
+    await expect(
+      service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + 55, 300),
+    ).resolves.toEqual({ ok: true });
+    expect(prisma.subscription.updateMany).toHaveBeenCalledTimes(1);
+    expect(calls.alerts.length).toBe(alertsAfterFirst);
+  });
 });
 
 // Второй инстанс приложения (масштабирование, перекатывающийся деплой)

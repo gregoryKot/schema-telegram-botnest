@@ -77,15 +77,15 @@ export function tryDecrypt(value: string | null | undefined): DecryptAttempt {
   // Try each known key — current first, then old keys.
   for (const key of ALL_KEYS) {
     try {
-      // authTagLength: 16 — отбрасывать тэги короче 16 байт; здесь tag всегда
-      // subarray(12,28) = 16, но явный опшен закрепляет контракт (semgrep
-      // gcm-no-tag-length / defense in depth).
+      // Stryker disable next-line ObjectLiteral: эквивалентный мутант — tag всегда subarray(12, 28) = 16 байт; опшен закрепляет контракт GCM (semgrep gcm-no-tag-length)
       const decipher = createDecipheriv('aes-256-gcm', key, iv, {
         authTagLength: 16,
       });
       decipher.setAuthTag(tag);
       const text =
-        decipher.update(data).toString('utf8') + decipher.final('utf8');
+        decipher.update(data).toString('utf8') +
+        // Stryker disable next-line StringLiteral: эквивалентный мутант — GCM отдаёт весь текст в update(), final('') вернёт пустой буфер, в строке это тот же ''
+        decipher.final('utf8');
       return { ok: true, text };
     } catch {
       /* wrong key, try next */
