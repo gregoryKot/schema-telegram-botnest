@@ -311,7 +311,9 @@ describe('PricingService.landingText', () => {
 
   it('база не ответила — дефолт кода и предупреждение в лог, а не ошибка страницы', async () => {
     const { service, prisma } = makeService();
-    prisma.bookingSetting.findUnique.mockRejectedValueOnce(new Error('db down'));
+    prisma.bookingSetting.findUnique.mockRejectedValueOnce(
+      new Error('db down'),
+    );
     const warn = jest
       .spyOn(Logger.prototype, 'warn')
       .mockImplementation(() => undefined);
