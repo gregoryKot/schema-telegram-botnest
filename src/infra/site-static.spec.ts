@@ -29,10 +29,13 @@ import { NestFactory } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import request from 'supertest';
 import { GenericExceptionFilter } from '../prisma/prisma-exception.filter';
-import { configureBuildAssets, siteStaticOptions } from './site-static';
+import { configureBuildAssets, siteStaticFactory } from './site-static';
 
 const MARKER = 'SITE-INDEX-MARKER';
 const IMMUTABLE = 'public, max-age=31536000, immutable';
+/** Метка: index.html фолбэка прошёл через landingText (цена визитки из админки). */
+const PRICED = '<!--landing-price-->';
+const landingText = (html: string) => Promise.resolve(html + PRICED);
 
 // Сайт как в AppModule: тот же ServeStatic и тот же вызов в configure().
 @Module({})
@@ -40,7 +43,9 @@ class SiteModule implements NestModule {
   static forDist(dist: string): DynamicModule {
     return {
       module: SiteModule,
-      imports: [ServeStaticModule.forRoot(siteStaticOptions(dist))],
+      imports: [
+        ServeStaticModule.forRoot(...siteStaticFactory(dist)({ landingText })),
+      ],
     };
   }
 
@@ -135,10 +140,18 @@ describe('статика сайта: адрес файла сборки — фа
     },
   );
 
+  it('фолбэк — index.html через landingText (цена визитки), ETag по содержимому', async () => {
+    const res = await get('/donate');
+    expect(res.text).toBe(`<!doctype html>${MARKER}${PRICED}`);
+    const again = await get('/donate').set('If-None-Match', res.headers.etag);
+    expect(again.status).toBe(304);
+  });
+
   it('/game/ — страница игры с диска, а не фолбэк сайта', async () => {
     const res = await get('/game/');
     expect(res.status).toBe(200);
     expect(res.text).toContain('GAME-INDEX');
+    expect(res.text).not.toContain(PRICED);
   });
 
   it('/api/nope → 404 (исключение /api на месте)', async () => {
@@ -153,9 +166,11 @@ describe('статика сайта: адрес файла сборки — фа
 describe('AppModule подключает это же', () => {
   const src = readFileSync(join(__dirname, '..', 'app.module.ts'), 'utf8');
 
-  it('единственный ServeStaticModule берёт siteStaticOptions', () => {
-    expect(src.match(/ServeStaticModule\.forRoot\(/g)).toHaveLength(1);
-    expect(src).toMatch(/ServeStaticModule\.forRoot\(\s*siteStaticOptions\(/);
+  it('единственный ServeStaticModule берёт siteStaticFactory с ценой визитки', () => {
+    expect(src.match(/ServeStaticModule\.forRoot(Async)?\(/g)).toHaveLength(1);
+    expect(src).toMatch(
+      /ServeStaticModule\.forRootAsync\(\{[^}]*inject: \[PricingService\],\s*useFactory: siteStaticFactory\(/,
+    );
   });
 
   it('configureBuildAssets(consumer) — после practiceDomainMiddleware', () => {

@@ -6,6 +6,7 @@
 // index.html, и ссылка на продукт schemehappens.ru выглядела как визитка.
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { landingPriceText } from './booking/landing-price';
 import { REVALIDATE } from './infra/static-cache';
 import {
   PRACTICE_PREVIEW_PAGES,
@@ -178,7 +179,10 @@ describe('карточка ссылки: продукт в файле, визи�
 // (его читают Telegram и поисковик без JS) обязан нести свой canonical, иначе
 // /reviews объявляет себя копией главной продукта и в выдачу не попадает.
 describe('practiceIndexMiddleware: страницы визитки', () => {
-  const run = (
+  // Цена сессии в админке — 4 500 ₽ (так её отдаст PricingService.landingText).
+  const landingText = (text: string) =>
+    Promise.resolve(landingPriceText(text, 4500));
+  const run = async (
     hostname: string,
     path: string,
     page: string | null = source,
@@ -194,67 +198,77 @@ describe('practiceIndexMiddleware: страницы визитки', () => {
         sent.body = body;
       },
     } as never;
-    practiceIndexMiddleware(page, new Set(['kotlarewski.gr']))(
-      { hostname, path } as never,
-      res,
-      () => {
-        nextCalled = true;
-      },
-    );
+    await practiceIndexMiddleware(
+      page,
+      new Set(['kotlarewski.gr']),
+      landingText,
+    )({ hostname, path } as never, res, () => {
+      nextCalled = true;
+    });
+    const body = sent.body ?? '';
     return {
-      canonical: /rel="canonical" href="([^"]+)"/.exec(sent.body ?? '')?.[1],
-      image: metaIn(sent.body ?? '')('property', 'og:image'),
+      canonical: /rel="canonical" href="([^"]+)"/.exec(body)?.[1],
+      image: metaIn(body)('property', 'og:image'),
       headers,
       nextCalled,
+      body,
     };
   };
 
-  it('/reviews и /reviews/ — canonical на саму страницу', () => {
-    expect(run('kotlarewski.gr', '/reviews').canonical).toBe(
+  it('/reviews и /reviews/ — canonical на саму страницу', async () => {
+    expect((await run('kotlarewski.gr', '/reviews')).canonical).toBe(
       'https://kotlarewski.gr/reviews',
     );
-    expect(run('kotlarewski.gr', '/reviews/').canonical).toBe(
+    expect((await run('kotlarewski.gr', '/reviews/')).canonical).toBe(
       'https://kotlarewski.gr/reviews',
     );
   });
 
-  it('главная — canonical на главную визитки', () => {
-    expect(run('kotlarewski.gr', '/').canonical).toBe(
+  it('главная — canonical на главную визитки', async () => {
+    expect((await run('kotlarewski.gr', '/')).canonical).toBe(
       'https://kotlarewski.gr/',
     );
   });
 
-  it('главная — карточка визитки и ревалидация, как у index.html из ServeStatic', () => {
-    const page = run('kotlarewski.gr', '/');
+  it('главная — карточка визитки и ревалидация, как у index.html из ServeStatic', async () => {
+    const page = await run('kotlarewski.gr', '/');
     expect(page.image).toBe(PRACTICE_PREVIEW.image);
     expect(page.headers['Cache-Control']).toBe(REVALIDATE);
   });
 
+  it('цена сессии — из админки, а не из файла: оффер JSON-LD и ответ FAQ', async () => {
+    const { body } = await run('kotlarewski.gr', '/');
+    expect(body).toContain('"price": "4500"');
+    expect(body).toContain('(50 минут) – 4 500 ₽.');
+  });
+
   // Ссылку на /book отправляют клиентам в мессенджер: карточка — визитки, а
   // canonical страницы вне поиска остаётся как в файле.
-  it('/book — карточка визитки, canonical не трогаем', () => {
-    const page = run('kotlarewski.gr', '/book');
+  it('/book — карточка визитки, canonical не трогаем', async () => {
+    const page = await run('kotlarewski.gr', '/book');
     expect(page.nextCalled).toBe(false);
     expect(page.image).toBe(PRACTICE_PREVIEW.image);
     expect(page.canonical).toBe('https://schemehappens.ru/');
   });
 
-  it('каждая страница визитки — с карточкой визитки', () => {
+  it('каждая страница визитки — с карточкой визитки', async () => {
     expect(PRACTICE_PREVIEW_PAGES).toEqual(
       expect.arrayContaining(['/', '/reviews', '/book', '/donate', '/privacy']),
     );
     for (const path of PRACTICE_PREVIEW_PAGES) {
-      expect([path, run('kotlarewski.gr', path).image]).toEqual([
+      expect([path, (await run('kotlarewski.gr', path)).image]).toEqual([
         path,
         PRACTICE_PREVIEW.image,
       ]);
     }
   });
 
-  it('продуктовый хост, /articles (у ArticleSeoMiddleware) и нет сборки — дальше', () => {
-    expect(run('schemehappens.ru', '/reviews').nextCalled).toBe(true);
-    expect(run('schemehappens.ru', '/').nextCalled).toBe(true);
-    expect(run('kotlarewski.gr', '/articles').nextCalled).toBe(true);
-    expect(run('kotlarewski.gr', '/reviews', null).nextCalled).toBe(true);
+  it('продуктовый хост, /articles (у ArticleSeoMiddleware) и нет сборки — дальше', async () => {
+    expect((await run('schemehappens.ru', '/reviews')).nextCalled).toBe(true);
+    expect((await run('schemehappens.ru', '/')).nextCalled).toBe(true);
+    expect((await run('kotlarewski.gr', '/articles')).nextCalled).toBe(true);
+    expect((await run('kotlarewski.gr', '/reviews', null)).nextCalled).toBe(
+      true,
+    );
   });
 });

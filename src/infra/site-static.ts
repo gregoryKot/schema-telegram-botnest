@@ -10,6 +10,7 @@ import { MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import type { ServeStaticModuleOptions } from '@nestjs/serve-static';
 import type { NextFunction, Request, Response } from 'express';
 import type { ServerResponse } from 'http';
+import type { PricingService } from '../booking/pricing.service';
 import { cacheControlFor } from './static-cache';
 
 /** Каталоги сборки: сайт (`/assets/`) и игра (vite base `/game/`, Dockerfile
@@ -22,21 +23,26 @@ export const BUILD_ASSET_ROUTES = [
 ] as const;
 
 /** Один ServeStatic: сайт на `/`. SPA-фолбэк (renderPath) отдаёт index.html
- *  путям без файла; /api и каталоги сборки из фолбэка исключены. */
-export function siteStaticOptions(rootPath: string): ServeStaticModuleOptions {
-  return {
-    rootPath,
-    // Синтаксис path-to-regexp v6+: '/*path' (именованный wildcard), не голый '/*'.
-    renderPath: '/*path',
-    exclude: ['/api/{*path}', ...BUILD_ASSET_ROUTES],
-    // Cache-Control по типу файла (immutable — только то, чьё имя меняется
-    // вместе с содержимым; иначе max-age=0, замер 2026-08-22: 857мс).
-    serveStaticOptions: {
-      setHeaders: (res: ServerResponse, filePath: string) => {
-        res.setHeader('Cache-Control', cacheControlFor(filePath));
+ *  путям без файла — с ценой визитки из админки; /api и каталоги сборки из
+ *  фолбэка исключены. useFactory для forRootAsync (inject: [PricingService]),
+ *  один на AppModule и e2e, у которого свой корень. */
+export function siteStaticFactory(rootPath: string) {
+  return (pricing: Pick<PricingService, 'landingText'>) => [
+    {
+      rootPath,
+      // Синтаксис path-to-regexp v6+: '/*path' (именованный wildcard), не голый '/*'.
+      renderPath: '/*path',
+      exclude: ['/api/{*path}', ...BUILD_ASSET_ROUTES],
+      transformIndexHtml: (html: string) => pricing.landingText(html),
+      // Cache-Control по типу файла (immutable — только то, чьё имя меняется
+      // вместе с содержимым; иначе max-age=0, замер 2026-08-22: 857мс).
+      serveStaticOptions: {
+        setHeaders: (res: ServerResponse, filePath: string) => {
+          res.setHeader('Cache-Control', cacheControlFor(filePath));
+        },
       },
-    },
-  };
+    } satisfies ServeStaticModuleOptions,
+  ];
 }
 
 /** `no-store` заранее: попадание его перепишет, промах — унесёт в 404. */
