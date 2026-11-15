@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { PHONE_MEDIA, DESKTOP_MEDIA } from './phoneLayout';
+import { SPREAD_MEDIA, SPREAD_COLUMN_MEDIA } from '../styles/cssRules.test-helpers';
 
 const SRC = path.resolve(__dirname, '..');
 /** Общие стили shared/ сайт подключает так же, как свои: условие то же. */
@@ -78,5 +79,16 @@ describe('phoneLayout: CSS и JS говорят одно и то же', () => {
     expect(PHONE_MEDIA).toContain('(pointer: coarse) and (max-height: 500px)');
     expect(DESKTOP_MEDIA).toContain('(min-height: 501px)');
     expect(DESKTOP_MEDIA).toContain('(pointer: fine)');
+  });
+
+  // Разворот (paper-app.css) и его колонка (sheet-exercises.css: aside ExScreen после формы) — дополнения, иначе на
+  // каком-то устройстве подсказка встала бы между листом и полем; 1100×480 под пальцем — колонкой (низкий экран).
+  it('разворот SpreadLayout и колонка разворота — дополнения, строки в CSS канонические', () => {
+    const css = (f: string) => fs.readFileSync(path.join(SRC, 'styles', f), 'utf8');
+    expect(css('paper-app.css')).toContain(`@media ${SPREAD_MEDIA} {\n  .pa-spread {`);
+    expect(css('sheet-exercises.css')).toContain(`@media ${SPREAD_COLUMN_MEDIA} {\n  .ex2-body--spread .pa-spread-side,`);
+    for (const d of [...DEVICES.map(([, , dev]) => dev), { w: 1100, h: 480, pointer: 'coarse' as const }]) {
+      expect(matches(SPREAD_MEDIA, d), JSON.stringify(d)).toBe(!matches(SPREAD_COLUMN_MEDIA, d));
+    }
   });
 });
