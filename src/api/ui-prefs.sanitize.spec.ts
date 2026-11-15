@@ -5,7 +5,7 @@
 import { sanitizeUiPrefs, SYNCED_PREF_KEYS } from './ui-prefs.sanitize';
 
 describe('sanitizeUiPrefs', () => {
-  it('реестр ключей — 7 штук, ровно как в зафиксированном контракте', () => {
+  it('реестр ключей — 8 штук, ровно как в зафиксированном контракте', () => {
     expect(SYNCED_PREF_KEYS).toEqual([
       'quick_actions_hidden_tools',
       'quick_actions_order_tools',
@@ -14,6 +14,7 @@ describe('sanitizeUiPrefs', () => {
       'screen_order_profile',
       'screen_order_patterns',
       'why_seen_v1',
+      'concept_brief_blocks',
     ]);
   });
 
@@ -116,6 +117,28 @@ describe('sanitizeUiPrefs', () => {
         {},
       );
     }
+  });
+
+  // Выбор блоков экрана «Главное» у терапевта: свой реестр id (BRIEF_BLOCKS),
+  // устаревший или чужой id выпадает, как у screen_*, а не роняет весь выбор.
+  it('concept_brief_blocks: известные id блоков «Главного» проходят, неизвестные отброшены', () => {
+    const key = 'concept_brief_blocks';
+    const pass = (ids: unknown[]) =>
+      sanitizeUiPrefs({ [key]: JSON.stringify(ids) });
+    expect(pass(['schemas', 'goals', 'early'])).toEqual({
+      [key]: JSON.stringify(['schemas', 'goals', 'early']),
+    });
+    expect(pass(['modes', 'nope', 'triggers'])).toEqual({
+      [key]: JSON.stringify(['modes', 'triggers']),
+    });
+    // id блоков других экранов и пунктов «Инструментов» сюда не проходят
+    expect(pass(['streak', 'tracker'])).toEqual({ [key]: '[]' });
+    // пустой выбор законен: терапевт снял все блоки
+    expect(pass([])).toEqual({ [key]: '[]' });
+    // структурно невалидное и охапка сверх 16 — ключ целиком
+    expect(sanitizeUiPrefs({ [key]: 'not-json' })).toEqual({});
+    expect(pass(['schemas', 5])).toEqual({});
+    expect(pass(Array.from({ length: 17 }, () => 'schemas'))).toEqual({});
   });
 
   it('значение длиннее 2000 символов отбрасывается', () => {

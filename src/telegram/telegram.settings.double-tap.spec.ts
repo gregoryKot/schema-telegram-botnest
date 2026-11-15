@@ -54,6 +54,7 @@ function setup() {
   let settings = {
     notifyEnabled: true,
     notifyReminderEnabled: true,
+    disclaimerAccepted: true, // без согласия перепланировка напоминание не ставит
     notifySummaryEnabled: true,
     notifyLocalHour: 21,
     notifyTimezone: 'Europe/Moscow',
