@@ -94,6 +94,7 @@
 - ⬜ **Комментарий `CheckPlate` ссылается на несуществующий принцип 9 PAPER** — `webapp/src/components/art/PaperArtSigns.tsx:53`: «(PAPER_2026-11.md, принцип 9)», а принципов в `docs/design/PAPER_2026-11.md` шесть; «вариант мотива лучше нового знака» — принцип 9 в `docs/design/APP_2026-11.md`, «вариант — пропом мотива» — волна 0 в `docs/archive/APP_2026-11.md`. Найдено при делении документов редизайна; поправить ссылку.
 - ⬜ **Трипваер analytics-sync: устаревшие причины `account_link_*` в BACKEND_ONLY** — `src/security/analytics-sync.invariants.spec.ts` называет отправителем `account_link_started` и `account_link_failed` хук `useAccountLink.ts` (мини-апп), которого в репозитории нет (`git ls-files | grep -i useAccountLink` пусто): `account_link_started` шлёт `webapp/src/pages/account/AccountLinkSection.tsx`, `account_link_failed` пишет сервер (`trackLinkFailed` в `src/telegram/telegram.link-outcome.ts`), а `ACCOUNT_LINK_FAILED_EVENT` и `AccountLinkFailReason` в `shared/src/analytics/accountLogin.ts` на фронте никто не импортирует.
 
+- ⬜ **Настройки: сбой загрузки связи с терапевтом и заявки «стать терапевтом» рисуется как «нет»** — `.catch(() => setTherapyRelation(null))` в `webapp/src/components/settingsSheet/useTherapyRelationSettings.ts` и `setTherapistReq(null)` в `settingsSheet/BecomeTherapistSection.tsx`: на отказе вместо сбоя — поле кода / форма заявки, отчёта наверх нет; найдено гейтом `check-dead-end-report.mjs` (записи `debt` в `scripts/dead-end-report-baseline.json`).
 
 ## Идеи
 
@@ -119,6 +120,7 @@
 
 ## Сделано
 
+- ✅ **Подписка: отказ загрузки вариантов — экран сбоя и отчёт наверх, гейт видит пустое состояние** (PR #PRNUM) — `webapp/src/pages/SubscribePage.tsx` на отказе `getSubscriptionOptions` шлёт `reportSubscriptionOptionsFailure` и рисует «Подписка не загрузилась» с «Обновить» вместо «Подписка скоро»; `scripts/check-dead-end-report.mjs` ловит `catch` без отчёта, где все сеттеры ставят `false`/`null`/`[]`/`''`: 10 находок на main классифицированы, два долга — строкой в «Следующее».
 - ✅ **Проход ключей комнат: алерт decrypt на нечитаемой ссылке комнаты** (PR #1278) — `holders()` в `src/booking/client-key-rekey.service.ts` читает ссылку комнаты через `readable()` (`tryDecrypt`), как и брони: комната под ключом, которого нет в env, идёт в счёт прохода (строка warn «не расшифровано броней и комнат: N») вместо алерта на каждом старте; ветка сирот прежняя — нечитаемая строка нового формата не удаляется (тест).
 - ✅ **Игра: ♥ ✦ ₽ ◀ ▶ ▲ — пиксельные значки** (PR К28, #1267) — `game/src/glyphs.ts`: сердца и ✦ в HUD, ₽ на дороге, стрелки тач-кнопок; подсказки без знаков. Эмодзи 💛 и 🐈‍⬛ в `messages.ts` оставлены: цветные, из системного шрифта, смысл не меняют.
 - ✅ **Чистка Zoom: комнаты вне `ClientMeeting` с именем клиента** (PR #1280) — `/scrub_foreign` берёт список встреч Zoom (`listZoomMeetings`, `src/booking/zoom-room.ts`) и сверяет с базой (`src/booking/zoom-orphans.ts`): комнату бота без строки и без живой брони удаляет, остальным снимает имя, прочие встречи не трогает; 403 и нечитаемые ссылки броней — строками отчёта. Боевой прогон — за владельцем (`docs/open/security.md`).

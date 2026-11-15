@@ -11,6 +11,8 @@
 // `.catch(…)`) файлов `webapp/src/pages/**` и `webapp/src/components/*/**`:
 // вызов сеттера с Error/Err/Fail в имени (`setLoadError(…)`, `setFailed(true)`)
 // или с исходом-литералом (`setStatus('error')`, `setState({ kind: 'failed' })`).
+// Тупик под нейтральным состоянием: catch без отчёта, где каждый сеттер ставит
+// пустое (`false`, `null`, `[]`, `''`) — «скоро»/«пусто» вместо сбоя; ключ — первый сеттер.
 // Ключ — `<файл>::<сеттер>`: одно состояние ошибки — одно решение, сколько бы
 // веток его ни ставили. Запись в `scripts/dead-end-report-baseline.json`:
 //   reports — каждая ветка с этим сеттером зовёт отчёт (`reportClientError(`,
@@ -33,6 +35,7 @@ const STATUSES = ['reports', 'exempt', 'debt'];
 const REASON_RED_FLAGS = ['legacy', 'todo', 'потом', 'позже'];
 const OUTCOME_RE =
   /\b(set\w*(?:Error|Err|Fail|Failed|Failure)\w*)\s*\(|\b(set\w*)\s*\(\s*(?:'(?:error|failed|fail)'|\{\s*kind:\s*'(?:error|failed)')/g;
+const NEUTRAL_RE = /^\s*(?:false|null|undefined|\[\s*\]|''|""|\{\s*\}|0)\s*\)/;
 const REPORT_RE = /\b(?:report[A-Z]\w*|handleLoadFailure|handleBookingFailure)\s*\(/;
 
 function walk(rel, acc = []) {
@@ -69,6 +72,10 @@ export function findOutcomes(rawSrc) {
     if (close === -1) continue;
     const body = src.slice(open, close + 1);
     const setters = new Set([...body.matchAll(OUTCOME_RE)].map((x) => x[1] ?? x[2]));
+    const calls = [...body.matchAll(/\b(set[A-Z]\w*)\s*\(/g)];
+    const neutral = calls.length && calls.every((c) => NEUTRAL_RE.test(body.slice(c.index + c[0].length)));
+    const quiet = !setters.size && neutral && !REPORT_RE.test(body);
+    if (quiet) out.push({ setter: calls[0][1], reports: false, neutral: true, line: lineAt(src, m.index) });
     for (const setter of setters) out.push({ setter, reports: REPORT_RE.test(body), line: lineAt(src, m.index) });
   }
   return out;
@@ -90,7 +97,7 @@ function main() {
     sources.set(rel, stripComments(raw));
     for (const o of findOutcomes(raw)) {
       const key = `${rel}::${o.setter}`;
-      const prev = found.get(key) ?? { file: rel, lines: [], unreported: [] };
+      const prev = found.get(key) ?? { file: rel, lines: [], unreported: [], neutral: o.neutral };
       prev.lines.push(o.line);
       if (!o.reports) prev.unreported.push(o.line);
       found.set(key, prev);
@@ -99,7 +106,8 @@ function main() {
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
   const problems = [];
   for (const [key, f] of found) {
-    if (!(key in baseline)) problems.push(`${key} (L${f.lines.join(', L')}): исход ошибки без классификации`);
+    const what = f.neutral ? 'сбой под пустым состоянием, без отчёта' : 'исход ошибки';
+    if (!(key in baseline)) problems.push(`${key} (L${f.lines.join(', L')}): ${what} без классификации`);
   }
   for (const [key, entry] of Object.entries(baseline)) {
     const f = found.get(key);
