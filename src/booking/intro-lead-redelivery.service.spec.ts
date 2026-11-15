@@ -5,6 +5,7 @@ import { Logger } from '@nestjs/common';
 import { IntroLeadService } from './intro-lead.service';
 import { IntroLeadRedeliveryService } from './intro-lead-redelivery.service';
 import { INTRO_LEAD_SCHEMA } from './intro-lead.schema';
+import { TelegramService } from '../telegram/telegram.service';
 import { encryptRecord } from '../utils/crypto';
 
 const NOW = new Date('2026-10-15T12:00:00.000Z');
@@ -22,6 +23,8 @@ function make(
     mail?: boolean;
     rows?: Record<string, unknown>[];
     lease?: boolean;
+    /** Настоящий TelegramService вместо мока (шов «есть ли канал»). */
+    realTelegram?: TelegramService;
   } = {},
 ) {
   const calls: string[] = [];
@@ -31,12 +34,14 @@ function make(
       findMany: jest.fn(async () => opts.rows ?? []),
     },
   };
-  const telegram = {
+  const mockTelegram = {
+    canNotifyAdmin: jest.fn(() => true),
     notifyAdmin: jest.fn(async () => {
       calls.push('tg');
       return opts.tg ?? true;
     }),
   };
+  const telegram = opts.realTelegram ?? mockTelegram;
   const email = {
     sendAdminNotification: jest.fn(async () => {
       calls.push('email');
@@ -53,8 +58,9 @@ function make(
     prisma as never,
     cronLeader as never,
     introLead,
+    telegram as never,
   );
-  return { service, prisma, telegram, email, cronLeader, calls };
+  return { service, prisma, telegram: mockTelegram, email, cronLeader, calls };
 }
 
 describe('IntroLeadRedeliveryService.redeliver', () => {
@@ -152,5 +158,76 @@ describe('IntroLeadRedeliveryService.redeliver', () => {
       'intro lead redelivery failed',
       expect.any(Error),
     );
+  });
+
+  // Канал (бот и ADMIN_ID) спрашивается у настоящего TelegramService: без него
+  // notifyAdmin отвечает false так же, как на сбой Telegram.
+  describe('канал к владельцу — настоящий TelegramService', () => {
+    const OLD_ADMIN_ID = process.env.ADMIN_ID;
+    afterEach(() => {
+      if (OLD_ADMIN_ID === undefined) delete process.env.ADMIN_ID;
+      else process.env.ADMIN_ID = OLD_ADMIN_ID;
+    });
+    const telegramWith = (sendMessage: (() => Promise<unknown>) | null) => {
+      const bot = sendMessage ? { telegram: { sendMessage } } : null;
+      const n = null as never; // сервисы хендлеров бота: notifyAdmin их не трогает
+      return new TelegramService(bot as never, n, n, n, n, n, n, n, n);
+    };
+    const spent = {
+      where: { id: 3 },
+      data: { deliveryAttempts: { increment: 1 } },
+    };
+
+    it('ADMIN_ID не задан: заявка без DM ждёт — попытка не списана, ничего не шлётся', async () => {
+      delete process.env.ADMIN_ID;
+      const sendMessage = jest.fn(async () => ({}));
+      const { service, prisma, email } = make({
+        rows: [row({ tgDeliveredAt: null })],
+        realTelegram: telegramWith(sendMessage),
+      });
+      await expect(service.redeliver(NOW)).resolves.toBe(0);
+      expect(prisma.introLead.update).not.toHaveBeenCalled();
+      expect(sendMessage).not.toHaveBeenCalled();
+      expect(email.sendAdminNotification).not.toHaveBeenCalled();
+    });
+
+    it('бота нет: попытка не списана', async () => {
+      process.env.ADMIN_ID = '999';
+      const { service, prisma } = make({
+        rows: [row({ tgDeliveredAt: null })],
+        realTelegram: telegramWith(null),
+      });
+      await expect(service.redeliver(NOW)).resolves.toBe(0);
+      expect(prisma.introLead.update).not.toHaveBeenCalled();
+    });
+
+    it('канала нет, а DM уже дошёл: письмо повторяется, попытка списана', async () => {
+      delete process.env.ADMIN_ID;
+      const { service, prisma, email } = make({
+        rows: [row({ tgDeliveredAt: new Date(NOW.getTime() - 10 * MIN) })],
+        realTelegram: telegramWith(null),
+      });
+      await expect(service.redeliver(NOW)).resolves.toBe(1);
+      expect(prisma.introLead.update).toHaveBeenNthCalledWith(1, spent);
+      expect(email.sendAdminNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it('канал есть, Telegram упал: попытка списана, DM не отмечен доставленным', async () => {
+      process.env.ADMIN_ID = '999';
+      const sendMessage = jest.fn(async () => {
+        throw new Error('blocked');
+      });
+      const { service, prisma } = make({
+        rows: [row({ tgDeliveredAt: null })],
+        realTelegram: telegramWith(sendMessage),
+      });
+      await expect(service.redeliver(NOW)).resolves.toBe(1);
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(prisma.introLead.update).toHaveBeenNthCalledWith(1, spent);
+      expect(prisma.introLead.update).not.toHaveBeenCalledWith({
+        where: { id: 3 },
+        data: { tgDeliveredAt: expect.any(Date) },
+      });
+    });
   });
 });

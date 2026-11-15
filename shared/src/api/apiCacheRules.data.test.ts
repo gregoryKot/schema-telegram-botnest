@@ -194,7 +194,13 @@ describe('RULES: запись по id и страницы дневника сб�
       '/api/belief-checks/31',
       ['/api/belief-checks', '/api/belief-checks/31'],
     ],
-    ['DELETE', '/api/flashcards/31', ['/api/flashcards', '/api/flashcards/31']],
+    // Число карточек квадрата «Мне плохо» (useQuickCounts) не отстаёт от записи и удаления.
+    [
+      'DELETE',
+      '/api/flashcards/31',
+      ['/api/flashcards', '/api/flashcards/31', '/api/flashcards/count'],
+    ],
+    ['POST', '/api/flashcards', ['/api/flashcards', '/api/flashcards/count']],
   ])('%s %s', (method, path, keys) => {
     const targets = targetsOf(method, path);
     for (const key of keys) expect(covers(targets, key)).toBe(true);
