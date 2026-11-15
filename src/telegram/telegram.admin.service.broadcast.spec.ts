@@ -259,14 +259,17 @@ describe('TelegramAdminService — /broadcast на настоящем AccountSer
   const WEB_ONLY = 2_000_000_000_000_001n; // веб-номер без привязки
   const ABOVE_2_53 = 2n ** 53n + 1n; // Number() даёт ...992 — другой человек
   const NO_CONSENT = 43n; // не принял условия — рассылки нет (РКН №08-1063539)
+  const NOTIFY_OFF = 44n; // выключил «Напоминания» — рассылки нет (цель 2 политики)
 
   function makeReal() {
     const user = createFakeTable([
       ...[OLD_BOT_ID, WEB_LINKED, WEB_ONLY, ABOVE_2_53].map((id) => ({
         id,
         disclaimerAccepted: true,
+        notifyEnabled: true,
       })),
-      { id: NO_CONSENT, disclaimerAccepted: false },
+      { id: NO_CONSENT, disclaimerAccepted: false, notifyEnabled: true },
+      { id: NOTIFY_OFF, disclaimerAccepted: true, notifyEnabled: false },
     ]);
     user.updateMany.mockImplementation(() => ({ count: 1 }));
     const authProvider = createFakeTable([
@@ -285,7 +288,7 @@ describe('TelegramAdminService — /broadcast на настоящем AccountSer
     return { accountService, user };
   }
 
-  it('адресует по привязке, а не по userId; id > 2^53 не округляется; без чата — в пропущенные; без согласия — мимо', async () => {
+  it('адресует по привязке, а не по userId; id > 2^53 не округляется; без чата — в пропущенные; без согласия или с выключенными «Напоминаниями» — мимо', async () => {
     process.env.ADMIN_ID = '999';
     const { accountService } = makeReal();
     const { service, fakeBot } = makeDeps({ accountService });

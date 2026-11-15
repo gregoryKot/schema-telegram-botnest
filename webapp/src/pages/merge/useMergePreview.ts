@@ -3,6 +3,9 @@
 // Чужой токен — 403; адрес не читается — его собирает кто угодно.
 import { useEffect, useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
+import { reportClientError } from '../../api';
+import { ApiError } from '../../apiClient';
+import { describeFailure } from '../../../../shared/src/api/describeFailure';
 
 export interface MergePreview {
   provider: string;
@@ -56,10 +59,14 @@ export function useMergePreview(token: string, accessToken: string | null): Merg
           },
           body: JSON.stringify({ token }),
         });
-        const preview = res.ok ? parseMergePreview(await res.json()) : null;
-        settle(preview ? { kind: 'ok', ...preview } : { kind: 'failed' });
-      } catch {
-        settle({ kind: 'failed' }); // сеть — нейтральный текст вместо имён и цифр
+        if (!res.ok) throw new ApiError(res.status, 'merge preview');
+        const preview = parseMergePreview(await res.json());
+        if (!preview) throw new SyntaxError('merge preview shape'); // чужая форма — как битое тело
+        settle({ kind: 'ok', ...preview });
+      } catch (e) {
+        // Сеть, отказ сервера, чужая форма — нейтральный текст вместо имён и цифр и отчёт наверх (№14).
+        settle({ kind: 'failed' });
+        if (alive) reportClientError({ message: `merge preview failed: ${describeFailure(e)}`, section: 'account.merge' });
       }
     })();
     return () => { alive = false; };
