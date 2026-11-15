@@ -31,6 +31,10 @@
 
 ## Следующее
 
+- ⬜ **Волна А мутаций красная на храповике: статику судят тесты с `require` внутри `it`** — с #1278 `foreignKeyApp` в `src/booking/client-key-rekey.service.spec.ts` (через `loadWithKeys`) грузит модули внутри теста, perTest-покрытие приписывает код уровня модуля этим тестам, `ignoreStatic` их не отбрасывает: ~215 статических мутантов гоняются, 100 выживают, `merge.service.ts` 93.1 → 52.94 (локальный полный `npm run mutation:golden-auth` 2026-11-15, 56 мин; подробности — `docs/open/ci-tests.md`, «гибридные»). Починить загрузку в спеке или фильтр `scripts/stryker/covering-test-files.cjs`, затем ночной прогон зелёный.
+
+- ⬜ **`src/auth/session-proof.ts` вне `mutate` golden-auth** — отзыв остальных сессий при включении 2FA Stryker не мерит: файл записан долгом волны в `scripts/mutation-zone-baseline.json` (reason «долг волны, а не решение»), держат его только `auth-2fa.controller.spec.ts` и `step-up.spec.ts`. Включить в `mutate` `stryker.golden-auth.config.json` с полом по прогону и убрать запись из бейслайна зоны.
+
 - ⬜ **Фон до CSS в `webapp/public/theme.js` — `#f5f2eb` вместо `--bg` `#f6f2eb`** — `public/` гейт `check-color-drift` не сканирует (слепая зона), литерал светлого фона разошёлся с `webapp/src/index.css:83` и `index.html`; `webapp/src/themeScript.test.ts` проверяет только тёмный `#14141a`. Свести к значению `--bg` и сверить тестом (как `pwaManifest.test.ts`).
 
 - ⬜ **Вход на сайт через MAX без кода 2FA** — билет MAX (#1179) подтверждают сессией мини-приложения, в `src/auth/login-ticket/` проверки TOTP нет (`grep -i totp`), а `SCOPE_TEXT` (`webapp/src/pages/account/TwoFactorScopeNote.tsx`) MAX на сайте не называет: решить — спрашивать код или сказать об этом в тексте. Тексты сайта (герой, политика, подсказка) уже называют MAX, кнопка появится с ником бота.
@@ -116,6 +120,7 @@
 
 ## Сделано
 
+- ✅ **Волна А мутаций: TOTP в `mutate`, выжившие `merge-combine` закрыты тестами** (PR #1297) — `totp.service.ts`, `totp-code.ts`, `totp-attempts.ts`, `totp-recovery.ts` в `mutate` golden-auth с полами 93.13/93.33/94.87/97.56 (было 77.86/86.67/76.92/80.49 вне зоны); новые `totp-code.spec.ts`, `totp-recovery.spec.ts`, фейк Prisma в `totp.service.spec.ts` отдаёт только `select`; `merge-combine.ts` 78.08 → 86.79, `merge-combine-rules.ts` 93.75 → 96.88 (нечитаемые и непарные записи по всем таблицам, сбой таблицы в `countCombinable`); `session-proof.ts` — в `mutation-zone-baseline.json`.
 - ✅ **Раскрывашки со своим `useState` мимо `Disclosure`** (PR #1294) — `NeedExamples`, «Выполнено» (`TaskListGroups`) и строки `PortraitNeedRows` на общей `shared/src/components/Disclosure.tsx`; у неё добавлены `keepMounted` (тело под `hidden`) и `chev` (свой глиф места); тесты `Disclosure.test.tsx`, `NeedExamples.test.tsx`, `PortraitNeedRows.test.tsx`.
 - ✅ **Хвост CSS-долга: `.dot` и список листов `.ex-screen` в e2e** (PR #1295) — мёртвое правило `.dot` убрано из `webapp/src/index.css`, `dot` в LEGACY `webapp/src/styles/legacyClasses.test.ts`; комментарий `e2e-browser/sheet-scroll.spec.ts` числит за `.ex-screen` только `ModeDoubtSheet`.
 - ✅ **Комментарий `CheckPlate` ведёт к принципу 9 `APP_2026-11.md`** (PR #1295) — `webapp/src/components/art/PaperArtSigns.tsx` ссылался на несуществующий принцип 9 `PAPER_2026-11.md`.
