@@ -6,7 +6,7 @@ import { YsqTestCard } from './YsqTestCard';
 import { MySchemasBlock } from './MySchemasBlock';
 import { MySchemasList } from './MySchemasList';
 import { SchemaMap } from './SchemaMap';
-import { SchemaMapFold } from './SchemaMapFold';
+import { Disclosure, DS_FOLD } from '../../../../shared/src/components/Disclosure';
 import { countSchemas, schemasWord } from './schemasModel';
 import type { ReactNode } from 'react';
 import type { YsqEntryLook } from './patternsHero';
@@ -61,9 +61,9 @@ export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest,
       {top.expressed && expressed}
       {note}
       <MySchemasList ids={allSchemaIds} {...mine} />
-      <SchemaMapFold label={`Все ${total} ${schemasWord(total)}`}>
+      <Disclosure classes={DS_FOLD} className="cs-allfold" title={`Все ${total} ${schemasWord(total)}`}>
         <SchemaMap mineIds={allSchemaIds} onOpenSchema={onOpenDetail} />
-      </SchemaMapFold>
+      </Disclosure>
     </>
   );
 }

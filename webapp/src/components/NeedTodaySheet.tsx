@@ -7,7 +7,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { NeedScale } from './NeedScale';
 import { NEED_HUE, hueStyle } from '../lib/tone';
-import { NeedFold } from './NeedFold';
+import { Disclosure, DS_FOLD } from '../../../shared/src/components/Disclosure';
 import { NeedTodayActions } from './NeedTodayActions';
 import { needDataStyle } from './needDataColor';
 import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
@@ -29,7 +29,7 @@ interface Props {
   onOpenHelp?: () => void;
 }
 
-// Лист «Подробнее о потребности» (редизайн 2026-11, APP_2026-11.md, b07): та же шапка, что у вопроса
+// Лист «Подробнее о потребности» (редизайн 2026-11, docs/archive/APP_2026-11.md, b07): та же шапка, что у вопроса
 // трекера, — лист бумаги потребности с её знаком (ExScreen look = needLook), на компьютере
 // разворотом слева. Сразу под шапкой — «Сегодня» со шкалой, ниже складки и при низкой оценке
 // плитки «Что с этим сделать?». «Хороший день» — бумага потребности, а не розовая плашка.
@@ -84,21 +84,21 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
         </section>
 
         <div className="tk2-folds">
-          <NeedFold title="Как это выглядит в жизни">
+          <Disclosure classes={DS_FOLD} title="Как это выглядит в жизни">
             <ul className="tk2-list">
               {data.examples.map((ex, i) => <li key={i} className="tk2-li">{glue(ex)}</li>)}
             </ul>
-          </NeedFold>
+          </Disclosure>
 
           {data.reflection?.length > 0 && (
-            <NeedFold title="Вопросы для рефлексии">
+            <Disclosure classes={DS_FOLD} title="Вопросы для рефлексии">
               <ul className="tk2-list tk2-list--q">
                 {data.reflection.map((q, i) => <li key={i} className="tk2-li">{glue(q)}</li>)}
               </ul>
-            </NeedFold>
+            </Disclosure>
           )}
 
-          <NeedFold title="Как понять оценку">
+          <Disclosure classes={DS_FOLD} title="Как понять оценку">
             <div className="tk2-opts">
               {data.ranges.map((range, i) => {
                 const active = i === rangeIdx;
@@ -119,7 +119,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
                 );
               })}
             </div>
-          </NeedFold>
+          </Disclosure>
         </div>
 
         {value <= 3 && (

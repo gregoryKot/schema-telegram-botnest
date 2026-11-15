@@ -112,15 +112,15 @@ const BACKEND_ONLY: Record<string, string> = {
     'константа MODE_DOUBT_SWITCHED_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из ModeDoubtSheet.tsx (оба фронта) при нажатии «Это ближе»',
   account_link_started:
-    'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/share/analytics.ts), ' +
+    'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/analytics/accountLogin.ts), ' +
     'шлётся из useAccountLink.ts (мини-апп) при нажатии «У меня уже есть ' +
     'аккаунт»',
   account_link_confirmed:
-    'константа ACCOUNT_LINK_CONFIRMED_EVENT (shared/src/share/analytics.ts), ' +
+    'константа ACCOUNT_LINK_CONFIRMED_EVENT (shared/src/analytics/accountLogin.ts), ' +
     'шлётся из LinkDevicePage.tsx (сайт) — подтверждение происходит в ' +
     'браузере, а не в мессенджере, поэтому фронт тут только один',
   account_link_failed:
-    'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/share/analytics.ts), ' +
+    'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/analytics/accountLogin.ts), ' +
     'шлётся из useAccountLink.ts (мини-апп), когда код протух или сервер ' +
     'не ответил',
   client_error:
@@ -284,6 +284,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлётся через импортируемую константу PUSH_DENIED_EVENT ' +
     '(shared/src/share/analytics.ts), когда человек отказал в разрешении ' +
     'браузера на уведомления; та же причина, что у share_card',
+  login_method_offer:
+    'шлётся через импортируемую константу LOGIN_METHOD_OFFER_EVENT ' +
+    '(shared/src/analytics/accountLogin.ts) из SiteAccessCard.tsx; значение ' +
+    'сверяет трипваер констант входа в конце файла',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -373,7 +377,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 50 — login_oauth (2026-11, вход через VK ID и Яндекс ID): серверное —
     // вход завершает колбэк площадки, у фронта такого действия нет.
     // 51 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(51);
+    // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(52);
   });
 });
 
@@ -396,5 +401,23 @@ describe('трипваер: EntryDeleteType фронта = ENTRY_DELETE_TYPES б
 
   it('списки совпадают в обе стороны', () => {
     expect([...front].sort()).toEqual([...ENTRY_DELETE_TYPES].sort());
+  });
+});
+
+// Константы событий входа грепом по литералу не видны (BACKEND_ONLY), поэтому
+// их значения сверяются с allow-list напрямую: опечатка в константе падает здесь.
+describe('трипваер: константы событий входа фронта ⊆ ANALYTICS_EVENTS (правило №8)', () => {
+  const FRONT = 'shared/src/analytics/accountLogin.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const values = [
+    ...src.matchAll(/export const [A-Z0-9_]+_EVENT\s*=\s*['"]([^'"]+)['"]/g),
+  ].map((x) => x[1]);
+
+  it('константы найдены, среди них login_method_offer', () => {
+    expect(values).toContain('login_method_offer');
+  });
+
+  it.each(values)('"%s" есть в ANALYTICS_EVENTS', (name) => {
+    expect(ANALYTICS_EVENTS).toContain(name);
   });
 });

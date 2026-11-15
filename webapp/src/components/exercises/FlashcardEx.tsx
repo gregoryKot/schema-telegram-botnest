@@ -21,7 +21,7 @@ import { CardHeroLinks, CardAside } from './cardFlow/CardHeroParts';
 import { useCardFlow } from './cardFlow/useCardFlow';
 import { findSchema, findMode, SCHEMA_PICK_GROUPS } from './cardFlow/cardEntities';
 
-// Карточки схемы и режима (редизайн 2026-11, APP_2026-11.md, b17): выбор — лист-герой упражнения
+// Карточки схемы и режима (редизайн 2026-11, docs/archive/APP_2026-11.md, b17): выбор — лист-герой упражнения
 // (глина + Layers, небо + Cluster) и список по доменам или группам со знаком у подписи (PickGroups);
 // вопросы — лист-герой домена или группы разворотом, со второго вопроса компактнее; «готово» — CardDone.
 // Портрет режима показывается один раз на устройство — ключ в localStorage.

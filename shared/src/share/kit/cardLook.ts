@@ -1,6 +1,6 @@
 // Вид сущностей на карточках шаринга: оттенок бумаги и знак — строки ENTITY_LOOK
 // (shared/src/theme/entityLook.ts) литералами. Карточки рисуются в ленивых чанках листов
-// шаринга, а рантайм-импорт entityLook.ts перекраивает чанки (ловушка, docs/design/APP_2026-11.md):
+// шаринга, а рантайм-импорт entityLook.ts перекраивает чанки (ловушка, docs/archive/APP_2026-11.md):
 // таблица здесь, сверка «совпадает с ENTITY_LOOK» — cardLook.test.ts (правило №4).
 import type { SignKey } from '../../theme/signKeys';
 export const CARD_LOOK = {

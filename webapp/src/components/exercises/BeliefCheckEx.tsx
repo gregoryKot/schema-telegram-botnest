@@ -18,7 +18,7 @@ import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
-// «Проверка убеждения» (редизайн 2026-11, APP_2026-11.md, b17): лист-герой соломы со знаком Scales
+// «Проверка убеждения» (редизайн 2026-11, docs/archive/APP_2026-11.md, b17): лист-герой соломы со знаком Scales
 // разворотом — со второго шага знак живой: камешков на чашах столько, сколько доказательств «за» и
 // «против» (BeliefScales); шаги — полосками, как мастер дневника; подсказка шага — свёрнутой строкой
 // на телефоне. Поля и кризисная детекция — здесь (правило №7), части без полей — beliefCheck/*.

@@ -2,7 +2,7 @@
 // Знаки бумажной аппликации в карточке клиента (владелец 2026-11-07: «на скрине нет
 // ничего из картинок стиля»). Пустая вкладка показывает знак своей сущности рядом с
 // текстом, а не одинаковую чашку: YSQ — слои, записи клиента — камешки; пустой «Обзор» —
-// сцена SceneConceptStart (b30; docs/design/PAPER_2026-11.md, «Мотив → смысл»). Шапка карточки — без
+// сцена SceneConceptStart (b30; docs/design/PAPER_MOTIFS_2026-11.md, «Мотив → смысл»). Шапка карточки — без
 // картинки (PAPER, принцип 1): имя, мета и «Встреча» на месте, знака нет.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
