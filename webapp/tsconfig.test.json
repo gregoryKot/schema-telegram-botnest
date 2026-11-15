@@ -1,0 +1,11 @@
+{
+  // Типы тестов: tsconfig.app.json их исключает, vitest типы не проверяет. В references
+  // tsconfig.json не входит, чтобы `tsc -b` сборки и typed-линт не трогали тесты.
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "noEmit": true
+  },
+  "include": ["src"],
+  "exclude": []
+}

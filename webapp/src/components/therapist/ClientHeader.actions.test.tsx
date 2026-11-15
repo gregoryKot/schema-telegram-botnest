@@ -173,7 +173,7 @@ describe('меню «⋯» шапки', () => {
 // диалог не писал запись в историю. Теперь «Назад» закрывает только диалог.
 describe('подтверждение удаления и «Назад» браузера', () => {
   const nav: { go?: NavigateFunction; path?: string } = {};
-  function Harness({ deleteClient = vi.fn() }: { deleteClient?: () => void }) {
+  function Harness({ deleteClient = vi.fn() }: { deleteClient?: ClientDetail['deleteClient'] }) {
     const [confirming, setConfirming] = useState(true);
     nav.go = useNavigate();
     nav.path = useLocation().pathname;
@@ -182,7 +182,7 @@ describe('подтверждение удаления и «Назад» брау
         detail={detailOf({ confirmingDelete: confirming, cancelDeleteClient: () => setConfirming(false), deleteClient })} />
     );
   }
-  const renderAt = (deleteClient?: () => void) => render(
+  const renderAt = (deleteClient?: ClientDetail['deleteClient']) => render(
     <MemoryRouter initialEntries={['/cabinet', '/cabinet/-1']} initialIndex={1}><Harness deleteClient={deleteClient} /></MemoryRouter>,
   );
   const back = () => act(() => { void nav.go!(-1); });
