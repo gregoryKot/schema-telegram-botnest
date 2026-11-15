@@ -76,8 +76,9 @@ describe('journeyDayRows', () => {
 });
 
 describe('journeyDayIndex', () => {
-  it('среднее по отмеченным потребностям, округлённое до десятых', () => {
-    expect(journeyDayIndex({ attachment: 8, autonomy: 5 })).toBe('6.5');
+  it('среднее по отмеченным потребностям, до десятых, с десятичной запятой', () => {
+    expect(journeyDayIndex({ attachment: 8, autonomy: 5 })).toBe('6,5');
+    expect(journeyDayIndex({ attachment: 7 })).toBe('7,0');
   });
 
   it('без единой оценки — «—», не NaN и не 0', () => {
@@ -325,7 +326,7 @@ describe('buildJourneySharePayload — payload.draw делегирует в пр
       expect.objectContaining({
         eyebrow: 'Трекер потребностей',
         title: 'Мой день',
-        center: { value: '5.0', caption: 'индекс' },
+        center: { value: '5,0', caption: 'индекс' },
       }),
     );
     expect(drawJourneyResultCard).not.toHaveBeenCalled();

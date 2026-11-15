@@ -11,7 +11,10 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
-import { CONCEPT_FIELD_TEXT_MAX as TEXT_MAX } from '../../utils/text-limits';
+import {
+  CONCEPT_FIELD_TEXT_MAX as TEXT_MAX,
+  CONCEPT_SCHEMA_IDS_MAX,
+} from '../../utils/text-limits';
 
 // Сколько связей режимов и схем держит концептуализация — одно число на
 // полное тело, патч (concept-save.dto.ts, concept-save.ts) и дописывание
@@ -30,7 +33,7 @@ export const CONCEPT_SCHEMA_LINKS_MAX = 20;
 export class ConceptualizationDto {
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(40) // схем в форме Янга 18; потолок — ради худшего тела запроса
+  @ArrayMaxSize(CONCEPT_SCHEMA_IDS_MAX) // его же держит дописывание с холста
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   schemaIds?: string[];

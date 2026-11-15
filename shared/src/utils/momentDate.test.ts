@@ -10,6 +10,7 @@
 // только во второй CI-джобе.
 import { describe, it, expect, vi } from 'vitest';
 import {
+  fmtAgo,
   momentDayKey,
   momentIsToday,
   momentDayLabel,
@@ -23,11 +24,12 @@ import { forEachTimeZone, withTimeZone } from './timeZone.test-helpers';
 const LATE_UTC = '2026-09-18T23:30:00.000Z';
 const EARLY_UTC = '2026-09-19T00:30:00.000Z';
 
-/** Выполняет fn в каждой зоне с часами, замороженными на iso. */
-function frozenAt(iso: string, fn: (tz: string) => void): void {
+/** Выполняет fn в каждой зоне с часами, замороженными на at: ISO-момент или
+ *  местное время, собранное уже в зоне прогона (`() => new Date(y, m, d, h)`). */
+function frozenAt(at: string | (() => Date), fn: (tz: string) => void): void {
   forEachTimeZone((tz) => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(iso));
+    vi.setSystemTime(typeof at === 'string' ? new Date(at) : at());
     try {
       fn(tz);
     } finally {
@@ -168,6 +170,63 @@ describe('momentTime — время в зоне читателя', () => {
     forEachTimeZone((tz) => {
       expect(momentTime('2026-07-21'), tz).toBe('');
       expect(momentTime('мусор'), tz).toBe('');
+    });
+  });
+});
+
+// Давность — календарными днями читателя, а не сутками по 24 ч от «сейчас»: запись
+// вчера в 22:00, открытая в 08:00, была подписана «сегодня». Часы и момент — местное
+// время зоны прогона (aug), поэтому граница суток проверяется в каждой зоне.
+describe('fmtAgo — давность по календарю читателя', () => {
+  const aug = (day: number, hour: number, min = 0) =>
+    new Date(2026, 7, day, hour, min);
+  const ago = (d: Date) => fmtAgo(d.toISOString());
+  /** fn в каждой зоне с часами на aug(day, hour). */
+  const at = (day: number, hour: number, fn: (tz: string) => void) =>
+    frozenAt(() => aug(day, hour), fn);
+
+  it('вечер вчера → утро сегодня — «вчера», хотя прошло 10 ч', () => {
+    at(4, 8, (tz) => {
+      expect(ago(aug(3, 22)), tz).toBe('вчера');
+      // контроль: меньше суток — сутками по 24 ч это было «сегодня»
+      expect(Date.now() - aug(3, 22).getTime()).toBe(10 * 3600000);
+    });
+  });
+
+  it('тот же местный день — «сегодня», и момент чуть впереди часов тоже', () => {
+    at(3, 23, (tz) => {
+      expect(ago(aug(3, 0, 1)), tz).toBe('сегодня');
+      // часы устройства отстают от сервера на минуту: сутками было «-1 дн. назад»
+      expect(ago(aug(3, 23, 1)), tz).toBe('сегодня');
+    });
+  });
+
+  it('со второго дня — «N дн. назад», с седьмого — дата', () => {
+    at(5, 9, (tz) => {
+      // 33,5 ч назад, но позавчера: сутками было «вчера»
+      expect(ago(aug(3, 23, 30)), tz).toBe('2 дн. назад');
+    });
+    at(20, 12, (tz) => {
+      expect(ago(aug(14, 12)), tz).toBe('6 дн. назад');
+      expect(ago(aug(13, 12)), tz).toBe('13 авг');
+    });
+  });
+
+  // Пин на случай «починки» вывода на UTC: 23:00 UTC в Сиднее — уже следующий день.
+  it('давний момент у полуночи UTC — днём зоны читателя', () => {
+    const shown: Record<string, string> = {};
+    frozenAt('2026-08-20T12:00:00Z', (tz) => {
+      shown[tz] = fmtAgo('2026-08-03T23:00:00Z');
+    });
+    expect(shown['Australia/Sydney']).toBe('4 авг');
+    expect(shown['America/Los_Angeles']).toBe('3 авг');
+  });
+
+  it('календарный день — как есть, нечитаемая строка — пустая', () => {
+    at(4, 0, (tz) => {
+      expect(fmtAgo('2026-08-04'), tz).toBe('сегодня');
+      expect(fmtAgo('2026-08-03'), tz).toBe('вчера');
+      expect(fmtAgo('мусор'), tz).toBe('');
     });
   });
 });

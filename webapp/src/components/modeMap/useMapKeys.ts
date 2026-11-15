@@ -16,9 +16,9 @@ interface Args {
 /** Все фигуры карты — выделенными: ⌘A, «Выделить всё» в «⋯ Ещё» и в меню холста. */
 export const selectAllNodes = (ns: FlowNode[]): FlowNode[] => ns.map(n => ({ ...n, selected: true }));
 
-// Горячие клавиши редактора карты. Вынесено из ModeMapEditor.tsx (правило №10).
-// В полях ввода не срабатывают (⌘Z, ⌘A и Backspace там правят текст), под
-// открытым диалогом — тоже: клавиша не должна трогать карту за ним.
+// Горячие клавиши редактора карты. В полях ввода не срабатывают (⌘Z, ⌘A и Backspace
+// там правят текст), под открытым диалогом — тоже: клавиша не должна трогать карту за ним.
+// Escape открытого меню гасит само меню (Dropdown, defaultPrevented): выбор узла остаётся.
 export function useMapKeys({ nodes, edges, selectedNodeId, selectedEdgeId, setNodes, setEdges,
   setSelectedNodeId, setSelectedEdgeId, scheduleSave, pushHistory, undo, redo }: Args) {
   useEffect(() => {
@@ -55,7 +55,7 @@ export function useMapKeys({ nodes, edges, selectedNodeId, selectedEdgeId, setNo
         }
         return;
       }
-      if (e.key === 'Escape') { setSelectedNodeId(null); setSelectedEdgeId(null); return; }
+      if (e.key === 'Escape') { if (!e.defaultPrevented) { setSelectedNodeId(null); setSelectedEdgeId(null); } return; }
       if (e.key === 'Backspace' || e.key === 'Delete') {
         // Multi-select (Shift+box) → delete all selected; else single selection
         const selNodes = nodes.filter(n => n.selected).map(n => n.id);
