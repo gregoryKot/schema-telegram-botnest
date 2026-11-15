@@ -7,7 +7,7 @@ import { trackEvent } from '../analytics';
 import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
 import { buildGroundStrip } from '../ground';
-import { addGlow, HUD_STROKE } from '../look';
+import { addGlow } from '../look';
 import { pinBubble, pinLeftOfMenu } from '../hudLayout';
 
 // ════════════════════════════════════════════════════════════════════════════
