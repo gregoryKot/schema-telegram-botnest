@@ -1,8 +1,6 @@
 {
   "webapp/src/components/landing-kit-hooks.ts": 1,
-  "webapp/src/components/useModeMapExport.ts": 1,
   "webapp/src/pages/landing/constants.ts": 1,
   "webapp/src/pages/landing/ContentSections.tsx": 2,
-  "webapp/src/pages/LandingPage.tsx": 6,
-  "webapp/src/utils/theme.ts": 2
+  "webapp/src/pages/LandingPage.tsx": 6
 }

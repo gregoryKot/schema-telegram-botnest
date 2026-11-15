@@ -98,7 +98,7 @@
   "scripts/check-body-truncation.mjs": 110,
   "scripts/check-bundle-size-ratchet.mjs": 141,
   "scripts/check-capability-registry.mjs": 180,
-  "scripts/check-color-drift.mjs": 249,
+  "scripts/check-color-drift.mjs": 240,
   "scripts/check-coverage-ratchet.mjs": 144,
   "scripts/check-cron-leader-rules.mjs": 142,
   "scripts/check-cron-leader.mjs": 157,

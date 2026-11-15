@@ -66,13 +66,6 @@ export const EXCLUDE_FILES = [
   'shared/src/hooks/useConfetti.ts',
 ];
 
-// Парная запись `css: 'var(--…)', hex: '#…'` в shared/src/journey/journeyMeta.ts:
-// hex здесь — ПАРА к токену для canvas, источник истины рядом в той же
-// строке. Одинокий `hex:` без пары по-прежнему считается дрейфом.
-export const EXCLUDE_LINE_PATTERNS = [
-  /\bcss:\s*'var\(--[\w-]+\)',\s*hex:\s*'#[0-9a-fA-F]{3,8}'/,
-];
-
 const BRAND_COLOR_KEYS = new Set(
   ALLOW_BRAND_COLORS.map((h) => hexToRgbKey(h)),
 );
@@ -125,8 +118,6 @@ function scanFile(src) {
   stripComments(src, false)
     .split('\n')
     .forEach((line, i) => {
-      if (EXCLUDE_LINE_PATTERNS.some((re) => re.test(line))) return;
-
       HEX_RE.lastIndex = 0;
       let m;
       while ((m = HEX_RE.exec(line))) {
