@@ -1,10 +1,8 @@
-import { glue } from '../../../../../shared/src/utils/typo';
 import type { CSSProperties } from 'react';
 import { useTr } from '../../../utils/addressForm';
 import { NeedArt } from '../../art/NeedArt';
-import { SignArt } from '../../art/SignArt';
 import { inkVars } from '../../history/needInk';
-import { ENTITY_LOOK } from '../../../../../shared/src/theme/entityLook';
+import { ExNext } from '../ExNext';
 import { NEEDS } from './needs';
 
 /** Ниже этой оценки и выше этой — текст полюса шкалы, между — «Где-то между». */
@@ -36,34 +34,15 @@ export function ResultRows({ ratings }: { ratings: Record<string, number> }) {
 }
 
 /**
- * «Что дальше: связать с сегодня» — плитка соломы трекера со знаком Strokes: ведёт в «Историю» трекера, где
- * видно, какие потребности просели сегодня. Хост не дал перехода — тот же лист без стрелки, не кнопкой.
+ * «Что дальше: связать с сегодня» — плитка ExNext на соломе трекера со знаком Strokes: ведёт в «Историю» трекера,
+ * где видно, какие потребности просели сегодня. Хост не дал перехода — тот же лист без стрелки, не кнопкой.
  */
 export function NextToday({ onOpen }: { onOpen?: () => void }) {
   const tr = useTr();
-  const { hue, sign } = ENTITY_LOOK.tracker;
-  const body = (
-    <>
-      <span className="chw-next-body">
-        <span className="ds-label chw-next-label">Что дальше</span>
-        <span className="chw-next-title">{glue('Связать с сегодня')}</span>
-        <span className="chw-next-text">
-          {tr(
-            'Открой дневник за последнюю неделю и сравни – какие потребности сегодня просели больше всего. Часто это те же зоны.',
-            'Откройте дневник за последнюю неделю и сравните – какие потребности сегодня просели больше всего. Часто это те же зоны.',
-          )}
-        </span>
-      </span>
-      <span className="chw-next-foot" aria-hidden="true">
-        <SignArt sign={sign} size="square" />
-        {onOpen && <span className="pp-arrow">→</span>}
-      </span>
-    </>
-  );
-  const style = { '--h': hue } as CSSProperties;
-  return onOpen ? (
-    <button type="button" className="pp-paper chw-next chw-next--link" style={style} onClick={onOpen}>{body}</button>
-  ) : (
-    <div className="pp-paper chw-next" style={style}>{body}</div>
+  return (
+    <ExNext entity="tracker" className="chw-next" label="Что дальше" title="Связать с сегодня" onOpen={onOpen} text={tr(
+      'Открой дневник за последнюю неделю и сравни – какие потребности сегодня просели больше всего. Часто это те же зоны.',
+      'Откройте дневник за последнюю неделю и сравните – какие потребности сегодня просели больше всего. Часто это те же зоны.',
+    )} />
   );
 }
