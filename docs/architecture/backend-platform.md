@@ -58,7 +58,7 @@
   - `src/test-support/free-text-inputs.ts` — признак однострочного поля свободного текста для трипваера `crisis-path.invariants.spec.ts` (правило №7)
   - `src/test-support/crisis-field-files.ts` — выборка полей свободного текста фронтендов, регэксп детекции и дочерние контролы: общая для `crisis-path.invariants.spec.ts` (текст файла) и `crisis-card-behavior.invariants.spec.ts` (у каждого поля с детекцией есть строка харнесса `describeCrisisField`)
   - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает `src/infra/configure-app.ts`)
-  - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors и SameSite=None
+  - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors, SameSite=None и платформы запуска, по которым вход Telegram узнаёт iframe
   - `src/security/collect-source-files.ts` — единственный обход дерева исходников
 - Связи: спеки читают исходники всего `src/` (и `.tsx` фронтендов) и используют `src/test-support/route-method-auth.ts`; `src/security/helmet-config.ts` — прод-код; `src/security/embedders.ts` сверяется с куками `src/auth/auth-http.util.ts` через `src/security/csrf.invariants.spec.ts`.
 - Подводные камни:
