@@ -57,6 +57,18 @@ export async function replacePending(
 }
 
 /**
+ * Что проверить под локом, прежде чем поставить сообщение дня. Хвост волны 9:
+ * «такое уже стоит» спрашивали до лока — два обхода разом (ручной запуск
+ * вместе с полуночным) не видели друг друга и ставили по сообщению.
+ */
+export interface SwapGuard {
+  /** Такое уже стоит — второе не ставится, напоминание не трогается. */
+  unlessPending?: boolean;
+  /** Вопрос о плане этого дня — пока план не отмечен (missed-plan.ts). */
+  openPlanDay?: string;
+}
+
+/**
  * Снять напоминание и поставить вместо него сообщение дня — под тем же локом
  * и в той же транзакции, что замена напоминания. Хвост волны 8: двумя
  * запросами правка настроек на соседнем инстансе вставала между ними, и в дне
@@ -68,15 +80,20 @@ export async function swapReminder(
   type: ReminderStandIn,
   sendAt: Date,
   payload?: object,
+  guard: SwapGuard = {},
 ): Promise<void> {
   await underRescheduleLock(prisma, userId, async (tx) => {
+    if (guard.unlessPending && (await isPending(tx, userId, type))) return;
+    const day = guard.openPlanDay;
+    if (day !== undefined && !(await hasOpenPlan(tx, userId, day))) return;
     await cancelPending(tx, userId, 'reminder');
     await createPending(tx, userId, type, sendAt, payload);
   });
 }
 
-/** Одна транзакция под локом перепланировки человека — у обеих замен. */
-async function underRescheduleLock(
+/** Одна транзакция под локом перепланировки человека — у замен и у отметки
+ *  плана (missed-plan.ts). */
+export async function underRescheduleLock(
   prisma: Db,
   userId: bigint,
   job: (tx: Tx) => Promise<void>,
@@ -85,6 +102,21 @@ async function underRescheduleLock(
     await lockReschedule(tx, userId);
     await job(tx);
   });
+}
+
+async function isPending(tx: Tx, userId: bigint, type: NotificationType) {
+  const n = await tx.scheduledNotification.count({
+    where: { userId, type, sentAt: null, cancelledAt: null },
+  });
+  return n > 0;
+}
+
+/** Есть неотмеченный план на день `day` (YYYY-MM-DD, местный день человека). */
+export async function hasOpenPlan(tx: Tx, userId: bigint, day: string) {
+  const n = await tx.practicePlan.count({
+    where: { userId, scheduledDate: day, done: null },
+  });
+  return n > 0;
 }
 
 async function cancelPending(tx: Tx, userId: bigint, type: NotificationType) {
