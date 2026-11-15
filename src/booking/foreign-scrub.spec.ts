@@ -207,8 +207,14 @@ describe('ForeignScrubCommand: разовая чистка iCloud и Zoom', () =
     await handler(ctx(2));
     expect(replies).toEqual(['⛔ Нет доступа']);
     expect(calls).toEqual([]);
-    await handler(ctx(1)); // контроль: владелец запускает
+    // Контроль: владелец, сухой прогон с ожиданием итога — боевой не уходит в фон.
+    const owner = ctx(1);
+    owner.message.text = '/scrub_foreign';
+    await handler(owner);
+    for (let i = 0; i < 20 && replies.length < 3; i++)
+      await new Promise((r) => setTimeout(r, 0));
     expect(replies[1]).toContain('Запущено');
+    expect(replies[2]).toContain('будет перезаписано');
     if (prev === undefined) delete process.env.ADMIN_ID;
     else process.env.ADMIN_ID = prev;
   });
