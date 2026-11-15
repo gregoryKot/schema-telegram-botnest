@@ -9,7 +9,8 @@
 // В `webapp/src/**`, `shared/src/**` (без тестов) каждый `setTimeout`, чей колбэк
 // меняет состояние (сеттер, колбэк-проп, dispatch), держит id в переменной или ref
 // и снимает его `clearTimeout` в очистке — разбор в timer-cleanup-rules.mjs. Иначе —
-// запись `"<файл>::<что меняет>": "причина"` в scripts/timer-cleanup-baseline.json.
+// запись `"<файл>::<что меняет>": "причина"` в scripts/timer-cleanup-baseline.json,
+// одна на таймер: второй с тем же «что меняет» в файле — `<файл>::<что меняет>#2`.
 // Протухшая запись — тоже красное. Без --update: это решение, не счётчик.
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
@@ -37,14 +38,13 @@ function main() {
     const raw = readFileSync(join(ROOT, rel), 'utf8');
     if (!raw.includes('setTimeout')) continue;
     for (const { line, change } of uncleanedTimers(raw)) {
-      const key = `${rel}::${change}`;
-      flagged.set(key, [...(flagged.get(key) ?? []), line]);
+      let key = `${rel}::${change}`;
+      for (let n = 2; flagged.has(key); n++) key = `${rel}::${change}#${n}`;
+      flagged.set(key, line);
     }
   }
-  const problems = [];
-  for (const [key, lines] of flagged) {
-    if (!(key in baseline)) problems.push(`${key} (L${lines.join(', L')}): таймер меняет состояние, своей очистки нет`);
-  }
+  const problems = [...flagged].filter(([key]) => !(key in baseline))
+    .map(([key, line]) => `${key} (L${line}): таймер меняет состояние, своей очистки нет`);
   for (const [key, reason] of Object.entries(baseline)) {
     if (!flagged.has(key)) problems.push(`бейслайн ${key}: таймера без очистки больше нет — запись протухла`);
     else if (String(reason).trim().length < 20) problems.push(`бейслайн ${key}: причина короче 20 символов`);
@@ -56,7 +56,7 @@ function main() {
       '\nТаймер, переживший компонент, срабатывает после сноса jsdom и роняет весь vitest\n' +
         '(«window is not defined»). Тост — useTimedFlag (shared/src/hooks/useTimedFlag.ts);\n' +
         'иначе id таймера в ref или переменной и clearTimeout этого id в очистке эффекта.\n' +
-        'Осознанное исключение — "<файл>::<что меняет>" в scripts/timer-cleanup-baseline.json с причиной.',
+        'Осознанное исключение — ключ из списка выше в scripts/timer-cleanup-baseline.json с причиной.',
     );
     process.exit(1);
   }

@@ -211,4 +211,17 @@ describe('check-timer-cleanup.mjs', () => {
       'webapp/src/Toast.tsx::setHint',
     ]);
   });
+
+  it('запись гасит один таймер: второй с тем же сеттером в файле — красный, ключ «…#2»', () => {
+    const reason = 'стор сторонней библиотеки, не setState';
+    const key = 'webapp/src/Toast.tsx::setShown';
+    const twice = {
+      'webapp/src/Toast.tsx': `${TOAST}\nsetTimeout(() => setShown(true), 10);`,
+    };
+    const second = run(twice, { [key]: reason });
+    expect(second.status).toBe(1);
+    expect(second.stderr).toContain(`${key}#2 (L6)`);
+    expect(keysIn(second.stderr)).toEqual([`${key}#2`]);
+    expect(run(twice, { [key]: reason, [`${key}#2`]: reason }).status).toBe(0);
+  });
 });
