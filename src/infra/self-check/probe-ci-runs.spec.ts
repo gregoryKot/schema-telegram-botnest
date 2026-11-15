@@ -35,15 +35,15 @@ describe('ciRunsProbe', () => {
     expect(ciRunsProbe().reportInHealth).toBe(false);
   });
 
-  it('оба воркфлоу зелёные (реальный ответ GitHub) — ok, без сети сверх двух вызовов', async () => {
+  it('воркфлоу зелёные (реальный ответ GitHub) — ok, без сети сверх трёх вызовов', async () => {
     const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
     const fetchMock = jest.fn().mockResolvedValue(jsonResponse(fixture));
     global.fetch = fetchMock as never;
 
     const res = await ciRunsProbe().run();
 
-    expect(res).toEqual({ ok: true, detail: 'оба воркфлоу зелёные на GitHub' });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(res).toEqual({ ok: true, detail: 'воркфлоу зелёные на GitHub' });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     const urls = fetchMock.mock.calls.map((c) => c[0] as string);
     expect(urls[0]).toContain('/workflows/nightly.yml/runs');
     expect(urls[1]).toContain('/workflows/prod-smoke.yml/runs');
@@ -103,6 +103,26 @@ describe('ciRunsProbe', () => {
       expect(stale.detail).toContain('ночная проверка не запускалась 41 ч');
 
       respondByWorkflow({ smoke: 1, nightly: 39 });
+      expect((await ciRunsProbe().run()).ok).toBe(true);
+    });
+
+    it('mutation-bot.yml старше 8 суток — не ok; 8 суток ровно — ok', async () => {
+      const fixture = JSON.parse(loadRecordedFixture(FIXTURE));
+      const at = (ageH: number) => {
+        global.fetch = jest.fn().mockImplementation(async (url: string) => {
+          const run = {
+            ...fixture.workflow_runs[0],
+            updated_at: new Date(FIXTURE_RUN_AT).toISOString(),
+          };
+          setNow((url.includes('mutation-bot.yml') ? ageH : 1) * HOUR);
+          return jsonResponse({ workflow_runs: [run] });
+        }) as never;
+      };
+      at(193);
+      const stale = await ciRunsProbe().run();
+      expect(stale.ok).toBe(false);
+      expect(stale.detail).toContain('мутационный прогон не запускался 193 ч');
+      at(192);
       expect((await ciRunsProbe().run()).ok).toBe(true);
     });
 

@@ -107,6 +107,7 @@
   - `src/booking/rule-slot-match.ts` (`ruleOffersSlot`) — бронь принимается только ровно слотом сетки правила (длина = `sessionDuration`, старт на `expandRuleForDay`); зовёт `booking.availability.ts`
   - `src/booking/client-booking.controller.ts` + `client-booking.service.ts` — запись клиента владельца практики из приложения (#546): под `TelegramAuthGuard`, свой префикс `/api/client-booking` (на визитке не открывается), та же цепочка `BookingService.book` с `account` (пишет `Booking.userId` и `clientTelegramId` из подписи); имя и контакт — `client-booking.identity.ts`; владелец практики — `src/utils/practice-owner.ts` (`ADMIN_ID` с учётом слияния)
   - `src/booking/caldav-owner-event.ts` — что уходит в iCloud владельца: только UID брони, время и тип записи; Zoom — `ZOOM_TOPIC` в `src/booking/meeting.service.ts`
+  - `src/booking/retry-cache.ts` — кэш промиса без запоминания пустого результата: сбой обнаружения календаря CalDAV повторяется на следующем вызове
 - Связи: Prisma (Booking, AvailabilityRule, SlotOverride, BookingSetting, ClientMeeting, IntroLead); `src/booking/booking.registry.ts` собирает BookingModule вместе с `src/donation/` и `src/subscription/`; `src/booking/intro-lead.module.ts` — отдельный модуль (контроллер в `src/api/booking.controller.ts`); `src/booking/admin-key.util.ts` используют admin-контроллеры `src/articles/` и `src/site-content/`.
 - Подводные камни:
   - Публичные ручки без JWT: доступ к брони — capability-токен (`by-token`, `ics`, `cancel/:token`); админка `/api/booking/admin/*` — заголовок `x-admin-key` = `ADMIN_BOOKING_KEY` (≥32 символов). Страница управления записью `/booking/manage?token=` есть только на визитке — ссылку на неё строит сервер от `SITE_URL`.
@@ -123,6 +124,7 @@
   - `src/infra/env-check.ts` — проверка env при старте + кросс-проверки `env-check.*.ts`
   - `src/infra/capability-report.ts` — реестр «фича молча выключена без env»
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
+  - `src/infra/self-check/ci-workflows.ts` — какие воркфлоу GitHub смотрит проба `ciRuns` и с каким порогом возраста (nightly, смок, недельный `mutation-bot.yml`)
   - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live|delivery.ts`)
   - `src/infra/postbox-mail.ts` — единственный транспорт писем: Yandex Cloud Postbox (API как у AWS SES v2, подпись SigV4 из `s3-sigv4.ts`); `sendPostboxEmail`, `postboxCredentials`, `emailFrom` (имя не-ASCII — словом RFC 2047, `email-from-name.ts`), разбор отказа `parsePostboxError`. Зовут `src/auth/email.service.ts` и `src/utils/admin-alert.ts`; пробы — `self-check/probe-postbox.ts` (ключ принят площадкой) и `self-check/probe-email.ts` (последнее реальное письмо, снимок `src/utils/alert-email-health.ts`); env — `env-registry.entries.postbox.ts`, кросс-проверки — `env-check.email.ts`
 - Остальные сервисы (по строке на группу):
