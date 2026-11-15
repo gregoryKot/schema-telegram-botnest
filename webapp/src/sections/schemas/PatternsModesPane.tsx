@@ -4,7 +4,7 @@ import type { usePatternLayer } from './usePatternLayer';
 import { ModesBlocks } from './ModesBlocks';
 import { MyModesList } from './MyModesList';
 import { ModeMap } from './ModeMap';
-import { SchemaMapFold } from './SchemaMapFold';
+import { Disclosure, DS_FOLD } from '../../../../shared/src/components/Disclosure';
 
 interface Props {
   mobile: boolean;
@@ -37,9 +37,9 @@ export function PatternsModesPane({ mobile, d, pat, onAdd, banner, note }: Props
       {note}
       <MyModesList loading={d.loading} ids={d.myModeIds} onAdd={onAdd} onOpenMode={openMine} statusFor={statusFor} freq={freq} />
       {banner}
-      <SchemaMapFold label="Все режимы">
+      <Disclosure classes={DS_FOLD} className="cs-allfold" title="Все режимы">
         <ModeMap myModeIds={d.myModeIds} onOpenMode={pat.openModeEx} hideTitle />
-      </SchemaMapFold>
+      </Disclosure>
     </>
   );
 }
