@@ -4,8 +4,8 @@
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/Dialog.tsx": {
-    "reason": "Оболочка диалога: запись истории — забота потребителя (useHistorySheet и goBack как onClose). Так делают AchievementDetail, AddressFormPicker, DeleteAccountDialog и подтверждения через HistoryConfirmDialog; AchievementsDialog и CelebrationDialog закрываются только своими кнопками и Escape, «Назад» браузера закрывает лист под ними. Потребителей рамки гейт не видит — слепая зона записана в docs/open/one-frontend.md, «Гейт оверлеев webapp».",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+    "reason": "Оболочка диалога (бэкдроп sk-dialog-backdrop): запись истории — забота потребителя (useHistorySheet и goBack как onClose), хук в оболочке дал бы вторую запись на одно окно. Потребителя гейт видит по тегу <Dialog (FRAME_TAGS в history-sheet-detect.mjs): без хука он стоит в бейслайне сам, с причиной.",
+    "since": "p23-overlay-gates, 2026-11"
   },
   "webapp/src/components/ModeMapContextMenu.tsx": {
     "reason": "Невидимая подложка под контекстным меню карты режимов (поповер у курсора): ловит клик снаружи, закрывает меню. Это не лист, «Назад» с поповером не связана.",
@@ -94,5 +94,72 @@
   "webapp/src/components/caseFlow/CaseStepScreen.tsx": {
     "reason": "Рамка шага сценария «Что случилось» на ExScreen (лист шалфея, разворот, «Что собрали»): useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги и развилка черновика получают «Назад» пропом; хук в рамке дал бы запись истории на каждый шаг.",
     "since": "b09-case, редизайн 2026-11"
+  },
+  "webapp/src/components/ConfirmDialog.tsx": {
+    "reason": "Рамка подтверждения на Dialog: запись истории — у потребителя. HistoryConfirmDialog вызывает useHistorySheet и пускает «Отмена», Escape и фон через goBack; прямой <ConfirmDialog гейт видит по тегу (FRAME_TAGS в history-sheet-detect.mjs) — потребитель без хука стоит в бейслайне сам, с причиной.",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/ConsentScreen.tsx": {
+    "reason": "Согласия при первом входе из Telegram и MAX (Dialog в двух ветках — приветствие и согласия): закрыть без согласия нельзя, onClose нет, поэтому нет и записи истории — «Назад» браузера не должен обходить согласия.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "ConsentScreen": 2
+    }
+  },
+  "webapp/src/components/JoinConfirmSheet.tsx": {
+    "reason": "Долг: окно согласия на присоединение по ссылке-приглашению (Dialog в двух ветках — согласие и «присоединились») закрывается фоном, Escape и «Не сейчас» (отказ без сетевого вызова), но записи истории у него нет — «Назад» браузера окно не закрывает. Хук — строка в docs/BACKLOG.md.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "JoinConfirmSheet": 2
+    }
+  },
+  "webapp/src/components/settingsSheet/TherapistSections.tsx": {
+    "reason": "Подтверждение «Отключиться от терапевта?» (ConfirmDialog) поверх листа настроек: у SettingsSheet своя запись истории, окно закрывается «Отмена», фоном и Escape, а «Назад» браузера закрывает лист вместе с ним — исключение для подтверждений поверх листа (.claude/rules/frontend.md).",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/settingsSheet/YsqDataDeleteButton.tsx": {
+    "reason": "Подтверждение «Удалить все результаты теста?» (ConfirmDialog) поверх окна «Данные и конфиденциальность» (InfoModal со своей записью истории) в листе настроек: закрывается «Отмена», фоном и Escape, «Назад» браузера закрывает окно вместе с ним — исключение для подтверждений поверх листа (.claude/rules/frontend.md).",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/pages/account/AccountFooter.tsx": {
+    "reason": "Долг: подтверждение «Выйти со всех устройств?» (ConfirmDialog) поверх страницы /account без записи истории — «Назад» браузера уводит со страницы, а не закрывает окно (тот же класс, что «Удалить клиента?» до HistoryConfirmDialog). Перевод на HistoryConfirmDialog — строка в docs/BACKLOG.md.",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/pages/admin/ArticlesSection.tsx": {
+    "reason": "Долг: подтверждение «Удалить статью?» (ConfirmDialog) поверх страницы админки без записи истории — «Назад» браузера уводит со страницы, а не закрывает окно. Перевод на HistoryConfirmDialog — строка в docs/BACKLOG.md.",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/pages/admin/HealthyAdultSection.tsx": {
+    "reason": "Долг: подтверждение «Удалить фразу?» (ConfirmDialog в строке PhraseRow) поверх страницы админки без записи истории — «Назад» браузера уводит со страницы, а не закрывает окно. Перевод на HistoryConfirmDialog — строка в docs/BACKLOG.md.",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/TrackerOverlay.tsx": {
+    "reason": "Две ветки одного листа трекера на классе tk2-overlay — силуэт загрузки и вопрос; useHistorySheet вызван один раз на лист, экран «Готово» (CompletionScreen) живёт на той же записи.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "TrackerOverlay": 2
+    }
+  },
+  "webapp/src/components/exercises/FlashcardEx.tsx": {
+    "reason": "Карточки схемы и режима: по две ветки одного экрана на рамке ExScreen (выбор схемы или режима и вопросы карточки), useHistorySheet вызван один раз на упражнение.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "SchemaEx": 2,
+      "ModeEx": 2
+    }
+  },
+  "webapp/src/components/therapist/ConceptFullscreenSheet.tsx": {
+    "reason": "Две ветки одного листа концептуализации: с панелью — слой cfs-layer со шторкой и затемнением, без панели — fixed на весь экран; useHistorySheet вызван один раз на лист.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "ConceptFullscreenSheet": 2
+    }
+  },
+  "webapp/src/components/WeeklyCardSheet.tsx": {
+    "reason": "Долг: запасная шторка «Поделиться текстом» (BottomSheetShell поверх листа недельной карточки на ExScreen, когда картинкой поделиться не вышло) закрывается локальным setFallbackText(null) без своей записи истории — «Назад» браузера закрывает весь лист. Хук под-листа — строка в docs/BACKLOG.md.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "WeeklyCardSheet": 2
+    }
   }
 }
