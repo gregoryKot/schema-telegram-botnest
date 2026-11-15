@@ -4,8 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { MobileNavSkeleton, SectionSkeleton } from './ShellSkeletons';
-import { QUICK_LOOK } from './practice/quickLook';
-import { PRACTICE_LOOK } from '../sections/practice/practiceLook';
+import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 
 const shape = (pathname: string, therapistMode = false) =>
   render(<SectionSkeleton pathname={pathname} therapistMode={therapistMode} />).container.firstElementChild!;
@@ -33,8 +32,8 @@ describe('SectionSkeleton', () => {
   it('«Практики»: герой дыхания на бумаге дыхания, квадраты по порядку раздела, бенто без оттенка', () => {
     const el = shape('/practice');
     const hue = (n: Element | null) => (n as HTMLElement | null)?.style.getPropertyValue('--h');
-    expect(hue(el.querySelector('.cpk-hero'))).toBe(String(QUICK_LOOK.breathing.hue));
-    const squares = [PRACTICE_LOOK.grounding, PRACTICE_LOOK.stop, PRACTICE_LOOK.sos].map((l) => String(l.hue));
+    expect(hue(el.querySelector('.cpk-hero'))).toBe(String(ENTITY_LOOK.breathing.hue));
+    const squares = [ENTITY_LOOK.grounding, ENTITY_LOOK.stop, ENTITY_LOOK.sos].map((l) => String(l.hue));
     expect(Array.from(el.querySelectorAll('.cpk-squares > .pp-square'), hue)).toEqual(squares);
     const tiles = el.querySelectorAll('.cpk-lib > .cpk-ex');
     expect(tiles.length).toBeGreaterThan(0);

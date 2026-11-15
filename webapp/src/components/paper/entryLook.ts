@@ -2,9 +2,8 @@
 // пара и исходы — строки ENTITY_LOOK и OUTCOME_LOOK; здесь — шаги согласий, «ты/вы», «Поддержать проект».
 // Три шага — три бумаги: приветствие на персике, данные и конфиденциальность — небо и рамка Limits (знак
 // «Доверия» лендинга), «не замена терапии» — шалфей и Check. Соседи — дальше 40°.
-import type { EntityId, PaperHue, SheetLook } from '../../../../shared/src/theme/entityLook';
+import { OUTCOME_LOOK, type EntityId, type PaperHue, type SheetLook } from '../../../../shared/src/theme/entityLook';
 import type { InvitePreview } from '../../../../shared/src/therapy/useInvitePreview';
-import { OUTCOME_LOOK_LIT } from './outcomeLook';
 
 export type ConsentStep = 'welcome' | 'privacy' | 'not_therapy';
 
@@ -26,9 +25,9 @@ export const ADDRESS_FORM_HUE: Record<'ty' | 'vy', PaperHue> = { ty: 135, vy: 24
 /** «Поддержать проект» — солома: просьба о самом продукте (знак продукта), не сущность кабинета. */
 export const DONATE_HUE: PaperHue = 70;
 
-/** Исходы «готово» и «устарело» — OUTCOME_LOOK (done, wait) из литеральной таблицы (outcomeLook.ts). */
-export const JOIN_DONE_LOOK: SheetLook = OUTCOME_LOOK_LIT.done;
-export const JOIN_STALE_LOOK: SheetLook = OUTCOME_LOOK_LIT.wait;
+/** Исходы «готово» и «устарело» — OUTCOME_LOOK (done, wait). */
+export const JOIN_DONE_LOOK: SheetLook = OUTCOME_LOOK.done;
+export const JOIN_STALE_LOOK: SheetLook = OUTCOME_LOOK.wait;
 
 /** Слово не встаёт в строку рядом со знаком на телефоне («Присоединиться» 212px при колонке 190–210 на 370–390):
  *  знак — строкой над заголовком (`ef-long`, entry-flows.css), а не перенос по слогам — тот рвал и влезающие. */

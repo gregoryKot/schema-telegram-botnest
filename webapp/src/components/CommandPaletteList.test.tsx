@@ -1,19 +1,19 @@
 // @vitest-environment jsdom
-// Список ⌘K со знаками (b04): знак быстрого действия — знак его сущности (литералы — сверка с таблицей
-// вида здесь, правило №4), подпись группы — один раз над первой строкой группы, клиент — кружок с
-// инициалами, пусто — чашка, а при «Показе экрана» — одна строка почему, без второй «Ничего не найдено».
+// Список ⌘K со знаками (b04): знак быстрого действия — знак его сущности по таблице вида, подпись
+// группы — один раз над первой строкой группы, клиент — кружок с инициалами, пусто — чашка, а при
+// «Показе экрана» — одна строка почему, без второй «Ничего не найдено».
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ENTITY_LOOK, QUICK_ACTION_ENTITY } from '../../../shared/src/theme/entityLook';
 import { QUICK_ACTION_IDS } from '../../../shared/src/quickActions/quickActions';
 import { CmdList, type CmdRow } from './CommandPaletteList';
-import { QUICK_ACTION_SIGN } from './quickActionSign';
+import { quickActionSign } from './quickActionSign';
 
 const row = (over: Partial<CmdRow>): CmdRow => ({ label: 'Строка', mark: { sign: 'cup' }, search: '', action: vi.fn(), ...over });
 
-describe('QUICK_ACTION_SIGN', () => {
+describe('quickActionSign', () => {
   it.each([...QUICK_ACTION_IDS])('%s — знак сущности действия', (id) => {
-    expect(QUICK_ACTION_SIGN[id]).toBe(ENTITY_LOOK[QUICK_ACTION_ENTITY[id]].sign);
+    expect(quickActionSign(id)).toBe(ENTITY_LOOK[QUICK_ACTION_ENTITY[id]].sign);
   });
 });
 

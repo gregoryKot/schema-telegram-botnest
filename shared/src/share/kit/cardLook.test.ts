@@ -1,45 +1,29 @@
-// Вид сущностей на карточках шаринга = ENTITY_LOOK (правило №4): литералы рядом с китом
-// (обход ловушки чанков) не расходятся с таблицей вида; каждый знак карточки есть в canvas.
+// Вид сущностей на карточках шаринга — строки ENTITY_LOOK и ACHIEVEMENT_LOOK; каждый знак карточки
+// есть в canvas, у значков достижений — число фигур мотива.
 import { describe, it, expect } from 'vitest';
-import {
-  ACHIEVEMENT_CARD_LOOK,
-  CARD_LOOK,
-  INVITE_LOOK,
-  achievementCardLook,
-} from './cardLook';
+import { CARD_LOOK, INVITE_LOOK, achievementCardLook } from './cardLook';
 import { ACHIEVEMENT_LOOK, ENTITY_LOOK } from '../../theme/entityLook';
 import { canvasSign, lookDrawing } from './signs';
 import { countedDrawing } from './countedSigns';
 
+const ACHIEVEMENTS = Object.keys(ACHIEVEMENT_LOOK);
+
 describe('CARD_LOOK', () => {
   it.each(Object.entries(CARD_LOOK))(
-    '%s — оттенок и знак из ENTITY_LOOK',
+    '%s — оттенок и знак из ENTITY_LOOK, знак есть на canvas',
     (id, look) => {
-      const entity = ENTITY_LOOK[id as keyof typeof ENTITY_LOOK];
-      expect(entity).toBeDefined();
-      expect({ hue: look.hue, sign: look.sign }).toEqual({
-        hue: entity.hue,
-        sign: entity.sign,
-      });
+      expect(look).toBe(ENTITY_LOOK[id as keyof typeof ENTITY_LOOK]);
       expect(canvasSign(look.sign)).toBe(look.sign);
     },
   );
 });
 
-describe('ACHIEVEMENT_CARD_LOOK', () => {
-  it('оттенок и знак = ACHIEVEMENT_LOOK значка (правило №4)', () => {
-    const hueSign = Object.fromEntries(
-      Object.entries(ACHIEVEMENT_CARD_LOOK).map(([id, l]) => [
-        id,
-        { hue: l.hue, sign: l.sign },
-      ]),
-    );
-    expect(hueSign).toEqual(ACHIEVEMENT_LOOK);
-  });
-
-  it.each(Object.entries(ACHIEVEMENT_CARD_LOOK))(
-    'у достижения %s есть рисунок на canvas (с вариантом по счёту)',
-    (_id, look) => {
+describe('achievementCardLook', () => {
+  it.each(ACHIEVEMENTS)(
+    '%s — оттенок и знак значка из ACHIEVEMENT_LOOK, рисунок на canvas (с вариантом по счёту)',
+    (id) => {
+      const look = achievementCardLook(id)!;
+      expect(look).toMatchObject(ACHIEVEMENT_LOOK[id]);
       expect(lookDrawing(look)).not.toBeNull();
       if (look.n !== undefined)
         expect(countedDrawing(look.sign, look.n)?.prims).toHaveLength(look.n);
@@ -47,9 +31,10 @@ describe('ACHIEVEMENT_CARD_LOOK', () => {
   );
 
   it('у двух достижений нет одинакового значка: знак и число фигур различаются', () => {
-    const keys = Object.values(ACHIEVEMENT_CARD_LOOK).map(
-      (l) => `${l.sign}:${l.n ?? ''}`,
-    );
+    const keys = ACHIEVEMENTS.map((id) => {
+      const l = achievementCardLook(id)!;
+      return `${l.sign}:${l.n ?? ''}`;
+    });
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -78,12 +63,9 @@ describe('ACHIEVEMENT_CARD_LOOK', () => {
 });
 
 describe('INVITE_LOOK', () => {
-  it('пара — сущность pair, терапевт — небо и Talk, знаки есть на canvas', () => {
-    expect(INVITE_LOOK.pair).toEqual({
-      hue: ENTITY_LOOK.pair.hue,
-      sign: ENTITY_LOOK.pair.sign,
-    });
-    expect(INVITE_LOOK.therapist).toEqual({ hue: 240, sign: 'talk' });
+  it('пара — сущность pair, терапевт — сущность therapist, знаки есть на canvas', () => {
+    expect(INVITE_LOOK.pair).toBe(ENTITY_LOOK.pair);
+    expect(INVITE_LOOK.therapist).toMatchObject({ hue: 240, sign: 'talk' });
     for (const l of Object.values(INVITE_LOOK))
       expect(canvasSign(l.sign)).toBe(l.sign);
   });

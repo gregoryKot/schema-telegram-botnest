@@ -10,7 +10,7 @@ import {
   type JourneyCardRow,
 } from './journeyCard';
 import { INK, headerHeight, sunkHex } from '../cardKit';
-import { JOURNEY_LOOK } from '../../journey/journeyLook';
+import { ENTITY_LOOK } from '../../theme/entityLook';
 
 function mockCtx() {
   const ctx = {
@@ -69,8 +69,8 @@ describe('buildJourneyCardRows', () => {
     expect(rows[0]).toEqual({
       label: 'Шаг по плану',
       day: '1 июля',
-      hue: JOURNEY_LOOK.plan_done.hue,
-      sign: JOURNEY_LOOK.plan_done.sign,
+      hue: ENTITY_LOOK.plan.hue,
+      sign: ENTITY_LOOK.plan.sign,
     });
   });
 

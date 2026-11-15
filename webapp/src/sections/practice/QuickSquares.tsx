@@ -1,6 +1,6 @@
 // Квадраты «Здесь и сейчас» под героем дыхания — как два квадрата «Сегодня»: заземление, «Стоп» и на
 // компьютере «Мне плохо» (на телефоне «Мне плохо» — в листе кризисных строк, PhoneHelpRows). Бумага и
-// знак — сущностей ENTITY_LOOK (practiceLook: Grounded, Pause, Heart), внизу мета из данных (useQuickCounts) и стрелка.
+// знак — сущностей ENTITY_LOOK (Grounded, Pause, Heart), внизу мета из данных (useQuickCounts) и стрелка.
 // Заменили верхний ряд из трёх плиток, повторявший героя, и строки «Если нужно больше» с одним
 // Breath на три разные практики (аудит b14).
 import { hueStyle } from '../../lib/tone';
@@ -9,7 +9,7 @@ import { practiceCountLabel } from '../../../../shared/src/practices/practiceCou
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
 import { SignHero } from '../../components/paper/SignHero';
 import type { QuickCount, QuickCounts } from './useQuickCounts';
-import { PRACTICE_LOOK } from './practiceLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 type QuickId = 'grounding' | 'stop';
 
@@ -19,7 +19,7 @@ const SQUARES: { id: QuickId; title: string; text: string }[] = [
 ];
 
 function Square({ entity, title, text, count, onClick }: { entity: 'grounding' | 'stop' | 'sos'; title: string; text: string; count: QuickCount; onClick: () => void }) {
-  const { hue, sign } = PRACTICE_LOOK[entity];
+  const { hue, sign } = ENTITY_LOOK[entity];
   const meta = count === undefined ? undefined : practiceCountLabel(count);
   return (
     <button type="button" className="pp-paper pp-square cp-sq" style={hueStyle(hue)} onClick={onClick}>

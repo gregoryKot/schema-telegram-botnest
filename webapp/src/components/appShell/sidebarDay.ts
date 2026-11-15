@@ -1,12 +1,11 @@
 // Карточка дня в меню (SidebarFoot): индекс и полоски — те же функции, что у главной (shared/src/needs/dayIndex.ts,
-// dayStrokes.ts). Бумага: день оценён — шалфей исхода «Готово» (литералы paper/outcomeLook.ts, их сверка —
-// outcomeLook.test.ts), нет — солома трекера литералом, не импорт таблицы вида в главный чанк (sidebarDay.test.ts).
+// dayStrokes.ts). Бумага: день оценён — шалфей исхода «Готово» (OUTCOME_LOOK), нет — солома трекера (ENTITY_LOOK).
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
 import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
-import { OUTCOME_LOOK_LIT } from '../paper/outcomeLook';
+import { ENTITY_LOOK, OUTCOME_LOOK } from '../../../../shared/src/theme/entityLook';
 
-export const DAY_OPEN_HUE = 70;
-export const DAY_DONE_HUE = OUTCOME_LOOK_LIT.done.hue;
+export const DAY_OPEN_HUE = ENTITY_LOOK.tracker.hue;
+export const DAY_DONE_HUE = OUTCOME_LOOK.done.hue;
 
 export interface SidebarDay {
   /** «6,4» — день оценён целиком; null — ещё нет. */

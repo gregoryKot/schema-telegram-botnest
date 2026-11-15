@@ -1,8 +1,8 @@
 // Карточка дня в меню (SidebarFoot): индекс — та же формула, что на плитке; бумага — солома трекера до
 // полной оценки и шалфей листа «Готово» после. Полоски — общая dayStrokeValues (её тест —
-// shared/src/needs/dayStrokes.test.ts), здесь только то, что она подключена. Литералы сверяются с таблицей вида.
+// shared/src/needs/dayStrokes.test.ts), здесь только то, что она подключена.
 import { describe, it, expect } from 'vitest';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { ENTITY_LOOK, OUTCOME_LOOK } from '../../../../shared/src/theme/entityLook';
 import { NEED_COLOR_ORDER } from '../../../../shared/src/needs/needColors';
 import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
 import { DAY_DONE_HUE, DAY_OPEN_HUE, sidebarDay } from './sidebarDay';
@@ -11,8 +11,9 @@ const IDS = [...NEED_COLOR_ORDER];
 const FULL = { attachment: 6, autonomy: 7, expression: 5, play: 6, limits: 6 };
 
 describe('sidebarDay', () => {
-  it('бумага до полной оценки — солома трекера из таблицы вида (шалфей «Готово» сверяет outcomeLook.test.ts)', () => {
+  it('бумага: до полной оценки — солома трекера, после — шалфей исхода «Готово» (таблицы вида)', () => {
     expect(DAY_OPEN_HUE).toBe(ENTITY_LOOK.tracker.hue);
+    expect(DAY_DONE_HUE).toBe(OUTCOME_LOOK.done.hue);
   });
 
   it('пустой и частичный день: индекса нет, солома', () => {
