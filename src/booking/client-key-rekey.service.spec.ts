@@ -7,7 +7,10 @@ import { loadWithKeys } from '../test-support/load-with-keys';
 
 type Svc = typeof import('./client-key-rekey.service');
 type Keys = typeof import('./client-key');
-const { mod, keys } = loadWithKeys({ key: 'ab'.repeat(32) }, () => ({
+type Crypto = typeof import('../utils/crypto');
+type Nest = typeof import('@nestjs/common');
+const KEY = 'ab'.repeat(32);
+const { mod, keys } = loadWithKeys({ key: KEY }, () => ({
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   mod: require('./client-key-rekey.service') as Svc,
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -46,6 +49,7 @@ function setup(
   bookings: B[],
   rows: R[],
   notify: () => Promise<boolean> = () => Promise.resolve(true),
+  svc: Svc = mod,
 ) {
   const has = (k: string) => rows.some((r) => r.clientKey === k);
   const hit = (where: any) => (r: R) =>
@@ -92,7 +96,7 @@ function setup(
     },
   };
   const telegram = { notifyAdmin: jest.fn(notify) };
-  const service = new mod.ClientKeyRekeyService(prisma as any, telegram as any);
+  const service = new svc.ClientKeyRekeyService(prisma as any, telegram as any);
   return { service, prisma, telegram, rows };
 }
 
@@ -128,6 +132,7 @@ describe('ClientKeyRekeyService.run', () => {
       moved: 0,
       dropped: 0,
       purged: 0,
+      unreadable: 0,
       shared: [],
       stale: [],
     });
@@ -350,6 +355,7 @@ describe('ClientKeyRekeyService.run', () => {
       moved: 0,
       dropped: 0,
       purged: 1,
+      unreadable: 0,
       shared: [],
       stale: [],
     });
@@ -436,6 +442,62 @@ describe('ClientKeyRekeyService.run', () => {
     expect(
       prisma.booking.findMany.mock.calls.map((c: any[]) => c[0].where.id.gt),
     ).toEqual([0, 500, 501]);
+  });
+});
+
+describe('ClientKeyRekeyService.run — брони под ключом, которого нет в env', () => {
+  it('алерта decrypt нет, итог — одна строка warn с числом; живая бронь переносится', async () => {
+    // Свежий реестр: троттл алерта decrypt (раз в минуту на модуль) не взведён
+    // соседними тестами — это и проверяет контроль в конце.
+    const foreign = loadWithKeys(
+      { key: 'cd'.repeat(32) },
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      () => require('../utils/crypto') as Crypto,
+    );
+    const app = loadWithKeys({ key: KEY }, () => ({
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      svc: require('./client-key-rekey.service') as Svc,
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      crypto: require('../utils/crypto') as Crypto,
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      nest: require('@nestjs/common') as Nest,
+    }));
+    const lost = foreign.encrypt('gone@x.ru') as string;
+    const C = 'live@x.ru';
+    const { service, rows } = setup(
+      [
+        booking(1, lost),
+        booking(2, 'other@x.ru', {
+          meetingUrl: foreign.encrypt('https://zoom.us/j/1'),
+        }),
+        booking(3, C),
+      ],
+      [
+        {
+          clientKey: keys.legacyClientKey(C),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+      undefined,
+      app.svc,
+    );
+    const { prototype } = app.nest.Logger;
+    const error = jest
+      .spyOn(prototype, 'error')
+      .mockImplementation(() => undefined);
+    const warn = jest
+      .spyOn(prototype, 'warn')
+      .mockImplementation(() => undefined);
+    expect(await service.run(NOW)).toMatchObject({ moved: 1, unreadable: 2 });
+    expect(rows.map((r) => r.clientKey)).toEqual([keys.clientKey(C)]);
+    expect(error).not.toHaveBeenCalled();
+    expect(warn.mock.calls).toEqual([
+      [expect.stringContaining('не расшифровано броней: 2')],
+    ]);
+    // Контроль: decrypt() того же значения в том же реестре алерт даёт.
+    app.crypto.decrypt(lost);
+    expect(error).toHaveBeenCalledTimes(1);
   });
 });
 
