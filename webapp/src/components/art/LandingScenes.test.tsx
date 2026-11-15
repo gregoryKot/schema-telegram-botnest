@@ -162,11 +162,15 @@ describe('сцены: декор языка знаков', () => {
     expect(vb(d.querySelector('svg.scn'))).toBe('0 0 320 260');
   });
 
-  it('HeroCollage: широкий и узкий холст, на узком всё в ширине контента (viewBox 358)', () => {
+  it('HeroCollage: широкий, узкий (viewBox 358) и xs, где ширина холста в CSS = ширине viewBox (1 ед. = 1px)', () => {
     const { container } = render(<HeroCollage />);
     expect(container.querySelector('.pl2-hero-collage--wide')).not.toBeNull();
     const narrow = container.querySelector('.pl2-hero-collage--narrow') as SVGElement;
     expect(narrow.getAttribute('viewBox')).toBe('0 0 358 520');
+    // Квадратик и петля xs нарисованы под полосу 80px под мокапом в пикселях: другой масштаб уведёт их под мокап.
+    const xsWidth = container.querySelector('.pl2-hero-collage--xs')?.getAttribute('viewBox')?.split(' ')[2];
+    const css = readFileSync(join(__dirname, '../../styles/product-landing-hero.css'), 'utf8');
+    expect(css.match(/\.pl2-hero-collage--xs \{[^}]*max-width: (\d+)px/)?.[1]).toBe(xsWidth);
   });
 
   it('Lift: тень — та же фигура со сдвигом под ней', () => {
