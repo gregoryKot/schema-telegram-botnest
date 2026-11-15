@@ -1,35 +1,29 @@
 #!/usr/bin/env node
-// Гейт «оверлей обязан жить в истории браузера» (CLAUDE.md, раздел «Новый
-// fullscreen-лист или оверлей в webapp»; дизайн-аудит 2026-08, кандидат из В6;
-// находка аудита 2026-10 — чек-ин в ModesTab).
+// Гейт «оверлей обязан жить в истории браузера» (.claude/rules/frontend.md, «Новый
+// fullscreen-лист или оверлей в webapp»).
 //
-// Любой `.tsx` в webapp/src и shared/src, рисующий оверлей на весь экран —
-// `position: fixed` + `inset: 0` в одном объекте стиля, className с классом,
-// чьё правило в CSS делает то же самое, ЛИБО тег рамки-оверлея (`<ExScreen`,
-// `<BottomSheetShell`), — обязан вызывать `useHistorySheet(`.
-// Иначе «Назад» браузера уводит со страницы (или, хуже, закрывает родительский
-// лист вместе с оверлеем), а Escape его не касается.
+// Любой `.tsx` в webapp/src и shared/src, рисующий оверлей на весь экран, — `position: fixed`
+// и `inset: 0` в одном объекте стиля, класс (или классы одного className), чьи правила в CSS
+// дают то же самое, ЛИБО тег рамки-оверлея (`<ExScreen`, `<BottomSheetShell`, `<Dialog`,
+// `<ConfirmDialog`), — обязан вызывать `useHistorySheet(`. Иначе «Назад» браузера уводит со
+// страницы (или закрывает родительский лист вместе с оверлеем), а Escape его не касается.
 //
-// Законных исключений много (бэкдропы под шторкой, лоадер, декор, лендинги, экран,
-// у которого хук в вызывающем) — каждое внесено в
-// scripts/history-sheet-baseline.json с причиной: { "<файл>": { reason, since } }.
-// Флага --update нет: это классификация решения человека, не счётчик (как у
-// cron-leader / raw-sql-live). Протухшая запись (файл получил хук, перестал быть
-// оверлеем или исчез) — красное: не уборка, а сигнал «сверься, что произошло».
+// Решение — по компоненту (объявлению верхнего уровня): хук листа в одном компоненте не
+// закрывает чек-ин без хука в соседнем, а компонент рисует не больше оверлеев, чем вызывает
+// хук. Законные исключения (бэкдроп, рамка с хуком у потребителя, шаг потока, ветки одного
+// листа, подтверждение поверх листа) — записи scripts/history-sheet-baseline.json:
+// { "<файл>": { reason, since, components?: [имена без хука], overlays?: { "<имя>": N } } }.
+// Флага --update нет: это классификация решения человека, не счётчик. Протухшая запись (файл
+// получил хук, перестал быть оверлеем, число оверлеев сменилось) — красное: «сверься».
 //
-// Решение принимается по компоненту (объявлению верхнего уровня), а не по
-// файлу: хук листа в одном компоненте не закрывает чек-ин без хука в соседнем
-// (форма находки аудита 2026-10). Запись бейслайна закрывает один компонент
-// без хука; если их в файле несколько — поле "components": [имена]. Новый
-// оверлей в другом компоненте файла из бейслайна — красный. Слепая зона:
-// второй оверлей в ТОМ ЖЕ компоненте, что уже вызывает хук или записан.
-//
-// Тесты гейта — src/test-support/gates/history-sheet.spec.ts и
-// history-sheet-components.spec.ts.
+// Распознавание — history-sheet-detect.mjs и history-sheet-css.mjs, сверка с записью —
+// history-sheet-judge.mjs. Тесты — src/test-support/gates/history-sheet*.spec.ts.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { classOverlays, frameOverlays, inlineOverlays, overlayClasses, overlaysByComponent } from './history-sheet-detect.mjs';
+import { frameOverlays, inlineOverlays, overlaysByComponent } from './history-sheet-detect.mjs';
+import { classDeclarations, classOverlays, overlayClassSet } from './history-sheet-css.mjs';
+import { judgeFile, needsEntry } from './history-sheet-judge.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'history-sheet-baseline.json');
@@ -75,48 +69,28 @@ function checkReason(key, entry) {
 
 function main() {
   const files = SCAN_DIRS.flatMap((d) => walk(d));
-  const classes = new Set();
-  for (const rel of files.filter((f) => f.endsWith('.css'))) {
-    for (const c of overlayClasses(readFileSync(join(ROOT, rel), 'utf8'))) classes.add(c);
-  }
-
-  const overlays = new Map(); // файл → [{ name, hook, hits }] по компонентам
+  const decls = classDeclarations(files.filter((f) => f.endsWith('.css')).map((f) => readFileSync(join(ROOT, f), 'utf8')));
+  const overlays = new Map(); // файл → [{ name, hook, calls, hits }] по компонентам
   for (const rel of files.filter((f) => f.endsWith('.tsx') && !isTest(f))) {
     const src = readFileSync(join(ROOT, rel), 'utf8');
-    const hits = [...inlineOverlays(src), ...classOverlays(src, classes), ...frameOverlays(src)];
+    const hits = [...inlineOverlays(src), ...classOverlays(src, decls), ...frameOverlays(src)];
     if (hits.length) overlays.set(rel, overlaysByComponent(src, hits));
   }
-  const bareOf = (file) => (overlays.get(file) ?? []).filter((c) => !c.hook);
 
   const baseline = loadBaseline();
   const problems = [];
   const missing = [];
-  const show = (file, c) => `   ${file} › ${c.name}  (L${c.hits[0].line}: ${c.hits[0].what})`;
-  for (const file of overlays.keys()) {
-    const bare = bareOf(file);
-    const entry = baseline[file];
-    if (!bare.length) continue;
-    if (!entry) {
-      for (const c of bare) missing.push(show(file, c));
-    } else if (!Array.isArray(entry.components)) {
-      if (bare.length > 1) {
-        problems.push(
-          `${file}: одна запись бейслайна, а компонентов-оверлеев без хука ${bare.length} ` +
-            `(${bare.map((c) => c.name).join(', ')}) — хук или поле "components" с перечнем`,
-        );
-      }
-    } else {
-      for (const c of bare.filter((x) => !entry.components.includes(x.name))) missing.push(show(file, c));
-      const gone = entry.components.filter((n) => !bare.some((c) => c.name === n));
-      if (gone.length) problems.push(`протухшая запись: ${file} — в components ${gone.join(', ')}: хук уже есть или оверлея нет`);
-    }
+  for (const [file, comps] of overlays) {
+    const verdict = judgeFile(file, comps, baseline[file]);
+    missing.push(...verdict.missing);
+    problems.push(...verdict.problems);
   }
   if (missing.length) {
     problems.unshift('оверлеи без useHistorySheet и без записи в scripts/history-sheet-baseline.json:', ...missing);
   }
   for (const [key, entry] of Object.entries(baseline)) {
     if (!overlays.has(key)) problems.push(`протухшая запись: ${key} — оверлея в файле больше нет (или файла нет)`);
-    else if (!bareOf(key).length) problems.push(`протухшая запись: ${key} — оверлеи файла уже вызывают useHistorySheet, убери запись`);
+    else if (!needsEntry(overlays.get(key))) problems.push(`протухшая запись: ${key} — оверлеи файла уже вызывают useHistorySheet, убери запись`);
     else {
       const bad = checkReason(key, entry);
       if (bad) problems.push(bad);
@@ -124,23 +98,23 @@ function main() {
   }
 
   if (problems.length) {
-    console.error('❌ Гейт оверлеев и истории браузера (CLAUDE.md, «Новый fullscreen-лист или оверлей в webapp»):\n');
+    console.error('❌ Гейт оверлеев и истории браузера (.claude/rules/frontend.md, «Новый fullscreen-лист или оверлей в webapp»):\n');
     for (const p of problems) console.error(p);
     console.error(
       '\nОверлей на весь экран без useHistorySheet: «Назад» браузера уводит со страницы\n' +
         'или закрывает родительский лист вместе с ним. Вызови хук один раз в теле\n' +
         'компонента и пусти все «Назад»/«Закрыть» через goBack(). Если оверлею хук не\n' +
-        'нужен (бэкдроп под листом, лоадер, декор, лендинг, хук у вызывающего) — запись\n' +
+        'нужен (бэкдроп под листом, рамка, лендинг, хук у вызывающего) — запись\n' +
         '  "<файл>": { "reason": "честная причина", "since": "<коммит/PR>" }\n' +
-        '(несколько компонентов без хука в файле — ещё "components": ["Имя", …])\n' +
-        'в scripts/history-sheet-baseline.json. Флага --update нет.',
+        '(несколько компонентов без хука — ещё "components": ["Имя", …]; оверлеев в компоненте\n' +
+        'больше, чем вызовов хука, — "overlays": { "Имя": N }) в scripts/history-sheet-baseline.json.',
     );
     process.exit(1);
   }
-  const withHook = [...overlays.keys()].filter((f) => !bareOf(f).length).length;
+  const withHook = [...overlays.values()].filter((comps) => !needsEntry(comps)).length;
   console.log(
     `✓ гейт оверлеев: ${overlays.size} файлов-оверлеев (${withHook} с useHistorySheet, ${overlays.size - withHook} в бейслайне), ` +
-      `${classes.size} CSS-классов-оверлеев.`,
+      `${overlayClassSet(decls).size} CSS-классов-оверлеев.`,
   );
 }
 
