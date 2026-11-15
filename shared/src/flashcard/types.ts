@@ -15,7 +15,6 @@ export interface ModeData {
   label: string;
   desc: string;
   response: string;
-  color: string;
 }
 
 export interface NeedData {

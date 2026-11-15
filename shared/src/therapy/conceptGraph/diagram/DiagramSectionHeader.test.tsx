@@ -36,11 +36,10 @@ describe('DiagramSectionHeader — кнопка добавления', () => {
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
-  it('без skin — прежний инлайн-вид; открыта — «Свернуть»', () => {
+  it('открыта — «Свернуть»', () => {
     render(<DiagramSectionHeader section={SECTION} open onAdd={vi.fn()} />);
     const btn = screen.getByRole('button', { name: 'Свернуть' });
     expect(btn.getAttribute('aria-expanded')).toBe('true');
-    expect(btn.style.color).toBe('var(--accent)');
   });
 
   it('без onAdd кнопки нет', () => {
