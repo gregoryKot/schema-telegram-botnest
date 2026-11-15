@@ -4,6 +4,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ScreenCustomizeSheet, type ScreenBlocksApi } from './ScreenCustomizeSheet';
+import type { ScreenBlockId } from '../../../../shared/src/screens/screenBlocks';
 import { plainText } from '../../test-support/plainText';
 
 vi.mock('../useIsMobile', () => ({ useIsMobile: () => true }));
@@ -51,7 +52,8 @@ describe('ScreenCustomizeSheet', () => {
   });
 
   it('блок без описания в реестре не рисуется, подсвеченный — выделен', () => {
-    setup({ orderedIds: ['heroes', 'ysq_status', 'focus'], highlight: 'ysq_status' });
+    // 'focus' — id не из реестра блоков: строки для него нет.
+    setup({ orderedIds: ['heroes', 'ysq_status', 'focus' as ScreenBlockId], highlight: 'ysq_status' });
     expect(screen.getAllByRole('switch')).toHaveLength(2);
     // Подпись строки клеится при отрисовке (glue в CustomizeRow): фраза — без знаков склейки.
     expect(plainText(document.querySelector('.cz-block.is-hl'))).toContain('Тест на схемы');

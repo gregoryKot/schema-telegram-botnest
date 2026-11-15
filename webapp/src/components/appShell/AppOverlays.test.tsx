@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { AppOverlays } from './AppOverlays';
 import { useOverlays } from './useOverlays';
 
@@ -26,7 +26,7 @@ vi.mock('../../api', () => ({ api: { resignTherapist: vi.fn() } }));
 // объект, который виден и там, и там.
 const settingsMock = vi.hoisted(() => {
   let resolve: () => void = () => {};
-  const ready = new Promise<{ SettingsSheet: () => JSX.Element }>((res) => {
+  const ready = new Promise<{ SettingsSheet: () => ReactElement }>((res) => {
     resolve = () => res({ SettingsSheet: () => <div data-testid="settings-sheet">Настройки</div> });
   });
   return { resolve: () => resolve(), ready };
@@ -66,8 +66,6 @@ function Harness() {
         navigate={() => {}}
         ratings={{}}
         setChildhoodRatings={() => {}}
-        childhoodWheelPending={false}
-        setChildhoodWheelPending={() => {}}
         todayDate="2026-08-23"
       />
     </MemoryRouter>
