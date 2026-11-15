@@ -51,12 +51,3 @@
   .ex2-voice-text { font-size: 19px; }
   .ex2-dialog-reply.pa-voice { margin-left: 20px; }
 }
-
-/* Пояснение «что это за карточка» (первый вопрос): на ≥1024 — в колонке разворота над подсказкой, на
-   телефоне и планшете — после формы, как у мастера дневника (diary-wizard.css): подсказка ExHint стоит
-   свёрнутой строкой до поля, а абзац пояснения не отодвигает поле за сгиб. */
-@media (max-width: 1023px) {
-  .pa-spread:has(.ex2-aside > .sd-explainer) > .pa-spread-side,
-  .pa-spread:has(.ex2-aside > .sd-explainer) > .pa-spread-side > .ex2-aside { display: contents; }
-  .pa-spread:has(.ex2-aside > .sd-explainer) > .pa-spread-main { order: 2; }
-}
