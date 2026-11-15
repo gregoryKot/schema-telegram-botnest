@@ -75,8 +75,7 @@ export class BotService {
     return this.needs;
   }
 
-  // Единый источник — utils/tz.localDate (аудит 2026-07, 2в): раньше тело
-  // Intl.DateTimeFormat дублировалось здесь и в notification.time.
+  // Единый источник — utils/tz.localDate: свой Intl.DateTimeFormat здесь не заводить.
   private localDateString(tz: string, base = new Date()): string {
     return localDate(tz, base);
   }
@@ -125,6 +124,7 @@ export class BotService {
         notifyGamified: true,
         notifyPausedUntil: true,
         notifyNextRemindDate: true,
+        disclaimerAccepted: true, // не настройка: без согласия rescheduleForUser молчит
         addressForm: true,
         pairCardDismissed: true,
         mySchemaIds: true,
