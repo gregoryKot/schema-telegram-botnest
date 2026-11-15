@@ -107,7 +107,7 @@
   },
   "src/booking/zoom-room.ts": {
     "status": "exempt",
-    "reason": "Get/Update Meeting Zoom (topic, 404, 429) в спеке — авторская форма по документации Zoom API, как у meeting.service.ts; боевых Zoom-учётных данных для записи нет, разовая команда."
+    "reason": "Записи с прода нет: токен Zoom живёт только в env прода (Amvera), разовая команда. List meetings — фикстура zoom-list-meetings.json, пример ответа из документации Zoom API (её читает foreign-scrub.spec.ts); Get/Update/Delete Meeting (topic, 403, 404, 429) — авторская форма по той же документации, как у meeting.service.ts."
   },
   "src/channel/channel-http.ts": {
     "status": "exempt",

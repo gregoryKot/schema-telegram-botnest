@@ -67,6 +67,7 @@ import {
 const ROOT = resolve(import.meta.dirname, '..');
 const MAP_FILE = 'docs/ARCHITECTURE.md';
 const MAP_DIR = 'docs/architecture';
+const GATES_TABLE = `${MAP_DIR}/gates.md`;
 const MAP_HINT = `${MAP_FILE} или ${MAP_DIR}/<область>.md`;
 
 function checkBudgets(root, out) {
@@ -144,8 +145,12 @@ function checkMapCoverage(root, out, mapText) {
   }
   const gates = exists(root, 'scripts') ? readdirSync(join(root, 'scripts')) : [];
   const names = gates.filter((f) => /^check-.+\.(mjs|ts)$/.test(f)).sort();
-  for (const g of names.filter((n) => !mentionsFile(mapText, n))) {
-    out.push(`scripts/${g}: гейта нет в карте. Добавь строку в карту: ${MAP_HINT}.`);
+  // Гейт засчитывается только строкой таблицы gates.md, не упоминанием в прозе карты.
+  const rows = exists(root, GATES_TABLE)
+    ? read(root, GATES_TABLE).split('\n').filter((l) => l.trimStart().startsWith('|')).join('\n')
+    : '';
+  for (const g of names.filter((n) => !mentionsFile(rows, n))) {
+    out.push(`scripts/${g}: гейта нет в карте. Добавь строку в таблицу гейтов: ${GATES_TABLE}.`);
   }
   return { dirs: wanted.length, gates: names.length };
 }

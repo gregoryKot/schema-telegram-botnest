@@ -94,6 +94,24 @@ describe('check-telegram-chat-id.mjs', () => {
       },
       'src/y/use.ts:2: адрес отправки «user.id» — id аккаунта, а не чат (через relay)',
     ],
+    [
+      'поле параметра: s.chatId',
+      {
+        'src/tg/push.ts':
+          'export async function push(s: { chatId: number }, text: string) {\n  await sendTg(Number(s.chatId), text);\n}\n',
+        'src/x/caller.ts': fn('await push({ chatId: userId }, "hi");'),
+      },
+      'src/x/caller.ts:2: адрес отправки «userId» — id аккаунта, а не чат (через push)',
+    ],
+    [
+      'поле параметра: шаблон ({ chatId: to })',
+      {
+        'src/tg/push.ts':
+          'export async function push({ chatId: to, text }: P) {\n  await sendTg(to, text);\n}\n',
+        'src/x/caller.ts': fn('await push({ chatId: user.id, text: "hi" });'),
+      },
+      'src/x/caller.ts:2: адрес отправки «user.id» — id аккаунта, а не чат (через push)',
+    ],
   ])('красный через параметр: %s', (_name, files, line) => {
     const res = runGate('check-telegram-chat-id.mjs', files);
     expect(res.status).toBe(1);
@@ -101,6 +119,16 @@ describe('check-telegram-chat-id.mjs', () => {
   });
 
   it.each<[string, Record<string, string>]>([
+    [
+      'поле параметра: вызывающий кладёт настоящий чат',
+      {
+        'src/tg/push.ts':
+          'export async function push(s: { chatId: number }, text: string) {\n  await sendTg(s.chatId, text);\n}\n',
+        'src/x/caller.ts': fn(
+          'const chatId = await telegramIdFor(prisma, userId);\nawait push({ chatId }, "hi");\nawait push({ chatId: Number(chatId), other: userId }, "hi");',
+        ),
+      },
+    ],
     [
       'вызывающий берёт адрес из telegramIdFor',
       {
@@ -133,6 +161,17 @@ describe('check-telegram-chat-id.mjs', () => {
     ],
   ])('контроль через параметр, зелёный: %s', (_name, files) => {
     expect(runGate('check-telegram-chat-id.mjs', files).status).toBe(0);
+  });
+
+  it('telegram-chat-id-params: поле берётся из литерала, у объекта-переменной — нет', () => {
+    const got: unknown = JSON.parse(
+      importExport(
+        'telegram-chat-id-params.mjs',
+        'fieldOf',
+        '(f) => [f("{ chatId: userId, x: 1 }", "chatId"), f("{ x: 1, chatId }", "chatId"), f("opts", "chatId") ?? null, f("{ other: 1 }", "chatId") ?? null, f("{ a: g(1, 2), chatId: h(x, y) }", "chatId")]',
+      ),
+    );
+    expect(got).toEqual(['userId', 'chatId', null, null, 'h(x, y)']);
   });
 
   it('отправщики по имени: sendTg(адрес, …) и sendBounded(бот, адрес, …)', () => {
