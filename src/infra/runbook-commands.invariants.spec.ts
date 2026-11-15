@@ -6,7 +6,7 @@ import { collectSourceFiles } from '../security/collect-source-files';
 
 const ROOT = join(__dirname, '..', '..');
 
-// Команда ранбука без смока → причина. Список только сокращается.
+// Команда ранбука без смока → причина; смок появился — строку убирают («DEBT не протух»).
 const DEBT: Record<string, string> = {};
 
 type RunbookCommand = {
