@@ -2,7 +2,7 @@
 // stickyAncestors — классы липких элементов из правил CSS и липкие предки листа в DOM.
 // Образец и контрольный образец: sticky под @media находится, relative и комментарий — нет.
 import { describe, it, expect } from 'vitest';
-import { stickyClasses, stickyAncestorsOf } from './stickyAncestors';
+import { stickyClasses, stickyAncestorsOf, openFromSticky } from './stickyAncestors';
 import { allCssRules, indexCssRules, parseRules } from '../styles/cssRules.test-helpers';
 
 describe('stickyClasses', () => {
@@ -29,5 +29,18 @@ describe('stickyAncestorsOf', () => {
     const sticky = new Set(['a', 'b']);
     expect(stickyAncestorsOf(document.getElementById('in')!, sticky)).toEqual(['div.b', 'div.a']);
     expect(stickyAncestorsOf(document.getElementById('out')!, sticky)).toEqual([]);
+  });
+});
+
+describe('openFromSticky', () => {
+  it('липкие предки открывающего и листа после тапа: лист в колонке, вне её, не открылся', () => {
+    document.body.innerHTML = '<div class="a"><button id="open"></button><div id="in"></div></div><div id="out"></div>';
+    const sticky = new Set(['a']);
+    const opener = document.getElementById('open')!;
+    const openInto = (id: string) => () => { document.getElementById(id)!.innerHTML = '<section class="sheet"></section>'; };
+    const sheetIn = (id: string) => () => document.querySelector(`#${id} .sheet`);
+    expect(openFromSticky(opener, openInto('in'), sheetIn('in'), sticky)).toEqual({ from: ['div.a'], sheet: ['div.a'] });
+    expect(openFromSticky(opener, openInto('out'), sheetIn('out'), sticky)).toEqual({ from: ['div.a'], sheet: [] });
+    expect(openFromSticky(opener, () => {}, () => null, sticky)).toEqual({ from: ['div.a'], sheet: null });
   });
 });

@@ -3,10 +3,12 @@
 // ответ словами, автопереход, «Пропустить», экран «Готово», бэкфилл, сохранение
 // (debounce автосейва), ошибка API. Образец сетапа: мок '../api', vi.useFakeTimers.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { TrackerOverlay } from './TrackerOverlay';
+import { HistorySheet } from './HistorySheet';
+import { sheetStackOf } from '../hooks/historySheetStack';
 import { AUTO_ADVANCE_MS } from './trackerOverlay/trackerFlow';
 import { TRACKER_ONBOARDING_KEY, TRACKER_ORIGIN_NOTE } from '../../../shared/src/needs/trackerOnboarding';
 import { glue } from '../../../shared/src/utils/typo';
@@ -15,8 +17,8 @@ import { todayStr } from '../../../shared/src/utils/format';
 
 // useHistorySheet (внутри TrackerOverlay) требует react-router-контекст.
 vi.mock('../api', () => ({
-  // getSettings — лист потребности узнаёт, дойдёт ли напоминание (U5).
-  api: { ratings: vi.fn(), saveRating: vi.fn(), trackEvent: vi.fn(), getSettings: vi.fn().mockResolvedValue({}) },
+  // getSettings — лист потребности узнаёт, дойдёт ли напоминание (U5); getNote — заметка дня в истории.
+  api: { ratings: vi.fn(), saveRating: vi.fn(), trackEvent: vi.fn(), getSettings: vi.fn().mockResolvedValue({}), getNote: vi.fn().mockResolvedValue({ text: null, tags: [] }) },
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
@@ -502,5 +504,54 @@ describe('TrackerOverlay — бэкафилл прошлой даты', () => {
     expect(mockReportClientError).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'tracker', message: expect.stringContaining('backfill rating save failed') }),
     );
+  });
+});
+
+// Порядок переходов «История →» → «Динамика»: роутер — как в приложении (createBrowserRouter), в jsdom, как в
+// браузере, history.go приходит позже отдельной задачей; хост — как AppShell: трекер закрывается, история открывается.
+describe('TrackerOverlay — «Готово» → «История →» → «Динамика»', () => {
+  const RATED = { attachment: 4, autonomy: 8 };
+  function Shell() {
+    const [tracker, setTracker] = useState(true);
+    const [history, setHistory] = useState(false);
+    return (
+      <>
+        {tracker && <TrackerOverlay needs={NEEDS} ratings={RATED} onChange={vi.fn()} onSaved={vi.fn()}
+          onClose={() => setTracker(false)} onOpenHistory={() => { setTracker(false); setHistory(true); }} />}
+        {history && <HistorySheet needs={NEEDS} history={[{ date: todayStr(), ratings: RATED }]} historyLoading={false}
+          ratings={RATED} childhoodRatings={{}} pendingPlans={[]} todayDate={todayStr()} historyDays={7}
+          onClose={() => setHistory(false)} onOpenTracker={() => setTracker(true)} onOpenSchemas={vi.fn()}
+          onOpenChildhoodWheel={vi.fn()} onDismissPlan={vi.fn()} onHistoryRefreshed={vi.fn()} />}
+      </>
+    );
+  }
+
+  it('лист потребности остаётся открытым, его «Назад» закрывает только его', async () => {
+    vi.useRealTimers(); // переходы истории в jsdom идут задачами, как в браузере
+    window.history.replaceState(null, '', '/');
+    const router = createBrowserRouter([{ path: '*', element: <Shell /> }]);
+    const depth = () => sheetStackOf(router.state.location.state).length;
+    const dynamics = () => screen.queryByRole('heading', { name: 'Динамика потребности' });
+    // Строка «Дня» — кнопка; у строк скелетона, пока грузится экран истории, роли нет.
+    const needRow = () => waitFor(() => {
+      const row = document.querySelector('.sd-need-row[role="button"]');
+      if (!row) throw new Error('нет строки потребности');
+      return row;
+    });
+    try {
+      render(<RouterProvider router={router} />);
+      await waitFor(() => expect(depth()).toBe(1)); // запись трекера
+      fireEvent.click(screen.getByRole('button', { name: 'История →' }));
+      fireEvent.click(await needRow()); // без паузы после «История →»
+      await act(() => new Promise((r) => setTimeout(r, 50))); // пришли все отложенные переходы
+      expect(dynamics()).toBeTruthy();
+      expect(depth()).toBe(2); // запись истории и запись листа потребности
+      fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+      await waitFor(() => expect(dynamics()).toBeNull());
+      expect(screen.getByRole('heading', { name: /^История/ })).toBeTruthy();
+      expect(depth()).toBe(1);
+    } finally {
+      router.dispose();
+    }
   });
 });
