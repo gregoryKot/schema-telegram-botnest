@@ -139,7 +139,7 @@ const CATALOG: Record<string, Draw> = {
     }),
   drawJourneyResultCard: (c) =>
     drawJourneyResultCard(c, {
-      label: 'Схемный дневник',
+      label: 'Дневник схем',
       day: '3 мая',
       hue: 28,
       sign: 'layers',

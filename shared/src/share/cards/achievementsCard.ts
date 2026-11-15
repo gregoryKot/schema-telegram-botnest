@@ -83,15 +83,12 @@ export function drawAchievementsCard(
   const total = items.length;
   const gridH = gridHeight(rows.length);
 
-  const H = headerHeight(1, true) + gridH + 30 + 8 + 40 + FOOTER_H;
+  // Счёт «N из M» — один раз, полоской под сеткой: подпись шапки его не повторяет.
+  const H = headerHeight(1) + gridH + 30 + 8 + 40 + FOOTER_H;
   const c = beginCard(canvas, H, { hue: SHEET_HUE });
   const { ctx } = c;
 
-  const top = header(c, {
-    eyebrow: 'Достижения',
-    title: 'Мои достижения',
-    subtitle: `собрано ${earned} из ${total}`,
-  });
+  const top = header(c, { eyebrow: 'Достижения', title: 'Мои достижения' });
 
   rows.forEach((row, r) => {
     const rowW = row.length * TILE + (row.length - 1) * GAP;

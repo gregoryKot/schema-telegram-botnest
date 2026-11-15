@@ -47,6 +47,20 @@ describe('buildYsqRows', () => {
   it('нет ответов — «–», а не «0/6»', () => {
     expect(buildYsqRows(run([{ id: 'failure', pct5plus: 0, avg: 0 }]), null)[0].avgLabel).toBe('–');
   });
+
+  // Сводка docs/TERMINOLOGY.md называет пару YSQ-R полностью; короткое «(на себя)» реестра — для тесных мест.
+  it('подпись строки — название по МИСТ для своего id, без полного названия — имя реестра', () => {
+    const rows = buildYsqRows(run([
+      { id: 'punitiveness_self', pct5plus: 0, avg: 2 },
+      { id: 'punitiveness_others', pct5plus: 0, avg: 1 },
+      { id: 'failure', pct5plus: 0, avg: 0 },
+    ]), null);
+    expect(rows.map(r => [r.id, r.name])).toEqual([
+      ['punitiveness_self', 'Пунитивность (направленная на себя)'],
+      ['punitiveness_others', 'Пунитивность (направленная на других)'],
+      ['failure', 'Неуспешность'],
+    ]);
+  });
 });
 
 describe('fmtDelta / deltaClass', () => {
