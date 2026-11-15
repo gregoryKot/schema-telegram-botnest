@@ -10,8 +10,6 @@
 .cpk-h1 { display: block; height: 55px; padding: 8px 0; }
 .cpk-h2 { display: block; height: 31px; padding: 4px 0; }
 .cpk-here { display: flex; flex-direction: column; gap: 18px; container: cpk-here / inline-size; }
-.cpk-phone { display: none; }
-.cpk-link { display: flex; align-items: center; height: 36px; }
 
 /* Герой — лист дыхания, как .qb: на узком листе сцена над текстом, на широком справа. */
 .cpk-hero { container: cpk-hero / inline-size; padding: 18px 20px 16px; }
@@ -45,19 +43,18 @@
   display: flex; flex-direction: column; gap: 8px; min-height: 236px;
   padding: 18px 22px 16px; border-radius: 22px; background: var(--paper-sunk);
 }
-.cpk-ex-sign { max-width: 104px; aspect-ratio: 112 / 94; }
+.cpk-ex > .cpk-sign { order: -1; max-width: 104px; margin: 0 0 4px; }
 .cpk-ex > .cpk-foot { margin-top: auto; }
 @container cpk-lib (max-width: 719px) {
   .cpk-lib { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* Телефон: вводная короче и со ссылкой, герой компактный — сцена 124px справа от надписи и заголовка, кнопка
+/* Телефон: заголовок блока несёт шапка, герой компактный — сцена 124px справа от надписи и заголовка, кнопка
    во всю ширину; два квадрата («Мне плохо» — в листе кризисных строк), плитки теснее. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cpk-h1 { height: 34px; padding: 4px 0; }
   .cpk-here { gap: 12px; }
-  .cpk-desk { display: none; }
-  .cpk-phone { display: block; }
+  .cpk-h2 { display: none; }
   .cpk-hero-in { grid-template-columns: minmax(0, 1fr) 124px; column-gap: 12px; }
   .cpk-hero-body { display: contents; }
   .cpk-scene { grid-column: 2; grid-row: 1 / span 2; align-self: center; max-width: none; }
@@ -72,5 +69,5 @@
   .cpk-lib-block { gap: 10px; }
   .cpk-lib { gap: 10px; }
   .cpk-ex { min-height: 0; padding: 14px 14px 12px 16px; border-radius: 18px; }
-  .cpk-ex-sign { max-width: 78px; }
+  .cpk-ex > .cpk-sign { max-width: 78px; }
 }

@@ -6,7 +6,7 @@ import { Skeleton, SkeletonLines } from '../components/Skeleton';
 /** Сетка списка: карточки с обложкой, заголовком в две строки, подписью и датой. */
 export function ArticleGridSkeleton() {
   return (
-    <div className="art-grid" aria-hidden="true" data-testid="articles-skeleton">
+    <div className="art-grid" aria-hidden="true">
       {[0, 1, 2, 3].map((k) => (
         <div key={k} className="ds-card ds-card--flush ac-card">
           <Skeleton className="ac-skel-cover" height="auto" radius={0} />
@@ -24,7 +24,7 @@ export function ArticleGridSkeleton() {
 /** Статья: дата, заголовок, подпись, обложка шапки и первые строки текста. */
 export function ArticleSkeleton() {
   return (
-    <div aria-hidden="true" data-testid="article-skeleton">
+    <div aria-hidden="true">
       <div className="pp-block pp-block--head art-head">
         <Skeleton width={200} height={12} />
         <SkeletonLines widths={['94%', '62%']} height={36} gap={14} />

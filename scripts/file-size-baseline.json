@@ -2838,7 +2838,7 @@
   "webapp/src/sections/practice/PhoneHelpRows.tsx": 46,
   "webapp/src/sections/practice/PracticeHeader.tsx": 38,
   "webapp/src/sections/practice/practiceLook.ts": 41,
-  "webapp/src/sections/practice/PracticeSkeleton.tsx": 70,
+  "webapp/src/sections/practice/PracticeSkeleton.tsx": 59,
   "webapp/src/sections/practice/QuickSquares.tsx": 45,
   "webapp/src/sections/practice/SelfHelpEntry.tsx": 22,
   "webapp/src/sections/practice/SelfHelpSheet.tsx": 39,
