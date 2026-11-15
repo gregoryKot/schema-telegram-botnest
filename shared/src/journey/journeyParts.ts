@@ -5,8 +5,9 @@
 import {
   SCHEMAS,
   type YsqHistoryEntry,
+  SCHEMA_NAME_TO_ID,
   countActiveInHistory,
-  historyScoresByName,
+  historyScoresById,
 } from '../hooks/useYsqTest';
 import { JOURNEY_NEED_NAMES } from './journeyMeta';
 import { DETAIL_FIELDS } from './journeyDetailFields';
@@ -56,8 +57,15 @@ export function ysqResultFromEntry(
   );
   if (!hasAvg) return null;
   const history = e as unknown as YsqHistoryEntry;
+  // История хранит счёт по id схемы, карточка-профиль ищет по названию.
+  const byId = historyScoresById(history);
+  const scores: Record<string, YsqScore> = {};
+  for (const s of SCHEMAS) {
+    const sc = byId[SCHEMA_NAME_TO_ID[s.name]];
+    if (sc) scores[s.name] = sc;
+  }
   return {
-    scores: historyScoresByName(history),
+    scores,
     activeCount: countActiveInHistory(history),
   };
 }
