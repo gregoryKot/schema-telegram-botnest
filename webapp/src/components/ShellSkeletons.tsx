@@ -11,6 +11,7 @@ import { hueStyle } from '../lib/tone';
 import { Strokes } from './art/PaperArt';
 import { Skeleton, ScreenSkeleton } from './Skeleton';
 import { DiaryFeedSkeleton } from '../sections/diary/DiaryFeedSkeleton';
+import { PracticeSkeleton } from '../sections/practice/PracticeSkeleton';
 import { TodaySkeletonBody } from './therapist/TodaySkeletonBody';
 import { CardHeadSkeleton, OverviewSkeleton } from './therapist/CardSkeleton';
 import '../styles/shell-skeletons.css';
@@ -18,12 +19,7 @@ import '../styles/shell-skeletons.css';
 const EMPTY_DAY = [null, null, null, null, null];
 
 function Head({ title = '60%' }: { title?: string }) {
-  return (
-    <div className="sks-head">
-      <Skeleton width={150} height={12} />
-      <Skeleton width={title} height={36} radius={10} />
-    </div>
-  );
+  return <div className="sks-head"><Skeleton width={150} height={12} /><Skeleton width={title} height={36} radius={10} /></div>;
 }
 /** Строка текста высотой строки экрана (sks-line--*): плашки по числу строк, лишние прячет CSS. */
 function Line({ kind, bars, h }: { kind: string; bars: (number | string)[]; h: number }) {
@@ -111,7 +107,7 @@ export function ClientCardSkeleton() {
   );
 }
 
-/** Силуэт раздела по адресу: «Сегодня», «Записи» и «Ещё» клиента, «Сегодня» и карточка терапевта, остальное — общий. */
+/** Силуэт раздела по адресу: «Сегодня», «Записи», «Практики» и «Ещё» клиента, «Сегодня» и карточка терапевта, остальное — общий. */
 export function SectionSkeleton({ pathname, therapistMode }: { pathname: string; therapistMode: boolean }) {
   if (therapistMode) {
     if (pathname === '/cabinet/today') return <TherapistTodaySkeleton />;
@@ -121,6 +117,7 @@ export function SectionSkeleton({ pathname, therapistMode }: { pathname: string;
   const seg = pathname.split('/')[1] || 'today';
   if (seg === 'today') return <ClientTodaySkeleton />;
   if (seg === 'more') return <MoreSkeleton />;
+  if (seg === 'practice') return <PracticeSkeleton />;
   return seg === 'diary' ? <DiaryFeedSkeleton /> : <ScreenSkeleton />;
 }
 
