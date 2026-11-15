@@ -100,12 +100,14 @@ describe('processors', () => {
   });
 
   // Бот подтверждает только объединение (src/telegram/telegram.link.service.ts); ссылка на комнату —
-  // в карточке брони Оператору (src/booking/booking-owner-card.ts), уведомления безопасности — src/auth/security-notice.texts.ts.
-  it('Telegram: подтверждение объединения, а не входа; названы ссылка на комнату и уведомления безопасности', () => {
+  // только в карточке брони Оператору (src/booking/booking-owner-card.ts), уведомления безопасности — src/auth/security-notice.texts.ts.
+  it('Telegram: подтверждение объединения, а не входа; ссылка на комнату — только Оператору; уведомления безопасности', () => {
     const tg = FOREIGN_PROCESSORS.find((p) => p.name.startsWith('Telegram'))!;
+    const [toUser, toOperator = ''] = tg.data.split('в сообщениях бота Оператору');
     expect(tg.data).toContain('при подтверждении объединения аккаунтов');
     expect(tg.data).not.toMatch(/подтверждении входа/);
-    expect(tg.data).toContain('ссылка на комнату видеовстречи');
+    expect(toOperator).toContain('ссылка на комнату видеовстречи');
+    expect(toUser).not.toMatch(/комнат/);
     expect(tg.data).toContain('сообщения о привязке или отвязке способа входа и о подборе кода двухфакторной защиты');
   });
 
