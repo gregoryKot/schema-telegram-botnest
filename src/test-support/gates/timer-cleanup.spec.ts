@@ -224,4 +224,60 @@ describe('check-timer-cleanup.mjs', () => {
     expect(keysIn(second.stderr)).toEqual([`${key}#2`]);
     expect(run(twice, { [key]: reason, [`${key}#2`]: reason }).status).toBe(0);
   });
+
+  it('колбэк зовёт свою функцию, меняющую состояние: без очистки — красный, с очисткой и фабрика — зелёный', () => {
+    const tick = 'const tick = () => { setState(1); };\n';
+    const bad = `${tick}const go = () => { setTimeout(() => void tick(), 100); };`;
+    const good = [
+      tick,
+      'const timer = useRef(0);',
+      'useEffect(() => () => clearTimeout(timer.current), []);',
+      'timer.current = setTimeout(() => void tick(), 100);',
+    ].join('\n');
+    const factory = [
+      'function make() {',
+      '  let timer = null;',
+      '  const take = () => { if (timer) clearTimeout(timer); timer = null; };',
+      '  const send = () => { take(); onLeaveError(1); };',
+      '  return { go: () => { timer = setTimeout(() => send(), 100); }, leave: send };',
+      '}',
+    ].join('\n');
+    const res = run({ 'webapp/src/A.tsx': bad, 'webapp/src/B.tsx': good, 'shared/src/C.ts': factory });
+    expect(res.status).toBe(1);
+    expect(keysIn(res.stderr)).toEqual(['webapp/src/A.tsx::tick']);
+  });
+
+  it('очистка на два вызова от возвращённой функции — зелёный; никем не зовущий помощник — красный', () => {
+    const chain = [
+      'const t = useRef(0);',
+      'const clear = () => clearTimeout(t.current);',
+      'const stop = () => { clear(); };',
+      'useEffect(() => () => { stop(); }, []);',
+      't.current = setTimeout(() => setShown(false), 100);',
+    ].join('\n');
+    const orphan = [
+      'const t = useRef(0);',
+      'const clear = () => clearTimeout(t.current);',
+      't.current = setTimeout(() => setShown(false), 100);',
+    ].join('\n');
+    const res = run({ 'webapp/src/A.tsx': chain, 'webapp/src/B.tsx': orphan });
+    expect(res.status).toBe(1);
+    expect(keysIn(res.stderr)).toEqual(['webapp/src/B.tsx::setShown']);
+  });
+
+  it('класс: this.setState без componentWillUnmount — красный, с ним — зелёный', () => {
+    const cls = (unmount: string) => [
+      'class A extends Component {',
+      '  timer = 0;',
+      '  show() { this.timer = setTimeout(() => this.setState({ shown: false }), 100); }',
+      unmount,
+      '}',
+    ].join('\n');
+    const res = run({
+      'webapp/src/Bad.tsx': cls(''),
+      'webapp/src/Good.tsx': cls('  componentWillUnmount() { clearTimeout(this.timer); }'),
+    });
+    expect(res.status).toBe(1);
+    expect(keysIn(res.stderr)).toEqual(['webapp/src/Bad.tsx::this.setState']);
+  });
 });

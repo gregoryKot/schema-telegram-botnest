@@ -209,7 +209,7 @@
   "scripts/tap-targets-css.mjs": 88,
   "scripts/tap-targets-rules.mjs": 151,
   "scripts/telegram-chat-id-flow.mjs": 121,
-  "scripts/timer-cleanup-rules.mjs": 98,
+  "scripts/timer-cleanup-rules.mjs": 121,
   "scripts/webvisor-fields-scan.mjs": 109,
   "scripts/zero-coverage-rules.mjs": 68,
   "shared/src/about/aboutData.ts": 59,
