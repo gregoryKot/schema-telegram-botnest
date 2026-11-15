@@ -1,10 +1,9 @@
-// check-history-sheet.mjs судит оверлей по компоненту, а не по файлу
-// (docs/open/one-frontend.md, «Гейт оверлеев webapp — слепые зоны»). Раньше
-// второй оверлей в файле, который уже вызывал хук или стоял в бейслайне,
-// проходил мимо — ровно форма находки аудита 2026-10 с чек-ином без хука.
-// Общие случаи гейта — history-sheet.spec.ts.
+// check-history-sheet.mjs судит оверлей по компоненту, а не по файлу: хук
+// соседа не закрывает чек-ин без хука (форма находки аудита 2026-10), а
+// компонент рисует не больше оверлеев, чем вызывает хук, — второй оверлей в
+// том же компоненте требует записи с числом. Общие случаи — history-sheet.spec.ts.
 import { runGate } from './gate-sandbox';
-import { callExport } from './pattern-loader';
+import { callExport, importExport } from './pattern-loader';
 
 const GATE = 'check-history-sheet.mjs';
 const BASE = 'scripts/history-sheet-baseline.json';
@@ -77,8 +76,78 @@ describe('check-history-sheet.mjs — решение по компоненту',
   });
 });
 
+const SHEET_WITH_SUBSHEET = [
+  'export function Sheet({ onClose }: { onClose: () => void }) {',
+  '  const goBack = useHistorySheet(onClose);',
+  '  const [more, setMore] = useState(false);',
+  '  return (',
+  "    <div style={{ position: 'fixed', inset: 0 }} onClick={goBack}>",
+  '      {more && <BottomSheetShell goBack={() => setMore(false)}>ещё</BottomSheetShell>}',
+  '    </div>',
+  '  );',
+  '}',
+].join('\n');
+const CHECKIN_TWO_BRANCHES = [
+  'function Checkin({ ready, onClose }: { ready: boolean; onClose: () => void }) {',
+  "  if (!ready) return <div style={{ position: 'fixed', inset: 0 }} />;",
+  "  return <div style={{ position: 'fixed', inset: 0 }} onClick={onClose} />;",
+  '}',
+].join('\n');
+
+describe('check-history-sheet.mjs — оверлеев в компоненте не больше, чем вызовов хука', () => {
+  it('под-лист без своей записи в компоненте с хуком — красный, с числом', () => {
+    const res = run(SHEET_WITH_SUBSHEET);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/Screen.tsx › Sheet: оверлеев 2, а вызовов useHistorySheet 1',
+    );
+  });
+
+  it('контроль: "overlays" с верным числом — зелёный, с неверным — красный', () => {
+    const at = (n: number) => ({
+      'webapp/src/Screen.tsx': entry({ overlays: { Sheet: n } }),
+    });
+    expect(run(SHEET_WITH_SUBSHEET, at(2)).status).toBe(0);
+    const wrong = run(SHEET_WITH_SUBSHEET, at(3));
+    expect(wrong.status).toBe(1);
+    expect(wrong.stderr).toContain('в "overlays" 3, а оверлеев 2');
+  });
+
+  it('записанный компонент без хука: второй оверлей — красный, "overlays" с числом — зелёный', () => {
+    const plain = run(CHECKIN_TWO_BRANCHES, {
+      'webapp/src/Screen.tsx': entry(),
+    });
+    expect(plain.status).toBe(1);
+    expect(plain.stderr).toContain(
+      'Checkin: оверлеев 2, а запись закрывает один',
+    );
+    const counted = { overlays: { Checkin: 2 } };
+    expect(
+      run(CHECKIN_TWO_BRANCHES, { 'webapp/src/Screen.tsx': entry(counted) })
+        .status,
+    ).toBe(0);
+  });
+
+  it('"overlays" там, где хватает хука, или для чужого имени — протухшая запись', () => {
+    const res = run(`${SHEET_WITH_HOOK}\n\n${CHECKIN_NO_HOOK}`, {
+      'webapp/src/Screen.tsx': entry({ overlays: { Sheet: 1, Ghost: 2 } }),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('"overlays".Sheet: оверлеев 1');
+    expect(res.stderr).toContain(
+      '"overlays".Ghost: такого компонента-оверлея нет',
+    );
+  });
+});
+
 describe('history-sheet-detect.mjs — topLevelComponents', () => {
-  type Comp = { name: string; start: number; end: number; hook: boolean };
+  type Comp = {
+    name: string;
+    start: number;
+    end: number;
+    hook: boolean;
+    calls: number;
+  };
   const comps = (src: string) =>
     callExport('history-sheet-detect.mjs', 'topLevelComponents', src) as Comp[];
 
@@ -101,6 +170,34 @@ describe('history-sheet-detect.mjs — topLevelComponents', () => {
       '  return null;',
       '}',
     ].join('\n');
-    expect(comps(src)).toEqual([{ name: 'A', start: 1, end: 5, hook: false }]);
+    expect(comps(src)).toEqual([
+      { name: 'A', start: 1, end: 5, hook: false, calls: 0 },
+    ]);
+  });
+});
+
+describe('history-sheet-judge.mjs — judgeFile', () => {
+  type Verdict = { missing: string[]; problems: string[] };
+  const judge = (comps: unknown[]) =>
+    JSON.parse(
+      importExport(
+        'history-sheet-judge.mjs',
+        'judgeFile',
+        `(fn) => fn('F.tsx', ${JSON.stringify(comps)})`,
+      ),
+    ) as Verdict;
+  const hit = (line: number) => ({ line, what: 'x' });
+
+  it('без записи: компонент без хука — missing, лишний оверлей при хуке — problems; два хита одной строки — одна точка', () => {
+    const got = judge([
+      { name: 'A', calls: 0, hits: [hit(1)] },
+      { name: 'B', calls: 1, hits: [hit(5), hit(9)] },
+      { name: 'C', calls: 1, hits: [hit(12), hit(12)] },
+    ]);
+    expect(got.missing).toEqual(['   F.tsx › A  (L1: x)']);
+    expect(got.problems).toHaveLength(1);
+    expect(got.problems[0]).toContain(
+      'F.tsx › B: оверлеев 2, а вызовов useHistorySheet 1',
+    );
   });
 });

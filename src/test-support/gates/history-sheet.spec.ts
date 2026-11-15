@@ -260,10 +260,9 @@ describe('check-history-sheet.mjs — бейслайн', () => {
   });
 });
 
-// Рамки-оверлеи (ExScreen, BottomSheetShell) рисуют fixed-оболочку сами, а у
-// потребителя своего `position: fixed` нет — до 2026-11 гейт их не видел: шторка
-// «О советах» (NeedAdviceModal) жила с локальным onClose, «Назад» закрывал лист
-// под ней. Теперь файл с тегом рамки — оверлей, как с инлайновым fixed.
+// Рамки-оверлеи (ExScreen, BottomSheetShell, Dialog, ConfirmDialog) рисуют fixed-оболочку
+// сами, а у потребителя своего `position: fixed` нет: без тега гейт их не видел (шторка
+// «О советах» жила с локальным onClose, CelebrationDialog — без записи истории).
 const FRAME_NO_HOOK = [
   "import { ExScreen } from './exercises/ExScreen';",
   'export function Ex({ onBack }: { onBack: () => void }) {',
@@ -278,6 +277,20 @@ const SHEET_FRAME_NO_HOOK = [
   '}',
   '',
 ].join('\n');
+const DIALOG_NO_HOOK = [
+  "import { Dialog } from './Dialog';",
+  'export function Note({ onClose }: { onClose: () => void }) {',
+  '  return <Dialog label="Заметка" onClose={onClose} closeOnEscape>текст</Dialog>;',
+  '}',
+  '',
+].join('\n');
+const CONFIRM_NO_HOOK = [
+  "import { ConfirmDialog } from './ConfirmDialog';",
+  'export function Ask({ onClose }: { onClose: () => void }) {',
+  '  return <ConfirmDialog title="Удалить?" message="м" confirmLabel="Да" onConfirm={onClose} onCancel={onClose} />;',
+  '}',
+  '',
+].join('\n');
 const FRAME_WITH_HOOK = [
   "import { ExScreen } from './exercises/ExScreen';",
   "import { useHistorySheet } from '../hooks/useHistorySheet';",
@@ -288,10 +301,12 @@ const FRAME_WITH_HOOK = [
   '',
 ].join('\n');
 
-describe('check-history-sheet.mjs — потребители рамок ExScreen/BottomSheetShell', () => {
+describe('check-history-sheet.mjs — потребители рамок-оверлеев', () => {
   it.each([
     ['<ExScreen', FRAME_NO_HOOK],
     ['<BottomSheetShell', SHEET_FRAME_NO_HOOK],
+    ['<Dialog', DIALOG_NO_HOOK],
+    ['<ConfirmDialog', CONFIRM_NO_HOOK],
   ])('%s без хука и без записи — красный, с путём', (_tag, src) => {
     const res = runGate(GATE, {
       'webapp/src/components/Consumer.tsx': src,
@@ -322,11 +337,12 @@ describe('check-history-sheet.mjs — потребители рамок ExScreen
     expect(res.status).toBe(0);
   });
 
-  it('контроль: рамка в комментарии, похожее имя тега (ExScreenSkeleton) и импорт без тега — не оверлей', () => {
+  it('контроль: рамка в комментарии, похожие имена (ExScreenSkeleton; HistoryConfirmDialog — хук внутри) и импорт без тега — не оверлей', () => {
     const src = [
       "import { ExScreen, ExScreenSkeleton } from './exercises/ExScreen';",
-      '// раньше здесь был <ExScreen> — теперь силуэт',
-      'export const S = () => <ExScreenSkeleton />;',
+      "import { HistoryConfirmDialog } from './HistoryConfirmDialog';",
+      '// раньше здесь был <ExScreen> и <Dialog> — теперь силуэт',
+      'export const S = () => <><ExScreenSkeleton /><HistoryConfirmDialog title="?" /></>;',
       '',
     ].join('\n');
     const res = runGate(GATE, {
