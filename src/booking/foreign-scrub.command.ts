@@ -8,7 +8,7 @@ import {
 import type { Context, Telegraf } from 'telegraf';
 import { TELEGRAF_BOT } from '../telegram/telegram.constants';
 import { PrismaService } from '../prisma/prisma.service';
-import { isAdminSender } from '../utils/admin-alert';
+import { registerBackgroundAdminCommand } from './admin-background-command';
 import { CalDavService } from './caldav.service';
 import { MeetingService, ZOOM_TOPIC } from './meeting.service';
 import { anonymizeCutoff } from './booking-retention.service';
@@ -21,11 +21,9 @@ import {
 } from './foreign-scrub';
 
 // /scrub_foreign — сухой прогон, /scrub_foreign go — боевой (только ADMIN_ID).
-// Идёт фоном: проход по площадкам с паузами дольше таймаута обработчика бота.
 @Injectable()
 export class ForeignScrubCommand implements OnModuleInit {
   private readonly logger = new Logger(ForeignScrubCommand.name);
-  private running: Promise<void> | null = null;
   /** Пауза между запросами к площадке: iCloud и Zoom режут частые вызовы. */
   pauseMs = 400;
 
@@ -39,35 +37,11 @@ export class ForeignScrubCommand implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.bot?.command('scrub_foreign', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        if (this.running) {
-          await ctx.reply(
-            '⏳ Чистка уже идёт — итог придёт отдельным сообщением.',
-          );
-          return;
-        }
-        const live = ctx.message.text.split(/\s+/)[1] === 'go';
-        await ctx.reply('⏳ Запущено — итог придёт отдельным сообщением.');
-        this.running = this.report(live)
-          .then((text) => ctx.reply(text))
-          .then(() => undefined)
-          .catch(async (err: unknown) => {
-            this.logger.error('scrub_foreign failed', err);
-            await ctx
-              .reply('❌ Чистка оборвалась, подробности в логах.')
-              .catch(() => null);
-          })
-          .finally(() => {
-            this.running = null;
-          });
-      } catch (err) {
-        this.logger.error('scrub_foreign command failed', err);
-      }
+    registerBackgroundAdminCommand(this.bot, this.logger, {
+      name: 'scrub_foreign',
+      busy: '⏳ Чистка уже идёт — итог придёт отдельным сообщением.',
+      failed: '❌ Чистка оборвалась, подробности в логах.',
+      run: (live) => this.report(live),
     });
   }
 
