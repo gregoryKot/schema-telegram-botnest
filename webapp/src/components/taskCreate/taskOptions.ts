@@ -3,7 +3,7 @@ import { ENTITY_LOOK, type PaperHue, type SignKey } from '../../../../shared/src
 import { taskEntity } from '../../sections/practice/taskEntity';
 
 export type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
-/** Бумага и знак — сущности, куда задание ведёт (ENTITY_LOOK, как у TaskSign), а не templateHue по названию (b20). */
+/** Бумага и знак — сущности, куда задание ведёт (ENTITY_LOOK, как у TaskSign), а не оттенок по названию. */
 export type TaskOption = { type: TaskType; label: string; sub: string; hasStreak?: boolean; time: string; hue: PaperHue; sign: SignKey };
 
 /** Задания-упражнения библиотеки: срок берётся из каталога, а не своей цифрой (QA 2026-11, М6). */
