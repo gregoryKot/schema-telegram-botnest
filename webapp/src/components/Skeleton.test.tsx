@@ -8,7 +8,7 @@
 // плашку инлайн-градиентом мимо общего класса .skel.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { Skeleton, SkeletonCard, SkeletonList, ScreenSkeleton } from './Skeleton';
+import { Skeleton, SkeletonCard, SkeletonLines, SkeletonList, ScreenSkeleton } from './Skeleton';
 
 afterEach(cleanup);
 
@@ -25,6 +25,21 @@ describe('Skeleton — примитив', () => {
     const el = container.firstElementChild as HTMLElement;
     expect(el.style.height).toBe('200px');
     expect(el.style.borderRadius).toBe('12px');
+  });
+
+  it('className добавляется к .skel, а не заменяет его: форма из CSS, цвет и шиммер — общие', () => {
+    const { container } = render(<Skeleton className="ac-skel-cover" height="auto" />);
+    const el = container.firstElementChild as HTMLElement;
+    expect(el.className).toBe('skel ac-skel-cover');
+    expect(el.style.height).toBe('auto');
+  });
+});
+
+describe('SkeletonLines — строки текста', () => {
+  it('по плашке на строку: ширины по порядку, высота кегля у каждой', () => {
+    const { container } = render(<SkeletonLines widths={['90%', 120]} height={18} />);
+    const bars = Array.from(container.querySelectorAll<HTMLElement>('.skel'));
+    expect(bars.map((b) => [b.style.width, b.style.height])).toEqual([['90%', '18px'], ['120px', '18px']]);
   });
 });
 
