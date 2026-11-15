@@ -33,6 +33,10 @@ export const isPhone = (m: string) => m.trim() === `@media ${PHONE_MEDIA}`;
 /** Блок касаний любой ширины; телефонный блок сюда не входит, хотя в PHONE_MEDIA тоже есть pointer: coarse. */
 export const isTouch = (m: string) => /pointer:\s*coarse/.test(m) && !isPhone(m);
 export const isDesktop = (m: string) => /min-width:\s*768px/.test(m);
+/** Разворот SpreadLayout (paper-app.css): ширина ≥1024 и (высота ≥501 или мышь). Дополнение — колонкой: лист
+ *  сверху, форма под ним (порядок aside ExScreen — sheet-exercises.css); сверка — utils/phoneLayout.test.ts. */
+export const SPREAD_MEDIA = '(min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine)';
+export const SPREAD_COLUMN_MEDIA = '(max-width: 1023px), (pointer: coarse) and (max-height: 500px)';
 
 /** Объявление у селектора вне телефонного блока и вне ≥768 (включая блок касаний) — нарушение. */
 export function unscopedPhone(rules: Rule[], selector: string, decl: RegExp): string[] {

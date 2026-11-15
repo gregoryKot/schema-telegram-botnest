@@ -2970,7 +2970,7 @@
   "webapp/src/share/SharePillButton.tsx": 28,
   "webapp/src/share/TherapistInviteShare.tsx": 28,
   "webapp/src/styles/cssBundle.test-helpers.ts": 9,
-  "webapp/src/styles/cssRules.test-helpers.ts": 71,
+  "webapp/src/styles/cssRules.test-helpers.ts": 75,
   "webapp/src/test-support/crashScreenGuard.ts": 93,
   "webapp/src/test-support/crisisCardHarness.ts": 80,
   "webapp/src/test-support/cssContrast.ts": 94,
