@@ -53,7 +53,7 @@ function main() {
     console.error(
       '\nuserId — чат только у телеграм-входа; у почты, Google, MAX и после слияния — нет.\n' +
         'Адрес берётся из AuthProvider: telegramIdFor / telegramIdsFor (src/auth/telegram-identity.ts);\n' +
-        'null — писать некуда (не «заблокировал бота»). «через X» — адрес дошёл до отправки параметром X.',
+        'null — писать некуда (не «заблокировал бота»). «через X» — адрес дошёл до отправки параметром функции X.',
     );
     process.exit(1);
   }

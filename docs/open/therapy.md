@@ -116,8 +116,9 @@
 - **Гейт `check-telegram-chat-id.mjs` идёт через параметры, но без типов**
   (`scripts/telegram-chat-id-flow.mjs`). Адрес полем параметра (`Number(s.chatId)`,
   `({ chatId })`) и вызов `obj.send(` одноимённой функции, которая отправляет не из
-  каждого объявления (`send` канала, почты, очереди), он не проверяет. Сейчас такой
-  путь один — очередь уведомлений, адрес из `resolveChatId` (`src/bot/send-settings.ts`).
+  каждого объявления (`send` канала, почты, очереди), он не проверяет. Сейчас так идут
+  очередь уведомлений (адрес — `resolveChatId` в `src/bot/send-settings.ts`) и пост
+  канала (`target.send(post, destination)`, адрес — `destination()` цели из env).
 
 **Подписи активности клиента — остаток после правила `status-label-m`**
 (`scripts/gendered-forms-status-patterns.mjs`):
