@@ -35,7 +35,7 @@ export function readRoomUrl(stored: string): string | null {
  * случайной (`replaced` — владелец узнаёт из DM) и записывается в ClientMeeting
  * условно, по прежнему шифротексту: два одновременных подтверждения одного
  * клиента не выписывают две комнаты, проигравший берёт комнату победителя.
- * Нечитаемая комната заменяется так же: шифротекст наружу не уходит.
+ * Нечитаемая заменяется так же, id её Zoom снимается (апгрейд Jitsi→Zoom повторим).
  */
 export async function reuseClientRoom(
   prisma: PrismaService,
@@ -52,7 +52,7 @@ export async function reuseClientRoom(
   const fresh = jitsiRoom();
   const res = await prisma.clientMeeting.updateMany({
     where: { clientKey: key, meetingUrl: row.meetingUrl },
-    data: { meetingUrl: encrypt(fresh) ?? fresh },
+    data: { meetingUrl: encrypt(fresh) ?? fresh, zoomMeetingId: null },
   });
   if (res.count === 0) {
     const won = await prisma.clientMeeting.findUnique({

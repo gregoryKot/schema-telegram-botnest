@@ -48,10 +48,10 @@ interface Row {
 }
 type Where<T> = { where: T };
 
-function setup(meetingUrl: string) {
+function setup(meetingUrl: string, zoomMeetingId: string | null = null) {
   const key = app.keys.clientKey('@maria');
   const store = new Map<string, Row>([
-    [key, { clientKey: key, meetingUrl, zoomMeetingId: null }],
+    [key, { clientKey: key, meetingUrl, zoomMeetingId }],
   ]);
   const prisma = {
     clientMeeting: {
@@ -87,7 +87,7 @@ afterEach(() => jest.restoreAllMocks());
 describe('Повторная бронь: нечитаемая комната клиента', () => {
   it('строка под чужим ключом → новая комната, запись по прежнему шифротексту', async () => {
     const lost = foreign.encrypt('https://zoom.us/j/1?pwd=x') as string;
-    const { service, prisma, store, key } = setup(lost);
+    const { service, prisma, store, key } = setup(lost, '111');
 
     const { url, replaced } = await service.createMeeting(TARGET);
 
@@ -95,8 +95,10 @@ describe('Повторная бронь: нечитаемая комната к�
     expect(replaced).toBe(true); // владелец узнает о смене комнаты из DM
     expect(prisma.clientMeeting.updateMany).toHaveBeenCalledWith({
       where: { clientKey: key, meetingUrl: lost },
-      data: { meetingUrl: expect.any(String) },
+      data: { meetingUrl: expect.any(String), zoomMeetingId: null },
     });
+    // id чужой комнаты Zoom снят: апгрейд Jitsi→Zoom снова возможен
+    expect(store.get(key)!.zoomMeetingId).toBeNull();
     // сохранил → нашёл: следующая бронь переиспользует новую комнату
     expect(app.crypto.decrypt(store.get(key)!.meetingUrl)).toBe(url);
     expect(await service.createMeeting(TARGET)).toEqual({
