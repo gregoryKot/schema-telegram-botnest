@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useClientDetail } from './useClientDetail';
 import { conceptServer } from './conceptServer.test-helpers';
+import { CONCEPT_PATCH_LINKS_MAX } from '../../../../shared/src/therapy/conceptGraph/conceptPatch';
 
 vi.mock('../../api', () => ({
   api: {
@@ -107,5 +108,45 @@ describe('автосохранение концептуализации: пат�
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(3);
     expect(result.current.saveStatus).toBe('error');
     expect(result.current.localConcept.goals).toBe('правка вкладки');
+  });
+});
+
+// «Восстановить» версию шлёт restore: сервер кладёт нынешнее состояние в историю даже в окне склейки
+// (src/therapy/concept-history.ts). Флаг нужен ровно одному принятому запросу отката.
+describe('«Восстановить» версию: флаг restore', () => {
+  const restoreFlags = () => mockApi.saveConceptualization.mock.calls.map((c) => (c[1] as { restore?: boolean }).restore);
+
+  it('откат не дошёл (сеть) → «Повторить» шлёт его с флагом; обычная правка потом — без флага', async () => {
+    const result = await opened();
+    mockApi.saveConceptualization.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    act(() => { result.current.restoreConcept({ goals: 'старая цель' }); });
+    await settle();
+    expect(result.current.saveStatus).toBe('error');
+    act(() => { result.current.retrySave(); });
+    await settle();
+    act(() => { result.current.patchConcept({ triggers: 'после отката' }); });
+    await settle();
+    expect(restoreFlags()).toEqual([true, true, undefined]);
+    expect(srv.state.goals).toBe('старая цель');
+    expect(srv.state.triggers).toBe('после отката');
+  });
+
+  it('откат поверх записи из другого окна: 409 → перечитал и повторил с тем же флагом', async () => {
+    const result = await opened();
+    srv.writeElsewhere({ modeIds: ['vulnerable_child', 'angry_child'] });
+    act(() => { result.current.restoreConcept({ goals: 'старая цель' }); });
+    await settle();
+    expect(restoreFlags()).toEqual([true, true]);
+    expect(srv.state.goals).toBe('старая цель');
+    expect(srv.state.modeIds).toEqual(['vulnerable_child', 'angry_child']);
+  });
+
+  it('откат в несколько запросов: флаг только у первого — снимок «до» нужен один', async () => {
+    const result = await opened();
+    const links = Array.from({ length: CONCEPT_PATCH_LINKS_MAX + 1 }, (_, i) => link(`mode_${i}`, 'старое'));
+    act(() => { result.current.restoreConcept({ modeLinks: links }); });
+    await settle();
+    expect(restoreFlags()).toEqual([true, undefined]);
+    expect(srv.state.modeLinks).toEqual(links);
   });
 });
