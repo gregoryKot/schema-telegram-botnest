@@ -1,7 +1,7 @@
 // «Что поможет» — блок между карточкой и записями: голос Здорового Взрослого
 // (режим — вставкой мха со знаком Together, HealthyVoice) или совет и потребность
 // (схема) плюс три быстрые практики — плитка QuickTile квадратов «Практик» без счётчика,
-// бумага и знак из QUICK_LOOK (вместо пилюль с эмодзи 🌬🌍🛑, b15); они открывают тот же
+// бумага и знак из ENTITY_LOOK (вместо пилюль с эмодзи 🌬🌍🛑, b15); они открывают тот же
 // QuickPracticeSheet, что и «Здесь и сейчас». Контент собирает
 // shared/pattern/patternHelpContent (один источник с мини-аппом).
 import { useState } from 'react';
@@ -9,7 +9,7 @@ import { QuickPracticeSheet } from '../practice/QuickPracticeSheet';
 import { QuickTile } from '../practice/QuickTile';
 import { HealthyVoice } from '../paper/HealthyVoice';
 import { useTr, useAddressForm } from '../../utils/addressForm';
-import { QUICK_LOOK } from '../practice/quickLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { resolveModeHelp, resolveSchemaHelp } from '../../../../shared/src/pattern/patternHelpContent';
 import {
   QUICK_PRACTICE_IDS,
@@ -48,7 +48,7 @@ export function PatternHelpSection({ kind, id }: Props) {
       <div className="ps-practices-box"><div className="ps-practices" role="group" aria-label="Быстрые практики">
         {QUICK_PRACTICE_IDS.map((pid) => {
           const p = buildQuickPractice(pid, tr);
-          return <QuickTile key={pid} plain look={QUICK_LOOK[pid]} title={p.title} text={p.subtitle} onClick={() => setActive(pid)} />;
+          return <QuickTile key={pid} plain look={ENTITY_LOOK[pid]} title={p.title} text={p.subtitle} onClick={() => setActive(pid)} />;
         })}
       </div></div>
       {active && <QuickPracticeSheet id={active} onClose={() => setActive(null)} />}

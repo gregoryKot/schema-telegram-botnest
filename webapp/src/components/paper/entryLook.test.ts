@@ -1,6 +1,6 @@
-// Вид окон первого входа (b06-entry): исходы приглашения — те же, что OUTCOME_LOOK (литералы
-// держат главный чанк, сверка — здесь, правило №4); шаги согласий — три разные бумаги дальше 40°
-// друг от друга, знаки есть в словаре; варианты «ты/вы» не совпадают ни друг с другом, ни с шапкой.
+// Вид окон первого входа (b06-entry): исходы приглашения — те же, что OUTCOME_LOOK; шаги согласий —
+// три разные бумаги дальше 40° друг от друга, знаки есть в словаре; варианты «ты/вы» не совпадают
+// ни друг с другом, ни с шапкой.
 import { describe, it, expect } from 'vitest';
 import { OUTCOME_LOOK, PAPER_HUE, SIGN_KEYS } from '../../../../shared/src/theme/entityLook';
 import {
@@ -12,7 +12,7 @@ const gap = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return 
 const PALETTE: readonly number[] = Object.values(PAPER_HUE);
 
 describe('entryLook', () => {
-  it('исходы приглашения — «готово» и «устарело» таблицы исходов (сама таблица сверена в outcomeLook.test.ts)', () => {
+  it('исходы приглашения — «готово» и «устарело» таблицы исходов', () => {
     expect(JOIN_DONE_LOOK).toEqual(OUTCOME_LOOK.done);
     expect(JOIN_STALE_LOOK).toEqual(OUTCOME_LOOK.wait);
   });

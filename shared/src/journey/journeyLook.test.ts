@@ -1,13 +1,10 @@
-// Вид шага «Моего пути» — один источник для ленты, плитки счётчика и детали (b22-journey).
-// Сверка (правило №4): у каждого типа шага из реестра journeyMeta есть знак из SIGN_KEYS и бумага
-// палитры; шаг на одну потребность — её вид; режим — небо и знак группы; незнакомое — без знака.
+// Вид шага «Моего пути» — один источник для ленты, плитки счётчика и детали (b22-journey):
+// у каждого типа шага из реестра journeyMeta — вид его сущности из ENTITY_LOOK; шаг на одну
+// потребность — её вид; режим — небо и знак группы; незнакомое — без знака.
 import { describe, it, expect } from 'vitest';
 import { JOURNEY_TYPE_META } from './journeyMeta';
 import {
-  CHILDHOOD_LOOK,
   CHILDHOOD_STAT,
-  JOURNEY_LOOK,
-  JOURNEY_NEED_LOOK,
   journeyItemLook,
   journeyStatLook,
 } from './journeyLook';
@@ -25,35 +22,21 @@ import { canvasSign } from '../share/kit/signs';
 
 const HUES = Object.values(PAPER_HUE) as number[];
 
-describe('литеральные таблицы вида сверены с ENTITY_LOOK (правило №4)', () => {
-  it('JOURNEY_LOOK — вид сущности JOURNEY_ENTITY каждого типа', () => {
-    const want = Object.fromEntries(
-      Object.entries(JOURNEY_ENTITY).map(([type, e]) => [
-        type,
-        { hue: ENTITY_LOOK[e].hue, sign: ENTITY_LOOK[e].sign },
-      ]),
-    );
-    const hueSign = Object.fromEntries(
-      Object.entries(JOURNEY_LOOK).map(([type, l]) => [
-        type,
-        { hue: l.hue, sign: l.sign },
-      ]),
-    );
-    expect(hueSign).toEqual(want);
+describe('вид шага — вид его сущности', () => {
+  it('тип шага — бумага и знак сущности JOURNEY_ENTITY из ENTITY_LOOK', () => {
+    for (const [type, e] of Object.entries(JOURNEY_ENTITY)) {
+      const { hue, sign } = ENTITY_LOOK[e];
+      expect(journeyItemLook({ type }), type).toMatchObject({ hue, sign });
+    }
   });
 
   it('благодарность — Pebbles filled (лёг один камешок), «Заметка дня» — обычные камешки', () => {
-    expect(JOURNEY_LOOK.gratitude).toMatchObject({ sign: 'pebbles', n: 1 });
-    expect(JOURNEY_LOOK.note.n).toBeUndefined();
+    expect(journeyItemLook({ type: 'gratitude' })).toMatchObject({
+      sign: 'pebbles',
+      n: 1,
+    });
+    expect(journeyItemLook({ type: 'note' })?.n).toBeUndefined();
     expect(journeyStatLook('gratitude')?.n).toBe(1);
-  });
-
-  it('JOURNEY_NEED_LOOK — needLook каждой потребности; колесо детства — его сущность', () => {
-    expect(JOURNEY_NEED_LOOK).toEqual(
-      Object.fromEntries(NEED_ORDER.map((id) => [id, needLook(id)])),
-    );
-    const { hue, sign } = ENTITY_LOOK.childhood_wheel;
-    expect(CHILDHOOD_LOOK).toEqual({ hue, sign });
   });
 });
 
@@ -157,7 +140,10 @@ describe('карточки шаринга рисуют знак каждого �
   );
 
   it('у шага на потребность и у колеса детства — тоже', () => {
-    for (const l of [...Object.values(JOURNEY_NEED_LOOK), CHILDHOOD_LOOK])
+    for (const l of [
+      ...NEED_ORDER.map(needLook),
+      journeyStatLook(CHILDHOOD_STAT)!,
+    ])
       expect(canvasSign(l.sign)).toBe(l.sign);
   });
 });
