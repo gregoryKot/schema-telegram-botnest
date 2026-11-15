@@ -168,10 +168,10 @@ describe('check-telegram-chat-id.mjs', () => {
       importExport(
         'telegram-chat-id-params.mjs',
         'fieldOf',
-        '(f) => [f("{ chatId: userId, x: 1 }", "chatId"), f("{ x: 1, chatId }", "chatId"), f("opts", "chatId") ?? null, f("{ other: 1 }", "chatId") ?? null]',
+        '(f) => [f("{ chatId: userId, x: 1 }", "chatId"), f("{ x: 1, chatId }", "chatId"), f("opts", "chatId") ?? null, f("{ other: 1 }", "chatId") ?? null, f("{ a: g(1, 2), chatId: h(x, y) }", "chatId")]',
       ),
     );
-    expect(got).toEqual(['userId', 'chatId', null, null]);
+    expect(got).toEqual(['userId', 'chatId', null, null, 'h(x, y)']);
   });
 
   it('отправщики по имени: sendTg(адрес, …) и sendBounded(бот, адрес, …)', () => {

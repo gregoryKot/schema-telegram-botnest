@@ -1,6 +1,6 @@
 // Параметры функций-отправщиков для telegram-chat-id-flow.mjs: из какого
 // параметра (целиком, полем, шаблоном) взят адрес и как достать поле из литерала вызова.
-import { callArgs } from './gate-functions.mjs';
+import { callArgs, splitTop } from './gate-functions.mjs';
 
 /** Параметр функции, откуда взято name: целиком (`k`), полем (`k.field` — `s.chatId`) или из шаблона `({ chatId })`. */
 function paramKey(fn, src, name) {
@@ -27,9 +27,12 @@ export function declaring(fns, src, at, name) {
   return best?.name ? { fn: best, k: paramKey(best, src, name) } : null;
 }
 
-/** Значение поля из литерала объекта-аргумента `{ chatId: x, … }` / `{ chatId }`. */
+/** Значение поля из литерала объекта-аргумента `{ chatId: x, … }` / `{ chatId }`; spread и объект-переменная — undefined. */
 export function fieldOf(arg, field) {
   const body = /^\{([\s\S]*)\}$/.exec(arg.trim())?.[1];
-  const m = body && new RegExp(String.raw`(?:^|,)\s*${field}\s*(?::\s*([^,]+))?\s*(?=,|$)`).exec(body);
-  return m ? (m[1] ?? field).trim() : undefined;
+  for (const part of body ? splitTop(body) : []) {
+    const m = new RegExp(String.raw`^\s*${field}\s*(?::\s*([\s\S]+))?$`).exec(part);
+    if (m) return (m[1] ?? field).trim();
+  }
+  return undefined;
 }

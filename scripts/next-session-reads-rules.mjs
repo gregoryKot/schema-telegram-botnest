@@ -1,8 +1,8 @@
 // Разбор для гейта check-next-session-reads.mjs (движок — там же: обход,
 // исключения, отчёт). Чтение `nextSession` мимо upcomingSession — это
 // `.nextSession`/`?.nextSession` не первым аргументом `upcomingSession(…)` и
-// деструктуризация: в объявлении (`const { nextSession } = rel`, `for (const { nextSession } of rels)`) и в параметрах
-// функции (`({ nextSession }) =>`, `function f({ nextSession: ns }: P) {`,
+// деструктуризация: в объявлении (`const { nextSession } = rel`, `for (const { nextSession } of …)`)
+// и в параметрах функции (`({ nextSession }) =>`, `function f({ nextSession: ns }: P) {`,
 // вложенная `({ rel: { nextSession } }) =>`). Запись (`x.nextSession = …`),
 // ключ объекта в вызове (`save({ nextSession: … })`) и типы
 // (`(r: { nextSession: string }) =>`) — не чтения.
