@@ -163,8 +163,6 @@
   дня благодарности, который приходит с сервера в UTC (правило №25). Решать
   вместе с тем, в какой системе координат живёт лента дневника.
 
-**Сверка карты инвалидации не видит мутаций мимо api-помощников** (осознанно, 2026-11): `shared/src/api/apiCacheRules.coverage.test.ts` читает вызовы `post(`/`postJson(`/`patchJson(`/`del(` (и `t.`-транспорта) в `SOURCES`, но не голый `fetch`/`authedFetch(path, { method })`. Сейчас так ходят только `/api/auth/*` (мимо кеша, `NO_CACHE` в `shared/src/api/apiCache.ts`), `POST /api/ratings` в `shared/src/api/ratingApi.ts` (правило в карте есть) и заявка терапевта (`webapp/src/pages/account/TherapistRequestSection.tsx`, её GET тоже голый `fetch`, не кешируется). Новая мутация голым `authedFetch` с кешируемым GET мимо сверки пройдёт — переводить такие места на помощники api-слоя.
-
 **Pre-push хук собирает только `webapp`** (2026-11-05, осознанно): `scripts/git-hooks/pre-push`
 гоняет `tsc -b && vite build` сайта — то, что ломалось только на машине владельца (регистр имён,
 #933); `tsc` бэкенда, vitest `webapp`/`shared` и остальные сьюты остаются работой CI — в хуке они
