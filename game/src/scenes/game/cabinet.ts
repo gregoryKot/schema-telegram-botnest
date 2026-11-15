@@ -125,6 +125,7 @@ export function sessionScene(s: GameScene) {
 
 // Финальная CTA: запись + шаринг + донат
 function showTherapyCta(s: GameScene) {
+  setTouchControls(false); // тач-кнопки закрывали «в меню» и кризисную строку
   track('demo_end', { chapter: s.chapter.id });
   trackEvent('game_chapter_done', { chapter: s.chapter.id });
   trackEvent('game_cta_shown', { from: 'cabinet' });
@@ -144,40 +145,39 @@ function showTherapyCta(s: GameScene) {
   const top = mk(130, t('m_mister_reached'), 13, '#fff0d8');
   const sum = mk(206, t('m_cab_final'), 11, '#c0b8e8');
 
-  const ctaTxt = mk(276, t('m_try_in_app'), 12, '#88ffcc');
-  const cta = s.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
+  const ctaTxt = mk(264, t('m_try_in_app'), 12, '#88ffcc');
+  const cta = s.add.rectangle(W / 2, 264 * ky, ctaTxt.width + 40, 42, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
   // вторая кнопка тише главной: честная подпись, без рамки
-  const book = mk(320, t('m_book_therapist'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
-  const shareTxt = mk(360, t('m_share'), 11, '#c0b8e8');
-  const share = s.add.rectangle(W / 2, 360 * ky, shareTxt.width + 30, 34, 0x241d3a)
+  const bot = mk(305, t('m_open_in_telegram'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const book = mk(341, t('m_book_therapist'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const shareTxt = mk(386, t('m_share'), 11, '#c0b8e8');
+  const share = s.add.rectangle(W / 2, 386 * ky, shareTxt.width + 30, 34, 0x241d3a)
     .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-  const donTxt = mk(404, t('m_support_game'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
-  const menu = mk(442, t('m_or_back_to_menu'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const donTxt = mk(424, t('m_support_game'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const menu = mk(454, t('m_or_back_to_menu'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: top, alpha: 1, duration: 800, delay: 300 });
   s.tweens.add({ targets: sum, alpha: 1, duration: 700, delay: 1200 });
   s.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 2000 });
-  s.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 2300 });
+  s.tweens.add({ targets: [bot, book], alpha: 0.85, duration: 700, delay: 2300 });
   s.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2600 });
   s.tweens.add({ targets: [donTxt, menu], alpha: 0.85, duration: 700, delay: 3100 });
 
-  cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
-  cta.on('pointerout', () => cta.setFillStyle(0x153028));
-  cta.on('pointerdown', () => openCta('cabinet', 'app'));
-  book.on('pointerover', () => book.setColor('#d8c8ec'));
-  book.on('pointerout', () => book.setColor('#9b8fbf'));
-  book.on('pointerdown', () => openCta('cabinet', 'booking'));
-  share.on('pointerover', () => share.setFillStyle(0x322a52));
-  share.on('pointerout', () => share.setFillStyle(0x241d3a));
+  cta.on('pointerover', () => cta.setFillStyle(0x1d4536)).on('pointerout', () => cta.setFillStyle(0x153028))
+    .on('pointerdown', () => openCta('cabinet', 'app'));
+  for (const [txt, to] of [[bot, 'bot'], [book, 'booking']] as const) {
+    txt.on('pointerover', () => txt.setColor('#d8c8ec')).on('pointerout', () => txt.setColor('#9b8fbf'))
+      .on('pointerdown', () => openCta('cabinet', to));
+  }
+  share.on('pointerover', () => share.setFillStyle(0x322a52)).on('pointerout', () => share.setFillStyle(0x241d3a));
   share.on('pointerdown', () => {
     trackEvent('game_share', { from: 'cabinet' });
     const url = 'https://schemehappens.ru/game/?src=share';
     window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(t('m_share_road'))}`, '_blank');
   });
-  donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
-  donTxt.on('pointerout', () => donTxt.setColor('#9b8fbf'));
+  donTxt.on('pointerover', () => donTxt.setColor('#ffd86a')).on('pointerout', () => donTxt.setColor('#9b8fbf'));
   donTxt.on('pointerdown', () => { track('donate_click', { source: 'cabinet' }); window.open('https://schemehappens.ru/donate', '_blank'); });
   menu.on('pointerdown', () => s.scene.start('Start'));
-  addCrisisLine(s, 486 * ky, deep + 1);
+  addCrisisLine(s, 490 * ky, deep + 1);
 }
