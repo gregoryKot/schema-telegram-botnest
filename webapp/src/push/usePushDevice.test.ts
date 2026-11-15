@@ -13,6 +13,8 @@ import type { NotifyChannel } from '../../../shared/src/settings/notifyReach';
 beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  // По умолчанию сверка адреса не отвечает — строка судит по каналу (reconcilePushState).
+  vi.spyOn(pushApi, 'status').mockRejectedValue(new TypeError('Failed to fetch'));
 });
 afterEach(() => {
   removePushBrowser();
@@ -47,13 +49,35 @@ describe('usePushDevice — состояние', () => {
     await waitFor(() => expect(result.current.state).toBe('off'));
   });
 
-  it('подписка на устройстве есть и канал push — on', async () => {
-    installPushBrowser({ subscription: true });
+  it('подписка на устройстве есть и сервер знает её адрес — on; в сверку уходит адрес этого браузера', async () => {
+    const b = installPushBrowser({ subscription: true });
     vi.spyOn(pushApi, 'config').mockResolvedValue({ publicKey: 'KEY' });
+    const status = vi.spyOn(pushApi, 'status').mockResolvedValue({ known: true });
     expect((await ready('push')).result.current.state).toBe('on');
+    expect(status).toHaveBeenCalledWith(b.subscription?.endpoint);
   });
 
-  it('подписка в браузере есть, а сервер её забыл (канал не push) — off; клик переотправляет её', async () => {
+  it('канал push, но адрес этого браузера сервер не знает (подписано другое устройство) — off; клик переотправляет', async () => {
+    installPushBrowser({ subscription: true });
+    vi.spyOn(pushApi, 'config').mockResolvedValue({ publicKey: 'KEY' });
+    vi.spyOn(pushApi, 'status').mockResolvedValue({ known: false });
+    const enable = vi.spyOn(subscription, 'enablePush').mockResolvedValue({ kind: 'on', delivered: true });
+    const { result } = await ready('push');
+    expect(result.current.state).toBe('off');
+    await act(async () => result.current.toggle());
+    await waitFor(() => expect(result.current.state).toBe('on'));
+    expect(enable).toHaveBeenCalledWith('KEY');
+  });
+
+  it('подписки в браузере нет — сверку адреса не спрашивает', async () => {
+    installPushBrowser();
+    vi.spyOn(pushApi, 'config').mockResolvedValue({ publicKey: 'KEY' });
+    const status = vi.spyOn(pushApi, 'status');
+    expect((await ready()).result.current.state).toBe('off');
+    expect(status).not.toHaveBeenCalled();
+  });
+
+  it('сверка не ответила, подписка в браузере есть, а канал не push (сервер её забыл) — off; клик переотправляет её', async () => {
     installPushBrowser({ subscription: true });
     vi.spyOn(pushApi, 'config').mockResolvedValue({ publicKey: 'KEY' });
     const enable = vi.spyOn(subscription, 'enablePush').mockResolvedValue({ kind: 'on', delivered: true });
