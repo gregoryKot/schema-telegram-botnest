@@ -93,9 +93,11 @@
 - `macos-build` — то же на `macos-26` (регистронезависимая ФС, как у владельца; образ прибит, гейт `runner-pin.spec.ts`): `npm ci` корня, `webapp` и `shared`, `check-filename-case`, build webapp, vitest webapp и shared. Без Playwright и Postgres: что зелено на Linux, обязано быть зелёным и здесь (инцидент 2026-11-05, #933).
 - `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
 - `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
-- `alarm` — issue `ci-alarm` и DM в Telegram, если упала любая джоба.
+- `alarm` — вызов `alarm.yml` (ниже): issue `ci-alarm` и DM в Telegram, если упала любая джоба.
 
-**mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, отчёт артефактом, храповика и `alarm` нет.
+**mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, храповик `check-mutation-ratchet` с полом `scripts/mutation-bot-baseline.json`, отчёт артефактом; `alarm` — вызов `alarm.yml` со своим заголовком issue.
+
+**alarm.yml** (`workflow_call`, зовут `nightly.yml` и `mutation-bot.yml`): `alarm` — issue `ci-alarm` (одна открытая на заголовок, зелёный прогон её закрывает) и DM владельцу; результаты джоб приходят входом `needs` (`toJSON(needs)`), секреты бота — `secrets: inherit`. Шаги исполняет `src/infra/alarm-workflow.spec.ts`, вызов сверяет `src/infra/alarm-call.spec.ts`; у `prod-smoke.yml` своя джоба `alarm`.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
 - `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`; тело — `src/api/health-report.ts`, в нём и `startedAt`/`launch`/`crashesDay` — старт процесса и рестарты в контейнере), `/`, `/app/`, `/game/` по маркерам (маркер игры сверяет с `game/index.html` `src/test-support/gates/game-smoke-marker.spec.ts`).
