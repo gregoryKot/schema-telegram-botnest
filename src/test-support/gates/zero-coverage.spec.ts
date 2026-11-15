@@ -9,12 +9,13 @@ import { cleanupTmp, runGate } from './gate-sandbox';
 import { loadRegexList } from './pattern-loader';
 
 type Lines = { total: number; covered: number };
-const entry = (total: number, covered: number) => ({
+const entry = (total: number, covered: number, fns?: [number, number]) => ({
   lines: {
     total,
     covered,
     pct: total ? (covered / total) * 100 : 100,
   } as Lines,
+  ...(fns && { functions: { total: fns[0], covered: fns[1] } }),
 });
 const SUMMARY = 'coverage/coverage-summary.json';
 interface RunOpts {
@@ -59,6 +60,21 @@ describe('check-zero-coverage.mjs', () => {
     expect(run({ [f]: entry(1000, 99) }, {}).stderr).toContain(
       `${f}: 9.9% строк`,
     );
+  });
+
+  it('ни одной вызванной функции при 80% строк — красный; одна вызванная или функций нет — зелёный', () => {
+    const f = 'src/push/push.controller.ts';
+    const red = run({ [f]: entry(10, 8, [4, 0]) }, {});
+    expect(red.status).toBe(1);
+    expect(red.stderr).toContain(
+      `${f}: ни одной вызванной функции (80.0% строк`,
+    );
+    const reason = { [f]: 'без ветвлений, ручки зовёт Nest' };
+    expect(run({ [f]: entry(10, 8, [4, 0]) }, reason).status).toBe(0);
+    expect(run({ [f]: entry(10, 8, [4, 1]) }, {}).status).toBe(0);
+    // DTO из одних декораторов: функций нет — не «почти ноль».
+    const dto = { 'src/push/push.dto.ts': entry(19, 17, [0, 0]) };
+    expect(run(dto, {}).status).toBe(0);
   });
 
   it('абсолютный путь из summary jest сводится к src/… песочницы', () => {
