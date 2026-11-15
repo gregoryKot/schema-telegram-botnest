@@ -3,7 +3,7 @@
 // аккаунтами (CLAUDE.md: см. src/auth/merge.service.ts на бэкенде). Мокаем
 // global fetch напрямую (компонент ходит через fetch, не через '../api') —
 // образец: AccountPage.test.tsx / AuthCallback.test.tsx.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
@@ -18,10 +18,10 @@ function jsonResponse(status: number, body: unknown): Response {
   } as unknown as Response;
 }
 
-let fetchMock: ReturnType<typeof vi.fn>;
+let fetchMock: Mock;
 // Сводка по токену (POST /api/auth/merge/preview) — отдельный мок, чтобы
 // fetchMock по-прежнему видел только сам merge (индексы вызовов в тестах ниже).
-let previewMock: ReturnType<typeof vi.fn>;
+let previewMock: Mock;
 const PREVIEW = { provider: 'google', otherDisplay: null, summary: {}, twoFactorLost: false };
 
 beforeEach(() => {
@@ -37,15 +37,18 @@ afterEach(() => {
 });
 
 function authValue(overrides: Partial<AuthState> = {}): AuthState {
-  return {
+  const value: AuthState = {
     accessToken: 'tok123',
     isLoading: false,
     isAuthenticated: true,
+    authError: null,
     setAccessToken: vi.fn(),
+    getAccessToken: () => value.accessToken,
     logout: vi.fn(),
     refreshToken: vi.fn(),
     ...overrides,
   };
+  return value;
 }
 
 function renderAt(

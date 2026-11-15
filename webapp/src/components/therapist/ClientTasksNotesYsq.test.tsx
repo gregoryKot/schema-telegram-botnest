@@ -51,7 +51,7 @@ describe('ClientTasksTab', () => {
   // тихий ярлык на бумаге (pp-tag, b31) под названием, нажимаемого на вид квадрата нет.
   it('статус задания — один ярлык pp-tag, квадрата-«чекбокса» нет', () => {
     const detail = { clientTasks: [task(1, {}), task(2, { done: true, completedAt: '2026-10-05T10:00:00Z' })], setShowAssign: vi.fn() };
-    const { container } = render(<ClientTasksTab detail={detail as unknown as ClientDetail} />);
+    const { container } = render(<ClientTasksTab detail={detail as unknown as ClientDetail} onAssign={vi.fn()} />);
     expect(container.querySelector('.tb-check')).toBeNull();
     const rows = [...container.querySelectorAll('.tb-task')];
     expect(rows).toHaveLength(2);
@@ -222,7 +222,7 @@ describe('вкладки без заголовков, пустые состоя�
   });
 
   it('«Задания» без заданий — ds-empty', () => {
-    render(<ClientTasksTab detail={{ clientTasks: [], setShowAssign: vi.fn() } as unknown as ClientDetail} />);
+    render(<ClientTasksTab detail={{ clientTasks: [], setShowAssign: vi.fn() } as unknown as ClientDetail} onAssign={vi.fn()} />);
     expect(screen.getByText(/Нет назначенных заданий/).classList.contains('ds-empty')).toBe(true);
   });
 });

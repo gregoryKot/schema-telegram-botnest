@@ -33,7 +33,7 @@ function Host() {
   const board = useTasksBoard();
   return (
     <ClientListView
-      animKey={0} clients={clients} loading={false} loadFailed={false}
+      animKey={0} clients={clients} loading={false} loadFailed={false} onRetry={vi.fn()}
       listTab={listTab} setListTab={setListTab} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
       filterStatus={filterStatus} setFilterStatus={setFilterStatus}
       board={board} openClient={vi.fn()} addClient={addClient}

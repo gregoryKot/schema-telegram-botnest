@@ -166,11 +166,11 @@ describe('EmailLinkRow — отправка письма', () => {
 
   it('возврат по ссылке из письма: успех — статусом, отказ — причиной у строки', () => {
     const { rerender } = render(
-      <EmailLinkRow accessToken="t" linked busy={false} onUnlink={vi.fn()} notice={{ kind: 'ok', text: 'Email успешно привязан' }} />,
+      <EmailLinkRow accessToken="t" linked busy={false} onUnlink={vi.fn()} onLinked={onLinked} notice={{ kind: 'ok', text: 'Email успешно привязан' }} />,
     );
     expect(screen.getByRole('status').textContent).toBe('Email успешно привязан');
     rerender(
-      <EmailLinkRow accessToken="t" linked={false} busy={false} onUnlink={vi.fn()} notice={{ kind: 'error', text: 'Адрес занят' }} />,
+      <EmailLinkRow accessToken="t" linked={false} busy={false} onUnlink={vi.fn()} onLinked={onLinked} notice={{ kind: 'error', text: 'Адрес занят' }} />,
     );
     expect(screen.getByRole('alert').textContent).toBe('Адрес занят');
   });

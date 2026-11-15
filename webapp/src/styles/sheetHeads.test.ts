@@ -18,7 +18,7 @@ function rules(css: string): { selectors: string[]; body: string }[] {
     body: m[2],
   }));
 }
-const classesOf = (sel: string) => sel.match(/\.[a-zA-Z0-9_-]+/g) ?? [];
+const classesOf = (sel: string): string[] => sel.match(/\.[a-zA-Z0-9_-]+/g) ?? [];
 
 const FILES = ['sheet-settings.css', 'auth-account.css', 'auth-pay.css', 'sheet-exercises.css', 'sheet-diary.css', 'client-schemas.css', 'sheet-tasks.css', 'sheet-schemas.css'] as const;
 const css = Object.fromEntries(FILES.map((f) => [f, read(f)])) as Record<(typeof FILES)[number], string>;

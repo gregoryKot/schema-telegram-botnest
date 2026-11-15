@@ -35,6 +35,7 @@ import { api } from '../../api';
 import { ClientConceptTab } from './ClientConceptTab';
 import { useClientDetail } from './useClientDetail';
 import { conceptServer } from './conceptServer.test-helpers';
+import type { ConceptSchemaLink } from '../../../../shared/src/apiTypes';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -77,7 +78,7 @@ const concept = (patch: Record<string, unknown> = {}) => ({
   currentProblems: null,
   modeTransitions: null,
   modeLinks: [LINK],
-  schemaLinks: [],
+  schemaLinks: [] as ConceptSchemaLink[],
   modeMapNodes: [],
   modeMapEdges: [],
   history: [],
