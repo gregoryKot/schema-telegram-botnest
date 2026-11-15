@@ -136,6 +136,7 @@ describe('LegacyUidReissueCommand: перевыпуск событий iCloud с
     expect(text).toContain(
       'перевыпущено 2, снято старых без замены 2, по старому адресу пусто 1, ошибок 0',
     );
+    expect(text).toContain('событий с номером брони в UID осталось 0');
     expect([...events.keys()].sort()).toEqual(
       [hmac(1), hmac(2), old(3), hmac(5)].map(ics).sort(),
     );
@@ -183,6 +184,7 @@ describe('LegacyUidReissueCommand: перевыпуск событий iCloud с
     const text = await makeCommand().report(true, NOW);
     expect(text).toContain('перевыпущено 0');
     expect(text).toContain('ошибок 2');
+    expect(text).toContain('с номером брони в UID осталось не больше 2');
     expect(text).toContain('Повтор безопасен: /reissue_icloud go');
     expect(events.has(ics(old(1)))).toBe(true);
     expect(rows[0].calDavUid).toBe(old(1));
