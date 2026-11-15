@@ -1,5 +1,5 @@
 /* Трекер «один вопрос на экран» и экран «Готово» (простой клиент, этап 2; живая бумага — b07,
-   docs/design/APP_2026-11.md). Префикс tq-; оболочка — .tk2-overlay (sheet-tracker.css).
+   docs/archive/APP_2026-11.md). Префикс tq-; оболочка — .tk2-overlay (sheet-tracker.css).
    Вопрос — лист потребности (EntitySheet, needLook) и ответы в развороте (SpreadLayout,
    paper-app.css); «Готово» — лист шалфея с индексом и столбиками, рядом куда дальше.
    Цвет потребности — --h (hueStyle), цвет её данных — --nd (needDataColor); цвета — токены

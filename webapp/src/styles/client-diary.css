@@ -1,7 +1,7 @@
 /* Экран «Записи» клиента (вкладка и лист «Дневники»). Префикс cd-. Раскладка — по ширине самой страницы
    (container cd-page), а не окна: лист «Дневники» идёт без бокового меню, раздел — рядом с ним.
    Карточка записи — client-diary-entry.css, пустая лента — client-diary-empty.css, силуэт —
-   client-diary-skeleton.css (грузится с оболочкой). Живая бумага — docs/design/APP_2026-11.md, b11. */
+   client-diary-skeleton.css (грузится с оболочкой). Живая бумага — docs/archive/APP_2026-11.md, b11. */
 .cd-page { max-width: 1100px; container: cd-page / inline-size; }
 
 /* «Записать» — ds-btn--lg (48/r24, во всю ширину на телефоне); на ноутбуке пилюля по тексту. */
