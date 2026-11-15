@@ -94,12 +94,26 @@ function bootProcess(notifications: NotificationService) {
 
 const flush = () => new Promise((r) => setImmediate(r));
 
+// Часы подделаны на весь тест, а setImmediate/nextTick — настоящие: прежнее
+// переключение fake↔real между шагами под нагрузкой воркеров упиралось в
+// таймаут jest. Дедлайн — страховка: тест ждёт событий, а не времени.
+jest.setTimeout(30_000);
+const at = (iso: string) => jest.setSystemTime(new Date(iso));
+
 describe('snooze → рестарт: отложенное напоминание переживает деплой', () => {
   beforeEach(() => {
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     delete process.env.BOT_REDIRECT_USERNAME;
     delete process.env.ADMIN_ID;
+    jest.useFakeTimers({
+      doNotFake: [
+        'nextTick',
+        'queueMicrotask',
+        'setImmediate',
+        'clearImmediate',
+      ],
+    });
   });
   afterEach(() => {
     jest.useRealTimers();
@@ -116,25 +130,24 @@ describe('snooze → рестарт: отложенное напоминание
     };
     prisma.$transaction = createFakeTransaction(prisma);
     const notifications = new NotificationService(prisma as never);
+    at('2026-10-11T11:25:00Z');
     const first = bootProcess(notifications);
     await flush();
 
-    jest.useFakeTimers({ now: new Date('2026-10-11T11:30:00Z') });
+    at('2026-10-11T11:30:00Z');
     const ctx = await runAction(first.fakeBot, 'snooze_reminder', {
       from: { id: 42 },
     });
     expect(ctx.editMessageText).toHaveBeenCalledWith('⏰ Напомню в 15:30');
 
     // Два рестарта подряд: частота деплоев не должна иметь значения.
-    jest.setSystemTime(new Date('2026-10-11T11:45:00Z'));
+    at('2026-10-11T11:45:00Z');
     first.service.onModuleDestroy();
     const second = bootProcess(notifications);
-    jest.useRealTimers();
     await flush();
-    jest.useFakeTimers({ now: new Date('2026-10-11T11:50:00Z') });
+    at('2026-10-11T11:50:00Z');
     second.service.onModuleDestroy();
     bootProcess(notifications);
-    jest.useRealTimers();
     await flush();
 
     expect(table.rows).toHaveLength(1);
@@ -144,7 +157,7 @@ describe('snooze → рестарт: отложенное напоминание
       sentAt: null,
     });
 
-    jest.useFakeTimers({ now: new Date('2026-10-11T12:31:00Z') });
+    at('2026-10-11T12:31:00Z');
     const due = await notifications.getDue();
     expect(due.map((d) => d.type)).toEqual(['pre_reminder']);
   });
