@@ -137,7 +137,7 @@ export function SafePlaceEx({
           ))}
         </div>
       </div>
-      {detectCrisisAny(overview, senses.see, senses.hear, senses.feel, senses.smell) && (
+      {detectCrisisAny(overview, ...SENSES.map((s) => senses[s.k])) && (
         <CrisisCard surface="safe_place" />
       )}
       {error && (
