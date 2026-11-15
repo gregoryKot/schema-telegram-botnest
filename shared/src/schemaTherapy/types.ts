@@ -14,6 +14,8 @@ export interface Emotion {
 export interface Schema {
   id: string;
   name: string;
+  /** Название по МИСТ (docs/TERMINOLOGY.md), когда `name` короче: в таблетках карты и шапке карточки длинное режет хвост. */
+  fullName?: string;
   emoji: string;
   desc: string;
   libraryDesc: string;

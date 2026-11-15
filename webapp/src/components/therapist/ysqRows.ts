@@ -41,7 +41,7 @@ export function buildYsqRows(latest: YsqHistoryEntry, prev: YsqHistoryEntry | nu
     const hasPrev = prevAvg != null && prevAvg > 0;
     return {
       id: score.id,
-      name: meta?.name ?? score.id,
+      name: meta?.fullName ?? meta?.name ?? score.id, // таблица и легенда переносят строку — название по МИСТ целиком
       domainId: meta?.domainId ?? null,
       needId: domainNeedId(meta?.domainId ?? null),
       avg,

@@ -21,7 +21,7 @@ function fills(ctx: ReturnType<typeof canvasWithMockCtx>['ctx']) {
 }
 
 describe('drawAchievementsCard', () => {
-  it('«N из M» и проценты', () => {
+  it('«N из M» и проценты; счёт на карточке один раз — шапка его не повторяет', () => {
     const { canvas, ctx } = canvasWithMockCtx();
     drawAchievementsCard(canvas, [
       { id: 'first_day', earned: true },
@@ -31,6 +31,7 @@ describe('drawAchievementsCard', () => {
     const texts = ctx.printed.map((p) => p.text);
     expect(texts).toContain('2 из 3');
     expect(texts).toContain('67%');
+    expect(texts.filter((t) => t.includes('из 3'))).toHaveLength(1);
   });
 
   it('неполученный значок — знак силуэтом одним тоном', () => {

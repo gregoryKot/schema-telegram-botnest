@@ -53,11 +53,12 @@ describe('ClientOverviewTab', () => {
     expect(modes.querySelectorAll('.sg-group').length).toBe(1);
     expect(screen.queryByText('—')).toBeNull();
     expect(within(modes).getByRole('button', { name: 'Редактировать →' }).className).toBe('ds-link');
-    // Записи: знак типа, заголовок, тип тихой подписью, фрагмент и дата.
+    // Записи: знак типа, заголовок, фрагмент и дата; у благодарности тип называет заголовок — тихой подписи
+    // «Благодарность» под ним нет, иначе слово стоит дважды подряд.
     const row = col.querySelector('.tk-entry') as HTMLElement;
     expect(row.querySelector('.pp-row-art svg')).toBeTruthy();
     expect(row.querySelector('.ds-list-title')!.textContent).toBe('Благодарность');
-    expect(row.querySelector('.tk-entry-type')!.textContent).toBe('Благодарность');
+    expect(row.querySelector('.tk-entry-type')).toBeNull();
     expect(row.querySelector('.tk-entry-excerpt')!.textContent).toBe('Спасибо за день');
     expect(row.querySelector('.tk-entry-date')).toBeTruthy();
   });
