@@ -180,7 +180,7 @@ export const EXCLUDE = [
   // Подкомпоненты/хук, вынесенные из BookingPicker (правило №10). Гостевые —
   // формы до входа нет. Файлы записи вошедшего клиента (кабинет, берут useTr)
   // из исключения вынуты и проверяются гейтом.
-  /webapp\/src\/components\/booking\/(?!(?:ClientBooking(?:Block|Sheet|Price)|BookingSlotsSection|slotsCopy|clientBookingCopy|SessionTicket)\.)/,
+  /webapp\/src\/components\/booking\/(?!(?:ClientBooking[A-Za-z]*|BookingSlotsSection|slotsCopy|clientBookingCopy|SessionTicket)\.)/,
   // Форматтеры подписи пояса («Время указано по вашему часовому поясу»,
   // «по вашему времени») — общий модуль для того же гостевого виджета
   // записи, addressForm физически неоткуда взять (нет залогиненного

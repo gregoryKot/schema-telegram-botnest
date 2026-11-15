@@ -245,7 +245,7 @@ describe('check-second-person.mjs', () => {
   });
 
   it('КОНТРОЛЬ: запись из кабинета (booking/ClientBookingSheet, BookingSlotsSection) под гейтом — exit 1', () => {
-    for (const f of ['ClientBookingSheet.tsx', 'BookingSlotsSection.tsx', 'slotsCopy.ts']) {
+    for (const f of ['ClientBookingSheet.tsx', 'ClientBookingPrice.tsx', 'BookingSlotsSection.tsx', 'slotsCopy.ts', 'clientBookingCopy.ts', 'SessionTicket.tsx']) {
       const res = runGate('check-second-person.mjs', {
         'scripts/second-person-baseline.json': JSON.stringify({}),
         [`webapp/src/components/booking/${f}`]:
