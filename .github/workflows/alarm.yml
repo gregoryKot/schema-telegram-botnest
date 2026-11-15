@@ -1,0 +1,164 @@
+# Общая джоба alarm (правило №24): красный прогон без неё виден только тому,
+# кто сам зашёл в Actions. Зовут nightly.yml и mutation-bot.yml, каждый со своим
+# заголовком issue. Контекст needs вызывающего воркфлоу сюда не доходит, поэтому
+# результаты джоб приходят строкой toJSON(needs). У prod-smoke.yml своя копия:
+# там напоминания с троттлингом и DM о восстановлении прода.
+# Шаги исполняют src/infra/alarm-workflow.spec.ts и src/infra/alarm-call.spec.ts.
+name: alarm
+
+on:
+  workflow_call:
+    inputs:
+      needs:
+        description: 'toJSON(needs) вызывающей джобы: какие джобы упали'
+        required: true
+        type: string
+      title:
+        description: 'Заголовок issue: одна открытая issue на заголовок'
+        required: true
+        type: string
+      label:
+        description: 'Метка issue'
+        required: false
+        type: string
+        default: ci-alarm
+      dm:
+        description: 'Начало DM владельцу: «<dm>: <джобы>.»'
+        required: true
+        type: string
+    # Секреты бота (BOT_TOKEN, ADMIN_ID) приходят через secrets: inherit.
+
+jobs:
+  alarm:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      # needs.*.result — 'success'/'failure'/'cancelled'/'skipped'. Джобы,
+      # пропущенные штатно ('skipped'), — не авария, в алярм не идут.
+      - name: собрать список упавших джоб
+        id: collect
+        env:
+          NEEDS_JSON: ${{ inputs.needs }}
+        run: |
+          node -e '
+            const needs = JSON.parse(process.env.NEEDS_JSON);
+            const failed = Object.entries(needs)
+              .filter(([, v]) => v.result === "failure" || v.result === "cancelled")
+              .map(([name]) => name);
+            require("fs").appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              `failed=${failed.join(",")}\nhas_failures=${failed.length > 0}\n`,
+            );
+          '
+      - name: issue ci-alarm — завести/обновить/закрыть (одна открытая на заголовок)
+        id: issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          FAILED: ${{ steps.collect.outputs.failed }}
+          TITLE: ${{ inputs.title }}
+          LABEL: ${{ inputs.label }}
+        with:
+          script: |
+            const title = process.env.TITLE;
+            const label = process.env.LABEL;
+            const failed = (process.env.FAILED || '').split(',').filter(Boolean);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: label,
+            });
+            const existing = openIssues.find((i) => i.title === title);
+            // Новые джобы — те, что не значились в прошлом отчёте (последний
+            // комментарий бота «Упали джобы: …», нет комментариев — тело issue).
+            // Не разобрался отчёт — строки «Новые» нет, шаг не падает.
+            const parseReport = (text) => {
+              const m = /^Упали джобы: (.+?)\.$/m.exec(text || '');
+              return m ? m[1].split(', ') : null;
+            };
+            let fresh = [];
+            if (existing && failed.length > 0) {
+              try {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  per_page: 100,
+                });
+                const previous =
+                  comments
+                    .filter((c) => c.user && c.user.type === 'Bot')
+                    .map((c) => parseReport(c.body))
+                    .filter(Boolean)
+                    .pop() || parseReport(existing.body);
+                if (previous) fresh = failed.filter((j) => !previous.includes(j));
+              } catch (e) {
+                core.warning(`не удалось прочитать прошлый отчёт: ${e.message}`);
+              }
+            }
+            core.setOutput('new', fresh.join(','));
+            if (failed.length > 0) {
+              const newLine = fresh.length > 0 ? `Новые: ${fresh.join(', ')}.\n\n` : '';
+              const body = `${newLine}Упали джобы: ${failed.join(', ')}.\n\nСсылка на прогон: ${runUrl}`;
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  // Правило №20: починка инцидента приезжает со строкой в
+                  // реестре. Чеклист — только в новой issue, не в напоминаниях.
+                  body: `${body}\n\n- [ ] строка в docs/INCIDENTS.md (симптом, корень, класс, кто заметил, сколько жило)`,
+                  labels: [label],
+                  // Без исполнителя issue не приходит владельцу ни уведомлением,
+                  // ни в «Assigned to me» (аудит 2026-10).
+                  assignees: [context.repo.owner],
+                });
+              }
+            } else if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Снова зелёный: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+              });
+            }
+      - name: DM владельцу в Telegram (только если есть провалы и настроены секреты)
+        if: steps.collect.outputs.has_failures == 'true'
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
+          FAILED: ${{ steps.collect.outputs.failed }}
+          NEW_JOBS: ${{ steps.issue.outputs.new }}
+          DM_LEAD: ${{ inputs.dm }}
+        run: |
+          # Нет секретов — нет DM-канала, и это видно: шаг красный (правило
+          # №15). Шаг стоит ПОСЛЕ issue: красный DM не срывает её создание.
+          if [ -z "$BOT_TOKEN" ] || [ -z "$ADMIN_ID" ]; then
+            echo "::error::alarm: нет секретов BOT_TOKEN/ADMIN_ID — DM-канал не настроен, владелец не узнает из Telegram: $DM_LEAD"
+            exit 1
+          fi
+          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          TEXT=$(printf '%s: %s.\nСмотреть: %s' "$DM_LEAD" "${FAILED//,/, }" "$RUN_URL")
+          if [ -n "$NEW_JOBS" ]; then
+            TEXT=$(printf '%s: %s.\nНовые: %s.\nСмотреть: %s' "$DM_LEAD" "${FAILED//,/, }" "${NEW_JOBS//,/, }" "$RUN_URL")
+          fi
+          curl -sS --max-time 10 \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${ADMIN_ID}" \
+            --data-urlencode "text=${TEXT}" > /dev/null
