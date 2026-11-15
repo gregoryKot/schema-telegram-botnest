@@ -11,7 +11,7 @@ vi.mock('../../api', () => ({
   api: {
     trackEvent: vi.fn(),
     getPracticeSessions: vi.fn().mockResolvedValue({ breathing: 0, grounding: 0, stop: 0 }),
-    getFlashcards: vi.fn().mockResolvedValue([]),
+    getFlashcardsCount: vi.fn().mockResolvedValue({ count: 0 }),
     recordPracticeSession: vi.fn(),
   },
 }));

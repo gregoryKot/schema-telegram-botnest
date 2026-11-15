@@ -151,6 +151,12 @@ export class ExercisesController {
     });
   }
 
+  // Выше flashcards/:id: иначе Express отдаст «count» в :id, и parseId ответит 400.
+  @Get('flashcards/count')
+  countFlashcards(@Req() req: AuthRequest) {
+    return this.exercisesService.countFlashcards(uid(req));
+  }
+
   @Get('flashcards/:id')
   getFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.exercisesService.getFlashcard(uid(req), id32(id));
