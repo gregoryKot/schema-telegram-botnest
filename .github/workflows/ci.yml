@@ -112,8 +112,13 @@ jobs:
       # данных через HTTP. См. test/app-auth.e2e-spec.ts, test/app-ownership.e2e-spec.ts.
       # read-after-write.e2e-spec гоняется отдельно в джобе migrations (нужен
       # реальный Postgres) — здесь исключён, наши специи на фейк-Prisma.
-      - run: >-
-          npx jest --config ./test/jest-e2e.json --cacheDirectory="$JEST_CACHE_DIR"
+      # Через сторожа, как шаг выше: держатель, переживший app.close(), роняет шаг с причиной, а не
+      # остаётся строкой «Jest did not exit» в зелёном логе (--cacheDirectory дописывает сторож).
+      - name: e2e на фейковой Prisma
+        timeout-minutes: 5
+        run: >-
+          node scripts/jest-exit-guard.mjs --budget 180 --exit-grace 60 --
+          npx jest --config ./test/jest-e2e.json
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
@@ -793,6 +798,9 @@ jobs:
           cache: npm
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
+      # Типы тестов (webapp/tsconfig.test.json): сборка их не видит, vitest типы не проверяет —
+      # без шага фикстура, отставшая от пропсов компонента, остаётся зелёной.
+      - run: npm run typecheck:test --prefix webapp
       # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
       # requireBotUsername.ts); значение то же, что в Dockerfile — их равенство
       # держит bot-username-sources.spec.ts.

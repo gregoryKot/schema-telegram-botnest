@@ -17,10 +17,14 @@ import { StepUpContext } from './stepUp/stepUpContext';
 import { takeLaunchParam } from '../../../shared/src/host/startParam';
 import { AUTH_RETURN_KEY } from '../auth/returnTo';
 
-const auth = (over: Partial<AuthState> = {}): AuthState => ({
-  accessToken: 'tok', isLoading: false, isAuthenticated: true,
-  setAccessToken: vi.fn(), logout: vi.fn(), refreshToken: vi.fn().mockResolvedValue(true), ...over,
-});
+const auth = (over: Partial<AuthState> = {}): AuthState => {
+  const value: AuthState = {
+    accessToken: 'tok', isLoading: false, isAuthenticated: true, authError: null,
+    setAccessToken: vi.fn(), getAccessToken: () => value.accessToken,
+    logout: vi.fn(), refreshToken: vi.fn().mockResolvedValue(true), ...over,
+  };
+  return value;
+};
 
 function Probe() {
   return <div>{useContext(StepUpContext) ? 'окно кода есть' : 'окна кода нет'}</div>;

@@ -25,7 +25,7 @@ function setup(initial: FlowNode[] = [node('a'), node('b')]) {
   return { selected, pushHistory, scheduleSave };
 }
 
-function press(target: EventTarget, init: KeyboardEventInit) {
+function press(target: Window | Element, init: KeyboardEventInit) {
   act(() => { fireEvent.keyDown(target, init); });
 }
 

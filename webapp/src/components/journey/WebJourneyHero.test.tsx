@@ -68,6 +68,7 @@ describe('JourneyView на сайте', () => {
       stats: [],
       total,
       items: [],
+      reload: vi.fn(),
     };
     return (
       <JourneyView

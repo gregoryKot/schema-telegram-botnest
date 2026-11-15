@@ -25,6 +25,17 @@ const FOLDED = [
   "          E2E_REAL_DB: '1'",
 ].join('\n');
 
+// e2e-шаг джобы backend под сторожем: jest — аргумент jest-exit-guard, шаг с name и таймаутом.
+const GUARDED = [
+  '      - name: e2e на фейковой Prisma',
+  '        timeout-minutes: 5',
+  '        run: >-',
+  '          node scripts/jest-exit-guard.mjs --budget 180 --exit-grace 60 --',
+  '          npx jest --config ./test/jest-e2e.json',
+  '          test/alpha test/beta-ownership',
+  '      - run: npm audit',
+].join('\n');
+
 const gate = (ci: string, files: Record<string, string>) =>
   runGate('check-e2e-in-ci.mjs', { '.github/workflows/ci.yml': ci, ...files });
 
@@ -39,6 +50,33 @@ describe('check-e2e-in-ci.mjs', () => {
     );
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('4 спеков');
+  });
+
+  it('шаг под сторожем: пути после jest-e2e.json засчитываются, флаги сторожа путями не считаются', () => {
+    const res = gate(
+      CI(GUARDED),
+      specs('alpha', 'beta-ownership', 'beta-ownership-2'),
+    );
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('2 путей');
+  });
+
+  it('шаг под сторожем: спек вне его списка — сирота', () => {
+    const res = gate(CI(GUARDED), specs('alpha', 'beta-ownership', 'orphan'));
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('test/orphan.e2e-spec.ts');
+  });
+
+  it('контроль: сторож вокруг юнит-jest без jest-e2e — пути не засчитываются', () => {
+    const res = gate(
+      CI(
+        GUARDED +
+          '\n      - run: node scripts/jest-exit-guard.mjs --budget 300 --exit-grace 60 -- npx jest test/orphan',
+      ),
+      specs('alpha', 'beta-ownership', 'orphan'),
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('test/orphan.e2e-spec.ts');
   });
 
   it('спек-сирота краснеет и называется по имени', () => {
