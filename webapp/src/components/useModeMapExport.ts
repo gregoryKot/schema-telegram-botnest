@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { getNodesBounds, getViewportForBounds } from '@xyflow/react';
 import { toPng } from 'html-to-image';
 import type { FlowNode } from './modeMapFlow';
+import { themeBg } from '../utils/theme';
 
 const FILTER_CLASSES = ['react-flow__minimap', 'react-flow__controls', 'react-flow__panel'];
 
@@ -16,9 +17,8 @@ export function useModeMapExport(nodes: FlowNode[]) {
     const vp = getViewportForBounds(bounds, W, H, 0.4, 2.5, 0.12);
     const viewportEl = document.querySelector('.react-flow__viewport') as HTMLElement | null;
     if (!viewportEl) return null;
-    const bg = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#f5f2eb';
     const url = await toPng(viewportEl, {
-      backgroundColor: bg, width: W, height: H, pixelRatio: 2,
+      backgroundColor: themeBg(viewportEl) || undefined, width: W, height: H, pixelRatio: 2,
       style: { width: `${W}px`, height: `${H}px`, transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})` },
       filter: (n) => !FILTER_CLASSES.some(c => n?.classList?.contains(c)),
     });

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 // Тест переключения темы (theme.ts): детекция системной темы через
 // matchMedia, персист в localStorage, применение к document.documentElement.
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme, savedTheme } from './theme';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme, savedTheme, themeBg } from './theme';
 
 function mockMatchMedia(prefersDark: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -13,13 +15,28 @@ function mockMatchMedia(prefersDark: boolean) {
   })) as unknown as typeof window.matchMedia;
 }
 
+// Значения --bg берутся из самого index.css: подмена токенов не разойдётся с ним (сверка с index.html — pwaManifest.test.ts).
+const css = readFileSync(resolve(__dirname, '../index.css'), 'utf8');
+const LIGHT = /--bg:\s*(#[0-9a-f]{6});/i.exec(css)![1];
+const DARK = /html\[data-theme="dark"\]\s*\{[^}]*?--bg:\s*(#[0-9a-f]{6});/i.exec(css)![1];
+const rgb = (hex: string) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
+const TOKENS_CSS = `:root, html[data-theme="light"] { --bg: ${LIGHT}; } html[data-theme="dark"] { --bg: ${DARK}; }`;
+let tokens: HTMLStyleElement;
+
 beforeEach(() => {
+  tokens = document.createElement('style');
+  tokens.textContent = TOKENS_CSS;
+  document.head.appendChild(tokens);
   localStorage.clear();
   document.documentElement.removeAttribute('data-theme');
   document.documentElement.style.background = '';
   document.documentElement.style.colorScheme = '';
   document.getElementById('theme-color-meta')?.remove();
   mockMatchMedia(false);
+});
+
+afterEach(() => {
+  tokens.remove();
 });
 
 describe('getTheme', () => {
@@ -45,7 +62,7 @@ describe('applyTheme', () => {
     applyTheme('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
-    expect(document.documentElement.style.background).toBe('rgb(20, 20, 26)');
+    expect(document.documentElement.style.background).toBe(rgb(DARK));
   });
 
   it('сохраняет выбор в localStorage', () => {
@@ -58,11 +75,35 @@ describe('applyTheme', () => {
     meta.id = 'theme-color-meta';
     document.head.appendChild(meta);
     applyTheme('dark');
-    expect(meta.content).toBe('#14141a');
+    expect(meta.content).toBe(DARK);
   });
 
   it('не бросает, если meta#theme-color-meta отсутствует', () => {
     expect(() => applyTheme('light')).not.toThrow();
+  });
+
+  it('фон и theme-color берутся из --bg новой темы, а не из литерала', () => {
+    const meta = document.createElement('meta');
+    meta.id = 'theme-color-meta';
+    document.head.appendChild(meta);
+    applyTheme('light');
+    expect(themeBg()).toBe(LIGHT);
+    expect(meta.content).toBe(LIGHT);
+    applyTheme('dark');
+    expect(themeBg()).toBe(DARK);
+    expect(meta.content).toBe(DARK);
+  });
+
+  it('CSS ещё не загружен — тема ставится, фон и meta остаются прежними', () => {
+    tokens.remove();
+    const meta = document.createElement('meta');
+    meta.id = 'theme-color-meta';
+    meta.content = LIGHT;
+    document.head.appendChild(meta);
+    applyTheme('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.style.background).toBe('');
+    expect(meta.content).toBe(LIGHT);
   });
 });
 
@@ -103,6 +144,7 @@ describe('applyCabinetLightTheme', () => {
     applyCabinetLightTheme();
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(document.documentElement.style.background).toBe(rgb(LIGHT));
     expect(localStorage.getItem('app_theme')).toBe('dark');
     expect(getTheme()).toBe('dark');
   });
