@@ -1634,7 +1634,7 @@
   "src/test-support/route-method-auth.ts": 121,
   "src/test-support/run-script.ts": 38,
   "src/test-support/subscription-update-many.ts": 17,
-  "src/test-support/workflow-steps.ts": 34,
+  "src/test-support/workflow-steps.ts": 48,
   "src/therapy/assigned-task.ts": 69,
   "src/therapy/client-childhood.ts": 33,
   "src/therapy/client-concept-view.ts": 113,
