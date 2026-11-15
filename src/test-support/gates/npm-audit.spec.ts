@@ -241,6 +241,11 @@ describe('scripts/npm-audit.mjs', () => {
     expect(npm.aliveChildren()).toHaveLength(1);
     child.kill('SIGTERM');
     expect(await exited).toBe(143);
+    // SIGKILL группе доходит не мгновенно: ждём опустения с дедлайном.
+    const gone = Date.now() + 10_000;
+    while (npm.aliveChildren().length > 0 && Date.now() < gone) {
+      await new Promise((ok) => setTimeout(ok, 50));
+    }
     expect(npm.aliveChildren()).toEqual([]);
   }, 30_000);
 });

@@ -579,9 +579,17 @@ describe('PracticeSection — упражнение открывается по �
   });
 });
 
+// «N дней назад» — местным календарём, в полдень: сутки ≠ 24 ч на переходе часов.
+const noonDaysAgo = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(12, 0, 0, 0);
+  return d.toISOString();
+};
+
 describe('PracticeSection — «давность» и число записей форматируются по реальным датам/числам', () => {
   it('lastDone вчера — подпись "вчера"', async () => {
-    const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const yesterday = noonDaysAgo(1);
     mockApi.getBeliefChecks.mockResolvedValue([{ id: 1, createdAt: yesterday }]);
     renderSection();
     const stat = (await screen.findByText(/1 запись/)).closest('.cp-ex-state')!;
@@ -589,7 +597,7 @@ describe('PracticeSection — «давность» и число записей 
   });
 
   it('lastDone 3 дня назад — подпись "3 дн. назад"', async () => {
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+    const threeDaysAgo = noonDaysAgo(3);
     mockApi.getBeliefChecks.mockResolvedValue([{ id: 1, createdAt: threeDaysAgo }]);
     renderSection();
     const stat = (await screen.findByText(/1 запись/)).closest('.cp-ex-state')!;
