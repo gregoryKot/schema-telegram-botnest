@@ -13,7 +13,7 @@ import {
 } from '../../../../shared/src/auth/useLoginTicket';
 import { AccountLinkCard } from '../../../../shared/src/components/AccountLinkCard';
 import { missingLinkTarget } from '../../../../shared/src/account/linkTarget';
-import { ACCOUNT_LINK_STARTED_EVENT } from '../../../../shared/src/share/analytics';
+import { ACCOUNT_LINK_STARTED_EVENT } from '../../../../shared/src/analytics/accountLogin';
 import { api, reportClientError } from '../../api';
 import { authedFetch } from '../../apiClient';
 import { API_BASE } from '../../utils/apiBase';

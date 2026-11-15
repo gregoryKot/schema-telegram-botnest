@@ -23,7 +23,7 @@ import { accountBackPathFromStorage } from './account/accountBackPath';
 import '../styles/auth-account.css';
 import { BackLabel } from '../components/NavGlyphs';
 
-// Форма без картинок (APP_2026-11.md, b27): плоские группы, одна залитая кнопка — «Данные из Telegram» (если бот не подключён).
+// Форма без картинок (docs/archive/APP_2026-11.md, b27): плоские группы, одна залитая кнопка — «Данные из Telegram» (если бот не подключён).
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
   const tr = useTr();

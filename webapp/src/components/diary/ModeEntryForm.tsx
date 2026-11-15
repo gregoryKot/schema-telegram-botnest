@@ -20,7 +20,7 @@ import { glue } from '../../../../shared/src/utils/typo';
 // в родителе (ModeEntrySheet). Герой — лист бумаги группы режима с его знаком (modeLook), со
 // второго шага полосой; «Сменить режим» и «Сравни с похожими» — строкой внизу листа-героя, внутри его
 // бумаги; пояснение и подсказка — один раз, на первом шаге, после формы (на ≥1024 — колонкой под
-// листом): шапка до первого поля на 390 — не выше ~230px (APP_2026-11.md, раздел b10b).
+// листом): шапка до первого поля на 390 — не выше ~230px (docs/archive/APP_2026-11.md, раздел b10b).
 
 export interface ModeFormFields {
   situation: string; thoughts: string; feelings: string; bodyFeelings: string;

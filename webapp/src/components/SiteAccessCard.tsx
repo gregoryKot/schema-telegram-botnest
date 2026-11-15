@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getHost } from '../../../shared/src/host';
+import { LOGIN_METHOD_OFFER_EVENT } from '../../../shared/src/analytics/accountLogin';
 import {
   isSiteLoginSnoozed,
   needsSiteLogin,
@@ -26,8 +27,7 @@ export function SiteAccessCard() {
   return getHost().id === 'telegram' ? <Offer /> : null;
 }
 
-const track = (action: 'shown' | 'open' | 'later') =>
-  api.trackEvent('login_method_offer', { action });
+const track = (action: 'shown' | 'open' | 'later') => api.trackEvent(LOGIN_METHOD_OFFER_EVENT, { action });
 
 function Offer() {
   const tr = useTr();

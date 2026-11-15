@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 // Новые куски мобильных «Паттернов»: шапка, сегмент, строки схем по доменам,
-// сворачиваемая карта, строка теста.
+// строка теста (сворачиваемая карта — общая Disclosure, shared/src/components/Disclosure.test.tsx).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { PatternsHeader } from './PatternsHeader';
 import { PatternsTabsBar } from './PatternsTabsBar';
 import { MySchemasList } from './MySchemasList';
-import { SchemaMapFold } from './SchemaMapFold';
 import { YsqTestRow } from './YsqTestRow';
 
 afterEach(cleanup);
@@ -75,20 +74,6 @@ describe('MySchemasList', () => {
   it('пусто — одна кнопка добавления', () => {
     render(<MySchemasList {...base} ids={[]} />);
     expect(screen.getAllByRole('button')).toHaveLength(1);
-  });
-});
-
-describe('SchemaMapFold', () => {
-  it('свёрнуто по умолчанию, раскрывается и сворачивается', () => {
-    render(<SchemaMapFold label="Все 20 схем"><p>карта</p></SchemaMapFold>);
-    const btn = screen.getByRole('button', { name: /Все 20 схем/ });
-    expect(btn.getAttribute('aria-expanded')).toBe('false');
-    expect(screen.queryByText('карта')).toBeNull();
-    fireEvent.click(btn);
-    expect(btn.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getByText('карта')).toBeTruthy();
-    fireEvent.click(btn);
-    expect(screen.queryByText('карта')).toBeNull();
   });
 });
 

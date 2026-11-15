@@ -2,7 +2,7 @@ import type { SignKey } from '../../../../../shared/src/theme/entityLook';
 import type { ConceptTextField } from '../../../../../shared/src/therapy/clientSheetHelpers';
 import type { BriefBlockId } from '../../../../../shared/src/therapy/conceptBrief/conceptBrief';
 
-// Знаки разделов концептуализации (docs/design/APP_2026-11.md, b33): раздел вида «Поля» и блок экрана
+// Знаки разделов концептуализации (docs/archive/APP_2026-11.md, b33): раздел вида «Поля» и блок экрана
 // «Главное» одной сущности несут один знак. Стили совладания — три знака копингов (один назвал бы все
 // копинги капитуляцией), на бумаге неба 240.
 export const SECTION_SIGNS: Record<ConceptTextField, readonly SignKey[]> = {

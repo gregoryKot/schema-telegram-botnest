@@ -115,25 +115,12 @@ export type OnboardingStep =
   | 'home_screen'
   | 'done';
 
-// ── Перенос аккаунта из мессенджера (device-link, RFC 8628) ─────────────────
-// Путь идёт через внешний браузер, поэтому мерить надо все три точки: начал в
-// мессенджере, подтвердил в браузере, не вышло. Без последней в отчёте видны
-// только успехи, и «сколько людей не смогли» не измерить.
-// Парный allow-list (ANALYTICS_EVENTS, ACCOUNT_LINK_*) —
-// src/analytics/analytics.constants.ts, при изменении синхронь оба.
-export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
-export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
-export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
+// Вход и перенос аккаунта (account_link_*, login_method_offer) — shared/src/analytics/accountLogin.ts.
 
 // Веб-пуши: человек запретил уведомления в окне браузера («Настройки → Уведомления»).
 // Без меты; шлёт webapp/src/push/pushSubscription.ts через api.trackEvent. Парный
 // allow-list — src/analytics/push-events.constants.ts (в analytics-sync — BACKEND_ONLY).
 export const PUSH_DENIED_EVENT = 'push_denied';
-
-/** Откуда переносят: meta.host. 'web' — карточка объединения на сайте. */
-export type AccountLinkHost = 'max' | 'telegram' | 'web';
-/** Почему не вышло: meta.reason. */
-export type AccountLinkFailReason = 'expired' | 'error';
 
 // Открытие листа схемы/режима с редизайна вкладки «Я»: meta { kind }.
 // Парный allow-list (ANALYTICS_EVENTS, PROFILE_PATTERN_KINDS) —

@@ -6,7 +6,7 @@ import { NODE_PAPER_LC as P } from '../../../../shared/src/modeMap/nodePaperTone
 import type { ModeNodeData } from './nodeStyle';
 import { isPlainPaper, PLAIN_HUE, PLAIN_TONES } from './plainPaper';
 
-// Бумага фигуры холста (docs/design/APP_2026-11.md, b34): заливка — бумага оттенка сущности,
+// Бумага фигуры холста (docs/archive/APP_2026-11.md, b34): заливка — бумага оттенка сущности,
 // контур — тот же оттенок тоном глубже, тень — сплошной сдвинутый слой. Оттенок и цвета считает
 // этот файл (paperInk), CSS (.mm2-n в styles/modemap-paper.css) берёт их переменными. Режим берёт тон своей группы,
 // схема — домена, потребность — свой; триггер — солома (шалфей 135 сливался со Здоровым Взрослым 145), опыт детства —

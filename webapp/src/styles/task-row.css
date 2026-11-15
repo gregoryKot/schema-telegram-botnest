@@ -1,7 +1,7 @@
 /* Строка задания (sections/practice/TaskRow, b20): знак слева, текст с одной строкой меты, справа одна колонка —
    шеврон/ссылка, круглая кнопка-галочка «Готово» или залитая галочка «сделано сегодня». Общий ряд .cp-task — в
    client-practice.css, откуда этот файл и подключается. Красной полосы и капители «от терапевта» больше нет:
-   «от терапевта» — в мете со знаком Talk (APP_2026-11.md, b20). */
+   «от терапевта» — в мете со знаком Talk (docs/archive/APP_2026-11.md, b20). */
 .cp-task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: var(--space-4); font-size: 13px; line-height: 1.4; color: var(--text-sub); }
 .cp-task-from { display: inline-flex; align-items: center; gap: 6px; }
 .cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
