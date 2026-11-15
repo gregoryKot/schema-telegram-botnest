@@ -3,10 +3,9 @@
 // fullscreen-лист или оверлей в webapp»).
 //
 // Любой `.tsx` в webapp/src и shared/src, рисующий оверлей на весь экран, — `position: fixed`
-// и `inset: 0` в одном объекте стиля, класс (или классы одного className), чьи правила в CSS
-// дают то же самое, ЛИБО тег рамки-оверлея (`<ExScreen`, `<BottomSheetShell`, `<Dialog`,
-// `<ConfirmDialog`), — обязан вызывать `useHistorySheet(`. Иначе «Назад» браузера уводит со
-// страницы (или закрывает родительский лист вместе с оверлеем), а Escape его не касается.
+// и `inset: 0` в объекте стиля, классах className или в style со спредами и классами одного
+// элемента вместе, ЛИБО тег рамки (`<ExScreen`, `<BottomSheetShell`, `<Dialog`, `<ConfirmDialog`),
+// — обязан вызывать `useHistorySheet(`. Иначе «Назад» браузера уводит со страницы.
 //
 // Решение — по компоненту (объявлению верхнего уровня): хук листа в одном компоненте не
 // закрывает чек-ин без хука в соседнем, а компонент рисует не больше оверлеев, чем вызывает
@@ -16,7 +15,7 @@
 // Флага --update нет: это классификация решения человека, не счётчик. Протухшая запись (файл
 // получил хук, перестал быть оверлеем, число оверлеев сменилось) — красное: «сверься».
 //
-// Распознавание — history-sheet-detect.mjs и history-sheet-css.mjs, сверка с записью —
+// Распознавание — history-sheet-detect.mjs, -css.mjs и -jsx.mjs, сверка с записью —
 // history-sheet-judge.mjs. Тесты — src/test-support/gates/history-sheet*.spec.ts.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
@@ -24,6 +23,7 @@ import { fileURLToPath } from 'url';
 import { frameOverlays, inlineOverlays, overlaysByComponent } from './history-sheet-detect.mjs';
 import { classDeclarations, classOverlays, overlayClassSet } from './history-sheet-css.mjs';
 import { judgeFile, needsEntry } from './history-sheet-judge.mjs';
+import { elementOverlays } from './history-sheet-jsx.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'history-sheet-baseline.json');
@@ -73,7 +73,7 @@ function main() {
   const overlays = new Map(); // файл → [{ name, hook, calls, hits }] по компонентам
   for (const rel of files.filter((f) => f.endsWith('.tsx') && !isTest(f))) {
     const src = readFileSync(join(ROOT, rel), 'utf8');
-    const hits = [...inlineOverlays(src), ...classOverlays(src, decls), ...frameOverlays(src)];
+    const hits = [...inlineOverlays(src), ...classOverlays(src, decls), ...elementOverlays(src, decls), ...frameOverlays(src)];
     if (hits.length) overlays.set(rel, overlaysByComponent(src, hits));
   }
 

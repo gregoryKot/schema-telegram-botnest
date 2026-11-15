@@ -22,7 +22,7 @@ export function isOverlayDecls(decls) {
 }
 
 /** Индекс символа после строкового литерала, начатого в i (кавычка в src[i]). */
-function skipString(src, i) {
+export function skipString(src, i) {
   const quote = src[i];
   for (let j = i + 1; j < src.length; j += 1) {
     if (src[j] === '\\') j += 1;
@@ -32,7 +32,7 @@ function skipString(src, i) {
 }
 
 /** Индекс `}`, парной `{` в openIndex; -1, если не закрыта. */
-function matchBrace(src, openIndex) {
+export function matchBrace(src, openIndex) {
   let depth = 0;
   for (let i = openIndex; i < src.length; i += 1) {
     const c = src[i];
