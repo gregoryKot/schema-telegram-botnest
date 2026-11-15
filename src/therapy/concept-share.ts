@@ -2,8 +2,9 @@
 // кабинете клиента. Решение «показывать ли» — за терапевтом, по каждому
 // клиенту; по умолчанию не показано. Что именно видит клиент — белый список
 // client-concept-view.ts. Выключил — следующий запрос клиента получает 404.
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
+import { inSerializableTx } from '../prisma/serializable-retry';
 import type { TherapyRelationsService } from './therapy-relations.service';
 import {
   clientConceptView,
@@ -24,6 +25,9 @@ interface Deps {
  * (assertHasClient бросает «No active relation» — контроллер отвечает 403).
  * Повторное включение дату не сдвигает: клиент видит, с какого дня схема у
  * него. Строки ещё нет — создаётся пустая (поля заполнятся автосохранением).
+ * Показ — не правка содержимого: версия строки (updatedAt, по ней сохранение
+ * вкладки ловит чужую запись — concept-save.ts) остаётся прежней, иначе
+ * следующее сохранение вкладки шло бы через 409 и перечитывание.
  */
 export async function setConceptShared(
   deps: Deps,
@@ -34,28 +38,36 @@ export async function setConceptShared(
   // Офлайн-клиент (отрицательный id) без аккаунта: показывать некому.
   if (key.clientId < 0n)
     throw new BadRequestException(OFFLINE_CLIENT_SHARE_ERROR);
-  const concept = deps.prisma.clientConceptualization;
-  if (!shared) {
-    // updateMany: строки может не быть — выключать нечего, это не ошибка.
-    await concept.updateMany({
-      where: key,
-      data: { sharedWithClientAt: null },
-    });
-    return { sharedWithClientAt: null };
-  }
   const where = { therapistId_clientId: key };
-  const row = await concept.findUnique({
-    where,
-    select: { sharedWithClientAt: true },
-  });
-  const sharedWithClientAt = row?.sharedWithClientAt ?? new Date();
-  // upsert, а не create: автосохранение могло создать строку между чтением и записью.
-  await concept.upsert({
-    where,
-    create: { ...key, sharedWithClientAt },
-    update: { sharedWithClientAt },
-  });
-  return { sharedWithClientAt };
+  // Serializable: прочитанная версия пишется обратно, только если строку
+  // между чтением и записью никто не тронул (иначе — повтор).
+  return inSerializableTx(
+    deps.prisma,
+    async (tx) => {
+      const concept = tx.clientConceptualization;
+      const row = await concept.findUnique({
+        where,
+        select: { sharedWithClientAt: true, updatedAt: true },
+      });
+      const sharedWithClientAt = shared
+        ? (row?.sharedWithClientAt ?? new Date())
+        : null;
+      if (row) {
+        // Явный updatedAt: Prisma не подставит «сейчас» (@updatedAt).
+        const data = { sharedWithClientAt, updatedAt: row.updatedAt };
+        await concept.update({ where, data });
+      } else if (shared) {
+        // upsert: чужая вставка — тоже повтор, не P2002; update не исполняется.
+        await concept.upsert({
+          where,
+          create: { ...key, sharedWithClientAt },
+          update: { sharedWithClientAt },
+        });
+      }
+      return { sharedWithClientAt };
+    },
+    () => new ConflictException('Conceptualization kept changing, try again'),
+  );
 }
 
 /**

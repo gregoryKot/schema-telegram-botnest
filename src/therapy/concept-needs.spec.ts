@@ -191,7 +191,7 @@ describe('колесо и остальные пути записи концеп�
     expect(edited.history).toHaveLength(1);
     expect(edited.history[0]).not.toHaveProperty('needLinks');
     expect(concept.row.history[0]).not.toHaveProperty('needLinks');
-    // «Восстановить» шлёт поля снимка полным сохранением
+    // «Восстановить» шлёт поля снимка с флагом restore
     // (shared/src/therapy/conceptSnapshotRestore.ts).
     const snap = edited.history[0] as Record<string, unknown>;
     const restored = await notes.saveConceptualization(T1, CLIENT, {
@@ -199,6 +199,7 @@ describe('колесо и остальные пути записи концеп�
       goals: snap.goals as string,
       modeLinks: snap.modeLinks as unknown[],
       schemaLinks: snap.schemaLinks as unknown[],
+      restore: true,
     });
     expect(restored.goals).toBe('снизить избегание');
     expect(restored.needLinks).toEqual(WHEEL);

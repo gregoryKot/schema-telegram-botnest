@@ -8,12 +8,12 @@ import { GlyphChevron } from '../../exercises/ExGlyphs';
 
 // История версий концептуализации — содержимое раскрывашки «История версий» под вкладкой
 // (ConceptFoldouts; заголовок с числом там) + «Восстановить»: паритет с мини-аппом
-// (ConceptHistoryPanel). Восстановление идёт через patchConcept → обычное
-// автосохранение; текущая версия при этом сама попадает в историю на сервере,
-// поэтому откат обратим — об этом и текст подтверждения. Подтверждение — со своей
+// (ConceptHistoryPanel). Восстановление — автосохранение с флагом restore (restoreConcept):
+// текущая версия ложится в историю на сервере даже в окне склейки, поэтому откат
+// обратим — об этом и текст подтверждения. Подтверждение — со своей
 // записью истории (HistoryConfirmDialog): «Назад» закрывает его, а не карточку.
 export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
-  const { concept, expandedSnapshot, setExpandedSnapshot, patchConcept } = detail;
+  const { concept, expandedSnapshot, setExpandedSnapshot, restoreConcept } = detail;
   // Индекс версии, ожидающей подтверждения (null — диалога нет).
   const [restoreIdx, setRestoreIdx] = useState<number | null>(null);
   if (!concept?.history || concept.history.length === 0) return null;
@@ -113,7 +113,7 @@ export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
           message="Текущие поля заменятся содержимым этой версии. То, что сейчас, останется в истории — к нему можно вернуться."
           confirmLabel="Восстановить"
           danger={false}
-          onConfirm={() => patchConcept(snapshotToConceptFields(pending))}
+          onConfirm={() => restoreConcept(snapshotToConceptFields(pending))}
           onCancel={() => setRestoreIdx(null)}
         />
       )}

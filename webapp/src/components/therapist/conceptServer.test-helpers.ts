@@ -14,9 +14,7 @@ export function applyConceptSave(row: Row, body: Row): Row {
   const fields: Row = { ...body };
   const modes = fields.modeLinksPatch as LinksPatch<ConceptModeLink> | undefined;
   const schemas = fields.schemaLinksPatch as LinksPatch<ConceptSchemaLink> | undefined;
-  delete fields.modeLinksPatch;
-  delete fields.schemaLinksPatch;
-  delete fields.baseVersion;
+  for (const k of ['modeLinksPatch', 'schemaLinksPatch', 'baseVersion', 'restore']) delete fields[k]; // служебное, не поля
   const next: Row = { ...row, ...fields };
   if (modes) next.modeLinks = applyLinksPatch(normalizeModeLinks(next.modeLinks), modes, (l) => l.modeId);
   if (schemas) next.schemaLinks = applyLinksPatch(normalizeSchemaLinks(next.schemaLinks), schemas, (l) => l.schemaId);
