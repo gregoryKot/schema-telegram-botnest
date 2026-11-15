@@ -2,7 +2,8 @@
 // Превью — лист бумаги без рамки, по высоте вписан под обе кнопки (share-sheet.css).
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import { TherapyNote } from '../components/TherapyNote';
+import { TherapyLine } from '../components/therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
 import { BottomSheetShell } from '../components/BottomSheetShell';
 import { CheckIcon, ShareIcon } from '../../../shared/src/share/ShareIcon';
 import { useShareCard } from '../../../shared/src/share/useShareCard';
@@ -36,6 +37,7 @@ export function ShareCardSheet({
   therapyNote,
 }: Props) {
   const goBack = useHistorySheet(onClose);
+  const bridge = useTherapyBridgeTexts();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const s = useShareCard(canvasRef, {
     draw,
@@ -72,11 +74,7 @@ export function ShareCardSheet({
           {s.copied && <CheckIcon size={17} />}
           {s.copied ? 'Текст скопирован' : s.failed ? 'Не получилось' : 'Скопировать текст'}
         </button>
-        {therapyNote && (
-          <div className="u-mt12">
-            <TherapyNote compact />
-          </div>
-        )}
+        {therapyNote && <TherapyLine place="share" text={bridge.lineHome} />}
     </BottomSheetShell>
   );
 }
