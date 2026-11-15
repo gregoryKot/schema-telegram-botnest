@@ -1,7 +1,7 @@
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
 
 // Модель статусов задания — общая с мини-аппом (shared/src/tasks/taskStatus.ts);
-// здесь только то, что есть у сайта: классы бейджей и цвет шаблонов.
+// здесь только то, что есть у сайта: классы бейджей и ярлыки статусов.
 export {
   SOON_DAYS, STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus, type TaskStatus,
 } from '../../../../shared/src/tasks/taskStatus';
@@ -27,11 +27,3 @@ export const STATUS_TAG: Record<TaskStatus, { hue: number; strong: boolean }> = 
   done: { hue: 135, strong: false },
   failed: { hue: 45, strong: false },
 };
-
-/** Hue карточки шаблона по названию типа задания. */
-export function templateHue(title: string): number {
-  if (title.startsWith('Схема')) return 28;
-  if (title.startsWith('Дневник')) return 310;
-  if (title.startsWith('Письмо')) return 145;
-  return 240;
-}
