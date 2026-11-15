@@ -63,12 +63,9 @@
 .ex2-phrase-now { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; font-family: var(--serif); font-size: 15px; line-height: 1.45; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
 .ex2-phrase-now > .pp-art { flex: none; align-self: center; }
 
-/* ── Поделиться — тихими ссылками под главным действием (итог и лист прошлого разбора) ──
-   Обёртки ShareTwoOptions не сплющиваются (display: contents): лист шаринга — их сосед в том же блоке,
-   и без своего бокса он терял position: fixed и вставал в поток страницы. */
+/* ── Поделиться — одной тихой ссылкой ShareLink под главным действием (итог и лист прошлого разбора);
+   краткая или полная карточка — в шторке SharePickSheet. ── */
 .ex2-share { padding: 0 4px; }
-.ex2-share > div > .ds-btn.ds-btn--secondary { height: 44px; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 14px; }
-.ex2-share > div > .ds-btn.ds-btn--secondary:hover { color: var(--accent-hi); }
 
 /* ── Лист «Разбор фразы» (история) ── */
 /* Найденные приметы (PhraseMarkPills, shared): бусина сливы и подпись, как у бусин хода разбора. */
