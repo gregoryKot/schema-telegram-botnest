@@ -1,5 +1,5 @@
-// Сторож прогона jest в nightly (scripts/jest-exit-guard.mjs + правила в
-// jest-exit-guard-rules.mjs). Место в nightly.yml пинит nightly-jest-steps.spec.ts.
+// Сторож прогона jest (scripts/jest-exit-guard.mjs + правила в jest-exit-guard-rules.mjs).
+// Места в nightly.yml и в джобе backend ci.yml (юнит и e2e) пинит nightly-jest-steps.spec.ts.
 //
 // Инцидент 2026-10-15 (ci-alarm #672): шаг `npx jest --detectOpenHandles
 // --forceExit=false 2>&1 | tail -50` висел 27 минут до отмены джобы — процесс
@@ -261,6 +261,18 @@ describe('jest-exit-guard.mjs: JEST_CACHE_DIR → --cacheDirectory', () => {
     const r = runWith({ JEST_CACHE_DIR: '/tmp/jc' });
     expect(r.status).toBe(0);
     expect(r.stderr).toContain('["jest","--cacheDirectory=/tmp/jc"]');
+  });
+
+  it('e2e-шаг (--config и пути спеков): флаг встаёт последним, аргументы шага целы', () => {
+    const r = runWith({ JEST_CACHE_DIR: '/tmp/jc' }, [
+      '--config',
+      './test/jest-e2e.json',
+      'test/app-auth',
+    ]);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain(
+      '["jest","--config","./test/jest-e2e.json","test/app-auth","--cacheDirectory=/tmp/jc"]',
+    );
   });
 
   it('контроль: без JEST_CACHE_DIR и при явном --cacheDirectory не трогает', () => {

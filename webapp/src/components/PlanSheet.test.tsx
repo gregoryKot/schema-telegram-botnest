@@ -37,9 +37,7 @@ function renderSheet(
       <MemoryRouter>
         <PlanSheet
           needId="attachment"
-          needColor="#60a5fa"
           needLabel="Привязанность"
-          color="#60a5fa"
           onClose={onClose}
           onSaved={onSaved}
           {...props}

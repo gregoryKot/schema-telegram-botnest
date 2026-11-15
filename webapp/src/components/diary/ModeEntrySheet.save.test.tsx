@@ -4,7 +4,7 @@
 // CLAUDE.md — до фикса единственным сигналом была вибрация haptic.error(),
 // которой на сайте в браузере вовсе нет: отказ был неотличим от успеха) и
 // возврат из подсказки «разобрать связанный режим».
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModeEntrySheet } from './ModeEntrySheet';
@@ -15,7 +15,7 @@ vi.mock('../../api', () => ({
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-function renderSheetOnFormStep(onSave: ReturnType<typeof vi.fn>, onClose = vi.fn()) {
+function renderSheetOnFormStep(onSave: Mock, onClose = vi.fn()) {
   const utils = render(
     <MemoryRouter>
       <ModeEntrySheet onClose={onClose} onSave={onSave} />
