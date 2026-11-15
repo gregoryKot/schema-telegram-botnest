@@ -13,10 +13,11 @@ const hits = () =>
   ((window as unknown as { ym?: { a?: unknown[][] } }).ym?.a ?? []).filter((c) => c[1] === 'hit');
 
 function auth(over: Partial<AuthState>): AuthState {
-  return {
+  const value: AuthState = {
     accessToken: null, isLoading: false, isAuthenticated: false, authError: null,
-    setAccessToken: vi.fn(), logout: vi.fn(), refreshToken: vi.fn(), ...over,
+    setAccessToken: vi.fn(), getAccessToken: () => value.accessToken, logout: vi.fn(), refreshToken: vi.fn(), ...over,
   };
+  return value;
 }
 
 function mount(path: string, state: Partial<AuthState>) {

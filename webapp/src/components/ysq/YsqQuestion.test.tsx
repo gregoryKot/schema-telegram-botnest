@@ -13,7 +13,7 @@ afterEach(() => {
 
 function renderQuestion(page: number) {
   return render(
-    <YsqQuestion page={page} slideKey={0} slideDir="forward" answer={0} schema={null}
+    <YsqQuestion page={page} slideKey={0} slideDir="forward" answer={0}
       onSelect={vi.fn()} onBack={vi.fn()} onClose={vi.fn()} />,
   );
 }

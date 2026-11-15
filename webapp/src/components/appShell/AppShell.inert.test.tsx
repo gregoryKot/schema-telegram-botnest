@@ -17,7 +17,7 @@ beforeEach(() => {
     unobserve() {}
     disconnect() {}
   }
-  // @ts-expect-error тестовый полифилл jsdom
+  // тестовый полифилл jsdom
   global.ResizeObserver = ResizeObserverStub;
   localStorage.clear();
   sessionStorage.clear();

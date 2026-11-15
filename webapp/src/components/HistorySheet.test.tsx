@@ -15,7 +15,8 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HistorySheet } from './HistorySheet';
-import type { Need, PracticePlan } from '../api';
+import type { PracticePlan } from '../api';
+import type { Need } from '../types';
 import { plainText } from '../test-support/plainText';
 
 vi.mock('../api', () => ({

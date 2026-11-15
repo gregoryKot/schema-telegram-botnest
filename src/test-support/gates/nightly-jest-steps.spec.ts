@@ -26,6 +26,23 @@ function job(yml: string, name: string): string {
 const stepField = (step: string, key: string) =>
   new RegExp(`^(?: {8})?${key}: (.*)$`, 'm').exec(step)?.[1];
 
+/** Команда шага; свёрнутый `run: >-` (строки блока — на 10 пробелах) склеен через пробел. */
+function runOf(step: string): string {
+  const value = stepField(step, 'run') ?? '';
+  if (!/^>-?$/.test(value)) return value;
+  const body = step
+    .slice(step.search(/^(?: {8})?run: >/m))
+    .split('\n')
+    .slice(1);
+  const end = body.findIndex(
+    (l) => l.trim() !== '' && !l.startsWith(' '.repeat(10)),
+  );
+  return (end < 0 ? body : body.slice(0, end))
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .join(' ');
+}
+
 describe('nightly.yml, backend-flaky: jest не может молча висеть', () => {
   const flaky = job(NIGHTLY, 'backend-flaky');
   const steps = flaky.split(/^ {6}- /m).slice(1);
@@ -75,44 +92,69 @@ describe('nightly.yml, backend-flaky: jest не может молча висет
 // логе зелёного шага — так поллинг из telegram.polling.seam.spec.ts (#649)
 // уехал в main при зелёном шаге со строкой «A worker process has failed to
 // exit gracefully» и повесил nightly (ci-alarm #672). Сторож стоит на полном
-// юнит-прогоне под Australia/Sydney: прогон coverage-храповика он не
+// юнит-прогоне под Australia/Sydney и на e2e (держатель после app.close() был
+// виден лишь строкой «Jest did not exit»). Прогон coverage-храповика он не
 // оборачивает — красный храповик (просадка покрытия при зелёных тестах)
 // сторож прочитал бы как «код выхода выставил тест».
-describe('ci.yml, backend: юнит-jest через jest-exit-guard', () => {
+describe('ci.yml, backend: юнит-jest и e2e через jest-exit-guard', () => {
   const CI = readFileSync(
     join(process.cwd(), '.github', 'workflows', 'ci.yml'),
     'utf8',
   );
   const backend = job(CI, 'backend');
   const steps = backend.split(/^ {6}- /m).slice(1);
-  const run = (s: string) => stepField(s, 'run') ?? '';
+  const GUARDED = /^node scripts\/jest-exit-guard\.mjs .* -- npx jest\b/;
   const unit = steps.filter(
-    (s) => /\bnpx jest\b/.test(run(s)) && !/--config/.test(run(s)),
+    (s) => /\bnpx jest\b/.test(runOf(s)) && !/--config/.test(runOf(s)),
   );
+  const e2e = steps.filter((s) =>
+    /\bnpx jest --config \.\/test\/jest-e2e\.json\b/.test(runOf(s)),
+  );
+  const step = { юнит: unit[0], e2e: e2e[0] };
 
-  it('полный юнит-прогон jest в джобе есть (под не-UTC зоной)', () => {
+  it('полный юнит-прогон jest в джобе есть (под не-UTC зоной), e2e-шаг — один', () => {
     expect(unit).toHaveLength(1);
     expect(unit[0]).toMatch(/^ {10}TZ: Australia\/Sydney$/m);
+    expect(e2e).toHaveLength(1);
   });
 
-  it('через сторожа, без пайпа и без --forceExit', () => {
-    const cmd = run(unit[0]);
-    expect(cmd).toMatch(/^node scripts\/jest-exit-guard\.mjs .* -- npx jest\b/);
-    expect(cmd).not.toMatch(/\|/);
-    expect(cmd).not.toMatch(/--forceExit/);
-  });
+  it.each(['юнит', 'e2e'] as const)(
+    '%s: через сторожа, без пайпа и без --forceExit',
+    (key) => {
+      const cmd = runOf(step[key]);
+      expect(cmd).toMatch(GUARDED);
+      expect(cmd).not.toMatch(/\|/);
+      expect(cmd).not.toMatch(/--forceExit/);
+    },
+  );
 
-  it('бюджет + ожидание выхода + минута запаса ≤ timeout-minutes шага ≤ джобы', () => {
-    const cmd = run(unit[0]);
-    const budget = Number(/--budget (\d+)/.exec(cmd)?.[1]);
-    const grace = Number(/--exit-grace (\d+)/.exec(cmd)?.[1]);
-    const step = Number(stepField(unit[0], 'timeout-minutes'));
-    const jobMinutes = Number(
-      /^ {4}timeout-minutes: (\d+)$/m.exec(backend)?.[1],
+  it.each(['юнит', 'e2e'] as const)(
+    '%s: бюджет + ожидание выхода + минута запаса ≤ timeout-minutes шага < джобы',
+    (key) => {
+      const cmd = runOf(step[key]);
+      const budget = Number(/--budget (\d+)/.exec(cmd)?.[1]);
+      const grace = Number(/--exit-grace (\d+)/.exec(cmd)?.[1]);
+      const minutes = Number(stepField(step[key], 'timeout-minutes'));
+      const jobMinutes = Number(
+        /^ {4}timeout-minutes: (\d+)$/m.exec(backend)?.[1],
+      );
+      expect(budget).toBeGreaterThan(0);
+      expect(grace).toBeGreaterThan(0);
+      expect(budget + grace + 60).toBeLessThanOrEqual(minutes * 60);
+      expect(minutes).toBeLessThan(jobMinutes);
+    },
+  );
+
+  it('контроль: свёрнутый e2e-шаг без сторожа (как до обёртки) проверку не проходит', () => {
+    const bare = [
+      'run: >-',
+      '          npx jest --config ./test/jest-e2e.json',
+      '          test/app-auth',
+      '      # следующий шаг',
+    ].join('\n');
+    expect(runOf(bare)).toBe(
+      'npx jest --config ./test/jest-e2e.json test/app-auth',
     );
-    expect(budget).toBeGreaterThan(0);
-    expect(grace).toBeGreaterThan(0);
-    expect(budget + grace + 60).toBeLessThanOrEqual(step * 60);
-    expect(step).toBeLessThan(jobMinutes);
+    expect(runOf(bare)).not.toMatch(GUARDED);
   });
 });

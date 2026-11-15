@@ -2,7 +2,7 @@
 // useModeMapExport.ts — 0% покрытия. PNG/PDF-экспорт карты режимов. Мокаем
 // внешние библиотеки рендера (html-to-image, jspdf) и проверяем реальные
 // аргументы вызова + имя файла, а не просто «функция была вызвана».
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useModeMapExport } from './useModeMapExport';
 import type { FlowNode } from './modeMapFlow';
@@ -13,10 +13,10 @@ vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) 
 const jsPDFCtor = vi.fn();
 const pdfInstance = { addImage: vi.fn(), save: vi.fn() };
 vi.mock('jspdf', () => ({
-  jsPDF: class {
+  jsPDF: class FakeJsPDF {
     constructor(...args: unknown[]) {
       jsPDFCtor(...args);
-      return pdfInstance as unknown as InstanceType<typeof this.constructor>;
+      return pdfInstance as unknown as FakeJsPDF;
     }
   },
 }));
@@ -28,7 +28,7 @@ function node(id: string): FlowNode {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 describe('useModeMapExport', () => {
-  let clickSpy: ReturnType<typeof vi.fn>;
+  let clickSpy: Mock;
   let createdAnchors: HTMLAnchorElement[];
 
   beforeEach(() => {
