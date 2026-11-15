@@ -14,7 +14,7 @@ export const QUICK_TAGS: ReadonlyArray<{ id: QuickTag; label: string }> = [
 ];
 
 /**
- * Тег → сущность ENTITY_LOOK (docs/design/APP_2026-11.md, b10a): бумага выбранного чипа и лист
+ * Тег → сущность ENTITY_LOOK (docs/archive/APP_2026-11.md, b10a): бумага выбранного чипа и лист
  * «Записано». Мысль — быстрая запись (персик, Pebbles), схема и режим — их дневники, благодарность —
  * бирюза с Pebbles filled. Строки, а не импорт таблицы: модель остаётся без рантайм-зависимостей.
  */

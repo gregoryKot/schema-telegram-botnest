@@ -1,5 +1,5 @@
 // Обложки статей о себе и близких: самооценка, повторяющийся сценарий в отношениях, ВДА
-// (docs/design/PAPER_2026-11.md, таблица «Обложки статей»). Холст и правила те же, что в
+// (docs/design/PAPER_MOTIFS_2026-11.md, таблица «Обложки статей»). Холст и правила те же, что в
 // ArticleScenesMethod.tsx; какая сцена у какой статьи — articleCoverScenes.ts.
 import { INK } from './scenePaper';
 import { Lift, SceneSvg } from './sceneKit';

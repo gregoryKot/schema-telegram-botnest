@@ -37,7 +37,7 @@ export interface ScreenBlockMeta {
   label: string;
   sub: string;
   /** Знак строки в листе «Настроить экран» (CustomizeRow) — ключ SignArt по смыслу блока
-   *  (docs/design/PAPER_2026-11.md, «Мотив → смысл»); в одном экране знаки не повторяются. */
+   *  (docs/design/PAPER_MOTIFS_2026-11.md, «Мотив → смысл»); в одном экране знаки не повторяются. */
   sign: SignKey;
 }
 

@@ -1,4 +1,4 @@
-// Вид строки задания и группы полного списка (b20, docs/design/APP_2026-11.md): чистая логика под тестом
+// Вид строки задания и группы полного списка (b20, docs/archive/APP_2026-11.md): чистая логика под тестом
 // (TaskRow.test.tsx). Сущность задания (знак) — taskEntity.ts. Действия строки — taskRowState.ts.
 import type { UserTask } from '../../api';
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
