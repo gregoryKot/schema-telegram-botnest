@@ -7,6 +7,7 @@ import { readBusy } from './caldav-busy-read';
 import { calDavHealth } from './caldav-health';
 import { onEmptyCalendars } from './caldav-empty-guard';
 import { BusyCache } from './caldav-busy-cache';
+import { cachedUnlessEmpty } from './caldav-retry';
 import { busySkips, sumSkips } from './caldav-parse-skips';
 
 export type CalDeleteResult = 'deleted' | 'missing' | 'failed';
@@ -27,10 +28,7 @@ export class CalDavService {
   private readonly configuredBase: string;
   private readonly calendarName: string;
   private readonly auth: string;
-  private resolvedBase: string | null = null;
-  private discovery: Promise<string | null> | null = null;
   private readonly busyCache = new BusyCache((f, t) => this.readBusyAll(f, t));
-  private busyUrls: Promise<string[]> | null = null;
 
   constructor(config: ConfigService) {
     this.configuredBase = (config.get<string>('APPLE_CALDAV_URL') ?? '')
@@ -49,17 +47,17 @@ export class CalDavService {
     return Boolean(this.auth);
   }
 
-  /** Resolve the target calendar URL: explicit env first, else discover once and cache. */
+  /** Resolve the target calendar URL: explicit env first, else discover and cache a success. */
   private async getBase(): Promise<string | null> {
-    if (this.configuredBase) return this.configuredBase;
-    if (this.resolvedBase) return this.resolvedBase;
-    if (!this.discovery) {
-      this.discovery = discoverCalendarUrl(this.auth, this.calendarName)
+    return this.configuredBase || this.discover();
+  }
+
+  private readonly discover = cachedUnlessEmpty<string | null>(
+    () =>
+      discoverCalendarUrl(this.auth, this.calendarName)
         .then((url) => {
-          if (url) {
-            this.resolvedBase = url;
-            this.logger.log(`CalDAV calendar discovered: ${url}`);
-          } else
+          if (url) this.logger.log(`CalDAV calendar discovered: ${url}`);
+          else
             this.logger.warn(
               'CalDAV auto-discovery found no calendar — set APPLE_CALDAV_URL manually',
             );
@@ -68,14 +66,9 @@ export class CalDavService {
         .catch((e) => {
           this.logger.error(`CalDAV discovery failed: ${(e as Error).message}`);
           return null;
-        })
-        .then((url) => {
-          if (!url) this.discovery = null; // неудачу не кэшируем: повтор на следующем вызове
-          return url;
-        });
-    }
-    return this.discovery;
-  }
+        }),
+    (url) => !url,
+  );
 
   /** Create or update the (client-data-free) calendar event for a booking. Returns the iCloud UID, or null. */
   async pushEvent(ev: OwnerCalEvent): Promise<string | null> {
@@ -114,30 +107,23 @@ export class CalDavService {
    * are scanned (so a meeting in any calendar — Home, Work, etc. — blocks the
    * slot, not just the one we write bookings into). Discovered once and cached.
    */
-  private async getBusyUrls(): Promise<string[]> {
-    if (this.configuredBase) return [this.configuredBase];
-    if (!this.busyUrls) {
-      this.busyUrls = listCalendars(this.auth)
+  private readonly getBusyUrls = cachedUnlessEmpty<string[]>(
+    () =>
+      listCalendars(this.auth)
         .then((cals) => {
-          const urls = cals.map((c) => c.url);
           this.logger.log(
             `CalDAV busy-scan calendars: ${cals.map((c) => c.name || c.url).join(', ') || 'none'}`,
           );
-          return urls;
+          return cals.map((c) => c.url);
         })
         .catch((e) => {
           this.logger.error(
             `CalDAV calendar list failed: ${(e as Error).message}`,
           );
           return [] as string[];
-        })
-        .then((urls) => {
-          if (!urls.length) this.busyUrls = null; // пусто/сбой — повторим в следующий раз
-          return urls;
-        });
-    }
-    return this.busyUrls;
-  }
+        }),
+    (urls) => !urls.length,
+  );
 
   /**
    * Busy intervals from ALL of the therapist's calendars in [from, to], so the
@@ -151,7 +137,9 @@ export class CalDavService {
   }
 
   private async readBusyAll(from: Date, to: Date): Promise<Interval[]> {
-    const urls = await this.getBusyUrls();
+    const urls = this.configuredBase
+      ? [this.configuredBase]
+      : await this.getBusyUrls();
     if (!urls.length) return onEmptyCalendars();
     const body = busyQueryXml(from, to);
     const all: Interval[] = [];

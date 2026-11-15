@@ -1,41 +1,7 @@
 import { Probe } from './types';
 import { fetchLastRun, WorkflowRunsResponse } from './ci-runs-github';
-import {
-  MUTATION_MAX_AGE_HOURS,
-  NIGHTLY_MAX_AGE_HOURS,
-  SMOKE_MAX_AGE_HOURS,
-  staleNote,
-} from './ci-run-age';
-
-interface WorkflowSpec {
-  file: string;
-  /** Текст в detail, если последний завершённый прогон не success. */
-  failMessage: (url: string) => string;
-  /** Старше — воркфлоу не запускается вовсе (планировщик GitHub молчит). */
-  maxAgeHours: number;
-  notRunLabel: string;
-}
-
-const WORKFLOWS: WorkflowSpec[] = [
-  {
-    file: 'nightly.yml',
-    failMessage: (url) => `ночная проверка упала: ${url}`,
-    maxAgeHours: NIGHTLY_MAX_AGE_HOURS,
-    notRunLabel: 'ночная проверка не запускалась',
-  },
-  {
-    file: 'prod-smoke.yml',
-    failMessage: (url) => `смок прода красный: ${url}`,
-    maxAgeHours: SMOKE_MAX_AGE_HOURS,
-    notRunLabel: 'смок не запускался',
-  },
-  {
-    file: 'mutation-bot.yml',
-    failMessage: (url) => `мутационный прогон упал: ${url}`,
-    maxAgeHours: MUTATION_MAX_AGE_HOURS,
-    notRunLabel: 'мутационный прогон не запускался',
-  },
-];
+import { staleNote } from './ci-run-age';
+import { WORKFLOWS } from './ci-workflows';
 
 /**
  * Вторая линия за джобой `alarm` (nightly.yml, prod-smoke.yml): приложение

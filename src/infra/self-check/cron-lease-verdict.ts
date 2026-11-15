@@ -76,8 +76,7 @@ export function leaseProblem(
   const [t1, t2] = ticks.map((d) => d.getTime());
   if (f.runAt !== undefined && f.runAt >= t2 - TICK_TOLERANCE_MS) return null;
   const own = Math.max(f.startedAt, f.lastDbFailureAt ?? -Infinity);
-  // Крона без единого захвата прошлые процессы могли не знать (новый после деплоя).
-  const earlier = f.runAt === undefined ? undefined : f.earlier;
+  const earlier = f.runAt === undefined ? undefined : f.earlier; // новый крон: прошлые его не знали
   const judged = (t: number) =>
     t > own || !!earlier?.some((p) => p.from < t && t + TICK_GRACE_MS <= p.to);
   if (judged(t2) && judged(t1)) {
@@ -87,7 +86,7 @@ export function leaseProblem(
       `последний раз ${ago(f.now - f.runAt)}`
     );
   }
-  // Тики пришлись на смену процессов или аварию базы — не судим, но не вечно.
+  // Смена процессов или авария базы — не судим, но не вечно.
   if (f.runAt !== undefined && f.now - f.runAt > maxAge + EXCUSE_BACKSTOP_MS)
     return `последний раз ${ago(f.now - f.runAt)}`;
   return null;
