@@ -84,7 +84,7 @@ export function Disclosure({
         style={classes ? undefined : INLINE_BTN}
       >
         {lead}
-        <span className={classes?.label}>{title}</span>
+        <span className={classes?.label || undefined}>{title}</span>
         {sub}
         <span className={classes?.chev} aria-hidden="true">
           {classes ? chev : open ? '▴' : '▾'}
