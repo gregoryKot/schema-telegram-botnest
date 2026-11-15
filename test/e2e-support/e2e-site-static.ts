@@ -13,7 +13,8 @@ import {
   SERVE_STATIC_MODULE_OPTIONS,
 } from '@nestjs/serve-static';
 import type { TestingModuleBuilder } from '@nestjs/testing';
-import { siteStaticOptions } from '../../src/infra/site-static';
+import { PricingService } from '../../src/booking/pricing.service';
+import { siteStaticFactory } from '../../src/infra/site-static';
 
 export const E2E_SITE_DIST = join(__dirname, '..', 'fixtures', 'site-dist');
 
@@ -25,5 +26,8 @@ export function withSiteStatic(
     .overrideProvider(AbstractLoader)
     .useValue(new ExpressLoader())
     .overrideProvider(SERVE_STATIC_MODULE_OPTIONS)
-    .useValue([siteStaticOptions(siteDist)]);
+    .useFactory({
+      factory: siteStaticFactory(siteDist),
+      inject: [PricingService],
+    });
 }
