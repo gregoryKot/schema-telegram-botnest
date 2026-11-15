@@ -129,8 +129,17 @@ describe('мета-строки плиток', () => {
     expect(diaryTileMeta(true, 1, null)).toBe('Сегодня 1 запись');
     expect(diaryTileMeta(true, 3, null)).toBe('Сегодня 3 записи');
     expect(diaryTileMeta(true, 5, null)).toBe('Сегодня 5 записей');
-    expect(diaryTileMeta(true, 0, hoursAgo(30))).toBe('Последняя запись — вчера');
     expect(diaryTileMeta(true, 0, null)).toBe('Пока записей нет');
+  });
+  // b05: запись вчера в 20:05, открытая утром, была «сегодня» — прошло меньше суток; давность — календарными днями.
+  it('дневник: последняя запись вчера вечером, открыто утром — «вчера», в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 7, 4, 8, 30));
+      try {
+        expect(diaryTileMeta(true, 0, new Date(2026, 7, 3, 20, 5).toISOString()), tz).toBe('Последняя запись — вчера');
+      } finally { vi.useRealTimers(); }
+    });
   });
 });
 

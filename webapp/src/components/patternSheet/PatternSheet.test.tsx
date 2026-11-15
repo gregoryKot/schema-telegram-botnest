@@ -9,6 +9,7 @@ import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 import type { PatternEntries } from '../../sections/schemas/usePatternEntries';
 import type { MyCardItem } from '../../../../shared/src/pattern/useMyCards';
 import { deleteFailedNote } from '../../../../shared/src/diary/deleteFailedNote';
+import { glue } from '../../../../shared/src/utils/typo';
 import { plainText } from '../../test-support/plainText';
 
 const deleteSchemaDiary = vi.fn().mockResolvedValue(undefined);
@@ -71,7 +72,7 @@ function renderSheet(over: Partial<React.ComponentProps<typeof PatternSheet>> = 
 describe('PatternSheet — карточка', () => {
   it('пустая: объяснение и «Заполнить карточку», без «Поделиться»', () => {
     renderSheet();
-    expect(screen.getByRole('heading', { name: 'Покинутость / Нестабильность' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: glue('Покинутость / Нестабильность') })).toBeTruthy();
     expect(screen.getByText('Заполнить карточку')).toBeTruthy();
     expect(screen.queryByText('Поделиться')).toBeNull();
     expect(screen.queryByText('Дополнить')).toBeNull();
@@ -190,7 +191,7 @@ describe('PatternSheet — справка и «О схеме»', () => {
     expect(screen.getByTestId('schema-detail')).toBeTruthy();
     fireEvent.click(screen.getByText('close-schema-detail'));
     expect(screen.queryByTestId('schema-detail')).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Покинутость / Нестабильность' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: glue('Покинутость / Нестабильность') })).toBeTruthy();
   });
 
   it('«О режиме» открывает портрет режима', () => {

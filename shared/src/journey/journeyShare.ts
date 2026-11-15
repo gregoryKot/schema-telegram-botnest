@@ -40,6 +40,7 @@ import {
   pluralEntries,
 } from '../share/shareTexts';
 import type { ShareCardKind } from '../share/analytics';
+import { fmtIndex } from '../needs/dayIndex';
 
 export type JourneyShareState =
   | { kind: 'summary' }
@@ -70,9 +71,9 @@ export function journeyDayIndex(
   const vals = Object.keys(JOURNEY_NEED_NAMES)
     .map((id) => ratings?.[id])
     .filter((v): v is number => typeof v === 'number');
-  return vals.length
-    ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1)
-    : '—';
+  return fmtIndex(
+    vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null,
+  );
 }
 
 export interface JourneySharePayload {
