@@ -26,6 +26,12 @@
     "src/subscription/subscription.service.ts",
     "src/subscription/subscription-price.ts",
     "src/subscription/subscription-views.ts",
+    "src/subscription/subscription.charges.ts",
+    "src/subscription/subscription.charge-guards.ts",
+    "src/subscription/subscription.charge-activate.ts",
+    "src/subscription/subscription-paid-after-cancel.ts",
+    "src/subscription/subscription.charge-failed.ts",
+    "src/logger/money-alert.ts",
     "src/booking/slot.service.ts",
     "src/booking/slot-window.ts",
     "src/booking/pricing.service.ts",
@@ -59,7 +65,7 @@
   "htmlReporter": {
     "fileName": "reports/mutation/golden-payments.html"
   },
-  "concurrency": 2,
+  "concurrency": 4,
   "coverageAnalysis": "perTest",
   "ignoreStatic": true,
   "thresholds": {
