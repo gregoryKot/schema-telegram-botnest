@@ -4,6 +4,7 @@
 // тик не забирают, и проба cronLeases судит аренду только при включённой
 // подписке (cron-lease-expected.ts).
 import { SubscriptionService } from './subscription.service';
+import { chargeDue } from './subscription.charges';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 function makeService(
@@ -60,5 +61,25 @@ describe('SubscriptionService.chargeDue — аренда крона', () => {
     await expect(service.chargeDue()).resolves.toBeUndefined();
     expect(cronLeader.claimRun.mock.calls).toEqual([]);
     expect(prisma.subscription.findMany.mock.calls).toEqual([]);
+  });
+});
+
+// Тот же гард в самом списании (subscription.charges.ts): вызов в обход крона
+// сервиса с выключенной подпиской или Robokassa базу не трогает.
+describe('chargeDue — свой гард флагов', () => {
+  it.each([
+    ['подписка выключена', { enabled: false, robokassa: { enabled: true } }],
+    [
+      'Robokassa не настроена',
+      { enabled: true, robokassa: { enabled: false } },
+    ],
+  ])('%s — ни просрочек, ни выборки должников', async (_, flags) => {
+    const prisma = {
+      subscription: { findMany: jest.fn().mockResolvedValue([]) },
+      subscriptionCharge: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    await chargeDue({ prisma, notify: {}, logger: {}, ...flags } as never);
+    expect(prisma.subscriptionCharge.findMany).not.toHaveBeenCalled();
+    expect(prisma.subscription.findMany).not.toHaveBeenCalled();
   });
 });

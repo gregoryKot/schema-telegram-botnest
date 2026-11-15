@@ -80,6 +80,14 @@ describe('markChargePaid — строки списания или подписк
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('нет charge и суммы (OutSum не число) → в error() «?» вместо суммы', async () => {
+    const { d, logger } = deps(null, null);
+    await markChargePaid(d, SUBSCRIPTION_INVID_BASE + 9);
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining(`InvId ${SUBSCRIPTION_INVID_BASE + 9} (? ₽)`),
+    );
+  });
+
   it('charge есть, подписки нет → OK и error() про подписку', async () => {
     const charge = { id: 9, subscriptionId: 3, status: 'pending', amount: 500 };
     const { d, logger, prisma } = deps(charge, null);

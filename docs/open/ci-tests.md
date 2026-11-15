@@ -39,27 +39,27 @@
   2026-11-08 — первый тест 0,9 с (рендер профиля и холодный ленивый лист «Настроить»), остальные
   меньше 0,3 с; под load average 55+ он один может упереться в 10 с. `testTimeout` не поднимали
   осознанно; повторится — мокать лист в этом файле.
-- **45 файлов вокруг мутационных зон не измеряются мутациями**
-  (`scripts/mutation-zone-baseline.json`, у каждого причина). 15 выделены из
-  файлов зон (`magic-link`/`unlink-provider` из `auth.service`, `merge-*` из
-  `merge.service`, `subscription.charges`, `account.delete`,
-  `init-data-paths`, `auth-failure.report` и другие); 30 гейт увидел после
-  расширения 2026-11 (кандидат — файл, у которого импортёров из зоны не
-  меньше, чем вне) и при включении соседей в `mutate`: хелперы броней,
-  уведомлений, связи терапевта, части билета входа. Семь из 45 — константы и
+- **47 файлов вокруг мутационных зон не измеряются мутациями**
+  (`scripts/mutation-zone-baseline.json`, у каждого причина). Часть выделена
+  из файлов зон (`magic-link`/`unlink-provider` из `auth.service`, `merge-*`
+  из `merge.service`, `account.delete`, `init-data-paths`,
+  `auth-failure.report` и другие), остальные гейт увидел после расширения
+  2026-11 (кандидат — файл, у которого импортёров из зоны не меньше, чем вне)
+  и при включении соседей в `mutate`: хелперы броней, уведомлений и карточек
+  владельцу, связи терапевта, части билета входа. Семь — константы и
   реестры без логики (`user-owned-tables`, `user-data-tables`,
   `booking.config`, `booking.schema`, `subscription.constants`,
   `init-data-window`, `totp-challenge`), остальное — долг волны. Гейт
   `check-mutation-zone.mjs` (#657) не даёт выпасть новому, а этим ничего не
   мешает остаться за кадром: включать в `mutate` по одному вместе с прогоном
   и полом в бейслайне храповика. `refresh-*`, `merge-subscriptions`,
-  `booking.{create,checkout,queries}` включены 2026-11-09 с полом 100.
-  Следующий по весу — `subscription.charges.ts` (деньги): замер 2026-11-09
-  85.71% (16 выживших и 3 NoCoverage), соседи `subscription.charge-guards.ts`
-  86.36%, `subscription.charge-activate.ts` 89.29%,
-  `subscription-paid-after-cancel.ts` 85.19%, `subscription.charge-failed.ts`
-  100% — включать вместе, иначе гейт потребует записи про каждого соседа;
-  затем `booking-public-view.ts` (выдача брони без ПДн). Слепое пятно гейта:
+  `booking.{create,checkout,queries}` включены 2026-11-09 с полом 100;
+  списания подписки (`subscription.charge*`, `subscription-paid-after-cancel`)
+  и `money-alert` — 2026-11-15 с полами по прогону. Карточка
+  `subscription-owner-card.ts` встала при этом в бейслайн, как карточки броней
+  и донатов: её включение тянет `booking-notify.format.ts`, а за ним
+  `client-timezone.ts`. Следующий по весу — `booking-public-view.ts` (выдача
+  брони без ПДн). Слепое пятно гейта:
   выделенный файл, у которого импортёров из зоны меньше половины или нет
   вовсе (импортёры переехали за ним), он не видит — так к 2026-11 жили
   `totp.service.ts`, `max-init-data.ts`, `login-ticket.service.ts` (два
