@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HistorySheet } from './HistorySheet';
-import type { Need } from '../api';
+import type { Need } from '../types';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import { localDateStr } from '../../../shared/src/utils/format';
 

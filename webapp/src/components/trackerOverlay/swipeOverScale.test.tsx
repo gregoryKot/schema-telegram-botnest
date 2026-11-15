@@ -16,8 +16,8 @@ function Harness({ onNext, onPrev }: { onNext: () => void; onPrev: () => void })
   return (
     <div data-testid="overlay" {...swipe}>
       <p>Фон вопроса</p>
-      <NeedScale value={undefined} hue={200} label="Близость" onChange={() => {}} />
-      <NeedScale value={undefined} hue={200} label="Шкала 10" onChange={() => {}} />
+      <NeedScale value={undefined} hue={200} needId="attachment" label="Близость" onChange={() => {}} />
+      <NeedScale value={undefined} hue={200} needId="autonomy" label="Шкала 10" onChange={() => {}} />
     </div>
   );
 }

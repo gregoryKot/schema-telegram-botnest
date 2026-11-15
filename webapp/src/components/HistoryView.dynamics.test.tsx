@@ -22,7 +22,7 @@ const NEEDS: Need[] = [{ id: 'attachment', emoji: '', title: 'Привязанн
 // дальше — по 2. Старый расчёт дал бы «+5,7» (три новых против трёх первых дней месяца).
 const WEEK = [8, 7, 8, 9, 8, 7, 8];
 const score = (i: number) => (i < 7 ? WEEK[i] : i < 14 ? 5 : 2);
-const history = (rate: (i: number) => number | null): DayHistory[] => Array.from({ length: 30 }, (_, i) => {
+const history = (rate: (i: number) => number | null): DayHistory[] => Array.from({ length: 30 }, (_, i): DayHistory => {
   const v = rate(i);
   return { date: `2020-01-${String(30 - i).padStart(2, '0')}`, ratings: v === null ? {} : { attachment: v } };
 });

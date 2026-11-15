@@ -19,7 +19,7 @@ function expectHead(btn: HTMLElement) {
 describe('оболочки листов — ds-sheet-head/ds-back', () => {
   it('OverlayFrame: «Назад» вызывает onBack', () => {
     const onBack = vi.fn();
-    render(<OverlayFrame title="Все задания" onBack={onBack}>x</OverlayFrame>);
+    render(<OverlayFrame onBack={onBack}>x</OverlayFrame>);
     const b = screen.getByRole('button', { name: /Назад/ });
     expectHead(b);
     fireEvent.click(b);

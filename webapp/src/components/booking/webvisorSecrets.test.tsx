@@ -81,7 +81,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
   it('DoneScreen: токен в href — под скрытым узлом; ссылки на встречу нет (аудит 2026-10)', () => {
     const { container } = render(
       <DoneScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" cancelled={false}
-        booked={{ cancelToken: TOKEN, eventDurationMin: 50 }} sessionType="SESSION_50" onCancelled={() => {}} />,
+        booked={{ cancelToken: TOKEN, eventDurationMin: 50 }} sessionType="SESSION_50" onCancelled={() => {}} message="" />,
     );
     expect(carriers(container).length).toBeGreaterThanOrEqual(3); // Google, .ics, Telegram
     expect(violations(container)).toEqual([]);
@@ -91,7 +91,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
 
   it('AwaitPaymentScreen: ссылка на оплату Робокассы — под скрытым узлом', () => {
     const { container } = render(
-      <AwaitPaymentScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" priceText={null} payUrl={PAY} />,
+      <AwaitPaymentScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" priceText={null} payUrl={PAY} message="" />,
     );
     expect(carriers(container)).toHaveLength(1);
     expect(violations(container)).toEqual([]);

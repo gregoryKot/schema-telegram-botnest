@@ -29,7 +29,7 @@ export const NEEDS_BUILD = {
   'mutation-changed-files.mjs':
     'сравнивает ветку с origin/main и пишет в $GITHUB_OUTPUT — только в CI',
   'jest-exit-guard.mjs':
-    'не гейт, а сторож полного прогона jest (джоба backend) — минуты',
+    'не гейт, а сторож прогонов jest джобы backend (юнит под TZ и e2e) — минуты',
   'check-pr-size.mjs': 'судит закоммиченный дифф ветки с origin/main и метку PR из события — только в CI; локально: node scripts/check-pr-size.mjs',
 };
 
@@ -42,6 +42,33 @@ const STEP_RE =
   /^\s*(?:-\s+)?run:\s+node\s+scripts\/([A-Za-z0-9._-]+\.mjs)((?:\s+[A-Za-z0-9_./=:@,-]+)*)\s*(?:\s#.*)?$/;
 const JOB_RE = /^ {2}([A-Za-z0-9_-]+):\s*(?:#.*)?$/;
 const TOP_KEY_RE = /^[A-Za-z0-9_-]+:/;
+// Свёрнутый блок `run: >-` (e2e-шаг джобы backend под сторожем): строки блока
+// оболочка получает одной командой через пробел. Литеральный `run: |` не склеиваем.
+const FOLDED_RUN_RE = /^(\s*(?:-\s+)?)run:\s*>[-+]?\s*(?:#.*)?$/;
+
+const indentOf = (line) => line.length - line.trimStart().length;
+
+/** Строки ci.yml, где каждый свёрнутый `run: >-` стал одной строкой `run: <команда>`. */
+function unfoldRuns(lines) {
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const head = FOLDED_RUN_RE.exec(lines[i]);
+    if (!head) {
+      out.push(lines[i]);
+      continue;
+    }
+    // Блок кончается на первой непустой строке не правее ключа `run`.
+    const parts = [];
+    while (
+      i + 1 < lines.length &&
+      (lines[i + 1].trim() === '' || indentOf(lines[i + 1]) > head[1].length)
+    ) {
+      parts.push(lines[++i].trim());
+    }
+    out.push(`${head[1]}run: ${parts.filter(Boolean).join(' ')}`);
+  }
+  return out;
+}
 
 /**
  * Гейты из текста ci.yml в порядке файла, без повторов (повтор — та же команда
@@ -53,8 +80,8 @@ export function gatesFromWorkflow(yamlText) {
   const seen = new Set();
   let inJobs = false;
   let job = null;
-  for (const raw of yamlText.split('\n')) {
-    const line = raw.replace(/\r$/, '');
+  const lines = yamlText.split('\n').map((raw) => raw.replace(/\r$/, ''));
+  for (const line of unfoldRuns(lines)) {
     if (TOP_KEY_RE.test(line)) {
       inJobs = /^jobs:\s*(?:#.*)?$/.test(line);
       job = null;

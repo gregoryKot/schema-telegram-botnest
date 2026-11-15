@@ -16,7 +16,8 @@ describe('sidebarDay', () => {
   });
 
   it('пустой и частичный день: индекса нет, солома', () => {
-    for (const r of [{}, { autonomy: 7, limits: 3 }]) {
+    const partial: Record<string, number>[] = [{}, { autonomy: 7, limits: 3 }];
+    for (const r of partial) {
       expect(sidebarDay(IDS, r)).toMatchObject({ index: null, hue: DAY_OPEN_HUE });
     }
   });

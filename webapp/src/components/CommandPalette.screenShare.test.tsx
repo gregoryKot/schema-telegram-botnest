@@ -12,6 +12,7 @@ const CLIENT: TherapyClientSummary = {
   telegramId: 42, name: 'Иван', clientAlias: null, streak: 3,
   lastActiveDate: null, todayIndex: null, recentIndexHistory: [],
   relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null,
+  meetingDays: [], schemaIds: [],
 };
 const getTherapyClients = vi.fn(() => Promise.resolve([CLIENT]));
 vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients() } }));
@@ -21,7 +22,7 @@ afterEach(() => { cleanup(); setScreenShare(false); });
 async function renderPalette() {
   render(
     <MemoryRouter>
-      <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} userRole="THERAPIST" therapistMode />
+      <CommandPalette section="today" onNavigate={vi.fn()} onClose={vi.fn()} userRole="THERAPIST" therapistMode />
     </MemoryRouter>,
   );
   await act(async () => { await Promise.resolve(); }); // список клиентов пришёл

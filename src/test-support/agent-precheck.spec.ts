@@ -110,6 +110,57 @@ describe('gatesFromWorkflow: разбор ci.yml', () => {
   });
 });
 
+// Свёрнутый `run: >-` — так записан e2e-шаг джобы backend под сторожем: длинный список спеков
+// в одной строке не прочитать. Оболочка получает строки блока одной командой через пробел.
+const FOLDED = `jobs:
+  backend:
+    steps:
+      - name: e2e под сторожем
+        timeout-minutes: 5
+        run: >-
+          node scripts/check-folded.mjs --budget 9 --
+          npx jest --config ./test/jest-e2e.json
+
+          test/a test/b
+        env:
+          X: '1'
+      - run: >-
+          npx jest --config ./test/jest-e2e.json
+          node scripts/check-mid-command.mjs
+      - run: >-
+          node scripts/check-folded-chain.mjs &&
+          echo ok
+      - run: |
+          node scripts/check-literal.mjs
+      - run: node scripts/check-after.mjs
+`;
+
+describe('gatesFromWorkflow: свёрнутый run: >-', () => {
+  const gates = gatesOf(FOLDED);
+
+  it('строки блока — одна команда через пробел; ключ после блока (env:) в неё не попадает', () => {
+    expect(gates.map((g) => g.command)).toEqual([
+      'node scripts/check-folded.mjs --budget 9 -- npx jest --config ./test/jest-e2e.json test/a test/b',
+      'node scripts/check-after.mjs',
+    ]);
+    expect(gates[0]).toMatchObject({
+      job: 'backend',
+      script: 'check-folded.mjs',
+    });
+  });
+
+  it('контроль: node scripts не в начале команды, цепочка через && и литеральный run: | — не гейты', () => {
+    const scripts = gates.map((g) => g.script);
+    for (const noise of [
+      'check-mid-command.mjs',
+      'check-folded-chain.mjs',
+      'check-literal.mjs',
+    ]) {
+      expect(scripts).not.toContain(noise);
+    }
+  });
+});
+
 describe('настоящий ci.yml', () => {
   const ci = readFileSync(CI_YML, 'utf8');
   const all = gatesOf(ci);
@@ -119,7 +170,7 @@ describe('настоящий ci.yml', () => {
   const needsBuild = lib<Record<string, string>>('mod.NEEDS_BUILD');
 
   it('каждая команда `node scripts/…` из ci.yml разобрана (ни один гейт не выпал молча)', () => {
-    const known = new Set(all.map((g) => g.command));
+    const known = all.map((g) => g.command);
     const lost: string[] = [];
     for (const line of ci.split('\n')) {
       if (line.trim().startsWith('#') || !line.includes('node scripts/'))
@@ -128,9 +179,21 @@ describe('настоящий ci.yml', () => {
         .slice(line.indexOf('node scripts/'))
         .replace(/\s#.*$/, '')
         .trim();
-      if (!known.has(command)) lost.push(line.trim());
+      // Первая строка свёрнутого `run: >-` — начало склеенной команды.
+      if (!known.some((k) => k === command || k.startsWith(`${command} `)))
+        lost.push(line.trim());
     }
     expect(lost).toEqual([]);
+  });
+
+  it('e2e-шаг джобы backend (свёрнутый run под сторожем) разобран и пропущен, как юнит-прогон', () => {
+    const guards = split.skipped.filter(
+      (g) => g.script === 'jest-exit-guard.mjs',
+    );
+    expect(guards.map((g) => g.job)).toEqual(['backend', 'backend']);
+    expect(
+      guards.filter((g) => g.args.includes('./test/jest-e2e.json')),
+    ).toHaveLength(1);
   });
 
   it('список пропусков: каждая запись есть в ci.yml и объяснена', () => {

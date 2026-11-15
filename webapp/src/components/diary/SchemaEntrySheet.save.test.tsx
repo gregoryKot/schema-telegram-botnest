@@ -2,7 +2,7 @@
 // SchemaEntrySheet — сохранение. Регрессия: при отказе сервера лист закрывался
 // молча (finally → goBack), и отказ был неотличим от успеха; Mode и Gratitude
 // оставались и показывали ошибку. Плюс текст из «Дневника одной страницей».
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
@@ -12,7 +12,7 @@ vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
 
 const PLACEHOLDER = 'Например: на созвоне А. сказал, что мой ппт «слабо проработан»…';
 
-function setup(onSave: ReturnType<typeof vi.fn>, props: { initialTrigger?: string } = {}) {
+function setup(onSave: Mock, props: { initialTrigger?: string } = {}) {
   const onClose = vi.fn();
   render(
     <MemoryRouter>

@@ -71,7 +71,7 @@ describe('NeedScale: подписи-якоря', () => {
   it('подпись рисуется под словом по индексу, без подписи — только слово', () => {
     render(
       <NeedScale
-       
+        needId="attachment"
         value={undefined}
         hue={28}
         label="Привязанность"

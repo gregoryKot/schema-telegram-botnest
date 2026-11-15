@@ -69,12 +69,12 @@
 
 | джоба | что гоняет (≤15 слов) |
 |---|---|
-| backend | tsc, coverage-храповик, jest под TZ Sydney, e2e на фейках, npm audit корня и game, 6 храповиков |
+| backend | tsc, coverage-храповик, jest под TZ Sydney и e2e на фейках через `jest-exit-guard`, npm audit корня и game, 6 храповиков |
 | checks | fs-only гейты без `npm ci`, shellcheck `scripts/*.sh` |
 | docker | `docker build` прод-образа (`push: false`, кэш gha) |
 | migrations | Postgres 17 (как прод), клиент 17 из `deploy/install-pg-client.sh`: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
 | perf | сид синтетики, EXPLAIN ANALYZE горячих путей, `check-query-plans.mjs` |
-| webapp | build, bundle-size, vitest+coverage, UI-гейты, npm audit |
+| webapp | типы тестов (`typecheck:test`), build, bundle-size, vitest+coverage, UI-гейты, npm audit |
 | webapp-tz | vitest `webapp` под TZ Sydney — отдельной джобой, параллельно `webapp` |
 | shared | coverage-храповик и vitest под TZ Sydney для `shared/`, npm audit |
 | eslint | vitest игры (`npm test --prefix game`), `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
