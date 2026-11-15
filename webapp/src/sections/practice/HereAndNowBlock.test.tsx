@@ -21,7 +21,7 @@ vi.mock('../../api', () => ({
   api: {
     trackEvent: vi.fn(),
     getPracticeSessions: vi.fn(),
-    getFlashcards: vi.fn(),
+    getFlashcardsCount: vi.fn(),
     recordPracticeSession: vi.fn(),
   },
 }));
@@ -63,7 +63,7 @@ describe('HereAndNowBlock', () => {
     expect(square(/Заземление/).classList.contains('pp-paper')).toBe(true);
     expect(square(/Техника «Стоп»/).classList.contains('pp-paper')).toBe(true);
     expect(screen.queryByText('Мне плохо')).toBeNull();
-    expect(mockApi.getFlashcards).not.toHaveBeenCalled();
+    expect(mockApi.getFlashcardsCount).not.toHaveBeenCalled();
   });
 
   it('пока счётчики грузятся — плашка-скелетон в мете, а не ноль', () => {
@@ -75,7 +75,7 @@ describe('HereAndNowBlock', () => {
 
   it('квадрат «Мне плохо» с onSos: мета — число сохранённых карточек, клик зовёт onSos', async () => {
     mockApi.getPracticeSessions.mockResolvedValue({ breathing: 0, grounding: 0, stop: 0 });
-    mockApi.getFlashcards.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockApi.getFlashcardsCount.mockResolvedValue({ count: 2 });
     const onSos = vi.fn();
     renderBlock(onSos);
     await flush();

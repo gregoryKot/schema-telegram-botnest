@@ -137,6 +137,11 @@ export class ExercisesService {
     return rows.map(readFlashcard);
   }
 
+  async countFlashcards(userId: bigint) {
+    const count = await this.prisma.userFlashcard.count({ where: { userId } });
+    return { count };
+  }
+
   async createFlashcard(
     userId: bigint,
     data: {
