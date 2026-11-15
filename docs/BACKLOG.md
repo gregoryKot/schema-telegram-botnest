@@ -38,7 +38,6 @@
 
 - ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml` и `alarm.yml`, её зовут `nightly.yml` и `mutation-bot.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
 - ⬜ **Владельцу: внести `webapp-tz` в живой ruleset `main`** — Require status checks (GitHub Actions); джоба есть в копии `.github/rulesets/main.json` с #1079, без неё `live-ruleset` в nightly красный каждую ночь и держит открытым ci-alarm #1057 (там же — проверить зелёный nightly и закрыть #1057). Запись — `docs/open/owner.md`.
-- ⬜ **Игра: ♥ ✦ ◀ ▶ ▲ ₽ рисуются запасным, не пиксельным шрифтом** — в `game/public/fonts/ps2p-latin.woff2` и `ps2p-cyrillic.woff2` их нет (cmap, fontTools): ♥ — жизни в HUD (`game/src/scenes/GameScene.ts:176`, `TutorialScene.ts:187`) и обучение (`m_when_it_hits_mister_copes_in`), ✦ — счётчик воспоминаний (`game/src/scenes/game/hud.ts:26`, `world.ts:60`), ◀ ▶ ▲ — подсказка `m_move_jump` (те же значки на тач-кнопках), ₽ — `game/src/enemies/road.ts:98`; эмодзи 💛 и 🐈‍⬛ в `game/src/i18n/messages.ts` — тоже. Знак из шрифта меняет смысл — нужен значок-спрайт или решение оставить.
 - ⬜ **Первый замер видимости в нейросетях** — пройти 15 вопросов из
   [GEO.md](GEO.md) в Алисе AI, ChatGPT, Perplexity и Gemini, записать в журнал
   там же; включить отчёты «Видимость сайта в Алисе AI» (Яндекс Вебмастер) и
@@ -124,6 +123,7 @@
 
 ## Сделано
 
+- ✅ **Игра: ♥ ✦ ₽ ◀ ▶ ▲ — пиксельные значки** (PR К28, #1267) — `game/src/glyphs.ts`: сердца и ✦ в HUD, ₽ на дороге, стрелки тач-кнопок; подсказки без знаков. Эмодзи 💛 и 🐈‍⬛ в `messages.ts` оставлены: цветные, из системного шрифта, смысл не меняют.
 - ✅ **Игра: финал кабинета гл.4 догнал развилку** (PR #1269) — `showTherapyCta`: тач-кнопки прячутся, добавлено «открыть в Telegram», раскладка по y как у запасного финала.
 - ✅ **Игра: eslint `cta.ts` чист, комментарий про размер холста** (PR #1269) — убран `IS_TOUCH`, `stopPropagation` типизирован; в `IntroScene.ts` H=360.
 - ✅ **Планки гейта планов — по замеру CI на Postgres 17** (К27, #1266) — `query-plan-baseline.json` пересчитан по артефакту `query-plans` main (`--update --report`), было выше замера в 1,5–10 раз; `PERF_PLANS.md` обновлён.

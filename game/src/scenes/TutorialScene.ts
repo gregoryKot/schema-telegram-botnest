@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { buildHearts, setHearts } from '../glyphs';
 import { W, H, GROUND_Y, PHYS } from '../constants';
 import { audio } from '../audio';
 import { touch, IS_TOUCH, setTouchControls } from '../controls';
@@ -63,7 +64,7 @@ export class TutorialScene extends Phaser.Scene {
   private narrContinue: (() => void) | null = null; // листать текст по тач-кнопке
 
   // жизни (как в игре — учим, что копинг их тратит)
-  private hearts = 3; private heartsText!: Phaser.GameObjects.Text; private hurtT = 0;
+  private hearts = 3; private heartImgs: Phaser.GameObjects.Image[] = []; private hurtT = 0;
   // walk
   private moved = 0; private jumped = false;
   // dash
@@ -152,8 +153,7 @@ export class TutorialScene extends Phaser.Scene {
     // жизни — как в игре; учим, что каждый «способ справиться» их тратит
     // жизни — В ТОЧНОСТИ как в игре (тот же размер/цвет/позиция)
     this.hearts = 3; this.hurtT = 0;
-    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577', ...HUD_STROKE })
-      .setScrollFactor(0).setDepth(60);
+    this.heartImgs = buildHearts(this, 18, 14, 3, 60);
     this.updateHearts();
 
     const skip = this.add.text(W - 18, 16, t('m_skip'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0' })
@@ -184,7 +184,7 @@ export class TutorialScene extends Phaser.Scene {
     this.anims.create({ key, frames: this.anims.generateFrameNumbers(sheet, { start, end }), frameRate, repeat });
   }
   private updateHearts() {
-    this.heartsText.setText('♥'.repeat(Math.max(0, this.hearts)) + '·'.repeat(Math.max(0, 3 - this.hearts)));
+    setHearts(this, this.heartImgs, this.hearts);
   }
   // в обучении жизнь не падает до конца (clamp 1), но убыль показываем — учим цену
   private loseHeart(msg: MsgKey) {

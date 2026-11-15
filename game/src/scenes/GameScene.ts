@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { setHearts } from '../glyphs';
 import { H, CAM_TOP } from '../constants';
 import { audio } from '../audio';
 import { CHAPTERS, DEFAULT_CHAPTER, ChapterConfig } from '../chapters';
@@ -47,7 +48,7 @@ export class GameScene extends Phaser.Scene {
   trail: { x: number; y: number; flip: boolean }[] = [];
 
   hearts = 3;
-  heartsText!: Phaser.GameObjects.Text;
+  heartImgs: Phaser.GameObjects.Image[] = [];
   invuln = 0;
   private checkpointX = 100;
   dead = false;
@@ -58,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   heartPickups: Phaser.GameObjects.Image[] = [];
   memories: Phaser.GameObjects.Sprite[] = [];
   memText!: Phaser.GameObjects.Text;
+  memIcon?: Phaser.GameObjects.Image;
   memGot = 0; memTotal = 0;
   readonly MAX_HEARTS = 5;
 
@@ -173,7 +175,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   updateHearts() {
-    this.heartsText.setText('♥'.repeat(Math.max(0, this.hearts)) + '·'.repeat(Math.max(0, 3 - this.hearts)));
+    setHearts(this, this.heartImgs, this.hearts);
   }
 
   // ── Main loop ────────────────────────────────────────────────────────────--

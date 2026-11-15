@@ -57,7 +57,7 @@ function collectMemory(s: GameScene, m: Phaser.GameObjects.Sprite) {
   audio.pickup();
   s.burst(m.x, m.y, 0xffd870, 10, 120);
   s.tweens.add({ targets: m, y: m.y - 24, alpha: 0, scale: 1.6, duration: 380, onComplete: () => m.destroy() });
-  s.memText?.setText(`✦ ${s.memGot}/${s.memTotal}`);
+  s.memText?.setText(`${s.memGot}/${s.memTotal}`);
   if (s.memGot >= s.memTotal && s.memTotal > 0) {
     // все собраны — награда: тёплая строка + полное здоровье
     s.hearts = s.MAX_HEARTS; s.updateHearts();
