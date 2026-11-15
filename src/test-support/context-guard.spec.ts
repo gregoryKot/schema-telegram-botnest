@@ -1,7 +1,14 @@
 // Сторож длинной сессии .claude/hooks/context-guard.mjs: молчит, пока сессия
 // дешёвая; вырос или сжимался контекст — начатую задачу передать или довести, новую не начинать.
 import { execFileSync, spawnSync } from 'child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
@@ -30,10 +37,14 @@ const usageLine = (tokens: number, sidechain = false) =>
     },
   });
 
-function run(event: object, lines?: string[]) {
+function run(
+  event: object,
+  lines?: string[],
+  extraEnv: NodeJS.ProcessEnv = {},
+) {
   const transcript = join(tmp, 'session.jsonl');
   if (lines) writeFileSync(transcript, lines.join('\n') + '\n');
-  const env = { ...process.env };
+  const env = { ...process.env, ...extraEnv };
   delete env.CLAUDE_CONTEXT_GUARD_TOKENS;
   return spawnSync('node', [GUARD], {
     input: JSON.stringify({ transcript_path: transcript, ...event }),
@@ -137,12 +148,88 @@ describe('хук context-guard.mjs', () => {
     const context = (command: string) =>
       JSON.parse(run(bash(command), [usageLine(130_000)]).stdout)
         .hookSpecificOutput.additionalContext as string;
-    expect(context('gh pr merge 12 --squash 2>&1 | tail -n 3')).toContain(
+    expect(context('gh pr merge 12 --squash')).toContain(
       'PR вмержен: проверь деплой',
     );
     const auto = context('cd /repo && gh pr merge 12 --squash --auto');
     expect(auto).toContain('ждёт автомержа: дождись мержа');
     expect(auto).toContain('start_session');
+  });
+
+  describe('мерж за пайпом: исход сверяется `gh pr view` (gh подменён)', () => {
+    /** Подменный gh в PATH: пишет аргументы в calls.txt и выполняет body. */
+    function fakeGh(body: string): NodeJS.ProcessEnv {
+      const bin = join(tmp, 'bin');
+      mkdirSync(bin);
+      const script = join(bin, 'gh');
+      writeFileSync(
+        script,
+        `#!/bin/sh\necho "$@" >> "${join(tmp, 'calls.txt')}"\n${body}\n`,
+        {
+          mode: 0o755,
+        },
+      );
+      return {
+        PATH: `${bin}:${process.env.PATH}`,
+        CLAUDE_GH_VIEW_TIMEOUT_MS: '1500',
+      };
+    }
+    const calls = () =>
+      existsSync(join(tmp, 'calls.txt'))
+        ? readFileSync(join(tmp, 'calls.txt'), 'utf8')
+        : '';
+    const PIPED = 'gh pr merge 12 --squash 2>&1 | tail -n 3';
+    const guard = (command: string, env: NodeJS.ProcessEnv) =>
+      run(bash(command), [usageLine(130_000)], env).stdout;
+    const context = (out: string) =>
+      JSON.parse(out).hookSpecificOutput.additionalContext as string;
+
+    it('пайп + MERGED — «PR вмержен», спрошен тот самый PR', () => {
+      const out = guard(
+        PIPED,
+        fakeGh(`echo '{"state":"MERGED","autoMergeRequest":null}'`),
+      );
+      expect(context(out)).toContain('PR вмержен: проверь деплой');
+      expect(calls().trim()).toBe('pr view 12 --json state,autoMergeRequest');
+    });
+
+    it('пайп + провал мержа (PR открыт без автомержа) — молчит', () => {
+      const out = guard(
+        PIPED,
+        fakeGh(`echo '{"state":"OPEN","autoMergeRequest":null}'`),
+      );
+      expect(out).toBe('');
+      expect(calls()).toContain('pr view 12');
+    });
+
+    it('пайп + OPEN с автомержем — «ждёт автомержа»; ветка и --repo уходят в gh', () => {
+      const env = fakeGh(
+        `echo '{"state":"OPEN","autoMergeRequest":{"mergeMethod":"SQUASH"}}'`,
+      );
+      const out = guard('gh pr merge feat/x -R o/r --squash | tail -n 1', env);
+      expect(context(out)).toContain('ждёт автомержа');
+      expect(calls().trim()).toBe(
+        'pr view feat/x --json state,autoMergeRequest --repo o/r',
+      );
+    });
+
+    it('пайп + таймаут gh — без «вмержен», строка-предупреждение', () => {
+      const out = guard(PIPED, fakeGh('exec sleep 5'));
+      const ctx = context(out);
+      expect(ctx).toContain('не проверен (таймаут gh pr view)');
+      expect(ctx).not.toContain('вмержен');
+    });
+
+    it('без пайпа — сигнал по коду выхода, gh не вызывается', () => {
+      const out = guard('gh pr merge 12 --squash', fakeGh('exit 1'));
+      expect(context(out)).toContain('PR вмержен: проверь деплой');
+      expect(calls()).toBe('');
+    });
+
+    it('ниже порога — молчит и в сеть не ходит', () => {
+      const res = run(bash(PIPED), [usageLine(40_000)], fakeGh('exit 1'));
+      expect([res.stdout, calls()]).toEqual(['', '']);
+    });
   });
 
   it('прочий Bash-вызов — тихий выход 0 до чтения журнала', () => {
