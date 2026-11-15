@@ -54,8 +54,8 @@ export const glueSubtitle = (s: string): string =>
 
 /** Строки шапки под шрифт карточки: заголовок до 2 строк, подпись до subtitleLines. */
 export function headerLines(ctx: CanvasRenderingContext2D, o: HeaderOpts) {
-  // +1 px при знаке: «Схемный дневник» Literata 26 — 240,08 px при поле 240, и доля пикселя рвала
-  // заголовок на две строки; вылет на долю пикселя съедает зазор до знака (SIGN_GAP), не поле листа.
+  // +1 px при знаке: заголовок шириной 240,08 px (Literata 26) при поле 240 рвался на две строки из-за доли
+  // пикселя; вылет на долю пикселя съедает зазор до знака (SIGN_GAP), не поле листа.
   const maxW =
     textWidth({ W: CARD_W }, o) + (o.sign && canvasSign(o.sign) ? 1 : 0);
   const measure = (s: string) => ctx.measureText(s).width;

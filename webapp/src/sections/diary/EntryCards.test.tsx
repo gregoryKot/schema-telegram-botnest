@@ -128,3 +128,12 @@ describe('EntryCards — все поля записи в раскрытой ка
     expect(screen.getByText('Действия')).toBeTruthy();
   });
 });
+
+// Текст пользователя в свёрнутой карточке клеится glueSpaces, как и раскрытые поля: короткий предлог
+// («без», «в») не висит в конце строки.
+describe('EntryCards — «Что было нужно» в свёрнутой записи режима', () => {
+  it('предлог держится со следующим словом', () => {
+    const { container } = render(<ModeEntry entry={{ ...MODE_ENTRY, actualNeed: 'Ошибиться без наказания' }} onDelete={() => {}} />);
+    expect(container.querySelector('.cd-entry-meta')!.textContent).toBe('Что было нужно: Ошибиться без\u00a0наказания');
+  });
+});

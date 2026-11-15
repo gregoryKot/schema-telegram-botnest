@@ -29,7 +29,7 @@ export interface JourneyTypeMeta {
 export const JOURNEY_TYPE_META = {
   tracker_day: { label: 'Трекер потребностей', group: 'tracker' },
   note: { label: 'Заметка дня', group: 'tracker' },
-  schema_diary: { label: 'Схемный дневник', group: 'diary' },
+  schema_diary: { label: 'Дневник схем', group: 'diary' },
   mode_diary: { label: 'Дневник режимов', group: 'diary' },
   gratitude: { label: 'Благодарность', group: 'diary' },
   practice: { label: 'Что меня питает', group: 'practice' },
