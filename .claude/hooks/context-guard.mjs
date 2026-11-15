@@ -6,7 +6,7 @@
 import { closeSync, fstatSync, openSync, readFileSync, readSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bashMerge } from './gh-merge.mjs';
+import { bashMerge, pipedMerge, verifyMerge } from './gh-merge.mjs';
 
 export const LIMIT = Number(process.env.CLAUDE_CONTEXT_GUARD_TOKENS) || 120_000;
 const AUTO_MERGE = 'PR вмержен или ждёт автомержа: дождись мержа и проверь деплой.';
@@ -80,7 +80,8 @@ function main() {
   try {
     const input = JSON.parse(readFileSync(0, 'utf8') || '{}');
     const event = input.hook_event_name ?? '';
-    const merge = input.tool_name === 'Bash' ? bashMerge(input) : 'merged';
+    const bash = input.tool_name === 'Bash';
+    let merge = bash ? bashMerge(input) : 'merged';
     if (!merge) return; // прочие Bash-вызовы — молча и до чтения журнала
     let measured = { tokens: 0, compactions: 0 };
     try {
@@ -88,7 +89,12 @@ function main() {
     } catch {
       // Журнала ещё нет — судим только по событию.
     }
-    const text = verdict({ event, source: input.source, merge, ...measured });
+    if (!verdict({ event, source: input.source, merge, ...measured })) return;
+    // Мерж за пайпом: код выхода от последней команды — исход сверяется с GitHub (сеть — только выше порога).
+    const piped = bash ? pipedMerge(input.tool_input?.command) : null;
+    let warning = '';
+    if (piped) ({ kind: merge, warning } = verifyMerge(piped));
+    const text = merge ? verdict({ event, source: input.source, merge, ...measured }) : warning;
     if (!text) return;
     if (event === 'PostToolUse') {
       process.stdout.write(
