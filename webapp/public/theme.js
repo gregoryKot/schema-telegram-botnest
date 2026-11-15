@@ -14,6 +14,6 @@
   }
   var root = document.documentElement;
   if (t === 'dark') root.setAttribute('data-theme', 'dark');
-  root.style.background = t === 'dark' ? '#14141a' : '#f5f2eb';
+  root.style.background = t === 'dark' ? '#14141a' : '#f6f2eb';
   root.style.colorScheme = t === 'dark' ? 'dark' : 'light';
 })();

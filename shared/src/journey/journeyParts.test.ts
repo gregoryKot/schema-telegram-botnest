@@ -3,8 +3,11 @@
 // записей их нет — карточка не должна показывать двадцать прочерков.
 import { describe, it, expect } from 'vitest';
 import { ysqResultFromEntry } from './journeyParts';
-import { historyScoresByName } from '../hooks/ysqScoring';
+import { historyScoresById } from '../hooks/ysqScoring';
+import { buildYsqProfile } from '../share/cards/ysqProfileCard';
 
+// Фикстуры — настоящие id из истории (SCHEMA_NAME_TO_ID): с названиями вместо
+// id ошибка «карточка без строк схем» пряталась за тестом.
 const entry = (scores: { id: string; pct5plus: number; avg?: number }[]) => ({
   id: 1,
   completedAt: '2026-07-23',
@@ -12,24 +15,39 @@ const entry = (scores: { id: string; pct5plus: number; avg?: number }[]) => ({
 });
 
 describe('ysqResultFromEntry', () => {
-  it('запись со средними баллами превращается в счёт по названиям схем', () => {
+  it('счёт по id из истории переводится в счёт по названиям схем', () => {
     const res = ysqResultFromEntry(
       entry([
-        { id: 'Покорность', pct5plus: 60, avg: 4.5 },
-        { id: 'Неуспешность', pct5plus: 10, avg: 2 },
+        { id: 'subjugation', pct5plus: 60, avg: 4.5 },
+        { id: 'failure', pct5plus: 10, avg: 2 },
       ]),
     );
     expect(res).not.toBeNull();
     expect(res?.scores['Покорность']).toEqual({ pct5plus: 60, avg: 4.5 });
+    expect(res?.scores['Неуспешность']).toEqual({ pct5plus: 10, avg: 2 });
     expect(res?.activeCount).toBe(1);
+  });
+
+  it('запись истории с id → карточка-профиль содержит строки схем с баллами', () => {
+    const res = ysqResultFromEntry(
+      entry([
+        { id: 'subjugation', pct5plus: 60, avg: 4.5 },
+        { id: 'abandonment', pct5plus: 20, avg: 4.2 },
+        { id: 'failure', pct5plus: 10, avg: 2 },
+      ]),
+    );
+    const rows = buildYsqProfile(res?.scores ?? {}).flatMap((d) => d.rows);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.avg > 0)).toBe(true);
+    expect(rows.map((r) => r.avg).sort()).toEqual([4.2, 4.5]);
   });
 
   it('старая запись без средних баллов — null (останется текстовая карточка)', () => {
     expect(
       ysqResultFromEntry(
         entry([
-          { id: 'Покорность', pct5plus: 60 },
-          { id: 'Неуспешность', pct5plus: 80 },
+          { id: 'subjugation', pct5plus: 60 },
+          { id: 'failure', pct5plus: 80 },
         ]),
       ),
     ).toBeNull();
@@ -44,22 +62,22 @@ describe('ysqResultFromEntry', () => {
 
   it('нулевой средний балл не считается за данные', () => {
     expect(
-      ysqResultFromEntry(entry([{ id: 'Покорность', pct5plus: 0, avg: 0 }])),
+      ysqResultFromEntry(entry([{ id: 'subjugation', pct5plus: 0, avg: 0 }])),
     ).toBeNull();
   });
 });
 
-describe('historyScoresByName', () => {
-  it('ключ — название схемы, отсутствующий avg становится нулём', () => {
-    const byName = historyScoresByName(
+describe('historyScoresById', () => {
+  it('ключ — id схемы, отсутствующий avg становится нулём', () => {
+    const byId = historyScoresById(
       entry([
-        { id: 'Уязвимость', pct5plus: 30, avg: 3.2 },
-        { id: 'Покорность', pct5plus: 70 },
+        { id: 'vulnerability', pct5plus: 30, avg: 3.2 },
+        { id: 'subjugation', pct5plus: 70 },
       ]),
     );
-    expect(byName).toEqual({
-      Уязвимость: { pct5plus: 30, avg: 3.2 },
-      Покорность: { pct5plus: 70, avg: 0 },
+    expect(byId).toEqual({
+      vulnerability: { pct5plus: 30, avg: 3.2 },
+      subjugation: { pct5plus: 70, avg: 0 },
     });
   });
 });
