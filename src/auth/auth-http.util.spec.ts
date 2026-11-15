@@ -13,6 +13,7 @@ import {
   getCookie,
   isCrossSiteRequest,
   isCrossSiteSession,
+  isCrossSiteTelegramLogin,
   requireCsrf,
   setRefreshCookie,
 } from './auth-http.util';
@@ -102,26 +103,58 @@ describe('cookieOptions', () => {
 // strict-куку. Сессия там держится на SameSite=None, и главное — это свойство
 // обязано пережить ротацию токена: без метки /api/auth/refresh выдал бы куку
 // обратно как strict, и вход в MAX умирал бы через 15 минут после логина.
-describe('кросс-сайтовая сессия (iframe MAX)', () => {
+describe('кросс-сайтовая сессия (iframe MAX и Telegram Web)', () => {
   function makeRes() {
     const cookie = jest.fn();
     const clearCookie = jest.fn();
     return { cookie, clearCookie, res: { cookie, clearCookie } };
   }
 
-  it('crossSite → SameSite=none и метка рядом с refresh-кукой', () => {
-    const { cookie, res } = makeRes();
-    setRefreshCookie(res, 'tok', 100, true);
+  it('crossSite → SameSite=none, Partitioned и метка рядом с refresh-кукой', () => {
+    const { cookie, clearCookie, res } = makeRes();
+    setRefreshCookie(res, 'tok', 100, true, makeRequest({}));
 
+    const partitioned = { sameSite: 'none', secure: true, partitioned: true };
     expect(cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       'tok',
-      expect.objectContaining({ sameSite: 'none', secure: true }),
+      expect.objectContaining(partitioned),
     );
     expect(cookie).toHaveBeenCalledWith(
       CROSS_SITE_COOKIE,
-      '1',
-      expect.objectContaining({ sameSite: 'none' }),
+      'p',
+      expect.objectContaining(partitioned),
+    );
+    // Метки '1' нет — непартиционированное место не трогаем: там может
+    // лежать strict-сессия сайта в этом же браузере.
+    expect(clearCookie).not.toHaveBeenCalled();
+  });
+
+  // Пара до CHIPS и партиционированная — разные куки: без сноса браузер держит
+  // обе refresh-куки и шлёт первой старую, уже ротированную.
+  it('метка до CHIPS (1) → старая пара сносится тем же ответом, раньше новой', () => {
+    const { cookie, clearCookie, res } = makeRes();
+    const req = makeRequest({ cookies: { [CROSS_SITE_COOKIE]: '1' } });
+    setRefreshCookie(res, 'tok', 100, isCrossSiteSession(req), req);
+
+    const legacy = { sameSite: 'none', secure: true, path: '/api/auth' };
+    for (const name of [REFRESH_COOKIE, CROSS_SITE_COOKIE]) {
+      expect(clearCookie).toHaveBeenCalledWith(
+        name,
+        expect.objectContaining(legacy),
+      );
+    }
+    for (const [, opts] of clearCookie.mock.calls)
+      expect(opts).not.toHaveProperty('partitioned');
+    expect(cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      'tok',
+      expect.objectContaining({ partitioned: true }),
+    );
+    // Без CHIPS браузер сочтёт обе записи одной кукой: снос обязан идти первым.
+    const lastClear = Math.max(...clearCookie.mock.invocationCallOrder);
+    expect(Math.min(...cookie.mock.invocationCallOrder)).toBeGreaterThan(
+      lastClear,
     );
   });
 
@@ -146,11 +179,13 @@ describe('кросс-сайтовая сессия (iframe MAX)', () => {
   });
 
   it('метка читается из запроса — по ней refresh не понижает сессию до strict', () => {
-    expect(
-      isCrossSiteSession(
-        makeRequest({ cookies: { [CROSS_SITE_COOKIE]: '1' } }),
-      ),
-    ).toBe(true);
+    for (const mark of ['p', '1']) {
+      expect(
+        isCrossSiteSession(
+          makeRequest({ cookies: { [CROSS_SITE_COOKIE]: mark } }),
+        ),
+      ).toBe(true);
+    }
     expect(isCrossSiteSession(makeRequest({ cookies: {} }))).toBe(false);
     // Чужое значение меткой не считается.
     expect(
@@ -161,15 +196,50 @@ describe('кросс-сайтовая сессия (iframe MAX)', () => {
   });
 
   it('ротация сохраняет кросс-сайтовость: что пришло, то и выдаётся', () => {
-    const req = makeRequest({ cookies: { [CROSS_SITE_COOKIE]: '1' } });
+    const req = makeRequest({ cookies: { [CROSS_SITE_COOKIE]: 'p' } });
     const { cookie, res } = makeRes();
-    setRefreshCookie(res, 'rotated', 100, isCrossSiteSession(req));
+    setRefreshCookie(res, 'rotated', 100, isCrossSiteSession(req), req);
 
     expect(cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       'rotated',
-      expect.objectContaining({ sameSite: 'none' }),
+      expect.objectContaining({ sameSite: 'none', partitioned: true }),
     );
+  });
+});
+
+// Аудит 2026-10: fetch сайта внутри web.telegram.org приходит с Sec-Fetch-Site
+// same-origin — по заголовкам вход из Telegram Web получал strict-куку, и
+// браузер не возвращал её во фрейм. Решает платформа из тела обмена.
+describe('вход Telegram: SameSite и Partitioned по платформе запуска', () => {
+  const OWN = 'https://schemehappens.ru';
+  const fromFrame = () =>
+    makeRequest({ headers: { 'sec-fetch-site': 'same-origin', origin: OWN } });
+
+  it.each(['weba', 'webk', 'web'])(
+    '%s (Telegram Web, iframe) → SameSite=none и Partitioned',
+    (platform) => {
+      const crossSite = isCrossSiteTelegramLogin(fromFrame(), OWN, platform);
+      expect(cookieOptions(100, { crossSite })).toMatchObject({
+        sameSite: 'none',
+        partitioned: true,
+      });
+    },
+  );
+
+  it.each(['ios', 'android', 'tdesktop', 'macos', 'other', undefined, 5])(
+    '%s (нативный клиент или мусор) → strict, без Partitioned',
+    (platform) => {
+      const crossSite = isCrossSiteTelegramLogin(fromFrame(), OWN, platform);
+      const opts = cookieOptions(100, { crossSite });
+      expect(opts.sameSite).toBe('strict');
+      expect(opts).not.toHaveProperty('partitioned');
+    },
+  );
+
+  it('Sec-Fetch-Site: cross-site решает и без платформы', () => {
+    const req = makeRequest({ headers: { 'sec-fetch-site': 'cross-site' } });
+    expect(isCrossSiteTelegramLogin(req, OWN, undefined)).toBe(true);
   });
 });
 

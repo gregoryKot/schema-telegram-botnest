@@ -110,7 +110,10 @@ describe('AuthController.refresh', () => {
     );
   });
 
-  it('кросс-сайтовая сессия (метка cookie) переживает ротацию — новая refresh-кука SameSite=none', async () => {
+  // Сессия до CHIPS (метка '1', пара без Partitioned) на ротации переезжает в
+  // партиционированную пару, старая сносится тем же ответом — иначе браузер
+  // держал бы обе refresh-куки и слал первой старую, уже отозванную.
+  it('кросс-сайтовая сессия (метка cookie) переживает ротацию — новая пара SameSite=none, Partitioned', async () => {
     const { auth, mocks } = makeAuth();
     mocks.rotateRefreshToken.mockResolvedValue({
       accessToken: 'acc-1',
@@ -126,15 +129,20 @@ describe('AuthController.refresh', () => {
 
     await controller.refresh(req, res);
 
+    const partitioned = { sameSite: 'none', partitioned: true };
     expect(resMocks.cookie).toHaveBeenCalledWith(
       REFRESH_COOKIE,
       'ref-2',
-      expect.objectContaining({ sameSite: 'none' }),
+      expect.objectContaining(partitioned),
     );
     expect(resMocks.cookie).toHaveBeenCalledWith(
       CROSS_SITE_COOKIE,
-      '1',
-      expect.objectContaining({ sameSite: 'none' }),
+      'p',
+      expect.objectContaining(partitioned),
+    );
+    expect(resMocks.clearCookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      expect.objectContaining({ sameSite: 'none', path: '/api/auth' }),
     );
   });
 

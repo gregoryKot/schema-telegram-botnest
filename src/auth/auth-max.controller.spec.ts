@@ -161,12 +161,13 @@ describe('AuthMaxController.maxWebApp', () => {
         httpOnly: true,
         secure: true,
         sameSite: 'none',
+        partitioned: true,
       }),
     );
     expect(res.cookie).toHaveBeenCalledWith(
       CROSS_SITE_COOKIE,
-      '1',
-      expect.objectContaining({ sameSite: 'none' }),
+      'p',
+      expect.objectContaining({ sameSite: 'none', partitioned: true }),
     );
     expect(result).toEqual({
       accessToken: FAKE_TOKENS.accessToken,
