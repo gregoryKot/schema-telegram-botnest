@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { routePaths, routeTableBlock } from './test-support/appRoutes';
 
 const read = (rel: string) => readFileSync(resolve(__dirname, rel), 'utf8');
 
@@ -59,13 +60,10 @@ function isAllowed(text: string, agent: string, path: string): boolean {
 }
 
 function appRoutes(): { open: string[]; authed: string[] } {
-  const app = read('App.tsx');
-  const block = /const appRoutes = \[([\s\S]*?)\n\];/.exec(app)?.[1];
-  if (!block) throw new Error('В App.tsx не найден блок `const appRoutes = [ … ];` — обнови регэксп теста');
+  const block = routeTableBlock(read('App.tsx'), 'appRoutes');
   const cut = block.indexOf('element: <RequireAuth />');
   if (cut < 0) throw new Error('В appRoutes не найден маркер `element: <RequireAuth />` — обнови тест');
-  const paths = (s: string) =>
-    [...s.matchAll(/path:\s*'([^']+)'/g)].map((m) => m[1]).filter((p) => p !== '*').map((p) => p.replace(/:[^/]+/g, 'x'));
+  const paths = (s: string) => routePaths(s).map((p) => p.replace(/:[^/]+/g, 'x'));
   return { open: paths(block.slice(0, cut)), authed: paths(block.slice(cut)) };
 }
 
