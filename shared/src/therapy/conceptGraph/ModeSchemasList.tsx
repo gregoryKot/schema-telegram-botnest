@@ -4,18 +4,24 @@ import {
   getSchemaById,
 } from '../../schemaTherapy/schemaTherapyData';
 import { domainLook, modeLook } from '../../theme/entityLook';
-import { EYEBROW, LINK_BTN, MODE_NAME } from './conceptInlineStyles';
 import { ConceptSign, ConceptTag } from './conceptPaper';
 import { useConceptSkin } from './conceptSkin';
 import { findModeLink, normalizeModeLinks } from './modeLinks';
 
+const MODE_NAME = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  fontWeight: 600,
+  color: 'var(--text)',
+} as const;
+
 /**
- * Схемы за режимами в карточке «Карта режимов» вида «Поля» (issue #879):
- * терапевт видел чипы режимов, но не видел, какие схемы за каждым стоят, хотя
- * связи уже лежат в `modeLinks`. Здесь связи только ЧИТАЮТСЯ — редактируются
- * они в одном месте, в виде «Схема» (правило «одна механика — один
- * компонент»); без связей — честное «схемы не привязаны» и ссылка туда.
- * Режим с неизвестным id пропускается, имя — alias из связи, иначе из реестра.
+ * Схемы за режимами в карточке «Карта режимов» вида «Поля»: связи из `modeLinks`
+ * здесь только ЧИТАЮТСЯ — редактируются они в одном месте, в виде «Схема»
+ * (правило «одна механика — один компонент»); без связей — честное «схемы не
+ * привязаны» и ссылка туда. Режим с неизвестным id пропускается, имя — alias
+ * из связи, иначе из реестра.
  */
 export function ModeSchemasList({
   activeModeIds,
@@ -41,11 +47,8 @@ export function ModeSchemasList({
   if (rows.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 'var(--space-8)' }}>
-      <div
-        className={skin?.label}
-        style={skin ? { marginBottom: 'var(--space-6)' } : EYEBROW}
-      >
+    <div className="u-mt8">
+      <div className={skin ? `${skin.label} u-mb6` : 'u-mb6'}>
         Схемы за режимами
       </div>
       <ul
@@ -82,15 +85,12 @@ export function ModeSchemasList({
               ))
             ) : (
               <>
-                <span style={{ color: 'var(--text-sub)' }}>
-                  схемы не привязаны
-                </span>
+                <span className="u-sub">схемы не привязаны</span>
                 {onGoToGraph && (
                   <button
                     type="button"
                     onClick={onGoToGraph}
                     className={skin?.link}
-                    style={skin ? undefined : LINK_BTN}
                   >
                     привязать в виде «Схема»
                   </button>

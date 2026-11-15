@@ -100,13 +100,6 @@
   --accent-hover: var(--accent-hi); /* прежнее имя в webapp */
   --accent-bg: var(--accent-soft); /* прежнее имя в miniapp */
   --accent-indigo: var(--accent); /* раньше отдельный оттенок, теперь = accent */
-
-  /* Цвета групп режимов — тон .tone-fill с hue из MODE_GROUP_HUE (entityHue.ts); тёмная тема берёт
-     те же, как .tone-*. Hex-пара для canvas — MODE_GROUP_COLOR, сверка — modeGroupColor.test.ts. */
-  --mode-child: oklch(0.58 0.12 28);
-  --mode-coping: oklch(0.58 0.12 240);
-  --mode-critic: oklch(0.58 0.12 310);
-  --mode-healthy: oklch(0.58 0.12 145);
 }
 
 [data-theme='dark'] {

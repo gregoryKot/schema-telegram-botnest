@@ -94,6 +94,9 @@ describe('ConceptGraph: общий вид', () => {
     render(<Harness initial={{ modeIds: ['detached_protector'] }} />);
     const fold = gapsButton();
     expect(fold.getAttribute('aria-expanded')).toBe('false');
+    // Обе раскрывашки — ds-fold сайта (DS_FOLD), а не инлайн-вид Disclosure.
+    expect(fold.className).toBe('ds-fold-btn');
+    expect(guideButton().className).toBe('ds-fold-btn');
     expect(fold.textContent).toMatch(/Подсказки по схеме · \d/);
     // Под фигурами, а не над ними: плашка, появившаяся после тапа в выборе
     // «+ режим», не сдвигает схему и выбор под пальцем.
