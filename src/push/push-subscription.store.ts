@@ -6,6 +6,7 @@
 // пачкой читает и AccountService (кому куда слать), а он с push-модулем не
 // связан — функция над Prisma не тянет за собой граф модулей.
 import type { PrismaService } from '../prisma/prisma.service';
+import { isUniqueViolation } from '../prisma/unique-violation';
 import {
   decryptRecord,
   encryptRecord,
@@ -19,6 +20,13 @@ export const PUSH_SCHEMA: EncryptSchema = {
 };
 
 export type PushDb = Pick<PrismaService, 'pushSubscription'>;
+export type PushTxDb = Pick<PrismaService, '$transaction'>;
+
+/** Строка этого адреса у этого человека: чужую по адресу не достать. */
+const own = (userId: bigint, endpoint: string) => ({
+  endpointHash: hashEndpoint(endpoint),
+  userId,
+});
 
 export interface PushKeys {
   endpoint: string;
@@ -51,6 +59,52 @@ export async function saveSubscription(
   return { id: row.id, ...keys };
 }
 
+/**
+ * Браузер сменил подписку сам (pushsubscriptionchange): строку ровно со старым
+ * адресом переписать на новый за тем же человеком. true — переписана. Старого
+ * адреса нет или новый уже за другим человеком — ничего не трогаем: зовёт
+ * анонимная ручка, и чужую строку она не двигает.
+ */
+export async function replaceSubscription(
+  db: PushTxDb,
+  oldEndpoint: string,
+  next: PushKeys,
+): Promise<boolean> {
+  const oldHash = hashEndpoint(oldEndpoint);
+  const endpointHash = hashEndpoint(next.endpoint);
+  const data = { endpointHash, ...encryptRecord({ ...next }, PUSH_SCHEMA) };
+  const pick = { id: true, userId: true } as const;
+  try {
+    return await db.$transaction(async (tx) => {
+      const old = await tx.pushSubscription.findUnique({
+        where: { endpointHash: oldHash },
+        select: pick,
+      });
+      if (!old) return false;
+      const taken =
+        endpointHash === oldHash
+          ? null
+          : await tx.pushSubscription.findUnique({
+              where: { endpointHash },
+              select: pick,
+            });
+      if (taken && taken.userId !== old.userId) return false;
+      // Новый адрес уже за этим человеком (вкладка успела раньше): старая лишняя.
+      if (taken)
+        await tx.pushSubscription.deleteMany({ where: { id: old.id } });
+      const { count } = await tx.pushSubscription.updateMany({
+        where: { id: (taken ?? old).id },
+        data,
+      });
+      return count > 0;
+    });
+  } catch (e) {
+    // Гонка с подпиской из вкладки на тот же новый адрес: строка уже есть.
+    if (isUniqueViolation(e)) return false;
+    throw e;
+  }
+}
+
 /** Все подписки человека, расшифрованные. */
 export async function subscriptionsOf(
   db: PushDb,
@@ -79,9 +133,20 @@ export async function deleteOwnSubscription(
   endpoint: string,
 ): Promise<boolean> {
   const { count } = await db.pushSubscription.deleteMany({
-    where: { endpointHash: hashEndpoint(endpoint), userId },
+    where: own(userId, endpoint),
   });
   return count > 0;
+}
+
+/** Знает ли сервер этот адрес за этим человеком (сверка вкладки). */
+export async function hasOwnSubscription(
+  db: PushDb,
+  userId: bigint,
+  endpoint: string,
+): Promise<boolean> {
+  return (
+    (await db.pushSubscription.count({ where: own(userId, endpoint) })) > 0
+  );
 }
 
 /** У кого из пачки есть хоть одна подписка — одним запросом (тик очереди). */

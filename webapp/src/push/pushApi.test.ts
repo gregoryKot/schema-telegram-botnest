@@ -13,17 +13,22 @@ const json = (body: unknown) =>
 
 function stubServer() {
   let channel: 'push' | 'telegram' | null = null;
+  const known = new Set<string>();
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     const path = new URL(url, 'https://schemehappens.ru').pathname;
+    const endpoint = init?.body ? String((JSON.parse(String(init.body)) as { endpoint?: unknown }).endpoint) : '';
     if (path === '/api/settings') return json({ notifyChannel: channel, notifyReachable: channel !== null });
     if (path === '/api/push/subscription' && init?.method === 'POST') {
       channel = 'push';
+      known.add(endpoint);
       return json({ ok: true, delivered: true });
     }
     if (path === '/api/push/unsubscribe' && init?.method === 'POST') {
       channel = null;
+      known.delete(endpoint);
       return json({ ok: true });
     }
+    if (path === '/api/push/status' && init?.method === 'POST') return json({ known: known.has(endpoint) });
     return new Response('not found', { status: 404 });
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -57,5 +62,22 @@ describe('pushApi ↔ кеш настроек', () => {
     await pushApi.unsubscribe('https://e', 'logout');
     const [, init] = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/api/push/unsubscribe'))!;
     expect(JSON.parse(String(init?.body))).toEqual({ endpoint: 'https://e', reason: 'logout' });
+  });
+
+  it('сверка адреса: endpoint в теле POST, не в URL; после подписки — known, после отписки — нет (ответ не из кеша)', async () => {
+    const fetchMock = stubServer();
+    const endpoint = 'https://fcm.googleapis.com/fcm/send/x';
+    expect(await pushApi.status(endpoint)).toEqual({ known: false });
+    await pushApi.subscribe({ endpoint, keys: { p256dh: 'p', auth: 'a' } });
+    expect(await pushApi.status(endpoint)).toEqual({ known: true });
+    await pushApi.unsubscribe(endpoint, 'user');
+    expect(await pushApi.status(endpoint)).toEqual({ known: false });
+    const calls = fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/push/status'));
+    expect(calls).toHaveLength(3);
+    for (const [url, init] of calls) {
+      expect(String(url)).not.toContain('fcm.googleapis.com');
+      expect(init?.method).toBe('POST');
+      expect(JSON.parse(String(init?.body))).toEqual({ endpoint });
+    }
   });
 });
