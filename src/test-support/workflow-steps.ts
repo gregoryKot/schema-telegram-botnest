@@ -13,6 +13,20 @@ export function jobBody(yml: string, name: string): string {
   return next < 0 ? rest : rest.slice(0, next);
 }
 
+/** Входы `with:` джобы, зовущей переиспользуемый воркфлоу; кавычки сняты. */
+export function withInputs(job: string): Record<string, string> {
+  const lines = job.split('\n');
+  const at = lines.findIndex((l) => /^ {4}with:\s*$/.test(l));
+  const out: Record<string, string> = {};
+  if (at < 0) return out;
+  for (const l of lines.slice(at + 1)) {
+    const m = /^ {6}([\w-]+):[ \t]*(.*?)[ \t]*$/.exec(l);
+    if (!m) break;
+    out[m[1]] = m[2].replace(/^'(.*)'$|^"(.*)"$/, '$1$2');
+  }
+  return out;
+}
+
 /** Шаги джобы: каждый начинается с `      - ` (отступ 6). */
 export function steps(job: string): string[] {
   return job.split(/^ {6}- /m).slice(1);
