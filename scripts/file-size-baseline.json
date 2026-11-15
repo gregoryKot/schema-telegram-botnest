@@ -1,6 +1,6 @@
 {
-  ".claude/hooks/context-guard.mjs": 105,
-  ".claude/hooks/gh-merge.mjs": 26,
+  ".claude/hooks/context-guard.mjs": 111,
+  ".claude/hooks/gh-merge.mjs": 81,
   ".claude/hooks/log-tool-use.mjs": 116,
   ".claude/hooks/session-start.mjs": 33,
   "deploy/app-exit.mjs": 72,
@@ -3038,6 +3038,6 @@
   "webapp/src/utils/uiPrefsSync.ts": 21,
   "webapp/src/utils/useCabinetLightTheme.ts": 11,
   "webapp/src/utils/useUiPrefsStartupSync.ts": 51,
-  "webapp/vite.config.ts": 54,
+  "webapp/vite.config.ts": 53,
   "webapp/vite.live.config.ts": 13
 }
