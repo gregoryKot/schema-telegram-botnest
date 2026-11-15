@@ -1,24 +1,23 @@
 // Правила храповика нулей: что считается «почти нулём» и чем подтверждается
-// причина «покрыто e2e». Движок — check-zero-coverage.mjs; правила вынесены,
-// чтобы он не рос (правило №10).
+// причина «покрыто e2e». Движок — check-zero-coverage.mjs (правило №10).
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { compare, e2eTokens } from './check-e2e-in-ci.mjs';
 
-// Без логики по построению: Nest-модуль (`*.module.ts` — один декоратор
-// `@Module`) и точка входа `src/main.ts` поднимаются e2e-смоком на AppModule,
-// который в этот подсчёт не входит.
+// Без логики по построению: Nest-модуль (`*.module.ts`) и `src/main.ts`
+// поднимаются e2e-смоком на AppModule, который в этот подсчёт не входит.
 export const EXEMPT_PATTERNS = [/\.module\.ts$/, /^src\/main\.ts$/];
 
-// Порог «почти ноля», % строк: одна покрытая строка из десяти — тот же файл
-// без тестов, а сумма и полы каталогов (check-coverage-ratchet) его не видят.
+// «Почти ноль»: покрыто меньше NEAR_ZERO_PCT % строк ИЛИ не вызвана ни одна
+// функция (импорты и объявления исполняются при загрузке модуля); полы
+// каталогов (check-coverage-ratchet) такой файл не видят.
 export const NEAR_ZERO_PCT = 10;
 
 export const CI_WORKFLOW = '.github/workflows/ci.yml';
 // Путь спека в причине — так, как его пишет e2e-шаг ci.yml.
 const SPEC_RE = /(?<![\w./-])test\/[\w./-]+\.e2e-spec\.ts/g;
 
-/** Файлы src/** с исполняемыми строками и долей покрытых ниже порога, по пути. */
+/** Файлы src/** «почти ноль» (см. NEAR_ZERO_PCT), по пути; noCalls — по функциям. */
 export function lowFiles(summary, root) {
   return Object.entries(summary)
     .filter(([p]) => p !== 'total')
@@ -26,9 +25,10 @@ export function lowFiles(summary, root) {
       rel: p.startsWith(`${root}/`) ? p.slice(root.length + 1) : p,
       covered: e.lines.covered,
       total: e.lines.total,
+      noCalls: (e.functions?.total ?? 0) > 0 && e.functions.covered === 0,
     }))
     .filter((f) => f.rel.startsWith('src/') && f.total > 0)
-    .filter((f) => f.covered * 100 < NEAR_ZERO_PCT * f.total)
+    .filter((f) => f.noCalls || f.covered * 100 < NEAR_ZERO_PCT * f.total)
     .filter((f) => !EXEMPT_PATTERNS.some((re) => re.test(f.rel)))
     .sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
 }
