@@ -2,11 +2,14 @@
 // DayShareButton — кнопка «Поделиться днём» + открытие ShareCardSheet.
 // Файл был на 0% покрытия. draw() рисует на canvas внутри useShareCard,
 // обёрнут там в try/catch — canvas можно не мокать отдельно.
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DayShareButton } from './DayShareButton';
 import type { Need } from '../types';
+
+// Показ строки моста — событие в api; здесь только видимость строки (место — ShareCardSheet.test).
+vi.mock('../components/therapy/trackTherapyNudge', () => ({ trackTherapyNudge: vi.fn() }));
 
 afterEach(() => {
   cleanup();
@@ -49,12 +52,11 @@ describe('DayShareButton', () => {
     expect(screen.getByText('Скопировать текст')).toBeTruthy();
   });
 
-  // Паритет с miniapp DayShareButton (В10 аудита 2026-08): у webapp его не
-  // было вовсе — ShareCardSheet принимал проп, но никто его не передавал.
-  it('открытый шит показывает TherapyNote (заход на терапию после «Поделиться»)', () => {
+  // ShareCardSheet принимал проп therapyNote, но кнопка дня его не передавала.
+  it('открытый шит показывает строку «самопомощь, не замена терапии» (заход на терапию после «Поделиться»)', () => {
     renderButton();
     fireEvent.click(screen.getByText('Поделиться днём'));
-    expect(screen.getByText(/не замена психологу/)).toBeTruthy();
+    expect(screen.getByText(/^Приложение — самопомощь, не замена терапии\./)).toBeTruthy();
   });
 
   it('клик по фону шита закрывает его (goBack), не оставляя карточку открытой', () => {
