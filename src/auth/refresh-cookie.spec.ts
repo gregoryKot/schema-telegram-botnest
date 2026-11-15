@@ -22,6 +22,24 @@ describe('clearCookies', () => {
     });
   });
 
+  // Партиционированную пару (CHIPS, сессия в iframe мессенджера) браузер
+  // стирает только по Set-Cookie с тем же Partitioned.
+  it('стирает и партиционированную пару — Set-Cookie с Partitioned', () => {
+    const res = makeRes();
+    clearCookies(res);
+    for (const name of [REFRESH_COOKIE, CROSS_SITE_COOKIE]) {
+      expect(res.clearCookie).toHaveBeenCalledWith(
+        name,
+        expect.objectContaining({
+          path: '/api/auth',
+          sameSite: 'none',
+          secure: true,
+          partitioned: true,
+        }),
+      );
+    }
+  });
+
   // Аудит 2026-11: брошенная привязка переживала выход — следующий вошедший на
   // том же компьютере привязывался к чужому аккаунту и получал его сессию.
   it.each(['link_token'])(

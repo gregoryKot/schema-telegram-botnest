@@ -150,6 +150,7 @@ export class AuthTicketController {
       result.tokens.refreshToken,
       REFRESH_MAX_AGE_S,
       isCrossSiteSession(req),
+      req,
     );
     return {
       status: 'linked',
