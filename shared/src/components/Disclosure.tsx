@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 
-/** Классы вида сайта (ds-fold); без них — инлайн-вид мини-аппа. */
+/** Классы вида: общий ds-fold сайта (DS_FOLD) или свои (аккордеон карты схем); без них — инлайн-вид. */
 export interface DisclosureClasses {
   root: string;
   btn: string;
@@ -9,63 +9,82 @@ export interface DisclosureClasses {
   body: string;
 }
 
+/** Раскрывашка сайта — ds-fold (webapp/src/styles/cabinet.css): карточка, заголовок капителью, шеврон. */
+export const DS_FOLD: DisclosureClasses = {
+  root: 'ds-fold',
+  btn: 'ds-fold-btn',
+  label: 'ds-label',
+  chev: 'ds-fold-chev',
+  body: 'ds-fold-body',
+};
+
+const INLINE_BTN: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 'var(--space-6)',
+  minHeight: 44,
+  padding: 0,
+  border: 'none',
+  background: 'transparent',
+  cursor: 'pointer',
+  color: 'var(--text-sub)',
+  fontSize: 13,
+  fontWeight: 600,
+};
+
 /**
- * Раскрывашка: кнопка-заголовок (≥44, aria-expanded, видна всегда, не только
- * по :hover) и содержимое под ней. `defaultOpen` — только начальное состояние:
- * дальше решает человек. Закрытое содержимое не монтируется.
+ * Раскрывашка — одна механика на все места (№3): кнопка-заголовок (≥44, aria-expanded,
+ * видна всегда, не только по :hover) и содержимое под ней; закрытое не монтируется.
+ * `defaultOpen` — только начальное состояние, дальше решает человек; `open` с `onToggle` —
+ * раскрытие снаружи (справочник держит открытым один домен).
  */
 export function Disclosure({
   title,
+  lead,
+  sub,
   defaultOpen = false,
-  children,
+  open: openProp,
+  onToggle,
   classes,
+  className,
+  style,
+  children,
 }: {
-  title: string;
+  /** Подпись кнопки: строка или разметка (название с подписью из данных у карты схем). */
+  title: ReactNode;
+  /** До подписи — знак домена или группы. */
+  lead?: ReactNode;
+  /** После подписи — вторая строка заголовка («Зачем это?» → «Рефлексия помогает»). */
+  sub?: ReactNode;
   defaultOpen?: boolean;
-  children: ReactNode;
+  open?: boolean;
+  onToggle?: () => void;
   classes?: DisclosureClasses;
+  /** Свой вид поверх classes.root (sd-why — тихая строка без карточки). */
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-  if (classes) {
-    return (
-      <div className={classes.root}>
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className={classes.btn}
-        >
-          <span className={classes.label}>{title}</span>
-          <span className={classes.chev} aria-hidden="true" />
-        </button>
-        {open && <div className={classes.body}>{children}</div>}
-      </div>
-    );
-  }
+  const [own, setOwn] = useState(defaultOpen);
+  const open = openProp ?? own;
+  const root = [classes?.root, className].filter(Boolean).join(' ');
   return (
-    <div>
+    <div className={root || undefined} style={style}>
       <button
         type="button"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'var(--space-6)',
-          minHeight: 44,
-          padding: 0,
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          color: 'var(--text-sub)',
-          fontSize: 13,
-          fontWeight: 600,
-        }}
+        onClick={onToggle ?? (() => setOwn((v) => !v))}
+        className={classes?.btn}
+        style={classes ? undefined : INLINE_BTN}
       >
-        <span>{title}</span>
-        <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+        {lead}
+        <span className={classes?.label}>{title}</span>
+        {sub}
+        <span className={classes?.chev} aria-hidden="true">
+          {classes ? null : open ? '▴' : '▾'}
+        </span>
       </button>
-      {open && <div>{children}</div>}
+      {open && <div className={classes?.body}>{children}</div>}
     </div>
   );
 }
