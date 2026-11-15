@@ -141,7 +141,7 @@ beforeEach(() => {
   mockApi.getTherapyClientHistory.mockResolvedValue([]);
   mockApi.getClientDiary.mockResolvedValue([]);
   mockApi.saveConceptualization.mockImplementation(
-    async (_id: number, body: object) => concept(body),
+    async (_id: number, body: Record<string, unknown>) => concept(body),
   );
 });
 

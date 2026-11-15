@@ -654,9 +654,9 @@ describe('createModeMap — дефолт kind="problem"', () => {
 
   it('с явным kind шлёт его, а не дефолт', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, {}));
-    await api.createModeMap(1, 'Карта', 'healthy');
+    await api.createModeMap(1, 'Карта', 'couple');
     const [, init] = fetchMock.mock.calls[0];
-    expect(JSON.parse(init.body).kind).toBe('healthy');
+    expect(JSON.parse(init.body).kind).toBe('couple');
   });
 });
 

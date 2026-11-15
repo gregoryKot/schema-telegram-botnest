@@ -156,7 +156,7 @@ function Probe({ onClose }: { onClose: () => void }) {
   return null;
 }
 
-function makeHarness(onCloseSpy: ReturnType<typeof vi.fn>) {
+function makeHarness(onCloseSpy: () => void) {
   return function Harness() {
     const [show, setShow] = useState(true);
     const handleClose = () => {

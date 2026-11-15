@@ -17,7 +17,7 @@ function stubBitmap(width: number, height: number) {
 function stubCanvas(opts: {
   ctx: object | null;
   drawImage?: (...args: unknown[]) => void;
-  toDataURL: (quality?: number) => string;
+  toDataURL: (type?: string, quality?: number) => string;
 }) {
   const getContextSpy = vi.fn().mockReturnValue(
     opts.ctx === null
