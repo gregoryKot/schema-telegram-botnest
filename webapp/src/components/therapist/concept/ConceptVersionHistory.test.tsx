@@ -17,7 +17,7 @@ const SNAPSHOT: ConceptSnapshot = {
 
 function History() {
   const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
-  const detail = { concept: { history: [SNAPSHOT] }, expandedSnapshot, setExpandedSnapshot, patchConcept: () => {} };
+  const detail = { concept: { history: [SNAPSHOT] }, expandedSnapshot, setExpandedSnapshot, restoreConcept: () => {} };
   return <ConceptVersionHistory detail={detail as unknown as ClientDetail} />;
 }
 

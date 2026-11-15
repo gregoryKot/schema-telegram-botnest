@@ -15,17 +15,25 @@ export interface ConceptSaveHost {
   acked: (saved: Concept) => void;
 }
 
+/**
+ * Как слать: `leaving` — досылка при уходе (keepalive). `restore` — «Восстановить» версию: флаг уходит
+ * с первой принятой частью патча и здесь же снимается — снимок «до» на сервере нужен один; остался
+ * true после отказа — откат не дошёл.
+ */
+interface ConceptSendHow { leaving: boolean; restore?: boolean }
+
 const REBASE_TRIES = 2;
 // По статусу, а не instanceof ApiError: спеки мокают модуль api целиком.
 const isStale = (e: unknown) => (e as { status?: unknown } | null)?.status === 409;
 
 // Патч частями (≤ CONCEPT_PATCH_LINKS_MAX связей на запрос), каждая — от версии предыдущего ответа
 // (shared/src/therapy/conceptGraph/conceptPatch.ts). Пустой патч — ни одного запроса, ответ — база.
-async function post(host: ConceptSaveHost, clientId: UserId, base: Concept | null, local: Local, leaving: boolean) {
+async function post(host: ConceptSaveHost, clientId: UserId, base: Concept | null, local: Local, how: ConceptSendHow) {
   let saved = base;
   for (const part of chunkConceptPatch(conceptPatch(base, local))) {
-    const body = { ...part, baseVersion: saved?.updatedAt ?? null };
-    saved = await (leaving ? api.saveConceptualization(clientId, body, { keepalive: true }) : api.saveConceptualization(clientId, body));
+    const body = { ...part, baseVersion: saved?.updatedAt ?? null, ...(how.restore ? { restore: true as const } : {}) };
+    saved = await (how.leaving ? api.saveConceptualization(clientId, body, { keepalive: true }) : api.saveConceptualization(clientId, body));
+    how.restore = false;
     if (host.isOpen(clientId)) host.acked(saved);
   }
   return saved;
@@ -37,16 +45,16 @@ async function post(host: ConceptSaveHost, clientId: UserId, base: Concept | nul
  * Досылка при уходе (`leaving`) не перечитывает — страница уже закрывается.
  */
 export async function saveConceptPatch(
-  host: ConceptSaveHost, clientId: UserId, base: Concept | null, local: Local, leaving: boolean, tries = 0,
+  host: ConceptSaveHost, clientId: UserId, base: Concept | null, local: Local, how: ConceptSendHow, tries = 0,
 ): Promise<Concept | null> {
   try {
-    return await post(host, clientId, base, local, leaving);
+    return await post(host, clientId, base, local, how);
   } catch (e) {
-    if (leaving || tries >= REBASE_TRIES || !isStale(e)) throw e;
+    if (how.leaving || tries >= REBASE_TRIES || !isStale(e)) throw e;
     const fresh = await api.getConceptualization(clientId);
     const open = host.isOpen(clientId);
     const next = rebaseConcept(base, open ? host.currentLocal() : local, fresh);
     if (open) host.rebased(fresh, next);
-    return saveConceptPatch(host, clientId, fresh, next, leaving, tries + 1);
+    return saveConceptPatch(host, clientId, fresh, next, how, tries + 1);
   }
 }

@@ -46,7 +46,10 @@ export type ConceptPatch = Partial<Record<TextField, string>> &
   };
 
 /** Тело запроса: патч и версия строки, от которой он считан (null — строки не было). */
-export type ConceptPatchRequest = ConceptPatch & { baseVersion: string | null };
+export type ConceptPatchRequest = ConceptPatch & {
+  baseVersion: string | null;
+  restore?: true; // «Восстановить» версию: снимок «до» — мимо окна склейки
+};
 
 const modeId = (l: { modeId: string }) => l.modeId;
 const schemaId = (l: { schemaId: string }) => l.schemaId;

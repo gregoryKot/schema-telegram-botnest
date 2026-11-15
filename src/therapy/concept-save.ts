@@ -38,6 +38,8 @@ export interface LinksPatchInput {
 
 export interface ConceptSaveInput {
   baseVersion?: string | null;
+  /** «Восстановить» версию: снимок «до» — мимо окна склейки (concept-history.ts). */
+  restore?: boolean;
   modeLinks?: unknown[];
   schemaLinks?: unknown[];
   modeLinksPatch?: LinksPatchInput;
@@ -87,6 +89,7 @@ function mergedFields(
   const { modeLinksPatch, schemaLinksPatch } = body;
   const fields: Record<string, unknown> = { ...body };
   delete fields.baseVersion;
+  delete fields.restore;
   delete fields.modeLinksPatch;
   delete fields.schemaLinksPatch;
   const stored = existing ? decryptConceptFields(existing) : {};
@@ -135,6 +138,7 @@ export async function saveConceptVersioned(
         existing,
         enc,
         nowMs,
+        body.restore === true,
       );
       return conceptView(row, history);
     },

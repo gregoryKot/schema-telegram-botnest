@@ -1,9 +1,11 @@
 // e2e частичного сохранения концептуализации с версией строки
 // (POST /api/therapy/conceptualization/:clientId, src/therapy/concept-save.ts):
 //  - худший патч (все поля до предела, по CONCEPT_PATCH_LINKS_MAX связей с
-//    отметками до предела) проходит, полное тело на пределе — 413;
+//    отметками до предела) проходит; полное тело на пределе и тот же патч
+//    эмодзи (4 байта на знак) — честный 413, а не 400 или 500;
 //  - гонка двух окон: второе сохранение от той же версии — 409, повтор от
 //    свежей — проходит, GET видит обе правки («сохранил → нашёл»);
+//  - «Восстановить» (restore) кладёт снимок и в окне склейки;
 //  - чужой терапевт патч не пишет (ownership).
 // Гоняется на фейковой Prisma (джоба backend) и на живом Postgres (migrations).
 import { INestApplication } from '@nestjs/common';
@@ -12,6 +14,7 @@ import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
 import {
+  EMOJI,
   worstFullBody,
   worstPatchBody,
 } from '../src/test-support/concept-worst-body';
@@ -63,7 +66,7 @@ describe('e2e: частичное сохранение концептуализ�
     expect(typeof r.body.updatedAt).toBe('string');
   });
 
-  it('худший патч проходит, GET видит его связи; полное тело на пределе — 413', async () => {
+  it('худший патч проходит, GET видит его связи; полное тело и патч эмодзи — 413', async () => {
     const base = (await as(T).get(url)).body.updatedAt as string;
     const r = await as(T).post(url, { ...worstPatchBody(), baseVersion: base });
     expect(r.status).toBeLessThan(300);
@@ -74,6 +77,8 @@ describe('e2e: частичное сохранение концептуализ�
 
     const full = await as(T).post(url, worstFullBody());
     expect(full.status).toBe(413);
+    const emoji = worstPatchBody(CONCEPT_PATCH_LINKS_MAX, EMOJI);
+    expect((await as(T).post(url, emoji)).status).toBe(413);
   });
 
   it('гонка двух окон: от устаревшей версии — 409, повтор от свежей — обе правки на месте', async () => {
@@ -96,6 +101,21 @@ describe('e2e: частичное сохранение концептуализ�
     const got = (await as(T).get(url)).body;
     expect(got.goals).toBe('правка окна A');
     expect(got.triggers).toBe('правка окна B');
+  });
+
+  // Все записи выше — в одном окне склейки: без restore снимка бы не было, и
+  // «Восстановить» затёр бы правки молча (ValidationPipe с whitelist срезал бы
+  // поле без декоратора — потому проверка через HTTP).
+  it('«Восстановить» в окне склейки: нынешнее состояние ложится в историю', async () => {
+    const before = (await as(T).get(url)).body;
+    const r = await as(T).post(url, {
+      baseVersion: before.updatedAt,
+      goals: 'цель из старой версии',
+      restore: true,
+    });
+    expect(r.status).toBeLessThan(300);
+    expect(r.body.goals).toBe('цель из старой версии');
+    expect(r.body.history[0].goals).toBe(before.goals);
   });
 
   it('чужой терапевт патч не пишет — 403, строка не тронута', async () => {

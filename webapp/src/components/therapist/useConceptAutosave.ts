@@ -29,6 +29,9 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   // Зеркало localConcept, обновляемое синхронно: правка за правкой до
   // рендера собирает тело из последней версии, а не из state рендера.
   const localRef = useRef<LocalConcept>({});
+  // «Восстановить» версию: ближайшая отправка этого клиента несёт restore — снимок «до» на сервере ложится мимо
+  // окна склейки (src/therapy/concept-history.ts). Снимается на отправке; откат не дошёл — взводится снова.
+  const restoreFor = useRef<UserId | null>(null);
   const [conceptError, setConceptError] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [savedAt, setSavedAt] = useState<Date | null>(null); // момент последнего удачного сохранения
@@ -56,9 +59,11 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   // Досылка при уходе (`leaving`) — тот же путь с keepalive: скрытая вкладка потом видит итог; после размонтирования setState — no-op.
   // База — синхронно, в момент отправки: досылка прежнему клиенту при смене берёт ЕГО версию, до обнуления карточки.
   async function send(clientId: UserId, local: LocalConcept, { leaving }: { leaving: boolean }) {
+    const how = { leaving, restore: sameId(restoreFor.current, clientId) };
+    if (how.restore) restoreFor.current = null;
     if (isOpen(clientId)) setSaveStatus('saving');
     try {
-      const saved = await saveConceptPatch(host, clientId, baseRef.current, local, leaving);
+      const saved = await saveConceptPatch(host, clientId, baseRef.current, local, how);
       if (!isOpen(clientId)) return;
       setBase(saved);
       setConceptError('');
@@ -68,6 +73,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
       // Карточка уже другого клиента или закрыта — показать отказ негде, но молчать нельзя.
       if (leaving || !isOpen(clientId)) reportClientError({ message: 'concept save failed after leaving the client', section: SECTION });
       if (!isOpen(clientId)) return;
+      if (how.restore) restoreFor.current = clientId; // откат не дошёл: «Повторить» пошлёт его с флагом
       setSaveStatus('error'); // «Не сохранилось» и «Повторить» рисует SaveStatusLine
       const over = conceptOverLimitField(local);
       setConceptError(over ? conceptOverLimitText(over, tr) : saveFailureText(e)); // иначе причина — сеть, 5xx, 413
@@ -100,6 +106,14 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     saver.schedule(clientId, next);
   }
 
+  /** «Восстановить» версию из истории: её поля уходят автосохранением с флагом restore. */
+  function restoreConcept(fields: LocalConcept) {
+    const clientId = openClientIdRef.current;
+    if (clientId == null || load.failed) return;
+    restoreFor.current = clientId;
+    patchConcept(fields);
+  }
+
   // «Повторить» после ошибки: текущая версия правок открытого клиента уходит сразу (взведённый таймер
   // заменяется — один запрос). Событие — литералом: так его видит трипваер analytics-sync (src/security);
   // константа CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts, равенство сверяет ClientConceptTab.save.test.
@@ -119,6 +133,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   /** Смена клиента: ожидающая правка сразу уходит прежнему клиенту, карточка обнуляется. */
   function resetForClient() {
     saver.flush();
+    restoreFor.current = null; // недошедший откат сбрасывается вместе с правками карточки
     setBase(null);
     setLocal({});
     setConceptError('');
@@ -148,7 +163,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     load, reloadConcept: () => void reloadConcept(),
     activeSchemaIds: (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[],
     activeModeIds: (localConcept.modeIds ?? concept?.modeIds ?? []) as string[],
-    patchConcept,
+    patchConcept, restoreConcept,
     toggleSchemaId: (id: string) => toggleId('schemaIds', id),
     toggleModeId: (id: string) => toggleId('modeIds', id),
     resetForClient, loadConcept,
