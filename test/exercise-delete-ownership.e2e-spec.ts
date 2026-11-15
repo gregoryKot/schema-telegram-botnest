@@ -47,12 +47,13 @@ describe('e2e smoke: удаление записей упражнений (owner
 
   // Одна таблица сценария: создать под A → чужой DELETE под B не трогает →
   // свой DELETE под A убирает. Три упражнения проходят один и тот же путь,
-  // поэтому он описан данными, а не тремя копиями блока (правило «одна
-  // механика — один компонент» в применении к тесту).
+  // поэтому он описан данными, а не тремя копиями блока. DELETE — литералом
+  // пути: его по нему находит трипваер e2e-route-coverage.invariants.spec.ts.
   const CASES = [
     {
       name: 'Проверка убеждения',
       path: '/api/belief-checks',
+      del: (id: number) => request(server()).delete(`/api/belief-checks/${id}`),
       body: {
         belief: 'убеждение пользователя A',
         evidenceFor: ['за'],
@@ -63,11 +64,13 @@ describe('e2e smoke: удаление записей упражнений (owner
     {
       name: 'Письмо себе',
       path: '/api/letters',
+      del: (id: number) => request(server()).delete(`/api/letters/${id}`),
       body: { text: 'письмо пользователя A' },
     },
     {
       name: 'Кризисная карточка',
       path: '/api/flashcards',
+      del: (id: number) => request(server()).delete(`/api/flashcards/${id}`),
       body: {
         modeId: 'vulnerable_child',
         needId: 'attachment',
@@ -93,8 +96,8 @@ describe('e2e smoke: удаление записей упражнений (owner
       // Чужое удаление: 404 (C-8, аудит 2026-10) — раньше сервис отвечал 200 с
       // нулём затронутых строк, и по ответу нельзя было отличить удаление от
       // попытки тронуть чужое. Запись при этом осталась у владельца.
-      const stranger = await request(server())
-        .delete(`${c.path}/${id}`)
+      const stranger = await c
+        .del(id)
         .set('Authorization', `Bearer ${tokenB()}`);
       expect(stranger.status).toBe(404);
 
@@ -105,9 +108,7 @@ describe('e2e smoke: удаление записей упражнений (owner
       expect(ids(afterStranger.body)).toContain(id);
 
       // Своё удаление — запись действительно исчезает из списка владельца.
-      const own = await request(server())
-        .delete(`${c.path}/${id}`)
-        .set('Authorization', `Bearer ${tokenA()}`);
+      const own = await c.del(id).set('Authorization', `Bearer ${tokenA()}`);
       expect(own.status).toBeLessThan(300);
 
       const afterOwner = await request(server())
