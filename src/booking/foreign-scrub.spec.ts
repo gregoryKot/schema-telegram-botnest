@@ -1,12 +1,14 @@
 // Разовая чистка iCloud и Zoom (запрос РКН №08-1063539). Шов: настоящие
 // ForeignScrubCommand + CalDavService + MeetingService, подменён fetch (и
 // поддельная Prisma вместо базы). В запросах нет данных клиента; повтор безопасен.
+// Комнаты Zoom без строки ClientMeeting находятся по списку встреч (zoom-orphans.ts).
 import { ConfigService } from '@nestjs/config';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { CalDavService } from './caldav.service';
 import { MeetingService, ZOOM_TOPIC } from './meeting.service';
 import { ForeignScrubCommand } from './foreign-scrub.command';
 import type { PrismaService } from '../prisma/prisma.service';
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
 
 const SECRETS = ['Евлампия Маркерова', '+79991234567', 'тревога-маркер'];
 const NOW = new Date('2026-11-13T10:00:00Z');
@@ -41,8 +43,21 @@ const BOOKINGS = [
   row(4, '2026-12-05T17:00:00Z', BookingStatus.CANCELLED), // отменена — DELETE
 ];
 
+// Живая бронь держит комнату 555 вне базы (ссылка — в meetingUrl).
+const LIVE = [
+  {
+    meetingUrl: 'https://us02web.zoom.us/j/555?pwd=room',
+    clientName: SECRETS[0],
+    clientContact: SECRETS[1],
+  },
+];
+
 const prisma = {
-  booking: { findMany: jest.fn(async () => BOOKINGS) },
+  booking: {
+    findMany: jest.fn(async (q: { where: object }) =>
+      'anonymizedAt' in q.where ? LIVE : BOOKINGS,
+    ),
+  },
   clientMeeting: {
     findMany: jest.fn(async () => [
       { zoomMeetingId: '111' },
@@ -57,6 +72,35 @@ const prisma = {
 let events: Map<string, string>;
 let topics: Map<string, string>;
 let calls: { url: string; method: string; body: string }[];
+let listStatus: number;
+let deleteStatus: number;
+
+// Список встреч: первая страница — записанный ответ Zoom как есть (встреча
+// владельца, type 2), её next_page_token ведёт к комнатам, по две на страницу.
+const LIST = 'https://api.zoom.us/v2/users/me/meetings?';
+const DOC = JSON.parse(loadRecordedFixture('zoom-list-meetings.json')) as {
+  next_page_token: string;
+  meetings: object[];
+};
+function listPage(url: string) {
+  const token = new URLSearchParams(url.slice(LIST.length)).get(
+    'next_page_token',
+  );
+  if (!token) return DOC;
+  const from = token === DOC.next_page_token ? 0 : Number(token.slice(1));
+  const rooms = [...topics].map(([id, topic]) => ({
+    ...DOC.meetings[0],
+    id: Number(id),
+    topic,
+    type: 3,
+  }));
+  const next = from + 2 < rooms.length ? `p${from + 2}` : '';
+  return {
+    ...DOC,
+    meetings: rooms.slice(from, from + 2),
+    next_page_token: next,
+  };
+}
 
 function fakeFetch(url: string, init: RequestInit = {}) {
   const method = init.method ?? 'GET';
@@ -76,7 +120,9 @@ function fakeFetch(url: string, init: RequestInit = {}) {
     if (method === 'PUT') return (events.set(key, body), res(201));
     if (method === 'DELETE') return res(events.delete(key) ? 204 : 404);
   }
-  const zoom = /\/v2\/meetings\/(\d+)$/.exec(url);
+  if (url.startsWith(LIST))
+    return listStatus === 200 ? res(200, listPage(url)) : res(listStatus);
+  const zoom = /\/v2\/meetings\/(\d+)(\?.*)?$/.exec(url);
   if (zoom) {
     const id = zoom[1];
     if (!topics.has(id)) return res(404);
@@ -84,6 +130,10 @@ function fakeFetch(url: string, init: RequestInit = {}) {
     if (method === 'PATCH') {
       topics.set(id, (JSON.parse(body) as { topic: string }).topic);
       return res(204);
+    }
+    if (method === 'DELETE') {
+      if (deleteStatus === 204) topics.delete(id);
+      return res(deleteStatus);
     }
   }
   return res(500);
@@ -114,6 +164,8 @@ beforeEach(() => {
     ['222', ZOOM_TOPIC],
   ]); // 333 удалена в Zoom
   calls = [];
+  listStatus = 200;
+  deleteStatus = 204;
   global.fetch = jest.fn(fakeFetch);
 });
 afterEach(() => {
@@ -217,5 +269,105 @@ describe('ForeignScrubCommand: разовая чистка iCloud и Zoom', () =
     expect(replies[2]).toContain('будет перезаписано');
     if (prev === undefined) delete process.env.ADMIN_ID;
     else process.env.ADMIN_ID = prev;
+  });
+});
+
+describe('ForeignScrubCommand: комнаты Zoom вне базы', () => {
+  const NAMED = `Сессии — ${SECRETS[0]}`;
+  const sent = (method: string) =>
+    calls.filter((c) => c.method === method && c.url.includes('api.zoom.us'));
+  beforeEach(() => {
+    // Строк ClientMeeting у них нет: 444 и 666 — без брони, 555 держит живая
+    // бронь, 777 — своя комната владельца с другой темой.
+    topics.set('444', NAMED);
+    topics.set('555', NAMED);
+    topics.set('666', ZOOM_TOPIC);
+    topics.set('777', 'Супервизия');
+  });
+
+  it('боевой: без брони — удалена, со ссылкой в живой брони — только переименована', async () => {
+    const text = await makeCommand().report(true, NOW);
+    expect(text).toContain(
+      'Комнаты Zoom вне базы: 3 — удалено 2, переименовано 1, оставлено из-за брони 1, ошибок 0',
+    );
+    expect(sent('DELETE').map((c) => c.url)).toEqual([
+      'https://api.zoom.us/v2/meetings/444?schedule_for_reminder=false',
+      'https://api.zoom.us/v2/meetings/666?schedule_for_reminder=false',
+    ]);
+    expect([...topics]).toEqual([
+      ['111', ZOOM_TOPIC],
+      ['222', ZOOM_TOPIC],
+      ['555', ZOOM_TOPIC],
+      ['777', 'Супервизия'],
+    ]);
+    // Встреча из записанного ответа (type 2) и 777 — не комнаты клиентов.
+    expect(text).toContain('Других встреч в Zoom: 2 — не комнаты клиентов');
+  });
+
+  it('сухой прогон: только счёт — ни PATCH, ни DELETE', async () => {
+    const text = await makeCommand().report(false, NOW);
+    expect([...sent('PATCH'), ...sent('DELETE')]).toEqual([]);
+    expect(text).toContain(
+      'Комнаты Zoom вне базы: 3 — будет удалено 2, будет переименовано 1, оставлено из-за брони 1',
+    );
+    expect(topics.get('444')).toBe(NAMED);
+  });
+
+  it('список постранично: next_page_token ответа уходит в следующий запрос', async () => {
+    await makeCommand().report(true, NOW);
+    const tokens = calls
+      .filter((c) => c.url.startsWith(LIST))
+      .map((c) => new URLSearchParams(c.url.slice(LIST.length)));
+    expect(tokens.map((q) => q.get('next_page_token'))).toEqual([
+      null,
+      DOC.next_page_token,
+      'p2',
+      'p4',
+    ]);
+    expect(tokens[0].get('page_size')).toBe('300');
+    expect(topics.has('666')).toBe(false); // комната с последней страницы
+  });
+
+  it('403 на удаление: только переименование и строка «удалить вручную»', async () => {
+    deleteStatus = 403;
+    const text = await makeCommand().report(true, NOW);
+    // 555 держит бронь — в списке «вручную» её нет.
+    expect(text).toContain(
+      'права на удаление встреч — удалить вручную в кабинете Zoom: 444, 666.',
+    );
+    expect(text).toContain(
+      'удалено 0, переименовано 2, оставлено из-за брони 1',
+    );
+    expect(sent('DELETE')).toHaveLength(1); // после первого отказа не пробует
+    expect(topics.get('444')).toBe(ZOOM_TOPIC);
+  });
+
+  it('403 на список: отчёт без падения, комнаты вне базы не тронуты', async () => {
+    listStatus = 403;
+    const text = await makeCommand().report(true, NOW);
+    expect(text).toContain(
+      'Комнаты Zoom вне базы: не проверены — нет права читать список встреч (403)',
+    );
+    expect(text).toContain('переименовано 1, уже без имени 1'); // комнаты из базы
+    expect(sent('DELETE')).toEqual([]);
+    expect(topics.get('444')).toBe(NAMED);
+  });
+
+  it('прочий отказ списка: в отчёте статус и код ошибки Zoom, повтор безопасен', async () => {
+    // 400 с кодом 3161 — отказ List meetings из документации Zoom.
+    global.fetch = jest.fn((url: string, init?: RequestInit) =>
+      url.startsWith(LIST)
+        ? Promise.resolve({
+            ok: false,
+            status: 400,
+            json: () => Promise.resolve({ code: 3161 }),
+          })
+        : fakeFetch(url, init),
+    );
+    const text = await makeCommand().report(true, NOW);
+    expect(text).toContain(
+      'не проверены — список встреч не получен (HTTP 400, код 3161)',
+    );
+    expect(text).toContain('Повтор безопасен: /scrub_foreign go');
   });
 });

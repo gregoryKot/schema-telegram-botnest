@@ -2,12 +2,14 @@ import { BookingStatus, SessionType } from '@prisma/client';
 import { OwnerCalEvent, ownerEventFor } from './caldav-owner-event';
 import type { CalDeleteResult } from './caldav.service';
 import type { ZoomRoomResult } from './zoom-room';
+import { OrphanPorts, OrphanReport, scrubOrphans } from './zoom-orphans';
+import { orphanLines, orphansRetry } from './zoom-orphans.report';
 
 // Разовая чистка зарубежных баз (запрос РКН №08-1063539, ч. 5 ст. 18 152-ФЗ):
 // события iCloud и комнаты Zoom, созданные до обезличивания, несут имя,
 // контакт и текст обращения. Событие перезаписывается обезличенным по тому же
-// UID, ненужное удаляется, комната Zoom переименовывается. Каждый шаг
-// идемпотентен: повторный запуск безопасен и добивает пропущенное.
+// UID, ненужное удаляется, комната Zoom переименовывается, комната вне базы без
+// живой брони удаляется (zoom-orphans.ts). Каждый шаг идемпотентен: повтор добивает пропущенное.
 
 export interface ScrubBooking {
   id: number;
@@ -18,14 +20,12 @@ export interface ScrubBooking {
   calDavUid: string;
 }
 
-export interface ScrubPorts {
+export interface ScrubPorts extends OrphanPorts {
   putEvent(ev: OwnerCalEvent): Promise<string | null>;
   removeEvent(uid: string): Promise<CalDeleteResult | undefined>;
   readZoomTopic(
     id: string,
   ): Promise<{ result: ZoomRoomResult; topic?: string }>;
-  renameZoomRoom(id: string): Promise<ZoomRoomResult>;
-  pause(): Promise<void>;
 }
 
 export interface ScrubReport {
@@ -38,6 +38,7 @@ export interface ScrubReport {
     failed: number;
     limited: boolean;
   };
+  orphans: OrphanReport | null;
 }
 
 /**
@@ -122,17 +123,26 @@ export async function runForeignScrub(input: {
   zoomTopic: string;
   cutoff: Date;
   live: boolean;
+  /** Zoom настроен: комнаты вне базы ищутся по списку встреч. */
+  findOrphans: boolean;
   ports: ScrubPorts;
 }): Promise<ScrubReport> {
   const report: ScrubReport = {
     live: input.live,
     cal: { rewritten: 0, deleted: 0, missing: 0, failed: 0 },
     zoom: { renamed: 0, clean: 0, missing: 0, failed: 0, limited: false },
+    orphans: null,
   };
   const { live, ports, cutoff } = input;
   await scrubCalendar(input.bookings, cutoff, live, ports, report.cal);
   const ids = [...new Set(input.zoomIds)];
   await scrubZoom(ids, input.zoomTopic, live, ports, report.zoom);
+  if (input.findOrphans && !report.zoom.limited)
+    report.orphans = await scrubOrphans({
+      topic: input.zoomTopic,
+      live,
+      ports,
+    });
   return report;
 }
 
@@ -157,13 +167,14 @@ export function formatScrubReport(
       ? 'Zoom: не настроен — пропущен'
       : `Zoom: ${verb}переименовано ${zoom.renamed}, уже без имени ${zoom.clean}, ` +
         `комнаты нет ${zoom.missing}, ошибок ${zoom.failed}`,
+    ...(r.orphans ? orphanLines(r.orphans, r.live) : []),
   ];
-  if (zoom.limited)
+  if (zoom.limited || r.orphans?.limited)
     lines.push(
       'Zoom упёрся в лимит запросов — повтор той же командой через сутки.',
     );
   if (!r.live) lines.push('', 'Боевой прогон: /scrub_foreign go');
-  else if (cal.failed || zoom.failed)
+  else if (cal.failed || zoom.failed || orphansRetry(r.orphans))
     lines.push('', 'Повтор безопасен: /scrub_foreign go добьёт ошибки.');
   return lines.join('\n');
 }
