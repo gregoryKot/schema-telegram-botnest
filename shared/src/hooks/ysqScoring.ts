@@ -73,16 +73,15 @@ export function countActiveInHistory(entry: YsqHistoryEntry): number {
 }
 
 /**
- * Счёт из записи истории в форму карточки-профиля (ключ — название схемы).
- * У старых записей нет avg: подставляем 0, тогда бар не рисуется и в строке
- * стоит «—» — выдумывать средний балл нельзя.
+ * Счёт из записи истории по id схемы (`subjugation`, …). У старых записей нет
+ * avg: подставляем 0 — выдумывать средний балл нельзя.
  */
-export function historyScoresByName(
+export function historyScoresById(
   entry: YsqHistoryEntry,
 ): Record<string, { pct5plus: number; avg: number }> {
-  const byName: Record<string, { pct5plus: number; avg: number }> = {};
+  const byId: Record<string, { pct5plus: number; avg: number }> = {};
   for (const s of entry.scores) {
-    byName[s.id] = { pct5plus: s.pct5plus, avg: s.avg ?? 0 };
+    byId[s.id] = { pct5plus: s.pct5plus, avg: s.avg ?? 0 };
   }
-  return byName;
+  return byId;
 }

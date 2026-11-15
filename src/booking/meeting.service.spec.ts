@@ -318,7 +318,7 @@ describe('MeetingService.createMeeting — комната Jitsi не вывод�
     );
     expect(prisma.clientMeeting.updateMany).toHaveBeenCalledWith({
       where: { clientKey: key, meetingUrl: LEGACY },
-      data: { meetingUrl: expect.any(String) },
+      data: { meetingUrl: expect.any(String), zoomMeetingId: null },
     });
     // read-after-write: следующая бронь получает уже новую комнату
     expect(decrypt(store.get(key).meetingUrl)).toBe(url);
