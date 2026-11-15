@@ -1,11 +1,11 @@
 // Подсказка упражнения («Совет», «Подсказка», «С чего начать», пояснение шага) — один примитив на всю группу
 // (ревью g6, APP_2026-11.md, принцип 5): до сведения у неё было три вида — DiaryAside после формы (карточки),
-// свёрнутая NeedFold до поля (проверка убеждения) и развёрнутая наклейка соломы до поля (письмо, место), и
-// наклейка в 250px отодвигала первое поле на телефоне за сгиб. Теперь — тихая раскрывашка NeedFold (вид
+// свёрнутая раскрывашка до поля (проверка убеждения) и развёрнутая наклейка соломы до поля (письмо, место), и
+// наклейка в 250px отодвигала первое поле на телефоне за сгиб. Теперь — тихая раскрывашка Disclosure (вид
 // sd-why): на компьютере раскрыта (в колонке разворота под листом или в колонке справа), на телефоне —
 // свёрнутой строкой «подпись · заголовок Literata ⌄». Место в раскладке задаёт экран (aside ExScreen).
 import type { ReactNode } from 'react';
-import { NeedFold } from '../NeedFold';
+import { Disclosure, DS_FOLD } from '../../../../shared/src/components/Disclosure';
 import { isPhoneLayout } from '../../utils/phoneLayout';
 import { glueIf } from '../../../../shared/src/utils/typo';
 import '../../styles/sheet-diary.css';
@@ -17,10 +17,10 @@ export function ExHint({ label = '', title, children }: {
   children: ReactNode;
 }) {
   return (
-    <NeedFold className="sd-why ex2-hint" title={label} defaultOpen={!isPhoneLayout()}
+    <Disclosure classes={DS_FOLD} className="sd-why ex2-hint" title={label} defaultOpen={!isPhoneLayout()}
       sub={<span className="sd-why-title">{glueIf(title)}</span>}>
       <div className="ex2-hint-body">{children}</div>
-    </NeedFold>
+    </Disclosure>
   );
 }
 

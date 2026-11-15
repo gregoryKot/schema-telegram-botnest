@@ -6,7 +6,7 @@ import type { SheetLook } from '../../../../../shared/src/theme/entityLook';
 import { SignArt } from '../../art/SignArt';
 import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
 import { SignHero } from '../../paper/SignHero';
-import { NeedFold } from '../../NeedFold';
+import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclosure';
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
 import { GuideSection, GuideSources } from './GuideSection';
 import { GuidePoints, GuideVoice } from './GuidePoints';
@@ -44,7 +44,7 @@ interface PageProps {
  * Каркас листа подсказок (#995, пилот живого языка 2026-11) — один на листы техники,
  * режима, схемы и «Для терапевта»: в шапке подпись и «Закрыть», герой бумажной аппликации
  * (заголовок Literata, суть, справа знак с тенью-вырезкой на квадратике бумаги группы или домена — SignHero), свои разделы листа,
- * «Подробнее» (закрыто по умолчанию, NeedFold) и мелко «Источники». Шапка и
+ * «Подробнее» (закрыто по умолчанию, Disclosure) и мелко «Источники». Шапка и
  * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet `panel`
  * (useHistorySheet, «Назад» браузера закрывает лист): на компьютере — панель справа над
  * затемнённым «Справочником» или схемой случая, на телефоне — весь экран.
@@ -63,10 +63,10 @@ export function GuidePage({ label, title, lede, look, onClose, more = [], morePa
         {children}
         {(items.length > 0 || parts.length > 0) && (
           <div className="gd-more">
-            <NeedFold title="Подробнее">
+            <Disclosure classes={DS_FOLD} title="Подробнее">
               {items.length > 0 && <GuidePoints items={items} />}
               {parts.map((p) => <GuideSection key={p.title} title={p.title} text={p.text}>{p.children}</GuideSection>)}
-            </NeedFold>
+            </Disclosure>
           </div>
         )}
         <GuideSources text={sources} />

@@ -1,4 +1,4 @@
-import { NeedFold } from '../../NeedFold';
+import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclosure';
 import type { ClientDetail } from '../clientSheetTypes';
 import { ConceptVersionHistory } from './ConceptVersionHistory';
 import { YsqCrossCheck } from './YsqCrossCheck';
@@ -16,14 +16,14 @@ export function ConceptFoldouts({ detail }: { detail: ClientDetail }) {
   return (
     <div className="ds-card tcp-folds">
       {ysqSchemaIds.length > 0 && (
-        <NeedFold className="tcp-fold" title={ysqFoldTitle(missing)}>
+        <Disclosure classes={DS_FOLD} className="tcp-fold" title={ysqFoldTitle(missing)}>
           <YsqCrossCheck ysqActiveIds={ysqSchemaIds} latest={clientData?.ysqHistory?.[0]} conceptSchemaIds={activeSchemaIds} />
-        </NeedFold>
+        </Disclosure>
       )}
       {versions > 0 && (
-        <NeedFold className="tcp-fold" title={`История версий · ${versions}`}>
+        <Disclosure classes={DS_FOLD} className="tcp-fold" title={`История версий · ${versions}`}>
           <ConceptVersionHistory detail={detail} />
-        </NeedFold>
+        </Disclosure>
       )}
     </div>
   );
