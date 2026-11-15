@@ -8,6 +8,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { PrivacyPage } from './PrivacyPage';
 import { PUSH_NOTE } from './privacy/processors';
+import { PURPOSES } from './privacy/purposes';
 
 afterEach(() => {
   cleanup();
@@ -168,6 +169,27 @@ describe('PrivacyPage — входа через Google нет', () => {
     expect(text).not.toMatch(/g_state|gsi_nonce/);
     expect(text).toContain(PUSH_NOTE);
     expect(text.split(PUSH_NOTE).join('')).not.toMatch(/Google/);
+  });
+});
+
+// Оценки — открытые Int (Rating.value, ChildhoodRating.value в prisma/schema.prisma), шифруются поля
+// из src/utils/encryption-policy.ts; трекер терапевт видит всегда (shared/src/therapy/therapistLinkCopy.ts).
+describe('PrivacyPage — шифрование, доступ к оценкам и цель безопасности', () => {
+  const pageText = () => (render(<PrivacyPage />).container.textContent ?? '').replace(/\s+/g, ' ');
+
+  it('глава 4: цель «обеспечение безопасности аккаунтов» — п. 2 ч. 1 ст. 6, обязанность по ст. 18.1 и 19', () => {
+    const text = pageText();
+    expect(PURPOSES).toHaveLength(6);
+    expect(text).toContain('Обеспечение безопасности аккаунтов: журнал событий безопасности');
+    expect(text).toContain('п. 2 ч. 1 ст. 6 ФЗ-152 – обязанность Оператора принимать меры по обеспечению безопасности персональных данных (ст. 18.1 и 19 ФЗ-152)');
+  });
+
+  it('шифруются свободный текст и ответы на опросники, оценки — без шифрования; терапевт видит трекер', () => {
+    const text = pageText();
+    expect(text).toContain('и ответы на опросники хранятся в зашифрованном виде (AES-256-GCM); оценки состояния и отметки, выбранные из готовых вариантов, хранятся без шифрования');
+    expect(text).toContain('хранятся на серверах на территории Российской Федерации и никому не передаются, за исключением терапевта');
+    expect(text).toContain('только на время активной связи получает доступ к трекеру потребностей (оценкам) и заданиям');
+    expect(text).not.toMatch(/добровольно, хранятся в зашифрованном виде|доступ только к зашифрованным данным|Шифрование пользовательского контента/);
   });
 });
 
