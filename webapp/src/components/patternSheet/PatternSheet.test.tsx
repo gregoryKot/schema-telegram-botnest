@@ -202,7 +202,7 @@ describe('PatternSheet — справка и «О схеме»', () => {
 
   it('быстрая практика открывается из блока «Что поможет»', () => {
     renderSheet();
-    fireEvent.click(screen.getByRole('button', { name: /Дыхание 4-4-6/ }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(glue('Дыхание 4-4-6')) }));
     expect(screen.getByTestId('practice')).toBeTruthy();
   });
 
