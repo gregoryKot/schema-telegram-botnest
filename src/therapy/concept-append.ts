@@ -1,10 +1,7 @@
-// «Дописать в концептуализацию с холста» (#963): холст «Графических карт»
-// шлёт режимы, схемы, линии схема → режим и линии к потребностям, которые
-// терапевт поставил на карту. Только добавление: сервер объединяет с тем, что
-// уже лежит в полях, и ничего не удаляет (удаление с холста — про раскладку).
-// Полного тела холст не шлёт, поэтому автосохранение вкладки «Концептуализация»
-// и холст не перетирают друг другу то, чего каждый не видел. Связи — в
-// concept-append-links.ts.
+// «Дописать в концептуализацию с холста» (#963): холст шлёт режимы, схемы и линии, которые
+// терапевт поставил на карту. Только добавление: сервер объединяет с лежащим в полях и
+// ничего не удаляет; полного тела холст не шлёт, поэтому автосохранение вкладки и холст
+// не перетирают друг друга. Связи — в concept-append-links.ts.
 import type { PrismaService } from '../prisma/prisma.service';
 import { inSerializableTx } from '../prisma/serializable-retry';
 import type { TherapyRelationsService } from './therapy-relations.service';
@@ -44,7 +41,7 @@ export interface ConceptAppendState {
 }
 
 /**
- * Чистое объединение: режимы и схемы связей попадают и в общие списки.
+ * Чистое объединение: режимы и схемы связей — и в общие списки (потолки ConceptualizationDto).
  * Возвращает только изменившиеся поля — пустой объект значит «писать нечего».
  */
 export function mergeConceptAppend(
@@ -52,8 +49,11 @@ export function mergeConceptAppend(
   add: ConceptAppendInput,
 ): Partial<ConceptAppendState> {
   const links = add.modeLinks ?? [];
-  const modeIds = union(cur.modeIds, [...(add.modeIds ?? []), ...links.map((l) => l.modeId)], CONCEPT_MODE_IDS_MAX);
-  // Потолки ConceptualizationDto: сверх них следующее сохранение полей — 400.
+  const modeIds = union(
+    cur.modeIds,
+    [...(add.modeIds ?? []), ...links.map((l) => l.modeId)],
+    CONCEPT_MODE_IDS_MAX,
+  );
   const addSchemas = [
     ...(add.schemaIds ?? []),
     ...links.flatMap((l) => l.schemaIds),
