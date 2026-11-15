@@ -121,7 +121,10 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
     renderEx();
     await screen.findByText(/Среднее 6.4\/10/);
     expect(screen.getByText(/^Колесо детства — самопомощь, не замена терапии\./)).toBeTruthy();
-    expect(mockApi.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'childhood_result', action: 'shown' });
+    // shown шлёт useEffect строки TherapyLine: эффект догоняет DOM уже после findByText.
+    await waitFor(() =>
+      expect(mockApi.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'childhood_result', action: 'shown' }),
+    );
   });
 
   it('«Изменить» открывает ползунки с СОХРАНЁННЫМИ значениями, а не с пятёрками', async () => {
