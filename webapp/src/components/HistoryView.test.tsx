@@ -268,7 +268,7 @@ describe('HistoryView — вкладка «Неделя»', () => {
 
   it('переключение на «Неделя» рисует спарклайны по потребностям', async () => {
     await act(async () => {
-      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 }, days: 7 });
+      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } });
     });
     fireEvent.click(screen.getByText('Неделя'));
     expect(screen.getByText('Привяз.')).toBeTruthy();

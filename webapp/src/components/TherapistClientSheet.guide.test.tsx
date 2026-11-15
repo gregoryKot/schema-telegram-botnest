@@ -4,7 +4,7 @@
 // заданием», которое открывает тот же лист «Новое задание», что «Назначить из
 // шаблона». Лист из листа стоит не ниже родителя: тот же слой, позже в DOM.
 // Разделы — фикстура, не тексты shared/src/schemaTherapy/guide/.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { useState } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -42,7 +42,7 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 import { applyConceptSave } from './therapist/conceptServer.test-helpers';
 
-const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockApi = api as unknown as Record<string, Mock>;
 
 beforeEach(() => {
   vi.clearAllMocks();

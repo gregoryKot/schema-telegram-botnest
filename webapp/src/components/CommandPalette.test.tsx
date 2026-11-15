@@ -33,7 +33,7 @@ function renderPalette(props: Partial<Parameters<typeof CommandPalette>[0]> = {}
   // Палитра кладёт запись истории (useHistorySheet) — нужен роутер.
   return render(
     <MemoryRouter>
-      <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} {...props} />
+      <CommandPalette section="today" onNavigate={vi.fn()} onClose={vi.fn()} {...props} />
     </MemoryRouter>,
   );
 }
@@ -120,7 +120,7 @@ describe('CommandPalette — клавиатура', () => {
     const onCloseDialog = vi.fn();
     render(
       <MemoryRouter>
-        <CommandPalette onNavigate={vi.fn()} onClose={onClose} />
+        <CommandPalette section="today" onNavigate={vi.fn()} onClose={onClose} />
         <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
           <button>ок</button>
         </Dialog>
@@ -154,6 +154,7 @@ describe('CommandPalette — клиенты терапевта', () => {
     telegramId: 42, name: 'Иван', clientAlias: null, streak: 3,
     lastActiveDate: null, todayIndex: null, recentIndexHistory: [],
     relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null,
+    meetingDays: [], schemaIds: [],
   };
 
   it('загружает и показывает клиентов только для роли THERAPIST', async () => {
@@ -296,7 +297,7 @@ describe('CommandPalette — «Назад» браузера и запись и�
   function Host({ onNavigate = vi.fn() }: { onNavigate?: (s: string) => void }) {
     const [open, setOpen] = useState(true);
     return open
-      ? <CommandPalette onNavigate={onNavigate} onClose={() => setOpen(false)} />
+      ? <CommandPalette section="today" onNavigate={onNavigate} onClose={() => setOpen(false)} />
       : <div>PALETTE-CLOSED</div>;
   }
 
@@ -312,7 +313,7 @@ describe('CommandPalette — «Назад» браузера и запись и�
     function LoggingHost() {
       const [open, setOpen] = useState(true);
       return open
-        ? <CommandPalette onNavigate={(s) => log.push('navigate:' + s)} onClose={() => { log.push('close'); setOpen(false); }} />
+        ? <CommandPalette section="today" onNavigate={(s) => log.push('navigate:' + s)} onClose={() => { log.push('close'); setOpen(false); }} />
         : null;
     }
     render(<MemoryRouter><LoggingHost /></MemoryRouter>);
