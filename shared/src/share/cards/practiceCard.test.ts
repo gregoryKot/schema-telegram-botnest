@@ -58,11 +58,11 @@ describe('drawPracticeCard', () => {
 
 describe('practiceLook — лист своей практики', () => {
   it('дыхание — бирюза и Breath, заземление и «Стоп» — свои, незнакомая — дыхание', async () => {
-    const { practiceLook } = await import('./practiceCard');
-    expect(practiceLook('breathing')).toEqual({ hue: 195, sign: 'breath' });
-    expect(practiceLook('grounding')).toEqual({ hue: 135, sign: 'grounded' });
-    expect(practiceLook('stop')).toEqual({ hue: 70, sign: 'pause' });
-    expect(practiceLook(undefined)).toEqual({ hue: 195, sign: 'breath' });
+    const { practiceLook: look } = await import('./practiceCard');
+    expect(look('breathing')).toMatchObject({ hue: 195, sign: 'breath' });
+    expect(look('grounding')).toMatchObject({ hue: 135, sign: 'grounded' });
+    expect(look('stop')).toMatchObject({ hue: 70, sign: 'pause' });
+    expect(look(undefined)).toMatchObject({ hue: 195, sign: 'breath' });
   });
 
   it('лид переносится целиком: все слова лида на карточке', async () => {

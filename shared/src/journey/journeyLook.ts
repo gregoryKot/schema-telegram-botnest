@@ -3,67 +3,50 @@
 // строки ленты, плитки счётчика и шапки детали. Шаг на одну потребность («Что питает», шаг плана) —
 // бумага и знак потребности (needLook); режим — небо дневника режимов, знак группы режима (как в ленте
 // «Записей», b11), без группы — Cluster. Группу режима знает площадка (данные режимов), сюда — функцией.
-// Таблицы — литералами: рантайм-импорт entityLook в лист «Мой путь» (его берут «Профиль» и «Ещё»)
-// перекраивал чанки — CSS упражнений вставал раньше index.css (check-css-link-order, как outcomeLook.ts).
-// Сверка с ENTITY_LOOK, JOURNEY_ENTITY и needLook — journeyLook.test.ts (правило №4).
-import type { Look, SignKey } from '../theme/entityLook';
+import { NEED_ORDER, type NeedId } from '../needs/types';
+import {
+  ENTITY_LOOK,
+  JOURNEY_ENTITY,
+  needLook,
+  type Look,
+  type SignKey,
+} from '../theme/entityLook';
 import type { JourneyItem, JourneyItemType } from './journeyMeta';
 
 /** Вид шага: бумага и знак; `n` — вариант мотива по счёту (countedSigns.ts). */
 export type JourneyLook = Look & { n?: number };
 
-/** ENTITY_LOOK[JOURNEY_ENTITY[type]] — знак и бумага сущности шага. Благодарность — `Pebbles filled`
- *  (решение владельца №2): лёг один камешок, два — гнёзда, как у тега «Благодарность»; «Заметка дня» —
- *  обычные три камешка. Сколько «спасибо» в записи, лента не знает — поэтому знак, а не данные. */
-export const JOURNEY_LOOK: Readonly<Record<JourneyItemType, JourneyLook>> = {
-  tracker_day: { hue: 70, sign: 'strokes' },
-  note: { hue: 70, sign: 'pebbles' },
-  schema_diary: { hue: 28, sign: 'layers' },
-  mode_diary: { hue: 240, sign: 'cluster' },
-  gratitude: { hue: 195, sign: 'pebbles', n: 1 },
-  practice: { hue: 145, sign: 'leaf' },
-  plan_done: { hue: 135, sign: 'check' },
-  ysq: { hue: 28, sign: 'layers' },
-  belief_check: { hue: 70, sign: 'scales' },
-  letter: { hue: 290, sign: 'sheets' },
-  flashcard: { hue: 25, sign: 'heart' },
-  safe_place: { hue: 135, sign: 'haven' },
-  schema_note: { hue: 28, sign: 'layers' },
-  mode_note: { hue: 240, sign: 'cluster' },
-  breathing: { hue: 195, sign: 'breath' },
-  grounding: { hue: 135, sign: 'grounded' },
-  stop: { hue: 70, sign: 'pause' },
-};
-
-/** needLook(id) — бумага NEED_HUE и знак потребности. */
-export const JOURNEY_NEED_LOOK: Readonly<Record<string, Look>> = {
-  attachment: { hue: 28, sign: 'need_attachment' },
-  autonomy: { hue: 70, sign: 'need_autonomy' },
-  limits: { hue: 135, sign: 'need_limits' },
-  expression: { hue: 240, sign: 'need_expression' },
-  play: { hue: 310, sign: 'need_play' },
-};
+/** Благодарность — `Pebbles filled` (решение владельца №2): лёг один камешок, два — гнёзда, как у тега
+ *  «Благодарность»; «Заметка дня» — обычные три камешка. Сколько «спасибо» в записи, лента не знает —
+ *  поэтому знак, а не данные. */
+const STEP_N: Partial<Record<JourneyItemType, number>> = { gratitude: 1 };
 
 /** Колесо детства — счётчик без записи в ленте (journeyStats); вид — ENTITY_LOOK.childhood_wheel. */
 export const CHILDHOOD_STAT = 'childhood_wheel';
-export const CHILDHOOD_LOOK: Look = { hue: 45, sign: 'wheel' };
 
 const NEED_STEP = new Set(['practice', 'plan_done']);
 const MODE_STEP = new Set(['mode_diary', 'mode_note']);
+const NEED_IDS: readonly string[] = NEED_ORDER;
+
+/** Бумага и знак строки ENTITY_LOOK, без сцены «готово». */
+const paper = ({ hue, sign }: Look): Look => ({ hue, sign });
+
+/** ENTITY_LOOK[JOURNEY_ENTITY[type]] — знак и бумага сущности шага (с вариантом мотива). */
+function stepLook(type: JourneyItemType): JourneyLook {
+  const look = paper(ENTITY_LOOK[JOURNEY_ENTITY[type]]);
+  const n = STEP_N[type];
+  return n === undefined ? look : { ...look, n };
+}
 
 /** Вид строки ленты; незнакомый тип с бэка — null (строка без картинки, без выдуманного знака). */
 export function journeyItemLook(
   item: Pick<JourneyItem, 'type' | 'needId' | 'modeId'>,
   modeSign?: (modeId: string) => SignKey,
 ): JourneyLook | null {
-  if (!Object.hasOwn(JOURNEY_LOOK, item.type)) return null;
-  const look = JOURNEY_LOOK[item.type as JourneyItemType];
-  if (
-    NEED_STEP.has(item.type) &&
-    item.needId &&
-    Object.hasOwn(JOURNEY_NEED_LOOK, item.needId)
-  )
-    return JOURNEY_NEED_LOOK[item.needId];
+  if (!Object.hasOwn(JOURNEY_ENTITY, item.type)) return null;
+  const look = stepLook(item.type as JourneyItemType);
+  if (NEED_STEP.has(item.type) && item.needId && NEED_IDS.includes(item.needId))
+    return needLook(item.needId as NeedId);
   if (MODE_STEP.has(item.type) && item.modeId && modeSign)
     return { hue: look.hue, sign: modeSign(item.modeId) };
   return look;
@@ -71,4 +54,6 @@ export function journeyItemLook(
 
 /** Вид плитки счётчика: сущность занятия; колесо детства — своя сущность. */
 export const journeyStatLook = (type: string): JourneyLook | null =>
-  type === CHILDHOOD_STAT ? CHILDHOOD_LOOK : journeyItemLook({ type });
+  type === CHILDHOOD_STAT
+    ? paper(ENTITY_LOOK.childhood_wheel)
+    : journeyItemLook({ type });

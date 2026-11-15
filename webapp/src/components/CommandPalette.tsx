@@ -9,7 +9,7 @@ import { clientStatus } from './therapist/rosterOrder';
 import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
 import { clientHue } from '../lib/tone';
 import { CmdList, type CmdRow } from './CommandPaletteList';
-import { QUICK_ACTION_SIGN } from './quickActionSign';
+import { quickActionSign } from './quickActionSign';
 import { SECTION_LOOK } from './appShell/navLook';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -90,7 +90,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
       }] : []),
       // Те же быстрые действия, что в «+» на телефоне (общий реестр); группа — подписью над строками.
       ...(!therapistMode ? buildPlusActions(tr).flatMap(g => g.actions.map(a => ({
-        group: g.title, label: a.label, sub: a.sub, mark: { sign: QUICK_ACTION_SIGN[a.id] },
+        group: g.title, label: a.label, sub: a.sub, mark: { sign: quickActionSign(a.id) },
         search: `${a.label} ${g.title} ${a.sub}`,
         action: () => onQuickAction?.(a.id),
       }))) : []),

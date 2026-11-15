@@ -1,21 +1,16 @@
-// Вид раздела «Практики» литералами (practiceLook.ts) совпадает с таблицей ENTITY_LOOK; у каждого
-// упражнения своя пара «бумага + знак», сущность упражнения с пунктом «Инструментов» — та же, что у
-// быстрого действия; порядок по умолчанию (без перестановки в «Инструментах») — порядок библиотеки, в
-// котором соседние плитки бенто на 2 и 3 колонки разной бумаги (сверка оттенков — entityLook.test.ts).
+// Вид раздела «Практики» (practiceLook.ts): у каждого упражнения своя пара «бумага + знак» из ENTITY_LOOK,
+// сущность упражнения с пунктом «Инструментов» — та же, что у быстрого действия; порядок по умолчанию (без
+// перестановки в «Инструментах») — порядок библиотеки, в котором соседние плитки бенто на 2 и 3 колонки
+// разной бумаги (сверка оттенков — entityLook.test.ts).
 import { describe, it, expect } from 'vitest';
-import { ENTITY_LOOK, PAPER_HUE, QUICK_ACTION_ENTITY } from '../../../../shared/src/theme/entityLook';
+import { ENTITY_LOOK, QUICK_ACTION_ENTITY } from '../../../../shared/src/theme/entityLook';
 import { EXERCISES } from './exerciseLibraryModel';
-import { EXERCISE_ENTITY, PRACTICE_LOOK, SELF_HELP_LOOK, exerciseLook, type PracticeEntity } from './practiceLook';
+import { EXERCISE_ENTITY, exerciseLook } from './practiceLook';
 import { arrangeExercises, CARD_TOOL_IDS, EXERCISE_TOOL } from './toolsLayout';
 
 describe('practiceLook', () => {
-  it.each(Object.keys(PRACTICE_LOOK) as PracticeEntity[])('%s — бумага и знак из ENTITY_LOOK', (id) => {
-    const { hue, sign } = ENTITY_LOOK[id];
-    expect(PRACTICE_LOOK[id]).toEqual({ hue, sign });
-  });
-
-  it('шапка «Важного о самопомощи» — шалфей палитры и рамка метода', () => {
-    expect(SELF_HELP_LOOK).toEqual({ hue: PAPER_HUE.sage, sign: 'limits' });
+  it('вид упражнения — строка ENTITY_LOOK его сущности', () => {
+    for (const e of EXERCISES) expect(exerciseLook(e.id), e.id).toBe(ENTITY_LOOK[EXERCISE_ENTITY[e.id]]);
   });
 
   it('у каждого упражнения свой вид: пара «оттенок + знак» не повторяется', () => {

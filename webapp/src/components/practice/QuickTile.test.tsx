@@ -4,13 +4,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { QuickTile } from './QuickTile';
-import { QUICK_LOOK } from './quickLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../shared/src/utils/typo';
 import { readCss } from '../../styles/cssRules.test-helpers';
 
 afterEach(cleanup);
 
-const LOOK = QUICK_LOOK.grounding;
+const LOOK = ENTITY_LOOK.grounding;
 const TITLE = 'Заземление 5-4-3-2-1';
 const parts = (tile: Element) => [...tile.children].map((c) => c.className);
 

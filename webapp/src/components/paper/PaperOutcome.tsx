@@ -3,9 +3,8 @@
 // кнопка, тихая ссылка, «код для поддержки». Для загрузки кабинета, ErrorBoundary, RouteErrorScreen, ConnectionTrouble,
 // ServicePage, 404, /link, /merge, «спасибо» (ThanksSheet: своя сцена в полосе — art). Лист всегда светлый (light-lock).
 import type { ReactNode } from 'react';
-import type { Look, OutcomeId } from '../../../../shared/src/theme/entityLook';
+import { OUTCOME_LOOK, type Look, type OutcomeId } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
-import { OUTCOME_LOOK_LIT } from './outcomeLook';
 import { SignHero } from './SignHero';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 /** Кнопка или ссылка (`href` — переход на другую страницу сайта). */
@@ -30,7 +29,7 @@ function ActionView({ action, cls }: { action: OutcomeAction; cls: string }) {
 }
 
 export function PaperOutcome({ outcome, eyebrow, title, lead, action, link, code, children, className, art }: PaperOutcomeProps) {
-  const { hue, sign } = typeof outcome === 'string' ? OUTCOME_LOOK_LIT[outcome] : outcome; // литералы — outcomeLook.ts
+  const { hue, sign } = typeof outcome === 'string' ? OUTCOME_LOOK[outcome] : outcome;
   return (
     <div className={`light-lock pa-outcome${className ? ` ${className}` : ''}`} style={hueStyle(hue)}>
       <div className="pa-outcome-card" data-sign={sign}>
