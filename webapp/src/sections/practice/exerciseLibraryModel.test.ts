@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { fmtCount } from './exerciseLibraryModel';
 
-// fmtAgo здесь не тестируется: копия одна — shared/src/utils/format.ts, её
+// fmtAgo здесь не тестируется: копия одна — shared/src/utils/momentDate.ts, её
 // сьют гоняет все зоны. Подпись «пройдено» без даты — в ExerciseLibrary.test.tsx.
 describe('форматирование', () => {
   it('fmtCount', () => {

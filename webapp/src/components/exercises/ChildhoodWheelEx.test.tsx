@@ -9,6 +9,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { ChildhoodWheelEx } from './ChildhoodWheelEx';
 import { AddressFormContext } from '../../utils/addressForm';
+import { glue } from '../../../../shared/src/utils/typo';
 
 vi.mock('../../api', () => ({
   api: {
@@ -264,7 +265,8 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
     rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'Дефективность / Стыд' }));
-    expect(screen.getByRole('heading', { name: 'Дефективность / Стыд' })).toBeTruthy();
+    // заголовок листа клеит glue: «/» держится с предыдущим словом
+    expect(screen.getByRole('heading', { name: glue('Дефективность / Стыд') })).toBeTruthy();
   });
 
   it('«Подробнее о схемах» зовёт onOpenSchemas', async () => {

@@ -18,6 +18,7 @@
 // Москве сегодняшняя запись была «вчера». Дню, посчитанному сервером в UTC,
 // нужен todayCalendarDate (calendarDate.ts).
 import { isCalendarDate } from './calendarDate';
+import { calendarAgoLabel } from './calendarAgo';
 import { fmtDate, localDateStr, todayStr } from './format';
 
 /**
@@ -46,6 +47,16 @@ export function momentDayLabel(value: string): string {
   if (momentIsToday(value)) return 'Сегодня';
   const key = momentDayKey(value);
   return key ? fmtDate(key) : '';
+}
+
+/**
+ * Давность у того, кто смотрит: «сегодня» / «вчера» / «N дн. назад» / «3 авг» —
+ * календарными днями его зоны, а не сутками по 24 ч (вчерашняя вечерняя запись
+ * утром — «вчера»). Нечитаемая строка — пустая.
+ */
+export function fmtAgo(value: string): string {
+  const day = momentDayKey(value);
+  return day ? calendarAgoLabel(day, todayStr()) : '';
 }
 
 /**
