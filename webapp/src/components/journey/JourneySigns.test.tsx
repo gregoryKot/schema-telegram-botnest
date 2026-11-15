@@ -11,6 +11,7 @@ import { JourneyTimeline } from '../../../../shared/src/journey/JourneyTimeline'
 import { JourneyItemDetail } from '../../../../shared/src/journey/JourneyItemDetail';
 import { JOURNEY_TYPE_META, groupJourneyByMonth } from '../../../../shared/src/journey/journeyMeta';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import type { JourneyResultPart } from '../../../../shared/src/journey/journeyParts';
 
 afterEach(cleanup);
 
@@ -54,7 +55,7 @@ describe('знак строки ленты', () => {
     expect(laidNo(n)).toBe(0);
     expect(n.querySelectorAll('ellipse')).toHaveLength(3);
     cleanup();
-    const t = render(<JourneyStat row={{ type: 'gratitude', emoji: '', label: 'Благодарности', count: 2 }} />).container;
+    const t = render(<JourneyStat row={{ type: 'gratitude', label: 'Благодарности', count: 2 }} />).container;
     expect(laidNo(t)).toBe(2);
   });
 
@@ -68,7 +69,7 @@ describe('знак строки ленты', () => {
 
 describe('плитка счётчика', () => {
   it('знак занятия, число и подпись на бумаге занятия', () => {
-    const { container } = render(<JourneyStat row={{ type: 'breathing', emoji: '🌬', label: 'Дыхательные практики', count: 6 }} />);
+    const { container } = render(<JourneyStat row={{ type: 'breathing', label: 'Дыхательные практики', count: 6 }} />);
     expect(screen.getByText('6')).toBeTruthy();
     expect(screen.getByText('Дыхательные практики')).toBeTruthy();
     const tile = container.querySelector('.jr-stat') as HTMLElement;
@@ -79,7 +80,7 @@ describe('плитка счётчика', () => {
 });
 
 describe('деталь шага', () => {
-  const detail = (type: string, parts: { title?: string; text: string }[]) => ({
+  const detail = (type: string, parts: JourneyResultPart[]) => ({
     item: { type, at: AT, modeId: type === 'mode_diary' ? 'punitive_critic' : undefined },
     parts, loading: false, open: vi.fn(), close: vi.fn(),
   });
