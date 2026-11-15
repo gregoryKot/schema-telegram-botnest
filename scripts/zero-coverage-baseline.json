@@ -3,5 +3,8 @@
   "src/booking/booking.registry.ts": "реестр контроллеров и провайдеров модуля брони — списки классов без ветвлений; модуль поднимается e2e-смоком на настоящем AppModule (test/client-booking-ownership.e2e-spec.ts) вне этого подсчёта",
   "src/booking/client-booking.controller.ts": "контроллер под e2e-смоком ownership test/client-booking-ownership.e2e-spec.ts — e2e в этот подсчёт юнит-покрытия не входит",
   "src/booking/meeting.providers.ts": "список провайдеров постоянной комнаты клиента (вынесен из booking.registry.ts) — одна константа без ветвлений",
-  "src/cli/rotate-encryption-key.ts": "точка входа CLI ротации ключа: исполняется отдельным процессом в test/key-rotation.e2e-spec.ts на живом Postgres (джоба migrations), вне юнит-подсчёта"
+  "src/bot/phrase-check-metrics.service.ts": "счётчики /stats — два сырых SELECT без ветвлений, проверяются на живом Postgres test/raw-sql-live-stats.e2e-spec.ts; форматтер — юнитом phrase-check-metrics.format",
+  "src/cli/rotate-encryption-key.ts": "точка входа CLI ротации ключа: исполняется отдельным процессом в test/key-rotation.e2e-spec.ts на живом Postgres (джоба migrations), вне юнит-подсчёта",
+  "src/push/push.controller.ts": "ручки /api/push без ветвлений (логика в PushService под юнитами); ownership и валидацию тел гоняет test/push-ownership.e2e-spec.ts — e2e вне юнит-подсчёта",
+  "src/push/push.dto.ts": "DTO из декораторов class-validator; единственные функции — фабрики @Type(() => …), их зовёт ValidationPipe в test/push-ownership.e2e-spec.ts — e2e вне юнит-подсчёта"
 }
