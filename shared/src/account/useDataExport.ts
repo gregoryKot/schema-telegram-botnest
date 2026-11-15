@@ -53,9 +53,6 @@ export function useDataExport({ authedFetch }: DataExportDeps) {
     }
     setStatus('loading');
     try {
-      // Путь — строковый литерал прямо в вызове (не вынесен в константу):
-      // гейт паритета фич (scripts/check-feature-parity.mjs) ищет буквальный
-      // первый аргумент authedFetch(...), а не резолвит идентификаторы.
       const res = await authedFetch('/api/account/export');
       if (!res.ok) {
         setStatus('error');
