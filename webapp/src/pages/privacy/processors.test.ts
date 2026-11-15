@@ -70,7 +70,8 @@ describe('processors', () => {
     expect(MEETING_NOTE).toContain('Zoom');
     expect(MEETING_NOTE).toContain('общим названием «Сессия»');
     expect(MEETING_NOTE).toContain('клиент подключается по ссылке сам');
-    expect(MEETING_NOTE).toContain('только время и вид записи');
+    // Длительность — тоже: ownerEventFor кладёт в событие durationMin.
+    expect(MEETING_NOTE).toContain('только время, длительность и вид записи');
   });
 
   // Тот же запрос: Jitsi — запасная комната вместо Zoom (src/booking/meeting-jitsi.ts),
@@ -108,7 +109,8 @@ describe('processors', () => {
     expect(tg.data).not.toMatch(/подтверждении входа/);
     expect(toOperator).toContain('ссылка на комнату видеовстречи');
     expect(toUser).not.toMatch(/комнат/);
-    expect(tg.data).toContain('сообщения о привязке или отвязке способа входа и о подборе кода двухфакторной защиты');
+    // security_notice уходит в Telegram и о почте для писем (emailNoticeText в security-notice.texts.ts).
+    expect(tg.data).toContain('сообщения о привязке или отвязке способа входа или почты для писем и о подборе кода двухфакторной защиты');
   });
 
   // На сайт входят и через MAX: билет подтверждают в мини-приложении (src/auth/login-ticket/site-login.ts).
