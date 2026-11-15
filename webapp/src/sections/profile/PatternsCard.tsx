@@ -2,6 +2,7 @@ import { hitboxStyle } from '../../utils/hitbox';
 import { SignArt } from '../../components/art/SignArt';
 import { needDataStyle } from '../../components/needDataColor';
 import { BLOCK_META } from '../../../../shared/src/screens/screenBlocks';
+import { fmtIndex } from '../../../../shared/src/needs/dayIndex';
 import { NEED_NAMES } from './profileMeta';
 import type { InsightsData } from './profileMeta';
 import { trendKind, TREND_SYMBOL, patternBarPercent } from './profileModel';
@@ -52,7 +53,7 @@ export function PatternsCard({ insights, onBestDayInfo }: Props) {
               <div className="cpf-prog-head">
                 <span className="cpf-prog-name">{NEED_NAMES[s.needId]}</span>
                 <span className={`cpf-prog-val is-${k}`}>
-                  <b>{(s.avg ?? 0).toFixed(1)}</b>
+                  <b>{fmtIndex(s.avg)}</b>
                   <span aria-hidden="true"> {TREND_SYMBOL[k]}</span>
                   <span className="cpf-vh">, в среднем за неделю, {TREND_TEXT[k]}</span>
                 </span>
