@@ -57,7 +57,7 @@ export async function setConceptShared(
         const data = { sharedWithClientAt, updatedAt: row.updatedAt };
         await concept.update({ where, data });
       } else if (shared) {
-        // upsert: автосохранение могло создать строку между чтением и записью.
+        // upsert: чужая вставка — тоже повтор, не P2002; update не исполняется.
         await concept.upsert({
           where,
           create: { ...key, sharedWithClientAt },
