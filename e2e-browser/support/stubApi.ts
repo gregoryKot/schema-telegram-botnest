@@ -134,11 +134,10 @@ export async function stubApi(
     if (key === 'POST /api/client-errors')
       return route.fulfill({ status: 204 });
 
-    if (overrides.has(key)) return reply(200, overrides.get(key));
-    if (key in FIXTURES) {
-      const status = STATUS[key] ?? (req.method() === 'POST' ? 201 : 200);
-      return reply(status, FIXTURES[key]);
-    }
+    // Подмена отвечает тем же статусом, что сервер: POST кабинета (therapist-view) — 201.
+    const status = STATUS[key] ?? (req.method() === 'POST' ? 201 : 200);
+    if (overrides.has(key)) return reply(status, overrides.get(key));
+    if (key in FIXTURES) return reply(status, FIXTURES[key]);
     console.warn(
       `stubApi: нет фикстуры для ${key} — ответ 404, как у сервера на неизвестный маршрут`,
     );
