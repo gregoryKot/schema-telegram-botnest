@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Тест переключения темы (theme.ts): детекция системной темы через
 // matchMedia, персист в localStorage, применение к document.documentElement.
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme, savedTheme } from './theme';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme, savedTheme, themeBg } from './theme';
 
 function mockMatchMedia(prefersDark: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -13,13 +13,24 @@ function mockMatchMedia(prefersDark: boolean) {
   })) as unknown as typeof window.matchMedia;
 }
 
+// Селекторы и значения --bg — как в index.css (сверка с index.html — pwaManifest.test.ts).
+const TOKENS_CSS = ':root, html[data-theme="light"] { --bg: #f6f2eb; } html[data-theme="dark"] { --bg: #14141a; }';
+let tokens: HTMLStyleElement;
+
 beforeEach(() => {
+  tokens = document.createElement('style');
+  tokens.textContent = TOKENS_CSS;
+  document.head.appendChild(tokens);
   localStorage.clear();
   document.documentElement.removeAttribute('data-theme');
   document.documentElement.style.background = '';
   document.documentElement.style.colorScheme = '';
   document.getElementById('theme-color-meta')?.remove();
   mockMatchMedia(false);
+});
+
+afterEach(() => {
+  tokens.remove();
 });
 
 describe('getTheme', () => {
@@ -64,6 +75,30 @@ describe('applyTheme', () => {
   it('не бросает, если meta#theme-color-meta отсутствует', () => {
     expect(() => applyTheme('light')).not.toThrow();
   });
+
+  it('фон и theme-color берутся из --bg новой темы, а не из литерала', () => {
+    const meta = document.createElement('meta');
+    meta.id = 'theme-color-meta';
+    document.head.appendChild(meta);
+    applyTheme('light');
+    expect(themeBg()).toBe('#f6f2eb');
+    expect(meta.content).toBe('#f6f2eb');
+    applyTheme('dark');
+    expect(themeBg()).toBe('#14141a');
+    expect(meta.content).toBe('#14141a');
+  });
+
+  it('CSS ещё не загружен — тема ставится, фон и meta остаются прежними', () => {
+    tokens.remove();
+    const meta = document.createElement('meta');
+    meta.id = 'theme-color-meta';
+    meta.content = '#f6f2eb';
+    document.head.appendChild(meta);
+    applyTheme('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.style.background).toBe('');
+    expect(meta.content).toBe('#f6f2eb');
+  });
 });
 
 describe('toggleTheme', () => {
@@ -103,6 +138,7 @@ describe('applyCabinetLightTheme', () => {
     applyCabinetLightTheme();
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(document.documentElement.style.background).toBe('rgb(246, 242, 235)');
     expect(localStorage.getItem('app_theme')).toBe('dark');
     expect(getTheme()).toBe('dark');
   });

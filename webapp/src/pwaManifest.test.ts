@@ -66,10 +66,12 @@ describe('корневой manifest.webmanifest', () => {
   });
 });
 
-describe('цвет оболочки PWA — один на все четыре места', () => {
-  const bgToken = /--bg:\s*(#[0-9a-f]{6});/i.exec(read('./index.css'))?.[1];
-  const themeBg = /light:\s*'(#[0-9a-f]{6})'/i.exec(read('./utils/theme.ts'))?.[1];
+describe('цвет оболочки PWA — один на все места', () => {
+  const css = read('./index.css');
+  const bgToken = /--bg:\s*(#[0-9a-f]{6});/i.exec(css)?.[1];
+  const bgDark = /html\[data-theme="dark"\]\s*\{[^}]*?--bg:\s*(#[0-9a-f]{6});/i.exec(css)?.[1];
   const metaLight = /name="theme-color" content="(#[0-9a-f]{6})" media="\(prefers-color-scheme: light\)"/i.exec(indexHtml)?.[1];
+  const metaDark = /name="theme-color" content="(#[0-9a-f]{6})" media="\(prefers-color-scheme: dark\)"/i.exec(indexHtml)?.[1];
   const metaDynamic = /id="theme-color-meta" content="(#[0-9a-f]{6})"/i.exec(indexHtml)?.[1];
 
   it('manifest: background_color = theme_color = --bg светлого блока', () => {
@@ -78,10 +80,15 @@ describe('цвет оболочки PWA — один на все четыре м
     expect(root.theme_color).toBe(bgToken);
   });
 
-  it('index.html и THEME_BG.light — тот же цвет', () => {
+  it('index.html — тот же цвет, что --bg светлого блока', () => {
     expect(metaLight).toBe(bgToken);
     expect(metaDynamic).toBe(bgToken);
-    expect(themeBg).toBe(bgToken);
+  });
+
+  // theme.ts своего литерала не держит: после смены темы читает --bg (theme.test.ts).
+  it('тёмная meta theme-color в index.html = --bg тёмного блока', () => {
+    expect(bgDark).toBeTruthy();
+    expect(metaDark).toBe(bgDark);
   });
 });
 

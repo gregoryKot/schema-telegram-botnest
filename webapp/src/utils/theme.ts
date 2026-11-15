@@ -14,29 +14,29 @@ export function savedTheme(): Theme | null {
 
 export const getTheme = (): Theme => savedTheme() ?? detectTheme();
 
-const THEME_BG: Record<Theme, string> = { light: '#f6f2eb', dark: '#14141a' };
+/** Фон темы — токен --bg из index.css (у `el` — с учётом .light-lock); пусто, пока CSS не загружен. */
+export const themeBg = (el: Element = document.documentElement): string =>
+  getComputedStyle(el).getPropertyValue('--bg').trim();
+
+/** data-theme, схема, фон <html> и theme-color браузера; без CSS фон и meta остаются от theme.js и index.html. */
+function paintTheme(theme: Theme) {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  root.style.colorScheme = theme;
+  const bg = themeBg();
+  if (!bg) return;
+  root.style.background = bg;
+  document.getElementById('theme-color-meta')?.setAttribute('content', bg);
+}
 
 export function applyTheme(theme: Theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.documentElement.style.background = THEME_BG[theme];
-  document.documentElement.style.colorScheme = theme;
-  const meta = document.getElementById('theme-color-meta') as HTMLMetaElement | null;
-  if (meta) meta.content = THEME_BG[theme];
+  paintTheme(theme);
   writeLocal(KEY, theme);
 }
 
-/** Кабинет (AppShell) нарисован только в светлой теме (редизайн 2026-10,
- *  решение владельца): документ переводится в светлую схему БЕЗ записи в
- *  localStorage — выбор для публичных страниц (лендинг со своим тумблером)
- *  остаётся за пользователем, а тёмные фон/скроллбары не просачиваются в
- *  кабинет через color-scheme. */
-export function applyCabinetLightTheme() {
-  document.documentElement.setAttribute('data-theme', 'light');
-  document.documentElement.style.background = THEME_BG.light;
-  document.documentElement.style.colorScheme = 'light';
-  const meta = document.getElementById('theme-color-meta') as HTMLMetaElement | null;
-  if (meta) meta.content = THEME_BG.light;
-}
+/** Кабинет (AppShell) нарисован только в светлой теме (решение владельца): светлая схема БЕЗ записи
+ *  в localStorage — выбор для лендинга остаётся за пользователем, тёмные фон/скроллбары не просачиваются. */
+export const applyCabinetLightTheme = () => paintTheme('light');
 
 export function toggleTheme(): Theme {
   const next = getTheme() === 'dark' ? 'light' : 'dark';
