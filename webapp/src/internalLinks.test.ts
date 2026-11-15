@@ -1,7 +1,7 @@
 // Внутренние ссылки ведут на маршрут App.tsx или файл public/ (№14): экран 404 отчёт не шлёт.
 // Хост в тесте неизвестен — сверка с appRoutes ∪ personalRoutes; путь из переменной не виден.
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { routePaths, routeTableBlock } from './test-support/appRoutes';
 
@@ -85,7 +85,10 @@ describe('сверка ссылок (самопроверка)', () => {
 
 const REPO = resolve(__dirname, '../..');
 const NOT_PRODUCT = /\.test\.tsx?$|\.test-helpers\.ts$|\.d\.ts$|(^|\/)test-support\//;
-const listFiles = (dir: string) => readdirSync(join(REPO, dir), { recursive: true }).map(String);
+const listFiles = (dir: string) =>
+  readdirSync(join(REPO, dir), { recursive: true })
+    .map(String)
+    .filter((rel) => statSync(join(REPO, dir, rel)).isFile());
 
 describe('внутренние ссылки webapp/src и shared/src ↔ маршруты App.tsx и public/', () => {
   const app = readFileSync(join(REPO, 'webapp/src/App.tsx'), 'utf8');
