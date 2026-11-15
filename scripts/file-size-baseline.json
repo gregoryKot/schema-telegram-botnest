@@ -1,6 +1,6 @@
 {
-  ".claude/hooks/context-guard.mjs": 105,
-  ".claude/hooks/gh-merge.mjs": 26,
+  ".claude/hooks/context-guard.mjs": 111,
+  ".claude/hooks/gh-merge.mjs": 81,
   ".claude/hooks/log-tool-use.mjs": 116,
   ".claude/hooks/session-start.mjs": 33,
   "deploy/app-exit.mjs": 72,
