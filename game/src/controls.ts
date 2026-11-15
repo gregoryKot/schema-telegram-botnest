@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { t, type MsgKey } from './i18n';
+import { mountTouchGlyphs } from './glyphs';
 import { isLongTapLabel } from './tapLabel';
 
 export const IS_TOUCH =
@@ -52,6 +53,7 @@ function localizeTouchUI() {
   set('tbtn-fawn', 'm_surrender');
   set('tbtn-avoid', 'm_avoid');
   set('tbtn-hit', 'm_fight');
+  mountTouchGlyphs();
   const rotate = document.getElementById('rotate-hint');
   if (rotate) rotate.innerHTML =
     `<div class="phone-icon">📱</div><div class="rotate-title">${t('m_game_title')}</div><div>${t('m_rotate_line')}</div>`;

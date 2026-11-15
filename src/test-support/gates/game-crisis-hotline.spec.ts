@@ -19,7 +19,11 @@ const messages = read('game/src/i18n/messages.ts');
 const scene = read('game/src/scenes/GameScene.ts');
 // экран смерти, развилка и CTA живут отдельными модулями сцены
 const cta = read('game/src/scenes/game/cta.ts');
-const screens = scene + read('game/src/scenes/game/death.ts') + cta + read('game/src/scenes/game/cabinet.ts');
+const screens =
+  scene +
+  read('game/src/scenes/game/death.ts') +
+  cta +
+  read('game/src/scenes/game/cabinet.ts');
 
 describe('кризисная строка игры', () => {
   it('источник правды читается', () => {
