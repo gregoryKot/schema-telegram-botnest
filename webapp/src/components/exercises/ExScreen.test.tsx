@@ -7,7 +7,9 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ExScreen, ExScreenSkeleton } from './ExScreen';
+import { ExHint, ExHintText } from './ExHint';
 import { PHONE_MEDIA } from '../../utils/phoneLayout';
+import { allCssRules, readCss, SPREAD_COLUMN_MEDIA } from '../../styles/cssRules.test-helpers';
 
 afterEach(cleanup);
 
@@ -94,9 +96,9 @@ describe('ExScreen — герой и раскладки', () => {
   });
 
   it('экран с героем помечен ex2-screen--hero: на телефоне вопрос ступенью ниже заголовка листа', () => {
-    const { container, rerender } = render(<ExScreen onBack={vi.fn()} look="letter" title="Письмо">поле</ExScreen>);
+    const { container, rerender } = render(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Упражнение" title="Письмо">поле</ExScreen>);
     expect(container.firstElementChild!.className).toBe('ex2-screen ex2-screen--hero');
-    rerender(<ExScreen onBack={vi.fn()} title="Письмо">поле</ExScreen>);
+    rerender(<ExScreen onBack={vi.fn()} eyebrow="Упражнение" title="Письмо">поле</ExScreen>);
     expect(container.firstElementChild!.className).toBe('ex2-screen');
     // два заголовка Literata 26 подряд (h1 листа и вопрос) — плоская иерархия (ревью волны 0, круг 2)
     const css = readFileSync(join(__dirname, '../../styles/sheet-exercises.css'), 'utf8');
@@ -169,6 +171,36 @@ describe('ExScreen — герой и раскладки', () => {
     expect(side.querySelector('.pa-sheet')).toBeTruthy();
     expect(side.querySelector('.ex2-aside')).toBeTruthy();
     expect(main.textContent).toBe('поле');
+  });
+});
+
+// Разворот уже 1024 — колонкой (принцип 5: до первого поля — шапка и лист): колонку листа и aside раскрывает в поток
+// одно правило sheet-exercises.css, у экранов своих `.pa-spread:has(…)` нет; строка ExHint остаётся до поля (ExHint.test.tsx).
+describe('ExScreen — разворот уже 1024: aside после формы', () => {
+  const column = readCss('sheet-exercises.css').filter((r) => r.media === `@media ${SPREAD_COLUMN_MEDIA}`);
+  const decl = (sel: string) => column.find((r) => r.selectors.includes(sel))?.body.trim();
+
+  it('колонка листа и aside — в поток, форма — order 2, всё из aside, кроме ExHint, — order 3 после формы', () => {
+    expect(decl('.ex2-body--spread .pa-spread-side')).toBe('display: contents;');
+    expect(decl(':where(.ex2-body--spread .pa-spread-side) > .ex2-aside')).toBe('display: contents;');
+    expect(decl('.ex2-body--spread .pa-spread-main')).toBe('order: 2;');
+    expect(decl('.ex2-body--spread .ex2-aside > :not(.ex2-hint)')).toBe('order: 3; position: static;');
+  });
+
+  it('DOM под правило: aside — прямой ребёнок колонки листа, ExHint — прямой ребёнок aside с .ex2-hint, поле — в main', () => {
+    const { container } = render(
+      <ExScreen onBack={vi.fn()} look="note" eyebrow="Дневник" title="Заметка" spread
+        aside={<><ExHint title="С чего начать"><ExHintText>Три вопроса</ExHintText></ExHint><p>Зачем это</p></>}>поле</ExScreen>,
+    );
+    const [side, main] = [...container.querySelector('.ex2-body--spread > .pa-spread')!.children];
+    expect([side.className, main.className]).toEqual(['pa-spread-side', 'pa-spread-main']);
+    const asideEl = side.querySelector(':scope > .ex2-aside')!;
+    expect([...asideEl.children].map((c) => c.classList.contains('ex2-hint'))).toEqual([true, false]);
+    expect(main.textContent).toBe('поле');
+  });
+
+  it('порядок держит одно правило: в стилях нет .pa-spread:has(…)', () => {
+    expect(allCssRules().filter((r) => r.selectors.some((s) => s.includes('.pa-spread:has('))).map((r) => r.f)).toEqual([]);
   });
 });
 
