@@ -38,11 +38,10 @@ const healthy = (
   part(text, title).map((p) => ({ ...p, healthy: true as const }));
 
 /**
- * Счёт теста из записи истории — для карточки-профиля всех 20 схем.
- * null, если записи нет, счёта нет или в нём нет ни одного среднего балла:
- * у совсем старых записей avg не сохранялся, и профиль вышел бы из двадцати
- * прочерков — такому шагу честнее остаться текстовой карточкой.
- * Чистая (тестируется).
+ * Счёт теста из записи истории (ключ — id схемы) в счёт по названиям для
+ * карточки-профиля всех 20 схем. null, если записи или счёта нет или в нём нет
+ * ни одного среднего балла: у старых записей avg не сохранялся, и профиль вышел
+ * бы из двадцати прочерков — честнее остаться текстовой карточкой.
  */
 export function ysqResultFromEntry(
   entry: unknown,
@@ -57,7 +56,6 @@ export function ysqResultFromEntry(
   );
   if (!hasAvg) return null;
   const history = e as unknown as YsqHistoryEntry;
-  // История хранит счёт по id схемы, карточка-профиль ищет по названию.
   const byId = historyScoresById(history);
   const scores: Record<string, YsqScore> = {};
   for (const s of SCHEMAS) {
