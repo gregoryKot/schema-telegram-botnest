@@ -13,10 +13,22 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { SYNCED_PREF_KEYS } from '../api/ui-prefs.sanitize';
+import { CONCEPT_BRIEF_BLOCK_IDS } from '../api/concept-brief-blocks.constants';
 
 const ROOT = join(__dirname, '..', '..');
 const FRONTEND_REL = 'shared/src/prefs/uiPrefsSync.ts';
 const FRONTEND_PATH = join(ROOT, FRONTEND_REL);
+const BRIEF_REL = 'shared/src/therapy/conceptBrief/conceptBrief.ts';
+
+// id реестра блоков «Главного»: `{ id: 'schemas', label: …, on: … }` внутри
+// `BRIEF_BLOCKS = [ … ];` — их сервер пускает в concept_brief_blocks.
+function readBriefBlockIds(): string[] {
+  const src = readFileSync(join(ROOT, BRIEF_REL), 'utf8');
+  const block = src.match(/\bBRIEF_BLOCKS\s*(?::[^=]+)?=\s*\[([\s\S]*?)\];/);
+  if (!block)
+    throw new Error(`Не нашли массив BRIEF_BLOCKS = [...] в ${BRIEF_REL}`);
+  return [...block[1].matchAll(/\bid:\s*'([a-z_]+)'/g)].map((m) => m[1]);
+}
 
 // Вырезает блок `SYNCED_PREF_KEYS = [ ... ]` и достаёт строковые литералы.
 function extractFrontendKeys(src: string): string[] {
@@ -58,8 +70,16 @@ describe('трипваер: SYNCED_PREF_KEYS фронта и бэка совпа
     expect(new Set(SYNCED_PREF_KEYS).size).toBe(SYNCED_PREF_KEYS.length);
   });
 
-  it('бэкендный реестр — ровно 7 ключей зафиксированного контракта', () => {
-    expect(SYNCED_PREF_KEYS.length).toBe(7);
+  it('бэкендный реестр — ровно 8 ключей зафиксированного контракта', () => {
+    expect(SYNCED_PREF_KEYS.length).toBe(8);
+  });
+
+  // Блок «Главного», которого сервер не знает, молча выпал бы из выбора на
+  // другом устройстве; лишний id на сервере пропустил бы мусор.
+  it('блоки «Главного»: allow-list сервера = id реестра BRIEF_BLOCKS', () => {
+    const frontend = readBriefBlockIds();
+    expect(frontend.length).toBeGreaterThan(0);
+    expect([...CONCEPT_BRIEF_BLOCK_IDS].sort()).toEqual([...frontend].sort());
   });
 
   // Мини-апп удалён, главная сайта этих ключей не читает (решение владельца
