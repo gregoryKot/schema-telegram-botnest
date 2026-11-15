@@ -31,7 +31,7 @@ interface Props {
 }
 
 // Лист-герой с камешками по заполненным пунктам (Pebbles filled), тетрадь — белый лист со строками
-// 01–05 без рамок; на компьютере — разворот (b10a, docs/design/APP_2026-11.md).
+// 01–05 без рамок; на компьютере — разворот (b10a, docs/archive/APP_2026-11.md).
 export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems, onSave }: Props) {
   const goBack = useHistorySheet(onClose);
   // Форма сама поднимает сохранённый день (инцидент 2026-10-18), а base — то,

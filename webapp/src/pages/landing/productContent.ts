@@ -27,7 +27,7 @@ export const NAV_LINKS: { label: string; href: string; hue: number; Art?: Art; S
 ];
 // Текст — src/articles/home-landing.content.ts (его же сервер вкладывает в #root для
 // робота без JS, GEO.md); здесь только вид по `id` — без строки ниже пункт не соберётся
-// (tsc). Знак и сцена — по «Мотив → смысл» (docs/design/PAPER_2026-11.md); `hue` — бумага:
+// (tsc). Знак и сцена — по «Мотив → смысл» (docs/design/PAPER_MOTIFS_2026-11.md); `hue` — бумага:
 // он же уходит в сцену (`<Scene hue>`), источник оттенка один.
 const STEP_LOOK: Record<HomeStepId, { num: string; Scene: Scene; hue: number }> = {
   origin:  { num: '01', Scene: SceneChildhood, hue: 45 },  // колесо потребностей вокруг детства

@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { SignArt } from '../art/SignArt';
 import '../../styles/auth-account.css'; // su-*
 
-/** Заголовок окна кода 2FA: знак границы `Limits` на листе неба (2FA — 240, APP_2026-11.md, b27) — окно
+/** Заголовок окна кода 2FA: знак границы `Limits` на листе неба (2FA — 240, docs/archive/APP_2026-11.md, b27) — окно
  *  про доступ, а не про сбой; заголовок — тот же ds-h2 диалога. */
 export function StepUpTitle({ title }: { title: string }) {
   return (

@@ -4,7 +4,7 @@ import { Strokes } from '../../components/art/PaperArt';
 import { Cluster, Talk } from '../../components/art/PaperArtSigns';
 import { Looming } from '../../components/art/GuideSigns';
 
-// Знак мини-теста по id — тот же язык, что в приложении (docs/design/PAPER_2026-11.md,
+// Знак мини-теста по id — тот же язык, что в приложении (docs/design/PAPER_MOTIFS_2026-11.md,
 // «Мотив → смысл»). Тексты тестов живут на сервере (src/quiz/quiz-*.data.ts); у каждого
 // теста оттуда есть знак — сверка в quizLook.test.ts. Теста без знака (новый, ещё не
 // нарисованный) показываем его эмодзи из контента, а не чужой знак.

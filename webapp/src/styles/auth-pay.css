@@ -1,4 +1,4 @@
-/* Подписка и донат (/subscribe, /donate) — язык живой бумаги (docs/design/APP_2026-11.md, b28). Префикс ap-.
+/* Подписка и донат (/subscribe, /donate) — язык живой бумаги (docs/archive/APP_2026-11.md, b28). Префикс ap-.
    Страницы живут вне AppShell (и на визитке практики): корень сам красит экран и тянется на всю ширину
    (#root — flex-ряд, без flex: 1 страница липла к левому краю). Каркас — pages/subscribe/PayLayout.tsx:
    лист соломы со сценой FinalCorners (EntitySheet .ap-sheet) + форма, на ≥1024 — разворот SpreadLayout.
