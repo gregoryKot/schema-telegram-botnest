@@ -25,6 +25,11 @@ export function reportSubscriptionLoadFailure(err: unknown): 'wait' | 'our_side'
   reportClientError({ message: `subscription load failed: ${describeFailure(err)}`, section: SUBSCRIPTION_SECTION }); return 'our_side';
 }
 
+/** Отказ загрузки вариантов подписки: без них экран — тупик, отчёт наверх (№14); исход — сбой, а не «скоро». */
+export function reportSubscriptionOptionsFailure(err: unknown): void {
+  reportClientError({ message: `subscription options failed: ${describeFailure(err)}`, section: SUBSCRIPTION_SECTION });
+}
+
 export function useSubscriptionCancel(token: string | null, onCancelled: () => void) {
   const [phase, setPhase] = useState<CancelPhase>('idle');
 

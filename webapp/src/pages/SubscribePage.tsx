@@ -4,7 +4,7 @@ import { CANCEL_SUPPORT_LINK } from '../components/booking/cancelPolicy';
 import { PaperOutcome } from '../components/paper/PaperOutcome';
 import { ThanksSheet } from '../components/paper/ThanksSheet';
 import { CancelControl } from './subscribe/CancelControl';
-import { reportSubscriptionLoadFailure } from './subscribe/useSubscriptionCancel';
+import { reportSubscriptionLoadFailure, reportSubscriptionOptionsFailure } from './subscribe/useSubscriptionCancel';
 import { usePageShowReset } from '../hooks/usePageShowReset';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { PayHero, PayLayout, PaySkeleton } from './subscribe/PayLayout';
@@ -36,7 +36,7 @@ export function SubscribePage() {
 
   const [sub, setSub] = useState<Sub | null>(null);
   const [cancelled, setCancelled] = useState(false); const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [consent, setConsent] = useState(false);
+  const [consent, setConsent] = useState(false); const [optsFailed, setOptsFailed] = useState(false);
   // Сбой ≠ пусто (правило №14, экран-тупик): раньше `sub === null` на отказе
   // рисовал «Загружаем…» — навсегда, отказ не отличить от загрузки.
   const [subFailed, setSubFailed] = useState<'wait' | 'our_side' | null>(null);
@@ -44,7 +44,7 @@ export function SubscribePage() {
   useEffect(() => {
     api.getSubscriptionOptions()
       .then((r) => { setEnabled(r.enabled); setOpts(r.options); })
-      .catch(() => { setEnabled(false); setOpts([]); });
+      .catch((err: unknown) => { reportSubscriptionOptionsFailure(err); setOptsFailed(true); }); // сбой ≠ «скоро»
   }, []);
   useEffect(() => {
     if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch((err: unknown) => setSubFailed(reportSubscriptionLoadFailure(err)));
@@ -61,12 +61,13 @@ export function SubscribePage() {
   };
 
   const home = { label: <BackLabel>На главную</BackLabel>, href: '/' };
+  const failed = (outcome: 'wait' | 'our_side', lead: string) => <div className="ap-failed" role="alert"><PaperOutcome outcome={outcome} eyebrow="Подписка" title="Подписка не загрузилась" lead={lead} action={{ label: 'Обновить', onClick: () => window.location.reload() }} link={home} /></div>;
   if (token) {
     // Управление. Отменена — лист Cup; сбой — исход на весь экран (404 — ссылка устарела, «подожди»;
     // остальное — сбой на нашей стороне). Безлично, без useTr (check-second-person.mjs).
     // Отменена — не «спасибо за оформление»: лист Cup на соломе 70 (как «скоро»), без сцены благодарности (ревью b28).
     if (cancelled) return <PaperOutcome outcome={{ hue: 70, sign: 'cup' }} eyebrow="Подписка" title="Подписка отменена" lead="Спасибо, что были с проектом. Оформить снова можно в любой момент." action={{ label: 'Оформить снова', href: '/subscribe' }} link={home} />;
-    if (subFailed) return <div className="ap-failed" role="alert"><PaperOutcome outcome={subFailed} eyebrow="Подписка" title="Подписка не загрузилась" lead="Возможно, истекла ссылка или нет соединения." action={{ label: 'Обновить', onClick: () => window.location.reload() }} link={home} /></div>;
+    if (subFailed) return failed(subFailed, 'Возможно, истекла ссылка или нет соединения.');
     if (!sub) return <PaySkeleton shape="manage" />;
     const state = sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status;
     return (
@@ -81,6 +82,7 @@ export function SubscribePage() {
     // нельзя (open/backend.md). Безлично, как CancelControl.
     return <ThanksSheet eyebrow="Подписка" title="Спасибо за поддержку!" lead={<>Подписка оформлена. Отменить её можно в любой момент — достаточно написать мне в <a href={CANCEL_SUPPORT_LINK} className="ds-link ds-link--inline">Telegram</a>.</>} action={{ label: 'На главную', href: '/' }} />;
   }
+  if (optsFailed) return failed('our_side', 'Возможно, нет соединения или сбой на нашей стороне.');
   // Скрыта, пока регулярные платежи Robokassa не включены: исход «подожди» (Cup на соломе) и разовый донат.
   if (enabled === false) return <PaperOutcome outcome="wait" eyebrow="Подписка" title="Подписка скоро" lead="Регулярная поддержка пока в разработке. А поддержать проект разово уже можно." action={{ label: 'Разовый донат', href: '/donate' }} link={home} />;
   if (enabled === null) return <PaySkeleton shape="form" />;
