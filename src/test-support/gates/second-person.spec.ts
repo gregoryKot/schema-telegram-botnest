@@ -235,13 +235,24 @@ describe('check-second-person.mjs', () => {
   it('подкомпоненты BookingPicker (webapp/src/components/booking/) исключены — та же гостевая зона', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
-      'webapp/src/components/booking/BookingSlotsSection.tsx':
+      'webapp/src/components/booking/BookingConfirmedView.tsx':
         "export const msg = 'Выберите другое время';\n",
       // Форма визитки гостя — «вы» без вилки законно: формы до входа нет.
       'webapp/src/components/booking/fieldHints.ts':
         "export const hint = 'Укажите, где вам ответить';\n",
     });
     expect(res.status).toBe(0);
+  });
+
+  it('КОНТРОЛЬ: запись из кабинета (booking/ClientBookingSheet, BookingSlotsSection) под гейтом — exit 1', () => {
+    for (const f of ['ClientBookingSheet.tsx', 'BookingSlotsSection.tsx', 'slotsCopy.ts']) {
+      const res = runGate('check-second-person.mjs', {
+        'scripts/second-person-baseline.json': JSON.stringify({}),
+        [`webapp/src/components/booking/${f}`]:
+          "export const msg = 'Выберите другое время';\n",
+      });
+      expect(res.status).toBe(1);
+    }
   });
 
   it('shared/src/booking/clientTimeZone.ts (подпись пояса гостя) исключён', () => {
@@ -581,7 +592,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'webapp/src/pages/landing/BookingForm.tsx',
       'webapp/src/components/BookingPicker.tsx',
       'webapp/src/components/BookingErrorNote.tsx',
-      'webapp/src/components/booking/BookingSlotsSection.tsx',
+      'webapp/src/components/booking/BookingConfirmedView.tsx',
       'shared/src/booking/clientTimeZone.ts',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
