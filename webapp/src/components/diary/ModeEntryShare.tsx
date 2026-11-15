@@ -28,7 +28,7 @@ export function ModeEntryShare({
   );
   if (!shortProps && !fullProps) return null;
   return (
-    <span onClick={(e) => e.stopPropagation()}>
+    <span role="presentation" onClick={(e) => e.stopPropagation()}>
       <ShareTwoOptions
         share={share}
         setShare={setShare}
