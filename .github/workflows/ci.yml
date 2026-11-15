@@ -588,6 +588,10 @@ jobs:
       # миграцией (booking_pii_retention).
       - name: e2e обезличивание броней по сроку на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
+      # /reissue_icloud: окно срока хранения, признаки события (OR) и CAS uid
+      # считает СУБД — юнит-спек видит их только на where-матчере в памяти.
+      - name: e2e перевыпуск старых событий iCloud на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-legacy-uid-reissue.e2e-spec.ts
       # Глобальный аудит 2026-10-11: заявка с простой формы знакомства
       # (POST /api/booking) раньше жила только в DM и письме. Строка пишется в БД
       # до уведомлений; шифртекст, флаги доставки по каждому каналу, повтор
