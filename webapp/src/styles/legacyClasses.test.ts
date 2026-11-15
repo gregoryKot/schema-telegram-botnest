@@ -12,7 +12,7 @@ const SRC = join(__dirname, '..');
 const SHARED = join(SRC, '..', '..', 'shared', 'src');
 const LEGACY = ['btn', 'btn-primary', 'btn-outline', 'chip', 'chip-success', 'aside-card', 'aside-card-eyebrow',
   'section', 'section-head', 'list-line', 'ex-btn-primary',
-  'eyebrow', 'ex-btn', 'ex-btn-ghost', 'tk2-done', 'ss-row', 'prompt', 'flash', 'flash-q'];
+  'eyebrow', 'ex-btn', 'ex-btn-ghost', 'tk2-done', 'ss-row', 'prompt', 'flash', 'flash-q', 'dot'];
 
 /** Классы из className="…" и литералов className={…}. */
 function classTokens(src: string): string[] {
