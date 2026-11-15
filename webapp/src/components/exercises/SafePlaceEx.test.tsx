@@ -11,7 +11,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SafePlaceEx } from './SafePlaceEx';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
-import { SAFE_PLACE_FIELD_MAX } from './safePlaceText';
+import { SAFE_PLACE_FIELD_MAX, SENSES } from './safePlaceText';
 import { SAFE_PLACE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
@@ -49,11 +49,13 @@ describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
   open: () => renderEx(),
   enter: (text) => fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: text } }),
 });
-describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
-  label: 'что слышно',
-  open: () => renderEx(),
-  enter: (text) => fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: text } }),
-});
+for (const sense of SENSES) {
+  describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+    label: sense.label,
+    open: () => renderEx(),
+    enter: (text) => fireEvent.change(screen.getByLabelText(sense.label), { target: { value: text } }),
+  });
+}
 
 describe('SafePlaceEx — сохранение и обращение ты/вы', () => {
   it('кнопка сохранить выключена, пока не заполнено общее описание и хотя бы одно чувство', () => {

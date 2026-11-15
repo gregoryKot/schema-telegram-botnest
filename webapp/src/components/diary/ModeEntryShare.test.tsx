@@ -76,30 +76,28 @@ describe('ModeEntryShare', () => {
     expect(container.textContent).toBe('');
   });
 
-  it('только healthyResponse → кнопка краткой карточки, без «всей записи»', () => {
+  it('только healthyResponse → ссылка сразу открывает лист краткой карточки', () => {
     renderShare({ healthyResponse: 'я имею право на отдых' });
-    expect(screen.getByText('Поделиться карточкой')).toBeTruthy();
-    expect(screen.queryByText('Поделиться всей записью')).toBeNull();
+    fireEvent.click(screen.getByText('Поделиться →'));
+    expect(screen.queryByText('Чем поделиться?')).toBeNull();
+    expect(screen.getByText(/Картинка уйдёт вместе со ссылкой/)).toBeTruthy();
   });
 
-  it('healthyResponse + заполненный entry → обе опции', () => {
+  it('healthyResponse + заполненный entry → шторка выбора с обоими вариантами', () => {
     renderShare({
       healthyResponse: 'я имею право на отдых',
       entry: { situation: 'Позвонил папа', healthyResponse: 'я имею право на отдых' },
     });
-    expect(screen.getByText('Поделиться карточкой')).toBeTruthy();
-    expect(screen.getByText('Поделиться всей записью')).toBeTruthy();
+    fireEvent.click(screen.getByText('Поделиться →'));
+    expect(screen.getByText('Чем поделиться?')).toBeTruthy();
+    expect(screen.getByText('Краткая карточка')).toBeTruthy();
+    fireEvent.click(screen.getByText('Вся запись'));
+    expect(screen.getByText('Поделиться записью')).toBeTruthy();
   });
 
-  it('entry без healthyResponse → только опция полной записи', () => {
+  it('entry без healthyResponse → ссылка сразу открывает лист полной записи', () => {
     renderShare({ entry: { situation: 'Позвонил папа' } });
-    expect(screen.queryByText('Поделиться карточкой')).toBeNull();
-    expect(screen.getByText('Поделиться всей записью')).toBeTruthy();
-  });
-
-  it('клик по «Поделиться всей записью» открывает шит полной карточки', () => {
-    renderShare({ entry: { situation: 'Позвонил папа' } });
-    fireEvent.click(screen.getByText('Поделиться всей записью'));
+    fireEvent.click(screen.getByText('Поделиться →'));
     expect(screen.getByText('Поделиться записью')).toBeTruthy();
   });
 });

@@ -1,6 +1,7 @@
 import { ExScreen } from '../ExScreen';
 import { TherapyNote } from '../../TherapyNote';
 import { pluralRu } from '../../../../../shared/src/utils/pluralRu';
+import { fmtIndex } from '../../../../../shared/src/needs/dayIndex';
 import {
   childhoodAverage,
   lowNeedIds,
@@ -32,7 +33,6 @@ export function ChildhoodResult({
   /** Перейти в «Историю» трекера («Связать с сегодня»); без него плитка — без перехода. */
   onOpenToday?: () => void;
 }) {
-  const avg = childhoodAverage(ratings);
   const lowIds = lowNeedIds(ratings);
 
   return (
@@ -40,7 +40,7 @@ export function ChildhoodResult({
       onBack={onBack} spread look="childhood_wheel" heroArt={<WheelScene ratings={ratings} className="chw-scene--hero" />}
       eyebrow="Истоки · сохранено"
       title={title}
-      lede={`Среднее ${avg}/10.${lowIds.length ? ` ${lowIds.length} ${pluralRu(lowIds.length, 'зона', 'зоны', 'зон')} ниже 5 – это места, где могли сформироваться схемы.` : ''}`}
+      lede={`Среднее ${fmtIndex(childhoodAverage(ratings))}/10.${lowIds.length ? ` ${lowIds.length} ${pluralRu(lowIds.length, 'зона', 'зоны', 'зон')} ниже 5 – это места, где могли сформироваться схемы.` : ''}`}
     >
       <ResultRows ratings={ratings} />
 
