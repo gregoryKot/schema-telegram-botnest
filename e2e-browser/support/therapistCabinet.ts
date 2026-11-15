@@ -1,17 +1,20 @@
 // Кабинет терапевта в браузерном смоке: тот же стаб формы сервера (stubApi), поверх — ответы
-// для терапевта с одним офлайн-клиентом через `api.overrides` (ключ — метод и путь, как в FIXTURES).
-// Формы — shared/src/types.ts (TherapyClientSummary), shared/src/apiTypes.ts (UserTask, ClientData),
-// shared/src/therapy/notesPage.ts. Минимум, который нужен карточке клиента без ответа 404.
+// терапевту с одним офлайн-клиентом через `api.overrides` (ключ — метод и путь, как в FIXTURES).
+// Список клиентов, карточка и «Графические карты»; каждую ручку сверяет с сервером
+// test/browser-stub-contract.e2e-spec.ts: терапевт и офлайн-клиент там заводятся настоящими ручками.
 import type { Page } from '@playwright/test';
 import type { StubApiHandle } from './stubApi';
 import { FIXTURES } from './stubFixtures';
 
-/** Офлайн-клиент (отрицательный id): терапевт сам отмечает его задания выполненными — у строки и «Выполнено», и корзина. */
+/** Имя терапевта в профиле — User.firstName. */
+export const THERAPIST_NAME = 'Марина';
+
+/** Офлайн-клиент (id — минус id связи): терапевт сам отмечает его задания выполненными. */
 export const OFFLINE_CLIENT = {
   telegramId: -57,
   urlCode: 'ghjkmnpq',
   name: 'Елена',
-  clientAlias: 'Елена',
+  clientAlias: null,
   streak: 0,
   lastActiveDate: null,
   daysSinceActive: null,
@@ -23,11 +26,71 @@ export const OFFLINE_CLIENT = {
   meetingDays: [],
   schemaIds: [],
 };
+const id = OFFLINE_CLIENT.telegramId;
+
+/**
+ * Ответы терапевту поверх FIXTURES чистого клиента: роль, список из офлайн-клиента, ручки его
+ * карточки и «Графические карты» без карт. Номер клиента в пути сверка заменяет настоящим.
+ */
+export const CABINET_FIXTURES: Record<string, unknown> = {
+  'GET /api/profile': {
+    ...(FIXTURES['GET /api/profile'] as object),
+    role: 'THERAPIST',
+    name: THERAPIST_NAME,
+  },
+  // Роль и therapistMode ставит одобрение заявки (src/therapy/therapist-request.service.ts).
+  'GET /api/user-flags': {
+    ...(FIXTURES['GET /api/user-flags'] as object),
+    therapistMode: true,
+  },
+  'POST /api/therapy/therapist-view': { ok: true },
+  'GET /api/therapy/clients': [OFFLINE_CLIENT],
+  'GET /api/therapy/invites': [],
+  'GET /api/therapy/card-claims': [],
+  'GET /api/therapy/tasks/all': [],
+  'GET /api/therapy/custom-modes': [],
+  [`GET /api/therapy/mode-maps/${id}`]: [],
+  [`GET /api/therapy/tasks/client/${id}`]: [],
+  [`GET /api/therapy/notes/${id}`]: { notes: [], total: 0 },
+  [`GET /api/therapy/conceptualization/${id}`]: null,
+  // У офлайн-клиента нет аккаунта: имени, списков и опросника сервер не отдаёт.
+  [`GET /api/therapy/client-data/${id}`]: {
+    name: null,
+    mySchemaIds: [],
+    myModeIds: [],
+    ysqCompletedAt: null,
+    ysqActiveSchemaIds: [],
+    ysqHistory: [],
+    childhoodRatings: {},
+    ysqRequestPending: false,
+  },
+  [`GET /api/therapy/client/${id}/schema-notes`]: [],
+  [`GET /api/therapy/client/${id}/mode-notes`]: [],
+  [`GET /api/therapy/client-history/${id}`]: [],
+  [`GET /api/therapy/client/${id}/diary`]: [],
+};
+
+/** Сессия терапевта с офлайн-клиентом; листы первого входа уже видены. Зовётся до goto. */
+export async function asTherapist(
+  page: Page,
+  api: StubApiHandle,
+): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
+      localStorage.setItem('why_seen_v1', '1');
+    } catch {
+      // about:blank до первой навигации: у документа нет хранилища.
+    }
+  });
+  for (const [key, body] of Object.entries(CABINET_FIXTURES))
+    api.overrides.set(key, body);
+}
 
 /** Задание в форме UserTask; срок далеко в будущем — статус не зависит от дня прогона. */
-export const cabinetTask = (id: number, text: string) => ({
-  id,
-  userId: String(OFFLINE_CLIENT.telegramId),
+export const cabinetTask = (taskId: number, text: string) => ({
+  id: taskId,
+  userId: String(id),
   assignedBy: '2',
   type: 'custom',
   text,
@@ -45,55 +108,7 @@ export async function openTherapistTasks(
   api: StubApiHandle,
   tasks: unknown[],
 ): Promise<void> {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('therapist_privacy_disclaimer_seen', '1'); // лист «о заботе о клиентах» — не этот тест
-      localStorage.setItem('why_seen_v1', '1');
-    } catch {
-      // about:blank до первой навигации: у документа нет хранилища.
-    }
-  });
-  const id = OFFLINE_CLIENT.telegramId;
-  const set = (key: string, body: unknown) => api.overrides.set(key, body);
-  set('GET /api/profile', {
-    ...(FIXTURES['GET /api/profile'] as object),
-    role: 'THERAPIST',
-    name: 'Марина',
-  });
-  set('GET /api/user-flags', {
-    ...(FIXTURES['GET /api/user-flags'] as object),
-    therapistMode: true,
-  });
-  set('POST /api/therapy/therapist-view', { ok: true });
-  set('GET /api/therapy/clients', [OFFLINE_CLIENT]);
-  for (const k of [
-    'invites',
-    'card-claims',
-    'tasks/all',
-    'custom-modes',
-    `mode-maps/${id}`,
-  ])
-    set(`GET /api/therapy/${k}`, []);
-  set(`GET /api/therapy/tasks/client/${id}`, tasks);
-  set(`GET /api/therapy/notes/${id}`, { notes: [], total: 0 });
-  set(`GET /api/therapy/conceptualization/${id}`, null);
-  set(`GET /api/therapy/client-data/${id}`, {
-    name: OFFLINE_CLIENT.name,
-    mySchemaIds: [],
-    myModeIds: [],
-    ysqCompletedAt: null,
-    ysqActiveSchemaIds: [],
-    ysqHistory: [],
-    ysqRequestPending: false,
-    childhoodRatings: {},
-  });
-  for (const k of [
-    `client/${id}/schema-notes`,
-    `client/${id}/mode-notes`,
-    `client-history/${id}`,
-    `client/${id}/diary`,
-  ]) {
-    set(`GET /api/therapy/${k}`, []);
-  }
+  await asTherapist(page, api);
+  api.overrides.set(`GET /api/therapy/tasks/client/${id}`, tasks);
   await page.goto(`/cabinet/${OFFLINE_CLIENT.urlCode}/tasks`);
 }

@@ -14,12 +14,14 @@
 // (причина — в той же записи реестра).
 import type { Page } from '@playwright/test';
 import { test, expect } from './support/test';
+import { asTherapist, OFFLINE_CLIENT } from './support/therapistCabinet';
 
 type Spec = {
   name: string;
   path: string;
   ready: (p: Page) => ReturnType<Page['getByRole']>;
   centered?: string;
+  therapist?: true; // кабинет: сессия терапевта с офлайн-клиентом (support/therapistCabinet.ts)
 };
 const PAGES: Spec[] = [
   {
@@ -51,15 +53,24 @@ const PAGES: Spec[] = [
     path: '/more',
     ready: (p) => p.getByRole('heading', { name: 'Всё остальное' }),
   },
+  {
+    // Карточка клиента: колонка вкладки и сайдбар сессии рядом с боковой навигацией.
+    name: '«Обзор» клиента',
+    path: `/cabinet/${OFFLINE_CLIENT.urlCode}`,
+    ready: (p) => p.getByRole('heading', { name: 'Следующая сессия' }),
+    therapist: true,
+  },
 ];
 
 for (const s of PAGES) {
   test(`1280, ${s.name}: без прокрутки вбок и обрезанных блоков`, async ({
     page,
+    api,
   }, testInfo) => {
     if (s.path === '/more') {
       await page.addInitScript(() => localStorage.setItem('why_seen_v1', '1'));
     }
+    if (s.therapist) await asTherapist(page, api);
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(s.path);
     await expect(s.ready(page)).toBeVisible();
