@@ -36,7 +36,8 @@ const INLINE_BTN: CSSProperties = {
  * Раскрывашка — одна механика на все места (№3): кнопка-заголовок (≥44, aria-expanded,
  * видна всегда, не только по :hover) и содержимое под ней; закрытое не монтируется.
  * `defaultOpen` — только начальное состояние, дальше решает человек; `open` с `onToggle` —
- * раскрытие снаружи (справочник держит открытым один домен).
+ * раскрытие снаружи (справочник держит открытым один домен). `keepMounted` — закрытое тело
+ * остаётся в DOM под `hidden` (история «Выполнено» не перезапрашивается при раскрытии).
  */
 export function Disclosure({
   title,
@@ -45,6 +46,8 @@ export function Disclosure({
   defaultOpen = false,
   open: openProp,
   onToggle,
+  keepMounted = false,
+  chev,
   classes,
   className,
   style,
@@ -59,6 +62,9 @@ export function Disclosure({
   defaultOpen?: boolean;
   open?: boolean;
   onToggle?: () => void;
+  keepMounted?: boolean;
+  /** Свой глиф в шевроне (SVG места); переворачивает CSS по aria-expanded, как ds-fold-chev. */
+  chev?: ReactNode;
   classes?: DisclosureClasses;
   /** Свой вид поверх classes.root (sd-why — тихая строка без карточки). */
   className?: string;
@@ -78,13 +84,17 @@ export function Disclosure({
         style={classes ? undefined : INLINE_BTN}
       >
         {lead}
-        <span className={classes?.label}>{title}</span>
+        <span className={classes?.label || undefined}>{title}</span>
         {sub}
         <span className={classes?.chev} aria-hidden="true">
-          {classes ? null : open ? '▴' : '▾'}
+          {classes ? chev : open ? '▴' : '▾'}
         </span>
       </button>
-      {open && <div className={classes?.body}>{children}</div>}
+      {(open || keepMounted) && (
+        <div className={classes?.body} hidden={!open}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }

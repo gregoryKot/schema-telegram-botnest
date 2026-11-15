@@ -19,6 +19,7 @@ describe('PortraitNeedRows', () => {
     expect(rows[0].getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByText(NEED_EXPLAINER_TEXT[needs[0].id]!)).toBeTruthy();
     fireEvent.click(rows[0]);
+    expect(rows[0].getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByText(NEED_EXPLAINER_TEXT[needs[0].id]!)).toBeNull();
   });
 
@@ -27,6 +28,8 @@ describe('PortraitNeedRows', () => {
     const rows = screen.getAllByRole('button');
     fireEvent.click(rows[0]);
     fireEvent.click(rows[1]);
+    expect(rows[0].getAttribute('aria-expanded')).toBe('false');
+    expect(rows[1].getAttribute('aria-expanded')).toBe('true');
     expect(screen.queryByText(NEED_EXPLAINER_TEXT[needs[0].id]!)).toBeNull();
     expect(screen.getByText(NEED_EXPLAINER_TEXT[needs[1].id]!)).toBeTruthy();
   });

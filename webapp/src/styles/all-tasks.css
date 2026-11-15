@@ -34,6 +34,7 @@
 .sk-done-group > .sk-list[hidden] { display: none; }
 .sk-done-chev { display: inline-flex; width: 14px; height: 14px; color: var(--text-sub); }
 .sk-done-chev svg { width: 100%; height: 100%; }
+.sk-done-toggle[aria-expanded="true"] > .sk-done-chev { transform: rotate(180deg); }
 .sk-done-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
 
 /* Строка истории: тихая — знак бледнее, название --text-sub, статус и дата строкой меты, без чипа. */

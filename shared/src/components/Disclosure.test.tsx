@@ -142,6 +142,36 @@ describe('Disclosure', () => {
     expect(screen.getByText('Плитки')).toBeTruthy();
   });
 
+  it('keepMounted: закрытое тело в DOM под hidden, раскрытие снимает hidden', () => {
+    const { container } = render(
+      <Disclosure title="Выполнено" classes={CLASSES} keepMounted>
+        <p>Строка истории</p>
+      </Disclosure>,
+    );
+    const body = container.querySelector('.f-body') as HTMLElement;
+    expect(body.hidden).toBe(true);
+    expect(body.textContent).toBe('Строка истории');
+    fireEvent.click(screen.getByRole('button', { name: 'Выполнено' }));
+    expect(body.hidden).toBe(false);
+  });
+
+  it('chev: свой глиф места в шевроне, скрыт от чтения', () => {
+    render(
+      <Disclosure
+        title="Домен"
+        classes={CLASSES}
+        chev={<svg data-testid="glyph" />}
+      >
+        <p>Плитки</p>
+      </Disclosure>,
+    );
+    const chev = screen
+      .getByRole('button', { name: 'Домен' })
+      .querySelector('.f-chev');
+    expect(chev?.getAttribute('aria-hidden')).toBe('true');
+    expect(chev?.querySelector('[data-testid="glyph"]')).toBeTruthy();
+  });
+
   it('с клавиатуры: родная кнопка в порядке Tab, Enter и Space не перехвачены', () => {
     render(
       <Disclosure title="Как читать" classes={DS_FOLD}>
