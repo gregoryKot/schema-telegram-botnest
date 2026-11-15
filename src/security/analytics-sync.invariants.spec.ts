@@ -113,16 +113,14 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлётся из ModeDoubtSheet.tsx (оба фронта) при нажатии «Это ближе»',
   account_link_started:
     'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/analytics/accountLogin.ts), ' +
-    'шлётся из useAccountLink.ts (мини-апп) при нажатии «У меня уже есть ' +
-    'аккаунт»',
+    'шлётся из AccountLinkSection.tsx (сайт) при нажатии на ссылку переноса',
   account_link_confirmed:
     'константа ACCOUNT_LINK_CONFIRMED_EVENT (shared/src/analytics/accountLogin.ts), ' +
     'шлётся из LinkDevicePage.tsx (сайт) — подтверждение происходит в ' +
     'браузере, а не в мессенджере, поэтому фронт тут только один',
   account_link_failed:
-    'константа ACCOUNT_LINK_FAILED_EVENT (shared/src/analytics/accountLogin.ts), ' +
-    'шлётся из useAccountLink.ts (мини-апп), когда код протух или сервер ' +
-    'не ответил',
+    'серверное событие: пишет trackLinkFailed (src/telegram/telegram.link-outcome.ts), ' +
+    'когда код переноса протух или подтверждение упало; фронт его не шлёт',
   client_error:
     'серверное событие: пишет только ClientErrorsController при ' +
     'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
