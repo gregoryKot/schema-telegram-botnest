@@ -9,6 +9,7 @@
 // не загружен, и форма (ты/вы) неизвестна — вилку строить не из чего.
 import type { HostId } from '../host/types';
 import { supportContact } from '../utils/supportContact';
+import { OutArrow } from './OutArrow';
 
 // Подсказка — по площадке, все три явно. Раньше «всё, что не MAX, — Telegram»,
 // и веб-хост (PWA с ярлыка, вкладка браузера) получал совет переоткрыть
@@ -44,7 +45,8 @@ export function AuthFailureHelp({ hostId }: { hostId: HostId | undefined }) {
           alignItems: 'center',
         }}
       >
-        Написать автору → {label}
+        Написать автору: {label}
+        <OutArrow />
       </a>
     </>
   );
