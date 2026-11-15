@@ -6,6 +6,7 @@ import {
   CONCEPT_FIELD_TEXT_MAX,
   CONCEPT_MODE_ALIAS_MAX,
   CONCEPT_MODE_TEXT_MAX,
+  CONCEPT_SCHEMA_IDS_MAX,
   CONCEPT_SCHEMA_TEXT_MAX,
   CONCEPT_TECHNIQUE_MARKS_MAX,
 } from '../utils/text-limits';
@@ -68,7 +69,7 @@ export function worstPatchBody(links = CONCEPT_PATCH_LINKS_MAX) {
   return {
     baseVersion: '2026-11-08T10:00:00.000Z',
     ...conceptTextFields(),
-    schemaIds: cyrIds('s', 40),
+    schemaIds: cyrIds('s', CONCEPT_SCHEMA_IDS_MAX),
     modeIds: cyrIds('m', 100),
     modeLinksPatch: {
       upsert: Array.from({ length: links }, (_, i) => worstModeLink(i)),

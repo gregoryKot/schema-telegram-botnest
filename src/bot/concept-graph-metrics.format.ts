@@ -49,7 +49,8 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
     lines.push('Пока никто из терапевтов не открывал схему случая по режимам.');
     return lines.join('\n');
   }
-  lines.push(`Открывали ${m.opens30} раз, терапевтов: ${m.therapists30}`);
+  if (m.opens30 > 0)
+    lines.push(`Открывали ${m.opens30} раз, терапевтов: ${m.therapists30}`);
   lines.push(
     m.linked30 > 0
       ? `Связи режимов заполняли ${m.linked30} раз`
