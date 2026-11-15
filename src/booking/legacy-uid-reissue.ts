@@ -133,11 +133,14 @@ export function formatReissueReport(r: ReissueReport | null): string {
       '',
       `Боевой прогон: ${go}`,
     ].join('\n');
+  // Старое событие уцелеет только при ошибке: оценка сверху — число ошибок.
+  const left = r.failed ? `не больше ${r.failed}` : '0';
   const lines = [
     '🔁 Перевыпуск событий iCloud — готово',
     '',
     `iCloud: перевыпущено ${r.reissued}, снято старых без замены ${r.removed}, ` +
       `по старому адресу пусто ${r.missing}, ошибок ${r.failed}`,
+    `Итог: в сроке хранения событий с номером брони в UID осталось ${left}`,
   ];
   if (r.failed) lines.push('', `Повтор безопасен: ${go} добьёт ошибки.`);
   return lines.join('\n');
