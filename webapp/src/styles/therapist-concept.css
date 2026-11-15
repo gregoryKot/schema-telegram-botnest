@@ -81,7 +81,7 @@
 .tcp-menu-icon { margin-top: 1px; color: var(--text-sub); }
 .tcp-menu-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tcp-menu-hint { font-size: 11px; line-height: 1.35; color: var(--text-faint); white-space: normal; }
-/* Раскрывашки — общий ds-fold (NeedFold) строками одной ds-card: между ними тонкая линия, своей рамки у строки нет. */
+/* Раскрывашки — общий ds-fold (Disclosure) строками одной ds-card: между ними тонкая линия, своей рамки у строки нет. */
 .ds-card.tcp-folds { margin-top: 40px; max-width: 880px; padding: 4px 8px; }
 .ds-fold.tcp-fold { background: none; border: 0; border-radius: 0; }
 .ds-fold.tcp-fold + .tcp-fold { border-top: 1px solid var(--paper-sunk); }
