@@ -78,8 +78,10 @@ describe('chargeDue — свой гард флагов', () => {
       subscription: { findMany: jest.fn().mockResolvedValue([]) },
       subscriptionCharge: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    await chargeDue({ prisma, notify: {}, logger: {}, ...flags } as never);
-    expect(prisma.subscriptionCharge.findMany).not.toHaveBeenCalled();
-    expect(prisma.subscription.findMany).not.toHaveBeenCalled();
+    await expect(
+      chargeDue({ prisma, notify: {}, logger: {}, ...flags } as never),
+    ).resolves.toBeUndefined();
+    expect(prisma.subscriptionCharge.findMany.mock.calls).toEqual([]);
+    expect(prisma.subscription.findMany.mock.calls).toEqual([]);
   });
 });
