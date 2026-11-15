@@ -169,6 +169,8 @@ jobs:
     runs-on: ubuntu-26.04
     # Волна Б — деньги, бронирование, напоминания. Состав — только `mutate` в
     # stryker.golden-payments.config.json (перечень здесь устаревал так же).
+    # Там же concurrency 4, как у волны А: при двух воркерах половина раннера
+    # простаивала, а джоба доходила до 54 из 60 минут.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

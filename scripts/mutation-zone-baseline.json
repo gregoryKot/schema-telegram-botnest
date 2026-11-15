@@ -122,8 +122,8 @@
   "src/notification/notification.weekly.ts": {
     "reason": "Кандидат с расширения гейта 2026-11 (импортёров из зоны не меньше, чем вне): сводка недели и «вчерашний план» по местному дню плана. В `mutate` не включён, прогона Stryker по нему не было — мутации окна сводки не измеряются; долг волны, а не решение."
   },
-  "src/subscription/subscription.charges.ts": {
-    "reason": "Вынесен из subscription.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации списаний подписки не измеряются — долг волны, а не решение. Сюда же `subscription.charge-failed.ts` (пометка failed, выделена из этого файла): ту же причину не измеряем, юнит `subscription.charge-failed.spec.ts` и живой кейс в `test/payment-webhooks.e2e-spec.ts` её пока держат вместо мутаций."
+  "src/subscription/subscription-owner-card.ts": {
+    "reason": "Тексты карточек подписки владельцу в два канала (Telegram без email и Telegram ID, письмо полное); кандидатом стал, когда subscription.charges.ts и subscription-paid-after-cancel.ts вошли в `mutate` golden-payments. Не включён, как booking-owner-card.ts и donation-owner-card.ts: следом кандидатом становится booking-notify.format.ts. Прогон Stryker по нему — 27 из 30, выжили эмодзи заголовка и склейка строк письма; состав каналов держат subscription.charges.escape.spec.ts и subscription-paid-after-cancel.spec.ts; долг волны, а не решение."
   },
   "src/subscription/subscription.constants.ts": {
     "reason": "Одна числовая константа без логики (база InvId подписок в общем вебхуке Robokassa): мутировать нечего, кроме литерала; разделение диапазонов пинит isSubscriptionInvId в subscription.lifecycle.spec.ts."
