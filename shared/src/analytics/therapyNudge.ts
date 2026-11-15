@@ -20,7 +20,12 @@ export type TherapyNudgePlace =
   | 'diary'
   | 'exercise_start'
   | 'test_start'
-  | 'why';
+  | 'why'
+  | 'childhood_result'
+  | 'profile'
+  | 'share'
+  | 'schema_info'
+  | 'weekly_card';
 
 /** shown — показали; open — открыли лист; book — «Выбрать время на сайте»; write — написали (Telegram/терапевту);
  *  dismiss — «Не сейчас» у карточки по сигналу или «Скрыть» у постоянной (home_card, practice);
