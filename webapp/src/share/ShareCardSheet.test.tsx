@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // ShareCardSheet (webapp) — общий шит шеринга. useShareCard уже покрыт своим
-// тестом (shared/) — мокаем, проверяем вёрстку и проводку therapyNote
-// (паритет с miniapp, В10 аудита 2026-08).
+// тестом (shared/) — мокаем, проверяем вёрстку и проводку therapyNote:
+// строка моста к терапевту (TherapyLine) с местом share.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -31,12 +31,12 @@ vi.mock('../../../shared/src/share/useShareCard', async () => {
     }),
   };
 });
-vi.mock('../components/TherapyNote', () => ({
-  TherapyNote: () => <div data-testid="therapy-note" />,
-}));
 vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
 
+import { api } from '../api';
 import { ShareCardSheet } from './ShareCardSheet';
+
+const SELF_HELP = /^Приложение — самопомощь, не замена терапии\./;
 
 afterEach(() => {
   cleanup();
@@ -73,19 +73,22 @@ describe('ShareCardSheet — therapyNote', () => {
     copy: copyMock,
   };
 
-  it('therapyNote не передан — TherapyNote не показан', () => {
+  it('therapyNote не передан — строки нет, показ не считается', () => {
     renderSheet();
-    expect(screen.queryByTestId('therapy-note')).toBeNull();
+    expect(screen.queryByText(SELF_HELP)).toBeNull();
+    expect(api.trackEvent).not.toHaveBeenCalled();
   });
 
-  it('therapyNote=true — TherapyNote показан', () => {
+  it('therapyNote=true — строка «самопомощь, не замена терапии», показ уходит с местом share', () => {
     renderSheet({ therapyNote: true });
-    expect(screen.getByTestId('therapy-note')).toBeTruthy();
+    expect(screen.getByText(SELF_HELP)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    expect(api.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'share', action: 'shown' });
   });
 
-  it('therapyNote=false — TherapyNote не показан', () => {
+  it('therapyNote=false — строки нет', () => {
     renderSheet({ therapyNote: false });
-    expect(screen.queryByTestId('therapy-note')).toBeNull();
+    expect(screen.queryByText(SELF_HELP)).toBeNull();
   });
 });
 

@@ -15,7 +15,8 @@ interface Props {
   className?: string;
 }
 
-// Отличие от shared/src/components/TherapyNote.tsx (старые экраны, карточка-дисклеймер): здесь тихая строка с листом «Поговорить» и событиями аналитики.
+// Карточка TherapyNote (shared/src/components, без аналитики) стоит только в «Мне плохо» (FlashcardSteps): «если нужна
+// терапия» на каждом шаге мешала бы пути «мне плохо прямо сейчас». Остальные места — эта строка с листом и событиями.
 export function TherapyLine({ place, text, className }: Props) {
   const t = useTherapyBridgeTexts();
   const target = useTherapyTarget(place);

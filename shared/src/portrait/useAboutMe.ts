@@ -2,8 +2,8 @@
 // «Мои режимы», «Тёплые слова» — одна реализация (№3, №11). api — параметром, сбой — reportError.
 // Шесть запросов параллельно, готовность у карточек своя: портрет не ждёт «тёплые
 // слова» (замер 2026-08-23: общий Promise.all делал вкладку вдвое дольше соседних).
-// Дневники схем и режимов — единственное чтение на весь профиль: счётчик записей,
-// частоты, «тёплые слова» и лист портрета берут их отсюда (diaries).
+// Дневники схем и режимов и история теста — единственное чтение на весь профиль: счётчики,
+// частоты, «тёплые слова» и лист портрета берут их отсюда (diaries, ysqCount).
 import { useEffect, useRef, useState } from 'react';
 import { buildPortrait, type Portrait } from './portraitData';
 import {
@@ -50,6 +50,7 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
   const [activeSchemaIds, setActiveSchemaIds] = useState<string[]>([]);
   const [myModeIds, setMyModeIds] = useState<string[]>([]);
   const [ysqHistory, setYsqHistory] = useState<YsqHistoryEntry[]>([]);
+  const [ysqHistoryFailed, setYsqHistoryFailed] = useState(false);
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
   const [modeNotes, setModeNotes] = useState<WarmWordsModeNoteSource[]>([]);
@@ -73,6 +74,7 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
     setPortraitReady(false);
     setWarmWordsReady(false);
     setDiaries('loading');
+    setYsqHistoryFailed(false);
 
     void Promise.all([
       a
@@ -90,7 +92,13 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
           setMyModeIds(lists.myModeIds ?? cachedMyIds(MY_MODE_IDS_KEY));
         })
         .catch(fail('getProfile')),
-      a.getYsqHistory().then(setYsqHistory).catch(fail('getYsqHistory')),
+      a
+        .getYsqHistory()
+        .then(setYsqHistory)
+        .catch(() => {
+          setYsqHistoryFailed(true);
+          fail('getYsqHistory')();
+        }),
     ]).finally(() => setPortraitReady(true));
 
     // Дневник схем карточек не гейтит; дневник режимов нужен и «тёплым словам».
@@ -126,6 +134,10 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
     warmWordsReady,
     portrait,
     ysqCompletedAt,
+    /** Сколько раз пройден тест (счётчик профиля); готово вместе с portraitReady. */
+    ysqCount: ysqHistory.length,
+    /** История теста не пришла: профиль показывает баннер сбоя, а не тихий ноль. */
+    ysqHistoryFailed,
     mySchemaIds,
     myModeIds,
     schemaEntries,

@@ -109,6 +109,12 @@ describe('WeeklyCardSheet — есть данные за неделю', () => {
       screen.getByText('Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.'),
     ).toBeTruthy();
   });
+
+  it('под карточкой строка «Трекер — самопомощь…», показ уходит с местом weekly_card', () => {
+    renderSheet();
+    expect(screen.getByText(/^Трекер — самопомощь, не замена терапии\./)).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'weekly_card', action: 'shown' });
+  });
 });
 
 describe('WeeklyCardSheet — шаринг: успех', () => {

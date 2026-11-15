@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
-import { TherapyNote } from './TherapyNote';
+import { TherapyLine } from './therapy/TherapyLine';
+import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
 import { FallbackTextSheet } from './FallbackTextSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, reportClientError } from '../api';
@@ -32,6 +33,7 @@ interface Props {
 export function WeeklyCardSheet({ needs, history, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
+  const bridge = useTherapyBridgeTexts();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [streak, setStreak] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -119,13 +121,8 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             </button>
           </div>
 
-          {/* Заход на терапию после «Поделиться» — паритет с miniapp
-              WeeklyCardSheet (В10 аудита 2026-08). Этот экран не ходит через
-              ShareCardSheet (собственный share-флоу с .ics-независимым
-              фолбэком), поэтому TherapyNote вставлен напрямую. */}
-          <div className="u-mt16">
-            <TherapyNote compact />
-          </div>
+          {/* Экран не ходит через ShareCardSheet (свой share-флоу с фолбэком), поэтому строка моста стоит здесь. */}
+          <TherapyLine place="weekly_card" text={bridge.lineTracker} />
         </>
       )}
 
