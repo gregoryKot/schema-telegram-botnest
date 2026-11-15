@@ -5,8 +5,9 @@ import { Prisma } from '@prisma/client';
 import { replacePending, swapReminder } from './replace-pending';
 import type { PrismaService } from '../prisma/prisma.service';
 
-/** standIns — сколько перерывов/сводок уже стоит у человека. */
-function fakeDb(standIns = 0) {
+/** standIns — сколько перерывов/сводок уже стоит у человека; openPlans —
+ *  сколько неотмеченных планов на проверяемый день. */
+function fakeDb(standIns = 0, openPlans = 1) {
   const steps: string[] = [];
   const tx = {
     $executeRaw: jest.fn((sql: TemplateStringsArray, ...args: unknown[]) => {
@@ -25,6 +26,12 @@ function fakeDb(standIns = 0) {
       count: jest.fn(async () => {
         steps.push('check');
         return standIns;
+      }),
+    },
+    practicePlan: {
+      count: jest.fn(async () => {
+        steps.push('plan');
+        return openPlans;
       }),
     },
   };
@@ -144,5 +151,123 @@ describe('swapReminder — перерыв или сводка вместо на�
     expect(tx.scheduledNotification.create).toHaveBeenCalledWith({
       data: { userId: 42n, type: 'lapsing_3', sendAt: at, payload: undefined },
     });
+  });
+});
+
+// Хвост волны 9: «такое уже стоит» спрашивали до лока, и два обхода разом
+// (ручной запуск вместе с полуночным) ставили по сообщению одного типа.
+describe('swapReminder с проверкой под локом (SwapGuard)', () => {
+  const LOCK = 'lock SELECT pg_advisory_xact_lock(hashtext(?)) reschedule:42';
+
+  it('такое уже стоит — напоминание не снимается, второго нет', async () => {
+    const { prisma, tx, steps } = fakeDb(1);
+    await swapReminder(prisma, 42n, 'weekly', new Date(0), undefined, {
+      unlessPending: true,
+    });
+    expect(steps).toEqual(['begin', LOCK, 'check', 'commit']);
+    expect(tx.scheduledNotification.count).toHaveBeenCalledWith({
+      where: { userId: 42n, type: 'weekly', sentAt: null, cancelledAt: null },
+    });
+  });
+
+  it('такого нет — проверка, снятие и вставка в одной транзакции', async () => {
+    const { prisma, steps } = fakeDb(0);
+    await swapReminder(prisma, 42n, 'weekly', new Date(0), undefined, {
+      unlessPending: true,
+    });
+    expect(steps).toEqual([
+      'begin',
+      LOCK,
+      'check',
+      'cancel',
+      'create',
+      'commit',
+    ]);
+  });
+
+  it('план дня уже отмечен — вопроса о нём нет', async () => {
+    const { prisma, tx, steps } = fakeDb(0, 0);
+    await swapReminder(prisma, 42n, 'practice_missed', new Date(0), undefined, {
+      openPlanDay: '2026-11-06',
+    });
+    expect(steps).toEqual(['begin', LOCK, 'plan', 'commit']);
+    expect(tx.practicePlan.count).toHaveBeenCalledWith({
+      where: { userId: 42n, scheduledDate: '2026-11-06', done: null },
+    });
+  });
+
+  it('план не отмечен — вопрос встаёт', async () => {
+    const { prisma, steps } = fakeDb(0, 1);
+    await swapReminder(prisma, 42n, 'practice_missed', new Date(0), undefined, {
+      openPlanDay: '2026-11-06',
+    });
+    expect(steps).toEqual([
+      'begin',
+      LOCK,
+      'plan',
+      'cancel',
+      'create',
+      'commit',
+    ]);
+  });
+});
+
+/** База в памяти: транзакции идут строго по очереди, как под локом на
+ *  человека; что Postgres держит лок — test/notify-stand-in-race.e2e-spec.ts. */
+function serialDb() {
+  const rows: { type: string; cancelled: boolean }[] = [];
+  const io = () => new Promise((r) => setImmediate(r));
+  const live = (type: string) =>
+    rows.filter((r) => !r.cancelled && r.type === type);
+  const tx = {
+    $executeRaw: async () => 0,
+    scheduledNotification: {
+      count: async ({ where }: { where: { type: string } }) => {
+        await io();
+        return live(where.type).length;
+      },
+      updateMany: async ({ where }: { where: { type: string } }) => {
+        await io();
+        for (const r of live(where.type)) r.cancelled = true;
+      },
+      create: async ({ data }: { data: { type: string } }) => {
+        await io();
+        rows.push({ type: data.type, cancelled: false });
+      },
+    },
+  };
+  let queue = Promise.resolve();
+  const prisma = {
+    $transaction: (job: (t: typeof tx) => Promise<void>) => {
+      const run = queue.then(() => job(tx));
+      queue = run.catch(() => undefined);
+      return run;
+    },
+  } as unknown as PrismaService;
+  return { prisma, live };
+}
+
+describe('два обхода разом — сообщение дня одно', () => {
+  const at = new Date('2026-11-06T18:00:00Z');
+
+  it.each(['lapsing_3', 'weekly', 'donate_reminder'] as const)(
+    '%s: два одновременных вызова с проверкой → одна строка',
+    async (type) => {
+      const { prisma, live } = serialDb();
+      await Promise.all([
+        swapReminder(prisma, 1n, type, at, undefined, { unlessPending: true }),
+        swapReminder(prisma, 1n, type, at, undefined, { unlessPending: true }),
+      ]);
+      expect(live(type)).toHaveLength(1);
+    },
+  );
+
+  it('контроль: без проверки под локом — две строки', async () => {
+    const { prisma, live } = serialDb();
+    await Promise.all([
+      swapReminder(prisma, 1n, 'lapsing_3', at),
+      swapReminder(prisma, 1n, 'lapsing_3', at),
+    ]);
+    expect(live('lapsing_3')).toHaveLength(2);
   });
 });

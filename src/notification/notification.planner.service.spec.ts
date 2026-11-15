@@ -39,9 +39,18 @@ function makeDeps() {
       await notifications.schedule(u, t, at, p);
     },
   );
-  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder).
+  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder);
+  // «такое уже стоит» проверяется под её локом (SwapGuard).
   notifications.swapReminder = jest.fn(
-    async (u: bigint, t: string, at: Date, p?: object) => {
+    async (
+      u: bigint,
+      t: string,
+      at: Date,
+      p?: object,
+      guard?: { unlessPending?: boolean },
+    ) => {
+      if (guard?.unlessPending && (await notifications.hasPending(u, t)))
+        return;
       await notifications.cancel(u, 'reminder');
       await notifications.schedule(u, t, at, p);
     },
@@ -532,6 +541,22 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       await svc.planDay(makeUser(), NOW);
       expect(deps.analytics.getProfileInsight).toHaveBeenCalledWith(BigInt(42));
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
+    });
+
+    it('день 14, value_recap уже стоит → портрет не считается, нового нет', async () => {
+      const { svc, deps } = make();
+      deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+      deps.analytics.getDaysSinceLastFill.mockResolvedValue(14);
+      deps.notifications.hasPending.mockImplementation(
+        async (_u: bigint, t: string) => t === 'value_recap',
+      );
+      await svc.planDay(makeUser(), NOW);
+      expect(deps.notifications.hasPending).toHaveBeenCalledWith(
+        BigInt(42),
+        'value_recap',
+      );
+      expect(deps.analytics.getProfileInsight).not.toHaveBeenCalled();
+      expect(scheduledTypes(deps)).toEqual([]);
     });
   });
 
