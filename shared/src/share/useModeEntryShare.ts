@@ -1,7 +1,7 @@
 // Состояние шита «поделиться записью режима» — общее для webapp/miniapp
 // (правило №3). Ветвление (что доступно к шаре) и оба набора пропсов
 // ShareCardSheet считает modeEntryShareOptions; хук добавляет только
-// useState открытого (шторка выбора или лист варианта, ShareTwoOptions), по образцу shared/src/share/useShareCard.ts.
+// useState открытого: шторка выбора или лист варианта (ShareTwoOptions).
 import { useState } from 'react';
 import {
   modeEntryShareOptions,

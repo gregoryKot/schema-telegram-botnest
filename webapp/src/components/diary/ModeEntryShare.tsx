@@ -26,6 +26,7 @@ export function ModeEntryShare({
   const { share, setShare, shortProps, fullProps } = useModeEntryShare(
     mode, healthyResponse, entry, botShortUrl, dateLabel,
   );
+  if (!shortProps && !fullProps) return null;
   return (
     <span onClick={(e) => e.stopPropagation()}>
       <ShareTwoOptions

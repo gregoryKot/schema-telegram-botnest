@@ -76,6 +76,11 @@ describe('ModeEntryShare', () => {
     expect(container.textContent).toBe('');
   });
 
+  it('делиться нечем → блок не рендерится (чтобы сработал :empty)', () => {
+    const { container } = renderShare({});
+    expect(container.innerHTML).toBe('');
+  });
+
   it('только healthyResponse → ссылка сразу открывает лист краткой карточки', () => {
     renderShare({ healthyResponse: 'я имею право на отдых' });
     fireEvent.click(screen.getByText('Поделиться →'));
