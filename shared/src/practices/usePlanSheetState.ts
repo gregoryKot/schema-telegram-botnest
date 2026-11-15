@@ -1,6 +1,6 @@
 // Состояние листа «Запланировать практику» (PlanSheet, правило №3): загрузка
 // практик и пояса, выбор часа, сохранение и .ics; вёрстка — в PlanSheet.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CURATED } from './curated';
 import { savePracticeIcs, type PracticeIcsLink } from './savePracticeIcs';
 import { notifyReachable } from '../settings/notifyReach';
@@ -80,12 +80,13 @@ export function usePlanSheetState(
   const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [practicesFailed, setPracticesFailed] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [notifyReach, setNotifyReach] = useState<boolean | null>(null); // U5: дойдёт ли напоминание; null — ещё не знаем
 
+  useEffect(() => () => clearTimeout(savedTimer.current ?? undefined), []); // лист снят — onSaved не зовём
+
   useEffect(() => {
-    // Сбой ≠ пусто (правило CLAUDE.md): без флага свои практики молча
-    // пропадали из выбора — виден был только готовый список, как будто
-    // своих нет.
+    // Сбой ≠ пусто: без флага свои практики молча пропадали из выбора.
     api
       .getPractices(needId)
       .then((p) => {
@@ -93,7 +94,6 @@ export function usePlanSheetState(
         setPracticesFailed(false);
       })
       .catch(() => setPracticesFailed(true));
-    // Часовой пояс — деградация подсказки времени до дефолта, лог достаточен.
     api
       .getSettings()
       .then((s) => {
@@ -156,7 +156,7 @@ export function usePlanSheetState(
       // Перевод в UTC здесь брал смещение «сейчас» и терял день (E11).
       await api.createPlan(needId, selectedText, localHour ?? undefined);
       setSavedOk(true);
-      setTimeout(() => onSaved(), 1200);
+      savedTimer.current = setTimeout(() => onSaved(), 1200);
     } catch {
       setSaveError(true);
     } finally {

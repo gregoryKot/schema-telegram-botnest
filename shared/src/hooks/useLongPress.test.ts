@@ -23,6 +23,15 @@ describe('useLongPress', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('элемент снят посреди удержания — onLongPress не зовётся', () => {
+    const fn = vi.fn();
+    const { result, unmount } = renderHook(() => useLongPress(fn));
+    result.current.onPointerDown(down());
+    unmount();
+    vi.advanceTimersByTime(500);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   it('обычный тап не считается долгим нажатием', () => {
     const fn = vi.fn();
     const { result } = renderHook(() => useLongPress(fn));

@@ -322,7 +322,6 @@ export function AppShell() {
       {/* ── Command palette ─────────────────────────────────────────────────── */}
       {ov.cmdOpen && (<Suspense fallback={null}>
         <CommandPalette
-          section={section}
           onNavigate={(s) => { setSection(s); }}
           onClose={() => ov.setCmdOpen(false)}
           userRole={userRole}

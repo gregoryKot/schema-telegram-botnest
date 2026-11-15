@@ -25,7 +25,7 @@ function Harness() {
   return (
     <MemoryRouter>
       <ClientListHero count={1} formVisible={false} onToggle={() => {}} onSearch={() => setOpen(true)} />
-      {open && <CommandPalette section="today" onNavigate={vi.fn()} onClose={() => setOpen(false)} userRole="THERAPIST" therapistMode />}
+      {open && <CommandPalette onNavigate={vi.fn()} onClose={() => setOpen(false)} userRole="THERAPIST" therapistMode />}
     </MemoryRouter>
   );
 }

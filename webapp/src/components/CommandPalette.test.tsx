@@ -33,7 +33,7 @@ function renderPalette(props: Partial<Parameters<typeof CommandPalette>[0]> = {}
   // Палитра кладёт запись истории (useHistorySheet) — нужен роутер.
   return render(
     <MemoryRouter>
-      <CommandPalette section="today" onNavigate={vi.fn()} onClose={vi.fn()} {...props} />
+      <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} {...props} />
     </MemoryRouter>,
   );
 }
@@ -120,7 +120,7 @@ describe('CommandPalette — клавиатура', () => {
     const onCloseDialog = vi.fn();
     render(
       <MemoryRouter>
-        <CommandPalette section="today" onNavigate={vi.fn()} onClose={onClose} />
+        <CommandPalette onNavigate={vi.fn()} onClose={onClose} />
         <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
           <button>ок</button>
         </Dialog>
@@ -297,7 +297,7 @@ describe('CommandPalette — «Назад» браузера и запись и�
   function Host({ onNavigate = vi.fn() }: { onNavigate?: (s: string) => void }) {
     const [open, setOpen] = useState(true);
     return open
-      ? <CommandPalette section="today" onNavigate={onNavigate} onClose={() => setOpen(false)} />
+      ? <CommandPalette onNavigate={onNavigate} onClose={() => setOpen(false)} />
       : <div>PALETTE-CLOSED</div>;
   }
 
@@ -313,7 +313,7 @@ describe('CommandPalette — «Назад» браузера и запись и�
     function LoggingHost() {
       const [open, setOpen] = useState(true);
       return open
-        ? <CommandPalette section="today" onNavigate={(s) => log.push('navigate:' + s)} onClose={() => { log.push('close'); setOpen(false); }} />
+        ? <CommandPalette onNavigate={(s) => log.push('navigate:' + s)} onClose={() => { log.push('close'); setOpen(false); }} />
         : null;
     }
     render(<MemoryRouter><LoggingHost /></MemoryRouter>);
