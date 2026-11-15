@@ -68,7 +68,7 @@ beforeEach(() => {
   mockApi.getClientModeNotes.mockResolvedValue([]);
   mockApi.getTherapyClientHistory.mockResolvedValue([]);
   mockApi.getClientDiary.mockResolvedValue([]);
-  mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => concept(body));
+  mockApi.saveConceptualization.mockImplementation(async (_id: number, body: Record<string, unknown>) => concept(body));
 });
 afterEach(() => cleanup());
 

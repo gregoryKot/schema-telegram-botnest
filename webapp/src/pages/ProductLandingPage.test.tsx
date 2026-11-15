@@ -28,15 +28,18 @@ afterEach(() => {
 });
 
 function authValue(overrides: Partial<AuthState> = {}): AuthState {
-  return {
+  const value: AuthState = {
     accessToken: null,
     isLoading: false,
     isAuthenticated: false,
+    authError: null,
     setAccessToken: vi.fn(),
+    getAccessToken: () => value.accessToken,
     logout: vi.fn(),
     refreshToken: vi.fn(),
     ...overrides,
   };
+  return value;
 }
 
 function renderPage(auth: AuthState = authValue()) {
