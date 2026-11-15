@@ -32,10 +32,10 @@ export function orphanLines(o: OrphanReport, live: boolean): string[] {
   return [...lines, ...otherLine(o)];
 }
 
+const OTHER_HINT =
+  'тема или тип не как у комнат бота, не тронуты. Если в теме имя клиента — поправить вручную в кабинете Zoom.';
 function otherLine(o: OrphanReport): string[] {
-  return o.other
-    ? [`Других встреч в Zoom: ${o.other} — не комнаты клиентов, не тронуты.`]
-    : [];
+  return o.other ? [`Других встреч в Zoom: ${o.other} — ${OTHER_HINT}`] : [];
 }
 
 /** Повтор боевого прогона поможет: были ошибки или список не получен. */
