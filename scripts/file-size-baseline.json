@@ -173,6 +173,7 @@
   "scripts/generate-pwa-icons.mjs": 40,
   "scripts/history-sheet-css.mjs": 52,
   "scripts/history-sheet-detect.mjs": 163,
+  "scripts/history-sheet-jsx.mjs": 82,
   "scripts/history-sheet-judge.mjs": 59,
   "scripts/jest-exit-guard-rules.mjs": 90,
   "scripts/jest-exit-guard.mjs": 157,
