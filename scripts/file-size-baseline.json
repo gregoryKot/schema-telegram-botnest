@@ -91,7 +91,7 @@
   "scripts/branch-cleanup.mjs": 137,
   "scripts/check-address-agreement.mjs": 87,
   "scripts/check-address-form.mjs": 124,
-  "scripts/check-agent-docs.mjs": 258,
+  "scripts/check-agent-docs.mjs": 263,
   "scripts/check-alert-throttle.mjs": 215,
   "scripts/check-body-dto.mjs": 177,
   "scripts/check-body-truncation.mjs": 110,
