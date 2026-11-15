@@ -1,6 +1,9 @@
 import { NotFoundException } from '@nestjs/common';
 import { PracticesService } from './practices.service';
-import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
+import {
+  createFakeTable,
+  createFakeTransaction,
+} from '../test-support/fake-prisma.spec-helper';
 
 // Stateful in-memory fake Prisma для UserPractice + PracticePlan (общий
 // src/test-support/fake-prisma.spec-helper.ts, этап 2.4 TEST_IMPROVEMENT_PLAN.md).
@@ -14,8 +17,14 @@ function makeDb() {
     practicePlan: createFakeTable(plans, {
       defaults: { createdAt: new Date(), done: null },
     }),
+    // Отметка плана снимает вопрос о его дне — под локом перепланировки
+    // (src/notification/missed-plan.ts): очередь и лок нужны и здесь.
+    scheduledNotification: createFakeTable([]),
+    user: createFakeTable([]),
+    $executeRaw: jest.fn(async () => 0),
     _plans: plans,
   };
+  db.$transaction = createFakeTransaction(db);
   return db;
 }
 

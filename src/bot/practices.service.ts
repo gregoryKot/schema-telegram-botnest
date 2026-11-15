@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt } from '../utils/crypto';
-import { deleteOwned, requireAffected } from '../utils/require-affected';
+import { deleteOwned } from '../utils/require-affected';
+import { checkinPlan } from '../notification/missed-plan';
 import { readPlan, readPractice } from './encrypted-rows';
 
 // Практики (пользовательские заметки-упражнения на потребность) и планы
@@ -52,13 +53,9 @@ export class PracticesService {
     return readPlan(row);
   }
 
+  /** Отметка снимает и вопрос «как получилось?» о дне плана (missed-plan.ts). */
   async checkinPlan(userId: bigint, id: number, done: boolean) {
-    await requireAffected(
-      this.prisma.practicePlan.updateMany({
-        where: { id, userId },
-        data: { done, checkedAt: new Date() },
-      }),
-    );
+    await checkinPlan(this.prisma, userId, id, done);
   }
 
   async getPendingPlans(userId: bigint, date: string) {

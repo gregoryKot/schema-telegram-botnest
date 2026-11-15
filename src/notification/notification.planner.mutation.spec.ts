@@ -42,9 +42,18 @@ function makeDeps() {
       await notifications.schedule(u, t, at, p);
     },
   );
-  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder).
+  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder);
+  // «такое уже стоит» проверяется под её локом (SwapGuard).
   notifications.swapReminder = jest.fn(
-    async (u: bigint, t: string, at: Date, p?: object) => {
+    async (
+      u: bigint,
+      t: string,
+      at: Date,
+      p?: object,
+      guard?: { unlessPending?: boolean },
+    ) => {
+      if (guard?.unlessPending && (await notifications.hasPending(u, t)))
+        return;
       await notifications.cancel(u, 'reminder');
       await notifications.schedule(u, t, at, p);
     },
@@ -181,7 +190,8 @@ describe('NotificationPlannerService — weekly/donate: seed из uid%3n, а н�
 });
 
 describe('NotificationPlannerService — practice_missed: точный payload и StringLiteral hasPending', () => {
-  it('несколько пропущенных практик — payload только с днём недели, текстов нет', async () => {
+  // Вопрос всегда о дне перед днём плана — «Вчера был план» говорит шаблон.
+  it('несколько пропущенных практик — без payload, текстов нет', async () => {
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.practices.getMissedPlans.mockResolvedValue([
@@ -189,9 +199,9 @@ describe('NotificationPlannerService — practice_missed: точный payload �
       { practiceText: 'Прогулка' },
     ]);
     await svc.planDay(makeUser(), NOW);
-    const payload = deps.notifications.schedule.mock.calls[0][3];
-    expect(JSON.stringify(payload ?? {})).not.toMatch(/Позвонить|Прогулка/);
-    expect(Object.keys(payload ?? {})).toEqual(['weekday']);
+    expect(deps.notifications.schedule.mock.calls).toEqual([
+      [BigInt(42), 'practice_missed', expect.any(Date), undefined],
+    ]);
   });
 
   it('practice_missed не дублируется при уже стоящем pending', async () => {

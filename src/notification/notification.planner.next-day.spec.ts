@@ -1,17 +1,21 @@
-// Хвост волны 3: у поясов, где день плана — завтрашний (Владивосток +10,
-// Магадан +11), обход в 00:00 UTC идёт в субботу утром: сводка недели ставится
-// по дню плана (воскресенье), а «Вчера был план» не говорит о пятнице
-// (notification.weekly.ts). Москва — контроль. Текст плана и оценки в очередь
-// не кладутся (РКН, #1135).
+// Пояса, где день плана — завтрашний (Владивосток +10, Магадан +11): обход в
+// 00:00 UTC идёт у них в субботу или пятницу утром. Сводка недели ставится по
+// дню плана (воскресенье), вопрос о невыполненном плане — о дне перед днём
+// плана: тот к обходу ещё идёт, вопрос встаёт заранее, отметка плана его
+// снимает (missed-plan.ts). Москва и западнее с вечерним часом — контроль: день
+// перед днём плана к обходу кончился, как раньше. Текст плана и оценки в
+// очередь не кладутся (РКН, #1135).
 import {
   NotificationPlannerService,
   type PlannerUser,
 } from './notification.planner.service';
-import { missedPlanWeekday } from './notification.weekly';
+import { addDaysLocal, localDateString } from './notification.time';
 
 const VLADIVOSTOK = 'Asia/Vladivostok'; // +10
 const MAGADAN = 'Asia/Magadan'; // +11
 const MOSCOW = 'Europe/Moscow';
+const KALININGRAD = 'Europe/Kaliningrad'; // +2
+const NEW_YORK = 'America/New_York'; // −5 в ноябре
 // 2026-11-06 — пятница, 07 — суббота, 08 — воскресенье.
 const FRIDAY_WALK = new Date('2026-11-06T00:05:00Z');
 const SATURDAY_WALK = new Date('2026-11-07T00:05:00Z');
@@ -92,33 +96,54 @@ describe('сводка недели: окно — по дню плана чел�
   );
 });
 
-describe('невыполненный план: день назван своим именем', () => {
-  // Пятничный обход: у Владивостока и Магадана день плана — суббота, а
-  // последний завершённый местный день — четверг (позавчера для субботы).
+describe('невыполненный план: день перед днём плана', () => {
+  // Пятничный обход: у Владивостока и Магадана день плана — суббота, и вопрос
+  // о пятничном плане встаёт заранее, пока пятница ещё идёт.
   it.each([
-    // tz, проверяемый день, как назван в сообщении
-    [VLADIVOSTOK, '2026-11-05', 4], // четверг
-    [MAGADAN, '2026-11-05', 4],
-    [MOSCOW, '2026-11-05', undefined],
+    [VLADIVOSTOK, 8, '2026-11-06'],
+    [MAGADAN, 8, '2026-11-06'],
   ])(
-    '%s: план за последний завершённый день %s → день недели %s',
-    async (tz, checked, weekday) => {
-      const hour = tz === MOSCOW ? 21 : 8;
+    '%s, %d:00: план за %s — день, который к обходу ещё идёт',
+    async (tz, hour, day) => {
       const { svc, swapReminder, practices } = makePlanner(false);
       await svc.planDay(
         makeUser({ notifyTimezone: tz, notifyLocalHour: hour }),
         FRIDAY_WALK,
       );
-      expect(practices.getMissedPlans).toHaveBeenCalledWith(42n, checked);
-      expect(swapReminder.mock.calls.map((c) => [c[1], c[3]])).toEqual([
-        ['practice_missed', { weekday }],
+      expect(localDateString(tz, FRIDAY_WALK)).toBe(day);
+      expect(practices.getMissedPlans).toHaveBeenCalledWith(42n, day);
+      // Без payload — «Вчера был план» (шаблон); под локом: такого ещё нет и
+      // план этого дня не отмечен.
+      expect(swapReminder.mock.calls.map((c) => c.slice(1))).toEqual([
+        [
+          'practice_missed',
+          expect.any(Date),
+          undefined,
+          { unlessPending: true, openPlanDay: day },
+        ],
       ]);
     },
   );
 
-  it('missedPlanWeekday: накануне дня отправки — шаблонное «Вчера», раньше — номер дня недели', () => {
-    expect(missedPlanWeekday('2026-11-07', '2026-11-08')).toBeUndefined();
-    expect(missedPlanWeekday('2026-11-06', '2026-11-08')).toBe(5); // пятница
-    expect(missedPlanWeekday('2026-11-03', '2026-11-05')).toBe(2); // вторник
-  });
+  // Поведение прежнее: план — за последний завершённый местный день.
+  it.each([
+    [MOSCOW, '2026-11-05'],
+    [KALININGRAD, '2026-11-05'],
+    [NEW_YORK, '2026-11-04'], // обход — 19:05 четверга, день плана — четверг
+  ])(
+    '%s, 21:00: план за %s — вчерашний к обходу день, как раньше',
+    async (tz, day) => {
+      const { svc, swapReminder, practices } = makePlanner(false);
+      await svc.planDay(makeUser({ notifyTimezone: tz }), FRIDAY_WALK);
+      expect(addDaysLocal(localDateString(tz, FRIDAY_WALK), -1)).toBe(day);
+      expect(practices.getMissedPlans).toHaveBeenCalledWith(42n, day);
+      expect(swapReminder.mock.calls.map((c) => [c[1], c[3], c[4]])).toEqual([
+        [
+          'practice_missed',
+          undefined,
+          { unlessPending: true, openPlanDay: day },
+        ],
+      ]);
+    },
+  );
 });

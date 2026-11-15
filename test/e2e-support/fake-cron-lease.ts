@@ -22,9 +22,11 @@ interface LeaseRow {
 export function makeFakeExecuteRaw(rows: LeaseRow[]) {
   return jest.fn((chunks: string[], ...values: unknown[]) => {
     const sql = Array.isArray(chunks) ? chunks.join(' ') : String(chunks);
-    // Замок строки пользователя (src/bot/notes-my-list.ts): в памяти один
-    // поток, ждать некого — гонку проверяет живой Postgres.
+    // Замок строки пользователя (src/bot/notes-my-list.ts) и лок перепланировки
+    // (src/notification/replace-pending.ts): в памяти один поток, ждать некого —
+    // гонку проверяет живой Postgres.
     if (/^SELECT 1 FROM "User" WHERE "id" = +FOR UPDATE$/.test(sql)) return 1;
+    if (/^SELECT pg_advisory_xact_lock\(hashtext\( +\)\)$/.test(sql)) return 0;
     if (!sql.includes('"CronLease"')) {
       throw new Error(`fake prisma: неэмулируемый $executeRaw: ${sql.trim()}`);
     }

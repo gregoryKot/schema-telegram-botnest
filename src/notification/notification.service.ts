@@ -12,6 +12,7 @@ import {
   replacePending,
   swapReminder,
   type ReminderStandIn,
+  type SwapGuard,
 } from './replace-pending';
 export {
   PROACTIVE_TYPES,
@@ -44,9 +45,16 @@ export class NotificationService {
     return replacePending(this.prisma, u, t, at, payload);
   }
 
-  /** Снять напоминание и поставить вместо него сообщение дня — тем же локом. */
-  swapReminder(u: bigint, t: ReminderStandIn, at: Date, payload?: object) {
-    return swapReminder(this.prisma, u, t, at, payload);
+  /** Снять напоминание и поставить вместо него сообщение дня — тем же локом;
+   *  guard проверяется под ним же (replace-pending.ts). */
+  swapReminder(
+    u: bigint,
+    t: ReminderStandIn,
+    at: Date,
+    payload?: object,
+    guard?: SwapGuard,
+  ) {
+    return swapReminder(this.prisma, u, t, at, payload, guard);
   }
 
   /** Отменить все неотправленные уведомления пользователя данного типа */
