@@ -1,13 +1,13 @@
 // «Что поможет» — блок между карточкой и записями: голос Здорового Взрослого
 // (режим — вставкой мха со знаком Together, HealthyVoice) или совет и потребность
-// (схема) плюс три быстрые практики плитками бумаги со знаком практики из
-// QUICK_LOOK — того же вида, что у квадратов «Практик» (вместо пилюль с эмодзи
-// 🌬🌍🛑, b15); они открывают тот же QuickPracticeSheet, что и «Здесь и сейчас». Контент собирает
+// (схема) плюс три быстрые практики — плитка QuickTile квадратов «Практик» без счётчика,
+// бумага и знак из QUICK_LOOK (вместо пилюль с эмодзи 🌬🌍🛑, b15); они открывают тот же
+// QuickPracticeSheet, что и «Здесь и сейчас». Контент собирает
 // shared/pattern/patternHelpContent (один источник с мини-аппом).
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { QuickPracticeSheet } from '../practice/QuickPracticeSheet';
+import { QuickTile } from '../practice/QuickTile';
 import { HealthyVoice } from '../paper/HealthyVoice';
-import { SignArt } from '../art/SignArt';
 import { useTr, useAddressForm } from '../../utils/addressForm';
 import { QUICK_LOOK } from '../practice/quickLook';
 import { resolveModeHelp, resolveSchemaHelp } from '../../../../shared/src/pattern/patternHelpContent';
@@ -48,14 +48,7 @@ export function PatternHelpSection({ kind, id }: Props) {
       <div className="ps-practices-box"><div className="ps-practices" role="group" aria-label="Быстрые практики">
         {QUICK_PRACTICE_IDS.map((pid) => {
           const p = buildQuickPractice(pid, tr);
-          const look = QUICK_LOOK[pid];
-          return (
-            <button key={pid} type="button" className="pp-paper ps-practice" style={{ '--h': look.hue } as CSSProperties} onClick={() => setActive(pid)}>
-              <span className="ps-practice-title">{p.title}</span>
-              <span className="ps-practice-sub">{p.subtitle}</span>
-              <span className="ps-practice-sign" aria-hidden="true"><SignArt sign={look.sign} size="square" /></span>
-            </button>
-          );
+          return <QuickTile key={pid} plain look={QUICK_LOOK[pid]} title={p.title} text={p.subtitle} onClick={() => setActive(pid)} />;
         })}
       </div></div>
       {active && <QuickPracticeSheet id={active} onClose={() => setActive(null)} />}

@@ -18,7 +18,7 @@
 .ps-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .ps-actions .ds-btn { flex: 1 1 160px; }
 
-/* «Что поможет»: совет и потребность — тихим текстом; практики — плитки бумаги со знаком. */
+/* «Что поможет»: совет и потребность — тихим текстом; практики — плитки бумаги со знаком (QuickTile plain). */
 .ps-tip { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text); }
 .ps-need { display: flex; flex-direction: column; gap: 2px; }
 .ps-practices-box { container: ps-practices / inline-size; }
