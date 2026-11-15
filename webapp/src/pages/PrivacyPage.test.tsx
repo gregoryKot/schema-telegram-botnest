@@ -117,7 +117,7 @@ describe('PrivacyPage — получатели данных', () => {
     const { container } = render(<PrivacyPage />);
     const text = container.textContent ?? '';
     expect(text).toContain('не передаёт сервису имя, контакт или иные данные клиента');
-    expect(text).toContain('В календарь Оператора (Apple iCloud) попадают только время и вид записи');
+    expect(text).toContain('В календарь Оператора (Apple iCloud) попадают только время, длительность и вид записи');
     expect(text).not.toMatch(/имя клиента в названии встречи|имя, контакт, текст обращения и время встречи/);
     expect(text).toContain('на сайте – вход через VK ID, Яндекс ID или MAX, внутри MAX и Telegram – по подписи мессенджера');
     expect(text).toContain('идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');

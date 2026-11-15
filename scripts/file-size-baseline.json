@@ -1147,7 +1147,7 @@
   "src/bot/account-link-metrics.format.ts": 47,
   "src/bot/account-link-metrics.service.ts": 51,
   "src/bot/account.delete.ts": 123,
-  "src/bot/account.service.ts": 198,
+  "src/bot/account.service.ts": 197,
   "src/bot/admin-stats.blocks.ts": 157,
   "src/bot/admin-stats.raters.ts": 25,
   "src/bot/admin-stats.sections.ts": 88,
