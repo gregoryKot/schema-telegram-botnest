@@ -8,6 +8,8 @@ export interface RekeyStats {
   dropped: number;
   /** Строк старого формата без единой живой брони удалено. */
   purged: number;
+  /** Броней, которых не открыл ни один ключ из env: в переносе не участвуют. */
+  unreadable: number;
   /** Брони, где лежит ссылка на комнату, оставшуюся за другим контактом. */
   shared: number[];
   /** Брони со ссылкой на прежнюю комнату клиента, снятую с учёта. */
@@ -36,4 +38,10 @@ export function rekeyReport(s: RekeyStats): string | null {
         `Прежняя ссылка — в бронях ${ids(s.stale)}.`,
     );
   return lines.join('\n\n');
+}
+
+/** Строка лога прохода о нечитаемых бронях или null. В DM её нет: проход идёт на каждом старте. */
+export function unreadableNote(n: number): string | null {
+  if (n === 0) return null;
+  return `не расшифровано броней: ${n} — ключа нет в env, в переносе они не участвуют`;
 }
