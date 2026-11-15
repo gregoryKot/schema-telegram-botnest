@@ -4,6 +4,9 @@
 // HealthyAdultImport — рендерится внутри секции, отдельного файла не заводим,
 // см. правило №10). Скелетон остатка пула вместо спиннера/нуля — тоже здесь.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { act } from '@testing-library/react';
+import { useEffect } from 'react';
 import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react';
 import { HealthyAdultSection } from './HealthyAdultSection';
 
@@ -42,7 +45,7 @@ afterEach(() => {
 describe('HealthyAdultSection — на чистом пуле пусто, не выдумка', () => {
   it('без фраз в API — «Активных фраз: 0 / 0», список пуст', async () => {
     mockApi.adminListPhrases.mockResolvedValue([]);
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     // «0 / 0» стоит и до ответа (начальный state пуст): ждём конца загрузки,
     // потом проверяем — иначе тест зелёный, что бы компонент ни сделал с ответом.
     await waitFor(() => expect(screen.queryByText('Загрузка…')).toBeNull());
@@ -54,21 +57,21 @@ describe('HealthyAdultSection — на чистом пуле пусто, не в
 
 describe('HealthyAdultSection — счётчик и список', () => {
   it('показывает реальное число активных фраз из API', async () => {
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByText('Активных фраз: 1 / 1');
     expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
   });
 
   it('ошибка загрузки списка показывается, не молчаливый пустой экран', async () => {
     mockApi.adminListPhrases.mockRejectedValue(new Error('Не удалось получить пул'));
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByText('Не удалось получить пул');
   });
 });
 
 describe('HealthyAdultSection — добавить фразу', () => {
   it('пустой текст — кнопка «Добавить» задизейблена, запрос не уходит', async () => {
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     const addButton = screen.getByRole('button', { name: 'Добавить' });
     expect((addButton as HTMLButtonElement).disabled).toBe(true);
@@ -76,7 +79,7 @@ describe('HealthyAdultSection — добавить фразу', () => {
 
   it('добавил → фраза сразу видна в списке (read-after-write)', async () => {
     mockApi.adminCreatePhrase.mockResolvedValue({ id: 2, text: 'Ошибка не делает плохим.', enabled: true });
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), {
       target: { value: 'Ошибка не делает плохим.' },
@@ -89,7 +92,7 @@ describe('HealthyAdultSection — добавить фразу', () => {
 
   it('ошибка добавления — видна, черновик не очищается молча', async () => {
     mockApi.adminCreatePhrase.mockRejectedValue(new Error('Дубль фразы'));
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), { target: { value: 'та же' } });
     fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
@@ -101,7 +104,7 @@ describe('HealthyAdultSection — добавить фразу', () => {
 describe('HealthyAdultSection — тестовая отправка', () => {
   it('успех — отчёт из ответа сервера показан как есть, не выдуман', async () => {
     mockApi.adminTestPhrasePost.mockResolvedValue({ message: 'Отправлено: «Устал – значит устал.»' });
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     fireEvent.click(screen.getByRole('button', { name: /Проверить: отправить сейчас/ }));
 
@@ -110,7 +113,7 @@ describe('HealthyAdultSection — тестовая отправка', () => {
 
   it('ошибка отправки — тоже показана в том же месте, а не потеряна', async () => {
     mockApi.adminTestPhrasePost.mockRejectedValue(new Error('Канал недоступен'));
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     fireEvent.click(screen.getByRole('button', { name: /Проверить: отправить сейчас/ }));
 
@@ -120,7 +123,7 @@ describe('HealthyAdultSection — тестовая отправка', () => {
 
 describe('HealthyAdultSection — строка фразы (сохранить/вкл-выкл/удалить)', () => {
   it('кнопка «Сохранить» у строки задизейблена, пока текст не изменился', async () => {
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     expect((within(row).getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement).disabled).toBe(true);
@@ -128,7 +131,7 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
 
   it('изменил и сохранил → карточка обновляется по ответу сервера (read-after-write)', async () => {
     mockApi.adminUpdatePhrase.mockResolvedValue({ id: 1, text: 'Устал – это нормально.', enabled: true });
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     fireEvent.change(textarea, { target: { value: 'Устал – это нормально.' } });
     const row = textarea.closest('section')!;
@@ -140,7 +143,7 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
 
   it('«Выключить» переключает фразу и подпись', async () => {
     mockApi.adminUpdatePhrase.mockResolvedValue({ id: 1, text: 'Устал – значит устал.', enabled: false });
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Выключить' }));
@@ -150,7 +153,7 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
   });
 
   it('«Отмена» в диалоге фразу НЕ удаляет', async () => {
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
@@ -167,7 +170,7 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
 
   it('подтверждение в диалоге убирает фразу из списка', async () => {
     mockApi.adminDeletePhrase.mockResolvedValue(undefined);
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
@@ -180,9 +183,22 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
     expect(confirmSpy).not.toHaveBeenCalled();
   });
 
+  it('«Назад» браузера закрывает диалог удаления, фраза остаётся', async () => {
+    const nav: { go: ReturnType<typeof useNavigate> | null } = { go: null };
+    const Probe = () => { const n = useNavigate(); useEffect(() => { nav.go = n; }); return null; };
+    render(<MemoryRouter initialEntries={['/', '/admin']} initialIndex={1}><Probe /><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.click(within(textarea.closest('section')!).getByRole('button', { name: 'Удалить' }));
+    screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    act(() => nav.go!(-1));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Удалить фразу?' })).toBeNull());
+    expect(mockApi.adminDeletePhrase).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
+  });
+
   it('сбой удаления виден в диалоге, фраза остаётся', async () => {
     mockApi.adminDeletePhrase.mockRejectedValue(new Error('API error: 500'));
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
@@ -196,12 +212,12 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
 
 describe('HealthyAdultSection — массовый импорт (HealthyAdultImport)', () => {
   it('остаток пула — скелетон до ответа API, потом реальные числа (не 0/спиннер)', async () => {
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByText(/Ещё не звучали: 3 из 5/);
   });
 
   it('пустая строка не считается — кнопка показывает 0 и задизейблена', async () => {
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/);
     fireEvent.change(textarea, { target: { value: '\n\n  \n' } });
@@ -216,7 +232,7 @@ describe('HealthyAdultSection — массовый импорт (HealthyAdultImp
         { id: 11, text: 'Вторая новая фраза.', enabled: true },
       ],
     });
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/);
     fireEvent.change(textarea, { target: { value: 'Первая новая фраза.\nВторая новая фраза.' } });
@@ -229,7 +245,7 @@ describe('HealthyAdultSection — массовый импорт (HealthyAdultImp
 
   it('ошибка импорта — видна, черновик НЕ очищается (можно поправить и повторить)', async () => {
     mockApi.adminImportPhrases.mockRejectedValue(new Error('Сервер недоступен'));
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     await screen.findByDisplayValue('Устал – значит устал.');
     const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: 'Фраза, которая не сохранится.' } });
@@ -250,7 +266,7 @@ describe('HealthyAdultSection — поздний ответ списка', () =>
     const late = new Promise<typeof LOADED>((r) => { answer = r; });
     mockApi.adminListPhrases.mockReturnValue(late);
     mockApi.adminCreatePhrase.mockResolvedValue({ id: 2, text: 'Сил больше нет — пора отдохнуть.', enabled: true });
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), {
       target: { value: 'Сил больше нет — пора отдохнуть.' },
     });
@@ -269,7 +285,7 @@ describe('HealthyAdultSection — поздний ответ списка', () =>
     mockApi.adminListPhrases.mockReturnValue(late);
     const ROW = { id: 2, text: 'Можно передохнуть.', enabled: true };
     mockApi.adminCreatePhrase.mockResolvedValue(ROW);
-    render(<HealthyAdultSection adminKey="k" />);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
     fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), { target: { value: ROW.text } });
     fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
     await waitFor(() => expect(mockApi.adminCreatePhrase).toHaveBeenCalled());

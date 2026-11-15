@@ -106,31 +106,12 @@
       "ConsentScreen": 2
     }
   },
-  "webapp/src/components/JoinConfirmSheet.tsx": {
-    "reason": "Долг: окно согласия на присоединение по ссылке-приглашению (Dialog в двух ветках — согласие и «присоединились») закрывается фоном, Escape и «Не сейчас» (отказ без сетевого вызова), но записи истории у него нет — «Назад» браузера окно не закрывает. Хук — строка в docs/BACKLOG.md.",
-    "since": "p23-overlay-gates, 2026-11",
-    "overlays": {
-      "JoinConfirmSheet": 2
-    }
-  },
   "webapp/src/components/settingsSheet/TherapistSections.tsx": {
     "reason": "Подтверждение «Отключиться от терапевта?» (ConfirmDialog) поверх листа настроек: у SettingsSheet своя запись истории, окно закрывается «Отмена», фоном и Escape, а «Назад» браузера закрывает лист вместе с ним — исключение для подтверждений поверх листа (.claude/rules/frontend.md).",
     "since": "p23-overlay-gates, 2026-11"
   },
   "webapp/src/components/settingsSheet/YsqDataDeleteButton.tsx": {
     "reason": "Подтверждение «Удалить все результаты теста?» (ConfirmDialog) поверх окна «Данные и конфиденциальность» (InfoModal со своей записью истории) в листе настроек: закрывается «Отмена», фоном и Escape, «Назад» браузера закрывает окно вместе с ним — исключение для подтверждений поверх листа (.claude/rules/frontend.md).",
-    "since": "p23-overlay-gates, 2026-11"
-  },
-  "webapp/src/pages/account/AccountFooter.tsx": {
-    "reason": "Долг: подтверждение «Выйти со всех устройств?» (ConfirmDialog) поверх страницы /account без записи истории — «Назад» браузера уводит со страницы, а не закрывает окно (тот же класс, что «Удалить клиента?» до HistoryConfirmDialog). Перевод на HistoryConfirmDialog — строка в docs/BACKLOG.md.",
-    "since": "p23-overlay-gates, 2026-11"
-  },
-  "webapp/src/pages/admin/ArticlesSection.tsx": {
-    "reason": "Долг: подтверждение «Удалить статью?» (ConfirmDialog) поверх страницы админки без записи истории — «Назад» браузера уводит со страницы, а не закрывает окно. Перевод на HistoryConfirmDialog — строка в docs/BACKLOG.md.",
-    "since": "p23-overlay-gates, 2026-11"
-  },
-  "webapp/src/pages/admin/HealthyAdultSection.tsx": {
-    "reason": "Долг: подтверждение «Удалить фразу?» (ConfirmDialog в строке PhraseRow) поверх страницы админки без записи истории — «Назад» браузера уводит со страницы, а не закрывает окно. Перевод на HistoryConfirmDialog — строка в docs/BACKLOG.md.",
     "since": "p23-overlay-gates, 2026-11"
   },
   "webapp/src/components/TrackerOverlay.tsx": {
@@ -153,13 +134,6 @@
     "since": "p23-overlay-gates, 2026-11",
     "overlays": {
       "ConceptFullscreenSheet": 2
-    }
-  },
-  "webapp/src/components/WeeklyCardSheet.tsx": {
-    "reason": "Долг: запасная шторка «Поделиться текстом» (BottomSheetShell поверх листа недельной карточки на ExScreen, когда картинкой поделиться не вышло) закрывается локальным setFallbackText(null) без своей записи истории — «Назад» браузера закрывает весь лист. Хук под-листа — строка в docs/BACKLOG.md.",
-    "since": "p23-overlay-gates, 2026-11",
-    "overlays": {
-      "WeeklyCardSheet": 2
     }
   }
 }

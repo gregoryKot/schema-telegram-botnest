@@ -3,7 +3,7 @@ import { api } from '../../api';
 import type { Article } from '../../api';
 import { useAsyncData } from '../../hooks/useAsyncData';
 import { ArticleEditor } from './ArticleEditor';
-import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { HistoryConfirmDialog } from '../../components/HistoryConfirmDialog';
 import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
 import { card, btn, btnGhost } from './shared';
 
@@ -18,7 +18,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
   const [toDelete, setToDelete] = useState<Article | null>(null);
   const del = useConfirmedAction(
     () => (toDelete ? api.adminDeleteArticle(adminKey, toDelete.id) : Promise.resolve()),
-    () => { setToDelete(null); void reload(); }, // reload из useAsyncData не отклоняется: сбой → failed на экране
+    () => { void reload(); }, // диалог закрывает сам HistoryConfirmDialog (goBack → onCancel); reload из useAsyncData не отклоняется: сбой → failed на экране
   );
   const askDelete = (a: Article) => { setToDelete(a); del.ask(); };
   const cancelDelete = () => { setToDelete(null); del.cancel(); };
@@ -57,14 +57,13 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
         </div>
       ))}
       {toDelete && del.confirming && (
-        <ConfirmDialog
+        <HistoryConfirmDialog
           title="Удалить статью?"
           message={`«${toDelete.title}» пропадёт со страницы статей.`}
           confirmLabel="Удалить"
           busyLabel="Удаляю…"
-          busy={del.busy}
           error={del.failed ? 'Не удалось удалить — статья на месте. Возможно, неверный админ-ключ или нет соединения.' : undefined}
-          onConfirm={() => void del.confirm()}
+          run={del.confirm}
           onCancel={cancelDelete}
         />
       )}
