@@ -4,6 +4,7 @@
 // тик не забирают, и проба cronLeases судит аренду только при включённой
 // подписке (cron-lease-expected.ts).
 import { SubscriptionService } from './subscription.service';
+import { chargeDue } from './subscription.charges';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 
 function makeService(
@@ -59,6 +60,28 @@ describe('SubscriptionService.chargeDue — аренда крона', () => {
     const { service, prisma, cronLeader } = makeService(opts);
     await expect(service.chargeDue()).resolves.toBeUndefined();
     expect(cronLeader.claimRun.mock.calls).toEqual([]);
+    expect(prisma.subscription.findMany.mock.calls).toEqual([]);
+  });
+});
+
+// Тот же гард в самом списании (subscription.charges.ts): вызов в обход крона
+// сервиса с выключенной подпиской или Robokassa базу не трогает.
+describe('chargeDue — свой гард флагов', () => {
+  it.each([
+    ['подписка выключена', { enabled: false, robokassa: { enabled: true } }],
+    [
+      'Robokassa не настроена',
+      { enabled: true, robokassa: { enabled: false } },
+    ],
+  ])('%s — ни просрочек, ни выборки должников', async (_, flags) => {
+    const prisma = {
+      subscription: { findMany: jest.fn().mockResolvedValue([]) },
+      subscriptionCharge: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    await expect(
+      chargeDue({ prisma, notify: {}, logger: {}, ...flags } as never),
+    ).resolves.toBeUndefined();
+    expect(prisma.subscriptionCharge.findMany.mock.calls).toEqual([]);
     expect(prisma.subscription.findMany.mock.calls).toEqual([]);
   });
 });
