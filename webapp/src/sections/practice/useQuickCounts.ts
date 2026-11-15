@@ -1,7 +1,7 @@
 // Мета квадратов «Здесь и сейчас» — только из реальных данных: сколько раз пройдены заземление и
-// «Стоп» (getPracticeSessions) и сколько сохранено карточек «Мне плохо» (getFlashcards, только если
-// квадрат «Мне плохо» на экране). undefined — ещё грузится (плашка-скелетон), null — не пришло
-// (квадрат без меты, без выдуманного нуля).
+// «Стоп» (getPracticeSessions) и сколько сохранено карточек «Мне плохо» (getFlashcardsCount: число без
+// самих карточек, только если квадрат на экране). undefined — ещё грузится (плашка-скелетон), null — не
+// пришло (квадрат без меты, без выдуманного нуля).
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 
@@ -25,9 +25,9 @@ export function useQuickCounts(withSos: boolean): QuickCounts {
   useEffect(() => {
     if (!withSos) return;
     let ignore = false;
-    api.getFlashcards()
-      .then((list) => { if (!ignore) setSos(list.length); })
-      .catch((e) => { console.error('getFlashcards failed', e); if (!ignore) setSos(null); });
+    api.getFlashcardsCount()
+      .then(({ count }) => { if (!ignore) setSos(count); })
+      .catch((e) => { console.error('getFlashcardsCount failed', e); if (!ignore) setSos(null); });
     return () => { ignore = true; };
   }, [withSos]);
 
