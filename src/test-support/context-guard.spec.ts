@@ -1,12 +1,14 @@
 // Сторож длинной сессии .claude/hooks/context-guard.mjs: молчит, пока сессия
 // дешёвая; вырос или сжимался контекст — начатую задачу передать или довести, новую не начинать.
-import { spawnSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
+import { pathToFileURL } from 'url';
 
 const ROOT = resolve(__dirname, '..', '..');
 const GUARD = join(ROOT, '.claude', 'hooks', 'context-guard.mjs');
+const MERGE = join(ROOT, '.claude', 'hooks', 'gh-merge.mjs');
 
 let tmp: string;
 beforeEach(() => {
@@ -37,10 +39,36 @@ function run(event: object, lines?: string[]) {
     input: JSON.stringify({ transcript_path: transcript, ...event }),
     encoding: 'utf8',
     env,
+    timeout: 5000,
   });
 }
 
 const PROMPT = { hook_event_name: 'UserPromptSubmit' };
+
+const bash = (command: string, response: object = {}) => ({
+  hook_event_name: 'PostToolUse',
+  tool_name: 'Bash',
+  tool_input: { command },
+  tool_response: { stdout: '', stderr: '', interrupted: false, ...response },
+});
+
+/** Журнал-канал: хук, открывший его на чтение, висел бы до таймаута без вывода. */
+function pipeTranscript() {
+  const path = join(tmp, 'pipe.jsonl');
+  execFileSync('mkfifo', [path]);
+  return path;
+}
+
+/** bashMerge из gh-merge.mjs на каждом событии — одним ESM-подпроцессом. */
+function mergeKinds(events: object[]): string[] {
+  const code =
+    `import { bashMerge } from ${JSON.stringify(pathToFileURL(MERGE).href)};\n` +
+    `process.stdout.write(JSON.stringify(${JSON.stringify(events)}.map(bashMerge)));`;
+  const res = spawnSync('node', ['--input-type=module', '-e', code], {
+    encoding: 'utf8',
+  });
+  return JSON.parse(res.stdout) as string[];
+}
 
 describe('хук context-guard.mjs', () => {
   it('контекст ниже порога — молчит (вывод хука попадает в контекст)', () => {
@@ -105,6 +133,48 @@ describe('хук context-guard.mjs', () => {
     expect(ctx).not.toContain('остановись');
   });
 
+  it('мерж через `gh pr merge` в Bash при дорогом контексте — тот же сигнал; автомерж — дождаться', () => {
+    const context = (command: string) =>
+      JSON.parse(run(bash(command), [usageLine(130_000)]).stdout)
+        .hookSpecificOutput.additionalContext as string;
+    expect(context('gh pr merge 12 --squash 2>&1 | tail -n 3')).toContain(
+      'PR вмержен: проверь деплой',
+    );
+    const auto = context('cd /repo && gh pr merge 12 --squash --auto');
+    expect(auto).toContain('ждёт автомержа: дождись мержа');
+    expect(auto).toContain('start_session');
+  });
+
+  it('прочий Bash-вызов — тихий выход 0 до чтения журнала', () => {
+    const res = run({
+      ...bash('git status --short'),
+      transcript_path: pipeTranscript(),
+    });
+    expect([res.status, res.stdout]).toEqual([0, '']);
+  });
+
+  it('мерж — вызов `gh pr merge`, а не упоминание; --disable-auto и фоновый вызов не в счёт', () => {
+    const table: [string, string, object?][] = [
+      ['gh pr merge 12 --squash 2>&1 | tail -n 3', 'merged'],
+      ['GH_REPO=o/r gh pr merge "$PR" --subject "a; b" --squash', 'merged'],
+      ['gh pr checks 12 --watch && gh pr merge 12 --squash', 'merged'],
+      [
+        "git commit -F - <<'EOF' && gh pr merge 12 --squash\nтекст\nEOF",
+        'merged',
+      ],
+      ['(cd repo && gh pr merge 12 --auto --squash)', 'auto'],
+      ['gh pr merge 12 --disable-auto', ''],
+      ['grep -n "gh pr merge" docs/BACKLOG.md', ''],
+      ["git commit -F - <<'EOF'\nСторож: сигнал на gh pr merge\nEOF", ''],
+      ['gh pr view 12 --json state', ''],
+      ['gh pr merge 12 --squash', '', { backgroundTaskId: 'b1' }],
+    ];
+    const kinds = mergeKinds(table.map(([c, , res]) => bash(c, res)));
+    expect(table.map(([c], i) => [c, kinds[i]])).toEqual(
+      table.map(([c, kind]) => [c, kind]),
+    );
+  });
+
   it('старт после сжатия говорит сразу, без журнала', () => {
     const res = run({ hook_event_name: 'SessionStart', source: 'compact' });
     expect(res.stdout).toContain('уже сжимался');
@@ -133,5 +203,6 @@ describe('хук context-guard.mjs', () => {
     expect(wired('UserPromptSubmit')).toBe(true);
     expect(wired('SessionStart', 'compact')).toBe(true);
     expect(wired('PostToolUse', 'mcp__github__merge_pull_request')).toBe(true);
+    expect(wired('PostToolUse', 'Bash')).toBe(true);
   });
 });
