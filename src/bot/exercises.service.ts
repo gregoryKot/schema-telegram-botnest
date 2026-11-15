@@ -137,7 +137,6 @@ export class ExercisesService {
     return rows.map(readFlashcard);
   }
 
-  // Квадрату «Мне плохо» нужно только число: карточки не читаются и не расшифровываются.
   async countFlashcards(userId: bigint) {
     const count = await this.prisma.userFlashcard.count({ where: { userId } });
     return { count };
