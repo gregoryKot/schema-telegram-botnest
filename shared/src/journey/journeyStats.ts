@@ -18,7 +18,7 @@ export interface JourneyStatRow {
 export const STAT_LABELS: Record<JourneyItemType, string> = {
   tracker_day: 'Дни с трекером',
   note: 'Заметки дня',
-  schema_diary: 'Схемный дневник',
+  schema_diary: 'Дневник схем',
   mode_diary: 'Дневник режимов',
   gratitude: 'Благодарности',
   practice: 'Свои практики',

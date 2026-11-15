@@ -9,6 +9,7 @@ import { modeEntryKind, schemaEntryKind } from './entryKind';
 import { entryLook } from './feedLook';
 import { EntryFields } from './EntryFields';
 import { EntryMore, EntryShell } from './EntryShell';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 import '../../styles/client-diary.css';
 // Карточки записей трёх дневников в ленте «Записей»: вид — по типу записи (feedLook), каркас — EntryShell.
 
@@ -46,9 +47,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
           share={<ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} entry={entry} dateLabel={fmtDayMonth(fmtDateKey(entry.createdAt))} />}
           remove={<DeleteBtn onClick={onDelete} />}
         />
-      ) : entry.actualNeed && (
-        <div className="cd-entry-meta">Что было нужно: {entry.actualNeed.slice(0, 80)}</div>
-      )}
+      ) : entry.actualNeed && <div className="cd-entry-meta">Что было нужно: {glueSpaces(entry.actualNeed.slice(0, 80))}</div>}
     </EntryShell>
   );
 }

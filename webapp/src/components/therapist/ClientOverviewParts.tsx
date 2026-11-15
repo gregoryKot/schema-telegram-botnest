@@ -9,8 +9,8 @@ import { noteLook } from './noteLook';
 import type { DiaryPreviewRow } from './clientOverviewModel';
 
 /** «Последние записи» — белый лист с тенью-слоем; у строки знак типа (noteLook: как в ленте «Записи» клиента),
- *  тип — тихой подписью перед фрагментом, без цветной плашки-«таблетки». Камешков благодарности в превью не
- *  знаем — знак целиком (все камешки легли). */
+ *  тип — тихой подписью перед фрагментом (у благодарности его называет заголовок), без цветной плашки-«таблетки».
+ *  Камешков благодарности в превью не знаем — знак целиком (все камешки легли). */
 export function OverviewEntries({ entries, onAll }: { entries: DiaryPreviewRow[]; onAll: () => void }) {
   return (
     <section className="pp-leaf tk-leaf" style={{ '--h': ENTITY_LOOK.diary.hue } as CSSProperties}>
@@ -24,7 +24,7 @@ export function OverviewEntries({ entries, onAll }: { entries: DiaryPreviewRow[]
           <div className="tk-entry-body">
             <div className="ds-list-title">{e.title}</div>
             <div className="tk-entry-sub">
-              <span className="tk-entry-type">{e.typeLabel}</span>
+              {e.typeLabel && <span className="tk-entry-type">{e.typeLabel}</span>}
               {e.excerpt && <span className="tk-entry-excerpt">{e.excerpt}</span>}
             </div>
           </div>
