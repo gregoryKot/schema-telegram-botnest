@@ -124,6 +124,39 @@ describe('check-dead-end-report.mjs', () => {
     expect(res.stderr).not.toContain('setBrokenError');
   });
 
+  it('сбой под пустым состоянием: catch без отчёта со setEnabled(false) — красный, ключ — первый сеттер', () => {
+    const res = run({ [PAGE]: page('setEnabled(false); setOpts([]);') }, {});
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      `${PAGE}::setEnabled (L5): сбой под пустым состоянием, без отчёта без классификации`,
+    );
+    expect(res.stderr).not.toContain('::setOpts');
+    const exempt = run(
+      { [PAGE]: page('setEnabled(false); setOpts([]);') },
+      {
+        [`${PAGE}::setEnabled`]: {
+          status: 'exempt',
+          reason: 'вспомогательный блок, экран рабочий',
+        },
+      },
+    );
+    expect(exempt.status).toBe(0);
+  });
+
+  it('контроль пустого состояния: с отчётом, с данными в сеттере и без сеттеров — не исход', () => {
+    const src = [
+      "import { reportClientError } from '../api';",
+      'export function X() {',
+      "  a().catch(() => { reportClientError({ message: 'x', section: 's' }); setOpts([]); });",
+      '  b().catch(() => { setOpts([]); setPhase(next); });',
+      '  c().catch(() => undefined);',
+      '}',
+    ].join('\n');
+    const res = run({ 'webapp/src/pages/X.tsx': src }, {});
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+
   it('область: верхний уровень components/ и тесты не сканируются', () => {
     const res = run(
       {
