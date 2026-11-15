@@ -22,6 +22,7 @@ vi.mock('../api', () => ({
     createCustomMode: (...a: unknown[]) => createCustomMode(...a),
     deleteCustomMode: (...a: unknown[]) => deleteCustomMode(...a),
   },
+  reportClientError: vi.fn(),
 }));
 
 const CLIENT = { modeIds: ['vulnerable_child', 'demanding_critic'], schemaIds: ['abandonment', 'no_such_schema'] };
