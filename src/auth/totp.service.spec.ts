@@ -23,6 +23,7 @@ import {
 import { generateSync } from 'otplib';
 import { TOTP_OPTIONS } from './totp-code';
 import { TotpService } from './totp.service';
+import * as cryptoUtils from '../utils/crypto';
 import { decrypt, encrypt } from '../utils/crypto';
 
 const USER_ID = 42n;
@@ -44,10 +45,24 @@ function makeFakePrisma(seed: Record<string, Record<string, unknown>> = {}) {
       updateMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },
     user: {
-      findUnique: jest.fn(({ where: { id } }: { where: { id: bigint } }) => {
-        const row = users.get(id.toString());
-        return Promise.resolve(row ? { ...row } : null);
-      }),
+      // Как Prisma: с select в ответе только выбранные поля.
+      findUnique: jest.fn(
+        ({
+          where: { id },
+          select,
+        }: {
+          where: { id: bigint };
+          select?: Record<string, boolean>;
+        }) => {
+          const row = users.get(id.toString());
+          if (!row) return Promise.resolve(null);
+          if (!select) return Promise.resolve({ ...row });
+          const keys = Object.keys(select).filter((k) => select[k]);
+          return Promise.resolve(
+            Object.fromEntries(keys.map((k) => [k, row[k]])),
+          );
+        },
+      ),
       update: jest.fn(
         ({
           where: { id },
@@ -375,6 +390,7 @@ describe('TotpService — disable', () => {
     const stored = prisma.users.get(USER_ID.toString())!;
     expect(stored.totpSecret).toBeNull();
     expect(stored.totpEnabledAt).toBeNull();
+    expect(stored.totpRecoveryCodes).toEqual([]);
     expect(await service.isEnabled(USER_ID)).toBe(false);
   });
 
@@ -548,5 +564,46 @@ describe('TotpService — код не того формата, битый сек
     expect(alertLine).not.toMatch(/letter|base32|allowed/i);
     expect(attempts.recordFailure).toHaveBeenCalledWith(USER_ID);
     logged.mockRestore();
+  });
+});
+
+// Код из буфера обмена приходит с пробелами по краям; аккаунта может не быть
+// (удалён между вызовами); шифрование недоступно — секрет не пишется вовсе.
+describe('TotpService — края ввода и состояния', () => {
+  it('TOTP-код с пробелами по краям принимается и при входе, и при включении', async () => {
+    const prisma = makeFakePrisma();
+    const service = new TotpService(prisma as never, noLock());
+    dateNowSpy.mockReturnValue(FIXED_TIME - 90_000);
+    const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
+    const secret = extractSecret(otpauthUrl);
+    await service.confirmSetup(USER_ID, ` ${codeFor(secret)} `);
+    dateNowSpy.mockReturnValue(FIXED_TIME);
+    expect(await service.verifyCode(USER_ID, `\t${codeFor(secret)} `)).toBe(
+      true,
+    );
+  });
+
+  it('аккаунта нет → verifyCode false без промаха в счётчик, 2FA выключена', async () => {
+    const prisma = makeFakePrisma();
+    const attempts = {
+      lockedFor: jest.fn().mockResolvedValue(0),
+      recordFailure: jest.fn(),
+    };
+    const service = new TotpService(prisma as never, attempts as never);
+    expect(await service.verifyCode(USER_ID, '123456')).toBe(false);
+    expect(attempts.recordFailure).not.toHaveBeenCalled();
+    expect(await service.isEnabled(USER_ID)).toBe(false);
+  });
+
+  it('шифрование недоступно → startSetup отказывает и ничего не пишет', async () => {
+    const prisma = makeFakePrisma();
+    const service = new TotpService(prisma as never, noLock());
+    jest.spyOn(cryptoUtils, 'encrypt').mockReturnValueOnce(null);
+    await expect(service.startSetup(USER_ID, 'user@test')).rejects.toThrow(
+      /Encryption unavailable/,
+    );
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
+    dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(FIXED_TIME);
   });
 });

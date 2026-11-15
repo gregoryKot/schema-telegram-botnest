@@ -87,3 +87,13 @@ describe('newerFirst — более свежая запись', () => {
     expect(newerFirst(fresh, same, at)[0].who).toBe('fresh');
   });
 });
+
+describe('joinDayNotes — края пробелов', () => {
+  it('тот же текст с пробелами по краям — дубль, у цели как было', () => {
+    expect(joinDayNotes('  Устала \n', 'Устала')).toBe('  Устала \n');
+  });
+
+  it('у цели одни пробелы — текст источника', () => {
+    expect(joinDayNotes('  \n', 'Поспала')).toBe('Поспала');
+  });
+});

@@ -191,7 +191,10 @@ describe('UserSchemaNote / UserModeNote — карточки', () => {
         },
       ],
     });
-    await combineConflicts(tx, SRC, TGT);
+    expect(await combineConflicts(tx, SRC, TGT)).toEqual({
+      combined: 1,
+      unreadable: 0,
+    });
     const [t] = db.userSchemaNote.rows;
     expect(decrypt(t.triggers as string)).toBe('уходят');
     expect(decrypt(t.feelings as string)).toBe('страх');
@@ -218,7 +221,10 @@ describe('UserSchemaNote / UserModeNote — карточки', () => {
         },
       ],
     });
-    await combineConflicts(tx, SRC, TGT);
+    expect(await combineConflicts(tx, SRC, TGT)).toEqual({
+      combined: 1,
+      unreadable: 0,
+    });
     const [t] = db.userModeNote.rows;
     expect(decrypt(t.alias as string)).toBe('Малыш');
     expect(decrypt(t.fear as string)).toBe('один');
@@ -389,5 +395,143 @@ describe('MergeService.merge — объединение в транзакции 
     );
     expect(order).toEqual(['combine', 'delete']);
     jest.restoreAllMocks();
+  });
+});
+
+// Нечитаемая пара в любой таблице — цель не тронута, пара в `unreadable`;
+// запись другого дня/другой схемы — не пара вовсе.
+describe('нечитаемые и непарные записи по всем таблицам', () => {
+  const quiet = () => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+  };
+  afterEach(() => jest.restoreAllMocks());
+
+  it('Note: не читается только запись второго аккаунта — тоже не вливаем', async () => {
+    quiet();
+    const { db, tx } = makeDb({
+      note: [note(1, TGT, 'Устала'), { ...note(2, SRC, 'x'), text: FOREIGN }],
+    });
+    expect(await combineConflicts(tx, SRC, TGT)).toEqual({
+      combined: 0,
+      unreadable: 1,
+    });
+    expect(db.note.update).not.toHaveBeenCalled();
+  });
+
+  it('Gratitude: другой день — не пара; нечитаемый день — цель не тронута', async () => {
+    quiet();
+    const g = (id: number, userId: bigint, date: string, items: unknown) => ({
+      id,
+      userId,
+      date,
+      items,
+    });
+    const { db, tx } = makeDb({
+      gratitudeDiaryEntry: [
+        g(1, TGT, D, FOREIGN),
+        g(2, SRC, D, encryptJson(['чай'])),
+        g(3, SRC, '2026-03-05', encryptJson(['море'])),
+      ],
+    });
+    expect(await combineConflicts(tx, SRC, TGT)).toEqual({
+      combined: 0,
+      unreadable: 1,
+    });
+    expect(db.gratitudeDiaryEntry.update).not.toHaveBeenCalled();
+  });
+
+  it('Gratitude: в старом массиве не-строки отбрасываются, пустой список цели — пункты источника', async () => {
+    const { db, tx } = makeDb({
+      gratitudeDiaryEntry: [
+        { id: 1, userId: TGT, date: D, items: null },
+        { id: 2, userId: SRC, date: D, items: ['чай', 5, null, 'звонок'] },
+      ],
+    });
+    expect((await combineConflicts(tx, SRC, TGT)).combined).toBe(1);
+    const items = db.gratitudeDiaryEntry.rows[0].items as string;
+    expect(decryptJson<string[]>(items)).toEqual(['чай', 'звонок']);
+  });
+
+  it.each([
+    ['userSchemaNote', 'schemaId', 'triggers'],
+    ['userModeNote', 'modeId', 'alias'],
+  ] as const)(
+    '%s: нечитаемая карточка — не тронута; карточка другого ключа — не пара',
+    async (model, key, field) => {
+      quiet();
+      const card = (id: number, userId: bigint, k: string, v: unknown) => ({
+        id,
+        userId,
+        [key]: k,
+        [field]: v,
+      });
+      const { db, tx } = makeDb({
+        [model]: [
+          card(1, TGT, 'a', ''),
+          card(2, SRC, 'a', FOREIGN),
+          card(3, SRC, 'b', encrypt('другая')),
+        ],
+      });
+      expect(await combineConflicts(tx, SRC, TGT)).toEqual({
+        combined: 0,
+        unreadable: 1,
+      });
+      expect(db[model].update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('SafePlace: нечитаемое описание — цель не тронута; читаемая пара считается влитой', async () => {
+    quiet();
+    const place = (userId: bigint, description: string) => ({
+      userId,
+      description,
+      updatedAt: T0,
+    });
+    const bad = makeDb({
+      userSafePlace: [place(TGT, encrypt('море')!), place(SRC, FOREIGN)],
+    });
+    expect(await combineConflicts(bad.tx, SRC, TGT)).toEqual({
+      combined: 0,
+      unreadable: 1,
+    });
+    expect(bad.db.userSafePlace.update).not.toHaveBeenCalled();
+    const ok = makeDb({
+      userSafePlace: [
+        place(TGT, encrypt('море')!),
+        place(SRC, encrypt('лес')!),
+      ],
+    });
+    expect(await combineConflicts(ok.tx, SRC, TGT)).toEqual({
+      combined: 1,
+      unreadable: 0,
+    });
+  });
+
+  it('YsqResult: пара итогов считается влитой', async () => {
+    const { tx } = makeDb({
+      ysqResult: [
+        { userId: TGT, answers: encryptJson([1]), completedAt: T0 },
+        { userId: SRC, answers: encryptJson([2]), completedAt: T1 },
+      ],
+    });
+    expect(await combineConflicts(tx, SRC, TGT)).toEqual({
+      combined: 1,
+      unreadable: 0,
+    });
+  });
+
+  it('countCombinable: таблица упала — в лог, остальные посчитаны', async () => {
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    const { db, tx } = makeDb({
+      note: [note(1, TGT, 'а'), note(2, SRC, 'б')],
+    });
+    db.gratitudeDiaryEntry.findMany.mockRejectedValue(new Error('db down'));
+    expect(await countCombinable(tx, SRC, TGT)).toBe(1);
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('GratitudeDiaryEntry: db down'),
+    );
   });
 });

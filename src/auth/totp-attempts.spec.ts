@@ -10,7 +10,7 @@
 process.env.ENCRYPTION_KEY = 'bb'.repeat(32);
 process.env.ENCRYPTION_KEY_OLD = '';
 
-import { HttpException } from '@nestjs/common';
+import { HttpException, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { generateSecret, generateSync } from 'otplib';
 import { PostgresThrottleStorage } from '../api/postgres-throttle-storage';
@@ -211,9 +211,13 @@ describe('TotpAttemptsService + TotpService.verifyCode (S11)', () => {
   });
 
   it('счётчик недоступен (БД) → промах всё равно false, не 500', async () => {
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
     const w = makeWorld({ storageDown: true });
     await expect(w.totp.verifyCode(USER, '000000')).resolves.toBe(false);
     expect(w.notice.notify).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('db down'));
   });
 
   it('2FA выключена → счётчик не трогается', async () => {
@@ -226,5 +230,36 @@ describe('TotpAttemptsService + TotpService.verifyCode (S11)', () => {
     );
     await expect(off.verifyCode(USER, '000000')).resolves.toBe(false);
     expect(w.hits.size).toBe(0);
+  });
+});
+
+// Пауза после 11-го промаха (blockedUntil) переживает окно счётчика, а
+// истёкшая пауза не держит аккаунт, даже если окно ещё идёт.
+describe('lockedFor — пауза по blockedUntil', () => {
+  const H = 3600_000;
+  const at = (ms: number) => new Date(T0 + ms);
+  const lockedWith = (row: Hit) => {
+    const w = makeWorld();
+    w.hits.set(totpFailKey(USER), row);
+    return w.attempts.lockedFor(USER, at(0));
+  };
+
+  it('пауза ещё идёт, окно истекло → секунды до конца паузы', async () => {
+    const row = { hits: 1, expiresAt: at(-H), blockedUntil: at(2 * H) };
+    expect(await lockedWith(row)).toBe(2 * 3600);
+  });
+
+  it('пауза кончилась, окно идёт, промахов меньше лимита → 0', async () => {
+    const row = { hits: 3, expiresAt: at(H), blockedUntil: at(-H) };
+    expect(await lockedWith(row)).toBe(0);
+  });
+
+  it('пауза кончается ровно сейчас, лимит в окне выбран → до конца окна', async () => {
+    const row = {
+      hits: TOTP_FAIL_LIMIT,
+      expiresAt: at(H),
+      blockedUntil: at(0),
+    };
+    expect(await lockedWith(row)).toBe(3600);
   });
 });

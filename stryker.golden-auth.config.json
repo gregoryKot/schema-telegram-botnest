@@ -34,6 +34,10 @@
     "src/api/telegram-auth.guard.ts",
     "src/auth/security-log.service.ts",
     "src/auth/security-log-redact.ts",
+    "src/auth/totp.service.ts",
+    "src/auth/totp-code.ts",
+    "src/auth/totp-attempts.ts",
+    "src/auth/totp-recovery.ts",
     "src/therapy/therapy-relations.service.ts"
   ],
   "mutator": {
