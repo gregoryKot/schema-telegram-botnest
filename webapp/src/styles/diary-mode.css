@@ -64,16 +64,8 @@
 
 /* «Запись сохранена» (ModeEntryDone): лист «готово», цепочка и тихий шаринг одной колонкой. */
 .sd-done-page { display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; max-width: 588px; margin: 0 auto; padding: 32px 24px 96px; }
-.sd-share { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.sd-share-full { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-.sd-share-note { font-size: 12px; line-height: 1.5; color: var(--text-faint); }
 .sd-done-share:empty { display: none; }
 .sd-done-share { padding: 0 6px; }
-.sd-done-share .sd-share { flex-flow: row wrap; align-items: center; gap: 0 18px; }
-.sd-done-share .sd-share-note { flex-basis: 100%; color: var(--text-sub); }
-.sd-done-share .sd-share-full { display: contents; }
-.sd-done-share .ds-btn.ds-btn--secondary { height: 44px; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 13.5px; }
-.sd-done-share .ds-btn.ds-btn--secondary:hover { color: var(--accent-hi); }
 /* Цепочка режимов: белый лист со сдвинутым слоем, знаки «режим → группа кандидатов». */
 .sd-chain {
   display: flex; flex-direction: column; gap: 12px; padding: 20px 22px 18px; border-radius: 22px;
