@@ -250,6 +250,10 @@
   .ss-checkin-sign { width: 56px; }
   .ss-checkin-title { font-size: 20px; }
 }
+/* 320–340: на 22px «почувствовать отклик.» шире строки, и «отклик.» в вопросе 1 оставалось одно в строке. */
+@media (max-width: 340px) {
+  .ss-q-text { font-size: 20px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .ss-slide-r, .ss-slide-l { animation: none; }
 }

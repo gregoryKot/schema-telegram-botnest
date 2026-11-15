@@ -24,7 +24,7 @@
   position: absolute; left: 50%; top: 50%; width: 100%; max-width: 580px;
   transform: translate(-50%, -50%);
 }
-.pl2-hero-collage--narrow { display: none; }
+.pl2-hero-collage--narrow, .pl2-hero-collage--xs { display: none; }
 
 /* ── Мокап экрана «Сегодня» на коллаже (декор, aria-hidden) ─────────────── */
 .pl2-preview { position: relative; z-index: 1; display: flex; justify-content: center; }
@@ -105,6 +105,13 @@
   .pl2-note-card--a { top: -46px; }
   .pl2-hero .pl2-h1 { font-size: 10.6vw; }
   .pl2-hero .pl2-pill { gap: 6px; padding: 6px 12px; font-size: 12px; }
+}
+/* 320–340: узкий коллаж мельчает с шириной, а высота мокапа нет — шалфей и петля уходили под мокап. Своя сцена
+   (--xs, 1 ед. = 1px) прижата к низу блока: квадратик и петля — в полосе 80px под мокапом при любой его высоте. */
+@media (max-width: 340px) {
+  .pl2-hero-art { min-height: 0; padding-bottom: 80px; }
+  .pl2-hero-collage--narrow { display: none; }
+  .pl2-hero-collage--xs { display: block; top: auto; bottom: 0; max-width: 288px; transform: translateX(-50%); }
 }
 @media (prefers-reduced-motion: reduce) {
   .pl2-in { animation: none; }
