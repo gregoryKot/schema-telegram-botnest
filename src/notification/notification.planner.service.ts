@@ -109,11 +109,11 @@ export class NotificationPlannerService {
 
     // День 14 без записей: возврат через зеркало СОБСТВЕННЫХ данных (value_recap).
     // Заполняет мёртвое окно между dormant_7 и reengagement_30. Только при значимом
-    // портрете (≥5 дней истории) — иначе в этот день просто тишина.
+    // портрете (≥5 дней), иначе тишина; в очереди — только число дней (РКН, #1135).
     if (daysSince === 14) {
+      if (await this.notifications.hasPending(uid, 'value_recap')) return;
       const insight = await this.analytics.getProfileInsight(uid);
       if (insight) {
-        // В очередь — только число дней: оценок и потребностей там нет (РКН, #1135).
         const recap = { totalDays: insight.totalDays };
         await this.standIn(uid, 'value_recap', sendAt, recap);
       }
