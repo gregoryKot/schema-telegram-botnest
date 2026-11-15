@@ -43,7 +43,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { messengerLaunchMeta } from '../analytics/launch-platforms.constants';
 import { failureSinks, reportExchangeFailure } from './exchange-failure.report';
 import {
-  isCrossSiteRequest,
+  isCrossSiteTelegramLogin,
   requireCsrf,
   setRefreshCookie,
 } from './auth-http.util';
@@ -143,10 +143,10 @@ export class AuthAccountController {
     const ua = req.headers['user-agent'];
     const tokens = await this.auth.issueTokens(userId, req.ip, ua);
     // Telegram Web (Web A/K) грузит мини-апп в iframe, как MAX: strict-кука
-    // там не продлевается (2026-08-21). Нативное вебвью остаётся на strict.
+    // там не продлевается. Нативное вебвью остаётся на strict.
     const webappUrl = this.config.getOrThrow<string>('WEBAPP_URL');
-    const crossSite = isCrossSiteRequest(req, webappUrl);
-    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
+    const crossSite = isCrossSiteTelegramLogin(req, webappUrl, dto.platform);
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite, req);
     // Платформа запуска — server-events.constants.ts; track() не бросает.
     const meta = messengerLaunchMeta('telegram', dto.platform);
     void this.analytics.track(null, 'messenger_launch', meta);

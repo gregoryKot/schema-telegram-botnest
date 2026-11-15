@@ -7,7 +7,11 @@
 // оставалась в jar и предъявлялась снова при каждом visibilitychange/cold
 // start тридцать дней подряд.
 import { UnauthorizedException } from '@nestjs/common';
-import { CROSS_SITE_COOKIE, REFRESH_COOKIE } from './auth-http.util';
+import {
+  CROSS_SITE_COOKIE,
+  REFRESH_COOKIE,
+  cookieOptions,
+} from './auth-http.util';
 
 interface CookieRes {
   clearCookie(name: string, opts: { path: string }): void;
@@ -20,6 +24,10 @@ const LINK_COOKIES = ['link_token']; // незаконченная привяз�
 export function clearCookies(res: CookieRes): void {
   for (const name of [REFRESH_COOKIE, CROSS_SITE_COOKIE, ...LINK_COOKIES])
     res.clearCookie(name, { path: '/api/auth' });
+  // Партиционированную пару (CHIPS) стирает только Set-Cookie с Partitioned.
+  const partitioned = cookieOptions(0, { crossSite: true });
+  for (const name of [REFRESH_COOKIE, CROSS_SITE_COOKIE])
+    res.clearCookie(name, partitioned);
 }
 
 /**

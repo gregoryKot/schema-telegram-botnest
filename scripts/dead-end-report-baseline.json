@@ -11,6 +11,10 @@
   "webapp/src/components/booking/useBookingByToken.ts::setLoadError": {
     "status": "reports"
   },
+  "webapp/src/components/booking/useClientBooking.ts::setOverview": {
+    "status": "exempt",
+    "reason": "вспомогательные данные карточки терапевта: без них она показывает дату от терапевта, как без записи; экран рабочий, ложного «записей нет» нет"
+  },
   "webapp/src/components/diary/GratitudeEntrySheet.tsx::setSaveError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); лист остаётся открытым с текстом"
@@ -22,6 +26,10 @@
   "webapp/src/components/diary/SchemaEntrySheet.tsx::setSaveError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); лист остаётся открытым с текстом"
+  },
+  "webapp/src/components/diary/quickEntry/useActiveSchemaIds.ts::setIds": {
+    "status": "exempt",
+    "reason": "вспомогательный порядок чипов: без профиля показываются все схемы, запись работает; экран рабочий"
   },
   "webapp/src/components/diary/quickEntry/useQuickEntry.ts::setError": {
     "status": "exempt",
@@ -63,6 +71,10 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
   },
+  "webapp/src/components/settingsSheet/BecomeTherapistSection.tsx::setTherapistReq": {
+    "status": "debt",
+    "reason": "сбой загрузки заявки рисуется как «заявки нет» с формой вместо статуса — неправда о данных; строка в docs/BACKLOG.md"
+  },
   "webapp/src/components/settingsSheet/NameAddressSections.tsx::setError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
@@ -74,6 +86,10 @@
   "webapp/src/components/settingsSheet/useTherapyRelationSettings.ts::setInviteError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/components/settingsSheet/useTherapyRelationSettings.ts::setTherapyRelation": {
+    "status": "debt",
+    "reason": "сбой загрузки связи рисуется как «терапевта нет» с полем кода вместо сбоя — неправда о данных; строка в docs/BACKLOG.md"
   },
   "webapp/src/components/therapist/OfflineInviteCard.tsx::setError": {
     "status": "exempt",
@@ -107,6 +123,14 @@
   "webapp/src/components/therapist/useTasksBoard.ts::setFailed": {
     "status": "reports"
   },
+  "webapp/src/components/therapy/useTherapySignal.ts::setLoaded": {
+    "status": "exempt",
+    "reason": "необязательная карточка-сигнал: без истории она просто не показывается, экран рабочий; ложного сигнала нет"
+  },
+  "webapp/src/pages/AdminPage.tsx::setAuthed": {
+    "status": "exempt",
+    "reason": "неверный или протухший ключ админки — снова экран ввода ключа; ввод владельца, а не поломка, экран видит только владелец"
+  },
   "webapp/src/pages/AdminPage.tsx::setKeyError": {
     "status": "exempt",
     "reason": "неверный ключ админки — ввод владельца, а не поломка; экран входа в админку видит только владелец"
@@ -114,6 +138,9 @@
   "webapp/src/pages/LoginPage.tsx::setError": {
     "status": "reports",
     "via": "useAuthFailureReport"
+  },
+  "webapp/src/pages/SubscribePage.tsx::setOptsFailed": {
+    "status": "reports"
   },
   "webapp/src/pages/SubscribePage.tsx::setStatus": {
     "status": "exempt",
@@ -145,6 +172,14 @@
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
   },
+  "webapp/src/pages/admin/BookingSection.tsx::setOpts": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/BookingSection.tsx::setS": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
   "webapp/src/pages/admin/BookingsManager.tsx::setBookingsFailed": {
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
@@ -152,6 +187,10 @@
   "webapp/src/pages/admin/HealthyAdultCheck.tsx::setError": {
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/HealthyAdultImport.tsx::setStatus": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
   },
   "webapp/src/pages/admin/HealthyAdultSection.tsx::setError": {
     "status": "exempt",
@@ -164,6 +203,10 @@
   "webapp/src/pages/admin/PhotoSection.tsx::setError": {
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/PricesManager.tsx::setOpts": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
   },
   "webapp/src/pages/admin/calendar/CalendarWeek.tsx::setMutateError": {
     "status": "exempt",

@@ -58,6 +58,25 @@ describe('SubscribePage — загрузка опций', () => {
     await renderLoaded();
     expect(screen.getByText('299 ₽')).toBeTruthy();
   });
+
+  // Правило №14: раньше отказ рисовал «Подписка скоро» и молчал — сбой не отличить от выключенной подписки.
+  it('отказ загрузки опций — отчёт наверх и экран сбоя с «Обновить», а не «скоро»', async () => {
+    mockApi.getSubscriptionOptions.mockRejectedValue(new ApiError(500, 'boom'));
+    render(<SubscribePage />);
+    await screen.findByText('Подписка не загрузилась');
+    expect(screen.getByRole('alert').textContent).toMatch(/нет\sсоединения\sили\sсбой\sна\sнашей\sстороне/);
+    expect(screen.getByRole('button', { name: 'Обновить' })).toBeTruthy();
+    expect(screen.queryByText('Подписка скоро')).toBeNull();
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'subscription options failed: HTTP 500', section: 'subscription' });
+  });
+
+  it('контроль: успех с enabled:false — «Подписка скоро» без отчёта наверх', async () => {
+    mockApi.getSubscriptionOptions.mockResolvedValue({ enabled: false, options: [] });
+    render(<SubscribePage />);
+    await screen.findByText('Подписка скоро');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
 });
 
 describe('SubscribePage — согласие обязательно', () => {

@@ -74,7 +74,7 @@ export class AuthMaxController {
     const tokens = await this.auth.issueTokens(userId, req.ip, ua);
     // crossSite: MAX открывает мини-апп в iframe, и strict-куку браузер оттуда
     // не пошлёт — сессия перестала бы продлеваться через 15 минут.
-    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, true);
+    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, true, req);
     // Платформа запуска — server-events.constants.ts; track() не бросает.
     const meta = messengerLaunchMeta('max', body.platform);
     void this.analytics.track(null, 'messenger_launch', meta);
