@@ -1,11 +1,10 @@
 // Межустройственная синхронизация настроек кастомизации экранов (меню
-// «Инструменты», скрытые/переставленные блоки «Профиля» и «Паттернов»). Живёт в
-// shared: сайт — тонкая обёртка над createUiPrefsSync (api и
-// хранилище приходят снаружи). Бэкенд хранит плоский объект «ключ → строка из
+// «Инструменты», блоки «Профиля», «Паттернов» и «Главного» концептуализации).
+// Живёт в shared: сайт — тонкая обёртка над createUiPrefsSync (api и хранилище
+// приходят снаружи). Бэкенд хранит плоский объект «ключ → строка из
 // localStorage» в User.uiPrefs и заменяет его ЦЕЛИКОМ. Контракт зафиксирован:
-// SYNCED_PREF_KEYS парсит бэкенд-спека fs-ом
-// (src/security/ui-prefs-sync.invariants.spec.ts) — менять состав/формат только
-// синхронно с бэкендом, по ключу на строке.
+// SYNCED_PREF_KEYS парсит бэкенд-спека fs-ом (src/security/ui-prefs-sync.invariants.spec.ts)
+// — менять состав/формат только синхронно с бэкендом, по ключу на строке.
 import { readLocal, removeLocal, writeLocal } from '../utils/safeLocalStorage';
 
 export const SYNCED_PREF_KEYS = [
@@ -16,6 +15,7 @@ export const SYNCED_PREF_KEYS = [
   'screen_order_profile',
   'screen_order_patterns',
   'why_seen_v1',
+  'concept_brief_blocks',
 ] as const;
 
 export type SyncedPrefKey = (typeof SYNCED_PREF_KEYS)[number];
