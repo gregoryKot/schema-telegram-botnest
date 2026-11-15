@@ -1,10 +1,10 @@
-// Вид кризисной карточки (CrisisCard.tsx) — инлайном: карточку берут и кабинет, и визитка
-// (BookingCrisisNote), CSS экрана туда не доезжает. Только токены и бумага по --h (.pp-paper);
-// тень плашки — сплошной сдвинутый слой тоном бумаги, без размытия.
+// Вид кризисной карточки (CrisisCard.tsx) — инлайном: карточку берут и кабинет, и визитка (BookingCrisisNote),
+// CSS экрана туда не доезжает. Только токены и бумага по --h (.pp-paper); тень плашки — сплошной слой без размытия.
 import type { CSSProperties } from 'react';
+import { ENTITY_LOOK } from '../theme/entityLook';
 
-/** Бумага карточки — «бережная» роза (ENTITY_LOOK.sos, PAPER_HUE.rose). */
-export const CRISIS_HUE = 25;
+/** Бумага карточки — «бережная» роза «Мне плохо» (ENTITY_LOOK.sos). */
+export const CRISIS_HUE = ENTITY_LOOK.sos.hue;
 
 export const CRISIS_CARD_STYLE = {
   head: { display: 'flex', alignItems: 'center', gap: 12 },

@@ -4,8 +4,7 @@ import { EntitySheet } from '../paper/EntitySheet';
 import { SpreadLayout } from '../paper/SpreadLayout';
 import { CRISIS_HUE } from '../../../../shared/src/components/crisisCardStyle';
 
-/** Бумага «Мне плохо» — бережная роза (CRISIS_HUE = ENTITY_LOOK.sos, сверка — entityLook.test.ts): её берут
- *  лист-герой, плашки номеров и поля. Литерал из crisisCardStyle, а не рантайм-импорт entityLook (чанки). */
+/** Бумага «Мне плохо» — бережная роза (CRISIS_HUE = ENTITY_LOOK.sos): её берут лист-герой, плашки номеров и поля. */
 const SOS_PAPER = { '--h': CRISIS_HUE } as CSSProperties;
 
 /** Каркас экрана «Мне плохо»: полноэкранный лист, бар упражнения (ExBar), колонка контента.

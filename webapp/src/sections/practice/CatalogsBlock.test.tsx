@@ -2,10 +2,10 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CatalogsBlock } from './CatalogsBlock';
-import type { PracticeEntity } from './practiceLook';
+import type { EntityId } from '../../../../shared/src/theme/entityLook';
 
 afterEach(cleanup);
-const row = (id: string, look: PracticeEntity) => ({ id, look, label: id, sub: '', onClick: () => {} });
+const row = (id: string, look: EntityId) => ({ id, look, label: id, sub: '', onClick: () => {} });
 
 describe('CatalogsBlock', () => {
   it('у каждой строки знак её сущности слева; «Что питает», «Планы» и «Карта режимов» — разные', () => {

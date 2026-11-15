@@ -78,7 +78,6 @@ export {
 export {
   CARD_LOOK,
   DAY_DONE_HUE,
-  ACHIEVEMENT_CARD_LOOK,
   achievementCardLook,
   INVITE_LOOK,
   type CardEntity,

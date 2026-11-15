@@ -3,7 +3,7 @@
 // (обе склеиваются здесь, glueIf), «Повторить» второстепенной (на телефоне во всю ширину). Заменяет красные
 // строки, cpf-error, st-err и ds-card--warn; на нём же SaveErrorNote. Красного нет: данные на месте.
 import type { CSSProperties, ReactNode } from 'react';
-import type { PaperHue, SignKey } from '../../../../shared/src/theme/entityLook';
+import { OUTCOME_LOOK, type PaperHue, type SignKey } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../art/SignArt';
 import { glueIf } from '../../../../shared/src/utils/typo';
 
@@ -12,10 +12,7 @@ export interface PaperAlertProps {
   text?: ReactNode;
   /** Знак сущности блока — бледно, строкой. */
   sign?: SignKey;
-  /** Бумага; по умолчанию солома (PAPER_HUE.straw, как исход wait) — «подожди, ничего страшного».
-   *  Литерал, а не импорт палитры: рантайм-импорт из entityLook в PaperAlert (SaveErrorNote — в
-   *  главном потоке) выносил entityLook и ExScreen в свои чанки, и CSS упражнений вставал раньше
-   *  index.css (docs/open/frontend-ux.md, порядок CSS). Сверка с палитрой — PaperAlert.test.tsx. */
+  /** Бумага; по умолчанию солома исхода wait (OUTCOME_LOOK) — «подожди, ничего страшного». */
   hue?: PaperHue;
   onRetry?: () => void;
   retryLabel?: ReactNode;
@@ -26,7 +23,7 @@ export interface PaperAlertProps {
   className?: string;
 }
 
-export function PaperAlert({ title, text, sign, hue = 70, onRetry, retryLabel = 'Повторить', retrying, role = 'alert', className }: PaperAlertProps) {
+export function PaperAlert({ title, text, sign, hue = OUTCOME_LOOK.wait.hue, onRetry, retryLabel = 'Повторить', retrying, role = 'alert', className }: PaperAlertProps) {
   // Cup — бумага на бумаге: бледным на соломе его не видно (ревью b26). Вариант мотива с плашкой и
   // контуром, в полную силу и по ширине чашки — без пустого поля слева от текста.
   const solid = sign === 'cup';

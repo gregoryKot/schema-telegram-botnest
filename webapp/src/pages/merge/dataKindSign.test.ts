@@ -1,15 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { DATA_KIND_ENTITY, ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { TABLE_LABELS } from '../../utils/mergeLabels';
-import { DATA_KIND_SIGN_LIT, dataKindSign } from './dataKindSign';
+import { dataKindSign } from './dataKindSign';
 
-// Правило №4: литеральная таблица страницы обязана совпадать с shared (DATA_KIND_ENTITY → ENTITY_LOOK).
 describe('dataKindSign — вид данных → знак строки «что переедет»', () => {
-  it('совпадает с DATA_KIND_ENTITY и ENTITY_LOOK из shared', () => {
-    const expected = Object.fromEntries(
-      Object.entries(DATA_KIND_ENTITY).map(([t, id]) => [t, ENTITY_LOOK[id].sign]),
-    );
-    expect(DATA_KIND_SIGN_LIT).toEqual(expected);
+  it('знак таблицы — знак её сущности (DATA_KIND_ENTITY → ENTITY_LOOK)', () => {
+    for (const [t, id] of Object.entries(DATA_KIND_ENTITY)) expect(dataKindSign(t), t).toBe(ENTITY_LOOK[id].sign);
   });
 
   it('у каждой таблицы, которую сервер отдаёт в сводке (TABLE_LABELS), есть знак', () => {

@@ -44,9 +44,9 @@ export default defineConfig({
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
             return 'vendor-react';
           }
-          if (id.includes('schemaTherapyData') || id.includes('needData')) {
-            return 'schema-data';
-          }
+          if (id.includes('schemaTherapyData') || id.includes('needData')) return 'schema-data';
+          // Таблицы вида — стартовый чанк без зависимостей (почему — docs/architecture/frontends.md, «Подводные камни»).
+          if (/[\\/]shared[\\/]src[\\/]theme[\\/](entityLook|entityLookMaps|entityHue|signKeys)\.ts$/.test(id)) return 'entity-look';
         },
       },
     },
