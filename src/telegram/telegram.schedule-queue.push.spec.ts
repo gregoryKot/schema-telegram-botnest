@@ -138,6 +138,47 @@ describe('очередь: канал «уведомление в приложе�
     expect(t.accountService.markUserBlocked).not.toHaveBeenCalled();
   });
 
+  // Инсайт выведен из оценок (PUSH_ONLY_TYPES): в Telegram не уходит ни у
+  // кого — ни без подписки, ни когда подписка пропала посреди прохода.
+  describe('low_streak_insight — только в приложение', () => {
+    const insight = (s: SendSettings, push?: () => PushOutcome) =>
+      deps({
+        due: [row(1, 5n, 'low_streak_insight')],
+        s: new Map([['5', s]]),
+        push,
+      });
+
+    it('подписка есть — уходит пушем', async () => {
+      const t = insight(settings({ chatId: 777n }));
+      await runProcessQueue(t.d);
+      expect(t.push.sendToUser).toHaveBeenCalledTimes(1);
+      expect(t.bot.telegram.callApi).not.toHaveBeenCalled();
+      expect(t.notificationService.markSent).toHaveBeenCalledWith(1);
+    });
+
+    it.each([
+      ['только Telegram', settings({ chatId: 777n, hasPush: false })],
+      ['пуш gone + Telegram привязан', settings({ chatId: 777n })],
+    ])('%s — снято, в Telegram не ушло', async (_name, s) => {
+      const t = insight(s, () => 'gone');
+      await runProcessQueue(t.d);
+      expect(t.bot.telegram.callApi).not.toHaveBeenCalled();
+      expect(t.notificationService.cancelOne).toHaveBeenCalledWith(1);
+      expect(t.notificationService.markSent).not.toHaveBeenCalled();
+      expect(t.accountService.markUserBlocked).not.toHaveBeenCalled();
+    });
+
+    it('контроль: напоминание тому же человеку только с Telegram уходит в Telegram', async () => {
+      const t = deps({
+        due: [row(1, 5n)],
+        s: new Map([['5', settings({ chatId: 777n, hasPush: false })]]),
+      });
+      await runProcessQueue(t.d);
+      expect(t.bot.telegram.callApi).toHaveBeenCalledTimes(1);
+      expect(t.notificationService.markSent).toHaveBeenCalledWith(1);
+    });
+  });
+
   it('ни подписки, ни Telegram — снято без попыток отправки', async () => {
     const t = deps({
       due: [row(1, 5n)],

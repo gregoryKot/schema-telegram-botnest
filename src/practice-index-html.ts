@@ -6,6 +6,7 @@
 // указывает на kotlarewski.gr уже в самом файле.
 import { RequestMethod } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import type { LandingText } from './booking/landing-price';
 import { REVALIDATE } from './infra/static-cache';
 import { PRACTICE_PAGES } from './practice-domain.surface';
 import { PRACTICE_INDEXED_PAGES } from './practice-domain.seo';
@@ -50,14 +51,15 @@ export function practicePageHtml(
     : preview;
 }
 
-/** GET страницы визитки на хосте-алиасе — index.html с её карточкой; любой
- *  другой хост или путь — дальше, к ServeStatic. Кэш — как у index.html из
- *  ServeStatic: ревалидация каждый раз, у сборки после деплоя другие хеши. */
+/** GET страницы визитки на хосте-алиасе — index.html с её карточкой и ценой
+ *  из админки; другой хост или путь — дальше, к ServeStatic. Кэш — как у
+ *  index.html из ServeStatic: ревалидация, у сборки после деплоя другие хеши. */
 export function practiceIndexMiddleware(
   html: string | null,
   aliasHosts: ReadonlySet<string>,
+  landingText: LandingText,
 ) {
-  return (req: Request, res: Response, next: () => void): void => {
+  return async (req: Request, res: Response, next: () => void) => {
     const path = req.path.length > 1 ? req.path.replace(/\/+$/, '') : req.path;
     if (
       !html ||
@@ -67,8 +69,9 @@ export function practiceIndexMiddleware(
       next();
       return;
     }
+    const body = await landingText(practicePageHtml(html, req.hostname, path));
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', REVALIDATE);
-    res.send(practicePageHtml(html, req.hostname, path));
+    res.send(body);
   };
 }

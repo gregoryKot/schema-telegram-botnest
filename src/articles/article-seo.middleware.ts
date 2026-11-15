@@ -11,6 +11,7 @@ import {
   injectSeo,
   type SeoPage,
 } from './article-seo.render';
+import { PricingService } from '../booking/pricing.service';
 import { requestHost } from '../infra/request-host';
 import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
@@ -34,7 +35,10 @@ export class ArticleSeoMiddleware implements NestMiddleware {
   private readonly logger = new Logger(ArticleSeoMiddleware.name);
   private cachedHtml: string | null | undefined;
 
-  constructor(private readonly articles: ArticlesService) {}
+  constructor(
+    private readonly articles: ArticlesService,
+    private readonly pricing: PricingService,
+  ) {}
 
   private html(): string | null {
     if (this.cachedHtml === undefined) {
@@ -64,7 +68,9 @@ export class ArticleSeoMiddleware implements NestMiddleware {
       const page = match
         ? await this.articlePage(match[1], suffix)
         : await this.listPage(suffix);
-      let out = injectSeo(alias ? practicePreviewHtml(base) : base, page);
+      const shell = alias ? practicePreviewHtml(base) : base;
+      // Цена визитки — в шаблон до текста статьи: его пишет владелец.
+      let out = injectSeo(await this.pricing.landingText(shell), page);
       if (alias) {
         out = out.split(SITE_URL).join(`https://${host}`);
       }
