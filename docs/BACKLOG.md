@@ -120,6 +120,7 @@
 
 ## Сделано
 
+- ✅ **Чистка Zoom: комнаты вне `ClientMeeting` с именем клиента** (PR #1280) — `/scrub_foreign` берёт список встреч Zoom (`listZoomMeetings`, `src/booking/zoom-room.ts`) и сверяет с базой (`src/booking/zoom-orphans.ts`): комнату бота без строки и без живой брони удаляет, остальным снимает имя, прочие встречи не трогает; 403 и нечитаемые ссылки броней — строками отчёта. Боевой прогон — за владельцем (`docs/open/security.md`).
 - ✅ **Ночная волна Б мутаций проходит пробный прогон: спек сверяет поведение, а не текст `subscription.service.ts`** — в `src/infra/self-check/cron-lease-expected.spec.ts` вместо `readFileSync` сверка `SubscriptionService.isEnabled()` с ожиданием аренды `subscriptionChargeDue` при флаге `LEASE_FEATURE_FLAG.subscriptionChargeDue` = `true`/`false`/`TRUE`/нет; `npx stryker run stryker.golden-payments.config.json --dryRunOnly` зелёный (#1277).
 - ✅ **Дубль тестов `chargeDue` в двух спеках подписки снят** — describe «SubscriptionService.chargeDue — точные аргументы выборки должников» остался только в `src/subscription/subscription.mutation3.spec.ts` (там на тест больше); из `subscription.mutation2.spec.ts` ушли копия и заглушки, нужные только ей (#1277).
 - ✅ **Флак `ChildhoodWheelEx.test.tsx`: показ `therapy_nudge` ждётся через `waitFor`** — событие шлёт `useEffect` в `webapp/src/components/therapy/TherapyLine.tsx`, и оно догоняет DOM уже после `findByText` (#1277).
