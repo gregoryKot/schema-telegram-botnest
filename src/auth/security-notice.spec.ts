@@ -84,7 +84,10 @@ describe('SecurityNoticeService.deliver', () => {
 
   // Почта — не вход (решение владельца, ч. 10 ст. 8 149-ФЗ): письмо не зовёт её способом входа.
   it('привязка почты: «почта для писем», без «способа входа», в обеих формах', async () => {
-    for (const [form, who] of [['ty', 'Если это не ты'], ['vy', 'Если это не вы']] as const) {
+    for (const [form, who] of [
+      ['ty', 'Если это не ты'],
+      ['vy', 'Если это не вы'],
+    ] as const) {
       const { svc, email } = makeService({ form, email: 'me@example.com' });
       await svc.deliver(7n, { kind: 'provider_linked', provider: 'email' });
       const [, subject, body] = email.send.mock.calls[0] as string[];

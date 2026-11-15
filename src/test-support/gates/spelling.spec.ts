@@ -96,9 +96,13 @@ describe('check-spelling.mjs', () => {
 
   it('игра в области многоточия: «ЗАГРУЗКА...» в game/ — exit 1, «ЗАГРУЗКА…» — exit 0', () => {
     expect(
-      runGate(GATE, { 'game/src/i18n/m.ts': "export const m = { ru: 'ЗАГРУЗКА...' };\n" }).status,
+      runGate(GATE, {
+        'game/src/i18n/m.ts': "export const m = { ru: 'ЗАГРУЗКА...' };\n",
+      }).status,
     ).toBe(1);
-    const ok = runGate(GATE, { 'game/src/i18n/m.ts': "export const m = { ru: 'ЗАГРУЗКА…' };\n" });
+    const ok = runGate(GATE, {
+      'game/src/i18n/m.ts': "export const m = { ru: 'ЗАГРУЗКА…' };\n",
+    });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK);
   });
