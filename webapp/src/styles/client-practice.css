@@ -9,11 +9,10 @@
 .cp-page { max-width: 1100px; }
 .cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
 .cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
-.cp-block .section { margin: 0; }
 .cp-here { gap: 18px; container: cp-here / inline-size; }
 .cp-here-text { margin: 0; max-width: 78ch; line-height: 1.6; text-wrap: pretty; }
 
-/* Квадраты «Здесь и сейчас» (QuickSquares): как два квадрата «Сегодня», знак — с тенью-вырезкой.
+/* Квадраты «Здесь и сейчас» (QuickSquares, плитка QuickTile): как два квадрата «Сегодня», знак — с тенью-вырезкой.
    Знак лежит в своём слоте: правило .pp-square .pp-art (paper.css) не должно двигать слои знака.
    Колонки minmax(0, 1fr), кегль названия — по ширине квадрата: «Заземление» Literata 26 на 320
    распирало колонку и уводило второй квадрат за край экрана. Три квадрата в узкой колонке
