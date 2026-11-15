@@ -1,8 +1,8 @@
 // Разбор для гейта check-next-session-reads.mjs (движок — там же: обход,
 // исключения, отчёт). Чтение `nextSession` мимо upcomingSession — это
 // `.nextSession`/`?.nextSession` не первым аргументом `upcomingSession(…)` и
-// деструктуризация: в объявлении (`const { nextSession } = rel`) и в параметрах
-// функции (`({ nextSession }) =>`, `function f({ nextSession: ns }: P) {`,
+// деструктуризация: в объявлении (`const { nextSession } = rel`, `for (const { nextSession } of …)`)
+// и в параметрах функции (`({ nextSession }) =>`, `function f({ nextSession: ns }: P) {`,
 // вложенная `({ rel: { nextSession } }) =>`). Запись (`x.nextSession = …`),
 // ключ объекта в вызове (`save({ nextSession: … })`) и типы
 // (`(r: { nextSession: string }) =>`) — не чтения.
@@ -11,7 +11,7 @@ import { lineAt, skipString } from './gate-balance.mjs';
 import { isParamList } from './gate-functions.mjs';
 
 const KEY = 'nextSession';
-const DECL_RE = /\b(?:const|let|var)\s*\{[^{}]*\bnextSession\b[^{}]*\}\s*(?::[^=]+)?=(?!=)/g;
+const DECL_RE = /\b(?:const|let|var)\s*\{[^{}]*\bnextSession\b[^{}]*\}\s*(?:(?::[^=]+)?=(?!=)|\bof\b)/g;
 const isQuote = (c) => c === "'" || c === '"' || c === '`';
 const prevChar = (src, i) => { let j = i - 1; while (j >= 0 && /\s/.test(src[j])) j -= 1; return src[j]; };
 const nextChar = (src, i) => { let j = i; while (j < src.length && /\s/.test(src[j])) j += 1; return src[j]; };
