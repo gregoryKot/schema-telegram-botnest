@@ -30,18 +30,13 @@
 .sd-feel-title { font-size: 15px; font-weight: 600; line-height: 1.35; }
 .sd-feel-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
 .sd-feel-mode { margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
-/* Полный список (ModeGroupList): группа — бумага группы со знаком в заголовке, строки — белый список.
-   Две колонки — только когда шире 700 сам список (container sd-groups), а не окно: в колонке разворота
-   на 1280 (≈590) две колонки по 285 переносили имена («Перфекционист- / Гиперконтролёр»). */
+/* Полный список (PickGroups: ModeGroupList, карточки упражнений): группа — общий лист SignGroup (sheet-schemas.css),
+   здесь — колонки и шаг между листами. Две колонки — только когда шире 700 сам список (container sd-groups), а не
+   окно: в колонке разворота на 1280 (≈590) две колонки по 285 переносили имена («Перфекционист- / Гиперконтролёр»). */
 .sd-groups-box { container: sd-groups / inline-size; }
 .sd-groups { columns: 1; column-gap: 14px; }
 @container sd-groups (min-width: 700px) { .sd-groups { columns: 2; } }
-.sd-group-block { display: block; margin: 0 0 14px; padding: 12px; border-radius: 20px; break-inside: avoid; }
-.sd-group-head { display: flex; align-items: center; gap: 12px; margin: 0 4px 10px; font: inherit; }
-.sd-group-sign { display: flex; flex: none; width: 60px; }
-.sd-group-sign .pp-art--square { width: 60px; height: auto; }
-.sd-group-name { color: var(--text-sub); }
-.sd-group-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
+.sd-groups > .sg-group { margin: 0 0 14px; }
 .sd-mode-card { display: flex; align-items: center; gap: 12px; min-height: 52px; box-sizing: border-box; padding: 9px 14px; cursor: pointer; }
 .sd-mode-card + .sd-mode-card { border-top: 1px solid var(--paper-sunk); }
 .sd-mode-card:hover { background: oklch(0.97 0.012 var(--h)); }
