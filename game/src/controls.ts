@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { t, type MsgKey } from './i18n';
-import { glyphDataUri } from './glyphs';
+import { mountTouchGlyphs } from './glyphs';
 import { isLongTapLabel } from './tapLabel';
 
 export const IS_TOUCH =
@@ -53,14 +53,7 @@ function localizeTouchUI() {
   set('tbtn-fawn', 'm_surrender');
   set('tbtn-avoid', 'm_avoid');
   set('tbtn-hit', 'm_fight');
-  // стрелки — пиксельные значки (знаков ◀ ▶ ▲ нет в Press Start 2P)
-  for (const [id, glyph] of [['tbtn-left', 'left'], ['tbtn-right', 'right'], ['tbtn-jump', 'up']] as const) {
-    const el = document.getElementById(id);
-    if (!el) continue;
-    const img = document.createElement('img');
-    img.src = glyphDataUri(glyph, '#a08fff', 4); img.alt = ''; img.style.imageRendering = 'pixelated';
-    el.replaceChildren(img);
-  }
+  mountTouchGlyphs();
   const rotate = document.getElementById('rotate-hint');
   if (rotate) rotate.innerHTML =
     `<div class="phone-icon">📱</div><div class="rotate-title">${t('m_game_title')}</div><div>${t('m_rotate_line')}</div>`;

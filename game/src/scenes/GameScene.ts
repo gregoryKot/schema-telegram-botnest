@@ -58,8 +58,7 @@ export class GameScene extends Phaser.Scene {
   spikeRects: { x: number; w: number }[] = [];
   heartPickups: Phaser.GameObjects.Image[] = [];
   memories: Phaser.GameObjects.Sprite[] = [];
-  memText!: Phaser.GameObjects.Text;
-  memIcon?: Phaser.GameObjects.Image;
+  memText!: Phaser.GameObjects.Text; memIcon?: Phaser.GameObjects.Image;
   memGot = 0; memTotal = 0;
   readonly MAX_HEARTS = 5;
 

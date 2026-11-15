@@ -59,3 +59,12 @@ export function setHearts(scene: Phaser.Scene, imgs: Phaser.GameObjects.Image[],
   const full = glyphTexture(scene, 'heart', HEART_FULL, 3), empty = glyphTexture(scene, 'heart', HEART_EMPTY, 3);
   imgs.forEach((img, i) => { img.setTexture(i < n ? full : empty); img.setVisible(i < Math.max(n, 3)); });
 }
+
+/** Стрелки тач-кнопок — пиксельные значки (◀ ▶ ▲ нет в Press Start 2P). */
+export function mountTouchGlyphs(): void {
+  for (const [id, glyph] of [['tbtn-left', 'left'], ['tbtn-right', 'right'], ['tbtn-jump', 'up']] as const) {
+    const img = document.createElement('img');
+    img.src = glyphDataUri(glyph, '#a08fff', 4); img.alt = ''; img.style.imageRendering = 'pixelated';
+    document.getElementById(id)?.replaceChildren(img);
+  }
+}
