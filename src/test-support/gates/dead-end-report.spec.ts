@@ -5,6 +5,7 @@
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
+import { loadStringList } from './pattern-loader';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const PAGE = 'webapp/src/pages/SubPage.tsx';
@@ -108,12 +109,12 @@ describe('check-dead-end-report.mjs', () => {
     expect(res.stderr).toContain(`${KEY}: протухшая запись`);
   });
 
-  it('исход-литерал: setStatus("error"), { kind: "failed" }, try/catch с типом; контроль: idle и комментарий', () => {
+  it('исход-литерал: setStatus("error"), { kind: "failed" }, try/catch с типом; контроль: данные и комментарий', () => {
     const src = [
       'export function X() {',
       "  try { await a(); } catch (e: unknown) { setStatus('error'); }",
       "  try { await b(); } catch { settle({ kind: 'failed' }); }",
-      "  try { await c(); } catch { setStatus('idle'); }",
+      '  try { await c(); } catch { setStatus(next); }',
       '  try { await d(); } catch { /* setBrokenError(true) */ }',
       '}',
     ].join('\n');
@@ -143,18 +144,86 @@ describe('check-dead-end-report.mjs', () => {
     expect(exempt.status).toBe(0);
   });
 
-  it('контроль пустого состояния: с отчётом, с данными в сеттере и без сеттеров — не исход', () => {
+  it('контроль пустого состояния: с отчётом, с данными в сеттере, статус загрузки и без сеттеров — не исход', () => {
     const src = [
       "import { reportClientError } from '../api';",
       'export function X() {',
       "  a().catch(() => { reportClientError({ message: 'x', section: 's' }); setOpts([]); });",
-      '  b().catch(() => { setOpts([]); setPhase(next); });',
+      "  b().catch(() => { setOpts(prev); setPhase('loading'); });",
       '  c().catch(() => undefined);',
       '}',
     ].join('\n');
     const res = run({ 'webapp/src/pages/X.tsx': src }, {});
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
+  });
+
+  it('нейтральный статус в catch без отчёта — красный; контроль: тот же статус с отчётом — зелёный', () => {
+    const res = run({ [PAGE]: page("setStatus('idle');") }, {});
+    expect(res.stderr).toContain(
+      `${PAGE}::setStatus (L5): сбой под пустым состоянием, без отчёта без классификации`,
+    );
+    const kind = run({ [PAGE]: page("setState({ kind: 'empty' });") }, {});
+    expect(kind.stderr).toContain(`${PAGE}::setState (L5)`);
+    const ok = run(
+      {
+        [PAGE]: page(
+          "reportClientError({ message: 'x', section: 's' }); setStatus('idle');",
+        ),
+      },
+      {},
+    );
+    expect(ok.stderr).toBe('');
+    expect(ok.status).toBe(0);
+  });
+
+  it('модуль правил: каждый нейтральный статус из NEUTRAL_STATUSES в catch без отчёта — красный', () => {
+    const statuses = loadStringList(
+      'check-dead-end-report-rules.mjs',
+      'NEUTRAL_STATUSES',
+    );
+    expect(statuses).toContain('idle');
+    for (const st of statuses) {
+      expect(run({ [PAGE]: page(`setStatus('${st}');`) }, {}).status).toBe(1);
+    }
+    expect(run({ [PAGE]: page("setStatus('loading');") }, {}).status).toBe(0);
+  });
+
+  it('смешанные сеттеры: хоть один пустой без отчёта — красный, ключ — пустой сеттер; контроль: все с данными', () => {
+    const res = run({ [PAGE]: page('setPhase(next); setOpts([]);') }, {});
+    expect(res.stderr).toContain(`${PAGE}::setOpts (L5): сбой под пустым`);
+    expect(res.stderr).not.toContain('::setPhase');
+    const ok = run({ [PAGE]: page('setPhase(next); setOpts(prev);') }, {});
+    expect(ok.status).toBe(0);
+  });
+
+  it('загрузка в useEffect: .then(сеттер) без .catch — красный; контроль: .catch, .then(ok, fail), return и вне эффекта', () => {
+    const effect = (body: string) =>
+      `export function X() {\n  useEffect(() => {\n    ${body}\n  }, []);\n}\n`;
+    const res = run({ [PAGE]: effect('api.load().then(setData);') }, {});
+    expect(res.stderr).toContain(
+      `${PAGE}::setData (L3): загрузка без обработки отказа (.then без .catch) без классификации`,
+    );
+    const chained = run(
+      {
+        [PAGE]: effect(
+          'api.load().then(setData).finally(() => setBusy(true));',
+        ),
+      },
+      {},
+    );
+    expect(chained.stderr).toContain(`${PAGE}::setData (L3)`);
+    const controls = [
+      'api.load().then(setData).catch((e) => { reportClientError(e); });',
+      'api.load().then(setData, () => reportClientError({}));',
+      'return api.load().then(setData);',
+    ];
+    for (const body of controls) {
+      expect(run({ [PAGE]: effect(body) }, {}).stderr).toBe('');
+    }
+    const onClick =
+      'export function X() {\n  const go = () => api.load().then(setData);\n}\n';
+    expect(run({ [PAGE]: onClick }, {}).status).toBe(0);
   });
 
   it('область: верхний уровень components/ и тесты не сканируются', () => {

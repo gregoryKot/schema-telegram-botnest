@@ -7,9 +7,11 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 import { THERAPIST_REQUEST_PENDING, rejectedRequestText, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
+import { useSectionLoadFailure } from './useSectionLoadFailure';
+import { SectionLoadState } from './SectionLoadState';
 
-// Раздел «Стать специалистом» листа настроек (вынесен из SettingsSheet.tsx, №10): заявка живёт
-// локально, родителю она не нужна. Статусы и отказ — тем же видом, что на /account (TherapistRequestSection).
+// Раздел «Стать специалистом» листа настроек: заявка живёт локально. Статусы и отказ — тем же видом,
+// что на /account (TherapistRequestSection); сбой загрузки ≠ «заявки нет» (иначе форма и дубль заявки).
 export function BecomeTherapistSection() {
   const tr = useTr();
   const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
@@ -21,19 +23,16 @@ export function BecomeTherapistSection() {
   const [reqBusy, setReqBusy] = useState(false);
   const [reqError, setReqError] = useState('');
 
+  const load = useSectionLoadFailure('therapist request');
+
   useEffect(() => {
-    api.getTherapistRequest().then(r => setTherapistReq(r)).catch(() => setTherapistReq(null));
-  }, []);
+    api.getTherapistRequest().then(r => setTherapistReq(r)).catch(load.fail);
+  }, [load.fail, load.attempt]);
 
   async function submitTherapistRequest() {
     setReqError('');
     if (!reqFullName.trim() || !reqQual.trim() || !reqContacts.trim()) {
-      setReqError(
-        tr(
-          'Заполни ФИО, квалификацию и контакты',
-          'Заполните ФИО, квалификацию и контакты',
-        ),
-      );
+      setReqError(tr('Заполни ФИО, квалификацию и контакты', 'Заполните ФИО, квалификацию и контакты'));
       return;
     }
     setReqBusy(true);
@@ -50,7 +49,8 @@ export function BecomeTherapistSection() {
     <SSection id="s-specialist" label="Стать специалистом">
       <div className="st-body-block">
         {rejected && <FieldError role="status">{rejected}</FieldError>}
-        {therapistReq?.status === 'pending' ? (
+        {therapistReq === undefined ? <SectionLoadState of="request" load={load} />
+        : therapistReq?.status === 'pending' ? (
           <div className="st-text">{THERAPIST_REQUEST_PENDING}</div>
         ) : therapistReq?.status === 'approved' ? (
           <div className="st-text st-text--ok">

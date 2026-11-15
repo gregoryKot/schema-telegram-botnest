@@ -71,10 +71,6 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
   },
-  "webapp/src/components/settingsSheet/BecomeTherapistSection.tsx::setTherapistReq": {
-    "status": "debt",
-    "reason": "сбой загрузки заявки рисуется как «заявки нет» с формой вместо статуса — неправда о данных; строка в docs/BACKLOG.md"
-  },
   "webapp/src/components/settingsSheet/NameAddressSections.tsx::setError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
@@ -86,10 +82,6 @@
   "webapp/src/components/settingsSheet/useTherapyRelationSettings.ts::setInviteError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
-  },
-  "webapp/src/components/settingsSheet/useTherapyRelationSettings.ts::setTherapyRelation": {
-    "status": "debt",
-    "reason": "сбой загрузки связи рисуется как «терапевта нет» с полем кода вместо сбоя — неправда о данных; строка в docs/BACKLOG.md"
   },
   "webapp/src/components/therapist/OfflineInviteCard.tsx::setError": {
     "status": "exempt",
