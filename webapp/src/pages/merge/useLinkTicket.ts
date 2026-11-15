@@ -7,7 +7,7 @@ import { humanizeThrown, readHumanError } from '../../../../shared/src/api/human
 import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
   type AccountLinkHost,
-} from '../../../../shared/src/share/analytics';
+} from '../../../../shared/src/analytics/accountLogin';
 import { TicketHttpError, type LinkFailOutcome } from './linkFailModel';
 import { reportLinkPreviewFailure } from './linkPreviewReport';
 
