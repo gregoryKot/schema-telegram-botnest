@@ -7,7 +7,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runGate, cleanupTmp } from './gate-sandbox';
-import { loadStringList, loadRegexList } from './pattern-loader';
+import { loadStringList } from './pattern-loader';
 
 describe('check-color-drift.mjs', () => {
   it('новый файл с rgba() мимо палитры — exit 1', () => {
@@ -140,22 +140,11 @@ describe('check-color-drift.mjs', () => {
     expect(res.stderr).toContain('#a78bfa');
   });
 
-  it('ОБРАЗЕЦ: парная запись css/hex в journeyMeta.ts — зелено', () => {
+  it('КОНТРОЛЬ: hex рядом с токеном css: — тоже дрейф, построчных исключений нет', () => {
     const res = runGate('check-color-drift.mjs', {
       'scripts/color-drift-baseline.json': JSON.stringify({}),
       'shared/src/journey/journeyMeta.ts':
         "  tracker: { css: 'var(--accent-blue)', hex: '#60a5fa' },\n",
-    });
-    expect(res.status).toBe(0);
-    expect(res.stdout).toContain(
-      '✓ Храповик цветовых литералов: 0 (без роста)',
-    );
-  });
-
-  it('КОНТРОЛЬ: одинокий hex без пары css: — по-прежнему красный', () => {
-    const res = runGate('check-color-drift.mjs', {
-      'scripts/color-drift-baseline.json': JSON.stringify({}),
-      'shared/src/journey/journeyMeta.ts': "  tracker: { hex: '#60a5fa' },\n",
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('#60a5fa');
@@ -230,18 +219,5 @@ describe('списки-исключения check-color-drift.mjs запинен
       'shared/src/share/',
       'shared/src/hooks/useConfetti.ts',
     ]);
-  });
-
-  it('EXCLUDE_LINE_PATTERNS непуст и матчит парную запись, но не одинокий hex:', () => {
-    const patterns = loadRegexList(
-      'check-color-drift.mjs',
-      'EXCLUDE_LINE_PATTERNS',
-    );
-    expect(patterns.length).toBeGreaterThan(0);
-    const re = new RegExp(patterns[0].source, patterns[0].flags);
-    expect(
-      re.test("  tracker: { css: 'var(--accent-blue)', hex: '#60a5fa' },"),
-    ).toBe(true);
-    expect(re.test("  tracker: { hex: '#60a5fa' },")).toBe(false);
   });
 });
