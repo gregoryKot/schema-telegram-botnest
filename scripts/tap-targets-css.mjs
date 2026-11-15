@@ -28,11 +28,10 @@ export function insetGrowth(inset) {
   const p = inset.trim().split(/\s+/).map(px);
   if (p.some((v) => v === null) || p.length > 4) return null;
   const [t, r = t, b = t, l = r] = p;
-  const out = (v) => Math.max(0, -v);
-  return { x: out(l) + out(r), y: out(t) + out(b) };
+  return { x: Math.max(0, -l) + Math.max(0, -r), y: Math.max(0, -t) + Math.max(0, -b) };
 }
 
-/** Свойства классов из CSS: Map класс → { w, h, gx, gy } (каждое { v, o }, o — порядок). */
+/** Map класс → { w, h, gx, gy } (каждое { v, o }, o — порядок); f — файл `.класс`, ptr — cursor: pointer. */
 export function cssTargetProps(cssTexts) {
   const props = new Map();
   cssTexts.forEach((text, fi) => {
@@ -42,6 +41,7 @@ export function cssTargetProps(cssTexts) {
         const m = /^\.([\w-]+)(::?(?:before|after))?$/.exec(sel.trim());
         if (!m) continue;
         const p = props.get(m[1]) ?? {};
+        if (!m[2]) Object.assign(p, { f: p.f ?? fi, ptr: p.ptr || r.decls.cursor === 'pointer' });
         const set = (k, v) => {
           if (v !== null && (!p[k] || p[k].o <= o)) p[k] = { v, o };
         };

@@ -29,13 +29,13 @@ import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { findTapTargets, MIN_TARGET_PX } from './tap-targets-rules.mjs';
 import { cssTargetProps } from './tap-targets-css.mjs';
+import { countDsTargets } from './tap-targets-ds.mjs';
 import { stripComments } from './gate-strip-comments.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'tap-targets-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
-
 const SCAN_DIRS = ['webapp/src', 'shared/src'];
 const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
 
@@ -50,7 +50,7 @@ function walk(dir, acc = []) {
     const rel = `${dir}/${name}`;
     const st = statSync(join(ROOT, rel));
     if (st.isDirectory()) {
-      if (name === 'node_modules' || name === 'dist') continue;
+      if (name === 'node_modules' || name === 'dist' || name.startsWith('.')) continue;
       walk(rel, acc);
     } else if (/\.(tsx|css)$/.test(name) && !/\.(spec|test)\.tsx$/.test(name)) {
       acc.push(rel);
@@ -63,9 +63,9 @@ function main() {
   const counts = {};
   const details = {};
   const files = SCAN_DIRS.flatMap((d) => walk(d)).sort();
-  const classProps = cssTargetProps(
-    files.filter((f) => f.endsWith('.css')).map((f) => readFileSync(join(ROOT, f), 'utf8')),
-  );
+  const cssFiles = files.filter((f) => f.endsWith('.css'));
+  const classProps = cssTargetProps(cssFiles.map((f) => readFileSync(join(ROOT, f), 'utf8')));
+  countDsTargets(classProps, cssFiles, counts, details, MIN_TARGET_PX);
   for (const file of files.filter((f) => f.endsWith('.tsx'))) {
     const src = readFileSync(join(ROOT, file), 'utf8');
     const hits = findTapTargets(stripComments(src, false), classProps).map(
