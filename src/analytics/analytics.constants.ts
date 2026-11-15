@@ -198,7 +198,7 @@ export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
 
 // Откуда переносят данные (meta.host) и почему не вышло (meta.reason) для
 // событий account_link_*. Парная константа на фронтах —
-// shared/src/share/analytics.ts (синхронно).
+// shared/src/analytics/accountLogin.ts (синхронно).
 //
 // 'web' появился вместе с карточкой объединения на сайте: там перенос
 // НАЧИНАЕТ сайт, а подтверждает бот. Без этого значения санитайзер вернул бы

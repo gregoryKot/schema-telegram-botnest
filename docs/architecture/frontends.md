@@ -140,7 +140,7 @@
 - GET кешируются (дедуп и stale-while-revalidate, `shared/src/api/apiCache.ts`). Мутации инвалидируют кеш по `shared/src/api/apiCacheRules.ts`. `/api/auth/*` в кеш не попадают.
 - Аналитика: `api.trackEvent(name, meta)` → `POST /api/event`, fire-and-forget, ошибки глотаются (`shared/src/api/sharedApi.ts`).
   - Для анонимов есть `api.trackPublicEvent` → `/api/public-event`.
-  - Имена событий — allow-list на бэке `src/analytics/analytics.constants.ts`; типы и константы на фронте — `shared/src/share/analytics.ts`.
+  - Имена событий — allow-list на бэке `src/analytics/analytics.constants.ts`; типы и константы на фронте — `shared/src/share/analytics.ts` и тематические файлы в `shared/src/analytics/` (вход и перенос аккаунта — `accountLogin.ts`).
 - Ошибки клиента: `reportClientError` (`createClientErrorReporter(BASE, 'webapp')`, `shared/src/api/clientErrorReport.ts`).
 
 ### Подводные камни

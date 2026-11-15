@@ -10,6 +10,7 @@ vi.mock('../../../shared/src/host', () => ({ getHost: () => ({ id: hostId.curren
 vi.mock('../api', () => ({ api: { trackEvent: vi.fn() }, reportClientError: vi.fn() }));
 vi.mock('../auth/authContext', () => ({ useAuth: () => ({ accessToken: 't' }) }));
 
+import { LOGIN_METHOD_OFFER_EVENT } from '../../../shared/src/analytics/accountLogin';
 import { api } from '../api';
 import { AddressFormContext } from '../utils/addressForm';
 import { SiteAccessCard } from './SiteAccessCard';
@@ -56,10 +57,10 @@ describe('SiteAccessCard', () => {
     show();
     await screen.findByText('Добавь вход для сайта', {}, SLOW);
     expect(screen.getByText(/вход через Telegram закрыт — туда входят через VK ID или Яндекс ID/)).toBeTruthy();
-    await waitFor(() => expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'shown' }), SLOW);
+    await waitFor(() => expect(api.trackEvent).toHaveBeenCalledWith(LOGIN_METHOD_OFFER_EVENT, { action: 'shown' }), SLOW);
 
     fireEvent.click(screen.getByRole('button', { name: ACTION }));
-    expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'open' });
+    expect(api.trackEvent).toHaveBeenCalledWith(LOGIN_METHOD_OFFER_EVENT, { action: 'open' });
     expect(await screen.findByText('экран способов входа', {}, SLOW)).toBeTruthy();
   });
 
@@ -102,7 +103,7 @@ describe('SiteAccessCard', () => {
     show();
     fireEvent.click(await screen.findByRole('button', { name: 'Позже' }, SLOW));
     expect(screen.queryByRole('button', { name: ACTION })).toBeNull();
-    expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'later' });
+    expect(api.trackEvent).toHaveBeenCalledWith(LOGIN_METHOD_OFFER_EVENT, { action: 'later' });
 
     cleanup();
     vi.mocked(api.trackEvent).mockClear();
