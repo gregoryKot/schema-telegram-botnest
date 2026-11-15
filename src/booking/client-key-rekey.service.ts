@@ -2,9 +2,13 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { isUniqueViolation } from '../prisma/unique-violation';
 import { TelegramService } from '../telegram/telegram.service';
-import { decrypt } from '../utils/crypto';
+import { decrypt, tryDecrypt } from '../utils/crypto';
 import { clientKey, clientKeySources, isLegacyKey } from './client-key';
-import { rekeyReport, type RekeyStats } from './client-key-rekey.report';
+import {
+  rekeyReport,
+  unreadableNote,
+  type RekeyStats,
+} from './client-key-rekey.report';
 
 // Перевод строк ClientMeeting на ключ client-key.ts (аудит 2026-10). Из ключа
 // контакт не восстановить, но он есть в брони (Booking.clientContact,
@@ -55,6 +59,15 @@ interface Row {
   createdAt: Date;
 }
 
+// decrypt() без алерта: шифротекст, которого не открыл ни один ключ из env, —
+// undefined (бронь идёт в счёт прохода), легаси-текст — как есть.
+function readable(value: string | null): string | null | undefined {
+  if (!value) return value;
+  const r = tryDecrypt(value);
+  if (r.ok) return r.text;
+  return r.looksCipher ? undefined : value;
+}
+
 /** Претенденты, в чьих бронях лежит ссылка именно на комнату этой строки. */
 function holders(row: Row, claims: Claim[] | undefined): Claim[] {
   if (!claims) return [];
@@ -82,14 +95,15 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
   }
 
   async run(now = new Date()): Promise<RekeyStats> {
-    const claims = await this.collectClaims();
     const stats: RekeyStats = {
       moved: 0,
       dropped: 0,
       purged: 0,
+      unreadable: 0,
       shared: [],
       stale: [],
     };
+    const claims = await this.collectClaims(stats);
     const rows: Row[] = await this.prisma.clientMeeting.findMany({
       select: { clientKey: true, meetingUrl: true, createdAt: true },
     });
@@ -111,6 +125,8 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
       this.logger.log(
         `clientKey rekey: moved ${stats.moved}, dropped ${stats.dropped}, purged ${stats.purged}`,
       );
+    const note = unreadableNote(stats.unreadable);
+    if (note) this.logger.warn(`clientKey rekey: ${note}`);
     const report = rekeyReport(stats);
     if (report) this.sendReport(report);
     return stats;
@@ -157,7 +173,9 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
   }
 
   /** Претенденты по ключам, под которыми их строку мог записать прежний код. */
-  private async collectClaims(): Promise<Map<string, Claim[]>> {
+  private async collectClaims(
+    stats: RekeyStats,
+  ): Promise<Map<string, Claim[]>> {
     const bySource = new Map<string, Claim[]>();
     let after = 0;
     for (;;) {
@@ -182,13 +200,15 @@ export class ClientKeyRekeyService implements OnApplicationBootstrap {
       });
       if (rows.length === 0) return bySource;
       for (const r of rows) {
-        const contact = decrypt(r.clientContact);
-        if (!contact) continue;
+        const contact = readable(r.clientContact);
+        const url = readable(r.meetingUrl);
+        if (contact === undefined || url === undefined) stats.unreadable += 1;
+        if (!contact || url === undefined) continue;
         const claim = {
           bookingId: r.id,
           claimedAt: r.confirmEffectsDoneAt ?? r.createdAt,
           target: clientKey(contact),
-          url: decrypt(r.meetingUrl),
+          url,
         };
         for (const src of clientKeySources(contact))
           bySource.set(src, [...(bySource.get(src) ?? []), claim]);
