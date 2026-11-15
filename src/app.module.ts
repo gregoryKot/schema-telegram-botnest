@@ -1,4 +1,5 @@
 import {
+  Inject,
   MiddlewareConsumer,
   Module,
   NestModule,
@@ -7,12 +8,16 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ServeStaticModule } from '@nestjs/serve-static';
+import {
+  SERVE_STATIC_MODULE_OPTIONS,
+  ServeStaticModule,
+  type ServeStaticModuleOptions,
+} from '@nestjs/serve-static';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AdminKeyAuditInterceptor } from './booking/admin-key-audit.interceptor';
-import { existsSync, readFileSync } from 'fs';
+import { PricingService } from './booking/pricing.service';
 import { join } from 'path';
-import { configureBuildAssets, siteStaticOptions } from './infra/site-static';
+import { configureBuildAssets, siteStaticFactory } from './infra/site-static';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
@@ -28,24 +33,12 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
 import { configureArticleSeo } from './articles/article-seo.routes';
-import { homeSeoMiddleware } from './articles/home-seo.middleware';
-import {
-  practiceDomainMiddleware,
-  PRACTICE_ALIAS_HOSTS,
-} from './practice-domain.middleware';
+import { practiceDomainMiddleware } from './practice-domain.middleware';
 import { configureUnifiedFrontend } from './unified-frontend.middleware';
-import {
-  PRACTICE_PREVIEW_ROUTES,
-  practiceIndexMiddleware,
-} from './practice-index-html';
+import { configureSitePages } from './site-pages.routes';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
 import { SelfCheckService } from './infra/self-check/self-check.service';
-
-// Domains that are aliases of schemehappens.ru and need their own og:url / canonical
-// so Telegram generates a separate link preview card for each domain.
-// kotlarewski.ru здесь не нужен: practiceDomainMiddleware 301-ит его на .gr.
-const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
 
 @Module({
   imports: [
@@ -55,10 +48,13 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
       inject: [PrismaService],
       useFactory: throttlerOptions,
     }),
-    // Сайт на / (webapp/dist): фолбэк, исключения и кэш — infra/site-static.ts.
-    ServeStaticModule.forRoot(
-      siteStaticOptions(join(__dirname, '..', 'webapp', 'dist')),
-    ),
+    // Сайт на / (webapp/dist): фолбэк, исключения и кэш — infra/site-static.ts;
+    // index.html фолбэка — с ценой визитки из админки.
+    ServeStaticModule.forRootAsync({
+      imports: [BookingModule],
+      inject: [PricingService],
+      useFactory: siteStaticFactory(join(__dirname, '..', 'webapp', 'dist')),
+    }),
     PrismaModule,
     ThrottleHitModule,
     CronLeaderModule,
@@ -81,12 +77,15 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
   ],
 })
 export class AppModule implements NestModule {
+  constructor(
+    @Inject(SERVE_STATIC_MODULE_OPTIONS)
+    private readonly site: ServeStaticModuleOptions[],
+    private readonly pricing: PricingService,
+  ) {}
+
   // configure() runs before ServeStaticModule.onModuleInit(), so this
   // middleware intercepts GET of practice pages before serve-static.
   configure(consumer: MiddlewareConsumer) {
-    const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
-    const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
-
     // Первым: 301 kotlarewski.ru → .gr + sitemap/robots практики. Метод ALL,
     // не GET: правило №19 («визитка отдаёт только себя») касается и записи —
     // до аудита 2026-10 POST/PUT/PATCH/DELETE на kotlarewski.gr доходили до
@@ -97,15 +96,11 @@ export class AppModule implements NestModule {
 
     configureUnifiedFrontend(consumer); // /app/* → /today за флагом
     configureBuildAssets(consumer); // промах по файлу сборки — 404 no-store
-    consumer
-      .apply(practiceIndexMiddleware(html, ALIAS_DOMAINS))
-      .forRoutes(...PRACTICE_PREVIEW_ROUTES);
-
-    // Главная продукта: текст лендинга в #root для робота без JS (GEO.md);
-    // после practiceIndexMiddleware — главная визитки до сюда не доходит.
-    consumer
-      .apply(homeSeoMiddleware(html))
-      .forRoutes({ path: '/', method: RequestMethod.GET });
+    // Страницы визитки, главная для робота, llms.txt — с ценой из админки;
+    // корень — тот же, что у ServeStatic (в e2e — сборка-фикстура).
+    configureSitePages(consumer, this.site[0]?.rootPath, (text) =>
+      this.pricing.landingText(text),
+    );
 
     // SEO для /articles* и sitemap.xml — после practiceDomainMiddleware.
     configureArticleSeo(consumer);

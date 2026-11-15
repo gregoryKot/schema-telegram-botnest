@@ -23,10 +23,20 @@ describe('cancelEventUid', () => {
     ).toBe('cal-7');
   });
 
-  it('CONFIRMED без записанного uid → детерминированный uid брони', () => {
-    expect(cancelEventUid({ status: BookingStatus.CONFIRMED }, fresh())).toBe(
-      'booking-7@schemehappens.ru',
-    );
+  it('записанный uid старой схемы (номер брони) снимается как есть', () => {
+    const legacy = 'booking-7@schemehappens.ru';
+    expect(
+      cancelEventUid(
+        { status: BookingStatus.CONFIRMED },
+        fresh({ calDavUid: legacy }),
+      ),
+    ).toBe(legacy);
+  });
+
+  it('CONFIRMED без записанного uid → детерминированный uid брони, без её номера', () => {
+    const uid = cancelEventUid({ status: BookingStatus.CONFIRMED }, fresh());
+    expect(uid).toBe(bookingEventUid(7));
+    expect(uid).toMatch(/^[0-9a-f]{32}@schemehappens\.ru$/);
   });
 
   it('HELD без записанного uid, оплаты и ссылки → null: события не бывает, DELETE не нужен', () => {

@@ -9,7 +9,7 @@ import { deleteAllUserData } from './account.delete';
 // ре-экспорт — чтобы импорты соседей и спек продолжали работать.
 export { USER_DATA_TABLES } from './user-data-tables';
 import type { SendSettings } from './send-settings';
-import { loadSendSettings } from './send-settings.load';
+import { loadSendSettings, pushedUserIds } from './send-settings.load';
 import {
   notifyAudience,
   notifyRouteOf,
@@ -101,22 +101,19 @@ export class AccountService {
   }
 
   /**
-   * Кого планировщик вообще рассматривает. Отсекаем тех, кому бот физически
-   * не может написать: вход через Google, почту или MAX даёт userId в
-   * веб-диапазоне, чата с таким номером не существует. Раньше их всё равно
-   * ставили в очередь, отправка падала, и человек молча получал
-   * `botBlockedAt` — уведомления выключались навсегда у того, кто ни о чём
-   * не просил.
-   *
-   * Отсекаем ИМЕННО здесь, до создания строки: тогда веха (streak_7 и
-   * соседи) не сгорает у человека, который привяжет Telegram позже.
-   *
-   * Подписка на уведомления в приложении — свой адрес (notify-channel.ts):
-   * с ней человек в выборке и без Telegram, и с заблокированным ботом.
+   * Кого планировщик рассматривает (отсекаем до создания строк): принявших
+   * условия — согласие основание напоминаний, а User заводится на /start до
+   * кнопки — и тех, кому есть куда писать (notifyAudience). `hasPush` —
+   * подписка в приложении: инсайт из оценок идёт только туда.
    */
   async getAllUsersWithSettings() {
-    return this.prisma.user.findMany({
-      where: { notifyEnabled: true, deletedAt: null, OR: notifyAudience() },
+    const users = await this.prisma.user.findMany({
+      where: {
+        notifyEnabled: true,
+        disclaimerAccepted: true,
+        deletedAt: null,
+        OR: notifyAudience(),
+      },
       select: {
         id: true,
         notifyLocalHour: true,
@@ -133,6 +130,9 @@ export class AccountService {
         addressForm: true,
       },
     });
+    const ids = users.map((u) => u.id);
+    const pushed = await pushedUserIds(this.prisma, ids);
+    return users.map((u) => ({ ...u, hasPush: pushed.has(String(u.id)) }));
   }
 
   /** Явный выбор частоты сбрасывает адаптацию на выбранный уровень */

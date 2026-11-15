@@ -5,7 +5,10 @@
 // названия потребностей, текст плана или задания). Новый тип без записи в SAFE
 // не компилируется (Record по NotificationType).
 import { renderTemplate } from '../../notification/notification.templates';
-import type { NotificationType } from '../../notification/notification.types';
+import {
+  PUSH_ONLY_TYPES,
+  type NotificationType,
+} from '../../notification/notification.types';
 
 type Render = (
   type: NotificationType,
@@ -56,6 +59,41 @@ const SAFE: Record<NotificationType, Record<string, unknown>> = {
 
 const TYPES = Object.keys(SAFE) as NotificationType[];
 const MARKERS: unknown[] = ['LEAK_MARKER_Zq7', 7771234];
+
+// Повод выведен из ЗНАЧЕНИЙ оценок (а не из факта активности): сам факт такого
+// сообщения раскрывает состояние, поэтому в Telegram оно не уходит вовсе —
+// только в приложение (PUSH_ONLY_TYPES, очередь — telegram.schedule-queue.telegram.ts).
+// Новый тип без записи не компилируется.
+const FROM_RATINGS: Record<NotificationType, boolean> = {
+  reminder: false,
+  pre_reminder: false,
+  summary: false,
+  comeback: false,
+  welcome_back: false,
+  onboarding_1: false,
+  onboarding_3: false,
+  onboarding_7: false,
+  streak_7: false,
+  streak_14: false,
+  streak_30: false,
+  lapsing_3: false,
+  dormant_7: false,
+  value_recap: false, // повод — число дней с записями, не оценки
+  reengagement_30: false,
+  weekly: false,
+  donate_reminder: false,
+  anniversary_30: false,
+  anniversary_60: false,
+  anniversary_90: false,
+  practice_reminder: false,
+  practice_missed: false,
+  low_streak_insight: true, // несколько дней невысоких оценок
+  nudge: false,
+  task_assigned: false,
+  ysq_requested: false,
+  pair_activity: false, // факт отметки дня напарником
+  security_notice: false,
+};
 
 function trapPayload(
   type: NotificationType,
@@ -119,5 +157,26 @@ describe('гейт: шаблоны уведомлений не выводят д
     for (const type of TYPES) {
       expect(renderTemplate(type, SAFE[type], 'ty')).not.toBeNull();
     }
+  });
+});
+
+/** Типы, где «из оценок» и «только в приложение» расходятся. */
+function pushOnlyMismatch(pushOnly: readonly NotificationType[]): string[] {
+  return TYPES.filter((t) => FROM_RATINGS[t] !== pushOnly.includes(t));
+}
+
+describe('гейт: выведенное из оценок в Telegram не уходит', () => {
+  it('типы из оценок — ровно PUSH_ONLY_TYPES', () => {
+    expect(TYPES.filter((t) => FROM_RATINGS[t])).toEqual([
+      'low_streak_insight',
+    ]);
+    expect(pushOnlyMismatch(PUSH_ONLY_TYPES)).toEqual([]);
+  });
+
+  it('контроль: тип из оценок, вернувшийся в Telegram, и лишний тип краснеют', () => {
+    expect(pushOnlyMismatch([])).toEqual(['low_streak_insight']);
+    expect(pushOnlyMismatch(['low_streak_insight', 'weekly'])).toEqual([
+      'weekly',
+    ]);
   });
 });

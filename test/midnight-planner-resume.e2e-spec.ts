@@ -83,7 +83,10 @@ describe('Полуночный обход: обрыв рестартом и до
   beforeEach(async () => {
     await cleanupOwnershipFixtures(prisma, ALL);
     for (const id of ALL) {
-      await prisma.user.create({ data: { id, notifyTimezone: TZ } });
+      // Обход берёт только принявших условия (getAllUsersWithSettings).
+      await prisma.user.create({
+        data: { id, notifyTimezone: TZ, disclaimerAccepted: true },
+      });
     }
   });
 

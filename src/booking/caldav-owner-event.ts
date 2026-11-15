@@ -1,13 +1,15 @@
+import { createHash } from 'crypto';
 import { SessionType } from '@prisma/client';
+import { keyedDigests } from '../utils/crypto-keys';
 import { buildVcalendar, CalEvent, sessionLabel } from './caldav-event.util';
 import { eventDurationMin } from './session-event';
 
 // Событие в календаре ВЛАДЕЛЬЦА (Apple iCloud, CalDAV) — обезличенное.
 // iCloud — зарубежная база: по ч. 5 ст. 18 152-ФЗ (запрос Роскомнадзора
 // №08-1063539 от 11.11.2026) данные клиента туда не уходят. В событии только
-// время, длительность, тип записи и номер брони в UID. Кто придёт, контакт и
-// текст обращения — в письме-карточке брони (`booking-confirmed-card.ts`) и в
-// админке записи; Telegram-карточка их не несёт.
+// время, длительность и тип записи; номера брони нет ни в UID, ни в адресе.
+// Кто придёт, контакт и текст обращения — в письме-карточке брони
+// (`booking-confirmed-card.ts`) и в админке записи.
 // Клиентский .ics (`booking-ics.ts`) — другой путь: файл уходит самому клиенту.
 
 /** Всё, что CalDAV-событие владельца вправе нести: описания, места, ссылки и участников в типе нет. */
@@ -16,9 +18,19 @@ export type OwnerCalEvent = Pick<
   'uid' | 'startsAt' | 'durationMin' | 'summary'
 >;
 
-/** Детерминированный UID события брони: по нему событие снимается и без записанного calDavUid. */
-export const bookingEventUid = (id: number): string =>
-  `booking-${id}@schemehappens.ru`;
+const UID_LABEL = 'booking.calDavUid.v1';
+
+/**
+ * UID события брони — HMAC номера под ENCRYPTION_KEY (без ключа, в dev, — sha256).
+ * Пишется в `calDavUid`: по записанному снимаются и старые `booking-<id>@…`,
+ * а этот детерминированный — запас, если под умер между PUT и записью.
+ */
+export function bookingEventUid(id: number): string {
+  const digest =
+    keyedDigests(UID_LABEL, String(id)).current ??
+    createHash('sha256').update(`${UID_LABEL}:${id}`).digest('hex');
+  return `${digest.slice(0, 32)}@schemehappens.ru`;
+}
 
 /** Событие владельца по брони: читает только id, время и тип — данные клиента сюда не доходят. */
 export function ownerEventFor(b: {
