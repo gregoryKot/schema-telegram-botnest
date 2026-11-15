@@ -55,8 +55,8 @@
 /* «Самопомощь» у героя — под кнопками (ExScreen, по умолчанию); под листом — только по cautionAt="head". */
 .ex2-main > .ex2-hero + .th-caution { margin-top: -12px; margin-bottom: 28px; }
 .ex2-body--spread .pa-spread-main > .th-caution { margin-top: 0; }
-/* hintBeforeField (шаги примет разбора фразы): шапка, подсказка и поле — отдельные ячейки. На компьютере
-   подсказка справа на обе строки (лишняя высота уходит во вторую строку, а не в зазор под шапкой), на ≤900 —
+/* hintBeforeField (шаги примет «Критик или забота?», PhraseCheckEx): шапка, подсказка и поле — отдельные ячейки.
+   На компьютере подсказка справа на обе строки (лишняя высота — во вторую строку, а не в зазор под шапкой), на ≤900 —
    между шапкой и полем: «Примета N из 9» стоит до вариантов ответа, а не под «самопомощью». */
 .ex2-body--split { grid-template-areas: 'head aside' 'main aside'; grid-template-rows: auto 1fr; row-gap: 28px; }
 .ex2-body--split > .ex2-head { grid-area: head; min-width: 0; }
