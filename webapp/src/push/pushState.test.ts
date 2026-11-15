@@ -64,16 +64,26 @@ describe('pushDeviceState — чистое решение', () => {
   });
 });
 
-describe('reconcilePushState — сверка с каналом сервера', () => {
-  it('on при канале push — on; при telegram или null сервер подписку забыл — off', () => {
-    expect(reconcilePushState('on', 'push')).toBe('on');
-    expect(reconcilePushState('on', 'telegram')).toBe('off');
-    expect(reconcilePushState('on', null)).toBe('off');
+describe('reconcilePushState — сверка с сервером', () => {
+  it('сервер знает адрес этого браузера — on, даже если канал в настройках ещё старый', () => {
+    expect(reconcilePushState('on', 'push', true)).toBe('on');
+    expect(reconcilePushState('on', null, true)).toBe('on');
+  });
+
+  it('сервер адрес не знает — off, даже при канале push: подписано другое устройство', () => {
+    expect(reconcilePushState('on', 'push', false)).toBe('off');
+    expect(reconcilePushState('on', 'telegram', false)).toBe('off');
+  });
+
+  it('сверка не ответила — по каналу целиком: push — on; telegram или null — сервер подписку забыл, off', () => {
+    expect(reconcilePushState('on', 'push', null)).toBe('on');
+    expect(reconcilePushState('on', 'telegram', null)).toBe('off');
+    expect(reconcilePushState('on', null, null)).toBe('off');
   });
 
   it('остальные состояния не трогает', () => {
     for (const s of ['off', 'denied', 'ios-install', 'unsupported', null] as const) {
-      expect(reconcilePushState(s, null)).toBe(s);
+      for (const known of [true, false, null]) expect(reconcilePushState(s, null, known)).toBe(s);
     }
   });
 });

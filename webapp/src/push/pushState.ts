@@ -46,12 +46,20 @@ export function pushDeviceState(env: PushEnv, publicKey: string | null, subscrib
 }
 
 /**
- * Сверка с сервером: подписка в браузере есть, а канал не push — сервер её
- * забыл (сменили ключ VAPID, push-сервис ответил «нет такой»). Показываем
- * «выключено»: включение переотправит подписку, а не будет врать «приходят сюда».
+ * Сверка с сервером: подписка в браузере есть, а сервер её не знает (сменили
+ * ключ VAPID, push-сервис ответил «нет такой», браузер сменил адрес и не
+ * достучался). Показываем «выключено»: включение переотправит подписку, а не
+ * будет врать «приходят сюда». known — ответ сервера про адрес ЭТОГО браузера
+ * (POST /api/push/status): канал push бывает и от другого устройства. null —
+ * сверка не ответила, судим по каналу целиком.
  */
-export function reconcilePushState(state: PushDeviceState | null, channel: 'push' | 'telegram' | null): PushDeviceState | null {
-  return state === 'on' && channel !== 'push' ? 'off' : state;
+export function reconcilePushState(
+  state: PushDeviceState | null,
+  channel: 'push' | 'telegram' | null,
+  known: boolean | null,
+): PushDeviceState | null {
+  if (state !== 'on') return state;
+  return (known ?? channel === 'push') ? 'on' : 'off';
 }
 
 export function hasPushApis(): boolean {

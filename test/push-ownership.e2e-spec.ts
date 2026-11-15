@@ -2,17 +2,23 @@
 // ownership). Юнит-спеки PushService проверяют where по userId и исходы
 // отправки, но не отвечают на «guard примонтирован?», «DTO валидирует тело?»,
 // «чужой endpoint не удаляет чужую подписку?» и «экран настроек видит тот же
-// канал, что выберет очередь?» (сохранил → нашёл).
+// канал, что выберет очередь?» (сохранил → нашёл). Ротация подписки — ручка
+// без входа: чужую строку без старого адреса не сдвинуть.
 //
 // Гоняется дважды: на фейковой Prisma и на живом Postgres (джоба migrations,
 // E2E_REAL_DB=1) — подписка лежит зашифрованной, unique по хэшу адреса
 // глобальный, перенос к другому аккаунту — upsert, и всё это обязано пройти
 // через настоящие констрейнты. Транспорт web-push подменён: в сеть спек не ходит.
 import { INestApplication } from '@nestjs/common';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import request from 'supertest';
+import { runInNewContext } from 'vm';
 import { generateVAPIDKeys, sendNotification } from 'web-push';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { AccountService } from '../src/bot/account.service';
+import { hashEndpoint } from '../src/push/push-endpoint';
+import { PushService } from '../src/push/push.service';
 import { signAccessToken } from './e2e-support/jwt';
 import {
   cleanupOwnershipFixtures,
@@ -35,6 +41,9 @@ const P256DH = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString(
 );
 const AUTH = Buffer.alloc(16, 3).toString('base64url');
 const ENDPOINT_A = 'https://fcm.googleapis.com/fcm/send/e2e-push-owner-a';
+const ENDPOINT_A2 = `${ENDPOINT_A}-rotated`;
+const ENDPOINT_A3 = `${ENDPOINT_A}-from-sw`;
+const ENDPOINT_EVIL = 'https://fcm.googleapis.com/fcm/send/e2e-push-attacker';
 
 describe('e2e smoke: ownership уведомлений в приложении', () => {
   let app: INestApplication;
@@ -65,6 +74,21 @@ describe('e2e smoke: ownership уведомлений в приложении', 
     ).body as { notifyChannel: string | null; telegramLinked: boolean };
   const rowsOf = (userId: bigint) =>
     prisma.pushSubscription.findMany({ where: { userId } });
+  const known = async (auth: string, endpoint: string) =>
+    (
+      await request(app.getHttpServer())
+        .post('/api/push/status')
+        .set('Authorization', auth)
+        .send({ endpoint })
+    ).body as unknown;
+  // Без Authorization — так шлёт воркер сайта: сессии у него нет.
+  const rotate = (oldEndpoint: string, endpoint: string) =>
+    request(app.getHttpServer())
+      .post('/api/push/rotate')
+      .send({
+        oldEndpoint,
+        subscription: { endpoint, keys: { p256dh: P256DH, auth: AUTH } },
+      });
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
@@ -163,5 +187,92 @@ describe('e2e smoke: ownership уведомлений в приложении', 
     expect((await unsubscribe(tokenB())).status).toBeLessThan(300);
     expect(await rowsOf(USER_B)).toHaveLength(0);
     expect((await settings(tokenB())).notifyChannel).toBeNull();
+  });
+
+  it('сверка вкладки: своя подписка известна, чужая и неизвестная — нет, без входа — 401', async () => {
+    expect((await subscribe(tokenA())).status).toBeLessThan(300);
+    expect(await known(tokenA(), ENDPOINT_A)).toEqual({ known: true });
+    expect(await known(tokenB(), ENDPOINT_A)).toEqual({ known: false });
+    expect(await known(tokenA(), `${ENDPOINT_A}x`)).toEqual({ known: false });
+    const anon = await request(app.getHttpServer())
+      .post('/api/push/status')
+      .send({ endpoint: ENDPOINT_A });
+    expect(anon.status).toBe(401);
+  });
+
+  it('ротация без входа: не зная старого адреса, чужую подписку не перехватить — ответ тот же, ничего не меняется', async () => {
+    const guesses = [
+      `${ENDPOINT_A}x`,
+      `${ENDPOINT_A}/`,
+      ENDPOINT_A.slice(0, -1),
+    ];
+    for (const guess of [...guesses, ENDPOINT_A.toUpperCase()]) {
+      const res = await rotate(guess, ENDPOINT_EVIL);
+      expect([res.status, res.body]).toEqual([200, { ok: true }]);
+    }
+    expect(await rowsOf(USER_A)).toHaveLength(1);
+    expect(await known(tokenA(), ENDPOINT_A)).toEqual({ known: true });
+    const evil = { endpointHash: hashEndpoint(ENDPOINT_EVIL) };
+    expect(await prisma.pushSubscription.findMany({ where: evil })).toEqual([]);
+  });
+
+  it('ротация без входа: известный старый адрес — подписка A на новом адресе, очередь шлёт туда (сохранил → нашёл)', async () => {
+    const res = await rotate(ENDPOINT_A, ENDPOINT_A2);
+    expect([res.status, res.body]).toEqual([200, { ok: true }]);
+    expect(await rowsOf(USER_A)).toHaveLength(1);
+    expect(await known(tokenA(), ENDPOINT_A2)).toEqual({ known: true });
+    expect(await known(tokenA(), ENDPOINT_A)).toEqual({ known: false });
+    expect((await settings(tokenA())).notifyChannel).toBe('push');
+    const payload = { title: 't', body: 'b', url: '/today', tag: 'x' };
+    await app.get(PushService).sendToUser(USER_A, payload);
+    expect(send.mock.calls.map(([to]) => to.endpoint)).toEqual([ENDPOINT_A2]);
+  });
+
+  it('ротация: новый адрес не из списка push-сервисов или без ключей — 400, подписка на месте', async () => {
+    expect((await rotate(ENDPOINT_A2, 'https://evil.example/x')).status).toBe(
+      400,
+    );
+    const noKeys = await request(app.getHttpServer())
+      .post('/api/push/rotate')
+      .send({
+        oldEndpoint: ENDPOINT_A2,
+        subscription: { endpoint: ENDPOINT_A3 },
+      });
+    expect(noKeys.status).toBe(400);
+    expect(await known(tokenA(), ENDPOINT_A2)).toEqual({ known: true });
+  });
+
+  // Шов (правило №14): тело собирает настоящий webapp/public/sw.js — без
+  // сессии, как в браузере; ручка его принимает и переносит подписку.
+  it('sw.js на pushsubscriptionchange доводит новую подписку до сервера', async () => {
+    const handlers: Record<string, (e: unknown) => void> = {};
+    type Init = {
+      method: string;
+      headers: Record<string, string>;
+      body: string;
+    };
+    const fetch = async (url: string, init: Init) => {
+      expect(init.method).toBe('POST');
+      const res = await request(app.getHttpServer())
+        .post(url)
+        .set(init.headers)
+        .send(init.body);
+      return { ok: res.ok, status: res.status };
+    };
+    const addEventListener = (type: string, fn: (e: unknown) => void) => {
+      handlers[type] = fn;
+    };
+    const sw = readFileSync(join(__dirname, '../webapp/public/sw.js'), 'utf8');
+    runInNewContext(sw, { self: { addEventListener, fetch }, console });
+    const pending: Promise<unknown>[] = [];
+    const keys = { p256dh: P256DH, auth: AUTH };
+    handlers.pushsubscriptionchange({
+      oldSubscription: { endpoint: ENDPOINT_A2 },
+      newSubscription: { toJSON: () => ({ endpoint: ENDPOINT_A3, keys }) },
+      waitUntil: (p: Promise<unknown>) => pending.push(p),
+    });
+    await Promise.all(pending);
+    expect(await known(tokenA(), ENDPOINT_A3)).toEqual({ known: true });
+    expect(await known(tokenA(), ENDPOINT_A2)).toEqual({ known: false });
   });
 });
