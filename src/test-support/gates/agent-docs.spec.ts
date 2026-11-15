@@ -40,6 +40,8 @@ const MAP = [
   'Гейты: `scripts/check-agent-docs.mjs`.',
   '',
 ].join('\n');
+const GATES =
+  '# Гейты\n\n| скрипт | что ловит |\n|---|---|\n| check-agent-docs.mjs | docs |\n';
 const RULE = '---\npaths:\n  - "src/**"\n---\n\n# Правило\n';
 const OPEN_README =
   '# Docs\n\n| Реестр | Файл |\n|---|---|\n| Бэкенд | [open/backend.md](open/backend.md) |\n';
@@ -53,6 +55,7 @@ function tree(
     'docs/ARCHITECTURE.md': MAP,
     '.claude/rules/tests.md': RULE,
     'src/bot/bot.service.ts': 'export const bot = 1;\n',
+    'docs/architecture/gates.md': GATES,
   };
   const out: Record<string, string> = { ...base };
   for (const [path, content] of Object.entries(overrides)) {
@@ -361,8 +364,8 @@ describe('check-agent-docs.mjs: 4. карта называет каждый ка
     const res = gate({
       'src/foo/foo.ts': 'export const f = 1;\n',
       'scripts/check-foo.mjs': '//\n',
-      'docs/architecture/backend.md':
-        '# Бэкенд\n\n`src/foo/` — модуль foo. Гейт `scripts/check-foo.mjs`.\n',
+      'docs/architecture/gates.md': GATES + '| check-foo.mjs | x |\n',
+      'docs/architecture/backend.md': '# Бэкенд\n\n`src/foo/` — модуль foo.\n',
     });
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
@@ -393,8 +396,8 @@ describe('check-agent-docs.mjs: 5. карта называет каждый ге
     const res = gate({
       'scripts/check-foo.mjs': '//\n',
       'scripts/check-bar.ts': '//\n',
-      'docs/ARCHITECTURE.md':
-        MAP + 'Гейт check-foo.mjs и `scripts/check-bar.ts`.\n',
+      'docs/architecture/gates.md':
+        GATES + '| check-foo.mjs | x |\n| `scripts/check-bar.ts` | y |\n',
     });
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
@@ -404,11 +407,21 @@ describe('check-agent-docs.mjs: 5. карта называет каждый ге
     const res = gate({
       'scripts/check-foo.mjs': '//\n',
       'scripts/check-foo-bar.mjs': '//\n',
-      'docs/ARCHITECTURE.md': MAP + '`scripts/check-foo-bar.mjs`\n',
+      'docs/architecture/gates.md': GATES + '| check-foo-bar.mjs | x |\n',
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('scripts/check-foo.mjs: гейта нет в карте');
     expect(res.stderr).not.toContain('scripts/check-foo-bar.mjs');
+  });
+
+  it('гейт, названный только в прозе карты (не в таблице), краснеет', () => {
+    const res = gate({
+      'scripts/check-foo.mjs': '//\n',
+      'docs/ARCHITECTURE.md': MAP + 'Гейт `scripts/check-foo.mjs`.\n',
+      'docs/architecture/glossary.md': '`check-foo.mjs` — слово\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('scripts/check-foo.mjs: гейта нет в карте');
   });
 
   it('контроль: не-гейты в scripts/ записи не требуют', () => {
