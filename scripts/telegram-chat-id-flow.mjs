@@ -13,9 +13,13 @@
 // всём src/**; у нескольких одноимённых объявлений аргумент адресный, только
 // если он адресный у каждого: иначе `send` почты, очереди и канала слились бы
 // в одного «отправщика». Слепые зоны: адрес полем параметра (`s.chatId`,
-// `({ chatId })`) и одноимённые функции, из которых отправляет не каждая.
+// `({ chatId })`): параметр-объект, поле которого доходит до адреса, делает функцию
+// отправщиком, и поле берётся из литерала `f({ chatId: userId })` (объект-переменная
+// и адрес из `resolveChatId` по данным не прослеживаются). Слепая зона: одноимённые
+// функции, из которых отправляет не каждая.
 import { lineAt } from './gate-balance.mjs';
 import { callArgs, functionsOf } from './gate-functions.mjs';
+import { declaring, fieldOf } from './telegram-chat-id-params.mjs';
 
 const API_RE = /\.(?:sendMessage|sendPhoto|sendDocument|sendVideo|sendAnimation|sendMediaGroup|sendChatAction|copyMessage|forwardMessage)\s*\(/g;
 const CHAT_ID_RE = /\bchat_id\s*:\s*([^,}\n]+)/g;
@@ -25,7 +29,8 @@ const ACCOUNT_ID = String.raw`(?:[\w$.]*\.userId|userId|uid|user\.id)`;
 export const DIRECT_RE = new RegExp(
   String.raw`^(?:(?:Number|String|BigInt)\(\s*${ACCOUNT_ID}\s*\)|${ACCOUNT_ID}(?:\.toString\(\))?)$`,
 );
-const CAST_RE = /^(?:(?:Number|String|BigInt)\(\s*([A-Za-z_$][\w$]*)\s*\)|([A-Za-z_$][\w$]*)(?:\.toString\(\))?)$/;
+const REF = String.raw`[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?`;
+const CAST_RE = new RegExp(String.raw`^(?:(?:Number|String|BigInt)\(\s*(${REF})\s*\)|(${REF})(?:\.toString\(\))?)$`);
 const esc = (s) => s.replace(/\$/g, '\\$');
 const norm = (e) => e.replace(/\s+/g, ' ').trim();
 const declOf = (src, name) =>
@@ -47,15 +52,6 @@ function sourceNames(expr, src) {
   const decl = declOf(src, id);
   const inner = decl && castOf(decl);
   return inner ? [id, inner] : [id];
-}
-
-/** Ближайшая функция вокруг at с параметром name: { fn, k }; у безымянной — null. */
-function declaring(fns, at, name) {
-  let best = null;
-  for (const fn of fns) {
-    if (fn.start <= at && at < fn.end && fn.params.includes(name) && (!best || fn.start > best.start)) best = fn;
-  }
-  return best?.name ? { fn: best, k: best.params.indexOf(name) } : null;
 }
 
 /** files: [{ rel, src, report }] с вырезанными комментариями → [{ rel, line, expr, via }]. */
@@ -91,7 +87,9 @@ export function findViolations(files) {
       const list = callArgs(f.src, open);
       const via = m[2] in SEED_SENDERS ? undefined : m[2];
       for (const k of addressArgs(f, m[1] === '.' ? '.' : m[1] ?? '', m[2], open)) {
-        if (list[k]) out.push({ at: m.index, target: list[k], via });
+        const [i, field] = String(k).split('.');
+        const target = field ? fieldOf(list[i] ?? '', field) : list[i];
+        if (target) out.push({ at: m.index, target, via });
       }
     }
     return out.filter((s) => s.target);
@@ -100,7 +98,7 @@ export function findViolations(files) {
     changed = false;
     for (const f of files) {
       for (const s of sites(f)) {
-        const hit = sourceNames(s.target, f.src).map((n) => declaring(fnsOf(f), s.at, n)).find(Boolean);
+        const hit = sourceNames(s.target, f.src).map((n) => declaring(fnsOf(f), f.src, s.at, n)).find(Boolean);
         if (!hit) continue;
         const ks = addr.get(hit.fn) ?? new Set();
         if (!ks.has(hit.k)) { addr.set(hit.fn, ks.add(hit.k)); changed = true; }

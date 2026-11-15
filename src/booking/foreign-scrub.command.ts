@@ -12,7 +12,13 @@ import { registerBackgroundAdminCommand } from './admin-background-command';
 import { CalDavService } from './caldav.service';
 import { MeetingService, ZOOM_TOPIC } from './meeting.service';
 import { anonymizeCutoff } from './booking-retention.service';
-import { readZoomTopic, renameZoomRoom } from './zoom-room';
+import {
+  deleteZoomRoom,
+  listZoomMeetings,
+  readZoomTopic,
+  renameZoomRoom,
+} from './zoom-room';
+import { linkRefs, RoomRefs } from './zoom-orphans';
 import {
   formatScrubReport,
   runForeignScrub,
@@ -73,25 +79,26 @@ export class ForeignScrubCommand implements OnModuleInit {
             orderBy: { id: 'asc' },
           })
         ).filter((b): b is ScrubBooking => b.calDavUid !== null);
-    const rooms = off.zoom
-      ? []
-      : await this.prisma.clientMeeting.findMany({
-          where: { zoomMeetingId: { not: null } },
-          select: { zoomMeetingId: true },
-        });
-    const zoomIds = rooms.map((m) => m.zoomMeetingId ?? '').filter(Boolean);
-    const token = zoomIds.length ? await this.meeting.zoomToken() : null;
+    const zoomIds = off.zoom ? [] : await this.zoomRoomIds();
+    const token = off.zoom ? null : await this.meeting.zoomToken();
+    // Без токена OAuth вызов Zoom — исход 'failed', а не исключение.
+    const z = <T>(call: (t: string) => Promise<T>, dead: NoInfer<T>) =>
+      token ? call(token) : Promise.resolve(dead);
     const ports: ScrubPorts = {
       putEvent: (ev) => this.calDav.pushEvent(ev),
       removeEvent: (uid) => this.calDav.removeEvent(uid),
       readZoomTopic: (id) =>
-        token
-          ? readZoomTopic(token, id)
-          : Promise.resolve({ result: 'failed' }),
+        z((t) => readZoomTopic(t, id), { result: 'failed' }),
       renameZoomRoom: (id) =>
-        token
-          ? renameZoomRoom(token, id, ZOOM_TOPIC)
-          : Promise.resolve('failed'),
+        z((t) => renameZoomRoom(t, id, ZOOM_TOPIC), 'failed'),
+      deleteZoomRoom: (id) => z((t) => deleteZoomRoom(t, id), 'failed'),
+      listZoomMeetings: () =>
+        z(listZoomMeetings, {
+          result: 'failed',
+          meetings: [],
+          detail: 'нет токена Zoom',
+        }),
+      roomRefs: () => this.roomRefs(),
       pause: () => new Promise((r) => setTimeout(r, this.pauseMs)),
     };
     return runForeignScrub({
@@ -100,7 +107,26 @@ export class ForeignScrubCommand implements OnModuleInit {
       zoomTopic: ZOOM_TOPIC,
       cutoff: anonymizeCutoff(now),
       live,
+      findOrphans: !off.zoom,
       ports,
     });
+  }
+
+  private async zoomRoomIds(): Promise<string[]> {
+    const rooms = await this.prisma.clientMeeting.findMany({
+      where: { zoomMeetingId: { not: null } },
+      select: { zoomMeetingId: true },
+    });
+    return rooms.map((m) => m.zoomMeetingId ?? '').filter(Boolean);
+  }
+
+  /** Кто держит комнату: строка ClientMeeting или ссылка живой брони. */
+  private async roomRefs(): Promise<RoomRefs> {
+    const known = new Set(await this.zoomRoomIds());
+    const links = await this.prisma.booking.findMany({
+      where: { anonymizedAt: null, meetingUrl: { not: null } },
+      select: { meetingUrl: true },
+    });
+    return { known, ...linkRefs(links.map((b) => b.meetingUrl)) };
   }
 }
