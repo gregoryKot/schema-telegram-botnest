@@ -9,6 +9,7 @@
 import { Logger } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
+import { bookingEventUid } from './caldav-owner-event';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
 import { LINK_TO_FORWARD, ROOM_REPLACED } from './booking-confirmed-card';
@@ -122,7 +123,7 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     // Точное равенство, без objectContaining: лишнее поле (имя, контакт, текст
     // обращения, ссылка) — красное. iCloud — зарубежная база (152-ФЗ).
     expect(calDav.pushEvent).toHaveBeenCalledWith({
-      uid: 'booking-42@schemehappens.ru',
+      uid: bookingEventUid(42),
       startsAt: b.startsAt,
       durationMin: 50,
       summary: 'Сессия (50 мин)',

@@ -160,10 +160,17 @@ describe('e2e smoke: ownership уведомлений в приложении', 
   (process.env.E2E_REAL_DB === '1' ? it : it.skip)(
     'подписчик без Telegram попадает в выборку планировщика',
     async () => {
+      // Оба приняли условия: B выпадает только из-за адреса, а не согласия.
+      await prisma.user.updateMany({
+        where: { id: { in: ALL } },
+        data: { disclaimerAccepted: true },
+      });
       const users = await app.get(AccountService).getAllUsersWithSettings();
       const ids = users.map((u) => u.id);
       expect(ids).toContain(USER_A);
       expect(ids).not.toContain(USER_B);
+      // Подписка, записанная ручкой, видна обходу (инсайт из оценок — только сюда).
+      expect(users.find((u) => u.id === USER_A)?.hasPush).toBe(true);
     },
   );
 
