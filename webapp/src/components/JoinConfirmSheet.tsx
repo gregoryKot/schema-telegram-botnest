@@ -1,7 +1,9 @@
 import { api } from '../api';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { Dialog } from './Dialog';
 import { EntryHead } from './paper/EntryHead';
+import { JoinDoneBody } from './JoinDoneBody';
 import { PaperAlert } from './paper/PaperAlert';
 import { alertParts, joinLook } from './paper/entryLook';
 import { joinSheetView } from '../../../shared/src/therapy/joinSheetView';
@@ -26,6 +28,7 @@ interface Props {
 // без выдумки) и что код уже не действует; после — что теперь видит терапевт.
 export function JoinConfirmSheet({ joinKind, joinCode, onClose, onJoined }: Props) {
   const tr = useTr();
+  const goBack = useHistorySheet(onClose); // «Назад» браузера = отказ, а не уход со страницы
   const isPair = joinKind === 'pair';
   const preview = useInvitePreview(api.previewTherapyInvite, joinCode, !isPair);
   const name = preview.state === 'ok' ? preview.therapistName : null;
@@ -37,37 +40,33 @@ export function JoinConfirmSheet({ joinKind, joinCode, onClose, onJoined }: Prop
     () => onJoined(joinKind),
   );
 
-  if (done && !isPair) {
-    return (
-      <Dialog label={JOIN_DONE_TITLE} onClose={onClose} closeOnEscape zIndex={350} maxWidth={480}>
-        <EntryHead look={joinLook(isPair, preview.state, true)} title={JOIN_DONE_TITLE} />
-        <p className="sk-dialog-text" role="status">{joinDoneText(name, tr)}</p>
-        <div className="sk-dialog-actions">
-          <button type="button" className="ds-btn" onClick={onClose}>Понятно</button>
-        </div>
-      </Dialog>
-    );
-  }
-
   // Согласие — только когда присоединиться можно; иначе одна причина (М1).
   const view = joinSheetView(isPair, preview, tr);
   const notice = view.notice; // причина, а не сбой: смысл несёт шапка (Cup — устарело), текст спокойный
+  // Одно окно на обе ветки — одна запись истории (гейт оверлеев).
+  const finished = done && !isPair;
   return (
-    <Dialog label={view.title} onClose={busy ? undefined : onClose} closeOnEscape={!busy} zIndex={350} maxWidth={480}>
-      <EntryHead look={joinLook(isPair, preview.state)} title={view.title} sub={name ? inviteFromLine(name) : undefined} />
-      {view.explain && <p className="sk-dialog-text">{view.explain}</p>}
-      {notice && <p role={notice.role} className="sk-dialog-text">{notice.text}</p>}
-      {failMsg && <PaperAlert className="ef-alert" {...alertParts(failMsg)} />}
-      <div className="sk-dialog-actions">
-        <button type="button" className="ds-btn ds-btn--secondary" onClick={onClose} disabled={busy}>
-          {view.closeLabel}
-        </button>
-        {view.canJoin && (
-          <button type="button" className="ds-btn" onClick={confirm} disabled={busy}>
-            {busy ? 'Присоединяю…' : 'Присоединиться'}
-          </button>
-        )}
-      </div>
+    <Dialog label={finished ? JOIN_DONE_TITLE : view.title} onClose={busy ? undefined : goBack} closeOnEscape={!busy} zIndex={350} maxWidth={480}>
+      {finished ? (
+        <JoinDoneBody look={joinLook(isPair, preview.state, true)} text={joinDoneText(name, tr)} onClose={() => goBack()} />
+      ) : (
+        <>
+          <EntryHead look={joinLook(isPair, preview.state)} title={view.title} sub={name ? inviteFromLine(name) : undefined} />
+          {view.explain && <p className="sk-dialog-text">{view.explain}</p>}
+          {notice && <p role={notice.role} className="sk-dialog-text">{notice.text}</p>}
+          {failMsg && <PaperAlert className="ef-alert" {...alertParts(failMsg)} />}
+          <div className="sk-dialog-actions">
+            <button type="button" className="ds-btn ds-btn--secondary" onClick={() => goBack()} disabled={busy}>
+              {view.closeLabel}
+            </button>
+            {view.canJoin && (
+              <button type="button" className="ds-btn" onClick={confirm} disabled={busy}>
+                {busy ? 'Присоединяю…' : 'Присоединиться'}
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </Dialog>
   );
 }

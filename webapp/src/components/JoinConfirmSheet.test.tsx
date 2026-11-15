@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { useEffect } from 'react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 
 vi.mock('../api', () => ({
   api: { joinPair: vi.fn(), joinTherapy: vi.fn(), previewTherapyInvite: vi.fn() },
@@ -14,10 +16,22 @@ import { plainText } from '../test-support/plainText';
 
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
+const nav = { go: null as ReturnType<typeof useNavigate> | null };
+function NavProbe() {
+  const navigate = useNavigate();
+  useEffect(() => { nav.go = navigate; });
+  return null;
+}
+
 function setup(joinKind: 'pair' | 'therapy') {
   const onClose = vi.fn();
   const onJoined = vi.fn();
-  render(<JoinConfirmSheet joinKind={joinKind} joinCode="CODE1" onClose={onClose} onJoined={onJoined} />);
+  render(
+    <MemoryRouter initialEntries={['/', '/join']} initialIndex={1}>
+      <NavProbe />
+      <JoinConfirmSheet joinKind={joinKind} joinCode="CODE1" onClose={onClose} onJoined={onJoined} />
+    </MemoryRouter>,
+  );
   return { onClose, onJoined };
 }
 
@@ -57,14 +71,22 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
   it('«Не сейчас», фон и Escape — отказ без вызова присоединения', async () => {
     const a = setup('pair');
     fireEvent.click(screen.getByText('Не сейчас'));
-    expect(a.onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(a.onClose).toHaveBeenCalledTimes(1));
     cleanup();
     const b = setup('therapy');
     await screen.findByText('Приглашение от терапевта: Анна');
     fireEvent.click(screen.getByRole('presentation'));
-    expect(b.onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(b.onClose).toHaveBeenCalledTimes(1));
     expect(m.joinPair).not.toHaveBeenCalled();
     expect(m.joinTherapy).not.toHaveBeenCalled();
+  });
+
+  it('«Назад» браузера закрывает окно (отказ без сети), а не страницу', async () => {
+    const { onClose } = setup('pair');
+    await screen.findByText('Присоединиться');
+    act(() => nav.go!(-1));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(m.joinPair).not.toHaveBeenCalled();
   });
 
   // Инцидент 2026-10-26: окно спрашивало «Открыть доступ терапевту?», не
@@ -122,7 +144,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
       expect(plainText(screen.getByRole('status'))).toMatch(/^Терапевт Анна видит твой трекер потребностей и задания/);
       expect(onJoined).toHaveBeenCalledWith('therapy');
       fireEvent.click(screen.getByText('Понятно'));
-      expect(onClose).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     });
   });
 
