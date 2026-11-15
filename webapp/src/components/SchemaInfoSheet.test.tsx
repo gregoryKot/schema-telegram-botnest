@@ -20,9 +20,12 @@ vi.mock('./YSQTestSheet', () => ({
     </div>
   ),
 }));
+const track = vi.hoisted(() => vi.fn());
+vi.mock('./therapy/trackTherapyNudge', () => ({ trackTherapyNudge: track }));
 
 beforeEach(() => {
   localStorage.clear();
+  track.mockClear();
 });
 
 afterEach(() => {
@@ -37,6 +40,14 @@ function renderSheet(props: Partial<Parameters<typeof SchemaInfoSheet>[0]> = {})
     </MemoryRouter>,
   );
 }
+
+describe('SchemaInfoSheet — строка моста к терапевту', () => {
+  it('под вкладками «самопомощь, не замена терапии», показ уходит с местом schema_info', () => {
+    renderSheet();
+    expect(screen.getByText(/^Приложение — самопомощь, не замена терапии\./)).toBeTruthy();
+    expect(track).toHaveBeenCalledWith('schema_info', 'shown');
+  });
+});
 
 describe('SchemaInfoSheet — вкладки', () => {
   it('по умолчанию открыта вкладка «Потребности» с пятью потребностями', () => {
