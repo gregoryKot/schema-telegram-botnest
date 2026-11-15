@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { SEG_GROUP, segBtn } from './conceptInlineStyles';
 import { useConceptSkin } from './conceptSkin';
 
 export type ConceptView = 'graph' | 'fields';
@@ -25,7 +24,7 @@ const OPTIONS: { view: ConceptView; label: string }[] = [
   { view: 'fields', label: 'Поля' },
 ];
 
-/** Переключатель «Схема · Поля» над концептуализацией (оба фронтенда). */
+/** Переключатель «Схема · Поля» над концептуализацией; вид — классы skin.seg (сайт: ds-seg). */
 export function ConceptViewSwitch({
   view,
   onChange,
@@ -39,7 +38,6 @@ export function ConceptViewSwitch({
       role="group"
       aria-label="Вид концептуализации"
       className={skin?.seg.group}
-      style={skin ? undefined : SEG_GROUP}
     >
       {OPTIONS.map((o) => {
         const active = view === o.view;
@@ -52,7 +50,6 @@ export function ConceptViewSwitch({
             className={
               skin ? skin.seg.btn + (active ? ' is-active' : '') : undefined
             }
-            style={skin ? undefined : segBtn(active)}
           >
             {o.label}
           </button>
