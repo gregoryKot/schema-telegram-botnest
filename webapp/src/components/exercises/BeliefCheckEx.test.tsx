@@ -3,9 +3,11 @@
 // поле "belief" на первом шаге мастера — остальные свободнотекстовые стейты
 // (forInput/againstInput/reframe) используют тот же гейт в BeliefCheckEx.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BeliefCheckEx } from './BeliefCheckEx';
+import { TaskExerciseHost } from '../../sections/today/TaskExerciseHost';
+import type { OpenExercise } from '../../sections/today/useTaskLauncher';
 import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { AddressFormContext } from '../../utils/addressForm';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
@@ -313,5 +315,39 @@ describe('BeliefCheckEx — живые весы на листе-герое', () 
     }
     expect(pebbles()).toBe(2);
     expect(document.querySelectorAll('.ex2-evi-row .ex2-pebble')).toHaveLength(2);
+  });
+});
+
+// «Что попробовать дальше» на итоге был плоским блоком без перехода — тупик (b17, docs/open/frontend-ux.md).
+// Шов хост → упражнение → итог: плитка закрывает упражнение и открывает карточку схемы; без перехода — блока нет.
+describe('Итог проверки — «Что попробовать дальше» ведёт к карточке схемы', () => {
+  async function finishInHost(onOpenExercise?: (ex: OpenExercise) => void) {
+    const onBack = vi.fn();
+    mockApi.createBeliefCheck.mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <TaskExerciseHost open={{ ex: 'belief' }} onBack={onBack} onComplete={vi.fn()} onOpenTracker={vi.fn()} onOpenExercise={onOpenExercise} />
+      </MemoryRouter>,
+    );
+    await screen.findByPlaceholderText(BELIEF_PH);
+    walkToLastStep();
+    fireEvent.click(screen.getByText(/Сохранить и закрыть/));
+    await screen.findByText('Готово.');
+    return onBack;
+  }
+
+  it('тап по плитке закрывает итог, затем открывает карточку схемы', async () => {
+    const onOpenExercise = vi.fn();
+    const onBack = await finishInHost(onOpenExercise);
+    expect(screen.getByText('Что попробовать дальше')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Знакомство со\sсхемой/ }));
+    await waitFor(() => expect(onOpenExercise).toHaveBeenCalledWith({ ex: 'schema' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onBack.mock.invocationCallOrder[0]).toBeLessThan(onOpenExercise.mock.invocationCallOrder[0]);
+  });
+
+  it('хост без перехода — блока «Что попробовать дальше» нет', async () => {
+    await finishInHost();
+    expect(screen.queryByText('Что попробовать дальше')).toBeNull();
   });
 });

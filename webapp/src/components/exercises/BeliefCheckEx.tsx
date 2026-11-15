@@ -25,7 +25,7 @@ import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 const STEPS = ['Убеждение', 'Доказательства за', 'Доказательства против', 'Переформулировка'];
 const HUE = ENTITY_LOOK.belief_check.hue;
 
-export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onComplete?: () => void }) {
+export function BeliefCheckEx({ onBack, onComplete, onOpenSchemaCard }: { onBack: () => void; onComplete?: () => void; onOpenSchemaCard?: () => void }) {
   const tr = useTr();
   const SIDE_HINTS = buildSideHints(tr);
   const goBack = useHistorySheet(onBack);
@@ -66,7 +66,8 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
   if (done) {
     return (
       <BeliefDoneScreen goBack={goBack} belief={belief} forList={forList} againstList={againstList} reframe={reframe}
-        history={history} pastChecks={history.filter((h) => h.belief !== belief).slice(0, 3)} onRestart={() => { setDone(false); form.reset(); }} />
+        history={history} pastChecks={history.filter((h) => h.belief !== belief).slice(0, 3)} onRestart={() => { setDone(false); form.reset(); }}
+        onOpenSchema={onOpenSchemaCard && (() => goBack(onOpenSchemaCard))} />
     );
   }
 

@@ -108,20 +108,8 @@
 .chw-good-title { margin-bottom: 6px; font-family: var(--serif); font-size: 20px; line-height: 1.2; color: var(--text); }
 .chw-good-body { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 
-/* ── «Связать с сегодня» — плитка соломы трекера: текст слева, справа стрелка и знак Strokes ── */
-.chw-next {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; box-sizing: border-box; width: 100%;
-  margin-top: 28px; padding: 20px 20px 18px 22px; border: 0; border-radius: 22px; font: inherit; text-align: left; color: var(--text);
-}
-.chw-next--link { cursor: pointer; transition: background .12s; }
-.chw-next--link:hover { background: oklch(0.895 0.04 var(--h)); }
-.chw-next--link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.chw-next-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.chw-next-label { color: var(--text-sub); }
-.chw-next-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
-.chw-next-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
-.chw-next-foot { display: flex; flex-direction: column-reverse; align-items: flex-end; justify-content: space-between; gap: 10px; }
-.chw-next-foot .pp-art { width: 88px; height: auto; }
+/* «Связать с сегодня» — плитка ExNext (ex-done.css); здесь только отступ от списка оценок. */
+.chw-next { margin-top: 28px; }
 .chw-note { margin-top: 20px; }
 
 /* ── Загрузка: силуэт пяти строк ─────────────────────────────────────── */

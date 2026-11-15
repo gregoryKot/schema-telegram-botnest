@@ -39,24 +39,30 @@ function renderCard(rewrite: string | null, handlers: { onClose?: () => void; on
 }
 
 describe('PhraseHistoryCard — шаринг из истории', () => {
-  it('с сохранённым ответом — обе опции, карточка «было и стало» открывает лист', () => {
+  const share = () => fireEvent.click(screen.getByRole('button', { name: /Поделиться →/ }));
+
+  it('с сохранённым ответом — шторка с обоими вариантами; «было и стало» открывает лист, карточка разбора остаётся', async () => {
     renderCard('бывает, поправимо');
-    expect(screen.getByText('Поделиться карточкой')).toBeTruthy();
-    expect(screen.getByText('Поделиться всем разбором')).toBeTruthy();
-    fireEvent.click(screen.getByText('Поделиться карточкой'));
-    expect(screen.getByText('Картинка уйдёт вместе со ссылкой')).toBeTruthy();
+    share();
+    expect(screen.getByRole('button', { name: /Весь разбор/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Краткая карточка/ }));
+    expect(await screen.findByText('Картинка уйдёт вместе со ссылкой')).toBeTruthy();
+    expect(screen.queryByText('Чем поделиться?')).toBeNull();
+    expect(screen.getByText('Разбор фразы')).toBeTruthy();
   });
 
-  it('без ответа краткой карточки нет, полный разбор остаётся', () => {
+  it('без ответа краткой карточки нет: шторки нет, ссылка сразу открывает полный разбор', () => {
     renderCard(null);
-    expect(screen.queryByText('Поделиться карточкой')).toBeNull();
-    expect(screen.getByText('Поделиться всем разбором')).toBeTruthy();
+    share();
+    expect(screen.queryByText('Чем поделиться?')).toBeNull();
+    expect(screen.getByText('Поделиться разбором')).toBeTruthy();
   });
 
   it('набранный в карточке ответ сразу даёт краткую карточку (без сохранения)', () => {
     renderCard(null);
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'ошибка – не приговор' } });
-    expect(screen.getByText('Поделиться карточкой')).toBeTruthy();
+    share();
+    expect(screen.getByRole('button', { name: /Краткая карточка/ })).toBeTruthy();
   });
 });
 
