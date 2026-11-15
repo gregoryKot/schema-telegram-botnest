@@ -1,8 +1,10 @@
 // Разбор таймеров для check-timer-cleanup.mjs, по каждому `setTimeout` отдельно:
 // колбэк меняет состояние — значит, id таймера лежит в переменной или ref, и
 // `clearTimeout` этого id стоит в очистке. Комментарии и текст строк стёрты до разбора.
-// Граница: смену состояния через вызов функции внутри колбэка (`() => void tick()`)
-// гейт не видит — только прямой вызов и колбэк, переданный ссылкой.
+// Колбэк `() => void tick()` разбирается на один вызов вглубь: своя функция, где прямая
+// смена состояния. Её таймер чистят и косвенно (`clearTimeout` в любой функции файла —
+// фабрика с `take()`/`leave()`, как createPendingSave), иначе вышла бы ложная находка.
+// Очистка — цепочка вызовов от возвращённой функции и `componentWillUnmount` класса.
 import { stripComments } from './gate-strip-comments.mjs';
 import { blankStrings } from './gate-blank-strings.mjs';
 import { matchParen, lineAt } from './gate-balance.mjs';
@@ -11,7 +13,7 @@ import { functionsOf, callArgs } from './gate-functions.mjs';
 const ID = String.raw`[A-Za-z_$][\w$]*`;
 // Смена состояния: сеттер `setX(` (не метод `storage.setItem(` и не `setTimeout(`),
 // колбэк-проп `onX(` / `props.onX?.(` / `onXRef.current(`, `dispatch(`.
-const CHANGER = String.raw`(?:\bprops\.)?(?:on[A-Z][\w$]*(?:\.current)?|set(?!Timeout\b|Interval\b|Immediate\b)[A-Z][\w$]*|dispatch)`;
+const CHANGER = String.raw`(?:\bprops\.|\bthis\.)?(?:on[A-Z][\w$]*(?:\.current)?|set(?!Timeout\b|Interval\b|Immediate\b)[A-Z][\w$]*|dispatch)`;
 const STATE_CALL = new RegExp(String.raw`(?<![\w$.])${CHANGER}\s*(?:\?\.\s*)?\(`);
 const STATE_REF = new RegExp(String.raw`^${CHANGER}$`);
 const BARE_ID = new RegExp(String.raw`^${ID}$`);
@@ -46,6 +48,15 @@ function changeOf(callback, code, fns) {
   return own ? arg : null;
 }
 
+/** Колбэк-стрелка зовёт свою функцию, которая меняет состояние напрямую: её имя; иначе null. */
+function indirectChangeOf(callback, code, fns) {
+  for (const m of callback.matchAll(BARE_CALL)) {
+    const fn = fns.find((f) => nameOf(code, f) === m[1]);
+    if (fn && STATE_CALL.test(code.slice(fn.start, fn.end))) return m[1];
+  }
+  return null;
+}
+
 function holderOf(code, at) {
   const head = before(code, at, 200).replace(/\b(?:window|globalThis)\.$/, '');
   for (const re of HOLDERS) {
@@ -59,13 +70,22 @@ function cleanupSpans(code, fns) {
   const returned = fns.filter((fn) => RETURNED.test(before(code, fn.head, 40)));
   const names = new Set([...code.matchAll(RETURNED_NAME)].map((m) => m[1]));
   for (const fn of returned) for (const m of code.slice(fn.start, fn.end).matchAll(BARE_CALL)) names.add(m[1]);
-  return [...returned, ...fns.filter((fn) => names.has(nameOf(code, fn)))];
+  const named = (fn) => names.has(nameOf(code, fn));
+  // Очистка зовёт помощника (`stop()` → `clear()`): имена растут, пока находятся новые.
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const fn of fns.filter(named)) {
+      for (const m of code.slice(fn.start, fn.end).matchAll(BARE_CALL)) if (!names.has(m[1])) { names.add(m[1]); grew = true; }
+    }
+  }
+  const unmount = fns.filter((fn) => nameOf(code, fn) === 'componentWillUnmount');
+  return [...new Set([...returned, ...unmount, ...fns.filter(named)])];
 }
 
 /** Имена у каждого `clearTimeout` в очистке: вызов — вместе с условием и заголовком
  *  цикла перед ним, ссылка `timers.forEach(clearTimeout)` — с выражением; плюс псевдонимы. */
-function clearedInCleanup(code, fns) {
-  const spans = cleanupSpans(code, fns);
+function clearedInCleanup(code, fns, anywhere = false) {
+  const spans = anywhere ? [{ start: 0, end: code.length }] : cleanupSpans(code, fns);
   const names = new Set();
   for (const m of code.matchAll(/\bclearTimeout\b/g)) {
     if (!spans.some((s) => m.index >= s.start && m.index < s.end)) continue;
@@ -87,12 +107,15 @@ export function uncleanedTimers(raw) {
   const fns = functionsOf(code);
   const found = [];
   let cleared = null;
+  let clearedAny = null;
   for (const m of code.matchAll(/\bsetTimeout\s*\(/g)) {
-    const change = changeOf(callArgs(code, m.index + m[0].length - 1)[0] ?? '', code, fns);
+    const callback = callArgs(code, m.index + m[0].length - 1)[0] ?? '';
+    const direct = changeOf(callback, code, fns);
+    const change = direct ?? indirectChangeOf(callback, code, fns);
     if (!change) continue;
-    cleared ??= clearedInCleanup(code, fns);
     const holder = holderOf(code, m.index);
-    if (!holder || !cleared.has(holder)) found.push({ line: lineAt(code, m.index), change });
+    const set = direct ? (cleared ??= clearedInCleanup(code, fns)) : (clearedAny ??= clearedInCleanup(code, fns, true));
+    if (!holder || !set.has(holder)) found.push({ line: lineAt(code, m.index), change });
   }
   return found;
 }
