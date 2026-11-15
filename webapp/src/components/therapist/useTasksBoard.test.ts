@@ -2,12 +2,15 @@
 // Доска «Задания» кабинета (QA 2026-11): лист кабинета не перемонтируется, и
 // доска, загруженная один раз, жила старой после назначения задания в карточке.
 // invalidate() перечитывает доску, которую уже открывали; поздний ответ
-// прежнего запроса новую доску не перезаписывает.
-import { describe, it, expect, vi } from 'vitest';
+// прежнего запроса новую доску не перезаписывает. Отказ — отчёт наверх (№14).
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useTasksBoard, type BoardTasks } from './useTasksBoard';
 
-vi.mock('../../api', () => ({ api: { getAllTherapyTasks: vi.fn() } }));
+vi.mock('../../api', () => ({ api: { getAllTherapyTasks: vi.fn() }, reportClientError: vi.fn() }));
+import { reportClientError } from '../../api';
+
+beforeEach(() => vi.clearAllMocks());
 
 const board = (text: string): BoardTasks => [{
   clientId: 1, clientName: 'Анна',
@@ -28,6 +31,7 @@ describe('useTasksBoard', () => {
     expect(result.current.tasks).toEqual(board('первое'));
     await act(async () => { result.current.open(); });
     expect(fetchAll).toHaveBeenCalledTimes(1);
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 
   it('invalidate() до первого открытия ничего не грузит — доску и так прочтут при открытии', async () => {
@@ -62,14 +66,25 @@ describe('useTasksBoard', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  it('сбой — failed, а не пустая доска; load() повторяет и снимает ошибку', async () => {
-    const fetchAll = vi.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce(board('после повтора'));
+  it('сбой — failed, а не пустая доска, и ровно один отчёт; load() повторяет и снимает ошибку', async () => {
+    const fetchAll = vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValueOnce(board('после повтора'));
     const { result } = renderHook(() => useTasksBoard(fetchAll));
     await act(async () => { result.current.open(); });
     expect(result.current.failed).toBe(true);
     expect(result.current.tasks).toBeNull();
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'tasks board load failed: network', section: 'therapist.tasks' });
     await act(async () => { result.current.load(); });
     expect(result.current.failed).toBe(false);
     expect(result.current.tasks).toEqual(board('после повтора'));
+    expect(reportClientError).toHaveBeenCalledTimes(1);
+  });
+
+  it('отказ устаревшего запроса отчёт не шлёт: два упавших подряд — один отчёт', async () => {
+    const fetchAll = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useTasksBoard(fetchAll));
+    await act(async () => { result.current.open(); result.current.invalidate(); });
+    expect(fetchAll).toHaveBeenCalledTimes(2);
+    expect(result.current.failed).toBe(true);
+    expect(reportClientError).toHaveBeenCalledTimes(1);
   });
 });

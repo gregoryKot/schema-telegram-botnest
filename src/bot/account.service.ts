@@ -17,6 +17,14 @@ import {
 } from './notify-channel';
 export type { SendSettings } from './send-settings';
 
+// Кому бот пишет сам (планировщик и /broadcast): принявшим условия — User есть
+// уже с /start, до кнопки — и не выключившим «Напоминания» (цель 2 политики).
+const BOT_WRITES_TO = {
+  disclaimerAccepted: true,
+  notifyEnabled: true,
+  deletedAt: null,
+} as const;
+
 // Жизненный цикл аккаунта: регистрация/идентичность, роль, статус блокировки
 // бота, списки для рассылок и полное удаление (right-to-erasure).
 @Injectable()
@@ -91,29 +99,20 @@ export class AccountService {
     });
   }
 
-  /** Кому рассылка адресована: только принявшим условия. bigint как есть: номер не округляется. */
+  /** Кому рассылка адресована: BOT_WRITES_TO, не заблокировавшим бота. bigint как есть: номер не округляется. */
   async getBroadcastUserIds(): Promise<bigint[]> {
     const users = await this.prisma.user.findMany({
-      where: { deletedAt: null, botBlockedAt: null, disclaimerAccepted: true },
+      where: { ...BOT_WRITES_TO, botBlockedAt: null },
       select: { id: true },
     });
     return users.map((u) => u.id);
   }
 
-  /**
-   * Кого планировщик рассматривает (отсекаем до создания строк): принявших
-   * условия — согласие основание напоминаний, а User заводится на /start до
-   * кнопки — и тех, кому есть куда писать (notifyAudience). `hasPush` —
-   * подписка в приложении: инсайт из оценок идёт только туда.
-   */
+  // Кого планировщик рассматривает (отсекаем до создания строк): BOT_WRITES_TO и
+  // кому есть куда писать (notifyAudience). `hasPush` — подписка в приложении: инсайт из оценок идёт только туда.
   async getAllUsersWithSettings() {
     const users = await this.prisma.user.findMany({
-      where: {
-        notifyEnabled: true,
-        disclaimerAccepted: true,
-        deletedAt: null,
-        OR: notifyAudience(),
-      },
+      where: { ...BOT_WRITES_TO, OR: notifyAudience() },
       select: {
         id: true,
         notifyLocalHour: true,
