@@ -181,25 +181,6 @@
   на разных элементах (`.cw-hero`/`.cw-title-row`, `.ex2-note`/`.ex2-portrait-row`, `.ex2-note-list`/`.ex2-ev`,
   `.aside-card`/`.ex-btn` против `*:focus-visible`: див без фокуса и `<button>` с более сильным
   `button:focus-visible`). Порядок @import держит `webapp/src/styles/cssSplit.test.ts`.
-- **Порядок CSS между файлами задаёт разбиение на чанки, а не исходник** (b03, 2026-11-08): промежуточная
-  сборка b03 с новыми импортами в `ExScreen` (главный чанк) растворила общий чанк `TherapyCaution` в `index`,
-  и `client-why.css` с `therapy-bridge.css` встали после `cabinet.css`, а не до него; вернул чанк порядок
-  импортов в `ExScreen.tsx` (rolldown делит на чанки и по нему). Спорили два правила: `.th-btn` (поле 22 и
-  скругление 24 против `.ds-btn`) и `.cw-item` (`align-items`/`gap` против `.ds-list-row`) — их объявления
-  никогда не действовали, убраны: правила больше не зависят от того, куда сборка положит файл. Переезд
-  файла в другой чанк ручная сверка собранного CSS не видит — с ревью волны 0 его ловит гейт
-  `scripts/check-css-link-order.mjs` (джоба `webapp`, после сборки): порядок `<link rel="stylesheet">` в
-  `webapp/dist/index.html` против `scripts/css-link-order.json`. Перестановки внутри одного файла по-прежнему
-  видит только сверка собранного CSS. Правило ремесла: класс экрана рядом с `ds-*` на том же элементе не повторяет его
-  свойства с той же специфичностью — пишется на два класса (`.ds-btn.th-…`) или не пишется. Два класса не
-  спасают от состояний той же специфичности: `.ds-btn:disabled` — тоже 0,2,0, поэтому своя заливка у `.ds-btn.x`
-  пишется с `:not(:disabled)` или с парой `.ds-btn.x:disabled` (сверка — `webapp/src/styles/paperPrimitives.test.ts`).
-  Второй случай (доводка волны 0, 2026-11-09): рантайм-импорт `PAPER_HUE` из `entityLook` в `PaperAlert` (его берёт
-  `SaveErrorNote` главного потока) вынес `entityLook`, `SignArt` и `ExScreen` в свои чанки — `ExScreen.css` встал в
-  `index.html` раньше `index.css`, `webapp:total-js` +3.6 КБ. Нашёл бандл-храповик, не тесты; дефолт `PaperAlert` —
-  литерал со сверкой в тесте. Порядок `<link rel="stylesheet">` в собранном `index.html` закреплён гейтом
-  выше; после слияния с main 218c05a5 он `sheet-tasks`, `TherapyCaution`, `index`, `sheet-diary` — тот же,
-  что даёт сборка самого main (`sheet-tasks` встал первым из-за импортов main, не раскроя).
 
 ## Редизайн приложения «живая бумага» — ждёт владельца (b00, 2026-11-08)
 

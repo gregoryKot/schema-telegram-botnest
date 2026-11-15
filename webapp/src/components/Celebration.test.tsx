@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-// Celebration — оверлей стрика (0% покрытия). Отключаем конфетти через
-// reduce_motion=1, чтобы не трогать canvas.getContext (не реализован в
-// jsdom) — сама механика confetti уже покрыта отдельно в useConfetti.test.
-// Проверяем: milestone-иконка, дни склоняются верно, клик по фону закрывает,
-// клик по карточке — нет (stopPropagation), обе формы ты/вы в подсказке.
+// Celebration — оверлей стрика. Конфетти выключено через reduce_motion=1 (canvas.getContext в jsdom
+// нет; механика — useConfetti.test). Проверяем: сцену и веху, закрытие через запись в истории
+// (фон, Escape, «Закрыть», «Назад» браузера), клик по карточке не закрывает, ты/вы в подсказке.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { act, render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { Celebration } from './Celebration';
+import { sheetStackOf } from '../hooks/historySheetStack';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 import { AddressFormContext } from '../utils/addressForm';
 import { needDataColor } from './needDataColor';
 import { CHECK_IN_GEOM, strokeLen } from './art/strokeLen';
@@ -24,12 +26,39 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
+// Снимок роутера: глубина стека листов в записи истории и navigate для «Назад» браузера.
+const nav = { go: null as ReturnType<typeof useNavigate> | null, depth: 0 };
+function Probe() {
+  const navigate = useNavigate();
+  const depth = sheetStackOf(useLocation().state).length;
+  useEffect(() => { nav.go = navigate; nav.depth = depth; });
+  return null;
+}
+
+function renderInRouter(children: ReactNode, form: 'ty' | 'vy' = 'ty') {
   return render(
-    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <Celebration streak={5} onDone={vi.fn()} {...props} />
-    </AddressFormContext.Provider>,
+    <MemoryRouter>
+      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+        <Probe />
+        {children}
+      </AddressFormContext.Provider>
+    </MemoryRouter>,
   );
+}
+
+function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
+  return renderInRouter(<Celebration streak={5} onDone={vi.fn()} {...props} />, form);
+}
+
+// Как в AppShell: onDone закрывает окно и открывает следующий лист со своей записью («Колесо детства»).
+function Wheel({ onClose }: { onClose: () => void }) {
+  useHistorySheet(onClose);
+  return <p>колесо</p>;
+}
+function CelebrationThenWheel() {
+  const [stage, setStage] = useState<'party' | 'wheel' | 'none'>('party');
+  if (stage === 'party') return <Celebration streak={5} onDone={() => setStage('wheel')} />;
+  return stage === 'wheel' ? <Wheel onClose={() => setStage('none')} /> : null;
 }
 
 describe('Celebration — лист серии (живая бумага, b07)', () => {
@@ -105,28 +134,30 @@ describe('Celebration — контент', () => {
   });
 });
 
-describe('Celebration — закрытие', () => {
-  it('клик по фону вызывает onDone', () => {
-    const onDone = vi.fn();
-    renderCelebration({ onDone });
-    fireEvent.click(screen.getByRole('presentation'));
-    expect(onDone).toHaveBeenCalled();
-  });
-});
-
-describe('Celebration — диалог', () => {
-  it('размечен как диалог и закрывается явной кнопкой «Закрыть»', () => {
-    const onDone = vi.fn();
-    renderCelebration({ onDone });
+// Окно живёт в истории браузера (useHistorySheet): закрытия идут через goBack, onDone — когда запись
+// снята. Иначе лист из onDone («Колесо детства») ложился поверх брошенной записи окна.
+describe('Celebration — закрытие через запись в истории', () => {
+  it.each([
+    ['«Закрыть»', () => fireEvent.click(screen.getByText('Закрыть'))],
+    ['Escape', () => fireEvent.keyDown(document, { key: 'Escape' })],
+    ['фон', () => fireEvent.click(screen.getByRole('presentation'))],
+  ])('%s снимает запись окна до onDone: лист из onDone — единственная запись', (_how, close) => {
+    renderInRouter(<CelebrationThenWheel />);
     expect(screen.getByRole('dialog').getAttribute('aria-modal')).toBe('true');
-    fireEvent.click(screen.getByText('Закрыть'));
-    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(nav.depth).toBe(1);
+    close();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByText('колесо')).toBeTruthy();
+    expect(nav.depth).toBe(1);
+    act(() => nav.go!(-1));
+    expect(screen.queryByText('колесо')).toBeNull();
+    expect(nav.depth).toBe(0);
   });
 
-  it('Escape закрывает', () => {
+  it('«Назад» браузера закрывает окно', () => {
     const onDone = vi.fn();
     renderCelebration({ onDone });
-    fireEvent.keyDown(document, { key: 'Escape' });
+    act(() => nav.go!(-1));
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
