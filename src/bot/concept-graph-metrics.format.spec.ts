@@ -165,6 +165,17 @@ describe('formatConceptGraphMetrics', () => {
     expect(formatConceptGraphMetrics({ ...base })).not.toContain('Колесо');
   });
 
+  // Холст открывают, не открывая схему случая: строки «Открывали 0 раз» быть не должно.
+  it.each<[string, Partial<ConceptGraphMetrics>]>([
+    ['только колесо потребностей', { needsRated30: 3 }],
+    ['только дописывание с холста', { syncFromMap30: 2 }],
+    ['пустая БД', {}],
+  ])('открытий нет (%s) — строки про открытия нет', (_, part) => {
+    const text = formatConceptGraphMetrics({ ...base, ...part });
+    expect(text).not.toMatch(/Открывали \d|терапевтов: 0/);
+    expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
   it('показ схемы клиенту: строки только о том, что было, — без «0 раз»', () => {
     const text = formatConceptGraphMetrics({
       ...base,
