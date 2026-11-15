@@ -2,11 +2,9 @@ import { useState } from 'react';
 
 // Необратимое действие за подтверждением: кнопка → «точно?» → действие; при
 // отказе подтверждение остаётся открытым с ошибкой, а не закрывается молча.
-// Одна механика на оба фронтенда и на все такие кнопки (правило «одна
-// механика — один компонент»): удаление результатов теста
-// (ysqDataDelete.ts), отключение от терапевта («Мой терапевт» — до
-// 2026-10-26 связь удалялась одним тапом без вопроса). Вид подтверждения у
-// площадок свой: ConfirmDialog сайта, ConfirmButtons в шторке мини-аппа.
+// Одна механика на все такие кнопки (удаление результатов теста, отключение
+// от терапевта, удаление статьи и фразы); вид подтверждения — ConfirmDialog сайта.
+// confirm возвращает true/false: HistoryConfirmDialog (`run`) по нему закрывается.
 export function useConfirmedAction(
   action: () => Promise<unknown>,
   onDone: () => void,
@@ -20,15 +18,17 @@ export function useConfirmedAction(
     setConfirming(true);
   };
   const cancel = () => setConfirming(false);
-  const confirm = async () => {
+  const confirm = async (): Promise<boolean> => {
     setBusy(true);
     setFailed(false);
     try {
       await action();
       setConfirming(false);
       onDone();
+      return true;
     } catch {
       setFailed(true);
+      return false;
     } finally {
       setBusy(false);
     }

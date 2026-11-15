@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import type { HealthyAdultPhrase } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
 import { HealthyAdultImport } from './HealthyAdultImport';
 import { HealthyAdultCheck } from './HealthyAdultCheck';
-import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { HistoryConfirmDialog } from '../../components/HistoryConfirmDialog';
 import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
 import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
@@ -161,8 +161,12 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
     });
   const toggle = () =>
     run(async () => onPatch(await api.adminUpdatePhrase(adminKey, row.id, { enabled: !row.enabled })));
-  // Ж4 (аудит 2026-08): удаление — через общий ConfirmDialog, не confirm().
-  const del = useConfirmedAction(() => api.adminDeletePhrase(adminKey, row.id), () => onDrop(row.id));
+  // Строку убираем после закрытия диалога (onCancel), а не в onDone: иначе она размонтируется
+  // раньше, чем диалог снимет запись истории; asking — потому что confirming гаснет сразу.
+  const deleted = useRef(false); const [asking, setAsking] = useState(false);
+  const del = useConfirmedAction(() => api.adminDeletePhrase(adminKey, row.id), () => { deleted.current = true; });
+  const ask = () => { del.ask(); setAsking(true); };
+  const closeDialog = () => { setAsking(false); del.cancel(); if (deleted.current) onDrop(row.id); };
 
   return (
     <>
@@ -177,7 +181,7 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
           <button style={btnGhost} onClick={toggle} disabled={busy}>
             {row.enabled ? 'Выключить' : 'Включить'}
           </button>
-          <button style={{ ...btnGhost, color: 'var(--accent-red)' }} onClick={del.ask} disabled={busy}>
+          <button style={{ ...btnGhost, color: 'var(--accent-red)' }} onClick={ask} disabled={busy}>
             Удалить
           </button>
           {saved && <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Сохранено ✓</span>}
@@ -186,16 +190,12 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
         </div>
       </section>
       {/* Вне section: opacity выключенной фразы иначе легла бы и на диалог. */}
-      {del.confirming && (
-        <ConfirmDialog
-          title="Удалить фразу?"
+      {asking && (
+        <HistoryConfirmDialog
+          title="Удалить фразу?" confirmLabel="Удалить" busyLabel="Удаляю…"
           message="Фраза уйдёт из пула канала. Чтобы только приостановить её, есть «Выключить»."
-          confirmLabel="Удалить"
-          busyLabel="Удаляю…"
-          busy={del.busy}
           error={del.failed ? 'Не удалось удалить — фраза на месте. Возможно, неверный админ-ключ или нет соединения.' : undefined}
-          onConfirm={() => void del.confirm()}
-          onCancel={del.cancel}
+          run={del.confirm} onCancel={closeDialog}
         />
       )}
     </>

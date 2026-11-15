@@ -3,6 +3,7 @@
 // (ArticleEditor, TipTap) не рендерим здесь — WYSIWYG-редактор не работает в
 // jsdom без отдельной настройки, это осознанная граница теста.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
 import { ArticlesSection } from './ArticlesSection';
 
@@ -38,7 +39,7 @@ describe('ArticlesSection — на чистом контенте пусто, н�
     // ответ (как renderSettled в PhotoSection.test.tsx), потом проверяем.
     const response = Promise.resolve([]);
     mockApi.adminListArticles.mockReturnValue(response);
-    render(<ArticlesSection adminKey="k" />);
+    render(<MemoryRouter><ArticlesSection adminKey="k" /></MemoryRouter>);
     await act(async () => { await response; });
     expect(mockApi.adminListArticles).toHaveBeenCalledWith('k');
     expect(screen.getByText('Пока нет статей.')).toBeTruthy();
@@ -48,7 +49,7 @@ describe('ArticlesSection — на чистом контенте пусто, н�
 describe('ArticlesSection — сбой ≠ пусто', () => {
   it('отказ загрузки (неверный ключ/сеть) показывает ошибку, а не «Пока нет статей.»', async () => {
     mockApi.adminListArticles.mockRejectedValue(new Error('API error: 403'));
-    render(<ArticlesSection adminKey="wrong" />);
+    render(<MemoryRouter><ArticlesSection adminKey="wrong" /></MemoryRouter>);
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(screen.getByText(/Не удалось загрузить статьи/)).toBeTruthy();
     expect(screen.queryByText('Пока нет статей.')).toBeNull();
@@ -60,14 +61,14 @@ describe('ArticlesSection — список статей', () => {
     mockApi.adminListArticles.mockResolvedValue([
       { id: 1, title: 'Тревога и тело', slug: 'trevoga-i-telo', readMin: 6, date: '2026-01-10' },
     ]);
-    render(<ArticlesSection adminKey="k" />);
+    render(<MemoryRouter><ArticlesSection adminKey="k" /></MemoryRouter>);
     await screen.findByText('Тревога и тело');
     expect(screen.getByText(/\/trevoga-i-telo · 6 мин/)).toBeTruthy();
   });
 
   it('«Отмена» в диалоге статью НЕ удаляет', async () => {
     mockApi.adminListArticles.mockResolvedValue([ARTICLE]);
-    render(<ArticlesSection adminKey="k" />);
+    render(<MemoryRouter><ArticlesSection adminKey="k" /></MemoryRouter>);
     await screen.findByText('Тревога и тело');
     fireEvent.click(screen.getByRole('button', { name: 'Удалить статью' }));
     expect(within(dialog()).getByText(/«Тревога и тело» пропадёт/)).toBeTruthy();
@@ -82,7 +83,7 @@ describe('ArticlesSection — список статей', () => {
   it('подтверждение в диалоге удаляет статью и перечитывает список (read-after-write)', async () => {
     mockApi.adminListArticles.mockResolvedValueOnce([ARTICLE]).mockResolvedValue([]);
     mockApi.adminDeleteArticle.mockResolvedValue(undefined);
-    render(<ArticlesSection adminKey="k" />);
+    render(<MemoryRouter><ArticlesSection adminKey="k" /></MemoryRouter>);
     await screen.findByText('Тревога и тело');
     fireEvent.click(screen.getByRole('button', { name: 'Удалить статью' }));
     fireEvent.click(within(dialog()).getByRole('button', { name: 'Удалить' }));
@@ -96,7 +97,7 @@ describe('ArticlesSection — список статей', () => {
   it('сбой удаления виден в диалоге, статья остаётся', async () => {
     mockApi.adminListArticles.mockResolvedValue([ARTICLE]);
     mockApi.adminDeleteArticle.mockRejectedValue(new Error('API error: 403'));
-    render(<ArticlesSection adminKey="k" />);
+    render(<MemoryRouter><ArticlesSection adminKey="k" /></MemoryRouter>);
     await screen.findByText('Тревога и тело');
     fireEvent.click(screen.getByRole('button', { name: 'Удалить статью' }));
     fireEvent.click(within(dialog()).getByRole('button', { name: 'Удалить' }));
