@@ -39,9 +39,18 @@ function makeDeps() {
       await notifications.schedule(u, t, at, p);
     },
   );
-  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder).
+  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder);
+  // «такое уже стоит» проверяется под её локом (SwapGuard).
   notifications.swapReminder = jest.fn(
-    async (u: bigint, t: string, at: Date, p?: object) => {
+    async (
+      u: bigint,
+      t: string,
+      at: Date,
+      p?: object,
+      guard?: { unlessPending?: boolean },
+    ) => {
+      if (guard?.unlessPending && (await notifications.hasPending(u, t)))
+        return;
       await notifications.cancel(u, 'reminder');
       await notifications.schedule(u, t, at, p);
     },

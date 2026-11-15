@@ -148,7 +148,7 @@ describe('BotAnalyticsService', () => {
     });
 
     // Хвост волны 3: сводка недели — по дню плана человека, а не по местному
-    // «сегодня» на момент обхода (notification.weekly.ts).
+    // «сегодня» на момент обхода (шапка notification.planner.service.ts).
     it('endDate задаёт последний день окна: неделя и прошлая неделя от него', async () => {
       const prisma = makePrisma();
       const svc = new BotAnalyticsService(prisma);
