@@ -20,6 +20,7 @@ export interface PlannerUser extends CadenceUser {
   notifyReminderEnabled: boolean;
   notifyGamified?: boolean;
   addressForm?: string | null;
+  hasPush?: boolean; // подписка в приложении, как SendSettings.hasPush
 }
 
 /**
@@ -187,7 +188,8 @@ export class NotificationPlannerService {
       return;
     }
 
-    await this.scheduleLowStreakInsight(uid, hour, tz, now);
+    // Инсайт выведен из оценок — только в приложение (PUSH_ONLY_TYPES).
+    if (user.hasPush) await this.scheduleLowStreakInsight(uid, hour, tz, now);
   }
 
   /** Напоминание: серия (оценок и потребностей в payload нет — РКН, #1135).

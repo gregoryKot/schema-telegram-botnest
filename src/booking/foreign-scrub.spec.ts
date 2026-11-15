@@ -148,6 +148,10 @@ describe('ForeignScrubCommand: разовая чистка iCloud и Zoom', () =
     expect(events.get('booking-1@schemehappens.ru.ics')).toContain(
       'SUMMARY:Сессия (50 мин)',
     );
+    // Записанный UID старой схемы: событие обновлено на месте, без второго (HMAC).
+    expect(events.get('booking-1@schemehappens.ru.ics')).toContain(
+      'UID:booking-1@schemehappens.ru\r\n',
+    );
     expect([...topics.values()]).toEqual([ZOOM_TOPIC, ZOOM_TOPIC]);
     // Ни адрес, ни тело ни одного запроса не несут данных клиента.
     const sent = JSON.stringify(calls);

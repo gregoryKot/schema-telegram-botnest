@@ -3,6 +3,7 @@
 // setTherapistMode покрыты в account.service.spec.ts (лимит ~300 строк на
 // файл), этот файл добирает остальную публичную поверхность. Отказ от роли
 // терапевта переехал в src/therapy/therapist-exit.service.ts (2026-10-22).
+import { generateVAPIDKeys } from 'web-push';
 import { AccountService } from './account.service';
 import { adoptDeviceTimezone } from './device-timezone';
 
@@ -320,7 +321,13 @@ describe('AccountService.getSendSettingsFor', () => {
 });
 
 describe('AccountService.getAllUsersWithSettings', () => {
-  it('фильтрует по notifyEnabled/botBlockedAt/deletedAt и запрашивает поля рассылки', async () => {
+  const env = process.env;
+  afterEach(() => {
+    process.env = env;
+  });
+
+  it('фильтрует по согласию, notifyEnabled/botBlockedAt/deletedAt и запрашивает поля рассылки', async () => {
+    process.env = { ...env, VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '' };
     const prisma = makePrisma();
     const rows = [{ id: 1n, notifyLocalHour: 9 }];
     prisma.user.findMany.mockResolvedValue(rows);
@@ -328,12 +335,14 @@ describe('AccountService.getAllUsersWithSettings', () => {
 
     const result = await service.getAllUsersWithSettings();
 
-    expect(result).toBe(rows);
-    // Ключей VAPID в окружении спека нет — ветки «подписка на уведомления в
-    // приложении» нет (notify-channel.spec.ts проверяет её отдельно).
+    expect(result).toEqual([{ id: 1n, notifyLocalHour: 9, hasPush: false }]);
+    // Ключей VAPID нет — ветки «подписка на уведомления в приложении» нет
+    // (notify-channel.spec.ts проверяет её отдельно).
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       where: {
         notifyEnabled: true,
+        // Согласие — основание напоминаний: не принявший условия не в выборке.
+        disclaimerAccepted: true,
         deletedAt: null,
         OR: [
           {
@@ -360,6 +369,31 @@ describe('AccountService.getAllUsersWithSettings', () => {
         notifyPausedUntil: true,
         addressForm: true,
       },
+    });
+  });
+
+  it('hasPush — та же проверка подписки, что у очереди: есть подписка → true', async () => {
+    const k = generateVAPIDKeys();
+    process.env = {
+      ...env,
+      VAPID_PUBLIC_KEY: k.publicKey,
+      VAPID_PRIVATE_KEY: k.privateKey,
+    };
+    const prisma = makePrisma();
+    prisma.user.findMany.mockResolvedValue([{ id: 1n }, { id: 2n }]);
+    prisma.pushSubscription = {
+      findMany: jest.fn().mockResolvedValue([{ userId: 2n }]),
+    };
+
+    const result = await new AccountService(prisma).getAllUsersWithSettings();
+
+    expect(result).toEqual([
+      { id: 1n, hasPush: false },
+      { id: 2n, hasPush: true },
+    ]);
+    expect(prisma.pushSubscription.findMany).toHaveBeenCalledWith({
+      where: { userId: { in: [1n, 2n] } },
+      select: { userId: true },
     });
   });
 });

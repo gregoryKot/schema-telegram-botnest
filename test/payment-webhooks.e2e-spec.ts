@@ -60,6 +60,7 @@ const BOOKING_CANCEL_TOKENS = [
   'bk-ct-14',
   'bk-ct-15',
   'bk-ct-16',
+  'bk-ct-17',
 ];
 const SUBSCRIPTION_CANCEL_TOKENS = [
   'sub-ct-1',
@@ -746,6 +747,8 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect((await pay(b.id)).text).toBe(`OK${b.id}`);
       const saved = (await row(b.id))?.calDavUid;
       expect(saved).toBe(bookingEventUid(b.id));
+      // UID — HMAC: номер брони в Apple не уходит (РКН №08-1063539).
+      expect(saved).toMatch(/^[0-9a-f]{32}@schemehappens\.ru$/);
       expect([...calendar]).toEqual([saved]);
       expect(dms('Запись подтверждена', b.id)).toHaveLength(1);
 
@@ -753,6 +756,22 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
 
       expect([...calendar]).toEqual([]);
       expect(remove).toHaveBeenCalledWith(saved);
+      expect(dms('Запись отменена', b.id)).toHaveLength(1);
+    });
+
+    it('событие старой схемы (номер брони в UID) отмена снимает по записанному uid', async () => {
+      const b = await create('bk-ct-17', 'CONFIRMED');
+      const legacy = `booking-${b.id}@schemehappens.ru`; // так писал UID код до HMAC
+      await prisma.booking.update({
+        where: { id: b.id },
+        data: { calDavUid: legacy },
+      });
+      calendar.add(legacy);
+
+      await bookingSvc.cancel('bk-ct-17');
+
+      expect([...calendar]).toEqual([]);
+      expect(remove.mock.calls).toEqual([[legacy]]);
       expect(dms('Запись отменена', b.id)).toHaveLength(1);
     });
   });
