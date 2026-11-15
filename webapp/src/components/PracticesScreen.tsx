@@ -25,10 +25,6 @@ import { pluralRu } from '../../../shared/src/utils/pluralRu';
 import { NEED_ORDER } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 const NEED_IDS: readonly string[] = NEED_ORDER;
-const NEED_NAMES: Record<string, string> = {
-  attachment: 'Привязанность', autonomy: 'Автономия',
-  expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
-};
 
 interface Props {
   onClose: () => void;
@@ -95,6 +91,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const { tap: tapDelete, isPending: deletePending } = useConfirmTap<number>(handleDelete);
 
   const needId = NEED_IDS[needIdx];
+  const needName = NEED_DATA[needId]?.name;
   const todayScore = ratings[needId];
   const isLow = todayScore !== undefined && todayScore <= 4;
   const isMid = todayScore !== undefined && todayScore > 4 && todayScore <= 7;
@@ -119,14 +116,14 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           <section className="sk-group sk-feed-need">
             <div className="sk-feed-head">
               <span className="pp-row-art" aria-hidden="true"><NeedArt id={needId} size="row" /></span>
-              <h2 className="sk-group-title">{NEED_DATA[needId]?.name ?? NEED_NAMES[needId]}</h2>
+              <h2 className="sk-group-title">{needName}</h2>
               {practices && <span className="ds-sub">{practices.length} {pluralRu(practices.length, 'действие', 'действия', 'действий')}</span>}
             </div>
             {(isLow || isMid) && (
               <p className="sk-feed-hint">
                 {isLow
-                  ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 – хороший момент, чтобы что-то сделать для этой потребности.</>
-                  : <>Сегодня {NEED_NAMES[needId]} – {todayScore}/10. Есть куда расти.</>}
+                  ? <>Сегодня <b>{needName}</b> на {todayScore}/10 – хороший момент, чтобы что-то сделать для этой потребности.</>
+                  : <>Сегодня {needName} – {todayScore}/10. Есть куда расти.</>}
               </p>
             )}
             {practicesFailed ? (

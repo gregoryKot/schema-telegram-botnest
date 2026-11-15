@@ -110,7 +110,8 @@
 
 /* «Связать с сегодня» — плитка ExNext (ex-done.css); здесь только отступ от списка оценок. */
 .chw-next { margin-top: 28px; }
-.chw-note { margin-top: 20px; }
+/* Строка моста (TherapyLine, .th-line) — по левому краю, как текст итога; два класса — не спор порядком CSS. */
+.th-line.chw-note { margin-top: 20px; text-align: left; }
 
 /* ── Загрузка: силуэт пяти строк ─────────────────────────────────────── */
 .chw-skeleton { display: flex; flex-direction: column; }

@@ -488,3 +488,32 @@ describe('ProfileSection — портрет и тёплые слова', () => {
     expect(reportClientError).toHaveBeenCalledWith({ message: 'getProfile failed', section: 'profile-about' });
   });
 });
+
+// Профиль читал историю теста дважды: свой счётчик и useAboutMe (портрет). Источник один — useAboutMe.
+describe('ProfileSection — история теста', () => {
+  it('один запрос на экран: из него и счётчик «прохождения теста», и портрет', async () => {
+    activeMocks();
+    mockApi.getYsqHistory.mockResolvedValue([1, 2].map(id => ({ id, completedAt: '2026-08-01T00:00:00.000Z', scores: [] })));
+    await act(async () => { renderSection(); });
+    const counter = screen.getByText('прохождения теста').closest('.cpf-counter');
+    expect(counter?.querySelector('.cpf-counter-num')?.textContent).toBe('2');
+    expect(mockApi.getYsqHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it('сбой истории — баннер ошибки, а не тихий ноль прохождений', async () => {
+    activeMocks();
+    mockApi.getYsqHistory.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    expect(plainText(await screen.findByRole('alert'))).toMatch(/Не удалось загрузить часть данных/);
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'getYsqHistory failed', section: 'profile-about' });
+  });
+});
+
+describe('ProfileSection — строка моста к терапевту', () => {
+  it('«самопомощь, не замена терапии» с «Поговорить →», показ уходит с местом profile', async () => {
+    await act(async () => { renderSection(); });
+    expect(screen.getByText(/^Приложение — самопомощь, не замена терапии\./)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'profile', action: 'shown' });
+  });
+});

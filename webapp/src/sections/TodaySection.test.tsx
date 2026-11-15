@@ -120,7 +120,13 @@ function renderSection(props: Partial<{ ratings: Record<string, number>; refresh
 }
 
 const nowIso = () => new Date().toISOString();
-const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+// «N дней назад» — местным календарём, в полдень: сутки ≠ 24 ч на переходе часов.
+const daysAgoIso = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(12, 0, 0, 0);
+  return d.toISOString();
+};
 
 beforeEach(() => {
   vi.clearAllMocks();

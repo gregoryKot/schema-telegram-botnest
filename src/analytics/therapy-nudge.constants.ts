@@ -26,6 +26,11 @@ export const THERAPY_NUDGE_PLACES = [
   'exercise_start',
   'test_start',
   'why',
+  'childhood_result',
+  'profile',
+  'share',
+  'schema_info',
+  'weekly_card',
 ] as const;
 export type TherapyNudgePlace = (typeof THERAPY_NUDGE_PLACES)[number];
 
