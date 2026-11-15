@@ -23,21 +23,7 @@ const TGT = BigInt(2002);
 // «Пустой» набор — как у только что созданного User (схема-дефолты).
 function baseRow(overrides: Record<string, unknown> = {}) {
   return {
-    themePref: null,
-    onboardingV1Done: false,
     onboardingV2Done: false,
-    onboardingSkipped: [],
-    childhoodWheelDone: false,
-    ysqBannerDismissed: false,
-    hintSheetCloseShown: false,
-    hintHistoryDismissed: false,
-    trackerOnboardingDone: false,
-    lastCelebrationDate: null,
-    lastYesterdayBannerDate: null,
-    lastWeeklyQuestionWeek: null,
-    schemaIntrosShown: [],
-    modeIntrosShown: [],
-    defaultSection: null,
     addressForm: null,
     // Поля, которые прежний перенос терял (разбор 2026-08-29). Значения —
     // схемные дефолты, как у только что созданного User.
@@ -141,32 +127,25 @@ describe('mergeUserScalarFields — флаги первого входа и addr
 
   it('заполненное у target значение НЕ перезатирается значением source', async () => {
     const { tx, update } = makeTx(
-      baseRow({ addressForm: 'vy', defaultSection: 'today' }),
-      baseRow({ addressForm: 'ty', defaultSection: 'practices' }),
+      baseRow({ addressForm: 'vy', uiPrefs: { accent: 'rose' } }),
+      baseRow({ addressForm: 'ty', uiPrefs: { accent: 'teal' } }),
     );
     await mergeUserScalarFields(tx, SRC, TGT);
-    // Ни один вызов update не должен трогать addressForm/defaultSection.
+    // Ни один вызов update не должен трогать addressForm/uiPrefs.
     for (const call of update.mock.calls) {
       const data = call[0].data as Record<string, unknown>;
       expect(data).not.toHaveProperty('addressForm');
-      expect(data).not.toHaveProperty('defaultSection');
+      expect(data).not.toHaveProperty('uiPrefs');
     }
   });
 
-  it('JSON-массивы (schemaIntrosShown) объединяются без дублей', async () => {
+  it('boolean-флаг не снимается: false у source не гасит true у target', async () => {
     const { tx, update } = makeTx(
-      baseRow({ schemaIntrosShown: ['a', 'b'] }),
-      baseRow({ schemaIntrosShown: ['b', 'c'] }),
+      baseRow({ onboardingV2Done: false }),
+      baseRow({ onboardingV2Done: true }),
     );
     await mergeUserScalarFields(tx, SRC, TGT);
-    const call = update.mock.calls.find(
-      (c) => 'schemaIntrosShown' in (c[0].data as Record<string, unknown>),
-    );
-    expect(call).toBeDefined();
-    const merged = (call![0].data as Record<string, unknown>)
-      .schemaIntrosShown as string[];
-    expect(new Set(merged)).toEqual(new Set(['a', 'b', 'c']));
-    expect(merged).toHaveLength(3);
+    expect(update.mock.calls).toEqual([]);
   });
 
   it('оба аккаунта «пустые» (дефолты) → update флагов вообще не вызывается', async () => {

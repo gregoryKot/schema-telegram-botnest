@@ -10,20 +10,4 @@
 // Позволить клиенту его переключать — это эскалация привилегий в
 // терапевтический UI; merge переносит его вместе с role отдельной веткой
 // (см. merge-user-fields.ts), не через этот реестр.
-export const FLAG_FIELDS = [
-  'themePref',
-  'onboardingV1Done',
-  'onboardingV2Done',
-  'onboardingSkipped',
-  'childhoodWheelDone',
-  'ysqBannerDismissed',
-  'hintSheetCloseShown',
-  'hintHistoryDismissed',
-  'trackerOnboardingDone',
-  'lastCelebrationDate',
-  'lastYesterdayBannerDate',
-  'lastWeeklyQuestionWeek',
-  'schemaIntrosShown',
-  'modeIntrosShown',
-  'defaultSection',
-] as const;
+export const FLAG_FIELDS = ['onboardingV2Done'] as const;

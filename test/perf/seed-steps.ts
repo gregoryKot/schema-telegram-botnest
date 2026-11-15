@@ -4,7 +4,6 @@
 // замыкается на момент запуска (`a`): все даты отсчитываются от него.
 import { NEED_IDS } from '../../src/bot/bot.service';
 import {
-  DEFAULT_SECTIONS,
   EMOTION_IDS,
   MODE_IDS,
   PERF_ID_BASE as B,
@@ -36,16 +35,14 @@ export function buildSteps(a: string): Record<string, string | string[]> {
 
   const steps = withStreakCohort(a, {
     // ── User: возраст аккаунта размазан по году; доли — как читает /stats ──
-    User: `INSERT INTO "User"("id","createdAt","role","therapistMode","disclaimerAccepted","notifyEnabled","botBlockedAt","notifyTimezone","onboardingV2Done","addressForm","themePref","defaultSection")
+    User: `INSERT INTO "User"("id","createdAt","role","therapistMode","disclaimerAccepted","notifyEnabled","botBlockedAt","notifyTimezone","onboardingV2Done","addressForm")
 SELECT ${B} + u,
   ${a} - make_interval(days => ((u * 7919) % ${P.userSpreadDays})::int, secs => ((u * 104729) % 86400)::int),
   (CASE WHEN u <= ${T} THEN 'THERAPIST' ELSE 'CLIENT' END)::"UserRole",
   u <= ${T}, (u % 20) < 17, (u % 8) <> 0,
   CASE WHEN u % 20 = 7 THEN ${a} - interval '10 days' END,
   ${at1(TIMEZONES, 'u / 7')}, (u % 5) < 3,
-  (ARRAY['ty','ty','ty','ty','ty','ty','vy','vy','vy',NULL])[1 + (u / 10) % 10],
-  (ARRAY['light','light','light','dark','dark',NULL,NULL,NULL,NULL,NULL])[1 + (u / 100) % 10],
-  (${strs(DEFAULT_SECTIONS)} || ARRAY[NULL,NULL]::text[])[1 + (u / 1000) % 10]
+  (ARRAY['ty','ty','ty','ty','ty','ty','vy','vy','vy',NULL])[1 + (u / 10) % 10]
 FROM generate_series(1::bigint, ${U}::bigint) g(u)`,
 
     // ── Rating: у каждого своё число дней, окно кончается не у всех сегодня ─

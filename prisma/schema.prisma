@@ -107,23 +107,9 @@ model User {
   therapistShareCards    Boolean  @default(true)
   therapistShareProfile  Boolean  @default(true)
   // ── Typed UI flags (migrated out of localStorage) ───────────────────────
-  themePref                String?  // 'light' | 'dark' (null = system)
-  onboardingV1Done         Boolean  @default(false)
   onboardingV2Done         Boolean  @default(false)
-  onboardingSkipped        Json     @default("[]")  // string[] of dismissed onboarding step ids
   practicesOnboardingDone  Boolean  @default(false)
-  childhoodWheelDone       Boolean  @default(false)
-  ysqBannerDismissed       Boolean  @default(false)
-  hintSheetCloseShown      Boolean  @default(false)
-  hintHistoryDismissed     Boolean  @default(false)
-  trackerOnboardingDone    Boolean  @default(false)
-  lastCelebrationDate      String?  // YYYY-MM-DD — last day we showed daily celebration
-  lastYesterdayBannerDate  String?  // YYYY-MM-DD — date for which "yesterday banner" was dismissed
-  lastWeeklyQuestionWeek   String?  // YYYY-Www — last week the weekly question was answered/dismissed
-  schemaIntrosShown        Json     @default("[]")  // string[] of schema ids whose intro was viewed
-  modeIntrosShown          Json     @default("[]")  // string[] of mode ids whose intro was viewed
   therapistMode            Boolean  @default(false)
-  defaultSection           String?  // last-selected bottom nav section
   uiPrefs                  Json?    // серверное зеркало кастомизации экранов (SYNCED_PREF_KEYS), src/api/ui-prefs.sanitize.ts
   botBlockedAt           DateTime?
   deletedAt              DateTime?

@@ -64,10 +64,6 @@ export const PHRASE_MARKS = ids(
   'goal notok person label fear never mistake absolute worth',
 );
 export const EMOTION_IDS = ids('fear anxiety sadness shame guilt anger');
-// Повтор значения = перекос в его пользу; NULL — «ещё не выбирал».
-export const DEFAULT_SECTIONS = ids(
-  'today today today today help schemas schemas profile',
-);
 export const TIMEZONES = [
   ...Array<string>(14).fill('Europe/Moscow'),
   ...ids(

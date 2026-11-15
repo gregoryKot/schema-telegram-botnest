@@ -28,7 +28,7 @@ import { MERGED_USER_FIELDS } from './merge-user-rules';
  *    флаг «уже видел», объединение массивов, заполнение пустого, приватность
  *    (побеждает более закрытое) и настройка со схемным дефолтом. Правило у
  *    каждого поля своё и записано явно — тип значения его не заменяет:
- *    `therapistShareCards` и `onboardingV1Done` оба boolean, но у первого
+ *    `therapistShareCards` и `onboardingV2Done` оба boolean, но у первого
  *    слияние обязано выбрать false, а у второго true.
  */
 export async function mergeUserScalarFields(

@@ -41,21 +41,7 @@ function captureRawSql() {
 // merge-user-fields.spec.ts.
 function defaultUserFlagsRow() {
   return {
-    themePref: null,
-    onboardingV1Done: false,
     onboardingV2Done: false,
-    onboardingSkipped: [],
-    childhoodWheelDone: false,
-    ysqBannerDismissed: false,
-    hintSheetCloseShown: false,
-    hintHistoryDismissed: false,
-    trackerOnboardingDone: false,
-    lastCelebrationDate: null,
-    lastYesterdayBannerDate: null,
-    lastWeeklyQuestionWeek: null,
-    schemaIntrosShown: [],
-    modeIntrosShown: [],
-    defaultSection: null,
     addressForm: null,
   };
 }

@@ -173,7 +173,6 @@
 
 **Роуты без вызова с сайта** (бывшие записи гейта паритета `check-feature-parity`, удалён вместе с мини-аппом, #908; сверка 2026-11-04, [#908](https://github.com/gregorykot/schema-telegram-botnest/issues/908)). Сайт их не ждёт; каждый решается отдельным PR — удалить или подключить:
 - **Таблица `DiaryDraft` без писателя** (ручки `/api/drafts*` удалены; черновики — в localStorage, `shared/src/utils/drafts.ts`). Таблица осталась — DROP после `SELECT count(*) FROM "DiaryDraft"` на проде (решение владельца: в строках может лежать текст черновиков). До тех пор модель в реестрах (`USER_DATA_TABLES`, `USER_OWNED_TABLES`, `UNIQUE_RULES`, экспорт, шифрование, ротация `TARGETS`) — удаление аккаунта и слияние строки чистят/переносят. DROP — одной миграцией вместе с выносом из реестров.
-- **Колонки `UserFlags` без писателя** (`POST /api/user-flags` удалён: писал только мини-апп). `onboardingV2Done` ставит `POST /api/disclaimer` (читает «Дошли до конца» в `/stats`, `src/bot/bot.product-metrics.service.ts`), `therapistMode` — сервер из `role`; `childhoodWheelDone` и ещё 13 полей `FLAG_FIELDS` (`src/api/flag-fields.ts`) не пишет никто, их отдаёт только `GET /api/user-flags` (сайт читает из него `therapistMode`). Чистить колонки — отдельным PR с миграцией: затронет правила слияния (`src/auth/merge-user-rules.ts`) и экспорт (`src/account/export-policy.ts`).
 - **`GET /health`** остаётся: это HEALTHCHECK в Docker, не долг.
 
 **Перекос ассетов при выкладке — что не сделано и что не выяснено** (инцидент 2026-11-04, #928):

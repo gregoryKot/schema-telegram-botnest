@@ -1,5 +1,5 @@
 // Тест агрегата продуктовых метрик: маппинг bigint→number, разбивка
-// share_result по meta.ok (true/false), сортировка распределения экранов.
+// share_result по meta.ok (true/false), порядок шагов онбординга.
 // Prisma мокается; порядок вызовов совпадает с Promise.all в getMetrics.
 import { ProductMetricsService } from './bot.product-metrics.service';
 import { BotService } from './bot.service';
@@ -12,10 +12,7 @@ describe('ProductMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(70) // completed30
       .mockResolvedValueOnce(900) // ty
       .mockResolvedValueOnce(250) // vy
-      .mockResolvedValueOnce(90) // notChosen
-      .mockResolvedValueOnce(400) // themeLight
-      .mockResolvedValueOnce(700) // themeDark
-      .mockResolvedValueOnce(140); // themeSystem
+      .mockResolvedValueOnce(90); // notChosen
     const queryRaw = jest
       .fn()
       .mockResolvedValueOnce([{ c: 320n }]) // diaries
@@ -60,10 +57,6 @@ describe('ProductMetricsService.getMetrics', () => {
     const prisma: any = {
       user: {
         count: userCount,
-        groupBy: jest.fn(async () => [
-          { defaultSection: 'help', _count: { _all: 80 } },
-          { defaultSection: 'today', _count: { _all: 300 } },
-        ]),
       },
       analyticsEvent: { count: eventCount },
       $queryRaw: queryRaw,
@@ -97,12 +90,6 @@ describe('ProductMetricsService.getMetrics', () => {
     });
     expect(m.ysq).toEqual({ started: 260, completed: 210, helpOpens: 44 });
     expect(m.addressForm).toEqual({ ty: 900, vy: 250, notChosen: 90 });
-    // распределение экранов отсортировано по убыванию
-    expect(m.sections).toEqual([
-      { key: 'today', count: 300 },
-      { key: 'help', count: 80 },
-    ]);
-    expect(m.themes).toEqual({ light: 400, dark: 700, system: 140 });
     expect(m.shareCard).toEqual({
       total7: 12,
       total30: 40,
@@ -133,7 +120,7 @@ describe('ProductMetricsService.getMetrics', () => {
   // отдать ноль, а не NaN/undefined — иначе /stats на чистой базе покажет мусор.
   it('пустая БД — везде нули, ни одного NaN/undefined', async () => {
     const prisma: any = {
-      user: { count: jest.fn(async () => 0), groupBy: jest.fn(async () => []) },
+      user: { count: jest.fn(async () => 0) },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: jest.fn(async () => []),
     };
@@ -153,7 +140,6 @@ describe('ProductMetricsService.getMetrics', () => {
     });
     // Воронка теста схем на пустом ответе — нули, не NaN.
     expect(m.ysq).toEqual({ started: 0, completed: 0, helpOpens: 0 });
-    expect(m.sections).toEqual([]);
     expect(m.onboardingSteps).toEqual([]);
     expect(m.shareCard.byKind30).toEqual([]);
     expect(m.shareResult).toEqual({ ok: 0, fallback: 0 });
@@ -189,9 +175,6 @@ describe('ProductMetricsService.getMetrics', () => {
     const prisma: any = {
       user: {
         count: jest.fn(async () => 0),
-        groupBy: jest.fn(async () => [
-          { defaultSection: null, _count: { _all: 4 } },
-        ]),
       },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: queryRaw,
@@ -204,7 +187,6 @@ describe('ProductMetricsService.getMetrics', () => {
     ).getMetrics();
 
     expect(m.shareCard.byKind30).toEqual([{ kind: 'другое', count: 2 }]);
-    expect(m.sections).toEqual([{ key: 'другое', count: 4 }]);
     // ok=null — это ни успех, ни фолбэк: обе цифры нули.
     expect(m.shareResult).toEqual({ ok: 0, fallback: 0 });
     // Строки без block/step/via/action не превращаются в фантомные категории.
@@ -301,8 +283,6 @@ const EMPTY_METRICS = {
   },
   ysq: { started: 0, completed: 0, helpOpens: 0 },
   addressForm: { ty: 0, vy: 0, notChosen: 0 },
-  sections: [],
-  themes: { light: 0, dark: 0, system: 0 },
   shareCard: { total7: 0, total30: 0, byKind30: [] },
   crisis: {
     shown: 0,
@@ -335,7 +315,6 @@ describe('согласие с экрана кабинета → метрика �
           if (where.onboardingV2Done && !user.onboardingV2Done) return 0;
           return 1;
         }),
-        groupBy: jest.fn(async () => []),
       },
       analyticsEvent: { count: jest.fn(async () => 0) },
       $queryRaw: jest.fn(async () => []),

@@ -110,21 +110,7 @@ const SETTINGS = {
 // (src/api/flag-fields.ts) и therapistMode со значениями по умолчанию модели
 // User (prisma/schema.prisma). Сайт из них читает только therapistMode.
 const NEW_USER_FLAGS = {
-  themePref: null,
-  onboardingV1Done: false,
   onboardingV2Done: false,
-  onboardingSkipped: [],
-  childhoodWheelDone: false,
-  ysqBannerDismissed: false,
-  hintSheetCloseShown: false,
-  hintHistoryDismissed: false,
-  trackerOnboardingDone: false,
-  lastCelebrationDate: null,
-  lastYesterdayBannerDate: null,
-  lastWeeklyQuestionWeek: null,
-  schemaIntrosShown: [],
-  modeIntrosShown: [],
-  defaultSection: null,
   therapistMode: false,
 };
 

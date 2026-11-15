@@ -46,9 +46,7 @@ describe('stand', () => {
     const seen = {
       addressForm: 'ty',
       disclaimerAccepted: true,
-      onboardingV1Done: true,
       onboardingV2Done: true,
-      trackerOnboardingDone: true,
       practicesOnboardingDone: true,
     };
     await prisma.user.create({
