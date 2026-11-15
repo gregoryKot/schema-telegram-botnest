@@ -20,6 +20,9 @@ import { scheduledNotificationSql } from './seed-notifications';
 import { pushSubscriptionSql } from './seed-push';
 import { webSessionSql } from './seed-sessions';
 import { withStreakCohort } from './seed-streaks';
+import { withTherapyContour } from './seed-therapy';
+
+export { THERAPY_AFTER } from './seed-therapy';
 
 const U = P.users;
 const T = P.therapists;
@@ -31,7 +34,7 @@ export function buildSteps(a: string): Record<string, string | string[]> {
   const day = (offset: string) =>
     `to_char((${a}::date - (${offset})::int)::timestamp, 'YYYY-MM-DD')`;
 
-  return withStreakCohort(a, {
+  const steps = withStreakCohort(a, {
     // ── User: возраст аккаунта размазан по году; доли — как читает /stats ──
     User: `INSERT INTO "User"("id","createdAt","role","therapistMode","disclaimerAccepted","notifyEnabled","botBlockedAt","notifyTimezone","onboardingV2Done","addressForm","themePref","defaultSection")
 SELECT ${B} + u,
@@ -131,12 +134,6 @@ FROM generate_series(1::bigint, ${T}::bigint) t, generate_series(0::bigint, ${P.
 SELECT 'perf-p-' || g.i, 'perf-p-' || g.i, ${B} + 1 + g.i % ${T}, NULL, 'pending'::"RelationStatus", ${ts('g.i', 90)}
 FROM ${series(P.pendingRelations)}`,
     ],
-    // updatedAt — NOT NULL без DEFAULT (ловушка @updatedAt, CLAUDE.md «Миграции БД»).
-    ClientConceptualization: `INSERT INTO "ClientConceptualization"("therapistId","clientId","schemaIds","modeIds","updatedAt")
-SELECT "therapistId", "clientId",
-  jsonb_build_array(${at1(SCHEMA_IDS, '"id"')}, ${at1(SCHEMA_IDS, '"id" / 9')}),
-  jsonb_build_array(${at1(MODE_IDS, '"id"')}, ${at1(MODE_IDS, '"id" / 9')}), CURRENT_TIMESTAMP
-FROM "TherapyRelation" WHERE "therapistId" >= ${B} AND "status" = 'active'`,
     // ── Очередь: год истории, завтрашнее, хвост (seed-notifications.ts) ───
     ScheduledNotification: scheduledNotificationSql(a),
     PushSubscription: pushSubscriptionSql(a), // seed-push.ts
@@ -145,4 +142,5 @@ FROM "TherapyRelation" WHERE "therapistId" >= ${B} AND "status" = 'active'`,
     AuthProvider: authProviderSql(a),
     Booking: bookingSql(a),
   });
+  return withTherapyContour(a, steps); // кабинет терапевта — seed-therapy.ts
 }
