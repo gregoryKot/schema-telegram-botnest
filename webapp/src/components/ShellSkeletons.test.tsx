@@ -4,6 +4,8 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { MobileNavSkeleton, SectionSkeleton } from './ShellSkeletons';
+import { QUICK_LOOK } from './practice/quickLook';
+import { PRACTICE_LOOK } from '../sections/practice/practiceLook';
 
 const shape = (pathname: string, therapistMode = false) =>
   render(<SectionSkeleton pathname={pathname} therapistMode={therapistMode} />).container.firstElementChild!;
@@ -13,6 +15,7 @@ describe('SectionSkeleton', () => {
     ['/today', false, 'today-skeleton'],
     ['/more', false, 'more-skeleton'],
     ['/diary', false, 'diary-skeleton'],
+    ['/practice', false, 'practice-skeleton'],
     ['/cabinet/today', true, 'therapist-today-skeleton'],
     ['/cabinet/annapeka', true, 'client-card-skeleton'],
     ['/cabinet/annapeka/concept', true, 'client-card-skeleton'],
@@ -27,6 +30,17 @@ describe('SectionSkeleton', () => {
       expect(el.classList.contains('sks-screen')).toBe(true);
     });
 
+  it('«Практики»: герой дыхания на бумаге дыхания, квадраты по порядку раздела, бенто без оттенка', () => {
+    const el = shape('/practice');
+    const hue = (n: Element | null) => (n as HTMLElement | null)?.style.getPropertyValue('--h');
+    expect(hue(el.querySelector('.cpk-hero'))).toBe(String(QUICK_LOOK.breathing.hue));
+    const squares = [PRACTICE_LOOK.grounding, PRACTICE_LOOK.stop, PRACTICE_LOOK.sos].map((l) => String(l.hue));
+    expect(Array.from(el.querySelectorAll('.cpk-squares > .pp-square'), hue)).toEqual(squares);
+    const tiles = el.querySelectorAll('.cpk-lib > .cpk-ex');
+    expect(tiles.length).toBeGreaterThan(0);
+    expect(Array.from(tiles).every((t) => !t.classList.contains('pp-paper') && hue(t) === '')).toBe(true);
+  });
+
   it('«Сегодня»: знак трекера пустыми полосками — пять мест, ни одной оценки', () => {
     const marks = shape('/today').querySelectorAll('svg.pp-art rect');
     expect(marks).toHaveLength(5);
@@ -34,7 +48,7 @@ describe('SectionSkeleton', () => {
   });
 
   it('в силуэтах нет текста — только плашки', () => {
-    for (const [p, t] of [['/today', false], ['/more', false], ['/cabinet/today', true], ['/cabinet/x1', true]] as const) {
+    for (const [p, t] of [['/today', false], ['/more', false], ['/practice', false], ['/cabinet/today', true], ['/cabinet/x1', true]] as const) {
       expect(shape(p, t).textContent).toBe('');
     }
   });

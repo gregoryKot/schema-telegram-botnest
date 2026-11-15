@@ -38,25 +38,34 @@ const SUMMARY: ArticleSummary = {
 };
 
 describe('ArticlesListPage', () => {
-  it('пока список не пришёл — показывает «Загрузка…», не пустой экран', () => {
+  it('пока список не пришёл — силуэт карточек по форме (обложка и строки), а не текст «Загрузка…»', () => {
     listArticles.mockReturnValue(new Promise(() => {}));
-    render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
-    expect(screen.getByText('Загрузка…')).toBeTruthy();
+    const { container } = render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
+    expect(screen.queryByText(/Загрузка/)).toBeNull();
+    const cards = container.querySelectorAll('.art-grid[aria-hidden="true"] > .ac-card');
+    expect(cards.length).toBeGreaterThan(0);
+    for (const card of cards) {
+      const cover = card.firstElementChild as HTMLElement; // пропорция — тем же правилом, что у .ac-cover
+      expect([cover.classList.contains('skel'), cover.classList.contains('ac-skel-cover'), cover.style.height]).toEqual([true, true, 'auto']);
+      expect(card.querySelectorAll('.ac-body .skel').length).toBeGreaterThanOrEqual(3);
+      expect(card.textContent).toBe('');
+    }
   });
 
-  it('рендерит реальные статьи из API со ссылкой на конкретную статью', async () => {
+  it('рендерит реальные статьи из API со ссылкой на конкретную статью — силуэт уходит', async () => {
     listArticles.mockResolvedValue([SUMMARY]);
-    render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
+    const { container } = render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
     const link = await screen.findByText('Что такое схемы');
     expect(link.closest('a')?.getAttribute('href')).toBe('/articles/schemas-101');
+    expect(container.querySelector('.ac-skel-cover')).toBeNull();
   });
 
   it('сбой ≠ пусто: провал загрузки показывает «не удалось», а не пустую сетку статей', async () => {
     listArticles.mockRejectedValue(new Error('network'));
-    render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
+    const { container } = render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(screen.getByText(/Не удалось загрузить статьи/)).toBeTruthy();
-    expect(screen.queryByText('Загрузка…')).toBeNull();
+    expect(container.querySelector('.ac-skel-cover')).toBeNull();
   });
 
   it('«Попробовать ещё раз» перезапрашивает список и рисует статьи', async () => {
@@ -82,6 +91,18 @@ function renderArticle(slug: string) {
 }
 
 describe('ArticlePage', () => {
+  it('пока статья грузится — силуэт шапки и обложки в колонке статьи, а не текст «Загрузка…»', () => {
+    getArticle.mockReturnValue(new Promise(() => {}));
+    const { container } = renderArticle('schemas-101');
+    expect(screen.queryByText(/Загрузка/)).toBeNull();
+    const hero = container.querySelector('.skel.ac-skel-hero'); // рамка обложки шапки — тем же правилом
+    const skel = hero?.closest('[aria-hidden="true"]:not(.skel)');
+    expect(skel?.querySelector('.art-head .skel')).not.toBeNull();
+    expect(skel?.textContent).toBe('');
+    // «← Все статьи» — уже на месте: назад можно уйти, не дожидаясь статьи.
+    expect(screen.getByText('← Все статьи').getAttribute('href')).toBe('/articles');
+  });
+
   it('незнакомый slug (серверный 404) после загрузки показывает 404 со ссылкой назад', async () => {
     getArticle.mockRejectedValue(new ApiError(404, 'Cannot GET /api/articles/unknown'));
     renderArticle('unknown');
@@ -141,11 +162,13 @@ describe('ArticlePage', () => {
     expect(container.querySelector('img')).toBeNull();
   });
 
-  it('CTA «Записаться» на странице статьи ведёт на реальный урл записи', async () => {
+  it('CTA «Записаться» на странице статьи ведёт на реальный урл записи, «Читать ещё» — к списку', async () => {
     getArticle.mockResolvedValue({ ...SUMMARY, content: '<p>Текст</p>' });
-    renderArticle('schemas-101');
+    const { container } = renderArticle('schemas-101');
     const cta = await screen.findAllByText('Записаться →');
     expect((cta[0] as HTMLAnchorElement).getAttribute('href')).toMatch(/^https?:\/\//);
+    expect(screen.getByText('Читать ещё').getAttribute('href')).toBe('/articles');
+    expect(container.querySelector('.ac-skel-hero')).toBeNull();
   });
 });
 
