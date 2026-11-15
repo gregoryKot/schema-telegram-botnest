@@ -2,14 +2,26 @@
 // 2026-10). Появился вместе с ночной джобой npm-audit: alarm сообщает только о
 // джобах из своего needs, и забытая в списке новая джоба краснела бы в
 // Actions, куда никто не заходит. Правила — alarm-needs.ts; здесь оба исхода
-// на образцах и прогон по настоящим nightly.yml и prod-smoke.yml.
-import { readFileSync } from 'fs';
+// на образцах и прогон по каждому воркфлоу с джобой alarm.
+import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { alarmNeedsGaps, jobNeeds } from './alarm-needs';
-import { triggerBlocks } from './workflow-yaml';
+import { jobBlocks, triggerBlocks } from './workflow-yaml';
 
-const read = (f: string) =>
-  readFileSync(join(process.cwd(), '.github', 'workflows', f), 'utf8');
+const DIR = join(process.cwd(), '.github', 'workflows');
+const read = (f: string) => readFileSync(join(DIR, f), 'utf8');
+
+// Воркфлоу с джобой alarm находятся сами, кроме переиспользуемого alarm.yml
+// (workflow_call): новый вызывающий не выпадет из сверки.
+const WATCHED = readdirSync(DIR)
+  .filter((f) => f.endsWith('.yml'))
+  .filter((f) => {
+    const text = read(f);
+    return (
+      Boolean(jobBlocks(text).alarm) &&
+      !('workflow_call' in triggerBlocks(text))
+    );
+  });
 
 const job = (id: string, extra = '') =>
   `  ${id}:\n${extra}    runs-on: ubuntu-latest\n    timeout-minutes: 5\n    steps:\n      - run: echo\n`;
@@ -61,12 +73,19 @@ describe('гейт: alarm.needs покрывает все джобы воркф�
     });
   });
 
-  it.each(['nightly.yml', 'prod-smoke.yml'])(
-    '%s: alarm ждёт все джобы',
-    (f) => {
-      expect(alarmNeedsGaps(read(f))).toEqual({ missing: [], unknown: [] });
-    },
-  );
+  it('воркфлоу с alarm найдены: nightly.yml, prod-smoke.yml, mutation-bot.yml', () => {
+    expect(WATCHED).toEqual(
+      expect.arrayContaining([
+        'nightly.yml',
+        'prod-smoke.yml',
+        'mutation-bot.yml',
+      ]),
+    );
+  });
+
+  it.each(WATCHED)('%s: alarm ждёт все джобы', (f) => {
+    expect(alarmNeedsGaps(read(f))).toEqual({ missing: [], unknown: [] });
+  });
 
   it('nightly.yml: ночной npm-audit под alarm', () => {
     expect(jobNeeds(read('nightly.yml').split(/^ {2}alarm:/m)[1])).toContain(
@@ -102,7 +121,7 @@ describe('гейт: alarm.needs покрывает все джобы воркф�
       expect(scheduleCrons(on(['0 3 * * *']))).toEqual(['0 3 * * *']);
     });
 
-    it.each(['nightly.yml', 'prod-smoke.yml'])(
+    it.each(WATCHED)(
       '%s: ровно один крон и ни одного if по github.event.schedule',
       (f) => {
         expect(scheduleCrons(read(f))).toHaveLength(1);

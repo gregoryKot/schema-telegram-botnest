@@ -1,5 +1,5 @@
-// Джоба `alarm` в prod-smoke.yml и nightly.yml — наблюдатель за наблюдателем
-// (CLAUDE.md, правило №24). До 2026-10-13 её шаг «DM владельцу» без секретов
+// Джоба `alarm` в prod-smoke.yml и общая alarm.yml (её зовут nightly.yml и
+// mutation-bot.yml) — наблюдатель за наблюдателем (CLAUDE.md, правило №24). До 2026-10-13 её шаг «DM владельцу» без секретов
 // BOT_TOKEN/ADMIN_ID печатал «DM не отправлен» и выходил нулём: два реальных
 // простоя прода (10-09 и 10-11) прошли при зелёной джобе, а единственная
 // проба-замена живёт внутри Nest, которого в таких авариях нет.
@@ -24,12 +24,18 @@ import {
   runBlock,
   stepName,
   steps,
+  withInputs,
 } from '../test-support/workflow-steps';
 
 const WORKFLOWS = join(process.cwd(), '.github', 'workflows');
 const read = (file: string) => readFileSync(join(WORKFLOWS, file), 'utf8');
 
 const alarmJob = (yml: string) => jobBody(yml, 'alarm');
+
+// Шаги alarm.yml исполняются с теми входами, что передаёт nightly.yml: так
+// сверяется, что заголовок ночной issue и текст DM после выноса не сменились.
+const NIGHTLY = withInputs(alarmJob(read('nightly.yml')));
+const NIGHTLY_ENV = { TITLE: NIGHTLY.title, LABEL: 'ci-alarm' };
 
 const dmStep = (file: string) => {
   const found = steps(alarmJob(read(file))).find((s) =>
@@ -79,7 +85,11 @@ const SECRETS = { BOT_TOKEN: 'fake-token', ADMIN_ID: '42' };
 describe.each([
   ['prod-smoke.yml', 'created', { NOTIFY: 'created' }],
   ['prod-smoke.yml', 'reminder', { NOTIFY: 'reminder' }],
-  ['nightly.yml', 'провал джоб', { FAILED: 'browser-smoke,npm-audit' }],
+  [
+    'alarm.yml',
+    'провал джоб',
+    { FAILED: 'browser-smoke,npm-audit', DM_LEAD: NIGHTLY.dm },
+  ],
 ])('%s: шаг «DM владельцу» (%s)', (file, _label, extra) => {
   const step = dmStep(file);
 
@@ -134,7 +144,7 @@ describe('prod-smoke.yml: «прод снова отвечает» без сек
   });
 });
 
-describe.each(['prod-smoke.yml', 'nightly.yml'])(
+describe.each(['prod-smoke.yml', 'alarm.yml'])(
   '%s: порядок шагов alarm',
   (file) => {
     const all = steps(alarmJob(read(file)));
@@ -230,20 +240,24 @@ async function execIssueStep(
   return { calls, outputs };
 }
 
-describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
+describe('alarm.yml с входами nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
   const exec = (opts: {
     failed: string;
     issue?: Issue;
     comments?: { body: string; user: { type: string } }[];
   }) =>
-    execIssueStep('nightly.yml', {
-      env: { FAILED: opts.failed },
+    execIssueStep('alarm.yml', {
+      env: { FAILED: opts.failed, ...NIGHTLY_ENV },
       issue: opts.issue,
       comments: opts.comments,
     });
 
   const TITLE = 'Ночная flaky-детекция — красный прогон';
   const bot = (body: string) => ({ body, user: { type: 'Bot' } });
+
+  it('заголовок ночной issue прежний: открытую тревогу находит, а не плодит вторую', () => {
+    expect(NIGHTLY.title).toBe(TITLE);
+  });
 
   it('новая джоба: тело комментария начинается с «Новые: …»', async () => {
     const r = await exec({
@@ -302,13 +316,15 @@ describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', (
   });
 
   it('DM: «Новые» попадают в текст уведомления', () => {
-    const dm = dmStep('nightly.yml');
+    const dm = dmStep('alarm.yml');
     const r = runStep(dm, {
       ...SECRETS,
       FAILED: 'a,b',
       NEW_JOBS: 'b',
+      DM_LEAD: NIGHTLY.dm,
     });
     expect(r.status).toBe(0);
+    expect(r.curlCalls[0]).toContain('text=Ночная проверка упала: a, b.');
     expect(r.curlCalls[0]).toContain('Новые: b.');
   });
 });
@@ -318,7 +334,7 @@ describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', (
 // нет секретов DM, это единственный канал, который GitHub доставляет сам.
 describe.each([
   ['prod-smoke.yml', { PROD_SMOKE_RESULT: 'failure' }],
-  ['nightly.yml', { FAILED: 'backend-flaky' }],
+  ['alarm.yml', { FAILED: 'backend-flaky', ...NIGHTLY_ENV }],
 ])('%s: новая issue ci-alarm', (file, env) => {
   it('назначается владельцу репозитория (assignees: [context.repo.owner])', async () => {
     const r = await execIssueStep(file, { env });
@@ -353,5 +369,45 @@ describe.each([
     const comments = r.calls.filter((c) => c.kind === 'comment');
     expect(comments).toHaveLength(1);
     expect(String(comments[0].args.body)).not.toContain('INCIDENTS');
+  });
+});
+
+// Контекст needs вызывающего воркфлоу в alarm.yml не виден: результаты джоб
+// приходят строкой toJSON(needs), список упавших шаг собирает из неё сам.
+describe('alarm.yml: шаг «собрать список упавших джоб»', () => {
+  const step = steps(alarmJob(read('alarm.yml'))).find((s) =>
+    stepName(s).startsWith('собрать список'),
+  );
+  const collect = (results: Record<string, string>) => {
+    const needs = Object.fromEntries(
+      Object.entries(results).map(([job, result]) => [
+        job,
+        { result, outputs: {} },
+      ]),
+    );
+    const output = join(bin, 'github-output');
+    writeFileSync(output, '');
+    const r = runStep(step ?? '', {
+      NEEDS_JSON: JSON.stringify(needs, null, 2),
+      GITHUB_OUTPUT: output,
+    });
+    return { status: r.status, output: readFileSync(output, 'utf8') };
+  };
+
+  it('берёт вход needs, а не контекст needs вызываемого воркфлоу', () => {
+    expect(step).toMatch(/^ {10}NEEDS_JSON: \$\{\{ inputs\.needs \}\}$/m);
+  });
+
+  it('failure и cancelled — в списке, success и skipped — нет', () => {
+    expect(
+      collect({ a: 'failure', b: 'success', c: 'cancelled', d: 'skipped' }),
+    ).toEqual({ status: 0, output: 'failed=a,c\nhas_failures=true\n' });
+  });
+
+  it('контроль: все зелёные — список пуст, has_failures=false', () => {
+    expect(collect({ a: 'success', b: 'skipped' })).toEqual({
+      status: 0,
+      output: 'failed=\nhas_failures=false\n',
+    });
   });
 });
