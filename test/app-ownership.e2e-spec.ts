@@ -96,6 +96,31 @@ describe('e2e smoke: ownership isolation + BigInt serialization (app-ownership)'
     expect(asOther.body).toHaveLength(0);
   });
 
+  it('счётчик «Мне плохо»: владелец видит своё число, чужие карточки в него не попадают', async () => {
+    const tokenA = signAccessToken(USER_A, secret());
+    const tokenB = signAccessToken(USER_B, secret());
+    const createCard = () =>
+      request(app.getHttpServer())
+        .post('/api/flashcards')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ modeId: 'vulnerable_child', needId: 'attachment' });
+    expect((await createCard()).status).toBeLessThan(300);
+    expect((await createCard()).status).toBeLessThan(300);
+
+    // 200 с числом, а не 400: маршрут стоит выше flashcards/:id и до parseId не доходит.
+    const asOwner = await request(app.getHttpServer())
+      .get('/api/flashcards/count')
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(asOwner.status).toBe(200);
+    expect(asOwner.body).toEqual({ count: 2 });
+
+    const asOther = await request(app.getHttpServer())
+      .get('/api/flashcards/count')
+      .set('Authorization', `Bearer ${tokenB}`);
+    expect(asOther.status).toBe(200);
+    expect(asOther.body).toEqual({ count: 0 });
+  });
+
   it('BigInt userId сериализуется в JSON-ответе как number, привязанный к владельцу', async () => {
     const owner = USER_BIGINT_SANITY;
     const token = signAccessToken(owner, secret());
