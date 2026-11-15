@@ -13,36 +13,26 @@
 //   не дошёл до сервера) и `http_429`/`http_5xx` (ответил, но не про ссылку).
 // Кодов `telegram_*` нет с 2026-11: входа через Telegram на сайте нет.
 // Неизвестное — общий текст, сам код не показываем, в отчёт уходит `unknown`.
+//
+// Тексты безличные: экран живёт вне AddressFormProvider, формы взять неоткуда.
 
-type Tr = (ty: string, vy: string) => string;
+const providerFailed = (name: string) =>
+  `Вход через ${name} не прошёл. Можно повторить попытку или выбрать другой способ.`;
 
-const providerFailed = (name: string) => (tr: Tr) =>
-  tr(
-    `Вход через ${name} не прошёл. Попробуй ещё раз или выбери другой способ.`,
-    `Вход через ${name} не прошёл. Попробуйте ещё раз или выберите другой способ.`,
-  );
-
-// Безличный: экран публичный, формы обращения у него нет (как у DonatePage).
 // Другой вход на сайте один — второй сервис; почтой не входят.
-const providerDisabled = (name: string, other: string) => () =>
+const providerDisabled = (name: string, other: string) =>
   `Вход через ${name} временно отключён. Если к аккаунту привязан ${other}, войти можно через него.`;
 
-const AUTH_ERROR_TEXTS: Record<string, (tr: Tr) => string> = {
+const AUTH_ERROR_TEXTS: Record<string, string> = {
   vk_failed: providerFailed('ВКонтакте'),
   vk_disabled: providerDisabled('ВКонтакте', 'Яндекс ID'),
   yandex_failed: providerFailed('Яндекс'),
   yandex_disabled: providerDisabled('Яндекс', 'VK ID'),
   max_failed: providerFailed('MAX'),
-  email_link_expired: (tr) =>
-    tr(
-      'Ссылка из письма действует 30 минут и открывается только один раз. Запроси новую в «Аккаунте».',
-      'Ссылка из письма действует 30 минут и открывается только один раз. Запросите новую в «Аккаунте».',
-    ),
-  email_network: (tr) =>
-    tr(
-      'Нет связи, попробуй ещё раз: проверь интернет и снова открой ссылку из письма.',
-      'Нет связи, попробуйте ещё раз: проверьте интернет и снова откройте ссылку из письма.',
-    ),
+  email_link_expired:
+    'Ссылка из письма действует 30 минут и открывается только один раз. Новую можно запросить в «Аккаунте».',
+  email_network:
+    'Запрос не дошёл до сервера, ссылка из письма цела. Когда интернет вернётся, её можно открыть ещё раз.',
 };
 
 const HTTP_REASON = /^http_[1-5]\d\d$/;
@@ -61,21 +51,10 @@ export function reportedAuthErrorReason(raw: string | null | undefined): string 
 }
 
 /** Пояснение для человека; для неизвестного кода — `null` (общий текст экрана). */
-export function authErrorText(code: string | null, tr: Tr): string | null {
+export function authErrorText(code: string | null): string | null {
   if (!code) return null;
-  const text = AUTH_ERROR_TEXTS[code];
-  if (text) return text(tr);
-  if (code === 'http_429') {
-    return tr(
-      'Слишком много попыток подряд. Подожди пару минут и попробуй снова.',
-      'Слишком много попыток подряд. Подождите пару минут и попробуйте снова.',
-    );
-  }
-  if (code.startsWith('http_5')) {
-    return tr(
-      'Сервер сейчас не отвечает. Попробуй через несколько минут.',
-      'Сервер сейчас не отвечает. Попробуйте через несколько минут.',
-    );
-  }
+  if (Object.prototype.hasOwnProperty.call(AUTH_ERROR_TEXTS, code)) return AUTH_ERROR_TEXTS[code];
+  if (code === 'http_429') return 'Слишком много попыток подряд. Через пару минут можно попробовать снова.';
+  if (code.startsWith('http_5')) return 'Сервер сейчас не отвечает — обычно это проходит за несколько минут.';
   return null;
 }
