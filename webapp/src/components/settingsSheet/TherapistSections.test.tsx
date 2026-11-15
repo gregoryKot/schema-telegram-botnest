@@ -22,10 +22,11 @@ type Rel = ReturnType<typeof useTherapyRelationSettings>;
 
 function rel(
   therapyRelation: TherapyRelationInfo | null | undefined,
-  over: { join?: Partial<Rel['join']>; leave?: Partial<Rel['leave']> } = {},
+  over: { join?: Partial<Rel['join']>; leave?: Partial<Rel['leave']>; load?: Partial<Rel['load']> } = {},
 ): Rel {
   return {
     therapyRelation,
+    load: { failed: false, attempt: 0, fail: vi.fn(), retry: vi.fn(), ...over.load },
     join: { code: '', setCode: vi.fn(), error: '', busy: false, joined: false, submit: vi.fn(), canSubmit: true, ...over.join },
     leave: { confirming: false, busy: false, failed: false, ask: vi.fn(), cancel: vi.fn(), confirm: vi.fn(), ...over.leave },
     invite: null,
@@ -133,3 +134,21 @@ describe('MyTherapistSection — подключение и отключение'
     expect(r.leave.cancel).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('MyTherapistSection — связь ещё не пришла', () => {
+  it('загрузка — силуэт без поля кода', () => {
+    render(<MyTherapistSection rel={rel(undefined)} settings={settings} patch={patch} />);
+    expect(screen.getByLabelText('Загружается связь с терапевтом').getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByLabelText('Код от терапевта')).toBeNull();
+  });
+
+  it('сбой — «Не загрузилось» с «Повторить», поля кода нет', () => {
+    const r = rel(undefined, { load: { failed: true } });
+    render(<MyTherapistSection rel={r} settings={settings} patch={patch} />);
+    expect(screen.getByText('Не загрузилось.')).toBeTruthy();
+    expect(screen.queryByLabelText('Код от терапевта')).toBeNull();
+    fireEvent.click(screen.getByText('Повторить'));
+    expect(r.load.retry).toHaveBeenCalledTimes(1);
+  });
+});
+
