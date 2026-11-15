@@ -21,12 +21,6 @@ const FULL: ProductMetrics = {
   },
   ysq: { started: 260, completed: 210, helpOpens: 44 },
   addressForm: { ty: 900, vy: 250, notChosen: 90 },
-  sections: [
-    { key: 'today', count: 300 },
-    { key: 'help', count: 80 },
-    { key: 'schemas', count: 40 },
-  ],
-  themes: { light: 400, dark: 700, system: 140 },
   shareCard: {
     total7: 12,
     total30: 40,
@@ -61,8 +55,6 @@ const EMPTY: ProductMetrics = {
   },
   ysq: { started: 0, completed: 0, helpOpens: 0 },
   addressForm: { ty: 0, vy: 0, notChosen: 0 },
-  sections: [],
-  themes: { light: 0, dark: 0, system: 0 },
   shareCard: { total7: 0, total30: 0, byKind30: [] },
   crisis: {
     shown: 0,
@@ -79,7 +71,7 @@ const EMPTY: ProductMetrics = {
 };
 
 describe('formatProductMetrics', () => {
-  it('простыми словами, с процентами и человекочитаемыми экранами', () => {
+  it('простыми словами, с процентами и человекочитаемыми подписями', () => {
     const t = formatProductMetrics(FULL);
     expect(t).toContain('Дошли до конца: 70 из 118 (59%)');
     // воронка обучения: подписи шагов простыми словами, в порядке показа
@@ -95,12 +87,7 @@ describe('formatProductMetrics', () => {
     expect(t).toContain('Дневники: 320');
     expect(t).toContain('Начали: 260 · дошли до конца: 210 (81%)');
     expect(t).toContain('Читали «как понимать результат»: 44 раз');
-    // ключи секций переводятся в подписи
-    expect(t).toContain('Сегодня: 300');
-    expect(t).toContain('Помощь: 80');
-    expect(t).not.toContain('today:');
     expect(t).toContain('На «ты»: 900 · на «вы»: 250');
-    expect(t).toContain('как в телефоне: 140');
     expect(t).toContain('позвонили по телефону доверия: 3');
     expect(t).toContain('Отправили картинку: 35 · сохранили текстом: 5');
     expect(t).toContain('записей вернули: 21');
@@ -165,7 +152,6 @@ describe('formatProductMetrics', () => {
     expect(t).not.toContain('NaN');
     expect(t).not.toContain('%'); // все знаменатели 0 → проценты не печатаются
     expect(t).toContain('Дошли до конца: 0 из 0');
-    expect(t).toContain('пока нет данных'); // пустое распределение экранов
     expect(t).toContain('Пока никто не делился'); // пустой share_card
     expect(t).toContain('Пока обучение никто не открывал');
     expect(t).toContain('Блоки с главного пока не прятали');

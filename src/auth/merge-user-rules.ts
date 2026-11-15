@@ -88,8 +88,6 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   mySchemaIds: union,
   myModeIds: union,
   uiPrefs: fillEmpty,
-  themePref: fillEmpty,
-  defaultSection: fillEmpty,
   pairCardDismissed: flag,
   // Приватность: если человек закрыл терапевту доступ в одном из аккаунтов,
   // слияние не имеет права открыть его снова.
@@ -97,20 +95,8 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   therapistShareProfile: priv,
 
   // ── Онбординг и подсказки ────────────────────────────────────────────────
-  onboardingV1Done: flag,
   onboardingV2Done: flag,
-  onboardingSkipped: union,
   practicesOnboardingDone: flag,
-  childhoodWheelDone: flag,
-  ysqBannerDismissed: flag,
-  hintSheetCloseShown: flag,
-  hintHistoryDismissed: flag,
-  trackerOnboardingDone: flag,
-  lastCelebrationDate: fillEmpty,
-  lastYesterdayBannerDate: fillEmpty,
-  lastWeeklyQuestionWeek: fillEmpty,
-  schemaIntrosShown: union,
-  modeIntrosShown: union,
 
   // ── Безопасность и служебное ─────────────────────────────────────────────
   // Второй фактор принадлежит аккаунту, а не человеку: перенести чужой секрет

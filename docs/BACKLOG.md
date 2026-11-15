@@ -120,6 +120,7 @@
 
 ## Сделано
 
+- ✅ **Колонки UI-флагов `User` без писателя удалены** (PR #1298) — миграция `20261115120000_drop_user_ui_flags` (14 колонок мини-аппа), `FLAG_FIELDS` — только `onboardingV2Done`; убраны правила слияния, экспорт, шифрование, блоки `/stats` по теме и стартовому экрану; пункт `docs/open/backend.md` снят.
 - ✅ **Волна А мутаций: TOTP в `mutate`, выжившие `merge-combine` закрыты тестами** (PR #1297) — `totp.service.ts`, `totp-code.ts`, `totp-attempts.ts`, `totp-recovery.ts` в `mutate` golden-auth с полами 93.13/93.33/94.87/97.56 (было 77.86/86.67/76.92/80.49 вне зоны); новые `totp-code.spec.ts`, `totp-recovery.spec.ts`, фейк Prisma в `totp.service.spec.ts` отдаёт только `select`; `merge-combine.ts` 78.08 → 86.79, `merge-combine-rules.ts` 93.75 → 96.88 (нечитаемые и непарные записи по всем таблицам, сбой таблицы в `countCombinable`); `session-proof.ts` — в `mutation-zone-baseline.json`.
 - ✅ **Раскрывашки со своим `useState` мимо `Disclosure`** (PR #1294) — `NeedExamples`, «Выполнено» (`TaskListGroups`) и строки `PortraitNeedRows` на общей `shared/src/components/Disclosure.tsx`; у неё добавлены `keepMounted` (тело под `hidden`) и `chev` (свой глиф места); тесты `Disclosure.test.tsx`, `NeedExamples.test.tsx`, `PortraitNeedRows.test.tsx`.
 - ✅ **Хвост CSS-долга: `.dot` и список листов `.ex-screen` в e2e** (PR #1295) — мёртвое правило `.dot` убрано из `webapp/src/index.css`, `dot` в LEGACY `webapp/src/styles/legacyClasses.test.ts`; комментарий `e2e-browser/sheet-scroll.spec.ts` числит за `.ex-screen` только `ModeDoubtSheet`.

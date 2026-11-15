@@ -71,11 +71,11 @@ describe('ApiController user-flags', () => {
 
   it('GET возвращает флаги существующей строки под userId из req', async () => {
     const { controller } = makeController({
-      userRows: [{ id: 5n, themePref: 'dark', onboardingV1Done: true }],
+      userRows: [{ id: 5n, onboardingV2Done: true, therapistMode: true }],
     });
     const res = await controller.getUserFlags(makeReq(5n));
     expect(res).toEqual(
-      expect.objectContaining({ themePref: 'dark', onboardingV1Done: true }),
+      expect.objectContaining({ onboardingV2Done: true, therapistMode: true }),
     );
   });
 });

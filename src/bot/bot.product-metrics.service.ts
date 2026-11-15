@@ -68,10 +68,6 @@ export class ProductMetricsService {
       ty,
       vy,
       notChosen,
-      sectionsRaw,
-      themeLight,
-      themeDark,
-      themeSystem,
       crisis,
       shareRows,
       outboxRows,
@@ -117,14 +113,6 @@ export class ProductMetricsService {
       this.prisma.user.count({ where: { ...activeUser, addressForm: 'ty' } }),
       this.prisma.user.count({ where: { ...activeUser, addressForm: 'vy' } }),
       this.prisma.user.count({ where: { ...activeUser, addressForm: null } }),
-      this.prisma.user.groupBy({
-        by: ['defaultSection'],
-        where: { ...activeUser, defaultSection: { not: null } },
-        _count: { _all: true },
-      }),
-      this.prisma.user.count({ where: { ...activeUser, themePref: 'light' } }),
-      this.prisma.user.count({ where: { ...activeUser, themePref: 'dark' } }),
-      this.prisma.user.count({ where: { ...activeUser, themePref: null } }),
       countCrisis(this.prisma, since30),
       this.prisma.$queryRaw<Array<{ ok: string | null; c: bigint }>>`
         SELECT "meta"->>'ok' AS ok, count(*)::bigint AS c FROM "AnalyticsEvent"
@@ -180,13 +168,6 @@ export class ProductMetricsService {
       countYsqFunnel(this.prisma),
     ]);
 
-    const sections = sectionsRaw
-      .map((r) => ({
-        key: r.defaultSection ?? 'другое',
-        count: r._count._all,
-      }))
-      .sort((a, b) => b.count - a.count);
-
     const shareOk = Number(shareRows.find((r) => r.ok === 'true')?.c ?? 0n);
     const shareFallback = Number(
       shareRows.find((r) => r.ok === 'false')?.c ?? 0n,
@@ -216,8 +197,6 @@ export class ProductMetricsService {
       },
       ysq: { ...ysqFunnel, helpOpens: ysqHelpOpens },
       addressForm: { ty, vy, notChosen },
-      sections,
-      themes: { light: themeLight, dark: themeDark, system: themeSystem },
       shareCard: {
         total7: shareCard7,
         total30: shareCard30,

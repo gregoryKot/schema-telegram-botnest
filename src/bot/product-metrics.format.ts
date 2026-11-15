@@ -21,10 +21,6 @@ export interface ProductMetrics {
   ysq: { started: number; completed: number; helpOpens: number };
   // Как просят обращаться.
   addressForm: { ty: number; vy: number; notChosen: number };
-  // С каким экраном заходят (defaultSection): today/help/schemas/profile.
-  sections: Array<{ key: string; count: number }>;
-  // Оформление (themePref): светлое/тёмное/как в телефоне (null).
-  themes: { light: number; dark: number; system: number };
   // Событийные метрики (таблица AnalyticsEvent, за месяц).
   // Делятся карточками: всего за неделю/месяц + разбивка по виду карточки.
   shareCard: {
@@ -53,13 +49,6 @@ export interface ProductMetrics {
 
 const pct = (part: number, whole: number): string =>
   whole === 0 ? '' : ` (${Math.round((part / whole) * 100)}%)`;
-
-const SECTION_LABELS: Record<string, string> = {
-  today: 'Сегодня',
-  help: 'Помощь',
-  schemas: 'Схемы',
-  profile: 'Профиль',
-};
 
 // Понятные подписи видов карточек (meta.kind) — без англицизмов.
 const SHARE_KIND_LABELS: Record<string, string> = {
@@ -109,13 +98,6 @@ const ONBOARDING_STEP_LABELS: Record<string, string> = {
 
 /** Собирает все продуктовые блоки /stats простыми словами. Чистая функция. */
 export function formatProductMetrics(m: ProductMetrics): string {
-  const sections =
-    m.sections.length === 0
-      ? 'пока нет данных'
-      : m.sections
-          .map((s) => `${SECTION_LABELS[s.key] ?? s.key}: ${s.count}`)
-          .join(' · ');
-
   return [
     `🎓 <b>Новички проходят обучение</b> (за месяц)`,
     `Дошли до конца: ${m.onboarding.completed30} из ${m.onboarding.cohort30}${pct(
@@ -140,16 +122,9 @@ export function formatProductMetrics(m: ProductMetrics): string {
     ysqFunnelLine(m.ysq),
     `Читали «как понимать результат»: ${m.ysq.helpOpens} раз (за месяц)`,
     '',
-    `📱 <b>С каким экраном заходят</b>`,
-    sections,
-    '',
     `🗣 <b>Как просят обращаться</b>`,
     `На «ты»: ${m.addressForm.ty} · на «вы»: ${m.addressForm.vy} · ` +
       `ещё не выбрали: ${m.addressForm.notChosen}`,
-    '',
-    `🎨 <b>Оформление</b>`,
-    `Светлое: ${m.themes.light} · тёмное: ${m.themes.dark} · ` +
-      `как в телефоне: ${m.themes.system}`,
     '',
     `📣 <b>Делятся карточками</b> (за неделю: ${m.shareCard.total7}, за месяц: ${m.shareCard.total30})`,
     m.shareCard.byKind30.length === 0
