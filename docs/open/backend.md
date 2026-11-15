@@ -127,13 +127,6 @@
   бюджета.
 
 **Фоном, не блокирует (защищено храповиками CI):**
-- **Статика визитки не видит цену из админки.** JSON-LD `webapp/index.html`
-  (оффер и ответ FAQPage) и `webapp/public/llms.txt` держат цену числом; сверка
-  `webapp/src/pages/landing/staticCopies.sync.test.ts` сводит их с
-  `SESSION_DEFAULT_PRICE` и последней миграцией `price:SESSION_50`, но правка
-  `BookingSetting` в админке до статики не доходит. Цена вне рублей в разметке
-  не указана вовсе. Чинится подстановкой при отдаче `index.html` (как
-  `ArticleSeoMiddleware`) — не сделано: цена меняется раз в квартал миграцией.
 - **`DELETE /api/therapy/relation` у клиента с двумя терапевтами рвёт обе связи**:
   `therapy-relations.service.ts:49-53` удаляет по `clientId` (терапевт клиентов
   **не** теряет — A-2 закрыто, пин `test/therapy-remove-client.e2e-spec.ts:411`).

@@ -20,9 +20,13 @@ import { REVALIDATE } from '../infra/static-cache';
 
 const BASE = `<!doctype html><html><head><title>t</title></head><body><div id="root"></div><script type="module" src="/a.js"></script></body></html>`;
 
+/** Метка: отданная страница прошла через landingText (цена визитки из админки). */
+const PRICED = '<!--landing-price-->';
+const landingText = (text: string) => Promise.resolve(text + PRICED);
+
 function buildApp(html: string | null = BASE) {
   const app = express();
-  app.get('/{*path}', homeSeoMiddleware(html), (_req, res) => {
+  app.get('/{*path}', homeSeoMiddleware(html, landingText), (_req, res) => {
     res.send('SPA');
   });
   return app;
@@ -50,6 +54,11 @@ describe('homeSeoMiddleware: GET / на хосте приложения', () => 
     expect(root).toContain(
       '<a href="https://kotlarewski.gr">сайте практики</a>',
     );
+  });
+
+  it('цена визитки из админки — в отданной странице (landingText)', async () => {
+    const res = await request(app).get('/').set('Host', 'schemehappens.ru');
+    expect(res.text.endsWith(PRICED)).toBe(true);
   });
 
   it('кэш: ревалидация как у index.html, ETag и 304 на повтор', async () => {

@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { LandingText } from '../booking/landing-price';
 import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
 import { buildHomeBody } from './home-seo.render';
@@ -13,8 +14,8 @@ import { buildHomeBody } from './home-seo.render';
 // со своим canonical. Визитку здесь не трогаем и на алиасе отдаём дальше:
 // продуктовый текст в #root визитки был бы чужой страницей.
 //
-// Текст статичен, поэтому HTML собирается один раз при старте. Кэш тот же,
-// что у index.html из ServeStatic: `public, no-cache` (ревалидация каждый
+// HTML с текстом собирается при старте, цена визитки — при отдаче. Кэш тот
+// же, что у index.html из ServeStatic: `public, no-cache` (ревалидация каждый
 // раз — после деплоя у страницы другие хеши бандла), ETag и 304 ставит
 // res.send Express по содержимому.
 
@@ -34,16 +35,18 @@ export function homeSeoHtml(html: string | null): string | null {
  *  путь или хост-алиас — дальше (practiceIndexMiddleware, ServeStatic). */
 export function homeSeoMiddleware(
   html: string | null,
+  landingText: LandingText,
   aliasHosts: ReadonlySet<string> = PRACTICE_ALIAS_HOSTS,
 ) {
   const out = homeSeoHtml(html);
-  return (req: Request, res: Response, next: () => void): void => {
+  return async (req: Request, res: Response, next: () => void) => {
     if (!out || req.path !== '/' || aliasHosts.has(req.hostname)) {
       next();
       return;
     }
+    const body = await landingText(out);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', REVALIDATE);
-    res.send(out);
+    res.send(body);
   };
 }
