@@ -161,12 +161,11 @@
   на 413 называет причину — «текст слишком длинный» (`webapp/src/components/useModeMapAutosave.ts`).
   Общий потолок не поднимать — разбор в `src/infra/body-limit.ts`.
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 13 литералов в 6 файлах (сверка 2026-11-15,
-  `scripts/color-drift-baseline.json`; админка, `indexColor` и цвета групп режимов переведены на токены).
-  Остаток по ролям: визитка (`webapp/src/pages/LandingPage.tsx`, `landing/ContentSections.tsx`,
+- Таяние долга `check-color-drift.mjs`: 10 литералов в 4 файлах (сверка 2026-11-15,
+  `scripts/color-drift-baseline.json`; админка, `indexColor`, цвета групп режимов и фон темы переведены на токены).
+  Остаток — визитка (`webapp/src/pages/LandingPage.tsx`, `landing/ContentSections.tsx`,
   `landing-kit-hooks.ts`, `landing/constants.ts` — свой стиль, тёмная секция без токенов, решение владельца
-  2026-10-16 «лендинг и визитка в старом виде»); `theme-color` браузера (`webapp/src/utils/theme.ts`) и
-  запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS. Брать ролями, а не файлами.
+  2026-10-16 «лендинг и визитка в старом виде»). Брать ролями, а не файлами.
 
 **Остатки мини-аппа для старых клиентов** (удалён, #908):
 - **`source: 'miniapp'` в отчёте об ошибках клиента.** `src/api/dto/client-error.dto.ts` (`@IsIn(['webapp','miniapp'])`) и строка «приложение в мессенджере» в блоке ошибок `/stats` (`src/bot/client-error-metrics.*`) оставлены: открытое до удаления окно мини-аппа ещё может прислать отчёт. Новых источников нет — через месяц-два после удаления убрать значение и строку вместе со спеками и `test/raw-sql-live-stats.e2e-spec.ts`.
