@@ -1,8 +1,6 @@
-// Знаки пунктов меню (docs/design/APP_2026-11.md, «Меню, ⌘K, объединение»): язык знаков — навигация,
-// а не украшение. Раздел клиента берёт знак своей сущности ENTITY_LOOK; ключи — литералами (таблицу
-// вида главный чанк не тянет), сверка с ENTITY_LOOK — navLook.test.tsx. Одна таблица на развёрнутое
-// меню, свёрнутую полоску и нижнюю панель телефона (до 2026-11 у кабинета их было три копии).
-import type { EntityId } from '../../../../shared/src/theme/entityLook';
+// Знаки пунктов меню (docs/design/APP_2026-11.md, «Меню, ⌘K, объединение»): язык знаков — навигация, а не
+// украшение. Раздел клиента берёт знак своей сущности из ENTITY_LOOK; одна таблица на меню, полоску и панель телефона.
+import { ENTITY_LOOK, type EntityId } from '../../../../shared/src/theme/entityLook';
 import { LIST_TASKS_PATH } from '../therapist/clientTabRoute';
 import type { NavSignKey } from './NavSign';
 import type { Section } from './navigation';
@@ -10,12 +8,12 @@ import type { Section } from './navigation';
 /** Раздел клиента → сущность и её знак: Сегодня — трекер, Записи — дневник, Практики — дыхание,
  *  Мои паттерны — схемы, Профиль — профиль, Ещё — настройки. */
 export const SECTION_LOOK: Record<Section, { entity: EntityId; sign: NavSignKey }> = {
-  today: { entity: 'tracker', sign: 'strokes' },
-  diary: { entity: 'diary', sign: 'pebbles' },
-  practice: { entity: 'breathing', sign: 'breath' },
-  schemas: { entity: 'schemas', sign: 'layers' },
-  profile: { entity: 'profile', sign: 'leaf' },
-  more: { entity: 'settings', sign: 'beads' },
+  today: { entity: 'tracker', sign: ENTITY_LOOK.tracker.sign },
+  diary: { entity: 'diary', sign: ENTITY_LOOK.diary.sign },
+  practice: { entity: 'breathing', sign: ENTITY_LOOK.breathing.sign },
+  schemas: { entity: 'schemas', sign: ENTITY_LOOK.schemas.sign },
+  profile: { entity: 'profile', sign: ENTITY_LOOK.profile.sign },
+  more: { entity: 'settings', sign: ENTITY_LOOK.settings.sign },
 };
 
 export interface TherapistNavItem {

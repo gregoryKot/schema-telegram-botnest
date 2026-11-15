@@ -4,9 +4,9 @@
 // переставляются) и разделы страницы (только скрываются). Состояние — общий
 // useToolsState, оболочка листа — QuickActionCustomizeSheet; знак строки — сущности пункта, как у плитки.
 import type { ToolsState } from '../../../../shared/src/quickActions/useToolsState';
-import { QUICK_ACTION_SIGN } from '../quickActionSign';
+import { quickActionSign } from '../quickActionSign';
 import { QuickActionCustomizeSheet, type SheetGroup } from './QuickActionCustomizeSheet';
-const toActions = (rows: ToolsState['rows']) => rows.map((r) => ({ id: r.id, label: r.label, sub: r.sub ?? '', sign: QUICK_ACTION_SIGN[r.id] }));
+const toActions = (rows: ToolsState['rows']) => rows.map((r) => ({ id: r.id, label: r.label, sub: r.sub ?? '', sign: quickActionSign(r.id) }));
 
 function buildToolsSheetGroups({ groups }: Pick<ToolsState, 'groups'>): SheetGroup[] {
   return [

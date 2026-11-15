@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Знаки рамки (b04, docs/design/APP_2026-11.md «Меню, ⌘K»): пункт меню несёт знак сущности своего
-// раздела по ENTITY_LOOK; в главном чанке — литералы (navLook.ts) и подмножество реестра (NavSign.tsx),
-// поэтому сверка двух мест — здесь (правило №4): ключ раздела = знак сущности, рисунок NavSign = SignArt.
+// раздела по ENTITY_LOOK; рисунок в главном чанке — подмножество реестра (NavSign.tsx), поэтому сверка
+// двух мест — здесь (правило №4): ключ раздела = знак сущности, рисунок NavSign = SignArt.
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
