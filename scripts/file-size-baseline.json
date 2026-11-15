@@ -1855,7 +1855,7 @@
   "webapp/src/components/art/GuideSignsModes.tsx": 73,
   "webapp/src/components/art/GuideSignsPractice.tsx": 34,
   "webapp/src/components/art/GuideSignsTechniques.tsx": 144,
-  "webapp/src/components/art/HeroCollage.tsx": 100,
+  "webapp/src/components/art/HeroCollage.tsx": 109,
   "webapp/src/components/art/LandingScenes.tsx": 114,
   "webapp/src/components/art/LandingScenesMore.tsx": 157,
   "webapp/src/components/art/NeedArt.tsx": 68,
