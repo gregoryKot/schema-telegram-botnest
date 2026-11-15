@@ -2,17 +2,14 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { SSection } from './ui';
+import { FieldError } from '../paper/FieldError';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
-import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
-import { THERAPIST_REQUEST_PENDING, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
+import { THERAPIST_REQUEST_PENDING, rejectedRequestText, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
 
-// Раздел «Стать специалистом» — вынесен из SettingsSheet.tsx (правило №10,
-// файл-должник, пофайловый храповик размера). Состояние заявки полностью
-// локально: снаружи оно нигде больше не используется (в отличие от
-// мини-аппа, где секция принимает всё пропсами — здесь проп-дриллинг не
-// нужен, родителю сама заявка не важна).
+// Раздел «Стать специалистом» листа настроек (вынесен из SettingsSheet.tsx, №10): заявка живёт
+// локально, родителю она не нужна. Статусы и отказ — тем же видом, что на /account (TherapistRequestSection).
 export function BecomeTherapistSection() {
   const tr = useTr();
   const [therapistReq, setTherapistReq] = useState<{ status: string; rejectReason: string | null } | null | undefined>(undefined);
@@ -48,9 +45,11 @@ export function BecomeTherapistSection() {
     finally { setReqBusy(false); }
   }
 
+  const rejected = rejectedRequestText(therapistReq, tr);
   return (
     <SSection id="s-specialist" label="Стать специалистом">
       <div className="st-body-block">
+        {rejected && <FieldError role="status">{rejected}</FieldError>}
         {therapistReq?.status === 'pending' ? (
           <div className="st-text">{THERAPIST_REQUEST_PENDING}</div>
         ) : therapistReq?.status === 'approved' ? (
@@ -59,7 +58,6 @@ export function BecomeTherapistSection() {
           </div>
         ) : !showReqForm ? (
           <div className="st-body-block">
-            <TherapistRequestRejectedNote request={therapistReq} className="st-err" />
             <p className="st-text">
               {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}
             </p>

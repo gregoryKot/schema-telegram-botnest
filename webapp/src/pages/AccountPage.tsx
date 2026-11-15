@@ -75,7 +75,7 @@ export function AccountPage() {
           </div>
           <div className="aa-col">
             {!loadedOnce ? <GroupSkeleton /> : <TwoFactorSection accessToken={accessToken} totp={totp} onChanged={refresh} />}
-            <TherapistRequestSection accessToken={accessToken} />
+            <TherapistRequestSection />
             <section className="aa-group"><Link to="/subscribe" className="aa-nav"><span className="aa-nav-body"><span className="aa-row-title">Подписка</span><span className="ds-sub">Регулярная поддержка проекта</span></span><span className="ds-chev" aria-hidden="true" /></Link></section>
           </div>
         </div>

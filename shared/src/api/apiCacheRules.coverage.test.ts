@@ -20,7 +20,8 @@ import { RULES } from './apiCacheRules.data';
 // До 2026-11 сверка видела только `shared/src/api/*` вида `t.post(`: мутации
 // `webapp/src/api.ts` (карты режимов, свои режимы терапевта, упражнения,
 // деньги) в неё не попадали, а `apiExercises.ts` из списка давно переехал в
-// api сайта — и молча пропускался.
+// api сайта — и молча пропускался. Голый fetch/authedFetch с POST/DELETE/PATCH
+// мимо этих помощников ловит apiCacheRules.rawFetch.test.ts.
 const SOURCES = [
   'shared/src/api/sharedApi.ts',
   'shared/src/api/ratingApi.ts',
