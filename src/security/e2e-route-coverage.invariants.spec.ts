@@ -126,9 +126,6 @@ const REASON = {
     'мелкие технические ручки api.controller.ts (UI-флаги/черновики/профиль/' +
     'disclaimer/init/hard-delete аккаунта) — не user-data ownership в фокусе ' +
     'этапа 1.3, кандидат для отдельного захода',
-  EXERCISES_DELETE:
-    'DELETE по id — тот же паттерн, что уже покрыт для diary/practices ' +
-    '(DELETE_ENDPOINTS в app-ownership-sweep-2.e2e-spec.ts), не сделано в этом проходе',
   JOURNEY:
     'read-only агрегат поверх уже покрытых по отдельности таблиц (rating/diary/practice)',
   AUTH_LOGIN:
@@ -153,12 +150,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'POST /api/disclaimer', reason: REASON.MISC_ACCOUNT },
   { route: 'DELETE /api/user', reason: REASON.MISC_ACCOUNT },
   { route: 'GET /api/healthy-phrase', reason: REASON.JOURNEY },
-  {
-    route: 'DELETE /api/belief-checks/:param',
-    reason: REASON.EXERCISES_DELETE,
-  },
-  { route: 'DELETE /api/letters/:param', reason: REASON.EXERCISES_DELETE },
-  { route: 'DELETE /api/flashcards/:param', reason: REASON.EXERCISES_DELETE },
   { route: 'GET /api/journey', reason: REASON.JOURNEY },
   { route: 'POST /api/auth/2fa/disable', reason: REASON.AUTH_LOGIN },
   { route: 'POST /api/auth/2fa/recovery-codes', reason: REASON.AUTH_LOGIN },
@@ -229,11 +220,9 @@ describe('трипваер: каждый guarded-маршрут вызван х�
     expect(stale).toEqual([]);
   });
 
-  // 61 → 52 (#864): −4 за ручки восстановления по почте (убраны вместе с
-  // кодом), −5 — запас между полом и фактом подтянут до факта.
-  // 52 → 49: GET relation, POST request и GET tasks ходят через
-  // test/therapy-resign.e2e-spec.ts.
-  it('ратчет: allowlist может только сокращаться (сейчас ≤49)', () => {
-    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(49);
+  // Пол = факт: покрыл маршрут e2e — убери запись и опусти число, чтобы
+  // новый непокрытый маршрут нельзя было тихо вписать на освободившееся место.
+  it('ратчет: allowlist может только сокращаться (сейчас ≤46)', () => {
+    expect(NOT_YET_COVERED.length).toBeLessThanOrEqual(46);
   });
 });
