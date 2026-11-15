@@ -110,7 +110,7 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
   it('сохранённый результат показывается сразу, без вступления и без записи в БД', async () => {
     mockApi.getChildhoodRatings.mockResolvedValue(SAVED);
     renderEx();
-    await screen.findByText(/Среднее 6.4\/10/);
+    await screen.findByText(/Среднее 6,4\/10/);
     expect(screen.getByRole('button', { name: 'Изменить' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Оценить детство/ })).toBeNull();
     expect(mockApi.saveChildhoodRatings).not.toHaveBeenCalled();
@@ -130,7 +130,7 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
     fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
     expect(screen.getAllByText('9', { selector: '.ex2-cw-value' }).length).toBe(1);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
-    await screen.findByText(/Среднее 6.4\/10/);
+    await screen.findByText(/Среднее 6,4\/10/);
     // Сохранилось ровно то, что было (регресс: раньше уходили пятёрки).
     expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith(SAVED);
   });
@@ -141,7 +141,7 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
     fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
     dragFirstTrackTo(200);
     fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
-    await screen.findByText(/Среднее 6.4\/10/);
+    await screen.findByText(/Среднее 6,4\/10/);
     expect(mockApi.saveChildhoodRatings).not.toHaveBeenCalled();
   });
 
@@ -152,18 +152,18 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(document.querySelectorAll('.ex2-cw-track').length).toBe(0);
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
-    await screen.findByText(/Среднее 6.4\/10/);
+    await screen.findByText(/Среднее 6,4\/10/);
   });
 });
 
 describe('ChildhoodWheelEx — результат и сохранение (read-after-write)', () => {
-  it('все на середине — среднее 5/10, все зоны выше 4, блок «Хорошее детство»', async () => {
+  it('все на середине — среднее 5,0/10, все зоны выше 4, блок «Хорошее детство»', async () => {
     renderEx();
     await openFill();
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
 
-    await screen.findByText(/Среднее 5\/10/);
+    await screen.findByText(/Среднее 5,0\/10/);
     expect(screen.getByText('Хорошее детство по всем зонам')).toBeTruthy();
     expect(screen.queryByText('Возможные активные схемы')).toBeNull();
     expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({
@@ -177,7 +177,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     await openFill();
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
-    await screen.findByText(/Среднее 5\/10/);
+    await screen.findByText(/Среднее 5,0\/10/);
     expect(onSaved).toHaveBeenCalledWith({ attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5 });
   });
 
@@ -186,7 +186,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     await openFill();
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
-    await screen.findByText(/Среднее 5\/10/);
+    await screen.findByText(/Среднее 5,0\/10/);
 
     fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
     expect(screen.getByRole('button', { name: /Посмотреть результат/ })).toBeTruthy();
@@ -205,7 +205,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     expect(await screen.findByRole('alert')).toBeTruthy();
-    expect(screen.queryByText(/Среднее 5\/10/)).toBeNull();
+    expect(screen.queryByText(/Среднее 5,0\/10/)).toBeNull();
     expect(onSaved).not.toHaveBeenCalled();
   });
 
@@ -217,7 +217,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByRole('alert');
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
-    await screen.findByText(/Среднее 5\/10/);
+    await screen.findByText(/Среднее 5,0\/10/);
   });
 });
 
@@ -233,7 +233,7 @@ describe('ChildhoodWheelEx — ты/вы: подсказка «Связать с
     await openFill();
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
-    await screen.findByText(/Среднее 5\/10/);
+    await screen.findByText(/Среднее 5,0\/10/);
   }
 
   it('форма «ты»', async () => {
