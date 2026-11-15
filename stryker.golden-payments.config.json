@@ -21,6 +21,8 @@
     "src/booking/booking-slot-lock.ts",
     "src/booking/booking.checkout.ts",
     "src/booking/booking.queries.ts",
+    "src/booking/booking-public-view.ts",
+    "src/booking/session-event.ts",
     "src/booking/payment-guard.ts",
     "src/booking/booking-data.ts",
     "src/subscription/subscription.service.ts",
