@@ -88,6 +88,7 @@ jest `rootDir`. См. `src/booking/caldav-discovery.spec.ts` и
 | `oauth-authorize-responses.json` | VK ID, `GET id.vk.com/authorize` — статус и `Location` первого ответа | Живой curl из разбора инцидента 2026-10-03; верный и чужой адрес возврата — судья пробы `vkOAuth` (`probe-oauth-providers.spec.ts`) |
 | `vk-id-authorize-state.json` | VK ID, `GET id.vk.com/authorize` → `redirect_state` | Живой curl 2026-10-03 со `state` в форме JWT: VK вырезает точки и `~+=/` — на этом держится `src/auth/providers/vk-state.ts` (`vk-state.spec.ts`) |
 | `s3-sigv4-reference.json` | Подпись S3 SigV4: пример из документации S3 и подпись botocore | Эталоны для `src/infra/s3-sigv4.ts` (`s3-sigv4.spec.ts`) |
+| `zoom-list-meetings.json` | Zoom Meetings API, `GET /v2/users/me/meetings` (List meetings) | Пример ответа из документации Zoom: `id` числом, `type`, `topic`, `next_page_token`. Первой страницей его отдаёт поддельный Zoom в `foreign-scrub.spec.ts` — так проверяется разбор списка в `src/booking/zoom-room.ts` для поиска комнат вне базы. С прода не записан: токена Zoom у агента нет, см. `.meta.json` |
 
 Новый парсер внешнего формата → см. `scripts/check-recorded-fixtures.mjs`
 (требует записи в `scripts/recorded-fixtures-baseline.json`) прежде, чем PR
