@@ -22,7 +22,7 @@ afterEach(() => { cleanup(); setScreenShare(false); });
 async function renderPalette() {
   render(
     <MemoryRouter>
-      <CommandPalette section="today" onNavigate={vi.fn()} onClose={vi.fn()} userRole="THERAPIST" therapistMode />
+      <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} userRole="THERAPIST" therapistMode />
     </MemoryRouter>,
   );
   await act(async () => { await Promise.resolve(); }); // список клиентов пришёл
