@@ -120,6 +120,23 @@ describe('CalDavService.pushEvent — запись события', () => {
     );
   });
 
+  it('первое обнаружение упало — не кэшируется, второй вызов находит календарь', async () => {
+    (discoverCalendarUrl as jest.Mock)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce('https://discovered/cal/');
+    const svc = makeService();
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true })) as any;
+    const ev = {
+      uid: 'a',
+      startsAt: new Date(),
+      durationMin: 50,
+      summary: 's',
+    };
+    expect(await svc.pushEvent(ev)).toBeNull();
+    expect(await svc.pushEvent(ev)).toBe('a');
+    expect(discoverCalendarUrl).toHaveBeenCalledTimes(2);
+  });
+
   it('discovery не находит календарь (null) — pushEvent возвращает null, не бросает', async () => {
     (discoverCalendarUrl as jest.Mock).mockResolvedValue(null);
     const svc = makeService();

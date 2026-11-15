@@ -100,3 +100,14 @@ describe('leaseProblem — суточный крон и серия деплое�
     ).toBeNull();
   });
 });
+
+describe('leaseProblem — новый крон после деплоя', () => {
+  it('захватов не было, прошлые процессы крона не знали — не «ни разу не отработал»', () => {
+    // Деплой через ~2,5 мин после часового прогона пробы: прошлый процесс жил
+    // в оба последних тика, но нового крона в нём не было.
+    const now = LAST + 3 * H;
+    const earlier: ProcessSpan[] = [{ from: PREV - H, to: now - 150_000 }];
+    const startedAt = now - 150_000;
+    expect(leaseProblem(DAILY, { now, startedAt, earlier })).toBeNull();
+  });
+});
