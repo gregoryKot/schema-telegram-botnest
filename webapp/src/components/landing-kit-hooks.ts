@@ -11,7 +11,7 @@ import { applyTheme, savedTheme } from '../utils/theme';
 // лендинговые 24/100 туда не входят).
 export const R = { pill: 100, card: 24, btn: 'var(--r-12)', badge: 'var(--r-14)' } as const;
 export const DARK_BG = '#1c1916';     // intentional always-dark sections
-export const INK_ON_DARK = '#eceae5'; // text on dark sections
+export const INK_ON_DARK = 'var(--on-dark)'; // text on dark sections (токен — index.css)
 
 // ─── Scroll reveal – IntersectionObserver with deep-link / in-view failsafe ──
 export function useReveal() {

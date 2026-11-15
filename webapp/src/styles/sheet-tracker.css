@@ -14,8 +14,6 @@
 }
 /* Телефон: корень листа не уходит под статус-бар установленного приложения (#902, --safe-top в index.css). */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay { padding-top: var(--safe-top); } }
-/* Загрузка оверлея (бэкафилл) */
-.tk2-done { align-items: center; justify-content: center; padding: 40px 20px; }
 /* Боковая колонка листа потребности из библиотеки (NeedDetailSheet, need-detail.css). */
 .tk2-aside { position: sticky; top: 40px; margin-bottom: 16px; }
 .tk2-opts { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
