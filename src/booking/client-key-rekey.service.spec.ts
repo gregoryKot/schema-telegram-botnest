@@ -445,23 +445,35 @@ describe('ClientKeyRekeyService.run', () => {
   });
 });
 
+// Шифр под ключом, которого в env нет, и свежий реестр приложения: троттл
+// алерта decrypt не взведён соседними тестами (это проверяет контроль в конце).
+function foreignKeyApp() {
+  const foreign = loadWithKeys(
+    { key: 'cd'.repeat(32) },
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    () => require('../utils/crypto') as Crypto,
+  );
+  const app = loadWithKeys({ key: KEY }, () => ({
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    svc: require('./client-key-rekey.service') as Svc,
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    crypto: require('../utils/crypto') as Crypto,
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    nest: require('@nestjs/common') as Nest,
+  }));
+  const { prototype } = app.nest.Logger;
+  const error = jest
+    .spyOn(prototype, 'error')
+    .mockImplementation(() => undefined);
+  const warn = jest
+    .spyOn(prototype, 'warn')
+    .mockImplementation(() => undefined);
+  return { foreign, app, error, warn };
+}
+
 describe('ClientKeyRekeyService.run — брони под ключом, которого нет в env', () => {
   it('алерта decrypt нет, итог — одна строка warn с числом; живая бронь переносится', async () => {
-    // Свежий реестр: троттл алерта decrypt (раз в минуту на модуль) не взведён
-    // соседними тестами — это и проверяет контроль в конце.
-    const foreign = loadWithKeys(
-      { key: 'cd'.repeat(32) },
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      () => require('../utils/crypto') as Crypto,
-    );
-    const app = loadWithKeys({ key: KEY }, () => ({
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      svc: require('./client-key-rekey.service') as Svc,
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      crypto: require('../utils/crypto') as Crypto,
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      nest: require('@nestjs/common') as Nest,
-    }));
+    const { foreign, app, error, warn } = foreignKeyApp();
     const lost = foreign.encrypt('gone@x.ru') as string;
     const C = 'live@x.ru';
     const { service, rows } = setup(
@@ -482,21 +494,55 @@ describe('ClientKeyRekeyService.run — брони под ключом, кото
       undefined,
       app.svc,
     );
-    const { prototype } = app.nest.Logger;
-    const error = jest
-      .spyOn(prototype, 'error')
-      .mockImplementation(() => undefined);
-    const warn = jest
-      .spyOn(prototype, 'warn')
-      .mockImplementation(() => undefined);
     expect(await service.run(NOW)).toMatchObject({ moved: 1, unreadable: 2 });
     expect(rows.map((r) => r.clientKey)).toEqual([keys.clientKey(C)]);
     expect(error).not.toHaveBeenCalled();
     expect(warn.mock.calls).toEqual([
-      [expect.stringContaining('не расшифровано броней: 2')],
+      [expect.stringContaining('не расшифровано броней и комнат: 2')],
     ]);
     // Контроль: decrypt() того же значения в том же реестре алерт даёт.
     app.crypto.decrypt(lost);
+    expect(error).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Ротация дошла до броней, но не до комнат. Строку нового формата (телефон без
+// `+`) ветка сирот не удаляет — алерт decrypt по ней звучал бы на каждом старте.
+describe('ClientKeyRekeyService.run — комната под ключом, которого нет в env', () => {
+  it('при читаемой брони того же клиента алерта нет: комната в счёт прохода и не удаляется', async () => {
+    const { foreign, app, error, warn } = foreignKeyApp();
+    const LIVE = 'live@x.ru';
+    const lostKey = keys.clientKey('4951234567');
+    const lostUrl = foreign.encrypt(ROOM) as string;
+    const { service, rows } = setup(
+      [booking(1, '+49 5123 4567'), booking(2, LIVE)],
+      [
+        { clientKey: lostKey, meetingUrl: lostUrl, createdAt: OLD_ROW },
+        {
+          clientKey: keys.legacyClientKey(LIVE),
+          meetingUrl: ROOM,
+          createdAt: OLD_ROW,
+        },
+      ],
+      undefined,
+      app.svc,
+    );
+    expect(await service.run(NOW)).toMatchObject({
+      moved: 1,
+      purged: 0,
+      unreadable: 1,
+    });
+    // нечитаемая — на месте, читаемая — прежнее поведение: переехала
+    expect(rows).toEqual([
+      { clientKey: lostKey, meetingUrl: lostUrl, createdAt: OLD_ROW },
+      { clientKey: keys.clientKey(LIVE), meetingUrl: ROOM, createdAt: OLD_ROW },
+    ]);
+    expect(error).not.toHaveBeenCalled();
+    expect(warn.mock.calls).toEqual([
+      [expect.stringContaining('не расшифровано броней и комнат: 1')],
+    ]);
+    // Контроль: decrypt() той же ссылки в том же реестре алерт даёт.
+    app.crypto.decrypt(lostUrl);
     expect(error).toHaveBeenCalledTimes(1);
   });
 });
