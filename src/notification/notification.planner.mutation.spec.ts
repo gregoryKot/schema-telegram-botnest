@@ -215,7 +215,7 @@ describe('NotificationPlannerService — low_streak_insight: lowest без optio
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
-    await svc.planDay(makeUser(), NOW);
+    await svc.planDay(makeUser({ hasPush: true }), NOW);
     expect(scheduledTypes(deps)).toEqual(['low_streak_insight']);
     expect(deps.notifications.schedule.mock.calls[0][3]).toBeUndefined();
   });
@@ -224,7 +224,7 @@ describe('NotificationPlannerService — low_streak_insight: lowest без optio
     const { svc, deps } = make();
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.analytics.getLowStreakNeeds.mockResolvedValue([]);
-    await svc.planDay(makeUser(), NOW);
+    await svc.planDay(makeUser({ hasPush: true }), NOW);
     expect(deps.analytics.getLowStreakNeeds).toHaveBeenCalledWith(
       BigInt(42),
       5,
@@ -239,7 +239,7 @@ describe('NotificationPlannerService — low_streak_insight: lowest без optio
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     deps.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
     deps.notifications.hasPending.mockResolvedValue(true);
-    await svc.planDay(makeUser(), NOW);
+    await svc.planDay(makeUser({ hasPush: true }), NOW);
     expect(deps.notifications.hasPending).toHaveBeenCalledWith(
       BigInt(42),
       'low_streak_insight',

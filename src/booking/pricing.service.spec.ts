@@ -1,7 +1,7 @@
 // PricingService — источник правды для суммы, которую спишет Robokassa.
 // Ошибка тут напрямую бьёт по деньгам (списали не ту сумму / не тот прайс).
 import { SessionType } from '@prisma/client';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { PricingService } from './pricing.service';
 import { PRICE_MAX } from './price-rules';
 import { SESSION_DEFAULT_PRICE, SESSION_META } from './booking.config';
@@ -280,5 +280,50 @@ describe('PricingService — цены по валютам', () => {
     expect(s50?.prices).toEqual({ RUB: 4200, ILS: 210, EUR: 65, USD: 70 });
     const intro = options.find((o) => o.type === SessionType.INTRO_15);
     expect(intro?.prices).toEqual({ RUB: 0, ILS: 0, EUR: 0, USD: 0 });
+  });
+});
+
+// Статика визитки (JSON-LD, llms.txt) — с ценой из админки (landing-price.ts).
+describe('PricingService.landingText', () => {
+  const LLMS = '(50 минут, 4 000 ₽) "price": "4000"';
+
+  it('строки цены в БД нет — дефолт кода, текст как в файле', async () => {
+    const { service } = makeService();
+    expect(await service.landingText(LLMS)).toBe(LLMS);
+  });
+
+  it('цена из БД — в тексте «4 500 ₽» и числом в JSON-LD', async () => {
+    const { service } = makeService({ 'price:SESSION_50': '4500' });
+    expect(await service.landingText(LLMS)).toBe(
+      '(50 минут, 4 500 ₽) "price": "4500"',
+    );
+  });
+
+  it('setPrice в админке → следующая отдача с новой ценой, без ожидания TTL', async () => {
+    const { service, prisma } = makeService({ 'price:SESSION_50': '4500' });
+    expect(await service.landingText(LLMS)).toContain('4 500 ₽');
+    await service.setPrice(SessionType.SESSION_50, 5200);
+    expect(await service.landingText(LLMS)).toContain('5 200 ₽');
+    expect(await service.landingText(LLMS)).toContain('5 200 ₽');
+    // Чтение — одно до правки и одно после, а не на каждую отдачу.
+    expect(prisma.bookingSetting.findUnique).toHaveBeenCalledTimes(2);
+  });
+
+  it('база не ответила — дефолт кода и предупреждение в лог, а не ошибка страницы', async () => {
+    const { service, prisma } = makeService();
+    prisma.bookingSetting.findUnique.mockRejectedValueOnce(
+      new Error('db down'),
+    );
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    try {
+      expect(await service.landingText(LLMS)).toBe(LLMS);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Цена визитки не прочитана: Error: db down'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
