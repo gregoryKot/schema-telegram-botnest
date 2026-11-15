@@ -1,7 +1,7 @@
 // Развилка конца Акта I, CTA финала и кризисная строка.
 import Phaser from 'phaser';
 import { W, H } from '../../constants';
-import { IS_TOUCH, setTouchControls } from '../../controls';
+import { setTouchControls } from '../../controls';
 import { t } from '../../i18n';
 import { unlockChapter } from '../../progress';
 import { track, trackEvent } from '../../analytics';
@@ -133,7 +133,7 @@ export function addCrisisLine(s: GameScene, y: number, depth: number) {
   const ln = s.add.text(W / 2, y, t('m_crisis_line'), {
     fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0', align: 'center',
   }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0).setInteractive({ useHandCursor: true });
-  ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); window.location.href = CRISIS_TEL; });
+  ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { (ev as { stopPropagation(): void }).stopPropagation(); window.location.href = CRISIS_TEL; });
   s.tweens.add({ targets: ln, alpha: 0.9, duration: 600, delay: 900 });
   return ln;
 }
