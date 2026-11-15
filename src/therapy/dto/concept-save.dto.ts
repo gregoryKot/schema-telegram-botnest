@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsISO8601,
   IsOptional,
   IsString,
@@ -72,6 +73,11 @@ export class ConceptSaveDto extends ConceptualizationDto {
   @MaxLength(40)
   @IsISO8601()
   baseVersion?: string | null;
+
+  /** «Восстановить» версию: снимок «до» — мимо окна склейки (concept-history.ts). */
+  @IsOptional()
+  @IsBoolean()
+  restore?: boolean;
 
   @IsOptional()
   @ValidateNested()

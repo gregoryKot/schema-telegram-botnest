@@ -222,4 +222,26 @@ describe('saveConceptualization — автосохранение не выжиг
     expect(loaded!.history[0].goals).toBe('v0');
     expect(loaded!.history).toEqual(saved.history);
   });
+
+  // Регрессия: «Восстановить» шло обычным автосохранением, и правки после
+  // снимка окна склейки затирались без следа, хотя диалог обещает обратное.
+  it('правка → «Восстановить» в окне склейки → прежнее состояние в истории', async () => {
+    const { service } = makeService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, { goals: 'v0' });
+    jest.setSystemTime(T0 + MIN); // правка 10:01 кладёт снимок «v0»
+    await service.saveConceptualization(T1, CLIENT, { goals: 'правка 10:01' });
+    jest.setSystemTime(T0 + 12 * MIN); // правки до 10:12 — в окне, без снимка
+    await service.saveConceptualization(T1, CLIENT, { goals: 'правка 10:12' });
+
+    await service.saveConceptualization(T1, CLIENT, {
+      goals: 'v0',
+      restore: true,
+    });
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.goals).toBe('v0');
+    expect(loaded!.history.map((h: any) => h.goals)).toEqual([
+      'правка 10:12',
+      'v0',
+    ]);
+  });
 });

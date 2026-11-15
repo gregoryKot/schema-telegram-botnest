@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import {
   ArrayMaxSize,
   IsArray,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
@@ -11,9 +12,11 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
+import { StringsWithin } from './strings-within';
 import {
   CONCEPT_FIELD_TEXT_MAX as TEXT_MAX,
   CONCEPT_SCHEMA_IDS_MAX,
+  MODE_MAP_NODE_TEXT_MAX,
 } from '../../utils/text-limits';
 
 // Потолки связей и режимов концептуализации — одно число на полное тело, патч
@@ -27,8 +30,9 @@ export const CONCEPT_MODE_IDS_MAX = 100;
  * №6 CLAUDE.md). Лимиты (текст — `CONCEPT_FIELD_TEXT_MAX`, его же `maxLength`
  * у полей обоих фронтов; 64 символа на id, 200/500
  * узлов/рёбер карты режимов) уже проверялись вручную — продублированы.
- * `modeMapNodes`/`modeMapEdges` — произвольная структура графа, форма
- * элементов не валидировалась и раньше — оставляем как есть.
+ * `modeMapNodes`/`modeMapEdges` — узлы и связи старого холста (сайт их больше
+ * не шлёт): элемент — объект, строки в нём — в границах карты режимов
+ * (mode-maps.dto.ts); вложенный DTO с whitelist срезал бы поля узла.
  */
 export class ConceptualizationDto {
   @IsOptional()
@@ -83,12 +87,16 @@ export class ConceptualizationDto {
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(200)
-  modeMapNodes?: unknown[];
+  @IsObject({ each: true })
+  @StringsWithin(MODE_MAP_NODE_TEXT_MAX)
+  modeMapNodes?: object[];
 
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(500)
-  modeMapEdges?: unknown[];
+  @IsObject({ each: true })
+  @StringsWithin(MODE_MAP_NODE_TEXT_MAX)
+  modeMapEdges?: object[];
 
   /** Связи режимов графической концептуализации (не больше 40 режимов). */
   @IsOptional()

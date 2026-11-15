@@ -7,6 +7,7 @@ import {
   CONCEPT_FIELD_TEXT_MAX,
   CONCEPT_MODE_TEXT_MAX,
   CONCEPT_SCHEMA_TEXT_MAX,
+  MODE_MAP_NODE_TEXT_MAX,
 } from '../../utils/text-limits';
 
 async function errorsFor(body: Record<string, unknown>): Promise<string[]> {
@@ -62,6 +63,35 @@ describe('ConceptualizationDto', () => {
     await expect(errorsFor({ modeMapEdges })).resolves.toContain(
       'modeMapEdges',
     );
+  });
+
+  // Узлы и связи старого холста: элемент — объект, строки в нём — в границах
+  // карты режимов; поля узла whitelist не срезает (их полтора десятка).
+  it.each(['modeMapNodes', 'modeMapEdges'])(
+    '%s: элемент не объект или строка в нём длиннее предела карты режимов — отказ',
+    async (field) => {
+      const long = 'x'.repeat(MODE_MAP_NODE_TEXT_MAX + 1);
+      await expect(errorsFor({ [field]: ['n1'] })).resolves.toContain(field);
+      await expect(
+        errorsFor({ [field]: [{ id: 'n1', data: { note: long } }] }),
+      ).resolves.toContain(field);
+    },
+  );
+
+  it('узел старого холста в пределах проходит целиком', async () => {
+    const node = {
+      id: 'n1',
+      type: 'child',
+      position: { x: 10, y: 20 },
+      data: {
+        label: 'Уязвимый Ребёнок',
+        note: 'x'.repeat(MODE_MAP_NODE_TEXT_MAX),
+        side: 'A',
+      },
+    };
+    const dto = plainToInstance(ConceptualizationDto, { modeMapNodes: [node] });
+    await expect(validate(dto, { whitelist: true })).resolves.toEqual([]);
+    expect(dto.modeMapNodes).toEqual([node]);
   });
 
   describe('modeLinks (графическая концептуализация)', () => {

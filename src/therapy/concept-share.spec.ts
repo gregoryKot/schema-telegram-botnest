@@ -16,7 +16,7 @@ function makePrisma(rows: Row[], therapists: bigint[] = [T1]) {
     rows.find(
       (r) => r.therapistId === k.therapistId && r.clientId === k.clientId,
     );
-  return {
+  const prisma = {
     rows,
     therapyRelation: {
       // Связь клиента: активная, терапевт с ролью THERAPIST.
@@ -32,12 +32,14 @@ function makePrisma(rows: Row[], therapists: bigint[] = [T1]) {
         async ({ where }: { where: { therapistId_clientId: Key } }) =>
           byKey(where.therapistId_clientId) ?? null,
       ),
-      updateMany: jest.fn(
-        async ({ where, data }: { where: Key; data: object }) => {
-          const r = byKey(where);
-          if (r) Object.assign(r, data);
-          return { count: r ? 1 : 0 };
-        },
+      update: jest.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { therapistId_clientId: Key };
+          data: object;
+        }) => Object.assign(byKey(where.therapistId_clientId)!, data),
       ),
       upsert: jest.fn(
         async ({
@@ -56,7 +58,10 @@ function makePrisma(rows: Row[], therapists: bigint[] = [T1]) {
         },
       ),
     },
+    // Serializable-транзакция setConceptShared: фейк исполняет её на себе.
+    $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
   };
+  return prisma;
 }
 
 const allow = { assertHasClient: jest.fn(async () => undefined) };
@@ -147,7 +152,9 @@ describe('setConceptShared + findSharedConcept', () => {
         true,
       ),
     ).rejects.toThrow('No active relation');
+    expect(prisma.clientConceptualization.update).not.toHaveBeenCalled();
     expect(prisma.clientConceptualization.upsert).not.toHaveBeenCalled();
+    expect(prisma.rows[0].sharedWithClientAt).toBeNull();
   });
 
   it('офлайн-клиент (отрицательный id) — 400: показывать некому', async () => {

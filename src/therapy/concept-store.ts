@@ -79,8 +79,8 @@ export function conceptView(row: ClientConceptualization, history: unknown) {
 /**
  * Пишет уже зашифрованные поля `enc` в строку пары терапевт–клиент внутри
  * транзакции: снимок прежнего состояния в историю (окно склейки —
- * concept-history.ts, иначе автосохранение выжигает историю, #752),
- * частичный апдейт (только поля из `enc`), создание строки при первой записи.
+ * concept-history.ts, иначе автосохранение выжигает историю, #752; `restore` —
+ * мимо окна), частичный апдейт (только поля из `enc`), создание строки.
  */
 export async function writeConceptWithHistory(
   tx: Prisma.TransactionClient,
@@ -88,11 +88,13 @@ export async function writeConceptWithHistory(
   existing: ClientConceptualization | null,
   enc: Record<string, string | null>,
   nowMs: number,
+  restore = false,
 ) {
   const hist = nextConceptHistory(
     existing && Array.isArray(existing.history) ? existing.history : [],
     existing,
     nowMs,
+    restore,
   );
   const row = await tx.clientConceptualization.upsert({
     where: { therapistId_clientId: key },
