@@ -1,25 +1,20 @@
 import { useState, useEffect } from 'react';
+import { api } from '../../api';
 import { Talk } from '../../components/art/PaperArtSigns';
 import { GroupSkeleton } from './GroupSkeleton';
-import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
+import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
-import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
-import { rejectedRequestText } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 import { FieldError } from '../../components/paper/FieldError';
-import { THERAPIST_REQUEST_PENDING, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
+import { THERAPIST_REQUEST_PENDING, rejectedRequestText, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
 
 // Секция «Роль психолога» (заявка терапевта), плоская группа /account (b27).
-interface TherapistRequest {
-  id: number;
-  status: 'pending' | 'approved' | 'rejected';
-  rejectReason: string | null;
-  createdAt: string;
-  reviewedAt: string | null;
-}
+// Запросы — через api-слой: перевыпуск сессии на 401 и сброс кеша GET по карте инвалидации.
+type TherapistRequest = Awaited<ReturnType<typeof api.getTherapistRequest>>;
 
-export function TherapistRequestSection({ accessToken }: { accessToken: string | null }) {
-  const tr = useTr(); const [req, setReq] = useState<TherapistRequest | null>(null);
+export function TherapistRequestSection() {
+  const tr = useTr(); const [req, setReq] = useState<TherapistRequest>(null);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -30,10 +25,8 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/therapy/request`, { headers: { Authorization: `Bearer ${accessToken}` } })
-      .then(r => r.json()).then(setReq).catch(() => {})
-      .finally(() => setLoaded(true));
-  }, [accessToken]);
+    api.getTherapistRequest().then(setReq).catch(() => {}).finally(() => setLoaded(true));
+  }, []);
 
   if (!loaded) return <GroupSkeleton />;
 
@@ -45,18 +38,13 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
     }
     setBusy(true);
     try {
-      const r = await fetch(`${API_BASE}/api/therapy/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          fullName: fullName.trim(),
-          qualification: qualification.trim(),
-          contacts: contacts.trim(),
-          message: message.trim() || undefined,
-        }),
+      await api.submitTherapistRequest({
+        fullName: fullName.trim(),
+        qualification: qualification.trim(),
+        contacts: contacts.trim(),
+        message: message.trim() || undefined,
       });
-      if (!r.ok) throw new Error((await readHumanError(r, 'Не удалось отправить заявку')).message);
-      setReq({ id: 0, status: 'pending', rejectReason: null, createdAt: new Date().toISOString(), reviewedAt: null });
+      setReq({ id: 0, status: 'pending', rejectReason: null });
       setOpen(false);
     } catch (e) {
       setErr(humanizeThrown(e, 'Не удалось отправить заявку'));
@@ -69,7 +57,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
   return (
     <section className="aa-group aa-role">
       <div className="aa-group-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
-      {/* Отказ — тем же листом, что ошибка поля (FieldError, ревью b27), а не красной строкой; текст — общий. */}
+      {/* Отказ — листом FieldError (ревью b27), как в настройках (BecomeTherapistSection); текст — общий. */}
       {rejected && <FieldError role="status">{rejected}</FieldError>}
       {req?.status === 'pending' ? (
         <div className="aa-role-note">{THERAPIST_REQUEST_PENDING}</div>
