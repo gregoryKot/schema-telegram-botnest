@@ -427,6 +427,24 @@ describe('AuthAccountController.telegramWebApp', () => {
     );
   });
 
+  // Так приходит настоящий обмен из Telegram Web: fetch из фрейма — same-origin
+  // (аудит 2026-10; проверено в браузере, e2e-browser/live/telegram-frame.spec.ts).
+  it('из фрейма (same-origin) с платформой weba → SameSite=none и Partitioned', async () => {
+    const { controller } = makeController();
+    const req = makeReq({ headers: { 'sec-fetch-site': 'same-origin' } });
+    const res = makeRes();
+    await controller.telegramWebApp(
+      { initData: 'init-data', platform: 'weba' },
+      req,
+      res,
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ sameSite: 'none', partitioned: true }),
+    );
+  });
+
   // Аудит 2026-10: платформа запуска (tgWebAppPlatform) не писалась, и тихую
   // поломку одной платформы по /stats было не увидеть.
   it('успешный обмен пишет messenger_launch с платформой, userId = null', async () => {

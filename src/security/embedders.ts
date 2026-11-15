@@ -6,7 +6,8 @@
 //  - сверка кросс-сайтовых кук (`SameSite=None`, src/auth/auth-http.util.ts) —
 //    сессия, выданная внутри чужого iframe, без этого флага не продлевается;
 //    тест csrf.invariants.spec.ts требует, чтобы каждая точка входа с такой
-//    кукой принадлежала площадке из этого списка.
+//    кукой принадлежала площадке из этого списка; `platforms` — по ним вход
+//    узнаёт, что его открыли в iframe этой площадки.
 //
 // До аудита 2026-10-11 это были два независимых списка, и они разошлись:
 // кука «для Telegram Web в iframe» заводилась, а CSP Telegram Web не пускал —
@@ -27,6 +28,12 @@ export interface Embedder {
    * refresh-кука выдаётся с `SameSite=None` (см. cookieOptions).
    */
   readonly crossSiteSession: boolean;
+  /**
+   * WebApp.platform клиентов площадки (поле `platform` обмена подписи): по нему
+   * вход узнаёт iframe — Sec-Fetch-Site у fetch из фрейма приходит same-origin.
+   * Нет поля — точка входа площадки кросс-сайтовая на любой платформе (MAX).
+   */
+  readonly platforms?: readonly string[];
 }
 
 export const EMBEDDERS: readonly Embedder[] = [
@@ -60,10 +67,17 @@ export const EMBEDDERS: readonly Embedder[] = [
       'https://weba.telegram.org',
     ],
     crossSiteSession: true,
+    platforms: ['web', 'weba', 'webk'], // старый веб, Web A, Web K
   },
 ];
 
 /** Значение для CSP `frame-ancestors`: сам сайт плюс все встраиватели. */
 export function frameAncestors(): string[] {
   return ["'self'", ...EMBEDDERS.flatMap((e) => e.origins)];
+}
+
+/** Площадка `name` открывает нас в iframe на этой платформе запуска. */
+export function opensInFrame(name: string, platform: unknown): boolean {
+  const platforms = EMBEDDERS.find((e) => e.name === name)?.platforms ?? [];
+  return typeof platform === 'string' && platforms.includes(platform);
 }

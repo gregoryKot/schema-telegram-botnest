@@ -11,9 +11,10 @@
 // определений примитивов и ВСЕ auth*.controller.ts для блоков-хендлеров.
 import { readFileSync, readdirSync } from 'fs';
 import { join, relative, sep } from 'path';
+import { LAUNCH_PLATFORMS } from '../analytics/launch-platforms.constants';
 import { cookieOptions } from '../auth/auth-http.util';
 import { collectSourceFiles } from './collect-source-files';
-import { EMBEDDERS } from './embedders';
+import { EMBEDDERS, opensInFrame } from './embedders';
 
 const AUTH_DIR = join(__dirname, '../auth');
 const UTIL = join(AUTH_DIR, 'auth-http.util.ts');
@@ -111,7 +112,9 @@ describe('CSRF-трипваер auth-контроллеры', () => {
     });
     expect(cookieOptions(100, { crossSite: true })).toMatchObject({
       sameSite: 'none',
+      partitioned: true, // CHIPS: живёт в разделе площадки, а не везде
     });
+    expect(cookieOptions(100)).not.toHaveProperty('partitioned');
   });
 
   // Кросс-сайтовую сессию (sameSite:none) заводит ровно две точки входа —
@@ -121,17 +124,19 @@ describe('CSRF-трипваер auth-контроллеры', () => {
   //  - auth-account.controller.ts (POST /api/auth/telegram/webapp) — Telegram
   //    Web (web.telegram.org, Telegram Web A/K) тоже открывает мини-апп в
   //    iframe (2026-08-21, «постоянно нужно логиниться заново»); crossSite
-  //    там вычисляется через isCrossSiteRequest(), а не хардкодится.
+  //    там вычисляется через isCrossSiteTelegramLogin() (заголовки + платформа
+  //    из реестра встраивателей), а не хардкодится.
   // Если crossSite появится в третьем месте, это надо увидеть на ревью —
   // поэтому детектор матчит фактический КОД (crossSite: true/=isCrossSite-
-  // Request(...), либо buквальный/переменный 4-й аргумент setRefreshCookie),
-  // а не слово «crossSite» где угодно — иначе он ловит и комментарии вроде
+  // Request|TelegramLogin(...), либо буквальный/переменный 4-й аргумент
+  // setRefreshCookie, за которым может идти `req`), а не слово «crossSite»
+  // где угодно — иначе он ловит и комментарии вроде
   // `// crossSite:false — виджет постится с нашей же страницы (fetch)`.
   function stripComments(code: string): string {
     return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   }
   const CROSS_SITE_CODE =
-    /crossSite\s*[:=]\s*(true\b|isCrossSiteRequest\()|setRefreshCookie\([^)]*,\s*(true|crossSite)\s*\)/;
+    /crossSite\s*[:=]\s*(true\b|isCrossSite(Request|TelegramLogin)\()|setRefreshCookie\([^)]*,\s*(true|crossSite)\s*(,\s*req\s*)?\)/;
   function usesCrossSite(code: string): boolean {
     return CROSS_SITE_CODE.test(stripComments(code));
   }
@@ -158,6 +163,17 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
     `;
     expect(usesCrossSite(thirdControllerComputed)).toBe(true);
+
+    // Кросс-сайтовой паре нужен req (снос пары до CHIPS) — с ним тоже ловится.
+    const thirdControllerWithReq = `
+      setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, true, req);
+    `;
+    expect(usesCrossSite(thirdControllerWithReq)).toBe(true);
+    // Ротация по метке (refresh, ticket/poll) — не точка входа: не ловится.
+    const rotation = `
+      setRefreshCookie(res, t, 30 * 24 * 3600, isCrossSiteSession(req), req);
+    `;
+    expect(usesCrossSite(rotation)).toBe(false);
   });
 
   // Правило №4: кука SameSite=None нужна ровно там, где мессенджер встраивает
@@ -199,6 +215,31 @@ describe('CSRF-трипваер auth-контроллеры', () => {
     for (const e of EMBEDDERS.filter((x) => x.crossSiteSession)) {
       expect(mapped.has(e.name)).toBe(true);
     }
+  });
+
+  // Аудит 2026-10: Sec-Fetch-Site у fetch из фрейма — same-origin, и вход из
+  // Telegram Web получал strict-куку. Его точка входа узнаёт iframe по платформе
+  // запуска из реестра встраивателей. Платформа вне LAUNCH_PLATFORMS (опечатка)
+  // молча вернула бы strict; нативный клиент в списке ослабил бы его куку зря.
+  it('вход Telegram узнаёт iframe по платформам своего встраивателя', () => {
+    const embedder = CROSS_SITE_ENTRY_TO_EMBEDDER['auth-account.controller.ts'];
+    const platforms = EMBEDDERS.find((e) => e.name === embedder)?.platforms;
+    expect(platforms?.length).toBeGreaterThan(0);
+    for (const p of platforms ?? []) {
+      expect(LAUNCH_PLATFORMS).toContain(p);
+      expect(opensInFrame(embedder, p)).toBe(true);
+    }
+    for (const p of ['ios', 'android', 'android_x', 'macos', 'tdesktop'])
+      expect(opensInFrame(embedder, p)).toBe(false);
+    // Решение входа берёт платформы именно этого встраивателя.
+    expect(util).toMatch(new RegExp(`opensInFrame\\(\\s*'${embedder}'`));
+    const ctrl = readFileSync(
+      join(AUTH_DIR, 'auth-account.controller.ts'),
+      'utf8',
+    );
+    expect(stripComments(ctrl)).toMatch(
+      /isCrossSiteTelegramLogin\([^)]*dto\.platform\s*\)/,
+    );
   });
 
   // ── Установщики сессии (login-CSRF, аудит 2026-10-11, security#6) ──────────

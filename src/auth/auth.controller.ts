@@ -62,6 +62,7 @@ export class AuthController {
         tokens.refreshToken,
         30 * 24 * 3600,
         isCrossSiteSession(req),
+        req,
       );
     }
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };

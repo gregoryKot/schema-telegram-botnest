@@ -205,7 +205,10 @@
 ## 7. CSRF, cookie и CORS
 
 - refresh-токен живёт в cookie: `httpOnly` + `secure` + `sameSite=strict` +
-  `path=/api/auth`. Не ослаблять эти флаги.
+  `path=/api/auth`. Не ослаблять эти флаги. Исключение — сессия в iframe
+  мессенджера (MAX; Telegram Web — по платформе запуска из тела обмена):
+  `SameSite=None; Partitioned` (CHIPS) с меткой `refresh_cross`. Решение живёт
+  только в `src/auth/auth-http.util.ts`, площадки — в `src/security/embedders.ts`.
 - Любой state-changing эндпоинт, опирающийся на ambient-cookie (`refresh`,
   `logout`, `merge`, `ticket/poll`), требует `requireCsrf(req, ...)` —
   проверку заголовка `x-requested-with`, который кросс-доменная форма выставить
