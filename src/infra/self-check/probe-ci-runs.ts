@@ -1,6 +1,7 @@
 import { Probe } from './types';
 import { fetchLastRun, WorkflowRunsResponse } from './ci-runs-github';
 import {
+  MUTATION_MAX_AGE_HOURS,
   NIGHTLY_MAX_AGE_HOURS,
   SMOKE_MAX_AGE_HOURS,
   staleNote,
@@ -27,6 +28,12 @@ const WORKFLOWS: WorkflowSpec[] = [
     failMessage: (url) => `смок прода красный: ${url}`,
     maxAgeHours: SMOKE_MAX_AGE_HOURS,
     notRunLabel: 'смок не запускался',
+  },
+  {
+    file: 'mutation-bot.yml',
+    failMessage: (url) => `мутационный прогон упал: ${url}`,
+    maxAgeHours: MUTATION_MAX_AGE_HOURS,
+    notRunLabel: 'мутационный прогон не запускался',
   },
 ];
 
@@ -85,7 +92,7 @@ export function ciRunsProbe(): Probe {
       if (emptyCount === WORKFLOWS.length) {
         return { ok: true, detail: 'прогонов ещё не было' };
       }
-      return { ok: true, detail: 'оба воркфлоу зелёные на GitHub' };
+      return { ok: true, detail: 'воркфлоу зелёные на GitHub' };
     },
   };
 }

@@ -76,9 +76,10 @@ export function leaseProblem(
   const [t1, t2] = ticks.map((d) => d.getTime());
   if (f.runAt !== undefined && f.runAt >= t2 - TICK_TOLERANCE_MS) return null;
   const own = Math.max(f.startedAt, f.lastDbFailureAt ?? -Infinity);
+  // Крона без единого захвата прошлые процессы могли не знать (новый после деплоя).
+  const earlier = f.runAt === undefined ? undefined : f.earlier;
   const judged = (t: number) =>
-    t > own ||
-    !!f.earlier?.some((p) => p.from < t && t + TICK_GRACE_MS <= p.to);
+    t > own || !!earlier?.some((p) => p.from < t && t + TICK_GRACE_MS <= p.to);
   if (judged(t2) && judged(t1)) {
     if (f.runAt === undefined) return 'ни разу не отработал';
     return (

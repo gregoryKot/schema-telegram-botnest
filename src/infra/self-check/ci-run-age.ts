@@ -21,6 +21,9 @@ export const SMOKE_MAX_AGE_HOURS = 14;
  */
 export const NIGHTLY_MAX_AGE_HOURS = 40;
 
+/** Мутационный прогон идёт раз в неделю (воскресенье 04:00 UTC): 8 суток — запас. */
+export const MUTATION_MAX_AGE_HOURS = 8 * 24;
+
 /**
  * Сколько часов назад стартовал прогон. null — GitHub не отдал время или оно
  * не разобралось: возраст тогда не судим (conclusion проба всё равно сверит).

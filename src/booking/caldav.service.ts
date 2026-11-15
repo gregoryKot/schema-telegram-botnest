@@ -68,6 +68,10 @@ export class CalDavService {
         .catch((e) => {
           this.logger.error(`CalDAV discovery failed: ${(e as Error).message}`);
           return null;
+        })
+        .then((url) => {
+          if (!url) this.discovery = null; // неудачу не кэшируем: повтор на следующем вызове
+          return url;
         });
     }
     return this.discovery;
@@ -125,7 +129,11 @@ export class CalDavService {
           this.logger.error(
             `CalDAV calendar list failed: ${(e as Error).message}`,
           );
-          return [];
+          return [] as string[];
+        })
+        .then((urls) => {
+          if (!urls.length) this.busyUrls = null; // пусто/сбой — повторим в следующий раз
+          return urls;
         });
     }
     return this.busyUrls;
