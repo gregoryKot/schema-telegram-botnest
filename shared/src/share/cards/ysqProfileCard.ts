@@ -29,6 +29,7 @@ import {
 } from '../cardKit';
 import { SCHEMAS, DOMAIN_ORDER, NEED_LABELS } from '../../hooks/ysqSchemas';
 import { isSchemaScoreActive, avgBarPct } from '../../hooks/ysqScoring';
+import { fmtIndex } from '../../needs/dayIndex';
 
 export interface YsqProfileRow {
   label: string;
@@ -222,7 +223,7 @@ export function drawYsqProfileCard(
       ctx.fillStyle = needTextInk(d.needId);
       ctx.textAlign = 'right';
       ctx.fillText(
-        r.avg >= 1 ? r.avg.toFixed(1) : '—',
+        r.avg >= 1 ? fmtIndex(r.avg) : '—',
         CARD_W - CARD_PAD,
         y + 16,
       );
