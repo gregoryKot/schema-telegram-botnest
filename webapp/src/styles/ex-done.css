@@ -18,6 +18,21 @@
 }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .ex2-done-page { padding-top: 16px; padding-bottom: 72px; } }
 
+/* ── «Что дальше» (ExNext): плитка бумаги сущности, куда ведёт, — текст слева, справа стрелка и знак ── */
+.ex2-next {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; box-sizing: border-box; width: 100%;
+  padding: 20px 20px 18px 22px; border: 0; border-radius: 22px; font: inherit; text-align: left; color: var(--text);
+}
+.ex2-next--link { cursor: pointer; transition: background .12s; }
+.ex2-next--link:hover { background: oklch(0.895 0.04 var(--h)); }
+.ex2-next--link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ex2-next-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ex2-next-label { color: var(--text-sub); }
+.ex2-next-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
+.ex2-next-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.ex2-next-foot { display: flex; flex-direction: column-reverse; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.ex2-next-foot .pp-art { width: 88px; height: auto; }
+
 /* ── Прошлые: подпись и строки (ExPastList, ExPastRow) ── */
 .ex2-past-list > .ds-label { display: block; margin-bottom: 4px; color: var(--text-sub); }
 .ex2-past { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); }
