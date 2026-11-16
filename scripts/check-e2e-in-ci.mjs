@@ -71,7 +71,7 @@ export function e2eTokens(workflowText) {
 function listSpecs(dir, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.isDirectory()) {
-      if (!SKIP_DIRS.has(e.name)) listSpecs(join(dir, e.name), out);
+      if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('.')) listSpecs(join(dir, e.name), out);
     } else if (e.name.endsWith('.e2e-spec.ts')) {
       out.push(relative(ROOT, join(dir, e.name)).split('\\').join('/'));
     }

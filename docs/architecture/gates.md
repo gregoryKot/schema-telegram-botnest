@@ -61,6 +61,7 @@
 | check-raw-sql-live.mjs | файл с `$queryRaw`/`$executeRaw` без спека на живом Postgres | `scripts/raw-sql-live-baseline.json` | нет | checks |
 | check-recorded-fixtures.mjs | парсер внешнего формата без записанной фикстуры | `scripts/recorded-fixtures-baseline.json` | нет | checks |
 | check-render-poison.mjs | `backdrop-filter` и `blur` во фронтендах (тормоза WebKit PWA) | `scripts/render-poison-baseline.json` | да | webapp |
+| check-repo-secrets.mjs | `secrets.X` в любом воркфлоу (кроме `GITHUB_TOKEN`) без строки `HAS_X: ${{ secrets.X != '' }}` в джобе `repo-secrets` `nightly.yml`, лишняя строка `HAS_`, динамическая ссылка `secrets[…]`; ночью с `--presence` — незаведённый секрет без записи в бейслайне (с записью — `::warning::`), запись о заведённом секрете | `scripts/repo-secrets-baseline.json` | нет | nightly (`repo-secrets`); сверка списков — `repo-secrets.spec.ts` в PR |
 | check-robot-phrases.mjs | роботные конструкции («Это не X. Это Y»), канцелярит | `scripts/robot-phrases-baseline.json` | да | backend |
 | check-route-collisions.mjs | один HTTP-маршрут в двух контроллерах | — | нет | checks |
 | check-scale-drift.mjs | инлайн borderRadius/padding вне шкалы токенов | `scripts/scale-drift-baseline.json` | да | webapp |

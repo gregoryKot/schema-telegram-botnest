@@ -28,7 +28,7 @@ function* walk(dir) {
     return;
   }
   for (const name of entries) {
-    if (name === 'node_modules' || name === 'dist') continue;
+    if (name.startsWith('.') || name === 'node_modules' || name === 'dist') continue;
     const p = join(dir, name);
     if (statSync(p).isDirectory()) yield* walk(p);
     else if (/\.(ts|tsx|css)$/.test(p)) yield p;

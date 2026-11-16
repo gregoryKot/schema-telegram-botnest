@@ -44,7 +44,7 @@ function walk(p, acc = []) {
     return acc;
   }
   for (const n of readdirSync(join(ROOT, p))) {
-    if (n === 'node_modules' || n === 'dist') continue;
+    if (n.startsWith('.') || n === 'node_modules' || n === 'dist') continue;
     walk(p + '/' + n, acc);
   }
   return acc;

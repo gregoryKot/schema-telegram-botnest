@@ -96,7 +96,7 @@ const TEST = /\.(spec|test)\.tsx?$/;
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (entry === 'node_modules' || entry === 'dist') continue;
+    if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
     if (statSync(full).isDirectory()) walk(full, out);
     else if (full.endsWith('.ts') && !TEST.test(full)) out.push(full);
   }

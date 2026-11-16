@@ -63,7 +63,7 @@ function blankForkArgs(src) {
 }
 
 function* walk(dir) {
-  for (const name of readdirSync(dir)) {
+  for (const name of readdirSync(dir).filter((n) => !n.startsWith('.'))) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) yield* walk(p);
     else if (/\.(ts|tsx)$/.test(p)) yield p;

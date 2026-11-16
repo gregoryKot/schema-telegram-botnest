@@ -42,7 +42,7 @@ function lineAt(src, index) {
 }
 
 function walk(dir, acc = []) {
-  for (const name of readdirSync(dir)) {
+  for (const name of readdirSync(dir).filter((n) => !n.startsWith('.'))) {
     const full = join(dir, name);
     const st = statSync(full);
     if (st.isDirectory()) {
