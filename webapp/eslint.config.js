@@ -50,9 +50,8 @@ export default defineConfig([
     // projectService, а тесты были вне правила: в tsconfig.app.json их нет,
     // `allowDefaultProject` не берёт `**`. Брошенный в тесте промис не всегда
     // валит прогон: отказ после конца теста или `act(() => promise)` без await
-    // теряют проверку молча. Замер 2026-11 (`npx eslint src`, 831 тест), против
-    // линта одного прода: вторая программа на тесты рядом с projectService —
-    // ×1.44, одна общая программа — ×1.3 (≈30 → ≈40 с).
+    // теряют проверку молча. Цена — время линта: `time npx eslint src` в webapp
+    // против того же с конфигом main до #1315 (`-c`) — ≈38 с против ≈31 с.
     files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
