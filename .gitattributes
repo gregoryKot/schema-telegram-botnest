@@ -34,6 +34,9 @@ scripts/tap-targets-baseline.json         merge=ratchet-sum
 scripts/utility-inline-baseline.json      merge=ratchet-sum
 scripts/color-drift-baseline.json         merge=ratchet-sum
 scripts/second-person-baseline.json       merge=ratchet-sum
+# count таймеров без очистки в функции складывается так же; причина-строка,
+# переписанная обеими сторонами, — конфликт человеку.
+scripts/timer-cleanup-baseline.json       merge=ratchet-sum
 
 # меньше — лучше, но число НЕ складывается — берётся min из двух.
 # Планки планов запросов: страницы зависят от выбранного плана, потолок времени
@@ -64,7 +67,6 @@ scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
 scripts/raw-sql-live-baseline.json        merge=ratchet-min
 scripts/recorded-fixtures-baseline.json   merge=ratchet-min
-scripts/timer-cleanup-baseline.json       merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
 scripts/zero-coverage-baseline.json       merge=ratchet-min
 
