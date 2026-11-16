@@ -152,7 +152,7 @@ describe('Celebration — закрытие через запись в истор
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByText('колесо')).toBeTruthy();
     expect(nav.depth).toBe(1);
-    act(() => nav.go!(-1));
+    act(() => { nav.go!(-1); });
     expect(screen.queryByText('колесо')).toBeNull();
     expect(nav.depth).toBe(0);
     expect(doneAt).toEqual([0]); // onDone до снятия записи окна видел бы глубину 1
@@ -161,7 +161,7 @@ describe('Celebration — закрытие через запись в истор
   it('«Назад» браузера закрывает окно', () => {
     const onDone = vi.fn();
     renderCelebration({ onDone });
-    act(() => nav.go!(-1));
+    act(() => { nav.go!(-1); });
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 

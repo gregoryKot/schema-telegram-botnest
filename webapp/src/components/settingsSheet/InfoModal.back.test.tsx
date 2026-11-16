@@ -22,7 +22,7 @@ describe('InfoModal и «Назад»', () => {
     render(<MemoryRouter initialEntries={['/', '/s']} initialIndex={1}><Host /></MemoryRouter>);
     expect(await screen.findByText('Сводка')).toBeTruthy();
     expect(snap.depth).toBe(1);
-    act(() => snap.nav!(-1));
+    act(() => { snap.nav!(-1); });
     expect(screen.queryByText('Сводка')).toBeNull();
     expect(screen.getByText('под окном')).toBeTruthy();
   });

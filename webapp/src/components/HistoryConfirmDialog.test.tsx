@@ -33,7 +33,7 @@ describe('HistoryConfirmDialog', () => {
     mount();
     await screen.findByText('Удалить?');
     expect(snap.depth).toBe(1);
-    act(() => snap.nav!(-1));
+    act(() => { snap.nav!(-1); });
     expect(screen.queryByText('Удалить?')).toBeNull();
   });
 

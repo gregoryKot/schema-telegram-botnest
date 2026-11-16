@@ -84,7 +84,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
   it('«Назад» браузера закрывает окно (отказ без сети), а не страницу', async () => {
     const { onClose } = setup('pair');
     await screen.findByText('Присоединиться');
-    act(() => nav.go!(-1));
+    act(() => { nav.go!(-1); });
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(m.joinPair).not.toHaveBeenCalled();
   });
