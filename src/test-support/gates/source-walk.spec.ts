@@ -194,9 +194,17 @@ describe('обход дерева исходников — только чере
 // `startsWith('.')` либо явный список кэшей (`\.jest-cache`…) там, где гейт
 // обязан видеть скрытое (public-scripts: `public/.well-known` уходит в сайт).
 const HIDDEN_SKIP = /startsWith\('\.'\)|\\\.jest-cache/;
-// Ещё без пропуска — оба в docs/BACKLOG.md: telegram-chat-id ведёт пакет
-// c3-11, dead-end-report выпал из аудита. Починил — убери из списка (тест
-// «исключение не шире нужного» напомнит).
+// Пропуск ищется в коде, а не в комментарии: строка-комментарий («тут надо бы
+// startsWith('.')») — не пропуск. Рабочий ли он — держат образцы в песочнице.
+const COMMENT_LINE = /^\s*(\/\/|\/\*|\*)/;
+const gateCode = (file: string) =>
+  readFileSync(file, 'utf8')
+    .split('\n')
+    .filter((l) => !COMMENT_LINE.test(l))
+    .join('\n');
+// Ещё без пропуска — оба в docs/BACKLOG.md: telegram-chat-id переписывал
+// параллельный пакет c3-11 (#1308), dead-end-report вне брифа c3-16, владельца
+// нет. Починил — убери из списка (тест «исключение не шире нужного» напомнит).
 const NOT_YET = new Set([
   'check-telegram-chat-id.mjs',
   'check-dead-end-report.mjs',
@@ -217,8 +225,7 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
   it('каждый рекурсивный обходчик пропускает скрытые каталоги', () => {
     const missing = walkers.filter(
       (f) =>
-        !NOT_YET.has(f) &&
-        !HIDDEN_SKIP.test(readFileSync(join(scriptsDir, f), 'utf8')),
+        !NOT_YET.has(f) && !HIDDEN_SKIP.test(gateCode(join(scriptsDir, f))),
     );
     expect(missing).toEqual([]);
   });
@@ -226,8 +233,7 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
   it('исключение не шире нужного: каждый из NOT_YET ещё без пропуска', () => {
     const fixed = [...NOT_YET].filter(
       (f) =>
-        !walkers.includes(f) ||
-        HIDDEN_SKIP.test(readFileSync(join(scriptsDir, f), 'utf8')),
+        !walkers.includes(f) || HIDDEN_SKIP.test(gateCode(join(scriptsDir, f))),
     );
     expect(fixed).toEqual([]);
   });
@@ -239,6 +245,8 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
         'check-legacy-name.mjs',
         'check-route-collisions.mjs',
         'check-hover-only-reveal.mjs',
+        'check-utility-inline.mjs',
+        'check-public-scripts.mjs',
       ]),
     );
   });
@@ -268,6 +276,25 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
           '.x { opacity: 0; }\n.r:hover .x { opacity: 1; }\n',
       }),
     ],
+    [
+      // Обход переписан с `recursive: true` на свою рекурсию.
+      'check-utility-inline.mjs',
+      (dir) => ({
+        'shared/src/theme/utilities.css':
+          '.u-mb4.u-mb4 { margin-bottom: var(--space-4); }\n',
+        'shared/src/theme/tokens.css': ':root { --space-4: 4px; }\n',
+        'scripts/utility-inline-baseline.json': '{}',
+        [`webapp/src/${dir}/A.tsx`]: '<p style={{ marginBottom: 4 }} />\n',
+      }),
+    ],
+    [
+      // Пропуск — только кэши (`.well-known` читается, тест ниже).
+      'check-public-scripts.mjs',
+      (dir) => ({
+        'scripts/public-scripts-baseline.json': '{}',
+        [`webapp/public/${dir}/loader.js`]: 'load();\n',
+      }),
+    ],
   ];
 
   it.each(samples)(
@@ -284,4 +311,13 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
       expect(runGate(gate, files('cache')).status).toBe(1);
     },
   );
+
+  it('check-public-scripts.mjs: public/.well-known уходит в сайт — читается', () => {
+    const res = runGate('check-public-scripts.mjs', {
+      'scripts/public-scripts-baseline.json': '{}',
+      'webapp/public/.well-known/loader.js': 'load();\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/public/.well-known/loader.js');
+  });
 });
