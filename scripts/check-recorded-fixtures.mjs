@@ -44,7 +44,7 @@ function isSpec(rel) {
 function walkSrc(dir, acc = []) {
   let entries;
   try {
-    entries = readdirSync(join(ROOT, dir));
+    entries = readdirSync(join(ROOT, dir)).filter((n) => !n.startsWith('.'));
   } catch {
     return acc; // песочница без src/ вовсе — валидный пустой случай
   }

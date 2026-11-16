@@ -39,7 +39,7 @@ const SCAN_FILES = ['game/src/i18n/messages.ts']; // тексты игры — �
 function walk(dir, acc = []) {
   let entries;
   try {
-    entries = readdirSync(join(ROOT, dir));
+    entries = readdirSync(join(ROOT, dir)).filter((n) => !n.startsWith('.'));
   } catch {
     return acc;
   }

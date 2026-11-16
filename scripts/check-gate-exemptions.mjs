@@ -151,7 +151,7 @@ function findExemptionLists(file, source) {
 function walkTsFiles(dir, acc = []) {
   let entries;
   try {
-    entries = readdirSync(dir);
+    entries = readdirSync(dir).filter((n) => !n.startsWith('.'));
   } catch {
     return acc; // src/test-support/gates ещё не существует (пустая песочница)
   }

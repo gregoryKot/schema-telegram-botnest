@@ -40,7 +40,7 @@ function walk(dir, acc = []) {
     return acc;
   }
   for (const name of entries) {
-    if (SKIP_DIR.has(name)) continue;
+    if (SKIP_DIR.has(name) || name.startsWith('.')) continue;
     const rel = join(dir, name);
     if (statSync(join(ROOT, rel)).isDirectory()) walk(rel, acc);
     else acc.push(rel.split('\\').join('/'));

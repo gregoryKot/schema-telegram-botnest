@@ -98,10 +98,10 @@ export function findUtilityInline(src, utils, scale) {
 }
 
 const tsxFiles = (dir) =>
-  readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
-    .filter((e) => e.isFile() && e.name.endsWith('.tsx') && !/\.(test|spec)\.tsx$/.test(e.name))
-    .filter((e) => !(e.parentPath ?? e.path).includes('node_modules'))
-    .map((e) => join(e.parentPath ?? e.path, e.name).slice(ROOT.length + 1))
+  readdirSync(join(ROOT, dir), { withFileTypes: true })
+    .filter((e) => !e.name.startsWith('.') && e.name !== 'node_modules')
+    .flatMap((e) => (e.isDirectory() ? tsxFiles(`${dir}/${e.name}`) : [`${dir}/${e.name}`]))
+    .filter((f) => f.endsWith('.tsx') && !/\.(test|spec)\.tsx$/.test(f))
     .sort();
 
 function main() {
