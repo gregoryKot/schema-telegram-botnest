@@ -67,27 +67,30 @@ describe('sendBounded: таймер', () => {
 });
 
 describe('шов: настоящий Telegraf против медленного Bot API', () => {
-  const REPLY_MS = 1000;
+  // Сервер не отвечает вовсе, а время отмены двигает тест — и только после
+  // того, как запрос дошёл до сервера: под нагрузкой воркеров jest реальные
+  // 150 мс истекали раньше, чем запрос доезжал (hits=0).
   const TIMEOUT_MS = 150;
+  // Дедлайн тестов и хуков файла — страховка: ждём событий, а не времени.
+  jest.setTimeout(30_000);
   let server: Server;
   let hits = 0;
+  let arrived: () => void = () => undefined;
   let bot: Telegraf;
+
+  /** Промис, который резолвится, когда сервер получил sendMessage. */
+  const nextArrival = () => new Promise<void>((r) => (arrived = r));
 
   beforeAll(async () => {
     server = createServer((req, res) => {
-      if ((req.url ?? '').endsWith('/sendMessage')) hits++;
       req.resume();
-      req.on('end', () => {
-        const reply = setTimeout(() => {
-          res.setHeader('content-type', 'application/json');
-          res.end(JSON.stringify({ ok: true, result: { message_id: 1 } }));
-        }, REPLY_MS);
-        // Клиент отменил запрос (таймаут) или сервер закрыт — ответ не
-        // нужен. Без этого таймер жил до секунды после afterAll, и воркер
-        // jest, у которого спек был последним, убивался с «failed to exit
-        // gracefully» (ночной прогон, после ci-alarm #672).
-        res.on('close', () => clearTimeout(reply));
-      });
+      if (!(req.url ?? '').endsWith('/sendMessage')) {
+        res.statusCode = 404;
+        res.end();
+        return;
+      }
+      hits++;
+      arrived();
     });
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
     const { port } = server.address() as AddressInfo;
@@ -103,12 +106,41 @@ describe('шов: настоящий Telegraf против медленного 
 
   beforeEach(() => {
     hits = 0;
+    // Подделан только таймер отмены (setTimeout): сеть, setImmediate и
+    // nextTick идут по-настоящему, иначе http-обмен встанет.
+    jest.useFakeTimers({
+      doNotFake: [
+        'Date',
+        'hrtime',
+        'nextTick',
+        'performance',
+        'queueMicrotask',
+        'setImmediate',
+        'clearImmediate',
+        'setInterval',
+        'clearInterval',
+      ],
+    });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  /** Дождаться запроса у сервера и только тогда сработать отмене. */
+  async function abortAfterArrival(arrival: Promise<void>): Promise<void> {
+    await arrival;
+    jest.advanceTimersByTime(TIMEOUT_MS);
+  }
+
   it('отмена по таймауту: запрос у сервера уже есть, ошибка — неизвестный исход', async () => {
-    const err = await sendBounded(bot, 1, 'т', {}, TIMEOUT_MS).catch(
+    const arrival = nextArrival();
+    const pending = sendBounded(bot, 1, 'т', {}, TIMEOUT_MS).catch(
       (e: unknown) => e,
     );
+    await abortAfterArrival(arrival);
+    const err = await pending;
     expect(isUnknownOutcome(err)).toBe(true);
     expect(hits).toBe(1);
   });
@@ -153,7 +185,10 @@ describe('шов: настоящий Telegraf против медленного 
       rejects: new RejectCounter(),
     };
 
-    await runProcessQueue(deps);
+    const arrival = nextArrival();
+    const first = runProcessQueue(deps);
+    await abortAfterArrival(arrival);
+    await first;
     await runProcessQueue(deps);
 
     expect(notificationService.markSent).toHaveBeenCalledWith(500);
