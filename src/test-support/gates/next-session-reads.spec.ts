@@ -169,6 +169,20 @@ describe('check-next-session-reads.mjs', () => {
       );
     });
 
+    it('чтение в другом безымянном колбэке разрешённой функции — красный по счёту', () => {
+      const src = [
+        ...allowed.slice(0, 2),
+        '    rels.forEach((r) => queue.push(() => r.nextSession));',
+        ...allowed.slice(2),
+        ...close,
+      ].join('\n');
+      const res = run(src, FILE);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        `${FILE}:3: в getClients чтений nextSession 3, разрешено 2 (ALLOWED_READS)`,
+      );
+    });
+
     it('чтение ушло из функции — красный: запись надо снять', () => {
       const src = [
         'export class S {',
