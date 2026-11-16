@@ -4,9 +4,6 @@
 // повторяется с нуля — уже видя запись первой. READ COMMITTED здесь не
 // годится: повторная проверка внутри транзакции не видит чужой
 // незакоммиченной вставки, и обе стороны пишут.
-//
-// Потребители: отвязка способа входа (`src/auth/unlink-provider.ts`), запрос
-// теста YSQ клиенту (`src/therapy/ysq-request.ts`).
 import type { Prisma } from '@prisma/client';
 
 export const SERIALIZATION_RETRIES = 3;
