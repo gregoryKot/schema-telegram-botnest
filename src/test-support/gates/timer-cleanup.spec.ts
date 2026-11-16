@@ -1,10 +1,12 @@
 // Тест гейта check-timer-cleanup.mjs: каждый таймер, меняющий состояние, держит
-// id и снимает его clearTimeout в очистке, иначе — запись «файл::что меняет» с причиной.
+// id и снимает его clearTimeout в очистке, иначе — запись «файл::функция::что меняет»
+// со счётом таймеров и причиной.
 // Класс: тост пережил jsdom и уронил весь vitest «window is not defined»
 // (CI main, run 36409902702).
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { runGate } from './gate-sandbox';
+import { readFileSync } from 'fs';
+import { cleanupTmp, runGate } from './gate-sandbox';
 import { importExport } from './pattern-loader';
 
 const ROOT = join(__dirname, '..', '..', '..');
@@ -15,14 +17,22 @@ const TOAST = [
   '  return null;',
   '}',
 ].join('\n');
+type Baseline = Record<string, { count: number; reason: string } | string>;
 const run = (
   files: Record<string, string>,
-  baseline: Record<string, string> = {},
+  baseline: Baseline = {},
+  options: Parameters<typeof runGate>[2] = {},
 ) =>
-  runGate('check-timer-cleanup.mjs', {
-    ...files,
-    'scripts/timer-cleanup-baseline.json': JSON.stringify(baseline),
-  });
+  runGate(
+    'check-timer-cleanup.mjs',
+    {
+      ...files,
+      'scripts/timer-cleanup-baseline.json': JSON.stringify(baseline),
+    },
+    options,
+  );
+const REASON = 'стор сторонней библиотеки, не setState';
+const entry = (count: number, reason = REASON) => ({ count, reason });
 const keysIn = (stderr: string) =>
   [...stderr.matchAll(/(\S+::\S+) \(L/g)].map((m) => m[1]).sort();
 
@@ -36,12 +46,16 @@ describe('check-timer-cleanup.mjs', () => {
     expect(res.status).toBe(0);
   });
 
-  it('uncleanedTimers (timer-cleanup-rules.mjs): строка и что меняет, по порядку таймеров', () => {
+  it('uncleanedTimers (timer-cleanup-rules.mjs): строка, функция и что меняет, по порядку таймеров', () => {
     const src = [
       'const t = useRef(0);',
       'useEffect(() => () => clearTimeout(t.current), []);',
       't.current = setTimeout(() => setShown(false), 2000);',
       'setTimeout(() => setHint(null), 3000); setTimeout(onDone, 10);',
+      'export function Card() {',
+      '  useEffect(() => { setTimeout(() => setOpen(false), 5); }, []);',
+      '  const close = useCallback(() => { setTimeout(() => setOpen(true), 5); }, []);',
+      '}',
     ].join('\n');
     const found: unknown = JSON.parse(
       importExport(
@@ -51,8 +65,10 @@ describe('check-timer-cleanup.mjs', () => {
       ),
     );
     expect(found).toEqual([
-      { line: 4, change: 'setHint' },
-      { line: 4, change: 'onDone' },
+      { line: 4, fn: '', change: 'setHint' },
+      { line: 4, fn: '', change: 'onDone' },
+      { line: 6, fn: 'Card', change: 'setOpen' },
+      { line: 7, fn: 'close', change: 'setOpen' },
     ]);
   });
 
@@ -62,8 +78,10 @@ describe('check-timer-cleanup.mjs', () => {
       'shared/src/hooks/useToast.ts': TOAST,
     });
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('webapp/src/Toast.tsx::setShown (L3)');
-    expect(res.stderr).toContain('shared/src/hooks/useToast.ts::setShown (L3)');
+    expect(res.stderr).toContain('webapp/src/Toast.tsx::show::setShown (L3)');
+    expect(res.stderr).toContain(
+      'shared/src/hooks/useToast.ts::show::setShown (L3)',
+    );
   });
 
   it('два таймера и один clearTimeout — красный второй таймер', () => {
@@ -88,10 +106,10 @@ describe('check-timer-cleanup.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(keysIn(res.stderr)).toEqual([
-      'webapp/src/A.tsx::setHint',
-      'webapp/src/B.tsx::setStep',
+      'webapp/src/A.tsx::show::setHint',
+      'webapp/src/B.tsx::(модуль)::setStep',
     ]);
-    expect(res.stderr).toContain('webapp/src/B.tsx::setStep (L3)');
+    expect(res.stderr).toContain('webapp/src/B.tsx::(модуль)::setStep (L3)');
   });
 
   it('колбэк-проп, dispatch и своя функция без очистки — красный', () => {
@@ -106,11 +124,11 @@ describe('check-timer-cleanup.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(keysIn(res.stderr)).toEqual([
-      'webapp/src/A.tsx::onDone',
-      'webapp/src/B.tsx::props.onClose',
-      'webapp/src/C.tsx::dispatch',
-      'webapp/src/D.tsx::onSaveRef.current',
-      'webapp/src/E.tsx::hide',
+      'webapp/src/A.tsx::finish::onDone',
+      'webapp/src/B.tsx::(модуль)::props.onClose',
+      'webapp/src/C.tsx::(модуль)::dispatch',
+      'webapp/src/D.tsx::(модуль)::onSaveRef.current',
+      'webapp/src/E.tsx::(модуль)::hide',
     ]);
   });
 
@@ -161,9 +179,9 @@ describe('check-timer-cleanup.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(keysIn(res.stderr)).toEqual([
-      'webapp/src/A.tsx::setSaved',
-      'webapp/src/B.tsx::onLongPress',
-      'webapp/src/C.tsx::setOther',
+      'webapp/src/A.tsx::arm::setSaved',
+      'webapp/src/B.tsx::start::onLongPress',
+      'webapp/src/C.tsx::(модуль)::setOther',
     ]);
   });
 
@@ -189,40 +207,141 @@ describe('check-timer-cleanup.mjs', () => {
     expect(run({ 'webapp/src/F.tsx': commented }).status).toBe(1);
   });
 
-  it('бейслайн гасит запись «файл::что меняет» с причиной; протухшая и короткая причина — красный', () => {
+  it('бейслайн гасит запись «файл::функция::что меняет» с причиной; протухшая и короткая причина — красный', () => {
     const files = { 'webapp/src/Toast.tsx': TOAST };
-    const key = 'webapp/src/Toast.tsx::setShown';
-    expect(
-      run(files, { [key]: 'стор сторонней библиотеки, не setState' }).status,
-    ).toBe(0);
-    expect(run(files, { [key]: 'ок' }).stderr).toContain('короче 20 символов');
+    const key = 'webapp/src/Toast.tsx::show::setShown';
+    expect(run(files, { [key]: entry(1) }).status).toBe(0);
+    expect(run(files, { [key]: entry(1, 'ок') }).stderr).toContain(
+      'короче 20 символов',
+    );
     const stale = run(
       { 'webapp/src/G.tsx': 'export {};' },
-      { 'webapp/src/G.tsx::setShown': 'раньше был тост без очистки' },
+      { 'webapp/src/G.tsx::show::setShown': entry(1) },
     );
     expect(stale.stderr).toContain('запись протухла');
     const otherSetter = run(
       {
-        'webapp/src/Toast.tsx': `${TOAST}\nsetTimeout(() => setHint(null), 10);`,
+        'webapp/src/Toast.tsx': TOAST.replace(
+          'setShown(false)',
+          'setShown(false); setTimeout(() => setHint(null), 10)',
+        ),
       },
-      { [key]: 'стор сторонней библиотеки, не setState' },
+      { [key]: entry(1) },
     );
     expect(keysIn(otherSetter.stderr)).toEqual([
-      'webapp/src/Toast.tsx::setHint',
+      'webapp/src/Toast.tsx::show::setHint',
     ]);
   });
 
-  it('запись гасит один таймер: второй с тем же сеттером в файле — красный, ключ «…#2»', () => {
-    const reason = 'стор сторонней библиотеки, не setState';
-    const key = 'webapp/src/Toast.tsx::setShown';
+  // Ключ без позиции: запись «файл::что меняет» молча покрывала второй такой же
+  // таймер в файле, если первый починили (К24, #1272). Теперь счёт по функции.
+  describe('счёт таймеров по функции', () => {
+    const key = 'webapp/src/Toast.tsx::show::setShown';
     const twice = {
-      'webapp/src/Toast.tsx': `${TOAST}\nsetTimeout(() => setShown(true), 10);`,
+      'webapp/src/Toast.tsx': TOAST.replace(
+        '2000); };',
+        '2000); setTimeout(() => setShown(true), 10); };',
+      ),
     };
-    const second = run(twice, { [key]: reason });
-    expect(second.status).toBe(1);
-    expect(second.stderr).toContain(`${key}#2 (L6)`);
-    expect(keysIn(second.stderr)).toEqual([`${key}#2`]);
-    expect(run(twice, { [key]: reason, [`${key}#2`]: reason }).status).toBe(0);
+    const otherFn = {
+      'webapp/src/Toast.tsx': `${TOAST}\nconst hide = () => { setTimeout(() => setShown(false), 10); };`,
+    };
+
+    it('второй таймер в той же функции при count 1 — красный, обе строки в выводе', () => {
+      const res = run(twice, { [key]: entry(1) });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        `${key} (L3, L3): таймеров без очистки 2, в бейслайне 1`,
+      );
+    });
+
+    it('тот же счёт — зелёный', () => {
+      const res = run(twice, { [key]: entry(2) });
+      expect(res.stderr).toBe('');
+      expect(res.status).toBe(0);
+    });
+
+    it('таймер с тем же сеттером в другой функции — красный, свой ключ', () => {
+      const res = run(otherFn, { [key]: entry(1) });
+      expect(res.status).toBe(1);
+      expect(keysIn(res.stderr)).toEqual([
+        'webapp/src/Toast.tsx::hide::setShown',
+      ]);
+    });
+
+    it('запись больше факта — красный с подсказкой уменьшить через --update', () => {
+      const res = run({ 'webapp/src/Toast.tsx': TOAST }, { [key]: entry(2) });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        `бейслайн ${key}: в бейслайне 2, без очистки 1 — уменьши`,
+      );
+      expect(res.stderr).toContain('--update');
+    });
+
+    it('count не целое положительное — красный', () => {
+      const res = run({ 'webapp/src/Toast.tsx': TOAST }, { [key]: entry(0) });
+      expect(res.stderr).toContain('count — целое не меньше 1');
+    });
+  });
+
+  describe('--update', () => {
+    const update = (files: Record<string, string>, baseline: Baseline) => {
+      const res = run(files, baseline, { args: ['--update'], keepTmp: true });
+      try {
+        const written = readFileSync(
+          join(res.tmp, 'scripts/timer-cleanup-baseline.json'),
+          'utf8',
+        );
+        return { ...res, written: JSON.parse(written) as Baseline };
+      } finally {
+        cleanupTmp(res.tmp);
+      }
+    };
+
+    it('переносит старый ключ «файл::что меняет»(#2) с причиной и счётом; без --update он красный', () => {
+      const twice = {
+        'webapp/src/Toast.tsx': `${TOAST}\nconst hide = () => { setTimeout(() => setShown(false), 10); };`,
+      };
+      const legacy = {
+        'webapp/src/Toast.tsx::setShown': REASON,
+        'webapp/src/Toast.tsx::setShown#2': 'другая причина второго таймера',
+      };
+      expect(run(twice, legacy).stderr).toContain('ключ старого формата');
+      const res = update(twice, legacy);
+      expect(res.status).toBe(0);
+      expect(res.written).toEqual({
+        'webapp/src/Toast.tsx::hide::setShown': entry(1),
+        'webapp/src/Toast.tsx::show::setShown': entry(1),
+      });
+    });
+
+    it('уменьшает счёт до факта и снимает протухшее, но не добавляет новое и не растит счёт', () => {
+      const key = 'webapp/src/Toast.tsx::show::setShown';
+      const lowered = update(
+        { 'webapp/src/Toast.tsx': TOAST },
+        { [key]: entry(3), 'webapp/src/G.tsx::f::setX': entry(1) },
+      );
+      expect(lowered.written).toEqual({ [key]: entry(1) });
+      expect(lowered.status).toBe(0);
+      const grown = update(
+        {
+          'webapp/src/Toast.tsx': TOAST.replace(
+            '2000); };',
+            '2000); setTimeout(() => setShown(true), 10); };',
+          ),
+          'webapp/src/New.tsx': TOAST,
+        },
+        { [key]: entry(1) },
+      );
+      expect(grown.written).toEqual({ [key]: entry(1) });
+      expect(grown.status).toBe(1);
+    });
+  });
+
+  it('скрытый каталог не обходится', () => {
+    const res = run({ 'webapp/src/.cache/Toast.tsx': TOAST });
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
   });
 
   it('колбэк зовёт свою функцию, меняющую состояние: без очистки — красный, с очисткой и фабрика — зелёный', () => {
@@ -248,7 +367,7 @@ describe('check-timer-cleanup.mjs', () => {
       'shared/src/C.ts': factory,
     });
     expect(res.status).toBe(1);
-    expect(keysIn(res.stderr)).toEqual(['webapp/src/A.tsx::tick']);
+    expect(keysIn(res.stderr)).toEqual(['webapp/src/A.tsx::go::tick']);
   });
 
   it('очистка на два вызова от возвращённой функции — зелёный; никем не зовущий помощник — красный', () => {
@@ -266,7 +385,9 @@ describe('check-timer-cleanup.mjs', () => {
     ].join('\n');
     const res = run({ 'webapp/src/A.tsx': chain, 'webapp/src/B.tsx': orphan });
     expect(res.status).toBe(1);
-    expect(keysIn(res.stderr)).toEqual(['webapp/src/B.tsx::setShown']);
+    expect(keysIn(res.stderr)).toEqual([
+      'webapp/src/B.tsx::(модуль)::setShown',
+    ]);
   });
 
   it('класс: this.setState без componentWillUnmount — красный, с ним — зелёный', () => {
@@ -285,6 +406,8 @@ describe('check-timer-cleanup.mjs', () => {
       ),
     });
     expect(res.status).toBe(1);
-    expect(keysIn(res.stderr)).toEqual(['webapp/src/Bad.tsx::this.setState']);
+    expect(keysIn(res.stderr)).toEqual([
+      'webapp/src/Bad.tsx::show::this.setState',
+    ]);
   });
 });
