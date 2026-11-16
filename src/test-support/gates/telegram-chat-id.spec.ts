@@ -163,6 +163,224 @@ describe('check-telegram-chat-id.mjs', () => {
     expect(runGate('check-telegram-chat-id.mjs', files).status).toBe(0);
   });
 
+  // Отправщик полем параметра: push(s) → sendTg(s.chatId).
+  const PUSH =
+    'export async function push(s: { chatId: number }, text: string) {\n  await sendTg(Number(s.chatId), text);\n}\n';
+  // Два одноимённых send: канал шлёт в Telegram (адрес — аргумент 1), почта — нет.
+  const CHANNEL =
+    'export class Channel {\n  async send(post: Post, destination: string) {\n' +
+    '    await sendBounded(this.bot, destination, post.text, undefined);\n  }\n}\n';
+  const MAIL =
+    'export class Mail {\n  async send(to: string, subject: string) {\n' +
+    '    return this.transport.post(to, subject);\n  }\n}\n';
+  const caller = (field: string, call: string) =>
+    `export class Caller {\n  constructor(private readonly ${field}) {}\n  async go(userId: bigint) {\n    await ${call};\n  }\n}\n`;
+  // Источник объекта: функция возвращает литерал с адресом.
+  const settings = (chatId: string) =>
+    `export function toSettings(r: Row) {\n  return { tz: r.tz, chatId: ${chatId} };\n}\n`;
+  // Две функции notify: в tg/ шлёт в Telegram, в mail/ — письмо.
+  const NOTIFY_FILES = {
+    'src/tg/notify.ts':
+      'export async function notify(chatId: number) {\n  await sendTg(chatId, "x");\n}\n',
+    'src/mail/notify.ts':
+      'export async function notify(to: string) {\n  await mailer.post(to, "x");\n}\n',
+  };
+
+  it.each<[string, Record<string, string>, string]>([
+    [
+      'объект-переменная: поле из литерала',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/x/caller.ts': fn(
+          'const s = {\n  chatId: userId,\n};\nawait push(s, "hi");',
+        ),
+      },
+      'src/x/caller.ts:2: адрес отправки «userId» — id аккаунта, а не чат (через push)',
+    ],
+    [
+      'объект-переменная: присваивание поля',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/x/caller.ts': fn(
+          'const s = {} as P;\ns.chatId = user.id;\nawait push(s, "hi");',
+        ),
+      },
+      'src/x/caller.ts:3: адрес отправки «user.id» — id аккаунта, а не чат (через push)',
+    ],
+    [
+      'объект-переменная — параметр посредника',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/y/relay.ts':
+          'export async function relay(s: P) {\n  await push(s, "x");\n}\n',
+        'src/x/caller.ts': fn('await relay({ chatId: userId });'),
+      },
+      'src/x/caller.ts:2: адрес отправки «userId» — id аккаунта, а не чат (через relay)',
+    ],
+    [
+      'объект-переменная из функции-источника',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts': settings('r.userId'),
+        'src/x/caller.ts': fn(
+          'const s = toSettings(row);\nawait push(s, "hi");',
+        ),
+      },
+      'src/tg/settings.ts:2: адрес отправки «r.userId» — id аккаунта, а не чат (через push)',
+    ],
+    [
+      'метод по типу поля: this.channel.send',
+      {
+        'src/tg/channel.ts': CHANNEL,
+        'src/mail/mail.ts': MAIL,
+        'src/x/caller.ts': caller(
+          'channel: Channel',
+          'this.channel.send(post, String(userId))',
+        ),
+      },
+      'src/x/caller.ts:4: адрес отправки «String(userId)» — id аккаунта, а не чат (через send)',
+    ],
+    [
+      'метод по new: ch.send',
+      {
+        'src/tg/channel.ts': CHANNEL,
+        'src/mail/mail.ts': MAIL,
+        'src/x/caller.ts': fn(
+          'const ch = new Channel(bot);\nawait ch.send(post, uid);',
+        ),
+      },
+      'src/x/caller.ts:3: адрес отправки «uid» — id аккаунта, а не чат (через send)',
+    ],
+    [
+      'функция по импорту',
+      {
+        ...NOTIFY_FILES,
+        'src/x/caller.ts':
+          "import { notify } from '../tg/notify';\n" +
+          fn('await notify(userId);'),
+      },
+      'src/x/caller.ts:3: адрес отправки «userId» — id аккаунта, а не чат (через notify)',
+    ],
+  ])('красный, поток внутри функции: %s', (_name, files, line) => {
+    const res = runGate('check-telegram-chat-id.mjs', files);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(line);
+  });
+
+  it.each<[string, Record<string, string>]>([
+    [
+      'объект-переменная: в поле настоящий чат',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/x/caller.ts': fn(
+          'const s = { chatId: await telegramIdFor(prisma, userId), userId };\nawait push(s, "hi");',
+        ),
+      },
+    ],
+    [
+      'объект-переменная: присвоен настоящий чат',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/x/caller.ts': fn(
+          'const s = {} as P;\ns.chatId = chatId;\nawait push(s, String(userId));',
+        ),
+      },
+    ],
+    [
+      'посредник: вызывающий кладёт настоящий чат',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/y/relay.ts':
+          'export async function relay(s: P) {\n  await push(s, "x");\n}\n',
+        'src/x/caller.ts': fn('await relay({ chatId: tgId, userId });'),
+      },
+    ],
+    [
+      'источник берёт адрес из resolveChatId (AuthProvider)',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts': settings(
+          'resolveChatId(r.id, r.authProviders?.[0]?.providerId)',
+        ),
+        'src/x/caller.ts': fn(
+          'const s = toSettings(row);\nawait push(s, "hi");',
+        ),
+      },
+    ],
+    [
+      // Известный пропуск: что лежит в карте, без типов не узнать.
+      'известный пропуск: объект из map.get',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts': settings('r.userId'),
+        'src/x/caller.ts': fn(
+          'const s = byUser.get(String(userId));\nawait push(s, "hi");',
+        ),
+      },
+    ],
+    [
+      'метод по типу поля: this.mail.send не отправляет в Telegram',
+      {
+        'src/tg/channel.ts': CHANNEL,
+        'src/mail/mail.ts': MAIL,
+        'src/x/caller.ts': caller(
+          'mail: Mail',
+          'this.mail.send(String(userId), "subject")',
+        ),
+      },
+    ],
+    [
+      // Известный пропуск: тип получателя-цепочки в файле не виден — общий аргумент одноимённых.
+      'известный пропуск: this.deps.channel.send',
+      {
+        'src/tg/channel.ts': CHANNEL,
+        'src/mail/mail.ts': MAIL,
+        'src/x/caller.ts': caller(
+          'deps: Deps',
+          'this.deps.channel.send(post, String(userId))',
+        ),
+      },
+    ],
+    [
+      'функция по импорту: notify почты',
+      {
+        ...NOTIFY_FILES,
+        'src/x/caller.ts':
+          "import { notify } from '../mail/notify';\n" +
+          fn('await notify(userId);'),
+      },
+    ],
+  ])('контроль, поток внутри функции, зелёный: %s', (_name, files) => {
+    expect(runGate('check-telegram-chat-id.mjs', files).status).toBe(0);
+  });
+
+  it('telegram-chat-id-objects: источник объекта — вызов целиком', () => {
+    const got: unknown = JSON.parse(
+      importExport(
+        'telegram-chat-id-objects.mjs',
+        'callOf',
+        '(c) => [c("await toSettings(r)"), c("this.svc.make(r, 1)"), c("byUser.get(id) ?? fallback"), c("{ chatId }") ?? null]',
+      ),
+    );
+    expect(got).toEqual([
+      { pre: '', name: 'toSettings', open: -1 },
+      { pre: '.', recv: 'this.svc', name: 'make', open: -1 },
+      null,
+      null,
+    ]);
+  });
+
+  it('telegram-chat-id-resolve: класс получателя из типа поля, параметра и new', () => {
+    const got: unknown = JSON.parse(
+      importExport(
+        'telegram-chat-id-resolve.mjs',
+        'receiverClass',
+        '(r) => [r("constructor(private readonly mail: Mail) {}", "this.mail"), r("const ch = new Channel(bot);", "ch"), r("x: Pick<Mail, \\"send\\">,", "x"), r("a.b: Mail,", "this.a.b")]',
+      ),
+    );
+    expect(got).toEqual(['Mail', 'Channel', null, null]);
+  });
+
   it('telegram-chat-id-params: поле берётся из литерала, у объекта-переменной — нет', () => {
     const got: unknown = JSON.parse(
       importExport(

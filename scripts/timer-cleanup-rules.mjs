@@ -37,6 +37,18 @@ const codeOf = (raw) => blankStrings(stripComments(raw));
 const before = (code, at, n) => (at < 0 ? '' : code.slice(Math.max(0, at - n), at));
 const nameOf = (code, fn) => fn.name || CALLBACK_NAME.exec(before(code, fn.head, 80))?.[1] || '';
 
+/** Имя ближайшей именованной функции вокруг позиции at (компонент, хук, обработчик,
+ *  `const x = useCallback(…)`); безымянные колбэки (`useEffect(() => …)`) пропускаются
+ *  наружу. Вне функций — ''. */
+function enclosingName(code, fns, at) {
+  let best = null;
+  for (const fn of fns) {
+    if (fn.start > at || fn.end <= at || !nameOf(code, fn)) continue;
+    if (!best || fn.start > best.start) best = fn;
+  }
+  return best ? nameOf(code, best) : '';
+}
+
 /** Что меняет колбэк: `setX`, `onDone`, `props.onDone`, `dispatch`, имя своей функции; иначе null. */
 function changeOf(callback, code, fns) {
   const arg = callback.trim();
@@ -101,7 +113,8 @@ function clearedInCleanup(code, fns, anywhere = false) {
   return names;
 }
 
-/** Таймеры, меняющие состояние без своей очистки: [{ line, change }]. */
+/** Таймеры, меняющие состояние без своей очистки: [{ line, fn, change }], fn — имя
+ *  охватывающей функции (enclosingName). */
 export function uncleanedTimers(raw) {
   const code = codeOf(raw);
   const fns = functionsOf(code);
@@ -115,7 +128,7 @@ export function uncleanedTimers(raw) {
     if (!change) continue;
     const holder = holderOf(code, m.index);
     const set = direct ? (cleared ??= clearedInCleanup(code, fns)) : (clearedAny ??= clearedInCleanup(code, fns, true));
-    if (!holder || !set.has(holder)) found.push({ line: lineAt(code, m.index), change });
+    if (!holder || !set.has(holder)) found.push({ line: lineAt(code, m.index), fn: enclosingName(code, fns, m.index), change });
   }
   return found;
 }
