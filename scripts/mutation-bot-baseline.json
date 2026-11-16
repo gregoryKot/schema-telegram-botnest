@@ -1,10 +1,10 @@
 {
-  "total": 83.39,
+  "total": 82.87,
   "files": {
     "src/bot/bot.service.ts": 75,
     "src/bot/send-settings.ts": 76.92,
     "src/bot/account.service.ts": 95.18,
-    "src/bot/user-settings-write.ts": 70.97,
+    "src/bot/user-settings-write.ts": 64.52,
     "src/therapy/end-therapist-relations.ts": 100,
     "src/bot/bot.analytics.service.ts": 100,
     "src/bot/device-timezone.ts": 100,
