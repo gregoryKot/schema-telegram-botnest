@@ -27,7 +27,9 @@ const lintSample = (text: string, filePath: string) =>
     cwd: WEBAPP,
     overrideConfig: {
       files: ['src/**/*.{ts,tsx}'],
-      languageOptions: { parserOptions: { disallowAutomaticSingleRunInference: true } },
+      languageOptions: {
+        parserOptions: { disallowAutomaticSingleRunInference: true },
+      },
     },
   }).lintText(text, { filePath });
 
