@@ -39,7 +39,7 @@ describe('JourneyDetailLayer', () => {
     const onClose = vi.fn();
     render(<MemoryRouter initialEntries={['/', '/more']} initialIndex={1}><Host onClose={onClose} /></MemoryRouter>);
     expect(snap.depth).toBe(1);
-    act(() => snap.nav!(-1));
+    act(() => { snap.nav!(-1); });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

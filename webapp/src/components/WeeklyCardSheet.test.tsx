@@ -186,7 +186,7 @@ describe('WeeklyCardSheet — шаринг: отказ показывает те
     fireEvent.click(screen.getByText('Поделиться'));
     await screen.findByText('Поделиться текстом');
     await act(async () => {}); // запись истории шторки доезжает после рендера
-    act(() => navRef.go!(-1));
+    act(() => { navRef.go!(-1); });
     await waitFor(() => expect(screen.queryByText('Поделиться текстом')).toBeNull());
     expect(onClose).not.toHaveBeenCalled();
   });

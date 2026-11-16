@@ -190,7 +190,7 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     fireEvent.click(within(textarea.closest('section')!).getByRole('button', { name: 'Удалить' }));
     screen.getByRole('dialog', { name: 'Удалить фразу?' });
-    act(() => nav.go!(-1));
+    act(() => { nav.go!(-1); });
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Удалить фразу?' })).toBeNull());
     expect(mockApi.adminDeletePhrase).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();

@@ -38,7 +38,8 @@ describe('useSavingAction', () => {
   it('повторный run во время выполнения игнорируется — защита от двойного нажатия', async () => {
     const { result } = renderHook(() => useSavingAction());
     const fn = vi.fn(() => new Promise<void>(() => {})); // никогда не резолвится
-    act(() => { result.current.run(fn); });
+    // fn не резолвится никогда, ждать run нельзя — промис брошен намеренно.
+    act(() => { void result.current.run(fn); });
     await waitFor(() => expect(result.current.saving).toBe(true));
 
     let second!: boolean;

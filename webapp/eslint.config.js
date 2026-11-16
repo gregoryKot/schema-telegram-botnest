@@ -40,26 +40,22 @@ export default defineConfig([
     },
   },
   {
-    // Правило №9: no-floating-promises — error и на сайте. До 2026-11 этот файл
-    // линтовал webapp без типов, и админская отмена брони с `.then(load)` без
-    // catch прожила незамеченной. Правилу нужны типы — typed linting через
-    // projectService (webapp/tsconfig.json → references → tsconfig.app.json).
+    // Правило №9: no-floating-promises — error на всём сайте, тесты включительно.
+    // До 2026-11 этот файл линтовал webapp без типов, и админская отмена брони
+    // с `.then(load)` без catch прожила незамеченной. Правилу нужны типы —
+    // typed linting.
     //
-    // Только прод-код. Тестов в tsconfig.app.json нет, `allowDefaultProject` не
-    // берёт `**` и держит ≤8 файлов, а отдельный tsconfig на 600+ тестов удвоил
-    // бы время линта ради класса, который и так ловится: брошенный промис в
-    // тесте, упав, даёт unhandled rejection, и vitest валит прогон. Сбой у
-    // пользователя молчит — его ловит только это правило. Тестовая
-    // инфраструктура (`test-support`, `*.test-helpers.*`) — вне правила так же.
+    // Программа одна — tsconfig.test.json (#1218): он = tsconfig.app.json плюс
+    // тесты, `test-support` и `*.test-helpers.*`. Прежде прод шёл через
+    // projectService, а тесты были вне правила: в tsconfig.app.json их нет,
+    // `allowDefaultProject` не берёт `**`. Брошенный в тесте промис не всегда
+    // валит прогон: отказ после конца теста или `act(() => promise)` без await
+    // теряют проверку молча. Цена — время линта: `time npx eslint src` в webapp
+    // против того же с конфигом main до #1315 (`-c`) — ≈38 с против ≈31 с.
     files: ['src/**/*.{ts,tsx}'],
-    ignores: [
-      'src/**/*.test.{ts,tsx}',
-      'src/**/*.test-helpers.{ts,tsx}',
-      'src/test-support/**',
-    ],
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        project: './tsconfig.test.json',
         tsconfigRootDir: import.meta.dirname,
       },
     },

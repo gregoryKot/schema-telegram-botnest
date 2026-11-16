@@ -62,7 +62,7 @@ describe('useHostBackButton', () => {
     });
     expect(bb.show).toHaveBeenCalledTimes(1);
     bb.hide.mockClear();
-    act(() => view.result.current.nav(-1));
+    act(() => { view.result.current.nav(-1); });
     expect(bb.hide).toHaveBeenCalled();
   });
 

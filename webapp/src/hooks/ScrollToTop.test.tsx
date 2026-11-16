@@ -25,10 +25,10 @@ describe('ScrollToTop', () => {
   it('переход по ссылке сбрасывает прокрутку, «Назад» — нет', () => {
     render(<MemoryRouter initialEntries={['/diary']}><Spy /><ScrollToTop /></MemoryRouter>);
     expect(scrollTo).not.toHaveBeenCalled();
-    act(() => snap.nav!('/today'));
+    act(() => { snap.nav!('/today'); });
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     scrollTo.mockClear();
-    act(() => snap.nav!(-1));
+    act(() => { snap.nav!(-1); });
     expect(scrollTo).not.toHaveBeenCalled();
   });
 });
