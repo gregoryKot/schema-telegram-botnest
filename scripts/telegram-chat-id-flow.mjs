@@ -8,18 +8,22 @@
 // Межфайловый шаг: функция, чей параметр доходит до адреса (сам, через
 // приведение или одну переменную), сама становится отправщиком, и этот
 // аргумент проверяется у всех её вызывающих — до неподвижной точки
-// (`notify(userId)` → `sendTg(id)` в соседнем файле, класс #456). Вызов
-// `this.x(`/`x(` ищет объявление сначала в своём файле, `obj.x(` — по имени во
-// всём src/**; у нескольких одноимённых объявлений аргумент адресный, только
-// если он адресный у каждого: иначе `send` почты, очереди и канала слились бы
-// в одного «отправщика». Слепые зоны: адрес полем параметра (`s.chatId`,
-// `({ chatId })`): параметр-объект, поле которого доходит до адреса, делает функцию
-// отправщиком, и поле берётся из литерала `f({ chatId: userId })` (объект-переменная
-// и адрес из `resolveChatId` по данным не прослеживаются). Слепая зона: одноимённые
-// функции, из которых отправляет не каждая.
+// (`notify(userId)` → `sendTg(id)` в соседнем файле, класс #456). Куда ведёт
+// вызов, решает `telegram-chat-id-resolve.mjs`: свой файл, импорт, класс
+// получателя (`this.mail.send(` → `mail: Mail`). Не разрешился — все
+// одноимённые объявления src/**, и аргумент адресный, только если он адресный
+// у каждого: иначе `send` почты, очереди и канала слились бы в одного
+// «отправщика». Адрес полем параметра (`s.chatId`, `({ chatId })`) берётся из
+// литерала вызова `f({ chatId: userId })`, а у объекта-переменной `f(s)` — из
+// её литерала, присваивания или литерала, который возвращает функция-источник
+// (`telegram-chat-id-objects.mjs`; `resolveChatId`/`telegramIdFor` там —
+// законный адрес). Слепые зоны (образцы — в спеке): получатель без типа в
+// файле (`this.deps.bot.send(`), источник без объявления (`map.get(id)`).
 import { lineAt } from './gate-balance.mjs';
 import { callArgs, functionsOf } from './gate-functions.mjs';
+import { objectField } from './telegram-chat-id-objects.mjs';
 import { declaring, fieldOf } from './telegram-chat-id-params.mjs';
+import { resolveDefs } from './telegram-chat-id-resolve.mjs';
 
 const API_RE = /\.(?:sendMessage|sendPhoto|sendDocument|sendVideo|sendAnimation|sendMediaGroup|sendChatAction|copyMessage|forwardMessage)\s*\(/g;
 const CHAT_ID_RE = /\bchat_id\s*:\s*([^,}\n]+)/g;
@@ -57,7 +61,12 @@ function sourceNames(expr, src) {
 /** files: [{ rel, src, report }] с вырезанными комментариями → [{ rel, line, expr, via }]. */
 export function findViolations(files) {
   const parsed = new Map();
-  const fnsOf = (f) => parsed.get(f) ?? parsed.set(f, functionsOf(f.src)).get(f);
+  const homeOf = new Map(); // объявление → файл
+  const fnsOf = (f) => {
+    if (!parsed.has(f)) parsed.set(f, functionsOf(f.src));
+    for (const fn of parsed.get(f)) homeOf.set(fn, f);
+    return parsed.get(f);
+  };
   const addr = new Map(); // объявление → индексы адресных параметров
   const byName = new Map();
   const named = (name) => {
@@ -67,18 +76,21 @@ export function findViolations(files) {
     }
     return byName.get(name);
   };
+  // Объявления вызова: разрешённые (свой файл, импорт, класс) или все одноимённые.
+  const defsOf = (f, call) => resolveDefs(files, f, fnsOf, call) ?? named(call.name);
+  // Источник объекта-переменной — только разрешённый или единственный одноимённый.
+  const defsFor = (f, call) => resolveDefs(files, f, fnsOf, call) ?? (named(call.name).length === 1 ? named(call.name) : []);
+  const ctx = { fnsOf, homeOf: (fn) => homeOf.get(fn), defsFor };
   // Адресные аргументы вызова name(: общие для всех объявлений, куда он ведёт.
-  const addressArgs = (f, pre, name, open) => {
-    const local = pre === '.' ? [] : fnsOf(f).filter((fn) => fn.name === name && !fn.inert && fn.head !== open);
-    const defs = local.length ? local : named(name);
-    const sets = defs.map((d) => addr.get(d) ?? new Set());
+  const addressArgs = (f, call) => {
+    const sets = defsOf(f, call).map((d) => addr.get(d) ?? new Set());
     const ks = sets.length ? [...sets[0]].filter((k) => sets.every((s) => s.has(k))) : [];
-    return name in SEED_SENDERS ? [...new Set([SEED_SENDERS[name], ...ks])] : ks;
+    return call.name in SEED_SENDERS ? [...new Set([SEED_SENDERS[call.name], ...ks])] : ks;
   };
   const sites = (f) => {
     const out = [];
-    for (const m of f.src.matchAll(API_RE)) out.push({ at: m.index, target: callArgs(f.src, m.index + m[0].length - 1)[0] });
-    for (const m of f.src.matchAll(CHAT_ID_RE)) out.push({ at: m.index, target: m[1] });
+    for (const m of f.src.matchAll(API_RE)) out.push({ file: f, at: m.index, target: callArgs(f.src, m.index + m[0].length - 1)[0] });
+    for (const m of f.src.matchAll(CHAT_ID_RE)) out.push({ file: f, at: m.index, target: m[1] });
     const names = new Set([...Object.keys(SEED_SENDERS), ...[...addr.keys()].map((d) => d.name)]);
     const callRe = new RegExp(String.raw`(?:((?<![\w$])this\.|\.)\s*)?(?<![\w$])(${[...names].map(esc).join('|')})\s*\(`, 'g');
     for (const m of f.src.matchAll(callRe)) {
@@ -86,10 +98,16 @@ export function findViolations(files) {
       if (fnsOf(f).some((fn) => fn.head === open)) continue; // объявление, а не вызов
       const list = callArgs(f.src, open);
       const via = m[2] in SEED_SENDERS ? undefined : m[2];
-      for (const k of addressArgs(f, m[1] === '.' ? '.' : m[1] ?? '', m[2], open)) {
+      const pre = m[1] === '.' ? '.' : m[1] ?? '';
+      const recv = pre === '.' ? /((?:this\.)?[A-Za-z_$][\w$]*)\s*$/.exec(f.src.slice(Math.max(0, m.index - 80), m.index))?.[1] : undefined;
+      for (const k of addressArgs(f, { pre, name: m[2], recv, open })) {
         const [i, field] = String(k).split('.');
-        const target = field ? fieldOf(list[i] ?? '', field) : list[i];
-        if (target) out.push({ at: m.index, target, via });
+        const arg = list[i] ?? '';
+        const target = field ? fieldOf(arg, field) : arg;
+        if (target) out.push({ file: f, at: m.index, target, via });
+        else if (field && /^[A-Za-z_$][\w$]*$/.test(arg.trim())) {
+          for (const o of objectField(f, arg.trim(), field, m.index, ctx)) out.push({ ...o, via });
+        }
       }
     }
     return out.filter((s) => s.target);
@@ -98,7 +116,8 @@ export function findViolations(files) {
     changed = false;
     for (const f of files) {
       for (const s of sites(f)) {
-        const hit = sourceNames(s.target, f.src).map((n) => declaring(fnsOf(f), f.src, s.at, n)).find(Boolean);
+        const { src } = s.file;
+        const hit = sourceNames(s.target, src).map((n) => declaring(fnsOf(s.file), src, s.at, n)).find(Boolean);
         if (!hit) continue;
         const ks = addr.get(hit.fn) ?? new Set();
         if (!ks.has(hit.k)) { addr.set(hit.fn, ks.add(hit.k)); changed = true; }
@@ -106,13 +125,13 @@ export function findViolations(files) {
     }
   }
   const found = [];
-  for (const f of files.filter((x) => x.report)) {
-    const seen = new Set();
+  const seen = new Set();
+  for (const f of files) {
     for (const s of sites(f)) {
-      const key = `${s.at}:${norm(s.target)}`;
-      if (seen.has(key) || !isAccountId(s.target, f.src)) continue;
+      const key = `${s.file.rel}:${s.at}:${norm(s.target)}`;
+      if (!s.file.report || s.synthetic || seen.has(key) || !isAccountId(s.target, s.file.src)) continue;
       seen.add(key);
-      found.push({ rel: f.rel, line: lineAt(f.src, s.at), expr: norm(s.target), via: s.via });
+      found.push({ rel: s.file.rel, line: lineAt(s.file.src, s.at), expr: norm(s.target), via: s.via });
     }
   }
   return found;

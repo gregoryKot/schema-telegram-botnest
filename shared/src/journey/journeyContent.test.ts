@@ -312,12 +312,16 @@ describe('fetchJourneyResult — ysq (id из истории и фолбэк с�
         1: {
           id: 1,
           completedAt: '2026-01-01',
-          scores: [{ id: 'Покорность', pct5plus: 60, avg: 4.5 }],
+          scores: [{ id: 'subjugation', pct5plus: 60, avg: 4.5 }],
         },
       }),
     });
     const result = await fetchJourneyResult(api, item({ type: 'ysq', id: 1 }));
     expect(result?.ysq?.activeCount).toBe(1);
+    expect(result?.ysq?.scores['Покорность']).toEqual({
+      pct5plus: 60,
+      avg: 4.5,
+    });
   });
 
   it('без id (старый юзер): считает схемы из сохранённых ответов теста, не из истории', async () => {

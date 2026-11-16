@@ -41,9 +41,6 @@
     "src/auth/security-log-redact.ts",
     "src/donation/donation.service.ts"
   ],
-  "mutator": {
-    "excludedMutations": ["CallExpression"]
-  },
   "reporters": [
     "clear-text",
     "progress",

@@ -1,5 +1,14 @@
 {
-  "webapp/src/components/ModeMapCanvas.tsx::setViewport": "setTimeout(…, 0) зовёт setViewport стора ReactFlow (useReactFlow), а не setState компонента; таймер до 10 мс до сноса jsdom ждёт afterAll(settleUnmountTimers) в rtlCleanup.ts, а очистка в эффекте потеряла бы восстановление вида при перезапуске эффекта (restoredVp уже true)",
-  "webapp/src/components/flashcard/FlashcardDoneScreen.tsx::onOpenTracker": "переход после закрытия листа: goBack() снимает лист, через 100 мс колбэк родителя открывает трекер — очистка на размонтировании листа отменила бы сам переход; родитель смонтирован, тест прокручивает таймер фейковым временем (SchemaFlashcard.test.tsx)",
-  "webapp/src/pages/landing/nav.tsx::onBook": "переход после закрытия меню: goBack() снимает меню, через 60 мс колбэк родителя открывает запись — очистка на размонтировании меню отменила бы сам переход; родитель смонтирован, тест прокручивает таймер фейковым временем (nav.test.tsx)"
+  "webapp/src/components/ModeMapCanvas.tsx::ModeMapCanvas::setViewport": {
+    "count": 1,
+    "reason": "setTimeout(…, 0) зовёт setViewport стора ReactFlow (useReactFlow), а не setState компонента; таймер до 10 мс до сноса jsdom ждёт afterAll(settleUnmountTimers) в rtlCleanup.ts, а очистка в эффекте потеряла бы восстановление вида при перезапуске эффекта (restoredVp уже true)"
+  },
+  "webapp/src/components/flashcard/FlashcardDoneScreen.tsx::FlashcardDoneScreen::onOpenTracker": {
+    "count": 1,
+    "reason": "переход после закрытия листа: goBack() снимает лист, через 100 мс колбэк родителя открывает трекер — очистка на размонтировании листа отменила бы сам переход; родитель смонтирован, тест прокручивает таймер фейковым временем (SchemaFlashcard.test.tsx)"
+  },
+  "webapp/src/pages/landing/nav.tsx::MobileMenu::onBook": {
+    "count": 1,
+    "reason": "переход после закрытия меню: goBack() снимает меню, через 60 мс колбэк родителя открывает запись — очистка на размонтировании меню отменила бы сам переход; родитель смонтирован, тест прокручивает таймер фейковым временем (nav.test.tsx)"
+  }
 }

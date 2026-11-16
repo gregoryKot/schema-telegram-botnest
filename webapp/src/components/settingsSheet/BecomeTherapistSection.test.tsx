@@ -17,8 +17,9 @@ vi.mock('../../api', () => ({
     getTherapistRequest: vi.fn(),
     submitTherapistRequest: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
-import { api } from '../../api';
+import { api, reportClientError } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 beforeEach(() => {
@@ -34,6 +35,25 @@ function renderWithForm(form: 'ty' | 'vy' = 'ty') {
 }
 
 describe('BecomeTherapistSection — статусы заявки', () => {
+  it('загрузка — силуэт, без приглашения подать заявку', () => {
+    mockApi.getTherapistRequest.mockReturnValue(new Promise(() => {}));
+    renderWithForm();
+    expect(screen.getByLabelText('Загружается заявка').getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByText('Я психолог — подать заявку')).toBeNull();
+  });
+
+  it('сбой загрузки — «Не загрузилось» и отчёт наверх, а не форма; «Повторить» перечитывает', async () => {
+    mockApi.getTherapistRequest.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    renderWithForm();
+    expect(await screen.findByText('Не загрузилось.')).toBeTruthy();
+    expect(screen.queryByText('Я психолог — подать заявку')).toBeNull();
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'therapist request load failed: network', section: 'settings' });
+    mockApi.getTherapistRequest.mockResolvedValue({ status: 'pending', rejectReason: null });
+    fireEvent.click(screen.getByText('Повторить'));
+    await screen.findByText(THERAPIST_REQUEST_PENDING);
+    expect(mockApi.getTherapistRequest).toHaveBeenCalledTimes(2);
+  });
+
   it('нет заявки — кнопка «Я психолог — подать заявку»', async () => {
     mockApi.getTherapistRequest.mockResolvedValue(null);
     renderWithForm();
@@ -62,11 +82,6 @@ describe('BecomeTherapistSection — статусы заявки', () => {
     expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
   });
 
-  it('getTherapistRequest() падает — форма доступна как для новой заявки', async () => {
-    mockApi.getTherapistRequest.mockRejectedValue(new Error('network down'));
-    renderWithForm();
-    await screen.findByText('Я психолог — подать заявку');
-  });
 });
 
 describe('BecomeTherapistSection — клиентская валидация (ты/вы)', () => {

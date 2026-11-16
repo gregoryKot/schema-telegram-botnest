@@ -125,19 +125,18 @@
   A/B не делали, а код загрузки исполняет любой импортирующий спек, и кто из них
   единственный судья, не известно. Сейчас они Ignored (`ignoreStatic: true`);
   включая статику (запись выше) — мерить заново.
-- **Мутатор `CallExpression` из Stryker 10 выключен во всех `stryker*.json`**
-  (`mutator.excludedMutations`, с перехода на Stryker 10). Он стирает вызов-оператор
-  (`foo();` → `;`), `throw new X()` и вызов внутри выражения (→ `void 0`), если в
-  нём нет других мутантов. На файлах зон — +36 мутантов к 2780 (подсчёт
-  инструментерами 9.6.1 и 10.0.0, по остальным мутаторам числа совпали):
-  `ratingOutbox.ts` +7, `crypto-record.ts` +6, `payment.booking-webhook.ts` +4,
-  прочие по 1–2. Десять из них — вызовы `logger.warn/error/log`, два —
-  запись в кэш форматтеров `tz.ts:13,76` (эквивалентные: без кэша результат тот
-  же). При полах 100% (`tz.ts`, `security-log.service.ts`) даже один выживший роняет
-  ночной храповик за допуск 1,5 п.п., поэтому включение — отдельным PR: снять
-  исключение, прогнать волны, выживших закрыть тестом или
-  `// Stryker disable next-line CallExpression` с причиной, полы — `--update`
-  по ночному прогону.
+- **Мутатор `CallExpression` из Stryker 10 выключен в волне golden-auth**
+  (`mutator.excludedMutations` в `stryker.golden-auth.config.json`, с перехода
+  на Stryker 10). Он стирает вызов-оператор (`foo();` → `;`), `throw new X()` и
+  вызов внутри выражения (→ `void 0`), если в нём нет других мутантов. В
+  остальных волнах (bot, golden-payments, crisis, outbox, зонтичный
+  `stryker.config.json`) включён: выжили два `logger.warn` в
+  `payment.booking-webhook.ts` (помечены `// Stryker disable next-line
+  CallExpression` с причиной) и `removeLocal` в `ratingOutbox.ts` (закрыт
+  тестом). В golden-auth по подсчёту инструментером — +6 мутантов в
+  `crypto-record.ts` и по 1–2 в прочих файлах. Включение — отдельным PR
+  (строка в `docs/BACKLOG.md`): снять исключение, прогнать волну, выживших
+  закрыть тестом или пометкой с причиной, полы — `--update` по прогону.
 - **Таймаутов у шагов `ci.yml` нет, потолок только у джоб.** Гейт
   `src/test-support/gates/job-timeouts.spec.ts` требует `timeout-minutes`
   на уровне джобы; шаг (`vitest`, `migrate deploy`) может занять весь потолок
