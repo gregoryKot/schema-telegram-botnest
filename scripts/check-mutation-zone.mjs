@@ -49,7 +49,7 @@ function walk(dir, out = []) {
   for (const e of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
     const rel = `${dir}/${e.name}`;
     if (e.isDirectory()) {
-      if (!SKIP_DIRS.has(e.name)) walk(rel, out);
+      if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('.')) walk(rel, out);
     } else if (
       /\.tsx?$/.test(e.name) &&
       !/\.d\.ts$/.test(e.name) &&

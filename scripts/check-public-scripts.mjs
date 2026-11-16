@@ -23,7 +23,7 @@ function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (entry === 'node_modules' || entry === 'dist') continue;
+    if (/^(node_modules|dist|\.jest-cache|\.vite|\.turbo|\.git)$/.test(entry)) continue;
     statSync(full).isDirectory() ? walk(full, out) : out.push(full);
   }
   return out;

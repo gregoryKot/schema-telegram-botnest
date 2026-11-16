@@ -48,7 +48,7 @@ const TEST_FILE = /\.(spec|test)\.(ts|tsx)$|\.test-helpers\.|\/test-support\/|\.
 function walk(dir, acc = []) {
   const abs = join(ROOT, dir);
   if (!existsSync(abs)) return acc;
-  for (const name of readdirSync(abs)) {
+  for (const name of readdirSync(abs).filter((n) => !n.startsWith('.'))) {
     const rel = `${dir}/${name}`;
     if (statSync(join(ROOT, rel)).isDirectory()) {
       if (name !== 'node_modules' && name !== 'dist') walk(rel, acc);

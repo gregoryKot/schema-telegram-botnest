@@ -31,7 +31,7 @@ const FONT_SIZE_RE = /fontSize:\s*['"]?(\d+(?:\.\d+)?)/g;
 function walk(dir, acc = []) {
   let entries;
   try {
-    entries = readdirSync(join(ROOT, dir));
+    entries = readdirSync(join(ROOT, dir)).filter((n) => !n.startsWith('.'));
   } catch {
     return acc;
   }
