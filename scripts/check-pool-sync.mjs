@@ -62,14 +62,6 @@ function extractBalanced(text, from) {
   return null;
 }
 
-function walk(dir, acc = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, acc);
-  }
-  return acc;
-}
-
 // Каталоги миграций в хронологическом порядке (имена начинаются с
 // сортируемого timestamp-префикса — лексикографический порядок = временной).
 const migrationDirs = readdirSync(MIGRATIONS_DIR)

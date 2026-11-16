@@ -43,7 +43,7 @@ const ROOT = resolve(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'cron-leader-baseline.json');
 
 function walk(dir, acc = []) {
-  for (const name of readdirSync(join(ROOT, dir))) {
+  for (const name of readdirSync(join(ROOT, dir)).filter((n) => !n.startsWith('.'))) {
     const rel = `${dir}/${name}`;
     const st = statSync(join(ROOT, rel));
     if (st.isDirectory()) {

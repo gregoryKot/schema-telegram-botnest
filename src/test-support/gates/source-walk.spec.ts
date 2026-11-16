@@ -20,115 +20,19 @@
 // ALLOW-списка нет (правило №15: не замалчивать). Список файлов берётся из git,
 // а не собственным обходом — иначе гейт сам стал бы нарушителем.
 //
-// За рамками сознательно: scripts/check-*.mjs (33 однофайловых гейта обходят
-// дерево через readdirSync+statSync без пропуска скрытых). В CI они идут
-// отдельными шагами ПОСЛЕ jest или в джобе без кэша jest, а их спеки гоняют
-// их в песочнице tmp, где `.jest-cache` нет, — конкурентной записи нет, гонки
-// нет. Остаточный риск: ручной параллельный запуск гейтов при живом jest;
-// запись в docs/README.md → «Что осталось открытым».
+// scripts/check-*.mjs через collectSourceFiles не ходят: каждый гейт обязан
+// быть самодостаточным (спеки гоняют его в песочнице tmp поодиночке). Зато
+// рекурсивный обход в них обязан пропускать скрытые каталоги — `.jest-cache`
+// и прочие кэши, — иначе ручной запуск гейта при живом jest падает на той же
+// гонке удаления. Это держит второй describe ниже: статическая сверка всех
+// гейтов + песочница на образцах каждой формы обхода.
 import { execFileSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-import * as ts from 'typescript';
+import { runGate } from './gate-sandbox';
+import { ALLOWED_WALKER, walkViolations } from './source-walk-rules';
 
 const ROOT = process.cwd();
-const ALLOWED_WALKER = 'src/security/collect-source-files.ts';
-const READ_DIR = /^(?:readdir|readdirSync|opendir|opendirSync)$/;
-const STAT = /^(?:statSync|lstatSync|stat|lstat)$/;
-
-type FnLike = ts.FunctionLikeDeclaration | ts.SourceFile;
-
-const isFn = (n: ts.Node): n is ts.FunctionLikeDeclaration =>
-  ts.isFunctionDeclaration(n) ||
-  ts.isFunctionExpression(n) ||
-  ts.isArrowFunction(n) ||
-  ts.isMethodDeclaration(n);
-
-/** Имя вызываемого: `foo(` → foo, `a.b.foo(` → foo. */
-function calleeName(call: ts.CallExpression): string | null {
-  const e = call.expression;
-  if (ts.isIdentifier(e)) return e.text;
-  if (ts.isPropertyAccessExpression(e)) return e.name.text;
-  return null;
-}
-
-function nearestFn(node: ts.Node): FnLike {
-  let p: ts.Node = node.parent;
-  while (!isFn(p) && !ts.isSourceFile(p)) p = p.parent;
-  return p;
-}
-
-/** Имя функции: декларация, метод или `const x = () => …`. */
-function fnName(fn: FnLike): string | null {
-  if (ts.isSourceFile(fn)) return null;
-  if (fn.name && (ts.isIdentifier(fn.name) || ts.isPrivateIdentifier(fn.name)))
-    return fn.name.text;
-  const p = fn.parent;
-  if (p && ts.isVariableDeclaration(p) && ts.isIdentifier(p.name))
-    return p.name.text;
-  if (p && ts.isPropertyAssignment(p) && ts.isIdentifier(p.name))
-    return p.name.text;
-  return null;
-}
-
-function hasRecursiveTrue(call: ts.CallExpression): boolean {
-  return call.arguments.some(
-    (a) =>
-      ts.isObjectLiteralExpression(a) &&
-      a.properties.some(
-        (pr) =>
-          ts.isPropertyAssignment(pr) &&
-          pr.name.getText() === 'recursive' &&
-          pr.initializer.kind === ts.SyntaxKind.TrueKeyword,
-      ),
-  );
-}
-
-const hasFnAncestor = (n: ts.Node, stop: ts.Node): boolean => {
-  for (let p = n.parent; p && p !== stop; p = p.parent)
-    if (isFn(p)) return true;
-  return false;
-};
-
-interface Walk {
-  line: number;
-  reason: string;
-}
-
-/** Все вызовы чтения каталога в коде и причины, по которым они — обход. */
-export function walkViolations(path: string, code: string): Walk[] {
-  if (path === ALLOWED_WALKER) return [];
-  const sf = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true);
-  const calls: ts.CallExpression[] = [];
-  const visit = (n: ts.Node) => {
-    if (ts.isCallExpression(n)) calls.push(n);
-    ts.forEachChild(n, visit);
-  };
-  visit(sf);
-
-  const out: Walk[] = [];
-  for (const call of calls) {
-    const name = calleeName(call);
-    if (!name || !READ_DIR.test(name)) continue;
-    const line = sf.getLineAndCharacterOfPosition(call.getStart()).line + 1;
-    const scope = nearestFn(call);
-    const reasons: string[] = [];
-    if (hasRecursiveTrue(call)) reasons.push(`${name}(…, { recursive: true })`);
-    const own = fnName(scope);
-    const inScope = calls.filter(
-      (c) =>
-        (ts.isSourceFile(scope)
-          ? !hasFnAncestor(c, scope)
-          : c.pos >= scope.pos && c.end <= scope.end) && c !== call,
-    );
-    if (own && inScope.some((c) => calleeName(c) === own))
-      reasons.push(`${own}() вызывает сама себя (ручная рекурсия)`);
-    if (inScope.some((c) => STAT.test(calleeName(c) ?? '')))
-      reasons.push('stat рядом с чтением каталога (гонка с кэшем jest)');
-    for (const reason of reasons) out.push({ line, reason });
-  }
-  return out;
-}
 
 function trackedSources(): string[] {
   return execFileSync(
@@ -284,4 +188,100 @@ describe('обход дерева исходников — только чере
       ]);
     });
   });
+});
+
+// Гейты-скрипты: рекурсия по каталогам — только с пропуском скрытых. Пропуск —
+// `startsWith('.')` либо явный список кэшей (`\.jest-cache`…) там, где гейт
+// обязан видеть скрытое (public-scripts: `public/.well-known` уходит в сайт).
+const HIDDEN_SKIP = /startsWith\('\.'\)|\\\.jest-cache/;
+// Ещё без пропуска — оба в docs/BACKLOG.md: telegram-chat-id ведёт пакет
+// c3-11, dead-end-report выпал из аудита. Починил — убери из списка (тест
+// «исключение не шире нужного» напомнит).
+const NOT_YET = new Set([
+  'check-telegram-chat-id.mjs',
+  'check-dead-end-report.mjs',
+]);
+const RECURSION = /вызывает сама себя|recursive: true/;
+
+describe('гейты scripts/check-*.mjs не заходят в скрытые каталоги', () => {
+  const scriptsDir = join(ROOT, 'scripts');
+  const gates = readdirSync(scriptsDir).filter((f) =>
+    /^check-.*\.mjs$/.test(f),
+  );
+  const walkers = gates.filter((f) =>
+    walkViolations(f, readFileSync(join(scriptsDir, f), 'utf8')).some((v) =>
+      RECURSION.test(v.reason),
+    ),
+  );
+
+  it('каждый рекурсивный обходчик пропускает скрытые каталоги', () => {
+    const missing = walkers.filter(
+      (f) =>
+        !NOT_YET.has(f) &&
+        !HIDDEN_SKIP.test(readFileSync(join(scriptsDir, f), 'utf8')),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('исключение не шире нужного: каждый из NOT_YET ещё без пропуска', () => {
+    const fixed = [...NOT_YET].filter(
+      (f) =>
+        !walkers.includes(f) ||
+        HIDDEN_SKIP.test(readFileSync(join(scriptsDir, f), 'utf8')),
+    );
+    expect(fixed).toEqual([]);
+  });
+
+  it('сверка не слепа: обходчиков десятки, образцы ниже среди них', () => {
+    expect(walkers.length).toBeGreaterThanOrEqual(30);
+    expect(walkers).toEqual(
+      expect.arrayContaining([
+        'check-legacy-name.mjs',
+        'check-route-collisions.mjs',
+        'check-hover-only-reveal.mjs',
+      ]),
+    );
+  });
+
+  // Общий образец: одно и то же нарушение в скрытом каталоге гейт не читает,
+  // а в обычном подкаталоге — ловит (контроль, что пропуск не шире нужного).
+  const route = (ctrl: string) =>
+    `@Controller('${ctrl}') class C { @Get('x') x() {} }\n`;
+  const samples: Array<[string, (dir: string) => Record<string, string>]> = [
+    [
+      'check-legacy-name.mjs',
+      (dir) => ({
+        [`webapp/src/${dir}/x.ts`]: "export const t = 'СхемаЛаб';\n",
+      }),
+    ],
+    [
+      'check-route-collisions.mjs',
+      (dir) => ({
+        'src/a.controller.ts': route('a'),
+        [`src/${dir}/b.controller.ts`]: route('a'),
+      }),
+    ],
+    [
+      'check-hover-only-reveal.mjs',
+      (dir) => ({
+        [`webapp/src/${dir}/a.css`]:
+          '.x { opacity: 0; }\n.r:hover .x { opacity: 1; }\n',
+      }),
+    ],
+  ];
+
+  it.each(samples)(
+    '%s: скрытый каталог с нарушением не читается',
+    (gate, files) => {
+      expect(runGate(gate, files('.jest-cache')).status).toBe(0);
+      expect(runGate(gate, files('.vite')).status).toBe(0);
+    },
+  );
+
+  it.each(samples)(
+    '%s: то же нарушение в обычном каталоге — exit 1',
+    (gate, files) => {
+      expect(runGate(gate, files('cache')).status).toBe(1);
+    },
+  );
 });

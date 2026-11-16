@@ -47,7 +47,7 @@ const isTestInfra = (rel) =>
 function listFiles(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
-    if (entry === 'node_modules' || entry === 'dist') continue;
+    if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
     if (statSync(full).isDirectory()) listFiles(full, out);
     else if (CODE.test(full) && !full.endsWith('.d.ts')) out.push(full);
   }

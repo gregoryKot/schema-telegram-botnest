@@ -109,7 +109,7 @@ function stripComments(text) {
 function walkFiles(dir, acc = []) {
   let entries;
   try {
-    entries = readdirSync(dir);
+    entries = readdirSync(dir).filter((n) => !n.startsWith('.'));
   } catch {
     return acc; // каталога нет (песочница теста) — нечего сканировать
   }

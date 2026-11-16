@@ -13,7 +13,7 @@ const ROOT = join(import.meta.dirname, '..');
 const SRC = join(ROOT, 'src');
 
 function* walk(dir) {
-  for (const name of readdirSync(dir)) {
+  for (const name of readdirSync(dir).filter((n) => !n.startsWith('.'))) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) yield* walk(p);
     else if (p.endsWith('.controller.ts')) yield p;

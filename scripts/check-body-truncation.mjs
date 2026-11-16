@@ -46,7 +46,7 @@ const CUT_RE = /\.(?:slice|substring|substr)\(\s*0\s*,/;
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === 'dist') continue;
+    if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
     else if (full.endsWith('.controller.ts')) out.push(full);
