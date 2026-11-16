@@ -31,6 +31,8 @@
 
 ## Следующее
 
+- ⬜ **Гейт на загрузку модулей внутри `it` для спеков волны А** — после #1305 внутри `it` модули ещё грузят `client-key.spec.ts`, `practice-ics.spec.ts`, `rotate-all.spec.ts`, `therapy-notes.service.conceptualization.spec.ts`: Stryker (perTest) засчитывает тесту код уровня модуля, статика становится «гибридной», как уронившая `merge.service.ts` до 52.94 (#1278). Полы пока держатся, гейта нет — новый такой спек над графом импортов `mutate` повторит провал. Перенести загрузку в `beforeAll` или отсекать такие тесты в `scripts/stryker/covering-test-files.cjs`, плюс гейт на `require`/`loadWithKeys` внутри `it`; подробности — `docs/open/ci-tests.md`, «гибридной».
+
 - ⬜ **`src/auth/session-proof.ts` вне `mutate` golden-auth** — отзыв остальных сессий при включении 2FA Stryker не мерит: файл записан долгом волны в `scripts/mutation-zone-baseline.json` (reason «долг волны, а не решение»), держат его только `auth-2fa.controller.spec.ts` и `step-up.spec.ts`. Включить в `mutate` `stryker.golden-auth.config.json` с полом по прогону и убрать запись из бейслайна зоны.
 
 - ⬜ **Мутатор `CallExpression` в golden-auth** — в остальных волнах включён, в `stryker.golden-auth.config.json` ещё стоит `excludedMutations: ["CallExpression"]` (по подсчёту инструментером +6 мутантов в `crypto-record.ts`, по 1–2 в прочих). Снять исключение, прогнать волну (`npm run mutation:golden-auth`), выживших закрыть тестом или `// Stryker disable next-line CallExpression` с причиной, полы — `--update` по прогону; пункт в `docs/open/ci-tests.md` закрыть.
