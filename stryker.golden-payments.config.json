@@ -54,9 +54,6 @@
     "src/donation/donation.service.ts",
     "src/notification/notification.planner.service.ts"
   ],
-  "mutator": {
-    "excludedMutations": ["CallExpression"]
-  },
   "reporters": [
     "clear-text",
     "progress",
