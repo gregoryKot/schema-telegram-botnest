@@ -67,6 +67,7 @@ scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
 scripts/raw-sql-live-baseline.json        merge=ratchet-min
 scripts/recorded-fixtures-baseline.json   merge=ratchet-min
+scripts/repo-secrets-baseline.json        merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
 scripts/zero-coverage-baseline.json       merge=ratchet-min
 
