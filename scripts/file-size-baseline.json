@@ -124,7 +124,7 @@
   "scripts/check-history-sheet.mjs": 121,
   "scripts/check-hover-only-reveal.mjs": 197,
   "scripts/check-ignored-tracked.mjs": 56,
-  "scripts/check-incident-registry.mjs": 174,
+  "scripts/check-incident-registry.mjs": 227,
   "scripts/check-jscpd-ratchet.mjs": 82,
   "scripts/check-legacy-name.mjs": 59,
   "scripts/check-live-ruleset.mjs": 169,

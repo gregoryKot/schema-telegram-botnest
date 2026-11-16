@@ -29,9 +29,9 @@ export async function bookingWebhookReply(
   } catch (e) {
     // Amount mismatch is NOT a benign repeat — do not ack money we didn't
     // verify as correct. BookingService.confirm already alerted the admin;
-    // FAIL keeps Robokassa retrying/visible instead of silently swallowing
-    // a potential fraud/misconfig case (see CLAUDE.md «Аудит-события»).
+    // FAIL keeps Robokassa retrying (see CLAUDE.md «Аудит-события»).
     if (e instanceof PaymentAmountMismatchError) {
+      // Stryker disable next-line CallExpression: только строка в лог — исход (FAIL) и алерт владельцу проверяют тесты
       logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
       return `FAIL${invId}`;
     }
@@ -67,10 +67,10 @@ export async function bookingWebhookReply(
       );
       return `FAIL${invId}`;
     }
-    // Остальные ConflictException — бронь уже в статусе, где подтверждать
-    // нечего (COMPLETED: поздний повтор вебхука) — ack, чтобы Robokassa
-    // перестала слать. Повтор по CONFIRMED сюда не доходит: сервис отвечает ok.
+    // Остальные ConflictException (COMPLETED: поздний повтор) — ack, чтобы
+    // Robokassa перестала слать. По CONFIRMED сюда не доходит: сервис отвечает ok.
     if (e instanceof ConflictException) {
+      // Stryker disable next-line CallExpression: только строка в лог — исход (OK, ack повтора) проверяют тесты
       logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
       return `OK${invId}`;
     }
