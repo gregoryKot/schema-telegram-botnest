@@ -8,15 +8,14 @@ import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROF
 import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { SSection, SRow, Toggle, Tick } from './ui';
+import { SectionLoadState } from './SectionLoadState';
 import type { useTherapyRelationSettings } from './useTherapyRelationSettings';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
 
 type Relation = ReturnType<typeof useTherapyRelationSettings>;
 
-// Раздел «Мой терапевт» (клиент): подключение по коду или управление доступом.
-// Инцидент 2026-10-26: поле пускало 8 знаков при коде из 12 (теперь предел с
-// запасом под ссылку, ввод чистит общий хук), отключение шло одним тапом,
-// статус «Анна Терапевт подключён» был мужским родом.
+// Раздел «Мой терапевт» (клиент): подключение по коду или управление доступом. Предел поля — с
+// запасом под ссылку (ввод чистит общий хук), отключение — с подтверждением, статус — без рода.
 export function MyTherapistSection({ rel, settings, patch }: {
   rel: Relation; settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<unknown>;
 }) {
@@ -30,7 +29,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
   return (
     <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={therapistSectionHint(therapyRelation?.status === 'active')}>
       {therapyRelation === undefined ? (
-        <SRow title="Загрузка…" />
+        <SectionLoadState of="relation" load={rel.load} />
       ) : active ? (
         <div className="st-body-block">
           <div className="st-strong" ref={titleRef} tabIndex={-1}>{therapistConnectedTitle(therapyRelation.partnerName)}</div>

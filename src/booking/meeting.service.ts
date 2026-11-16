@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionType } from '@prisma/client';
-import { decrypt, encrypt } from '../utils/crypto';
+import { encrypt } from '../utils/crypto';
 import { clientKey } from './client-key';
 import { findClientMeeting, hasClientMeeting } from './client-meeting-lookup';
-import { jitsiRoom, reuseClientRoom } from './meeting-jitsi';
+import { jitsiRoom, readRoomUrl, reuseClientRoom } from './meeting-jitsi';
 import type { MeetingLink } from './meeting-link';
 
 // Zoom — зарубежная база (152-ФЗ, ч. 5 ст. 18): название одно на всех, без имени клиента.
@@ -82,8 +82,8 @@ export class MeetingService {
     if (existing) {
       const key = existing.clientKey;
       // meetingUrl в БД зашифрован (D-9, аудит 2026-10: `?pwd=` пускает в
-      // комнату клиента); старую строку с открытой ссылкой decrypt отдаёт как есть.
-      const existingUrl = decrypt(existing.meetingUrl) ?? '';
+      // комнату клиента); нечитаемую комнату заменит reuseClientRoom.
+      const existingUrl = readRoomUrl(existing.meetingUrl) ?? '';
       // Upgrade a previously-issued Jitsi room to Zoom once Zoom is configured,
       // so links created during testing/before Zoom setup don't stay on Jitsi.
       if (

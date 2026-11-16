@@ -2,9 +2,10 @@
 // «Гейт тап-целей не видит размеры из CSS-классов»). Раньше считался только
 // инлайновый style, и малый тумблер настроек `.ds-switch--sm` (38×22, зона
 // `::before` от базового класса — 42×40) проходил мимо. Разбор CSS —
-// scripts/tap-targets-css.mjs; общие случаи гейта — tap-targets.spec.ts.
+// scripts/tap-targets-css.mjs, кнопки дизайн-системы в CSS — tap-targets-ds.mjs;
+// общие случаи гейта — tap-targets.spec.ts.
 import { runGate } from './gate-sandbox';
-import { callExport } from './pattern-loader';
+import { callExport, loadStringList } from './pattern-loader';
 
 const GATE = 'check-tap-targets.mjs';
 const BASE = 'scripts/tap-targets-baseline.json';
@@ -64,6 +65,59 @@ describe('check-tap-targets.mjs — размер из CSS-класса', () => {
       '<span className="dot" />',
     );
     expect(res.status).toBe(0);
+  });
+});
+
+const SEG = '.ds-seg-btn { padding: 6px 14px; cursor: pointer; }';
+const TOUCH = (rule: string) => `@media (pointer: coarse) { ${rule} }`;
+
+describe('check-tap-targets.mjs — кнопки дизайн-системы в CSS', () => {
+  it('ds-класс с cursor: pointer без высоты (только padding) — красный, в отчёте класс', () => {
+    const res = run(SEG, '');
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('.ds-seg-btn: высота не задана');
+  });
+
+  it('контроль: min-height 44 под пальцем (@media) — зелёный', () => {
+    expect(
+      run(SEG + '\n' + TOUCH('.ds-seg-btn { min-height: 44px; }'), '').status,
+    ).toBe(0);
+  });
+
+  it('контроль: зона ::before дотягивает 20 до 44 — зелёный', () => {
+    const css = [
+      '.ds-link { position: relative; height: 20px; cursor: pointer; }',
+      ".ds-link::before { content: ''; position: absolute; inset: -12px 0; }",
+    ].join('\n');
+    expect(run(css, '').status).toBe(0);
+  });
+
+  it('модификатор со своей высотой ниже 44 — красный; исключение ds-link--inline — нет', () => {
+    const css = [
+      '.ds-btn { height: 44px; cursor: pointer; }',
+      '.ds-btn--sm { height: 40px; }',
+      '.ds-link { min-height: 44px; cursor: pointer; }',
+      '.ds-link--inline { display: inline; min-height: 0; }',
+    ].join('\n');
+    const res = run(css, '');
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('.ds-btn--sm: высота 40');
+    expect(res.stderr).not.toContain('ds-link--inline');
+  });
+
+  it('DS_TARGET_EXEMPT гасит свои классы; контроль: тот же CSS у другого ds-класса — красный', () => {
+    const exempt = loadStringList('tap-targets-ds.mjs', 'DS_TARGET_EXEMPT');
+    expect(exempt).toContain('ds-link--inline');
+    const css = (c: string) =>
+      `.${c} { padding: 2px; cursor: pointer; min-height: 0; }`;
+    expect(run(exempt.map(css).join('\n'), '').status).toBe(0);
+    expect(run(css('ds-link--ctl'), '').status).toBe(1);
+  });
+
+  it('контроль: не ds-класс и ds-класс без cursor: pointer не считаются', () => {
+    const css =
+      '.tcp-anchor { padding: 4px; cursor: pointer; }\n.ds-chip { padding: 5px 10px; }';
+    expect(run(css, '').status).toBe(0);
   });
 });
 
