@@ -5,10 +5,12 @@
 // и в параметрах функции (`({ nextSession }) =>`, `function f({ nextSession: ns }: P) {`,
 // вложенная `({ rel: { nextSession } }) =>`). Запись (`x.nextSession = …`),
 // ключ объекта в вызове (`save({ nextSession: … })`) и типы
-// (`(r: { nextSession: string }) =>`) — не чтения.
+// (`(r: { nextSession: string }) =>`) — не чтения. Место чтения (`readSites`) —
+// строка и имя ближайшей именованной функции вокруг: по нему гейт сверяет
+// разрешённые места.
 import { stripComments } from './gate-strip-comments.mjs';
 import { lineAt, skipString } from './gate-balance.mjs';
-import { isParamList } from './gate-functions.mjs';
+import { isParamList, functionsOf } from './gate-functions.mjs';
 
 const KEY = 'nextSession';
 const DECL_RE = /\b(?:const|let|var)\s*\{[^{}]*\bnextSession\b[^{}]*\}\s*(?:(?::[^=]+)?=(?!=)|\bof\b)/g;
@@ -41,33 +43,54 @@ function inParamPattern(src, stack) {
   return false;
 }
 
-/** Строки с деструктуризацией nextSession в параметрах функций. */
+/** Позиции деструктуризации nextSession в параметрах функций. */
 function paramReads(src) {
-  const lines = [];
+  const at = [];
   const stack = [];
   for (let i = 0; i < src.length; i += 1) {
     const c = src[i];
     if (isQuote(c)) { i = skipString(src, i); continue; }
     if ('([{'.includes(c)) stack.push(i);
     else if (')]}'.includes(c)) stack.pop();
-    else if (c === 'n' && src.startsWith(KEY, i) && isPatternKey(src, i) && inParamPattern(src, stack)) {
-      lines.push(lineAt(src, i));
-    }
+    else if (c === 'n' && src.startsWith(KEY, i) && isPatternKey(src, i) && inParamPattern(src, stack)) at.push(i);
   }
-  return lines;
+  return at;
 }
 
-/** Прямые чтения nextSession мимо upcomingSession: номера строк. */
-export function directReads(rawSrc) {
-  const src = stripComments(rawSrc);
-  const lines = paramReads(src);
+/** Позиции прямых чтений nextSession мимо upcomingSession — по одной на чтение. */
+function readOffsets(src) {
+  const at = paramReads(src);
   for (const m of src.matchAll(/\??\.nextSession\b/g)) {
     const before = src.slice(0, m.index);
     const after = src.slice(m.index + m[0].length);
     if (/upcomingSession\s*\(\s*[\w$?.[\]]*$/.test(before)) continue;
     if (/^\s*=(?!=)/.test(after)) continue;
-    lines.push(lineAt(src, m.index));
+    at.push(m.index);
   }
-  for (const m of src.matchAll(DECL_RE)) lines.push(lineAt(src, m.index));
-  return [...new Set(lines)].sort((a, b) => a - b);
+  for (const m of src.matchAll(DECL_RE)) at.push(m.index);
+  return at.sort((a, b) => a - b);
+}
+
+/** Имя ближайшей именованной функции вокруг позиции (параметры — часть функции);
+ *  вне функций — '<module>'. Безымянные колбэки пропускаются наружу. */
+function enclosingName(fns, at) {
+  const around = fns
+    .filter((f) => f.name && (f.head === -1 ? f.start : f.head) <= at && at < f.end)
+    .sort((a, b) => a.end - (a.head === -1 ? a.start : a.head) - (b.end - (b.head === -1 ? b.start : b.head)));
+  return around[0]?.name ?? '<module>';
+}
+
+/** Места прямых чтений: { line, fn } на каждое чтение, по порядку. */
+export function readSites(rawSrc) {
+  const src = stripComments(rawSrc);
+  const offsets = readOffsets(src);
+  if (!offsets.length) return [];
+  const fns = functionsOf(src);
+  return offsets.map((at) => ({ line: lineAt(src, at), fn: enclosingName(fns, at) }));
+}
+
+/** Прямые чтения nextSession мимо upcomingSession: номера строк. */
+export function directReads(rawSrc) {
+  const src = stripComments(rawSrc);
+  return [...new Set(readOffsets(src).map((at) => lineAt(src, at)))].sort((a, b) => a - b);
 }
