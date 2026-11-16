@@ -223,6 +223,8 @@ describe('битый JSON в localStorage', () => {
     const post = vi.fn().mockResolvedValue(undefined);
     await expect(flushRatingOutbox(post)).resolves.toBeUndefined();
     expect(post).not.toHaveBeenCalled();
+    // Мусор стирается, а не читается заново на каждом старте.
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
   });
 
   it('фильтрует элементы неправильной формы, сохраняя валидные', () => {

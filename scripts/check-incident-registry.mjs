@@ -17,12 +17,18 @@
 // это решение человека, а не счётчик. Протухшая запись (issue уже со строкой,
 // без напоминания или не найдена среди закрытых) — тоже красное.
 //
+// Второе правило — открытая тревога: `ci-alarm`, открытая дольше
+// OPEN_MAX_HOURS, обязана иметь строку с `#<номер>` (дата не раньше открытия
+// −1 день) или запись `{ "status": "долг", "reason": "…" }` в бейслайне. Без
+// него поломка, которую чинят неделю, остаётся вне реестра, пока issue не
+// закроют (аудит 2026-10, «Красный смок не говорит, что именно лежит»).
+//
 // Гейт ходит в сеть (класс 15 реестра): GitHub без ответа с трёх попыток
 // (таймаут 15 с, сеть, не-2xx) — код 2 и отдельный текст, а не «нарушение»;
 // ночной шаг nightly.yml делает из кода 2 предупреждение, не тревогу
 // (incident-registry-step.spec.ts). В песочнице теста сеть не нужна:
-// `--issues=<файл> --comments=<файл>` — записанные ответы GitHub
-// (test/fixtures/recorded/github-ci-alarm-*.json).
+// `--issues=<файл> --comments=<файл> --open-issues=<файл> --now=<ISO>` —
+// записанные ответы GitHub (test/fixtures/recorded/github-ci-alarm-*.json).
 import { readFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -35,6 +41,12 @@ const BOT = 'github-actions[bot]';
 const REMINDER_RE = /^(Всё ещё красный|Упали джобы)/;
 const DAY = 86_400_000;
 const REASON_RED_FLAGS = ['legacy', 'todo', 'потом', 'позже'];
+// 48 ч, а не сутки: ночная проверка идёт раз в сутки, и тревога, открытая
+// ночью и закрытая следующим зелёным прогоном, живёт до ~24 ч плюс опоздание
+// прогона — это вспышка. Двое суток красного — уже поломка, которую чинят
+// как инцидент; ждать закрытия issue, чтобы записать её, — терять неделю.
+export const OPEN_MAX_HOURS = 48;
+const DEBT = 'долг';
 
 const dayMs = (iso) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
 
@@ -79,9 +91,30 @@ export function closedAlarms(issues, comments) {
     }));
 }
 
-export function verdict(alarms, rows, baseline) {
+/** Открытые issue → { number, from, window, hours } (возраст на момент now). */
+export function openAlarms(issues, now) {
+  return issues
+    .filter((i) => !i.pull_request && i.state === 'open')
+    .map((i) => ({
+      number: i.number,
+      from: dayMs(i.created_at),
+      window: `открыта ${i.created_at.slice(0, 10)}`,
+      hours: Math.floor((now - Date.parse(i.created_at)) / 3_600_000),
+    }));
+}
+
+export function verdict(alarms, rows, baseline, open = []) {
   const problems = [];
   const byNumber = new Map(alarms.map((a) => [a.number, a]));
+  const openByNumber = new Map(open.map((a) => [a.number, a]));
+  const openCovered = (a) => rows.some((r) => r.refs.has(a.number) && r.dates && r.dates.to >= a.from - DAY);
+  for (const a of open) {
+    if (a.hours <= OPEN_MAX_HOURS || openCovered(a) || String(a.number) in baseline) continue;
+    problems.push(
+      `#${a.number} (${a.window}, открыта ${a.hours} ч > ${OPEN_MAX_HOURS} ч): ` +
+        'нет строки в docs/INCIDENTS.md и записи «долг» в бейслайне',
+    );
+  }
   const covered = (a) =>
     rows.some((r) => r.refs.has(a.number) && r.dates && r.dates.from <= a.to + DAY && r.dates.to >= a.from - DAY);
   for (const a of alarms) {
@@ -94,7 +127,11 @@ export function verdict(alarms, rows, baseline) {
   }
   for (const [key, entry] of Object.entries(baseline)) {
     const a = byNumber.get(Number(key));
-    if (!a) problems.push(`бейслайн #${key}: issue не найдена среди закрытых ci-alarm — запись протухла`);
+    const o = openByNumber.get(Number(key));
+    if (o) {
+      if (openCovered(o)) problems.push(`бейслайн #${key}: строка в реестре уже есть — убери запись`);
+      else if (entry?.status !== DEBT) problems.push(`бейслайн #${key}: открытой тревоге нужна запись "status": "${DEBT}"`);
+    } else if (!a) problems.push(`бейслайн #${key}: issue не найдена среди закрытых ci-alarm — запись протухла`);
     else if (a.reminders === 0) problems.push(`бейслайн #${key}: у issue нет напоминаний — исключение не нужно`);
     else if (covered(a)) problems.push(`бейслайн #${key}: строка в реестре уже есть — убери запись`);
     const reason = String(entry?.reason ?? '').trim();
@@ -122,19 +159,25 @@ async function getJson(path) {
   throw new Error(`GitHub API без ответа на ${path}: ${last}`);
 }
 
-async function fetchFromGitHub() {
+async function listIssues(state) {
   const issues = [];
   for (let page = 1; page <= 50; page += 1) {
-    const batch = await getJson(`issues?labels=ci-alarm&state=closed&per_page=100&page=${page}`);
+    const batch = await getJson(`issues?labels=ci-alarm&state=${state}&per_page=100&page=${page}`);
     issues.push(...batch);
     if (batch.length < 100) break;
   }
+  return issues;
+}
+
+async function fetchFromGitHub() {
+  const issues = await listIssues('closed');
+  const openIssues = await listIssues('open');
   const comments = [];
   // Напоминание — второй комментарий и дальше: у issue с одним (закрывающим) его нет.
   for (const i of issues.filter((x) => x.comments >= 2)) {
     comments.push(...(await getJson(`issues/${i.number}/comments?per_page=100`)));
   }
-  return { issues, comments };
+  return { issues, comments, openIssues };
 }
 
 function readArg(name) {
@@ -145,7 +188,7 @@ function readArg(name) {
 async function main() {
   let data;
   const issues = readArg('issues');
-  if (issues) data = { issues, comments: readArg('comments') ?? [] };
+  if (issues) data = { issues, comments: readArg('comments') ?? [], openIssues: readArg('open-issues') ?? [] };
   else {
     try {
       data = await fetchFromGitHub();
@@ -155,20 +198,30 @@ async function main() {
     }
   }
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
+  const nowArg = process.argv.find((x) => x.startsWith('--now='));
+  const now = nowArg ? Date.parse(nowArg.slice(6)) : Date.now();
   const alarms = closedAlarms(data.issues, data.comments);
-  const problems = verdict(alarms, parseRows(readFileSync(INCIDENTS_PATH, 'utf8')), baseline);
+  const open = openAlarms(data.openIssues, now);
+  const problems = verdict(alarms, parseRows(readFileSync(INCIDENTS_PATH, 'utf8')), baseline, open);
   if (problems.length) {
-    console.error('❌ Реестр инцидентов (правило №20): закрытая тревога CI с напоминанием без строки\n');
+    console.error(
+      `❌ Реестр инцидентов (правило №20): тревога CI без строки — закрытая с напоминанием или открытая дольше ${OPEN_MAX_HOURS} ч\n`,
+    );
     for (const p of problems) console.error(`   ${p}`);
     console.error(
       '\nДопиши строку в docs/INCIDENTS.md (симптом, корень, класс, кто заметил, сколько жило,\n' +
         'что держит) с номером issue и датой в её окне. Инцидента нет (вспышка сети, сломан\n' +
-        'тест, а не прод) — запись в scripts/incident-registry-baseline.json с честной причиной.',
+        'тест, а не прод) — запись в scripts/incident-registry-baseline.json с честной причиной.\n' +
+        'Открытая тревога ещё не разобрана — запись { "status": "долг", "reason": "…" } там же.',
     );
     process.exit(1);
   }
   const need = alarms.filter((a) => a.reminders > 0).length;
-  console.log(`✓ реестр инцидентов: закрытых тревог ${alarms.length}, с напоминанием ${need} — у всех строка или причина.`);
+  const old = open.filter((a) => a.hours > OPEN_MAX_HOURS).length;
+  console.log(
+    `✓ реестр инцидентов: закрытых тревог ${alarms.length}, с напоминанием ${need}, ` +
+      `открытых дольше ${OPEN_MAX_HOURS} ч ${old} — у всех строка или причина.`,
+  );
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) await main();
