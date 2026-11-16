@@ -15,7 +15,10 @@ const ISSUES = read(
   'test/fixtures/recorded/github-ci-alarm-closed-issues.json',
 );
 const COMMENTS = read('test/fixtures/recorded/github-ci-alarm-comments.json');
+const OPEN = read('test/fixtures/recorded/github-ci-alarm-open-issues.json');
 const ARGS = ['--issues=gh/issues.json', '--comments=gh/comments.json'];
+// Записанная открытая #1057 создана 2026-11-09 11:21Z; «сейчас» — день записи.
+const RECORDED_NOW = '--now=2026-11-16T12:00:00Z';
 
 const HEADER = '| Дата | Симптом |\n| --- | --- |\n';
 const issue = (
@@ -45,6 +48,7 @@ function run(
   issues: unknown[],
   comments: unknown[],
   baseline = {},
+  open: unknown[] = [],
 ) {
   return runGate(
     'check-incident-registry.mjs',
@@ -53,15 +57,29 @@ function run(
       'scripts/incident-registry-baseline.json': JSON.stringify(baseline),
       'gh/issues.json': JSON.stringify(issues),
       'gh/comments.json': JSON.stringify(comments),
+      'gh/open.json': JSON.stringify(open),
     },
-    { args: ARGS },
+    { args: [...ARGS, '--open-issues=gh/open.json', NOW] },
   );
 }
+
+const NOW = '--now=2026-11-10T12:00:00Z';
+const openIssue = (number: number, created: string) => ({
+  number,
+  title: 'Ночная flaky-детекция — красный прогон',
+  state: 'open',
+  created_at: created,
+  closed_at: null,
+  comments: 3,
+  labels: [{ name: 'ci-alarm' }],
+});
 
 describe('check-incident-registry.mjs', () => {
   it('настоящий реестр и бейслайн на записанных ответах GitHub — зелёный', () => {
     const recorded = new Set(
-      (JSON.parse(ISSUES) as { number: number }[]).map((i) => String(i.number)),
+      [...JSON.parse(ISSUES), ...JSON.parse(OPEN)].map(
+        (i: { number: number }) => String(i.number),
+      ),
     );
     const baseline = Object.fromEntries(
       Object.entries(
@@ -75,12 +93,44 @@ describe('check-incident-registry.mjs', () => {
         'scripts/incident-registry-baseline.json': JSON.stringify(baseline),
         'gh/issues.json': ISSUES,
         'gh/comments.json': COMMENTS,
+        'gh/open.json': OPEN,
       },
-      { args: ARGS },
+      { args: [...ARGS, '--open-issues=gh/open.json', RECORDED_NOW] },
     );
     expect(res.stderr).toBe('');
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('с напоминанием 18');
+    expect(res.stdout).toContain('открытых дольше 48 ч 1');
+  });
+
+  it('контроль: из реестра убран номер открытой #1057 — красный, долг в бейслайне — зелёный', () => {
+    const files = (baseline: object) => ({
+      'docs/INCIDENTS.md': read('docs/INCIDENTS.md').replace(
+        /#1057(?!\d)/g,
+        'issue',
+      ),
+      'scripts/incident-registry-baseline.json': JSON.stringify(baseline),
+      'gh/issues.json': '[]',
+      'gh/comments.json': '[]',
+      'gh/open.json': OPEN,
+    });
+    const args = {
+      args: [...ARGS, '--open-issues=gh/open.json', RECORDED_NOW],
+    };
+    const red = runGate('check-incident-registry.mjs', files({}), args);
+    expect(red.status).toBe(1);
+    expect(red.stderr).toContain(
+      '#1057 (открыта 2026-11-09, открыта 168 ч > 48 ч)',
+    );
+    const debt = {
+      1057: {
+        status: 'долг',
+        reason: 'ночная красная пять суток, разбор не закончен',
+      },
+    };
+    const green = runGate('check-incident-registry.mjs', files(debt), args);
+    expect(green.stderr).toBe('');
+    expect(green.status).toBe(0);
   });
 
   it('контроль на тех же данных: из строки реестра убран номер #903 — красный', () => {
@@ -190,5 +240,52 @@ describe('check-incident-registry.mjs', () => {
     expect(noReminder.stderr).toContain('#43: у issue нет напоминаний');
     const gone = run('', issues, c, { 42: reason, 99: reason });
     expect(gone.stderr).toContain('#99: issue не найдена');
+  });
+
+  describe('открытая тревога старше 48 ч', () => {
+    // NOW = 2026-11-10 12:00Z: 2026-11-08 11:00Z — 49 ч, 2026-11-08 13:00Z — 47 ч.
+    const old = [openIssue(77, '2026-11-08T11:00:00Z')];
+    const debt = {
+      status: 'долг',
+      reason: 'ночная красная, разбор не закончен',
+    };
+
+    it('без строки и записи — красный', () => {
+      const res = run('', [], [], {}, old);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(
+        '#77 (открыта 2026-11-08, открыта 49 ч > 48 ч): нет строки',
+      );
+    });
+
+    it('строка с #N после открытия — зелёный; строка задолго до открытия — красный', () => {
+      expect(
+        run('| 2026-11-09 | ночная (#77) |\n', [], [], {}, old).status,
+      ).toBe(0);
+      expect(
+        run('| 2026-11-01 | другое (#77) |\n', [], [], {}, old).status,
+      ).toBe(1);
+    });
+
+    it('запись «долг» с причиной — зелёный; без статуса «долг» — красный', () => {
+      expect(run('', [], [], { 77: debt }, old).status).toBe(0);
+      const noStatus = run('', [], [], { 77: { reason: debt.reason } }, old);
+      expect(noStatus.status).toBe(1);
+      expect(noStatus.stderr).toContain('"status": "долг"');
+      const covered = run(
+        '| 2026-11-09 | (#77) |\n',
+        [],
+        [],
+        { 77: debt },
+        old,
+      );
+      expect(covered.stderr).toContain('строка в реестре уже есть');
+    });
+
+    it('моложе 48 ч — зелёный и без строки; запись «долг» заранее не протухает', () => {
+      const young = [openIssue(78, '2026-11-08T13:00:00Z')];
+      expect(run('', [], [], {}, young).status).toBe(0);
+      expect(run('', [], [], { 78: debt }, young).status).toBe(0);
+    });
   });
 });
