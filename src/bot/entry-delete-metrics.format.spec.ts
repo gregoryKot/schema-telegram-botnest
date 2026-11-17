@@ -30,7 +30,7 @@ describe('formatEntryDeleteMetrics', () => {
     expect(text).toContain('Удалили записей: 12 · людей: 6');
     expect(text).toContain('проверка убеждения — 7');
     expect(text).toContain('письмо себе — 3');
-    expect(text).toContain('кризисная карточка — 2');
+    expect(text).toContain('флеш-карта «Мне плохо» — 2');
     // Язык отчёта — без терминов и внутренних id (правило №8).
     expect(text).not.toMatch(/belief_check|flashcard|entry_deleted/i);
   });
