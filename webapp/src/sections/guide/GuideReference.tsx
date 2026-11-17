@@ -11,6 +11,7 @@ import { GuideSchemaTable, SchemaViewSwitch, type SchemaView } from './GuideSche
 import { FadeSeg } from '../../components/FadeSeg';
 import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceItem, type ReferenceTab } from './guideReferenceModel';
 import { searchReference } from './guideReferenceSearch';
+import { buildReferenceBody } from './guideReferenceBody';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
 const REFERENCE_TRACK: GuideOpenTrack = {
@@ -33,7 +34,7 @@ export function GuideReference({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
- * Поиск по названиям, переключатель разделов (тот же ds-seg, что у списка
+ * Поиск по названиям и текстам листов, переключатель разделов (тот же ds-seg, что у списка
  * клиентов) и список. Пустой раздел в переключатель не попадает. Листы
  * режима, схемы и техники — те же, что в схеме случая (useConceptGuide), без
  * клиента: без «Дать заданием», отметок и истории.
@@ -49,7 +50,8 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const [schemaView, setSchemaView] = useState<SchemaView>('list');
   const guide = useConceptGuide({ track: REFERENCE_TRACK });
   const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
-  const found = searchReference(ref, query);
+  const body = useMemo(() => buildReferenceBody(texts, tr), [texts, tr]);
+  const found = useMemo(() => searchReference(ref, query, body), [ref, query, body]);
   const searching = query.trim() !== '';
   const schemaTable = tab === 'schemas' && !searching && schemaView === 'table';
   const pickSchemaView = (v: SchemaView) => {
@@ -70,7 +72,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
     <div className="gr-column">
       <input
         type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={80}
-        placeholder="Найти по названию" aria-label="Найти в справочнике" className="ds-input ds-input--search"
+        placeholder="Найти по названию или тексту" aria-label="Найти в справочнике" className="ds-input ds-input--search"
       />
       {!searching && (
         <div className="gr-bar">
