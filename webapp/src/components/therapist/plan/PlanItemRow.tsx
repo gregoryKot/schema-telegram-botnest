@@ -12,12 +12,15 @@ interface Props {
   onCycleStatus: () => void;
   onOpenSource: () => void;
   onAssign: () => void;
+  /** Задание создано, но отметка в пункте не дошла: вместо «Дать заданием» — повтор отметки. */
+  linkPending: boolean;
+  onRetryLink: () => void;
   onSaveText: (text: string) => Promise<boolean>;
   onDelete: () => void;
 }
 
 /** Пункт плана: статус-кнопка (тап — следующий статус), текст, откуда пункт, действия — видны всегда. */
-export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSource, onAssign, onSaveText, onDelete }: Props) {
+export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const label = statusLabel(item.status);
   return (
@@ -34,6 +37,12 @@ export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSour
         ) : (
           <div className="pl-text">{item.text}</div>
         )}
+        {linkPending && (
+          <div className="pl-meta" role="alert">
+            <span className="tb-error">Задание создано, но не отметилось в плане</span>
+            <button type="button" className="ds-link pl-source" disabled={busy} onClick={onRetryLink}>Повторить</button>
+          </div>
+        )}
         {(sourceTitle || item.taskId != null) && (
           <div className="pl-meta">
             {sourceTitle && <button type="button" className="ds-link pl-source" onClick={onOpenSource}>Из справочника: {sourceTitle} →</button>}
@@ -43,7 +52,7 @@ export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSour
       </div>
       {!editing && (
         <div className="pl-acts">
-          {canAssign(item) && <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" disabled={busy} onClick={onAssign}>Дать заданием</button>}
+          {canAssign(item) && !linkPending && <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" disabled={busy} onClick={onAssign}>Дать заданием</button>}
           <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Изменить текст пункта" disabled={busy} onClick={() => setEditing(true)}><MMIcon name="edit" size={16} /></button>
           <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Удалить пункт" disabled={busy} onClick={onDelete}><MMIcon name="trash" size={16} /></button>
         </div>

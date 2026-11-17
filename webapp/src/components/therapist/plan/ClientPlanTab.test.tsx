@@ -12,6 +12,12 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));
+// Лист «Новое задание» — кнопкой: шов вкладки — что она делает с созданным заданием.
+vi.mock('../../TaskCreateSheet', () => ({
+  TaskCreateSheet: (p: { defaultText?: string; onCreated: (t: { id: number }) => void; onClose: () => void }) => (
+    <button onClick={() => { p.onCreated({ id: 40 }); p.onClose(); }}>создать задание: {p.defaultText}</button>
+  ),
+}));
 
 import { ClientPlanTab } from './ClientPlanTab';
 
@@ -78,5 +84,45 @@ describe('ClientPlanTab', () => {
     fireEvent.click(await screen.findByText('Повторить'));
     await screen.findByText('В плане пока пусто');
     expect(h.getTherapyPlan).toHaveBeenCalledTimes(2);
+  });
+
+  it('«Дать заданием»: созданное задание запоминается в пункте; отметка не дошла — «Повторить» шлёт только её', async () => {
+    const between = item({ id: 2, rubric: 'between', text: 'Дневник режима' });
+    h.getTherapyPlan.mockResolvedValue([between]);
+    h.updatePlanItem.mockRejectedValueOnce(new Error('net')).mockResolvedValueOnce({ ...between, taskId: 40 });
+    renderTab();
+    fireEvent.click(await screen.findByText('Дать заданием'));
+    fireEvent.click(screen.getByText('создать задание: Дневник режима'));
+    await screen.findByText('Задание создано, но не отметилось в плане');
+    expect(h.updatePlanItem).toHaveBeenLastCalledWith(2, { taskId: 40 });
+    expect(screen.queryByText('Дать заданием')).toBeNull(); // второе задание не создать
+    fireEvent.click(screen.getByText('Повторить'));
+    await screen.findByText('выдано заданием');
+    expect(h.updatePlanItem).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Задание создано, но не отметилось в плане')).toBeNull();
+    expect(detail.onTaskAssigned).toHaveBeenCalledTimes(1);
+  });
+
+  it('отказ смены статуса возвращает прежний статус и показывает ошибку', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Свой пункт' })]);
+    h.updatePlanItem.mockRejectedValue(new Error('net'));
+    renderTab();
+    fireEvent.click(await screen.findByRole('button', { name: /Статус: намечено/ }));
+    await screen.findByText('Не удалось сохранить пункт');
+    expect(screen.getByRole('button', { name: /Статус: намечено/ })).toBeTruthy();
+    expect(h.trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('удаление — через подтверждение; пункт уходит из списка', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Свой пункт' }), item({ id: 2, text: 'Второй', position: 1 })]);
+    h.deletePlanItem.mockResolvedValue(undefined);
+    renderTab();
+    await screen.findByText('Свой пункт');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить пункт' })[0]);
+    expect(h.deletePlanItem).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    await waitFor(() => expect(screen.queryByText('Свой пункт')).toBeNull());
+    expect(h.deletePlanItem).toHaveBeenCalledWith(1);
+    expect(screen.getByText('Второй')).toBeTruthy();
   });
 });

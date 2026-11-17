@@ -80,13 +80,15 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
               <div className="pp-leaf pl-list">
                 {g.items.map((item) => (
                   <PlanItemRow
-                    key={item.id} item={item} busy={plan.busyId === item.id}
+                    key={item.id} item={item} busy={plan.busyId !== null}
                     sourceTitle={planSourceTitle(texts, tr, item.source)}
                     onCycleStatus={() => void plan.cycleStatus(item)}
                     onOpenSource={() => item.source && openSource(item.source)}
                     onAssign={() => setAssignItem(item)}
+                    linkPending={item.taskId == null && plan.pendingLinks[item.id] != null}
+                    onRetryLink={() => void plan.retryLink(item.id)}
                     onSaveText={(text) => plan.saveText(item.id, text)}
-                    onDelete={() => setConfirmDelete(item)}
+                    onDelete={() => { plan.clearError(); setConfirmDelete(item); }}
                   />
                 ))}
               </div>
