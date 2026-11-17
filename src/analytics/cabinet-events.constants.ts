@@ -10,6 +10,7 @@
 //     из листа режима и схемы) или раздела «Для терапевта». Те же листы из схемы случая клиента —
 //     concept_guide_* (concept-events.constants.ts): справочник без клиента считается отдельно.
 //     Какой режим, схема или техника — нет.
+//   cabinet_guide_table_open — в «Справочнике» переключил «Схемы» на вид «Таблицей» (все схемы и три копинга).
 export const CABINET_EVENTS = [
   'cabinet_screen_share_on',
   'cabinet_guide_open',
@@ -17,4 +18,5 @@ export const CABINET_EVENTS = [
   'cabinet_guide_schema_open',
   'cabinet_guide_technique_open',
   'cabinet_guide_note_open',
+  'cabinet_guide_table_open',
 ] as const;

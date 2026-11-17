@@ -26,5 +26,6 @@ export function formatGuideReferenceMetrics(m: GuideReferenceMetrics): string {
       ? `Читали оттуда — ${sheets.join(', ')}`
       : 'Ни одного листа оттуда пока не открывали',
   );
+  if (m.tables30 > 0) lines.push(`Общую таблицу схем открывали: ${m.tables30}`);
   return lines.join('\n');
 }

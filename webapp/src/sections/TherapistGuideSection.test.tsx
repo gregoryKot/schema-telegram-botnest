@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TherapistGuideSection } from './TherapistGuideSection';
-import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS } from '../../../shared/src/share/analytics';
+import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS, CABINET_GUIDE_TABLE_EVENT } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
 import { FIXTURE_PRACTICE_NOTE as NOTE } from '../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
@@ -84,6 +84,25 @@ describe('TherapistGuideSection', () => {
     expect(within(sheet).getByText('Дневник разлук')).toBeTruthy();
     expectNoClientControls();
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.schema);
+  });
+
+  it('«Схемы» → «Таблицей»: описание и три копинга по домену, тап по схеме — её лист; обратно — список', async () => {
+    await mount();
+    expect(screen.queryByRole('button', { name: 'Таблицей' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Схемы' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Таблицей' }));
+    expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_TABLE_EVENT]);
+    const domain = screen.getByRole('region', { name: 'Нарушение связи и отвержение' });
+    const row = within(domain).getByRole('row', { name: new RegExp(SCHEMA_NAME) });
+    expect(within(row).getByText('Выбирает недоступных партнёров')).toBeTruthy();
+    expect(within(row).getByText('Цепляется и контролирует')).toBeTruthy();
+    expect(within(domain).getByRole('columnheader', { name: 'Гиперкомпенсация' })).toBeTruthy();
+    fireEvent.click(within(row).getByRole('button', { name: new RegExp(SCHEMA_NAME) }));
+    expect(screen.getByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Таблицей' }));
+    expect(tracked().filter((e) => e === CABINET_GUIDE_TABLE_EVENT)).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Списком' }));
+    expect(screen.queryByRole('table')).toBeNull();
   });
 
   it('техники — с описанием; лист техники из списка — без отметки', async () => {
