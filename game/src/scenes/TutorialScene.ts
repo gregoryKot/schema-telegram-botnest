@@ -402,13 +402,13 @@ export class TutorialScene extends Phaser.Scene {
     };
     if (kind === 'office') {
       windowGlow(W * 0.62, true);
-      prop('prop_desk', 150, 190);
+      prop('prop_desk', 150, 184);
     } else if (kind === 'night' || kind === 'morning') {
       const warm = kind === 'morning';
       windowGlow(W * 0.36, warm);
-      prop('prop_bed', 165, 230);
+      prop('prop_bed', 165, 220);
     } else { // door
-      prop('prop_door', W - 110, 150);
+      prop('prop_door', W - 110, 92);
     }
   }
   // ── Шаг 1: походить-попрыгать ───────────────────────────────────────────────
@@ -428,7 +428,7 @@ export class TutorialScene extends Phaser.Scene {
   private spawnPile() {
     const c = this.add.container(110, GROUND_Y).setDepth(8); // на экране слева, наступает
     // настоящий спрайт «пачка дел» (дрожит), origin снизу — стоит на полу
-    this.pileSpr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(0.9);
+    this.pileSpr = this.add.sprite(0, 0, 'workload').setOrigin(0.5, 1).setScale(2);
     if (this.anims.exists('workload-wobble')) this.pileSpr.play('workload-wobble');
     c.add(this.pileSpr);
     this.pile = c;
@@ -509,7 +509,7 @@ export class TutorialScene extends Phaser.Scene {
       // будильник рядом с кроватью, поменьше — Мистер подходит и бьёт
       // рядом с котом (после рывка он у правой стены, а будильник на 305 был вне удара — тап «в воздух»)
       const ax = Phaser.Math.Clamp(this.player.x + (this.player.flipX ? -140 : 140), 90, W - 90);
-      this.colleague = this.add.sprite(ax, GROUND_Y - 4, 'prop_alarm').setOrigin(0.5, 1).setScale(0.15).setDepth(8);
+      this.colleague = this.add.sprite(ax, GROUND_Y - 4, 'prop_alarm').setOrigin(0.5, 1).setScale(2).setDepth(8);
       this.colBubble = this.add.text(0, 0, t('m_ring_ring_ring'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#1a1020',
         backgroundColor: '#ffd870', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
