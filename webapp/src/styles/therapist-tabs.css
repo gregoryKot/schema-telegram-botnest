@@ -216,3 +216,38 @@
 .sw-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .sw-tag { background: var(--paper-sunk); color: var(--text-sub); }
 .sw-done-field { font-size: 14px; line-height: 1.6; color: var(--text-sub); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* «План работы» (#1337, префикс pl-): цель — лист соломы «Обзора» (.tk-goal) с полем; рубрика — подпись
+   и один лист, пункты через тонкую линию, как задания. Статус — кнопка слева: тап ведёт к следующему. */
+.pl-plan { display: flex; flex-direction: column; gap: 28px; }
+.pl-goals .ds-head-row { align-items: center; gap: 12px; }
+.pl-goal-area { margin-top: 10px; font: 400 17px/1.5 var(--serif); background: transparent; }
+.pl-group { display: flex; flex-direction: column; gap: 10px; }
+.pl-list { display: flex; flex-direction: column; padding: 4px 20px; }
+.pl-item { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; }
+.pl-item + .pl-item { border-top: 1px solid var(--paper-sunk); }
+.pl-status {
+  flex: none; min-width: 96px; min-height: 44px; padding: 0 12px; box-sizing: border-box; cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: 8px; background: transparent;
+  font: 600 12px/1.2 inherit; color: var(--text-sub);
+}
+.pl-status--active { background: var(--paper-tint); color: var(--text); }
+.pl-status--done { background: var(--ok-bg); border-color: transparent; color: var(--ok-ink); }
+.pl-status:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pl-status:disabled { cursor: default; }
+.pl-body { flex: 1; min-width: 0; padding-top: 10px; }
+.pl-text { font-size: 15px; line-height: 1.55; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.pl-item.is-done .pl-text { color: var(--text-sub); }
+.pl-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; }
+.ds-link.pl-source { min-height: 44px; text-align: left; }
+.pl-acts { display: flex; align-items: center; gap: 4px; flex: none; }
+.pl-form { display: flex; flex-direction: column; gap: 10px; }
+.pl-form-rubric { display: flex; align-items: center; gap: 10px; }
+.pl-add { padding: 16px 20px; }
+.pl-fail { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .pl-list { padding: 4px 14px; }
+  .pl-item { flex-wrap: wrap; }
+  .pl-body { flex-basis: calc(100% - 110px); }
+  .pl-acts { width: 100%; justify-content: flex-end; }
+}

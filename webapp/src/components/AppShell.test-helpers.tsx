@@ -195,7 +195,7 @@ vi.mock('./Celebration', () => ({
 }));
 vi.mock('./TaskCreateSheet', () => ({
   TaskCreateSheet: (p: ComponentProps<typeof TaskCreateSheetT>) => (
-    <Btns testid="task-create-sheet" map={{ close: () => p.onClose(), created: () => p.onCreated() }} />
+    <Btns testid="task-create-sheet" map={{ close: () => p.onClose(), created: () => p.onCreated({} as Parameters<typeof p.onCreated>[0]) }} />
   ),
 }));
 vi.mock('./CommandPalette', () => ({

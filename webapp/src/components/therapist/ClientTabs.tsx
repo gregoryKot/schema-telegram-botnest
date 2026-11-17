@@ -7,7 +7,7 @@ export function ClientTabs({ detail }: { detail: ClientDetail }) {
   const { clientSchemaNotesData, clientModeNotesData, clientTasks, notesPage, clientData, clientDiary, clientTab, setClientTab } = detail;
   const tabs: [ClientTab, string, number | null][] = [
     ['overview', 'Обзор', null],
-    ['concept', 'Концептуализация', null],
+    ['concept', 'Концептуализация', null], ['plan', 'План работы', null],
     ['mode_map', 'Графические карты', null],
     ['sessions', 'Сессии', notesPage.total],
     ['tasks', 'Задания', clientTasks.length],

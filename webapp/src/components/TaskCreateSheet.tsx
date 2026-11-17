@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { EntitySheet } from './paper/EntitySheet';
 import { PaperAlert } from './paper/PaperAlert';
-import { api, type UserId } from '../api';
+import { api, type UserId, type UserTask } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
 import { detectCrisisAny } from '../utils/crisisMarkers';
@@ -24,7 +24,7 @@ interface Props {
   clientId?: UserId; clientName?: string;
   /** Тип и текст, с которыми лист открывается (шаблоны, «Дать заданием»); zIndex — над листами концептуализации. */
   defaultType?: TaskType; defaultText?: string; zIndex?: number;
-  onCreated: () => void; onClose: () => void;
+  onCreated: (task: UserTask) => void; onClose: () => void;
 }
 
 export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, zIndex, onCreated, onClose }: Props) {
@@ -69,8 +69,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     haptic.success();
     setSaving(true); setError('');
     try {
-      await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
-      onCreated();
+      const task = await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
+      onCreated(task);
       // Лист закрывается через историю: иначе его запись оставалась, и первое
       // «Назад» браузера после назначения ничего не делало (QA 2026-10-26).
       goBack();
