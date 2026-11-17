@@ -6,6 +6,9 @@
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
+/* Вкладки и, у «Схем», вид «Списком / Таблицей» — одной строкой; не влезли — вид уходит под вкладки. */
+.gr-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.gr-bar > .gr-seg { min-width: 0; max-width: 100%; }
 /* Вкладки справочника на телефоне: на 390 четыре вкладки входят целиком (поля кнопок уже, без хвоста
    прокрутки — до этого «Для терапевта» срезалась на 9px у края); на 320 лента прокручивается и край
    затухает (FadeSeg). */
@@ -48,4 +51,38 @@
 @container (min-width: 1080px) {
   .gr-list--groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .gr-list--tiles .gr-rows { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* «Схемы» → «Таблицей» (sections/guide/GuideSchemaTable.tsx): лист домена с таблицей его схем. На узком
+   контейнере строка таблицы — карточка: название с описанием, под ним три подписанные строки копингов;
+   с 640 — колонки, подписи уходят в шапку таблицы. */
+.gst-list { display: flex; flex-direction: column; gap: 16px; }
+.gst-lede { margin: 0; max-width: 72ch; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.gst-table, .gst-table tbody, .gst-table tr, .gst-table th, .gst-table td { display: block; }
+.gst-table { width: 100%; border-collapse: collapse; }
+.gst-table thead { display: none; }
+.gst-table tbody tr { padding: 0 18px 14px; border-bottom: 1px solid var(--paper-sunk); }
+.gst-table tbody tr:last-child { border-bottom: none; }
+.gst-table th, .gst-table td { text-align: left; font-weight: 400; }
+.gst-table td { padding-top: 8px; font-size: 14px; line-height: 1.45; color: var(--text); }
+.gst-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.gst-schema {
+  display: flex; flex-direction: column; gap: 2px; width: 100%; min-height: 44px; padding: 12px 0 2px;
+  border: none; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.gst-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.gst-schema:hover .gst-name { color: var(--accent); }
+.gst-desc { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+
+@container (min-width: 640px) {
+  .gst-table { display: table; table-layout: fixed; }
+  .gst-table thead { display: table-header-group; }
+  .gst-table tbody { display: table-row-group; }
+  .gst-table tr { display: table-row; }
+  .gst-table tbody tr { padding: 0; }
+  .gst-table th, .gst-table td { display: table-cell; vertical-align: top; padding: 14px 16px; }
+  .gst-table thead th { padding-block: 12px 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--paper-sunk); }
+  .gst-table thead th:first-child { width: 28%; }
+  .gst-label { display: none; }
+  .gst-schema { min-height: 0; padding: 0; }
 }

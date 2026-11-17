@@ -15,6 +15,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['schemas30', 'cabinet_guide_schema_open'],
   ['techniques30', 'cabinet_guide_technique_open'],
   ['notes30', 'cabinet_guide_note_open'],
+  ['tables30', 'cabinet_guide_table_open'],
 ];
 
 // Счётчики «Справочника» в меню терапевта для /stats (события cabinet_guide_* из AnalyticsEvent,
