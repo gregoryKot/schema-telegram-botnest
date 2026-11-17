@@ -7,11 +7,11 @@ import {
 import type { ClientTab } from './clientSheetTypes';
 import { parseClientRef } from '../../../../shared/src/utils/clientRef';
 
-const ALL: ClientTab[] = ['overview', 'concept', 'mode_map', 'sessions', 'tasks', 'ysq', 'client_notes'];
+const ALL: ClientTab[] = ['overview', 'concept', 'plan', 'mode_map', 'sessions', 'tasks', 'ysq', 'client_notes'];
 
 describe('слаги вкладок карточки', () => {
   it('слаги — как договорено; «Обзор» без слага', () => {
-    expect(ALL.map(slugOfTab)).toEqual(['', 'concept', 'maps', 'sessions', 'tasks', 'schemas', 'notes']);
+    expect(ALL.map(slugOfTab)).toEqual(['', 'concept', 'plan', 'maps', 'sessions', 'tasks', 'schemas', 'notes']);
   });
   it('слаг → вкладка → слаг сходится для каждой вкладки, кроме «Обзора»', () => {
     for (const t of ALL.filter((x) => x !== 'overview')) expect(tabFromSlug(slugOfTab(t))).toBe(t);

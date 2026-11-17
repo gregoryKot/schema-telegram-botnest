@@ -13,6 +13,7 @@ import {
 } from './dto/analytics.dto';
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
+import { sanitizeCabinetMeta } from './analytics-meta.sanitize-cabinet';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginMeta } from './analytics-meta.sanitize-login';
 import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
@@ -75,16 +76,8 @@ export function sanitizeMeta(
   if (name === 'concept_shared') {
     return typeof meta.on === 'boolean' ? { on: meta.on } : undefined;
   }
-  // «Что делали» в итогах сессии: число пунктов и виды, без названий и текста.
-  if (name === 'cabinet_session_work') {
-    const { items, kinds } = meta;
-    if (!Number.isInteger(items) || !Array.isArray(kinds)) return undefined;
-    const known = ['technique', 'exercise', 'custom'];
-    return {
-      items: Math.min(Math.max(items as number, 1), 12),
-      kinds: known.filter((k) => kinds.includes(k)),
-    };
-  }
+  if (name === 'cabinet_session_work' || name.startsWith('therapy_plan_item_'))
+    return sanitizeCabinetMeta(name, meta);
   if (name === 'onboarding_step') {
     const step = meta.step;
     if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {

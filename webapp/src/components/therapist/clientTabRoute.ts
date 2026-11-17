@@ -7,7 +7,7 @@ import type { ClientTab } from './clientSheetTypes';
 import { parseClientRef } from '../../../../shared/src/utils/clientRef';
 
 const SLUG: Record<ClientTab, string> = {
-  overview: '', concept: 'concept', mode_map: 'maps', sessions: 'sessions',
+  overview: '', concept: 'concept', plan: 'plan', mode_map: 'maps', sessions: 'sessions',
   tasks: 'tasks', ysq: 'schemas', client_notes: 'notes',
 };
 

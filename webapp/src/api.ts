@@ -6,7 +6,7 @@ export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types'
 import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { Currency } from '../../shared/src/booking/priceRegion'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
-import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
+import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi'; import { createPlanApi } from '../../shared/src/therapy/plan/planApi';
 import { createEntryApi } from '../../shared/src/api/entryApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import {
@@ -139,7 +139,7 @@ export const api = {
   ...buildSharedApi(transport),
   ...ratingApi,
   // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
-  ...createPracticeSessionsApi(transport),
+  ...createPracticeSessionsApi(transport), ...createPlanApi({ ...transport, patchJson }), // план работы с клиентом (#1337)
   ...createEntryApi(transport), // запись по id для «Моего пути», страницы «Записей»
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и анонимная аналитика (userId = null).

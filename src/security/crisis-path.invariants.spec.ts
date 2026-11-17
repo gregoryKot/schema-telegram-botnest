@@ -90,6 +90,10 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'заметки терапевта о сессии клиента',
   'webapp/src/components/therapist/SessionWorkItemCard.tsx':
     'терапевт: поля пункта «Что делали» в итогах сессии',
+  // План работы с клиентом (#1337): пункт плана пишет терапевт о работе,
+  // не клиент о своём состоянии — тот же класс, что поля итогов сессии.
+  'webapp/src/components/therapist/plan/PlanItemForm.tsx':
+    'терапевт: текст пункта плана работы с клиентом',
   // Вид «Поля» уехал из ClientConceptTab/ConceptSheet в отдельные файлы
   // (правило №10): запись переехала за <textarea>, а не добавилась. Поля
   // связей режимов графической концептуализации — ConceptTextField (shared,
@@ -186,8 +190,10 @@ describe('трипваер: кризисная детекция для своб�
     // терапевт о клиенте на своём холсте (тот же класс, что NodeMeaningFields).
     // 20 → 21 (2026-11, «Что делали» в итогах сессии): SessionWorkItemCard.tsx —
     // тот же класс, что заметка о сессии в ClientSessionsTab: пишет терапевт.
+    // 21 → 22 (2026-11, план работы #1337): plan/PlanItemForm.tsx — пункт плана
+    // пишет терапевт, тот же класс, что SessionWorkItemCard.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      21,
+      22,
     );
   });
 

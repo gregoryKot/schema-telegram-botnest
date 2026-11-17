@@ -13,6 +13,7 @@ import { ClientListView } from './therapist/ClientListView';
 import { ClientHeader } from './therapist/ClientHeader';
 import { ClientOverviewTab } from './therapist/ClientOverviewTab';
 import { ClientConceptTab } from './therapist/ClientConceptTab';
+import { ClientPlanTab } from './therapist/plan/ClientPlanTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
 import type { AssignPreset } from './therapist/assignTemplates';
@@ -139,9 +140,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
         <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
           <ClientHeader selectedClient={selectedClient} detail={detail} switchView={switchView} />
 
-          {/* Tab content */}
           <div className="therapist-scroll therapist-scroll--tabs tk-tabs-body" key={clientTab}>
-
             {tabLoading ? (
               <div aria-hidden><OverviewSkeleton tab={clientTab} /></div>
             ) : <>
@@ -156,6 +155,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
               <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} onAssign={openAssign} onOpenJournal={openJournal} />
             )}
 
+            {clientTab === 'plan' && <ClientPlanTab key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} onTasksChanged={board.invalidate} />}
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
