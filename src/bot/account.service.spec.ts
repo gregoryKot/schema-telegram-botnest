@@ -45,6 +45,7 @@ function makePrisma() {
     // отдельно обрабатываемые
     'clientConceptualization',
     'therapistNote',
+    'therapyPlanItem',
     'therapyRelation',
     'modeMap',
     'therapistCustomMode',
@@ -88,7 +89,11 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     const service = new AccountService(prisma);
     await service.deleteAllUserData(uid);
 
-    for (const table of ['clientConceptualization', 'therapistNote']) {
+    for (const table of [
+      'clientConceptualization',
+      'therapistNote',
+      'therapyPlanItem',
+    ]) {
       const args = prisma._calls[table]?.[0];
       expect(args).toBeDefined();
       // Ключевой инвариант: where покрывает ОБЕ роли пользователя.

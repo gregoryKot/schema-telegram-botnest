@@ -65,6 +65,7 @@ function make(o: Opts) {
     userTask: { updateMany: rec('task.updateMany') },
     therapistNote: { updateMany: rec('note.updateMany') },
     modeMap: { updateMany: rec('map.updateMany') },
+    therapyPlanItem: { updateMany: rec('plan.updateMany') },
     clientConceptualization: {
       findFirst: conc,
       update: rec('conc.update'),
@@ -86,7 +87,7 @@ describe('attachOfflineCard', () => {
       where: { userId: -7n, assignedBy: TH },
       data: { userId: CLIENT },
     });
-    for (const d of [tx.therapistNote, tx.modeMap])
+    for (const d of [tx.therapistNote, tx.modeMap, tx.therapyPlanItem])
       expect(d.updateMany).toHaveBeenCalledWith({
         where: { therapistId: TH, clientId: -7n },
         data: { clientId: CLIENT },
