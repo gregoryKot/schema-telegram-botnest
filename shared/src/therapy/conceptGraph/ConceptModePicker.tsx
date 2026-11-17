@@ -10,6 +10,7 @@ import { modeGroupLook } from '../../theme/entityLook';
  *
  * `groupIds` — показать только эти группы (клетка графа предлагает режимы
  * своей клетки); выбранные режимы остаются видны, тап снимает/ставит.
+ * `onlyIds` — только эти режимы (режимы клиента в «Что делали»), пустая группа скрыта.
  *
  * Опознаватель режима — знак его группы в шапке группы (ConceptGroup: лист
  * бумаги группы, как у клиента); выбранный чип — бумага группы с галочкой.
@@ -18,10 +19,12 @@ export function ConceptModePicker({
   activeModeIds,
   onToggle,
   groupIds,
+  onlyIds,
 }: {
   activeModeIds: string[];
   onToggle: (id: string) => void;
   groupIds?: string[];
+  onlyIds?: ReadonlySet<string>;
 }) {
   const groups = groupIds
     ? MODE_GROUPS.filter((g) => groupIds.includes(g.id))
@@ -30,9 +33,11 @@ export function ConceptModePicker({
     <div className="cg-groups">
       {groups.map((group) => {
         const look = modeGroupLook(group.id);
+        const items = group.items.filter((m) => !onlyIds || onlyIds.has(m.id));
+        if (items.length === 0) return null;
         return (
           <ConceptGroup key={group.id} look={look} title={group.group}>
-            {group.items.map((mode) => (
+            {items.map((mode) => (
               <ConceptToggleChip
                 key={mode.id}
                 label={mode.name}

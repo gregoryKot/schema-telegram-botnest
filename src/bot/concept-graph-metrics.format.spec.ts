@@ -15,6 +15,7 @@ const base: ConceptGraphMetrics = {
   syncToMap30: 0,
   syncFromMap30: 0,
   needsRated30: 0,
+  sessionWork30: 0,
   guideModes30: 0,
   guideSchemas30: 0,
   guideTechniques30: 0,
@@ -149,6 +150,15 @@ describe('formatConceptGraphMetrics', () => {
     expect(onlyFrom).toContain('Холст дописывал в концептуализацию: 1 раз');
     expect(onlyFrom).not.toContain('Дописывали на карту');
     expect(onlyFrom).not.toMatch(/NaN|undefined|null|полей: 0/);
+  });
+
+  it('«Что делали» в итогах сессии: строка стоит, только когда отмечали', () => {
+    const text = formatConceptGraphMetrics({ ...base, sessionWork30: 3 });
+    expect(text).toContain('В итогах сессии отмечали, что делали: 3 раз');
+    expect(text).not.toMatch(/NaN|undefined|null/);
+    expect(formatConceptGraphMetrics({ ...base, opens30: 5 })).not.toContain(
+      'В итогах сессии',
+    );
   });
 
   it('колесо потребностей на холсте: строка стоит, только когда его заполняли', () => {

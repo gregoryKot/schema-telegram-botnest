@@ -170,7 +170,11 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     needId: ID,
     dueDate: DATE,
   },
-  TherapistNote: { date: DATE, text: enc(`${TH}/therapy-notes.service.ts`) },
+  TherapistNote: {
+    date: DATE,
+    text: enc(`${TH}/therapy-notes.service.ts`),
+    work: enc(`${TH}/therapy-notes.service.ts`),
+  },
   ClientConceptualization: {
     schemaIds: enc(`${TH}/concept-store.ts`),
     modeIds: enc(`${TH}/concept-store.ts`),

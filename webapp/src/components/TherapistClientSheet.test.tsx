@@ -326,7 +326,7 @@ describe('TherapistClientSheet — вкладка «Сессии» (заметк
     });
     fireEvent.click(screen.getByText('Сохранить'));
 
-    await waitFor(() => expect(mockApi.createTherapistNote).toHaveBeenCalledWith(7, expect.any(String), 'Хорошая динамика'));
+    await waitFor(() => expect(mockApi.createTherapistNote).toHaveBeenCalledWith(7, expect.any(String), 'Хорошая динамика', []));
     await screen.findByText('Хорошая динамика');
     expect(screen.queryByText('Заметок пока нет')).toBeNull();
   });
