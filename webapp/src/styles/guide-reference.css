@@ -6,8 +6,9 @@
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
-/* Вкладки и, у «Схем», вид «Списком / Таблицей» — одной строкой; не влезли — вид уходит под вкладки. */
-.gr-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+/* Вкладки и, у «Схем», вид «Списком / Таблицей» — одной строкой; не влезли (телефон) — вид уходит под вкладки
+   во всю ширину (ds-seg--full). */
+.gr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .gr-bar > .gr-seg { min-width: 0; max-width: 100%; }
 /* Вкладки справочника на телефоне: на 390 четыре вкладки входят целиком (поля кнопок уже, без хвоста
    прокрутки — до этого «Для терапевта» срезалась на 9px у края); на 320 лента прокручивается и край

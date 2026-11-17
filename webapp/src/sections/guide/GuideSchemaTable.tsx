@@ -10,7 +10,7 @@ const SCHEMA_VIEWS: { id: SchemaView; label: string }[] = [{ id: 'list', label: 
 /** Вид раздела «Схемы» рядом с вкладками: список по доменам или общая таблица копингов. */
 export function SchemaViewSwitch({ view, onPick }: { view: SchemaView; onPick: (v: SchemaView) => void }) {
   return (
-    <div className="ds-seg" role="group" aria-label="Вид раздела «Схемы»">
+    <div className="ds-seg ds-seg--full" role="group" aria-label="Вид раздела «Схемы»">
       {SCHEMA_VIEWS.map((v) => (
         <button
           key={v.id} type="button" aria-pressed={view === v.id}
