@@ -6,6 +6,8 @@
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
+/* Оговорка под шапкой (TherapistGuideSection): тексты из разных источников, куда писать об ошибке. */
+.gr-note { margin: 10px 0 0; line-height: 1.45; }
 /* Вкладки и, у «Схем», вид «Списком / Таблицей» — одной строкой; не влезли (телефон) — вид уходит под вкладки
    во всю ширину (ds-seg--full). */
 .gr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }

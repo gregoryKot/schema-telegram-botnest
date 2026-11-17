@@ -1,4 +1,5 @@
 import type { SchemaDomainGuideBuilder } from '../types';
+import { SCHEMA_COPING } from './coping';
 
 // Домен «Направленность на других» — справочник, разделы 12–14. Режимы
 // справочника сопоставлены с modeGroups.ts: Запуганный, Парентифицированный
@@ -19,12 +20,7 @@ export const buildOtherDirectedGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Страшно, что если сказать о своих желаниях и чувствах, другие рассердятся, накажут или уйдут. Поэтому решать отдают другим, а свои потребности и злость прячут [Касьяник].',
       need: 'Свобода выражать себя и безопасно не соглашаться',
-      coping: {
-        surrender: 'Соглашается, своего не отстаивает.',
-        avoidance: 'Уходит от конфликтов, скрывает информацию.',
-        overcompensation:
-          'Контролирует и доминирует, злится исподтишка, бунтует.',
-      },
+      coping: SCHEMA_COPING.subjugation,
       modeIds: [
         'vulnerable_child',
         'angry_child',
@@ -92,12 +88,7 @@ export const buildOtherDirectedGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Чужие боль и нужды кажутся важнее своих, забота о себе — эгоизмом, чувства других — своей ответственностью. Часто ребёнку рано пришлось заботиться о больном или депрессивном родителе [Кембридж, табл. 3.1].',
       need: 'Разрешение на свои потребности и ответственность в разумной мере',
-      coping: {
-        surrender: 'Заботится обо всех, своих желаний не чувствует.',
-        avoidance:
-          'Не допускает заботы о себе; иногда избегает людей, чтобы не выгореть.',
-        overcompensation: 'Обиженно скупится, когда другие о чём-то просят.',
-      },
+      coping: SCHEMA_COPING.self_sacrifice,
       modeIds: [
         'vulnerable_child',
         'angry_child',
@@ -156,12 +147,7 @@ export const buildOtherDirectedGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Кажется, что ценность человека измеряется одобрением, признанием, статусом. Одни хотят, чтобы их все любили, другие ищут восхищения: статус, деньги, внешность [Касьяник].',
       need: 'Принятие без условий и право на свои взгляды',
-      coping: {
-        surrender: 'Старается впечатлить знаниями, успехом, внешностью.',
-        avoidance: 'Держится подальше от тех, чьё одобрение важно.',
-        overcompensation:
-          'Нарочно держится незаметно или бунтует, напрашиваясь на неодобрение.',
-      },
+      coping: SCHEMA_COPING.approval_seeking,
       modeIds: [
         'vulnerable_child',
         'attention_seeker',

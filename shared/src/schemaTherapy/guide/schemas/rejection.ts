@@ -1,4 +1,5 @@
 import type { SchemaDomainGuideBuilder } from '../types';
+import { SCHEMA_COPING } from './coping';
 
 /** Домен rejection: emotional_deprivation, abandonment, mistrust, defectiveness, social_isolation. */
 export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
@@ -11,13 +12,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Кажется, что никто по-настоящему не позаботится, не поймёт и не защитит. Детство часто называют «нормальным»: чувства приглушены, и страдание виднее близким, чем самому клиенту [Арнтц, 1.1.1].',
       need: 'Тепло, чуткость и руководство взрослого',
-      coping: {
-        surrender:
-          'Не просит, выбирает холодных партнёров; с любящими скучно или тесно.',
-        avoidance:
-          'Держит дистанцию, заглушает пустоту едой, играми, алкоголем.',
-        overcompensation: 'Требует от друзей и партнёров всё больше внимания.',
-      },
+      coping: SCHEMA_COPING.emotional_deprivation,
       modeIds: [
         'lonely_child',
         'detached_protector',
@@ -71,14 +66,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Кажется, что близкие вот-вот уйдут, умрут или пропадут без предупреждения. Растёт из потерь и нестабильности в детстве или из гиперопеки — тогда рядом с ней Зависимость [Касьяник].',
       need: 'Надёжная связь: человек рядом и не исчезает без предупреждения',
-      coping: {
-        surrender:
-          'Выбирает тех, кто не готов к обязательствам, и всё время просит заверений.',
-        avoidance:
-          'Не подпускает близко, уходит первым, заедает и запивает одиночество.',
-        overcompensation:
-          'Цепляется за партнёра и нападает на него за любую разлуку.',
-      },
+      coping: SCHEMA_COPING.abandonment,
       modeIds: [
         'abandoned_child',
         'angry_child',
@@ -127,14 +115,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Кажется, что другие обманут, унизят, используют или причинят вред, а дружелюбие настораживает. Корни в семье, но часто и в травле сверстниками — тогда рядом Дефективность или Неуспешность [Арнтц, 1.1.1].',
       need: 'Безопасность и защита',
-      coping: {
-        surrender:
-          'Раз за разом оказывается рядом с теми, кто обижает, и терпит плохое обращение.',
-        avoidance:
-          'Держит дистанцию, ничего личного не рассказывает, уходит в диссоциацию.',
-        overcompensation:
-          'Подозрительно всё контролирует, нападает и использует первым; доверяет или на 100%, или никак.',
-      },
+      coping: SCHEMA_COPING.mistrust,
       modeIds: [
         'abandoned_child',
         'punitive_critic',
@@ -183,13 +164,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Кажется, что внутри что-то плохое и недостойное и, если это увидят, отвергнут. Речь о личности целиком, а не об отдельных поступках; главное чувство — стыд [Касьяник].',
       need: 'Принятие без условий и защита от унижения',
-      coping: {
-        surrender:
-          'Терпит тех, кто критикует, ставит других на пьедестал, а себя принижает.',
-        avoidance: 'Не показывает уязвимость, не подпускает близко.',
-        overcompensation:
-          'Критикует и унижает других, держится за статус или подчёркнуто любезничает, чтобы не отвергли.',
-      },
+      coping: SCHEMA_COPING.defectiveness,
       modeIds: [
         'humiliated_child',
         'punitive_critic',
@@ -248,13 +223,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
       essence:
         'Ощущение «мне нигде нет места, я не как все». Бывает от чувства дефективности, а бывает от настоящей непохожести на окружающих [Касьяник].',
       need: 'Быть частью группы',
-      coping: {
-        surrender:
-          'Держится с краю, подчёркивает свои отличия, примыкает к «изгоям».',
-        avoidance: 'Не ходит в группы и компании.',
-        overcompensation:
-          'Играет роль, чтобы вписаться, или держится так, будто выше всего этого.',
-      },
+      coping: SCHEMA_COPING.social_isolation,
       modeIds: [
         'lonely_child',
         'detached_protector',
