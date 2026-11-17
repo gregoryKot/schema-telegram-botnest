@@ -8,7 +8,7 @@ from tile import BAYER4
 P = PAL['ch1']
 BAND = ('sky0', 'sky1', 'sky2', 'sky3', 'sky4', 'sky5', 'sky6', 'sky7', 'sky8')
 
-def bands(w, h, ys, edge=0.35):
+def bands(w, h, ys, edge=0.35, P=P):
     """Жёсткие полосы, дизер только в последней доле `edge` каждой полосы."""
     out = np.zeros((h, w, 4), np.uint8)
     ys = list(ys) + [h + 99]; cols = [np.array(C(P[c])) for c in BAND] + [np.array(C(P['sky8']))]
@@ -25,7 +25,7 @@ def sun_disc(a, cx, cy, r):
     a[halo] = C(P['sun_halo'])
     a[d <= r] = C(P['sun'])
 
-def cloud(a, sun_x, x, y, parts):
+def cloud(a, sun_x, x, y, parts, P=P):
     """Гряда: капсулы одной маской; верх лиловый, низ подсвечен, у солнца — горячая кромка."""
     h, w = a.shape[:2]
     m = Image.new('L', (w, h), 0); d = ImageDraw.Draw(m)

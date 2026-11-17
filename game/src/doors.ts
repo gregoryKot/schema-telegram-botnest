@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GROUND_Y } from './constants';
 import { t, type MsgKey } from './i18n';
 import { IS_TOUCH } from './controls';
-import { addGlow } from './look';
+import { addGlow, HUD_STROKE } from './look';
 import type { DoorKind } from './chapters';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -22,7 +22,7 @@ const STYLE: Record<DoorKind, DoorStyle> = {
     label: 'm_door_home', labelColor: '#ffd9a0' },
   guru: { w: 86, h: 134, leaf: 0x2a0a3a, frame: 0xff2fd6, glow: 0xff2fd6,
     label: 'm_door_guru', labelColor: '#ff8af0', sub: 'm_door_guru_sub' },
-  therapist: { w: 72, h: 112, leaf: 0x1e2a24, frame: 0x4a6a5a, glow: 0x88ffcc,
+  therapist: { w: 56, h: 108, leaf: 0x1e2a24, frame: 0x4a6a5a, glow: 0x88ffcc,
     label: 'm_door_therapist', labelColor: '#a8e8d0' },
 };
 
@@ -40,16 +40,16 @@ export class Door {
     maxX?: number, // правый край мира: вывеска не должна уходить за кадр
   ) {
     const st = STYLE[kind];
-    const g = scene.add.graphics().setDepth(5);
-    // рама + полотно + ручка
-    g.fillStyle(st.frame, 1); g.fillRect(x - st.w / 2 - 6, GROUND_Y - st.h - 6, st.w + 12, st.h + 6);
+    const art = scene.textures.exists(`door_${kind}`); // нарисованная дверь (game/art/road.py), иначе — рама и полотно кодом
+    if (art) scene.add.image(x, GROUND_Y, `door_${kind}`).setOrigin(0.5, 1).setScale(2).setDepth(5);
+    else scene.add.rectangle(x, GROUND_Y - st.h / 2 - 3, st.w + 12, st.h + 6, st.frame).setDepth(5);
     this.leaf = scene.add.rectangle(x, GROUND_Y - st.h / 2, st.w, st.h, st.leaf).setDepth(5)
-      .setInteractive({ useHandCursor: true });
-    scene.add.circle(x + st.w / 2 - 12, GROUND_Y - st.h / 2, 4, st.glow, 0.9).setDepth(6);
+      .setInteractive({ useHandCursor: true }).setAlpha(art ? 0.001 : 1);
+    if (!art) scene.add.circle(x + st.w / 2 - 12, GROUND_Y - st.h / 2, 4, st.glow, 0.9).setDepth(6);
     this.glow = addGlow(scene, x, GROUND_Y - 4, st.w + 90, 34, st.glow, 0.22, 4); // тёплый свет из-под двери
     scene.tweens.add({ targets: this.glow, alpha: { from: 0.7, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
     this.label = scene.add.text(x, GROUND_Y - st.h - 18, t(st.label), {
-      fontFamily: FONT, fontSize: '11px', color: st.labelColor, align: 'center',
+      fontFamily: FONT, fontSize: '11px', color: st.labelColor, align: 'center', ...HUD_STROKE,
     }).setOrigin(0.5, 1).setDepth(6);
     if (st.sub) {
       const sub = scene.add.text(x, GROUND_Y - st.h - 6, t(st.sub), {
@@ -107,7 +107,7 @@ export class ExcuseVoice {
       backgroundColor: 'rgba(14,10,26,0.8)', padding: { x: 7, y: 6 },
     }).setOrigin(0.5, 1).setDepth(46).setAlpha(0).setInteractive({ useHandCursor: true });
     this.hint = scene.add.text(x, y + 14, t(IS_TOUCH ? 'm_tap_answer' : 'm_e_answer'), {
-      fontFamily: FONT, fontSize: '11px', color: '#88ffcc',
+      fontFamily: FONT, fontSize: '11px', color: '#88ffcc', ...HUD_STROKE,
     }).setOrigin(0.5, 0).setDepth(46).setAlpha(0);
     this.bubble.on('pointerdown', () => this.doAnswer());
   }

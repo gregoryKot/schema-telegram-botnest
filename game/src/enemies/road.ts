@@ -3,6 +3,7 @@ import { glyphTexture } from '../glyphs';
 import { GROUND_Y } from '../constants';
 import { audio } from '../audio';
 import { MobCtx, HomeMob } from './home';
+import { GRID, gridScale } from '../gridScale';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Акт II «Выбор». У неверных дверей стоят ЗАЗЫВАЛЫ — не враги, а продавцы
@@ -19,7 +20,7 @@ export class SelfSoothe implements HomeMob {
 
   constructor(private ctx: MobCtx, x: number) {
     const s = ctx.scene;
-    this.img = s.add.sprite(x, GROUND_Y - 52, 'soothe').setScale(0.82).setDepth(6);
+    this.img = s.add.sprite(x, GROUND_Y - 52, 'soothe').setScale(GRID).setDepth(6);
     if (s.anims.exists('soothe-idle')) this.img.play('soothe-idle');
   }
 
@@ -44,7 +45,7 @@ export class CrookedMirror implements HomeMob {
 
   constructor(private ctx: MobCtx, private x: number) {
     const s = ctx.scene;
-    this.frame = s.add.sprite(x, GROUND_Y, 'crookedmirror').setOrigin(0.5, 1).setScale(0.92).setDepth(6);
+    this.frame = s.add.sprite(x, GROUND_Y, 'crookedmirror').setOrigin(0.5, 1).setScale(GRID).setDepth(6);
     if (s.anims.exists('mirror-shimmer')) this.frame.play('mirror-shimmer');
   }
 
@@ -66,14 +67,13 @@ export class CrookedMirror implements HomeMob {
 export class Bargainer implements HomeMob {
   alive = true;
   private img: Phaser.GameObjects.Sprite;
-  private base = 0.82;
   private size = 1;
   private throwT = 0;
   private tags: Phaser.GameObjects.Image[] = [];
 
   constructor(private ctx: MobCtx, private x: number) {
     const s = ctx.scene;
-    this.img = s.add.sprite(x, GROUND_Y, 'bargainer').setOrigin(0.5, 1).setScale(this.base).setDepth(6);
+    this.img = s.add.sprite(x, GROUND_Y, 'bargainer').setOrigin(0.5, 1).setScale(GRID).setDepth(6);
     if (s.anims.exists('bargainer-idle')) this.img.play('bargainer-idle');
   }
 
@@ -103,7 +103,7 @@ export class Bargainer implements HomeMob {
   }
 
   tryHit(): boolean {
-    this.size = Math.min(1.6, this.size + 0.12); this.img.setScale(this.base * this.size);
+    this.size = Math.min(1.6, this.size + 0.12); this.img.setScale(gridScale(this.size)); // дорожает ступенью
     this.ctx.hitstop(40); this.ctx.burst(this.img.x, GROUND_Y - 30, 0xffd86a, 6, 90);
     this.ctx.sayOnce('barg_hit', 'm_barg_hit', 2600);
     return true;
