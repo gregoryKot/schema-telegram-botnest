@@ -32,7 +32,7 @@ export function buildBackground(s: GameScene) {
         onRepeat: () => { m.y = GROUND_Y - 30; m.x = Phaser.Math.Between(0, ARENA_W); m.alpha = 0.2; } });
     }
   }
-  if (pal.sky) return; // рисованное небо: без полосы тумана и тёмной виньетки
+  if (pal.sky || s.chapter.theme === 'room') return; // рисованный фон: без полосы тумана и тёмной виньетки
   const fog = s.add.graphics().setScrollFactor(0).setDepth(-2);
   fog.fillGradientStyle(pal.fog, pal.fog, pal.fog, pal.fog, 0, 0, 0.55, 0.55);
   fog.fillRect(0, GROUND_Y - 80, W, 90);
