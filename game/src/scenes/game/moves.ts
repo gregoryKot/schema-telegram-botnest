@@ -72,7 +72,7 @@ export function updateMoves(s: GameScene, dt: number) {
   if (s.dashing) {
     s.dashT -= dt;
     b.setVelocityX(s.dashDir * DASH_SPEED);
-    ghost(s); // синий шлейф i-кадров — рывок как был
+    s.player.play('p-dash', true); ghost(s); // синий шлейф i-кадров — рывок как был
     if (s.dashT <= 0) { s.dashing = false; b.setAllowGravity(true); }
   } else if (!s.frozen) {
     // ── БЕГИ ──
@@ -88,8 +88,8 @@ export function updateMoves(s: GameScene, dt: number) {
     s.jumpBufferT = jump ? JUMP_BUFFER_MS : Math.max(0, s.jumpBufferT - dt);
     if (s.jumpBufferT > 0 && s.coyoteT > 0) {
       b.setVelocityY(PHYS.jumpVel); audio.jump();
-      s.player.setScale(1.3, 1.75); // вытягивается на отрыве, плавно к норме
-      s.tweens.add({ targets: s.player, scaleX: 1.5, scaleY: 1.5, duration: 220, ease: 'Quad.Out' });
+      s.player.setScale(1.75, 2.3); // вытягивается на отрыве, плавно к норме
+      s.tweens.add({ targets: s.player, scaleX: 2, scaleY: 2, duration: 220, ease: 'Quad.Out' });
       s.jumping = true; s.coyoteT = 0; s.jumpBufferT = 0;
     }
     // отпустил на взлёте — короткий подскок
@@ -104,7 +104,7 @@ export function updateMoves(s: GameScene, dt: number) {
     else if (Math.abs(b.velocity.x) > 20) s.player.play('p-walk', true);
     else s.player.play('p-idle', true);
     // на земле в покое и без активного твина — вернуть базовый масштаб
-    if (onGround && !s.jumping && !s.tweens.isTweening(s.player)) s.player.setScale(1.5, 1.5);
+    if (onGround && !s.jumping && !s.tweens.isTweening(s.player)) s.player.setScale(2, 2);
   }
 
   // ── БЕЙ ── (короткие i-кадры на замах — копинг сохраняет в моменте)
@@ -118,8 +118,8 @@ export function updateMoves(s: GameScene, dt: number) {
 
 // приземление: облачко пыли + лёгкий squash — вес и тактильность
 function onLand(s: GameScene) {
-  s.player.setScale(1.7, 1.3);
-  s.tweens.add({ targets: s.player, scaleX: 1.5, scaleY: 1.5, duration: 110, ease: 'Quad.Out' });
+  s.player.setScale(2.25, 1.75);
+  s.tweens.add({ targets: s.player, scaleX: 2, scaleY: 2, duration: 110, ease: 'Quad.Out' });
   for (let i = 0; i < 5; i++) {
     const dx = (Math.random() - 0.5) * 28;
     const p = s.add.rectangle(s.player.x + dx, s.player.y - 2, 3, 3, 0xc8bcd8, 0.7).setDepth(9);

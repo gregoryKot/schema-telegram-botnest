@@ -9,12 +9,12 @@ export function spawnPlayer(s: GameScene) {
     s.anims.create({ key: 'p-idle', frames: s.anims.generateFrameNumbers('cat_idle', { start: 0, end: 11 }), frameRate: 8, repeat: -1 });
   if (!s.anims.exists('p-walk'))
     s.anims.create({ key: 'p-walk', frames: s.anims.generateFrameNumbers('cat_run', { start: 0, end: 5 }), frameRate: 16, repeat: -1 });
-  if (!s.anims.exists('p-jump'))
-    s.anims.create({ key: 'p-jump', frames: [{ key: 'cat_run', frame: 2 }], frameRate: 1, repeat: 0 });
+  s.safeAnim('p-jump', 'cat_run', 2, 2, 1, 0);
+  s.safeAnim('p-dash', 'cat_run', 6, 6, 1, 0); // кадр рывка: уши прижаты, штрихи скорости
 
-  s.player = s.physics.add.sprite(100, GROUND_Y - 20, 'cat_idle').setOrigin(0.5, 1).setScale(1.5).setDepth(10);
+  s.player = s.physics.add.sprite(100, GROUND_Y - 20, 'cat_idle').setOrigin(0.5, 1).setScale(2).setDepth(10);
   const b = s.player.body as Phaser.Physics.Arcade.Body;
-  b.setSize(22, 30); b.setOffset(13, 16);
+  b.setSize(16, 22); b.setOffset(10, 14);
   s.player.setCollideWorldBounds(true); // за дверью гл.3 мир кончается — раньше кот падал с края
   s.player.play('p-idle');
   for (const r of s.floorColliders) s.physics.add.collider(s.player, r);
@@ -29,10 +29,10 @@ export function spawnPlayer(s: GameScene) {
   // иначе .play() по пустой анимации роняет update-цикл и игра «зависает».
   s.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
   s.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
-  s.playSprite = s.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
-  s.sleepSprite = s.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
+  s.playSprite = s.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(2).setDepth(10).setVisible(false);
+  s.sleepSprite = s.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(2).setDepth(10).setVisible(false);
   s.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-  s.lungeSprite = s.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setScale(1.5).setDepth(11).setVisible(false);
+  s.lungeSprite = s.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setScale(2).setDepth(11).setVisible(false);
   s.bubble = s.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#fff0d8',
     backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
     .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
