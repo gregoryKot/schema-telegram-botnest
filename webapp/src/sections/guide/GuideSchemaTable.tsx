@@ -44,7 +44,7 @@ export function GuideSchemaTable({ groups, guides, onOpen }: Props) {
         <p className="gst-lede">
           Одна схема — три способа с ней жить. Капитуляция: человек живёт так, будто схема права.
           Избегание: обходит всё, что может её включить. Гиперкомпенсация: ведёт себя так, будто верно
-          обратное.
+          обратное. В строках — примеры: один человек переходит между стилями в разных ситуациях.
         </p>
         {table.map((g) => (
           <SignGroup key={g.key} look={g.look} title={g.title} label={g.title} headAs="h2" rowsClassName="gst-rows">
