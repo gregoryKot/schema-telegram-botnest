@@ -8,7 +8,6 @@ import { addTherapist } from './therapist';
 import { CAB } from './cabinetLayout';
 import type { GameScene } from '../GameScene';
 
-
 // Тексты на светлой стене — тёмные, со светлой обводкой: читаются и поверх окна.
 export const CAB_INK = { say: '#2c3a52', warm: '#7a4226', doc: '#14664e', meet: '#8a2f52', calm: '#0f6a50' };
 export const CAB_STROKE = { stroke: '#fff8e0', strokeThickness: 6 };
@@ -33,7 +32,7 @@ export function buildCabinet(s: GameScene, depth: number): Cabinet {
   add(placeGrid(s, 'prop_bookshelf', at(CAB.shelf), floorY, 0));
   for (const x of CAB.plants) add(placeGrid(s, 'prop_plant', at(x), floorY, 0));
   const couch = add(placeGrid(s, 'prop_couch', at(CAB.couch), floorY, 0));
-  // Мистер и терапевт — просто сидят. никого не надо бить.
+  // Мистер и терапевт просто сидят: никого не надо бить.
   const seat = couch ? Math.round(couch.height * 0.4) * GRID : 0;
   add(s.add.sprite(at(CAB.couch - 10), floorY - seat, 'cat_idle').setOrigin(0.5, 1).setScale(GRID).play('p-idle'), depth + 3);
   const doc = addTherapist(s, at(CAB.chair), floorY - CAB.seat * GRID, depth + 3);
