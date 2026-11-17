@@ -9,9 +9,9 @@
 """
 import numpy as np
 from PIL import Image, ImageDraw
-from ref.pal import CH1, CH2, DAWN
+from ref.pal import CH1, CH2, CH3, DAWN
 
-PAL = {'ch1': CH1, 'ch2': CH2, 'dawn': DAWN}
+PAL = {'ch1': CH1, 'ch2': CH2, 'ch3': CH3, 'dawn': DAWN}
 SCALE = 2
 
 def C(h):
