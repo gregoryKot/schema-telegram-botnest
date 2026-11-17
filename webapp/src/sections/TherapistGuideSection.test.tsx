@@ -59,6 +59,9 @@ describe('TherapistGuideSection', () => {
     // режим без своего раздела в справочнике в список не попадает
     expect(screen.queryByRole('button', { name: 'Одинокий Ребёнок' })).toBeNull();
     expect(screen.getByText(/по книгам схема-терапии/)).toBeTruthy();
+    // оговорка об источниках и адрес для ошибок — сразу под шапкой (на сайте — Telegram автора)
+    expect(screen.getByText(/могут содержать ошибки/).textContent).toMatch(/обязательно напиши: @kotlarewski$/);
+    expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Техники', 'Для терапевта']);
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT]);
   });
