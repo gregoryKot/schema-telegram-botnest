@@ -73,7 +73,8 @@ describe('exportClientSide — концептуализация', () => {
     const out = await exportClientSide(prisma, 555n);
     expect(out.withheld).toEqual([
       expect.objectContaining({
-        table: 'ModeMap, TherapistNote, ClientConceptualization',
+        table:
+          'ModeMap, TherapistNote, TherapyPlanItem, ClientConceptualization',
       }),
     ]);
     expect(out.withheld[0].reason).toContain('истоки, задачи терапии');

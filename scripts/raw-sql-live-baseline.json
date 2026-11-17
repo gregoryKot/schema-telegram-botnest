@@ -17,6 +17,10 @@
     "spec": "test/notify-address.e2e-spec.ts",
     "via": "src/auth/merge.service.ts"
   },
+  "src/auth/merge-therapist-side.ts": {
+    "spec": "test/notify-address.e2e-spec.ts",
+    "via": "src/auth/merge.service.ts"
+  },
   "src/auth/merge-user-fields.ts": {
     "spec": "test/notify-address.e2e-spec.ts",
     "via": "src/auth/merge.service.ts"

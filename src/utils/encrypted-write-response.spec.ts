@@ -43,6 +43,7 @@ const mods = loadWithKeys({ key: 'c4'.repeat(32) }, () => ({
     require('../therapy/concept-needs') as typeof import('../therapy/concept-needs'),
   tasks:
     require('../therapy/therapy-tasks.service') as typeof import('../therapy/therapy-tasks.service'),
+  plan: require('../therapy/therapy-plan.service') as typeof import('../therapy/therapy-plan.service'),
 }));
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -73,6 +74,7 @@ function makeServices() {
     practicePlan: table({ done: null }),
     userPhraseCheck: table({ inWarmWords: false }),
     therapistNote: table(),
+    therapyPlanItem: table({ status: 'planned', taskId: null }),
     modeMap: table({ nodes: [], edges: [] }),
     therapistCustomMode: table(),
     clientConceptualization: table(),
@@ -97,6 +99,7 @@ function makeServices() {
         links,
       ),
     tasks: new mods.tasks.TherapyTasksService(db, {} as never),
+    plan: new mods.plan.TherapyPlanService(db, relations),
   };
 }
 type Services = ReturnType<typeof makeServices>;
@@ -288,6 +291,18 @@ const CASES: Case[] = [
       }),
     read: (s, w) =>
       s.therapyNotes.getNotes(THERAPIST, USER).then((p) => byId(w)(p.notes)),
+  },
+  {
+    model: 'TherapyPlanItem',
+    route: 'POST /api/therapy/plan',
+    write: (s) =>
+      s.plan
+        .create(THERAPIST, [USER], {
+          rubric: 'cognitive',
+          text: 'проверка убеждений',
+        })
+        .then((items) => items[0]),
+    read: (s, w) => s.plan.list(THERAPIST, USER).then(byId(w)),
   },
   {
     model: 'ClientConceptualization',

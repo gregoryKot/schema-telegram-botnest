@@ -404,6 +404,21 @@ describe('MergeService — реестры таблиц и SQL-инвариант
         values: [SRC, SRC],
       },
       {
+        label: 'TherapyPlanItem: UPDATE therapistId',
+        sql: 'UPDATE "TherapyPlanItem" SET "therapistId" = ? WHERE "therapistId" = ? AND "clientId" <> ?',
+        values: [TGT, SRC, TGT],
+      },
+      {
+        label: 'TherapyPlanItem: UPDATE clientId',
+        sql: 'UPDATE "TherapyPlanItem" SET "clientId" = ? WHERE "clientId" = ? AND "therapistId" <> ?',
+        values: [TGT, SRC, TGT],
+      },
+      {
+        label: 'TherapyPlanItem: DELETE cleanup (self-loop guard)',
+        sql: 'DELETE FROM "TherapyPlanItem" WHERE "therapistId" = ? OR "clientId" = ?',
+        values: [SRC, SRC],
+      },
+      {
         label:
           'TherapistCustomMode: UPDATE therapistId (без unique — просто remap)',
         sql: 'UPDATE "TherapistCustomMode" SET "therapistId" = ? WHERE "therapistId" = ?',
