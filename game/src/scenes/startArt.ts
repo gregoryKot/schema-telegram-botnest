@@ -22,7 +22,7 @@ export function drawStartArt(scene: Phaser.Scene): Phaser.GameObjects.Sprite {
   const lampX = couchX + 200 * k; // торшер у дивана — свет падает на спящего кота
   placeProp(scene, 'prop_lamp', lampX, floorY, FLOORLAMP_W * k, 2); // ореол и пятно — в спрайте
 
-  const couch = placeProp(scene, 'prop_couch', couchX, floorY, 280 * k, 2);
+  const couch = placeProp(scene, 'prop_couch', couchX, floorY, 228 * k, 2);
   const seatY = couch ? floorY - couch.displayHeight * 0.4 : floorY;
   const cat = scene.add
     .sprite(couchX + 60 * k, seatY, 'cat_idle', 0)

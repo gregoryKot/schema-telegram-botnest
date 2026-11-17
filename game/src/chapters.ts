@@ -124,7 +124,7 @@ const chapter2: ChapterConfig = {
   title: 'm_home',
   tagline: 'm_home_but_no_rest',
   theme: 'room',
-  decor: { couch: 1560, tv: 3000, lamps: [400, 2450, 4300] },
+  decor: { couch: 1560, tv: 3000, lamps: [384, 2432, 4288] },
   arenaW: 4700,
   pits: [{ s: 900, e: 1060 }, { s: 1980, e: 2160 }, { s: 3120, e: 3300 }],
   checkpoints: [100, 1120, 2220, 3360, 4100],
@@ -178,7 +178,7 @@ const chapter2: ChapterConfig = {
   palette: {
     // тёплая «вечерняя комната при лампе», не подземелье — чтобы тёплый реквизит читался
     skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
-    platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
+    platTint: 0xeacf9a, fog: 0x241a26, mote: 0xffe2a0,
   },
   music: 'home',
   overwhelmAnx: 0,
@@ -272,7 +272,7 @@ const chapter4: ChapterConfig = {
   palette: {
     // тёплая комната при лампе — как chapter2, но спокойнее
     skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
-    platTint: 0xeacf9a, fog: 0x241a26, mote: 0x8a7a8a,
+    platTint: 0xeacf9a, fog: 0x241a26, mote: 0xffe2a0,
   },
   music: 'home',
   overwhelmAnx: 0,
