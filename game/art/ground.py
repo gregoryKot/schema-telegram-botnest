@@ -1,16 +1,16 @@
-"""A3: пол трёх тем. Лист 80x16 = пять тайлов 16x16: левый край, середина,
-правый край, толща, второй вариант середины (чередуется, чтобы не было «обоев»). Тайлы бесшовные: рисуются прямо пикселями (без render,
-иначе контур лёг бы на стык), но по тем же правилам — свет сверху-слева,
-тень дизерингом, тёмная кромка вместо чёрной.
+"""A3: пол трёх тем. Лист из столбов 16x64 (кромка и вся толща до низа кадра): левый край,
+середина, правый край, третья середина, вторая середина (чередуются, чтобы не было «обоев»);
+у улицы шестой столб — темнота ямы. Столбы бесшовные: рисуются прямо пикселями (без render,
+иначе контур лёг бы на стык). Комната и дорога — прежние тайлы 16x16 поверх своей толщи;
+улица — street_ground.py (эталон: бордюр, кирпич подпорной стенки, рваные края ямы).
 """
 import random
 from PIL import Image
 from px import C
+import street_ground
 
-T = 16
+T, DEEP = 16, 64
 THEMES = {
-    'street': dict(top=('#35422e', '#4a5a3a', '#5e6e46'), curb=('#6a5a82', '#a89fd0'),
-                   body=('#1c1830', '#2a2440', '#3a3458'), out='#1a1426', grass=3),
     'room':   dict(top=('#5a4a52', '#2a1a12', '#2a1a12'), curb=('#9a6e54', '#e8cda0'),
                    body=('#6e4c3a', '#9a6e54', '#b48a66'), out='#2a1a12', grass=0),
     'road':   dict(top=('#35422e', '#3f5036', '#5e6e46'), curb=('#6a5a5a', '#ffe6b0'),
@@ -38,10 +38,6 @@ def _body(img, ox, th, y0, rnd, theme, fade=True, crack=False):
     for _ in range(3):                            # камешки / зерно асфальта
         x, y = rnd.randrange(1, T - 2), rnd.randrange(y0 + 1, T - 3)
         img.putpixel((ox + x, y), light); img.putpixel((ox + x + 1, y + 1), dark)
-    if theme == 'street' and crack:               # трещина
-        x, y = rnd.randrange(3, T - 4), y0 + 3
-        for i in range(4):
-            img.putpixel((ox + x + (i % 2), y + i), C('#1a1426'))
 
 def _surface(img, ox, th, theme, rnd):
     """Верхние 4 px: трава/плинтус, светлая кромка бордюра."""
@@ -83,5 +79,17 @@ def tiles(theme):
     _edge(img, 2 * T, 'R', th)
     return img
 
+def column_sheet(theme):
+    """Старый лист 80x16 -> столбы 16x64: под каждым тайлом кромки три тайла толщи."""
+    old = tiles(theme)
+    out = Image.new('RGBA', (T * 5, DEEP), (0, 0, 0, 0))
+    out.paste(old, (0, 0))
+    out.paste(old.crop((T, 0, 2 * T, T)), (3 * T, 0))     # третья середина: у старых тем — копия первой
+    fill = old.crop((3 * T, 0, 4 * T, T))
+    for i in range(5):
+        for y in range(T, DEEP, T):
+            out.paste(fill, (i * T, y))
+    return out
+
 def build():
-    return {f'ground_{t}': tiles(t) for t in THEMES}
+    return {'ground_street': street_ground.sheet(), **{f'ground_{t}': column_sheet(t) for t in THEMES}}
