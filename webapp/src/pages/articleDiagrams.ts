@@ -57,7 +57,7 @@ const MODES = `
   <svg viewBox="0 0 640 300" role="img" aria-label="Четыре группы режимов">
     <rect class="dg-node" x="14" y="14" width="300" height="118" rx="16"/>
     <text class="dg-cap-acc" x="34" y="42">РЕБЁНОК</text>
-    <text class="dg-t" x="34" y="72">Уязвимый · Злой</text>
+    <text class="dg-t" x="34" y="72">Уязвимый · Сердитый</text>
     <text class="dg-s" x="34" y="94">боль, страх, гнев,</text>
     <text class="dg-s" x="34" y="112">ощущение несправедливости</text>
     <rect class="dg-node" x="326" y="14" width="300" height="118" rx="16"/>
@@ -68,7 +68,7 @@ const MODES = `
     <rect class="dg-node" x="14" y="146" width="300" height="118" rx="16"/>
     <text class="dg-cap-acc" x="34" y="174">КОПИНГИ</text>
     <text class="dg-t" x="34" y="204">Защитник · Капитулянт</text>
-    <text class="dg-s" x="34" y="226">избегание, отключение,</text>
+    <text class="dg-s" x="34" y="226">капитуляция, избегание,</text>
     <text class="dg-s" x="34" y="244">гиперкомпенсация</text>
     <rect class="dg-accent" x="326" y="146" width="300" height="118" rx="16"/>
     <text class="dg-cap-on" x="346" y="174">ЦЕЛЬ ТЕРАПИИ</text>
@@ -101,7 +101,7 @@ const ANX_DEP = `
     <rect class="dg-chip" x="342" y="144" width="268" height="34" rx="9"/>
     <text class="dg-s" x="358" y="166">Неуспешность</text>
     <rect class="dg-chip" x="342" y="186" width="268" height="34" rx="9"/>
-    <text class="dg-s" x="358" y="208">Покорность · Карающий Критик</text>
+    <text class="dg-s" x="358" y="208">Покорность · Самопожертвование</text>
   </svg>
   <figcaption><b>У симптома есть адрес.</b> Когда понятно, какая схема подпитывает тревогу или спад, становится ясно, куда прикладывать усилия.</figcaption>
 </figure>`;
@@ -273,7 +273,7 @@ const RELATIONS = `
   <svg viewBox="0 0 640 300" role="img" aria-label="Одна схема, разные партнёры, один и тот же итог">
     <rect class="dg-accent" x="270" y="20" width="100" height="50" rx="14"/>
     <text class="dg-t-on" x="320" y="50" text-anchor="middle">Схема</text>
-    <text class="dg-cap" x="222" y="86">например, Покинутость / Недоверие</text>
+    <text class="dg-cap" x="222" y="86">например, Покинутость или Недоверие</text>
     <line class="dg-flow-soft" x1="320" y1="70" x2="120" y2="110"/>
     <line class="dg-flow-soft" x1="320" y1="70" x2="320" y2="110"/>
     <line class="dg-flow-soft" x1="320" y1="70" x2="520" y2="110"/>
