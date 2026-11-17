@@ -167,7 +167,7 @@ export const MODE_GROUPS: ModeGroup[] = [
         id: 'flagellating_oc',
         name: 'Самобичующий Гиперконтролёр',
         emoji: '😩',
-        short: 'Наказывает себя за ошибки строже чем нужно',
+        short: 'Наказывает себя заранее, чтобы опередить чужое наказание',
       },
       {
         id: 'compulsive_oc',
@@ -197,7 +197,7 @@ export const MODE_GROUPS: ModeGroup[] = [
         id: 'predator',
         name: 'Хищник',
         emoji: '🦊',
-        short: 'Использует других в своих интересах без сочувствия',
+        short: 'Холодно и расчётливо устраняет соперника или угрозу',
       },
       {
         id: 'attention_seeker',
