@@ -5,6 +5,7 @@ import { LEDGE } from '../../props';
 import { buildGroundStrip, buildPits, groundKey } from '../../ground';
 import { addGlow } from '../../look';
 import { addSky } from '../../sky';
+import { GRID } from '../../gridScale';
 import type { GameScene } from '../GameScene';
 
 // Небо: текстура главы (свет и дымка уже в арте) либо градиент со свечением зоны игры
@@ -78,15 +79,9 @@ export function buildPlatforms(s: GameScene) {
 
 // ── Spikes — sharp intrusive thoughts; touching costs a heart ───────────────
 export function buildSpikes(s: GameScene) {
-  const defs = s.chapter.spikes;
-  for (const d of defs) {
-    const g = s.add.graphics().setDepth(3);
-    const n = Math.floor(d.w / 16);
-    for (let i = 0; i < n; i++) {
-      const sx = d.x + i * 16;
-      g.fillStyle(0x2a1424, 1); g.fillTriangle(sx, GROUND_Y, sx + 16, GROUND_Y, sx + 8, GROUND_Y - 22);
-      g.fillStyle(0xe2506a, 1); g.fillTriangle(sx + 4, GROUND_Y, sx + 12, GROUND_Y, sx + 8, GROUND_Y - 18);
-    }
+  for (const d of s.chapter.spikes) {
+    for (let i = 0; i < Math.floor(d.w / 16); i++) // шип 8×12 в сетке ×2, три варианта по кругу
+      s.add.image(d.x + i * 16, GROUND_Y, 'spikes', i % 3).setOrigin(0, 1).setScale(GRID).setDepth(3);
     s.spikeRects.push({ x: d.x, w: d.w });
   }
 }
@@ -95,7 +90,7 @@ export function buildSpikes(s: GameScene) {
 export function buildHearts(s: GameScene) {
   const spots = s.chapter.hearts;
   for (const sp of spots) {
-    const img = s.add.image(sp.x, sp.y, 'heartpk').setDepth(7).setScale(0.8);
+    const img = s.add.image(sp.x, sp.y, 'heartpk').setDepth(7).setScale(GRID);
     s.tweens.add({ targets: img, y: sp.y - 8, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     s.heartPickups.push(img);
   }
@@ -106,7 +101,7 @@ export function buildMemories(s: GameScene) {
   const spots = s.chapter.memories ?? [];
   s.memTotal = spots.length;
   for (const sp of spots) {
-    const img = s.add.sprite(sp.x, sp.y, 'memory').setDepth(7).setScale(0.9);
+    const img = s.add.sprite(sp.x, sp.y, 'memory').setDepth(7).setScale(GRID);
     if (s.anims.exists('memory-twinkle')) img.play('memory-twinkle');
     s.tweens.add({ targets: img, y: sp.y - 7, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     s.memories.push(img);

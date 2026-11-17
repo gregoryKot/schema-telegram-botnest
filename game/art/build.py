@@ -5,14 +5,14 @@ import os
 import sys
 from PIL import Image
 from px import save, check
-import poses, ground, ledges, street, sky, refs, light, doc
+import poses, ground, ledges, street, sky, refs, light, doc, foes, pickups
 
 ASSETS, OUT = '../src/assets', 'out'
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     made = {}
-    for mod in (poses, ground, ledges, sky, street, light, doc):
+    for mod in (poses, ground, ledges, sky, street, light, doc, foes, pickups):
         made.update(mod.build())
     for k, img in made.items():
         limit = 64 if k.startswith('bg_') else 32    # фоны: дымка множит оттенки

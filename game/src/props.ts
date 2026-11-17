@@ -10,7 +10,6 @@ import shelfUrl from './assets/prop_bookshelf.png';
 import plantUrl from './assets/prop_plant.png';
 import slampUrl from './assets/prop_streetlamp.png';
 import heartUrl from './assets/spr_heart.png';
-import anxUrl   from './assets/enemy_anx.png';
 import procUrl  from './assets/enemy_proc.png';
 import phoneUrl from './assets/enemy_phone.png';
 import irritUrl from './assets/enemy_irrit.png';
@@ -21,6 +20,7 @@ import lRoomUrl   from './assets/ledge_room.png';
 import sootheUrl from './assets/enemy_soothe.png';
 import bargUrl   from './assets/enemy_bargainer.png';
 import mirrorUrl from './assets/enemy_mirror.png';
+import { FOE_SHEETS, ensureFoeAnims } from './foes';
 
 // Настоящие пиксель-арт спрайты (заменили код-рисованные прямоугольники/кружки).
 // Файлы мелкие → Vite инлайнит data-URI в бандл: грузятся мгновенно, упасть
@@ -45,12 +45,12 @@ export const LEDGE: Record<string, { key: string; cap: number }> = {
 
 // Анимированные враги: спрайт-лист → ключ текстуры + размеры кадра.
 export const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number; frames: number }> = {
-  anxmob:   { url: anxUrl,   fw: 124, fh: 64, frames: 3 },
+  ...FOE_SHEETS,
   procmob:  { url: procUrl,  fw: 110, fh: 56, frames: 3 },
   phonemob: { url: phoneUrl, fw: 79,  fh: 60, frames: 3 },
-  irritmob: { url: irritUrl, fw: 59,  fh: 60, frames: 4 },
+  irritmob: { url: irritUrl, fw: 30,  fh: 30, frames: 4 },
   workload: { url: workUrl,  fw: 86,  fh: 96, frames: 4 },
-  memory:   { url: memUrl,   fw: 30,  fh: 30, frames: 4 },
+  memory:   { url: memUrl,   fw: 15,  fh: 15, frames: 4 },
   soothe:   { url: sootheUrl, fw: 42,  fh: 78,  frames: 4 },
   bargainer:{ url: bargUrl,   fw: 106, fh: 98,  frames: 4 },
   crookedmirror:{ url: mirrorUrl, fw: 107, fh: 156, frames: 4 },
@@ -70,7 +70,7 @@ export function ensureEnemyAnims(scene: Phaser.Scene) {
     const end = (ENEMY_SHEETS[sheet]?.frames ?? 3) - 1;
     scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(sheet, { start: 0, end }), frameRate: fps, repeat: -1 });
   };
-  mk('anx-fly', 'anxmob', 5);
+  ensureFoeAnims(scene);
   mk('proc-idle', 'procmob', 4);
   mk('phone-walk', 'phonemob', 6);
   mk('irrit-flicker', 'irritmob', 8);
