@@ -4,6 +4,8 @@ import type { UserId } from '../userId';
 import { sameId } from '../utils/sameId';
 import { todayStr } from '../utils/format';
 import { useNotesPage } from './useNotesPage';
+import { normalizeSessionWork } from './sessionWork/normalize';
+import type { SessionWorkItem } from './sessionWork/types';
 
 // «Новая заметка» по сессии в карточке клиента у терапевта — одна механика
 // на оба фронта (правило №3): до инцидента 2026-10-26 (docs/INCIDENTS.md)
@@ -13,14 +15,19 @@ import { useNotesPage } from './useNotesPage';
 // Ответ, пришедший после перехода, в карточку другого клиента не попадает:
 // заметка уже сохранена своему, а список, черновик и флаги на экране — чужие.
 // Дата пустая — сегодняшний день (мини-апп даты не выбирает).
+// «Что делали» (#1330): пункты уходят в каноническом виде; с пунктами текст
+// может быть пустым.
 
 export interface NoteSenders {
   create: (
     clientId: UserId,
     date: string,
     text: string,
+    work: SessionWorkItem[],
   ) => Promise<TherapistNote>;
   remove: (noteId: number) => Promise<unknown>;
+  /** Запись сохранена с пунктами «Что делали» — событие аналитики. */
+  onWorkSaved?: (work: SessionWorkItem[]) => void;
 }
 
 export function useNoteComposer(
@@ -30,6 +37,7 @@ export function useNoteComposer(
   const np = useNotesPage();
   const [newNoteText, setNewNoteText] = useState('');
   const [newNoteDate, setNewNoteDate] = useState('');
+  const [newNoteWork, setNewNoteWork] = useState<SessionWorkItem[]>([]);
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteError, setNoteError] = useState('');
   const isOpen = (id: UserId | null): id is UserId =>
@@ -40,12 +48,14 @@ export function useNoteComposer(
     setNoteError('');
     setNewNoteText('');
     setNewNoteDate('');
+    setNewNoteWork([]);
     setNoteSaving(false);
   }
 
   async function addNote() {
     const clientId = openClientIdRef.current;
-    if (clientId == null || !newNoteText.trim()) return;
+    const work = normalizeSessionWork(newNoteWork);
+    if (clientId == null || (!newNoteText.trim() && work.length === 0)) return;
     setNoteSaving(true);
     setNoteError('');
     try {
@@ -53,11 +63,14 @@ export function useNoteComposer(
         clientId,
         newNoteDate || todayStr(),
         newNoteText.trim(),
+        work,
       );
+      if (work.length > 0) send.onWorkSaved?.(work);
       if (!isOpen(clientId)) return;
       np.onNoteSaved(note);
       setNewNoteText('');
       setNewNoteDate('');
+      setNewNoteWork([]);
     } catch {
       if (isOpen(clientId)) setNoteError('Не удалось сохранить заметку');
     } finally {
@@ -84,6 +97,8 @@ export function useNoteComposer(
     setNewNoteText,
     newNoteDate,
     setNewNoteDate,
+    newNoteWork,
+    setNewNoteWork,
     noteSaving,
     noteError,
     setNoteError,

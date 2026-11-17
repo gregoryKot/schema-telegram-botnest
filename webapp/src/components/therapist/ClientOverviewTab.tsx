@@ -1,3 +1,5 @@
+import { workTitle } from '../../../../shared/src/therapy/sessionWork/names';
+import { normalizeSessionWork } from '../../../../shared/src/therapy/sessionWork/normalize';
 import type { CSSProperties } from 'react';
 import type { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
@@ -59,7 +61,8 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
               <SignHead kind="pebbles" className="ds-label">Заметка сессии</SignHead>
               <button className="ds-link" onClick={() => setClientTab('sessions')}>Все заметки →</button>
             </div>
-            <div className="tk-note-text">{notes[0].text}</div>
+            {/* Запись без текста (#1330) — названия пунктов «Что делали». */}
+            <div className="tk-note-text">{notes[0].text || normalizeSessionWork(notes[0].work).map(workTitle).join(' · ')}</div>
             <div className="ds-sub tk-note-date">{fmtDate(notes[0].date)}</div>
           </section>
         )}

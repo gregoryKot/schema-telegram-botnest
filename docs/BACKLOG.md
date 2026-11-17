@@ -25,6 +25,10 @@
 
 ## В работе
 
+- 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. PR1 (эта ветка): каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`.
+  Впереди: PR2 — журнал «На сессиях» и лист техники берут пункты из итогов (ручка пунктов по клиенту); PR3 — сводка «Что было сделано» на «Обзоре».
+  Не сделано в PR1: свои режимы терапевта (`TherapistCustomMode`) в выборе и в метках под записью — `webapp/src/components/therapist/SessionWorkItemCard.tsx` берёт только справочник (причина: у своих режимов отдельная загрузка, в размер PR не вошло).
+
 - 🔧 **Игра: логика, шероховатости, дизайн** — владелец 2026-11-12: «бери всё в свои руки».
   Семь карточек по порядку в зонтике #1087; первая — смок игры в CI и вход `#intro` (#1088).
   Не сделано в #1092 (#1108): дробление `game/src/scenes/GameScene.ts` — #1109, #1110 сделаны; дробление по #1181 сделано (#1184 и следующий PR): сцена 246 строк, логика — модули `game/src/scenes/game/` (`anx`, `critic`, `moves`, `attack`, `level`, `triggers`, `gates`, `player`, `hud`, `world`).
@@ -90,6 +94,9 @@
 - ⬜ **Шаблон `practice_missed`: разбор `payload.weekday` нужен только старым строкам очереди** — с #1285 вопрос всегда о дне перед днём плана и ставится без payload («Вчера был план»); `ON_WEEKDAY` и ветка `weekday` в `src/notification/notification.templates.activity.ts` дочитывают строки, поставленные до деплоя (не дольше суток). Шаг после мержа: через сутки после деплоя снять ветку вместе с её тестами.
 - ⬜ **Гейт `check-dead-end-report.mjs` не видит два вида загрузчика** — `async`-загрузчик с `await` без `try` и промис, отданный дальше (аргумент, присваивание, `return`), идут мимо правил `scripts/check-dead-end-report-rules.mjs`: сбой там может рисоваться как «пусто» без отчёта (№14). Подробности — `docs/open/audit-2026-10.md`, «остаток слепого пятна»; найдено в #1303.
 - ⬜ **Пропуск скрытых каталогов в `check-telegram-chat-id.mjs` и `check-dead-end-report.mjs`** — оба обходят дерево `readdirSync`+`statSync` без пропуска `.`-имён (первый в момент пакета c3-16 переписывал параллельный c3-11, #1308; второго нет в брифе c3-16 и ни в одном открытом PR — пакета-владельца нет, берёт любая сессия); при живом `src/.jest-cache` ручной запуск падает на гонке удаления. Добавить `name.startsWith('.')` у рекурсии и убрать файл из `NOT_YET` в `src/test-support/gates/source-walk.spec.ts`.
+- ⬜ **«Что делали»: нет живого спека чтения и записи `TherapistNote.work`** — «сохранил → нашёл» проверено на моке Prisma (`src/therapy/therapy-notes.service.spec.ts`), через реальную БД не гонялось (#1330, PR1).
+- ⬜ **`scripts/file-size-baseline.json` на `main` не знает новых файлов** — `game/src/{foes,gridScale}.ts`, `webapp/src/sections/guide/{GuideSchemaTable.tsx,guideSchemaTableModel.ts}`; видно по `node scripts/check-file-size-ratchet.mjs --update` на чистом `main`.
+- ⬜ **`ClientDetail` в тестах карточки клиента собирается руками через `as unknown as`** — новое поле ловится только падением теста (так было с `webapp/src/components/therapist/ClientSessionsTab.limit.test.tsx`); нужна общая фабрика.
 
 ## Идеи
 

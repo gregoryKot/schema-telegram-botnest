@@ -43,6 +43,7 @@ import type {
 } from '../notes/types';
 import type { JourneyData } from '../journey/journeyMeta';
 import type { TherapistNotesPage } from '../therapy/notesPage';
+import type { SessionWorkItem } from '../therapy/sessionWork/types';
 import type { PracticeIcsLinkBody } from '../practices/savePracticeIcs';
 
 /** Транспорт фронтенда: auth-заголовки, BASE и обработка ошибок — внутри. */
@@ -250,8 +251,17 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getTherapistNotes: (clientId: UserId) =>
     t.get<TherapistNotesPage>(`/api/therapy/notes/${clientId}`),
-  createTherapistNote: (clientId: UserId, date: string, text: string) =>
-    t.postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, { date, text }),
+  createTherapistNote: (
+    clientId: UserId,
+    date: string,
+    text: string,
+    work: SessionWorkItem[] = [],
+  ) =>
+    t.postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, {
+      date,
+      text,
+      work,
+    }),
   deleteTherapistNote: (noteId: number) =>
     t.del(`/api/therapy/notes/${noteId}`),
   updateSessionInfo: (

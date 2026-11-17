@@ -88,6 +88,8 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // свободный текст клиента о своём состоянии.
   'webapp/src/components/therapist/ClientSessionsTab.tsx':
     'заметки терапевта о сессии клиента',
+  'webapp/src/components/therapist/SessionWorkItemCard.tsx':
+    'терапевт: поля пункта «Что делали» в итогах сессии',
   // Вид «Поля» уехал из ClientConceptTab/ConceptSheet в отдельные файлы
   // (правило №10): запись переехала за <textarea>, а не добавилась. Поля
   // связей режимов графической концептуализации — ConceptTextField (shared,
@@ -182,8 +184,10 @@ describe('трипваер: кризисная детекция для своб�
     // 2026-11-12 поле стояло в WheelFields.tsx — запись переехала за ним) — текст
     // листа «детский опыт / подростковый / как сейчас» по потребности; пишет
     // терапевт о клиенте на своём холсте (тот же класс, что NodeMeaningFields).
+    // 20 → 21 (2026-11, «Что делали» в итогах сессии): SessionWorkItemCard.tsx —
+    // тот же класс, что заметка о сессии в ClientSessionsTab: пишет терапевт.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      20,
+      21,
     );
   });
 
@@ -271,6 +275,8 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
     'терапевт: имя нового клиента',
   'webapp/src/components/therapist/ClientHeader.tsx':
     'терапевт: переименование клиента',
+  'webapp/src/components/therapist/SessionWorkItemCard.tsx':
+    'терапевт: название своего упражнения в пункте «Что делали»',
   'shared/src/therapy/conceptGraph/ConceptAliasField.tsx':
     'концептуализация терапевта: своё имя режима клиента',
   // Карта режимов — короткие подписи узлов, стрелок и дорожек. Тот же класс,
@@ -306,7 +312,8 @@ describe('трипваер: кризисная детекция для <input> �
   it('allowlist коротких полей не разросся (может только сокращаться)', () => {
     // 24 (2026-11, первый обход <input>): имена, коды (в т.ч. резервный код
     // 2FA из #897), поиск, терапевтская сторона, подписи карты режимов, админка.
-    expect(Object.keys(SHORT_INPUT_ALLOWLIST).length).toBeLessThanOrEqual(24);
+    // 25 («Что делали» в итогах сессии): название своего упражнения, пишет терапевт.
+    expect(Object.keys(SHORT_INPUT_ALLOWLIST).length).toBeLessThanOrEqual(25);
   });
 
   it('записи <input>-классификации не протухли: в файле ещё есть свободное поле', () => {

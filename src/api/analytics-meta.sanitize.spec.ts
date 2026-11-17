@@ -76,6 +76,20 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('client_concept_opened', { on: true })).toBeUndefined();
   });
 
+  it('cabinet_session_work: число пунктов и известные виды, текст — мимо', () => {
+    expect(
+      sanitizeMeta('cabinet_session_work', {
+        items: 40,
+        kinds: ['custom', 'technique', 'song', 'custom'],
+        text: 'ссора с матерью',
+      }),
+    ).toEqual({ items: 12, kinds: ['technique', 'custom'] });
+    expect(
+      sanitizeMeta('cabinet_session_work', { items: '2', kinds: [] }),
+    ).toBeUndefined();
+    expect(sanitizeMeta('cabinet_session_work', { items: 2 })).toBeUndefined();
+  });
+
   it('breath_start: meta игнорируется (событие без meta)', () => {
     expect(sanitizeMeta('breath_start', { junk: 'x' })).toBeUndefined();
   });

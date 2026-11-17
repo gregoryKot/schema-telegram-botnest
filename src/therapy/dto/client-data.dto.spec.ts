@@ -38,6 +38,26 @@ describe('CreateSessionNoteDto', () => {
     ).resolves.toEqual([]);
   });
 
+  it('work: форма и границы пунктов «Что делали» (#1330)', async () => {
+    const item = { id: 'a', kind: 'custom', customName: 'Своё', fields: {} };
+    const body = (work: unknown) => ({ date: '2026-07-14', text: '', work });
+    await expect(
+      errorsFor(CreateSessionNoteDto, body([item])),
+    ).resolves.toEqual([]);
+    for (const bad of [
+      'строка',
+      Array.from({ length: 13 }, () => item),
+      [{ ...item, kind: 'song' }],
+      [{ ...item, customName: 'н'.repeat(81) }],
+      [{ ...item, fields: { what: 'ж'.repeat(601) } }],
+      [{ ...item, modeIds: Array.from({ length: 13 }, () => 'm') }],
+      [{ ...item, id: 5 }],
+    ])
+      await expect(
+        errorsFor(CreateSessionNoteDto, body(bad)),
+      ).resolves.toContain('work');
+  });
+
   // QA 2026-10-26: заметка принимала `2026-13-45` и `0000-00-00`.
   it('date — настоящий календарный день', async () => {
     for (const bad of ['2026-13-45', '0000-00-00', '2026-02-30', '2026-7-1'])
