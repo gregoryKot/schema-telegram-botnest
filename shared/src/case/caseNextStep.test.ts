@@ -109,8 +109,18 @@ describe('caseNextStep — девять веток', () => {
       input({
         caseCount: 4,
         modeStats: [
-          mode({ modeId: 'healthy_adult', alias: 'Опора', count: 3, hasCard: true }),
-          mode({ modeId: 'punitive_critic', alias: 'Судья', count: 1, hasCard: true }),
+          mode({
+            modeId: 'healthy_adult',
+            alias: 'Опора',
+            count: 3,
+            hasCard: true,
+          }),
+          mode({
+            modeId: 'punitive_critic',
+            alias: 'Судья',
+            count: 1,
+            hasCard: true,
+          }),
         ],
         healthyResponseCount: 0,
       }),

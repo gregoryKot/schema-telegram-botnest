@@ -78,7 +78,8 @@ const modeName = (m: Pick<ModeStat, 'modeId' | 'alias'>): string =>
   modeDisplayName(m.modeId, m.alias);
 
 const familyOf = (modeId: string) => findTestGroupByModeId(modeId)?.id ?? '';
-const isCoping = (modeId: string): boolean => COPING_FAMILIES.has(familyOf(modeId));
+const isCoping = (modeId: string): boolean =>
+  COPING_FAMILIES.has(familyOf(modeId));
 
 /** Самый заметный режим из подмножества — больше случаев, при равенстве
  *  более свежий. undefined, если под predicate ничего не подошло. */
