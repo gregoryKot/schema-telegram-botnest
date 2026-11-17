@@ -1,23 +1,16 @@
 // Мир вокруг кота: спираль истощения, шипы, подбор сердец и воспоминаний, падение в яму.
 import Phaser from 'phaser';
-import { W, H, GROUND_Y } from '../../constants';
+import { H, GROUND_Y } from '../../constants';
 import { audio } from '../../audio';
 import type { GameScene } from '../GameScene';
+import { updateMood } from './mood';
 
 // ── СПИРАЛЬ (не цикл): копинг и время копят истощение → мир враждебнее ──────
 export function updateSpiral(s: GameScene, dt: number) {
   const coping = s.frozen || s.dashing || s.attacking;
   s.exhaustion = Math.min(1, s.exhaustion + dt * (coping ? 0.00011 : 0.000022));
   audio.setDetune(1 - s.exhaustion * 0.06); // музыка чуть ниже = «расстроеннее»
-  // виньетка темнеет к краям
-  const g = s.exhaustOverlay; g.clear();
-  const a = s.exhaustion;
-  if (a > 0.02) {
-    const band = 24 + 70 * a, t = 0.5 * a;
-    g.fillStyle(0x080510, t);
-    g.fillRect(0, 0, W, band); g.fillRect(0, H - band, W, band);
-    g.fillRect(0, 0, band * 0.7, H); g.fillRect(W - band * 0.7, 0, band * 0.7, H);
-  }
+  updateMood(s, dt); // истощение и теснота не темнят мир, а холодят его
   // состояние пальцами: рядом угрозы — экран подрагивает (п.4)
   let threats = s.anx.filter(a2 => a2.alive && Phaser.Math.Distance.Between(a2.img.x, a2.img.y, s.player.x, s.player.y) < 150).length;
   if (s.critic?.alive && Phaser.Math.Distance.Between(s.critic.img.x, s.critic.img.y, s.player.x, s.player.y) < 150) threats++;
