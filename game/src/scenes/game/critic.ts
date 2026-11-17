@@ -33,7 +33,7 @@ export function spawnCritic(s: GameScene) {
   introOnce(s, 'critic', 'm_the_inner_critic', 'm_critic_story');
 }
 
-// ── Self-critic: его не победить. Рявкнул — притих на миг и вырос. Он же ты.
+// ── Self-critic: в одиночку его не победить. Рявкнул — притих на миг и вырос.
 export function hitCritic(s: GameScene) {
   const c = s.critic;
   if (!c) return;
