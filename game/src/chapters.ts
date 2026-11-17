@@ -244,8 +244,8 @@ const chapter3: ChapterConfig = {
   // развязка гл.3 — не текстовая карточка, а вход в дверь (кабинет); ending не используется
   ending: [],
   palette: {
-    skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
-    platTint: 0xc0b4d4, fog: 0x342a4a, mote: 0xb0a0d0,
+    skyTop: 0x2f3a78, skyBot: 0xffe4bc, glow1: 0xf6b0b0, glow2: 0x44509a, sky: 'bg_road_sky', // синий час (game/art/road.py)
+    platTint: 0xc0b4d4, fog: 0xeab6c6, mote: 0xffe4bc,
   },
   music: 'home',
   overwhelmAnx: 0,
@@ -270,9 +270,9 @@ const chapter4: ChapterConfig = {
   triggers: [],
   ending: [],
   palette: {
-    // тёплая комната при лампе — как chapter2, но спокойнее
-    skyTop: 0x342b3e, skyBot: 0x5a4a52, glow1: 0x7a5a5e, glow2: 0x9a6e54,
-    platTint: 0xeacf9a, fog: 0x241a26, mote: 0xffe2a0,
+    // кабинет на рассвете (палитра DAWN в game/art/ref/pal.py): лазурь, персик, мята
+    skyTop: 0x7aa7d8, skyBot: 0xffe2c4, glow1: 0xffc6a8, glow2: 0x8fd8b8,
+    platTint: 0xfff0d8, fog: 0xd7e4ee, mote: 0xfff8e0,
   },
   music: 'home',
   overwhelmAnx: 0,

@@ -14,11 +14,9 @@ import irritUrl from './assets/enemy_irrit.png';
 import memUrl    from './assets/spr_memory.png';
 import lStreetUrl from './assets/ledge_street.png';
 import lRoomUrl   from './assets/ledge_room.png';
-import sootheUrl from './assets/enemy_soothe.png';
-import bargUrl   from './assets/enemy_bargainer.png';
-import mirrorUrl from './assets/enemy_mirror.png';
 import { FOE_SHEETS, ensureFoeAnims } from './foes';
 import { loadRoom } from './room';
+import { ROAD_IMAGES, HAWKER_ANIMS, HAWKER_SHEETS } from './roadArt';
 
 // Пиксель-арт спрайты: файлы мелкие → Vite инлайнит data-URI в бандл, грузит BootScene.preload.
 export const PROP_IMAGES: Record<string, string> = {
@@ -26,7 +24,7 @@ export const PROP_IMAGES: Record<string, string> = {
   prop_couch: couchUrl, prop_tv: tvUrl, prop_lamp: lampUrl,
   prop_bookshelf: shelfUrl, prop_plant: plantUrl, prop_streetlamp: slampUrl,
   heartpk: heartUrl,
-  ledge_street: lStreetUrl, ledge_room: lRoomUrl,
+  ledge_street: lStreetUrl, ledge_room: lRoomUrl, ...ROAD_IMAGES,
 };
 
 // Свет — внутри спрайта: фонарь 32x100 и торшер 44x92, оба в сетке ×2.
@@ -37,6 +35,7 @@ export const FLOORLAMP_W = 44 * 2;
 export const LEDGE: Record<string, { key: string; cap: number }> = {
   street: { key: 'ledge_street', cap: 16 },
   room:   { key: 'ledge_room',   cap: 16 },
+  road:   { key: 'ledge_road',   cap: 16 },
 };
 
 // Анимированные враги: спрайт-лист → ключ текстуры + размеры кадра.
@@ -44,9 +43,7 @@ const ENEMY_SHEETS: Record<string, { url: string; fw: number; fh: number; frames
   ...FOE_SHEETS,
   irritmob: { url: irritUrl, fw: 30,  fh: 30, frames: 4 },
   memory:   { url: memUrl,   fw: 15,  fh: 15, frames: 4 },
-  soothe:   { url: sootheUrl, fw: 42,  fh: 78,  frames: 4 },
-  bargainer:{ url: bargUrl,   fw: 106, fh: 98,  frames: 4 },
-  crookedmirror:{ url: mirrorUrl, fw: 107, fh: 156, frames: 4 },
+  ...HAWKER_SHEETS,
 };
 
 export function loadProps(scene: Phaser.Scene) {
@@ -67,9 +64,7 @@ export function ensureEnemyAnims(scene: Phaser.Scene) {
   ensureFoeAnims(scene);
   mk('irrit-flicker', 'irritmob', 8);
   mk('memory-twinkle', 'memory', 7);
-  mk('soothe-idle', 'soothe', 5);
-  mk('bargainer-idle', 'bargainer', 6);
-  mk('mirror-shimmer', 'crookedmirror', 5);
+  for (const [sheet, key, fps] of HAWKER_ANIMS) mk(key, sheet, fps);
 }
 
 // Поставить реквизит на пол: origin (0.5, 1) в точке (x, groundY), масштаб — по

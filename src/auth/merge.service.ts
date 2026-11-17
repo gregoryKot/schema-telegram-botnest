@@ -13,6 +13,7 @@ import {
 import { SecurityLogService } from './security-log.service';
 import { twoFactorWillBeLost } from './merge-two-factor';
 import { remapAssignerRefs } from './merge-assigner-refs';
+import { remapTherapistSideRows } from './merge-therapist-side';
 import { remapRelations } from './merge-relations';
 import { combineConflicts, countCombinable } from './merge-combine';
 import { countLost } from './merge-lost';
@@ -58,6 +59,7 @@ export const KNOWN_TABLES = new Set<string>([
   'TherapistNote',
   'ClientConceptualization',
   'ModeMap',
+  'TherapyPlanItem',
   'TherapistCustomMode',
   'User',
 ]);
@@ -242,21 +244,8 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 4d. ModeMap (therapistId / clientId, без unique) — до аудита 2026-07
-      // карты режимов при merge не переносились вовсе и терялись для
-      // терапевта. Паттерн как у TherapistNote; clientId может быть
-      // отрицательным (виртуальный клиент) — обычный remap это покрывает.
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "ModeMap" SET "therapistId" = ${targetId}
-        WHERE "therapistId" = ${sourceId} AND "clientId" <> ${targetId}
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        UPDATE "ModeMap" SET "clientId" = ${targetId}
-        WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
-      `);
-      await tx.$executeRaw(Prisma.sql`
-        DELETE FROM "ModeMap" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
-      `);
+      // 4d. ModeMap и TherapyPlanItem — merge-therapist-side.ts.
+      await remapTherapistSideRows(tx, sourceId, targetId);
 
       // 4e. TherapistCustomMode (только therapistId, без unique) — просто remap.
       await tx.$executeRaw(Prisma.sql`

@@ -11,12 +11,11 @@ from px import C, PAL
 
 W, H = 48, 16
 
-def street():
+def street(P=PAL['ch1'], top='#fff0c4'):
     """Уступ эталона: светлая кромка, тёмный фасад, тёплый контур — контрастен на любом слое."""
-    P = PAL['ch1']
     img = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
     d.rectangle((0, 0, W - 1, 10), fill=C(P['ink']))
-    for y, col in ((1, '#fff0c4'), (2, P['curb_hi']), (3, P['curb_hi']), (4, P['curb']), (5, P['pave_sh']),
+    for y, col in ((1, top), (2, P['curb_hi']), (3, P['curb_hi']), (4, P['curb']), (5, P['pave_sh']),
                    (6, P['wall']), (7, P['wall_dk']), (8, P['wall_dk']), (9, P['wall_dk'])):
         d.line((1, y, W - 2, y), fill=C(col))
     for bx in (5, W - 12):                       # кронштейны и швы камня — только на торцах
@@ -41,4 +40,4 @@ def room():
 
 def build():
     # только карнизы из LEDGE в game/src/props.ts — build.py --install кладёт в ассеты всё, что здесь
-    return {f'ledge_{k}': f() for k, f in (('street', street), ('room', room))}
+    return {f'ledge_{k}': f() for k, f in (('street', street), ('room', room), ('road', lambda: street(PAL['ch3'], '#fff8e8')))}

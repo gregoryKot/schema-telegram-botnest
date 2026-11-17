@@ -75,6 +75,10 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
     status: 'withhold',
     reason: `заметки психолога о сессиях — ${THERAPIST_WORK_MATERIAL}`,
   },
+  TherapyPlanItem: {
+    status: 'withhold',
+    reason: `план работы с клиентом — ${THERAPIST_WORK_MATERIAL}`,
+  },
   // Схема случая, которую терапевт показал клиенту (sharedWithClientAt), —
   // в файл тем же видом, что в «Мой терапевт» (src/therapy/client-concept-view.ts).
   ClientConceptualization: {

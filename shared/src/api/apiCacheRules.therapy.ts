@@ -16,6 +16,7 @@ const CLAIMS = `${T}/card-claims`;
 // Канбан «Задания» (tasks/all): имя клиента и его задания.
 const ALL_TASKS = `${T}/tasks/all`;
 const MODE_MAPS = { prefix: `${T}/mode-maps/` };
+const PLANS = { prefix: `${T}/plan/` };
 
 /** Всё, что кабинет кеширует про одного клиента (GET с :clientId). */
 const clientKeys = (id: string): InvalidationTarget[] => [
@@ -25,6 +26,7 @@ const clientKeys = (id: string): InvalidationTarget[] => [
   `${T}/conceptualization/${id}`,
   `${T}/tasks/client/${id}`,
   `${T}/mode-maps/${id}`,
+  `${T}/plan/${id}`,
   { prefix: `${T}/client/${id}/` }, // diary, schema-notes, mode-notes
 ];
 
@@ -149,6 +151,16 @@ export const THERAPY_RULES: Rule[] = [
   },
   simple('PATCH', /^\/api\/therapy\/mode-maps\/map\/\d+$/, MODE_MAPS),
   simple('DELETE', /^\/api\/therapy\/mode-maps\/map\/\d+$/, MODE_MAPS),
+  // План работы: создание идёт сразу нескольким клиентам, правка и удаление
+  // знают только id пункта — сбрасываем планы кабинета целиком.
+  simple('POST', /^\/api\/therapy\/plan$/, PLANS),
+  simple('PATCH', /^\/api\/therapy\/plan\/items\/\d+$/, PLANS),
+  simple('DELETE', /^\/api\/therapy\/plan\/items\/\d+$/, PLANS),
+  {
+    method: 'POST',
+    pattern: /^\/api\/therapy\/plan\/order\/(-?\d+)$/,
+    targets: (m) => [`${T}/plan/${m[1]}`],
+  },
   simple('POST', /^\/api\/therapy\/custom-modes$/, `${T}/custom-modes`),
   simple('DELETE', /^\/api\/therapy\/custom-modes\/\d+$/, `${T}/custom-modes`),
 ];

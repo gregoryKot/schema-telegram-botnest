@@ -109,6 +109,9 @@ function makeDb(rels: Rel[]) {
     userModeNote: { findMany: findByUser(modeNotes) },
     childhoodRating: { findMany: findByUser(childhood) },
     therapistNote: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
+    therapyPlanItem: {
+      deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
+    },
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },

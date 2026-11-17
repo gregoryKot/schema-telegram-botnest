@@ -1,0 +1,82 @@
+// Поиск «Справочника» по текстам листов: слово из текста находит лист и показывает кусок абзаца,
+// название по-прежнему важнее; сверка «собрал тексты → нашёл по ним» идёт через buildReferenceBody.
+import { describe, it, expect } from 'vitest';
+import { buildReference, type ReferenceTexts } from './guideReferenceModel';
+import { buildReferenceBody, snippet } from './guideReferenceBody';
+import { searchReference } from './guideReferenceSearch';
+import {
+  FIXTURE_GUIDE,
+  FIXTURE_PRACTICE_NOTE,
+  FIXTURE_SCHEMA_GUIDE,
+  FIXTURE_TECHNIQUES,
+} from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
+
+const tr = (ty: string) => ty;
+const texts: ReferenceTexts = {
+  buildModeGuides: () => [
+    { ...FIXTURE_GUIDE, modeId: 'vulnerable_child', what: 'Ребёнок остаётся один на один с тоской и страхом.' },
+    { ...FIXTURE_GUIDE, modeId: 'angry_child', what: 'Гнев на то, что потребность не услышана.', more: ['Ярость копится неделями'] },
+  ],
+  buildSchemaDomainGuides: () => [{
+    domainId: 'rejection', note: 'домен',
+    schemas: [{ ...FIXTURE_SCHEMA_GUIDE, schemaId: 'abandonment', betweenSessions: [{ kind: 'custom', title: 'Письмо о разлуке', text: 'Написать и не отправлять' }] }],
+  }],
+  buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
+  practiceNotes: () => [{ ...FIXTURE_PRACTICE_NOTE, points: ['Сверить контрперенос с супервизором'] }],
+};
+const ref = buildReference(texts, tr);
+const body = buildReferenceBody(texts, tr);
+const ids = (query: string) => searchReference(ref, query, body).flatMap((g) => g.items.map((i) => i.id));
+const only = (query: string) => searchReference(ref, query, body).flatMap((g) => g.items)[0];
+
+describe('поиск по текстам листов', () => {
+  it('слово из текста находит лист; под названием — кусок абзаца с этим словом', () => {
+    expect(ids('тоской')).toEqual(['vulnerable_child']);
+    expect(only('ТОСКОЙ').sub).toBe('…остаётся один на один с тоской и страхом.');
+  });
+
+  it('ищет во вложенных пунктах: «Подробнее», «Между сессиями», пункты раздела «Для терапевта»', () => {
+    expect(ids('ярость')).toEqual(['angry_child']);
+    expect(ids('разлуке')).toEqual(['abandonment']);
+    expect(ids('контрперенос')).toEqual([FIXTURE_PRACTICE_NOTE.id]);
+  });
+
+  it('совпадение в названии — строка как была, без куска текста', () => {
+    const hit = only('сердитый');
+    expect(hit.id).toBe('angry_child');
+    expect(hit.sub).toBeUndefined();
+  });
+
+  it('несколько слов — нужны все: часть в названии, часть в тексте', () => {
+    expect(ids('ребёнок гнев')).toEqual(['angry_child']);
+    expect(only('ребёнок гнев').sub).toBe('Гнев на то, что потребность не услышана.');
+    expect(ids('ребёнок щщщщ')).toEqual([]);
+  });
+
+  it('слово короче трёх букв в тексте не ищется; идентификаторы — не текст', () => {
+    expect(ids('на')).not.toContain('angry_child');
+    expect(ids('angry_child')).toEqual([]);
+  });
+
+  it('без текстов поиск идёт только по названиям', () => {
+    expect(searchReference(ref, 'тоской')).toEqual([]);
+  });
+});
+
+describe('snippet', () => {
+  const long = 'Первое длинное вступление про совсем другое, затем идёт мысль про контрперенос терапевта, '
+    + 'и после неё ещё одно длинное придаточное, которое в строку списка уже никак не помещается целиком.';
+
+  it('длинный абзац режется по границам слов, обрезанные края — с многоточием', () => {
+    const cut = snippet(long, 'контрперенос');
+    expect(cut.startsWith('…')).toBe(true);
+    expect(cut.endsWith('…')).toBe(true);
+    expect(cut).toContain('контрперенос терапевта');
+    expect(long).toContain(cut.slice(1, -1));
+    expect(cut.length).toBeLessThan(150);
+  });
+
+  it('короткий абзац — целиком', () => {
+    expect(snippet('Гнев — сигнал.', 'гнев')).toBe('Гнев — сигнал.');
+  });
+});

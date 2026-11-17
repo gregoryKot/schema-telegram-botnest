@@ -62,3 +62,4 @@ export function charCounterState(
   const left = Math.max(0, max - length);
   return { left, atLimit: left === 0 };
 }
+export const PLAN_ITEM_TEXT_MAX = 5000; // пункт плана работы с клиентом (рубрика справочника целиком помещается)

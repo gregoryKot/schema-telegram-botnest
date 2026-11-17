@@ -86,6 +86,14 @@ describe('moodLook', () => {
     expect(moodLook(1, 1, 0).glow).toBeGreaterThan(moodLook(1, 0, 0).glow);
   });
 
+  it('рассвет гл.3 заметен: к двери терапевта подсветка втрое сильнее, чем на старте, давление её гасит', () => {
+    const start = moodLook(0, 0, chapterWarmth('chapter3', 0)).dawn, end = moodLook(0, 0, chapterWarmth('chapter3', 1)).dawn;
+    expect(start).toBeGreaterThan(0.04);
+    expect(end).toBeGreaterThan(start * 3);
+    expect(end).toBeLessThan(0.25); // ADD-слой: сильнее — пересвет светлой мостовой
+    expect(moodLook(1, 0, chapterWarmth('chapter3', 1)).dawn).toBeLessThan(end / 2);
+  });
+
   it('в главах терапии то же давление холодит слабее, а база теплее', () => {
     expect(moodLook(1, 0, 1).wash).toBeLessThan(moodLook(1, 0, 0).wash);
     expect(moodLook(0, 0, 1).dawn).toBeGreaterThan(moodLook(0, 0, 0.3).dawn);

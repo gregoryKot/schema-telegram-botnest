@@ -91,6 +91,9 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); переключатель «показать клиенту»"
   },
+  "webapp/src/components/therapist/plan/usePlanItems.ts::setError": {
+    "status": "reports"
+  },
   "webapp/src/components/therapist/useAddClient.ts::setError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"

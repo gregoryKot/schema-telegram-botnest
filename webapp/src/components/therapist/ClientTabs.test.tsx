@@ -33,11 +33,11 @@ describe('ClientTabs', () => {
     expect(screen.getByRole('tab', { name: 'Сессии' }).querySelector('.ds-count')).toBeNull();
   });
 
-  it('вкладка холстов — «Графические карты» между «Концептуализацией» и «Сессиями» (#963)', () => {
+  it('вкладка холстов — «Графические карты» между «Планом работы» и «Сессиями» (#963); план — сразу за «Концептуализацией»', () => {
     const detail = detailWith('overview');
     render(<ClientTabs detail={detail} />);
     const names = screen.getAllByRole('tab').map(t => t.textContent);
-    expect(names.slice(1, 4)).toEqual(['Концептуализация', 'Графические карты', 'Сессии']);
+    expect(names.slice(1, 5)).toEqual(['Концептуализация', 'План работы', 'Графические карты', 'Сессии']);
     expect(screen.queryByRole('tab', { name: 'Карта режимов' })).toBeNull();
     fireEvent.click(screen.getByRole('tab', { name: 'Графические карты' }));
     expect(detail.setClientTab).toHaveBeenCalledWith('mode_map');

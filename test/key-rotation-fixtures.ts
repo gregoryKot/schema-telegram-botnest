@@ -29,6 +29,7 @@ export const BASE_ROWS: Record<string, Row> = {
   userTask: { userId: USER, type: 'custom' },
   therapistNote: { therapistId: THERAPIST, clientId: USER, date: '2026-10-14' },
   clientConceptualization: { therapistId: THERAPIST, clientId: USER },
+  therapyPlanItem: { therapistId: THERAPIST, clientId: USER, rubric: 'custom' },
   booking: {
     startsAt: T0,
     durationMin: 50,
