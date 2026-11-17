@@ -2,21 +2,22 @@
 import Phaser from 'phaser';
 import { W, H, GROUND_Y, S } from '../../constants';
 import { LEDGE } from '../../props';
-import { buildGroundStrip, groundKey } from '../../ground';
+import { buildGroundStrip, buildPits, groundKey } from '../../ground';
 import { addGlow } from '../../look';
+import { addSky } from '../../sky';
 import type { GameScene } from '../GameScene';
 
-// ── Atmosphere — inside a restless mind ─────────────────────────────────────
+// Небо: текстура главы (свет и дымка уже в арте) либо градиент со свечением зоны игры
 export function buildBackground(s: GameScene) {
-  const ARENA_W = s.chapter.arenaW;
-  const pal = s.chapter.palette;
-  const g = s.add.graphics().setScrollFactor(0).setDepth(-9);
-  g.fillGradientStyle(pal.skyTop, pal.skyTop, pal.skyBot, pal.skyBot, 1, 1, 1, 1);
-  g.fillRect(0, 0, W, H);
-  // distant glow lighting the play zone
-  addGlow(s, W / 2, GROUND_Y - 10, W * 1.8, 420, pal.glow1, 0.30, -8).setScrollFactor(0);
-  addGlow(s, W / 2, GROUND_Y - 10, W * 1.1, 260, pal.glow2, 0.22, -8).setScrollFactor(0);
-  // drifting "thought" motes (parallax)
+  const ARENA_W = s.chapter.arenaW, pal = s.chapter.palette;
+  if (pal.sky) addSky(s, pal.sky);
+  else {
+    const g = s.add.graphics().setScrollFactor(0).setDepth(-9);
+    g.fillGradientStyle(pal.skyTop, pal.skyTop, pal.skyBot, pal.skyBot, 1, 1, 1, 1);
+    g.fillRect(0, 0, W, H);
+    addGlow(s, W / 2, GROUND_Y - 10, W * 1.8, 420, pal.glow1, 0.30, -8).setScrollFactor(0);
+    addGlow(s, W / 2, GROUND_Y - 10, W * 1.1, 260, pal.glow2, 0.22, -8).setScrollFactor(0);
+  }
   for (let layer = 0; layer < 2; layer++) {
     const depth = layer === 0 ? -7 : -3;
     const sf = layer === 0 ? 0.2 : 0.5;
@@ -30,11 +31,10 @@ export function buildBackground(s: GameScene) {
         onRepeat: () => { m.y = GROUND_Y - 30; m.x = Phaser.Math.Between(0, ARENA_W); m.alpha = 0.2; } });
     }
   }
-  // low fog band
+  if (pal.sky) return; // рисованное небо: без полосы тумана и тёмной виньетки
   const fog = s.add.graphics().setScrollFactor(0).setDepth(-2);
   fog.fillGradientStyle(pal.fog, pal.fog, pal.fog, pal.fog, 0, 0, 0.55, 0.55);
   fog.fillRect(0, GROUND_Y - 80, W, 90);
-  // vignette (soft)
   const vig = s.add.graphics().setScrollFactor(0).setDepth(58);
   vig.fillStyle(0x000000, 0.28);
   vig.fillRect(0, 0, W, 16); vig.fillRect(0, H - 16, W, 16);
@@ -42,19 +42,19 @@ export function buildBackground(s: GameScene) {
 }
 
 export function buildGround(s: GameScene) {
-  const ARENA_W = s.chapter.arenaW, pits = s.chapter.pits;
-  const key = groundKey(s.chapter.theme);
+  const ARENA_W = s.chapter.arenaW, pits = s.chapter.pits, key = groundKey(s.chapter.theme);
+  buildPits(s, key, ARENA_W, 1.9);
   const edges = [0, ...pits.flatMap(p => [p.s, p.e]), ARENA_W];
   for (let i = 0; i < edges.length - 1; i += 2) {
     const sx = edges[i], ex = edges[i + 1], w = ex - sx;
-    buildGroundStrip(s, key, sx, ex, 2);
+    // у краёв арены пол уходит за кадр — берег ямы там не рисуется
+    buildGroundStrip(s, key, sx - (i ? 0 : 32), ex + (i < edges.length - 2 ? 0 : 32), 2);
     const r = s.add.rectangle(sx + w / 2, GROUND_Y + 20, w, 40, 0, 0);
     s.physics.add.existing(r, true);
     s.floorColliders.push(r);
   }
 }
 
-// ── Level geometry: a deliberate line — intro · gaps · spikes · climb · gauntlet
 export function buildPlatforms(s: GameScene) {
   const tw = 16 * S, th = 10 * S;
   const P = s.chapter.platforms;
@@ -84,8 +84,8 @@ export function buildSpikes(s: GameScene) {
     const n = Math.floor(d.w / 16);
     for (let i = 0; i < n; i++) {
       const sx = d.x + i * 16;
-      g.fillStyle(0x2a1330, 1); g.fillTriangle(sx, GROUND_Y, sx + 16, GROUND_Y, sx + 8, GROUND_Y - 22);
-      g.fillStyle(0xb04050, 1); g.fillTriangle(sx + 5, GROUND_Y, sx + 11, GROUND_Y, sx + 8, GROUND_Y - 20);
+      g.fillStyle(0x2a1424, 1); g.fillTriangle(sx, GROUND_Y, sx + 16, GROUND_Y, sx + 8, GROUND_Y - 22);
+      g.fillStyle(0xe2506a, 1); g.fillTriangle(sx + 4, GROUND_Y, sx + 12, GROUND_Y, sx + 8, GROUND_Y - 18);
     }
     s.spikeRects.push({ x: d.x, w: d.w });
   }
