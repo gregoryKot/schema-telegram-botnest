@@ -47,6 +47,9 @@ export async function deleteAllUserData(
     prisma.therapistNote.deleteMany({
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),
+    prisma.therapyPlanItem.deleteMany({
+      where: { OR: [{ therapistId: uid }, { clientId: uid }] },
+    }),
     prisma.therapyRelation.deleteMany({
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),

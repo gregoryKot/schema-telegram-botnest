@@ -14,7 +14,7 @@
 | трекер потребностей и тесты | Rating, Note, YsqProgress, YsqResult, YsqResultHistory, ChildhoodRating |
 | дневники и самопомощь | SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, DiaryDraft, UserSchemaNote, UserModeNote, UserBeliefCheck, UserPhraseCheck, UserLetter, UserSafePlace, UserFlashcard |
 | практики | UserPractice, PracticePlan, PracticeSession |
-| терапия и пары | Pair, TherapyRelation, TherapistRequest, UserTask, TherapistNote, ClientConceptualization, TherapistCustomMode, ModeMap |
+| терапия и пары | Pair, TherapyRelation, TherapistRequest, UserTask, TherapistNote, TherapyPlanItem, ClientConceptualization, TherapistCustomMode, ModeMap |
 | запись на консультации | AvailabilityRule, SlotOverride, Booking, IntroLead, ClientMeeting, BookingSetting |
 | платежи | Donation, Subscription, SubscriptionCharge |
 | контент и канал «ЗВ» | Article, HealthyAdultPhrase, HealthyAdultPost, ChannelDelivery |

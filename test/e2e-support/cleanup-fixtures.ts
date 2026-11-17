@@ -95,6 +95,11 @@ export async function cleanupOwnershipFixtures(
       OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
     },
   });
+  await prisma.therapyPlanItem.deleteMany({
+    where: {
+      OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
+    },
+  });
   await prisma.modeMap.deleteMany({
     where: {
       OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
