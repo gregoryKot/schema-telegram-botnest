@@ -18,11 +18,11 @@ export class StartScene extends Phaser.Scene {
 
     this.add.text(W / 2, IS_TOUCH ? 48 : 84, t('m_title_top'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#fff0d8',
-      letterSpacing: 4,
+      letterSpacing: 4, ...HUD_STROKE,
     }).setOrigin(0.5);
     this.add.text(W / 2, IS_TOUCH ? 84 : 124, t('m_title_bottom'), {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#ff7733',
-      letterSpacing: 4,
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#ff9a4a',
+      letterSpacing: 4, ...HUD_STROKE,
     }).setOrigin(0.5);
 
     // кнопка — между титулом и комнатой, не поверх дивана
@@ -63,7 +63,7 @@ export class StartScene extends Phaser.Scene {
     // на таче «стрелки/WASD» бессмысленны и налезали на START — не показываем
     if (!IS_TOUCH) {
       this.add.text(W / 2, H - 40, t('m_arrows_wasd_tap_to_play'), {
-        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0', letterSpacing: 1,
+        fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#f2d2a8', letterSpacing: 1, ...HUD_STROKE,
       }).setOrigin(0.5);
     }
   }

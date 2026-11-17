@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { W, H } from '../../constants';
 import { addGlow } from '../../look';
+import { isHawker } from '../../roadArt';
 import type { GameScene } from '../GameScene';
 import { chapterWarmth, moodLook, pressureTarget, reliefAt, stepPressure } from './pressure';
 
@@ -33,8 +34,8 @@ function enemyDists(s: GameScene): number[] {
   for (const a of s.anx) if (a.alive && a.state !== 'calm') add(a.img);
   if (s.critic?.alive) add(s.critic.img);
   for (const m of s.homeMobs) {
-    const img = (m as { img?: { x: number; y: number } }).img;
-    if (m.alive && img) add(img);
+    const img = (m as { img?: { x: number; y: number; texture?: { key: string } } }).img;
+    if (m.alive && img && !isHawker(img.texture?.key)) add(img); // отговорка манит, а не давит: кадр не холодит
   }
   return out;
 }

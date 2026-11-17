@@ -8,6 +8,8 @@ import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
 import { buildGroundStrip } from '../ground';
 import { addGlow } from '../look';
+import { roomWall } from '../backdrop';
+import { placeGrid } from '../gridProp';
 import { pinBubble, pinLeftOfMenu } from '../hudLayout';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -102,9 +104,7 @@ export class TutorialScene extends Phaser.Scene {
     this.neighbor = null; this.neiBubble = null;
 
     // сцена-«прихожая»: тёплый полумрак, пятно света на котике
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x18142a, 0x18142a, 0x2e2440, 0x2e2440, 1, 1, 1, 1);
-    bg.fillRect(0, 0, W, H); addGlow(this, W / 2, GROUND_Y, 620, 300, 0xffe9c0, 0.12, 0);
+    roomWall(this, GROUND_Y, -6); addGlow(this, W / 2, GROUND_Y, 620, 300, 0xffe9c0, 0.12, 0);
     // пол — деревянная текстура (как дома в главах), а не плоский прямоугольник
     buildGroundStrip(this, 'ground_room', -32, W + 32, 1, false);
 
@@ -384,17 +384,11 @@ export class TutorialScene extends Phaser.Scene {
     const c = this.add.container(0, 0).setDepth(2);
     this.sceneDecor = c;
     const G = GROUND_Y;
-    const g = this.add.graphics(); c.add(g);
-    const rect = (x: number, y: number, w: number, h: number, col: number, a = 1) => { g.fillStyle(col, a); g.fillRect(x, y, w, h); };
 
-    // мягкий островок света из окна — атмосфера, на фоне спрайтов реквизита
+    // окно из арта гл.2: ночью стекло остывает, утром — тёплое
     const windowGlow = (cx: number, warm: boolean) => {
-      rect(cx - 76, G - 256, 152, 168, warm ? 0x6a4a2a : 0x10182e, 0.55);
-      g.fillStyle(warm ? 0xffd070 : 0xeaeaff, warm ? 0.45 : 0.85);
-      g.fillCircle(cx + 50, G - 214, warm ? 20 : 15);                    // солнце / луна
-      rect(cx - 80, G - 88, 160, 7, 0x4a4060);                           // подоконник
-      g.fillStyle(warm ? 0xffd9a0 : 0x9fb6e0, 0.06);
-      g.fillTriangle(cx - 76, G - 88, cx + 76, G - 88, cx, G);           // дорожка света на пол
+      const w = placeGrid(this, 'prop_window', cx, G - 88, 0);
+      if (w) c.add(warm ? w : w.setTint(0x7088c8));
     };
 
     const prop = (key: string, x: number, w: number) => {

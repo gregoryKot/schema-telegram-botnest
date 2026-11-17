@@ -8,8 +8,8 @@ import { unlockChapter } from '../../progress';
 import { track, trackEvent } from '../../analytics';
 import { openCta } from '../../therapyCta';
 import { addCrisisLine } from './cta';
-import { GRID } from '../../gridScale';
-import { addTherapist, talk } from './therapist';
+import { buildCabinet, CAB_INK, CAB_STROKE, CAB_VEIL } from './cabinetArt';
+import { talk } from './therapist';
 import type { GameScene } from '../GameScene';
 
 export function onDoorEnter(s: GameScene) {
@@ -53,52 +53,36 @@ export function sessionScene(s: GameScene) {
   s.player.setVisible(false);          // Мистера рисуем сами, в кресле
   setTouchControls(false); // на сеансе кнопки не нужны — совсем
   const deep = 150;
-  // тёплая комната
-  const room = s.add.rectangle(W / 2, H / 2, W, H, 0x171008).setScrollFactor(0).setDepth(deep).setAlpha(0);
+  // кабинет на рассвете: светлая стена под фоном — пока тот проявляется, кадр не чернеет
+  const room = s.add.rectangle(W / 2, H / 2, W, H, 0xffe0c0).setScrollFactor(0).setDepth(deep).setAlpha(0);
   s.tweens.add({ targets: room, alpha: 1, duration: 900 });
-  const gfx = s.add.graphics().setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
-    gfx.fillStyle(0x2a2014, 1); gfx.fillRect(0, H - 64, W, 64);                     // пол
-  const objs: Phaser.GameObjects.GameObject[] = [gfx];
-  const put = (key: string, x: number) => {
-    if (!s.textures.exists(key)) return null;
-    const img = s.add.image(x, H - 64, key).setOrigin(0.5, 1).setScrollFactor(0).setDepth(deep + 2).setAlpha(0);
-    img.setScale(GRID);
-    objs.push(img); return img;
-  };
-  put('prop_couch', W * 0.30);
-  put('prop_lamp', W * 0.74); // ореол и пятно на полу — в спрайте
-  put('prop_plant', W * 0.92);
-  // Мистер и терапевт — просто сидят. никого не надо бить.
-  const mister = s.add.sprite(W * 0.26, H - 64, 'cat_idle').setOrigin(0.5, 1)
-    .setScale(2).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
-  const doc = addTherapist(s, W * 0.56, H - 64, deep + 3);
-  objs.push(mister, doc);
+  const { objs, doc, floorY } = buildCabinet(s, deep);
   s.tweens.add({ targets: objs, alpha: 1, duration: 1100, delay: 700 });
 
   // строки — тихие, по одной
   const font = '"Press Start 2P", "Courier New", monospace';
   const ky = H / 540;
   const line = (key: MsgKey, y: number, color: string, size: number, delay: number) => {
-    const ln = s.add.text(W / 2, y * ky, t(key), { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8 })
+    const ln = s.add.text(W / 2, y * ky, t(key), { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8, ...CAB_STROKE })
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 5).setAlpha(0);
     s.tweens.add({ targets: ln, alpha: 1, duration: 900, delay });
     s.sessionLines.push(ln);
     return ln;
   };
-  line('m_cab_1', 82, '#d8c8ec', 13, 1600);
-  line('m_cab_2', 118, '#d8c8ec', 12, 3200);
-  line('m_cab_3', 154, '#e8d8c0', 12, 5200);
-  line('m_ther_q', 208, '#a8e8d0', 12, 7400);          // — кто приходит к тебе чаще всего?
+  line('m_cab_1', 82, CAB_INK.say, 13, 1600);
+  line('m_cab_2', 118, CAB_INK.say, 12, 3200);
+  line('m_cab_3', 154, CAB_INK.warm, 12, 5200);
+  line('m_ther_q', 208, CAB_INK.doc, 12, 7400);          // — кто приходит к тебе чаще всего?
   s.time.delayedCall(7400, () => talk(s, doc, 2600));
   // Критик встаёт в дверях — огромный, как всегда
   s.time.delayedCall(9000, () => {
-    const shadow = s.add.sprite(W * 0.92, H - 64, 'critic_idle').setOrigin(0.5, 1)
+    const shadow = s.add.sprite(W * 0.92, floorY, 'critic_idle').setOrigin(0.5, 1)
       .setScale(4).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('c-idle');
     shadow.setFlipX(true);
     s.tweens.add({ targets: shadow, alpha: 0.85, duration: 900 });
     audio.anx();
-    const prompt = s.add.text(W / 2, (H - 100), t('m_meet_prompt'), {
-      fontFamily: font, fontSize: '11px', color: '#88ffcc',
+    const prompt = s.add.text(W / 2, 250 * ky, t('m_meet_prompt'), {
+      fontFamily: font, fontSize: '11px', color: CAB_INK.calm, ...CAB_STROKE,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(deep + 6).setAlpha(0);
     s.tweens.add({ targets: prompt, alpha: { from: 0.4, to: 1 }, duration: 700, yoyo: true, repeat: -1, delay: 1100 });
     // ВСТРЕТИТЬ — вместе: одно нажатие, и вблизи он меньше, чем казался
@@ -110,11 +94,13 @@ export function sessionScene(s: GameScene) {
         s.input.keyboard!.off('keydown-E', meet); s.input.off('pointerdown', meet);
         prompt.destroy();
         audio.gate();
-        s.tweens.add({ targets: shadow, x: W * 0.72, scale: 0.9, duration: 1700, ease: 'Sine.InOut' });
+        s.tweens.add({ targets: shadow, x: W * 0.72, scale: 1, duration: 1700, ease: 'Sine.InOut' });
+        const old = s.sessionLines.splice(0); // прежние реплики уходят: новые встают на их место, а не на героев
+        s.tweens.add({ targets: old, alpha: 0, duration: 600, onComplete: () => old.forEach(l => l.destroy()) });
         s.tweens.add({ targets: shadow, tint: 0x4a3060, alpha: 0.8, duration: 1700 });
-        line('m_meet_1', 250, '#e8b8c8', 12, 1900);
-        line('m_meet_2', 306, '#d8c8ec', 12, 4300);
-        line('m_meet_3', 368, '#88ffcc', 12, 6900);
+        line('m_meet_1', 96, CAB_INK.meet, 12, 1900);
+        line('m_meet_2', 156, CAB_INK.say, 12, 4300);
+        line('m_meet_3', 216, CAB_INK.calm, 12, 6900);
         s.time.delayedCall(10200, () => showTherapyCta(s));
       };
       s.input.keyboard!.once('keydown-E', meet);
@@ -130,32 +116,32 @@ function showTherapyCta(s: GameScene) {
   trackEvent('game_chapter_done', { chapter: s.chapter.id });
   trackEvent('game_cta_shown', { from: 'cabinet' });
   const font = '"Press Start 2P", "Courier New", monospace';
-  const ky = H / 540, deep = 160;
+  const ky = H / 540, deep = 160, LINK = '#4f4488'; // тихие ссылки на светлой вуали
   // тексты кнопок — НАД заливкой (deep + 1): при равном depth Phaser рисует по порядку
   // добавления, и непрозрачный прямоугольник закрывал подпись «записаться в терапию»
   const mk = (y: number, text: string, size: number, color: string) =>
     s.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 8 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
-  // реплики кабинета гасим — иначе они просвечивают сквозь затемнение под CTA
+  // реплики кабинета гасим — иначе они просвечивают сквозь вуаль под CTA
   const old = s.sessionLines; s.sessionLines = [];
   s.tweens.add({ targets: old, alpha: 0, duration: 500, onComplete: () => old.forEach(l => l.destroy()) });
-  const dim = s.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0.6).setScrollFactor(0).setDepth(deep - 1).setAlpha(0);
+  const dim = s.add.rectangle(W / 2, H / 2, W, H, CAB_VEIL, 0.82).setScrollFactor(0).setDepth(deep - 1).setAlpha(0);
   s.tweens.add({ targets: dim, alpha: 1, duration: 700 });
 
-  const top = mk(130, t('m_mister_reached'), 13, '#fff0d8');
-  const sum = mk(206, t('m_cab_final'), 11, '#c0b8e8');
+  const top = mk(130, t('m_mister_reached'), 13, CAB_INK.say);
+  const sum = mk(206, t('m_cab_final'), 11, LINK);
 
   const ctaTxt = mk(264, t('m_try_in_app'), 12, '#88ffcc');
   const cta = s.add.rectangle(W / 2, 264 * ky, ctaTxt.width + 40, 42, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
   // вторая кнопка тише главной: честная подпись, без рамки
-  const bot = mk(305, t('m_open_in_telegram'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
-  const book = mk(341, t('m_book_therapist'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const bot = mk(305, t('m_open_in_telegram'), 11, LINK).setInteractive({ useHandCursor: true });
+  const book = mk(341, t('m_book_therapist'), 11, LINK).setInteractive({ useHandCursor: true });
   const shareTxt = mk(386, t('m_share'), 11, '#c0b8e8');
   const share = s.add.rectangle(W / 2, 386 * ky, shareTxt.width + 30, 34, 0x241d3a)
     .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-  const donTxt = mk(424, t('m_support_game'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
-  const menu = mk(454, t('m_or_back_to_menu'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const donTxt = mk(424, t('m_support_game'), 11, LINK).setInteractive({ useHandCursor: true });
+  const menu = mk(454, t('m_or_back_to_menu'), 11, LINK).setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: top, alpha: 1, duration: 800, delay: 300 });
   s.tweens.add({ targets: sum, alpha: 1, duration: 700, delay: 1200 });
@@ -167,7 +153,7 @@ function showTherapyCta(s: GameScene) {
   cta.on('pointerover', () => cta.setFillStyle(0x1d4536)).on('pointerout', () => cta.setFillStyle(0x153028))
     .on('pointerdown', () => openCta('cabinet', 'app'));
   for (const [txt, to] of [[bot, 'bot'], [book, 'booking']] as const) {
-    txt.on('pointerover', () => txt.setColor('#d8c8ec')).on('pointerout', () => txt.setColor('#9b8fbf'))
+    txt.on('pointerover', () => txt.setColor(CAB_INK.say)).on('pointerout', () => txt.setColor(LINK))
       .on('pointerdown', () => openCta('cabinet', to));
   }
   share.on('pointerover', () => share.setFillStyle(0x322a52)).on('pointerout', () => share.setFillStyle(0x241d3a));
@@ -176,8 +162,8 @@ function showTherapyCta(s: GameScene) {
     const url = 'https://schemehappens.ru/game/?src=share';
     window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(t('m_share_road'))}`, '_blank');
   });
-  donTxt.on('pointerover', () => donTxt.setColor('#ffd86a')).on('pointerout', () => donTxt.setColor('#9b8fbf'));
+  donTxt.on('pointerover', () => donTxt.setColor(CAB_INK.warm)).on('pointerout', () => donTxt.setColor(LINK));
   donTxt.on('pointerdown', () => { track('donate_click', { source: 'cabinet' }); window.open('https://schemehappens.ru/donate', '_blank'); });
   menu.on('pointerdown', () => s.scene.start('Start'));
-  addCrisisLine(s, 490 * ky, deep + 1);
+  addCrisisLine(s, 490 * ky, deep + 1, LINK);
 }

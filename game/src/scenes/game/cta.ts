@@ -129,9 +129,9 @@ export function showCta(s: GameScene) {
 
 // Кризисная строка: игра нарочно доводит до «сил не осталось» — рядом обязан быть
 // выход (правило №7 CLAUDE.md). Тихая, но кликабельная: tel-ссылка.
-export function addCrisisLine(s: GameScene, y: number, depth: number) {
+export function addCrisisLine(s: GameScene, y: number, depth: number, color = '#a89fd0') {
   const ln = s.add.text(W / 2, y, t('m_crisis_line'), {
-    fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0', align: 'center',
+    fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color, align: 'center',
   }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0).setInteractive({ useHandCursor: true });
   ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { (ev as { stopPropagation(): void }).stopPropagation(); window.location.href = CRISIS_TEL; });
   s.tweens.add({ targets: ln, alpha: 0.9, duration: 600, delay: 900 });
