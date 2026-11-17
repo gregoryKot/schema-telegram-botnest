@@ -7,7 +7,7 @@ import { t } from '../../i18n';
 import { getAssist, setAssist } from '../../assist';
 import { trackEvent } from '../../analytics';
 import { addCrisisLine } from './cta';
-import { drawDeathArt } from './deathArt';
+import { drawDeathArt, DEATH_DUSK } from './deathArt';
 import type { GameScene } from '../GameScene';
 
 export function gameOver(s: GameScene) {
@@ -21,8 +21,8 @@ export function gameOver(s: GameScene) {
   s.deathX = s.player.x;
   trackEvent('game_over', { chapter: s.chapter.id });
   audio.stopMusic();
-  // сразу гасим хаос (огромные тучи и пр.) чёрной шторой — иначе он лезет в кадр
-  const cover = s.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);
+  // сразу гасим хаос (огромные тучи и пр.) шторой холодных сумерек — иначе он лезет в кадр
+  const cover = s.add.rectangle(W / 2, H / 2, W, H, DEATH_DUSK).setScrollFactor(0).setDepth(150).setAlpha(0);
   s.tweens.add({ targets: cover, alpha: 1, duration: 700 });
   const art = drawDeathArt(s, 151);
   setTouchControls(false); // кнопки перекрывали «тап — ещё раз»

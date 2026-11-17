@@ -16,3 +16,11 @@ describe('арт глав лежит в assets под ключами из chapte
     }
   });
 });
+
+describe('зазывалы гл.3 не считаются давлением', () => {
+  it('isHawker узнаёт листы зазывал и не путает их с врагами', async () => {
+    const { isHawker } = await import('./roadArt');
+    expect(['soothe', 'bargainer', 'crookedmirror'].map(isHawker)).toEqual([true, true, true]);
+    expect([isHawker('anxmob'), isHawker('phonemob'), isHawker(undefined)]).toEqual([false, false, false]);
+  });
+});
