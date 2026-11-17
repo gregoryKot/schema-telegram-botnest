@@ -92,8 +92,8 @@ export function sessionScene(s: GameScene) {
   s.time.delayedCall(7400, () => talk(s, doc, 2600));
   // Критик встаёт в дверях — огромный, как всегда
   s.time.delayedCall(9000, () => {
-    const shadow = s.add.sprite(W * 0.92, H - 64, 'cat_idle').setOrigin(0.5, 1)
-      .setScale(3).setTint(0x1a0030).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('p-idle');
+    const shadow = s.add.sprite(W * 0.92, H - 64, 'critic_idle').setOrigin(0.5, 1)
+      .setScale(4).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('c-idle');
     shadow.setFlipX(true);
     s.tweens.add({ targets: shadow, alpha: 0.85, duration: 900 });
     audio.anx();
