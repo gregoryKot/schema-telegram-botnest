@@ -16,8 +16,8 @@ type G = Phaser.GameObjects.Graphics;
 // Только cat_run/cat_idle обязательны для старта. Остальные подгружаются в фоне;
 // сцены guard'ят анимации, поэтому игра играбельна даже пока они не доехали.
 const CAT_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
-  cat_run:   { url: catRunUrl,   fw: 48,  fh: 48 },
-  cat_idle:  { url: catIdleUrl,  fw: 48,  fh: 48 },
+  cat_run:   { url: catRunUrl,   fw: 36, fh: 36 },
+  cat_idle:  { url: catIdleUrl,  fw: 36, fh: 36 },
 };
 const ESSENTIAL = ['cat_run', 'cat_idle'];
 

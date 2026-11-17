@@ -5,7 +5,7 @@
 import math
 from PIL import Image
 from px import Canvas, Mat, OUT_COOL, OUT_WARM
-from cat import restyle, draw
+from cat import frame
 import poses, ledges, ground
 
 def anxiety():
@@ -67,9 +67,7 @@ def lamp():
 def sheet():
     """256x128 логических px; превью x2 = 512x256, как в брифе."""
     s = Image.new('RGBA', (256, 128), (0, 0, 0, 0))
-    idle = restyle('src/cat_idle_src.png').crop((0, 0, 48, 48))
-    run = restyle('src/cat_run_src.png').crop((96, 0, 144, 48))
-    curl = draw(poses.freeze()[3], s=1, size=48)
+    idle, run, curl = frame(poses.IDLE), frame(poses.FLY), frame(poses.freeze()[5])
     for i, im in enumerate((idle, run, curl)):
         s.alpha_composite(im, (4 + i * 50, 4))
     for x, im in ((160, anxiety()), (196, irritation()), (226, phone())):
