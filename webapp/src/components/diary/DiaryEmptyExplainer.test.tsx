@@ -32,7 +32,7 @@ describe('DiaryEmptyExplainer (webapp) — пустой архив объясн�
     );
     const text = plain(container);
     expect(text).toContain('Пока ни одной записи');
-    expect(text).toContain('главный инструмент схема-терапии');
+    expect(text).toContain('В схема-терапии дневник ведут между сессиями');
     expect(text).toContain('СхемаТак в схема-терапии называют'); // что такое схема
     expect(text).toContain('РежимСостояние, которое включается'); // что такое режим
     expect(text).toContain('3–5 записей'); // результат и срок
