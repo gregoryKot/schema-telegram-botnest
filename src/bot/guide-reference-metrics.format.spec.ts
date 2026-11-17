@@ -8,6 +8,7 @@ const EMPTY: GuideReferenceMetrics = {
   schemas30: 0,
   techniques30: 0,
   notes30: 0,
+  tables30: 0,
 };
 
 describe('formatGuideReferenceMetrics', () => {
@@ -45,5 +46,16 @@ describe('formatGuideReferenceMetrics', () => {
     );
     expect(text).not.toContain('схемы');
     expect(text).not.toContain('Пока никто');
+    expect(text).not.toContain('таблицу');
+  });
+
+  it('таблицу схем открывали — своя строка', () => {
+    const text = formatGuideReferenceMetrics({
+      ...EMPTY,
+      opens30: 3,
+      therapists30: 1,
+      tables30: 2,
+    });
+    expect(text).toContain('Общую таблицу схем открывали: 2');
   });
 });

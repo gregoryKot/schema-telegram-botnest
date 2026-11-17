@@ -4,6 +4,7 @@ import { audio } from '../../audio';
 import { t, type MsgKey } from '../../i18n';
 import type { GameScene } from '../GameScene';
 import { introOnce } from './frames';
+import { GRID, gridScale } from '../../gridScale';
 
 // тень-критик выкрикивает это постоянно (голос Карающего Критика)
 const CRITIC_LINES: MsgKey[] = [
@@ -18,8 +19,8 @@ export interface Critic {
 
 export function spawnCritic(s: GameScene) {
   if (s.critic) return;
-  const img = s.add.sprite(s.player.x - 200, s.player.y, 'cat_idle')
-    .setOrigin(0.5, 1).setScale(2).setDepth(9).setTint(0x1a0030).setAlpha(0).play('p-walk');
+  const img = s.add.sprite(s.player.x - 200, s.player.y, 'critic_run')
+    .setOrigin(0.5, 1).setScale(GRID).setDepth(9).setAlpha(0).play('c-walk');
   s.tweens.add({ targets: img, alpha: 0.82, duration: 600 });
   s.critic = { img, size: 1, struck: 0, alive: true };
   // тень постоянно выкрикивает упрёки — её не заткнуть
@@ -40,7 +41,7 @@ export function hitCritic(s: GameScene) {
   s.burst(c.img.x, c.img.y - 20, 0x6a2a8a, 8, 110);
   c.struck = 1600;                              // огрызнулся — притих на секунду
   c.size = Math.min(2.4, c.size + 0.18);        // ...и в ответ стал больше
-  c.img.setScale(2 * c.size);
+  c.img.setScale(gridScale(c.size));
   s.sayOnce('critic_hit', 'm_snapped_it_hushed_then_grew_louder', 3200);
 }
 
@@ -50,8 +51,7 @@ export function updateCritic(s: GameScene, dt: number) {
   // уступка прогнала его — стоит вдалеке, выцветший, и ждёт своего часа
   if (c.struck > 1500) {
     c.struck -= dt;
-    c.img.setAlpha(0.22);
-    c.img.play('p-idle', true);
+    c.img.setAlpha(0.22).play('c-idle', true);
     s.criticBubble?.setAlpha(0); // притих, пока выцветший
     if (c.struck <= 1500) s.sayOnce('critic_back', 'm_it_came_back_they_always_come', 2800);
     return;
@@ -60,7 +60,7 @@ export function updateCritic(s: GameScene, dt: number) {
   if (s.criticBubble) {
     s.criticSayT += dt;
     s.criticBubble.x = c.img.x;
-    s.criticBubble.y = c.img.y - 66 * c.size;
+    s.criticBubble.y = c.img.y - 33 * gridScale(c.size);
     if (s.criticSayT > 2300) {
       s.criticSayT = 0;
       s.criticBubble.setText(t(CRITIC_LINES[s.criticLine++ % CRITIC_LINES.length])).setAlpha(0).setScale(0.85);
@@ -73,7 +73,7 @@ export function updateCritic(s: GameScene, dt: number) {
     c.img.x += (target.x - c.img.x) * 0.12;
     c.img.y += (target.y - c.img.y) * 0.18;
     c.img.setFlipX(target.flip);
-    c.img.play(Math.abs(target.x - c.img.x) > 4 ? 'p-walk' : 'p-idle', true);
+    c.img.play(Math.abs(target.x - c.img.x) > 4 ? 'c-walk' : 'c-idle', true);
   }
   const dist = Phaser.Math.Distance.Between(c.img.x, c.img.y - 20, s.player.x, s.player.y - 20);
   // убегаешь — он растёт за спиной
@@ -86,7 +86,7 @@ export function updateCritic(s: GameScene, dt: number) {
     c.size = Math.min(2.4, c.size + dt * 0.0005);
     s.sayOnce('critic_frz', 'm_the_yarn_it_s_right_behind', 2800);
   }
-  c.img.setScale(2 * c.size);
+  c.img.setScale(gridScale(c.size));
   c.struck -= dt;
   if (dist < 34 && s.invuln <= 0 && c.struck <= 0 && !s.finalApproach) {
     c.struck = 1200; s.damage(c.img.x);

@@ -7,6 +7,7 @@ import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNote
 import { PaperAlert } from '../../components/paper/PaperAlert';
 import { Skeleton, SkeletonList } from '../../components/Skeleton';
 import { GuideReferenceList } from './GuideReferenceList';
+import { GuideSchemaTable, SchemaViewSwitch, type SchemaView } from './GuideSchemaTable';
 import { FadeSeg } from '../../components/FadeSeg';
 import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceItem, type ReferenceTab } from './guideReferenceModel';
 import { searchReference } from './guideReferenceSearch';
@@ -41,13 +42,20 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const form = useAddressForm();
   const tr = useMemo(() => (ty: string, vy: string) => pickForm(form, ty, vy), [form]);
   const ref = useMemo(() => buildReference(texts, tr), [texts, tr]);
+  const schemaGuides = useMemo(() => texts.buildSchemaDomainGuides(tr), [texts, tr]);
   const [tab, setTab] = useState<ReferenceTab>('modes');
   const [query, setQuery] = useState('');
   const [noteId, setNoteId] = useState<string | null>(null);
+  const [schemaView, setSchemaView] = useState<SchemaView>('list');
   const guide = useConceptGuide({ track: REFERENCE_TRACK });
   const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
   const found = searchReference(ref, query);
   const searching = query.trim() !== '';
+  const schemaTable = tab === 'schemas' && !searching && schemaView === 'table';
+  const pickSchemaView = (v: SchemaView) => {
+    if (v === 'table' && schemaView !== 'table') api.trackEvent('cabinet_guide_table_open');
+    setSchemaView(v);
+  };
   const note = noteId ? texts.practiceNotes(tr).find((n) => n.id === noteId) : undefined;
   const open = (item: ReferenceItem) => {
     if (item.kind === 'mode') guide.actions.onOpenMode(item.id);
@@ -65,20 +73,24 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
         placeholder="Найти по названию" aria-label="Найти в справочнике" className="ds-input ds-input--search"
       />
       {!searching && (
-        <FadeSeg className="u-self-start gr-seg" role="tablist" label="Разделы справочника" watch={tab}>
-          {tabs.map((t) => (
-            <button
-              key={t.id} type="button" role="tab" aria-selected={tab === t.id}
-              className={`ds-seg-btn${tab === t.id ? ' is-active' : ''}`} onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </FadeSeg>
+        <div className="gr-bar">
+          <FadeSeg className="gr-seg" role="tablist" label="Разделы справочника" watch={tab}>
+            {tabs.map((t) => (
+              <button
+                key={t.id} type="button" role="tab" aria-selected={tab === t.id}
+                className={`ds-seg-btn${tab === t.id ? ' is-active' : ''}`} onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </FadeSeg>
+          {tab === 'schemas' && <SchemaViewSwitch view={schemaView} onPick={pickSchemaView} />}
+        </div>
       )}
-      {searching && found.length === 0
+      {schemaTable && <GuideSchemaTable groups={ref.schemas} guides={schemaGuides} onOpen={open} />}
+      {!schemaTable && (searching && found.length === 0
         ? <p className="ds-empty">Ничего не нашлось</p>
-        : <GuideReferenceList groups={searching ? found : ref[tab]} layout={referenceLayout(tab, searching)} onOpen={open} />}
+        : <GuideReferenceList groups={searching ? found : ref[tab]} layout={referenceLayout(tab, searching)} onOpen={open} />)}
       {guide.sheets}
       {note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />}
     </div>

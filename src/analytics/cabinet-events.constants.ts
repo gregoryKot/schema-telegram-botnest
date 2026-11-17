@@ -13,6 +13,7 @@
 //   cabinet_session_work    — сохранил итоги сессии с пунктами «Что делали» (#1330); meta { items, kinds }:
 //     число пунктов и их виды (technique / exercise / custom). Какая техника и текст полей — нет.
 //     Строка в /stats — блок src/bot/concept-graph-metrics.* (рядом с журналом техник).
+//   cabinet_guide_table_open — в «Справочнике» переключил «Схемы» на вид «Таблицей» (все схемы и три копинга).
 export const CABINET_EVENTS = [
   'cabinet_session_work',
   'cabinet_screen_share_on',
@@ -21,4 +22,5 @@ export const CABINET_EVENTS = [
   'cabinet_guide_schema_open',
   'cabinet_guide_technique_open',
   'cabinet_guide_note_open',
+  'cabinet_guide_table_open',
 ] as const;

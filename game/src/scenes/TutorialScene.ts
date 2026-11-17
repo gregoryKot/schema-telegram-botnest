@@ -466,7 +466,7 @@ export class TutorialScene extends Phaser.Scene {
       this.setScene('night');
       this.setNarr('m_avoid_hold_distract_and_they_back');
       this.setPrompt(IS_TOUCH ? 'm_avoid_hold_zone_out' : 'm_z_hold_zone_out_distract');
-      for (let i = 0; i < 3; i++) this.worries.push(this.add.sprite(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(0.42).play('anx-fly'));
+      for (let i = 0; i < 3; i++) this.worries.push(this.add.sprite(this.player.x, this.player.y - 60, 'anxmob').setDepth(7).setScale(2).play('anx-fly-s'));
       audio.anx();
     });
   }
