@@ -16,9 +16,7 @@ const NEAR = 70, FAR = 340;          // ближе NEAR враг давит в �
 const HURT_MS = 3200;                // урон «звенит» столько
 const STUCK_FROM = 1300, STUCK_SPAN = 3200; // залипание сначала греет, потом тянет вниз
 const RISE_MS = 650, FALL_MS = 2400; // накрывает быстро, отпускает медленно
-const RELIEF_IN = 140, RELIEF_HOLD = 520, RELIEF_MS = 1500;
-
-const DAWN_MAX = 0.24;                // потолок рассветной подсветки: на синем часе гл.3 слабее не видно
+const RELIEF_IN = 140, RELIEF_HOLD = 520, RELIEF_MS = 1500, DAWN_MAX = 0.24; // DAWN_MAX — потолок рассветной подсветки
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
