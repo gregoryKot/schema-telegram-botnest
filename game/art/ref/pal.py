@@ -1,4 +1,5 @@
-"""Палитры эталона. CH1 — тёплый вечер (золотой час), CH2 — дом вечером, DAWN — терапия."""
+"""Палитры эталона. CH1 — тёплый вечер (золотой час), CH2 — дом вечером, CH3 — дорога перед рассветом
+(ключи те же, что у CH1: уличные функции красят обе главы), DAWN — терапия."""
 CH1 = {
     # небо сверху вниз
     'sky0': '#3b2f6b', 'sky1': '#5b3d7e', 'sky2': '#8a4b88', 'sky3': '#bb5889',
@@ -30,4 +31,18 @@ DAWN = {  # терапия: рассвет и утро — свежо, свет�
     'sky0': '#7aa7d8', 'sky1': '#a6c8e8', 'sky2': '#d7e4ee', 'sky3': '#ffe2c4', 'sky4': '#ffc6a8',
     'sun': '#fff8e0', 'mint': '#8fd8b8', 'mint_dk': '#5aa890', 'leaf': '#6fbf6a', 'leaf_hi': '#b8e88a',
     'stone': '#e8d6c0', 'stone_dk': '#b8a090', 'roof': '#e98a6a', 'lilac': '#b7a2e0', 'ink': '#2c3a52',
+}
+CH3 = {  # дорога: синий час, у горизонта впереди розовеет; холоднее гл.1, но чище и светлее к земле
+    'sky0': '#2f3a78', 'sky1': '#44509a', 'sky2': '#6468b4', 'sky3': '#8a7cc4',
+    'sky4': '#b48cc8', 'sky5': '#dc9cc0', 'sky6': '#f6b0b0', 'sky7': '#ffc9a6', 'sky8': '#ffe4bc',
+    'sun': '#fff6e0', 'sun_halo': '#ffeccc',
+    'cl_top': '#7676ba', 'cl_mid': '#a48cc8', 'cl_lit': '#f2b0c0', 'cl_hot': '#ffdcc0',
+    'far': '#9a92cc', 'far_rim': '#ecbcd0', 'far_dk': '#8680c0',
+    'mid': '#6c6aa8', 'mid_dk': '#575690', 'mid_rim': '#f4b4b8', 'mid_hi': '#8a86c0',
+    'win': '#ffd890', 'win_hi': '#fff4c8', 'win_off': '#4c4a84',
+    'haze': '#eab6c6',
+    'near': '#343a6c', 'near_dk': '#262a56', 'near_rim': '#f0a4a4', 'leaf': '#3a5e72', 'leaf_lit': '#78b89c',
+    'curb_hi': '#ffeed0', 'curb': '#ecc8b4', 'pave': '#b898a6', 'pave_sh': '#8c7698',
+    'wall': '#5c528c', 'wall_dk': '#463e74', 'wall_hi': '#746aa2', 'soil': '#2c2652',
+    'ink': '#1e1a3c', 'ink_cool': '#1c1838',
 }

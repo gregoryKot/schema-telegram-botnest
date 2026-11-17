@@ -5,14 +5,14 @@ import os
 import sys
 from PIL import Image
 from px import save, check
-import poses, ground, ledges, street, sky, refs, light, doc, foes, pickups, room, furniture, bedroom, home_foes
+import poses, ground, ledges, street, sky, refs, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers
 
 ASSETS, OUT = '../src/assets', 'out'
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     made = {}
-    for mod in (poses, ground, ledges, sky, street, light, doc, foes, pickups, room, furniture, bedroom, home_foes):
+    for mod in (poses, ground, ledges, sky, street, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers):
         made.update(mod.build())
     for k, img in made.items():
         limit = 64 if k.startswith('bg_') else 32    # фоны: дымка множит оттенки
@@ -20,7 +20,7 @@ def main():
         if '--install' in sys.argv:
             save(img, f'{ASSETS}/{k}.png', limit)
     sheet = preview(made)
-    save(sheet, f'{OUT}/wave1.png', limit=255)
+    sheet.convert('RGB').save(f'{OUT}/wave1.png')       # превью: цветов больше, чем в индексной PNG
     ref = refs.sheet()
     save(ref.resize((ref.width * 2, ref.height * 2), Image.NEAREST), f'{OUT}/reference.png', limit=255)
     print('\n'.join(f'{k}: {v.size}' for k, v in made.items()))
