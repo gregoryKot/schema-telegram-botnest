@@ -8,6 +8,7 @@ import { TherapyNotesService } from './therapy-notes.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { SESSION_NOTES_PAGE } from './session-notes-page';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
+import { loadWithKeys } from '../test-support/load-with-keys';
 
 function makeService(rels: Rel[]) {
   const notes: any[] = [];
@@ -94,6 +95,47 @@ describe('TherapyNotesService — заметки о сессиях (session note
     expect(notes).toHaveLength(1);
     expect(notes[0].text).toBe('клиент рассказал про триггер');
     expect(notes[0].date).toBe('2026-01-05');
+  });
+
+  it('пункты «Что делали»: сохранил → нашёл, в БД — шифротекст (#1330)', async () => {
+    // Crypto разбирает ключ при импорте: без него encrypt() — identity.
+    const Keyed = loadWithKeys(
+      { key: 'cd'.repeat(32) },
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      () =>
+        require('./therapy-notes.service') as typeof import('./therapy-notes.service'),
+    ).TherapyNotesService;
+    const { prisma, notes: rows } = makeService([activeRel]);
+    const service = new Keyed(
+      prisma,
+      new TherapyRelationsService(prisma, {} as any),
+    );
+    const work = [
+      {
+        id: 'w1',
+        kind: 'technique' as const,
+        refId: 'imagery_rescripting',
+        modeIds: ['vulnerable_child'],
+        schemaIds: [],
+        needIds: ['attachment'],
+        fields: { trigger: 'ссора с матерью' },
+      },
+    ];
+    const created = await service.createNote(T1, CLIENT, {
+      date: '2026-01-05',
+      text: '',
+      work,
+    });
+    expect(created.work).toEqual(work);
+    expect(typeof rows[0].work).toBe('string');
+    expect(rows[0].work).not.toContain('ссора');
+    expect(rows[0].work).not.toContain('imagery_rescripting');
+
+    // Старая запись: колонка по умолчанию [] — читается без пунктов.
+    await service.createNote(T1, CLIENT, { date: '2026-01-04', text: 'без' });
+    rows[1].work = [];
+    const { notes } = await service.getNotes(T1, CLIENT);
+    expect(notes.map((n) => n.work)).toEqual([work, []]);
   });
 
   it('чужой терапевт не может читать заметки клиента', async () => {

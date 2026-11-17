@@ -33,9 +33,38 @@ describe('useNoteComposer', () => {
     await act(async () => {
       await result.current.addNote();
     });
-    expect(create).toHaveBeenCalledWith(1, todayStr(), 'наблюдения');
+    expect(create).toHaveBeenCalledWith(1, todayStr(), 'наблюдения', []);
     expect(result.current.notesPage.notes.map((n) => n.id)).toEqual([5]);
     expect(result.current.newNoteText).toBe('');
+  });
+
+  it('пункты «Что делали» сохраняются без текста, в каноническом виде; форма очищается', async () => {
+    const onWorkSaved = vi.fn();
+    const ref = { current: 1 as UserId | null };
+    const create = vi.fn(async () => note(6));
+    const { result } = renderHook(() =>
+      useNoteComposer(ref, { create, remove: vi.fn(), onWorkSaved }),
+    );
+    const item = {
+      id: 'a',
+      kind: 'custom' as const,
+      modeIds: [],
+      schemaIds: [],
+      needIds: [],
+    };
+    act(() =>
+      result.current.setNewNoteWork([
+        { ...item, fields: { what: ' песок ', чужой: 'x' } },
+        { ...item, id: 'b', kind: 'technique', refId: 'нет такой', fields: {} },
+      ]),
+    );
+    await act(async () => {
+      await result.current.addNote();
+    });
+    const sent = [{ ...item, fields: { what: 'песок' } }];
+    expect(create).toHaveBeenCalledWith(1, todayStr(), '', sent);
+    expect(onWorkSaved).toHaveBeenCalledWith(sent);
+    expect(result.current.newNoteWork).toEqual([]);
   });
 
   it('пустой текст или нет открытого клиента — ничего не отправляет', async () => {

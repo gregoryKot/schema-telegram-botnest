@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { api, reportClientError, type TherapyClientSummary, type UserTask, type ClientData, type UserId } from '../../api';
 import { useNoteComposer } from '../../../../shared/src/therapy/useNoteComposer';
+import { CABINET_SESSION_WORK_EVENT } from '../../../../shared/src/share/analytics';
 import { useSessionAliasEditing } from '../../../../shared/src/therapy/useSessionAliasEditing';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
@@ -35,7 +36,10 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     modeFunction: string; needsMet: string;
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
-  const notes = useNoteComposer(openClientIdRef, { create: api.createTherapistNote, remove: api.deleteTherapistNote });
+  const notes = useNoteComposer(openClientIdRef, {
+    create: api.createTherapistNote, remove: api.deleteTherapistNote,
+    onWorkSaved: (work) => api.trackEvent(CABINET_SESSION_WORK_EVENT, { items: work.length, kinds: [...new Set(work.map((w) => w.kind))] }),
+  });
   const conceptSave = useConceptAutosave(openClientIdRef);
   const { concept, localConcept, activeSchemaIds, activeModeIds } = conceptSave;
   const [clientData, setClientData] = useState<ClientData | null>(null);
@@ -161,6 +165,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     saveStatus: conceptSave.saveStatus, savedAt: conceptSave.savedAt, retrySave: conceptSave.retrySave,
     newNoteText: notes.newNoteText, setNewNoteText: notes.setNewNoteText,
     newNoteDate: notes.newNoteDate, setNewNoteDate: notes.setNewNoteDate,
+    newNoteWork: notes.newNoteWork, setNewNoteWork: notes.setNewNoteWork,
     noteSaving: notes.noteSaving, showAssign, setShowAssign,
     editingStartDate: sa.editingStartDate, setEditingStartDate: sa.setEditingStartDate,
     localStartDate: sa.localStartDate, setLocalStartDate: sa.setLocalStartDate,

@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
-import { encrypt } from '../utils/crypto';
+import { encrypt, encryptJson } from '../utils/crypto';
 import { requireAffected } from '../utils/require-affected';
 import { findSessionNotesPage } from './session-notes-page';
+import type { SessionWorkItem } from './session-work';
 import { conceptView } from './concept-store';
 import { saveConceptVersioned, type ConceptSaveInput } from './concept-save';
 
@@ -27,18 +28,23 @@ export class TherapyNotesService {
   async createNote(
     therapistId: bigint,
     clientId: bigint,
-    body: { date: string; text: string },
+    body: { date: string; text: string; work?: SessionWorkItem[] },
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
+    const work = body.work ?? [];
     const note = await this.prisma.therapistNote.create({
       data: {
         therapistId,
         clientId,
         date: body.date,
         text: encrypt(body.text) ?? body.text,
+        // Пункты — шифротекст-строка в Json-колонке, как связи концептуализации; нет пунктов — [].
+        ...(work.length > 0 && {
+          work: encryptJson(work) ?? JSON.stringify(work),
+        }),
       },
     });
-    return { ...note, text: body.text }; // return plaintext to caller
+    return { ...note, text: body.text, work }; // return plaintext to caller
   }
 
   async deleteNote(therapistId: bigint, noteId: number): Promise<void> {

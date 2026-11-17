@@ -598,6 +598,7 @@ model TherapistNote {
   clientId    BigInt
   date        String   // YYYY-MM-DD
   text        String
+  work        Json     @default("[]") // «Что делали»: шифротекст-строка (SessionWorkItem[]), [] — пунктов нет
   createdAt   DateTime @default(now())
 
   @@index([therapistId, clientId, createdAt])

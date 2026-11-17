@@ -164,6 +164,8 @@ export const CLIENT_CONCEPT_OPENED_EVENT = 'client_concept_opened';
 // «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
 // (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
 export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
+// Итоги сессии сохранены с пунктами «Что делали» (#1330): meta { items, kinds } — число пунктов и виды, без текста.
+export const CABINET_SESSION_WORK_EVENT = 'cabinet_session_work';
 // «Справочник» терапевта (#995, /cabinet/guide): открыл раздел; оттуда — лист режима, схемы, техники, «Для терапевта».
 export const CABINET_GUIDE_OPEN_EVENT = 'cabinet_guide_open';
 export const CABINET_GUIDE_SHEET_EVENTS = {

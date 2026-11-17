@@ -20,6 +20,7 @@ import { AccountService } from '../bot/account.service';
 import { CreateSessionNoteDto, SessionInfoDto } from './dto/client-data.dto';
 import { ConceptSaveDto } from './dto/concept-save.dto';
 import { isCalendarDay } from '../utils/calendar-day';
+import { normalizeSessionWork } from './session-work';
 
 interface AuthRequest extends Request {
   userRole?: string;
@@ -65,10 +66,12 @@ export class TherapyNotesController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    if (!body.text?.trim()) throw new BadRequestException('text required');
+    const work = normalizeSessionWork(body.work);
+    if (!body.text?.trim() && work.length === 0)
+      throw new BadRequestException('text required');
     if (!isCalendarDay(body.date))
       throw new BadRequestException('Invalid date');
-    const note = { date: body.date, text: body.text };
+    const note = { date: body.date, text: body.text, work };
     try {
       const cid = parseClientId(clientId);
       return await this.notesService.createNote(uid(req), cid, note);
