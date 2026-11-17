@@ -59,7 +59,7 @@ export function buildGround(s: GameScene) {
 export function buildPlatforms(s: GameScene) {
   const tw = 16 * S, th = 10 * S;
   const P = s.chapter.platforms;
-  const ledge = s.chapter.theme === 'room' ? LEDGE.room : LEDGE.street;
+  const ledge = LEDGE[s.chapter.theme] ?? LEDGE.street;
   const platTex = s.chapter.theme === 'room' ? 'plat_room' : 'plat';
   const LH = 16; // карниз 48×16 в логических пикселях, показ ×2; верх — поверхность (p.y)
   for (const p of P) {

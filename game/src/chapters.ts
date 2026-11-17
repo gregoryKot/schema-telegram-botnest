@@ -244,8 +244,8 @@ const chapter3: ChapterConfig = {
   // развязка гл.3 — не текстовая карточка, а вход в дверь (кабинет); ending не используется
   ending: [],
   palette: {
-    skyTop: 0x3a3458, skyBot: 0x6a5a82, glow1: 0x8a7aba, glow2: 0xa890c8,
-    platTint: 0xc0b4d4, fog: 0x342a4a, mote: 0xb0a0d0,
+    skyTop: 0x2f3a78, skyBot: 0xffe4bc, glow1: 0xf6b0b0, glow2: 0x44509a, sky: 'bg_road_sky', // синий час (game/art/road.py)
+    platTint: 0xc0b4d4, fog: 0xeab6c6, mote: 0xffe4bc,
   },
   music: 'home',
   overwhelmAnx: 0,
