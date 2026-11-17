@@ -7,12 +7,13 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 import { SignHead } from './SignArt';
 import { SessionArchive } from './SessionArchive';
+import { SessionWorkBlock } from './SessionWorkBlock';
 
 interface Props { detail: ClientDetail }
 
 export function ClientSessionsTab({ detail }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
-  const canSave = !!newNoteText.trim() && !noteSaving;
+  const canSave = (!!newNoteText.trim() || detail.newNoteWork.length > 0) && !noteSaving; // с пунктами «Что делали» текст не обязателен
   const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком
   return (
     <div className="ds-page tb-page--narrow">
@@ -30,6 +31,7 @@ export function ClientSessionsTab({ detail }: Props) {
           rows={5}
           placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
         />
+        <SessionWorkBlock detail={detail} />
         <div className="tb-composer-foot">
           <span className="tb-hint kbd-hint">⌘ + Enter — сохранить</span>
           <div className="tb-actions">

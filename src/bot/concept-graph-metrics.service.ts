@@ -32,6 +32,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['guideMarkDone30', 'concept_guide_mark_done'],
   ['guideJournalOpen30', 'concept_guide_journal_open'],
   ['guideJournalEntry30', 'concept_guide_journal_entry'],
+  ['sessionWork30', 'cabinet_session_work'],
   ['clientOpens30', CLIENT_OPEN_EVENT],
 ];
 

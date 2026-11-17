@@ -7,6 +7,7 @@ import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 import type { TherapistNotesPage } from '../../../../shared/src/therapy/notesPage';
 import { Sign } from './SignArt';
+import { SessionWorkList } from './SessionWorkList';
 
 // Архив заметок сессий. Удаление — через подтверждение: до 2026-10-26 заметку
 // стирал один клик по «✕» рядом с датой (QA-проход), вернуть её было нельзя.
@@ -39,7 +40,8 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
                 <span className="tb-meta">Сессия {numbers.get(note.id)}</span>
                 <button type="button" onClick={() => setConfirmId(note.id)} aria-label="Удалить заметку" className="ds-btn ds-btn--icon tb-del tb-tl-del"><MMIcon name="trash" size={16} /></button>
               </div>
-              <div className="tb-tl-text">{note.text}</div>
+              {note.text && <div className="tb-tl-text">{note.text}</div>}
+              <SessionWorkList work={note.work} />
             </div>
           </div>
         ))

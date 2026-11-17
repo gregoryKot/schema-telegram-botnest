@@ -75,6 +75,16 @@ export function sanitizeMeta(
   if (name === 'concept_shared') {
     return typeof meta.on === 'boolean' ? { on: meta.on } : undefined;
   }
+  // «Что делали» в итогах сессии: число пунктов и виды, без названий и текста.
+  if (name === 'cabinet_session_work') {
+    const { items, kinds } = meta;
+    if (!Number.isInteger(items) || !Array.isArray(kinds)) return undefined;
+    const known = ['technique', 'exercise', 'custom'];
+    return {
+      items: Math.min(Math.max(items as number, 1), 12),
+      kinds: known.filter((k) => kinds.includes(k)),
+    };
+  }
   if (name === 'onboarding_step') {
     const step = meta.step;
     if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {

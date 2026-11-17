@@ -8,7 +8,11 @@ import {
   MaxLength,
   Min,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { WORK_ITEMS_MAX } from '../session-work';
+import { SessionWorkItemDto } from './session-work.dto';
 import { CLIENT_NAME_MAX, SESSION_NOTE_MAX } from '../../utils/text-limits';
 import { IsCalendarDay } from '../../utils/calendar-day';
 import { IsDayOrWallMoment } from '../../utils/wall-moment';
@@ -34,6 +38,14 @@ export class CreateSessionNoteDto {
   @IsString()
   @MaxLength(SESSION_NOTE_MAX)
   text!: string;
+
+  // «Что делали»: с пунктами текст может быть пустым (контроллер).
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(WORK_ITEMS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => SessionWorkItemDto)
+  work?: SessionWorkItemDto[];
 }
 
 // therapyStartDate/nextSession: строка, null (сброс) или undefined (не менять).
