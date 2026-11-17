@@ -76,7 +76,6 @@ export class GameScene extends Phaser.Scene {
 
   hitstop = 0;
   exhaustion = 0;                          // спираль: копинг + время → мир враждебнее
-  exhaustOverlay!: Phaser.GameObjects.Graphics;
   assistInvuln = false;                    // ассист-режим: «без урона»
   deathsInChapter = 0;                     // после второй смерти экран смерти сам предлагает ассист
   deathX = 100;                            // где умер — оттуда считаем чекпоинт
@@ -123,7 +122,6 @@ export class GameScene extends Phaser.Scene {
     restoreCopingButtons(); // после финальной двери прошлого захода
 
     buildBackground(this);
-    this.exhaustOverlay = this.add.graphics().setScrollFactor(0).setDepth(59); // виньетка истощения
     buildDecor(this, this.chapter);
     buildGround(this);
     buildPlatforms(this);
