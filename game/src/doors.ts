@@ -44,7 +44,7 @@ export class Door {
     if (art) scene.add.image(x, GROUND_Y, `door_${kind}`).setOrigin(0.5, 1).setScale(2).setDepth(5);
     else scene.add.rectangle(x, GROUND_Y - st.h / 2 - 3, st.w + 12, st.h + 6, st.frame).setDepth(5);
     this.leaf = scene.add.rectangle(x, GROUND_Y - st.h / 2, st.w, st.h, st.leaf).setDepth(5)
-      .setInteractive({ useHandCursor: true }).setAlpha(art ? 0.001 : 1);
+      .setInteractive({ useHandCursor: true }).setAlpha(art ? 0.001 : 1); // под спрайтом — только зона тапа
     if (!art) scene.add.circle(x + st.w / 2 - 12, GROUND_Y - st.h / 2, 4, st.glow, 0.9).setDepth(6);
     this.glow = addGlow(scene, x, GROUND_Y - 4, st.w + 90, 34, st.glow, 0.22, 4); // тёплый свет из-под двери
     scene.tweens.add({ targets: this.glow, alpha: { from: 0.7, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
