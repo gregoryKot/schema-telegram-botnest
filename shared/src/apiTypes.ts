@@ -2,6 +2,7 @@
 // №3 CLAUDE.md), ре-экспорт из api-модулей. Здесь ТОЛЬКО типы, совпадающие везде;
 // расходящиеся остаются локальными (ClientConceptualization в webapp несёт
 // modeMapNodes/modeMapEdges — mode-map есть только на сайте).
+import type { SessionWorkItem } from './therapy/sessionWork/types';
 import type { UserId } from './userId';
 import type { UiPrefsPatch } from './prefs/uiPrefsSync';
 export type { UserId };
@@ -106,6 +107,8 @@ export interface TherapistNote {
   clientId: UserId;
   date: string;
   text: string;
+  /** «Что делали» (#1330); у старых записей и чужих клиентов поля нет. */
+  work?: SessionWorkItem[];
   createdAt: string;
 }
 

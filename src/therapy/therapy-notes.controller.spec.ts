@@ -157,8 +157,39 @@ describe('TherapyNotesController.createNote', () => {
     expect(notes.createNote).toHaveBeenCalledWith(3n, 5n, {
       date: '2026-07-01',
       text: 'текст заметки',
+      work: [],
     });
     expect(res).toEqual({ id: 2, date: '2026-07-01', text: 'новая' });
+  });
+
+  it('пустой text с пунктом «Что делали» сохраняется; мусорные пункты отброшены (#1330)', async () => {
+    const { controller, notes } = makeController();
+    const item = { id: 'a', kind: 'technique', refId: 'chairwork' };
+    await controller.createNote(makeReq(3n), '5', {
+      date: '2026-07-01',
+      text: '',
+      work: [
+        { ...item, fields: { theme: 'стыд', чужой: 'x' } },
+        { ...item, refId: 'нет такой' },
+      ],
+    });
+    expect(notes.createNote.mock.calls[0][2].work).toEqual([
+      {
+        ...item,
+        modeIds: [],
+        schemaIds: [],
+        needIds: [],
+        fields: { theme: 'стыд' },
+      },
+    ]);
+    // Одни незнакомые пункты без текста — та же пустая заметка.
+    await expect(
+      controller.createNote(makeReq(3n), '5', {
+        date: '2026-07-01',
+        text: '',
+        work: [{ ...item, kind: 'custom2' }],
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('текст длиннее прежних 5000 доходит до сервиса целиком: лимит один, в DTO (backend#29)', async () => {

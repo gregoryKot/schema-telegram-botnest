@@ -4,22 +4,21 @@ import { GROUND_Y } from '../../constants';
 import { audio } from '../../audio';
 import type { GameScene } from '../GameScene';
 import { adoptIntoGate } from './gates';
-
-const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
+import { anxAnim } from '../../foes';
+import { GRID } from '../../gridScale';
 
 type AnxState = 'chase' | 'windup' | 'lunge' | 'calm';
 export interface Anx {
-  img: Phaser.GameObjects.Image; halo: Phaser.GameObjects.Ellipse;
+  img: Phaser.GameObjects.Sprite;
   state: AnxState; t: number; size: number;
   vx: number; vy: number; jit: number; calm: number; cd: number; alive: boolean;
 }
 
 export function spawnAnx(s: GameScene, x: number, size: number) {
   const s2 = size * (1 + s.exhaustion * 0.3); // спираль: чем выжатее — тем крупнее возвращается
-  // ореол позади — отделяет тёмную тучу от чёрного кота и «дышит»
-  const halo = s.add.ellipse(x, GROUND_Y - 44, 104, 78, 0x9a5ad0, 0.22).setDepth(5);
-  const img = s.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(s2 * ANX_SCALE).play('anx-fly');
-  s.anx.push({ img, halo, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
+  // размер тучи — ступень арта (anxAnim), масштаб всегда сетка ×2
+  const img = s.add.sprite(x, GROUND_Y - 44, 'anxmob').setDepth(6).setScale(GRID).play(anxAnim(s2));
+  s.anx.push({ img, state: 'chase', t: 0, size: s2, vx: 0, vy: 0, jit: Math.random()*6, calm: 0, cd: 0, alive: true });
 }
 
 // ── Anxiety: бить = их только больше; растворяет лишь спокойствие ──────────
@@ -30,7 +29,7 @@ export function hitAnx(s: GameScene, m: Anx, dir: number) {
   const aliveCount = s.anx.filter(a => a.alive).length;
   if (aliveCount < 7 && m.size > 0.6) {
     // удар по тревоге — она делится (хуже). Ловушка.
-    m.size = Math.max(0.6, m.size * 0.85); m.img.setScale(m.size * ANX_SCALE);
+    m.size = Math.max(0.6, m.size * 0.85);
     spawnAnx(s, m.img.x, m.size);
     const nb = s.anx[s.anx.length - 1]; nb.vx = -dir * 220; nb.vy = -110;
     adoptIntoGate(s, m, nb);
@@ -51,7 +50,7 @@ export function updateAnx(s: GameScene, dt: number) {
     // критик рядом — тревога подпитывается и растёт (мысли громче под его голос)
     if (s.critic?.alive && m.state !== 'calm'
       && Phaser.Math.Distance.Between(m.img.x, m.img.y, s.critic.img.x, s.critic.img.y) < 220) {
-      m.size = Math.min(2.0, m.size + dt * 0.0002); m.img.setScale(m.size * ANX_SCALE);
+      m.size = Math.min(2.0, m.size + dt * 0.0002);
     }
     const dist = Phaser.Math.Distance.Between(m.img.x, m.img.y, px, py);
     // любой копинг копит «передышку»: залипание рядом — быстрее всего,
@@ -71,8 +70,7 @@ export function updateAnx(s: GameScene, dt: number) {
       case 'windup': {
         m.t += dt; m.vx *= 0.85; m.vy *= 0.85;
         m.img.setTint(m.t % 150 < 75 ? 0xff4466 : 0xffffff);
-        m.img.setScale(m.size * ANX_SCALE * (1 + Math.sin(m.t * 0.04) * 0.12));
-        if (m.t > 460) { m.state = 'lunge'; m.t = 0; m.img.clearTint().setScale(m.size * ANX_SCALE); audio.anx();
+        if (m.t > 460) { m.state = 'lunge'; m.t = 0; m.img.clearTint(); audio.anx();
           const a = Math.atan2(py - m.img.y, px - m.img.x); m.vx = Math.cos(a) * 450; m.vy = Math.sin(a) * 450; }
         break;
       }
@@ -83,21 +81,17 @@ export function updateAnx(s: GameScene, dt: number) {
       }
       case 'calm': {
         m.t += dt; m.vx += Math.sign(m.img.x - px) * 8; m.vy -= 2;
-        m.size = Math.max(0.2, m.size - dt * 0.0004); m.img.setScale(m.size * ANX_SCALE).setAlpha(0.6);
+        m.size = Math.max(0.2, m.size - dt * 0.0004); m.img.setAlpha(0.6);
         if (!s.frozen && dist > 360) { m.state = 'chase'; m.calm = 0; m.img.setAlpha(1); }
-        if (m.size <= 0.2) { m.alive = false; s.tweens.add({ targets: [m.img, m.halo], alpha: 0, duration: 350, onComplete: () => m.img.destroy() }); }
+        if (m.size <= 0.2) { m.alive = false; s.tweens.add({ targets: m.img, alpha: 0, duration: 350, onComplete: () => m.img.destroy() }); }
         break;
       }
     }
     m.img.x += m.vx * dt / 1000; m.img.y += m.vy * dt / 1000; m.vx *= 0.96; m.vy *= 0.98;
     m.img.x += Math.sin(m.jit * 3) * 0.8; m.img.y += Math.cos(m.jit * 4) * 0.8;
     m.img.y = Math.min(m.img.y, GROUND_Y - 12);
-    // ореол следует и пульсирует (ярче на замахе)
-    m.halo.setPosition(m.img.x, m.img.y).setScale(m.size * (1 + Math.sin(m.jit * 2) * 0.12))
-      .setAlpha((m.state === 'calm' ? 0.1 : 0.22) + (m.state === 'windup' ? 0.18 : 0));
+    // смотрит на кота; ступень размера меняется вместе с size
+    m.img.setFlipX(px > m.img.x).play(anxAnim(m.size), true);
   }
-  s.anx = s.anx.filter(m => {
-    if (!m.alive && !m.img.active) { m.halo.destroy(); return false; }
-    return true;
-  });
+  s.anx = s.anx.filter(m => m.alive || m.img.active);
 }

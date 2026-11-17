@@ -90,7 +90,7 @@ export const TARGETS: RotationTarget[] = [
   // Ключ составной: один черновик на тип дневника у пользователя.
   { name: 'diaryDraft', fields: ['data'], pk: ['userId', 'type'] },
   { name: 'userTask', fields: ['text'] },
-  { name: 'therapistNote', fields: ['text'] },
+  { name: 'therapistNote', fields: ['text', 'work'] },
   {
     name: 'clientConceptualization',
     // history — вложенные снапшоты: rotate-history.ts (общий цикл — только строки).

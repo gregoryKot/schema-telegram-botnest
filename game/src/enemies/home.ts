@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import type { MsgKey } from '../i18n';
 import { GROUND_Y } from '../constants';
 import { audio } from '../audio';
+import { GRID } from '../gridScale';
+import { procAnim, PROC_ORIGIN_Y } from '../foes';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Глава 2 «Дома». Единый закон (как в гл.1): любой копинг копит «передышку»
@@ -34,8 +36,6 @@ export interface HomeMob {
   tryHit(dir: number, range: number): boolean;
 }
 
-// процедурные текстуры мобов удалены — теперь это настоящие спрайты (props.ts)
-
 // ── Прокрастинация — липкая масса; снимается только рывком ──────────────────
 export class Procrastination implements HomeMob {
   alive = true;
@@ -44,23 +44,23 @@ export class Procrastination implements HomeMob {
   private size = 1;
   private t = 0;
   private frozenT = 0;
-  private wob = Math.random() * 6;
   private homeX: number;
   private seatY: number;
   private relief = 0; // любой копинг копит передышку; ловушка — залипание
 
   constructor(private ctx: MobCtx, x: number, seatY = GROUND_Y - 20) {
     this.homeX = x; this.seatY = seatY;
-    this.img = ctx.scene.add.sprite(x, seatY, 'procmob').setDepth(6).play('proc-idle');
+    this.img = ctx.scene.add.sprite(x, seatY, 'procmob').setOrigin(0.5, PROC_ORIGIN_Y).setScale(GRID).setDepth(6);
   }
+  // размер — ступенью арта (малая, обычная, крупная), а не дробным масштабом
+  private look() { const k = procAnim(this.size); if (this.img.anims.getName() !== k) this.img.play(k); }
 
   update(dt: number) {
     if (!this.alive) return;
     const p = this.ctx.player();
-    this.wob += dt * 0.003;
+    this.look();
     switch (this.state) {
       case 'idle': {
-        this.img.setScale(this.size * (1 + Math.sin(this.wob) * 0.06), this.size * (1 - Math.sin(this.wob) * 0.06));
         const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
         // медленно подползает, когда ты рядом и не в рывке
         if (d < 220 && !this.ctx.dashing()) this.img.x += Math.sign(p.x - this.img.x) * dt * 0.022;
@@ -78,7 +78,7 @@ export class Procrastination implements HomeMob {
         // висит на спине и замедляет; рывок стряхивает
         this.img.x = p.x - (p.flipX ? -12 : 12);
         this.img.y = p.y - 12;
-        this.img.setScale(this.size).setAlpha(0.92);
+        this.img.setAlpha(0.92);
         this.ctx.slow(this.size > 1.5 ? 0.35 : 0.5);
         this.size = Math.min(2.0, this.size + dt * 0.00006); // тяжелеет со временем
         if (this.ctx.frozen()) {
@@ -93,7 +93,7 @@ export class Procrastination implements HomeMob {
       }
       case 'stunned': {
         this.t -= dt;
-        this.img.setAlpha(0.55).setScale(this.size * 1.1, this.size * 0.7);
+        this.img.setAlpha(0.55);
         // не добита — отлежится и снова налипнет (возвращается)
         if (this.t <= 0) { this.state = 'idle'; this.img.setAlpha(1); this.img.y = GROUND_Y - 20; }
         break;
@@ -153,7 +153,7 @@ export class PhoneMob implements HomeMob {
   private relief = 0; // удар выключает быстро, рывок из зоны — средне; ловушка — залипнуть в зоне
 
   constructor(private ctx: MobCtx, private x: number) {
-    this.img = ctx.scene.add.sprite(x, PHONE_Y, 'phonemob').setDepth(6).play('phone-walk');
+    this.img = ctx.scene.add.sprite(x, PHONE_Y, 'phonemob').setScale(GRID).setDepth(6).play('phone-walk');
     this.glow = ctx.scene.add.graphics().setDepth(4);
   }
 
@@ -163,7 +163,7 @@ export class PhoneMob implements HomeMob {
     // расхаживает у своего места: ножки шагают, повёрнут по ходу, не левитирует
     this.img.x = this.x + Math.sin(this.bob * 0.8) * 48;
     this.img.setFlipX(Math.cos(this.bob * 0.8) < 0);
-    this.img.y = PHONE_Y - Math.abs(Math.sin(this.bob * 4)) * 3; // лёгкий шаговый подскок, ноги у пола
+    this.img.y = PHONE_Y - Math.round(Math.abs(Math.sin(this.bob * 4)) * 1.5) * GRID; // шаговый подскок по сетке, ноги у пола
     this.img.setAngle(0);
     this.notify(dt);
     const p = this.ctx.player();
@@ -237,14 +237,13 @@ export class Irritation implements HomeMob {
   private img: Phaser.GameObjects.Sprite;
   private state: 'chase' | 'tired' | 'gone' = 'chase';
   private relief = 0; // удар выпускает пар (но вспыхивает), рывок прочь и игнор — тоже передышка
-  private size = 1;
   private t = 0;
   private cd = 0;
   private jit = Math.random() * 6;
   private vx = 0; private vy = 0;
 
   constructor(private ctx: MobCtx, x: number) {
-    this.img = ctx.scene.add.sprite(x, GROUND_Y - 50, 'irritmob').setDepth(6).play('irrit-flicker');
+    this.img = ctx.scene.add.sprite(x, GROUND_Y - 50, 'irritmob').setDepth(6).setScale(2).play('irrit-flicker');
   }
 
   update(dt: number) {
@@ -265,7 +264,7 @@ export class Irritation implements HomeMob {
         this.vx = Phaser.Math.Clamp(this.vx, -235, 235);
         const ty = GROUND_Y - 46 + Math.sin(this.jit * 2) * 16;
         this.vy += (ty - this.img.y) * 0.05;
-        this.img.setAngle(Math.sin(this.jit * 5) * 14);
+        this.img.x += Math.round(Math.sin(this.jit * 5)) * 2; // дрожит от злости — по сетке, без поворота
         const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, px, py);
         if (d < 30 && this.cd <= 0) {
           this.cd = 900;
@@ -279,15 +278,15 @@ export class Irritation implements HomeMob {
       }
       case 'tired': {
         // выдохлось — обмякло, можно проскочить
-        this.img.setAngle(0).setScale(this.size * 0.92).setAlpha(0.7);
+        this.img.setAlpha(0.7);
         this.vx *= 0.9; this.vy = (GROUND_Y - 40 - this.img.y) * 0.04;
-        if (this.t > 1200) { this.state = 'chase'; this.t = 0; this.img.setAlpha(1).setScale(this.size); }
+        if (this.t > 1200) { this.state = 'chase'; this.t = 0; this.img.setAlpha(1); }
         break;
       }
       case 'gone': {
         if (this.t > 1700) {
           this.state = 'chase'; this.t = 0; this.cd = 600;
-          this.img.setVisible(true).setAlpha(0).setScale(this.size);
+          this.img.setVisible(true).setAlpha(0);
           this.img.x = px + 240; this.img.y = GROUND_Y - 60;
           this.ctx.scene.tweens.add({ targets: this.img, alpha: 1, duration: 300 });
           this.ctx.sayOnce('irrit_back', 'm_again_i_just_caught_my_breath', 2600);
@@ -317,7 +316,6 @@ export class Irritation implements HomeMob {
       if (this.relief >= 1) { this.standDown(); }
       else {
         // вспыхивает обратно (возвращается) — текстура злости
-        this.size = Math.max(0.6, this.size * 0.82);
         this.state = 'gone'; this.t = 0;
         this.img.setVisible(false);
         this.ctx.sayOnce('irrit_pop', 'm_let_off_steam_and_it_boils', 2400);

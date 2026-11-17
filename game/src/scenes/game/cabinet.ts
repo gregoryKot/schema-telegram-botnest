@@ -8,7 +8,7 @@ import { unlockChapter } from '../../progress';
 import { track, trackEvent } from '../../analytics';
 import { openCta } from '../../therapyCta';
 import { addCrisisLine } from './cta';
-import { FLOORLAMP_W } from '../../props';
+import { GRID } from '../../gridScale';
 import { addTherapist, talk } from './therapist';
 import type { GameScene } from '../GameScene';
 
@@ -59,15 +59,15 @@ export function sessionScene(s: GameScene) {
   const gfx = s.add.graphics().setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
     gfx.fillStyle(0x2a2014, 1); gfx.fillRect(0, H - 64, W, 64);                     // пол
   const objs: Phaser.GameObjects.GameObject[] = [gfx];
-  const put = (key: string, x: number, w: number) => {
+  const put = (key: string, x: number) => {
     if (!s.textures.exists(key)) return null;
     const img = s.add.image(x, H - 64, key).setOrigin(0.5, 1).setScrollFactor(0).setDepth(deep + 2).setAlpha(0);
-    img.setScale(w / img.width);
+    img.setScale(GRID);
     objs.push(img); return img;
   };
-  put('prop_couch', W * 0.30, 240);
-  put('prop_lamp', W * 0.74, FLOORLAMP_W); // ореол и пятно на полу — в спрайте
-  put('prop_plant', W * 0.92, 70);
+  put('prop_couch', W * 0.30);
+  put('prop_lamp', W * 0.74); // ореол и пятно на полу — в спрайте
+  put('prop_plant', W * 0.92);
   // Мистер и терапевт — просто сидят. никого не надо бить.
   const mister = s.add.sprite(W * 0.26, H - 64, 'cat_idle').setOrigin(0.5, 1)
     .setScale(2).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
@@ -92,8 +92,8 @@ export function sessionScene(s: GameScene) {
   s.time.delayedCall(7400, () => talk(s, doc, 2600));
   // Критик встаёт в дверях — огромный, как всегда
   s.time.delayedCall(9000, () => {
-    const shadow = s.add.sprite(W * 0.92, H - 64, 'cat_idle').setOrigin(0.5, 1)
-      .setScale(3).setTint(0x1a0030).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('p-idle');
+    const shadow = s.add.sprite(W * 0.92, H - 64, 'critic_idle').setOrigin(0.5, 1)
+      .setScale(4).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('c-idle');
     shadow.setFlipX(true);
     s.tweens.add({ targets: shadow, alpha: 0.85, duration: 900 });
     audio.anx();

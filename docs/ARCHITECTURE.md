@@ -104,7 +104,7 @@
 | `deploy/` | Супервизор контейнера, бэкапы (`backup-scheduler.cjs`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
 | `game/` | Игра (Phaser): под eslint- и file-size-храповиками; юнит-тесты — `npm test --prefix game` (vitest под node, модули без Phaser и DOM); смок — `e2e-browser/game-smoke.spec.ts` |
-| `game/art/` | Генератор пиксель-арта игры (Python + Pillow): `cd game/art && python3 build.py [--install]` → превью в `out/`, ассеты в `game/src/assets/` (пол и ямы — `game/src/ground.ts`, небо — `game/src/sky.ts`, слои улицы — `loadStreetLayers` в `game/src/decor.ts`); бриф — `docs/GAME_ART_BRIEF.md` |
+| `game/art/` | Генератор пиксель-арта игры (Python + Pillow): `cd game/art && python3 build.py [--install]` → превью в `out/`, ассеты в `game/src/assets/` (пол и ямы — `game/src/ground.ts`, небо — `game/src/sky.ts`, слои улицы — `loadStreetLayers` в `game/src/decor.ts`, комната гл.2 — `game/src/room.ts` и раскладка `game/src/roomLayout.ts`, мебель в сетке ×2 — `game/src/gridProp.ts`, враги, шипы и ступени размера — `game/src/foes.ts`, `game/src/gridScale.ts`); бриф — `docs/GAME_ART_BRIEF.md` |
 | `assets/` | Шрифты для карточек шаринга и корневой сертификат для MAX (`assets/ca/russian-trusted-root.pem`) |
 
 ## Модули бэкенда (`src/`)

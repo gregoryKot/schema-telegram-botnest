@@ -7,14 +7,9 @@
 Верх (строка 1) — поверхность, по которой ходит кот.
 """
 from PIL import Image, ImageDraw
-from px import Canvas, Mat, C, PAL, OUT_WARM
+from px import C, PAL
 
 W, H = 48, 16
-SLAB, LIP, BRACKET = 1, 2, 3
-
-def _flat(c, top, lip):
-    c.rect((1, 1, W - 2, top), SLAB)
-    c.rect((2, top + 1, W - 3, top + lip), LIP)
 
 def street():
     """Уступ эталона: светлая кромка, тёмный фасад, тёплый контур — контрастен на любом слое."""
@@ -32,14 +27,17 @@ def street():
     return img
 
 def room():
-    c = Canvas(W, H)
-    _flat(c, 3, 1)
-    for x0 in (3, W - 10):                       # деревянные кронштейны-угольники
-        c.poly([(x0, 5), (x0 + 6, 5), (x0 + 1, 12), (x0, 12)], BRACKET)
-    mats = {SLAB: Mat('#9a6e54', '#c4a07a', '#e8cda0', OUT_WARM, dither=False),
-            LIP: Mat('#6e4c3a', '#7e5a44', '#9a6e54', OUT_WARM, z=-1, dither=False),
-            BRACKET: Mat('#4a3228', '#6e4c3a', '#9a6e54', OUT_WARM, z=-2)}
-    return c.render(mats)
+    """Полка гл.2: тёплое дерево, светлая кромка сверху; кронштейны-угольники — на торцах."""
+    P = PAL['ch2']
+    img = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    d.rectangle((0, 0, W - 1, 6), fill=C(P['ink']))
+    for y, col in ((1, P['trim']), (2, P['wood_hi']), (3, P['wood']), (4, P['wood']), (5, P['wood_dk'])):
+        d.line((1, y, W - 2, y), fill=C(col))
+    for bx, s in ((4, 1), (W - 5, -1)):
+        d.polygon([(bx - s, 7), (bx + 7 * s, 7), (bx + s, 14), (bx - s, 14)], fill=C(P['ink']))
+        d.polygon([(bx, 7), (bx + 5 * s, 7), (bx, 12)], fill=C(P['wood_dk']))
+        d.line((bx, 7, bx, 12), fill=C(P['wood']))
+    return img
 
 def build():
     # только карнизы из LEDGE в game/src/props.ts — build.py --install кладёт в ассеты всё, что здесь

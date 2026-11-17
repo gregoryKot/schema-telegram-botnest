@@ -14,6 +14,7 @@ afterEach(() => {
 
 function renderTab(newNoteText: string) {
   const detail = {
+    newNoteWork: [], setNewNoteWork: vi.fn(), activeModeIds: [], activeSchemaIds: [], ysqSchemaIds: [], selfSchemaIds: [],
     newNoteDate: '2026-10-11',
     setNewNoteDate: vi.fn(),
     newNoteText,
@@ -52,6 +53,7 @@ describe('ClientSessionsTab — композер и таймлайн', () => {
   function make(over: Record<string, unknown>) {
     const detail = {
       newNoteDate: '2026-10-11', setNewNoteDate: vi.fn(), newNoteText: 'текст', setNewNoteText: vi.fn(),
+      newNoteWork: [], setNewNoteWork: vi.fn(), activeModeIds: [], activeSchemaIds: [], ysqSchemaIds: [], selfSchemaIds: [],
       addNote: vi.fn(), noteSaving: false, noteError: '', removeNote: vi.fn(),
       notesPage: { notes: [], total: 0 }, ...over,
     };
