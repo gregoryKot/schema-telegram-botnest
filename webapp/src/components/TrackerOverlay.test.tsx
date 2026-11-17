@@ -79,7 +79,7 @@ describe('TrackerOverlay — вопрос', () => {
     renderOverlay();
     expect(screen.getByText('Потребность 1 из 2')).toBeTruthy();
     expect(heading('Привязанность')).toBeTruthy();
-    expect(screen.getByText(/Были ли сегодня конкретные моменты близости/)).toBeTruthy();
+    expect(screen.getByText(/Хватало ли тебе сегодня тепла/)).toBeTruthy();
     expect(screen.getByText('Выбор сохраняется сразу и сам открывает следующий вопрос.')).toBeTruthy();
     expect(screen.getByRole('group', { name: 'Привязанность' }).querySelectorAll('button')).toHaveLength(5);
   });
