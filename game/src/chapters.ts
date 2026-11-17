@@ -17,7 +17,7 @@ export interface TriggerDef {
 export interface EndingLine { text: MsgKey; y: number; color: string; size: number; delay: number; }
 export interface ChapterPalette {
   skyTop: number; skyBot: number; glow1: number; glow2: number;
-  platTint: number; fog: number; mote: number;
+  platTint: number; fog: number; mote: number; sky?: string; // sky — текстура неба вместо градиента
 }
 export interface ChapterConfig {
   id: string;
@@ -105,9 +105,9 @@ const chapter1: ChapterConfig = {
     { text: 'm_and_you_don_t_have_to',          y: 372, color: '#88ffcc', size: 15, delay: 8200 },
   ],
   palette: {
-    // сумеречная улица, но не чёрная — мягкий фиолетовый вечер
-    skyTop: 0x2c2348, skyBot: 0x5e4878, glow1: 0x9a6aaa, glow2: 0xb07ab2,
-    platTint: 0xbaaed0, fog: 0x2a2040, mote: 0xa898c8,
+    // закат, золотой час: небо — текстура, свет и дымка запечены в слои (game/art/sky.py, street.py)
+    skyTop: 0x3b2f6b, skyBot: 0xffe0a3, glow1: 0xffab70, glow2: 0x3b2f6b, sky: 'bg_street_sky', // glow2 — стена-гейт
+    platTint: 0xbaaed0, fog: 0xefa184, mote: 0xffe7b8,
   },
   music: 'day',
   overwhelmAnx: 3,

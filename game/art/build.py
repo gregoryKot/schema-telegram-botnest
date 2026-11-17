@@ -5,19 +5,20 @@ import os
 import sys
 from PIL import Image
 from px import save, check
-import poses, ground, ledges, street, refs, light, doc
+import poses, ground, ledges, street, sky, refs, light, doc
 
 ASSETS, OUT = '../src/assets', 'out'
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     made = {}
-    for mod in (poses, ground, ledges, street, light, doc):
+    for mod in (poses, ground, ledges, sky, street, light, doc):
         made.update(mod.build())
     for k, img in made.items():
-        check(img, k)
+        limit = 64 if k.startswith('bg_') else 32    # фоны: дымка множит оттенки
+        check(img, k, limit)
         if '--install' in sys.argv:
-            save(img, f'{ASSETS}/{k}.png')
+            save(img, f'{ASSETS}/{k}.png', limit)
     sheet = preview(made)
     save(sheet, f'{OUT}/wave1.png', limit=255)
     ref = refs.sheet()
