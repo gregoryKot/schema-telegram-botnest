@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { api, reportClientError, type TherapyClientSummary, type UserTask, type ClientData, type UserId } from '../../api';
 import { useNoteComposer } from '../../../../shared/src/therapy/useNoteComposer';
-import { CABINET_SESSION_WORK_EVENT } from '../../../../shared/src/share/analytics';
 import { useSessionAliasEditing } from '../../../../shared/src/therapy/useSessionAliasEditing';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { useYsqRequest } from '../../../../shared/src/therapy/useYsqRequest';
@@ -38,7 +37,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
   const notes = useNoteComposer(openClientIdRef, {
     create: api.createTherapistNote, remove: api.deleteTherapistNote,
-    onWorkSaved: (work) => api.trackEvent(CABINET_SESSION_WORK_EVENT, { items: work.length, kinds: [...new Set(work.map((w) => w.kind))] }),
+    onWorkSaved: (work) => api.trackEvent('cabinet_session_work', { items: work.length, kinds: [...new Set(work.map((w) => w.kind))] }),
   });
   const conceptSave = useConceptAutosave(openClientIdRef);
   const { concept, localConcept, activeSchemaIds, activeModeIds } = conceptSave;
