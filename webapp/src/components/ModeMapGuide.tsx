@@ -79,7 +79,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
     : [
         { ok: hasChild,   label: 'Детские режимы',     desc: 'Уязвимая, сердитая, импульсивная части — где живёт боль и потребности',
           add: mk('child', 'Уязвимый Ребёнок') },
-        { ok: hasCritic,  label: 'Критикующие',        desc: 'Внутренние голоса родителей: требуют, наказывают, внушают вину',
+        { ok: hasCritic,  label: 'Критикующие',        desc: 'Усвоенные голоса значимых взрослых: требуют, наказывают, внушают вину',
           add: mk('critic', 'Критик') },
         { ok: hasCoping,  label: 'Копинги',            desc: 'Стратегии выживания, которые когда-то спасали, а теперь мешают',
           add: mk('coping', 'Копинг', { copingSubtype: 'avoid' }) },

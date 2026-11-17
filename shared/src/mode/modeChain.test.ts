@@ -28,6 +28,17 @@ describe('buildModeChainSuggestion', () => {
     ]);
   });
 
+  it('злость и импульс: Критик вступает после, а не «Ребёнку больно»', () => {
+    for (const id of ['angry_child', 'impulsive_child']) {
+      const q = buildModeChainSuggestion(id, tyTr)!.question;
+      expect(q, id).toMatch(/^После злости или импульса/);
+      expect(q, id).not.toContain('больно');
+    }
+    expect(
+      buildModeChainSuggestion('vulnerable_child', tyTr)!.question,
+    ).toMatch(/^Ребёнку сейчас больно/);
+  });
+
   it('копинг-избегание (avoid) предлагает разобрать защищаемого Ребёнка', () => {
     const s = buildModeChainSuggestion('detached_protector', tyTr);
     expect(s!.candidateIds).toEqual([

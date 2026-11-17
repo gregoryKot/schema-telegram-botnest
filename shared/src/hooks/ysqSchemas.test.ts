@@ -14,6 +14,8 @@ import {
   buildYsqSchemas,
 } from './ysqSchemas';
 import { SCHEMA_DOMAINS } from '../schemaTherapy/content/schemaDomains';
+import { DOMAIN_HUE, NEED_HUE } from '../theme/entityHue';
+import type { NeedId } from '../needs/types';
 
 // Остаточные «ты»-формы (местоимения/императивы) — грубая проверка гейта
 // check-second-person.mjs на резолвленном тексте формы «вы», и наоборот.
@@ -97,6 +99,19 @@ describe('ysqSchemas: имена совпадают с реестром схем
       const id = SCHEMA_NAME_TO_ID[name];
       expect(id).toBeDefined();
       expect(registry.get(id)).toBe(name);
+    },
+  );
+
+  // Аудит теории #1344: скованность и страх потери контроля сидели в «Выражении»
+  // по созвучию, Пунитивность к другим — в «Самоконтроле», а домен у всех трёх пятый.
+  it.each(SCHEMAS.map((s) => [s.name, s.needId] as const))(
+    '«%s» — потребность своего домена',
+    (name, needId) => {
+      const domain = SCHEMA_DOMAINS.find((d) =>
+        d.schemas.some((s) => s.id === SCHEMA_NAME_TO_ID[name]),
+      );
+      expect(domain).toBeDefined();
+      expect(NEED_HUE[needId as NeedId]).toBe(DOMAIN_HUE[domain!.id]);
     },
   );
 

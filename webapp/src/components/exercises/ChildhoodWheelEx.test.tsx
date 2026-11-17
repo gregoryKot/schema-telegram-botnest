@@ -160,14 +160,14 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
 });
 
 describe('ChildhoodWheelEx — результат и сохранение (read-after-write)', () => {
-  it('все на середине — среднее 5,0/10, все зоны выше 4, блок «Хорошее детство»', async () => {
+  it('все на середине — среднее 5,0/10, все зоны выше 4, блок «Явных провалов нет»', async () => {
     renderEx();
     await openFill();
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
 
     await screen.findByText(/Среднее 5,0\/10/);
-    expect(screen.getByText('Хорошее детство по всем зонам')).toBeTruthy();
+    expect(screen.getByText('Явных провалов нет ни в одной зоне')).toBeTruthy();
     expect(screen.queryByText('Возможные активные схемы')).toBeNull();
     expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({
       attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5,
@@ -267,7 +267,7 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
     await screen.findByText(/1 зона ниже 5/);
     expect(screen.getByText('Возможные активные схемы')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Покинутость / Нестабильность' })).toBeTruthy();
-    expect(screen.queryByText('Хорошее детство по всем зонам')).toBeNull();
+    expect(screen.queryByText('Явных провалов нет ни в одной зоне')).toBeNull();
   });
 
   it('тап по схеме открывает её описание', async () => {

@@ -32,7 +32,7 @@ export const ENTRY_DELETE_TYPE_LABELS: Record<
 > = {
   belief_check: 'проверка убеждения',
   letter: 'письмо себе',
-  flashcard: 'кризисная карточка',
+  flashcard: 'флеш-карта «Мне плохо»',
   phrase_check: 'разбор фразы',
   diary: 'запись дневника',
 };

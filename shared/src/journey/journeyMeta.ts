@@ -12,7 +12,7 @@ import {
   formatDateString,
 } from '../utils/calendarDate';
 import { exerciseCard } from '../exercises/exerciseCatalog';
-const LETTER = exerciseCard('letter').title; // одно имя письма — из каталога
+import { FLASHCARD_TITLE } from '../flashcard/flashcardNames';
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
@@ -36,8 +36,8 @@ export const JOURNEY_TYPE_META = {
   plan_done: { label: 'Шаг по плану', group: 'practice' },
   ysq: { label: 'Тест схем', group: 'test' },
   belief_check: { label: 'Проверка убеждения', group: 'exercise' },
-  letter: { label: LETTER, group: 'exercise' },
-  flashcard: { label: 'Кризисная карточка', group: 'exercise' },
+  letter: { label: exerciseCard('letter').title, group: 'exercise' }, // имена упражнений — из их каталогов
+  flashcard: { label: FLASHCARD_TITLE, group: 'exercise' }, // «кризисная карточка» в продукте — телефон доверия (№7)
   safe_place: { label: 'Безопасное место', group: 'exercise' },
   schema_note: { label: 'Карточка схемы', group: 'cards' },
   mode_note: { label: 'Карточка режима', group: 'cards' },
