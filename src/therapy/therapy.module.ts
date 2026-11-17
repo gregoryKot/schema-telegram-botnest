@@ -11,6 +11,8 @@ import { TherapyConnectionController } from './therapy-connection.controller';
 import { TherapyInvitesController } from './therapy-invites.controller';
 import { TherapyCardClaimsController } from './therapy-card-claims.controller';
 import { TherapyTasksController } from './therapy-tasks.controller';
+import { TherapyPlanController } from './therapy-plan.controller';
+import { TherapyPlanService } from './therapy-plan.service';
 import { TherapyNotesController } from './therapy-notes.controller';
 import { ModeMapsController } from './mode-maps.controller';
 import { ConceptAppendController } from './concept-append.controller';
@@ -32,6 +34,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyInvitesController,
     TherapyCardClaimsController,
     TherapyTasksController,
+    TherapyPlanController,
     TherapyNotesController,
     ModeMapsController,
     ConceptAppendController,
@@ -42,6 +45,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyInviteService,
     TherapyTasksService,
     TherapyTasksViewService,
+    TherapyPlanService,
     TherapyNotesService,
     TherapyClientDataService,
     ModeMapsService,

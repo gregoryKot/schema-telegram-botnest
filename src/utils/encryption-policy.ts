@@ -175,6 +175,14 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     text: enc(`${TH}/therapy-notes.service.ts`),
     work: enc(`${TH}/therapy-notes.service.ts`),
   },
+  TherapyPlanItem: {
+    rubric: ID,
+    text: enc(`${TH}/therapy-plan.service.ts`),
+    status: ID,
+    sourceKind: ID,
+    sourceId: ID,
+    sourceField: ID,
+  },
   ClientConceptualization: {
     schemaIds: enc(`${TH}/concept-store.ts`),
     modeIds: enc(`${TH}/concept-store.ts`),

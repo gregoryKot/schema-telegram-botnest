@@ -113,6 +113,9 @@ export function makeFakePrisma() {
       userTable,
     ),
     therapistNote: makeTable(),
+    therapyPlanItem: withUpdatedAt(
+      withDefaults(makeTable(), { status: 'planned', taskId: null }),
+    ),
     clientConceptualization: withUpdatedAt(makeTable()),
     modeMap: makeTable(),
     therapistCustomMode: makeTable(),

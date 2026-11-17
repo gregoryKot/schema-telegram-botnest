@@ -37,6 +37,10 @@ export async function attachOfflineCard(
       where: { therapistId, clientId: neg },
       data: { clientId },
     });
+    await tx.therapyPlanItem.updateMany({
+      where: { therapistId, clientId: neg },
+      data: { clientId },
+    });
 
     // Концептуализация уникальна по паре therapistId+clientId. Две версии
     // одного документа слить нельзя: остаётся новее по updatedAt, при

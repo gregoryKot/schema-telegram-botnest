@@ -82,10 +82,9 @@ describe('Реестры user-таблиц ↔ schema.prisma', () => {
     const botSrc =
       readFileSync(join(ROOT, 'src/bot/account.delete.ts'), 'utf8') +
       readFileSync(join(ROOT, 'src/bot/account.service.ts'), 'utf8');
-    const mergeSrc = readFileSync(
-      join(ROOT, 'src/auth/merge.service.ts'),
-      'utf8',
-    );
+    const mergeSrc =
+      readFileSync(join(ROOT, 'src/auth/merge.service.ts'), 'utf8') +
+      readFileSync(join(ROOT, 'src/auth/merge-therapist-side.ts'), 'utf8');
     for (const model of THERAPIST_SIDE_MODELS) {
       const camel = model[0].toLowerCase() + model.slice(1);
       expect(botSrc.includes(`${camel}.deleteMany`)).toBe(true);

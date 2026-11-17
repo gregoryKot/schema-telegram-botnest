@@ -588,6 +588,8 @@ model UserTask {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 
+  planItems   TherapyPlanItem[]
+
   @@index([userId, done, createdAt])
   @@index([userId, done, type])
 }
@@ -602,6 +604,27 @@ model TherapistNote {
   createdAt   DateTime @default(now())
 
   @@index([therapistId, clientId, createdAt])
+}
+
+// Пункт плана работы с клиентом: видит только терапевт. Без FK на User, как
+// TherapistNote: clientId офлайн-клиента отрицательный (-TherapyRelation.id).
+model TherapyPlanItem {
+  id          Int       @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  rubric      String    // PLAN_RUBRICS (src/therapy/therapy-plan.types.ts)
+  text        String    // шифруется
+  status      String    @default("planned") // 'planned' | 'active' | 'done'
+  position    Int       @default(0)
+  sourceKind  String?   // статья справочника: 'schema' | 'mode' | 'technique'
+  sourceId    String?
+  sourceField String?   // поле статьи, из которого взят текст
+  taskId      Int?      // задание, которым пункт выдан клиенту
+  task        UserTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([therapistId, clientId, position])
 }
 
 model ClientConceptualization {
