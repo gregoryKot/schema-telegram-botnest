@@ -37,9 +37,9 @@ const EXPECTED_NEEDS: Need[] = [
   {
     id: 'limits',
     emoji: '⚖️',
-    title: '⚖️ Границы',
+    title: '⚖️ Самоконтроль',
     fullTitle: 'Реалистичные границы и самоконтроль',
-    chartLabel: 'Границы',
+    chartLabel: 'Самоконтроль',
   },
 ];
 

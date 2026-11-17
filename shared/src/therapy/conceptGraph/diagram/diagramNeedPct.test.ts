@@ -109,7 +109,7 @@ describe('подсказка и период по умолчанию', () => {
       'Привязанность: детство 20%, 11–17 лет 30%, сейчас 50%',
     );
     expect(needPctTitle('Спонтанность', WHEEL, 'play')).toBeUndefined();
-    expect(needPctTitle('Границы', undefined, 'limits')).toBeUndefined();
+    expect(needPctTitle('Самоконтроль', undefined, 'limits')).toBeUndefined();
   });
 
   it('оценки есть — если оценён хоть один период хоть одной потребности', () => {

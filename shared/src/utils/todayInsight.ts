@@ -9,7 +9,7 @@ const LABELS: Record<string, string> = {
   autonomy: 'Автономия',
   expression: 'Выражение чувств',
   play: 'Спонтанность',
-  limits: 'Границы',
+  limits: 'Самоконтроль',
 };
 
 /**

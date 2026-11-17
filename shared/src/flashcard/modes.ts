@@ -54,7 +54,7 @@ export const NEEDS: NeedData[] = [
   { id: 'autonomy', emoji: '🔑', label: 'Автономия' },
   { id: 'expression', emoji: '🎨', label: 'Выражение' },
   { id: 'play', emoji: '🎉', label: 'Спонтанность' },
-  { id: 'limits', emoji: '🛡️', label: 'Границы' },
+  { id: 'limits', emoji: '🛡️', label: 'Самоконтроль' },
 ];
 
 export const STEPS: Step[] = ['mode', 'response', 'need', 'action'];

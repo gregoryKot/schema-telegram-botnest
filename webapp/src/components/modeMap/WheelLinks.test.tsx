@@ -49,7 +49,7 @@ describe('WheelChildhood — «Колесо детства» клиента', ()
     getTherapyClientData.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ childhoodRatings: { limits: 5 } });
     render(<WheelChildhood clientId={7} links={[]} onApply={vi.fn()} />);
     fireEvent.click(await screen.findByText('Повторить'));
-    await waitFor(() => expect(screen.getByText('Границы 50%')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Самоконтроль 50%')).toBeTruthy());
     expect(getTherapyClientData).toHaveBeenCalledTimes(2);
   });
 });

@@ -161,7 +161,7 @@ describe('ConceptGraph: общий вид', () => {
       'Автономия',
       'Выражение чувств',
       'Спонтанность',
-      'Границы',
+      'Самоконтроль',
     ]) {
       expect(needPill(name).getAttribute('aria-pressed')).toBe('false');
     }

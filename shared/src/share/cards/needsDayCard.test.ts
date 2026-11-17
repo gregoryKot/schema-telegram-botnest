@@ -15,7 +15,7 @@ afterEach(() => vi.restoreAllMocks());
 const ROWS: NeedsDayRow[] = [
   { id: 'attachment', label: 'Привязанность', value: 7, valueText: '7' },
   { id: 'autonomy', label: 'Автономия', value: null, valueText: '—' },
-  { id: 'limits', label: 'Границы', value: 3, valueText: '3' },
+  { id: 'limits', label: 'Самоконтроль', value: 3, valueText: '3' },
 ];
 
 const data = (rows = ROWS, subtitle?: string) => ({

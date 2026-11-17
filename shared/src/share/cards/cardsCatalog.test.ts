@@ -59,7 +59,7 @@ const NEEDS: Need[] = [
     title: 'Спонтанность',
     chartLabel: 'Спонтанность',
   },
-  { id: 'limits', emoji: '⚖️', title: 'Границы', chartLabel: 'Границы' },
+  { id: 'limits', emoji: '⚖️', title: 'Самоконтроль', chartLabel: 'Самоконтроль' },
 ];
 const RATINGS = { attachment: 3, autonomy: 6, expression: 10, play: 5 };
 const HISTORY = ['2026-11-06', '2026-11-08', '2026-11-09', '2026-11-12'].map(

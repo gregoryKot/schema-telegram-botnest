@@ -39,7 +39,7 @@ const NEED_LABELS: Record<string, string> = {
   autonomy: 'Автономия',
   expression: 'Выражение чувств',
   play: 'Спонтанность',
-  limits: 'Границы',
+  limits: 'Самоконтроль',
 };
 
 const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];

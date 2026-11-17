@@ -92,10 +92,10 @@ describe('drawDayBars / drawNeedRow', () => {
     const { c, ctx } = card();
     drawNeedRow(
       c,
-      { id: 'limits', label: 'Границы', value: 6, valueText: '6' },
+      { id: 'limits', label: 'Самоконтроль', value: 6, valueText: '6' },
       0,
     );
-    expect(ctx.printed.map((p) => p.text)).toEqual(['Границы', '6']);
+    expect(ctx.printed.map((p) => p.text)).toEqual(['Самоконтроль', '6']);
     expect(ctx.fillStyle).toBe(needTextInk('limits'));
   });
 });

@@ -184,7 +184,7 @@ describe('buildJourneyResultParts', () => {
     });
     expect(part.title).toBe('Оценки дня (из 10)');
     expect(part.text).toBe(
-      'Привязанность — 7 · Спонтанность — 4 · Границы — 6',
+      'Привязанность — 7 · Спонтанность — 4 · Самоконтроль — 6',
     );
   });
 

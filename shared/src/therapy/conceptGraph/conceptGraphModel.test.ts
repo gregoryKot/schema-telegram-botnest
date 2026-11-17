@@ -118,7 +118,7 @@ describe('карточка', () => {
     expect(card.alias).toBe('Маленькая Аня');
     expect(card.name).toBe('Уязвимый Ребёнок');
     expect(card.schemas.map((s) => s.id)).toEqual(['abandonment', 'failure']);
-    expect(card.needs.map((n) => n.name)).toEqual(['Привязанность', 'Границы']);
+    expect(card.needs.map((n) => n.name)).toEqual(['Привязанность', 'Самоконтроль']);
     expect(card.lane).toBe('child');
     expect(card.manifest).toBe('замирает');
     expect(card.empty).toBe(false);

@@ -15,7 +15,7 @@ describe('todayInsightPhrase', () => {
   it('контраст: называет опору и слабую потребность с баллами', () => {
     const phrase = todayInsightPhrase(full({ attachment: 9, limits: 2 }));
     expect(phrase).toContain('Привязанность (9/10)');
-    expect(phrase).toContain('Границы (2/10)');
+    expect(phrase).toContain('Самоконтроль (2/10)');
   });
 
   it('ровный высокий день', () => {

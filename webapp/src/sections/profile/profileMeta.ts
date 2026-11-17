@@ -1,6 +1,6 @@
 export const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность', autonomy: 'Автономия',
-  expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
+  expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Самоконтроль',
 };
 
 export const ACHIEVEMENT_META: Record<string, { title: string; desc: string }> = {

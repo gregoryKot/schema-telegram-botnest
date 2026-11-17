@@ -65,7 +65,7 @@ describe('QuestionScreen — лист потребности', () => {
   // висеть в конце строки (на листе потребности те же описания уже склеены).
   it('подписи ответов склеены: короткий предлог не висит в конце строки', () => {
     const MID = 'Частично — что-то получилось: или с защитой себя, или с самоконтролем, но не всё';
-    render(<QuestionScreen idx={4} total={5} name="Границы" needId="limits" hue={NEED_HUE.limits} value={0}
+    render(<QuestionScreen idx={4} total={5} name="Самоконтроль" needId="limits" hue={NEED_HUE.limits} value={0}
       data={{ ...DATA, ranges: [{ description: 'Мало' }, { description: MID }, { description: 'Много' }] } as NeedExtra}
       showOriginNote={false} onAnswer={vi.fn()} onMore={vi.fn()} />);
     const subs = [...document.querySelectorAll('.ns-word-sub')].map((n) => n.textContent);
