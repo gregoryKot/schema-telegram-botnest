@@ -101,8 +101,8 @@ describe('TherapyNotesService — заметки о сессиях (session note
     // Crypto разбирает ключ при импорте: без него encrypt() — identity.
     const Keyed = loadWithKeys(
       { key: 'cd'.repeat(32) },
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       () =>
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         require('./therapy-notes.service') as typeof import('./therapy-notes.service'),
     ).TherapyNotesService;
     const { prisma, notes: rows } = makeService([activeRel]);
