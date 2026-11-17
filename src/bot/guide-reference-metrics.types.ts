@@ -5,4 +5,5 @@ export interface GuideReferenceMetrics {
   schemas30: number; // раз открывали лист схемы
   techniques30: number; // раз открывали лист техники (из списка или из листа режима и схемы)
   notes30: number; // раз открывали раздел «Для терапевта»
+  tables30: number; // раз включали у «Схем» вид «Таблицей»
 }

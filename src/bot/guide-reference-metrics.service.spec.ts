@@ -33,6 +33,7 @@ describe('GuideReferenceMetricsService', () => {
         cabinet_guide_schema_open: 2,
         cabinet_guide_technique_open: 4,
         cabinet_guide_note_open: 1,
+        cabinet_guide_table_open: 6,
         // те же листы из схемы случая сюда не попадают
         concept_guide_mode_open: 99,
       },
@@ -45,6 +46,7 @@ describe('GuideReferenceMetricsService', () => {
       schemas30: 2,
       techniques30: 4,
       notes30: 1,
+      tables30: 6,
     });
   });
 
@@ -54,7 +56,7 @@ describe('GuideReferenceMetricsService', () => {
     expect(count).toHaveBeenCalledWith({
       where: { name: 'cabinet_guide_open', createdAt: { gte: SINCE } },
     });
-    expect(count).toHaveBeenCalledTimes(5);
+    expect(count).toHaveBeenCalledTimes(6);
     expect(groupBy).toHaveBeenCalledWith({
       by: ['userId'],
       where: {
