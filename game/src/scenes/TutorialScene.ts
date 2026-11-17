@@ -116,8 +116,8 @@ export class TutorialScene extends Phaser.Scene {
     if (!this.anims.exists('p-walk'))
       this.anims.create({ key: 'p-walk', frames: this.anims.generateFrameNumbers('cat_run', { start: 0, end: 5 }), frameRate: 16, repeat: -1 });
 
-    this.player = this.physics.add.sprite(W / 2, GROUND_Y - 20, 'cat_idle').setOrigin(0.5, 1).setScale(1.5).setDepth(10);
-    (this.player.body as Phaser.Physics.Arcade.Body).setSize(22, 30).setOffset(13, 16);
+    this.player = this.physics.add.sprite(W / 2, GROUND_Y - 20, 'cat_idle').setOrigin(0.5, 1).setScale(2).setDepth(10);
+    (this.player.body as Phaser.Physics.Arcade.Body).setSize(16, 22).setOffset(10, 14);
     this.player.setCollideWorldBounds(true);
     this.player.play('p-idle');
     this.physics.add.collider(this.player, floor);
@@ -127,14 +127,14 @@ export class TutorialScene extends Phaser.Scene {
     // запросами и могут не доехать по сети. Анимацию создаём ТОЛЬКО если текстура
     // реально загрузилась — иначе .play() по пустой анимации роняет update-цикл
     // и игра «зависает» (так вешалось ОТВЛЕКИСЬ без клубка).
-    this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
+    this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1); this.safeAnim('p-dash', 'cat_run', 6, 6, 1, 0);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(2).setDepth(10).setVisible(false);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
-    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(2).setDepth(10).setVisible(false);
     // выпад атаки — тот же спрайт, что в игре (cat_dash), грузится в фоне
     this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(1.5).setDepth(11).setVisible(false);
+    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(2).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'),
@@ -308,13 +308,13 @@ export class TutorialScene extends Phaser.Scene {
     }
     if (this.dashT > 0) {
       if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
-      this.dashT -= dt; b.setVelocityX(this.dashDir * 560);
+      this.dashT -= dt; b.setVelocityX(this.dashDir * 560); this.player.play('p-dash', true);
       const g = this.add.image(this.player.x, this.player.y, this.player.texture.key, this.player.frame.name)
-        .setOrigin(0.5, 1).setScale(1.5).setFlipX(this.player.flipX).setTint(0x9fd0ff).setAlpha(0.5).setDepth(9);
+        .setOrigin(0.5, 1).setScale(2).setFlipX(this.player.flipX).setTint(0x9fd0ff).setAlpha(0.5).setDepth(9);
       this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
     } else if (this.frozen) {
       b.setVelocityX(0);
-      this.player.setScale(1.5, 1.5);
+      this.player.setScale(2, 2);
       // Мистер играет с клубком. Спрайт грузится в фоне — создаём анимацию при
       // первом использовании. Если ещё не доехал — просто стоим (idle).
       this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
@@ -326,13 +326,13 @@ export class TutorialScene extends Phaser.Scene {
       }
     } else {
       if (this.playSprite.visible) { this.playSprite.setVisible(false); this.player.setVisible(true); }
-      this.player.setScale(1.5, 1.5);
+      this.player.setScale(2, 2);
       if (right) { b.setVelocityX(250); this.player.setFlipX(false); this.moved += dt; }
       else if (left) { b.setVelocityX(-250); this.player.setFlipX(true); this.moved += dt; }
       else b.setVelocityX(b.velocity.x * 0.7);
       if (jump && onGround) { b.setVelocityY(PHYS.jumpVel); audio.jump(); this.jumped = true; }
       if (onGround && Math.abs(b.velocity.x) > 20) this.player.play('p-walk', true);
-      else if (onGround) this.player.play('p-idle', true);
+      else if (onGround || this.player.anims.currentAnim?.key === 'p-dash') this.player.play(onGround ? 'p-idle' : 'p-walk', true);
     }
 
     this.slash.clear();

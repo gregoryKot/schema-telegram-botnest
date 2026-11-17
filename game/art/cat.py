@@ -1,126 +1,137 @@
-"""Кот Мистер: перекраска базовых листов (A1) и риг поз копингов (A2).
+"""Кот Мистер: кадр 36x36, показ x2 (72 px на экране). Окрас — чёрный с тёплой кромкой.
 
-A1 сохраняет силуэт и походку старых 48-px листов (опора стиля по брифу),
-но красит их общим конвейером px.render: шерсть, кромка света, контур.
-Позы рисуются ригом в единицах 48-px кадра; scale=2 даёт кадр 96 px
-с честной детализацией, а не растянутые квадраты.
+Голова — ручной штамп (лицо решает выразительность), тело, лапы и хвост — риг
+примитивов в карту материалов; paint() красит её: тень снизу, свет неба сверху,
+солнце справа (px.sun_rim), контур тёмным оттенком шерсти.
 """
 import math
 import numpy as np
-from PIL import Image
-from px import Canvas, Mat, render, OUT_CAT, C
+from PIL import Image, ImageDraw
+from px import C, empty_at, outline_mask, sun_rim
 
-FUR, FAR, NEAR, BELLY, LINE, HEAD, TAIL, TAILF = 1, 2, 3, 4, 5, 6, 7, 8
-MATS = {
-    FUR:   Mat('#1a1a22', '#2b2b36', '#4a4a5c', OUT_CAT, shade=2),
-    FAR:   Mat('#121218', '#1a1a22', '#2b2b36', OUT_CAT, shade=1),
-    NEAR:  Mat('#1a1a22', '#2b2b36', '#4a4a5c', OUT_CAT, shade=1),
-    BELLY: Mat('#2b2b36', '#3a3a48', '#4a4a5c', OUT_CAT, shade=1),
-    LINE:  Mat('#0e0b16', '#0e0b16', '#0e0b16', OUT_CAT, shade=0, rim=False),
-}
-def _z(m, z):
-    n = Mat('#000000', '#000000', '#000000'); n.__dict__.update(m.__dict__); n.z = z; return n
-# z — порядок слоёв: край переднего поверх заднего получает внутренний контур
-MATS.update({FAR: _z(MATS[FAR], 0), TAIL: _z(MATS[FUR], 1), FUR: _z(MATS[FUR], 2),
-             BELLY: _z(MATS[BELLY], 3), HEAD: _z(MATS[FUR], 4), NEAR: _z(MATS[NEAR], 5),
-             TAILF: _z(MATS[FUR], 6), LINE: _z(MATS[LINE], 9)})
-EYE, EYE_D, NOSE, STREAK = '#ffcc33', '#c8901e', '#d9738a', '#a89fd0'
+FS = 36
+GY = FS - 1   # нижняя строка кадра — земля
+BODY, FAR, LITE, EARIN, IRIS, PUP, GLINT, NOSE, MOUTH, TAIL, HEAD, PAW, LID, LEG, WRAP = range(1, 16)
 
-# ---------- A1: перекраска старых листов ----------
-OLD = {(38, 38, 38): FUR, (27, 27, 27): FAR, (19, 19, 19): LINE}
-INK = {(250, 188, 19): EYE, (192, 145, 17): EYE_D, (140, 31, 86): NOSE}
+HEAD_UP = [
+    "..b..........b..",
+    ".bib........bib.",
+    ".biib......biib.",
+    ".biibbbbbbbbiib.",
+    ".bbbbbbbbbbbbbb.",
+    "bbbbbbbbbbbbbbbb",
+    "bbbJJJbbbbJJJJbb",
+    "bbbIGPbbbbIGPIbb",
+    "bbbIPPbbbbIPPIbb",
+    "bbbbIbbbbbbIIbbb",
+    "bbbbbbbbnbbbbbbb",
+    ".bbbbbbmMmbbbbb.",
+    "..bbbbbbbbbbbb..",
+]
+# рывок и удар: уши прижаты назад, глаза сужены — решимость
+HEAD_DASH = [
+    "................",
+    "................",
+    "bbbb........bb..",
+    ".biibb....bbiib.",
+    "..bbbbbbbbbbbbb.",
+    "bbbbbbbbbbbbbbbb",
+    "bbbbbbbbbbbbbbbb",
+    "bbbJGPbbbbJGPJbb",
+    "bbbIPPbbbbIPPIbb",
+    "bbbbbbbbbbbbbbbb",
+    ".bbbbbbbnbbbbbb.",
+    ".bbbbbbmMmbbbbb.",
+    "..bbbbbbbbbbbb..",
+]
+_SHUT = ["bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb", "bbbPPPbbbbPPPPbb", "bbbbbbbbbbbbbbbb"]
+HEAD_BLINK = HEAD_UP[:6] + _SHUT + HEAD_UP[10:]
+# устал: веки наполовину
+HEAD_HALF = HEAD_UP[:6] + ["bbbbbbbbbbbbbbbb", "bbbPPPbbbbPPPPbb", "bbbIPPbbbbIPPIbb", "bbbbbbbbbbbbbbbb"] + HEAD_UP[10:]
+# сон и сдача: уши прижаты, глаза закрыты
+HEAD_SLEEP = HEAD_DASH[:6] + _SHUT + HEAD_DASH[10:]
+# на спине: та же голова вверх ногами
+HEAD_BACK, HEAD_BACK_SHUT = HEAD_HALF[::-1], HEAD_BLINK[::-1]
+KEY = {'J': LID, 'b': HEAD, 'i': EARIN, 'I': IRIS, 'P': PUP, 'G': GLINT, 'n': NOSE, 'm': LITE, 'M': MOUTH}
 
-def restyle(path):
-    src = np.array(Image.open(path).convert('RGBA'))
-    h, w = src.shape[:2]
-    a = np.zeros((h, w), np.uint8)
-    ink = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    for y in range(h):
-        for x in range(w):
-            r, g, b, al = src[y, x]
-            if not al:
-                continue
-            key = (int(r), int(g), int(b))
-            if key in INK:
-                a[y, x] = FUR
-                ink.putpixel((x, y), C(INK[key]))
-            else:
-                a[y, x] = OLD.get(key, FUR)
-    # внешний контур старого листа срезаем — render нарисует его заново
-    edge = [(x, y) for y in range(h) for x in range(w) if a[y, x] == LINE and any(
-        not (0 <= x + dx < w and 0 <= y + dy < h) or (src[y + dy, x + dx][3] == 0)
-        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
-    for x, y in edge:
-        a[y, x] = 0
-    return render(a, MATS, ink)
-
-# ---------- A2: риг позы ----------
 def oval(cx, cy, rx, ry, ang=0.0, n=28):
     ca, sa = math.cos(ang), math.sin(ang)
     return [(cx + rx * math.cos(t) * ca - ry * math.sin(t) * sa,
              cy + rx * math.cos(t) * sa + ry * math.sin(t) * ca)
             for t in (2 * math.pi * i / n for i in range(n))]
 
-class Pose:
-    """Все координаты — в единицах 48-px кадра, кот смотрит вправо."""
-    def __init__(self, **kw):
-        self.body = (24, 34, 11, 5.5, 0.0)      # cx, cy, rx, ry, наклон
-        self.head = (36, 28, 6.0)               # cx, cy, r
-        self.ears = (0.0, 0.0)                  # отклонение назад, рад (уши прижаты > 0)
-        self.legs_far, self.legs_near = [], []  # [(плечо, колено, лапа)]
-        self.tail = [(14, 33), (9, 28), (8, 20)]
-        self.tail_w = 2.2
-        self.tail_front = False                 # хвост поверх тела (клубок)
-        self.eyes = 'open'                      # open | half | closed | none
-        self.belly = None                       # oval брюха поверх тела
-        self.streaks = []                       # линии движения (ink)
-        self.__dict__.update(kw)
+def pose(p):
+    """Поза (dict) -> карта материалов. Ключи: body, head, tail, far, near; необязательные —
+    face, tail_w, belly (светлое брюхо), wrap (хвост поверх тела), paws=False, pads (подушечки),
+    seam=True (голова лежит на теле — шов по её краю)."""
+    img = Image.new('L', (FS, FS), 0); d = ImageDraw.Draw(img)
+    for pts in p['far']:
+        d.line(pts, fill=FAR, width=2)
+    if 'tail' in p:
+        d.line(p['tail'], fill=TAIL, width=p.get('tail_w', 3))
+        tx, ty = p['tail'][-1]
+        d.ellipse((tx - 1, ty - 1, tx + 1, ty + 1), fill=TAIL)
+    d.ellipse(p['body'], fill=BODY)
+    if 'belly' in p:
+        d.ellipse(p['belly'], fill=LITE)
+    for pts in p['near']:
+        d.line(pts, fill=LEG, width=3)
+        x, y = pts[-1]
+        if p.get('paws', True):
+            d.rectangle((x - 1, y - 1, x + 1, y), fill=PAW)
+    hx, hy = p['head']
+    for j, row in enumerate(p.get('face', HEAD_UP)):
+        for i, ch in enumerate(row):
+            if ch in KEY and 0 <= hx + i < FS and 0 <= hy + j < FS:
+                img.putpixel((hx + i, hy + j), KEY[ch])
+    if 'wrap' in p:
+        d.line(p['wrap'], fill=WRAP, width=3)
+    for x, y in p.get('pads', ()):
+        img.putpixel((x, y), NOSE)
+    return np.array(img)
 
-def draw(p, s=2, size=96):
-    c = Canvas(size, size)
-    S = lambda pts: [(x * s, y * s) for x, y in pts]
-    lw = lambda w: max(1, round(w * s))
-    for leg in p.legs_far:
-        c.line(S(leg), FAR, lw(2.0))
-    if not p.tail_front:
-        c.line(S(p.tail), TAIL, lw(p.tail_w))
-    bx, by, brx, bry, ba = p.body
-    bry *= 0.85                                 # стройнее: силуэт как у базового кота
-    c.poly(S(oval(bx, by, brx, bry, ba)), FUR)
-    if p.belly:
-        c.poly(S(oval(*p.belly)), BELLY)
-    hx, hy, hr = p.head
-    hr *= 0.88
-    c.poly(S(oval(hx, hy, hr, hr * 0.9)), HEAD)
-    for side, base in ((-1, -0.55), (1, 0.35)):   # заднее и переднее ухо
-        a = base - p.ears[0 if side < 0 else 1] - math.pi / 2
-        tip = (hx + math.cos(a) * hr * 1.55, hy + math.sin(a) * hr * 1.55)
-        l = (hx + math.cos(a - 0.45) * hr * 0.85, hy + math.sin(a - 0.45) * hr * 0.85)
-        r = (hx + math.cos(a + 0.45) * hr * 0.85, hy + math.sin(a + 0.45) * hr * 0.85)
-        c.poly(S([l, tip, r]), HEAD)
-    if p.tail_front:
-        c.line(S(p.tail), TAILF, lw(p.tail_w))
-    for leg in p.legs_near:
-        c.line(S(leg), NEAR, lw(2.0))
-        fx, fy = leg[-1]
-        c.poly(S(oval(fx + 0.6, fy, 1.7, 1.1)), NEAR)
-    _face(c, p, s)
-    for pts in p.streaks:
-        c.iline(S(pts), STREAK)
-    return c.render(MATS)
+SKIN = dict(out='#120b16', base='#2c2236', dark='#1d1526', top='#6a4058', rim='#ff9a5c', rim2='#ffd38a',
+            far='#1a1322', lite='#3d3048', earin='#d0607a', iris='#ffc23a', lid='#fff27a', pup='#120b16',
+            glint='#ffffff', nose='#ef7a92', mouth='#120b16')
+STREAK = (SKIN['rim'], SKIN['rim2'])
 
-def _face(c, p, s):
-    hx, hy, hr = p.head
-    hr *= 0.88
-    ex, ey = round((hx + hr * 0.1) * s), round((hy - hr * 0.2) * s)
-    nx, ny = round((hx + hr * 0.95) * s), round((hy + hr * 0.3) * s)
-    gap = 4 * s                                 # как у базового кота: глаз 1x2, шаг 4
-    for x in (ex, ex + gap):
-        if p.eyes == 'open':
-            c.irect((x, ey, x + s - 1, ey + s - 1), EYE); c.irect((x, ey + s, x + s - 1, ey + 2 * s - 1), EYE_D)
-        elif p.eyes == 'half':
-            c.irect((x, ey + s, x + s - 1, ey + 2 * s - 1), EYE)
-        elif p.eyes == 'closed':
-            c.iline([(x, ey + s), (x + s, ey + s)], '#4a4a5c')
-    if p.eyes != 'none':
-        c.dot(nx, ny, NOSE)
+def paint(a, s=SKIN, seam=False):
+    h, w = a.shape
+    out = np.zeros((h, w, 4), np.uint8)
+    fur = np.isin(a, [BODY, HEAD, TAIL, LEG, WRAP])
+    trunk = np.isin(a, [BODY, HEAD])
+    flat = {BODY: 'base', HEAD: 'base', TAIL: 'base', LEG: 'base', PAW: 'base', WRAP: 'base', FAR: 'far',
+            LITE: 'lite', EARIN: 'earin', IRIS: 'iris', LID: 'lid', PUP: 'pup', GLINT: 'glint',
+            NOSE: 'nose', MOUTH: 'mouth'}
+    for k, name in flat.items():
+        out[a == k] = C(s[name])
+    # тень снизу: два нижних пикселя меха над пустотой
+    below1 = empty_at(a, 0, 1)
+    below2 = np.zeros_like(below1); below2[:-1] = below1[1:] & (a[:-1] > 0)
+    for msk in (below1, below2):
+        out[msk & fur] = C(s['dark'])
+    # шов голова/тело — тёмная линия под подбородком
+    chin = np.zeros_like(fur); chin[1:] = (a[:-1] == HEAD) & np.isin(a[1:], [BODY, LITE, LEG])
+    out[chin] = C(s['dark'])
+    # хвост поверх тела читается по светлой верхней кромке
+    wtop = np.zeros_like(fur); wtop[1:] = (a[1:] == WRAP) & (a[:-1] != WRAP)
+    out[wtop] = C(s['top'])
+    if seam:
+        left = np.zeros_like(fur); left[:, :-1] = (a[:, :-1] == BODY) & (a[:, 1:] == HEAD)
+        over = np.zeros_like(fur); over[1:] = (a[1:] == HEAD) & (a[:-1] == BODY)
+        out[left] = C(s['dark']); out[over] = C(s['top'])
+    sun_rim(out, a, trunk, s['top'], s['rim'], s['rim2'])
+    out[(a == FAR) & empty_at(a, 0, -1)] = C(s['dark'])
+    out[outline_mask(a)] = C(s['out'])
+    return Image.fromarray(out, 'RGBA')
+
+def streaks(img, rows):
+    """Штрихи скорости цветом кромки, без контура: (y, x0, x1), только по пустому."""
+    for y, x0, x1 in rows:
+        for x in range(x0, x1):
+            if img.getpixel((x, y))[3] == 0:
+                img.putpixel((x, y), C(STREAK[1] if x > x0 + 2 else STREAK[0]))
+    return img
+
+def frame(p):
+    return streaks(paint(pose(p), seam=p.get('seam', False)), p.get('streaks', ()))

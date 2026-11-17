@@ -19,7 +19,7 @@ export interface Critic {
 export function spawnCritic(s: GameScene) {
   if (s.critic) return;
   const img = s.add.sprite(s.player.x - 200, s.player.y, 'cat_idle')
-    .setOrigin(0.5, 1).setScale(1.5).setDepth(9).setTint(0x1a0030).setAlpha(0).play('p-walk');
+    .setOrigin(0.5, 1).setScale(2).setDepth(9).setTint(0x1a0030).setAlpha(0).play('p-walk');
   s.tweens.add({ targets: img, alpha: 0.82, duration: 600 });
   s.critic = { img, size: 1, struck: 0, alive: true };
   // тень постоянно выкрикивает упрёки — её не заткнуть
@@ -40,7 +40,7 @@ export function hitCritic(s: GameScene) {
   s.burst(c.img.x, c.img.y - 20, 0x6a2a8a, 8, 110);
   c.struck = 1600;                              // огрызнулся — притих на секунду
   c.size = Math.min(2.4, c.size + 0.18);        // ...и в ответ стал больше
-  c.img.setScale(1.5 * c.size);
+  c.img.setScale(2 * c.size);
   s.sayOnce('critic_hit', 'm_snapped_it_hushed_then_grew_louder', 3200);
 }
 
@@ -86,7 +86,7 @@ export function updateCritic(s: GameScene, dt: number) {
     c.size = Math.min(2.4, c.size + dt * 0.0005);
     s.sayOnce('critic_frz', 'm_the_yarn_it_s_right_behind', 2800);
   }
-  c.img.setScale(1.5 * c.size);
+  c.img.setScale(2 * c.size);
   c.struck -= dt;
   if (dist < 34 && s.invuln <= 0 && c.struck <= 0 && !s.finalApproach) {
     c.struck = 1200; s.damage(c.img.x);

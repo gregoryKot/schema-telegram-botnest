@@ -4,10 +4,15 @@
 затем render() красит её одинаково для всех: свет сверху-слева (кромка light),
 тень снизу-справа (dark + полоса дизеринга), контур 1 px тёмным оттенком
 объекта (не чёрным). Детали (глаза, окна, трещины) — ink поверх.
-Палитра — раздел 2 docs/GAME_ART_BRIEF.md.
+Палитра — эталон game/art/ref/pal.py (PAL); старые ассеты держат свои рампы до перерисовки.
+Сетка единая: всё рисуется в логических пикселях и показывается в игре ×SCALE.
 """
 import numpy as np
 from PIL import Image, ImageDraw
+from ref.pal import CH1, CH2, DAWN
+
+PAL = {'ch1': CH1, 'ch2': CH2, 'dawn': DAWN}
+SCALE = 2
 
 def C(h):
     return (int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16), 255)
@@ -97,6 +102,31 @@ def render(a, mats, ink=None, outline=True):
     if ink is not None:
         img.alpha_composite(ink)
     return img
+
+def empty_at(a, dx, dy):
+    """Маска: пиксель занят, а сосед (x+dx, y+dy) пуст."""
+    h, w = a.shape
+    pad = np.zeros((h + 2, w + 2), a.dtype); pad[1:-1, 1:-1] = a
+    return (a > 0) & (pad[1 + dy:h + 1 + dy, 1 + dx:w + 1 + dx] == 0)
+
+def outline_mask(a):
+    """Пустые пиксели, у которых занят сосед по стороне, — место внешнего контура."""
+    h, w = a.shape
+    pad = np.zeros((h + 2, w + 2), bool); pad[1:-1, 1:-1] = a > 0
+    near = np.zeros((h, w), bool)
+    for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+        near |= pad[1 + dy:h + 1 + dy, 1 + dx:w + 1 + dx]
+    return near & (a == 0)
+
+def sun_rim(out, a, where, top, rim, rim2, sun=1):
+    """Тёплая кромка: свет неба сверху (top), солнце сбоку (rim; sun=1 — справа), угол — rim2."""
+    up_, side = empty_at(a, 0, -1) & where, empty_at(a, sun, 0) & where
+    out[up_] = C(top)
+    out[side & ~empty_at(a, 0, 1)] = C(rim)
+    out[up_ & side] = C(rim2)
+
+def up(img, k=SCALE):
+    return img.resize((img.width * k, img.height * k), Image.NEAREST)
 
 def strip(frames):
     """Кадры одного размера в одну строку слева направо, без полей."""

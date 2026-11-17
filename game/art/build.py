@@ -1,19 +1,17 @@
 """Собрать ассеты волны 1 и лист-эталон: `cd game/art && python3 build.py [--install]`.
 Всегда пишет game/art/out/ (эталон, превью); с --install — ещё game/src/assets/.
-Базовый кот перекрашивается из исходников src/*_src.png (старые листы), поэтому
-сборка повторяема."""
+Кот целиком рисуется ригом (cat.py, poses.py) — исходных картинок нет, сборка повторяема."""
 import os
 import sys
 from PIL import Image
 from px import save, check
-from cat import restyle
 import poses, ground, ledges, street, refs, light, doc
 
 ASSETS, OUT = '../src/assets', 'out'
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    made = {k: restyle(f'src/{k}_src.png') for k in ('cat_idle', 'cat_run')}
+    made = {}
     for mod in (poses, ground, ledges, street, light, doc):
         made.update(mod.build())
     for k, img in made.items():

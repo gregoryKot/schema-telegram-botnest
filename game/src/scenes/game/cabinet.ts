@@ -70,7 +70,7 @@ export function sessionScene(s: GameScene) {
   put('prop_plant', W * 0.92, 70);
   // Мистер и терапевт — просто сидят. никого не надо бить.
   const mister = s.add.sprite(W * 0.26, H - 64, 'cat_idle').setOrigin(0.5, 1)
-    .setScale(1.6).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
+    .setScale(2).setScrollFactor(0).setDepth(deep + 3).setAlpha(0).play('p-idle');
   const doc = addTherapist(s, W * 0.56, H - 64, deep + 3);
   objs.push(mister, doc);
   s.tweens.add({ targets: objs, alpha: 1, duration: 1100, delay: 700 });
@@ -93,7 +93,7 @@ export function sessionScene(s: GameScene) {
   // Критик встаёт в дверях — огромный, как всегда
   s.time.delayedCall(9000, () => {
     const shadow = s.add.sprite(W * 0.92, H - 64, 'cat_idle').setOrigin(0.5, 1)
-      .setScale(2.2).setTint(0x1a0030).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('p-idle');
+      .setScale(3).setTint(0x1a0030).setScrollFactor(0).setDepth(deep + 4).setAlpha(0).play('p-idle');
     shadow.setFlipX(true);
     s.tweens.add({ targets: shadow, alpha: 0.85, duration: 900 });
     audio.anx();
