@@ -104,10 +104,10 @@ export function ApproachSection() {
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Подход</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как я работаю</h2>
           <div className="bento-grid">
-            <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем с глубинными убеждениями и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." accent /></div>
+            <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем со схемами и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." accent /></div>
             <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. В сессии я живой человек и использую этот контакт как часть терапии." /></div>
             <div><BentoCard num="03" title="Доказательная база" text="У схема-терапии есть рандомизированные исследования при расстройствах личности и хронических паттернах. Где данных меньше – скажу прямо." /></div>
-            <div><BentoCard num="04" title="Долгосрочный результат" text="Работаем не с одним симптомом, а с тем, как вы воспринимаете себя. Медленнее, зато надолго." /></div>
+            <div><BentoCard num="04" title="Работа вглубь" text="Работаем не с одним симптомом, а с тем, как вы воспринимаете себя. Медленнее, зато с прицелом на устойчивые перемены." /></div>
           </div>
         </div>
       </section>
