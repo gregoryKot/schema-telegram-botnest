@@ -36,7 +36,7 @@ export function buildDrivesQuiz(form: AddressForm): Quiz {
             label: '«Подъём! Нормальные люди уже на пробежке»',
             resultId: 'critic',
           },
-          { label: '«Можно сегодня просто не быть?»', resultId: 'child' },
+          { label: '«Страшно вставать. Обнимите меня»', resultId: 'child' },
           {
             label: '«Ещё пять минуточек…» (и полчаса ленты)',
             resultId: 'protector',
@@ -91,7 +91,7 @@ export function buildDrivesQuiz(form: AddressForm): Quiz {
             resultId: 'critic',
           },
           {
-            label: '«Позвать кого-то… а вдруг всем без меня лучше…»',
+            label: '«Позвать кого-то… а вдруг откажут…»',
             resultId: 'child',
           },
           {
