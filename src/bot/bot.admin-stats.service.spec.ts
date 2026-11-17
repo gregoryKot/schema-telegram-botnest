@@ -448,7 +448,7 @@ describe('BotAdminStatsService.getAdminStats — средняя по потре�
     });
     const report = await new BotAdminStatsService(prisma).getAdminStats();
     expect(report).toContain(
-      'Людям больше всего не хватает: Границы (в среднем 3.2 из 10)',
+      'Людям больше всего не хватает: Самоконтроль (в среднем 3.2 из 10)',
     );
   });
 
@@ -458,7 +458,7 @@ describe('BotAdminStatsService.getAdminStats — средняя по потре�
     });
     const report = await new BotAdminStatsService(prisma).getAdminStats();
     expect(report).toContain('Пока мало данных о потребностях');
-    expect(report).not.toContain('Границы');
+    expect(report).not.toContain('Самоконтроль');
   });
 
   it('людей считает ограниченный запрос: GROUP BY userId за ту же неделю, take = порог', async () => {

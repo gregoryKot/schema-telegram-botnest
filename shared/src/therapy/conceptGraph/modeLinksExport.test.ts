@@ -93,7 +93,7 @@ describe('formatModeLinksExport', () => {
     );
     expect(out).toContain('  На что опирается: Я имею право на поддержку');
     // потребности обычного режима и схемы здорового в экспорт не идут: в редакторе их нет
-    expect(out).not.toContain('Границы');
+    expect(out).not.toContain('Самоконтроль');
     expect(out).not.toContain('Неуспешность');
     expect(out).not.toContain('Как проявляется');
   });

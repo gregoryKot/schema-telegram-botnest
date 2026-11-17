@@ -146,7 +146,7 @@ export const JOURNEY_NEED_NAMES: Record<string, string> = {
   autonomy: 'Автономия',
   expression: 'Выражение чувств',
   play: 'Спонтанность',
-  limits: 'Границы',
+  limits: 'Самоконтроль',
 };
 
 export interface JourneySubtitleSources {

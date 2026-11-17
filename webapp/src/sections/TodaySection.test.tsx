@@ -77,7 +77,7 @@ const NEEDS = [
   { id: 'autonomy',   emoji: '🧭', title: 'Автономия',    chartLabel: 'Автон.' },
   { id: 'expression', emoji: '🎤', title: 'Выражение',    chartLabel: 'Выраж.' },
   { id: 'play',       emoji: '🎈', title: 'Радость',      chartLabel: 'Радость' },
-  { id: 'limits',     emoji: '🚧', title: 'Границы',      chartLabel: 'Границы' },
+  { id: 'limits',     emoji: '🚧', title: 'Самоконтроль',      chartLabel: 'Самоконтроль' },
 ];
 const ALL_RATED = { attachment: 6, autonomy: 6, expression: 6, play: 6, limits: 6 };
 

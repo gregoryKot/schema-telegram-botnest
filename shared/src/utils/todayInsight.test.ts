@@ -36,7 +36,7 @@ describe('todayInsightPhrase — контраст между слабой и с�
   it('называет и опору (максимум), и то, что просит внимания (минимум), с баллами', () => {
     const phrase = todayInsightPhrase(full({ attachment: 9, limits: 2 }));
     expect(phrase).toContain('Привязанность (9/10)');
-    expect(phrase).toContain('Границы (2/10)');
+    expect(phrase).toContain('Самоконтроль (2/10)');
   });
 
   it('разница ровно 2 (граница «уже не ровный профиль») — идёт по ветке контраста', () => {

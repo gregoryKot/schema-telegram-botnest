@@ -41,7 +41,7 @@ describe('needWheel — сектора и линии', () => {
     expect(needOfHandle(null)).toBeUndefined();
   });
 
-  it('край сектора «Привязанность» — верх колеса по центру узла; «Автономия» правее, «Границы» левее', () => {
+  it('край сектора «Привязанность» — верх колеса по центру узла; «Автономия» правее, «Самоконтроль» левее', () => {
     // колесо рисуется в масштабе 1:1 (ширина рисунка = W геометрии), по центру узла под шапкой
     expect(sectorPoint('attachment')).toEqual({ x: WHEEL_NODE_W / 2, y: HEADER_H + (CY - R) });
     expect(sectorPoint('autonomy').x).toBeGreaterThan(WHEEL_NODE_W / 2);

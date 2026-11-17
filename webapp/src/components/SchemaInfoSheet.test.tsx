@@ -53,7 +53,7 @@ describe('SchemaInfoSheet — вкладки', () => {
   it('по умолчанию открыта вкладка «Потребности» с пятью потребностями', () => {
     renderSheet();
     expect(screen.getByText('Привязанность')).toBeTruthy();
-    expect(screen.getByText('Границы')).toBeTruthy();
+    expect(screen.getByText('Самоконтроль')).toBeTruthy();
   });
 
   it('переключение на «Схемы» показывает список доменов', () => {

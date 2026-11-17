@@ -308,7 +308,7 @@ describe('ChildhoodWheelEx — с клавиатуры', () => {
     await openFill();
     const sliders = screen.getAllByRole('slider');
     expect(sliders.map((s) => s.getAttribute('aria-label'))).toEqual(
-      ['Привязанность', 'Автономия', 'Выражение чувств', 'Спонтанность', 'Границы'],
+      ['Привязанность', 'Автономия', 'Выражение чувств', 'Спонтанность', 'Самоконтроль'],
     );
     sliders[0].focus();
     expect(document.activeElement).toBe(sliders[0]);

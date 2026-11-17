@@ -8,7 +8,7 @@ import { NeedArt } from '../../components/art/NeedArt';
 const MOCK_NEEDS = [
   { id: 'attachment', name: 'Привязанность', v: 7, c: 'var(--c-teal)' },
   { id: 'autonomy',   name: 'Автономия',     v: 8, c: 'var(--c-moss)' },
-  { id: 'limits',     name: 'Границы',       v: 4, c: 'var(--c-rose)' },
+  { id: 'limits',     name: 'Самоконтроль',       v: 4, c: 'var(--c-rose)' },
   { id: 'play',       name: 'Спонтанность',  v: 6, c: 'var(--c-amber)' },
 ];
 const MOCK_SPARK = [4, 5, 3, 6, 5, 7, 6, 8, 7, 8, 6, 9];

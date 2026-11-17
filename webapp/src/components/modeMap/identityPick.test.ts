@@ -17,7 +17,7 @@ describe('pickNeed — какая из пяти потребностей', () =>
 
   it('смена выбора меняет прежнее название и прежний цвет', () => {
     const d = { label: 'Спонтанность', needId: 'play', customColor: needColor('play') };
-    expect(pickNeed(d, 'limits')).toEqual({ needId: 'limits', label: 'Границы', customColor: needColor('limits') });
+    expect(pickNeed(d, 'limits')).toEqual({ needId: 'limits', label: 'Самоконтроль', customColor: needColor('limits') });
   });
 
   it('свою подпись и свой цвет терапевта не трогает', () => {

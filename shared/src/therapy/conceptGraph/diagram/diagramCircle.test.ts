@@ -12,7 +12,7 @@ describe('circleGeometry', () => {
       'Автономия',
       'Выражение чувств',
       'Спонтанность',
-      'Границы',
+      'Самоконтроль',
     ]);
     expect(g.needs.every((n) => n.h === PILL_H && n.kind === 'need')).toBe(
       true,

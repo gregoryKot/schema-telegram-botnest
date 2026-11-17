@@ -52,7 +52,7 @@ export const NEED_LABELS: Record<string, string> = {
   autonomy: 'Автономия',
   expression: 'Выражение',
   play: 'Игра/Радость',
-  limits: 'Границы',
+  limits: 'Самоконтроль',
 };
 
 export const DOMAIN_ORDER = [

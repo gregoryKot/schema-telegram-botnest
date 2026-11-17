@@ -107,7 +107,7 @@ describe('ClientConceptTab: сводка «Коротко»', () => {
     // у метки строки — знак раздела
     expect(within(digest()).getByText('Схемы').querySelector('.pp-art--row')).toBeTruthy();
     expect(value('Цикл')).toBe('Критика → Судья → уход в себя');
-    expect(value('Потребности')).toBe('block блокированы: Автономия meet есть опора: Границы'); // плашки через пробел (value)
+    expect(value('Потребности')).toBe('block блокированы: Автономия meet есть опора: Самоконтроль'); // плашки через пробел (value)
     expect(value('Цель')).toBe('Снизить тревогу перед работой');
     const figure = screen.getByRole('button', { name: 'Карающий Критик: связи' });
     expect(isBefore(head(), digest())).toBe(true);

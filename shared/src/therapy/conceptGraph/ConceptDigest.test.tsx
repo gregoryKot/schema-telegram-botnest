@@ -133,7 +133,7 @@ describe('ConceptDigest', () => {
                 { text: '✗ блокированы:', plain: 'caption' },
                 { text: 'Автономия', hue: 70, sign: 'need_autonomy' },
                 { text: '✓ есть опора:', plain: 'caption' },
-                { text: 'Границы', hue: 135, sign: 'need_limits' },
+                { text: 'Самоконтроль', hue: 135, sign: 'need_limits' },
               ],
               text: '',
             },
@@ -155,7 +155,7 @@ describe('ConceptDigest', () => {
     ).toBeTruthy();
     const needs = screen.getAllByRole('definition')[1];
     // слова подписи остаются, глифов ✗ и ✓ в тексте нет — они нарисованы путём
-    expect(needs.textContent).toBe('блокированы:Автономияесть опора:Границы');
+    expect(needs.textContent).toBe('блокированы:Автономияесть опора:Самоконтроль');
     expect(needs.querySelector('svg[data-mark="block"]')).toBeTruthy();
     expect(needs.querySelector('svg[data-mark="meet"]')).toBeTruthy();
   });

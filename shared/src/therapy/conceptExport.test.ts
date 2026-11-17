@@ -165,7 +165,7 @@ describe('buildConceptExport: связи режимов', () => {
     expect(text).toContain('Карающий Критик («Судья»)');
     expect(text).toContain('  Схемы: Неуспешность');
     // потребности обычного режима в редакторе не правятся — в экспорт не идут
-    expect(text).not.toContain('Потребности: Границы');
+    expect(text).not.toContain('Потребности: Самоконтроль');
     expect(text).toContain('  В терапии: спорить с голосом');
     expect(text).not.toContain('Как проявляется');
   });

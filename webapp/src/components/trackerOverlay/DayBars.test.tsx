@@ -15,7 +15,7 @@ const NEEDS: Need[] = [
 ];
 // Порядок на экране не совпадает с NEED_ORDER: цвет идёт за потребностью, а не за местом.
 const SWAPPED: Need[] = [
-  { id: 'limits', emoji: '', title: 'Границы', chartLabel: 'Гран.' },
+  { id: 'limits', emoji: '', title: 'Самоконтроль', chartLabel: 'Гран.' },
   { id: 'attachment', emoji: '', title: 'Привязанность', chartLabel: 'Привяз.' },
 ];
 const v = (el: HTMLElement) => Number(el.style.getPropertyValue('--v'));
