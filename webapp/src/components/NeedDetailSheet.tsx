@@ -9,6 +9,7 @@ import type { NeedId } from '../../../shared/src/needs/types';
 import { glue } from '../../../shared/src/utils/typo';
 import { inkVars } from './history/needInk';
 import { DomainMark } from './DomainMark';
+import { childhoodScoreText } from './exercises/childhoodWheel/childhoodScoreText';
 import { TipHead } from './schemaSheets/TipHead';
 import '../styles/sheet-tracker.css';
 
@@ -38,9 +39,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const level = childhoodRating !== undefined
     ? (childhoodRating <= 3 ? 'low' : childhoodRating <= 6 ? 'medium' : 'high')
     : null;
-  const rangeDesc = childhoodRating !== undefined
-    ? (childhoodRating <= 3 ? need.ranges[0].description : childhoodRating <= 6 ? need.ranges[1].description : need.ranges[2].description)
-    : null;
+  const rangeDesc = childhoodRating !== undefined ? childhoodScoreText(needId, childhoodRating) : null;
 
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
   const relatedSchemas = SCHEMA_DOMAINS

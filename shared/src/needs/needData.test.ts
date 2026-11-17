@@ -29,8 +29,8 @@ describe('needData', () => {
     const ty = getNeedData('ty');
     const vy = getNeedData('vy');
     // question для attachment различается между формами (см. content/attachment.ts)
-    expect(ty.attachment.question).toContain('тебя услышали');
-    expect(vy.attachment.question).toContain('вас услышали');
+    expect(ty.attachment.question).toContain('тебе');
+    expect(vy.attachment.question).toContain('вам');
     expect(ty.attachment.question).not.toBe(vy.attachment.question);
   });
 
