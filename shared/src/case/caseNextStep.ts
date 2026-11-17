@@ -77,10 +77,8 @@ const FIRST_CASE_VIEW: NextStepView = {
 const modeName = (m: Pick<ModeStat, 'modeId' | 'alias'>): string =>
   modeDisplayName(m.modeId, m.alias);
 
-const isCoping = (modeId: string): boolean => {
-  const family = findTestGroupByModeId(modeId);
-  return !!family && COPING_FAMILIES.has(family.id);
-};
+const familyOf = (modeId: string) => findTestGroupByModeId(modeId)?.id ?? '';
+const isCoping = (modeId: string): boolean => COPING_FAMILIES.has(familyOf(modeId));
 
 /** Самый заметный режим из подмножества — больше случаев, при равенстве
  *  более свежий. undefined, если под predicate ничего не подошло. */
@@ -132,15 +130,16 @@ export function caseNextStep(input: NextStepInput, tr: Tr): NextStepView {
     if (coping) {
       return {
         id: 'coping_child',
-        label: `Разобрать, кто стоит за ${modeName(coping)}`,
+        label: `Разобрать, кого защищает ${modeName(coping)}`,
         time: '3 мин',
       };
     }
   }
 
   // 5. достаточно разборов, но ни разу не пробовали ответ Здорового Взрослого.
+  // Отвечают проблемному режиму: здоровый (семья ok) сам и есть ответ.
   if (caseCount >= 3 && healthyResponseCount === 0) {
-    const top = pickTop(modeStats);
+    const top = pickTop(modeStats, (m) => familyOf(m.modeId) !== 'ok');
     if (top) {
       return { id: 'healthy_response', label: `Ответить: ${modeName(top)}` };
     }

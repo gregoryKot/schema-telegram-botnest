@@ -74,7 +74,7 @@ export function buildConceptExport(input: ConceptExportInput): string {
     '══════ КРАТКАЯ КОНЦЕПТУАЛИЗАЦИЯ ══════',
     '',
     div,
-    row('Актуальные схемы (ЭДС)', names(activeSchemaIds, getSchemaById)),
+    row('Актуальные схемы', names(activeSchemaIds, getSchemaById)),
     div,
     row('Карта режимов', names(activeModeIds, getModeById)),
     ...(links ? [div, `${links}\n`] : []),

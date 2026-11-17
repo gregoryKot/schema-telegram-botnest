@@ -136,7 +136,7 @@ describe('вводная новичку', () => {
     const onOpenSchema = vi.fn();
     renderSection(onOpenSchema);
     expect(await screen.findByText('Узнать свои схемы')).toBeTruthy();
-    expect(screen.getByText(/Понятие ввёл Джеффри Янг/)).toBeTruthy();
+    expect(screen.getByText(/ввёл Джеффри Янг/)).toBeTruthy();
     fireEvent.click(screen.getByText('Начать тест →'));
     expect(onOpenSchema).toHaveBeenCalledWith({ startTest: true });
   });

@@ -72,7 +72,7 @@ describe('caseNextStep — девять веток', () => {
     expect(v.label).toMatch(/^Собрать приметы: /);
   });
 
-  it('4. копинг без детского режима → «Разобрать, кто стоит за имя» · 3 мин', () => {
+  it('4. копинг без детского режима → «Разобрать, кого защищает имя» · 3 мин', () => {
     const v = caseNextStep(
       input({
         caseCount: 2,
@@ -86,7 +86,7 @@ describe('caseNextStep — девять веток', () => {
     );
     expect(v.id).toBe('coping_child');
     expect(v.time).toBe('3 мин');
-    expect(v.label).toMatch(/^Разобрать, кто стоит за /);
+    expect(v.label).toMatch(/^Разобрать, кого защищает /);
   });
 
   it('5. три+ разбора без ответа Здорового Взрослого → «Ответить: имя»', () => {
@@ -102,6 +102,22 @@ describe('caseNextStep — девять веток', () => {
     );
     expect(v.id).toBe('healthy_response');
     expect(v.label).toMatch(/^Ответить: /);
+  });
+
+  it('5. отвечают проблемному режиму: самый частый здоровый в «Ответить» не попадает', () => {
+    const v = caseNextStep(
+      input({
+        caseCount: 4,
+        modeStats: [
+          mode({ modeId: 'healthy_adult', alias: 'Опора', count: 3, hasCard: true }),
+          mode({ modeId: 'punitive_critic', alias: 'Судья', count: 1, hasCard: true }),
+        ],
+        healthyResponseCount: 0,
+      }),
+      tyTr,
+    );
+    expect(v.id).toBe('healthy_response');
+    expect(v.label).toBe('Ответить: Судья');
   });
 
   it('6. пять+ разборов, повторный триггер, тест не пройден → «Пройти тест на схемы»', () => {
