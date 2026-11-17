@@ -1,18 +1,18 @@
-"""Собрать ассеты волны 1 и лист-эталон: `cd game/art && python3 build.py [--install]`.
-Всегда пишет game/art/out/ (эталон, превью); с --install — ещё game/src/assets/.
+"""Собрать ассеты игры: `cd game/art && python3 build.py [--install]`.
+Всегда пишет game/art/out/ (превью-лист); с --install — ещё game/src/assets/.
 Кот целиком рисуется ригом (cat.py, poses.py) — исходных картинок нет, сборка повторяема."""
 import os
 import sys
 from PIL import Image
 from px import save, check
-import poses, ground, ledges, street, sky, refs, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers
+import poses, ground, ledges, street, sky, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers, cabinet, zone
 
 ASSETS, OUT = '../src/assets', 'out'
 
 def main():
     os.makedirs(OUT, exist_ok=True)
     made = {}
-    for mod in (poses, ground, ledges, sky, street, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers):
+    for mod in (poses, ground, ledges, sky, street, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers, cabinet, zone):
         made.update(mod.build())
     for k, img in made.items():
         limit = 64 if k.startswith('bg_') else 32    # фоны: дымка множит оттенки
@@ -21,8 +21,6 @@ def main():
             save(img, f'{ASSETS}/{k}.png', limit)
     sheet = preview(made)
     sheet.convert('RGB').save(f'{OUT}/wave1.png')       # превью: цветов больше, чем в индексной PNG
-    ref = refs.sheet()
-    save(ref.resize((ref.width * 2, ref.height * 2), Image.NEAREST), f'{OUT}/reference.png', limit=255)
     print('\n'.join(f'{k}: {v.size}' for k, v in made.items()))
 
 def preview(made):

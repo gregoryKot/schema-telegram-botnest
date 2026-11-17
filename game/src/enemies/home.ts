@@ -146,7 +146,7 @@ const PHONE_Y = GROUND_Y - 30; // телефон-монстрик стоит н�
 export class PhoneMob implements HomeMob {
   alive = true;
   private img: Phaser.GameObjects.Sprite;
-  private glow: Phaser.GameObjects.Graphics;
+  private glow: Phaser.GameObjects.Sprite;
   private drain = 0;
   private bob = Math.random() * 6;
   private ping = 0;
@@ -154,7 +154,7 @@ export class PhoneMob implements HomeMob {
 
   constructor(private ctx: MobCtx, private x: number) {
     this.img = ctx.scene.add.sprite(x, PHONE_Y, 'phonemob').setScale(GRID).setDepth(6).play('phone-walk');
-    this.glow = ctx.scene.add.graphics().setDepth(4);
+    this.glow = ctx.scene.add.sprite(x, PHONE_Y, 'phone_zone').setScale(GRID).setDepth(4);
   }
 
   update(dt: number) {
@@ -170,12 +170,8 @@ export class PhoneMob implements HomeMob {
     const d = Phaser.Math.Distance.Between(this.img.x, this.img.y, p.x, p.y - 20);
     const inZone = d < PHONE_R;
 
-    this.glow.clear();
-    const pulse = PHONE_R + Math.sin(this.bob * 2.4) * 8;
-    this.glow.lineStyle(2, 0x6ab4ff, inZone ? 0.5 : 0.25);
-    this.glow.strokeCircle(this.img.x, this.img.y, pulse);
-    this.glow.fillStyle(0x6ab4ff, inZone ? 0.10 : 0.05);
-    this.glow.fillCircle(this.img.x, this.img.y, pulse);
+    // зона — пиксельное кольцо: «дышит» кадрами, а не дробным масштабом; внутри зоны ярче
+    this.glow.setPosition(this.img.x, this.img.y).setFrame(Math.round((Math.sin(this.bob * 2.4) + 1) * 1.5)).setAlpha(inZone ? 1 : 0.6);
 
     if (inZone && !this.ctx.dashing()) {
       // затягивает: мягкая тяга к телефону
@@ -218,7 +214,7 @@ export class PhoneMob implements HomeMob {
       this.relief += 0.55;                                  // удар — выключить, крупная передышка
       if (this.relief >= 1) {
         this.alive = false;
-        this.glow.clear(); this.glow.destroy();
+        this.glow.destroy();
         this.ctx.scene.tweens.add({ targets: this.img, alpha: 0, angle: 70, y: GROUND_Y - 10, duration: 360, onComplete: () => this.img.destroy() });
         this.ctx.sayOnce('phone_break', 'm_switched_off_until_the_next_ping', 2600);
       } else {

@@ -18,6 +18,8 @@ const STUCK_FROM = 1300, STUCK_SPAN = 3200; // залипание сначала
 const RISE_MS = 650, FALL_MS = 2400; // накрывает быстро, отпускает медленно
 const RELIEF_IN = 140, RELIEF_HOLD = 520, RELIEF_MS = 1500;
 
+const DAWN_MAX = 0.24;                // потолок рассветной подсветки: на синем часе гл.3 слабее не видно
+
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Куда стремится давление при таком состоянии сцены. */
@@ -47,8 +49,8 @@ export function reliefAt(msSince: number, exhaustion: number): number {
 /** Базовое тепло главы: в главах терапии выше и растёт к финалу (progress 0…1 по уровню). */
 export function chapterWarmth(chapterId: string, progress: number): number {
   const p = clamp01(progress);
-  if (chapterId === 'chapter3') return 0.2 + 0.3 * p;
-  if (chapterId === 'chapter4') return 0.6 + 0.4 * p;
+  if (chapterId === 'chapter3') return 0.2 + 0.5 * p;
+  if (chapterId === 'chapter4') return 0.75 + 0.25 * p;
   return 0;
 }
 
@@ -66,6 +68,6 @@ export function moodLook(pressure: number, relief: number, warmth: number): Mood
   return {
     wash: 0.58 * chill,
     glow: 0.12 + 0.3 * chill + 0.3 * clamp01(relief),
-    dawn: 0.1 * clamp01(warmth) * (1 - chill),
+    dawn: DAWN_MAX * clamp01(warmth) * (1 - chill),
   };
 }

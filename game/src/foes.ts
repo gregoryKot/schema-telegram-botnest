@@ -6,6 +6,7 @@ import spikesUrl from './assets/spr_spikes.png';
 import procUrl from './assets/enemy_proc.png';
 import phoneUrl from './assets/enemy_phone.png';
 import workUrl from './assets/prop_workload.png';
+import zoneUrl from './assets/fx_phone_zone.png';
 import { anxTier } from './gridScale';
 
 // Листы game/art/foes.py, home_foes.py и pickups.py: нарисованы в сетке ×2, в игре — setScale(GRID) без дробей.
@@ -17,6 +18,7 @@ export const FOE_SHEETS: Record<string, { url: string; fw: number; fh: number; f
   procmob: { url: procUrl, fw: 96, fh: 46, frames: 9 }, // три размера по три кадра, как у Тревоги
   phonemob: { url: phoneUrl, fw: 26, fh: 30, frames: 3 },
   workload: { url: workUrl, fw: 44, fh: 48, frames: 4 },
+  phone_zone: { url: zoneUrl, fw: 176, fh: 176, frames: 4 }, // зона Телефона (game/art/zone.py): кадры — радиус кольца
 };
 
 const ANIMS: [key: string, sheet: string, start: number, end: number, fps: number][] = [
