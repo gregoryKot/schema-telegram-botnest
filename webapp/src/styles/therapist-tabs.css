@@ -219,7 +219,6 @@
 
 /* «План работы» (#1337, префикс pl-): цель — лист соломы «Обзора» (.tk-goal) с полем; рубрика — подпись
    и один лист, пункты через тонкую линию, как задания. Статус — кнопка слева: тап ведёт к следующему. */
-.pl-plan { display: flex; flex-direction: column; gap: 28px; }
 .pl-goals .ds-head-row { align-items: center; gap: 12px; }
 .pl-goal-area { margin-top: 10px; font: 400 17px/1.5 var(--serif); background: transparent; }
 .pl-group { display: flex; flex-direction: column; gap: 10px; }

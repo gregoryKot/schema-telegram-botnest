@@ -64,7 +64,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
   const addButton = <button type="button" className="ds-btn ds-btn--secondary" onClick={() => setAdding(true)}>+ Свой пункт</button>;
 
   return (
-    <div className="ds-page tb-page--narrow pl-plan">
+    <div className="ds-page tb-page--narrow">
       <PlanGoals detail={detail} />
 
       {plan.failed ? (
