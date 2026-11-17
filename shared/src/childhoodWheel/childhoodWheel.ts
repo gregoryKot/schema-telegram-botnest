@@ -75,7 +75,7 @@ export const CHILDHOOD_SCHEMA_HINTS: Record<
     schemaIds: ['dependence', 'failure', 'enmeshment'],
   },
   expression: {
-    domain: 'Направленность на других + Бдительность',
+    domain: 'Направленность на других + Сверхбдительность и подавление эмоций',
     schemaIds: [
       'subjugation',
       'self_sacrifice',
