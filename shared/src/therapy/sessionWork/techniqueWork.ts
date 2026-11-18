@@ -1,4 +1,7 @@
-import type { CoreTechniqueId, TechniqueId } from '../../schemaTherapy/guide/techniqueIds';
+import type {
+  CoreTechniqueId,
+  TechniqueId,
+} from '../../schemaTherapy/guide/techniqueIds';
 import type { WorkField } from './fields';
 import { SCHEMA_TECHNIQUE_WORK } from './techniqueWorkSchema';
 

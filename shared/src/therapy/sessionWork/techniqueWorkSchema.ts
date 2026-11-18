@@ -2,7 +2,10 @@ import type { SchemaTechniqueId } from '../../schemaTherapy/guide/techniqueIds';
 import type { TechniqueWorkDef } from './techniqueWork';
 
 /** «Что делали»: техники схема-терапии, добавленные после первых 14 (#1366). */
-export const SCHEMA_TECHNIQUE_WORK: Record<SchemaTechniqueId, TechniqueWorkDef> = {
+export const SCHEMA_TECHNIQUE_WORK: Record<
+  SchemaTechniqueId,
+  TechniqueWorkDef
+> = {
   limited_reparenting: {
     name: 'Ограниченное родительство',
     fields: [
