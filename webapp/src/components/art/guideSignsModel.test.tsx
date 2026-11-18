@@ -97,7 +97,7 @@ describe('знаки листов подсказок', () => {
     expect(practiceNoteSign('therapist_schemas')).toBe('layers');
     expect(practiceNoteSign('group_therapy')).toBe('cluster');
     expect(practiceNoteSign('chatting')).not.toBe(TECHNIQUE_SIGN.chairwork);
-    const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(TECHNIQUE_SIGN).includes(s));
+    const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(CORE_TECHNIQUE_SIGN).includes(s));
     expect(shared.sort()).toEqual(['heart', 'heart_frame']);
   });
 

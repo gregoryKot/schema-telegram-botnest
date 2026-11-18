@@ -80,7 +80,7 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
       tr('Что ещё тебя в этом злит?', 'Что ещё вас в этом злит?'),
     ],
     cautions:
-      'Угрозы, оскорбления и сломанные вещи — это уже не выражение гнева: сначала граница. Порядок шагов не меняют: проверка реальностью до сочувствия звучит как «ты не имеешь права злиться».',
+      'Угрозы, оскорбления и сломанные вещи — это уже не выражение гнева: сначала граница. Порядок шагов не меняют: проверка реальностью до сочувствия звучит как запрет злиться.',
     sources:
       'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5 и 9. Arntz A., Jacob G. Schema Therapy in Practice. Wiley-Blackwell, 2013, гл. 7.',
   },
