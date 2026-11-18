@@ -5,7 +5,7 @@ import { NeedExplainer } from './NeedExplainer';
 import { EntitySheet } from '../paper/EntitySheet';
 import { SpreadLayout } from '../paper/SpreadLayout';
 import { hueStyle } from '../../lib/tone';
-import { wordAnchorDescriptions } from '../../../../shared/src/needs/ratingWords';
+import { useAnchorSublabels } from '../../../../shared/src/needs/anchorPools';
 import { needLook } from '../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../shared/src/utils/typo';
 import type { NeedExtra, NeedId } from '../../../../shared/src/needs/types';
@@ -67,7 +67,7 @@ export function QuestionScreen({
           needId={needId}
           label={name}
           yesterday={yesterday}
-          sublabels={data ? wordAnchorDescriptions(data.ranges).map((s) => s && glue(s)) : undefined}
+          sublabels={useAnchorSublabels(needId)}
           onChange={onAnswer}
         />
         <p className="tq-hint">Выбор сохраняется сразу и сам открывает следующий вопрос.</p>
