@@ -9,6 +9,7 @@ import { AddressFormContext } from '../utils/addressForm';
 import { NeedTodaySheet } from './NeedTodaySheet';
 import type { Need } from '../types';
 import { api } from '../api';
+import { resetExampleRotation } from '../../../shared/src/needs/exampleRotation';
 
 vi.mock('../api', () => ({
   api: {
@@ -40,6 +41,24 @@ function renderSheet(
 afterEach(() => cleanup());
 
 describe('NeedTodaySheet', () => {
+  it('«Как это выглядит в жизни» — четыре примера, при новом открытии листа другие', () => {
+    resetExampleRotation();
+    const open = () => {
+      const view = renderSheet();
+      fireEvent.click(screen.getByText('Как это выглядит в жизни'));
+      const items = [...view.container.querySelectorAll('.tk2-list')][0].querySelectorAll('li');
+      const texts = [...items].map((li) => li.textContent);
+      view.unmount();
+      return texts;
+    };
+    const first = open();
+    const second = open();
+    expect(first).toHaveLength(4);
+    expect(second).toHaveLength(4);
+    expect(second.filter((x) => first.includes(x))).toEqual([]);
+  });
+
+
   it('тап по ответу общей шкалы словами зовёт onChange с его значением', () => {
     const onChange = vi.fn();
     renderSheet({ value: 5, onChange });

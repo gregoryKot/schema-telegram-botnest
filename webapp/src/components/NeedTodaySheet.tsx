@@ -12,12 +12,15 @@ import { NeedTodayActions } from './NeedTodayActions';
 import { needDataStyle } from './needDataColor';
 import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
 import { needLook } from '../../../shared/src/theme/entityLook';
+import { useExampleWindow } from '../../../shared/src/needs/exampleRotation';
 import { glue } from '../../../shared/src/utils/typo';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
 import { api } from '../api';
 import { useNotifyReach } from '../../../shared/src/settings/useNotifyReach';
 import { planStepHint } from '../../../shared/src/practices/planReminderCopy';
+
+const EXAMPLES_SHOWN = 4;
 
 interface Props {
   need: Need;
@@ -41,6 +44,8 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
   const notifyReach = useNotifyReach(api.getSettings); // «напомним» — только если дойдёт (U5)
 
   const data = NEED_DATA[need.id];
+  // «Как это выглядит в жизни» — окно из пула примеров, новое при каждом открытии листа.
+  const examples = useExampleWindow(`sheet:${need.id}`, data?.examples, EXAMPLES_SHOWN);
   if (!data) return null;
   const rangeIdx = rangeCardIndex(value);
   const RANGE_VALUES = [2, 6, 8]; // слова «Совсем нет» / «Наполовину» / «В основном да»
@@ -86,7 +91,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
         <div className="tk2-folds">
           <Disclosure classes={DS_FOLD} title="Как это выглядит в жизни">
             <ul className="tk2-list">
-              {data.examples.map((ex, i) => <li key={i} className="tk2-li">{glue(ex)}</li>)}
+              {examples.map((ex, i) => <li key={i} className="tk2-li">{glue(ex)}</li>)}
             </ul>
           </Disclosure>
 
