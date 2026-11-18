@@ -1353,7 +1353,7 @@
   "src/bot/stats-infra-blocks.ts": 23,
   "src/bot/stats-report.blocks.ts": 89,
   "src/bot/stats-report.service.ts": 116,
-  "src/bot/stats-sections.ts": 133,
+  "src/bot/stats-sections.ts": 134,
   "src/bot/stats-settle.ts": 66,
   "src/bot/task-assign-metrics.format.ts": 20,
   "src/bot/task-assign-metrics.service.ts": 39,
