@@ -1,24 +1,41 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { glue } from '../../../../shared/src/utils/typo';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { NeedExplainer } from './NeedExplainer';
+import { resetExampleRotation } from '../../../../shared/src/needs/exampleRotation';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
 
-const data = {
-  desc: 'Рядом есть надёжные люди.',
-  examples: ['Кто-то обнял', 'Был разговор, где услышали', 'Третий пример, который не показываем'],
-} as unknown as NeedExtra;
+const pool = ['Кто-то обнял', 'Был разговор, где услышали', 'Третий пример', 'Четвёртый пример', 'Пятый пример', 'Шестой пример'];
+const data = { name: 'Привязанность', desc: 'Рядом есть надёжные люди.', examples: pool } as unknown as NeedExtra;
+const shown = (c: HTMLElement) => [...c.querySelectorAll('li')].map((li) => li.textContent);
 
 afterEach(cleanup);
+beforeEach(resetExampleRotation);
 
 describe('NeedExplainer', () => {
-  it('описание потребности всегда на экране, примеров не больше двух', () => {
-    render(<NeedExplainer data={data} />);
+  it('описание потребности всегда на экране, примеров ровно два — из пула', () => {
+    const { container } = render(<NeedExplainer data={data} />);
     expect(screen.getByText('Рядом есть надёжные люди.')).toBeTruthy();
-    expect(screen.getByText(glue('Кто-то обнял'))).toBeTruthy();
-    expect(screen.getByText('Был разговор, где услышали')).toBeTruthy();
-    expect(screen.queryByText('Третий пример, который не показываем')).toBeNull();
+    const items = shown(container);
+    expect(items).toHaveLength(2);
+    const glued = pool.map((p) => glue(p));
+    for (const it of items) expect(glued).toContain(it);
+  });
+
+  it('при каждом открытии вопроса примеры другие, а перерисовка их не меняет', () => {
+    const first = render(<NeedExplainer data={data} />);
+    const a = shown(first.container);
+    first.rerender(<NeedExplainer data={{ ...data }} />);
+    expect(shown(first.container)).toEqual(a);
+    first.unmount();
+    for (let i = 0; i < 10; i++) {
+      const next = render(<NeedExplainer data={data} />);
+      const b = shown(next.container);
+      expect(b.filter((x) => a.includes(x))).toEqual([]);
+      a.splice(0, a.length, ...b);
+      next.unmount();
+    }
   });
 
   // QA мобильной версии 2026-11, З5: раскрытые сразу примеры на 390×664 и 360×640
