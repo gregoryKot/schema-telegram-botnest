@@ -1,7 +1,8 @@
 import type { ModeGuideView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import { GUIDE_CHANNELS as CHANNELS } from '../../../../../shared/src/therapy/plan/planItem'; // четыре канала работы с режимом, пустой не показывается
-import { GuideSection, PlanButton } from './GuideSection';
+import { GuideSection } from './GuideSection';
 import { channelSeed } from './guidePlan';
+import { PlanButton } from './PlanButton';
 import { modeGuideLook } from './guideLook';
 import { GuidePoints } from './GuidePoints';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
