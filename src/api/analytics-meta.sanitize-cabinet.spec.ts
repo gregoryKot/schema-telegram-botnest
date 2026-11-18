@@ -59,6 +59,10 @@ describe('sanitizeMeta: события плана работы', () => {
       'guide',
       'task',
       'action',
+      'pattern',
+      'exercise',
+      'plan',
+      'own_task',
     ]) {
       expect(
         sanitizeMeta('search_result_open', {

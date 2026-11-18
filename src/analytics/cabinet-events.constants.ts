@@ -13,7 +13,7 @@
 //   task_assign_source — терапевт назначил задание в листе «Новое задание»; meta { source } из
 //     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника или свой текст. Блок — src/bot/task-assign-metrics.*.
 //   search_result_open — в общем поиске (⌘K, у клиента и у терапевта) открыли результат; meta { kind, typed, recent }:
-//     вид из SEARCH_RESULT_KINDS (клиент, вкладка его карточки, раздел, лист справочника, задание из справочника, действие), был ли введён запрос и открыт ли результат из «Недавнего». Текста запроса, имени клиента, названий листа и задания нет. Блок — src/bot/search-metrics.*.
+//     вид из SEARCH_RESULT_KINDS (клиент, вкладка его карточки, раздел, лист справочника, задание из справочника, действие; у клиента — схема или режим «Паттернов», упражнение, свой план, своё задание), был ли введён запрос и открыт ли результат из «Недавнего». Текста запроса, имени клиента, названий листа и задания нет. Блок — src/bot/search-metrics.*.
 import { PLAN_EVENTS } from './plan-events.constants';
 export const CABINET_EVENTS = [
   'cabinet_session_work',
@@ -34,12 +34,9 @@ export const CABINET_EVENTS = [
 export const TASK_ASSIGN_SOURCES = ['tile', 'catalog', 'custom'] as const;
 export type TaskAssignSource = (typeof TASK_ASSIGN_SOURCES)[number];
 
+// prettier-ignore
 export const SEARCH_RESULT_KINDS = [
-  'client',
-  'client_tab',
-  'section',
-  'guide',
-  'task',
-  'action',
+  'client', 'client_tab', 'section', 'guide', 'task', 'action',
+  'pattern', 'exercise', 'plan', 'own_task',
 ] as const;
 export type SearchResultKind = (typeof SEARCH_RESULT_KINDS)[number];
