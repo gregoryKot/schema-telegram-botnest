@@ -27,6 +27,7 @@ import { ScreenShareMetricsService } from '../../src/bot/screen-share-metrics.se
 import { GuideReferenceMetricsService } from '../../src/bot/guide-reference-metrics.service';
 import { PlanMetricsService } from '../../src/bot/plan-metrics.service';
 import { TaskAssignMetricsService } from '../../src/bot/task-assign-metrics.service';
+import { SearchMetricsService } from '../../src/bot/search-metrics.service';
 import { AuthHealthMetricsService } from '../../src/bot/auth-health-metrics.service';
 import { LoginTicketMetricsService } from '../../src/bot/login-ticket-metrics.service';
 import { ClientErrorMetricsService } from '../../src/bot/client-error-metrics.service';
@@ -72,6 +73,7 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new GuideReferenceMetricsService(prisma),
     new PlanMetricsService(prisma),
     new TaskAssignMetricsService(prisma),
+    new SearchMetricsService(prisma),
     new AuthHealthMetricsService(prisma),
     new LoginTicketMetricsService(prisma),
     new ClientErrorMetricsService(prisma),

@@ -1,6 +1,6 @@
 import type { ReferenceItem } from './guideReferenceModel';
 import { bodyKey, snippet, type ReferenceBody } from './guideReferenceBody';
-import { findTerm, textTokens, type QueryTerm } from './guideReferenceQuery';
+import { findTerm, textTokens, type QueryTerm } from '../../../../shared/src/search/searchQuery';
 
 // Вес листа в выдаче «Справочника»: слово в названии листа весит больше, чем в подписи группы, а та — больше,
 // чем в тексте; название, покрытое запросом целиком, — выше всех. В тексте ищутся слова от трёх букв — иначе подходит всё.

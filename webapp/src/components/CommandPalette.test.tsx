@@ -16,8 +16,9 @@ import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const getTherapyClients = vi.fn();
+const trackEvent = vi.fn();
 vi.mock('../api', () => ({
-  api: { getTherapyClients: (...a: unknown[]) => getTherapyClients(...a) },
+  api: { getTherapyClients: (...a: unknown[]) => getTherapyClients(...a), trackEvent: (...a: unknown[]) => trackEvent(...a) },
 }));
 
 beforeEach(() => {
@@ -87,10 +88,11 @@ describe('CommandPalette — поиск', () => {
     expect(screen.queryByText('Сегодня')).toBeNull();
   });
 
-  it('пустой результат поиска показывает «Ничего не найдено»', () => {
+  it('пустой результат поиска показывает «Ничего не нашлось»', () => {
     renderPalette();
     fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'zzz-нет-такого' } });
-    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
+    expect(screen.getByText('Ничего не нашлось')).toBeTruthy();
+    expect(screen.getByText('Здесь ищутся: разделы и действия')).toBeTruthy();
   });
 });
 
@@ -100,10 +102,22 @@ describe('CommandPalette — подпись поля поиска', () => {
     expect(screen.getByPlaceholderText('Найти страницу или действие…')).toBeTruthy();
   });
 
-  it('терапевту — «Клиент, страница, действие…» (короче: на 390 прежняя обрезалась)', () => {
-    getTherapyClients.mockResolvedValue([]);
-    renderPalette({ userRole: 'THERAPIST', therapistMode: true });
+  it('терапевту в режиме клиента — «Клиент, страница, действие…» (короче: на 390 прежняя обрезалась)', () => {
+    renderPalette({ userRole: 'THERAPIST' });
     expect(screen.getByPlaceholderText('Клиент, страница, действие…')).toBeTruthy();
+  });
+
+  it('в кабинете терапевта — с листами справочника; под полем — что ищется', () => {
+    renderPalette({ userRole: 'THERAPIST', therapistMode: true });
+    expect(screen.getByPlaceholderText('Клиент, лист справочника, раздел…')).toBeTruthy();
+    expect(screen.getByText('Клиенты, листы справочника, разделы и действия')).toBeTruthy();
+  });
+
+  it('клиенту под полем — «Разделы и действия»; ввод убирает подсказку', () => {
+    renderPalette({ userRole: 'CLIENT' });
+    expect(screen.getByText('Разделы и действия')).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'зап' } });
+    expect(screen.queryByText('Разделы и действия')).toBeNull();
   });
 });
 
@@ -171,7 +185,7 @@ describe('CommandPalette — клиенты терапевта', () => {
     ]);
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
     await screen.findByText('Семён');
-    const search = screen.getByPlaceholderText('Клиент, страница, действие…');
+    const search = screen.getByPlaceholderText('Клиент, лист справочника, раздел…');
     fireEvent.change(search, { target: { value: 'семен' } });
     expect(screen.getByText('Семён')).toBeTruthy();
     expect(screen.queryByText('Алена')).toBeNull();
