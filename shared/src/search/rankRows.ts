@@ -1,5 +1,6 @@
 import { normalizeSearchText } from '../utils/searchNormalize';
 import { textTokens } from './searchQuery';
+import { typoMatch } from './typo';
 
 /**
  * Вес строки общего поиска (палитра ⌘K) по запросу: чем точнее совпало название, тем выше строка.
@@ -7,11 +8,12 @@ import { textTokens } from './searchQuery';
  * «клиент» и «режим» обязаны находить разделы и действия. Регистр и «ё/е» не различаются.
  */
 export const ROW_SCORE = {
-  starts: 5,
-  wordStarts: 4,
-  contains: 3,
-  stems: 2,
-  text: 1,
+  starts: 6,
+  wordStarts: 5,
+  contains: 4,
+  stems: 3,
+  text: 2,
+  typo: 1,
   none: 0,
 } as const;
 
@@ -29,7 +31,7 @@ function stemsMatch(text: string, query: string): boolean {
 
 /**
  * Вес строки: `label` — название, `text` — подзаголовок и прочий текст поиска.
- * 0 — строка не подходит; пустой запрос подходит всем с наименьшим весом.
+ * 0 — строка не подходит; пустой запрос подходит всем с весом текста.
  */
 export function rowScore(label: string, text: string, query: string): number {
   const q = normalizeSearchText(query.trim());
@@ -41,10 +43,14 @@ export function rowScore(label: string, text: string, query: string): number {
   }
   if (name.includes(q)) return ROW_SCORE.contains;
   if (stemsMatch(label, query)) return ROW_SCORE.stems;
-  return normalizeSearchText(text).includes(q) ||
+  if (
+    normalizeSearchText(text).includes(q) ||
     stemsMatch(`${label} ${text}`, query)
-    ? ROW_SCORE.text
-    : ROW_SCORE.none;
+  ) {
+    return ROW_SCORE.text;
+  }
+  // Опечатка прощается только в названии: в длинном тексте она находила бы случайные слова.
+  return typoMatch(label, query) ? ROW_SCORE.typo : ROW_SCORE.none;
 }
 
 /** Строки с весом по убыванию; при равном весе порядок входа сохраняется. Неподходящие выпадают. */

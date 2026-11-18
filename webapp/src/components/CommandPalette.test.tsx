@@ -23,6 +23,7 @@ vi.mock('../api', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   getTherapyClients.mockResolvedValue([]);
 });
 
@@ -152,6 +153,43 @@ describe('CommandPalette — клавиатура', () => {
     fireEvent.keyDown(window, { key: 'Enter' });
     expect(onNavigate).toHaveBeenCalledWith('today');
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('поле — combobox: activedescendant указывает на выбранную строку; Home и End — первая и последняя', () => {
+    renderPalette();
+    const input = screen.getByRole('combobox', { name: 'Поиск' });
+    const options = screen.getAllByRole('option');
+    const active = () => document.getElementById(input.getAttribute('aria-activedescendant') ?? '');
+    expect(input.getAttribute('aria-controls')).toBe(screen.getByRole('listbox').id);
+    expect(active()).toBe(options[0]);
+    expect(options[0].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(window, { key: 'End' });
+    expect(active()).toBe(options[options.length - 1]);
+    fireEvent.keyDown(window, { key: 'Home' });
+    expect(active()).toBe(options[0]);
+    fireEvent.change(input, { target: { value: 'а' } });
+    expect(fireEvent.keyDown(window, { key: 'End' })).toBe(true); // запрос набран — End остаётся полю
+    fireEvent.change(input, { target: { value: 'ыыыыыы' } });
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('выбранная клавиатурой строка прокручивается в видимую область; движение мыши выбирает без прокрутки', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      renderPalette();
+      const options = screen.getAllByRole('option');
+      fireEvent.mouseMove(options[2]);
+      expect(options[2].getAttribute('aria-selected')).toBe('true');
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      fireEvent.keyDown(window, { key: 'ArrowDown' });
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.instances[0]).toBe(options[3]);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+    } finally {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
   });
 
   it('ArrowDown двигает выделение на следующую строку перед Enter', () => {

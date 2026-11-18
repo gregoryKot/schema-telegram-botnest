@@ -2,29 +2,31 @@
 // «Справочника» и действий. Каждая строка — в группе с подписью. Пустой запрос — обзор: первые клиенты,
 // разделы, действия. Запрос — вес строки (shared/src/search/rankRows.ts): внутри группы по убыванию
 // веса, группы — по лучшему весу, при равенстве — в порядке GROUP_ORDER. Листы справочника ищет
-// движок самого справочника (rankReference) и только в кабинете терапевта.
+// движок самого справочника (guideRows.ts) и только в кабинете терапевта. Без запроса первой группой —
+// «Недавнее» (recentRows.ts).
 import type { Tr } from '../../../../shared/src/needs/types';
 import { buildPlusActions, type QuickActionId } from '../../../../shared/src/quickActions/quickActions';
 import { isActiveToday } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
+import { hasLatin, toRussianLayout } from '../../../../shared/src/search/keyboardLayout';
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
 import type { TherapyClientSummary, UserId } from '../../api';
 import { clientHue } from '../../lib/tone';
 import type { Reference } from '../../sections/guide/guideReferenceModel';
 import type { ReferenceBody } from '../../sections/guide/guideReferenceBody';
-import { rankReference } from '../../sections/guide/guideReferenceSearch';
 import type { GuideSheetTarget } from '../../sections/guide/guideSheetRoute';
 import { clientStatus } from '../therapist/rosterOrder';
 import { SECTION_LOOK, THERAPIST_NAV } from '../appShell/navLook';
 import type { Section } from '../appShell/navigation';
 import type { CmdRow } from '../CommandPaletteList';
 import { quickActionSign } from '../quickActionSign';
+import { GUIDE_GROUP, allGuideRows, guideRows } from './guideRows';
+import { RECENT_GROUP, recentRows } from './recentRows';
 
-export const GROUP = { clients: 'Клиенты', sections: 'Разделы', guide: 'Справочник', actions: 'Действия' } as const;
+export const GROUP = { recent: RECENT_GROUP, clients: 'Клиенты', sections: 'Разделы', guide: GUIDE_GROUP, actions: 'Действия' } as const;
 const GROUP_ORDER: string[] = [GROUP.clients, GROUP.sections, GROUP.guide, GROUP.actions];
-/** Сколько клиентов видно без запроса и сколько листов справочника — по запросу. */
+/** Сколько клиентов видно без запроса. */
 export const CLIENTS_SHOWN = 5;
-export const GUIDE_SHOWN = 6;
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'today', label: 'Сегодня', sub: 'Главная', hint: '⌘ 1' },
@@ -49,6 +51,8 @@ export interface PaletteInput {
   clients: TherapyClientSummary[];
   /** Тексты справочника; грузятся или не загрузились — null, группы «Справочник» нет. */
   guide: PaletteGuide | null;
+  /** Ключи недавно открытых строк, свежие первыми (paletteRecent.ts). */
+  recent: string[];
   run: {
     section: (id: Section) => void;
     path: (to: string) => void;
@@ -61,7 +65,7 @@ export interface PaletteInput {
 
 function clientRows({ clients, run }: PaletteInput): CmdRow[] {
   return clients.map((c) => ({
-    kind: 'client', group: GROUP.clients, label: clientDisplayName(c),
+    key: `client:${c.telegramId}`, kind: 'client', group: GROUP.clients, label: clientDisplayName(c),
     sub: isActiveToday(c) ? 'Активность сегодня' : clientStatus(c).label,
     hint: 'Открыть карточку',
     mark: { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) },
@@ -73,12 +77,12 @@ function clientRows({ clients, run }: PaletteInput): CmdRow[] {
 function sectionRows({ therapistMode, run }: PaletteInput): CmdRow[] {
   if (therapistMode) {
     return Object.values(THERAPIST_NAV).map((n) => ({
-      kind: 'section', group: GROUP.sections, label: n.label, mark: { sign: n.sign }, search: n.label,
+      key: `section:${n.to}`, kind: 'section', group: GROUP.sections, label: n.label, mark: { sign: n.sign }, search: n.label,
       action: () => run.path(n.to),
     }));
   }
   return NAV_ITEMS.map((n) => ({
-    kind: 'section', group: GROUP.sections, label: n.label, sub: n.sub, hint: n.hint,
+    key: `section:${n.id}`, kind: 'section', group: GROUP.sections, label: n.label, sub: n.sub, hint: n.hint,
     mark: { sign: SECTION_LOOK[n.id].sign }, search: `${n.label} ${n.sub}`,
     action: () => run.section(n.id),
   }));
@@ -91,29 +95,14 @@ function actionRows({ therapist, therapistMode, tr, run, query }: PaletteInput):
   const searching = query.trim() !== '';
   return [
     ...(therapist ? [{
-      kind: 'action' as const, group: GROUP.actions, label: toggle, sub: toggleSub, mark: { sign: 'cluster' as const },
+      key: 'action:toggle-mode', kind: 'action' as const, group: GROUP.actions, label: toggle, sub: toggleSub, mark: { sign: 'cluster' as const },
       search: `${toggle} ${toggleSub}`, action: run.toggleMode,
     }] : []),
     ...(therapistMode ? [] : buildPlusActions(tr).flatMap((g) => g.actions.map((a): CmdRow => ({
-      kind: 'action', group: searching ? GROUP.actions : g.title, label: a.label, sub: a.sub, mark: { sign: quickActionSign(a.id) },
+      key: `action:${a.id}`, kind: 'action', group: searching ? GROUP.actions : g.title, label: a.label, sub: a.sub, mark: { sign: quickActionSign(a.id) },
       search: `${a.label} ${g.title} ${a.sub}`, action: () => run.quick(a.id),
     })))),
   ];
-}
-
-/** Лучшие листы справочника по запросу: подзаголовок — кусок совпавшего текста или «Раздел · Группа». */
-function guideRows({ guide, query, run }: PaletteInput): { row: CmdRow; score: number }[] {
-  if (!guide) return [];
-  return rankReference(guide.ref, query, guide.body).slice(0, GUIDE_SHOWN).map(({ item, snippet, section, title }) => ({
-    row: {
-      kind: 'guide', group: GROUP.guide, label: item.name,
-      sub: snippet ?? (title === section ? section : `${section} · ${title}`),
-      mark: { sign: item.sign ?? THERAPIST_NAV.guide.sign }, search: item.name,
-      action: () => run.guideSheet({ kind: item.kind, id: item.id }),
-    },
-    // Название не совпало (нашлось в тексте листа) — наименьший вес, порядок справочника сохраняется.
-    score: Math.max(rowScore(item.name, '', query), ROW_SCORE.text),
-  }));
 }
 
 /** Первые клиенты и приглушённая строка «Ещё N» под последним из них. */
@@ -128,17 +117,32 @@ function clientsPreview(rows: CmdRow[], tr: Tr): CmdRow[] {
 export function buildPaletteRows(input: PaletteInput): CmdRow[] {
   const { query, therapist, therapistMode, screenShare, tr } = input;
   const clients = therapist && !screenShare ? clientRows(input) : [];
-  if (query.trim() === '') return [...clientsPreview(clients, tr), ...sectionRows(input), ...actionRows(input)];
-  const scored = [...clients, ...sectionRows(input), ...actionRows(input)]
+  const cabinet = therapist && therapistMode;
+  const rows = [...clients, ...sectionRows(input), ...actionRows(input)];
+  if (query.trim() === '') {
+    const recent = recentRows(input.recent, cabinet ? [...rows, ...allGuideRows(input)] : rows);
+    return [...recent, ...clientsPreview(clients, tr), ...rows.slice(clients.length)];
+  }
+  const scored = rows
     .map((row) => ({ row, score: rowScore(row.label, row.search, query) }))
     .filter((r) => r.score > ROW_SCORE.none);
-  if (therapist && therapistMode) scored.push(...guideRows(input));
+  if (cabinet) scored.push(...guideRows(input));
   const best = new Map<string, number>();
   for (const { row, score } of scored) best.set(row.group, Math.max(best.get(row.group) ?? 0, score));
   const order = (group: string) => GROUP_ORDER.indexOf(group);
   return scored
     .sort((a, b) => ((best.get(b.row.group) ?? 0) - (best.get(a.row.group) ?? 0)) || (order(a.row.group) - order(b.row.group)) || (b.score - a.score))
     .map((r) => r.row);
+}
+
+/** Строки по запросу; ничего не нашлось и запрос набран латиницей — по нему же в русской раскладке. */
+export function searchPalette(input: PaletteInput): { rows: CmdRow[]; query: string; layoutFixed: boolean } {
+  const { query } = input;
+  const rows = buildPaletteRows(input);
+  const fixed = toRussianLayout(query);
+  if (rows.length > 0 || query.trim() === '' || !hasLatin(query) || fixed === query) return { rows, query, layoutFixed: false };
+  const fixedRows = buildPaletteRows({ ...input, query: fixed });
+  return fixedRows.length > 0 ? { rows: fixedRows, query: fixed, layoutFixed: true } : { rows, query, layoutFixed: false };
 }
 
 /** Примеры запросов из настоящих названий листов: первая схема, первый режим, первая техника. */

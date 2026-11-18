@@ -9,7 +9,7 @@ import { QUICK_ACTION_IDS } from '../../../shared/src/quickActions/quickActions'
 import { CmdList, type CmdRow } from './CommandPaletteList';
 import { quickActionSign } from './quickActionSign';
 
-const row = (over: Partial<CmdRow>): CmdRow => ({ kind: 'section', group: 'Разделы', label: 'Строка', mark: { sign: 'cup' }, search: '', action: vi.fn(), ...over });
+const row = (over: Partial<CmdRow>): CmdRow => ({ key: 'section:x', kind: 'section', group: 'Разделы', label: 'Строка', mark: { sign: 'cup' }, search: '', action: vi.fn(), ...over });
 
 describe('quickActionSign', () => {
   it.each([...QUICK_ACTION_IDS])('%s — знак сущности действия', (id) => {
@@ -61,5 +61,12 @@ describe('CmdList', () => {
     rerender(<CmdList rows={[]} sel={0} onSelect={vi.fn()} onRun={vi.fn()} note="Клиенты скрыты" />);
     expect(screen.getByText('Клиенты скрыты')).toBeTruthy();
     expect(screen.queryByText('Ничего не нашлось')).toBeNull();
+  });
+
+  it('запрос подсвечен в подписи и подзаголовке; переведённая раскладка — строка над списком', () => {
+    render(<CmdList rows={[row({ label: 'Режим Критика', sub: 'Критик внутри' })]} sel={0} onSelect={vi.fn()} onRun={vi.fn()}
+                    searching highlight="критик" fixedQuery="критик" />);
+    expect(Array.from(document.querySelectorAll('mark.cmd-hit')).map((m) => m.textContent)).toEqual(['Критик', 'Критик']);
+    expect(screen.getByText('Показаны результаты по запросу «критик»')).toBeTruthy();
   });
 });

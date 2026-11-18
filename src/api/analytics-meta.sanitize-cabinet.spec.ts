@@ -51,7 +51,7 @@ describe('sanitizeMeta: события плана работы', () => {
     }
   });
 
-  it('search_result_open: вид из списка и «был ли запрос»; текст запроса — мимо', () => {
+  it('search_result_open: вид из списка, «был ли запрос» и «из недавнего»; текст запроса — мимо', () => {
     for (const kind of ['client', 'section', 'guide', 'action']) {
       expect(
         sanitizeMeta('search_result_open', {
@@ -59,8 +59,15 @@ describe('sanitizeMeta: события плана работы', () => {
           typed: true,
           query: 'покинутость',
         }),
-      ).toEqual({ kind, typed: true });
+      ).toEqual({ kind, typed: true, recent: false });
     }
+    expect(
+      sanitizeMeta('search_result_open', {
+        kind: 'client',
+        typed: false,
+        recent: true,
+      }),
+    ).toEqual({ kind: 'client', typed: false, recent: true });
     for (const meta of [
       { kind: 'article', typed: true },
       { kind: 'guide' },

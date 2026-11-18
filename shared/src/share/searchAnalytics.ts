@@ -4,17 +4,24 @@
 // попадают (правило №7). Имя в trackEvent — строковым литералом: так его видит трипваер analytics-sync.
 export const SEARCH_RESULT_OPEN_EVENT = 'search_result_open';
 
-export type SearchResultKind = 'client' | 'section' | 'guide' | 'action';
+export const SEARCH_RESULT_KINDS = [
+  'client',
+  'section',
+  'guide',
+  'action',
+] as const;
+export type SearchResultKind = (typeof SEARCH_RESULT_KINDS)[number];
 
 interface Tracker {
   trackEvent(name: string, meta?: Record<string, unknown>): void;
 }
 
-/** Открыта строка поиска; `typed` — был ли введён запрос (сам запрос не отправляется). */
+/** Открыта строка поиска; `typed` — был ли введён запрос (сам запрос не отправляется), `recent` — строка из «Недавнего». */
 export function trackSearchResultOpen(
   api: Tracker,
   kind: SearchResultKind,
   typed: boolean,
+  recent: boolean,
 ): void {
-  api.trackEvent('search_result_open', { kind, typed });
+  api.trackEvent('search_result_open', { kind, typed, recent });
 }

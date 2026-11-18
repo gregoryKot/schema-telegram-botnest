@@ -214,6 +214,10 @@
       "kind": "mirror",
       "source": "User.uiPrefs (SYNCED_PREF_KEYS, uiPrefsSync, server wins)"
     },
+    "search_recent": {
+      "owner": "webapp/src/components/commandPalette/paletteRecent.ts",
+      "kind": "local"
+    },
     "sidebar_collapsed": {
       "owner": "webapp/src/components/appShell/sidebarCollapse.ts",
       "kind": "local"

@@ -14,8 +14,8 @@
 //   cabinet_guide_table_open — в «Справочнике» переключил «Схемы» на вид «Таблицей» (все схемы и три копинга).
 //   task_assign_source — терапевт назначил задание в листе «Новое задание»; meta { source } из
 //     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника или свой текст. Блок — src/bot/task-assign-metrics.*.
-//   search_result_open — в общем поиске (⌘K, у клиента и у терапевта) открыли результат; meta { kind, typed }:
-//     вид из SEARCH_RESULT_KINDS и был ли введён запрос. Текста запроса, имени клиента и листа нет. Блок — src/bot/search-metrics.*.
+//   search_result_open — в общем поиске (⌘K, у клиента и у терапевта) открыли результат; meta { kind, typed, recent }:
+//     вид из SEARCH_RESULT_KINDS, был ли введён запрос и открыт ли результат из «Недавнего». Текста запроса, имени клиента и листа нет. Блок — src/bot/search-metrics.*.
 import { PLAN_EVENTS } from './plan-events.constants';
 export const CABINET_EVENTS = [
   'cabinet_session_work',

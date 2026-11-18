@@ -54,11 +54,14 @@ export function sanitizeCabinetMeta(
       : undefined;
   }
   if (name === 'search_result_open') {
-    // Вид результата и «был ли запрос»; сам запрос сюда не доходит.
-    const { kind, typed } = meta;
+    // Вид результата, «был ли запрос» и «из недавнего»; сам запрос сюда не доходит.
+    // Клиент старой сборки поля recent не шлёт — это «не из недавнего».
+    const { kind, typed, recent } = meta;
     if (typeof kind !== 'string' || !SEARCH_KIND_SET.has(kind))
       return undefined;
-    return typeof typed === 'boolean' ? { kind, typed } : undefined;
+    return typeof typed === 'boolean'
+      ? { kind, typed, recent: recent === true }
+      : undefined;
   }
   return undefined;
 }

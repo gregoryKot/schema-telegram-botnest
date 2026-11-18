@@ -6,6 +6,7 @@ export interface SearchMetrics {
   guide30: number; // листов справочника
   actions30: number; // действий
   typed30: number; // из них — после того, как набрали запрос (остальное выбрано из списка без набора)
+  recent30: number; // из них — из списка недавно открытого
 }
 
 /** Текстовый блок для /stats. Чистая функция. */
@@ -24,5 +25,6 @@ export function formatSearchMetrics(m: SearchMetrics): string {
   ].filter(Boolean);
   lines.push(`Открыли результатов: ${total} (${parts.join(', ')})`);
   if (m.typed30 > 0) lines.push(`Из них набрав запрос: ${m.typed30}`);
+  if (m.recent30 > 0) lines.push(`Из них из недавнего: ${m.recent30}`);
   return lines.join('\n');
 }
