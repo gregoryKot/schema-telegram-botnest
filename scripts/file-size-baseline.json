@@ -1807,7 +1807,7 @@
   "src/utils/encryption-policy.infra.ts": 70,
   "src/utils/encryption-policy.intro-lead.ts": 17,
   "src/utils/encryption-policy.throttle.ts": 24,
-  "src/utils/encryption-policy.ts": 263,
+  "src/utils/encryption-policy.ts": 264,
   "src/utils/escape-html.ts": 8,
   "src/utils/evict-oldest.ts": 18,
   "src/utils/hash.ts": 37,
