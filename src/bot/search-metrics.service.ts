@@ -27,14 +27,15 @@ export class SearchMetricsService {
       this.prisma.analyticsEvent.count({
         where: { name: EVENT, createdAt, meta: { path: [path], equals } },
       });
-    const [clients30, sections30, guide30, actions30, typed30] =
+    const [clients30, sections30, guide30, actions30, typed30, recent30] =
       await Promise.all([
         count('kind', 'client'),
         count('kind', 'section'),
         count('kind', 'guide'),
         count('kind', 'action'),
         count('typed', true),
+        count('recent', true),
       ]);
-    return { clients30, sections30, guide30, actions30, typed30 };
+    return { clients30, sections30, guide30, actions30, typed30, recent30 };
   }
 }

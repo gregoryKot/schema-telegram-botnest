@@ -1,12 +1,13 @@
 import { SearchMetricsService } from './search-metrics.service';
 
+type Row = { name: string; kind: string; typed: boolean; recent?: boolean };
 type Where = { name: string; meta: { path: [string]; equals: unknown } };
 
 describe('SearchMetricsService', () => {
-  it('считает открытия по виду результата и отдельно — после набора запроса', async () => {
-    const rows = [
+  it('считает открытия по виду результата и отдельно — после набора запроса и из недавнего', async () => {
+    const rows: Row[] = [
       { name: 'search_result_open', kind: 'guide', typed: true },
-      { name: 'search_result_open', kind: 'guide', typed: false },
+      { name: 'search_result_open', kind: 'guide', typed: false, recent: true },
       { name: 'search_result_open', kind: 'client', typed: true },
       { name: 'task_assign_source', kind: 'guide', typed: true },
     ];
@@ -15,7 +16,7 @@ describe('SearchMetricsService', () => {
         rows.filter(
           (r) =>
             r.name === where.name &&
-            r[where.meta.path[0] as 'kind' | 'typed'] === where.meta.equals,
+            r[where.meta.path[0] as keyof Row] === where.meta.equals,
         ).length,
       ),
     );
@@ -28,6 +29,7 @@ describe('SearchMetricsService', () => {
       guide30: 2,
       actions30: 0,
       typed30: 2,
+      recent30: 1,
     });
   });
 });

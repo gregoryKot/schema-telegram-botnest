@@ -3,7 +3,7 @@
 // группу «Справочник», выбор строки ведёт на /cabinet/guide с kind и id листа в состоянии маршрута
 // и шлёт search_result_open без текста запроса; чип-пример подставляет запрос. Разделы — фикстура.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
@@ -40,7 +40,7 @@ function renderPalette(props: Partial<Parameters<typeof CommandPalette>[0]> = {}
   );
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); });
 afterEach(cleanup);
 
 describe('CommandPalette — листы справочника', () => {
@@ -53,7 +53,7 @@ describe('CommandPalette — листы справочника', () => {
     fireEvent.click(screen.getByText((_t, el) => el?.className === 'cmd-label' && el.textContent === SCHEMA));
     expect(screen.getByTestId('where').textContent).toBe('/cabinet/guide {"kind":"schema","id":"abandonment"}');
     expect(trackEvent).toHaveBeenCalledTimes(1);
-    expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'guide', typed: true });
+    expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'guide', typed: true, recent: false });
     expect(JSON.stringify(trackEvent.mock.calls)).not.toContain('покинутость');
   });
 
@@ -66,7 +66,7 @@ describe('CommandPalette — листы справочника', () => {
     fireEvent.change(input, { target: { value: '' } });
     fireEvent.click(screen.getByText('Задания'));
     expect(screen.getByTestId('where').textContent).toBe('/cabinet/tasks null');
-    expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'section', typed: false });
+    expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'section', typed: false, recent: false });
   });
 
   it('в режиме клиента у терапевта листов и примеров нет', async () => {
@@ -74,5 +74,24 @@ describe('CommandPalette — листы справочника', () => {
     fireEvent.change(screen.getByPlaceholderText('Клиент, страница, действие…'), { target: { value: 'покинутость' } });
     expect(await screen.findByText('Ничего не нашлось')).toBeTruthy();
     expect(screen.queryByRole('button', { name: SCHEMA })).toBeNull();
+  });
+});
+
+describe('CommandPalette — «Недавнее»', () => {
+  it('открытый лист при следующем открытии палитры — в «Недавнем»; выбор оттуда шлёт recent=true', async () => {
+    const first = renderPalette();
+    await screen.findByRole('button', { name: SCHEMA });
+    expect(screen.queryByText('Недавнее')).toBeNull();
+    fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: 'покинутость' } });
+    fireEvent.click(screen.getByRole('option', { name: new RegExp(SCHEMA) }));
+    expect(localStorage.getItem('search_recent')).toBe('["guide:schema:abandonment"]');
+    first.unmount();
+
+    renderPalette();
+    await screen.findByRole('button', { name: SCHEMA });
+    const group = screen.getByRole('group', { name: 'Недавнее' });
+    expect(document.querySelector('[role="group"]')).toBe(group);
+    fireEvent.click(within(group).getByRole('option', { name: new RegExp(SCHEMA) }));
+    expect(trackEvent).toHaveBeenLastCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'guide', typed: false, recent: true });
   });
 });

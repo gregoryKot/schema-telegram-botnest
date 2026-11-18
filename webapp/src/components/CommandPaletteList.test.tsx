@@ -9,7 +9,7 @@ import { QUICK_ACTION_IDS } from '../../../shared/src/quickActions/quickActions'
 import { CmdList, type CmdRow } from './CommandPaletteList';
 import { quickActionSign } from './quickActionSign';
 
-const row = (over: Partial<CmdRow>): CmdRow => ({ kind: 'section', group: 'Разделы', label: 'Строка', mark: { sign: 'cup' }, search: '', action: vi.fn(), ...over });
+const row = (over: Partial<CmdRow>): CmdRow => ({ key: 'section:x', kind: 'section', group: 'Разделы', label: 'Строка', mark: { sign: 'cup' }, search: '', action: vi.fn(), ...over });
 
 describe('quickActionSign', () => {
   it.each([...QUICK_ACTION_IDS])('%s — знак сущности действия', (id) => {

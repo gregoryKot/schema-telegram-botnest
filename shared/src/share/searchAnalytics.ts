@@ -16,11 +16,12 @@ interface Tracker {
   trackEvent(name: string, meta?: Record<string, unknown>): void;
 }
 
-/** Открыта строка поиска; `typed` — был ли введён запрос (сам запрос не отправляется). */
+/** Открыта строка поиска; `typed` — был ли введён запрос (сам запрос не отправляется), `recent` — строка из «Недавнего». */
 export function trackSearchResultOpen(
   api: Tracker,
   kind: SearchResultKind,
   typed: boolean,
+  recent: boolean,
 ): void {
-  api.trackEvent('search_result_open', { kind, typed });
+  api.trackEvent('search_result_open', { kind, typed, recent });
 }

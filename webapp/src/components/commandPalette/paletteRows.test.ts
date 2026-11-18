@@ -28,7 +28,7 @@ const CLIENTS = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дина', '
 
 const run = () => ({ section: vi.fn(), path: vi.fn(), client: vi.fn(), toggleMode: vi.fn(), quick: vi.fn(), guideSheet: vi.fn() });
 const input = (over: Partial<PaletteInput>): PaletteInput => ({
-  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, run: run(), ...over,
+  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, recent: [], run: run(), ...over,
 });
 const groups = (rows: { group: string }[]) => rows.map((r) => r.group).filter((g, i, all) => g !== all[i - 1]);
 const labels = (rows: { label: string }[]) => rows.map((r) => r.label);
@@ -99,6 +99,11 @@ describe('buildPaletteRows — запрос', () => {
     expect(labels(buildPaletteRows(input({ query: 'режим' })))).toContain('Переключиться в режим клиента');
   });
 
+  it('родовое слово, которое движок справочника отбрасывает, находит листы по началу названия', () => {
+    const rows = buildPaletteRows(input({ query: 'работа', clients: [] }));
+    expect(rows.filter((r) => r.kind === 'guide')).toMatchObject([{ group: GROUP.guide, label: 'Работа со стульями', sub: expect.stringContaining('Техники') }]);
+  });
+
   it('клиент: быстрые действия по запросу — в одной группе «Действия»', () => {
     const rows = buildPaletteRows(input({ query: 'успокоиться', therapist: false, therapistMode: false, clients: [] }));
     expect(groups(rows)).toEqual([GROUP.actions]);
@@ -137,5 +142,34 @@ describe('подсказки', () => {
     expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: false })).toBe('Клиенты, листы справочника, разделы и действия');
     expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: true })).toBe('Листы справочника, разделы и действия');
     expect(paletteHelp({ therapist: false, therapistMode: false, screenShare: false })).toBe('Разделы и действия');
+  });
+});
+
+describe('«Недавнее»', () => {
+  const RECENT = ['client:7', 'guide:schema:abandonment', 'section:/cabinet/tasks', 'client:999', 'action:toggle-mode'];
+
+  it('первая группа без запроса: строки по ключу среди всех доступных, порядок ключей; неразрешимый ключ пропущен', () => {
+    const handlers = run();
+    const rows = buildPaletteRows(input({ recent: RECENT, run: handlers }));
+    expect(groups(rows)).toEqual([GROUP.recent, GROUP.clients, GROUP.sections, GROUP.actions]);
+    const recent = rows.filter((r) => r.group === GROUP.recent);
+    // «Клим» — седьмой клиент, вне первых пяти; лист справочника без запроса виден только здесь
+    expect(labels(recent)).toEqual(['Клим', SCHEMA, 'Задания', 'Переключиться в режим клиента']);
+    expect(recent.map((r) => r.kind)).toEqual(['client', 'guide', 'section', 'action']);
+    expect(recent.some((r) => r.after)).toBe(false);
+    recent[0].action();
+    expect(handlers.client).toHaveBeenCalledWith(7);
+  });
+
+  it('«Показ экрана» прячет клиента; другой режим и незагруженный справочник — строки нет; пусто — группы нет', () => {
+    expect(labels(buildPaletteRows(input({ recent: RECENT, screenShare: true })).filter((r) => r.group === GROUP.recent)))
+      .toEqual([SCHEMA, 'Задания', 'Переключиться в режим клиента']);
+    expect(labels(buildPaletteRows(input({ recent: RECENT, guide: null, therapistMode: false })).filter((r) => r.group === GROUP.recent)))
+      .toEqual(['Клим', 'Переключиться в кабинет терапевта']);
+    expect(groups(buildPaletteRows(input({ recent: ['client:999'] })))).not.toContain(GROUP.recent);
+  });
+
+  it('при запросе группы нет', () => {
+    expect(groups(buildPaletteRows(input({ recent: RECENT, query: 'клим' })))).toEqual([GROUP.clients]);
   });
 });
