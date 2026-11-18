@@ -62,6 +62,11 @@ describe('поиск по текстам листов', () => {
     expect(ids('как работать со схемой')).toEqual([]);
   });
 
+  it('слово из подписи группы находит её листы — выше листов, где оно только в тексте', () => {
+    expect(ids('детских').slice(0, 2)).toEqual(['vulnerable_child', 'angry_child']);
+    expect(only('детских').sub).toBeUndefined();
+  });
+
   it('слово короче трёх букв в тексте не ищется; идентификаторы — не текст', () => {
     expect(ids('на')).not.toContain('angry_child');
     expect(ids('angry_child')).toEqual([]);
