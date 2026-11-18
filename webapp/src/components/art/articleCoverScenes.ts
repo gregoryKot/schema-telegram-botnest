@@ -7,10 +7,15 @@ import { CoverDepth, CoverModes, CoverRoots, CoverSchemaStacks, CoverTalkMap } f
 import { CoverFirstSession, CoverGrowth, CoverScales, CoverStages } from './ArticleScenesPath';
 import { CoverBar, CoverCloud, CoverMended } from './ArticleScenesHelp';
 import { CoverLoop, CoverMirror, CoverOwnFrame } from './ArticleScenesSelf';
+import { CoverAttach, CoverDrained, CoverImpostor, CoverNo } from './ArticleScenesLife';
 
 export type CoverScene = (p: { hue: number }) => ReactElement;
 
 export const ARTICLE_SCENES: Readonly<Record<string, CoverScene>> = {
+  'tipy-privyazannosti-i-schema-terapiya': CoverAttach,
+  'emotsionalnoe-vygoranie-i-schema-terapiya': CoverDrained,
+  'pochemu-ya-ne-umeyu-govorit-net': CoverNo,
+  'sindrom-samozvantsa': CoverImpostor,
   'schema-terapiya-pri-nizkoy-samootsenke': CoverMirror,
   'schematerapia-vda': CoverOwnFrame,
   'zdoroviy-vzrosliy-bez-terapii': CoverGrowth,

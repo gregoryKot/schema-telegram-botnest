@@ -187,8 +187,8 @@ export const EXCLUDE = [
   // пользователя на этом пути).
   /^shared\/src\/booking\/clientTimeZone\.ts$/,
   // Статьи сайта — единая форма «вы» (docs/ARTICLES.md), addressForm не
-  // читают, как и лендинг.
-  /^src\/articles\/articles\.seed\.ts$/,
+  // читают, как и лендинг. Сид делится по файлам (articles.seed.2026-11.ts).
+  /^src\/articles\/articles\.seed(\.[\w-]+)?\.ts$/,
   // Текст продуктового лендинга schemehappens.ru — тот же маркетинг, что
   // webapp/src/pages/landing/ выше: страница публичная, гость формы не
   // выбирал. В src/ он лежит только затем, чтобы его читал и сервер (HTML для
