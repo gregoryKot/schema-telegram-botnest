@@ -58,7 +58,7 @@ export function ConceptGuideHint({
       <HintBetweenSessions
         items={guide.betweenSessions}
         from={from}
-        assign={actions?.onAssign}
+        actions={actions}
         notes={notes}
       />
       {actions && (

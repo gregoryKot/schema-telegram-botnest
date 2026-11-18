@@ -674,7 +674,7 @@
   "shared/src/therapy/conceptGraph/conceptGuide.fixture.ts": 117,
   "shared/src/therapy/conceptGraph/conceptGuide.ts": 129,
   "shared/src/therapy/conceptGraph/ConceptGuideHint.tsx": 75,
-  "shared/src/therapy/conceptGraph/ConceptGuideHintSections.tsx": 132,
+  "shared/src/therapy/conceptGraph/ConceptGuideHintSections.tsx": 129,
   "shared/src/therapy/conceptGraph/conceptLinksExport.ts": 20,
   "shared/src/therapy/conceptGraph/ConceptModeEditor.tsx": 96,
   "shared/src/therapy/conceptGraph/ConceptModePicker.tsx": 55,
