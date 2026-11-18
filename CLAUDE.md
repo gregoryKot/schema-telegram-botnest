@@ -79,12 +79,12 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный токен — `color-mix(in srgb, var(--x) N%, transparent)`; `'var(--x)18'` невалидно (`check-var-alpha-suffix`); `--c-*` — оттенок для заливок, текст — `--accent-*`/`*-strong` (`accentTextContrast.test.ts`).
 
 ### Тексты для пользователя → [.claude/rules/texts.md](.claude/rules/texts.md)
-- **ты/вы:** строка с обращением — в обеих формах: бэк `t(form, 'ты', 'вы')` (`address-form.ts`), фронт `useTr()` → `tr('ты', 'вы')`, контент — `buildX(tr)` + хук; «вы»-строка целиком во мн. числе (`check-address-form`, `-agreement`, `check-second-person`).
+- **ты/вы:** строка с обращением — в обеих формах: бэк `t(form, 'ты', 'вы')` (`src/notification/address-form.ts`), фронт `useTr()` → `tr('ты', 'вы')`, контент — `buildX(tr)` + хук; «вы»-строка целиком во мн. числе (`check-address-form`, `check-address-agreement`, `check-second-person`).
 - **Род — нейтральный:** настоящее время, безличный оборот, существительное («удалось справиться»); скобки «сделал(а)» режет `check-gendered-forms`.
 - **№7** Свободный текст → кризисная детекция `crisisMarkers` на клиенте до шифрования + карточка 8-800-100-49-94 (детская 8-800-2000-122 второй).
 - **№12** Голос живой и конкретный ([docs/VOICE.md](docs/VOICE.md)), роботное считает `check-robot-phrases`; о владельце — «работает в подходе схема-терапия», без титула.
 - **№27** Термины — по [docs/TERMINOLOGY.md](docs/TERMINOLOGY.md), режимы с заглавных («Карающий Критик») (`check-schema-terms`).
-- **№29** Смысл теории по [чек-листу](.claude/rules/theory.md): схема → домен → потребность, режим → группа, термин не в бытовом значении; сверяет `rules-reviewer`.
+- **№29** Смысл теории — [чек-лист](.claude/rules/theory.md): схема → домен → потребность, режим → группа, без бытовых значений.
 
 ### Бэкенд: эндпоинты и хосты → [.claude/rules/backend-api.md](.claude/rules/backend-api.md)
 - **№5** Бакет rate-limit — только по проверенной подписи (иначе IP). Денежные, заявочные и кодовые ручки — `@PersistentThrottle()` (счётчик в Postgres, общий для инстансов); каждая ручка с `@Throttle` классифицирована (`check-persistent-throttle`).
