@@ -1,4 +1,7 @@
-import { formatGuideAnswerLines } from './guide-answer-metrics';
+import {
+  formatGuideAnswerLines,
+  withGuideAnswerLines,
+} from './guide-answer-metrics';
 
 describe('formatGuideAnswerLines', () => {
   it('пустая БД — строки нет', () => {
@@ -17,5 +20,31 @@ describe('formatGuideAnswerLines', () => {
     expect(formatGuideAnswerLines({ answers30: 4, answerLinks30: 2 })).toEqual([
       'Готовый ответ над поиском показан: 4, по ссылкам из него перешли: 2',
     ]);
+  });
+});
+
+describe('withGuideAnswerLines', () => {
+  const prisma = (counts: Record<string, number>) =>
+    ({
+      analyticsEvent: {
+        count: ({ where }: { where: { name: string } }) =>
+          Promise.resolve(counts[where.name] ?? 0),
+      },
+    }) as never;
+
+  it('каждое число — своё событие; строка дописана к блоку', async () => {
+    const text = await withGuideAnswerLines(
+      prisma({ cabinet_guide_answer_show: 5, cabinet_guide_answer_link: 2 }),
+      'блок',
+    );
+    expect(text).toBe(
+      'блок\nГотовый ответ над поиском показан: 5, по ссылкам из него перешли: 2',
+    );
+  });
+
+  it('пустая БД — блок как был', async () => {
+    await expect(withGuideAnswerLines(prisma({}), 'блок')).resolves.toBe(
+      'блок',
+    );
   });
 });
