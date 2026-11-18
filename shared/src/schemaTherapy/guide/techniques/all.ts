@@ -6,6 +6,9 @@ import { buildHomeworkTechniques } from './homework';
 import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
 import { buildFormulationTechniques } from './formulation';
+import { buildEvidenceWorkTechniques } from './evidenceWork';
+import { buildChildCareTechniques } from './childCare';
+import { buildBodyValuesTechniques } from './bodyValues';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -16,4 +19,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildRelationshipTechniques,
   buildImageryMoreTechniques,
   buildFormulationTechniques,
+  buildEvidenceWorkTechniques,
+  buildChildCareTechniques,
+  buildBodyValuesTechniques,
 ];

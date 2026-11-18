@@ -43,4 +43,16 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:anger_expression': ['trigger', 'expressed', 'need', 'result'],
     'technique:mode_map': ['modes', 'origins', 'insight', 'next'],
     'technique:schema_diary': ['entry', 'schema', 'healthy', 'result'],
+    'technique:positive_data_log': ['belief', 'facts', 'scale', 'result'],
+    'technique:behavioral_experiment': [
+      'prediction',
+      'test',
+      'outcome',
+      'conclusion',
+    ],
+    'technique:transitional_objects': ['object', 'message', 'when'],
+    'technique:play_and_joy': ['activity', 'blocker', 'response', 'plan'],
+    'technique:body_grounding': ['noticed', 'mode', 'grounding', 'result'],
+    'technique:values_overview': ['situation', 'values', 'step', 'obstacle'],
+    'technique:couple_mode_cycle': ['conflict', 'cycle', 'needs', 'exit'],
   };

@@ -24,7 +24,14 @@ export type SchemaTechniqueId =
   | 'mode_dialogue_imagery'
   | 'anger_expression'
   | 'mode_map'
-  | 'schema_diary';
+  | 'schema_diary'
+  | 'positive_data_log'
+  | 'behavioral_experiment'
+  | 'transitional_objects'
+  | 'play_and_joy'
+  | 'body_grounding'
+  | 'values_overview'
+  | 'couple_mode_cycle';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId = CoreTechniqueId | SchemaTechniqueId;

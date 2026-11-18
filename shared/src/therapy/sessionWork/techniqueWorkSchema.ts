@@ -76,4 +76,66 @@ export const SCHEMA_TECHNIQUE_WORK: Record<
       ['result', 'Итог'],
     ],
   },
+  positive_data_log: {
+    name: 'Журнал позитивных данных',
+    fields: [
+      ['belief', 'Какое убеждение укрепляем'],
+      ['facts', 'Какие факты записали'],
+      ['scale', 'Что показала шкала'],
+      ['result', 'Итог'],
+    ],
+  },
+  behavioral_experiment: {
+    name: 'Поведенческий эксперимент',
+    fields: [
+      ['prediction', 'Предсказание'],
+      ['test', 'Как проверяем'],
+      ['outcome', 'Что вышло'],
+      ['conclusion', 'Вывод'],
+    ],
+  },
+  transitional_objects: {
+    name: 'Переходный объект',
+    fields: [
+      ['object', 'Что это'],
+      ['message', 'Что на нём или в записи'],
+      ['when', 'Когда доставать'],
+    ],
+  },
+  play_and_joy: {
+    name: 'Игра и радость',
+    fields: [
+      ['activity', 'Во что играли'],
+      ['blocker', 'Какой режим мешал'],
+      ['response', 'Как откликнулся клиент'],
+      ['plan', 'Что между сессиями'],
+    ],
+  },
+  body_grounding: {
+    name: 'Работа с телом',
+    fields: [
+      ['noticed', 'Что заметили в теле'],
+      ['mode', 'Какой режим за этим'],
+      ['grounding', 'Как заземлялись'],
+      ['result', 'Как изменилось состояние'],
+    ],
+  },
+  values_overview: {
+    name: 'Ценности и «взгляд сверху»',
+    fields: [
+      ['situation', 'Ситуация'],
+      ['values', 'Что важно'],
+      ['step', 'Шаг на неделю'],
+      ['obstacle', 'Какой режим помешает'],
+    ],
+  },
+  couple_mode_cycle: {
+    name: 'Цикл режимов в паре',
+    fields: [
+      ['conflict', 'Ссора'],
+      ['cycle', 'Как идёт круг'],
+      ['needs', 'Что нужно каждому'],
+      ['exit', 'Как выходим'],
+    ],
+  },
 };
