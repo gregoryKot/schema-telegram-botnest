@@ -25,7 +25,7 @@
 
 ## В работе
 
-- 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. Сделано: PR1 (#1332) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; PR2 — ручка пунктов по клиенту `GET /api/therapy/notes/:clientId/work` (`src/therapy/session-work-list.ts`), журнал «На сессиях» и лист техники берут пункты из итогов (`shared/src/therapy/sessionWork/sessionJournal.ts`, `webapp/src/components/therapist/useSessionWork.ts`), тап по пункту открывает запись на «Сессиях», свои режимы терапевта — в выборе «С чем работали» и в подписях.
+- 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. Сделано: PR1 (#1332) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; PR2 (#1367) — ручка пунктов по клиенту `GET /api/therapy/notes/:clientId/work` (`src/therapy/session-work-list.ts`), журнал «На сессиях» и лист техники берут пункты из итогов (`shared/src/therapy/sessionWork/sessionJournal.ts`, `webapp/src/components/therapist/useSessionWork.ts`), тап по пункту открывает запись на «Сессиях», свои режимы терапевта — в выборе «С чем работали» и в подписях.
   Осталось: PR3 — сводка «Что было сделано» на «Обзоре» (`ClientOverviewTab.tsx`; данные — `useSessionWork` + отметки связей, считать по `sessionJournal`).
   Не сделано в PR2: глазами в браузере журнал и переход к записи не проверялись (только vitest); пункт из ранней записи (за пределами 100 показанных заметок) в журнале стоит строкой без перехода — вкладка «Сессии» такие записи не выводит (`SessionArchive.tsx`, `NotesTruncationHint`).
 
