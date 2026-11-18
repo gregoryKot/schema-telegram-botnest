@@ -33,7 +33,7 @@ export const FIXTURE_GUIDE: ModeGuide = {
   modeId: 'vulnerable_child',
   goal: 'Дать Ребёнку опыт заботы, которого не хватало',
   what: 'Детская часть с болью и страхом.',
-  relationship: 'Тёплый тон и ограниченный репарентинг',
+  relationship: 'Тёплый тон и ограниченное родительство',
   cognitive: 'Связать чувства с потребностями',
   experiential: 'Рескриптинг детских сцен',
   techniques: ['imagery_rescripting', 'chairwork'],

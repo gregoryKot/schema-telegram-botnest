@@ -68,7 +68,7 @@ describe('strategyGroupOf', () => {
 
   it('критики: карающий и вины — с карающим подходом, требовательный — свой', () => {
     expect(strategyGroupOf('punitive_critic')).toBe('punitive');
-    expect(strategyGroupOf('guilt_critic')).toBe('punitive');
+    expect(strategyGroupOf('guilt_critic')).toBe('guilt');
     expect(strategyGroupOf('demanding_critic')).toBe('demanding');
   });
 

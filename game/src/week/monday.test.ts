@@ -4,22 +4,42 @@ import { describe, expect, it, vi } from 'vitest';
 vi.hoisted(() => vi.stubGlobal('window', {}));
 import { PHYS } from '../constants';
 import { M } from '../i18n/messages';
-import { MONDAY, OPENS, doorX, gateInReach, type Act } from './monday';
+import { MONDAY, OPENS, PEAK_X, doorX, gateInReach, type Act } from './monday';
+import { secondsTo } from './run';
 import { agree, jumpFactor, newWeekState } from './habits';
 
 const jumpH = (factor: number) => (PHYS.jumpVel * factor) ** 2 / (2 * PHYS.gravity);
 
 describe('«Понедельник» — данные главы', () => {
-  it('каждая привычка открывается до первой преграды, которую она убирает', () => {
-    for (const g of MONDAY.gates) {
+  it('преграда, которую не перепрыгнуть, встаёт только после кнопки своей привычки', () => {
+    const blocking = MONDAY.gates.filter(g => g.kind !== 'pile' || g.h >= jumpH(1));
+    expect(new Set(blocking.map(g => g.kind))).toEqual(new Set(['pile', 'noise', 'person']));
+    for (const g of blocking) {
       const beat = MONDAY.beats.find(b => b.reveal === OPENS[g.kind]);
       expect(beat, g.kind).toBeDefined();
       expect(beat!.x).toBeLessThan(g.x);
     }
   });
-  it('ПАУЗУ места главы не открывают: она появляется только у двери', () => {
+  it('ПАУЗУ места главы не открывают: она появляется только на пике, после всех преград', () => {
     expect(MONDAY.beats.some(b => b.reveal === ('pause' satisfies Act))).toBe(false);
-    expect(MONDAY.door.peakX).toBeGreaterThan(Math.max(...MONDAY.gates.map(g => g.x)));
+    expect(PEAK_X).toBeGreaterThan(Math.max(...MONDAY.gates.map(g => g.x)));
+  });
+  it('спокойные кадры — шагом и трусцой, сбой — бегом; до сбоя бежать не заставляют', () => {
+    const glitchAt = MONDAY.beats.find(b => b.glitch)!;
+    expect(MONDAY.startPace).toBe('walk');
+    expect(glitchAt.pace).toBe('run');
+    expect(MONDAY.beats.filter(b => b.x < glitchAt.x).some(b => b.pace === 'run')).toBe(false);
+    expect(MONDAY.beats.filter(b => b.x > glitchAt.x).some(b => b.pace)).toBe(false);
+  });
+  it('хук короткий: до пика — от двух до трёх минут чистого бега, сбой начинается в первые полминуты', () => {
+    const at = (x: number) => secondsTo(MONDAY.startX, MONDAY.startPace, MONDAY.beats, x);
+    expect(at(MONDAY.beats.find(b => b.glitch)!.x)).toBeLessThan(30);
+    expect(at(PEAK_X)).toBeGreaterThan(90);
+    expect(at(PEAK_X)).toBeLessThan(150);
+  });
+  it('дверь видна из кадра телефона и после названия стоит ближе, чем держалась', () => {
+    expect(MONDAY.door.keepAway).toBeLessThan(640 * 0.7); // Саша на 30% ширины кадра
+    expect(MONDAY.door.nearSteps).toBeLessThan(MONDAY.door.keepAway);
   });
   it('места идут по порядку, часы не идут назад, строки есть в каталоге', () => {
     const xs = MONDAY.beats.map(b => b.x);
@@ -30,12 +50,14 @@ describe('«Понедельник» — данные главы', () => {
       ...MONDAY.beats.flatMap(b => [...(b.say ? [b.say] : []), ...(b.notifs ?? [])])];
     for (const k of keys) expect(M[k], k).toBeDefined();
   });
-  it('утренние блоки перепрыгиваются; стопка после коллеги — только без рюкзака', () => {
+  it('блоки улицы и низкие стопки перепрыгиваются и с рюкзаком; стопка после коллеги — только без него', () => {
     const light = jumpH(1), loaded = jumpH(jumpFactor(agree(newWeekState(0), true)));
     for (const b of MONDAY.blocks) expect(b.h).toBeLessThan(light);
-    const after = MONDAY.gates.filter(g => g.kind === 'pile' && g.x > MONDAY.gates.find(p => p.kind === 'person')!.x);
-    expect(after.length).toBeGreaterThan(0);
-    for (const g of after) { expect(g.h).toBeLessThan(light); expect(g.h).toBeGreaterThan(loaded); }
+    const personX = MONDAY.gates.find(p => p.kind === 'person')!.x;
+    const next = MONDAY.gates.find(g => g.kind === 'pile' && g.x > personX)!;
+    expect(next.h).toBeLessThan(light);
+    expect(next.h).toBeGreaterThan(loaded);
+    for (const g of MONDAY.gates.filter(p => p.kind === 'pile' && p.x > next.x)) expect(g.h).toBeLessThan(loaded);
   });
 });
 
@@ -47,9 +69,13 @@ describe('преграды и дверь', () => {
     expect(gateInReach(gates, 'overwork', 400, 110)).toBeUndefined();
     expect(gateInReach([{ ...gates[0], open: true }], 'overwork', 60, 110)).toBeUndefined();
   });
-  it('на пике дверь держится впереди; после названия стоит на месте', () => {
+  it('пока сбой не назван, дверь не приближается, сколько ни беги; после названия стоит на месте', () => {
     const d = MONDAY.door;
-    expect(doorX(d.x, d.x, true, false, d)).toBe(d.x + d.keepAway);
+    let door = d.x;
+    for (let px = d.x; px < d.x + 5000; px += 230) {
+      door = doorX(door, px, true, false, d);
+      expect(door - px).toBeGreaterThanOrEqual(d.keepAway);
+    }
     expect(doorX(d.x, d.x - 1000, true, false, d)).toBe(d.x);
     expect(doorX(d.x, d.x, true, true, d)).toBe(d.x);
     expect(doorX(d.x, d.x, false, false, d)).toBe(d.x);

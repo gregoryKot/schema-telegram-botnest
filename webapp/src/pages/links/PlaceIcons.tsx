@@ -1,5 +1,5 @@
-// Значки площадок-зеркал пункта: круглые ссылки с одноцветным контуром. Площадка текстом
-// не подписана — доступное имя даёт aria-label. Знак MAX — нейтральная «M», не логотип.
+// Значки площадок-зеркал пункта: круглые ссылки с заливным знаком. Площадка текстом
+// не подписана — доступное имя даёт aria-label. MAX — надпись в круге, не логотип.
 import type { ReactNode } from 'react';
 import { hitboxStyle } from '../../../../shared/src/utils/hitbox';
 import type { PlaceLink, ReadyLink } from './linksModel';
@@ -7,28 +7,26 @@ import { trackLinksClick } from './trackLinksClick';
 
 type Place = PlaceLink['title'];
 
-const GLYPH: Record<Place, ReactNode> = {
-  Telegram: <path d="M21 3.5 3 10.4l5.6 2.2 2.1 6.4 3.2-3.9 4.6 3.4L21 3.5ZM8.6 12.6l8-5.4" />,
-  MAX: <path d="M5.5 17.5v-11l6.5 7 6.5-7v11" />,
-  Threads: <><circle cx="12" cy="12" r="3.6" /><path d="M15.6 8.4v4.8a2.5 2.5 0 0 0 5 0V12a8.6 8.6 0 1 0-3.4 6.85" /></>,
-  ВКонтакте: <path d="m3.5 7 3.4 10L10.3 7M14 7v10m6.5-10L14 12.2l6.5 4.8" />,
+const GLYPH: Record<Exclude<Place, 'MAX'>, ReactNode> = {
+  Telegram: <path d="M21.94 4.32 18.6 19.66c-.24 1.1-.9 1.36-1.82.85l-5.03-3.7-2.43 2.33c-.27.27-.5.5-1.01.5l.36-5.12 9.31-8.41c.4-.36-.09-.56-.63-.2L5.84 13.15.88 11.6c-1.08-.34-1.1-1.08.23-1.6L20.5 2.53c.9-.33 1.69.21 1.44 1.79Z" />,
+  Threads: <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z" />,
+  ВКонтакте: <path transform="translate(-2.2 -2.6) scale(1.2)" d="M6.79 7.3H4.05c.13 6.24 3.25 9.99 8.72 9.99h.31v-3.57c2.01.2 3.53 1.67 4.14 3.57h2.84c-.78-2.84-2.83-4.41-4.11-5.01 1.28-.74 3.08-2.54 3.51-4.98h-2.58c-.56 1.98-2.22 3.78-3.8 3.95V7.3H10.5v6.92c-1.6-.4-3.62-2.34-3.71-6.92Z" />,
 };
 const WHERE: Record<Place, string> = { Telegram: 'в Telegram', MAX: 'в MAX', Threads: 'в Threads', ВКонтакте: 'во ВКонтакте' };
 
-const hit = hitboxStyle(36, 36);
+const hit = hitboxStyle(44, 44);
 
 export function PlaceIcons({ link }: { link: ReadyLink }) {
   return (
     <span className="lk-places">
-      {link.placesLabel && <span className="lk-places-label">{link.placesLabel}</span>}
       {link.places.map((p) => {
         const name = `${link.placesName ?? link.title} ${WHERE[p.title]}`;
         return (
           <a key={p.id} className="lk-place" style={hit.outer} href={p.href} aria-label={name} title={name} onClick={() => trackLinksClick(p.id)}>
             <span className="lk-place-dot" style={hit.inner}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                {GLYPH[p.title]}
-              </svg>
+              {p.title === 'MAX' ? <span className="lk-place-max" aria-hidden>MAX</span> : (
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden>{GLYPH[p.title]}</svg>
+              )}
             </span>
           </a>
         );
