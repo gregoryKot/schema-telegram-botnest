@@ -23,10 +23,11 @@ const client = (telegramId: number, name: string, urlCode: string) => ({
   telegramId, name, urlCode, clientAlias: null, streak: 0, lastActiveDate: null, todayIndex: null, recentIndexHistory: [],
   relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null, meetingDays: [], schemaIds: [],
 });
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 vi.mock('../api', () => ({
   api: {
     getTherapyClients: () => Promise.resolve([client(1, 'Анна', 'aaaabbbb'), client(2, 'Борис', 'ccccdddd')]),
-    trackEvent: (...a: unknown[]) => trackEvent(...a),
+    trackEvent: (...a: unknown[]) => trackEvent(...a), listArticles: () => Promise.resolve([]),
   },
 }));
 

@@ -29,7 +29,7 @@ interface Props {
 
 /**
  * Общий поиск ⌘K: клиенты и вкладки их карточек, разделы, листы «Справочника», задания (кабинет терапевта),
- * в режиме клиента — схемы, режимы, упражнения, свои планы и задания, и действия. Строки собирает commandPalette/paletteRows.ts, действия строк и второй шаг «Кому дать
+ * в режиме клиента — схемы, режимы, упражнения, свои планы и задания, действия; у всех — настройки и статьи. Строки собирает commandPalette/paletteRows.ts, действия строк и второй шаг «Кому дать
  * задание?» — usePaletteActions.ts: событие search_result_open без текста запроса и ключ строки в
  * «Недавнее» (paletteRecent.ts). На телефоне панель — во весь видимый экран над клавиатурой.
  */
@@ -61,13 +61,13 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
 
   const therapist = userRole === 'THERAPIST';
   const cabinet = therapist && !!therapistMode;
-  const { clients, own } = usePaletteClientData(therapist, cabinet);
+  const { clients, own, articles } = usePaletteClientData(therapist, cabinet);
   const guide = usePaletteGuide(cabinet, tr);
   const { assign, run: actions, leaveAssign } = usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, guide, setQuery: setQ, inputRef });
   const mode = { therapist, therapistMode: cabinet, screenShare };
   const found = useMemo(
-    () => searchPalette({ query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, own, guide, recent, assign, run: actions }),
-    [q, tr, therapist, therapistMode, screenShare, clients, own, guide, recent, assign, actions],
+    () => searchPalette({ query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, own, articles, guide, recent, assign, run: actions }),
+    [q, tr, therapist, therapistMode, screenShare, clients, own, articles, guide, recent, assign, actions],
   );
   const rows = found.rows;
   const examples = useMemo(() => paletteExamples(guide, cabinet), [guide, cabinet]);

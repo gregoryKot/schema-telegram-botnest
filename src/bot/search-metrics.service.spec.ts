@@ -13,6 +13,7 @@ describe('SearchMetricsService', () => {
       { name: 'search_result_open', kind: 'task', typed: false },
       { name: 'search_result_open', kind: 'own_task', typed: true },
       { name: 'search_result_open', kind: 'pattern', typed: false },
+      { name: 'search_result_open', kind: 'setting', typed: true },
       { name: 'task_assign_source', kind: 'guide', typed: true },
     ];
     const count = jest.fn(({ where }: { where: Where }) =>
@@ -39,8 +40,10 @@ describe('SearchMetricsService', () => {
         exercise: 0,
         plan: 0,
         own_task: 1,
+        article: 0,
+        setting: 1,
       },
-      typed30: 4,
+      typed30: 5,
       recent30: 1,
     });
   });

@@ -12,10 +12,11 @@ const trackEvent = vi.fn();
 const requestTasksOpen = vi.fn();
 vi.mock('../sections/tasks/tasksLaunch', () => ({ requestTasksOpen: (...a: unknown[]) => requestTasksOpen(...a) }));
 const reportClientError = vi.fn();
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 vi.mock('../api', () => ({
   reportClientError: (...a: unknown[]) => reportClientError(...a),
   api: {
-    trackEvent: (...a: unknown[]) => trackEvent(...a),
+    trackEvent: (...a: unknown[]) => trackEvent(...a), listArticles: () => Promise.resolve([]),
     getTasks: () => Promise.resolve([{ id: 42, assignedBy: 7, type: 'custom', text: 'Записать три тёплых момента', dueDate: null, done: null }]),
     getPlanHistory: () => Promise.reject(new Error('сеть')),
   },

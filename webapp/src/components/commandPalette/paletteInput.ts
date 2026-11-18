@@ -2,7 +2,7 @@
 import type { Tr } from '../../../../shared/src/needs/types';
 import type { CatalogTask } from '../../../../shared/src/tasks/catalog/taskCatalog';
 import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
-import type { PracticePlan, TherapyClientSummary, UserId, UserTask } from '../../api';
+import type { ArticleSummary, PracticePlan, TherapyClientSummary, UserId, UserTask } from '../../api';
 import type { Reference } from '../../sections/guide/guideReferenceModel';
 import type { ReferenceBody } from '../../sections/guide/guideReferenceBody';
 import type { GuideSheetTarget } from '../../sections/guide/guideSheetRoute';
@@ -27,6 +27,8 @@ export interface PaletteInput {
   guide: PaletteGuide | null;
   /** Свои задания и планы клиента (usePaletteClientData.ts); в кабинете, до загрузки и при сбое — пусто. */
   own: { tasks: UserTask[]; plans: PracticePlan[] };
+  /** Статьи сайта (usePaletteClientData.ts); до загрузки и при сбое — пусто, группы «Статьи» нет. */
+  articles: ArticleSummary[];
   /** Ключи недавно открытых строк, свежие первыми (paletteRecent.ts). */
   recent: string[];
   /** Второй шаг «Кому дать задание?»: в списке только клиенты; catalogId — выбранное задание справочника. */
@@ -45,5 +47,8 @@ export interface PaletteInput {
     pattern: (target: PatternTarget) => void;
     practice: (target: PracticeTarget) => void;
     ownTask: (taskId: number) => void;
+    /** Лист «Настройки», прокрученный к разделу (id из settingsNav.ts); null — с начала. */
+    setting: (sectionId: string | null) => void;
+    logout: () => void;
   };
 }

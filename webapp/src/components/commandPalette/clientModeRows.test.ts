@@ -19,7 +19,7 @@ const plan = (id: number, practiceText: string, scheduledDate: string, done: boo
 const run = () => ({ section: vi.fn(), pattern: vi.fn(), practice: vi.fn(), ownTask: vi.fn(), quick: vi.fn(), toggleMode: vi.fn() });
 const input = (over: object = {}) => ({
   query: '', tr, therapist: false, therapistMode: false, screenShare: false, clients: [], guide: null,
-  own: { tasks: [], plans: [] }, recent: [], assign: null, run: run(), ...over,
+  own: { tasks: [], plans: [] }, articles: [], recent: [], assign: null, run: run(), ...over,
 }) as unknown as PaletteInput;
 const groups = (rows: { group: string }[]) => [...new Set(rows.map((r) => r.group))];
 const SCHEMA = ALL_SCHEMAS[0];

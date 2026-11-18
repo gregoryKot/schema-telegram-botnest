@@ -18,6 +18,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { SettingsSheet } from './SettingsSheet';
+import { requestSettingsOpen } from './settingsSheet/settingsLaunch';
 import {
   withAddressForm,
   mockLocationReload,
@@ -144,6 +145,18 @@ describe('SettingsSheet — оглавление совпадает с разд�
     expect(sections.length).toBeGreaterThan(5);
     expect([...nav].map((n) => n.getAttribute('data-target'))).toEqual([...sections].map((el) => el.id)); // и состав, и порядок
     expect(screen.getByRole('button', { name: 'Обращение' })).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — раздел из общего поиска', () => {
+  it('запрошенный раздел прокручивается в видимую область после загрузки настроек, один раз', async () => {
+    requestSettingsOpen('s-data');
+    const { unmount } = await renderSheet();
+    const scrolled = () => vi.mocked(Element.prototype.scrollIntoView).mock.contexts.map((el) => (el as Element).id);
+    expect(scrolled()).toEqual(['s-data']);
+    unmount();
+    await renderSheet();
+    expect(scrolled()).toEqual(['s-data']); // лист открыт заново — без запроса не прокручивается
   });
 });
 

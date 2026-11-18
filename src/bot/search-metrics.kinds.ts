@@ -13,4 +13,6 @@ export const SEARCH_KIND_LABELS: Record<SearchResultKind, string> = {
   exercise: 'упражнений',
   plan: 'планов',
   own_task: 'своих заданий',
+  article: 'статей',
+  setting: 'настроек',
 };

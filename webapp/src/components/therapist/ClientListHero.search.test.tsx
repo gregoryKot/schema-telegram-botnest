@@ -15,7 +15,8 @@ const CLIENT = {
   telegramId: 42, name: 'Иван', clientAlias: null, streak: 3, lastActiveDate: null, todayIndex: null,
   recentIndexHistory: [], relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null, meetingDays: [], schemaIds: [],
 } as TherapyClientSummary;
-vi.mock('../../api', () => ({ api: { getTherapyClients: () => Promise.resolve([CLIENT]) } }));
+vi.mock('../../api', () => ({ api: { getTherapyClients: () => Promise.resolve([CLIENT]), listArticles: () => Promise.resolve([]) } }));
+vi.mock('../../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 
 afterEach(() => { cleanup(); setScreenShare(false); });
 

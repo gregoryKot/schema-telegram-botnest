@@ -34,10 +34,10 @@ const client = (telegramId: number, name: string): TherapyClientSummary => ({
 const CLIENTS = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дина', 'Ева', 'Клим'].map((n, i) => client(i + 1, n));
 
 const run = () => ({ section: vi.fn(), path: vi.fn(), client: vi.fn(), toggleMode: vi.fn(), quick: vi.fn(), guideSheet: vi.fn(),
-  pickAssignee: vi.fn(), assign: vi.fn(), addClient: vi.fn(), toggleScreenShare: vi.fn(), pattern: vi.fn(), practice: vi.fn(), ownTask: vi.fn(),
+  pickAssignee: vi.fn(), assign: vi.fn(), addClient: vi.fn(), toggleScreenShare: vi.fn(), pattern: vi.fn(), practice: vi.fn(), ownTask: vi.fn(), setting: vi.fn(), logout: vi.fn(),
 });
 const input = (over: Partial<PaletteInput>): PaletteInput => ({
-  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, own: { tasks: [], plans: [] }, recent: [], assign: null, run: run(), ...over,
+  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, own: { tasks: [], plans: [] }, articles: [], recent: [], assign: null, run: run(), ...over,
 });
 const groups = (rows: { group: string }[]) => rows.map((r) => r.group).filter((g, i, all) => g !== all[i - 1]);
 const labels = (rows: { label: string }[]) => rows.map((r) => r.label);
@@ -97,7 +97,7 @@ describe('buildPaletteRows — запрос', () => {
 
   it('группы — по лучшему весу, при равенстве: клиенты, их вкладки, разделы, справочник, действия', () => {
     // «Клим» — начало имени, клиент один — следом его вкладки; «клиенты», «клиента» — слово раздела и действия (равный вес); в листах — только в тексте
-    expect(groups(buildPaletteRows(input({ query: 'кли' })))).toEqual([GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.actions, GROUP.guide]);
+    expect(groups(buildPaletteRows(input({ query: 'кли' })))).toEqual([GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.actions, GROUP.guide, GROUP.settings]); // «Клиент или терапевт» — раздел настроек «Режим»
     // начало названия раздела «Справочник» весит больше, чем слово в середине
     const rows = buildPaletteRows(input({ query: 'с', clients: [client(9, 'Иван Сидоров')] }));
     expect(groups(rows).slice(0, 2)).toEqual([GROUP.sections, GROUP.clients]);
@@ -151,9 +151,9 @@ describe('подсказки', () => {
   });
 
   it('что ищется — по роли, режиму и «Показу экрана»', () => {
-    expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: false })).toBe('Клиенты и их вкладки, задания, листы справочника, разделы и действия');
-    expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: true })).toBe('Листы справочника, разделы и действия');
-    expect(paletteHelp({ therapist: false, therapistMode: false, screenShare: false })).toBe('Схемы и режимы, упражнения, свои планы и задания, разделы и действия');
+    expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: false })).toBe('Клиенты и их вкладки, задания, листы справочника, разделы и действия, статьи и настройки');
+    expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: true })).toBe('Листы справочника, разделы и действия, статьи и настройки');
+    expect(paletteHelp({ therapist: false, therapistMode: false, screenShare: false })).toBe('Схемы и режимы, упражнения, свои планы и задания, разделы и действия, статьи и настройки');
     expect(paletteHelp({ therapist: true, therapistMode: false, screenShare: false })).toMatch(/^Клиенты, схемы и режимы/);
   });
 });

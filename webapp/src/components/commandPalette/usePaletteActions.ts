@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState, type RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import type { TherapyClientSummary, UserId } from '../../api';
+import { useAuth } from '../../auth/authContext';
 import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
 import { trackSearchResultOpen } from '../../../../shared/src/share/searchAnalytics';
 import { clientRef } from '../../../../shared/src/utils/clientRef';
@@ -15,6 +16,7 @@ import { requestTasksOpen } from '../../sections/tasks/tasksLaunch';
 import type { Section } from '../appShell/navigation';
 import { readScreenShare } from '../appShell/screenShareMode';
 import { toggleScreenShare } from '../appShell/toggleScreenShare';
+import { requestSettingsOpen } from '../settingsSheet/settingsLaunch';
 import { ADD_CLIENT_STATE, assignTaskState } from '../therapist/cabinetRouteActions';
 import { clientCardPath } from '../therapist/clientTabRoute';
 import type { CmdRow } from './cmdRow';
@@ -36,6 +38,7 @@ interface Params {
 
 export function usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, guide, setQuery, inputRef }: Params) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [assign, setAssign] = useState<PaletteInput['assign']>(null);
   const enter = useCallback((next: PaletteInput['assign']) => {
     setAssign(next);
@@ -54,6 +57,8 @@ export function usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQu
     practice: (target) => { navigate(PRACTICE_PATH, { state: practiceRouteState(target) }); },
     // «Задания» живут листом в «Ещё»: запрос забирает useTasksSheet, как по ссылке из уведомления.
     ownTask: (taskId) => { requestTasksOpen(taskId); onNavigate('more'); },
+    setting: requestSettingsOpen,
+    logout: () => { void logout(); },
     pickAssignee: (catalogId) => enter({ catalogId }),
     assign: (clientId, catalogId) => {
       const client = clients.find((c) => c.telegramId === clientId);
@@ -62,7 +67,7 @@ export function usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQu
     },
     addClient: () => { navigate('/cabinet', { state: ADD_CLIENT_STATE }); },
     toggleScreenShare: () => toggleScreenShare(readScreenShare()),
-  }), [navigate, onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, tasks, enter]);
+  }), [navigate, logout, onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, tasks, enter]);
   /** Назад к первому шагу (Backspace в пустом поле). */
   const leaveAssign = useCallback(() => enter(null), [enter]);
   return { assign, run, leaveAssign };
