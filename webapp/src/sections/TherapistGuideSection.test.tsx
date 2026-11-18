@@ -152,7 +152,7 @@ describe('TherapistGuideSection', () => {
     expect(screen.queryByRole('tablist')).toBeNull();
     const found = screen.getByRole('region', { name: 'Техники' });
     expect(within(found).getByRole('button', { name: /^Работа со стульями/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Уязвимый Ребёнок' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Детские режимы' })).toBeNull(); // режим — только ссылкой в карточке-ответе
     fireEvent.change(search, { target: { value: 'щщщ' } });
     expect(screen.getByText('Ничего не нашлось')).toBeTruthy();
     fireEvent.change(search, { target: { value: '' } });
