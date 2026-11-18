@@ -68,9 +68,9 @@ describe('LinksPage', () => {
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target, from: 'direct' }, { keepalive: true });
   });
 
-  it('карточка проекта ведёт на сайт своей основной ссылкой', () => {
+  it('карточка проекта ведёт на сайт своей основной ссылкой — с кнопкой «Открыть приложение»', () => {
     render(<LinksPage />);
-    const main = screen.getByText('Всё по схеме').closest('a')!;
+    const main = screen.getByRole('link', { name: /Всё по схеме.*Открыть приложение/ });
     expect(main.getAttribute('href')).toBe('https://schemehappens.ru');
     fireEvent.click(main);
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'project', from: 'direct' }, { keepalive: true });

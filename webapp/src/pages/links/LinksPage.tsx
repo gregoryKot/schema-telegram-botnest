@@ -19,7 +19,7 @@ export function LinksPage() {
           <ThemeIcon dark={dark} />
         </button>
         <header className="links-head">
-          <AuthorAvatar photo="/gregory.jpg" size={88} letterSize={34} />
+          <span className="links-photo"><AuthorAvatar photo="/gregory.jpg" size={88} letterSize={34} /></span>
           <h1 className="links-name">Григорий Котляревский</h1>
           <p className="links-about">Работаю в подходе схема-терапия · онлайн</p>
         </header>
