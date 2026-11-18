@@ -100,7 +100,7 @@ export function BeliefCheckEx({ onBack, onComplete, onOpenSchemaCard }: { onBack
           {foot(nextTo(1, 'Дальше · доказательства за', !belief.trim()))}
         </>)}
         {step === 1 && (<>
-          <DiaryStepQ title={quoted('Что подтверждает')} hint={tr('Записывай честно. Не убеждай себя, что мысль не имеет оснований — она их имеет.', 'Записывайте честно. Не убеждайте себя, что мысль не имеет оснований — она их имеет.')} />
+          <DiaryStepQ title={quoted('Что подтверждает')} hint={tr('Записывай честно. У мысли есть причины: она выросла из настоящего опыта. Верна ли она сейчас, покажет следующий шаг.', 'Записывайте честно. У мысли есть причины: она выросла из настоящего опыта. Верна ли она сейчас, покажет следующий шаг.')} />
           <EviList side="for" items={forList} setItems={setForList} input={forInput} onInput={setForInput} onAdd={addFor} placeholder="Добавить доказательство…" />
           {detectCrisisAny(forInput, ...forList) && <CrisisCard surface="belief_check" />}
           {foot(nextTo(2, 'Дальше · доказательства против', forList.length === 0 && !forInput.trim()), 0)}
