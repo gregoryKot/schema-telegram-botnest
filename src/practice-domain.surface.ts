@@ -40,5 +40,5 @@ export const PRACTICE_API_PREFIXES: readonly string[] = [
   '/api/articles', // статьи и их админка
   '/api/healthy-adult', // админка фраз канала (AdminPage)
   '/api/client-errors', // отчёт о сбое формы брони (bookingFailure.ts), правило №14
-  '/api/public-event', // анонимные события визитки: клики /links, кризисная карточка записи (301 съел бы тело POST)
+  '/api/public-event', // анонимные события визитки (страница ссылок, кризисная карточка записи) иначе теряются в 301; приём — белый список событий и лимит по IP
 ];

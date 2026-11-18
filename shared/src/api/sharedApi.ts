@@ -48,11 +48,12 @@ import type {
   SessionWorkItem,
 } from '../therapy/sessionWork/types';
 import type { PracticeIcsLinkBody } from '../practices/savePracticeIcs';
+import { postEvent, type EventArgs, type SendOptions } from './publicEvent';
 
 /** Транспорт фронтенда: auth-заголовки, BASE и обработка ошибок — внутри. */
 export interface ApiTransport {
   get<T>(path: string): Promise<T>;
-  post(path: string, body?: unknown): Promise<void>;
+  post(path: string, body?: unknown, opts?: SendOptions): Promise<void>;
   postJson<T>(path: string, body: unknown): Promise<T>;
   del(path: string, body?: unknown): Promise<void>;
 }
@@ -70,9 +71,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
-  trackPublicEvent: (name: string, meta?: Record<string, unknown>): void => {
-    void t.post('/api/public-event', { name, meta }).catch(() => undefined);
-  },
+  trackPublicEvent: (...a: EventArgs): void =>
+    void postEvent(t, ...a).catch(() => undefined),
   getDisclaimer: () => t.get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => t.post('/api/disclaimer', {}),
   // Только чтение: сервер отдаёт все UI-флаги (UserFlagsDto), здесь типизирован

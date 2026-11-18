@@ -51,13 +51,13 @@ describe('LinksPage', () => {
     window.history.replaceState({}, '', '/links?utm_source=instagram');
     render(<LinksPage />);
     fireEvent.click(screen.getByText('Статьи'));
-    expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'articles', from: 'instagram' });
+    expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'articles', from: 'instagram' }, { keepalive: true });
   });
 
   it('без метки в адресе источник — direct', () => {
     render(<LinksPage />);
     fireEvent.click(screen.getByText('Записаться на консультацию'));
-    expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'booking', from: 'direct' });
+    expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'booking', from: 'direct' }, { keepalive: true });
   });
 });
 

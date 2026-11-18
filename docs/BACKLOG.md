@@ -33,7 +33,6 @@
 
 - ⬜ **Владельцу: прислать адрес Telegram-канала «Здоровый Взрослый»** — #1392. Агенту — вписать его в `href` пункта `channel_ha` в `webapp/src/pages/links/linksData.ts`: пока там `null`, кнопки на `kotlarewski.gr/links` нет (тест `LinksPage.test.tsx`).
 
-- ⬜ **Страница ссылок: клик может не дойти до /stats** — #1392, находка. `api.trackPublicEvent` (`shared/src/api/sharedApi.ts:73`) шлёт обычный `fetch` без `keepalive`, а кнопки `/links` открываются в той же вкладке: браузер вправе оборвать запрос вместе со страницей. Проверить на живых кликах; лечится `keepalive` у публичного события (приём `shared/src/api/keepalive.ts`).
 
 - ⬜ **Баннер куки на визитке: в тёмной теме текст не читается, на `/links` закрывает кнопки** — #1392, находка. `webapp/src/components/CookieBanner.tsx` на `kotlarewski.gr` в тёмной теме рисует светлую плашку со светлым текстом; при первом заходе с телефона 360px перекрывает нижние кнопки страницы ссылок. Доказано скриншотом Playwright 360×740 (`?site=personal`, `app_theme=dark`).
 

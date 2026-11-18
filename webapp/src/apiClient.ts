@@ -93,8 +93,8 @@ export function get<T>(path: string): Promise<T> {
   return cachedGet(path, () => rawGet<T>(path));
 }
 
-export async function post(path: string, body: unknown): Promise<void> {
-  const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(body) });
+export async function post(path: string, body: unknown, opts?: SendOptions): Promise<void> {
+  const res = await authedFetch(path, withKeepalive({ method: 'POST', body: JSON.stringify(body) }, opts));
   if (!res.ok) throw await apiError(res);
 }
 

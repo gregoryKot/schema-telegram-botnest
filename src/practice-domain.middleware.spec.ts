@@ -205,6 +205,31 @@ describe('practiceDomainMiddleware', () => {
       },
     );
 
+    it('POST /api/public-event → next: событие визитки не уходит в 301', () => {
+      const { sent, nextCalled } = run(
+        'kotlarewski.gr',
+        '/api/public-event',
+        '/api/public-event',
+        'POST',
+      );
+      expect(nextCalled).toBe(true);
+      expect(sent.redirect).toBeUndefined();
+    });
+
+    it('/api/public-eventx → 301 (похожий, но незаконный префикс — не подстрока)', () => {
+      const { sent, nextCalled } = run(
+        'kotlarewski.gr',
+        '/api/public-eventx',
+        '/api/public-eventx',
+        'POST',
+      );
+      expect(sent.redirect).toEqual([
+        301,
+        'https://schemehappens.ru/api/public-eventx',
+      ]);
+      expect(nextCalled).toBe(false);
+    });
+
     it('/api/client-errorsx → 301 (похожий, но незаконный префикс — не подстрока)', () => {
       const { sent, nextCalled } = run('kotlarewski.gr', '/api/client-errorsx');
       expect(sent.redirect).toEqual([
