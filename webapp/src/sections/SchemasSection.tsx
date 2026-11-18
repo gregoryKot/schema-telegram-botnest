@@ -10,7 +10,7 @@ import { SelectionSaveNote } from './schemas/SelectionSaveNote';
 import { PatternsModesPane } from './schemas/PatternsModesPane';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
-import { usePatternLayer } from './schemas/usePatternLayer';
+import { useRoutedPatternLayer } from './schemas/patternRoute';
 import { PatternsTopCards } from './schemas/PatternsTopCards';
 import { PatternsTopStack } from './schemas/PatternsTopStack';
 import { ModesTopCards } from './schemas/ModesTopCards';
@@ -40,7 +40,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const [detailSchemaId, setDetailSchemaId] = useState<string | null>(null);
   const [detailNeedId, setDetailNeedId] = useState<string | null>(null);
   const [showMyMap, setShowMyMap] = useState(false);
-  const pat = usePatternLayer();
+  const pat = useRoutedPatternLayer();
   const mobile = useIsMobile();
   const [tab, setTab] = useState(readStoredTab);
   useEffect(() => { writeStoredTab(tab); }, [tab]);

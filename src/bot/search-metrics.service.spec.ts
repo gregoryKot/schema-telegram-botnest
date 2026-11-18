@@ -11,6 +11,8 @@ describe('SearchMetricsService', () => {
       { name: 'search_result_open', kind: 'client', typed: true },
       { name: 'search_result_open', kind: 'client_tab', typed: true },
       { name: 'search_result_open', kind: 'task', typed: false },
+      { name: 'search_result_open', kind: 'own_task', typed: true },
+      { name: 'search_result_open', kind: 'pattern', typed: false },
       { name: 'task_assign_source', kind: 'guide', typed: true },
     ];
     const count = jest.fn(({ where }: { where: Where }) =>
@@ -26,13 +28,19 @@ describe('SearchMetricsService', () => {
       analyticsEvent: { count },
     } as never);
     await expect(service.getMetrics()).resolves.toEqual({
-      clients30: 1,
-      tabs30: 1,
-      sections30: 0,
-      guide30: 2,
-      tasks30: 1,
-      actions30: 0,
-      typed30: 3,
+      byKind30: {
+        client: 1,
+        client_tab: 1,
+        section: 0,
+        guide: 2,
+        task: 1,
+        action: 0,
+        pattern: 1,
+        exercise: 0,
+        plan: 0,
+        own_task: 1,
+      },
+      typed30: 4,
       recent30: 1,
     });
   });

@@ -11,7 +11,6 @@
   "src/utils/crypto.ts": 1,
   "webapp/src/api.ts": 1,
   "webapp/src/components/AppShell.tsx": 1,
-  "webapp/src/components/CommandPalette.tsx": 1,
   "webapp/src/components/exercises/BeliefCheckEx.tsx": 1,
   "webapp/src/components/exercises/LetterEx.tsx": 1,
   "webapp/src/components/HistorySheet.tsx": 1,

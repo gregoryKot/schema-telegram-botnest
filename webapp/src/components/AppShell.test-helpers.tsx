@@ -52,7 +52,7 @@ export const mockLogout = vi.fn();
 vi.mock('../sections/TodaySection', () => ({
   TodaySection: (p: ComponentProps<typeof TodaySectionT>) => (
     <Btns testid="today-section" state={{ entryDone: useEntryFlowsDone() }} map={{
-      tracker: () => p.onOpenTracker(),
+      tracker: () => p.onOpenTracker(), search: () => p.onSearch?.(),
       schema: () => p.onOpenSchema({ startTest: true, tab: 'schemas', highlight: 'abandonment' }),
     }} />
   ),

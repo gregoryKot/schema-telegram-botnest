@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import type { SearchResultKind } from '../analytics/cabinet-events.constants';
+import {
+  SEARCH_RESULT_KINDS,
+  type SearchResultKind,
+} from '../analytics/cabinet-events.constants';
 import {
   formatSearchMetrics,
   type SearchMetrics,
@@ -26,14 +29,10 @@ export class SearchMetricsService {
       this.prisma.analyticsEvent.count({
         where: { name: EVENT, createdAt, meta: { path: [path], equals } },
       });
-    const kind = (k: SearchResultKind) => count('kind', k);
+    const byKind30 = {} as Record<SearchResultKind, number>;
+    for (const k of SEARCH_RESULT_KINDS) byKind30[k] = await count('kind', k);
     return {
-      clients30: await kind('client'),
-      tabs30: await kind('client_tab'),
-      sections30: await kind('section'),
-      guide30: await kind('guide'),
-      tasks30: await kind('task'),
-      actions30: await kind('action'),
+      byKind30,
       typed30: await count('typed', true),
       recent30: await count('recent', true),
     };

@@ -4,32 +4,36 @@
 // веса, группы — по лучшему весу, при равенстве — в порядке GROUP_ORDER. Только в кабинете терапевта:
 // листы справочника (guideRows.ts), вкладки карточки клиента (clientTabRows.ts), задания из справочника
 // (taskRows.ts) и действия кабинета (cabinetActionRows.ts); шаг «Кому дать задание?» — одни клиенты
-// (clientRows.ts). Без запроса первой группой — «Недавнее» (recentRows.ts).
-import type { Tr } from '../../../../shared/src/needs/types';
-import type { CatalogTask } from '../../../../shared/src/tasks/catalog/taskCatalog';
-import { buildPlusActions, type QuickActionId } from '../../../../shared/src/quickActions/quickActions';
+// (clientRows.ts). Только в режиме клиента: свои задания, упражнения, схемы, режимы и планы
+// (clientModeRows.ts). Без запроса первой группой — «Недавнее» (recentRows.ts).
+import { buildPlusActions } from '../../../../shared/src/quickActions/quickActions';
 import { hasLatin, toRussianLayout } from '../../../../shared/src/search/keyboardLayout';
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
-import type { TherapyClientSummary, UserId } from '../../api';
-import type { Reference } from '../../sections/guide/guideReferenceModel';
-import type { ReferenceBody } from '../../sections/guide/guideReferenceBody';
-import type { GuideSheetTarget } from '../../sections/guide/guideSheetRoute';
 import { SECTION_LOOK, THERAPIST_NAV } from '../appShell/navLook';
 import type { Section } from '../appShell/navigation';
 import { quickActionSign } from '../quickActionSign';
 import { cabinetActionRows } from './cabinetActionRows';
 import { ASSIGN_GROUP, CLIENTS_GROUP, assigneeRows, clientRows, clientsPreview } from './clientRows';
+import { allClientModeRows, clientModeRows } from './clientModeRows';
 import { CLIENT_TAB_GROUP, allClientTabRows, clientTabRows } from './clientTabRows';
 import type { CmdRow } from './cmdRow';
 import { GUIDE_GROUP, allGuideRows, guideRows } from './guideRows';
+import { OWN_TASK_GROUP, PLAN_GROUP, ownTasksPreview } from './ownRows';
+import type { PaletteInput } from './paletteInput';
+import { EXERCISE_GROUP, MODE_GROUP, SCHEMA_GROUP } from './patternRows';
 import { RECENT_GROUP, recentRows } from './recentRows';
 import { TASK_GROUP, allTaskRows, taskRows } from './taskRows';
 
 export const GROUP = {
   recent: RECENT_GROUP, clients: CLIENTS_GROUP, clientTabs: CLIENT_TAB_GROUP, sections: 'Разделы', guide: GUIDE_GROUP,
   tasks: TASK_GROUP, actions: 'Действия', assign: ASSIGN_GROUP,
+  ownTasks: OWN_TASK_GROUP, exercises: EXERCISE_GROUP, schemas: SCHEMA_GROUP, modes: MODE_GROUP, plans: PLAN_GROUP,
 } as const;
-const GROUP_ORDER: string[] = [GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.guide, GROUP.tasks, GROUP.actions];
+const GROUP_ORDER: string[] = [
+  GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.ownTasks, GROUP.exercises, GROUP.schemas, GROUP.modes, GROUP.plans,
+  GROUP.guide, GROUP.tasks, GROUP.actions,
+];
+export type { PaletteGuide, PaletteInput } from './paletteInput';
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'today', label: 'Сегодня', sub: 'Главная', hint: '⌘ 1' },
@@ -39,39 +43,6 @@ const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'profile', label: 'Профиль', sub: 'Аккаунт', hint: '' },
   { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
 ];
-
-/** `tasks` — каталог заданий «Из справочника» (taskCatalog.ts). */
-export interface PaletteGuide { ref: Reference; body: ReferenceBody; tasks: CatalogTask[] }
-
-export interface PaletteInput {
-  query: string;
-  tr: Tr;
-  /** Роль THERAPIST: видит клиентов и переключатель режима. */
-  therapist: boolean;
-  /** Открыт кабинет терапевта: его разделы и листы справочника вместо разделов клиента. */
-  therapistMode: boolean;
-  /** «Показ экрана»: клиентов нет ни списком, ни по поиску. */
-  screenShare: boolean;
-  clients: TherapyClientSummary[];
-  /** Тексты справочника; грузятся или не загрузились — null, группы «Справочник» нет. */
-  guide: PaletteGuide | null;
-  /** Ключи недавно открытых строк, свежие первыми (paletteRecent.ts). */
-  recent: string[];
-  /** Второй шаг «Кому дать задание?»: в списке только клиенты; catalogId — выбранное задание справочника. */
-  assign: { catalogId: string | null } | null;
-  run: {
-    section: (id: Section) => void;
-    path: (to: string) => void;
-    pickAssignee: (catalogId: string | null) => void;
-    assign: (clientId: UserId, catalogId: string | null) => void;
-    addClient: () => void;
-    toggleScreenShare: () => void;
-    client: (id: UserId) => void;
-    toggleMode: () => void;
-    quick: (id: QuickActionId) => void;
-    guideSheet: (target: GuideSheetTarget) => void;
-  };
-}
 
 function sectionRows({ therapistMode, run }: PaletteInput): CmdRow[] {
   if (therapistMode) {
@@ -114,13 +85,13 @@ export function buildPaletteRows(input: PaletteInput): CmdRow[] {
   if (cabinet && input.assign) return assigneeRows(input, input.assign.catalogId);
   const rows = [...clients, ...sectionRows(input), ...actionRows(input)];
   if (query.trim() === '') {
-    const recent = recentRows(input.recent, cabinet ? [...rows, ...allGuideRows(input), ...allClientTabRows(input), ...allTaskRows(input)] : rows);
-    return [...recent, ...clientsPreview(clients, tr), ...rows.slice(clients.length)];
+    const more = cabinet ? [...allGuideRows(input), ...allClientTabRows(input), ...allTaskRows(input)] : allClientModeRows(input);
+    return [...recentRows(input.recent, [...rows, ...more]), ...(cabinet ? [] : ownTasksPreview(input)), ...clientsPreview(clients, tr), ...rows.slice(clients.length)];
   }
   const scored = rows
     .map((row) => ({ row, score: rowScore(row.label, row.search, query) }))
     .filter((r) => r.score > ROW_SCORE.none);
-  if (cabinet) scored.push(...guideRows(input), ...clientTabRows(input), ...taskRows(input));
+  scored.push(...(cabinet ? [...guideRows(input), ...clientTabRows(input), ...taskRows(input)] : clientModeRows(input)));
   const best = new Map<string, number>();
   for (const { row, score } of scored) best.set(row.group, Math.max(best.get(row.group) ?? 0, score));
   const order = (group: string) => GROUP_ORDER.indexOf(group);

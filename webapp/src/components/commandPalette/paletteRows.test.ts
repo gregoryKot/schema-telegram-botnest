@@ -5,7 +5,8 @@ import type { TherapyClientSummary } from '../../api';
 import type { CatalogTask } from '../../../../shared/src/tasks/catalog/taskCatalog';
 import { buildReference, type ReferenceTexts } from '../../sections/guide/guideReferenceModel';
 import { buildReferenceBody } from '../../sections/guide/guideReferenceBody';
-import { getSchemaById } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
+import { ALL_MODES, ALL_SCHEMAS, getSchemaById } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
+import { EXERCISES } from '../../../../shared/src/exercises/exerciseCatalog';
 import {
   FIXTURE_GUIDE, FIXTURE_PRACTICE_NOTE, FIXTURE_SCHEMA_GUIDE, FIXTURE_TECHNIQUES,
 } from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
@@ -33,10 +34,10 @@ const client = (telegramId: number, name: string): TherapyClientSummary => ({
 const CLIENTS = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дина', 'Ева', 'Клим'].map((n, i) => client(i + 1, n));
 
 const run = () => ({ section: vi.fn(), path: vi.fn(), client: vi.fn(), toggleMode: vi.fn(), quick: vi.fn(), guideSheet: vi.fn(),
-  pickAssignee: vi.fn(), assign: vi.fn(), addClient: vi.fn(), toggleScreenShare: vi.fn(),
+  pickAssignee: vi.fn(), assign: vi.fn(), addClient: vi.fn(), toggleScreenShare: vi.fn(), pattern: vi.fn(), practice: vi.fn(), ownTask: vi.fn(),
 });
 const input = (over: Partial<PaletteInput>): PaletteInput => ({
-  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, recent: [], assign: null, run: run(), ...over,
+  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, own: { tasks: [], plans: [] }, recent: [], assign: null, run: run(), ...over,
 });
 const groups = (rows: { group: string }[]) => rows.map((r) => r.group).filter((g, i, all) => g !== all[i - 1]);
 const labels = (rows: { label: string }[]) => rows.map((r) => r.label);
@@ -88,8 +89,9 @@ describe('buildPaletteRows — запрос', () => {
   });
 
   it('листы справочника — только в кабинете терапевта и только когда тексты загружены', () => {
-    expect(buildPaletteRows(input({ query: 'покинутость', therapistMode: false }))).toEqual([]);
-    expect(buildPaletteRows(input({ query: 'покинутость', therapist: false, therapistMode: false }))).toEqual([]);
+    const kinds = (over: Partial<PaletteInput>) => buildPaletteRows(input({ query: 'покинутость', ...over })).map((r) => r.kind);
+    expect(kinds({ therapistMode: false })).toEqual(['pattern']);
+    expect(kinds({ therapist: false, therapistMode: false })).toEqual(['pattern']);
     expect(buildPaletteRows(input({ query: 'покинутость', guide: null }))).toEqual([]);
   });
 
@@ -142,14 +144,17 @@ describe('опечатки и чужая раскладка', () => {
 
 describe('подсказки', () => {
   it('примеры — настоящие названия: первая схема, первый режим, первая техника; без текстов — пусто', () => {
-    expect(paletteExamples(guide)).toEqual([SCHEMA, 'Уязвимый Ребёнок', FIXTURE_TECHNIQUES[0].name]);
-    expect(paletteExamples(null)).toEqual([]);
+    expect(paletteExamples(guide, true)).toEqual([SCHEMA, 'Уязвимый Ребёнок', FIXTURE_TECHNIQUES[0].name]);
+    expect(paletteExamples(null, true)).toEqual([]);
+    // режим клиента: первая схема, первый режим и первое упражнение каталогов
+    expect(paletteExamples(null, false)).toEqual([ALL_SCHEMAS[0].name, ALL_MODES[0].name, EXERCISES[0].title]);
   });
 
   it('что ищется — по роли, режиму и «Показу экрана»', () => {
     expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: false })).toBe('Клиенты и их вкладки, задания, листы справочника, разделы и действия');
     expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: true })).toBe('Листы справочника, разделы и действия');
-    expect(paletteHelp({ therapist: false, therapistMode: false, screenShare: false })).toBe('Разделы и действия');
+    expect(paletteHelp({ therapist: false, therapistMode: false, screenShare: false })).toBe('Схемы и режимы, упражнения, свои планы и задания, разделы и действия');
+    expect(paletteHelp({ therapist: true, therapistMode: false, screenShare: false })).toMatch(/^Клиенты, схемы и режимы/);
   });
 });
 

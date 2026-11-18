@@ -9,6 +9,9 @@ import type { QuickActionId } from '../../../../shared/src/quickActions/quickAct
 import { trackSearchResultOpen } from '../../../../shared/src/share/searchAnalytics';
 import { clientRef } from '../../../../shared/src/utils/clientRef';
 import { GUIDE_PATH, guideSheetState } from '../../sections/guide/guideSheetRoute';
+import { PRACTICE_PATH, practiceRouteState } from '../../sections/practice/practiceRoute';
+import { PATTERNS_PATH, patternRouteState } from '../../sections/schemas/patternRoute';
+import { requestTasksOpen } from '../../sections/tasks/tasksLaunch';
 import type { Section } from '../appShell/navigation';
 import { readScreenShare } from '../appShell/screenShareMode';
 import { toggleScreenShare } from '../appShell/toggleScreenShare';
@@ -16,7 +19,7 @@ import { ADD_CLIENT_STATE, assignTaskState } from '../therapist/cabinetRouteActi
 import { clientCardPath } from '../therapist/clientTabRoute';
 import type { CmdRow } from './cmdRow';
 import { pushRecent } from './paletteRecent';
-import type { PaletteGuide, PaletteInput } from './paletteRows';
+import type { PaletteGuide, PaletteInput } from './paletteInput';
 import { RECENT_GROUP } from './recentRows';
 
 interface Params {
@@ -47,6 +50,10 @@ export function usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQu
     toggleMode: () => onToggleMode?.(),
     quick: (id) => onQuickAction?.(id),
     guideSheet: (target) => { navigate(GUIDE_PATH, { state: guideSheetState(target) }); },
+    pattern: (target) => { navigate(PATTERNS_PATH, { state: patternRouteState(target) }); },
+    practice: (target) => { navigate(PRACTICE_PATH, { state: practiceRouteState(target) }); },
+    // «Задания» живут листом в «Ещё»: запрос забирает useTasksSheet, как по ссылке из уведомления.
+    ownTask: (taskId) => { requestTasksOpen(taskId); onNavigate('more'); },
     pickAssignee: (catalogId) => enter({ catalogId }),
     assign: (clientId, catalogId) => {
       const client = clients.find((c) => c.telegramId === clientId);

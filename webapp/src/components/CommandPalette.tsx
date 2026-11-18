@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
-import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import type { QuickActionId } from '../../../shared/src/quickActions/quickActions';
-import type { TherapyClientSummary, UserId } from '../api';
+import type { UserId } from '../api';
 import { CmdList, type CmdRow } from './CommandPaletteList';
 import { CMD_LIST_ID, cmdOptionId } from './commandPalette/listIds';
 import { searchPalette } from './commandPalette/paletteRows';
 import { readRecent } from './commandPalette/paletteRecent';
 import { paletteExamples, paletteHelp, palettePlaceholder } from './commandPalette/paletteTexts';
 import { runPaletteRow, usePaletteActions } from './commandPalette/usePaletteActions';
+import { usePaletteClientData } from './commandPalette/usePaletteClientData';
 import { usePaletteGuide } from './commandPalette/usePaletteGuide';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -28,8 +28,8 @@ interface Props {
 }
 
 /**
- * Общий поиск ⌘K: клиенты и вкладки их карточек, разделы, листы «Справочника», задания (кабинет терапевта)
- * и действия. Строки собирает commandPalette/paletteRows.ts, действия строк и второй шаг «Кому дать
+ * Общий поиск ⌘K: клиенты и вкладки их карточек, разделы, листы «Справочника», задания (кабинет терапевта),
+ * в режиме клиента — схемы, режимы, упражнения, свои планы и задания, и действия. Строки собирает commandPalette/paletteRows.ts, действия строк и второй шаг «Кому дать
  * задание?» — usePaletteActions.ts: событие search_result_open без текста запроса и ключ строки в
  * «Недавнее» (paletteRecent.ts). На телефоне панель — во весь видимый экран над клавиатурой.
  */
@@ -43,7 +43,6 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const tr = useTr();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
-  const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   // «Показ экрана» (сайдбар кабинета): имён клиентов нет и здесь, даже по поиску.
   const screenShare = useScreenShare();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,24 +59,18 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  // Fetch clients for therapists
-  useEffect(() => {
-    if (userRole === 'THERAPIST') {
-      api.getTherapyClients().then(setClients).catch(() => {});
-    }
-  }, [userRole]);
-
   const therapist = userRole === 'THERAPIST';
   const cabinet = therapist && !!therapistMode;
+  const { clients, own } = usePaletteClientData(therapist, cabinet);
   const guide = usePaletteGuide(cabinet, tr);
   const { assign, run: actions, leaveAssign } = usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, guide, setQuery: setQ, inputRef });
   const mode = { therapist, therapistMode: cabinet, screenShare };
   const found = useMemo(
-    () => searchPalette({ query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, guide, recent, assign, run: actions }),
-    [q, tr, therapist, therapistMode, screenShare, clients, guide, recent, assign, actions],
+    () => searchPalette({ query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, own, guide, recent, assign, run: actions }),
+    [q, tr, therapist, therapistMode, screenShare, clients, own, guide, recent, assign, actions],
   );
   const rows = found.rows;
-  const examples = useMemo(() => paletteExamples(guide), [guide]);
+  const examples = useMemo(() => paletteExamples(guide, cabinet), [guide, cabinet]);
   const typed = q.trim() !== '';
   const run = (row: CmdRow | undefined) => runPaletteRow(row, typed, goBack);
   const runRef = useRef(run);
