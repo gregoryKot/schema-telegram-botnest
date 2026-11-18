@@ -1,5 +1,7 @@
 // Ротация примеров потребности («Например» в трекере): из пула показывается окно подряд,
 // и новое открытие не пересекается с прошлым — память живёт до перезагрузки страницы.
+import { useState } from 'react';
+
 const lastStart = new Map<string, number>();
 
 /** Начало нового окна: случайное, а при известном прошлом — без общих с ним примеров. */
@@ -24,6 +26,12 @@ export function nextExampleStart(
 export function exampleWindow<T>(pool: readonly T[], start: number, count: number): T[] {
   const size = Math.min(count, pool.length);
   return Array.from({ length: size }, (_, i) => pool[(start + i) % pool.length]);
+}
+
+/** Окно примеров, выбранное один раз на открытие экрана: перерисовка его не меняет. */
+export function useExampleWindow<T>(key: string, pool: readonly T[] | undefined, count: number): T[] {
+  const [start] = useState(() => nextExampleStart(key, pool?.length ?? 0, count));
+  return pool ? exampleWindow(pool, start, count) : [];
 }
 
 export function resetExampleRotation(): void {

@@ -3,16 +3,14 @@
 // примера — в <details> «Например», свёрнуты и раскрываются по тапу: раскрытые сразу,
 // они на 390×664 и 360×640 сталкивали все пять ответов за край (QA мобильной, З5).
 // Примеры меняются с каждым открытием вопроса: окно из большого пула (exampleRotation).
-import { useState } from 'react';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
-import { exampleWindow, nextExampleStart } from '../../../../shared/src/needs/exampleRotation';
+import { useExampleWindow } from '../../../../shared/src/needs/exampleRotation';
 import { glue } from '../../../../shared/src/utils/typo';
 const EXAMPLES_SHOWN = 2;
 
 export function NeedExplainer({ data }: { data: NeedExtra | undefined }) {
-  const [start] = useState(() => nextExampleStart(data?.name ?? '', data?.examples.length ?? 0, EXAMPLES_SHOWN));
+  const examples = useExampleWindow(data?.name ?? '', data?.examples, EXAMPLES_SHOWN);
   if (!data) return null;
-  const examples = exampleWindow(data.examples, start, EXAMPLES_SHOWN);
   return (
     <>
       <p className="tq-desc">{glue(data.desc)}</p>
