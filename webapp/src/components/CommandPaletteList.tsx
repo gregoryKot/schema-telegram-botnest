@@ -7,33 +7,15 @@
 // та же подсказка и примеры. Сборка строк — commandPalette/paletteRows.ts. Палитра — ленивый чанк.
 // Строки — listbox: группа role="group", строка role="option"; фокус остаётся в поле (aria-activedescendant).
 import { Fragment } from 'react';
-import type { SignKey } from '../../../shared/src/theme/entityLook';
-import type { SearchResultKind } from '../../../shared/src/share/searchAnalytics';
 import { SignArt } from './art/SignArt';
 import { PaperEmpty } from './art/PaperEmpty';
+import type { CmdMark, CmdRow } from './commandPalette/cmdRow';
 import { Hit } from './commandPalette/Hit';
 import { CMD_LIST_ID, cmdOptionId } from './commandPalette/listIds';
 import { pressable } from '../utils/a11y';
 import { hueStyle } from '../lib/tone';
 
-export type CmdMark = { sign: SignKey } | { initials: string; hue: number };
-export interface CmdRow {
-  /** Стабильный ключ строки (тип + id, без имён): по нему строка попадает в «Недавнее». */
-  key: string;
-  /** Вид строки — для события открытия результата (search_result_open). */
-  kind: SearchResultKind;
-  /** Подпись группы над первой строкой группы. */
-  group: string;
-  label: string;
-  sub?: string;
-  hint?: string;
-  mark: CmdMark;
-  /** Текст, по которому ищется строка (подпись, подзаголовок и группа). */
-  search: string;
-  action: () => void;
-  /** Приглушённая строка под этой («Ещё N — начни вводить имя»): не выбирается. */
-  after?: string;
-}
+export type { CmdMark, CmdRow };
 
 function Mark({ mark }: { mark: CmdMark }) {
   if ('sign' in mark) return <span className="cmd-mark" aria-hidden="true"><SignArt sign={mark.sign} size="row" /></span>;
@@ -68,13 +50,15 @@ function groupRuns(rows: CmdRow[]): { group: string; from: number; to: number }[
   return runs;
 }
 
-export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, help, examples = [], onExample, highlight = '', fixedQuery }: {
+export function CmdList({ rows, sel, onSelect, onRun, note, emptyText = 'Ничего не нашлось', searching = false, help, examples = [], onExample, highlight = '', fixedQuery }: {
   rows: CmdRow[];
   sel: number;
   onSelect: (i: number) => void;
   onRun: (row: CmdRow) => void;
   /** Пояснение над списком (клиенты скрыты показом экрана); с ним «Ничего не нашлось» не дублируется. */
   note?: string;
+  /** Пустое состояние; на шаге «Кому дать задание» — про клиента. */
+  emptyText?: string;
   /** Введён запрос: подсказка и примеры уходят из-под поля в пустое состояние. */
   searching?: boolean;
   /** Что ищется: «Клиенты, листы справочника, разделы и действия». */
@@ -93,7 +77,7 @@ export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, h
       {!searching && help && <p className="ds-sub cmd-note">{help}</p>}
       {note && <p className="ds-sub cmd-note">{note}</p>}
       {fixedQuery && <p className="ds-sub cmd-note">Показаны результаты по запросу «{fixedQuery}»</p>}
-      {empty && !note && <div className="cmd-empty"><PaperEmpty>Ничего не нашлось</PaperEmpty></div>}
+      {empty && !note && <div className="cmd-empty"><PaperEmpty>{emptyText}</PaperEmpty></div>}
       {empty && searching && help && <p className="ds-sub cmd-note">Здесь ищутся: {help.toLowerCase()}</p>}
       {chips}
       <div id={CMD_LIST_ID} role="listbox" aria-label="Результаты поиска">

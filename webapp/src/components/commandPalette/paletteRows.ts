@@ -1,32 +1,35 @@
 // Строки общего поиска (палитра ⌘K, CommandPalette.tsx): чистая сборка из клиентов, разделов, листов
 // «Справочника» и действий. Каждая строка — в группе с подписью. Пустой запрос — обзор: первые клиенты,
 // разделы, действия. Запрос — вес строки (shared/src/search/rankRows.ts): внутри группы по убыванию
-// веса, группы — по лучшему весу, при равенстве — в порядке GROUP_ORDER. Листы справочника ищет
-// движок самого справочника (guideRows.ts) и только в кабинете терапевта. Без запроса первой группой —
-// «Недавнее» (recentRows.ts).
+// веса, группы — по лучшему весу, при равенстве — в порядке GROUP_ORDER. Только в кабинете терапевта:
+// листы справочника (guideRows.ts), вкладки карточки клиента (clientTabRows.ts), задания из справочника
+// (taskRows.ts) и действия кабинета (cabinetActionRows.ts); шаг «Кому дать задание?» — одни клиенты
+// (clientRows.ts). Без запроса первой группой — «Недавнее» (recentRows.ts).
 import type { Tr } from '../../../../shared/src/needs/types';
+import type { CatalogTask } from '../../../../shared/src/tasks/catalog/taskCatalog';
 import { buildPlusActions, type QuickActionId } from '../../../../shared/src/quickActions/quickActions';
-import { isActiveToday } from '../../../../shared/src/therapy/clientSheetHelpers';
-import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import { hasLatin, toRussianLayout } from '../../../../shared/src/search/keyboardLayout';
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
 import type { TherapyClientSummary, UserId } from '../../api';
-import { clientHue } from '../../lib/tone';
 import type { Reference } from '../../sections/guide/guideReferenceModel';
 import type { ReferenceBody } from '../../sections/guide/guideReferenceBody';
 import type { GuideSheetTarget } from '../../sections/guide/guideSheetRoute';
-import { clientStatus } from '../therapist/rosterOrder';
 import { SECTION_LOOK, THERAPIST_NAV } from '../appShell/navLook';
 import type { Section } from '../appShell/navigation';
-import type { CmdRow } from '../CommandPaletteList';
 import { quickActionSign } from '../quickActionSign';
+import { cabinetActionRows } from './cabinetActionRows';
+import { ASSIGN_GROUP, CLIENTS_GROUP, assigneeRows, clientRows, clientsPreview } from './clientRows';
+import { CLIENT_TAB_GROUP, allClientTabRows, clientTabRows } from './clientTabRows';
+import type { CmdRow } from './cmdRow';
 import { GUIDE_GROUP, allGuideRows, guideRows } from './guideRows';
 import { RECENT_GROUP, recentRows } from './recentRows';
+import { TASK_GROUP, allTaskRows, taskRows } from './taskRows';
 
-export const GROUP = { recent: RECENT_GROUP, clients: 'Клиенты', sections: 'Разделы', guide: GUIDE_GROUP, actions: 'Действия' } as const;
-const GROUP_ORDER: string[] = [GROUP.clients, GROUP.sections, GROUP.guide, GROUP.actions];
-/** Сколько клиентов видно без запроса. */
-export const CLIENTS_SHOWN = 5;
+export const GROUP = {
+  recent: RECENT_GROUP, clients: CLIENTS_GROUP, clientTabs: CLIENT_TAB_GROUP, sections: 'Разделы', guide: GUIDE_GROUP,
+  tasks: TASK_GROUP, actions: 'Действия', assign: ASSIGN_GROUP,
+} as const;
+const GROUP_ORDER: string[] = [GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.guide, GROUP.tasks, GROUP.actions];
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'today', label: 'Сегодня', sub: 'Главная', hint: '⌘ 1' },
@@ -37,7 +40,8 @@ const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
 ];
 
-export interface PaletteGuide { ref: Reference; body: ReferenceBody }
+/** `tasks` — каталог заданий «Из справочника» (taskCatalog.ts). */
+export interface PaletteGuide { ref: Reference; body: ReferenceBody; tasks: CatalogTask[] }
 
 export interface PaletteInput {
   query: string;
@@ -53,9 +57,15 @@ export interface PaletteInput {
   guide: PaletteGuide | null;
   /** Ключи недавно открытых строк, свежие первыми (paletteRecent.ts). */
   recent: string[];
+  /** Второй шаг «Кому дать задание?»: в списке только клиенты; catalogId — выбранное задание справочника. */
+  assign: { catalogId: string | null } | null;
   run: {
     section: (id: Section) => void;
     path: (to: string) => void;
+    pickAssignee: (catalogId: string | null) => void;
+    assign: (clientId: UserId, catalogId: string | null) => void;
+    addClient: () => void;
+    toggleScreenShare: () => void;
     client: (id: UserId) => void;
     toggleMode: () => void;
     quick: (id: QuickActionId) => void;
@@ -63,21 +73,11 @@ export interface PaletteInput {
   };
 }
 
-function clientRows({ clients, run }: PaletteInput): CmdRow[] {
-  return clients.map((c) => ({
-    key: `client:${c.telegramId}`, kind: 'client', group: GROUP.clients, label: clientDisplayName(c),
-    sub: isActiveToday(c) ? 'Активность сегодня' : clientStatus(c).label,
-    hint: 'Открыть карточку',
-    mark: { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) },
-    search: clientDisplayName(c),
-    action: () => run.client(c.telegramId),
-  }));
-}
-
 function sectionRows({ therapistMode, run }: PaletteInput): CmdRow[] {
   if (therapistMode) {
     return Object.values(THERAPIST_NAV).map((n) => ({
-      key: `section:${n.to}`, kind: 'section', group: GROUP.sections, label: n.label, mark: { sign: n.sign }, search: n.label,
+      key: `section:${n.to}`, kind: 'section', group: GROUP.sections, label: n.label, mark: { sign: n.sign },
+      search: n === THERAPIST_NAV.tasks ? `${n.label} доска задания клиентов` : n.label,
       action: () => run.path(n.to),
     }));
   }
@@ -89,7 +89,8 @@ function sectionRows({ therapistMode, run }: PaletteInput): CmdRow[] {
 }
 
 /** Переключатель режима — в «Действиях»; быстрые действия клиента — группами реестра, при запросе — там же. */
-function actionRows({ therapist, therapistMode, tr, run, query }: PaletteInput): CmdRow[] {
+function actionRows(input: PaletteInput): CmdRow[] {
+  const { therapist, therapistMode, tr, run, query } = input;
   const toggle = therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в кабинет терапевта';
   const toggleSub = therapistMode ? 'Клиентский вид' : 'Кабинет';
   const searching = query.trim() !== '';
@@ -98,6 +99,7 @@ function actionRows({ therapist, therapistMode, tr, run, query }: PaletteInput):
       key: 'action:toggle-mode', kind: 'action' as const, group: GROUP.actions, label: toggle, sub: toggleSub, mark: { sign: 'cluster' as const },
       search: `${toggle} ${toggleSub}`, action: run.toggleMode,
     }] : []),
+    ...(therapist && therapistMode ? cabinetActionRows(input, GROUP.actions) : []),
     ...(therapistMode ? [] : buildPlusActions(tr).flatMap((g) => g.actions.map((a): CmdRow => ({
       key: `action:${a.id}`, kind: 'action', group: searching ? GROUP.actions : g.title, label: a.label, sub: a.sub, mark: { sign: quickActionSign(a.id) },
       search: `${a.label} ${g.title} ${a.sub}`, action: () => run.quick(a.id),
@@ -105,28 +107,20 @@ function actionRows({ therapist, therapistMode, tr, run, query }: PaletteInput):
   ];
 }
 
-/** Первые клиенты и приглушённая строка «Ещё N» под последним из них. */
-function clientsPreview(rows: CmdRow[], tr: Tr): CmdRow[] {
-  const rest = rows.length - CLIENTS_SHOWN;
-  if (rest <= 0) return rows;
-  const shown = rows.slice(0, CLIENTS_SHOWN);
-  shown[CLIENTS_SHOWN - 1] = { ...shown[CLIENTS_SHOWN - 1], after: tr(`Ещё ${rest} — начни вводить имя`, `Ещё ${rest} — начните вводить имя`) };
-  return shown;
-}
-
 export function buildPaletteRows(input: PaletteInput): CmdRow[] {
   const { query, therapist, therapistMode, screenShare, tr } = input;
   const clients = therapist && !screenShare ? clientRows(input) : [];
   const cabinet = therapist && therapistMode;
+  if (cabinet && input.assign) return assigneeRows(input, input.assign.catalogId);
   const rows = [...clients, ...sectionRows(input), ...actionRows(input)];
   if (query.trim() === '') {
-    const recent = recentRows(input.recent, cabinet ? [...rows, ...allGuideRows(input)] : rows);
+    const recent = recentRows(input.recent, cabinet ? [...rows, ...allGuideRows(input), ...allClientTabRows(input), ...allTaskRows(input)] : rows);
     return [...recent, ...clientsPreview(clients, tr), ...rows.slice(clients.length)];
   }
   const scored = rows
     .map((row) => ({ row, score: rowScore(row.label, row.search, query) }))
     .filter((r) => r.score > ROW_SCORE.none);
-  if (cabinet) scored.push(...guideRows(input));
+  if (cabinet) scored.push(...guideRows(input), ...clientTabRows(input), ...taskRows(input));
   const best = new Map<string, number>();
   for (const { row, score } of scored) best.set(row.group, Math.max(best.get(row.group) ?? 0, score));
   const order = (group: string) => GROUP_ORDER.indexOf(group);
@@ -143,20 +137,4 @@ export function searchPalette(input: PaletteInput): { rows: CmdRow[]; query: str
   if (rows.length > 0 || query.trim() === '' || !hasLatin(query) || fixed === query) return { rows, query, layoutFixed: false };
   const fixedRows = buildPaletteRows({ ...input, query: fixed });
   return fixedRows.length > 0 ? { rows: fixedRows, query: fixed, layoutFixed: true } : { rows, query, layoutFixed: false };
-}
-
-/** Примеры запросов из настоящих названий листов: первая схема, первый режим, первая техника. */
-export function paletteExamples(guide: PaletteGuide | null): string[] {
-  if (!guide) return [];
-  return [guide.ref.schemas, guide.ref.modes, guide.ref.techniques].flatMap((groups) => groups[0]?.items[0]?.name ?? []);
-}
-
-/** Строка «что ищется»: под полем при пустом запросе и в «Ничего не нашлось». */
-export function paletteHelp({ therapist, therapistMode, screenShare }: Pick<PaletteInput, 'therapist' | 'therapistMode' | 'screenShare'>): string {
-  const parts = [
-    therapist && !screenShare && 'клиенты',
-    therapist && therapistMode && 'листы справочника',
-    'разделы и действия',
-  ].filter(Boolean).join(', ');
-  return parts[0].toUpperCase() + parts.slice(1);
 }

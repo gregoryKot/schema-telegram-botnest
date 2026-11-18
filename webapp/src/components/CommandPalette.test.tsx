@@ -110,8 +110,8 @@ describe('CommandPalette — подпись поля поиска', () => {
 
   it('в кабинете терапевта — с листами справочника; под полем — что ищется', () => {
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
-    expect(screen.getByPlaceholderText('Клиент, лист справочника, раздел…')).toBeTruthy();
-    expect(screen.getByText('Клиенты, листы справочника, разделы и действия')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Клиент, вкладка, задание, лист справочника…')).toBeTruthy();
+    expect(screen.getByText('Клиенты и их вкладки, задания, листы справочника, разделы и действия')).toBeTruthy();
   });
 
   it('клиенту под полем — «Разделы и действия»; ввод убирает подсказку', () => {
@@ -223,12 +223,12 @@ describe('CommandPalette — клиенты терапевта', () => {
     ]);
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
     await screen.findByText('Семён');
-    const search = screen.getByPlaceholderText('Клиент, лист справочника, раздел…');
+    const search = screen.getByPlaceholderText('Клиент, вкладка, задание, лист справочника…');
     fireEvent.change(search, { target: { value: 'семен' } });
-    expect(screen.getByText('Семён')).toBeTruthy();
+    expect(screen.getAllByText('Семён')[0]).toBeTruthy(); // клиент и следом вкладки его карточки
     expect(screen.queryByText('Алена')).toBeNull();
     fireEvent.change(search, { target: { value: 'Алёна' } });
-    expect(screen.getByText('Алена')).toBeTruthy();
+    expect(screen.getAllByText('Алена')[0]).toBeTruthy();
     expect(screen.queryByText('Семён')).toBeNull();
   });
 

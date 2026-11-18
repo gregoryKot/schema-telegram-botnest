@@ -1,16 +1,15 @@
 import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import type { QuickActionId } from '../../../shared/src/quickActions/quickActions';
-import { trackSearchResultOpen } from '../../../shared/src/share/searchAnalytics';
 import type { TherapyClientSummary, UserId } from '../api';
 import { CmdList, type CmdRow } from './CommandPaletteList';
 import { CMD_LIST_ID, cmdOptionId } from './commandPalette/listIds';
-import { searchPalette, paletteExamples, paletteHelp, GROUP } from './commandPalette/paletteRows';
-import { pushRecent, readRecent } from './commandPalette/paletteRecent';
+import { searchPalette } from './commandPalette/paletteRows';
+import { readRecent } from './commandPalette/paletteRecent';
+import { paletteExamples, paletteHelp, palettePlaceholder } from './commandPalette/paletteTexts';
+import { runPaletteRow, usePaletteActions } from './commandPalette/usePaletteActions';
 import { usePaletteGuide } from './commandPalette/usePaletteGuide';
-import { GUIDE_PATH, guideSheetState } from '../sections/guide/guideSheetRoute';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useVisualViewportHeight } from '../hooks/useVisualViewportHeight';
@@ -29,16 +28,11 @@ interface Props {
 }
 
 /**
- * Общий поиск ⌘K: клиенты, разделы, листы «Справочника» (кабинет терапевта) и действия. Строки собирает
- * commandPalette/paletteRows.ts; выбор листа ведёт на /cabinet/guide с состоянием маршрута, лист открывает
- * справочник (guideSheetRoute.ts). Открытие результата — событие search_result_open без текста запроса
- * и ключ строки в «Недавнее» (paletteRecent.ts). На телефоне панель — во весь видимый экран над клавиатурой.
+ * Общий поиск ⌘K: клиенты и вкладки их карточек, разделы, листы «Справочника», задания (кабинет терапевта)
+ * и действия. Строки собирает commandPalette/paletteRows.ts, действия строк и второй шаг «Кому дать
+ * задание?» — usePaletteActions.ts: событие search_result_open без текста запроса и ключ строки в
+ * «Недавнее» (paletteRecent.ts). На телефоне панель — во весь видимый экран над клавиатурой.
  */
-function placeholder(therapist: boolean, cabinet: boolean, screenShare: boolean): string {
-  if (cabinet) return screenShare ? 'Лист справочника, раздел…' : 'Клиент, лист справочника, раздел…';
-  return therapist && !screenShare ? 'Клиент, страница, действие…' : 'Найти страницу или действие…';
-}
-
 /** Высота и сдвиг видимой области — переменными для телефонной раскладки (command-palette.css). */
 function viewportVars(viewport: { height: number; offsetTop: number } | null): CSSProperties | undefined {
   if (!viewport) return undefined;
@@ -47,7 +41,6 @@ function viewportVars(viewport: { height: number; offsetTop: number } | null): C
 
 export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, onToggleMode, onOpenClient, onQuickAction }: Props) {
   const tr = useTr();
-  const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
@@ -77,27 +70,16 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const therapist = userRole === 'THERAPIST';
   const cabinet = therapist && !!therapistMode;
   const guide = usePaletteGuide(cabinet, tr);
-  const found = useMemo(() => searchPalette({
-    query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, guide, recent,
-    run: {
-      section: onNavigate,
-      path: (to) => { navigate(to); },
-      client: (id) => onOpenClient?.(id),
-      toggleMode: () => onToggleMode?.(),
-      quick: (id) => onQuickAction?.(id),
-      guideSheet: (target) => { navigate(GUIDE_PATH, { state: guideSheetState(target) }); },
-    },
-  }), [q, tr, therapist, therapistMode, screenShare, clients, guide, recent, navigate, onNavigate, onOpenClient, onToggleMode, onQuickAction]);
+  const { assign, run: actions, leaveAssign } = usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, guide, setQuery: setQ, inputRef });
+  const mode = { therapist, therapistMode: cabinet, screenShare };
+  const found = useMemo(
+    () => searchPalette({ query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, guide, recent, assign, run: actions }),
+    [q, tr, therapist, therapistMode, screenShare, clients, guide, recent, assign, actions],
+  );
   const rows = found.rows;
   const examples = useMemo(() => paletteExamples(guide), [guide]);
   const typed = q.trim() !== '';
-  // Действие строки — после снятия записи палитры; в событие уходит вид строки, не запрос.
-  const run = (row: CmdRow | undefined) => {
-    if (!row) return;
-    trackSearchResultOpen(api, row.kind, typed, row.group === GROUP.recent);
-    pushRecent(row.key);
-    goBack(row.action);
-  };
+  const run = (row: CmdRow | undefined) => runPaletteRow(row, typed, goBack);
   const runRef = useRef(run);
   useEffect(() => { runRef.current = run; });
 
@@ -118,10 +100,12 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
       if (e.key === 'Home' && !typed) move(e, Math.min(last, 0));
       if (e.key === 'End' && !typed)  move(e, last); // набран запрос — Home и End остаются полю
       if (e.key === 'Enter')     { e.preventDefault(); runRef.current(rows[sel]); }
+      if (e.key === 'Backspace' && assign && q === '') leaveAssign(); // пустое поле второго шага — назад к поиску
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [rows, sel, typed]);
+    // На перехвате: панель гасит всплытие Enter (чтобы не закрыть бэкдроп), до window на всплытии он не доходит.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [rows, sel, typed, assign, q, leaveAssign]);
 
   return (
     <div className="cmd-backdrop" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть" style={viewportVars(viewport)}
@@ -145,19 +129,23 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder={placeholder(therapist, cabinet, screenShare)}
+            placeholder={palettePlaceholder(mode, !!assign)}
             role="combobox" aria-label="Поиск" aria-autocomplete="list" aria-controls={CMD_LIST_ID}
             aria-expanded={rows.length > 0} aria-activedescendant={rows[sel] ? cmdOptionId(sel) : undefined}
           />
           {/* Телефон: бэкдропа не видно — «Отмена» закрывает палитру; на компьютере кнопка скрыта стилем. */}
-          <button type="button" className="ds-link cmd-cancel" onClick={() => goBack()}>Отмена</button>
+          <button type="button" className="ds-link cmd-cancel" onClick={() => (assign ? leaveAssign() : goBack())}>{assign ? 'Назад' : 'Отмена'}</button>
         </div>
         {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не нашлось» под ней. */}
-        <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={run} searching={typed}
-                 highlight={typed ? found.query : ''} fixedQuery={found.layoutFixed ? found.query.trim() : undefined}
-                 help={paletteHelp({ therapist, therapistMode: cabinet, screenShare })}
-                 examples={examples} onExample={(example) => { setQ(example); inputRef.current?.focus(); }}
-                 note={screenShare && therapist ? 'Клиенты скрыты: включён показ экрана' : undefined} />
+        {assign
+          ? <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={run} searching={typed} highlight={typed ? found.query : ''}
+                     help={typed ? undefined : 'Откроется лист нового задания в карточке клиента'}
+                     emptyText="Клиент с таким именем не нашёлся" />
+          : <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={run} searching={typed}
+                     highlight={typed ? found.query : ''} fixedQuery={found.layoutFixed ? found.query.trim() : undefined}
+                     help={paletteHelp(mode)}
+                     examples={examples} onExample={(example) => { setQ(example); inputRef.current?.focus(); }}
+                     note={screenShare && therapist ? 'Клиенты скрыты: включён показ экрана' : undefined} />}
       </div>
     </div>
   );

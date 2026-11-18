@@ -16,7 +16,7 @@ import { ClientConceptTab } from './therapist/ClientConceptTab';
 import { ClientPlanTab } from './therapist/plan/ClientPlanTab';
 import { ClientSessionsTab } from './therapist/ClientSessionsTab';
 import { ClientTasksTab } from './therapist/ClientTasksTab';
-import type { AssignPreset } from './therapist/assignTemplates';
+import { useCabinetRouteActions } from './therapist/cabinetRouteActions';
 import { CONCEPT_SHEET_Z } from './therapist/ConceptFullscreenSheet';
 import { ClientCardFallback } from './therapist/ClientCardFallback';
 import { clientCardState } from './therapist/clientCardState';
@@ -47,7 +47,6 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   const board = useTasksBoard();
   const [animKey, setAnimKey] = useState(0);
   const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
-  const [assignPreset, setAssignPreset] = useState<AssignPreset | undefined>(undefined); // шаблон «Назначить из шаблона»
 
   function switchView(v: 'list' | 'client') {
     setAnimKey(k => k + 1);
@@ -105,8 +104,8 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
     ysqSchemaIds, selfSchemaIds,
     handleRequestYsq, handleExport,
   } = detail;
-  // «Назначить из шаблона» и «Дать заданием» подсказок — один лист; с концептуализации он встаёт над её листами.
-  const openAssign = (preset?: AssignPreset) => { setAssignPreset(preset); setShowAssign(true); };
+  // «Назначить из шаблона», «Дать заданием» подсказок и общий поиск — один лист; с концептуализации он встаёт над её листами.
+  const { assignPreset, setAssignPreset, openAssign } = useCabinetRouteActions({ detail, openClientRef, addClient });
   // «журнал →» в подсказках: «Задания» открываются на журнале техник «На сессиях» (прокрутка — один раз).
   const journalFocus = useRef(false);
   const openJournal = () => { journalFocus.current = true; detail.setClientTab('tasks'); };
