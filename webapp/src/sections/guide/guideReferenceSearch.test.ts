@@ -1,5 +1,5 @@
 // Поиск «Справочника» по текстам листов: слово из текста находит лист и показывает кусок абзаца,
-// название по-прежнему важнее; сверка «собрал тексты → нашёл по ним» идёт через buildReferenceBody.
+// название весит больше текста; сверка «собрал тексты → нашёл по ним» идёт через buildReferenceBody.
 import { describe, it, expect } from 'vitest';
 import { buildReference, type ReferenceTexts } from './guideReferenceModel';
 import { buildReferenceBody, snippet } from './guideReferenceBody';
@@ -47,10 +47,19 @@ describe('поиск по текстам листов', () => {
     expect(hit.sub).toBeUndefined();
   });
 
-  it('несколько слов — нужны все: часть в названии, часть в тексте', () => {
-    expect(ids('ребёнок гнев')).toEqual(['angry_child']);
+  it('несколько слов: лист, где нашлись оба, — первым; где одно — ниже; ни одного — нет в выдаче', () => {
+    expect(ids('ребёнок гнев')[0]).toBe('angry_child');
     expect(only('ребёнок гнев').sub).toBe('Гнев на то, что потребность не услышана.');
-    expect(ids('ребёнок щщщщ')).toEqual([]);
+    expect(ids('ребёнок гнев')).toContain('vulnerable_child');
+    expect(ids('ребёнок щщщщ').slice(0, 2)).toEqual(['vulnerable_child', 'angry_child']);
+    expect(ids('щщщщ')).toEqual([]);
+  });
+
+  it('падеж не важен ни в названии, ни в тексте; служебные слова не ищутся', () => {
+    expect(ids('сердитого ребёнка')[0]).toBe('angry_child');
+    expect(ids('тоска')).toEqual(['vulnerable_child']);
+    expect(ids('как работать с яростью')).toEqual(['angry_child']);
+    expect(ids('как работать со схемой')).toEqual([]);
   });
 
   it('слово короче трёх букв в тексте не ищется; идентификаторы — не текст', () => {
