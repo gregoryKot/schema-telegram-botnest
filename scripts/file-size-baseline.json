@@ -1273,7 +1273,7 @@
   "src/bot/guide-reference-metrics.service.ts": 45,
   "src/bot/guide-reference-metrics.types.ts": 9,
   "src/bot/healthy-adult.attempts.ts": 47,
-  "src/bot/healthy-adult.data.ts": 148,
+  "src/bot/healthy-adult.data.ts": 164,
   "src/bot/healthy-adult.dto.ts": 50,
   "src/bot/healthy-adult.import.ts": 130,
   "src/bot/healthy-adult.pool-alert.ts": 47,
