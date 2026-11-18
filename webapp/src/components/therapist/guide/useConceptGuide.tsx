@@ -8,7 +8,7 @@ import type { SheetBack } from '../ConceptFullscreenSheet';
 import type { AssignPreset } from '../assignTemplates';
 import { PlanAddSheet } from '../plan/PlanAddSheet';
 import { guideAssignPreset } from './guideAssign';
-import { planDraft, type PlanDraft } from './guidePlan';
+import { betweenRubricSeed, planDraft, sessionSeed, type PlanDraft } from './guidePlan';
 import { guideJournal, type GuideGraph } from './guideJournal';
 import { ConceptGuideSheets, type GuideOpen } from './ConceptGuideSheets';
 
@@ -39,8 +39,8 @@ const CONCEPT_TRACK: GuideOpenTrack = {
  * без него ссылки нет. `openMark` — строка журнала техник: лист техники с
  * разделом и днём отметки; `anyOpen` — открыт ли какой-то лист. События — concept_guide_*
  * (src/analytics/concept-events.constants.ts), без меты; «Справочник»
- * передаёт свои (`track`), чтобы открытия не смешивались. `plan` — кнопки «В план» у рубрик листа и лист
- * выбора частей поверх него: с `clientId` — в план этого клиента, без — терапевт выбирает клиентов.
+ * передаёт свои (`track`), чтобы открытия не смешивались. `plan` — кнопки «В план» у рубрик листа и плашки, лист
+ * выбора частей поверх: с `clientId` — в план этого клиента, без — терапевт выбирает клиентов.
  */
 export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under, plan }: {
   onAssign?: (preset: AssignPreset) => void;
@@ -76,6 +76,8 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
       api.trackEvent('concept_guide_assign');
       onAssign(guideAssignPreset(item));
     }),
+    onPlanSession: plan && ((t, from) => setDraft(planDraft(sessionSeed(t), from))),
+    onPlanBetween: plan && ((b, from) => setDraft(planDraft(betweenRubricSeed(b), from))),
     tasks,
     onOpenJournal: onOpenJournal && (() => {
       api.trackEvent('concept_guide_journal_open');
@@ -88,8 +90,7 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
       <ConceptGuideSheets
         open={open} actions={actions} journal={journal} backRefs={backRefs}
         onPlan={plan && ((seed, from) => setDraft(planDraft(seed, from)))}
-        onCloseSheet={() => setOpen(CLOSED)}
-        onCloseTechnique={() => setOpen((o) => ({ ...o, technique: null }))}
+        onCloseSheet={() => setOpen(CLOSED)} onCloseTechnique={() => setOpen((o) => ({ ...o, technique: null }))}
       />
       {plan && draft && <PlanAddSheet draft={draft} clientId={plan.clientId} onAdded={plan.onAdded} onClose={() => setDraft(null)} />}
     </>
@@ -99,7 +100,6 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
     api.trackEvent('concept_guide_journal_entry');
     setOpen({ sheet: null, technique: { id: techniqueId as TechniqueId, from, day } });
   };
-  // Открыт ли лист: журнал держит листы, пока открыт лист снятой последней отметки.
-  const anyOpen = open.sheet !== null || open.technique !== null;
+  const anyOpen = open.sheet !== null || open.technique !== null; // журнал держит листы, пока открыт лист снятой отметки
   return { actions, sheets, openMark, anyOpen };
 }
