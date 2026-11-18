@@ -10,7 +10,7 @@ import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
 import type { ArticleDto } from './article.dto';
 
 // Bump when built-in article content changes: instances refresh seeds on start.
-const SEED_VERSION = '19';
+const SEED_VERSION = '20';
 const SEED_VERSION_KEY = 'articlesSeedVersion';
 
 /** CRUD for blog articles. Public reads, admin-only writes. */
