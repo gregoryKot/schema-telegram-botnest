@@ -33,7 +33,7 @@ export const SCHEMA_TECHNIQUE_WORK: Record<
     ],
   },
   safe_place_imagery: {
-    name: 'Безопасное место',
+    name: 'Безопасное место в воображении',
     fields: [
       ['place', 'Какое место'],
       ['senses', 'Что там видно, слышно, чувствуется'],
