@@ -1,11 +1,10 @@
-// Подписи под ответами шкалы трекера («Совсем нет», «Наполовину», «Полностью») меняются
+// Подписи под пятью ответами шкалы трекера меняются
 // с каждым открытием вопроса: по одной строке из пула потребности (ротация — exampleRotation).
 import { useAddressForm, type AddressForm } from '../utils/addressForm';
 import { useExampleWindow } from './exampleRotation';
-import { wordAnchorDescriptions } from './ratingWords';
 import { glue } from '../utils/typo';
 import type { NeedId, Tr } from './types';
-import type { AnchorPools } from './content/anchors/types';
+import type { AnchorPools, AnchorStep } from './content/anchors/types';
 import { attachmentAnchors } from './content/anchors/attachment';
 import { autonomyAnchors } from './content/anchors/autonomy';
 import { expressionAnchors } from './content/anchors/expression';
@@ -29,16 +28,19 @@ export function getAnchorPools(form: AddressForm): Record<NeedId, AnchorPools> {
 }
 
 /**
- * Подписи пяти ответов шкалы, склеенные (glue): якорные — из пула, выбраны раз на открытие экрана.
+ * Подписи пяти ответов шкалы, склеенные (glue): по одной из пула ступени, выбраны раз на открытие экрана.
  * Незнакомая потребность — без подписей.
  */
 export function useAnchorSublabels(needId: NeedId): (string | undefined)[] {
   const pools: AnchorPools | undefined =
     getAnchorPools(useAddressForm())[needId];
-  const [low] = useExampleWindow(`anchor:${needId}:low`, pools?.low, 1);
-  const [mid] = useExampleWindow(`anchor:${needId}:mid`, pools?.mid, 1);
-  const [high] = useExampleWindow(`anchor:${needId}:high`, pools?.high, 1);
-  return wordAnchorDescriptions(
-    [low, mid, high].filter(Boolean).map((s) => ({ description: glue(s) })),
-  );
+  const key = (step: AnchorStep) => `anchor:${needId}:${step}`;
+  const picked = [
+    useExampleWindow(key('low'), pools?.low, 1),
+    useExampleWindow(key('little'), pools?.little, 1),
+    useExampleWindow(key('mid'), pools?.mid, 1),
+    useExampleWindow(key('mostly'), pools?.mostly, 1),
+    useExampleWindow(key('high'), pools?.high, 1),
+  ];
+  return picked.map(([s]) => (s ? glue(s) : undefined));
 }
