@@ -165,6 +165,13 @@ describe('карточка ссылки: продукт в файле, визи�
     expect(titleOf(practicePreviewHtml(source))).toBe(PRACTICE_PREVIEW.title);
   });
 
+  it('экран загрузки со знаком продукта есть в файле, у визитки вырезан', () => {
+    expect(source).toContain('<div id="boot">');
+    const page = practicePreviewHtml(source);
+    expect(page).not.toContain('id="boot"');
+    expect(page).toContain('<div id="root"></div>');
+  });
+
   it('визитка подменяет каждый тег карточки (тег из файла не пропал)', () => {
     const swapped = metaIn(practicePreviewHtml(source));
     for (const [attr, key, field] of CARD) {
