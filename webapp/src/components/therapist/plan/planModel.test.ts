@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
-import { canAssign, cleanText, groupPlan, isEmptyPlan, nextStatus, planCounts, statusLabel } from './planModel';
+import { canAssign, cleanText, groupPlan, isEmptyPlan, movePlanItem, nextStatus, planCounts, statusLabel } from './planModel';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
@@ -63,5 +63,36 @@ describe('действия пункта', () => {
   it('пустой текст не сохраняется, края обрезаются', () => {
     expect(cleanText('  \n ')).toBeNull();
     expect(cleanText('  стул  ')).toBe('стул');
+  });
+});
+
+describe('movePlanItem', () => {
+  // Порядок показа: between [4, 2], custom [1, 9 (незнакомая рубрика), 5].
+  const plan = [
+    item({ id: 1, rubric: 'custom', position: 0 }),
+    item({ id: 2, rubric: 'between', position: 3 }),
+    item({ id: 4, rubric: 'between', position: 1 }),
+    item({ id: 9, rubric: 'future' as PlanItem['rubric'], position: 4 }),
+    item({ id: 5, rubric: 'custom', position: 5 }),
+  ];
+  const ids = (list: PlanItem[] | null) => list?.map((i) => i.id);
+
+  it('меняет пункт с соседом своей рубрики; список полный, position — 0..n-1 по порядку показа', () => {
+    const next = movePlanItem(plan, 1, 1);
+    expect(ids(next)).toEqual([4, 2, 9, 1, 5]);
+    expect(next?.map((i) => i.position)).toEqual([0, 1, 2, 3, 4]);
+    expect(ids(movePlanItem(plan, 2, -1))).toEqual([2, 4, 1, 9, 5]);
+  });
+
+  it('пункты других рубрик сохраняют взаимный порядок', () => {
+    const next = movePlanItem(plan, 5, -1) ?? [];
+    expect(groupPlan(next).map((g) => g.items.map((i) => i.id))).toEqual([[4, 2], [1, 5, 9]]);
+  });
+
+  it('край рубрики и незнакомый id — null', () => {
+    expect(movePlanItem(plan, 4, -1)).toBeNull();
+    expect(movePlanItem(plan, 2, 1)).toBeNull(); // ниже — уже другая рубрика
+    expect(movePlanItem(plan, 5, 1)).toBeNull();
+    expect(movePlanItem(plan, 77, 1)).toBeNull();
   });
 });

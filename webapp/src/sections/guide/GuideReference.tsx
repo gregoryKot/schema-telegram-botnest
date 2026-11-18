@@ -37,7 +37,7 @@ export function GuideReference({ onRetry }: { onRetry: () => void }) {
  * Поиск по названиям и текстам листов, переключатель разделов (тот же ds-seg, что у списка
  * клиентов) и список. Пустой раздел в переключатель не попадает. Листы
  * режима, схемы и техники — те же, что в схеме случая (useConceptGuide), без
- * клиента: без «Дать заданием», отметок и истории.
+ * клиента: без «Дать заданием», отметок и истории; «В план» — с выбором клиентов.
  */
 function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const form = useAddressForm();
@@ -48,7 +48,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const [query, setQuery] = useState('');
   const [noteId, setNoteId] = useState<string | null>(null);
   const [schemaView, setSchemaView] = useState<SchemaView>('list');
-  const guide = useConceptGuide({ track: REFERENCE_TRACK });
+  const guide = useConceptGuide({ track: REFERENCE_TRACK, plan: {} }); // plan без клиента: лист «В план» даёт выбрать клиентов
   const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
   const body = useMemo(() => buildReferenceBody(texts, tr), [texts, tr]);
   const found = useMemo(() => searchReference(ref, query, body), [ref, query, body]);
