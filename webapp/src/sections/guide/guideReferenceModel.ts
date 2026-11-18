@@ -13,8 +13,9 @@ import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
 import { MODE_GROUPS } from '../../../../shared/src/schemaTherapy/content/modeGroups';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
 import { domainLook, modeGroupLook, type SheetLook, type SignKey } from '../../../../shared/src/theme/entityLook';
-import { modeGuideLook, practiceNoteLook, PRACTICE_HUE, schemaGuideLook, techniqueGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
+import { modeGuideLook, practiceNoteLook, PRACTICE_HUE, schemaGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
 import { mergeCoping } from './guideReferenceCoping';
+import { techniqueGroups } from './guideReferenceTechniques';
 
 export type ReferenceTab = 'modes' | 'schemas' | 'techniques' | 'practice';
 
@@ -89,13 +90,7 @@ export function buildReference(texts: ReferenceTexts, tr: Tr): Reference {
         .filter((s) => schemaIds.has(s.id))
         .map((s) => ({ kind: 'schema' as const, id: s.id, name: s.name, sign: schemaGuideLook(s.id)?.sign })),
     }))),
-    techniques: nonEmpty([{
-      key: 'techniques',
-      look: { hue: TECHNIQUES_HUE },
-      items: texts.buildTechniqueGuides(tr).map((t) => ({
-        kind: 'technique' as const, id: t.id, name: t.name, sub: t.summary, sign: techniqueGuideLook(t.id).sign,
-      })),
-    }]),
+    techniques: nonEmpty(techniqueGroups(texts.buildTechniqueGuides(tr))),
     practice: nonEmpty([{
       key: 'practice',
       look: { hue: PRACTICE_HUE },

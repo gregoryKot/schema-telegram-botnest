@@ -130,6 +130,16 @@ describe('TechniqueSheet', () => {
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
   });
 
+  it('техника из другого подхода: подпись подхода вместо «Техника» и раздел «В схема-терапии» после «Когда»', () => {
+    const t = { ...FIXTURE_TECHNIQUES[0], approach: 'ACT', pairsWith: 'Сочетается с работой с Критиками.' };
+    render(<MemoryRouter><TechniqueSheet technique={t} onClose={() => {}} /></MemoryRouter>);
+    const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
+    expect(within(dialog).getByText('Из другого подхода · ACT')).toBeTruthy();
+    expect(within(dialog).queryByText('Техника')).toBeNull();
+    expect(regions()).toEqual(['Когда', 'В схема-терапии', 'Как проводить', 'Источники']);
+    expect(within(screen.getByRole('region', { name: 'В схема-терапии' })).getByText(t.pairsWith)).toBeTruthy();
+  });
+
   it('переписанная техника: «Как это звучит» до шагов, пункты `more` первыми под «Подробнее»', () => {
     const t = { ...FIXTURE_TECHNIQUES[0], voice: ['Что самое маленькое?'], more: ['Срыв — повод разобраться'] };
     render(<MemoryRouter><TechniqueSheet technique={t} onClose={() => {}} /></MemoryRouter>);

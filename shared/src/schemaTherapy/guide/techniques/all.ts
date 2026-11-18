@@ -6,6 +6,13 @@ import { buildHomeworkTechniques } from './homework';
 import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
 import { buildFormulationTechniques } from './formulation';
+import { buildEvidenceWorkTechniques } from './evidenceWork';
+import { buildChildCareTechniques } from './childCare';
+import { buildBodyValuesTechniques } from './bodyValues';
+import { buildBorrowedCbtTechniques } from './borrowedCbt';
+import { buildBorrowedDbtTechniques } from './borrowedDbt';
+import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
+import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -16,4 +23,11 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildRelationshipTechniques,
   buildImageryMoreTechniques,
   buildFormulationTechniques,
+  buildEvidenceWorkTechniques,
+  buildChildCareTechniques,
+  buildBodyValuesTechniques,
+  buildBorrowedCbtTechniques,
+  buildBorrowedDbtTechniques,
+  buildBorrowedThirdWaveTechniques,
+  buildBorrowedTraumaTechniques,
 ];

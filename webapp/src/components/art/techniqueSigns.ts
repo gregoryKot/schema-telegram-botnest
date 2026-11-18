@@ -1,7 +1,7 @@
 // Знак листа техники. У первых 14 техник знак свой; техники, добавленные позже (#1366),
 // берут знак родственной техники или мотива — своих рисунков у них пока нет.
 import type {
-  CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  BorrowedTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -31,9 +31,32 @@ const SCHEMA_TECHNIQUE_SIGN: Record<SchemaTechniqueId, GuideSign> = {
   anger_expression: 'flare',
   mode_map: 'cluster',
   schema_diary: 'sheets',
+  positive_data_log: 'pebbles',
+  behavioral_experiment: 'pattern_steps',
+  transitional_objects: 'flashcard',
+  play_and_joy: 'together',
+  body_grounding: 'breath',
+  values_overview: 'horizon',
+  couple_mode_cycle: 'ribbon',
+};
+
+const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
+  behavioral_activation: 'pattern_steps',
+  socratic_dialogue: 'spotlight',
+  exposure: 'horizon',
+  chain_analysis: 'beads',
+  distress_tolerance: 'breath',
+  validation_levels: 'heart_frame',
+  defusion: 'pebbles',
+  compassionate_self: 'heart',
+  motivational_interviewing: 'scales',
+  window_of_tolerance: 'limits',
+  stop_rewind_explore: 'talk_past',
+  life_line: 'ribbon',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
+  ...BORROWED_TECHNIQUE_SIGN,
 };

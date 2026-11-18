@@ -108,14 +108,16 @@ describe('homeSeoMiddleware: всё прочее — дальше, без вло
 });
 
 describe('homeSeoHtml: шов с настоящим index.html', () => {
-  it('в webapp/index.html есть пустой #root — вкладывать есть куда', () => {
+  it('в webapp/index.html есть #root — лендинг встаёт на место экрана загрузки', () => {
     const source = readFileSync(
       join(__dirname, '..', '..', 'webapp', 'index.html'),
       'utf8',
     );
     const out = homeSeoHtml(source);
     expect(out).not.toBeNull();
+    expect(source).toContain('<div id="root"><div id="boot">');
     expect(out).toContain(`<div id="root">${buildHomeBody()}</div>`);
+    expect(out).not.toContain('id="boot"');
   });
 });
 

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import type { LandingText } from '../booking/landing-price';
+import { SPA_ROOT } from '../infra/spa-root';
 import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
 import { buildHomeBody } from './home-seo.render';
@@ -19,14 +20,12 @@ import { buildHomeBody } from './home-seo.render';
 // раз — после деплоя у страницы другие хеши бандла), ETag и 304 ставит
 // res.send Express по содержимому.
 
-const EMPTY_ROOT = '<div id="root"></div>';
-
-/** index.html с текстом лендинга в #root; null — файла нет или #root уже
- *  не пустой (сборка поменяла разметку — отдаём как есть, без вложения). */
+/** index.html с текстом лендинга в #root вместо экрана загрузки; null — файла нет или
+ *  в #root чужое (сборка поменяла разметку — отдаём как есть, без вложения). */
 export function homeSeoHtml(html: string | null): string | null {
-  if (!html?.includes(EMPTY_ROOT)) return null;
+  if (!html || !SPA_ROOT.test(html)) return null;
   return html.replace(
-    EMPTY_ROOT,
+    SPA_ROOT,
     () => `<div id="root">${buildHomeBody()}</div>`,
   );
 }

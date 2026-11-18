@@ -20,6 +20,15 @@
          Синхронно и раньше тегов сборки: Vite ставит их в конец <head>. -->
     <script src="/asset-recovery.js"></script>
 
+    <!-- Экран загрузки (#boot в #root): виден, пока не запустился бандл, первый рендер React его заменяет.
+         Проявляется через 0.3 с, чтобы быстрый старт не мигал; визитка вырезает блок (src/practice-preview.ts). -->
+    <style>
+      #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding-bottom: 8vh; opacity: 0; animation: boot-in 0.4s ease-out 0.3s forwards; font: 600 20px/1.2 'Literata', Georgia, serif; color: #4a433b; }
+      [data-theme='dark'] #boot { color: #eceae5; }
+      @keyframes boot-in { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { #boot { animation-duration: 0s; } }
+    </style>
+
     <!-- Address bar / status bar color (updates via JS after load) -->
     <meta name="theme-color" content="#f6f2eb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#14141a" media="(prefers-color-scheme: dark)" />
@@ -212,7 +221,14 @@
     <script src="/max-bridge.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="boot"><svg width="88" height="88" viewBox="0 0 512 512" aria-hidden="true">
+  <rect width="512" height="512" rx="112" fill="#f6f2eb"/>
+  <path d="M218 0 L330 0 L298 512 L186 512 Z" fill="#aab499"/>
+  <g transform="translate(256 256) scale(1.06) translate(-256 -256)">
+    <path d="M367.9 237.7 A124 124 0 1 1 224.2 154.7" fill="none" stroke="#6b8156" stroke-width="70" stroke-linecap="round"/>
+    <circle cx="238" cy="300" r="60" fill="#b06f4a"/>
+  </g>
+</svg><span>Всё по схеме</span></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
