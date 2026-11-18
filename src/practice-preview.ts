@@ -29,14 +29,15 @@ const PRACTICE_TAGS: readonly (readonly [string, string, string])[] = [
   ['name', 'twitter:image', PRACTICE_PREVIEW.image],
 ];
 
-/** index.html с карточкой визитки вместо карточки продукта. Ключ сверяется
- *  целиком (`og:image"`, не `og:image:alt`); тега нет — строка как есть,
- *  спек ловит это на настоящем index.html. */
+/** index.html визитки: её карточка вместо продуктовой (ключ целиком: `og:image"`, не `og:image:alt`),
+ *  без экрана загрузки продукта (`#boot`, внутри один свой `</div>`); тега нет — строка как есть. */
 export function practicePreviewHtml(html: string): string {
-  const titled = html.replace(
-    /<title>[^<]*<\/title>/,
-    `<title>${PRACTICE_PREVIEW.title}</title>`,
-  );
+  const titled = html
+    .replace(/<div id="boot">[\s\S]*?<\/div>/, '')
+    .replace(
+      /<title>[^<]*<\/title>/,
+      `<title>${PRACTICE_PREVIEW.title}</title>`,
+    );
   return PRACTICE_TAGS.reduce(
     (out, [attr, key, value]) =>
       out.replace(
