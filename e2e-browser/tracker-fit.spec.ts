@@ -14,6 +14,10 @@
 // Высоту и ширину считает только браузер (jsdom CSS не исполняет), поэтому
 // замер — здесь, на прод-сборке. Раскладка — webapp/src/styles/tracker-question.css.
 import { test, expect, type Page } from './support/test';
+import { getAnchorPools } from '../shared/src/needs/anchorPools';
+import { ANCHOR_STEPS } from '../shared/src/needs/content/anchors/types';
+import { NEED_ORDER } from '../shared/src/needs/types';
+import { glue } from '../shared/src/utils/typo';
 
 const PHONE = { width: 390, height: 844, fold: 830 };
 
@@ -147,6 +151,65 @@ for (const vp of [
         m.pill.right,
         `${q}: полоска текущей точки наезжает на «Пропустить»`,
       ).toBeLessThanOrEqual(m.skipText.left);
+      if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
+    }
+  });
+}
+
+// Подписи под ответами меняются с каждым открытием, поэтому один показ запас не доказывает:
+// в каждую строку ставим по очереди весь её пул и берём самую высокую. «Мало» и «В основном да»
+// обязаны уложиться в одну строку — на двух строках пятый ответ уходит под сгиб.
+for (const vp of [
+  { width: 390, height: 844, fold: PHONE.fold },
+  { width: 360, height: 640, fold: null },
+]) {
+  test(`подписи ответов ${vp.width}×${vp.height}: короткие — в одну строку${vp.fold ? `, худший набор из пулов выше ${vp.fold}` : ''}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    await openTracker(page);
+    const dots = page.locator('.tk2-overlay .tq-dot-hit');
+    for (let i = 0; i < NEED_ORDER.length; i++) {
+      await expect(dots.nth(i)).toHaveAttribute('aria-current', 'step');
+      const pools = getAnchorPools('ty')[NEED_ORDER[i]];
+      const m = await page.evaluate(
+        (lists) => {
+          const rows = [
+            ...document.querySelectorAll<HTMLElement>('.tk2-overlay .ns-word'),
+          ];
+          const gaps =
+            rows[4].getBoundingClientRect().bottom -
+            rows.reduce((sum, r) => sum + r.getBoundingClientRect().height, 0);
+          const wrapped: string[] = [];
+          let worst = gaps;
+          rows.forEach((row, k) => {
+            const sub = row.querySelector<HTMLElement>('.ns-word-sub')!;
+            const lineHeight = parseFloat(getComputedStyle(sub).lineHeight);
+            let tallest = 0;
+            for (const text of lists[k]) {
+              sub.textContent = text;
+              tallest = Math.max(tallest, row.getBoundingClientRect().height);
+              if (
+                k % 2 === 1 &&
+                sub.getBoundingClientRect().height > lineHeight * 1.5
+              )
+                wrapped.push(text);
+            }
+            worst += tallest;
+          });
+          return { wrapped, worst };
+        },
+        ANCHOR_STEPS.map((step) => pools[step].map(glue)),
+      );
+      expect(
+        m.wrapped,
+        `${NEED_ORDER[i]}: подпись не влезла в одну строку`,
+      ).toEqual([]);
+      if (vp.fold)
+        expect(
+          m.worst,
+          `${NEED_ORDER[i]}: худший набор подписей уводит пятый ответ под сгиб`,
+        ).toBeLessThanOrEqual(vp.fold);
       if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
     }
   });

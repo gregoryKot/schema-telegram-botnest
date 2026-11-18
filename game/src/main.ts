@@ -1,9 +1,5 @@
 import Phaser from 'phaser';
-import { BootScene } from './scenes/BootScene';
-import { StartScene } from './scenes/StartScene';
-import { IntroScene } from './scenes/IntroScene';
-import { TutorialScene } from './scenes/TutorialScene';
-import { GameScene } from './scenes/GameScene';
+import { SCENES } from './scenes';
 import { setupMenu } from './menu';
 import { initTouchControls } from './controls';
 import { initAnalytics } from './analytics';
@@ -32,7 +28,7 @@ const config: Phaser.Types.Core.GameConfig = {
     width: W,
     height: H,
   },
-  scene: [BootScene, StartScene, IntroScene, TutorialScene, GameScene],
+  scene: SCENES,
 };
 
 // Стартуем после загрузки пиксельного шрифта — иначе Phaser отрендерит
@@ -42,7 +38,7 @@ function start() {
   if (started) return;
   started = true;
   const game = new Phaser.Game(config);
-  (window as any).__game = game;
+  (window as unknown as { __game: Phaser.Game }).__game = game;
   setupMenu(game);
   initTouchControls();
   pauseInPortrait(game);
