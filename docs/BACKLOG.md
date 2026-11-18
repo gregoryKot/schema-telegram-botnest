@@ -169,7 +169,7 @@
 
 ## Сделано
 
-- ✅ **Карточка клиента: «Что делали» в итогах сессии** (#1330; PR #1332, #1367, PR3) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; ручка `GET /api/therapy/notes/:clientId/work`, журнал «На сессиях» и лист техники берут пункты из итогов; сводка «Что было сделано» на «Обзоре» (`shared/src/therapy/sessionWork/workSummary.ts`, `webapp/src/components/therapist/ClientWorkSummary.tsx`).
+- ✅ **Карточка клиента: «Что делали» в итогах сессии** (#1330; PR #1332, #1367, #1371) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; ручка `GET /api/therapy/notes/:clientId/work`, журнал «На сессиях» и лист техники берут пункты из итогов; сводка «Что было сделано» на «Обзоре» (`shared/src/therapy/sessionWork/workSummary.ts`, `webapp/src/components/therapist/ClientWorkSummary.tsx`).
 
 - ✅ **«Что делали»: живой спек чтения и записи `TherapistNote.work`** — «сохранил → нашёл» через HTTP и БД в `test/therapy-ownership-2.e2e-spec.ts` (#1330, PR2).
 
