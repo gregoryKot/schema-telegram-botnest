@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { exampleWindow, nextExampleStart, resetExampleRotation } from './exampleRotation';
+import {
+  exampleWindow,
+  nextExampleStart,
+  resetExampleRotation,
+} from './exampleRotation';
 import { NEED_ORDER, buildNeedData } from './needData';
 
 const pool = Array.from({ length: 20 }, (_, i) => `п${i}`);
@@ -17,9 +21,17 @@ describe('exampleRotation', () => {
     for (const count of [2, 4]) {
       for (const r of [0, 0.3, 0.5, 0.999]) {
         resetExampleRotation();
-        let prev = exampleWindow(pool, nextExampleStart('k', pool.length, count, () => r), count);
+        let prev = exampleWindow(
+          pool,
+          nextExampleStart('k', pool.length, count, () => r),
+          count,
+        );
         for (let i = 0; i < 50; i++) {
-          const cur = exampleWindow(pool, nextExampleStart('k', pool.length, count, () => (r + i * 0.37) % 1), count);
+          const cur = exampleWindow(
+            pool,
+            nextExampleStart('k', pool.length, count, () => (r + i * 0.37) % 1),
+            count,
+          );
           expect(cur.filter((x) => prev.includes(x))).toEqual([]);
           prev = cur;
         }
@@ -48,7 +60,9 @@ describe('exampleRotation', () => {
       expect(new Set(examples).size).toBe(examples.length);
       for (const ex of examples) {
         const vy = ex.includes('|') ? ex.split('|')[1] : ex;
-        expect(vy.replace(/«[^»]*»/g, '')).not.toMatch(/(^|[^а-яё])(ты|тебя|тебе|тобой|твой|твоя|твоё|твои)([^а-яё]|$)/i);
+        expect(vy.replace(/«[^»]*»/g, '')).not.toMatch(
+          /(^|[^а-яё])(ты|тебя|тебе|тобой|твой|твоя|твоё|твои)([^а-яё]|$)/i,
+        );
       }
     }
   });

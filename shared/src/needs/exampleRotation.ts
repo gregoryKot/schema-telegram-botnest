@@ -15,7 +15,8 @@ export function nextExampleStart(
   const prev = lastStart.get(key);
   const free = poolSize - 2 * count + 1; // сдвигов, при которых окна не пересекаются
   let start: number;
-  if (prev === undefined || prev >= poolSize) start = Math.floor(rand() * poolSize);
+  if (prev === undefined || prev >= poolSize)
+    start = Math.floor(rand() * poolSize);
   else if (free <= 0) start = (prev + count) % poolSize;
   else start = (prev + count + Math.floor(rand() * free)) % poolSize;
   lastStart.set(key, start);
@@ -23,14 +24,27 @@ export function nextExampleStart(
 }
 
 /** Окно из `count` примеров подряд, с переходом через конец пула. */
-export function exampleWindow<T>(pool: readonly T[], start: number, count: number): T[] {
+export function exampleWindow<T>(
+  pool: readonly T[],
+  start: number,
+  count: number,
+): T[] {
   const size = Math.min(count, pool.length);
-  return Array.from({ length: size }, (_, i) => pool[(start + i) % pool.length]);
+  return Array.from(
+    { length: size },
+    (_, i) => pool[(start + i) % pool.length],
+  );
 }
 
 /** Окно примеров, выбранное один раз на открытие экрана: перерисовка его не меняет. */
-export function useExampleWindow<T>(key: string, pool: readonly T[] | undefined, count: number): T[] {
-  const [start] = useState(() => nextExampleStart(key, pool?.length ?? 0, count));
+export function useExampleWindow<T>(
+  key: string,
+  pool: readonly T[] | undefined,
+  count: number,
+): T[] {
+  const [start] = useState(() =>
+    nextExampleStart(key, pool?.length ?? 0, count),
+  );
   return pool ? exampleWindow(pool, start, count) : [];
 }
 
