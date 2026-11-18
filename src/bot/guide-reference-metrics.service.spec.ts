@@ -34,6 +34,8 @@ describe('GuideReferenceMetricsService', () => {
         cabinet_guide_technique_open: 4,
         cabinet_guide_note_open: 1,
         cabinet_guide_table_open: 6,
+        cabinet_guide_answer_show: 5,
+        cabinet_guide_answer_link: 2,
         // те же листы из схемы случая сюда не попадают
         concept_guide_mode_open: 99,
       },
@@ -47,6 +49,8 @@ describe('GuideReferenceMetricsService', () => {
       techniques30: 4,
       notes30: 1,
       tables30: 6,
+      answers30: 5,
+      answerLinks30: 2,
     });
   });
 
@@ -56,7 +60,7 @@ describe('GuideReferenceMetricsService', () => {
     expect(count).toHaveBeenCalledWith({
       where: { name: 'cabinet_guide_open', createdAt: { gte: SINCE } },
     });
-    expect(count).toHaveBeenCalledTimes(6);
+    expect(count).toHaveBeenCalledTimes(8);
     expect(groupBy).toHaveBeenCalledWith({
       by: ['userId'],
       where: {

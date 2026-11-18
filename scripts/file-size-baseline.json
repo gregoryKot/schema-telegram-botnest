@@ -2939,7 +2939,7 @@
   "webapp/src/sections/diary/useDiaryLists.ts": 68,
   "webapp/src/sections/diary/WeekSummary.tsx": 28,
   "webapp/src/sections/DiarySection.tsx": 153,
-  "webapp/src/sections/guide/GuideReference.tsx": 120,
+  "webapp/src/sections/guide/GuideReference.tsx": 105,
   "webapp/src/sections/guide/guideReferenceBody.ts": 44,
   "webapp/src/sections/guide/guideReferenceCoping.ts": 28,
   "webapp/src/sections/guide/GuideReferenceList.tsx": 46,
