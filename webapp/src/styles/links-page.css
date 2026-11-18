@@ -11,7 +11,7 @@
 .links-col { position: relative; max-width: 440px; margin: 0 auto; }
 
 .links-theme {
-  position: absolute; top: -16px; right: -6px;
+  position: absolute; top: -16px; right: -6px; z-index: 1;
   width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
   background: none; border: 0; border-radius: 50%;
@@ -60,13 +60,39 @@
 .lk-feature .lk-title { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.05; letter-spacing: -0.01em; }
 .lk-feature .lk-arrow { color: var(--accent); font-size: 20px; }
 
-.lk:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.lk:active { transform: scale(.985); }
+/* Пункт с ярлычками площадок: рамку держит пункт, основная ссылка и ярлычки — соседи внутри. */
+.lk-stack { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.lk-stack > .lk { min-height: 0; border: 0; background: none; }
+.lk-stack > .lk-static { padding-bottom: 0; }
+.lk-stack-feature {
+  border-color: var(--accent-line);
+  background:
+    radial-gradient(140% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
+    var(--surface);
+}
+.lk-places { display: flex; flex-direction: column; gap: 8px; padding: 12px 18px 16px; }
+.lk-stack-feature .lk-places { padding-top: 0; }
+.lk-places-label { font-size: 12.5px; line-height: 1.3; color: var(--text-faint); }
+.lk-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.lk-chip {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--bg); color: var(--text);
+  font-size: 14px; font-weight: 600; white-space: nowrap;
+  text-decoration: none;
+  transition: transform .15s ease, border-color .15s ease;
+}
+
+.lk:focus-visible, .lk-chip:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+a.lk:active { transform: scale(.985); }
+.lk-chip:active { transform: scale(.97); }
 @media (hover: hover) {
-  .lk:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+  a.lk:hover, .lk-chip:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+  .lk-stack > a.lk:hover { transform: none; }
   .lk-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
   .lk-feature:hover { border-color: var(--accent); }
-  .lk:hover .lk-arrow { transform: translateX(3px); }
+  a.lk:hover .lk-arrow { transform: translateX(3px); }
   .links-theme:hover { color: var(--text); }
 }
 

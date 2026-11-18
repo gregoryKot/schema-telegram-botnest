@@ -4,6 +4,7 @@ import {
   LINKS_PAGE_FROM,
   LINKS_PAGE_TARGETS,
 } from '../analytics/links-page.constants';
+import { FROM_LABELS, TARGET_LABELS } from './links-page-metrics.labels';
 
 export interface LinksPageMetrics {
   /** За месяц: все нажатия кнопок на странице ссылок. */
@@ -13,26 +14,6 @@ export interface LinksPageMetrics {
   /** Нажатия по источникам (meta.from). */
   byFrom: Record<string, number>;
 }
-
-const TARGET_LABELS: Record<(typeof LINKS_PAGE_TARGETS)[number], string> = {
-  booking: 'запись на консультацию',
-  project: '«Всё по схеме»',
-  channel_ha: 'канал «Здоровый Взрослый»',
-  channel_schema: 'канал о схема-терапии',
-  about: 'обо мне',
-  articles: 'статьи',
-  write: 'написать лично',
-};
-
-const FROM_LABELS: Record<(typeof LINKS_PAGE_FROM)[number], string> = {
-  telegram: 'Телеграм',
-  instagram: 'Инстаграм',
-  max: 'Макс',
-  vk: 'ВКонтакте',
-  youtube: 'Ютуб',
-  other: 'другая метка',
-  direct: 'без метки',
-};
 
 /** Ненулевые счётчики в порядке реестра: «подпись — число». */
 const parts = <K extends string>(
