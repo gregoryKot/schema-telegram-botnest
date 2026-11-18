@@ -68,6 +68,8 @@
     /* «Неделя»: четыре действия сеткой 2×2 (длинные подписи кеглем 8px), ПАУЗА есть только там */
     #tbtn-pause { display: none; }
     #touch-controls.week #tbtn-pause { display: flex; }
+    /* Саша бежит сам: влево-вправо в «Неделе» нет, место слева остаётся под касание-прыжок */
+    #touch-controls.week .dpad { visibility: hidden; pointer-events: none; }
     #touch-controls.week .action-pad { display: grid; grid-template-columns: 100px 100px 62px; align-items: end; }
     #touch-controls.week .tbtn.act { width: 100px; height: 44px; font-size: 8px; }
     #touch-controls.week #tbtn-jump { grid-column: 3; grid-row: 1 / span 2; }
