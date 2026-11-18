@@ -24,6 +24,7 @@ import { RULES } from './apiCacheRules.data';
 // мимо этих помощников ловит apiCacheRules.rawFetch.test.ts.
 const SOURCES = [
   'shared/src/api/sharedApi.ts',
+  'shared/src/api/publicEvent.ts',
   'shared/src/api/ratingApi.ts',
   'shared/src/api/practiceSessionsApi.ts',
   'webapp/src/api.ts',

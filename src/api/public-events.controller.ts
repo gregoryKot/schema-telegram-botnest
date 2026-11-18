@@ -15,6 +15,7 @@ import { PublicEventDto } from './dto/public-event.dto';
 import { sanitizePublicCrisisMeta } from './public-crisis.sanitize';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
 import { sanitizeAssetRecoveredMeta } from '../analytics/asset-recovery.constants';
+import { sanitizeLinksPageMeta } from '../analytics/links-page.constants';
 
 // Анонимная аналитика (правило №8): мини-тест, клик на сайт практики, блок
 // установки, игра (game/, правило №5/№14), кризисная карточка записи, повтор
@@ -70,6 +71,7 @@ export class PublicEventsController {
     }
     // Повтор файла сборки помог (public/asset-recovery.js, до входа).
     if (name === 'asset_recovered') return sanitizeAssetRecoveredMeta(meta);
+    if (name === 'links_page_click') return sanitizeLinksPageMeta(meta);
     if (name === 'home_screen_offer') {
       const action = meta?.action;
       const surface = meta?.surface;

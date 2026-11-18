@@ -1,0 +1,84 @@
+/* Страница ссылок визитки (/links): один столбец, токены визитки. Свечение —
+   градиентом по сплошному фону (без размытия); появление — transform/opacity. */
+.links-page {
+  min-height: 100dvh;
+  padding: 28px 16px 40px;
+  color: var(--text);
+  background:
+    radial-gradient(120% 340px at 50% -80px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    var(--bg);
+}
+.links-col { position: relative; max-width: 440px; margin: 0 auto; }
+
+.links-theme {
+  position: absolute; top: -16px; right: -6px;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; border-radius: 50%;
+  color: var(--text-sub); cursor: pointer;
+}
+
+.links-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 22px; }
+.links-name {
+  margin: 14px 0 0;
+  font-family: var(--serif); font-weight: 400;
+  font-size: clamp(30px, 9vw, 38px); line-height: 1.05; letter-spacing: -0.02em;
+}
+.links-about { margin: 8px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
+
+.links-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+.lk {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 56px; padding: 12px 18px;
+  border: 1px solid var(--line); border-radius: 18px;
+  background: var(--surface); color: var(--text);
+  text-decoration: none;
+  transition: transform .15s ease, border-color .15s ease;
+}
+.lk-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lk-title { font-size: 15.5px; font-weight: 600; line-height: 1.25; }
+.lk-note { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.lk-arrow { flex-shrink: 0; font-size: 17px; color: var(--text-faint); transition: transform .15s ease; }
+
+/* Главная кнопка — единственная с акцентной заливкой. */
+.lk-primary { min-height: 68px; border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.lk-primary .lk-title { font-size: 17px; }
+.lk-primary .lk-note { color: color-mix(in srgb, var(--on-accent) 82%, transparent); }
+.lk-primary .lk-arrow { font-size: 20px; color: var(--on-accent); }
+
+/* Карточка проекта — крупнее остальных. */
+.lk-feature {
+  align-items: flex-end; padding: 18px;
+  border-color: var(--accent-line);
+  background:
+    radial-gradient(140% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
+    var(--surface);
+}
+.lk-feature .lk-text { gap: 6px; }
+.lk-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.lk-feature .lk-title { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.05; letter-spacing: -0.01em; }
+.lk-feature .lk-arrow { color: var(--accent); font-size: 20px; }
+
+.lk:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.lk:active { transform: scale(.985); }
+@media (hover: hover) {
+  .lk:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+  .lk-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
+  .lk-feature:hover { border-color: var(--accent); }
+  .lk:hover .lk-arrow { transform: translateX(3px); }
+  .links-theme:hover { color: var(--text); }
+}
+
+/* Каскадное появление: только когда движение не отключено в системе. */
+@media (prefers-reduced-motion: no-preference) {
+  .links-head, .lk-item { animation: lk-in .5s cubic-bezier(.2, .7, .2, 1) both; }
+  .lk-item:nth-child(1) { animation-delay: 90ms; }
+  .lk-item:nth-child(2) { animation-delay: 145ms; }
+  .lk-item:nth-child(3) { animation-delay: 200ms; }
+  .lk-item:nth-child(4) { animation-delay: 255ms; }
+  .lk-item:nth-child(5) { animation-delay: 310ms; }
+  .lk-item:nth-child(6) { animation-delay: 365ms; }
+  .lk-item:nth-child(7) { animation-delay: 420ms; }
+}
+@keyframes lk-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }

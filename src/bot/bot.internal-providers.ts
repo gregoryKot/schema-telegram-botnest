@@ -30,6 +30,7 @@ import { PlanMetricsService } from './plan-metrics.service';
 import { TaskAssignMetricsService } from './task-assign-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { LinksPageMetricsService } from './links-page-metrics.service';
 import { PracticeMetricsService } from './practice-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { QuizMetricsService } from './quiz-metrics.service';
@@ -68,6 +69,7 @@ export const INTERNAL_PROVIDERS = [
   TaskAssignMetricsService,
   PlusMetricsService,
   PracticeLinkMetricsService,
+  LinksPageMetricsService,
   PracticeMetricsService,
   ProfilePatternMetricsService,
   QuizMetricsService,

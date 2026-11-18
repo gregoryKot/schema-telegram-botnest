@@ -22,6 +22,8 @@ export const PRACTICE_INDEXED_TITLES: Record<string, string> = {
   '/': 'Григорий Котляревский – схема-терапия онлайн',
   '/reviews': 'Почему здесь нет отзывов – Григорий Котляревский',
 };
+// Закрытые от поиска страницы со своим заголовком вкладки; canonical у них — главная.
+const PRACTICE_OWN_TITLES: Record<string, string> = { '/links': 'Григорий Котляревский – ссылки' };
 
 // JSON-LD в index.html уже указывает на kotlarewski.gr ("@id", "url",
 // "serviceUrl", "image") — Person и услуга принадлежат визитке практики на
@@ -37,7 +39,7 @@ export function applyPersonalSiteChrome(doc: Document = document, path: string =
   });
   doc.querySelector("link[rel='apple-touch-icon']")?.setAttribute('href', '/apple-touch-icon-personal.png');
   doc.querySelector("link[rel='manifest']")?.remove();
-  doc.title = PRACTICE_INDEXED_TITLES[page];
+  doc.title = PRACTICE_OWN_TITLES[trimmed] ?? PRACTICE_INDEXED_TITLES[page];
   const canonical = doc.querySelector("link[rel='canonical']");
   if (canonical) canonical.setAttribute('href', `${PRACTICE_URL}${page}`);
   const ogUrl = doc.querySelector("meta[property='og:url']");

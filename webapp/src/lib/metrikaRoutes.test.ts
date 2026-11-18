@@ -24,7 +24,7 @@ function appRoutePaths(): string[] {
 const sample = (path: string) => path.replace(/:[A-Za-z]+/g, 'x');
 
 describe('isPublicMetrikaRoute', () => {
-  it.each(['/', '/articles', '/articles/some-slug', '/reviews', '/tests', '/tests/mode-quiz',
+  it.each(['/', '/articles', '/articles/some-slug', '/reviews', '/links', '/tests', '/tests/mode-quiz',
     '/subscribe', '/donate', '/privacy', '/offer', '/install', '/book', '/booking/paid', '/booking/manage', '/articles/'])(
     '%s — публичный', (p) => expect(isPublicMetrikaRoute(p)).toBe(true));
 

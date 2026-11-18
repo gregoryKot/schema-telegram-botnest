@@ -82,6 +82,11 @@ describe('robots.txt визитки ⇄ страницы визитки', () => 
     expect(isAllowed(robots, '/donate')).toBe(false);
   });
 
+  it('закрыта /links — страница для шапок соцсетей, не для поиска', () => {
+    expect(robots).toMatch(/^Disallow: \/links$/m);
+    expect(isAllowed(robots, '/links?utm_source=instagram')).toBe(false);
+  });
+
   it('ссылки клиентов закрыты вместе с параметрами', () => {
     for (const p of ['/book', '/booking/paid?t=x', '/booking/manage?t=x']) {
       expect(isAllowed(robots, p)).toBe(false);

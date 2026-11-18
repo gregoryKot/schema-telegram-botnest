@@ -95,6 +95,7 @@ import { SERVER_EVENTS } from './server-events.constants';
 import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
 import { PUSH_EVENTS } from './push-events.constants';
 import { ASSET_RECOVERY_EVENTS } from './asset-recovery.constants';
+import { LINKS_PAGE_EVENTS } from './links-page.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -145,6 +146,7 @@ export const ANALYTICS_EVENTS = [
   ...BOOKING_EVENTS,
   ...PUSH_EVENTS, // уведомления в приложении: push-events.constants.ts
   ...ASSET_RECOVERY_EVENTS,
+  ...LINKS_PAGE_EVENTS, // страница ссылок визитки: links-page.constants.ts
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -158,6 +160,7 @@ export const PUBLIC_ANALYTICS_EVENTS = [
   ...GAME_EVENTS,
   ...PUBLIC_CRISIS_EVENTS,
   ...ASSET_RECOVERY_EVENTS, // public/asset-recovery.js работает до входа
+  ...LINKS_PAGE_EVENTS,
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -275,9 +278,7 @@ export {
   type CrisisSurface,
 } from './crisis-surfaces.constants';
 
-// QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
-// вынесены в quick-actions.constants.ts (правило №10: тот файл держим
-// минимальным, парность с фронтом описана прямо там).
+// QUICK_ACTION_* — вынесены в quick-actions.constants.ts (правило №10).
 export {
   QUICK_ACTION_IDS,
   type QuickActionId,
@@ -287,9 +288,7 @@ export {
   type QuickActionMoveDir,
 } from './quick-actions.constants';
 
-// SCREEN_BLOCK_IDS/ScreenBlockId/CUSTOMIZABLE_SCREENS/CustomizableScreen —
-// вынесены в screen-blocks.constants.ts (правило №10, тот же приём, что и
-// с QUICK_ACTION_IDS выше).
+// SCREEN_BLOCK_IDS/CUSTOMIZABLE_SCREENS — в screen-blocks.constants.ts (№10).
 export {
   SCREEN_BLOCK_IDS,
   type ScreenBlockId,

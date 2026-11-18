@@ -282,6 +282,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлётся через импортируемую константу PUSH_DENIED_EVENT ' +
     '(shared/src/share/analytics.ts), когда человек отказал в разрешении ' +
     'браузера на уведомления; та же причина, что у share_card',
+  links_page_click:
+    'константа LINKS_PAGE_CLICK_EVENT (shared/src/share/analytics.ts), шлёт ' +
+    'страница ссылок визитки через api.trackPublicEvent — ' +
+    'webapp/src/pages/links/trackLinksClick.ts',
   login_method_offer:
     'шлётся через импортируемую константу LOGIN_METHOD_OFFER_EVENT ' +
     '(shared/src/analytics/accountLogin.ts) из SiteAccessCard.tsx; значение ' +
@@ -376,7 +380,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // вход завершает колбэк площадки, у фронта такого действия нет.
     // 51 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
     // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(52);
+    // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(53);
   });
 });
 
