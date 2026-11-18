@@ -5,6 +5,7 @@ import os
 import sys
 from PIL import Image
 from px import save, check
+import week
 import poses, ground, ledges, street, sky, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers, cabinet, zone
 
 ASSETS, OUT = '../src/assets', 'out'
@@ -21,6 +22,7 @@ def main():
             save(img, f'{ASSETS}/{k}.png', limit)
     sheet = preview(made)
     sheet.convert('RGB').save(f'{OUT}/wave1.png')       # превью: цветов больше, чем в индексной PNG
+    week.build(OUT)                                     # эталон «Недели»: только превью, в ассеты не ставится
     print('\n'.join(f'{k}: {v.size}' for k, v in made.items()))
 
 def preview(made):
