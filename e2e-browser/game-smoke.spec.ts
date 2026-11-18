@@ -26,7 +26,11 @@ interface GameSceneLike {
   triggers: { fn(): void }[];
   voices: { doAnswer(): void }[];
   showBranch(next: string): void;
-  player: { x: number; y: number; body: { reset(x: number, y: number): void } };
+  player: {
+    x: number;
+    y: number;
+    body: { reset(x: number, y: number): void; velocity: { y: number } };
+  };
   gameOver(): void;
   time: { timeScale: number };
   tweens: { timeScale: number };
@@ -298,7 +302,7 @@ test.describe('игра: телефон в портрете', () => {
   });
 });
 
-// «Неделя» (#1379): каркас «Понедельника» на серых блоках, вход по скрытому хешу #week.
+// «Неделя»: каркас «Понедельника» на серых блоках, вход по скрытому хешу #week. Саша бежит сам.
 interface WeekGate {
   x: number;
   kind: string;
@@ -336,7 +340,8 @@ const weekState = (page: Page) =>
       busy: sc.busy,
       done: sc.done,
       revealed: [...sc.revealed],
-      gates: sc.world.gates.map((g) => g.open),
+      gates: sc.world.gates.map((g) => ({ x: g.x, open: g.open })),
+      gateCount: sc.world.gates.length,
       texts: sc.children.list
         .filter((o) => o.type === 'Text')
         .map((o) => o.text ?? ''),
@@ -350,11 +355,17 @@ const weekGoTo = async (page: Page, x: number, act?: string) => {
     ) as WeekSceneLike;
     sc.player.body.reset(to, sc.player.y);
   }, x);
+  // сцена увидела Сашу на новом месте: дальше он бежит сам
+  await expect
+    .poll(async () => (await weekState(page)).x, { timeout: 15_000 })
+    .toBeGreaterThan(x);
   if (act)
     await expect
       .poll(async () => (await weekState(page)).revealed, { timeout: 15_000 })
       .toContain(act);
 };
+const gateOpen = async (page: Page, x: number) =>
+  (await weekState(page)).gates.find((g) => g.x === x)?.open;
 /** Нажатие с удержанием на кадр-другой: JustDown читается в update сцены; прошлое действие должно кончиться. */
 const tapKey = async (page: Page, code: string, ms = 120) => {
   await expect
@@ -374,46 +385,43 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     expect(start.texts).toContain('Понедельник. Офис');
     expect(start.revealed).toEqual([]);
 
-    // утро: бег настоящими клавишами
-    await page.keyboard.down('ArrowRight');
+    // утро: ни одной клавиши — Саша идёт сам
     await expect
       .poll(async () => (await weekState(page)).x, { timeout: 15_000 })
       .toBeGreaterThan(start.x + 60);
-    await page.keyboard.up('ArrowRight');
 
-    // ПЕРЕРАБОТАТЬ: стопка убрана, дел больше, сил меньше
-    await weekGoTo(page, 2420, 'overwork');
-    await page.keyboard.down('ArrowRight');
-    await tapKey(page, 'KeyZ');
-    await page.keyboard.up('ArrowRight');
-    await expect
-      .poll(async () => (await weekState(page)).gates[0], { timeout: 15_000 })
-      .toBe(true);
+    // высокая стопка держит Сашу на месте, пока не нажато ПЕРЕРАБОТАТЬ: стопка убрана, впереди новые, сил меньше
+    await weekGoTo(page, 4600, 'overwork');
+    await page.waitForTimeout(600);
     let s = await weekState(page);
+    expect(s.x).toBeLessThan(4700);
+    const gatesBefore = s.gateCount;
+    await tapKey(page, 'KeyZ');
+    await expect.poll(() => gateOpen(page, 4700), { timeout: 15_000 }).toBe(true);
+    s = await weekState(page);
     expect(s.energy).toBeLessThan(100);
     expect(s.piles).toBeGreaterThan(0);
+    expect(s.gateCount).toBeGreaterThan(gatesBefore);
 
     // ПРОЛИСТАТЬ: шум убран, часы перескочили, мир посерел
-    await weekGoTo(page, 3400, 'scroll');
+    await weekGoTo(page, 9380, 'scroll');
     const before = (await weekState(page)).clockMin;
     await tapKey(page, 'KeyX');
-    await expect
-      .poll(async () => (await weekState(page)).gates[2], { timeout: 15_000 })
-      .toBe(true);
+    await expect.poll(() => gateOpen(page, 9500), { timeout: 15_000 }).toBe(true);
     s = await weekState(page);
     expect(s.clockMin).toBeGreaterThan(before + 60);
     expect(s.color).toBeLessThan(1);
 
     // СОГЛАСИТЬСЯ: проход свободен, рюкзак тяжелее
-    await weekGoTo(page, 4300, 'agree');
+    await weekGoTo(page, 15400, 'agree');
     await tapKey(page, 'KeyC');
     await expect
       .poll(async () => (await weekState(page)).load, { timeout: 15_000 })
       .toBe(1);
-    expect((await weekState(page)).gates[3]).toBe(true);
+    expect(await gateOpen(page, 15500)).toBe(true);
 
-    // дверь на пике: привычки её не открывают, она держится впереди
-    await weekGoTo(page, 5050);
+    // пик: привычки дверь не открывают, она держится впереди, сколько ни беги
+    await weekGoTo(page, 21050);
     await expect
       .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
       .toBe(true);
@@ -444,12 +452,10 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     s = await weekState(page);
     expect(s.doorAhead).toBeLessThan(320);
 
-    // десять шагов до двери — и реплика начальницы
-    await page.keyboard.down('ArrowRight');
+    // последние десять шагов Саша проходит сам — и реплика начальницы
     await expect
       .poll(async () => (await weekState(page)).done, { timeout: 30_000 })
       .toBe(true);
-    await page.keyboard.up('ArrowRight');
     expect((await weekState(page)).texts).toContain(
       'Глянь отчёт до четверга, ладно?',
     );
@@ -470,18 +476,34 @@ test.describe('игра «Неделя»: каркас «Понедельник�
       await openGame(page, 'week', 'Week');
       await expect(page.locator('#touch-controls.week')).toBeVisible();
       const acts = [
-        ['overwork', '#tbtn-hit', 2300],
-        ['scroll', '#tbtn-avoid', 3200],
-        ['agree', '#tbtn-fawn', 4150],
+        ['overwork', '#tbtn-hit', 4320],
+        ['scroll', '#tbtn-avoid', 9020],
+        ['agree', '#tbtn-fawn', 15020],
       ] as const;
       for (const [, id] of acts) await expect(page.locator(id)).toBeHidden();
       await expect(page.locator('#tbtn-pause')).toBeHidden();
+      // управление одним пальцем: влево-вправо нет, касание кадра — прыжок
+      await expect(page.locator('#tbtn-left')).toBeHidden();
+      const cv = (await page.locator('canvas').boundingBox())!;
+      await page.touchscreen.tap(cv.x + cv.width * 0.3, cv.y + cv.height * 0.4);
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              const sc = (
+                window as unknown as GameWindow
+              ).__game!.scene.getScene('Week') as WeekSceneLike;
+              return sc.player.body.velocity.y;
+            }),
+          { timeout: 5_000, intervals: [30] },
+        )
+        .toBeLessThan(0);
       for (const [act, id, x] of acts) {
         await weekGoTo(page, x, act);
         await expect(page.locator(id)).toBeVisible();
       }
       // у двери: привычка пальцем — и появляется ПАУЗА
-      await weekGoTo(page, 5050);
+      await weekGoTo(page, 21050);
       await expect
         .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
         .toBe(true);
@@ -492,8 +514,6 @@ test.describe('игра «Неделя»: каркас «Понедельник�
         '#tbtn-avoid',
         '#tbtn-fawn',
         '#tbtn-pause',
-        '#tbtn-left',
-        '#tbtn-right',
         '#tbtn-jump',
       ]) {
         const box = (await page.locator(id).boundingBox())!;
