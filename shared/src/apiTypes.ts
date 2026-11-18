@@ -83,6 +83,8 @@ export interface UserTask {
   targetDays: number | null;
   needId: string | null;
   dueDate: string | null;
+  /** Задание взято из справочника: по id клиенту показывается «зачем» (shared/tasks/catalog/taskWhy). */
+  catalogId?: string | null;
   done: boolean | null;
   completedAt: string | null;
   createdAt: string;

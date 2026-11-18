@@ -3,11 +3,10 @@ import type { UserTask } from '../../api';
 import { TaskProgressBar } from '../../components/TaskProgressBar';
 import { GlyphCheck } from '../../components/exercises/ExGlyphs';
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
-import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
-import { glueSpaces } from '../../../../shared/src/utils/typo';
 import { taskRowState } from './taskRowState';
 import { rowStatus } from './taskListModel';
 import { TaskDoneButton, TaskRowMeta } from './TaskRowParts';
+import { TaskRowTitle } from './TaskRowTitle';
 import { TaskSign } from './TaskSign';
 import '../../styles/client-practice.css';
 
@@ -26,7 +25,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
     >
       <span className="pp-row-art"><TaskSign task={task} /></span>
       <div className="cp-task-body">
-        <div className="cp-task-title">{glueSpaces(resolveTaskDisplayText(task, 'compact'))}</div>
+        <TaskRowTitle task={task} />
         {st.streakNote && <div className="cp-task-note">Сделано сегодня — завтра снова</div>}
         <TaskProgressBar task={task} />
         <TaskRowMeta task={task} from={!!mark && !st.doneToday} status={rowStatus(status)} />

@@ -9,6 +9,7 @@ import {
   getModeById,
   getSchemaById,
 } from '../../schemaTherapy/schemaTherapyData';
+import { buildTaskWhy } from './taskWhy';
 import {
   matchesSearch,
   normalizeSearchText,
@@ -17,15 +18,22 @@ import {
 type Tr = Parameters<Guide['buildModeGuides']>[0];
 export type CatalogGroupId = 'modes' | 'schemas';
 
-export interface CatalogTask {
-  /** Стабильный id из названия. */
-  id: string;
-  title: string;
+/** Текст задания и где он стоит: у одного названия в разных режимах и схемах тексты бывают разные. */
+export interface CatalogVariant {
   /** «Что делать». */
   text: string;
-  /** id режимов и схем, в чьём «Между сессиями» задание стоит. */
+  /** id режимов и схем, в чьём «Между сессиями» стоит именно этот текст. */
   forModes: string[];
   forSchemas: string[];
+}
+export interface CatalogTask {
+  /** Стабильный id из названия; он же `UserTask.catalogId`. */
+  id: string;
+  title: string;
+  /** Разные тексты одного названия, в порядке справочника; первый — основной. */
+  variants: CatalogVariant[];
+  /** «Зачем» для клиента (taskWhy); пусто, если текста нет. */
+  why: string;
   /** Задание хотя бы одного режима — «При режимах», только схем — «При схемах». */
   group: CatalogGroupId;
 }
@@ -57,10 +65,11 @@ interface Source {
   betweenSessions: BetweenSessionsItem[];
 }
 
-/** Пункты `custom` режимов и схем одной записью на название; текст — первого встреченного. */
+/** Пункты `custom` режимов и схем одной записью на название; разные тексты — вариантами. */
 export function collectTaskCatalog(
   modes: (Source & { modeId: string })[],
   schemas: (Source & { schemaId: string })[],
+  why: Record<string, string> = {},
 ): CatalogTask[] {
   const byId = new Map<string, CatalogTask>();
   const add = (
@@ -74,12 +83,16 @@ export function collectTaskCatalog(
       const task = byId.get(id) ?? {
         id,
         title: item.title,
-        text: item.text,
-        forModes: [],
-        forSchemas: [],
+        variants: [],
+        why: Object.hasOwn(why, id) ? why[id] : '',
         group: 'schemas',
       };
-      if (!task[field].includes(ownerId)) task[field].push(ownerId);
+      let variant = task.variants.find((v) => v.text === item.text);
+      if (!variant) {
+        variant = { text: item.text, forModes: [], forSchemas: [] };
+        task.variants.push(variant);
+      }
+      if (!variant[field].includes(ownerId)) variant[field].push(ownerId);
       if (field === 'forModes') task.group = 'modes';
       byId.set(id, task);
     }
@@ -93,7 +106,11 @@ export function buildTaskCatalog(
   guide: Pick<Guide, 'buildModeGuides' | 'buildSchemaGuides'>,
   tr: Tr,
 ): CatalogTask[] {
-  return collectTaskCatalog(guide.buildModeGuides(tr), guide.buildSchemaGuides(tr));
+  return collectTaskCatalog(
+    guide.buildModeGuides(tr),
+    guide.buildSchemaGuides(tr),
+    buildTaskWhy(tr),
+  );
 }
 
 /** Записи, чьё название содержит запрос, по группам; пустые группы не показываются. */
@@ -112,10 +129,10 @@ export function searchTaskCatalog(
 }
 
 /** «Когда давать»: названия режимов и схем из общих каталогов. */
-export function catalogTaskWhen(task: CatalogTask): string[] {
+export function catalogTaskWhen(variant: CatalogVariant): string[] {
   const names = [
-    ...task.forModes.map((id) => getModeById(id)?.name),
-    ...task.forSchemas.map((id) => getSchemaById(id)?.name),
+    ...variant.forModes.map((id) => getModeById(id)?.name),
+    ...variant.forSchemas.map((id) => getSchemaById(id)?.name),
   ];
   return names.filter((n): n is string => Boolean(n));
 }

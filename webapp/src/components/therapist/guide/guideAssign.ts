@@ -1,5 +1,5 @@
 import type { BetweenSessionsItem } from '../../../../../shared/src/schemaTherapy/guide';
-import { customTaskText } from '../../../../../shared/src/tasks/catalog/taskCatalog';
+import { catalogTaskId, customTaskText } from '../../../../../shared/src/tasks/catalog/taskCatalog';
 import type { TaskType } from '../../taskCreate/taskOptions';
 import type { AssignPreset } from '../assignTemplates';
 
@@ -13,7 +13,7 @@ import type { AssignPreset } from '../assignTemplates';
  */
 export function guideAssignPreset(item: BetweenSessionsItem): AssignPreset {
   if (item.kind === 'custom') {
-    return { type: 'custom', text: customTaskText(item) };
+    return { type: 'custom', text: customTaskText(item), catalogId: catalogTaskId(item.title) };
   }
   return { type: item.type satisfies TaskType };
 }

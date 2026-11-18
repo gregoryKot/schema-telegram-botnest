@@ -214,7 +214,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
           defaultType={assignPreset?.type}
-          defaultText={assignPreset?.text}
+          defaultText={assignPreset?.text} defaultCatalogId={assignPreset?.catalogId}
           zIndex={clientTab === 'concept' ? CONCEPT_SHEET_Z : undefined}
           onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); board.invalidate(); }}
           onClose={() => { setShowAssign(false); setAssignPreset(undefined); }}
