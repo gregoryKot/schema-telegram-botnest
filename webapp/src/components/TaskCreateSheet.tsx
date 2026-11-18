@@ -10,13 +10,15 @@ import { CrisisCard } from './CrisisCard';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 import { taskSheetCopy } from '../../../shared/src/tasks/taskSheetCopy';
-import { TASK_OPTIONS, STREAK_OPTIONS, type TaskType } from './taskCreate/taskOptions';
-import { SchemaPicker, ModePicker } from './taskCreate/TaskPickers';
+import { TASK_OPTIONS, type TaskType } from './taskCreate/taskOptions';
+import { SchemaPicker, ModePicker, StreakPicker } from './taskCreate/TaskPickers';
+import { TaskCatalogSection } from './taskCreate/TaskCatalogSection';
 import { TaskTypeTiles } from './taskCreate/TaskTypeTiles';
 import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
 import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { taskPayloadText } from '../../../shared/src/tasks/taskPayload';
-import { assignLead, assignableOptions } from '../../../shared/src/tasks/assignCopy';
+import { assignLead, assignTilesNote, assignableOptions } from '../../../shared/src/tasks/assignCopy';
+import { taskAssignSource, trackTaskAssignSource } from '../../../shared/src/share/taskAssignAnalytics';
 import '../styles/sheet-tasks.css';
 import '../styles/task-create.css';
 
@@ -36,6 +38,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     options.find(o => o.type === (defaultType ?? 'tracker_streak'))?.type ?? options[0].type);
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState(defaultText ?? '');
+  const [fromCatalog, setFromCatalog] = useState(false); // текст взят «Из справочника» — источник в аналитике
   const [selectedSchemaId, setSelectedSchemaId] = useState('');
   const [selectedModeId, setSelectedModeId] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -57,8 +60,15 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     el.setSelectionRange(el.value.length, el.value.length);
   }, [type]);
 
+  // «Взять» из справочника: «Своё задание» с текстом записи, поле — в фокусе и на виду.
+  function takeFromCatalog(taskText: string) {
+    setType('custom'); setText(taskText); setFromCatalog(true);
+    setTimeout(() => { customTextRef.current?.focus(); scrollIntoViewSafe(customTextRef.current, { block: 'center' }); }, 80);
+  }
+
   const selected = options.find(o => o.type === type) ?? options[0];
   const lead = assignLead(clientId);
+  const tilesNote = assignTilesNote(clientId);
   const copy = taskSheetCopy(clientId, clientName, tr); // клиент ставит цель себе, терапевт назначает задание
 
   async function handleCreate() {
@@ -70,6 +80,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     setSaving(true); setError('');
     try {
       const task = await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
+      if (clientId !== undefined) trackTaskAssignSource(api, taskAssignSource(type, fromCatalog));
       onCreated(task);
       // Лист закрывается через историю: иначе его запись оставалась, и первое
       // «Назад» браузера после назначения ничего не делало (QA 2026-10-26).
@@ -94,22 +105,10 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
             title={`${tr('Выбери', 'Выберите')} ${copy.what}`} sub={lead ?? undefined} className="sk-create-head" />
 
           <TaskTypeTiles options={options} value={type} onPick={setType} />
+          {tilesNote && <p className="ds-sub sk-tiles-note">{tilesNote}</p>}
 
           <div ref={configRef} className="sk-config">
-            {selected.hasStreak && (
-              <div className="sk-field">
-                <div className="ds-label">Цель в днях</div>
-                <div className="ds-seg ds-seg--full">
-                  {STREAK_OPTIONS.map(d => (
-                    <button
-                      key={d}
-                      onClick={() => setTargetDays(d)}
-                      className={'ds-seg-btn' + (targetDays === d ? ' is-active' : '')}
-                    >{d} дн</button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {selected.hasStreak && <StreakPicker value={targetDays} onPick={setTargetDays} />}
 
             {type === 'schema_intro' && <SchemaPicker value={selectedSchemaId} onPick={setSelectedSchemaId} />}
             {type === 'mode_intro' && <ModePicker value={selectedModeId} onPick={setSelectedModeId} />}
@@ -138,6 +137,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
               </div>
             )}
           </div>
+          {clientId !== undefined && <TaskCatalogSection onTake={takeFromCatalog} />}
         </div>
       </div>
       {/* Главная кнопка закреплена внизу листа: на телефоне до неё было девять плиток и настройки. */}

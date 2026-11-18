@@ -28,6 +28,8 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
     schemaGuide: (_tr: unknown, id: string) =>
       id === 'abandonment' ? { guide: f.FIXTURE_SCHEMA_GUIDE, domainNote: f.FIXTURE_DOMAIN_NOTE } : null,
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
+    buildModeGuides: () => [],
+    buildSchemaGuides: () => [],
     techniqueGuide: (_tr: unknown, id: string) => f.FIXTURE_TECHNIQUES.find((t) => t.id === id) ?? null,
   };
 });

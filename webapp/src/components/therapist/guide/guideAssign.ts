@@ -1,4 +1,5 @@
 import type { BetweenSessionsItem } from '../../../../../shared/src/schemaTherapy/guide';
+import { customTaskText } from '../../../../../shared/src/tasks/catalog/taskCatalog';
 import type { TaskType } from '../../taskCreate/taskOptions';
 import type { AssignPreset } from '../assignTemplates';
 
@@ -7,12 +8,12 @@ import type { AssignPreset } from '../assignTemplates';
  * задание» (TaskCreateSheet, тот же лист, что у «Назначить из шаблона»).
  * Упражнение из «Практик» — его тип; `satisfies` держит на сборке, что каждый
  * GuideTaskType — тип задания сайта. Упражнение без экрана — «Своё задание»:
- * название первой строкой, ниже инструкция. Режим в «Карточку режима» не
+ * текст собирает customTaskText, как у раздела «Из справочника». Режим в «Карточку режима» не
  * подставляется: лист назначения выбор режима снаружи не принимает.
  */
 export function guideAssignPreset(item: BetweenSessionsItem): AssignPreset {
   if (item.kind === 'custom') {
-    return { type: 'custom', text: `${item.title}\n${item.text}` };
+    return { type: 'custom', text: customTaskText(item) };
   }
   return { type: item.type satisfies TaskType };
 }
