@@ -42,21 +42,21 @@ describe('collectTaskCatalog', () => {
 
   it('повторы по названию склеиваются, упражнения с экраном не попадают', () => {
     expect(catalog.map((t) => t.title)).toEqual(['Письмо Критику', 'Ещё одно']);
-    expect(catalog[0].text).toBe('первый текст');
+    expect(catalog[0].why).toBe('');
     expect(catalog[0].id).toBe('письмо-критику');
   });
 
-  it('forModes и forSchemas выводятся из того, где пункт стоит; группа — по ним', () => {
-    expect(catalog[0]).toMatchObject({
-      forModes: ['m1', 'm2'],
-      forSchemas: ['s1'],
-      group: 'modes',
-    });
-    expect(catalog[1]).toMatchObject({
-      forModes: [],
-      forSchemas: ['s1', 's2'],
-      group: 'schemas',
-    });
+  it('разные тексты одного названия — варианты; где стоит каждый, выводится из данных; группа — по ним', () => {
+    expect(catalog[0].group).toBe('modes');
+    expect(catalog[0].variants).toEqual([
+      { text: 'первый текст', forModes: ['m1'], forSchemas: [] },
+      { text: 'второй текст', forModes: ['m2'], forSchemas: [] },
+      { text: 'что делать', forModes: [], forSchemas: ['s1'] },
+    ]);
+    expect(catalog[1].group).toBe('schemas');
+    expect(catalog[1].variants).toEqual([
+      { text: 'что делать', forModes: [], forSchemas: ['s1', 's2'] },
+    ]);
   });
 
   it('поиск по названию без регистра и «ё», пустые группы пропадают', () => {
@@ -78,11 +78,21 @@ describe('buildTaskCatalog на данных справочника', () => {
     expect(catalog.length).toBeGreaterThan(0);
     expect(new Set(catalog.map((t) => t.id)).size).toBe(catalog.length);
     for (const task of catalog) {
-      expect(catalogTaskWhen(task).length).toBe(
-        task.forModes.length + task.forSchemas.length,
-      );
-      expect(catalogTaskWhen(task).length).toBeGreaterThan(0);
-      expect(customTaskText(task).length).toBeLessThanOrEqual(TASK_TEXT_MAX);
+      for (const variant of task.variants) {
+        expect(catalogTaskWhen(variant).length).toBe(
+          variant.forModes.length + variant.forSchemas.length,
+        );
+        expect(catalogTaskWhen(variant).length).toBeGreaterThan(0);
+        expect(
+          customTaskText({ title: task.title, text: variant.text }).length,
+        ).toBeLessThanOrEqual(TASK_TEXT_MAX);
+      }
     }
+  });
+
+  it('у семи названий тексты в режимах и схемах разные — видны все варианты', () => {
+    const many = catalog.filter((t) => t.variants.length > 1);
+    expect(many.map((t) => t.title)).toContain('Прямая просьба');
+    expect(many).toHaveLength(7);
   });
 });

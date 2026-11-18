@@ -1,0 +1,1 @@
+ALTER TABLE "UserTask" ADD COLUMN IF NOT EXISTS "catalogId" TEXT;

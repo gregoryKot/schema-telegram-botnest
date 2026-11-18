@@ -27,6 +27,7 @@ export class TherapyTasksService {
       targetDays?: number;
       needId?: string;
       dueDate?: string;
+      catalogId?: string;
     },
     assignedBy?: bigint,
   ) {
@@ -39,6 +40,8 @@ export class TherapyTasksService {
         targetDays: body.targetDays ?? null,
         needId: body.needId ?? null,
         dueDate: body.dueDate ?? null,
+        // «Зачем» из справочника — только у задания, которое дал терапевт.
+        catalogId: assignedBy ? (body.catalogId ?? null) : null,
       },
     });
     return { ...task, text: body.text }; // return plaintext to caller

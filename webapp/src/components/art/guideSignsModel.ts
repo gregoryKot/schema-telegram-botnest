@@ -6,7 +6,6 @@
 // Чистые функции; рисунки — реестр SignArt.tsx (группы режимов — GuideSignsModes.tsx, техники —
 // GuideSignsTechniques.tsx, два знака «Для терапевта» — GuideSignsPractice.tsx). Тип техники —
 // только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
-import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
 import { MODE_GROUP_SIGN, modeGroupLook, modeLook } from '../../../../shared/src/theme/entityLook';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
@@ -30,23 +29,7 @@ export type GuideSign = (typeof GUIDE_SIGNS)[number];
  */
 export { MODE_GROUP_SIGN };
 
-/** Знак техники: у каждой свой, общих нет. */
-export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
-  imagery_rescripting: 'rescript',
-  future_imagery: 'horizon',
-  chairwork: 'talk',
-  historical_role_play: 'talk_past',
-  flashcards: 'flashcard',
-  cognitive_work: 'pebbles',
-  letters: 'sheets',
-  pattern_breaking: 'pattern_steps',
-  mindfulness: 'breath',
-  empathic_confrontation: 'heart_frame',
-  pros_cons: 'scales',
-  mode_interview: 'spotlight',
-  self_compassion: 'heart',
-  healthy_adult_imagery: 'grown',
-};
+export { TECHNIQUE_SIGN } from './techniqueSigns';
 
 /**
  * Знак раздела «Для терапевта» (id из guide/practice.ts; сверка — тестом модели). Восемь —

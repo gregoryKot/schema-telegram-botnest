@@ -18,18 +18,19 @@ import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea'
 import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { taskPayloadText } from '../../../shared/src/tasks/taskPayload';
 import { assignLead, assignTilesNote, assignableOptions } from '../../../shared/src/tasks/assignCopy';
+import { catalogIdAfterEdit } from '../../../shared/src/tasks/catalog/taskWhy';
 import { taskAssignSource, trackTaskAssignSource } from '../../../shared/src/share/taskAssignAnalytics';
 import '../styles/sheet-tasks.css';
 import '../styles/task-create.css';
 
 interface Props {
   clientId?: UserId; clientName?: string;
-  /** Тип и текст, с которыми лист открывается (шаблоны, «Дать заданием»); zIndex — над листами концептуализации. */
-  defaultType?: TaskType; defaultText?: string; zIndex?: number;
+  /** Тип, текст и запись справочника, с которыми лист открывается (шаблоны, «Дать заданием»); zIndex — над листами концептуализации. */
+  defaultType?: TaskType; defaultText?: string; defaultCatalogId?: string; zIndex?: number;
   onCreated: (task: UserTask) => void; onClose: () => void;
 }
 
-export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, zIndex, onCreated, onClose }: Props) {
+export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, defaultCatalogId, zIndex, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
   // Офлайн-клиенту — только «Своё задание» (shared/tasks/assignCopy).
@@ -38,12 +39,11 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     options.find(o => o.type === (defaultType ?? 'tracker_streak'))?.type ?? options[0].type);
   const [targetDays, setTargetDays] = useState(7);
   const [text, setText] = useState(defaultText ?? '');
-  const [fromCatalog, setFromCatalog] = useState(false); // текст взят «Из справочника» — источник в аналитике
+  const [catalogId, setCatalogId] = useState<string | null>(defaultCatalogId ?? null); // запись справочника, чей текст в поле
   const [selectedSchemaId, setSelectedSchemaId] = useState('');
   const [selectedModeId, setSelectedModeId] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false); const [error, setError] = useState('');
   const configRef = useRef<HTMLDivElement>(null);
   const customTextRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -61,14 +61,14 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
   }, [type]);
 
   // «Взять» из справочника: «Своё задание» с текстом записи, поле — в фокусе и на виду.
-  function takeFromCatalog(taskText: string) {
-    setType('custom'); setText(taskText); setFromCatalog(true);
+  function takeFromCatalog(taskText: string, id: string) {
+    setType('custom'); setText(taskText); setCatalogId(id);
     setTimeout(() => { customTextRef.current?.focus(); scrollIntoViewSafe(customTextRef.current, { block: 'center' }); }, 80);
   }
 
   const selected = options.find(o => o.type === type) ?? options[0];
-  const lead = assignLead(clientId);
-  const tilesNote = assignTilesNote(clientId);
+  const lead = assignLead(clientId), tilesNote = assignTilesNote(clientId);
+  const sentCatalogId = type === 'custom' && clientId !== undefined ? catalogId : null; // id каталога — только у текста клиенту
   const copy = taskSheetCopy(clientId, clientName, tr); // клиент ставит цель себе, терапевт назначает задание
 
   async function handleCreate() {
@@ -79,8 +79,8 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     haptic.success();
     setSaving(true); setError('');
     try {
-      const task = await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId });
-      if (clientId !== undefined) trackTaskAssignSource(api, taskAssignSource(type, fromCatalog));
+      const task = await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId, catalogId: sentCatalogId ?? undefined });
+      if (clientId !== undefined) trackTaskAssignSource(api, taskAssignSource(type, sentCatalogId !== null));
       onCreated(task);
       // Лист закрывается через историю: иначе его запись оставалась, и первое
       // «Назад» браузера после назначения ничего не делало (QA 2026-10-26).
@@ -120,7 +120,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
                   ref={customTextRef}
                   max={TASK_TEXT_MAX}
                   value={text}
-                  onChange={e => setText(e.target.value)}
+                  onChange={e => { setText(e.target.value); setCatalogId(catalogIdAfterEdit(catalogId, e.target.value)); }}
                   placeholder="Например: позвонить другу раз в неделю"
                   className="ds-textarea"
                   rows={3}

@@ -1,6 +1,8 @@
 // «Что делали» в итогах сессии (#1330): серверная копия каталога пунктов.
 // Копия shared/src/therapy/sessionWork/, а НЕ импорт: rootDir бэкенда — ./src.
 // Ключи, границы и поведение нормализации сверяет session-work.sync.spec.ts.
+import { TECHNIQUE_WORK_KEYS } from './session-work-technique-keys';
+
 export const WORK_ITEMS_MAX = 12;
 export const WORK_VALUE_MAX = 600;
 export const WORK_CUSTOM_NAME_MAX = 80;
@@ -20,25 +22,7 @@ export interface SessionWorkItem {
 
 /** Ключи полей по виду: `technique:<TechniqueId>`, `exercise:<ExId>`, `custom`. */
 export const SESSION_WORK_KEYS: Readonly<Record<string, readonly string[]>> = {
-  'technique:imagery_rescripting': ['trigger', 'image', 'rewrite', 'ending'],
-  'technique:future_imagery': ['situation', 'rehearsal', 'obstacle', 'result'],
-  'technique:chairwork': ['theme', 'modeVoice', 'adultVoice', 'ending'],
-  'technique:historical_role_play': ['scene', 'roles', 'insight', 'newScene'],
-  'technique:flashcards': ['trigger', 'text', 'when'],
-  'technique:cognitive_work': ['belief', 'pro', 'contra', 'reframe'],
-  'technique:letters': ['addressee', 'main', 'reading'],
-  'technique:pattern_breaking': ['habit', 'instead', 'obstacle', 'agreement'],
-  'technique:mindfulness': ['exercise', 'noticed', 'result'],
-  'technique:empathic_confrontation': [
-    'behavior',
-    'origin',
-    'cost',
-    'response',
-  ],
-  'technique:pros_cons': ['subject', 'pro', 'contra', 'result'],
-  'technique:mode_interview': ['origin', 'protects', 'fears', 'agreement'],
-  'technique:self_compassion': ['situation', 'critic', 'support', 'response'],
-  'technique:healthy_adult_imagery': ['situation', 'adult', 'child', 'result'],
+  ...TECHNIQUE_WORK_KEYS,
   'exercise:belief': ['belief', 'evidence', 'result'],
   'exercise:schema': ['learned', 'fresh'],
   'exercise:mode': ['learned', 'fresh'],

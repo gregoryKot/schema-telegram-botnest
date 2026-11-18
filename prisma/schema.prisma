@@ -584,6 +584,7 @@ model UserTask {
   targetDays  Int?      // for streak types
   needId      String?
   dueDate     String?   // YYYY-MM-DD
+  catalogId   String?   // запись справочника заданий (shared/src/tasks/catalog), null — не из справочника
   done        Boolean?  // null = in progress
   completedAt DateTime?
   createdAt   DateTime  @default(now())
