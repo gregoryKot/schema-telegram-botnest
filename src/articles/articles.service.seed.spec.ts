@@ -32,7 +32,9 @@ jest.mock('./article-diagrams', () => ({
   ARTICLE_DIAGRAM_KEYS: { 'a-1': 'duration' },
 }));
 
-import { ArticlesService } from './articles.service';
+import { Logger } from '@nestjs/common';
+import { ArticlesService, SEED_VERSION } from './articles.service';
+import { articleFieldsHash } from './articles.seed-sync';
 
 type ArticleRow = {
   id: number;
@@ -120,7 +122,7 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
     expect(db._articles).toHaveLength(2);
   });
 
-  it('версия устарела → рефреш текста встроенных статей, чужие статьи не трогаются', async () => {
+  it('версия устарела, хешей сида ещё нет (первый старт с защитой) → рефреш как раньше, чужие статьи не трогаются', async () => {
     const existingBuiltin: ArticleRow = {
       id: 1,
       slug: 'a-1',
@@ -164,5 +166,101 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
     expect(db._settings['articlesSeedVersion']).not.toBe(
       'ancient-version-marker',
     );
+  });
+
+  // Защита правок из админки: при смене версии статья перезаписывается, только
+  // если её содержимое совпадает с тем, что записал прошлый сид (хеши в
+  // BookingSetting `articlesSeedHashes`).
+  const prevSeedRow = (): ArticleRow => ({
+    id: 1,
+    slug: 'a-1',
+    title: 'Статья 1 (сид v0)',
+    description: 'Описание 1',
+    content: '<p>Контент 1, старый</p>',
+    date: new Date('2026-01-01'),
+    readMin: 5,
+    diagramKey: 'duration',
+  });
+
+  it('версия сменилась, статья не правилась с прошлого сида → перезаписана', async () => {
+    const row = prevSeedRow();
+    const db = makeDb([row], {
+      articlesSeedVersion: 'prev',
+      articlesSeedHashes: JSON.stringify({ 'a-1': articleFieldsHash(row) }),
+    });
+
+    await new ArticlesService(db as any).onModuleInit();
+
+    const a1 = db._articles.find((a) => a.slug === 'a-1')!;
+    expect(a1.title).toBe('Статья 1 (сид v1)');
+    expect(a1.content).toBe('<p>Контент 1</p>');
+    const hashes = JSON.parse(db._settings['articlesSeedHashes']) as Record<
+      string,
+      string
+    >;
+    expect(hashes['a-1']).toBe(articleFieldsHash(a1));
+  });
+
+  it('версия сменилась, статья правлена в админке → осталась, warn со slug', async () => {
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const seeded = prevSeedRow();
+    const edited = { ...seeded, content: '<p>Правка владельца</p>' };
+    const db = makeDb([edited], {
+      articlesSeedVersion: 'prev',
+      articlesSeedHashes: JSON.stringify({ 'a-1': articleFieldsHash(seeded) }),
+    });
+
+    await new ArticlesService(db as any).onModuleInit();
+
+    const a1 = db._articles.find((a) => a.slug === 'a-1')!;
+    expect(a1.content).toBe('<p>Правка владельца</p>');
+    expect(a1.title).toBe('Статья 1 (сид v0)');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('a-1'));
+    expect(db._settings['articlesSeedVersion']).toBe(SEED_VERSION);
+    warn.mockRestore();
+  });
+
+  it('первый старт с защитой: хеши пишутся только для статей, совпадающих с сидом; правленая переживает следующую смену версии', async () => {
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const asSeed: ArticleRow = {
+      ...prevSeedRow(),
+      title: 'Статья 1 (сид v1)',
+      content: '<p>Контент 1</p>',
+    };
+    const edited: ArticleRow = {
+      id: 2,
+      slug: 'a-2',
+      title: 'Статья 2, правка в админке',
+      description: 'Описание 2',
+      content: '<p>Контент 2</p>',
+      date: new Date('2026-01-02'),
+      readMin: 3,
+      diagramKey: null,
+    };
+    const db = makeDb([asSeed, edited], { articlesSeedVersion: SEED_VERSION });
+    const svc = new ArticlesService(db as any);
+
+    await svc.onModuleInit();
+
+    expect(db.article.update).not.toHaveBeenCalled();
+    const hashes = JSON.parse(db._settings['articlesSeedHashes']) as Record<
+      string,
+      string
+    >;
+    expect(Object.keys(hashes)).toEqual(['a-1']);
+
+    db._settings['articlesSeedVersion'] = 'prev';
+    await svc.onModuleInit();
+
+    expect(db.article.update).not.toHaveBeenCalled();
+    expect(db._articles.find((a) => a.slug === 'a-2')!.title).toBe(
+      'Статья 2, правка в админке',
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('a-2'));
+    warn.mockRestore();
   });
 });

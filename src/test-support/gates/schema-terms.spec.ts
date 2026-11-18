@@ -132,16 +132,32 @@ describe('check-schema-terms.mjs', () => {
     expect(ok.stdout).toContain(OK_PREFIX);
   });
 
-  // ——— «Злой Ребёнок» вместо «Сердитый/Упрямый/Разъярённый Ребёнок» ———
-  it('«Злой Ребёнок» (капитал Р) — exit 1', () => {
+  // ——— «Злой Ребёнок» вместо «Сердитый Ребёнок»: любой падеж и регистр ———
+  it.each([
+    ['Злой Ребёнок кричит внутри.', 'именительный'],
+    [
+      'Клетка злого Ребёнка пуста.',
+      'родительный, реальный случай conceptGraphModel.ts (#1347)',
+    ],
+    ['Дай злому ребенку сказать.', 'дательный, строчные, «е»'],
+    ['Встреча со Злящимся Ребёнком.', 'творительный, «Злящийся»'],
+    ['Речь о злом ребёнке.', 'предложный'],
+  ])('«%s» (%s) — exit 1', (text) => {
     const bad = runGate('check-schema-terms.mjs', {
-      'webapp/src/j.tsx': 'const m = "Злой Ребёнок кричит внутри.";\n',
+      'webapp/src/j.tsx': `const m = "${text}";\n`,
     });
     expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Сердитый');
+    expect(bad.stderr).toContain('Сердитый Ребёнок');
+  });
 
+  it.each([
+    'Клетка Сердитого Ребёнка пуста.',
+    'Отвечать злом ребёнку бесполезно.',
+    'Он был зол на весь ребячий мир.',
+    'Злость ребёнка понятна.',
+  ])('«%s» — контроль, exit 0', (text) => {
     const ok = runGate('check-schema-terms.mjs', {
-      'webapp/src/j.tsx': 'const m = "Он был зол на весь ребячий мир.";\n',
+      'webapp/src/j.tsx': `const m = "${text}";\n`,
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
@@ -180,18 +196,27 @@ describe('check-schema-terms.mjs', () => {
     expect(ok.stdout).toContain(OK_PREFIX);
   });
 
-  // ——— Гиперкомпенсатор / Гиперкомпенсация ———
-  it('«Гиперкомпенсатор» — exit 1, «Гиперкомпенсация» — exit 0', () => {
+  // ——— Режима «Гиперкомпенсатор» нет. Законны «гиперкомпенсация» (копинг-стиль)
+  // и «Гиперкомпенсаторные копинговые режимы» (группа, docs/TERMINOLOGY.md) ———
+  it.each([
+    'Гиперкомпенсатор включается при угрозе.',
+    'Голос Гиперкомпенсатора звучит громко.',
+    'Не спорь с гиперкомпенсатором.',
+  ])('«%s» — exit 1', (text) => {
     const bad = runGate('check-schema-terms.mjs', {
-      'shared/src/m.ts':
-        'export const g = "Гиперкомпенсатор — режим избегания боли.";\n',
+      'shared/src/m.ts': `export const g = "${text}";\n`,
     });
     expect(bad.status).toBe(1);
-    expect(bad.stderr).toContain('Гиперкомпенсация');
+    expect(bad.stderr).toContain('Гиперкомпенсаторные копинговые режимы');
+  });
 
+  it.each([
+    'Гиперкомпенсаторные копинговые режимы: Самовозвеличиватель, Гиперконтролёр.',
+    'Один из гиперкомпенсаторных режимов.',
+    'Гиперкомпенсация: копинг-стиль, человек действует так, будто верно обратное.',
+  ])('«%s» — exit 0', (text) => {
     const ok = runGate('check-schema-terms.mjs', {
-      'shared/src/m.ts':
-        'export const g = "Гиперкомпенсация — группа копинговых режимов.";\n',
+      'shared/src/m.ts': `export const g = "${text}";\n`,
     });
     expect(ok.status).toBe(0);
     expect(ok.stdout).toContain(OK_PREFIX);
