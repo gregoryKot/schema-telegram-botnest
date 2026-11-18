@@ -2497,7 +2497,7 @@
   "webapp/src/components/therapist/clientOverviewModel.ts": 130,
   "webapp/src/components/therapist/ClientOverviewParts.tsx": 53,
   "webapp/src/components/therapist/ClientOverviewSidebar.tsx": 45,
-  "webapp/src/components/therapist/ClientOverviewTab.tsx": 78,
+  "webapp/src/components/therapist/ClientOverviewTab.tsx": 81,
   "webapp/src/components/therapist/ClientQuickActions.tsx": 16,
   "webapp/src/components/therapist/ClientSessionInfoCards.tsx": 62,
   "webapp/src/components/therapist/ClientSessionsTab.tsx": 59,
