@@ -30,15 +30,23 @@ describe('anchorPools — подписи под ответами шкалы', ()
     }
   });
 
-  it('подпись не длиннее нынешних и в форме «вы» не содержит «ты»', () => {
+  it('строки не повторяются между потребностями, нет слова «сегодня» (подпись видна и при дооценке)', () => {
+    const all = NEED_ORDER.flatMap((id) => STEPS.flatMap((s) => pools[id][s]));
+    expect(new Set(all).size).toBe(all.length);
+    for (const line of all) expect(line).not.toMatch(/сегодня/i);
+  });
+
+  it('новая подпись — до 100 знаков (пять ответов на телефоне 360×640) и в форме «вы» не содержит «ты»', () => {
     for (const id of NEED_ORDER) {
-      for (const line of STEPS.flatMap((s) => pools[id][s])) {
-        for (const form of line.split('|'))
-          expect(form.length).toBeLessThanOrEqual(110);
-        const vy = line.includes('|') ? line.split('|')[1] : line;
-        expect(vy.replace(/«[^»]*»/g, '')).not.toMatch(
-          /(^|[^а-яё])(ты|тебя|тебе|тобой|твой|твоя|твоё|твои)([^а-яё]|$)/i,
-        );
+      for (const s of STEPS) {
+        pools[id][s].forEach((line, i) => {
+          for (const form of line.split('|'))
+            expect(form.length).toBeLessThanOrEqual(i === 0 ? 110 : 100);
+          const vy = line.includes('|') ? line.split('|')[1] : line;
+          expect(vy.replace(/«[^»]*»/g, '')).not.toMatch(
+            /(^|[^а-яё])(ты|тебя|тебе|тобой|твой|твоя|твоё|твои)([^а-яё]|$)/i,
+          );
+        });
       }
     }
   });
