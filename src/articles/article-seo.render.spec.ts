@@ -185,5 +185,12 @@ describe('injectSeo', () => {
       expect(metaIn(out, 'twitter:title')).toBe('Статья');
       expect(metaIn(out, 'twitter:description')).toBe('Лид статьи');
     });
+
+    it('тело статьи встаёт в #root на место экрана загрузки', () => {
+      expect(source).toContain('<div id="root"><div id="boot">');
+      const out = injectSeo(source, { ...page, bodyHtml: '<p>тело</p>' });
+      expect(out).toContain('<div id="root"><p>тело</p></div>');
+      expect(out).not.toContain('id="boot"');
+    });
   });
 });

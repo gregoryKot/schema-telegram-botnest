@@ -4,6 +4,7 @@
 // каждой своей странице: practiceIndexMiddleware (PRACTICE_PAGES) и
 // ArticleSeoMiddleware (статьи на алиасе). Имя автора во вкладке — только у
 // визитки. Description и JSON-LD не трогаем (docs/open/owner.md, «Автор описан на двух хостах»).
+import { BOOT_SCREEN } from './infra/spa-root';
 
 /** Карточка визитки. Обложка того же размера, что у продукта (1200×630):
  *  og:image:width/height в файле общие — сверка в practice-index-html.spec. */
@@ -33,7 +34,7 @@ const PRACTICE_TAGS: readonly (readonly [string, string, string])[] = [
  *  без экрана загрузки продукта (`#boot`, внутри один свой `</div>`); тега нет — строка как есть. */
 export function practicePreviewHtml(html: string): string {
   const titled = html
-    .replace(/<div id="boot">[\s\S]*?<\/div>/, '')
+    .replace(BOOT_SCREEN, '')
     .replace(
       /<title>[^<]*<\/title>/,
       `<title>${PRACTICE_PREVIEW.title}</title>`,
