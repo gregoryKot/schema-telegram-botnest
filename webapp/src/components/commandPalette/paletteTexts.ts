@@ -26,7 +26,7 @@ export function paletteHelp({ therapist, therapistMode, screenShare }: Mode): st
     therapist && !screenShare && (cabinet ? 'клиенты и их вкладки' : 'клиенты'),
     cabinet && !screenShare && 'задания',
     cabinet ? 'листы справочника' : 'схемы и режимы, упражнения, свои планы и задания',
-    'разделы и действия',
+    'разделы и действия, статьи и настройки',
   ].filter(Boolean).join(', ');
   return parts[0].toUpperCase() + parts.slice(1);
 }

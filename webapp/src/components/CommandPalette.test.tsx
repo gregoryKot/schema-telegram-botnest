@@ -17,14 +17,15 @@ import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers
 
 const getTherapyClients = vi.fn();
 const trackEvent = vi.fn();
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 vi.mock('../api', () => ({
   api: {
-    getTherapyClients: (...a: unknown[]) => getTherapyClients(...a), trackEvent: (...a: unknown[]) => trackEvent(...a),
+    getTherapyClients: (...a: unknown[]) => getTherapyClients(...a), trackEvent: (...a: unknown[]) => trackEvent(...a), listArticles: () => Promise.resolve([]),
     getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]),
   },
 }));
 
-const HELP = 'Схемы и режимы, упражнения, свои планы и задания, разделы и действия';
+const HELP = 'Схемы и режимы, упражнения, свои планы и задания, разделы и действия, статьи и настройки';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -98,7 +99,7 @@ describe('CommandPalette — поиск', () => {
     renderPalette();
     fireEvent.change(screen.getByPlaceholderText('Схема, упражнение, задание, раздел…'), { target: { value: 'zzz-нет-такого' } });
     expect(screen.getByText('Ничего не нашлось')).toBeTruthy();
-    expect(screen.getByText('Здесь ищутся: схемы и режимы, упражнения, свои планы и задания, разделы и действия')).toBeTruthy();
+    expect(screen.getByText('Здесь ищутся: схемы и режимы, упражнения, свои планы и задания, разделы и действия, статьи и настройки')).toBeTruthy();
   });
 });
 
@@ -116,7 +117,7 @@ describe('CommandPalette — подпись поля поиска', () => {
   it('в кабинете терапевта — с листами справочника; под полем — что ищется', () => {
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
     expect(screen.getByPlaceholderText('Клиент, вкладка, задание, лист справочника…')).toBeTruthy();
-    expect(screen.getByText('Клиенты и их вкладки, задания, листы справочника, разделы и действия')).toBeTruthy();
+    expect(screen.getByText('Клиенты и их вкладки, задания, листы справочника, разделы и действия, статьи и настройки')).toBeTruthy();
   });
 
   it('клиенту под полем — что ищется; ввод убирает подсказку', () => {

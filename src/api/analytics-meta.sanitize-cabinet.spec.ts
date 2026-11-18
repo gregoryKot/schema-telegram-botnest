@@ -63,6 +63,8 @@ describe('sanitizeMeta: события плана работы', () => {
       'exercise',
       'plan',
       'own_task',
+      'article',
+      'setting',
     ]) {
       expect(
         sanitizeMeta('search_result_open', {
@@ -80,7 +82,7 @@ describe('sanitizeMeta: события плана работы', () => {
       }),
     ).toEqual({ kind: 'client', typed: false, recent: true });
     for (const meta of [
-      { kind: 'article', typed: true },
+      { kind: 'page', typed: true },
       { kind: 'guide' },
       { kind: 'guide', typed: 'да' },
       {},

@@ -2,10 +2,9 @@
 // «Справочника» и действий. Каждая строка — в группе с подписью. Пустой запрос — обзор: первые клиенты,
 // разделы, действия. Запрос — вес строки (shared/src/search/rankRows.ts): внутри группы по убыванию
 // веса, группы — по лучшему весу, при равенстве — в порядке GROUP_ORDER. Только в кабинете терапевта:
-// листы справочника (guideRows.ts), вкладки карточки клиента (clientTabRows.ts), задания из справочника
-// (taskRows.ts) и действия кабинета (cabinetActionRows.ts); шаг «Кому дать задание?» — одни клиенты
-// (clientRows.ts). Только в режиме клиента: свои задания, упражнения, схемы, режимы и планы
-// (clientModeRows.ts). Без запроса первой группой — «Недавнее» (recentRows.ts).
+// листы справочника (guideRows.ts), вкладки карточки клиента (clientTabRows.ts), задания (taskRows.ts) и действия
+// кабинета (cabinetActionRows.ts); шаг «Кому дать задание?» — одни клиенты (clientRows.ts). Только в режиме клиента:
+// своё, упражнения, схемы и режимы (clientModeRows.ts). У всех по запросу — настройки и статьи (commonRows.ts). Без запроса первой — «Недавнее» (recentRows.ts).
 import { buildPlusActions } from '../../../../shared/src/quickActions/quickActions';
 import { hasLatin, toRussianLayout } from '../../../../shared/src/search/keyboardLayout';
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
@@ -15,6 +14,7 @@ import { quickActionSign } from '../quickActionSign';
 import { cabinetActionRows } from './cabinetActionRows';
 import { ASSIGN_GROUP, CLIENTS_GROUP, assigneeRows, clientRows, clientsPreview } from './clientRows';
 import { allClientModeRows, clientModeRows } from './clientModeRows';
+import { ARTICLE_GROUP, SETTINGS_GROUP, allCommonRows, commonRows } from './commonRows';
 import { CLIENT_TAB_GROUP, allClientTabRows, clientTabRows } from './clientTabRows';
 import type { CmdRow } from './cmdRow';
 import { GUIDE_GROUP, allGuideRows, guideRows } from './guideRows';
@@ -26,12 +26,12 @@ import { TASK_GROUP, allTaskRows, taskRows } from './taskRows';
 
 export const GROUP = {
   recent: RECENT_GROUP, clients: CLIENTS_GROUP, clientTabs: CLIENT_TAB_GROUP, sections: 'Разделы', guide: GUIDE_GROUP,
-  tasks: TASK_GROUP, actions: 'Действия', assign: ASSIGN_GROUP,
+  tasks: TASK_GROUP, actions: 'Действия', assign: ASSIGN_GROUP, settings: SETTINGS_GROUP, articles: ARTICLE_GROUP,
   ownTasks: OWN_TASK_GROUP, exercises: EXERCISE_GROUP, schemas: SCHEMA_GROUP, modes: MODE_GROUP, plans: PLAN_GROUP,
 } as const;
 const GROUP_ORDER: string[] = [
   GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.ownTasks, GROUP.exercises, GROUP.schemas, GROUP.modes, GROUP.plans,
-  GROUP.guide, GROUP.tasks, GROUP.actions,
+  GROUP.guide, GROUP.tasks, GROUP.actions, GROUP.settings, GROUP.articles,
 ];
 export type { PaletteGuide, PaletteInput } from './paletteInput';
 
@@ -85,13 +85,13 @@ export function buildPaletteRows(input: PaletteInput): CmdRow[] {
   if (cabinet && input.assign) return assigneeRows(input, input.assign.catalogId);
   const rows = [...clients, ...sectionRows(input), ...actionRows(input)];
   if (query.trim() === '') {
-    const more = cabinet ? [...allGuideRows(input), ...allClientTabRows(input), ...allTaskRows(input)] : allClientModeRows(input);
+    const more = [...(cabinet ? [...allGuideRows(input), ...allClientTabRows(input), ...allTaskRows(input)] : allClientModeRows(input)), ...allCommonRows(input)];
     return [...recentRows(input.recent, [...rows, ...more]), ...(cabinet ? [] : ownTasksPreview(input)), ...clientsPreview(clients, tr), ...rows.slice(clients.length)];
   }
   const scored = rows
     .map((row) => ({ row, score: rowScore(row.label, row.search, query) }))
     .filter((r) => r.score > ROW_SCORE.none);
-  scored.push(...(cabinet ? [...guideRows(input), ...clientTabRows(input), ...taskRows(input)] : clientModeRows(input)));
+  scored.push(...(cabinet ? [...guideRows(input), ...clientTabRows(input), ...taskRows(input)] : clientModeRows(input)), ...commonRows(input));
   const best = new Map<string, number>();
   for (const { row, score } of scored) best.set(row.group, Math.max(best.get(row.group) ?? 0, score));
   const order = (group: string) => GROUP_ORDER.indexOf(group);

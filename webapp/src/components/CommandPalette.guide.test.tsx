@@ -20,9 +20,10 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   };
 });
 const trackEvent = vi.fn();
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 vi.mock('../api', () => ({
   api: {
-    getTherapyClients: () => Promise.resolve([]), trackEvent: (...a: unknown[]) => trackEvent(...a),
+    getTherapyClients: () => Promise.resolve([]), trackEvent: (...a: unknown[]) => trackEvent(...a), listArticles: () => Promise.resolve([]),
     getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]),
   },
 }));

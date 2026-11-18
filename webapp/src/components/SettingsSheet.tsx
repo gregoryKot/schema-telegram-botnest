@@ -6,7 +6,7 @@ import { api, type UserSettings } from '../api';
 import { SettingsSkeleton } from './settingsSheet/SettingsSkeleton';
 import { useSaveBadge } from './settingsSheet/useSaveBadge';
 import { SaveBadge } from './settingsSheet/SaveBadge';
-import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { useSettingsScroll } from './settingsSheet/settingsLaunch';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { pairInviteShare } from '../../../shared/src/share/cards/inviteShare';
@@ -80,7 +80,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   }
   const reloadSettings = () => api.getSettings().then(setSettings, (e: unknown) => console.warn('настройки не перечитались', e)); // после веб-пушей: новый notifyChannel
 
-  const scrollTo = (id: string) => scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
+  const scrollTo = useSettingsScroll(!!settings && subView === 'main'); // раздел из общего поиска — после загрузки
 
   const isTherapist = userRole === 'THERAPIST';
   const canSwitchMode = isTherapist && onSetTherapistMode;

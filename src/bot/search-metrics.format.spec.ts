@@ -51,6 +51,11 @@ describe('formatSearchMetrics', () => {
     );
   });
 
+  it('статьи и настройки — последними в разбивке', () => {
+    const text = formatSearchMetrics(metrics({ setting: 2, article: 3 }));
+    expect(text).toContain('Открыли результатов: 5 (статей — 3, настроек — 2)');
+  });
+
   it('сколько открыто после набора запроса и из недавнего', () => {
     const text = formatSearchMetrics(
       metrics({ client: 1, section: 2, guide: 3, action: 4 }, 6, 2),

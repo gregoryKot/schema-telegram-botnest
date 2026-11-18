@@ -15,7 +15,8 @@ const CLIENT: TherapyClientSummary = {
   meetingDays: [], schemaIds: [],
 };
 const getTherapyClients = vi.fn(() => Promise.resolve([CLIENT]));
-vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients(), trackEvent: vi.fn(), getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]) } }));
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
+vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients(), trackEvent: vi.fn(), listArticles: () => Promise.resolve([]), getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]) } }));
 
 afterEach(() => { cleanup(); setScreenShare(false); });
 
@@ -41,7 +42,7 @@ describe('CommandPalette — «Показ экрана»', () => {
     expect(screen.getByText(NOTE)).toBeTruthy();
     expect(screen.queryByText('Ничего не нашлось')).toBeNull();
     // Подсказка, что ищется, — без слова «клиенты».
-    expect(screen.getByText('Здесь ищутся: листы справочника, разделы и действия')).toBeTruthy();
+    expect(screen.getByText('Здесь ищутся: листы справочника, разделы и действия, статьи и настройки')).toBeTruthy();
   });
 
   it('контроль: без режима клиент на месте и подписи нет; выключение возвращает его сразу', async () => {
