@@ -21,7 +21,13 @@ const item = (over: Partial<SessionWorkItem> = {}): SessionWorkItem => ({
   ...over,
 });
 const note = (id: number, date: string, work: SessionWorkItem[]) =>
-  ({ id, date, text: '', createdAt: `${date}T10:00:00Z`, work }) as TherapistNote;
+  ({
+    id,
+    date,
+    text: '',
+    createdAt: `${date}T10:00:00Z`,
+    work,
+  }) as TherapistNote;
 const mark = (day: string, id = 'punitive_critic'): TechniqueJournalEntry => ({
   day,
   techniqueId: 'chairwork',
@@ -48,7 +54,9 @@ describe('sessionWorkEntries', () => {
       { noteId: 2, date: '2026-11-05', work: [item({ id: 'old' })] },
       { noteId: 1, date: '2026-01-05', work: [item({ id: 'w0' })] },
     ];
-    expect(sessionWorkEntries(page, older).map((e) => e.noteId)).toEqual([2, 1]);
+    expect(sessionWorkEntries(page, older).map((e) => e.noteId)).toEqual([
+      2, 1,
+    ]);
     expect(sessionWorkEntries(page, null).map((e) => e.noteId)).toEqual([2]);
   });
 });
@@ -59,7 +67,9 @@ describe('sessionJournal', () => {
     {
       noteId: 3,
       date: '2026-11-07',
-      work: [item({ id: 'c', kind: 'custom', customName: 'Рисунок', modeIds: [] })],
+      work: [
+        item({ id: 'c', kind: 'custom', customName: 'Рисунок', modeIds: [] }),
+      ],
     },
   ];
 
@@ -104,12 +114,20 @@ describe('workFromNames и workMarks', () => {
 
   it('дни техники с этим режимом — только техники и только свои', () => {
     const entries: SessionWorkEntry[] = [
-      { noteId: 1, date: '2026-11-05', work: [item(), item({ kind: 'exercise', refId: 'safe' })] },
-      { noteId: 2, date: '2026-11-06', work: [item({ modeIds: [], schemaIds: ['abandonment'] })] },
+      {
+        noteId: 1,
+        date: '2026-11-05',
+        work: [item(), item({ kind: 'exercise', refId: 'safe' })],
+      },
+      {
+        noteId: 2,
+        date: '2026-11-06',
+        work: [item({ modeIds: [], schemaIds: ['abandonment'] })],
+      },
     ];
-    expect(workMarks(entries, { kind: 'mode', id: 'punitive_critic' })).toEqual([
-      { techniqueId: 'chairwork', day: '2026-11-05' },
-    ]);
+    expect(workMarks(entries, { kind: 'mode', id: 'punitive_critic' })).toEqual(
+      [{ techniqueId: 'chairwork', day: '2026-11-05' }],
+    );
     expect(workMarks(entries, { kind: 'schema', id: 'abandonment' })).toEqual([
       { techniqueId: 'chairwork', day: '2026-11-06' },
     ]);
