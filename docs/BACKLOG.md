@@ -26,7 +26,7 @@
 ## В работе
 
 - 🔧 **Справочник заданий: каталог и выбор в «Новом задании»** — #1366, владелец 2026-11-18. Часть 1 (эта ветка): каталог `shared/src/tasks/catalog/` из пунктов «Между сессиями», раздел «Из справочника» в `webapp/src/components/TaskCreateSheet.tsx`, текстовые задания клиенту без аккаунта.
-  Часть 2 смержена (см. «Сделано»); осталась часть 3.
+  Часть 2 — PR #1373 (см. «Сделано»); осталась часть 3. После мержа #1373 — проверить зелёный `main` и деплой.
   Находки: «Критик или забота?» (`shared/src/schemaTherapy/guide/modes/critic.ts:9-12`) начинается с «Открыть в „Практиках“…» и теперь назначается клиенту без аккаунта, у которого «Практик» нет; событие `task_assign_source` не отличает «Дать заданием» и шаблон от плитки и своего (`webapp/src/components/TaskCreateSheet.tsx`); `TASK_ASSIGN_SOURCES` объявлен дважды (`src/analytics/cabinet-events.constants.ts`, `shared/src/share/taskAssignAnalytics.ts`) без теста-сверки (№4).
 
 - 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. Сделано: PR1 (#1332) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; PR2 (#1367) — ручка пунктов по клиенту `GET /api/therapy/notes/:clientId/work` (`src/therapy/session-work-list.ts`), журнал «На сессиях» и лист техники берут пункты из итогов (`shared/src/therapy/sessionWork/sessionJournal.ts`, `webapp/src/components/therapist/useSessionWork.ts`), тап по пункту открывает запись на «Сессиях», свои режимы терапевта — в выборе «С чем работали» и в подписях.
@@ -169,7 +169,7 @@
 
 ## Сделано
 
-- ✅ **Справочник заданий, часть 2: «зачем» у клиента и варианты текста** (#1366) — `UserTask.catalogId`, тексты «зачем» `shared/src/tasks/catalog/taskWhy*.ts`, строка задания клиента `webapp/src/sections/practice/TaskRowTitle.tsx`; у семи названий с разными текстами в «Из справочника» видны все варианты.
+- ✅ **Справочник заданий, часть 2: «зачем» у клиента и варианты текста** (#1366, PR #1373) — `UserTask.catalogId`, тексты «зачем» `shared/src/tasks/catalog/taskWhy*.ts`, строка задания клиента `webapp/src/sections/practice/TaskRowTitle.tsx`; у семи названий с разными текстами в «Из справочника» видны все варианты.
 
 - ✅ **«Что делали»: живой спек чтения и записи `TherapistNote.work`** — «сохранил → нашёл» через HTTP и БД в `test/therapy-ownership-2.e2e-spec.ts` (#1330, PR2).
 
