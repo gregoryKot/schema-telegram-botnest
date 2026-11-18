@@ -29,6 +29,15 @@ describe('CreateTaskDto', () => {
     ).resolves.toContain('targetDays');
   });
 
+  it('catalogId — только id из справочника заданий', async () => {
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, catalogId: 'тайм-аут' }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(CreateTaskDto, { ...VALID, catalogId: 'нет-такого' }),
+    ).resolves.toContain('catalogId');
+  });
+
   it('пустой text — отказ', async () => {
     await expect(
       errorsFor(CreateTaskDto, { ...VALID, text: '' }),

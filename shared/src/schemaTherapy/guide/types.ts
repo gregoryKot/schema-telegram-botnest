@@ -9,23 +9,9 @@
  * каждый файл содержания — билдер `(tr) => …`, а не константа.
  */
 import type { Tr } from '../../needs/types';
+import type { TechniqueId } from './techniqueIds';
 
-/** Техника из библиотеки (guide/techniques/*). */
-export type TechniqueId =
-  | 'imagery_rescripting'
-  | 'future_imagery'
-  | 'chairwork'
-  | 'historical_role_play'
-  | 'flashcards'
-  | 'cognitive_work'
-  | 'letters'
-  | 'pattern_breaking'
-  | 'mindfulness'
-  | 'empathic_confrontation'
-  | 'pros_cons'
-  | 'mode_interview'
-  | 'self_compassion'
-  | 'healthy_adult_imagery';
+export type { TechniqueId } from './techniqueIds';
 
 /**
  * Типы заданий, которые подсказка умеет выдать упражнением из «Практик».

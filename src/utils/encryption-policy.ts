@@ -169,6 +169,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     text: enc(`${TH}/therapy-tasks.service.ts`),
     needId: ID,
     dueDate: DATE,
+    catalogId: ID,
   },
   TherapistNote: {
     date: DATE,

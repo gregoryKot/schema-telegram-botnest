@@ -243,6 +243,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
     needId?: string;
     dueDate?: string;
     clientId?: UserId;
+    /** id записи справочника заданий (shared/tasks/catalog). */
+    catalogId?: string;
   }) => t.postJson<UserTask>('/api/therapy/tasks', body),
   getTasks: () => t.get<UserTask[]>('/api/therapy/tasks'),
   getTaskHistory: () => t.get<UserTask[]>('/api/therapy/tasks/history'),

@@ -13,6 +13,7 @@ import {
 import { ClientIdField } from './client-id.decorator';
 import { TASK_TEXT_MAX } from '../../utils/text-limits';
 import { IsCalendarDay } from '../../utils/calendar-day';
+import { TASK_CATALOG_ID_MAX, TASK_CATALOG_IDS } from '../task-catalog-ids';
 
 // Типы заданий из форм обоих фронтендов (TaskCreateSheet) плюс schema_diary/
 // mode_diary для стрик-прогресса; 'custom' — «своё задание» (T6: был любой строкой).
@@ -68,6 +69,13 @@ export class CreateTaskDto {
   @IsOptional()
   @ClientIdField()
   clientId?: string;
+
+  // Запись справочника заданий: по ней клиент видит «зачем».
+  @IsOptional()
+  @IsString()
+  @MaxLength(TASK_CATALOG_ID_MAX)
+  @IsIn(TASK_CATALOG_IDS)
+  catalogId?: string;
 }
 
 export class CompleteTaskDto {

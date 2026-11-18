@@ -259,6 +259,18 @@ describe('TherapyTasksService — createTask', () => {
     );
     expect(tasks[0].assignedBy).toBe(THERAPIST);
   });
+
+  it('catalogId сохраняется у задания терапевта; своей цели клиент его не ставит', async () => {
+    const { service, tasks } = makeService();
+    const body = {
+      type: 'custom',
+      text: 'из справочника',
+      catalogId: 'тайм-аут',
+    };
+    await service.createTask(CLIENT_A, body, THERAPIST);
+    await service.createTask(CLIENT_A, body);
+    expect(tasks.map((t) => t.catalogId)).toEqual(['тайм-аут', null]);
+  });
 });
 
 describe('TherapyTasksService — авто-экспирация и авто-завершение стриков', () => {

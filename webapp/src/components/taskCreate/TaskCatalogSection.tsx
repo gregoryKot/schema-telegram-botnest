@@ -1,15 +1,16 @@
 // «Из справочника» в листе «Новое задание» (TaskCreateSheet, только терапевту): текстовые задания без экрана в
 // приложении — их можно дать и клиенту без аккаунта. Данные — shared/tasks/catalog (пункты «Между сессиями»
-// справочника); «Взять» отдаёт листу текст «Своего задания», дальше его можно дописать.
+// справочника); «Взять» отдаёт листу текст «Своего задания» и id записи, дальше текст можно дописать.
 import { useMemo, useState } from 'react';
 import { haptic } from '../../haptic';
 import { useGuide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
 import { pickForm, useAddressForm } from '../../utils/addressForm';
 import {
-  buildTaskCatalog, catalogTaskWhen, customTaskText, searchTaskCatalog, type CatalogTask,
+  buildTaskCatalog, catalogTaskWhen, customTaskText, searchTaskCatalog, type CatalogTask, type CatalogVariant,
 } from '../../../../shared/src/tasks/catalog/taskCatalog';
 
-function CatalogRow({ task, open, onToggle, onTake }: { task: CatalogTask; open: boolean; onToggle: () => void; onTake: () => void }) {
+function CatalogRow({ task, open, onToggle, onTake }: { task: CatalogTask; open: boolean; onToggle: () => void; onTake: (variant: CatalogVariant) => void }) {
+  const many = task.variants.length > 1;
   return (
     <li className="sk-cat-item">
       <button
@@ -21,18 +22,32 @@ function CatalogRow({ task, open, onToggle, onTake }: { task: CatalogTask; open:
       </button>
       {open && (
         <div className="sk-cat-body">
-          <div className="ds-label">Что делать</div>
-          <p className="sk-cat-text">{task.text}</p>
-          <div className="ds-label">Когда давать</div>
-          <p className="sk-cat-text">{catalogTaskWhen(task).join(', ')}</p>
-          <button type="button" className="ds-btn ds-btn--secondary sk-cat-take" onClick={onTake}>Взять</button>
+          {task.why && (
+            <>
+              <div className="ds-label">Зачем — увидит клиент</div>
+              <p className="sk-cat-text">{task.why}</p>
+            </>
+          )}
+          {many && <p className="ds-sub sk-cat-text">В справочнике {task.variants.length} варианта текста — для разных режимов и схем.</p>}
+          {/* Варианты одного названия: у каждого свой текст, свои режимы и схемы и своя «Взять». */}
+          {task.variants.map((variant, i) => (
+            <div key={variant.text} className="sk-cat-variant" role="group" aria-label={many ? `Вариант ${i + 1}` : undefined}>
+              <div className="ds-label">Когда давать</div>
+              <p className="sk-cat-text">{catalogTaskWhen(variant).join(', ')}</p>
+              <div className="ds-label">Что делать</div>
+              <p className="sk-cat-text">{variant.text}</p>
+              <button type="button" className="ds-btn ds-btn--secondary sk-cat-take" onClick={() => onTake(variant)}>
+                {many ? 'Взять этот вариант' : 'Взять'}
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </li>
   );
 }
 
-export function TaskCatalogSection({ onTake }: { onTake: (text: string) => void }) {
+export function TaskCatalogSection({ onTake }: { onTake: (text: string, catalogId: string) => void }) {
   const form = useAddressForm();
   const texts = useGuide();
   const catalog = useMemo(
@@ -52,7 +67,7 @@ export function TaskCatalogSection({ onTake }: { onTake: (text: string) => void 
     <section className="sk-field sk-cat" aria-label="Задания из справочника">
       <div className="ds-label">Из справочника</div>
       <p className="ds-sub sk-cat-lead">
-        Задания из «Между сессиями» справочника: клиент делает их без приложения. «Взять» подставит текст в «Своё задание» — его можно дописать.
+        Задания из «Между сессиями» справочника: клиент делает их без приложения. «Взять» подставит текст в «Своё задание» — его можно дописать. Рядом с заданием клиент увидит «зачем».
       </p>
       <input
         type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={80}
@@ -67,7 +82,7 @@ export function TaskCatalogSection({ onTake }: { onTake: (text: string) => void 
               <CatalogRow
                 key={task.id} task={task} open={openId === task.id}
                 onToggle={() => { haptic.select(); setOpenId(openId === task.id ? null : task.id); }}
-                onTake={() => { haptic.select(); setOpenId(null); onTake(customTaskText(task)); }}
+                onTake={(variant) => { haptic.select(); setOpenId(null); onTake(customTaskText({ title: task.title, text: variant.text }), task.id); }}
               />
             ))}
           </ul>

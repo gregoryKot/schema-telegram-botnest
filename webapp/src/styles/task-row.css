@@ -60,3 +60,6 @@
   .cp-task:has(> .cp-task-acts) > .cp-task-acts { grid-area: acts; flex-wrap: wrap; }
   .cp-task-acts > :last-child:not(:only-child) { margin-left: auto; }
 }
+/* Задание из справочника: под названием «что делать» и «зачем» обычным текстом (TaskRowTitle). */
+.cp-task-part { margin: var(--space-4) 0 0; font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; white-space: pre-line; }
+.cp-task-part-label { margin-right: 6px; font-weight: 700; color: var(--text-sub); }
