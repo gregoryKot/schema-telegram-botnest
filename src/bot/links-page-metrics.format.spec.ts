@@ -22,6 +22,27 @@ describe('formatLinksPageMetrics', () => {
     expect(text).not.toContain('статьи');
   });
 
+  it('площадки одного проекта названы по-русски, в порядке страницы', () => {
+    const one = (keys: string[]) =>
+      formatLinksPageMetrics({
+        total30: keys.length,
+        byTarget: Object.fromEntries(keys.map((k) => [k, 1])),
+        byFrom: {},
+      });
+    expect(one(['project_max', 'project_tg'])).toContain(
+      'Куда: «Всё по схеме» в Телеграме — 1, «Всё по схеме» в Макс — 1',
+    );
+    const ha = one(['ha_max', 'ha_vk', 'ha_threads', 'channel_ha']);
+    expect(ha).toContain(
+      'Куда: «Здоровый Взрослый» в Телеграме — 1, «Здоровый Взрослый» в Тредс — 1, ' +
+        '«Здоровый Взрослый» во ВКонтакте — 1, «Здоровый Взрослый» в Макс — 1',
+    );
+    expect(one(['schema_max', 'channel_schema'])).toContain(
+      'Куда: канал о схема-терапии в Телеграме — 1, канал о схема-терапии в Макс — 1',
+    );
+    expect(ha.replace(/<\/?b>/g, '')).not.toMatch(/[a-z]/i);
+  });
+
   it('пустая БД: дружелюбная строка, без NaN и нулей', () => {
     const text = formatLinksPageMetrics({
       total30: 0,

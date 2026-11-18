@@ -1,14 +1,20 @@
 // Страница ссылок kotlarewski.gr/links: событие links_page_click
 // { target, from } — какую кнопку нажали и из какой соцсети пришли. Гость без
 // входа, поэтому событие анонимное (POST /api/public-event). Парные списки на
-// сайте — shared/src/analytics/linksPage.ts (сверка — links-page.sync.spec.ts).
+// сайте — shared/src/analytics/linksPage*.ts (сверка — links-page.sync.spec.ts).
 export const LINKS_PAGE_EVENTS = ['links_page_click'] as const;
 
 export const LINKS_PAGE_TARGETS = [
   'booking',
   'project',
+  'project_tg',
+  'project_max',
   'channel_ha',
+  'ha_threads',
+  'ha_vk',
+  'ha_max',
   'channel_schema',
+  'schema_max',
   'about',
   'articles',
   'write',
@@ -28,20 +34,3 @@ export const LINKS_PAGE_FROM = [
   'other',
   'direct',
 ] as const;
-
-const TARGETS: ReadonlySet<string> = new Set(LINKS_PAGE_TARGETS);
-const FROM: ReadonlySet<string> = new Set(LINKS_PAGE_FROM);
-
-/** Только target и from из списков; иначе null — событие не пишется. */
-export function sanitizeLinksPageMeta(
-  meta: Record<string, unknown> | undefined,
-): { target: string; from: string } | null {
-  const target = meta?.target;
-  const from = meta?.from;
-  return typeof target === 'string' &&
-    TARGETS.has(target) &&
-    typeof from === 'string' &&
-    FROM.has(from)
-    ? { target, from }
-    : null;
-}

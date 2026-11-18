@@ -1,30 +1,13 @@
 // Страница ссылок визитки (kotlarewski.gr/links) — одна ссылка для шапок соцсетей:
-// фото, имя и столбик кнопок. Статична, данных не грузит. Кнопки — обычные <a href>
+// фото, имя и столбик пунктов. Статична, данных не грузит. Ссылки — обычные <a href>
 // в той же вкладке: так предсказуемо во встроенных браузерах Telegram и Instagram.
 import { AuthorAvatar } from '../../components/AuthorAvatar';
 import { ThemeIcon } from '../../components/landing-kit';
 import { useTheme } from '../../components/landing-kit-hooks';
-import { readyLinks, type ReadyLink } from './linksData';
-import { trackLinksClick } from './trackLinksClick';
+import { LINKS } from './linksData';
+import { readyLinks } from './linksModel';
+import { LinkRow } from './LinkRow';
 import '../../styles/links-page.css';
-
-const isExternal = (href: string) => /^https?:/.test(href);
-
-function LinkButton({ link }: { link: ReadyLink }) {
-  const arrow = isExternal(link.href) ? '↗' : '→';
-  return (
-    <li className="lk-item">
-      <a className={`lk lk-${link.kind}`} href={link.href} onClick={() => trackLinksClick(link.id)}>
-        <span className="lk-text">
-          {link.kind === 'feature' && <span className="lk-eyebrow">Проект</span>}
-          <span className="lk-title">{link.title}</span>
-          {link.note && <span className="lk-note">{link.note}</span>}
-        </span>
-        <span className="lk-arrow" aria-hidden>{arrow}</span>
-      </a>
-    </li>
-  );
-}
 
 export function LinksPage() {
   const { theme, toggle } = useTheme();
@@ -42,7 +25,7 @@ export function LinksPage() {
         </header>
         <nav aria-label="Ссылки">
           <ul className="links-list">
-            {readyLinks().map((link) => <LinkButton key={link.id} link={link} />)}
+            {readyLinks(LINKS).map((link) => <LinkRow key={link.title} link={link} />)}
           </ul>
         </nav>
       </div>
