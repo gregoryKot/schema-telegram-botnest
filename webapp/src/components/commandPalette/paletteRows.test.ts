@@ -2,13 +2,16 @@
 // только в кабинете терапевта, клиенты скрыты при «Показе экрана».
 import { describe, it, expect, vi } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
+import type { CatalogTask } from '../../../../shared/src/tasks/catalog/taskCatalog';
 import { buildReference, type ReferenceTexts } from '../../sections/guide/guideReferenceModel';
 import { buildReferenceBody } from '../../sections/guide/guideReferenceBody';
 import { getSchemaById } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
 import {
   FIXTURE_GUIDE, FIXTURE_PRACTICE_NOTE, FIXTURE_SCHEMA_GUIDE, FIXTURE_TECHNIQUES,
 } from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
-import { buildPaletteRows, searchPalette, paletteExamples, paletteHelp, CLIENTS_SHOWN, GROUP, type PaletteInput } from './paletteRows';
+import { CLIENTS_SHOWN } from './clientRows';
+import { buildPaletteRows, searchPalette, GROUP, type PaletteInput } from './paletteRows';
+import { paletteExamples, paletteHelp } from './paletteTexts';
 
 const tr = (ty: string) => ty;
 const texts: ReferenceTexts = {
@@ -17,7 +20,10 @@ const texts: ReferenceTexts = {
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [FIXTURE_PRACTICE_NOTE],
 };
-const guide = { ref: buildReference(texts, tr), body: buildReferenceBody(texts, tr) };
+const TASKS: CatalogTask[] = [
+  { id: 'pismo-kritiku', title: 'Письмо Критику', variants: [{ text: 'Написать письмо', forModes: [], forSchemas: [] }], why: '', group: 'modes' },
+];
+const guide = { ref: buildReference(texts, tr), body: buildReferenceBody(texts, tr), tasks: TASKS };
 const SCHEMA = getSchemaById('abandonment')!.name;
 
 const client = (telegramId: number, name: string): TherapyClientSummary => ({
@@ -26,9 +32,11 @@ const client = (telegramId: number, name: string): TherapyClientSummary => ({
 });
 const CLIENTS = ['Анна', 'Борис', 'Вера', 'Глеб', 'Дина', 'Ева', 'Клим'].map((n, i) => client(i + 1, n));
 
-const run = () => ({ section: vi.fn(), path: vi.fn(), client: vi.fn(), toggleMode: vi.fn(), quick: vi.fn(), guideSheet: vi.fn() });
+const run = () => ({ section: vi.fn(), path: vi.fn(), client: vi.fn(), toggleMode: vi.fn(), quick: vi.fn(), guideSheet: vi.fn(),
+  pickAssignee: vi.fn(), assign: vi.fn(), addClient: vi.fn(), toggleScreenShare: vi.fn(),
+});
 const input = (over: Partial<PaletteInput>): PaletteInput => ({
-  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, recent: [], run: run(), ...over,
+  query: '', tr, therapist: true, therapistMode: true, screenShare: false, clients: CLIENTS, guide, recent: [], assign: null, run: run(), ...over,
 });
 const groups = (rows: { group: string }[]) => rows.map((r) => r.group).filter((g, i, all) => g !== all[i - 1]);
 const labels = (rows: { label: string }[]) => rows.map((r) => r.label);
@@ -85,9 +93,9 @@ describe('buildPaletteRows — запрос', () => {
     expect(buildPaletteRows(input({ query: 'покинутость', guide: null }))).toEqual([]);
   });
 
-  it('группы — по лучшему весу, при равенстве: клиенты, разделы, справочник, действия', () => {
-    // «Клим» — начало имени; «клиенты», «клиента» — слово раздела и действия (равный вес); в листах — только в тексте
-    expect(groups(buildPaletteRows(input({ query: 'кли' })))).toEqual([GROUP.clients, GROUP.sections, GROUP.actions, GROUP.guide]);
+  it('группы — по лучшему весу, при равенстве: клиенты, их вкладки, разделы, справочник, действия', () => {
+    // «Клим» — начало имени, клиент один — следом его вкладки; «клиенты», «клиента» — слово раздела и действия (равный вес); в листах — только в тексте
+    expect(groups(buildPaletteRows(input({ query: 'кли' })))).toEqual([GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.actions, GROUP.guide]);
     // начало названия раздела «Справочник» весит больше, чем слово в середине
     const rows = buildPaletteRows(input({ query: 'с', clients: [client(9, 'Иван Сидоров')] }));
     expect(groups(rows).slice(0, 2)).toEqual([GROUP.sections, GROUP.clients]);
@@ -116,13 +124,13 @@ describe('опечатки и чужая раскладка', () => {
     const [sheet] = buildPaletteRows(input({ query: 'уязвмый' }));
     expect(sheet).toMatchObject({ kind: 'guide', label: 'Уязвимый Ребёнок', sub: expect.stringContaining('Режимы') });
     const rows = buildPaletteRows(input({ query: 'Алексадр', clients: [client(1, 'Александр')] }));
-    expect(labels(rows)).toEqual(['Александр']);
+    expect(labels(rows.filter((r) => r.kind === 'client'))).toEqual(['Александр']);
   });
 
   it('латиница без результатов — запрос в русской раскладке; строки и запрос — переведённые', () => {
     const found = searchPalette(input({ query: 'crkbv', clients: [client(1, 'Склим')] }));
     expect(found).toMatchObject({ query: 'склим', layoutFixed: true });
-    expect(labels(found.rows)).toEqual(['Склим']);
+    expect(labels(found.rows.filter((r) => r.kind === 'client'))).toEqual(['Склим']);
   });
 
   it('перевод ничего не нашёл или запрос русский — запрос исходный', () => {
@@ -139,7 +147,7 @@ describe('подсказки', () => {
   });
 
   it('что ищется — по роли, режиму и «Показу экрана»', () => {
-    expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: false })).toBe('Клиенты, листы справочника, разделы и действия');
+    expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: false })).toBe('Клиенты и их вкладки, задания, листы справочника, разделы и действия');
     expect(paletteHelp({ therapist: true, therapistMode: true, screenShare: true })).toBe('Листы справочника, разделы и действия');
     expect(paletteHelp({ therapist: false, therapistMode: false, screenShare: false })).toBe('Разделы и действия');
   });
@@ -170,6 +178,65 @@ describe('«Недавнее»', () => {
   });
 
   it('при запросе группы нет', () => {
-    expect(groups(buildPaletteRows(input({ recent: RECENT, query: 'клим' })))).toEqual([GROUP.clients]);
+    expect(groups(buildPaletteRows(input({ recent: RECENT, query: 'клим' })))).toEqual([GROUP.clients, GROUP.clientTabs]);
+  });
+});
+
+describe('buildPaletteRows — кабинет: вкладки, задания, действия', () => {
+  const keys = (rows: { key: string }[]) => rows.map((r) => r.key);
+  const ACTIONS = ['action:assign-task', 'action:add-client', 'action:screen-share'];
+
+  it('действия кабинета видны без запроса и находятся по запросу; клиенту их нет', () => {
+    expect(keys(buildPaletteRows(input({})))).toEqual(expect.arrayContaining(ACTIONS));
+    expect(labels(buildPaletteRows(input({ query: 'дать задание' })))[0]).toBe('Дать задание');
+    expect(labels(buildPaletteRows(input({ query: 'добавить' })))).toContain('Добавить клиента');
+    expect(labels(buildPaletteRows(input({ query: 'показ экрана' })))).toContain('Включить показ экрана');
+    expect(labels(buildPaletteRows(input({ query: 'доска' })))).toContain('Задания');
+    for (const mode of [{ therapist: false, therapistMode: false, clients: [] }, { therapistMode: false }]) {
+      expect(keys(buildPaletteRows(input(mode))).filter((k) => ACTIONS.includes(k))).toEqual([]);
+    }
+  });
+
+  it('«Показ экрана» включён: выключатель есть, «Дать задание» нет; без клиентов — только «Добавить клиента»', () => {
+    const shared = buildPaletteRows(input({ screenShare: true }));
+    expect(labels(shared)).toContain('Выключить показ экрана');
+    expect(keys(shared)).not.toContain('action:assign-task');
+    expect(keys(buildPaletteRows(input({ clients: [] }))).filter((k) => ACTIONS.includes(k))).toEqual(['action:add-client']);
+  });
+
+  it('«Дать задание» и строка каталога палитру не закрывают и ведут к выбору клиента', () => {
+    const r = run();
+    const rows = buildPaletteRows(input({ query: 'письмо', run: r }));
+    const task = rows.find((row) => row.kind === 'task')!;
+    expect(task).toMatchObject({ key: 'task:pismo-kritiku', group: GROUP.tasks, stay: true, sub: 'Дать клиенту · При режимах' });
+    task.action();
+    expect(r.pickAssignee).toHaveBeenCalledWith('pismo-kritiku');
+    const action = buildPaletteRows(input({ run: r })).find((row) => row.key === 'action:assign-task')!;
+    expect(action.stay).toBe(true);
+    action.action();
+    expect(r.pickAssignee).toHaveBeenLastCalledWith(null);
+  });
+
+  it('шаг «Кому дать задание?»: только клиенты, все без обрезки, не для «Недавнего»; запрос — по имени', () => {
+    const r = run();
+    const rows = buildPaletteRows(input({ assign: { catalogId: 'pismo-kritiku' }, recent: ['client:1'], run: r }));
+    expect(groups(rows)).toEqual([GROUP.assign]);
+    expect(rows).toHaveLength(CLIENTS.length);
+    expect(rows.every((row) => row.transient && !row.after)).toBe(true);
+    rows[1].action();
+    expect(r.assign).toHaveBeenCalledWith(2, 'pismo-kritiku');
+    expect(labels(buildPaletteRows(input({ assign: { catalogId: null }, query: 'вер' })))).toEqual(['Вера']);
+  });
+
+  it('«Недавнее» находит вкладку клиента и задание по ключу; при «Показе экрана» — нет', () => {
+    const recent = ['client-tab:3:plan', 'task:pismo-kritiku'];
+    const rows = buildPaletteRows(input({ recent })).filter((row) => row.group === GROUP.recent);
+    expect(labels(rows)).toEqual(['Вера · План работы', 'Письмо Критику']);
+    expect(buildPaletteRows(input({ recent, screenShare: true })).some((row) => row.group === GROUP.recent)).toBe(false);
+  });
+
+  it('вкладки единственного найденного клиента идут сразу за ним', () => {
+    const rows = buildPaletteRows(input({ query: 'вера' }));
+    expect(groups(rows).slice(0, 2)).toEqual([GROUP.clients, GROUP.clientTabs]);
   });
 });

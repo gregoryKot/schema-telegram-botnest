@@ -52,7 +52,14 @@ describe('sanitizeMeta: события плана работы', () => {
   });
 
   it('search_result_open: вид из списка, «был ли запрос» и «из недавнего»; текст запроса — мимо', () => {
-    for (const kind of ['client', 'section', 'guide', 'action']) {
+    for (const kind of [
+      'client',
+      'client_tab',
+      'section',
+      'guide',
+      'task',
+      'action',
+    ]) {
       expect(
         sanitizeMeta('search_result_open', {
           kind,

@@ -9,9 +9,8 @@ import {
 
 const EVENT: AnalyticsEventName = 'search_result_open';
 
-// Что открывают из общего поиска, для /stats (событие search_result_open, смысл —
-// src/analytics/cabinet-events.constants.ts). Без сырого SQL: count через Prisma, разрез
-// по meta — фильтром пути. Образец — task-assign-metrics.service.ts.
+// Что открывают из общего поиска, для /stats (событие search_result_open). Без сырого SQL:
+// count через Prisma, разрез по meta — фильтром пути, как в task-assign-metrics.service.ts.
 @Injectable()
 export class SearchMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -27,15 +26,16 @@ export class SearchMetricsService {
       this.prisma.analyticsEvent.count({
         where: { name: EVENT, createdAt, meta: { path: [path], equals } },
       });
-    const [clients30, sections30, guide30, actions30, typed30, recent30] =
-      await Promise.all([
-        count('kind', 'client'),
-        count('kind', 'section'),
-        count('kind', 'guide'),
-        count('kind', 'action'),
-        count('typed', true),
-        count('recent', true),
-      ]);
-    return { clients30, sections30, guide30, actions30, typed30, recent30 };
+    const kind = (k: SearchResultKind) => count('kind', k);
+    return {
+      clients30: await kind('client'),
+      tabs30: await kind('client_tab'),
+      sections30: await kind('section'),
+      guide30: await kind('guide'),
+      tasks30: await kind('task'),
+      actions30: await kind('action'),
+      typed30: await count('typed', true),
+      recent30: await count('recent', true),
+    };
   }
 }

@@ -1,13 +1,13 @@
-// Аналитика общего поиска (палитра ⌘K, правило №8): открыли найденное — клиента, раздел, лист
-// справочника или действие. Парный allow-list — src/analytics/cabinet-events.constants.ts, строка
-// в /stats — src/bot/search-metrics.*. Текст запроса, имя клиента и название листа в событие не
-// попадают (правило №7). Имя в trackEvent — строковым литералом: так его видит трипваер analytics-sync.
+// Аналитика общего поиска (палитра ⌘K, правило №8): открыли найденное — клиента, вкладку его карточки, раздел, лист справочника,
+// задание из справочника или действие. Парный allow-list — src/analytics/cabinet-events.constants.ts, строка в /stats — src/bot/search-metrics.*.
+// Текст запроса, имя клиента, названия листа и задания в событие не попадают (правило №7). Имя в trackEvent — литералом: так его видит трипваер analytics-sync.
 export const SEARCH_RESULT_OPEN_EVENT = 'search_result_open';
-
 export const SEARCH_RESULT_KINDS = [
   'client',
+  'client_tab',
   'section',
   'guide',
+  'task',
   'action',
 ] as const;
 export type SearchResultKind = (typeof SEARCH_RESULT_KINDS)[number];

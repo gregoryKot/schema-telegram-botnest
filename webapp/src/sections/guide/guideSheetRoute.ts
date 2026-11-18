@@ -1,8 +1,7 @@
 // Переход к листу «Справочника» по адресу: общий поиск (палитра ⌘K) ведёт на /cabinet/guide с
 // состоянием маршрута { guideSheet }, а справочник открывает лист и состояние очищает —
 // «Назад» и обновление страницы лист повторно не открывают.
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useRouteStateOnce } from '../../hooks/useRouteStateOnce';
 import { THERAPIST_NAV } from '../../components/appShell/navLook';
 import type { Reference, ReferenceItem } from './guideReferenceModel';
 
@@ -29,30 +28,10 @@ export function findReferenceItem(ref: Reference, target: GuideSheetTarget): Ref
   return null;
 }
 
-/**
- * Открывает лист из состояния маршрута — один раз на переход: сначала состояние очищается (replace),
- * лист открывается следующим шагом, чтобы его запись истории легла уже поверх чистой.
- */
+/** Открывает лист из состояния маршрута — один раз на переход (useRouteStateOnce). */
 export function useRouteGuideSheet(ref: Reference, open: (item: ReferenceItem) => void): void {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const target = targetOf(location.state);
-  const key = target ? `${target.kind}:${target.id}` : null;
-  const pending = useRef<GuideSheetTarget | null>(null);
-  const live = useRef({ ref, open, target });
-  useLayoutEffect(() => { live.current = { ref, open, target }; });
-  useEffect(() => {
-    const now = live.current;
-    if (now.target) {
-      pending.current = now.target;
-      navigate(location.pathname + location.search + location.hash, { replace: true, state: null });
-      return;
-    }
-    const next = pending.current;
-    pending.current = null;
-    const item = next && findReferenceItem(now.ref, next);
-    if (item) now.open(item);
-    // Только смена цели: адрес и тексты между переходом и открытием не меняются.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  useRouteStateOnce(targetOf, (target) => {
+    const item = findReferenceItem(ref, target);
+    if (item) open(item);
+  }, (target) => `${target.kind}:${target.id}`);
 }

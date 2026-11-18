@@ -2,8 +2,10 @@ import { formatSearchMetrics } from './search-metrics.format';
 
 const EMPTY = {
   clients30: 0,
+  tabs30: 0,
   sections30: 0,
   guide30: 0,
+  tasks30: 0,
   actions30: 0,
   typed30: 0,
   recent30: 0,
@@ -25,8 +27,16 @@ describe('formatSearchMetrics', () => {
     expect(text).not.toMatch(/разделов|действий|набрав|недавнего/);
   });
 
+  it('вкладки клиента и задания из справочника входят в сумму и в разбивку', () => {
+    const text = formatSearchMetrics({ ...EMPTY, tabs30: 2, tasks30: 5 });
+    expect(text).toContain(
+      'Открыли результатов: 7 (вкладок клиента — 2, заданий из справочника — 5)',
+    );
+  });
+
   it('сколько открыто после набора запроса и из недавнего', () => {
     const text = formatSearchMetrics({
+      ...EMPTY,
       clients30: 1,
       sections30: 2,
       guide30: 3,
