@@ -293,6 +293,21 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('часть сида статей по месяцам исключена, соседний модуль сида — нет', () => {
+    const ok = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/articles/articles.seed.2026-11.ts':
+        "export const A = [{ content: 'Вы можете заметить этот паттерн у себя' }];\n",
+    });
+    expect(ok.status).toBe(0);
+    const bad = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/articles/articles.seed-sync.ts':
+        "export const msg = 'Вы можете заметить этот паттерн у себя';\n",
+    });
+    expect(bad.status).toBe(1);
+  });
+
   it('текст лендинга в src/ (его читает и сервер для робота) исключён как маркетинг', () => {
     const res = runGate('check-second-person.mjs', {
       'scripts/second-person-baseline.json': JSON.stringify({}),
@@ -603,6 +618,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'shared/src/booking/clientTimeZone.ts',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
+      'src/articles/articles.seed.2026-11.ts',
       'src/articles/home-landing.content.ts',
       'src/bot/healthy-adult.data.ts',
       // Заявка терапевта в личку владельцу (adminPlainText).
