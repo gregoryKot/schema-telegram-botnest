@@ -9,6 +9,7 @@ import { SignHead } from './SignArt';
 import { ClientQuickActions } from './ClientQuickActions';
 import { PaperGroups } from './ClientOverviewGroups';
 import { OverviewEmpty, OverviewEntries } from './ClientOverviewParts';
+import { ClientWorkSummary } from './ClientWorkSummary';
 import { diaryPreview, groupSchemasByDomain, summarizeModes } from './clientOverviewModel';
 import { domainLook, ENTITY_LOOK, modeGroupLook } from '../../../../shared/src/theme/entityLook';
 import type { ClientDetail } from './clientSheetTypes';
@@ -66,6 +67,8 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
             <div className="ds-sub tk-note-date">{fmtDate(notes[0].date)}</div>
           </section>
         )}
+
+        {!isEmpty && <ClientWorkSummary detail={detail} />}
 
         {entries.length > 0 && <OverviewEntries entries={entries} onAll={() => setClientTab('client_notes')} />}
 

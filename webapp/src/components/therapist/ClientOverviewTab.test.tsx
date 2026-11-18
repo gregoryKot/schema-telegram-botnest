@@ -35,7 +35,7 @@ describe('ClientOverviewTab', () => {
       } as unknown as Partial<ClientDetail>)} />,
     );
     const col = container.querySelector('.tk-col') as HTMLElement;
-    expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
+    expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Что было сделано', 'Последние записи']);
     // Белых карточек с рамкой и цветных точек больше нет.
     expect(col.querySelector('.ds-card, .ds-dot, .tone-tint, .tone-fill, .ds-chip')).toBeNull();
     // Цель — лист соломы.
@@ -73,6 +73,35 @@ describe('ClientOverviewTab', () => {
     expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Открыть концептуализацию']);
     within(col).getByRole('button', { name: 'Открыть концептуализацию' }).click();
     expect(setClientTab).toHaveBeenCalledWith('concept');
+  });
+
+  it('«Что было сделано»: пункт итогов и отметка «Делали сегодня» за тот же день — один раз; режим со словами клиента; «Журнал →» ведёт в «Задания»', () => {
+    const setClientTab = vi.fn();
+    const work = (id: string) => [{ id, kind: 'technique', refId: 'chairwork', modeIds: ['punitive_critic'], schemaIds: ['abandonment'], needIds: [], fields: {} }];
+    render(<ClientOverviewTab selectedClient={client} detail={detailOf({
+      setClientTab,
+      notes: [{ id: 2, date: '2026-11-08', text: '', work: work('w2') }, { id: 1, date: '2026-11-01', text: 'Текст', work: work('w1') }],
+      notesPage: { notes: [{ id: 2, date: '2026-11-08', text: '', work: work('w2') }, { id: 1, date: '2026-11-01', text: 'Текст', work: work('w1') }], total: 2 },
+      localConcept: { modeLinks: [{ modeId: 'punitive_critic', alias: 'Судья', done: [{ techniqueId: 'chairwork', day: '2026-11-08' }] }] },
+    } as unknown as Partial<ClientDetail>)} />);
+    const block = screen.getByText('Что было сделано').closest('section') as HTMLElement;
+    const row = block.querySelector('.tk-done-row') as HTMLElement;
+    expect(block.querySelectorAll('.tk-done-row').length).toBe(1);
+    expect(row.textContent).toContain('Работа со стульями');
+    expect(row.textContent).toContain('2 раза · последний — ');
+    expect(within(block).getByText('Судья (Карающий Критик) — 2 раза')).toBeTruthy();
+    expect(within(block).getByText('Покинутость / Нестабильность — 2 раза')).toBeTruthy();
+    expect(within(block).queryByText('Потребности')).toBeNull();
+    fireEvent.click(within(block).getByRole('button', { name: 'Журнал →' }));
+    expect(setClientTab).toHaveBeenCalledWith('tasks');
+  });
+
+  it('«Что было сделано» без пунктов и отметок — тихая строка, без цифр и ссылки', () => {
+    render(<ClientOverviewTab selectedClient={client} detail={detailOf({ notes: [{ id: 1, date: '2026-10-20', text: 'Текст' }] } as unknown as Partial<ClientDetail>)} />);
+    const block = screen.getByText('Что было сделано').closest('section') as HTMLElement;
+    expect(block.textContent).toContain('Пока пусто');
+    expect(block.querySelector('.tk-done-row, .tk-done-with')).toBeNull();
+    expect(within(block).queryByRole('button')).toBeNull();
   });
 
   it('«Карта режимов» → «Редактировать →» открывает концептуализацию, а не холст', () => {
