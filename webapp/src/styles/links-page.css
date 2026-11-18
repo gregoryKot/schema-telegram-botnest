@@ -8,7 +8,7 @@
     radial-gradient(120% 340px at 50% -80px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
     var(--bg);
 }
-.links-col { position: relative; max-width: 440px; margin: 0 auto; }
+.links-col { position: relative; max-width: clamp(440px, 34vw, 480px); margin: 0 auto; }
 
 .links-theme {
   position: absolute; top: -16px; right: -6px; z-index: 1;
@@ -18,7 +18,12 @@
   color: var(--text-sub); cursor: pointer;
 }
 
-.links-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 22px; }
+.links-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 18px; }
+/* Тонкое кольцо акцента вокруг фото. */
+.links-photo {
+  display: flex; padding: 3px; border-radius: 50%;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
 .links-name {
   margin: 14px 0 0;
   font-family: var(--serif); font-weight: 400;
@@ -47,31 +52,53 @@
 .lk-primary .lk-note { color: color-mix(in srgb, var(--on-accent) 82%, transparent); }
 .lk-primary .lk-arrow { font-size: 20px; color: var(--on-accent); }
 
-/* Карточка проекта — крупнее остальных. */
-.lk-feature {
-  align-items: flex-end; padding: 18px;
-  border-color: var(--accent-line);
-  background:
-    radial-gradient(140% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
-    var(--surface);
-}
-.lk-feature .lk-text { gap: 6px; }
+/* Карточка проекта — обложка: знак и название, строки «для кого», кнопка-действие. */
+.lk-feature { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px 18px; }
+.lk-cover-head { display: flex; align-items: center; gap: 14px; }
+.lk-mark { border-radius: 12px; box-shadow: 0 0 0 1px var(--line); }
 .lk-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-.lk-feature .lk-title { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.05; letter-spacing: -0.01em; }
-.lk-feature .lk-arrow { color: var(--accent); font-size: 20px; }
+.lk-feature .lk-title { font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
+.lk-roles { display: flex; flex-direction: column; gap: 4px; }
+.lk-role { position: relative; padding-left: 16px; font-size: 13.5px; line-height: 1.4; color: var(--text-sub); }
+.lk-role::before {
+  content: ''; position: absolute; left: 1px; top: .5em;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+}
+.lk-role:first-child::before { background: var(--c-clay); }
+.lk-role:last-child::before { background: var(--c-moss); }
+.lk-role-who { font-weight: 600; color: var(--text); }
+.lk-cta {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 42px; padding: 0 16px; border-radius: 12px;
+  border: 1px solid var(--accent-line);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  font-size: 14.5px; font-weight: 600; color: var(--accent);
+}
+.lk-cta .lk-arrow { color: inherit; font-size: 17px; }
+
+/* Цитата-пример: одна строка из канала. */
+.lk-quote {
+  margin-top: 4px; padding-left: 12px;
+  border-left: 2px solid var(--accent-line);
+  font-family: var(--serif); font-style: italic; font-size: 15.5px; line-height: 1.35; color: var(--text);
+}
 
 /* Пункт без основной ссылки: название слева, значки площадок справа; с подписью — под ней. */
 .lk-static-noted { flex-direction: column; align-items: flex-start; padding-top: 14px; padding-bottom: 14px; }
 
-/* Карточка проекта со значками ботов: рамку держит пункт, ссылка и значки — соседи внутри. */
+/* Карточка проекта со значками ботов: рамку держит пункт, ссылка и значки — соседи внутри.
+   Узор — дуги от правого верхнего угла, гаснут к середине; свечение — градиентом. */
 .lk-stack {
   border: 1px solid var(--accent-line); border-radius: 18px;
   background:
-    radial-gradient(140% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
+    radial-gradient(circle at 100% 0%, transparent 0, var(--surface) 240px),
+    repeating-radial-gradient(circle at 100% 0%, transparent 0 21px, color-mix(in srgb, var(--accent) 22%, transparent) 21px 22px),
+    radial-gradient(140% 120% at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
     var(--surface);
+  transition: border-color .15s ease;
 }
 .lk-stack > .lk { min-height: 0; border: 0; background: none; }
-.lk-stack > .lk-places { padding: 0 18px 16px; }
+.lk-stack > .lk-places { padding: 0 18px 14px; }
 
 .lk-places { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .lk-places-label { margin-right: 2px; font-size: 12.5px; line-height: 1.3; color: var(--text-faint); }
@@ -93,7 +120,8 @@ a.lk:active { transform: scale(.985); }
   .lk-place:hover .lk-place-dot { border-color: var(--line-strong); color: var(--text); transform: translateY(-1px); }
   .lk-stack > a.lk:hover { transform: none; }
   .lk-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
-  .lk-feature:hover { border-color: var(--accent); }
+  .lk-stack:hover { border-color: var(--accent); }
+  .lk-feature:hover .lk-cta { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
   a.lk:hover .lk-arrow { transform: translateX(3px); }
   .links-theme:hover { color: var(--text); }
 }
