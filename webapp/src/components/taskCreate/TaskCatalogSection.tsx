@@ -3,6 +3,7 @@
 // справочника); «Взять» отдаёт листу текст «Своего задания», дальше его можно дописать.
 import { useMemo, useState } from 'react';
 import { haptic } from '../../haptic';
+import { useGuide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
 import { pickForm, useAddressForm } from '../../utils/addressForm';
 import {
   buildTaskCatalog, catalogTaskWhen, customTaskText, searchTaskCatalog, type CatalogTask,
@@ -33,10 +34,19 @@ function CatalogRow({ task, open, onToggle, onTake }: { task: CatalogTask; open:
 
 export function TaskCatalogSection({ onTake }: { onTake: (text: string) => void }) {
   const form = useAddressForm();
-  const catalog = useMemo(() => buildTaskCatalog((ty, vy) => pickForm(form, ty, vy)), [form]);
+  const texts = useGuide();
+  const catalog = useMemo(
+    () => (texts ? buildTaskCatalog(texts, (ty, vy) => pickForm(form, ty, vy)) : []),
+    [texts, form],
+  );
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const groups = searchTaskCatalog(catalog, query);
+  const empty = texts === undefined
+    ? <div className="ds-sub" role="status">Загружаем справочник…</div>
+    : texts === null
+      ? <p className="ds-empty" role="status">Справочник не загрузился — задания появятся после перезагрузки страницы.</p>
+      : <p className="ds-empty">Ничего не нашлось</p>;
 
   return (
     <section className="sk-field sk-cat" aria-label="Задания из справочника">
@@ -48,7 +58,7 @@ export function TaskCatalogSection({ onTake }: { onTake: (text: string) => void 
         type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={80}
         placeholder="Найти по названию" aria-label="Найти задание в справочнике" className="ds-input ds-input--search"
       />
-      {groups.length === 0 && <p className="ds-empty">Ничего не нашлось</p>}
+      {groups.length === 0 && empty}
       {groups.map((group) => (
         <div key={group.id} className="sk-cat-group">
           <div className="ds-sub sk-cat-group-title">{group.title}</div>

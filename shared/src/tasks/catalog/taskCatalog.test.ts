@@ -6,6 +6,7 @@ import {
   customTaskText,
   searchTaskCatalog,
 } from './taskCatalog';
+import * as guide from '../../schemaTherapy/guide';
 import { TASK_TEXT_MAX } from '../../limits/textLimits';
 
 const tr = (ty: string) => ty;
@@ -71,7 +72,7 @@ describe('collectTaskCatalog', () => {
 });
 
 describe('buildTaskCatalog на данных справочника', () => {
-  const catalog = buildTaskCatalog(tr);
+  const catalog = buildTaskCatalog(guide, tr);
 
   it('id уникальны, у каждой записи есть «когда давать», текст задания влезает в лимит', () => {
     expect(catalog.length).toBeGreaterThan(0);

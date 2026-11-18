@@ -1,11 +1,10 @@
 // Каталог текстовых заданий «Из справочника» (лист «Новое задание»): задания без экрана в
 // приложении. Своих текстов здесь нет — всё собрано из пунктов «Между сессиями» режимов и схем
 // справочника терапевта; при каких режимах и схемах давать, выводится из тех же данных.
-import {
-  buildModeGuides,
-  buildSchemaGuides,
-  type BetweenSessionsItem,
-} from '../../schemaTherapy/guide';
+// Только типы: тексты справочника — отдельный чанк (см. guideLoader); статический импорт вернул бы их
+// в чанк листа «Новое задание», который тянет и guideAssign.
+import type { BetweenSessionsItem } from '../../schemaTherapy/guide';
+import type { Guide } from '../../therapy/conceptGraph/guideLoader';
 import {
   getModeById,
   getSchemaById,
@@ -15,7 +14,7 @@ import {
   normalizeSearchText,
 } from '../../utils/searchNormalize';
 
-type Tr = Parameters<typeof buildModeGuides>[0];
+type Tr = Parameters<Guide['buildModeGuides']>[0];
 export type CatalogGroupId = 'modes' | 'schemas';
 
 export interface CatalogTask {
@@ -90,8 +89,11 @@ export function collectTaskCatalog(
   return [...byId.values()];
 }
 
-export function buildTaskCatalog(tr: Tr): CatalogTask[] {
-  return collectTaskCatalog(buildModeGuides(tr), buildSchemaGuides(tr));
+export function buildTaskCatalog(
+  guide: Pick<Guide, 'buildModeGuides' | 'buildSchemaGuides'>,
+  tr: Tr,
+): CatalogTask[] {
+  return collectTaskCatalog(guide.buildModeGuides(tr), guide.buildSchemaGuides(tr));
 }
 
 /** Записи, чьё название содержит запрос, по группам; пустые группы не показываются. */
