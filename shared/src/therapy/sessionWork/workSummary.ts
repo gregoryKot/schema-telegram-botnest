@@ -100,7 +100,10 @@ export function workSummary(days: readonly SessionJournalDay[]): WorkSummary {
       else if (day > prev.lastDay) prev.lastDay = day;
     }
   }
-  const list = [...rows.values()].map((r) => ({ ...r, count: done.count(r.key) }));
+  const list = [...rows.values()].map((r) => ({
+    ...r,
+    count: done.count(r.key),
+  }));
   list.sort((a, b) =>
     a.lastDay < b.lastDay ? 1 : a.lastDay > b.lastDay ? -1 : b.count - a.count,
   );
