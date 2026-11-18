@@ -23,15 +23,12 @@ import { buildAvoidanceGuides } from './modes/avoidance';
 import { buildOvercontrolGuides } from './modes/overcontrol';
 import { buildAttackGuides } from './modes/attack';
 import { buildHealthyGuides } from './modes/healthy';
-import { buildImageryTechniques } from './techniques/imagery';
-import { buildChairTechniques } from './techniques/chairs';
-import { buildStanceTechniques } from './techniques/stance';
-import { buildHomeworkTechniques } from './techniques/homework';
 import { buildRejectionGuides } from './schemas/rejection';
 import { buildAutonomyGuides } from './schemas/autonomy';
 import { buildLimitsGuides } from './schemas/limits';
 import { buildOtherDirectedGuides } from './schemas/otherDirected';
 import { buildVigilanceGuides } from './schemas/vigilance';
+import { TECHNIQUE_BUILDERS } from './techniques/all';
 import { buildPracticeNotes } from './practice';
 
 const MODE_BUILDERS: ModeGuideBuilder[] = [
@@ -43,13 +40,6 @@ const MODE_BUILDERS: ModeGuideBuilder[] = [
   buildOvercontrolGuides,
   buildAttackGuides,
   buildHealthyGuides,
-];
-
-const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
-  buildImageryTechniques,
-  buildChairTechniques,
-  buildStanceTechniques,
-  buildHomeworkTechniques,
 ];
 
 const DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
