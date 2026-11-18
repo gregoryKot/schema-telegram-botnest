@@ -32,6 +32,9 @@ export const createPlanApi = (t: PlanTransport) => ({
   updatePlanItem: (id: number, body: PlanItemPatch) =>
     t.patchJson<PlanItem>(`${BASE}/items/${id}`, body),
   deletePlanItem: (id: number) => t.del(`${BASE}/items/${id}`),
+  /** Новый порядок плана: все id пунктов клиента; неполный список сервер отвергает (404). */
+  reorderPlan: (clientId: UserId, ids: number[]) =>
+    t.postJson<{ ok: true }>(`${BASE}/order/${clientId}`, { ids }),
 });
 
 export type PlanApi = ReturnType<typeof createPlanApi>;

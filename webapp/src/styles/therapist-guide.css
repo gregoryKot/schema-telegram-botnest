@@ -63,3 +63,13 @@
 .gd-more .ds-fold-btn { padding-inline: 0; }
 .gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; padding-inline: 0; }
 .gd-sources p { margin: 0; font-size: 12px; line-height: 1.5; }
+
+/* «В план» (#1337): кнопка у рубрики и пункта листа, лист выбора частей (PlanAddSheet) */
+.gd-point-act { margin-top: 8px; }
+.gd-acts { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pa-page { padding: 8px 20px 32px; }
+.pa-block { display: flex; flex-direction: column; gap: 10px; }
+.pa-set { border: 0; margin: 0; padding: 0; min-width: 0; }
+.pa-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 16px; line-height: 1.5; color: var(--text); cursor: pointer; }
+.pa-check + .pa-check { border-top: 1px solid var(--paper-sunk); }
+.pa-check > input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }

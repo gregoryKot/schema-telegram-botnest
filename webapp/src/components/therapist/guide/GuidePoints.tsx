@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 // Детали листа подсказок (GuideSheet.tsx, стили — therapist-guide.css): реплики «Как это звучит» и списки пунктов.
 
 /** «Как это звучит»: реплики терапевта на бумаге листа (группы, домена); кавычки ставит лист, в данных их нет. */
@@ -13,7 +15,7 @@ export function GuideVoice({ lines = [] }: { lines?: string[] }) {
 }
 
 /** Пункт списка: строка или подпись канала работы над строкой. */
-export type GuidePoint = string | { lead: string; text: string };
+export type GuidePoint = string | { lead: string; text: string; action?: ReactNode };
 
 /** Шаги (`ordered`: номер Literata слева, тихо) или главные пункты (маленькая точка). */
 export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?: boolean }) {
@@ -22,7 +24,7 @@ export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?:
     <List className={ordered ? 'gd-steps' : 'gd-points'}>
       {items.map((item, i) => (
         <li key={i}>
-          {typeof item === 'string' ? item : <><span className="gd-lead">{item.lead}</span>{item.text}</>}
+          {typeof item === 'string' ? item : <><span className="gd-lead">{item.lead}</span>{item.text}{item.action && <div className="gd-point-act">{item.action}</div>}</>}
         </li>
       ))}
     </List>

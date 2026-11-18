@@ -17,6 +17,19 @@ export function groupPlan(items: readonly PlanItem[]): PlanGroup[] {
     .filter((g) => g.items.length > 0);
 }
 
+/** Пункт меняется местами с соседом своей рубрики (dir: -1 — выше, 1 — ниже). Возвращает весь план в порядке
+ *  показа с `position` 0..n-1; null — двигать некуда (край рубрики, пункта нет). */
+export function movePlanItem(items: readonly PlanItem[], id: number, dir: -1 | 1): PlanItem[] | null {
+  const groups = groupPlan(items).map((g) => [...g.items]);
+  const group = groups.find((g) => g.some((i) => i.id === id));
+  if (!group) return null;
+  const from = group.findIndex((i) => i.id === id);
+  const to = from + dir;
+  if (to < 0 || to >= group.length) return null;
+  [group[from], group[to]] = [group[to], group[from]];
+  return groups.flat().map((i, position) => ({ ...i, position }));
+}
+
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
   planned: 'намечено',
   active: 'в работе',

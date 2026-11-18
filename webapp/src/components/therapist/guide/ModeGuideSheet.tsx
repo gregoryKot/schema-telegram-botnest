@@ -1,6 +1,8 @@
 import type { ModeGuideView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import { GUIDE_CHANNELS as CHANNELS } from '../../../../../shared/src/therapy/plan/planItem'; // четыре канала работы с режимом, пустой не показывается
 import { GuideSection } from './GuideSection';
+import { channelSeed } from './guidePlan';
+import { PlanButton } from './PlanButton';
 import { modeGuideLook } from './guideLook';
 import { GuidePoints } from './GuidePoints';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
@@ -17,7 +19,8 @@ export function ModeGuideSheet({ modeName, view, ...actions }: Props) {
   const { guide } = view;
   const channels = CHANNELS.flatMap(([key, lead]) => {
     const text = guide[key]?.trim();
-    return text ? [{ lead, text }] : [];
+    const action = actions.onPlan && <PlanButton label={lead} onClick={() => actions.onPlan?.(channelSeed(key, text ?? ''))} />;
+    return text ? [{ lead, text, action }] : [];
   });
   return (
     <GuideSheet
