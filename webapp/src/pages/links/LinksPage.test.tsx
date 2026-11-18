@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Страница ссылок: пункты и ярлычки площадок рисуются по массиву (ссылка без адреса
+// Страница ссылок: пункты и значки площадок рисуются по массиву (ссылка без адреса
 // скрыта), клик шлёт links_page_click со своей целью и источником из адреса страницы.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
@@ -45,25 +45,26 @@ describe('LinksPage', () => {
     expect(shown).toEqual(readyLinks(LINKS).flatMap(itemLinks).map((l) => [l.href, null]));
   });
 
-  it('ярлычки площадок — соседи основной ссылки, ссылок внутри ссылок нет', () => {
+  it('значки площадок — соседи основной ссылки, ссылок внутри ссылок нет', () => {
     const { container } = render(<LinksPage />);
     expect(container.querySelector('a a')).toBeNull();
   });
 
   it.each([
-    ['Всё по схеме', 'Telegram', botUrl, 'project_tg'],
-    ['Всё по схеме', 'MAX', 'https://max.ru/se13646337_bot', 'project_max'],
-    ['Здоровый Взрослый', 'Telegram', 'https://t.me/MyHealthyAdult', 'channel_ha'],
-    ['Здоровый Взрослый', 'Threads', 'https://www.threads.com/@yourhealthyadult', 'ha_threads'],
-    ['Здоровый Взрослый', 'ВКонтакте', 'https://vk.ru/healthyadult', 'ha_vk'],
-    ['Здоровый Взрослый', 'MAX', 'https://max.ru/join/I-uqSia8bTFSfwNswMeNIDTKcbydSmUntfPcVMEz2Ts', 'ha_max'],
-    ['Канал о схема-терапии', 'Telegram', 'https://t.me/SchemeHappens', 'channel_schema'],
-    ['Канал о схема-терапии', 'MAX', 'https://max.ru/se13646337_biz', 'schema_max'],
-  ])('«%s» → %s: свой адрес и своя цель клика', (item, place, href, target) => {
+    ['Всё по схеме', 'Бот «Всё по схеме» в Telegram', botUrl, 'project_tg'],
+    ['Всё по схеме', 'Бот «Всё по схеме» в MAX', 'https://max.ru/se13646337_bot', 'project_max'],
+    ['Здоровый Взрослый', 'Здоровый Взрослый в Telegram', 'https://t.me/MyHealthyAdult', 'channel_ha'],
+    ['Здоровый Взрослый', 'Здоровый Взрослый в Threads', 'https://www.threads.com/@yourhealthyadult', 'ha_threads'],
+    ['Здоровый Взрослый', 'Здоровый Взрослый во ВКонтакте', 'https://vk.ru/healthyadult', 'ha_vk'],
+    ['Здоровый Взрослый', 'Здоровый Взрослый в MAX', 'https://max.ru/join/I-uqSia8bTFSfwNswMeNIDTKcbydSmUntfPcVMEz2Ts', 'ha_max'],
+    ['Канал о схема-терапии', 'Канал о схема-терапии в Telegram', 'https://t.me/SchemeHappens', 'channel_schema'],
+    ['Канал о схема-терапии', 'Канал о схема-терапии в MAX', 'https://max.ru/se13646337_biz', 'schema_max'],
+  ])('«%s» → значок «%s»: свой адрес и своя цель клика', (item, name, href, target) => {
     render(<LinksPage />);
-    const chip = within(screen.getByText(item).closest('li')!).getByRole('link', { name: place });
-    expect(chip.getAttribute('href')).toBe(href);
-    fireEvent.click(chip);
+    const icon = within(screen.getByText(item).closest('li')!).getByRole('link', { name });
+    expect(icon.getAttribute('href')).toBe(href);
+    expect(icon.getAttribute('title')).toBe(name);
+    fireEvent.click(icon);
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target, from: 'direct' }, { keepalive: true });
   });
 

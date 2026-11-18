@@ -1,10 +1,10 @@
-// Модель страницы ссылок: пункт — название, подпись, основная ссылка и ярлычки
+// Модель страницы ссылок: пункт — название, подпись, основная ссылка и значки
 // площадок-зеркал. Ссылка без адреса не рисуется; пункт без ссылок скрыт.
 import type { LinksPageTarget } from '../../../../shared/src/analytics/linksPageTargets';
 
 type Linked = { id: LinksPageTarget; href: string | null };
 
-/** Ярлычок площадки: подпись — её название, цель клика своя. */
+/** Значок площадки: по названию выбирается знак, цель клика своя. */
 export interface PlaceLink extends Linked {
   title: 'Telegram' | 'MAX' | 'Threads' | 'ВКонтакте';
 }
@@ -15,10 +15,12 @@ export interface LinkItem {
   title: string;
   /** Вторая строка — что это. */
   note?: string;
-  /** Основная ссылка пункта; нет поля — пункт ведёт только ярлычками. null — адреса пока нет. */
+  /** Основная ссылка пункта; нет поля — пункт ведёт только значками. null — адреса пока нет. */
   main?: Linked;
-  /** Подпись над ярлычками, когда из названия неясно, куда они ведут. */
+  /** Подпись перед значками, когда из названия неясно, куда они ведут. */
   placesLabel?: string;
+  /** Что открывают значки, для их доступного имени («… в Telegram»); по умолчанию — название. */
+  placesName?: string;
   places?: readonly PlaceLink[];
 }
 
@@ -36,5 +38,5 @@ export const readyLinks = (links: readonly LinkItem[]): ReadyLink[] =>
     return item.main || item.places.length ? [item] : [];
   });
 
-/** Все ссылки пункта в порядке показа: основная, затем ярлычки. */
+/** Все ссылки пункта в порядке показа: основная, затем значки. */
 export const itemLinks = (l: ReadyLink): Ready<Linked>[] => [...(l.main ? [l.main] : []), ...l.places];

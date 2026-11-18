@@ -9,7 +9,7 @@ export const LINKS: readonly LinkItem[] = [
   {
     kind: 'feature', title: 'Всё по схеме', main: { id: 'project', href: 'https://schemehappens.ru' },
     note: 'Бесплатное приложение самопомощи по схема-терапии: трекер потребностей, дневники, тест схем',
-    placesLabel: 'Или в мессенджере', places: PROJECT_PLACES,
+    placesLabel: 'В мессенджере:', placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
   },
   {
     kind: 'plain', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,
