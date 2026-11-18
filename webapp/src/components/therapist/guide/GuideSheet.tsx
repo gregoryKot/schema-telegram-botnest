@@ -129,7 +129,7 @@ function GuideTechniques({ techniques, onOpen, onPlan, notes, onOpenJournal }: {
 }) {
   if (techniques.length === 0) return null;
   return (
-    <GuideSection title={PLAN_RUBRIC_LABEL.session}>
+    <GuideSection title={PLAN_RUBRIC_LABEL.session} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
       <ul className="tcp-guide-list">
         {techniques.map((t) => (
           <li key={t.id} className="gd-tech">
@@ -142,7 +142,6 @@ function GuideTechniques({ techniques, onOpen, onPlan, notes, onOpenJournal }: {
           </li>
         ))}
       </ul>
-      {onPlan && <div><PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} /></div>}
     </GuideSection>
   );
 }

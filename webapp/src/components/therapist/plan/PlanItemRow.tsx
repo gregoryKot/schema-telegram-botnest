@@ -47,16 +47,16 @@ export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSour
             <button type="button" className="ds-link pl-source" disabled={busy} onClick={onRetryLink}>Повторить</button>
           </div>
         )}
-        {(sourceTitle || item.taskId != null) && (
+        {(sourceTitle || item.taskId != null || (!editing && canAssign(item) && !linkPending)) && (
           <div className="pl-meta">
             {sourceTitle && <button type="button" className="ds-link pl-source" onClick={onOpenSource}>Из справочника: {sourceTitle} →</button>}
+            {!editing && canAssign(item) && !linkPending && <button type="button" className="ds-link pl-source" disabled={busy} onClick={onAssign}>Дать заданием</button>}
             {item.taskId != null && <span className="ds-badge ds-badge--line">выдано заданием</span>}
           </div>
         )}
       </div>
       {!editing && (
         <div className="pl-acts">
-          {canAssign(item) && !linkPending && <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" disabled={busy} onClick={onAssign}>Дать заданием</button>}
           {(canUp || canDown) && (
             <>
               <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Поднять выше" disabled={busy || !canUp} onClick={() => onMove(-1)}><MMIcon name="caret" size={16} style={{ transform: 'rotate(180deg)' }} /></button>

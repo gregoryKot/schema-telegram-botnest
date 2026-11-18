@@ -24,7 +24,7 @@ export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?:
     <List className={ordered ? 'gd-steps' : 'gd-points'}>
       {items.map((item, i) => (
         <li key={i}>
-          {typeof item === 'string' ? item : <><span className="gd-lead">{item.lead}</span>{item.text}{item.action && <div className="gd-point-act">{item.action}</div>}</>}
+          {typeof item === 'string' ? item : <><span className="gd-lead">{item.lead}{item.action}</span>{item.text}</>}
         </li>
       ))}
     </List>

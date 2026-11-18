@@ -4,11 +4,11 @@ import type { ReactNode } from 'react';
  * Раздел листа подсказок (режим, техника): подпись и содержимое. Пустой
  * раздел не рисуется — у режима бывают не все четыре канала работы.
  */
-export function GuideSection({ title, text, children }: { title: string; text?: string; children?: ReactNode }) {
+export function GuideSection({ title, text, action, children }: { title: string; text?: string; action?: ReactNode; children?: ReactNode }) {
   if (!children && !text?.trim()) return null;
   return (
     <section aria-label={title} className="gd-section">
-      <h3 className="ds-label gd-label">{title}</h3>
+      <div className="gd-head"><h3 className="ds-label gd-label">{title}</h3>{action}</div>
       {text?.trim() ? <p className="gd-text">{text}</p> : null}
       {children}
     </section>
