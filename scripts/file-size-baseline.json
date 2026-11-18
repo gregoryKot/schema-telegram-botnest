@@ -2944,7 +2944,7 @@
   "webapp/src/sections/guide/guideReferenceCoping.ts": 28,
   "webapp/src/sections/guide/GuideReferenceList.tsx": 46,
   "webapp/src/sections/guide/guideReferenceModel.ts": 102,
-  "webapp/src/sections/guide/guideReferenceSearch.ts": 43,
+  "webapp/src/sections/guide/guideReferenceSearch.ts": 41,
   "webapp/src/sections/guide/GuideSchemaTable.tsx": 82,
   "webapp/src/sections/guide/guideSchemaTableModel.ts": 40,
   "webapp/src/sections/more/HomeTherapyLine.tsx": 8,
