@@ -11,6 +11,7 @@ import { QuizMetricsService } from '../../src/bot/quiz-metrics.service';
 import { PracticeLinkMetricsService } from '../../src/bot/practice-link-metrics.service';
 import { PracticeMetricsService } from '../../src/bot/practice-metrics.service';
 import { CaseMetricsService } from '../../src/bot/case-metrics.service';
+import { LinksPageMetricsService } from '../../src/bot/links-page-metrics.service';
 import { ModeCardMetricsService } from '../../src/bot/mode-card-metrics.service';
 import { ModeDiaryMetricsService } from '../../src/bot/mode-diary-metrics.service';
 import { WarmWordsMetricsService } from '../../src/bot/warm-words-metrics.service';
@@ -52,6 +53,7 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new PracticeLinkMetricsService(prisma),
     new PracticeMetricsService(prisma),
     new CaseMetricsService(prisma),
+    new LinksPageMetricsService(prisma),
   );
   return new StatsReportService(
     product,
