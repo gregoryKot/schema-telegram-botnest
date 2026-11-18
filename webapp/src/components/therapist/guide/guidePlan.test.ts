@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
-import { betweenSeed, channelSeed, planDraft, sessionSeed } from './guidePlan';
+import { betweenRubricSeed, betweenSeed, channelSeed, planDraft, sessionSeed } from './guidePlan';
 
 describe('guidePlan — заготовка пункта плана из статьи справочника', () => {
   it('направление «Как работать»: рубрика и поле — ключ направления, текст по предложениям', () => {
@@ -18,6 +18,11 @@ describe('guidePlan — заготовка пункта плана из стат
     expect(betweenSeed({ kind: 'custom', title: 'Письмо себе', text: 'Написать письмо. Прочитать вслух.' }).parts)
       .toEqual(['Письмо себе', 'Написать письмо.', 'Прочитать вслух.']);
     expect(betweenSeed({ kind: 'task', type: 'mode_card' as never, title: 'Карточка режима' }).parts).toEqual(['Карточка режима']);
+  });
+
+  it('рубрика «Между сессиями» целиком: по части на название пункта', () => {
+    const seed = betweenRubricSeed([{ kind: 'custom', title: 'Письмо себе', text: 'Написать письмо.' }, { kind: 'task', type: 'mode_card' as never, title: 'Карточка режима' }]);
+    expect(seed).toMatchObject({ rubric: 'between', field: 'betweenSessions', label: 'Между сессиями', parts: ['Письмо себе', 'Карточка режима'] });
   });
 
   it('заготовка помнит статью: вид, id и поле', () => {

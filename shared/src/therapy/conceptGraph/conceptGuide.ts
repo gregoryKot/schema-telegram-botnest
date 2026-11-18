@@ -1,8 +1,7 @@
 /**
- * Подсказки терапевту в схеме случая (#995): раздел режима или схемы вместе с
- * техниками из библиотеки. Читают плашка «Обычно в методе» (ConceptGuideHint)
- * и листы сайта (webapp/src/components/therapist/guide/). Тексты разделов —
- * shared/src/schemaTherapy/guide/.
+ * Подсказки терапевту в схеме случая (#995): раздел режима или схемы вместе с техниками из библиотеки.
+ * Читают плашка «Обычно в методе» (ConceptGuideHint) и листы сайта (webapp/src/components/therapist/guide/).
+ * Тексты разделов — shared/src/schemaTherapy/guide/.
  */
 import { useMemo } from 'react';
 import type {
@@ -22,11 +21,9 @@ export interface GuideFrom {
   kind: 'mode' | 'schema';
   id: string;
 }
+type PlanRubric<T> = (items: readonly T[], from: GuideFrom) => void;
 
-/**
- * Что сайт умеет вокруг плашки. Без пропа плашка — только текст; без
- * onAssign (справочник без клиента) — без «Дать заданием».
- */
+/** Что сайт умеет вокруг плашки. Без пропа плашка — только текст; без onAssign (справочник без клиента) — без «Дать заданием». */
 export interface ConceptGuideActions {
   /** «Подробнее о режиме» — лист режима. */
   onOpenMode: (modeId: string) => void;
@@ -36,6 +33,10 @@ export interface ConceptGuideActions {
   onOpenTechnique: (techniqueId: TechniqueId, from?: GuideFrom) => void;
   /** «Дать заданием» у пункта «Между сессиями». */
   onAssign?: (item: BetweenSessionsItem, from: GuideFrom) => void;
+  /** «В план» у подписи «На сессии»: техники раздела — в лист выбора частей. */
+  onPlanSession?: PlanRubric<TechniqueGuide>;
+  /** «В план» у подписи «Между сессиями»: пункты раздела — в лист выбора частей. */
+  onPlanBetween?: PlanRubric<BetweenSessionsItem>;
   /** Задания клиента — строки «давали …» (guideHistory.ts); нет — без истории. */
   tasks?: readonly GuideTask[];
   /** «журнал →» у строки «делали …»: вкладка «Задания», блок «На сессиях»; нет — строка без ссылки. */
@@ -98,9 +99,8 @@ export function resolveSchemaGuide(
 }
 
 /**
- * Раздел в форме обращения пользователя. undefined — тексты ещё грузятся
- * (guideLoader), null — раздела нет, id пуст (лист закрыт) или тексты не
- * загрузились.
+ * Раздел в форме обращения пользователя. undefined — тексты ещё грузятся (guideLoader),
+ * null — раздела нет, id пуст (лист закрыт) или тексты не загрузились.
  */
 function useResolved<T>(
   resolve: (texts: Guide, tr: Tr, id: string) => T | null,
