@@ -30,7 +30,9 @@ interface Props {
 export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
   const back = useRef<SheetBack | null>(null);
   const [checked, setChecked] = useState(() => draft.parts.map(() => true));
-  const [text, setText] = useState(() => joinSentences(draft.parts));
+  // сервер длиннее предела не примет — собранный текст режется до него
+  const compose = (parts: string[]) => joinSentences(parts).slice(0, PLAN_ITEM_TEXT_MAX);
+  const [text, setText] = useState(() => compose(draft.parts));
   // undefined — список грузится, null — не пришёл
   const [clients, setClients] = useState<TherapyClientSummary[] | null | undefined>(undefined);
   const [picked, setPicked] = useState<string[]>(clientId != null ? [String(clientId)] : []);
@@ -50,7 +52,7 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
   const togglePart = (i: number) => {
     const next = checked.map((c, j) => (j === i ? !c : c));
     setChecked(next);
-    setText(joinSentences(draft.parts.filter((_, j) => next[j])));
+    setText(compose(draft.parts.filter((_, j) => next[j])));
   };
   const toggleClient = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const clean = cleanText(text);
