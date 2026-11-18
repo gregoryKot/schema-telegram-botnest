@@ -27,19 +27,22 @@ export interface ReferenceHit {
   score: number;
 }
 
+/** Все листы справочника в порядке реестра, каждый — с подписью группы и именем раздела. */
+export function referenceLeaves(ref: Reference): (Pick<ReferenceHit, 'key' | 'title' | 'section' | 'look'> & { item: ReferenceItem })[] {
+  return REFERENCE_TABS.flatMap((tab) => leafGroups(ref[tab.id]).flatMap((group) => group.items.map((item) => (
+    { item, key: `${tab.id}:${group.key}`, title: group.title ?? tab.label, section: tab.label, look: group.look }
+  ))));
+}
+
 /** Плоская выдача по убыванию веса: ею пользуются список «Справочника» и общий поиск (палитра ⌘K). */
 export function rankReference(ref: Reference, query: string, body?: ReferenceBody): ReferenceHit[] {
   const terms = parseSearchQuery(query);
   if (terms.length === 0) return [];
-  const hits: ReferenceHit[] = REFERENCE_TABS.flatMap((tab) => leafGroups(ref[tab.id]).flatMap((group) => {
-    const title = group.title ?? tab.label;
-    return group.items.flatMap((item) => {
-      const hit = rankItem(item, title, terms, body);
-      if (!hit) return [];
-      const snippet = hit.item === item ? undefined : hit.item.sub;
-      return [{ ...hit, snippet, key: `${tab.id}:${group.key}`, title, section: tab.label, look: group.look }];
-    });
-  }));
+  const hits: ReferenceHit[] = referenceLeaves(ref).flatMap(({ item, ...leaf }) => {
+    const hit = rankItem(item, leaf.title, terms, body);
+    if (!hit) return [];
+    return [{ ...hit, snippet: hit.item === item ? undefined : hit.item.sub, ...leaf }];
+  });
   return hits.sort((a, b) => b.score - a.score); // сортировка устойчива: при равном весе остаётся порядок реестра
 }
 

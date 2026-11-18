@@ -6,7 +6,7 @@ import type { QuickActionId } from '../../../shared/src/quickActions/quickAction
 import { trackSearchResultOpen } from '../../../shared/src/share/searchAnalytics';
 import type { TherapyClientSummary, UserId } from '../api';
 import { CmdList, type CmdRow } from './CommandPaletteList';
-import { buildPaletteRows, paletteExamples, paletteHelp } from './commandPalette/paletteRows';
+import { searchPalette, paletteExamples, paletteHelp } from './commandPalette/paletteRows';
 import { usePaletteGuide } from './commandPalette/usePaletteGuide';
 import { GUIDE_PATH, guideSheetState } from '../sections/guide/guideSheetRoute';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
@@ -64,7 +64,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const therapist = userRole === 'THERAPIST';
   const cabinet = therapist && !!therapistMode;
   const guide = usePaletteGuide(cabinet, tr);
-  const rows = useMemo<CmdRow[]>(() => buildPaletteRows({
+  const found = useMemo(() => searchPalette({
     query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, guide,
     run: {
       section: onNavigate,
@@ -75,6 +75,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
       guideSheet: (target) => { navigate(GUIDE_PATH, { state: guideSheetState(target) }); },
     },
   }), [q, tr, therapist, therapistMode, screenShare, clients, guide, navigate, onNavigate, onOpenClient, onToggleMode, onQuickAction]);
+  const rows = found.rows;
   const examples = useMemo(() => paletteExamples(guide), [guide]);
   const typed = q.trim() !== '';
   // Действие строки — после снятия записи палитры; в событие уходит вид строки, не запрос.
@@ -123,6 +124,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
         </div>
         {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не нашлось» под ней. */}
         <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={run} searching={typed}
+                 highlight={typed ? found.query : ''} fixedQuery={found.layoutFixed ? found.query.trim() : undefined}
                  help={paletteHelp({ therapist, therapistMode: cabinet, screenShare })}
                  examples={examples} onExample={(example) => { setQ(example); inputRef.current?.focus(); }}
                  note={screenShare && therapist ? 'Клиенты скрыты: включён показ экрана' : undefined} />

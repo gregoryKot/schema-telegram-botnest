@@ -9,6 +9,7 @@ import type { SignKey } from '../../../shared/src/theme/entityLook';
 import type { SearchResultKind } from '../../../shared/src/share/searchAnalytics';
 import { SignArt } from './art/SignArt';
 import { PaperEmpty } from './art/PaperEmpty';
+import { Hit } from './commandPalette/Hit';
 import { pressable } from '../utils/a11y';
 import { hueStyle } from '../lib/tone';
 
@@ -51,7 +52,7 @@ function Examples({ examples, onExample }: { examples: string[]; onExample: (que
   );
 }
 
-export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, help, examples = [], onExample }: {
+export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, help, examples = [], onExample, highlight = '', fixedQuery }: {
   rows: CmdRow[];
   sel: number;
   onSelect: (i: number) => void;
@@ -64,6 +65,10 @@ export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, h
   help?: string;
   examples?: string[];
   onExample?: (query: string) => void;
+  /** Запрос, по которому показаны строки: совпадения в подписи и подзаголовке подсвечены. */
+  highlight?: string;
+  /** Запрос переведён из чужой раскладки: строка над списком говорит, по чему он показан. */
+  fixedQuery?: string;
 }) {
   const empty = rows.length === 0;
   const chips = onExample && (!searching || empty) && <Examples examples={examples} onExample={onExample} />;
@@ -71,6 +76,7 @@ export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, h
     <div className="cmd-list">
       {!searching && help && <p className="ds-sub cmd-note">{help}</p>}
       {note && <p className="ds-sub cmd-note">{note}</p>}
+      {fixedQuery && <p className="ds-sub cmd-note">Показаны результаты по запросу «{fixedQuery}»</p>}
       {empty && !note && <div className="cmd-empty"><PaperEmpty>Ничего не нашлось</PaperEmpty></div>}
       {empty && searching && help && <p className="ds-sub cmd-note">Здесь ищутся: {help.toLowerCase()}</p>}
       {chips}
@@ -84,8 +90,8 @@ export function CmdList({ rows, sel, onSelect, onRun, note, searching = false, h
           >
             <Mark mark={row.mark} />
             <span className="cmd-main">
-              <span className="cmd-label">{row.label}</span>
-              {row.sub && <span className="ds-sub cmd-sub">{row.sub}</span>}
+              <span className="cmd-label"><Hit text={row.label} query={highlight} /></span>
+              {row.sub && <span className="ds-sub cmd-sub"><Hit text={row.sub} query={highlight} /></span>}
             </span>
             {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-kbd kbd-hint' : 'ds-sub cmd-hint'}>{row.hint}</span>}
           </div>

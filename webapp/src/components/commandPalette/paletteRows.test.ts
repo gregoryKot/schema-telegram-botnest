@@ -8,7 +8,7 @@ import { getSchemaById } from '../../../../shared/src/schemaTherapy/schemaTherap
 import {
   FIXTURE_GUIDE, FIXTURE_PRACTICE_NOTE, FIXTURE_SCHEMA_GUIDE, FIXTURE_TECHNIQUES,
 } from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
-import { buildPaletteRows, paletteExamples, paletteHelp, CLIENTS_SHOWN, GROUP, type PaletteInput } from './paletteRows';
+import { buildPaletteRows, searchPalette, paletteExamples, paletteHelp, CLIENTS_SHOWN, GROUP, type PaletteInput } from './paletteRows';
 
 const tr = (ty: string) => ty;
 const texts: ReferenceTexts = {
@@ -103,6 +103,27 @@ describe('buildPaletteRows — запрос', () => {
     const rows = buildPaletteRows(input({ query: 'успокоиться', therapist: false, therapistMode: false, clients: [] }));
     expect(groups(rows)).toEqual([GROUP.actions]);
     expect(labels(rows)).toContain('Техника «Стоп»');
+  });
+});
+
+describe('опечатки и чужая раскладка', () => {
+  it('опечатка в названии листа и в имени клиента находит строку; группа с опечаткой — после точных', () => {
+    const [sheet] = buildPaletteRows(input({ query: 'уязвмый' }));
+    expect(sheet).toMatchObject({ kind: 'guide', label: 'Уязвимый Ребёнок', sub: expect.stringContaining('Режимы') });
+    const rows = buildPaletteRows(input({ query: 'Алексадр', clients: [client(1, 'Александр')] }));
+    expect(labels(rows)).toEqual(['Александр']);
+  });
+
+  it('латиница без результатов — запрос в русской раскладке; строки и запрос — переведённые', () => {
+    const found = searchPalette(input({ query: 'crkbv', clients: [client(1, 'Склим')] }));
+    expect(found).toMatchObject({ query: 'склим', layoutFixed: true });
+    expect(labels(found.rows)).toEqual(['Склим']);
+  });
+
+  it('перевод ничего не нашёл или запрос русский — запрос исходный', () => {
+    expect(searchPalette(input({ query: 'qqqqzzz' }))).toEqual({ rows: [], query: 'qqqqzzz', layoutFixed: false });
+    expect(searchPalette(input({ query: 'анна' }))).toMatchObject({ query: 'анна', layoutFixed: false });
+    expect(searchPalette(input({ query: '' })).layoutFixed).toBe(false);
   });
 });
 

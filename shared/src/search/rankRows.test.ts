@@ -27,7 +27,20 @@ describe('rowScore', () => {
     ).toBe(ROW_SCORE.text);
   });
 
-  it('пустой запрос подходит всем с наименьшим весом; запрос из знаков — никому', () => {
+  it('опечатка в слове от 5 букв — наименьший вес, только по названию; короткое слово не прощается', () => {
+    expect(rowScore('Заброшенность', '', 'заброшеность')).toBe(ROW_SCORE.typo);
+    expect(rowScore('Александр', '', 'Алексадр')).toBe(ROW_SCORE.typo);
+    expect(rowScore('Записи', 'Заброшенность', 'заброшеность')).toBe(
+      ROW_SCORE.none,
+    );
+    expect(rowScore('Режим Критика', '', 'режм')).toBe(ROW_SCORE.none);
+    expect(ROW_SCORE.typo).toBeLessThan(ROW_SCORE.text);
+    expect(rowScore('Заброшенность', '', 'заброшенность')).toBeGreaterThan(
+      ROW_SCORE.typo,
+    );
+  });
+
+  it('пустой запрос подходит всем с весом текста; запрос из знаков — никому', () => {
     expect(rowScore('Сегодня', '', '  ')).toBe(ROW_SCORE.text);
     expect(rowScore('Сегодня', '', '?!')).toBe(ROW_SCORE.none);
   });

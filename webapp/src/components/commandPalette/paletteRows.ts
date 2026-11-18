@@ -7,12 +7,13 @@ import type { Tr } from '../../../../shared/src/needs/types';
 import { buildPlusActions, type QuickActionId } from '../../../../shared/src/quickActions/quickActions';
 import { isActiveToday } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
+import { hasLatin, toRussianLayout } from '../../../../shared/src/search/keyboardLayout';
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
 import type { TherapyClientSummary, UserId } from '../../api';
 import { clientHue } from '../../lib/tone';
 import type { Reference } from '../../sections/guide/guideReferenceModel';
 import type { ReferenceBody } from '../../sections/guide/guideReferenceBody';
-import { rankReference } from '../../sections/guide/guideReferenceSearch';
+import { rankReference, referenceLeaves } from '../../sections/guide/guideReferenceSearch';
 import type { GuideSheetTarget } from '../../sections/guide/guideSheetRoute';
 import { clientStatus } from '../therapist/rosterOrder';
 import { SECTION_LOOK, THERAPIST_NAV } from '../appShell/navLook';
@@ -101,10 +102,17 @@ function actionRows({ therapist, therapistMode, tr, run, query }: PaletteInput):
   ];
 }
 
+/** Листы, чьё название подходит запросу только с опечаткой: движок справочника опечаток не прощает. */
+function typoLeaves(ref: Reference, query: string) {
+  return referenceLeaves(ref).filter(({ item }) => rowScore(item.name, '', query) === ROW_SCORE.typo).map((leaf) => ({ ...leaf, snippet: undefined }));
+}
+
 /** Лучшие листы справочника по запросу: подзаголовок — кусок совпавшего текста или «Раздел · Группа». */
 function guideRows({ guide, query, run }: PaletteInput): { row: CmdRow; score: number }[] {
   if (!guide) return [];
-  return rankReference(guide.ref, query, guide.body).slice(0, GUIDE_SHOWN).map(({ item, snippet, section, title }) => ({
+  const hits = rankReference(guide.ref, query, guide.body);
+  const typo = hits.length === 0;
+  return (typo ? typoLeaves(guide.ref, query) : hits).slice(0, GUIDE_SHOWN).map(({ item, snippet, section, title }) => ({
     row: {
       kind: 'guide', group: GROUP.guide, label: item.name,
       sub: snippet ?? (title === section ? section : `${section} · ${title}`),
@@ -112,7 +120,7 @@ function guideRows({ guide, query, run }: PaletteInput): { row: CmdRow; score: n
       action: () => run.guideSheet({ kind: item.kind, id: item.id }),
     },
     // Название не совпало (нашлось в тексте листа) — наименьший вес, порядок справочника сохраняется.
-    score: Math.max(rowScore(item.name, '', query), ROW_SCORE.text),
+    score: typo ? ROW_SCORE.typo : Math.max(rowScore(item.name, '', query), ROW_SCORE.text),
   }));
 }
 
@@ -139,6 +147,16 @@ export function buildPaletteRows(input: PaletteInput): CmdRow[] {
   return scored
     .sort((a, b) => ((best.get(b.row.group) ?? 0) - (best.get(a.row.group) ?? 0)) || (order(a.row.group) - order(b.row.group)) || (b.score - a.score))
     .map((r) => r.row);
+}
+
+/** Строки по запросу; ничего не нашлось и запрос набран латиницей — по нему же в русской раскладке. */
+export function searchPalette(input: PaletteInput): { rows: CmdRow[]; query: string; layoutFixed: boolean } {
+  const { query } = input;
+  const rows = buildPaletteRows(input);
+  const fixed = toRussianLayout(query);
+  if (rows.length > 0 || query.trim() === '' || !hasLatin(query) || fixed === query) return { rows, query, layoutFixed: false };
+  const fixedRows = buildPaletteRows({ ...input, query: fixed });
+  return fixedRows.length > 0 ? { rows: fixedRows, query: fixed, layoutFixed: true } : { rows, query, layoutFixed: false };
 }
 
 /** Примеры запросов из настоящих названий листов: первая схема, первый режим, первая техника. */

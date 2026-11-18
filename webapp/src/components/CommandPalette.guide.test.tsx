@@ -49,7 +49,8 @@ describe('CommandPalette — листы справочника', () => {
     await screen.findByRole('button', { name: SCHEMA }); // тексты загрузились: чип-пример
     fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: 'покинутость' } });
     expect(screen.getByText('Справочник', { selector: '.cmd-group' })).toBeTruthy();
-    fireEvent.click(screen.getByText(SCHEMA));
+    // совпадение подсвечено — подпись разбита на куски, ищем по тексту целиком
+    fireEvent.click(screen.getByText((_t, el) => el?.className === 'cmd-label' && el.textContent === SCHEMA));
     expect(screen.getByTestId('where').textContent).toBe('/cabinet/guide {"kind":"schema","id":"abandonment"}');
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'guide', typed: true });

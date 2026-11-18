@@ -62,4 +62,11 @@ describe('CmdList', () => {
     expect(screen.getByText('Клиенты скрыты')).toBeTruthy();
     expect(screen.queryByText('Ничего не нашлось')).toBeNull();
   });
+
+  it('запрос подсвечен в подписи и подзаголовке; переведённая раскладка — строка над списком', () => {
+    render(<CmdList rows={[row({ label: 'Режим Критика', sub: 'Критик внутри' })]} sel={0} onSelect={vi.fn()} onRun={vi.fn()}
+                    searching highlight="критик" fixedQuery="критик" />);
+    expect(Array.from(document.querySelectorAll('mark.cmd-hit')).map((m) => m.textContent)).toEqual(['Критик', 'Критик']);
+    expect(screen.getByText('Показаны результаты по запросу «критик»')).toBeTruthy();
+  });
 });
