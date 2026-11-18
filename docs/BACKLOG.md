@@ -38,8 +38,7 @@
 
 - ⬜ **Справочник заданий, часть 2: «зачем» у клиента** — #1366. `UserTask.catalogId` (nullable, миграция `prisma/schema.prisma`), назначение из каталога его заполняет; у записи каталога (`shared/src/tasks/catalog/`) — текст «зачем» для клиента (ты/вы, без рода); клиент в задании видит «что делать» и «зачем». Тексты — в очередь вычитки `docs/open/owner.md`. Готово: клиент видит «зачем» у задания из каталога, старые задания без `catalogId` выглядят как раньше.
 
-- 🔧 **Справочник заданий, часть 3: новые техники** — #1366, владелец 2026-11-18 принял список из 27 целиком. Шаг А (PR #1372): техники 1–8 из схема-терапии (`guide/techniques/{relationship,imageryMore,formulation}.ts`), id — `guide/techniqueIds.ts`, «Что делали» — `shared/src/therapy/sessionWork/techniqueWorkSchema.ts` + серверная копия `src/therapy/session-work-technique-keys.ts`, знаки — `webapp/src/components/art/techniqueSigns.ts`. Стало 22.
-- 🔧 **Справочник заданий, часть 3Б: техники 9–15** — #1366 (записка с проверенными источниками — комментарий в issue). Журнал позитивных данных и континуум (Padesky 1994; Арнц и ван Гендерен, гл. 6), поведенческий эксперимент (Bennett-Levy и др. 2004), переходные объекты, игра для Счастливого Ребёнка (Lockwood & Shaw 2012), работа с телом (Heath & Startup 2020, гл. 3), ценности и «взгляд сверху» (Roediger и др. 2018), цикл столкновения режимов в паре (Simeone-DiFrancesco и др. 2015, гл. 8). По образцу шага А: id в `SchemaTechniqueId`, запись, поля «Что делали» в двух местах, знак, счётчики в тестах (22 → 29). Готово: тесты-сверки зелёные, тексты — в очередь вычитки `docs/open/owner.md`.
+- 🔧 **Справочник заданий, часть 3: новые техники** — #1366, владелец 2026-11-18 принял список из 27 целиком. Шаг А (PR #1372): техники 1–8 из схема-терапии (`guide/techniques/{relationship,imageryMore,formulation}.ts`), id — `guide/techniqueIds.ts`, «Что делали» — `shared/src/therapy/sessionWork/techniqueWorkSchema.ts` + серверная копия `src/therapy/session-work-technique-keys.ts`, знаки — `webapp/src/components/art/techniqueSigns.ts`. Стало 22; шаг Б (PR #1388) — 29.
 - ⬜ **Справочник заданий, часть 3В: 12 техник из других подходов** — #1366 (источники — та же записка). Новый `BorrowedTechniqueId`, поле «из какого подхода» у `TechniqueGuide`, вторая группа «Из других подходов» в `webapp/src/sections/guide/guideReferenceModel.ts` (файл расти не может — группы вынести), подпись подхода в `TechniqueSheet.tsx`. Готово: 41 техника, группа видна в справочнике, тесты зелёные.
 - ⬜ **Свои знаки у новых техник** — техники, добавленные в #1366, берут знак родственной (`webapp/src/components/art/techniqueSigns.ts`); свой рисунок каждой — дизайн-задача по `docs/design/PAPER_2026-11.md`.
 - ⬜ **ДПДГ (EMDR) в справочник не добавлена осознанно** — #1366: техника требует отдельного обучения; решит владелец, нужна ли справочная запись без шагов.
@@ -173,6 +172,8 @@
 из 12 пунктов и обоснования — в разделе «Что требует решения владельца» там же.
 
 ## Сделано
+
+- ✅ **Справочник заданий, часть 3Б: техники 9–15** (#1366; PR #1388) — семь техник схема-терапии в `shared/src/schemaTherapy/guide/techniques/{evidenceWork,childCare,bodyValues}.ts`, стало 29; написанное по смыслу — в очереди вычитки `docs/open/owner.md`.
 
 - ✅ **Карточка клиента: «Что делали» в итогах сессии** (#1330; PR #1332, #1367, #1371) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; ручка `GET /api/therapy/notes/:clientId/work`, журнал «На сессиях» и лист техники берут пункты из итогов; сводка «Что было сделано» на «Обзоре» (`shared/src/therapy/sessionWork/workSummary.ts`, `webapp/src/components/therapist/ClientWorkSummary.tsx`).
 
