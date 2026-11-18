@@ -44,6 +44,7 @@ export type StrategyGroup =
   | 'impulsive'
   | 'punitive'
   | 'demanding'
+  | 'guilt'
   | CopingKind
   | 'healthy_adult'
   | 'happy_child'
@@ -62,7 +63,7 @@ const STRATEGY_BY_MODE: Record<string, StrategyGroup> = {
   impulsive_child: 'impulsive',
   undisciplined_child: 'impulsive',
   punitive_critic: 'punitive',
-  guilt_critic: 'punitive',
+  guilt_critic: 'guilt',
   demanding_critic: 'demanding',
   healthy_adult: 'healthy_adult',
   happy_child: 'happy_child',
@@ -76,7 +77,7 @@ export function strategyGroupOf(modeId: string): StrategyGroup | null {
 
 export const STRATEGY_HINTS: Record<StrategyGroup, string> = {
   vulnerable:
-    'Прямой контакт с чувствами: рескриптинг в воображении, ограниченное повторное родительство. Потребность сначала получает ответ в терапии.',
+    'Прямой контакт с чувствами: рескриптинг в воображении, ограниченное родительство. Потребность сначала получает ответ в терапии.',
   angry:
     'Дать злости прозвучать и найти за ней потребность. Разрушительное выражение ограничивать, к потребности искать реалистичный путь.',
   impulsive:
@@ -85,6 +86,8 @@ export const STRATEGY_HINTS: Record<StrategyGroup, string> = {
     'Активная конфронтация: сначала терапевт, потом Здоровый Взрослый клиента останавливает голос, не споря с ним по существу, и защищает Ребёнка. Голос усвоен в прошлом, клиенту он не принадлежит.',
   demanding:
     'Снизить требования до реалистичных: разобрать, откуда они и чего стоят. С Карающим Критиком борются, с Требовательным чаще договариваются.',
+  guilt:
+    'Как с Требовательным: договариваться и ставить пределы, с упором на вину. Развести здоровую вину (был реальный вред) и навязанную (не оправдалось чужое ожидание). Тон мягкий: родителя, который сделал ребёнка ответственным за свои страдания, клиент жалеет и жёсткой конфронтации не выдержит.',
   surrender:
     'Признать, чем капитуляция помогала, показать её цену и тренировать отстаивание своих потребностей.',
   avoidance:
@@ -99,11 +102,8 @@ export const STRATEGY_HINTS: Record<StrategyGroup, string> = {
     'Укреплять тёплый внутренний голос — он приходит на смену Критику.',
 };
 
-/**
- * Поле «текст режима» (ConceptModeLink.manifest): что в нём писать зависит от
- * клетки. Этот текст виден на фигуре режима, поэтому подпись говорит, о чём он
- * — реплика критика, чувство ребёнка, действие копинга, опора взрослого.
- */
+// Поле «текст режима» (ConceptModeLink.manifest) видно на фигуре режима, поэтому подпись
+// зависит от клетки: реплика критика, чувство ребёнка, действие копинга, опора взрослого.
 export const MANIFEST_FIELD: Record<
   ConceptLane,
   { label: string; placeholder: string }

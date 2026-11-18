@@ -1,0 +1,82 @@
+/* Листки страницы ссылок (/links): карточка проекта на линованном листе со скотчем, жёлтая
+   записка на кнопке, зелёный ярлык канала и значки площадок. Переменные --lk-* — links-page.css. */
+.lk-paper {
+  position: relative; margin-top: 34px; padding: 20px 18px 18px; border-radius: 4px;
+  background: var(--lk-paper); box-shadow: 5px 6px 0 var(--lk-shade);
+}
+.lk-tape::before {
+  content: ''; position: absolute; top: -12px; left: 50%; width: 92px; height: 24px; margin-left: -46px;
+  border-radius: 3px; background: var(--lk-tape); transform: rotate(-3deg);
+}
+
+/* Карточка проекта. */
+.lk-card {
+  transform: rotate(.8deg);
+  background-image: repeating-linear-gradient(transparent 0 27px, var(--line) 27px 28px); background-position: 0 12px;
+}
+.lk-card-top { display: flex; align-items: center; gap: 12px; }
+.lk-card-title { max-width: 4.6em; margin: 0; font-family: var(--lk-serif); font-weight: 500; font-size: 27px; line-height: 1.05; letter-spacing: -.015em; }
+.lk-aside { position: absolute; right: 12px; top: 14px; width: 96px; font-size: 13px; line-height: 1.2; text-align: center; transform: rotate(5deg); }
+.lk-roles { margin: 16px 0 0; padding: 0; list-style: none; }
+.lk-role { display: grid; grid-template-columns: 26px 1fr; gap: 6px; padding: 5px 0; font-size: 14.5px; line-height: 1.38; color: var(--text-sub); }
+.lk-role b { font-weight: 800; color: var(--lk-ink); }
+.lk-open {
+  display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; margin-top: 14px;
+  border: 2px solid var(--lk-ink); border-radius: 14px; background: var(--lk-paper);
+  font-size: 16.5px; font-weight: 800; box-shadow: 3px 4px 0 var(--lk-ink-shade);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.lk-open .lk-hand, .lk-strip .lk-hand { transition: transform .15s ease; }
+.lk-open .lk-hand { color: inherit; }
+.lk-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; font-size: 13.5px; font-weight: 700; color: var(--text-sub); }
+
+/* Записка «Здоровый Взрослый»: жёлтый листок на кнопке, загнутый угол — радиусом. */
+.lk-sticky {
+  --lk-note: color-mix(in srgb, var(--c-amber) 34%, var(--surface));
+  padding: 26px 20px 16px; border-radius: 2px 2px 18px 2px; transform: rotate(-1.6deg);
+  background: var(--lk-note); box-shadow: 5px 6px 0 color-mix(in srgb, var(--c-ochre) 55%, var(--lk-note));
+}
+/* Чистый жёлтый тем же тоном, что --c-amber: смесью с бумагой он выходит бежевым. */
+@supports (color: oklch(from red l c h)) {
+  html:not([data-theme="dark"]) .lk-sticky { --lk-note: oklch(from var(--c-amber) .915 .085 calc(h + 18)); }
+}
+html[data-theme="dark"] .lk-sticky { --lk-note: color-mix(in srgb, var(--c-amber) 21%, var(--surface)); box-shadow: 5px 6px 0 var(--lk-shade); }
+.lk-pin {
+  position: absolute; top: -9px; left: 50%; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
+  background: var(--c-clay); box-shadow: 2px 3px 0 color-mix(in srgb, var(--c-clay) 65%, black);
+}
+.lk-quote { margin: 0; font-family: var(--lk-serif); font-style: italic; font-size: clamp(20px, 6.4vw, 23px); line-height: 1.24; }
+.lk-sig { margin: 10px 0 0; text-align: right; font-family: var(--lk-serif); font-weight: 500; font-size: 17px; }
+.lk-about {
+  margin: 14px 0 0; padding-top: 12px; border-top: 1.5px dashed color-mix(in srgb, var(--c-ochre) 70%, var(--lk-note));
+  font-size: 13.5px; line-height: 1.4; font-weight: 600; color: var(--lk-ink);
+}
+.lk-sticky .lk-line { margin-top: 10px; justify-content: flex-start; }
+
+/* Ярлык канала. */
+.lk-label {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 14px 16px 14px 18px; transform: rotate(1.1deg);
+  background: color-mix(in srgb, var(--c-moss) 22%, var(--surface));
+  box-shadow: 5px 6px 0 color-mix(in srgb, var(--c-moss) 50%, var(--surface));
+}
+html[data-theme="dark"] .lk-label { box-shadow: 5px 6px 0 var(--lk-shade); }
+.lk-label-title { margin: 0; font-family: var(--lk-serif); font-weight: 500; font-size: 20px; line-height: 1.12; }
+
+/* Значки площадок: круг 44px с контуром чернилами. */
+.lk-places { display: flex; align-items: center; gap: 8px; flex: none; }
+.lk-place { border-radius: 50%; }
+.lk-place-dot {
+  display: flex; align-items: center; justify-content: center; border: 1.8px solid var(--lk-ink); border-radius: 50%;
+  color: var(--lk-ink); transition: transform .15s ease, background-color .15s ease, color .15s ease;
+}
+.lk-place-max { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; }
+.lk-place:focus-visible { outline: none; }
+.lk-place:focus-visible .lk-place-dot { outline: 2px solid var(--lk-pen); outline-offset: 2px; }
+.lk-place:active .lk-place-dot { transform: scale(.94); }
+.lk-open:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 var(--lk-ink-shade); }
+@media (hover: hover) {
+  .lk-place:hover .lk-place-dot { background: var(--lk-ink); color: var(--lk-paper); }
+  .lk-open:hover { transform: translate(-1px, -1px); box-shadow: 4px 5px 0 var(--lk-ink-shade); }
+  .lk-open:hover .lk-hand, .lk-strip:hover .lk-hand { transform: translateX(3px); }
+}

@@ -13,7 +13,7 @@ export const LINKS: readonly LinkItem[] = [
       { who: 'Для терапевтов', what: 'карточки клиентов, концептуализация, задания' },
     ],
     cta: 'Открыть приложение',
-    placesLabel: 'В мессенджере:', placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
+    placesLabel: 'Бот в мессенджере', placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
   },
   {
     kind: 'plain', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,

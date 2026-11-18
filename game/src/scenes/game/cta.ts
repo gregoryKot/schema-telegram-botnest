@@ -80,7 +80,7 @@ export function showCta(s: GameScene) {
     s.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
       .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
 
-  // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
+  // Карточка-результат: что мешает сильнее всего = режим (виральный крючок, п.7); копинг не «враг»
   // y — под 540; на тач-холсте 640×360 они ×2/3, а кегль и кнопки — нет: зазоры посчитаны под оба холста
   const top  = mk(55, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
   const lbl  = mk(95, t('m_your_biggest_enemy'), 11, '#a89fd0');
