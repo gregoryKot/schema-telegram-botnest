@@ -2,9 +2,8 @@
 // silently break the other, and `satisfies` makes a missing translation a compile
 // error. Add a line here, reference by key via t('m_...'). Interpolation: use
 // {name} placeholders and pass vars to t(key, { name: value }).
-
+import { WEEK } from './week';
 export interface Msg { ru: string; en: string; }
-
 export const M = {
   m_part_i: { ru: "Часть I", en: "Part I" },
   m_what_gets_in_the_way: { ru: "Что мешает жить", en: "What gets in the way" },
@@ -322,6 +321,7 @@ export const M = {
   // кризисная строка (правило №7 CLAUDE.md): номер — тот же, что в shared/src/utils/crisisMarkers.ts;
   // дубль держит в согласии тест src/test-support/gates/game-crisis-hotline.spec.ts
   m_crisis_line: { ru: "если тяжело прямо сейчас — 8-800-100-49-94, бесплатно", en: "if it's hard right now — 8-800-100-49-94, free (Russia)" },
+  ...WEEK,
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

@@ -25,8 +25,8 @@ const SCAN_DIRS = ['src', 'webapp/src', 'shared/src'];
 // гейт в неё не смотрел. Именно там самоназвание «Консультант по
 // схема-терапии» (JSON-LD) и «Сайт специалиста по психологическому
 // консультированию» (llms.txt) прожили свип 2026-09.
-// game/: тексты игры живут только в каталоге messages.ts.
-export const SCAN_FILES = ['webapp/index.html', 'webapp/public/llms.txt', 'game/src/i18n/messages.ts'];
+// game/: тексты игры живут только в каталоге (messages.ts и week.ts).
+export const SCAN_FILES = ['webapp/index.html', 'webapp/public/llms.txt', 'game/src/i18n/messages.ts', 'game/src/i18n/week.ts'];
 
 // Юридические документы (оферта, политика и её глава 7 о трансграничной передаче):
 // формулировки 152-ФЗ юридически точны, живым языком их не переписать (docs/VOICE.md).

@@ -7,18 +7,14 @@ import type {
 } from '../../schemaTherapy/guide';
 import type { ConceptGuideActions, GuideFrom } from './conceptGuide';
 import type { GuideNotes } from './guideHistory';
-import { hintStyle, labelStyle } from './graphStyles';
+import { hintStyle } from './graphStyles';
+import { HintAssignButton, HintRubricHead } from './ConceptGuideHintButtons';
 import { JournalLink } from './JournalLink';
 import { rowBtn, techItem } from './guideHintStyles';
 
 const sectionStyle: CSSProperties = { marginTop: 'var(--space-8)' };
 const subStyle: CSSProperties = { color: 'var(--text-sub)' };
 
-const assignBtn: CSSProperties = {
-  ...rowBtn,
-  flexShrink: 0,
-  color: 'var(--text-sub)',
-};
 /** «На сессии»: техника — слово-кнопка (без `actions` — текст), за ней «делали …», «журнал →». */
 export function HintTechniques({
   techniques,
@@ -32,9 +28,13 @@ export function HintTechniques({
   notes: GuideNotes;
 }) {
   if (techniques.length === 0) return null;
+  const plan = actions?.onPlanSession;
   return (
     <div style={sectionStyle}>
-      <div style={labelStyle}>На сессии</div>
+      <HintRubricHead
+        rubric="session"
+        onPlan={plan && (() => plan(techniques, from))}
+      />
       <div
         style={{
           ...hintStyle,
@@ -74,22 +74,26 @@ export function HintTechniques({
   );
 }
 
-/** «Между сессиями»: пункт, серым пояснение и «давали …», справа «Дать заданием». */
+/** «Между сессиями»: пункт, серым пояснение и «давали …», справа «Дать заданием»; у подписи — «В план». */
 export function HintBetweenSessions({
   items,
   from,
-  assign,
+  actions,
   notes,
 }: {
   items: BetweenSessionsItem[];
   from: GuideFrom;
-  assign?: ConceptGuideActions['onAssign'];
+  actions?: ConceptGuideActions;
   notes: GuideNotes;
 }) {
   if (items.length === 0) return null;
+  const { onAssign: assign, onPlanBetween: plan } = actions ?? {};
   return (
     <div style={sectionStyle}>
-      <div style={labelStyle}>Между сессиями</div>
+      <HintRubricHead
+        rubric="between"
+        onPlan={plan && (() => plan(items, from))}
+      />
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {items.map((item, i) => {
           const given = notes.task(item);
@@ -114,14 +118,7 @@ export function HintBetweenSessions({
                 )}
               </span>
               {assign && (
-                <button
-                  type="button"
-                  style={{ ...assignBtn, fontSize: 12 }}
-                  aria-label={`Дать заданием: ${item.title}`}
-                  onClick={() => assign(item, from)}
-                >
-                  Дать заданием
-                </button>
+                <HintAssignButton item={item} from={from} assign={assign} />
               )}
             </li>
           );
