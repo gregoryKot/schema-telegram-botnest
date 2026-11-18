@@ -1,4 +1,5 @@
 import { CANONICAL_HOST } from '../infra/canonical-host';
+import { SPA_ROOT } from '../infra/spa-root';
 import { sanitizeArticleHtml } from './article-html-sanitize';
 
 export const SITE_URL = `https://${CANONICAL_HOST}`;
@@ -137,7 +138,7 @@ export function injectSeo(baseHtml: string, page: SeoPage): string {
       () => `<link rel="canonical" href="${url}" />`,
     )
     .replace(
-      '<div id="root"></div>',
+      SPA_ROOT,
       () => `<div id="root">${page.bodyHtml}</div>${jsonLdTag}`,
     );
 }
