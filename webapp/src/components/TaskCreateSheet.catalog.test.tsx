@@ -13,7 +13,9 @@ vi.mock('../api', () => ({ api: { createTask: vi.fn(), trackEvent: vi.fn() } }))
 import { api } from '../api';
 const mockApi = api as unknown as { createTask: ReturnType<typeof vi.fn>; trackEvent: ReturnType<typeof vi.fn> };
 
-const first = buildTaskCatalog(guide, (ty) => ty)[0];
+const catalog = buildTaskCatalog(guide, (ty) => ty);
+const first = catalog[0];
+const text = (task: typeof first, variant = 0) => customTaskText({ title: task.title, text: task.variants[variant].text });
 const textarea = () => screen.getByPlaceholderText('Например: позвонить другу раз в неделю') as HTMLTextAreaElement;
 
 function renderSheet(clientId?: UserId) {
@@ -38,15 +40,39 @@ describe('TaskCreateSheet — «Из справочника»', () => {
     expect(screen.queryByText('Взять')).toBeNull();
     fireEvent.click(await screen.findByText(first.title));
     expect(screen.getByText('Когда давать')).toBeTruthy();
+    expect(screen.getByText(first.why)).toBeTruthy();
     fireEvent.click(screen.getByText('Взять'));
-    expect(textarea().value).toBe(customTaskText(first));
+    expect(textarea().value).toBe(text(first));
 
-    fireEvent.change(textarea(), { target: { value: `${customTaskText(first)}\nдо пятницы` } });
+    fireEvent.change(textarea(), { target: { value: `${text(first)}\nдо пятницы` } });
     fireEvent.click(screen.getByText('Назначить задание'));
     await waitFor(() => expect(mockApi.createTask).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'custom', text: `${customTaskText(first)}\nдо пятницы`, clientId: 42 }),
+      expect.objectContaining({ type: 'custom', text: `${text(first)}\nдо пятницы`, clientId: 42, catalogId: first.id }),
     ));
     expect(mockApi.trackEvent).toHaveBeenCalledWith('task_assign_source', { source: 'catalog' });
+  });
+
+  it('у названия с разными текстами «Взять» есть у каждого варианта — в задание идёт выбранный', async () => {
+    const many = catalog.find((t) => t.variants.length > 1)!;
+    renderSheet(42);
+    fireEvent.click(await screen.findByText(many.title));
+    const takes = screen.getAllByText('Взять этот вариант');
+    expect(takes).toHaveLength(many.variants.length);
+    fireEvent.click(takes[1]);
+    expect(textarea().value).toBe(text(many, 1));
+  });
+
+  it('текст справочника стёрт целиком и написан свой — catalogId не уходит, источник custom', async () => {
+    mockApi.createTask.mockResolvedValue({ id: 1 });
+    renderSheet(42);
+    fireEvent.click(await screen.findByText(first.title));
+    fireEvent.click(screen.getByText('Взять'));
+    fireEvent.change(textarea(), { target: { value: '' } });
+    fireEvent.change(textarea(), { target: { value: 'своё' } });
+    fireEvent.click(screen.getByText('Назначить задание'));
+    await waitFor(() => expect(mockApi.createTask).toHaveBeenCalled());
+    expect(mockApi.createTask.mock.calls[0][0]).toMatchObject({ text: 'своё', catalogId: undefined });
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('task_assign_source', { source: 'custom' });
   });
 
   it('поиск без совпадений — «Ничего не нашлось»; своей цели клиента раздел не показывается', async () => {
