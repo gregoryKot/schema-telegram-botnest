@@ -45,7 +45,7 @@ export function setTouchControls(visible: boolean) {
   root.classList.toggle('visible', visible);
 }
 // Подписи статичны в HTML по-русски — переводим один раз при инициализации (язык меняется через reload).
-function localizeTouchUI() {
+export function localizeTouchUI() {
   const set = (id: string, key: MsgKey) => {
     const el = document.getElementById(id), label = t(key);
     if (el) { el.textContent = label; el.classList.toggle('long', isLongTapLabel(label)); }
@@ -58,33 +58,33 @@ function localizeTouchUI() {
   if (rotate) rotate.innerHTML =
     `<div class="phone-icon">📱</div><div class="rotate-title">${t('m_game_title')}</div><div>${t('m_rotate_line')}</div>`;
 }
+export function hold(id: string, on: () => void, off: () => void) {
+  const el = document.getElementById(id)!;
+  let pid: number | null = null;
+  // setPointerCapture: палец, начавший на кнопке, гарантированно получит
+  // pointerup на ней же, даже если соскользнул на соседнюю — иначе
+  // «удержание» (ОТВЛЕКИСЬ) залипало и игра казалась зависшей.
+  const down = (e: PointerEvent) => {
+    e.preventDefault();
+    pid = e.pointerId;
+    try { el.setPointerCapture(e.pointerId); } catch { /* not supported — ok */ }
+    el.classList.add('pressed'); on();
+  };
+  const up = (e: PointerEvent) => {
+    if (pid !== null && e.pointerId !== pid) return; // чужой палец (мультитач) — не трогаем
+    pid = null;
+    el.classList.remove('pressed'); off();
+  };
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+}
 export function initTouchControls() {
   const root = document.getElementById('touch-controls');
   if (!root || !IS_TOUCH) return;
 
   localizeTouchUI();
 
-  const hold = (id: string, on: () => void, off: () => void) => {
-    const el = document.getElementById(id)!;
-    let pid: number | null = null;
-    // setPointerCapture: палец, начавший на кнопке, гарантированно получит
-    // pointerup на ней же, даже если соскользнул на соседнюю — иначе
-    // «удержание» (ОТВЛЕКИСЬ) залипало и игра казалась зависшей.
-    const down = (e: PointerEvent) => {
-      e.preventDefault();
-      pid = e.pointerId;
-      try { el.setPointerCapture(e.pointerId); } catch { /* not supported — ok */ }
-      el.classList.add('pressed'); on();
-    };
-    const up = (e: PointerEvent) => {
-      if (pid !== null && e.pointerId !== pid) return; // чужой палец (мультитач) — не трогаем
-      pid = null;
-      el.classList.remove('pressed'); off();
-    };
-    el.addEventListener('pointerdown', down);
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
-  };
   const tap = (id: string, a: JustAction) => hold(id, () => touch.press(a), () => undefined);
 
   hold('tbtn-left',  () => { touch.left = true; },  () => { touch.left = false; });
