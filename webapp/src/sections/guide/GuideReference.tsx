@@ -5,13 +5,15 @@ import { useGuide, type Guide } from '../../../../shared/src/therapy/conceptGrap
 import { useConceptGuide, type GuideOpenTrack } from '../../components/therapist/guide/useConceptGuide';
 import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNoteSheet';
 import { PaperAlert } from '../../components/paper/PaperAlert';
-import { Skeleton, SkeletonList } from '../../components/Skeleton';
 import { GuideReferenceList } from './GuideReferenceList';
 import { GuideSchemaTable, SchemaViewSwitch, type SchemaView } from './GuideSchemaTable';
 import { FadeSeg } from '../../components/FadeSeg';
 import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceItem, type ReferenceTab } from './guideReferenceModel';
 import { searchReference } from './guideReferenceSearch';
 import { buildReferenceBody } from './guideReferenceBody';
+import { buildAnswerSources, referenceAnswer } from './guideReferenceAnswer';
+import { GuideAnswerCard } from './GuideAnswerCard';
+import { GuideReferenceSkeleton } from './GuideReferenceSkeleton';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
 const REFERENCE_TRACK: GuideOpenTrack = {
@@ -52,6 +54,8 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
   const body = useMemo(() => buildReferenceBody(texts, tr), [texts, tr]);
   const found = useMemo(() => searchReference(ref, query, body), [ref, query, body]);
+  const sources = useMemo(() => buildAnswerSources(texts, tr), [texts, tr]);
+  const answer = useMemo(() => referenceAnswer(ref, sources, query), [ref, sources, query]);
   const searching = query.trim() !== '';
   const schemaTable = tab === 'schemas' && !searching && schemaView === 'table';
   const pickSchemaView = (v: SchemaView) => {
@@ -89,32 +93,13 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
           {tab === 'schemas' && <SchemaViewSwitch view={schemaView} onPick={pickSchemaView} />}
         </div>
       )}
+      {answer && <GuideAnswerCard answer={answer} onOpen={open} />}
       {schemaTable && <GuideSchemaTable groups={ref.schemas} guides={schemaGuides} onOpen={open} />}
       {!schemaTable && (searching && found.length === 0
         ? <p className="ds-empty">Ничего не нашлось</p>
         : <GuideReferenceList groups={searching ? found : ref[tab]} layout={referenceLayout(tab, searching)} onOpen={open} />)}
       {guide.sheets}
       {note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />}
-    </div>
-  );
-}
-
-/** Силуэт: строка поиска, переключатель и группы строк — в те же колонки, что группы режимов. */
-function GuideReferenceSkeleton() {
-  return (
-    <div aria-hidden className="gr-column">
-      <Skeleton height={44} radius={22} />
-      <Skeleton width={300} height={34} radius={20} style={{ maxWidth: '100%' }} />
-      <div className="gr-wrap">
-        <div className="gr-list gr-list--groups">
-          {[4, 3].map((rows) => (
-            <div key={rows} className="gr-skel-group">
-              <Skeleton width="40%" height={24} />
-              <SkeletonList rows={rows} height={48} radius={12} gap={6} />
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
