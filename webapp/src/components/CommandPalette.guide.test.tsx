@@ -21,7 +21,10 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
 });
 const trackEvent = vi.fn();
 vi.mock('../api', () => ({
-  api: { getTherapyClients: () => Promise.resolve([]), trackEvent: (...a: unknown[]) => trackEvent(...a) },
+  api: {
+    getTherapyClients: () => Promise.resolve([]), trackEvent: (...a: unknown[]) => trackEvent(...a),
+    getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]),
+  },
 }));
 
 const SCHEMA = getSchemaById('abandonment')!.name;
@@ -70,11 +73,11 @@ describe('CommandPalette — листы справочника', () => {
     expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'section', typed: false, recent: false });
   });
 
-  it('в режиме клиента у терапевта листов и примеров нет', async () => {
+  it('в режиме клиента у терапевта листов справочника нет: схема находится в «Схемах» клиента', () => {
     renderPalette({ therapistMode: false });
-    fireEvent.change(screen.getByPlaceholderText('Клиент, страница, действие…'), { target: { value: 'покинутость' } });
-    expect(await screen.findByText('Ничего не нашлось')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: SCHEMA })).toBeNull();
+    fireEvent.change(screen.getByPlaceholderText('Клиент, схема, упражнение, раздел…'), { target: { value: 'покинутость' } });
+    expect(screen.getByText('Схемы', { selector: '.cmd-group' })).toBeTruthy();
+    expect(screen.queryByText('Справочник', { selector: '.cmd-group' })).toBeNull();
   });
 });
 

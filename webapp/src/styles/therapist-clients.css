@@ -5,13 +5,6 @@
 .tc-hero { gap: 18px; }
 .tc-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .tc-hero-btn { align-self: flex-start; }
-/* Лупа → палитра «Перейти к…»: только там, где нет строки .topbar с «Перейти к… ⌘K» (index.css). */
-.tc-find {
-  display: none; align-items: center; justify-content: center; flex: none;
-  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
-  background: var(--paper-sunk); color: var(--text); cursor: pointer;
-}
-.tc-find:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .tc-search { width: 240px; max-width: 100%; }
 .tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
@@ -119,7 +112,6 @@
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tc-count { font-size: 24px; }
-  .tc-find { display: inline-flex; }
   /* «Клиенты/Задания» — равные доли на всю ширину и на доске: без колонки фильтров .tc-modes сжимался
      до содержимого, и «Задания» обрезались («Клиент…» на 390, шире экрана на 320/360). */
   .tc-modes { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }

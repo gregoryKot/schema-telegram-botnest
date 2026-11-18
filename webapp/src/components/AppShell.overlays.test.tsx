@@ -663,6 +663,12 @@ describe('AppShell — сайдбар: индекс дня и поиск⌘K о�
     fireEvent.click(screen.getByText('Перейти к…'));
     await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
   });
+
+  it('лупа в шапке «Сегодня» клиента (телефон, без топбара) открывает ту же палитру', async () => {
+    renderAppShell('/today');
+    fireEvent.click(await screen.findByTestId('today-section-search'));
+    await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
+  });
 });
 
 describe('AppShell — стрик 5+ дней ставит колесо детства «в очередь», закрытие поздравления его открывает', () => {

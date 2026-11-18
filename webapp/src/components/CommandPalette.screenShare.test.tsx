@@ -15,7 +15,7 @@ const CLIENT: TherapyClientSummary = {
   meetingDays: [], schemaIds: [],
 };
 const getTherapyClients = vi.fn(() => Promise.resolve([CLIENT]));
-vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients(), trackEvent: vi.fn() } }));
+vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients(), trackEvent: vi.fn(), getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]) } }));
 
 afterEach(() => { cleanup(); setScreenShare(false); });
 
