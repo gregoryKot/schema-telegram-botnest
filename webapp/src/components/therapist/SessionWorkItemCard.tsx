@@ -8,6 +8,9 @@ import { getModeById, getSchemaById } from '../../../../shared/src/schemaTherapy
 import { workFields } from '../../../../shared/src/therapy/sessionWork/fields';
 import { workTitle } from '../../../../shared/src/therapy/sessionWork/names';
 import { WORK_CUSTOM_NAME_MAX, WORK_IDS_MAX, WORK_VALUE_MAX, type SessionWorkItem } from '../../../../shared/src/therapy/sessionWork/types';
+import { ConceptGroup } from '../../../../shared/src/therapy/conceptGraph/ConceptGroup';
+import { ConceptToggleChip } from '../../../../shared/src/therapy/conceptGraph/ConceptToggleChip';
+import type { NamedMode } from './useCustomModeNames';
 import { ConceptPaperProvider } from './concept/ConceptPaperProvider';
 
 interface Props {
@@ -17,6 +20,8 @@ interface Props {
   /** Режимы и схемы клиента (концептуализация, тест) — в выборе стоят первыми, остальные под «Все». */
   clientModeIds: string[];
   clientSchemaIds: string[];
+  /** Свои режимы терапевта: в выборе под «Все» отдельной группой. */
+  customModes?: NamedMode[];
 }
 
 const toggled = (ids: string[], id: string) =>
@@ -40,8 +45,19 @@ function PickSection({ title, names, own, children }: { title: string; names: st
   );
 }
 
+/** Свои режимы терапевта — отдельной группой после справочника; выбранный виден и в коротком списке. */
+function CustomModeChips({ modes, picked, onToggle }: { modes: NamedMode[]; picked: string[]; onToggle: (id: string) => void }) {
+  if (modes.length === 0) return null;
+  return (
+    <ConceptGroup look={null} title="Свои режимы">
+      {modes.map(m => <ConceptToggleChip key={m.id} label={m.name} color="var(--text-sub)" active={picked.includes(m.id)} onClick={() => onToggle(m.id)} />)}
+    </ConceptGroup>
+  );
+}
+
 /** Один пункт «Что делали»: с чем работали (режимы, схемы, потребности) и поля вида; все необязательные. */
-export function SessionWorkItemCard({ item, onChange, onRemove, clientModeIds, clientSchemaIds }: Props) {
+export function SessionWorkItemCard({ item, onChange, onRemove, clientModeIds, clientSchemaIds, customModes = [] }: Props) {
+  const modeOf = (id: string) => getModeById(id) ?? customModes.find(m => m.id === id);
   const title = workTitle(item);
   const toggle = (key: 'modeIds' | 'schemaIds', id: string) => onChange({ ...item, [key]: toggled(item[key], id) });
   // Выбранное остаётся на виду и в коротком списке: иначе его не снять, не открыв «Все».
@@ -62,8 +78,13 @@ export function SessionWorkItemCard({ item, onChange, onRemove, clientModeIds, c
       <ConceptPaperProvider>
         <div className="sw-with" role="group" aria-label="С чем работали">
           <div className="ds-label">С чем работали</div>
-          <PickSection title="Режимы" names={nameOf(item.modeIds, getModeById)} own={clientModeIds.length > 0}>
-            {all => <ConceptModePicker activeModeIds={item.modeIds} onToggle={id => toggle('modeIds', id)} onlyIds={only(all, clientModeIds, item.modeIds)} />}
+          <PickSection title="Режимы" names={nameOf(item.modeIds, modeOf)} own={clientModeIds.length > 0}>
+            {all => (
+              <>
+                <ConceptModePicker activeModeIds={item.modeIds} onToggle={id => toggle('modeIds', id)} onlyIds={only(all, clientModeIds, item.modeIds)} />
+                <CustomModeChips modes={customModes.filter(m => all || item.modeIds.includes(m.id))} picked={item.modeIds} onToggle={id => toggle('modeIds', id)} />
+              </>
+            )}
           </PickSection>
           <PickSection title="Схемы" names={nameOf(item.schemaIds, getSchemaById)} own={clientSchemaIds.length > 0}>
             {all => <ConceptSchemaPicker activeIds={item.schemaIds} onToggle={id => toggle('schemaIds', id)} onlyIds={only(all, clientSchemaIds, item.schemaIds)} />}

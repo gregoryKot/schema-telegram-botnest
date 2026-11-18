@@ -10,6 +10,8 @@ export interface GuideGraph {
   source: { modeLinks: ConceptModeLink[]; schemaLinks: ConceptSchemaLink[] };
   onChangeLink: (link: ConceptModeLink) => void;
   onChangeSchemaLink: (link: ConceptSchemaLink) => void;
+  /** Дни из итогов сессий («Что делали») — в «делали …» листа; отметку ими не снять. */
+  workMarks?: (from: GuideFrom) => ConceptTechniqueMark[];
 }
 
 /** Журнал «Делали сегодня» раздела режима или схемы; `day` не задан — сегодня. */
@@ -39,12 +41,15 @@ const write = <L,>(r: { link: L; added: boolean }, save: (link: L) => void) => {
  */
 export function guideJournal(graph: GuideGraph, onMarked: () => void, today: () => string = todayStr): GuideJournal {
   const { source } = graph;
-  const marksOf = (from: GuideFrom) =>
+  const linkMarks = (from: GuideFrom) =>
     from.kind === 'mode' ? findModeLink(source.modeLinks, from.id).done : findSchemaLink(source.schemaLinks, from.id).done;
   return {
-    marksOf,
+    marksOf: (from) => {
+      const work = graph.workMarks?.(from) ?? [];
+      return work.length > 0 ? [...(linkMarks(from) ?? []), ...work] : linkMarks(from);
+    },
     today,
-    marked: (techniqueId, from, day = today()) => isMarkedOn(marksOf(from), techniqueId, day),
+    marked: (techniqueId, from, day = today()) => isMarkedOn(linkMarks(from), techniqueId, day),
     toggle: (techniqueId, from, day = today()) => {
       const added = from.kind === 'mode'
         ? write(toggleLinkMark(findModeLink(source.modeLinks, from.id), techniqueId, day), graph.onChangeLink)

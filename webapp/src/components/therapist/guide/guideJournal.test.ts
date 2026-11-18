@@ -76,4 +76,14 @@ describe('guideJournal', () => {
     expect(journal.marked('chairwork', MODE)).toBe(true);
     expect(journal.marked('chairwork', SCHEMA)).toBe(false);
   });
+
+  it('дни из итогов сессий видны в marksOf, но отметкой связи не считаются', () => {
+    const graph = {
+      source: { modeLinks: [], schemaLinks: [] }, onChangeLink: vi.fn(), onChangeSchemaLink: vi.fn(),
+      workMarks: () => [{ techniqueId: 'chairwork', day: TODAY }],
+    };
+    const journal = guideJournal(graph, vi.fn(), () => TODAY);
+    expect(journal.marksOf(MODE)).toEqual([{ techniqueId: 'chairwork', day: TODAY }]);
+    expect(journal.marked('chairwork', MODE)).toBe(false);
+  });
 });

@@ -1,6 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { decrypt, decryptJson } from '../utils/crypto';
-import { normalizeSessionWork } from './session-work';
+import { decrypt } from '../utils/crypto';
+import { readNoteWork } from './session-work-list';
 
 // Сколько заметок отдаётся за раз; остальное фронт узнаёт из total.
 export const SESSION_NOTES_PAGE = 100;
@@ -33,10 +33,7 @@ export async function findSessionNotesPage(
     notes: rows.map((r) => ({
       ...r,
       text: decrypt(r.text) ?? r.text,
-      // Шифротекст-строка; [] по умолчанию и старые записи — пунктов нет.
-      work: normalizeSessionWork(
-        typeof r.work === 'string' ? decryptJson(r.work) : r.work,
-      ),
+      work: readNoteWork(r.work),
     })),
     total,
   };

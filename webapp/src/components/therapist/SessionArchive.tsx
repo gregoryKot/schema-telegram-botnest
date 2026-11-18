@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fmtDate } from '../../utils/format';
 import { MMIcon } from '../modeMapIcons';
 import { sessionNumbers } from './sessionNumbers';
@@ -8,10 +8,19 @@ import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncat
 import type { TherapistNotesPage } from '../../../../shared/src/therapy/notesPage';
 import { Sign } from './SignArt';
 import { SessionWorkList } from './SessionWorkList';
+import type { NamedMode } from './useCustomModeNames';
 
 // Архив заметок сессий. Удаление — через подтверждение: до 2026-10-26 заметку
 // стирал один клик по «✕» рядом с датой (QA-проход), вернуть её было нельзя.
-export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage; removeNote: (id: number) => void | Promise<void> }) {
+export function SessionArchive({ page, removeNote, takeFocus, customModes }: {
+  page: TherapistNotesPage; removeNote: (id: number) => void | Promise<void>;
+  /** Запись, к которой пришли из журнала «На сессиях»: прокручивается в вид и подсвечена. */
+  takeFocus?: () => number | null;
+  customModes?: NamedMode[];
+}) {
+  const [focusId] = useState(() => takeFocus?.() ?? null);
+  const focusRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { focusRef.current?.scrollIntoView?.({ block: 'center' }); }, []);
   const { notes, total } = page;
   const numbers = sessionNumbers(notes, total);
   const [confirmId, setConfirmId] = useState<number | null>(null);
@@ -32,7 +41,7 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
         <p className="ds-empty tb-empty-row"><Sign kind="pebbles" />Заметок пока нет</p>
       ) : (
         notes.map(note => (
-          <div key={note.id} className="tb-tl-row">
+          <div key={note.id} ref={note.id === focusId ? focusRef : undefined} className={note.id === focusId ? 'tb-tl-row tb-tl-row--focus' : 'tb-tl-row'}>
             <div className="tb-tl-rail"><div className="tb-tl-dot">{numbers.get(note.id)}</div><div className="tb-tl-line" /></div>
             <div className="tb-tl-body">
               <div className="tb-tl-head">
@@ -41,7 +50,7 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
                 <button type="button" onClick={() => setConfirmId(note.id)} aria-label="Удалить заметку" className="ds-btn ds-btn--icon tb-del tb-tl-del"><MMIcon name="trash" size={16} /></button>
               </div>
               {note.text && <div className="tb-tl-text">{note.text}</div>}
-              <SessionWorkList work={note.work} />
+              <SessionWorkList work={note.work} customModes={customModes} />
             </div>
           </div>
         ))

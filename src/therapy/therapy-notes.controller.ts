@@ -58,6 +58,23 @@ export class TherapyNotesController {
     }
   }
 
+  @Get('notes/:clientId/work')
+  async getSessionWork(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+  ) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const cid = parseClientId(clientId);
+    try {
+      return await this.notesService.getSessionWork(uid(req), cid);
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'No active relation')
+        throw new ForbiddenException('No active relation with this client');
+      throw e;
+    }
+  }
+
   @Post('notes/:clientId')
   async createNote(
     @Req() req: AuthRequest,

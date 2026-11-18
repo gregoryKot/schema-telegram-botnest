@@ -4,6 +4,7 @@ import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, encryptJson } from '../utils/crypto';
 import { requireAffected } from '../utils/require-affected';
 import { findSessionNotesPage } from './session-notes-page';
+import { findSessionWork } from './session-work-list';
 import type { SessionWorkItem } from './session-work';
 import { conceptView } from './concept-store';
 import { saveConceptVersioned, type ConceptSaveInput } from './concept-save';
@@ -23,6 +24,12 @@ export class TherapyNotesService {
   async getNotes(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     return findSessionNotesPage(this.prisma, therapistId, clientId);
+  }
+
+  /** Пункты «Что делали» всех сессий клиента — журнал «На сессиях». */
+  async getSessionWork(therapistId: bigint, clientId: bigint) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    return findSessionWork(this.prisma, therapistId, clientId);
   }
 
   async createNote(
