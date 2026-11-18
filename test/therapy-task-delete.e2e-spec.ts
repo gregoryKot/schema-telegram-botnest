@@ -94,6 +94,26 @@ describe('e2e: задание терапевта — удаление и отм�
     );
   });
 
+  it('задание из справочника: catalogId сохранён и доходит до клиента; чужой id — 400', async () => {
+    const res = await agentAs(T1).post('/api/therapy/tasks', {
+      type: 'custom',
+      text: 'Тайм-аут\nвыйти на десять минут',
+      clientId: C1_ID,
+      catalogId: 'тайм-аут',
+    });
+    expect(res.status).toBeLessThan(300);
+    const mine = await agentAs(C1).get('/api/therapy/tasks');
+    const found = mine.body.find((t: { id: number }) => t.id === res.body.id);
+    expect(found.catalogId).toBe('тайм-аут');
+    const bad = await agentAs(T1).post('/api/therapy/tasks', {
+      type: 'custom',
+      text: 'текст',
+      clientId: C1_ID,
+      catalogId: 'нет-такого',
+    });
+    expect(bad.status).toBe(400);
+  });
+
   it('назначивший терапевт удаляет — задание пропадает и у него, и у клиента', async () => {
     const id = await assign(C1_ID, 'удалить меня');
     const res = await agentAs(T1).delete(`/api/therapy/tasks/${id}`);

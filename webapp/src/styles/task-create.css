@@ -52,3 +52,6 @@
 .sk-cat-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 0 16px; border-bottom: 1px solid var(--paper-sunk); }
 .sk-cat-text { font-size: 14px; color: var(--text); overflow-wrap: anywhere; }
 .sk-cat-take { margin-top: 4px; }
+/* Вариант текста задания: «когда давать», «что делать» и своя «Взять»; варианты одного названия разделены линией. */
+.sk-cat-variant { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.sk-cat-variant + .sk-cat-variant { padding-top: 12px; border-top: 1px dashed var(--paper-sunk); }
