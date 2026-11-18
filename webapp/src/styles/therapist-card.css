@@ -141,6 +141,14 @@
 .tk-leaf { padding: 18px 20px; }
 .tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tk-note-date { margin-top: 6px; }
+/* «Что было сделано»: строка — название слева, «сколько раз · когда» справа; ниже — с чем работали. */
+.tk-done, .tk-done-with { margin: 0; padding: 0; list-style: none; }
+.tk-done-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 12px; padding: 8px 0; }
+.tk-done-row + .tk-done-row { border-top: 1px solid var(--paper-sunk); }
+.tk-done-meta { white-space: nowrap; }
+.tk-done + .tk-done-with { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--paper-sunk); }
+.tk-done-with > div + div { margin-top: 8px; }
+.tk-done-with dd { margin: 2px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-sub); overflow-wrap: anywhere; }
 /* Строка записи: знак типа 44×24, заголовок и тихая строка «тип + фрагмент», дата справа. */
 .tk-entry { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; align-items: center; padding: 11px 0; }
 .tk-entry + .tk-entry { border-top: 1px solid var(--paper-sunk); }
