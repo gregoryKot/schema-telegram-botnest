@@ -13,6 +13,16 @@ export const ASSIGN_LEAD_ONLINE =
 export const ASSIGN_LEAD_OFFLINE =
   'Клиент не пользуется приложением, поэтому задание останется пометкой в карточке: отметить его выполненным можно на вкладке «Задания».';
 
+/** Строка под плитками офлайн-клиенту: почему плитка одна и что есть взамен. */
+export const ASSIGN_OFFLINE_TILES_NOTE =
+  'Упражнения приложения появятся здесь, когда клиент подключится. Пока — своё задание или задание из справочника ниже.';
+
+export function assignTilesNote(clientId: UserId | undefined): string | null {
+  return clientId !== undefined && isVirtualId(clientId)
+    ? ASSIGN_OFFLINE_TILES_NOTE
+    : null;
+}
+
 /** Подпись под заголовком формы; своей цели клиента она не нужна. */
 export function assignLead(clientId: UserId | undefined): string | null {
   if (clientId === undefined) return null;
