@@ -3,9 +3,12 @@
 Документ для автора (и для будущих сессий Claude) — чеклист качества для статей
 раздела `/articles`. Написан после клинического ревью первых 7 статей практикующим
 специалистом по схема-терапии. Статьи редактируются через `/admin` → Статьи;
-встроенные (слаги из `src/articles/articles.seed.ts`) правятся только в сиде с бампом
-`SEED_VERSION` в `src/articles/articles.service.ts`: бамп перезаписывает их по
-slug, и правки этих статей из админки теряются.
+встроенные (слаги из `src/articles/articles.seed.ts`) правятся в сиде с бампом
+`SEED_VERSION` в `src/articles/articles.service.ts` и новой парой «версия, хеш» в
+`src/articles/articles.seed.lock.json` (без бампа краснеет
+`articles.seed.lock.spec.ts`). Бамп перезаписывает статью по slug, только если её
+не правили в админке: правленая остаётся, slug уходит в лог `warn`
+(`src/articles/articles.seed-sync.ts`).
 
 ## Клиническая точность
 
