@@ -39,4 +39,15 @@ describe('sanitizeMeta: события плана работы', () => {
       expect(sanitizeMeta('therapy_plan_item_status', meta)).toBeUndefined();
     }
   });
+
+  it('task_assign_source: только источник из списка, текст задания — мимо', () => {
+    for (const source of ['tile', 'catalog', 'custom']) {
+      expect(sanitizeMeta('task_assign_source', { source, text: 'x' })).toEqual(
+        { source },
+      );
+    }
+    for (const meta of [{ source: 'guide' }, { source: 1 }, {}]) {
+      expect(sanitizeMeta('task_assign_source', meta)).toBeUndefined();
+    }
+  });
 });

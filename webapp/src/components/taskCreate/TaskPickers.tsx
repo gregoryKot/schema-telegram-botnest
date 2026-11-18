@@ -5,6 +5,7 @@
 import { PickGroups } from '../exercises/PickGroups';
 import { SCHEMA_PICK_GROUPS } from '../exercises/cardFlow/cardEntities';
 import { ModeGroupList } from '../diary/ModeGroupList';
+import { STREAK_OPTIONS } from './taskOptions';
 
 interface PickerProps { value: string; onPick: (id: string) => void }
 
@@ -22,6 +23,19 @@ export function ModePicker({ value, onPick }: PickerProps) {
     <div className="sk-field">
       <div className="ds-label">Какой режим изучить?</div>
       <ModeGroupList modeId={value} onPick={onPick} />
+    </div>
+  );
+}
+
+export function StreakPicker({ value, onPick }: { value: number; onPick: (days: number) => void }) {
+  return (
+    <div className="sk-field">
+      <div className="ds-label">Цель в днях</div>
+      <div className="ds-seg ds-seg--full">
+        {STREAK_OPTIONS.map(d => (
+          <button key={d} onClick={() => onPick(d)} className={'ds-seg-btn' + (value === d ? ' is-active' : '')}>{d} дн</button>
+        ))}
+      </div>
     </div>
   );
 }

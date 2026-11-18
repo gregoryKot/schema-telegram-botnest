@@ -1,9 +1,11 @@
+import { TASK_ASSIGN_SOURCES } from '../analytics/cabinet-events.constants';
 import { PLAN_RUBRICS, PLAN_STATUSES } from '../therapy/therapy-plan.types';
 
 type Meta = Record<string, unknown>;
 
 const RUBRIC_SET = new Set<string>(PLAN_RUBRICS);
 const STATUS_SET = new Set<string>(PLAN_STATUSES);
+const TASK_SOURCE_SET = new Set<string>(TASK_ASSIGN_SOURCES);
 const SESSION_WORK_KINDS = ['technique', 'exercise', 'custom'];
 
 // «Что делали» в итогах сессии: число пунктов и виды, без названий и текста.
@@ -15,6 +17,12 @@ function sanitizeSessionWork(meta: Meta): Meta | undefined {
     kinds: SESSION_WORK_KINDS.filter((k) => kinds.includes(k)),
   };
 }
+
+/** События, чью meta разбирает sanitizeCabinetMeta. */
+export const hasCabinetMeta = (name: string): boolean =>
+  /^(cabinet_session_work|task_assign_source|therapy_plan_item_\w+)$/.test(
+    name,
+  );
 
 // События кабинета терапевта с meta (правило №7/№8): только известные поля и только значения
 // из allow-list; чего-то нет или оно чужое — meta отбрасывается целиком. Текст пункта плана,
@@ -33,6 +41,12 @@ export function sanitizeCabinetMeta(
     const { status } = meta;
     return typeof status === 'string' && STATUS_SET.has(status)
       ? { status }
+      : undefined;
+  }
+  if (name === 'task_assign_source') {
+    const { source } = meta;
+    return typeof source === 'string' && TASK_SOURCE_SET.has(source)
+      ? { source }
       : undefined;
   }
   return undefined;

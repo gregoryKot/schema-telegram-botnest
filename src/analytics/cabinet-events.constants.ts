@@ -14,6 +14,8 @@
 //     число пунктов и их виды (technique / exercise / custom). Какая техника и текст полей — нет.
 //     Строка в /stats — блок src/bot/concept-graph-metrics.* (рядом с журналом техник).
 //   cabinet_guide_table_open — в «Справочнике» переключил «Схемы» на вид «Таблицей» (все схемы и три копинга).
+//   task_assign_source — терапевт назначил задание в листе «Новое задание»; meta { source } из
+//     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника или свой текст. Блок — src/bot/task-assign-metrics.*.
 import { PLAN_EVENTS } from './plan-events.constants';
 export const CABINET_EVENTS = [
   'cabinet_session_work',
@@ -25,4 +27,8 @@ export const CABINET_EVENTS = [
   'cabinet_guide_note_open',
   'cabinet_guide_table_open',
   ...PLAN_EVENTS, // вкладка «План работы» карточки клиента
+  'task_assign_source',
 ] as const;
+
+export const TASK_ASSIGN_SOURCES = ['tile', 'catalog', 'custom'] as const;
+export type TaskAssignSource = (typeof TASK_ASSIGN_SOURCES)[number];
