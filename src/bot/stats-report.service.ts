@@ -15,6 +15,7 @@ import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { ScreenShareMetricsService } from './screen-share-metrics.service';
 import { GuideReferenceMetricsService } from './guide-reference-metrics.service';
 import { PlanMetricsService } from './plan-metrics.service';
+import { TaskAssignMetricsService } from './task-assign-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
@@ -58,6 +59,7 @@ export class StatsReportService {
     readonly screenShare: ScreenShareMetricsService,
     readonly guideReference: GuideReferenceMetricsService,
     readonly plan: PlanMetricsService,
+    readonly taskAssign: TaskAssignMetricsService,
     readonly authHealth: AuthHealthMetricsService,
     readonly loginTicket: LoginTicketMetricsService,
     readonly clientErrors: ClientErrorMetricsService,

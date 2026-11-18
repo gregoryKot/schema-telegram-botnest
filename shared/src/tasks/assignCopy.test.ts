@@ -6,6 +6,7 @@ import {
   ASSIGN_LEAD_OFFLINE,
   ASSIGN_LEAD_ONLINE,
   assignLead,
+  assignTilesNote,
   assignableOptions,
 } from './assignCopy';
 
@@ -37,5 +38,13 @@ describe('assignableOptions', () => {
   });
   it('офлайн-клиенту — только «Своё задание»', () => {
     expect(assignableOptions(OPTIONS, -5)).toEqual([{ type: 'custom' }]);
+  });
+});
+
+describe('assignTilesNote', () => {
+  it('строка про упражнения приложения — только клиенту без аккаунта', () => {
+    expect(assignTilesNote(-5)).toMatch(/когда клиент подключится/);
+    expect(assignTilesNote(42)).toBeNull();
+    expect(assignTilesNote(undefined)).toBeNull();
   });
 });

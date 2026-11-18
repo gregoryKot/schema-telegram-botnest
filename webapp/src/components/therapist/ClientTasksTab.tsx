@@ -29,10 +29,11 @@ interface Props {
   /** Журнал техник пуст — переход на «Концептуализацию»; `takeJournalFocus` — см. TechniqueJournalBlock. */
   onOpenConcept?: () => void;
   takeJournalFocus?: () => boolean;
+  onOpenSession?: (noteId: number) => void;
 }
 
 // Задания — то, что клиент делает между сессиями; ниже «На сессиях» — журнал техник (TechniqueJournalBlock).
-export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept, takeJournalFocus }: Props) {
+export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept, takeJournalFocus, onOpenSession }: Props) {
   const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
   const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged); // успех перечитывает доску «Задания»
@@ -90,7 +91,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
           </div>
         )}
         {actions.error && !confirmDelete && <div className="tb-error" role="alert">{actions.error}</div>}
-        <TechniqueJournalBlock detail={detail} onOpenConcept={onOpenConcept} takeFocus={takeJournalFocus} />
+        <TechniqueJournalBlock detail={detail} onOpenConcept={onOpenConcept} takeFocus={takeJournalFocus} onOpenSession={onOpenSession} />
       </div>
 
       <div className="tb-col tb-col--tight">

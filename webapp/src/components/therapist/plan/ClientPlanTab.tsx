@@ -48,7 +48,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
   const tr = useTr();
   const navigate = useNavigate();
   const plan = usePlanItems(selectedClient.telegramId);
-  const guide = useConceptGuide();
+  const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload } });
   const texts = useGuide();
   const [adding, setAdding] = useState(false);
   const [rubric, setRubric] = useState<PlanRubric>('custom');
@@ -78,7 +78,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
             <section key={g.rubric} className="pl-group">
               <h3 className="ds-label">{g.label}</h3>
               <div className="pp-leaf pl-list">
-                {g.items.map((item) => (
+                {g.items.map((item, idx) => (
                   <PlanItemRow
                     key={item.id} item={item} busy={plan.busyId !== null}
                     sourceTitle={planSourceTitle(texts, tr, item.source)}
@@ -89,6 +89,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
                     onRetryLink={() => void plan.retryLink(item.id)}
                     onSaveText={(text) => plan.saveText(item.id, text)}
                     onDelete={() => { plan.clearError(); setConfirmDelete(item); }}
+                    canUp={idx > 0} canDown={idx < g.items.length - 1} onMove={(dir) => void plan.move(item, dir)}
                   />
                 ))}
               </div>
@@ -106,8 +107,8 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
             <div>
               <PaperEmpty title="В плане пока пусто">
                 {tr(
-                  'Запиши сюда, что планируешь делать с клиентом: свои пункты или идеи из справочника — «Как работать», «На сессии», «Между сессиями».',
-                  'Запишите сюда, что планируете делать с клиентом: свои пункты или идеи из справочника — «Как работать», «На сессии», «Между сессиями».',
+                  'Запиши сюда, что планируешь делать с клиентом: свои пункты или идеи из справочника: у рубрик «Как работать», «На сессии» и «Между сессиями» там есть кнопка «В план».',
+                  'Запишите сюда, что планируете делать с клиентом: свои пункты или идеи из справочника: у рубрик «Как работать», «На сессии» и «Между сессиями» там есть кнопка «В план».',
                 )}
               </PaperEmpty>
               <div className="tb-actions tb-mt16">

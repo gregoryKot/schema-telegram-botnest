@@ -8,7 +8,11 @@ import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
 import { SignHero } from '../../paper/SignHero';
 import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclosure';
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
+import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
+import { GuideBetweenSessions } from './GuideBetweenSessions';
 import { GuideSection, GuideSources } from './GuideSection';
+import { sessionSeed, type PlanSeed } from './guidePlan';
+import { PlanButton } from './PlanButton';
 import { GuidePoints, GuideVoice } from './GuidePoints';
 import { TechniqueDoneNote } from './TechniqueMarkRow';
 import '../../../styles/therapist-guide.css';
@@ -80,6 +84,8 @@ export interface GuideSheetActions {
   onOpenTechnique: (id: TechniqueId) => void;
   /** «Дать заданием»; нет — лист без кнопок заданий (справочник без клиента). */
   onAssign?: (item: BetweenSessionsItem) => void;
+  /** «В план» у рубрик листа; нет — лист без этих кнопок. */
+  onPlan?: (seed: PlanSeed) => void;
   onClose: () => void;
   /** История серым: «делали …» у техники, «давали …» у задания; нет — без строк. */
   notes?: GuideNotes;
@@ -102,7 +108,7 @@ type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'>
  * guideHistory.ts), за «делали …» — «журнал →» (`onOpenJournal`); `backRef` идёт
  * в каркас (GuidePage). Пустой раздел не рисуется.
  */
-export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAssign, onClose, notes, onOpenJournal, children, ...page }: Props) {
+export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAssign, onPlan, onClose, notes, onOpenJournal, children, ...page }: Props) {
   const { guide, techniques } = view;
   return (
     <GuidePage
@@ -111,19 +117,19 @@ export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAss
     >
       <GuideVoice lines={voice} />
       {children}
-      <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} notes={notes} onOpenJournal={onOpenJournal} />
-      <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} notes={notes} />
+      <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} onPlan={onPlan} notes={notes} onOpenJournal={onOpenJournal} />
+      <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} onPlan={onPlan} notes={notes} />
     </GuidePage>
   );
 }
 
 /** «На сессии»: знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
-function GuideTechniques({ techniques, onOpen, notes, onOpenJournal }: {
-  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; notes?: GuideNotes; onOpenJournal?: () => void;
+function GuideTechniques({ techniques, onOpen, onPlan, notes, onOpenJournal }: {
+  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes; onOpenJournal?: () => void;
 }) {
   if (techniques.length === 0) return null;
   return (
-    <GuideSection title="На сессии">
+    <GuideSection title={PLAN_RUBRIC_LABEL.session} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
       <ul className="tcp-guide-list">
         {techniques.map((t) => (
           <li key={t.id} className="gd-tech">
@@ -138,42 +144,4 @@ function GuideTechniques({ techniques, onOpen, notes, onOpenJournal }: {
       </ul>
     </GuideSection>
   );
-}
-
-/** «Между сессиями»: название, серым пояснение или инструкция и «давали …», «Дать заданием». */
-function GuideBetweenSessions({ items, onAssign, notes }: {
-  items: BetweenSessionsItem[]; onAssign?: (item: BetweenSessionsItem) => void; notes?: GuideNotes;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <GuideSection title="Между сессиями">
-      <ul className="tcp-guide-list">
-        {items.map((item, i) => {
-          const sub = item.kind === 'task' ? item.note : item.text;
-          return (
-            <li key={`${i}:${item.title}`} className="tcp-guide-task">
-              <div className="gd-min">
-                <div className="gd-text gd-text--strong">{item.title}</div>
-                {sub && <div className="ds-sub">{sub}</div>}
-                <GuideNote text={notes?.task(item)} />
-              </div>
-              {onAssign && (
-                <button
-                  type="button" className="ds-btn ds-btn--secondary"
-                  aria-label={`Дать заданием: ${item.title}`} onClick={() => onAssign(item)}
-                >
-                  Дать заданием
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </GuideSection>
-  );
-}
-
-/** Строка истории: мелко и серым, нечего сказать — ничего. */
-function GuideNote({ text }: { text?: string | null }) {
-  return text ? <div className="ds-sub">{text}</div> : null;
 }

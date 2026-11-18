@@ -3,6 +3,7 @@
 // (или свой: modeSign), строка схемы — знак домена, как в «Справочнике»; фигура — свой знак цвета типа (PaletteMark).
 import { modeGroupSign, modeSign, schemaDomain, type GuideSign } from '../art/guideSignsModel';
 import type { TherapistCustomMode } from '../../api';
+import { customModeId } from './useCustomModes';
 import { getModeById, MODE_GROUPS, SCHEMA_DOMAINS, type ModeGroup, type SchemaDomain } from '../../schemaTherapyData';
 import { COPING_KIND_LABEL } from '../../../../shared/src/therapy/conceptGraph/modeLanes';
 import { NEEDS_TITLE } from '../../../../shared/src/therapy/conceptGraph/diagram/diagramCircle';
@@ -63,7 +64,7 @@ export const CATALOG_TOTAL = [...CATALOG_MODE_GROUPS, ...CATALOG_DOMAINS].reduce
 export function customItem(m: TherapistCustomMode): PaletteItem {
   const type = m.nodeType as NodeType;
   const draft = (): Draft => ({ id: `cm_${m.id}_${Date.now()}`, type, data: { label: m.name, ...(type === 'coping' ? { copingSubtype: 'over' as const } : {}) } });
-  return { id: `cm_${m.id}`, name: m.name, hint: 'Свой режим', mark: 'mode', sign: modeGroupSign(TYPE_GROUP[type]), color: TYPE_COLORS[type] ?? TYPE_COLORS.custom, draft };
+  return { id: customModeId(m), name: m.name, hint: 'Свой режим', mark: 'mode', sign: modeGroupSign(TYPE_GROUP[type]), color: TYPE_COLORS[type] ?? TYPE_COLORS.custom, draft };
 }
 
 /** Режим из концептуализации клиента; неизвестный id — null. */

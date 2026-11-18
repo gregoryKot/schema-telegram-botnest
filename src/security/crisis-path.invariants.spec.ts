@@ -92,6 +92,8 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'терапевт: поля пункта «Что делали» в итогах сессии',
   // План работы с клиентом (#1337): пункт плана пишет терапевт о работе,
   // не клиент о своём состоянии — тот же класс, что поля итогов сессии.
+  'webapp/src/components/therapist/plan/PlanAddSheet.tsx':
+    'терапевт: текст пункта плана из справочника («В план»)',
   'webapp/src/components/therapist/plan/PlanItemForm.tsx':
     'терапевт: текст пункта плана работы с клиентом',
   // Вид «Поля» уехал из ClientConceptTab/ConceptSheet в отдельные файлы
@@ -192,8 +194,10 @@ describe('трипваер: кризисная детекция для своб�
     // тот же класс, что заметка о сессии в ClientSessionsTab: пишет терапевт.
     // 21 → 22 (2026-11, план работы #1337): plan/PlanItemForm.tsx — пункт плана
     // пишет терапевт, тот же класс, что SessionWorkItemCard.
+    // 22 → 23 (2026-11, «В план» #1337): plan/PlanAddSheet.tsx — тот же текст
+    // пункта плана, что в PlanItemForm, только взятый из справочника.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      22,
+      23,
     );
   });
 

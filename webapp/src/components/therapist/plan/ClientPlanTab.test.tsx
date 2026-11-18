@@ -8,7 +8,7 @@ import type { TherapyClientSummary } from '../../../api';
 import type { ClientDetail } from '../clientSheetTypes';
 
 const h = vi.hoisted(() => ({
-  getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), trackEvent: vi.fn(),
+  getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));
@@ -124,5 +124,34 @@ describe('ClientPlanTab', () => {
     await waitFor(() => expect(screen.queryByText('Свой пункт')).toBeNull());
     expect(h.deletePlanItem).toHaveBeenCalledWith(1);
     expect(screen.getByText('Второй')).toBeTruthy();
+  });
+
+  it('«Опустить ниже» шлёт полный список id в новом порядке и переставляет пункты; один пункт в рубрике — без стрелок', async () => {
+    const plan = [
+      item({ id: 1, text: 'Первый', position: 0 }), item({ id: 2, text: 'Второй', position: 1 }),
+      item({ id: 3, rubric: 'between', text: 'Дневник режима', position: 2 }),
+    ];
+    h.getTherapyPlan.mockResolvedValue(plan);
+    h.reorderPlan.mockResolvedValue({ ok: true });
+    renderTab();
+    await screen.findByText('Первый');
+    const texts = () => Array.from(document.querySelectorAll('.pl-text')).map((n) => n.textContent);
+    const down = screen.getAllByRole('button', { name: 'Опустить ниже' }) as HTMLButtonElement[];
+    expect(down).toHaveLength(2); // у одинокого пункта «Между сессиями» стрелок нет
+    expect(down[1].disabled).toBe(true); // край рубрики
+    fireEvent.click(down[0]);
+    expect(texts()).toEqual(['Дневник режима', 'Второй', 'Первый']);
+    await waitFor(() => expect(h.reorderPlan).toHaveBeenCalledWith(7, [3, 2, 1]));
+  });
+
+  it('отказ перестановки: ошибка видна, план перечитывается с сервера', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Первый' }), item({ id: 2, text: 'Второй', position: 1 })]);
+    h.reorderPlan.mockRejectedValue(new Error('Plan items mismatch'));
+    renderTab();
+    await screen.findByText('Первый');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Поднять выше' })[1]);
+    await screen.findByText('Не удалось переставить пункт');
+    expect(h.getTherapyPlan).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(Array.from(document.querySelectorAll('.pl-text')).map((n) => n.textContent)).toEqual(['Первый', 'Второй']));
   });
 });

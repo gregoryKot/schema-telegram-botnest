@@ -72,4 +72,14 @@ describe('SessionArchive', () => {
     await waitFor(() => expect(removeNote).toHaveBeenCalledWith(2));
     await waitFor(() => expect(screen.queryByText('Удалить заметку?')).toBeNull());
   });
+
+  it('пришли из журнала «На сессиях»: запись прокручена в вид и подсвечена, один раз', () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    const takeFocus = vi.fn(() => 2);
+    const { container } = render(<SessionArchive page={{ notes: rows(3), total: 3 }} removeNote={vi.fn()} takeFocus={takeFocus} />);
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.tb-tl-row--focus')?.textContent).toContain('заметка 2');
+    expect(takeFocus).toHaveBeenCalledTimes(1);
+  });
 });

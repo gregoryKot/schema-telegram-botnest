@@ -117,7 +117,7 @@ const history = () => screen.getByTestId('history').textContent;
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
-  mockApi.getTherapistNotes.mockResolvedValue([]);
+  mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getTherapyClientData.mockResolvedValue(null);
   mockApi.getClientSchemaNotes.mockResolvedValue([]);
   mockApi.getClientModeNotes.mockResolvedValue([]);

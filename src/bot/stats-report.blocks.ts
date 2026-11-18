@@ -23,6 +23,7 @@ export interface StatsBlockDeps {
   screenShare: Renderable;
   guideReference: Renderable;
   plan: Renderable;
+  taskAssign: Renderable;
   authHealth: Renderable;
   loginTicket: Renderable;
   clientErrors: Renderable;
@@ -65,6 +66,7 @@ export function statsBlocks(d: StatsBlockDeps): StatsBlock[] {
     { name: 'Показ экрана в кабинете', svc: d.screenShare },
     { name: 'Справочник терапевта', svc: d.guideReference },
     { name: 'План работы с клиентом', svc: d.plan },
+    { name: 'Задания клиентам', svc: d.taskAssign },
     { name: 'Вход в мессенджере', svc: d.authHealth },
     { name: 'Вход по коду', svc: d.loginTicket },
     { name: 'Поломки на клиенте', svc: d.clientErrors },

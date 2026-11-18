@@ -9,6 +9,7 @@ import { guideNotes } from '../../../../../shared/src/therapy/conceptGraph/guide
 import { useGuide } from '../../../../../shared/src/therapy/conceptGraph/guideLoader';
 import type { SheetBack } from '../ConceptFullscreenSheet';
 import type { GuideJournal } from './guideJournal';
+import type { PlanSeed } from './guidePlan';
 import { ModeGuideSheet } from './ModeGuideSheet';
 import { SchemaGuideSheet } from './SchemaGuideSheet';
 import { TechniqueSheet } from './TechniqueSheet';
@@ -40,8 +41,10 @@ export interface GuideBackRefs {
  * по заданиям клиента (`actions.tasks`) и отметкам связи раздела (`journal`);
  * за «делали …» — «журнал →» (`actions.onOpenJournal`).
  */
-export function ConceptGuideSheets({ open, actions, journal, backRefs, onCloseSheet, onCloseTechnique }: {
+export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, onCloseSheet, onCloseTechnique }: {
   open: GuideOpen; actions: ConceptGuideActions; journal?: GuideJournal; backRefs?: GuideBackRefs;
+  /** «В план» у рубрик листа раздела; нет — без кнопок. */
+  onPlan?: (seed: PlanSeed, from: GuideFrom) => void;
   onCloseSheet: () => void; onCloseTechnique: () => void;
 }) {
   const tr = useTr();
@@ -56,6 +59,7 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onCloseSh
   const sheetProps = (from: GuideFrom) => ({
     onOpenTechnique: (id: TechniqueId) => actions.onOpenTechnique(id, from),
     onAssign: assign && ((item: BetweenSessionsItem) => assign(item, from)),
+    onPlan: onPlan && ((seed: PlanSeed) => onPlan(seed, from)),
     onClose: onCloseSheet,
     notes: notesOf(from),
     onOpenJournal: actions.onOpenJournal,
