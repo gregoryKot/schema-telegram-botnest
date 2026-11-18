@@ -17,10 +17,14 @@ interface Props {
   onRetryLink: () => void;
   onSaveText: (text: string) => Promise<boolean>;
   onDelete: () => void;
+  /** Есть ли сосед в рубрике выше / ниже; оба false — пункт в рубрике один, стрелок нет. */
+  canUp: boolean;
+  canDown: boolean;
+  onMove: (dir: -1 | 1) => void;
 }
 
 /** Пункт плана: статус-кнопка (тап — следующий статус), текст, откуда пункт, действия — видны всегда. */
-export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete }: Props) {
+export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove }: Props) {
   const [editing, setEditing] = useState(false);
   const label = statusLabel(item.status);
   return (
@@ -53,6 +57,12 @@ export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSour
       {!editing && (
         <div className="pl-acts">
           {canAssign(item) && !linkPending && <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" disabled={busy} onClick={onAssign}>Дать заданием</button>}
+          {(canUp || canDown) && (
+            <>
+              <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Поднять выше" disabled={busy || !canUp} onClick={() => onMove(-1)}><MMIcon name="caret" size={16} style={{ transform: 'rotate(180deg)' }} /></button>
+              <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Опустить ниже" disabled={busy || !canDown} onClick={() => onMove(1)}><MMIcon name="caret" size={16} /></button>
+            </>
+          )}
           <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Изменить текст пункта" disabled={busy} onClick={() => setEditing(true)}><MMIcon name="edit" size={16} /></button>
           <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Удалить пункт" disabled={busy} onClick={onDelete}><MMIcon name="trash" size={16} /></button>
         </div>

@@ -3,7 +3,7 @@ import { api, reportClientError, type UserId } from '../../../api';
 import type { PlanItemPatch } from '../../../../../shared/src/therapy/plan/planApi';
 import type { PlanItem, PlanRubric } from '../../../../../shared/src/therapy/plan/planItem';
 import { trackPlanItemAdded, trackPlanItemStatus } from '../../../../../shared/src/share/planAnalytics';
-import { nextStatus } from './planModel';
+import { movePlanItem, nextStatus } from './planModel';
 
 /**
  * План работы открытого клиента (#1337): загрузка и правки. `items === null` — ещё грузится; `failed` — план
@@ -91,10 +91,21 @@ export function usePlanItems(clientId: UserId) {
     if (alive.current) setItems((prev) => prev && prev.filter((i) => i.id !== id));
   });
 
+  /** Перестановка внутри рубрики: порядок виден сразу. Отказ — план перечитывается: список мог устареть. */
+  const move = async (item: PlanItem, dir: -1 | 1) => {
+    const next = items && !inFlight.current ? movePlanItem(items, item.id, dir) : null;
+    if (!next) return;
+    setItems(next);
+    const ok = await run(item.id, 'Не удалось переставить пункт', async () => {
+      await api.reorderPlan(clientId, next.map((i) => i.id));
+    });
+    if (!ok && alive.current) fetchPlan();
+  };
+
   return {
     items, failed, busyId, error, reload, pendingLinks,
     clearError: () => setError(''),
-    add, cycleStatus, remove, linkTask,
+    add, cycleStatus, remove, linkTask, move,
     saveText: (id: number, text: string) => patch(id, { text }),
     /** Повтор отметки «выдано заданием» — только PATCH, без нового задания. */
     retryLink: (id: number) => (pendingLinks[id] != null ? linkTask(id, pendingLinks[id]) : Promise.resolve(false)),
