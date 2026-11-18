@@ -436,7 +436,7 @@
   "shared/src/needs/needData.ts": 40,
   "shared/src/needs/ratingRecord.ts": 22,
   "shared/src/needs/ratingShare.ts": 7,
-  "shared/src/needs/ratingWords.ts": 53,
+  "shared/src/needs/ratingWords.ts": 34,
   "shared/src/needs/trackerOnboarding.ts": 12,
   "shared/src/needs/types.ts": 45,
   "shared/src/notes/noteTags.ts": 34,
