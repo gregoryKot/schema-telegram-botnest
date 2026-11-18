@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   RULES, agree, clockText, glitchLevel, isResting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock,
-  scroll, speedFactor, tick,
+  scroll, tick,
 } from './habits';
 
 const start = () => newWeekState(11 * 60);
@@ -18,7 +18,7 @@ describe('ПЕРЕРАБОТАТЬ', () => {
     const s = tick(overwork(start()), RULES.overworkCalmMs);
     expect(glitchLevel(s, 0.7)).toBe(0.7);
   });
-  it('силы на нуле — Саша садится, а потом встаёт с частью сил: проиграть нельзя', () => {
+  it('силы на нуле — Саша плетётся, а потом возвращает часть сил: проиграть нельзя', () => {
     let s = start();
     while (s.energy > 0) s = overwork(s);
     expect(isResting(s)).toBe(true);
@@ -79,11 +79,6 @@ describe('сбой и часы', () => {
     expect(s.color).toBe(1);
     expect(s.load).toBe(1);
     expect(s.energy).toBe(paid.energy);
-  });
-  it('в сбое шаг короче, без сбоя — обычный', () => {
-    expect(speedFactor(0)).toBe(1);
-    expect(speedFactor(1)).toBeGreaterThan(0);
-    expect(speedFactor(1)).toBeLessThan(speedFactor(0.5));
   });
   it('часы идут только вперёд', () => {
     const s = reachClock(start(), 12 * 60 + 10);

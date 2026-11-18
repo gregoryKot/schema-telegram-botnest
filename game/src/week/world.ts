@@ -47,11 +47,6 @@ export function openGate(scene: Phaser.Scene, g: GateObj) {
   scene.tweens.add({ targets: g.rect, alpha: 0, duration: 260, onComplete: () => g.rect.destroy() });
 }
 
-/** Стопка без столкновений — то, что выросло за спиной от переработки. */
-export function addDecorPile(scene: Phaser.Scene, x: number, h: number) {
-  scene.add.rectangle(x, GROUND_Y - h / 2, 34, h, C.pile).setAlpha(0.55).setDepth(1);
-}
-
 export function buildWorld(scene: Phaser.Scene, ch: Chapter): World {
   const solids = scene.physics.add.staticGroup();
   const floor = scene.add.rectangle(ch.worldW / 2, GROUND_Y + (H - GROUND_Y) / 2, ch.worldW, H - GROUND_Y, C.floor);
@@ -70,6 +65,8 @@ export function buildWorld(scene: Phaser.Scene, ch: Chapter): World {
     person(scene, x, w.faces);
   }
   for (const g of ch.gates) addGate(scene, w, g);
+  // разметка пола: без неё на серых блоках бега не видно
+  for (let x = 0; x < ch.worldW; x += 160) scene.add.rectangle(x, GROUND_Y + 2, 60, 4, C.block).setAlpha(0.5);
   w.door = scene.add.rectangle(ch.door.x, GROUND_Y, 56, 110, C.door).setOrigin(0.5, 1).setDepth(2);
   return w;
 }
