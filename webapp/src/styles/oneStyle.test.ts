@@ -67,7 +67,6 @@ const LINE_OUTLINES: Record<string, string> = {
   '.mm2-bar': 'нижний край полосы выбора карт',
   // index.css — каркас кабинета (подключён к сверке 2026-11-08):
   '.topbar': 'нижний край верхней полосы кабинета',
-  '.mobile-nav': 'верхний край нижней навигации телефона',
 };
 const selectorsOf = (css: string, re: RegExp) => [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
   .filter((m) => re.test(m[2])).map((m) => m[1].trim());
