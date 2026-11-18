@@ -64,6 +64,18 @@ const OVERLAY_ROOTS: [string, string[], Record<string, string>?][] = [
   ['styles/product-landing-menu.css', ['.pl2-menu']],
 ];
 
+describe('безопасная зона снизу (--safe-bottom)', () => {
+  it('берёт и env(), и переменную telegram-web-app.js: в webview Telegram env() — ноль', () => {
+    const decl = read('index.css').match(/:root\s*\{[^}]*--safe-bottom:\s*([^;]+);/)?.[1] ?? '';
+    expect(decl).toMatch(/^max\(/);
+    expect(decl).toContain('env(safe-area-inset-bottom');
+    const name = /var\(--tg-([a-z-]+)/.exec(decl)?.[1] ?? '';
+    const tg = readFileSync(join(SRC, '../public/telegram-web-app.js'), 'utf8');
+    expect(tg).toContain("root.style.setProperty('--tg-' + name");
+    expect(name && tg.includes(`setCssProperty('${name}'`)).toBe(true);
+  });
+});
+
 describe('безопасная зона сверху (--safe-top)', () => {
   it(':root считает --safe-top как max() из env(safe-area-inset-top) и переменной хоста', () => {
     const decl = read('index.css').match(/:root\s*\{[^}]*--safe-top:\s*([^;]+);/)?.[1] ?? '';
