@@ -14,6 +14,7 @@ import { buildReferenceBody } from './guideReferenceBody';
 import { buildAnswerSources, referenceAnswer } from './guideReferenceAnswer';
 import { GuideAnswerCard } from './GuideAnswerCard';
 import { GuideReferenceSkeleton } from './GuideReferenceSkeleton';
+import { useRouteGuideSheet } from './guideSheetRoute';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
 const REFERENCE_TRACK: GuideOpenTrack = {
@@ -72,6 +73,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
       setNoteId(item.id);
     }
   };
+  useRouteGuideSheet(ref, open); // лист из общего поиска (⌘K): состояние маршрута → open
   return (
     <div className="gr-column">
       <input

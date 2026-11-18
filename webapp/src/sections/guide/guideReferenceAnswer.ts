@@ -4,7 +4,7 @@ import { normalizeSearchText } from '../../../../shared/src/utils/searchNormaliz
 import { bodyKey } from './guideReferenceBody';
 import { leafGroups } from './guideReferenceCoping';
 import type { Reference, ReferenceItem, ReferenceTexts } from './guideReferenceModel';
-import { parseReferenceQuery, textTokens } from './guideReferenceQuery';
+import { parseSearchQuery, textTokens } from '../../../../shared/src/search/searchQuery';
 
 /**
  * Карточка-ответ «Справочника» над выдачей поиска: запрос называет режим, схему или технику — наверху её название,
@@ -47,7 +47,7 @@ const entities = (ref: Reference): Entity[] => (['modes', 'schemas', 'techniques
  * затем доля покрытого названия. Ничья («ребёнок» — у десяти режимов) или название — меньшая часть запроса — null.
  */
 export function findEntity(ref: Reference, query: string): Entity | null {
-  const terms = parseReferenceQuery(query);
+  const terms = parseSearchQuery(query);
   let best: { item: Entity; score: number } | null = null;
   let tie = false;
   for (const item of entities(ref)) {
