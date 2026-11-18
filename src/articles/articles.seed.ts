@@ -1,5 +1,5 @@
-// Встроенные статьи. ArticlesService при смене SEED_VERSION перезаписывает их по slug
-// (правки этих статей из админки при этом теряются); правка текста здесь = бамп SEED_VERSION.
+// Встроенные статьи. Правка = бамп SEED_VERSION (articles.service.ts) и пара в articles.seed.lock.json (сверяет .lock.spec.ts).
+// Бамп перезаписывает статью по slug, только если её не правили в админке; правленая остаётся, slug в warn (articles.seed-sync.ts).
 export interface ArticleSeed {
   slug: string;
   title: string;
