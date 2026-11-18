@@ -6,7 +6,7 @@ import type { ReferenceItem } from './guideReferenceModel';
 const KIND = { mode: 'Режим', schema: 'Схема', technique: 'Техника' } as const;
 const LINKS = { mode: 'Связанные режимы', schema: 'Связанные схемы', technique: 'Связанные техники' } as const;
 const SHEET = { mode: 'Открыть лист режима', schema: 'Открыть лист схемы', technique: 'Открыть лист техники' } as const;
-// Показ считается, когда карточка задержалась на экране: лист, мелькнувший посреди набора, — не ответ.
+// Имена событий — литералом (трипваер analytics-sync). Показ считается, когда карточка задержалась на экране: лист, мелькнувший посреди набора, — не ответ.
 const SHOWN_AFTER_MS = 800;
 
 /**

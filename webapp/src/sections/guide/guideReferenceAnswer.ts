@@ -111,9 +111,11 @@ export function referenceAnswer(ref: Reference, sources: AnswerSources, query: s
   const text = firstSentences(source[intent]);
   if (!text) return null;
   const byKey = new Map(entities(ref).map((e) => [bodyKey(e), e]));
-  const links = (['technique', 'mode', 'schema'] as const).flatMap((kind) => {
-    const items = (source.related[kind] ?? []).flatMap((id) => byKey.get(`${kind}:${id}`) ?? []).slice(0, MAX_LINKS);
-    return items.length > 0 ? [{ kind, items }] : [];
-  });
+  const links: ReferenceAnswer['links'] = [];
+  for (const kind of ['technique', 'mode', 'schema'] as const) {
+    const found = (source.related[kind] ?? []).map((id) => byKey.get(`${kind}:${id}`));
+    const items = found.filter((e): e is Entity => e !== undefined).slice(0, MAX_LINKS);
+    if (items.length > 0) links.push({ kind, items });
+  }
   return { item, intent, text, links };
 }
