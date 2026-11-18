@@ -24,7 +24,32 @@ export type SchemaTechniqueId =
   | 'mode_dialogue_imagery'
   | 'anger_expression'
   | 'mode_map'
-  | 'schema_diary';
+  | 'schema_diary'
+  | 'positive_data_log'
+  | 'behavioral_experiment'
+  | 'transitional_objects'
+  | 'play_and_joy'
+  | 'body_grounding'
+  | 'values_overview'
+  | 'couple_mode_cycle';
+
+/** Техники из других подходов (#1366): у записи заполнены `approach` и `pairsWith`. */
+export type BorrowedTechniqueId =
+  | 'behavioral_activation'
+  | 'socratic_dialogue'
+  | 'exposure'
+  | 'chain_analysis'
+  | 'distress_tolerance'
+  | 'validation_levels'
+  | 'defusion'
+  | 'compassionate_self'
+  | 'motivational_interviewing'
+  | 'window_of_tolerance'
+  | 'stop_rewind_explore'
+  | 'life_line';
 
 /** Техника из библиотеки (guide/techniques/*). */
-export type TechniqueId = CoreTechniqueId | SchemaTechniqueId;
+export type TechniqueId =
+  | CoreTechniqueId
+  | SchemaTechniqueId
+  | BorrowedTechniqueId;

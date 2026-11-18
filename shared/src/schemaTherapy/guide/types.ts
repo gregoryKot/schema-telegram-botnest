@@ -76,6 +76,10 @@ export interface TechniqueGuide extends GuideVoiceFields {
   summary: string;
   /** Когда применять. */
   when?: string;
+  /** Техника из другого подхода: из какого. У техник схема-терапии поля нет. */
+  approach?: string;
+  /** Техника из другого подхода: с каким режимом или задачей схема-терапии сочетается. */
+  pairsWith?: string;
   /** Как проводить, по шагам. */
   steps: string[];
   /** Когда не делать и где буксует. */

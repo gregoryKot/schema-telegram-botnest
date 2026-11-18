@@ -22,7 +22,7 @@ export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
 }) {
   return (
     <GuidePage
-      label="Техника" title={t.name} lede={t.summary} onClose={onClose} backRef={backRef}
+      label={t.approach ? `Из другого подхода · ${t.approach}` : 'Техника'} title={t.name} lede={t.summary} onClose={onClose} backRef={backRef}
       look={techniqueGuideLook(t.id)}
       more={t.more} sources={t.sources}
       moreParts={[{ title: 'Когда не делать', text: t.cautions }, { title: 'Доказательность', text: t.evidence }]}
@@ -30,6 +30,7 @@ export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
       {mark && <TechniqueMarkRow {...mark} />}
       <GuideVoice lines={t.voice} />
       <GuideSection title="Когда" text={t.when} />
+      <GuideSection title="В схема-терапии" text={t.pairsWith} />
       {t.steps.length > 0 && (
         <GuideSection title="Как проводить">
           <GuidePoints items={t.steps} ordered />
