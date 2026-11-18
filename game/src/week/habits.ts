@@ -1,5 +1,5 @@
 // Цена привычек «Недели» — чистые функции над состоянием главы (сценарий — game/GAME_CONCEPT.md).
-// Привычка срабатывает всегда и всегда чего-то стоит; проиграть нельзя: силы на нуле — Саша садится.
+// Привычка срабатывает всегда и всегда чего-то стоит; проиграть нельзя: силы на нуле — Саша плетётся.
 
 export interface WeekState {
   energy: number;    // полоска сил, 0..100
@@ -9,7 +9,7 @@ export interface WeekState {
   load: number;      // сколько чужого в рюкзаке
   calmMs: number;    // сколько ещё сбой отступил
   calmLevel: number; // доля сбоя, пока он отступил (0 — погас)
-  restMs: number;    // > 0 — Саша сидит
+  restMs: number;    // > 0 — сил нет, Саша плетётся
   named: boolean;    // сбой назван в ПАУЗЕ — больше не возвращается
 }
 
@@ -19,7 +19,6 @@ export const RULES = {
   agreeJumpLoss: 0.12, minJump: 0.6,
   restMs: 2200, restEnergy: 40,
   clockCap: 14 * 60 + 58, // встреча в 15:00 — телефон не уносит дальше двери
-  glitchSlow: 0.55,
 } as const;
 
 export function newWeekState(clockMin: number): WeekState {
@@ -68,17 +67,12 @@ export function glitchLevel(s: WeekState, base: number): number {
   return s.calmMs > 0 ? base * s.calmLevel : base;
 }
 
-/** В сбое коридор тянется: шаг короче. */
-export function speedFactor(glitch: number): number {
-  return 1 - RULES.glitchSlow * glitch;
-}
-
 /** Часы идут только вперёд: место главы подтягивает их до своего времени. */
 export function reachClock(s: WeekState, min: number): WeekState {
   return min > s.clockMin ? { ...s, clockMin: min } : s;
 }
 
-/** Кадр времени: отступивший сбой возвращается; отсидевшись, Саша встаёт с частью сил. */
+/** Кадр времени: отступивший сбой возвращается; отдышавшись, Саша снова бежит с частью сил. */
 export function tick(s: WeekState, dtMs: number): WeekState {
   const calmMs = Math.max(0, s.calmMs - dtMs);
   if (s.restMs <= 0) return calmMs === s.calmMs ? s : { ...s, calmMs };

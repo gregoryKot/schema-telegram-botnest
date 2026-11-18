@@ -1,4 +1,5 @@
-// Ввод «Недели»: клавиатура и тач-кнопки сводятся к одному — куда идти, что нажато, держится ли ПАУЗА.
+// Ввод «Недели»: один палец. Саша бежит сам — касание кадра, кнопка или клавиша дают прыжок,
+// остальное — кнопки действий и удержание ПАУЗЫ.
 import Phaser from 'phaser';
 import { touch } from '../controls';
 import { weekTouch } from './touch';
@@ -10,19 +11,19 @@ export const ACT_KEYS: Record<Act, string> = { overwork: 'Z', scroll: 'X', agree
 
 export class WeekInput {
   private k: Record<string, Key>;
+  private tapped = false;
   constructor(scene: Phaser.Scene) {
-    this.k = scene.input.keyboard!.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,X,C,V,ONE,TWO,THREE') as Record<string, Key>;
+    this.k = scene.input.keyboard!.addKeys('UP,W,SPACE,Z,X,C,V,ONE,TWO,THREE') as Record<string, Key>;
+    scene.input.on('pointerdown', () => { this.tapped = true; });
     touch.drain();
   }
-  /** −1, 0 или 1 */
-  get dir(): number {
-    const l = touch.left || this.k.LEFT.isDown || this.k.A.isDown;
-    const r = touch.right || this.k.RIGHT.isDown || this.k.D.isDown;
-    return (r ? 1 : 0) - (l ? 1 : 0);
-  }
+  /** Забыть касания до этого кадра: выбор в панели ПАУЗЫ не должен стать прыжком. */
+  drain() { this.tapped = false; touch.drain(); }
   jump(): boolean {
     const keys = [this.k.UP, this.k.W, this.k.SPACE].map(k => just(k)); // прочитать все: нажатие не копится
-    return touch.consume('jump') || keys.some(Boolean);
+    const tap = this.tapped;
+    this.tapped = false;
+    return touch.consume('jump') || tap || keys.some(Boolean);
   }
   /** Привычка, нажатая в этом кадре. */
   act(): Act | null {
