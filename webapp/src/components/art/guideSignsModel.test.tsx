@@ -13,6 +13,7 @@ import {
   TECHNIQUE_SIGN,
 } from './guideSignsModel';
 import { GuideSignArt } from './GuideSigns';
+import { CORE_TECHNIQUE_SIGN } from './techniqueSigns';
 
 const tr = (ty: string) => ty;
 
@@ -62,10 +63,10 @@ describe('знаки листов подсказок', () => {
     for (const g of buildModeGuides(tr)) expect(modeSign(g.modeId), g.modeId).not.toBe('cluster');
   });
 
-  it('у каждой техники библиотеки свой знак, общих нет', () => {
+  it('у каждой техники библиотеки есть знак; у первых 14 он свой', () => {
     const ids = buildTechniqueGuides(tr).map((t) => t.id);
     expect(ids.sort()).toEqual(Object.keys(TECHNIQUE_SIGN).sort());
-    const signs = ids.map((id) => TECHNIQUE_SIGN[id]);
+    const signs = Object.values(CORE_TECHNIQUE_SIGN);
     expect(new Set(signs).size).toBe(signs.length);
   });
 
@@ -96,7 +97,7 @@ describe('знаки листов подсказок', () => {
     expect(practiceNoteSign('therapist_schemas')).toBe('layers');
     expect(practiceNoteSign('group_therapy')).toBe('cluster');
     expect(practiceNoteSign('chatting')).not.toBe(TECHNIQUE_SIGN.chairwork);
-    const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(TECHNIQUE_SIGN).includes(s));
+    const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(CORE_TECHNIQUE_SIGN).includes(s));
     expect(shared.sort()).toEqual(['heart', 'heart_frame']);
   });
 
