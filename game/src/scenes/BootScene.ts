@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { sceneForHash } from './route';
 import { S } from '../constants';
 import { loadProps, ensureEnemyAnims } from '../props';
 import { loadGround } from '../ground';
@@ -56,16 +57,8 @@ export class BootScene extends Phaser.Scene {
     if (!this.essentialsReady()) { this.armRetry(); return; }
     this.advanced = true;
     if (this.watchdog) clearTimeout(this.watchdog);
-    // Flow: Start → Intro → Game. Хеш — вход в сцену напрямую (смок e2e-browser/game-smoke.spec.ts).
-    const hash = window.location.hash.slice(1).toLowerCase();
-    if (hash === 'game' || hash.startsWith('chapter'))
-      this.scene.start('Game', { chapter: hash.startsWith('chapter') ? hash : 'chapter1' });
-    else if (hash === 'tutorial')
-      this.scene.start('Tutorial');
-    else if (hash === 'intro')
-      this.scene.start('Intro');
-    else
-      this.scene.start('Start');
+    const route = sceneForHash(window.location.hash); // Flow: Start → Intro → Game, либо вход по хешу
+    this.scene.start(route.key, route.data);
   }
 
   // Текстура существует И реально декодировалась (а не пришла HTML-заглушкой 0×0).

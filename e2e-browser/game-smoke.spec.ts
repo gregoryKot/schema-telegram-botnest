@@ -90,6 +90,7 @@ const SCENES = [
   { hash: 'chapter2', scene: 'Game' },
   { hash: 'chapter3', scene: 'Game' },
   { hash: 'chapter4', scene: 'Game' },
+  { hash: 'week', scene: 'Week' },
 ];
 
 test.describe('игра: смок прод-сборки', () => {
@@ -294,5 +295,226 @@ test.describe('игра: телефон в портрете', () => {
       null,
       { timeout: 30_000 },
     );
+  });
+});
+
+// «Неделя» (#1379): каркас «Понедельника» на серых блоках, вход по скрытому хешу #week.
+interface WeekGate {
+  x: number;
+  kind: string;
+  open: boolean;
+}
+interface WeekSceneLike {
+  st: {
+    energy: number;
+    piles: number;
+    clockMin: number;
+    color: number;
+    load: number;
+    named: boolean;
+  };
+  ps: { open: boolean };
+  done: boolean;
+  busy: boolean;
+  peak: boolean;
+  revealed: Set<string>;
+  player: { x: number; y: number; body: { reset(x: number, y: number): void } };
+  world: { gates: WeekGate[]; door: { x: number } };
+  children: { list: Obj[] };
+}
+const weekState = (page: Page) =>
+  page.evaluate(() => {
+    const sc = (window as unknown as GameWindow).__game!.scene.getScene(
+      'Week',
+    ) as WeekSceneLike;
+    return {
+      ...sc.st,
+      x: sc.player.x,
+      doorAhead: sc.world.door.x - sc.player.x,
+      open: sc.ps.open,
+      peak: sc.peak,
+      busy: sc.busy,
+      done: sc.done,
+      revealed: [...sc.revealed],
+      gates: sc.world.gates.map((g) => g.open),
+      texts: sc.children.list
+        .filter((o) => o.type === 'Text')
+        .map((o) => o.text ?? ''),
+    };
+  });
+/** Саша — к точке x; место главы срабатывает, когда сцена увидит его там. */
+const weekGoTo = async (page: Page, x: number, act?: string) => {
+  await page.evaluate((to) => {
+    const sc = (window as unknown as GameWindow).__game!.scene.getScene(
+      'Week',
+    ) as WeekSceneLike;
+    sc.player.body.reset(to, sc.player.y);
+  }, x);
+  if (act)
+    await expect
+      .poll(async () => (await weekState(page)).revealed, { timeout: 15_000 })
+      .toContain(act);
+};
+/** Нажатие с удержанием на кадр-другой: JustDown читается в update сцены; прошлое действие должно кончиться. */
+const tapKey = async (page: Page, code: string, ms = 120) => {
+  await expect
+    .poll(async () => (await weekState(page)).busy, { timeout: 15_000 })
+    .toBe(false);
+  await page.keyboard.down(code);
+  await page.waitForTimeout(ms);
+  await page.keyboard.up(code);
+};
+
+test.describe('игра «Неделя»: каркас «Понедельника»', () => {
+  test('от утра до двери: привычки берут цену, дверь открывает только ПАУЗА', async ({
+    page,
+  }) => {
+    await openGame(page, 'week', 'Week');
+    const start = await weekState(page);
+    expect(start.texts).toContain('Понедельник. Офис');
+    expect(start.revealed).toEqual([]);
+
+    // утро: бег настоящими клавишами
+    await page.keyboard.down('ArrowRight');
+    await expect
+      .poll(async () => (await weekState(page)).x, { timeout: 15_000 })
+      .toBeGreaterThan(start.x + 60);
+    await page.keyboard.up('ArrowRight');
+
+    // ПЕРЕРАБОТАТЬ: стопка убрана, дел больше, сил меньше
+    await weekGoTo(page, 2420, 'overwork');
+    await page.keyboard.down('ArrowRight');
+    await tapKey(page, 'KeyZ');
+    await page.keyboard.up('ArrowRight');
+    await expect
+      .poll(async () => (await weekState(page)).gates[0], { timeout: 15_000 })
+      .toBe(true);
+    let s = await weekState(page);
+    expect(s.energy).toBeLessThan(100);
+    expect(s.piles).toBeGreaterThan(0);
+
+    // ПРОЛИСТАТЬ: шум убран, часы перескочили, мир посерел
+    await weekGoTo(page, 3400, 'scroll');
+    const before = (await weekState(page)).clockMin;
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).gates[2], { timeout: 15_000 })
+      .toBe(true);
+    s = await weekState(page);
+    expect(s.clockMin).toBeGreaterThan(before + 60);
+    expect(s.color).toBeLessThan(1);
+
+    // СОГЛАСИТЬСЯ: проход свободен, рюкзак тяжелее
+    await weekGoTo(page, 4300, 'agree');
+    await tapKey(page, 'KeyC');
+    await expect
+      .poll(async () => (await weekState(page)).load, { timeout: 15_000 })
+      .toBe(1);
+    expect((await weekState(page)).gates[3]).toBe(true);
+
+    // дверь на пике: привычки её не открывают, она держится впереди
+    await weekGoTo(page, 5050);
+    await expect
+      .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
+      .toBe(true);
+    for (const code of ['KeyZ', 'KeyX', 'KeyC']) {
+      await tapKey(page, code);
+    }
+    s = await weekState(page);
+    expect(s.named).toBe(false);
+    expect(s.done).toBe(false);
+    expect(s.doorAhead).toBeGreaterThan(200);
+    expect(s.revealed).toContain('pause');
+
+    // ПАУЗА: удержание → выбор; неверное название оставляет выбор, верное гасит сбой
+    await page.keyboard.down('KeyV');
+    await expect
+      .poll(async () => (await weekState(page)).open, { timeout: 15_000 })
+      .toBe(true);
+    await page.keyboard.up('KeyV');
+    expect((await weekState(page)).texts).toContain('Что сейчас происходит?');
+    await tapKey(page, 'Digit1');
+    s = await weekState(page);
+    expect(s.open).toBe(true);
+    expect(s.named).toBe(false);
+    await tapKey(page, 'Digit3');
+    await expect
+      .poll(async () => (await weekState(page)).named, { timeout: 15_000 })
+      .toBe(true);
+    s = await weekState(page);
+    expect(s.doorAhead).toBeLessThan(320);
+
+    // десять шагов до двери — и реплика начальницы
+    await page.keyboard.down('ArrowRight');
+    await expect
+      .poll(async () => (await weekState(page)).done, { timeout: 30_000 })
+      .toBe(true);
+    await page.keyboard.up('ArrowRight');
+    expect((await weekState(page)).texts).toContain(
+      'Глянь отчёт до четверга, ладно?',
+    );
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
+      .toContain('Продолжение скоро');
+  });
+
+  test.describe('с телефона', () => {
+    test.use({
+      viewport: { width: 800, height: 360 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    test('кнопки открываются по сюжету, каждая не меньше 44×44; ПАУЗА — пальцем', async ({
+      page,
+    }) => {
+      await openGame(page, 'week', 'Week');
+      await expect(page.locator('#touch-controls.week')).toBeVisible();
+      const acts = [
+        ['overwork', '#tbtn-hit', 2300],
+        ['scroll', '#tbtn-avoid', 3200],
+        ['agree', '#tbtn-fawn', 4150],
+      ] as const;
+      for (const [, id] of acts) await expect(page.locator(id)).toBeHidden();
+      await expect(page.locator('#tbtn-pause')).toBeHidden();
+      for (const [act, id, x] of acts) {
+        await weekGoTo(page, x, act);
+        await expect(page.locator(id)).toBeVisible();
+      }
+      // у двери: привычка пальцем — и появляется ПАУЗА
+      await weekGoTo(page, 5050);
+      await expect
+        .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
+        .toBe(true);
+      await page.locator('#tbtn-avoid').tap();
+      await expect(page.locator('#tbtn-pause')).toBeVisible();
+      for (const id of [
+        '#tbtn-hit',
+        '#tbtn-avoid',
+        '#tbtn-fawn',
+        '#tbtn-pause',
+        '#tbtn-left',
+        '#tbtn-right',
+        '#tbtn-jump',
+      ]) {
+        const box = (await page.locator(id).boundingBox())!;
+        expect(box.width, id).toBeGreaterThanOrEqual(44);
+        expect(box.height, id).toBeGreaterThanOrEqual(44);
+      }
+      // удержание ПАУЗЫ пальцем → выбор; верное название — третья строка панели
+      await page.locator('#tbtn-pause').dispatchEvent('pointerdown');
+      await expect
+        .poll(async () => (await weekState(page)).open, { timeout: 15_000 })
+        .toBe(true);
+      await page.locator('#tbtn-pause').dispatchEvent('pointerup');
+      const canvas = (await page.locator('canvas').boundingBox())!;
+      const k = canvas.height / 360;
+      await page.touchscreen.tap(
+        canvas.x + canvas.width / 2,
+        canvas.y + (72 + 30 + 2 * 60 + 26) * k,
+      );
+      await expect
+        .poll(async () => (await weekState(page)).named, { timeout: 15_000 })
+        .toBe(true);
+    });
   });
 });
