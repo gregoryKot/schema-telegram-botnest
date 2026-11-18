@@ -31,6 +31,13 @@ const SCHEMA_TECHNIQUE_SIGN: Record<SchemaTechniqueId, GuideSign> = {
   anger_expression: 'flare',
   mode_map: 'cluster',
   schema_diary: 'sheets',
+  positive_data_log: 'pebbles',
+  behavioral_experiment: 'pattern_steps',
+  transitional_objects: 'flashcard',
+  play_and_joy: 'together',
+  body_grounding: 'breath',
+  values_overview: 'horizon',
+  couple_mode_cycle: 'ribbon',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
