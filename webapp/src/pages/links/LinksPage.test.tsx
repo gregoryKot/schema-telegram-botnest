@@ -68,18 +68,18 @@ describe('LinksPage', () => {
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target, from: 'direct' }, { keepalive: true });
   });
 
-  it('карточка проекта ведёт на сайт своей основной ссылкой', () => {
+  it('карточка проекта ведёт на сайт кнопкой «Открыть приложение»', () => {
     render(<LinksPage />);
-    const main = screen.getByText('Всё по схеме').closest('a')!;
+    const main = within(screen.getByText('Всё по схеме').closest('li')!).getByRole('link', { name: 'Открыть приложение' });
     expect(main.getAttribute('href')).toBe('https://schemehappens.ru');
     fireEvent.click(main);
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'project', from: 'direct' }, { keepalive: true });
   });
 
-  it('главная кнопка одна — запись на консультацию', () => {
+  it('кнопка записи ведёт к форме на визитке', () => {
     render(<LinksPage />);
-    const primary = anchors().filter((a) => a.classList.contains('lk-primary'));
-    expect(primary.map((a) => a.getAttribute('href'))).toEqual(['/#booking']);
+    const booking = screen.getByRole('link', { name: /Записаться на консультацию.*Первая встреча бесплатно/ });
+    expect(booking.getAttribute('href')).toBe('/#booking');
   });
 
   it('клик шлёт событие с кнопкой и источником из utm_source', () => {

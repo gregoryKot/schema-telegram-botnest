@@ -1,38 +1,39 @@
-// Пункт страницы ссылок: основная ссылка и значки площадок. Все ссылки — обычные
-// <a href> в той же вкладке; клик по каждой шлёт свою цель.
+// Пункт страницы ссылок — бумага своего вида: кнопка записи с пометкой, карточка проекта,
+// записка, ярлык со значками или полоска-ссылка. Все ссылки — обычные <a href> в той же
+// вкладке; клик по каждой шлёт свою цель.
+import { HealthyAdultNote } from './HealthyAdultNote';
 import type { ReadyLink } from './linksModel';
+import { PenCurve, PenGo } from './linksPen';
 import { PlaceIcons } from './PlaceIcons';
+import { ProjectCard } from './ProjectCard';
 import { trackLinksClick } from './trackLinksClick';
-
-const isExternal = (href: string) => /^https?:/.test(href);
-
-function LinkBody({ link }: { link: ReadyLink }) {
-  return (
-    <span className="lk-text">
-      {link.kind === 'feature' && <span className="lk-eyebrow">Проект</span>}
-      <span className="lk-title">{link.title}</span>
-      {link.note && <span className="lk-note">{link.note}</span>}
-    </span>
-  );
-}
 
 export function LinkRow({ link }: { link: ReadyLink }) {
   const { main } = link;
-  // Без основной ссылки пункт — строка: название слева, значки справа (с подписью — под ней).
+  if (link.kind === 'feature') return <li className="lk-item"><ProjectCard link={link} /></li>;
+  if (link.quote) return <li className="lk-item"><HealthyAdultNote link={link} /></li>;
   if (!main) {
     return (
       <li className="lk-item">
-        <div className={`lk lk-static${link.note ? ' lk-static-noted' : ''}`}><LinkBody link={link} /><PlaceIcons link={link} /></div>
+        <section className="lk-paper lk-label"><h2 className="lk-label-title">{link.title}</h2><PlaceIcons link={link} /></section>
       </li>
     );
   }
-  const body = (
-    <a className={`lk lk-${link.kind}`} href={main.href} onClick={() => trackLinksClick(main.id)}>
-      <LinkBody link={link} />
-      <span className="lk-arrow" aria-hidden>{isExternal(main.href) ? '↗' : '→'}</span>
-    </a>
+  if (link.kind === 'primary') {
+    return (
+      <li className="lk-item lk-ask">
+        <span className="lk-why lk-pen" aria-hidden>разбирать схемы не в одиночку</span>
+        <PenCurve className="lk-why-arrow" />
+        <a className="lk-cta" href={main.href} onClick={() => trackLinksClick(main.id)}>
+          <b>{link.title}</b>
+          {link.note && <small>{link.note}</small>}
+        </a>
+      </li>
+    );
+  }
+  return (
+    <li className="lk-item lk-strip-item">
+      <a className="lk-strip" href={main.href} onClick={() => trackLinksClick(main.id)}>{link.title} <PenGo /></a>
+    </li>
   );
-  if (!link.places.length) return <li className="lk-item">{body}</li>;
-  // Значки — соседи основной ссылки, не её дети: рамку держит пункт.
-  return <li className="lk-item lk-stack">{body}<PlaceIcons link={link} /></li>;
 }
