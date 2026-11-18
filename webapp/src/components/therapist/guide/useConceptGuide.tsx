@@ -1,12 +1,14 @@
 import { useRef, useState, type RefObject } from 'react';
-import { api } from '../../../api';
+import { api, type UserId } from '../../../api';
 import type { BetweenSessionsItem, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { ConceptGuideActions } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideTask } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
 import type { TechniqueJournalEntry } from '../../../../../shared/src/therapy/conceptGraph/techniqueJournal';
 import type { SheetBack } from '../ConceptFullscreenSheet';
 import type { AssignPreset } from '../assignTemplates';
+import { PlanAddSheet } from '../plan/PlanAddSheet';
 import { guideAssignPreset } from './guideAssign';
+import { planDraft, type PlanDraft } from './guidePlan';
 import { guideJournal, type GuideGraph } from './guideJournal';
 import { ConceptGuideSheets, type GuideOpen } from './ConceptGuideSheets';
 
@@ -37,17 +39,20 @@ const CONCEPT_TRACK: GuideOpenTrack = {
  * без него ссылки нет. `openMark` — строка журнала техник: лист техники с
  * разделом и днём отметки; `anyOpen` — открыт ли какой-то лист. События — concept_guide_*
  * (src/analytics/concept-events.constants.ts), без меты; «Справочник»
- * передаёт свои (`track`), чтобы открытия не смешивались.
+ * передаёт свои (`track`), чтобы открытия не смешивались. `plan` — кнопки «В план» у рубрик листа и лист
+ * выбора частей поверх него: с `clientId` — в план этого клиента, без — терапевт выбирает клиентов.
  */
-export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under }: {
+export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under, plan }: {
   onAssign?: (preset: AssignPreset) => void;
   tasks?: readonly GuideTask[];
   graph?: GuideGraph;
   track?: GuideOpenTrack;
   onOpenJournal?: () => void;
   under?: RefObject<SheetBack | null>;
+  plan?: { clientId?: UserId; onAdded?: () => void };
 } = {}) {
   const [open, setOpen] = useState<GuideOpen>(CLOSED);
+  const [draft, setDraft] = useState<PlanDraft | null>(null);
   const backRefs = { section: useRef<SheetBack | null>(null), technique: useRef<SheetBack | null>(null) };
   const leaveThen = (then: () => void) => {
     const back = under?.current ?? backRefs.section.current ?? backRefs.technique.current;
@@ -79,11 +84,15 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
   };
   const journal = graph && guideJournal(graph, () => api.trackEvent('concept_guide_mark_done'));
   const sheets = (
-    <ConceptGuideSheets
-      open={open} actions={actions} journal={journal} backRefs={backRefs}
-      onCloseSheet={() => setOpen(CLOSED)}
-      onCloseTechnique={() => setOpen((o) => ({ ...o, technique: null }))}
-    />
+    <>
+      <ConceptGuideSheets
+        open={open} actions={actions} journal={journal} backRefs={backRefs}
+        onPlan={plan && ((seed, from) => setDraft(planDraft(seed, from)))}
+        onCloseSheet={() => setOpen(CLOSED)}
+        onCloseTechnique={() => setOpen((o) => ({ ...o, technique: null }))}
+      />
+      {plan && draft && <PlanAddSheet draft={draft} clientId={plan.clientId} onAdded={plan.onAdded} onClose={() => setDraft(null)} />}
+    </>
   );
   // id отметки — строка из данных; техники нет в библиотеке — лист не откроется (techniqueGuide → null).
   const openMark = ({ techniqueId, from, day }: TechniqueJournalEntry) => {
