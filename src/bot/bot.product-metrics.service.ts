@@ -8,6 +8,8 @@ import { formatQuizMetrics } from './quiz-metrics.format';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { formatLinksPageMetrics } from './links-page-metrics.format';
+import { LinksPageMetricsService } from './links-page-metrics.service';
 import { formatPracticeMetrics } from './practice-metrics.format';
 import { PracticeMetricsService } from './practice-metrics.service';
 import { formatCaseMetrics } from './case-metrics.format';
@@ -33,19 +35,21 @@ export class ProductMetricsService {
     private readonly practiceLink: PracticeLinkMetricsService,
     private readonly practiceMetrics: PracticeMetricsService,
     private readonly caseMetrics: CaseMetricsService,
+    private readonly linksPage: LinksPageMetricsService,
   ) {}
 
   /** Готовый текстовый блок для /stats (+ мини-тесты, переходы к автору, практики). */
   async render(): Promise<string> {
-    const [metrics, quiz, practice, practiceSessions, cases] =
+    const [metrics, quiz, practice, practiceSessions, cases, links] =
       await Promise.all([
         this.getMetrics(),
         this.quizMetrics.getMetrics(),
         this.practiceLink.getMetrics(),
         this.practiceMetrics.getMetrics(),
         this.caseMetrics.getMetrics(),
+        this.linksPage.getMetrics(),
       ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}`;
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatLinksPageMetrics(links)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {

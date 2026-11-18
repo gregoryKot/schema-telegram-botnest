@@ -30,6 +30,7 @@ Disallow: /book
 Disallow: /admin
 Disallow: /booking-admin
 Disallow: /articles-admin
+Disallow: /links
 
 Sitemap: https://${host}/sitemap.xml
 `;

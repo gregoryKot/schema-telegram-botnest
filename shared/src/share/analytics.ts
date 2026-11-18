@@ -54,6 +54,8 @@ export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
 // api.trackPublicEvent (userId = null). Парный allow-list
 // (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts (синхронно).
 export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
+// Клик по кнопке страницы ссылок kotlarewski.gr/links: meta { target, from } — analytics/linksPage.ts.
+export const LINKS_PAGE_CLICK_EVENT = 'links_page_click';
 // Лендинг открыт кнопкой финала игры (?from=game), без meta; пара — GAME_EVENTS.
 export const GAME_APP_ARRIVE_EVENT = 'game_app_arrive';
 export type PracticeLinkPlace =

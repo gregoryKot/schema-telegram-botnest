@@ -37,6 +37,7 @@ const lazyRoute = (load: () => Promise<ComponentType>) => async () => ({ Compone
 const linkRoute = lazyRoute(async () => (await import('./pages/LinkDevicePage')).LinkDevicePage);
 const mergeRoute = lazyRoute(async () => (await import('./pages/MergePage')).MergePage);
 const donateRoute = lazyRoute(async () => (await import('./pages/DonatePage')).DonatePage);
+const linksRoute = lazyRoute(async () => (await import('./pages/links/LinksPage')).LinksPage); // страница ссылок визитки
 const notFoundRoute = lazyRoute(async () => (await import('./pages/NotFoundPage')).NotFoundPage);
 const authConfirmRoute = lazyRoute(async () => (await import('./pages/AuthConfirmPage')).AuthConfirmPage);
 const authErrorRoute = lazyRoute(async () => (await import('./pages/AuthErrorPage')).AuthErrorPage);
@@ -75,6 +76,7 @@ const personalRoutes = [
       { path: '/booking/manage', element: <BookingPaidRoute /> },
       { path: '/privacy',        element: <Suspense fallback={null}><PrivacyPage /></Suspense> },
       { path: '/offer',          element: <Suspense fallback={null}><OfferPage /></Suspense> },
+      { path: '/links',          lazy: linksRoute },
     ],
   },
   // Вне бренда визитки — осознанно:

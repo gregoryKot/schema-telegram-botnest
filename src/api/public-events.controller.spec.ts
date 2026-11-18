@@ -142,6 +142,25 @@ describe('PublicEventsController', () => {
     }
   });
 
+  it('links_page_click пишется анонимно, неизвестная кнопка молча дропается', async () => {
+    await controller.track({
+      name: 'links_page_click',
+      meta: { target: 'booking', from: 'telegram', extra: 'x' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'links_page_click', {
+      target: 'booking',
+      from: 'telegram',
+    });
+    track.mockClear();
+    await expect(
+      controller.track({
+        name: 'links_page_click',
+        meta: { target: 'nope', from: 'telegram' },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
+  });
+
   it('practice_link_click: лишние поля отрезаются, остаётся только place', async () => {
     await controller.track({
       name: 'practice_link_click',

@@ -250,6 +250,13 @@ describe('ProductMetricsService.getMetrics', () => {
       practiceLink,
       practiceMetrics,
       caseMetrics,
+      {
+        getMetrics: jest.fn(async () => ({
+          total30: 0,
+          byTarget: {},
+          byFrom: {},
+        })),
+      } as never,
     );
     // Сами запросы к БД покрыты тестом выше — здесь проверяем склейку.
     jest.spyOn(service, 'getMetrics').mockResolvedValue(EMPTY_METRICS);
@@ -259,6 +266,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(text).toContain('Начали: 7 · дошли до результата: 5');
     expect(text).toContain('Переходы к автору-терапевту');
     expect(text).toContain('Переходили на сайт практики: 3');
+    expect(text).toContain('Страница ссылок');
     // Продуктовый блок тоже на месте (склейка ничего не потеряла).
     expect(text).toContain('Новички проходят обучение');
     // Блок быстрых практик тоже подклеен.
