@@ -48,6 +48,32 @@ describe('тексты игры в зоне гейтов', () => {
     ).toBe(0);
   });
 
+  // «Неделя» живёт в соседнем файле каталога — он в той же зоне
+  it.each([
+    [
+      'check-gendered-forms.mjs',
+      'scripts/gendered-forms-baseline.json',
+      'Ты мог сделать лучше',
+      'Можно было сделать лучше',
+    ],
+    [
+      'check-robot-phrases.mjs',
+      'scripts/robot-phrases-baseline.json',
+      'Важно отметить, что страх старый.',
+      'Страх старый.',
+    ],
+  ])('%s смотрит и в week.ts', (gate, baseline, bad, ok) => {
+    const WEEK = 'game/src/i18n/week.ts';
+    const files = (ru: string) => ({
+      [baseline]: JSON.stringify({}),
+      [WEEK]: `export const WEEK = {\n  m_wk_x: wk("${ru}"),\n};\n`,
+    });
+    const red = runGate(gate, files(bad));
+    expect(red.status).toBe(1);
+    expect(red.stderr).toContain(WEEK);
+    expect(runGate(gate, files(ok)).status).toBe(0);
+  });
+
   it('Мистер — персонаж, его мужской род гейт не трогает', () => {
     const res = runGate('check-gendered-forms.mjs', {
       'scripts/gendered-forms-baseline.json': JSON.stringify({}),
