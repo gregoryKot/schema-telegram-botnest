@@ -34,7 +34,7 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'shared/src'];
-const SCAN_FILES = ['game/src/i18n/messages.ts']; // тексты игры — только в каталоге
+const SCAN_FILES = ['game/src/i18n/messages.ts', 'game/src/i18n/week.ts']; // тексты игры — только в каталоге
 
 function walk(dir, acc = []) {
   let entries;
