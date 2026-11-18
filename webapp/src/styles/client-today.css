@@ -16,6 +16,12 @@
 }
 .ct-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ct-head-why { flex-shrink: 0; }
+/* «Зачем это?» — стеклянная капсула той же заливки, что нижняя навигация (вариант А, владелец 2026-11-18). */
+.ct-link.ct-head-why {
+  padding: 0 var(--space-16); border-radius: 22px;
+  background: var(--glass-fill); box-shadow: var(--glass-shade), 0 6px 14px -8px var(--glass-shadow);
+}
+.ct-link.ct-head-why:hover { text-decoration: none; }
 /* Главная по референсу владельца 2026-11-04 («бумажная аппликация»): блок трекера,
    два квадрата цветной бумаги, картинки — примитивы pp-* из styles/paper.css и
    components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
