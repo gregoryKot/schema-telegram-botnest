@@ -8,12 +8,19 @@ import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 import { SignHead } from './SignArt';
 import { SessionArchive } from './SessionArchive';
 import { SessionWorkBlock } from './SessionWorkBlock';
+import { hasCustomMode, useCustomModeNames } from './useCustomModeNames';
 
-interface Props { detail: ClientDetail }
+interface Props {
+  detail: ClientDetail;
+  /** Вкладку открыли строкой журнала «На сессиях»: id записи, которую показать (один раз). */
+  takeFocus?: () => number | null;
+}
 
-export function ClientSessionsTab({ detail }: Props) {
+export function ClientSessionsTab({ detail, takeFocus }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
   const canSave = (!!newNoteText.trim() || detail.newNoteWork.length > 0) && !noteSaving; // с пунктами «Что делали» текст не обязателен
+  // Свои режимы нужны выбору в открытом пункте и подписям записей, где они отмечены.
+  const customModes = useCustomModeNames(detail.newNoteWork.length > 0 || notesPage.notes.some(n => hasCustomMode(n.work)));
   const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком
   return (
     <div className="ds-page tb-page--narrow">
@@ -31,7 +38,7 @@ export function ClientSessionsTab({ detail }: Props) {
           rows={5}
           placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
         />
-        <SessionWorkBlock detail={detail} />
+        <SessionWorkBlock detail={detail} customModes={customModes} />
         <div className="tb-composer-foot">
           <span className="tb-hint kbd-hint">⌘ + Enter — сохранить</span>
           <div className="tb-actions">
@@ -46,7 +53,7 @@ export function ClientSessionsTab({ detail }: Props) {
         {noteError && <div className="tb-error">{noteError}</div>}
       </div>
 
-      <SessionArchive page={notesPage} removeNote={removeNote} />
+      <SessionArchive page={notesPage} removeNote={removeNote} takeFocus={takeFocus} customModes={customModes} />
     </div>
   );
 }

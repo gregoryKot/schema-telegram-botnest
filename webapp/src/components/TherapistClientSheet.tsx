@@ -111,6 +111,9 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   const journalFocus = useRef(false);
   const openJournal = () => { journalFocus.current = true; detail.setClientTab('tasks'); };
   const takeJournalFocus = () => { const f = journalFocus.current; journalFocus.current = false; return f; };
+  const sessionFocus = useRef<number | null>(null); // строка журнала «На сессиях» → запись на вкладке «Сессии»
+  const openSession = (noteId: number) => { sessionFocus.current = noteId; detail.setClientTab('sessions'); };
+  const takeSessionFocus = () => { const id = sessionFocus.current; sessionFocus.current = null; return id; };
   const cardState = clientCardState({ loading, loadFailed, clients, selected: selectedClient, openClientRef });
 
   // ─── Render ───────────────────────────────────────────────────────────────────
@@ -165,14 +168,14 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
 
             {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
             {clientTab === 'sessions' && (
-              <ClientSessionsTab detail={detail} />
+              <ClientSessionsTab detail={detail} takeFocus={takeSessionFocus} />
             )}
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
             {clientTab === 'tasks' && (
               <ClientTasksTab
                 detail={detail} onAssign={openAssign} onTasksChanged={board.invalidate}
-                onOpenConcept={() => detail.setClientTab('concept')} takeJournalFocus={takeJournalFocus}
+                onOpenConcept={() => detail.setClientTab('concept')} takeJournalFocus={takeJournalFocus} onOpenSession={openSession}
               />
             )}
 

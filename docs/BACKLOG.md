@@ -29,9 +29,9 @@
   Не сделано в части 1: у семи названий («Прямая просьба», «Восьмидесятый день рождения», «Отсроченная проверка», «Список положительных посланий», «Просьба вместо требования», «Сделать на 80%», «Шкала доверия») тексты в разных режимах и схемах разные — каталог (`shared/src/tasks/catalog/taskCatalog.ts`) берёт первый, остальные варианты не видны; решить — сводить тексты или показывать варианты.
   Находки: «Критик или забота?» (`shared/src/schemaTherapy/guide/modes/critic.ts:9-12`) начинается с «Открыть в „Практиках“…» и теперь назначается клиенту без аккаунта, у которого «Практик» нет; событие `task_assign_source` не отличает «Дать заданием» и шаблон от плитки и своего (`webapp/src/components/TaskCreateSheet.tsx`); `TASK_ASSIGN_SOURCES` объявлен дважды (`src/analytics/cabinet-events.constants.ts`, `shared/src/share/taskAssignAnalytics.ts`) без теста-сверки (№4).
 
-- 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. PR1 (эта ветка): каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`.
-  Впереди: PR2 — журнал «На сессиях» и лист техники берут пункты из итогов (ручка пунктов по клиенту); PR3 — сводка «Что было сделано» на «Обзоре».
-  Не сделано в PR1: свои режимы терапевта (`TherapistCustomMode`) в выборе и в метках под записью — `webapp/src/components/therapist/SessionWorkItemCard.tsx` берёт только справочник (причина: у своих режимов отдельная загрузка, в размер PR не вошло).
+- 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. Сделано: PR1 (#1332) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; PR2 (#1367) — ручка пунктов по клиенту `GET /api/therapy/notes/:clientId/work` (`src/therapy/session-work-list.ts`), журнал «На сессиях» и лист техники берут пункты из итогов (`shared/src/therapy/sessionWork/sessionJournal.ts`, `webapp/src/components/therapist/useSessionWork.ts`), тап по пункту открывает запись на «Сессиях», свои режимы терапевта — в выборе «С чем работали» и в подписях.
+  Осталось: PR3 — сводка «Что было сделано» на «Обзоре» (`ClientOverviewTab.tsx`; данные — `useSessionWork` + отметки связей, считать по `sessionJournal`).
+  Не сделано в PR2: глазами в браузере журнал и переход к записи не проверялись (только vitest); пункт из ранней записи (за пределами 100 показанных заметок) в журнале стоит строкой без перехода — вкладка «Сессии» такие записи не выводит (`SessionArchive.tsx`, `NotesTruncationHint`).
 
 
 ## Следующее
@@ -140,7 +140,6 @@
 - ⬜ **Шаблон `practice_missed`: разбор `payload.weekday` нужен только старым строкам очереди** — с #1285 вопрос всегда о дне перед днём плана и ставится без payload («Вчера был план»); `ON_WEEKDAY` и ветка `weekday` в `src/notification/notification.templates.activity.ts` дочитывают строки, поставленные до деплоя (не дольше суток). Шаг после мержа: через сутки после деплоя снять ветку вместе с её тестами.
 - ⬜ **Гейт `check-dead-end-report.mjs` не видит два вида загрузчика** — `async`-загрузчик с `await` без `try` и промис, отданный дальше (аргумент, присваивание, `return`), идут мимо правил `scripts/check-dead-end-report-rules.mjs`: сбой там может рисоваться как «пусто» без отчёта (№14). Подробности — `docs/open/audit-2026-10.md`, «остаток слепого пятна»; найдено в #1303.
 - ⬜ **Пропуск скрытых каталогов в `check-telegram-chat-id.mjs` и `check-dead-end-report.mjs`** — оба обходят дерево `readdirSync`+`statSync` без пропуска `.`-имён (первый в момент пакета c3-16 переписывал параллельный c3-11, #1308; второго нет в брифе c3-16 и ни в одном открытом PR — пакета-владельца нет, берёт любая сессия); при живом `src/.jest-cache` ручной запуск падает на гонке удаления. Добавить `name.startsWith('.')` у рекурсии и убрать файл из `NOT_YET` в `src/test-support/gates/source-walk.spec.ts`.
-- ⬜ **«Что делали»: нет живого спека чтения и записи `TherapistNote.work`** — «сохранил → нашёл» проверено на моке Prisma (`src/therapy/therapy-notes.service.spec.ts`), через реальную БД не гонялось (#1330, PR1).
 - ⬜ **`scripts/file-size-baseline.json` на `main` не знает новых файлов** — `game/src/{foes,gridScale}.ts`, `webapp/src/sections/guide/{GuideSchemaTable.tsx,guideSchemaTableModel.ts}`; видно по `node scripts/check-file-size-ratchet.mjs --update` на чистом `main`.
 - ⬜ **`ClientDetail` в тестах карточки клиента собирается руками через `as unknown as`** — новое поле ловится только падением теста (так было с `webapp/src/components/therapist/ClientSessionsTab.limit.test.tsx`); нужна общая фабрика.
 
@@ -169,6 +168,8 @@
 из 12 пунктов и обоснования — в разделе «Что требует решения владельца» там же.
 
 ## Сделано
+
+- ✅ **«Что делали»: живой спек чтения и записи `TherapistNote.work`** — «сохранил → нашёл» через HTTP и БД в `test/therapy-ownership-2.e2e-spec.ts` (#1330, PR2).
 
 - ✅ **План работы с клиентом: вкладка в карточке + «В план» из справочника** (#1337; PR #1338, #1341, #1364) — бэкенд `/api/therapy/plan`, вкладка «План работы» (`webapp/src/components/therapist/plan/`), кнопка «В план» в листах справочника (общий `/cabinet/guide` — с выбором клиентов, из вкладки плана — этому клиенту; лист `PlanAddSheet.tsx`, разбиение `shared/src/schemaTherapy/guide/sentences.ts`), перестановка пунктов внутри рубрики (`movePlanItem`, ручка `order`).
 

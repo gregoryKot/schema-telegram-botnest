@@ -3,11 +3,12 @@ import type { ClientDetail } from './clientSheetTypes';
 import { WORK_OPTION_GROUPS, newWorkItem, type WorkOption } from '../../../../shared/src/therapy/sessionWork/names';
 import { WORK_ITEMS_MAX, type SessionWorkItem } from '../../../../shared/src/therapy/sessionWork/types';
 import { SessionWorkItemCard } from './SessionWorkItemCard';
+import type { NamedMode } from './useCustomModeNames';
 
 type Detail = Pick<ClientDetail, 'newNoteWork' | 'setNewNoteWork' | 'activeModeIds' | 'activeSchemaIds' | 'ysqSchemaIds' | 'selfSchemaIds'>;
 
 /** «Что делали» в форме итогов сессии (#1330): пункты записи и выбор вида нового пункта. Клиенту не видно. */
-export function SessionWorkBlock({ detail }: { detail: Detail }) {
+export function SessionWorkBlock({ detail, customModes }: { detail: Detail; customModes?: NamedMode[] }) {
   const { newNoteWork: work, setNewNoteWork: setWork } = detail;
   const [picking, setPicking] = useState(false);
   const add = (option: WorkOption) => { setWork([...work, newWorkItem(option)]); setPicking(false); };
@@ -21,7 +22,7 @@ export function SessionWorkBlock({ detail }: { detail: Detail }) {
         <SessionWorkItemCard
           key={item.id} item={item} onChange={change}
           onRemove={() => setWork(work.filter(w => w.id !== item.id))}
-          clientModeIds={detail.activeModeIds} clientSchemaIds={clientSchemaIds}
+          clientModeIds={detail.activeModeIds} clientSchemaIds={clientSchemaIds} customModes={customModes}
         />
       ))}
       {picking ? (

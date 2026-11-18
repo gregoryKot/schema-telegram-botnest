@@ -3,19 +3,20 @@ import { useNeedData } from '../../../../shared/src/needs/needData';
 import { workFields } from '../../../../shared/src/therapy/sessionWork/fields';
 import { workTitle } from '../../../../shared/src/therapy/sessionWork/names';
 import { normalizeSessionWork } from '../../../../shared/src/therapy/sessionWork/normalize';
+import type { NamedMode } from './useCustomModeNames';
 import type { SessionWorkItem } from '../../../../shared/src/therapy/sessionWork/types';
 
 /** «Что делали» под записью сессии: название, с чем работали, заполненные поля. У записи без пунктов блока нет. */
-export function SessionWorkList({ work }: { work: SessionWorkItem[] | undefined }) {
+export function SessionWorkList({ work, customModes = [] }: { work: SessionWorkItem[] | undefined; customModes?: NamedMode[] }) {
   const needData = useNeedData();
   const items = normalizeSessionWork(work);
   if (items.length === 0) return null;
   return (
     <ul className="sw-list" aria-label="Что делали">
       {items.map(item => {
-        // Режим или схема, которых больше нет в справочнике, метки не дают.
+        // Режим или схема, которых больше нет в справочнике (и удалённый свой режим), метки не дают.
         const tags = [
-          ...item.modeIds.map(id => getModeById(id)?.name),
+          ...item.modeIds.map(id => (getModeById(id) ?? customModes.find(m => m.id === id))?.name),
           ...item.schemaIds.map(id => getSchemaById(id)?.name),
           ...item.needIds.map(id => needData[id]?.name),
         ].filter((name): name is string => !!name);

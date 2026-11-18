@@ -10,6 +10,12 @@ import type { SessionWorkItem } from '../../../../shared/src/therapy/sessionWork
 import { ClientSessionsTab } from './ClientSessionsTab';
 import type { ClientDetail } from './clientSheetTypes';
 
+const listCustomModes = vi.fn(async () => [{ id: 5, name: 'Тихий Наблюдатель' }]);
+vi.mock('../../api', async (orig) => {
+  const real = await orig<typeof import('../../api')>();
+  return { ...real, api: { ...real.api, listCustomModes: () => listCustomModes() } };
+});
+
 const create = vi.fn(async (clientId: UserId, date: string, text: string, work: SessionWorkItem[]): Promise<TherapistNote> =>
   ({ id: 9, therapistId: 1, clientId, date, text, work, createdAt: '2026-11-17T10:00:00Z' }));
 const onWorkSaved = vi.fn();
@@ -22,7 +28,7 @@ function Tab({ modeIds = ['vulnerable_child'] }: { modeIds?: string[] }) {
 }
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 
-beforeEach(() => { create.mockClear(); onWorkSaved.mockClear(); });
+beforeEach(() => { create.mockClear(); onWorkSaved.mockClear(); listCustomModes.mockClear(); });
 
 describe('«Что делали» в форме итогов', () => {
   it('пустое состояние — одна строка-кнопка; выбор вида тремя группами', () => {
@@ -89,5 +95,22 @@ describe('«Что делали» в форме итогов', () => {
     expect(onWorkSaved).not.toHaveBeenCalled();
     expect(screen.getByText('текст')).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Что делали' })).toBeNull();
+  });
+
+  it('свой режим терапевта: под «Все» отдельной группой, после сохранения — метка под записью', async () => {
+    render(<Tab />);
+    expect(listCustomModes).not.toHaveBeenCalled(); // пока пунктов нет, свои режимы не грузятся
+    click('Что делали на сессии — добавить');
+    click('Работа со стульями');
+    const item = screen.getByRole('group', { name: 'Работа со стульями' });
+    fireEvent.click(within(item).getByRole('button', { name: /Режимы/ }));
+    await act(async () => {});
+    expect(within(item).queryByRole('button', { name: /Тихий Наблюдатель/ })).toBeNull(); // короткий список — только режимы клиента
+    fireEvent.click(within(item).getByRole('button', { name: 'Все' }));
+    fireEvent.click(within(item).getByRole('button', { name: /Тихий Наблюдатель/ }));
+    expect(within(item).getByRole('button', { name: /Режимы/ }).textContent).toContain('Тихий Наблюдатель');
+    await act(async () => { click('Сохранить'); });
+    expect(create.mock.calls[0][3]).toEqual([expect.objectContaining({ modeIds: ['cm_5'] })]);
+    expect(within(screen.getByRole('list', { name: 'Что делали' })).getByText('Тихий Наблюдатель')).toBeTruthy();
   });
 });

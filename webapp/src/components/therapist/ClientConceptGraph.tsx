@@ -7,6 +7,8 @@ import { ConceptGraphToolbar } from './ConceptGraphToolbar';
 import { ConceptFullscreenSheet, type SheetBack } from './ConceptFullscreenSheet';
 import { ConceptTabHead, type ConceptTabHeadProps } from './concept/ConceptTabHead';
 import type { AssignPreset } from './assignTemplates';
+import { workMarks } from '../../../../shared/src/therapy/sessionWork/sessionJournal';
+import { useSessionWork } from './useSessionWork';
 import { useConceptGuide } from './guide/useConceptGuide';
 
 // Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и правки —
@@ -30,7 +32,11 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
   const graphRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<SheetBack | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
-  const guide = useConceptGuide({ onAssign, tasks: detail.clientTasks, graph: g.graphProps, onOpenJournal, under: backRef });
+  const work = useSessionWork(detail);
+  const guide = useConceptGuide({
+    onAssign, tasks: detail.clientTasks, onOpenJournal, under: backRef,
+    graph: { ...g.graphProps, workMarks: (from) => workMarks(work.entries, from) },
+  });
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');
     setHeld(flowRef.current?.offsetHeight ?? 0);

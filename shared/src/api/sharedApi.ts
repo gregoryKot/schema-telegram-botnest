@@ -43,7 +43,10 @@ import type {
 } from '../notes/types';
 import type { JourneyData } from '../journey/journeyMeta';
 import type { TherapistNotesPage } from '../therapy/notesPage';
-import type { SessionWorkItem } from '../therapy/sessionWork/types';
+import type {
+  SessionWorkEntry,
+  SessionWorkItem,
+} from '../therapy/sessionWork/types';
 import type { PracticeIcsLinkBody } from '../practices/savePracticeIcs';
 
 /** Транспорт фронтенда: auth-заголовки, BASE и обработка ошибок — внутри. */
@@ -251,6 +254,11 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getTherapistNotes: (clientId: UserId) =>
     t.get<TherapistNotesPage>(`/api/therapy/notes/${clientId}`),
+  /** Пункты «Что делали» всех сессий клиента (страница заметок отдаёт только свежие). */
+  getSessionWork: (clientId: UserId) =>
+    t.get<{ entries: SessionWorkEntry[] }>(
+      `/api/therapy/notes/${clientId}/work`,
+    ),
   createTherapistNote: (
     clientId: UserId,
     date: string,

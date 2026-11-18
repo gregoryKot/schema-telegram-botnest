@@ -25,3 +25,11 @@ export const WORK_VALUE_MAX = 600; // знаков в поле
 export const WORK_CUSTOM_NAME_MAX = 80;
 export const WORK_IDS_MAX = 12; // режимов, схем, потребностей в пункте
 export const WORK_ID_MAX = 64; // знаков в id пункта, режима, схемы
+
+/** Пункты одной записи сессии — ответ ручки пунктов по клиенту (`GET /api/therapy/notes/:clientId/work`). */
+export interface SessionWorkEntry {
+  noteId: number;
+  /** День сессии, `YYYY-MM-DD`. */
+  date: string;
+  work: SessionWorkItem[];
+}

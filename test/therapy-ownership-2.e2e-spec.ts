@@ -34,6 +34,15 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
   const C2 = 4_000_000_000_000_005n;
   const C2_ID = Number(C2);
   const ALL_USER_IDS = [T3, C2];
+  const WORK_ITEM = {
+    id: 'w1',
+    kind: 'technique',
+    refId: 'chairwork',
+    modeIds: ['punitive_critic'],
+    schemaIds: [],
+    needIds: [],
+    fields: { theme: 'спор с Критиком' },
+  };
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
@@ -82,8 +91,14 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     const note = await t3.post(`/api/therapy/notes/${C2_ID}`, {
       date: '2026-07-22',
       text: 'заметка до разрыва связи',
+      work: [WORK_ITEM],
     });
     expect(note.status).toBeLessThan(300);
+    // «Сохранил → нашёл» пунктов «Что делали» через живую БД.
+    const work = await t3.get(`/api/therapy/notes/${C2_ID}/work`);
+    expect(work.body.entries).toEqual([
+      { noteId: note.body.id, date: '2026-07-22', work: [WORK_ITEM] },
+    ]);
 
     const concept = await t3.post(`/api/therapy/conceptualization/${C2_ID}`, {
       earlyExperience: 'опыт клиента C2',
@@ -137,6 +152,9 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     const t3 = agentAs(T3);
     const res = await t3.get(`/api/therapy/notes/${C2_ID}`);
     expect(res.status).toBe(403);
+    const work = await t3.get(`/api/therapy/notes/${C2_ID}/work`);
+    expect(work.status).toBe(403);
+    expect(JSON.stringify(work.body)).not.toContain('спор с Критиком');
   });
 
   it('после разрыва связи T3 не может читать концептуализацию C2', async () => {

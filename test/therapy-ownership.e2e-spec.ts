@@ -102,6 +102,10 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(notes.body.notes).toHaveLength(1);
     expect(notes.body.total).toBe(1);
     expect(notes.body.notes[0].text).toBe('первая сессия: тревога, избегание');
+    // Записей без пунктов «Что делали» ручка пунктов не отдаёт.
+    const work = await t1.get(`/api/therapy/notes/${C1_ID}/work`);
+    expect(work.status).toBe(200);
+    expect(work.body.entries).toEqual([]);
 
     const savedConcept = await t1.post(
       `/api/therapy/conceptualization/${C1_ID}`,
@@ -191,6 +195,7 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     const t2 = agentAs(T2);
     const routes = [
       `/api/therapy/notes/${C1_ID}`,
+      `/api/therapy/notes/${C1_ID}/work`,
       `/api/therapy/conceptualization/${C1_ID}`,
       `/api/therapy/client-data/${C1_ID}`,
       `/api/therapy/tasks/client/${C1_ID}`,
@@ -215,6 +220,7 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       () => c1.get('/api/therapy/clients'),
       () => c1.post('/api/therapy/invite'),
       () => c1.get(`/api/therapy/notes/${C1_ID}`),
+      () => c1.get(`/api/therapy/notes/${C1_ID}/work`),
       () => c1.get(`/api/therapy/mode-maps/${C1_ID}`),
       () => c1.get('/api/therapy/tasks/all'),
       () => c1.get('/api/therapy/custom-modes'),
