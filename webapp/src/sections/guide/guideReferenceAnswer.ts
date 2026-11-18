@@ -12,8 +12,8 @@ import { parseReferenceQuery, textTokens } from './guideReferenceQuery';
  * текст про работу, без него — суть. Сущность не распознана или у названий ничья — ответа нет, выдача как раньше.
  */
 export type AnswerIntent = 'work' | 'essence';
-type Entity = Extract<ReferenceItem, { kind: 'mode' | 'schema' | 'technique' }>;
-type Kind = Entity['kind'];
+type Kind = 'mode' | 'schema' | 'technique';
+type Entity = ReferenceItem & { kind: Kind };
 
 export interface ReferenceAnswer {
   item: Entity;
