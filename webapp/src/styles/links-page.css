@@ -1,8 +1,8 @@
 /* Страница ссылок визитки (/links): один столбец, токены визитки. Свечение —
    градиентом по сплошному фону (без размытия); появление — transform/opacity. */
 .links-page {
-  min-height: 100dvh;
-  padding: 28px 16px 40px;
+  width: 100%; min-height: 100dvh;
+  padding: clamp(28px, calc((100vw - 440px) * 0.12), 96px) 16px 40px;
   color: var(--text);
   background:
     radial-gradient(120% 340px at 50% -80px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),

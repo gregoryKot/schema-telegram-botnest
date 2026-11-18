@@ -39,7 +39,7 @@ export function TechniqueJournalBlock({ detail, onOpenConcept, takeFocus, onOpen
   const work = useSessionWork(detail);
   const customModes = useCustomModeNames(work.entries.some((e) => hasCustomMode(e.work)));
   const guide = useConceptGuide({
-    tasks: detail.clientTasks,
+    tasks: detail.clientTasks, plan: { clientId: detail.selectedClient?.telegramId },
     graph: {
       source, onChangeLink: handlers.onChangeLink, onChangeSchemaLink: handlers.onChangeSchemaLink,
       workMarks: (from) => workMarks(work.entries, from),
