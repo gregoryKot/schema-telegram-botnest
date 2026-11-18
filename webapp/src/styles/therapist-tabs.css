@@ -243,13 +243,16 @@
 .pl-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 6px; }
 .ds-link.pl-source { min-height: 44px; text-align: left; }
 .pl-acts { display: flex; align-items: center; gap: 4px; flex: none; }
+/* Стрелка без соседа — бледная иконка, без кольца простаивающей кнопки. */
+.pl-acts .ds-btn--icon.tb-del:disabled { background: transparent; border-color: transparent; opacity: .35; }
 .pl-form { display: flex; flex-direction: column; gap: 10px; }
 .pl-form-rubric { display: flex; align-items: center; gap: 10px; }
 .pl-add { padding: 16px 20px; }
 .pl-fail { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 @media (max-width: 640px) {
   .pl-list { padding: 4px 14px; }
-  .pl-item { flex-wrap: wrap; }
-  .pl-body { flex-basis: calc(100% - 110px); }
-  .pl-acts { width: 100%; justify-content: flex-end; }
+  /* Телефон: статус и иконки — одной строкой сверху, текст пункта под ними во всю ширину. */
+  .pl-item { flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .pl-acts { margin-left: auto; gap: 0; }
+  .pl-body { order: 1; flex-basis: 100%; padding-top: 0; }
 }

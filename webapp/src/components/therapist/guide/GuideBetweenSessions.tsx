@@ -15,24 +15,24 @@ export function GuideBetweenSessions({ items, onAssign, onPlan, notes }: {
       <ul className="tcp-guide-list">
         {items.map((item, i) => {
           const sub = item.kind === 'task' ? item.note : item.text;
+          const plan = onPlan && <PlanButton label={item.title} onClick={() => onPlan(betweenSeed(item))} />;
           return (
             <li key={`${i}:${item.title}`} className="tcp-guide-task">
               <div className="gd-min">
-                <div className="gd-text gd-text--strong">{item.title}</div>
+                {/* одно тихое «+ В план» стоит в строке названия; с «Дать заданием» действия — рядом под текстом */}
+                <div className="gd-lead">{item.title}{!onAssign && plan}</div>
                 {sub && <div className="ds-sub">{sub}</div>}
                 <GuideNote text={notes?.task(item)} />
               </div>
-              {(onAssign || onPlan) && (
+              {onAssign && (
                 <div className="gd-acts">
-                  {onPlan && <PlanButton label={item.title} onClick={() => onPlan(betweenSeed(item))} />}
-                  {onAssign && (
-                    <button
-                      type="button" className="ds-btn ds-btn--secondary"
-                      aria-label={`Дать заданием: ${item.title}`} onClick={() => onAssign(item)}
-                    >
-                      Дать заданием
-                    </button>
-                  )}
+                  <button
+                    type="button" className="ds-btn ds-btn--secondary"
+                    aria-label={`Дать заданием: ${item.title}`} onClick={() => onAssign(item)}
+                  >
+                    Дать заданием
+                  </button>
+                  {plan}
                 </div>
               )}
             </li>
