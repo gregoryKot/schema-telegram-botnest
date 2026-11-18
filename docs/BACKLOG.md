@@ -29,14 +29,13 @@
   Часть 2 — PR #1373 (см. «Сделано»); осталась часть 3. После мержа #1373 — проверить зелёный `main` и деплой.
   Находки: «Критик или забота?» (`shared/src/schemaTherapy/guide/modes/critic.ts:9-12`) начинается с «Открыть в „Практиках“…» и теперь назначается клиенту без аккаунта, у которого «Практик» нет; событие `task_assign_source` не отличает «Дать заданием» и шаблон от плитки и своего (`webapp/src/components/TaskCreateSheet.tsx`); `TASK_ASSIGN_SOURCES` объявлен дважды (`src/analytics/cabinet-events.constants.ts`, `shared/src/share/taskAssignAnalytics.ts`) без теста-сверки (№4).
 
-- 🔧 **Карточка клиента: «Что делали» в итогах сессии** — #1330. Сделано: PR1 (#1332) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; PR2 (#1367) — ручка пунктов по клиенту `GET /api/therapy/notes/:clientId/work` (`src/therapy/session-work-list.ts`), журнал «На сессиях» и лист техники берут пункты из итогов (`shared/src/therapy/sessionWork/sessionJournal.ts`, `webapp/src/components/therapist/useSessionWork.ts`), тап по пункту открывает запись на «Сессиях», свои режимы терапевта — в выборе «С чем работали» и в подписях.
-  Осталось: PR3 — сводка «Что было сделано» на «Обзоре» (`ClientOverviewTab.tsx`; данные — `useSessionWork` + отметки связей, считать по `sessionJournal`).
-  Не сделано в PR2: глазами в браузере журнал и переход к записи не проверялись (только vitest); пункт из ранней записи (за пределами 100 показанных заметок) в журнале стоит строкой без перехода — вкладка «Сессии» такие записи не выводит (`SessionArchive.tsx`, `NotesTruncationHint`).
-
-
 ## Следующее
 
 - ⬜ **«Зачем» у задания клиента: событие и строка /stats** — #1366, часть 2 отложила (№8): «зачем» показывается в строке задания без действия клиента (`webapp/src/sections/practice/TaskRowTitle.tsx`), считать нечего; назначение из справочника уже считает `task_assign_source`. Решить: нужен ли показ как событие или хватит доли выполненных заданий с `catalogId` в «Задания клиентам» (`src/bot/task-assign-metrics.*`).
+
+- ⬜ **«Что делали»: посмотреть глазами в браузере** — #1330. Форма итогов, журнал «На сессиях» с переходом к записи (`webapp/src/components/therapist/TechniqueJournalBlock.tsx`) и сводка «Что было сделано» на «Обзоре» (`ClientWorkSummary.tsx`) проверены только vitest; на телефоне и компьютере под терапевтом их никто не открывал.
+
+- ⬜ **«Что делали»: пункт из ранней записи стоит в журнале без перехода** — #1330. Запись за пределами 100 показанных заметок вкладка «Сессии» не выводит (`webapp/src/components/therapist/SessionArchive.tsx`, `NotesTruncationHint`), поэтому строка журнала «На сессиях» у такого пункта не кнопка. Готово: тап открывает и раннюю запись.
 
 - ⬜ **Справочник заданий, часть 3: новые техники** — #1366. Сейчас 14 (`shared/src/schemaTherapy/guide/techniques/`, `TechniqueId` в `guide/types.ts`, копия ключей — `shared/src/therapy/sessionWork/fields.ts`). Шаг 1: список кандидатов с источниками (владелец: «можно и не по основным, но с источниками») — владельцу на вычёркивание. Шаг 2: принятые — записи `TechniqueGuide` с `sources`, запись в очередь вычитки. Готово: `guide.test.ts` зелёный, у каждой новой техники источник.
 
@@ -170,6 +169,8 @@
 ## Сделано
 
 - ✅ **Справочник заданий, часть 2: «зачем» у клиента и варианты текста** (#1366, PR #1373) — `UserTask.catalogId`, тексты «зачем» `shared/src/tasks/catalog/taskWhy*.ts`, строка задания клиента `webapp/src/sections/practice/TaskRowTitle.tsx`; у семи названий с разными текстами в «Из справочника» видны все варианты.
+
+- ✅ **Карточка клиента: «Что делали» в итогах сессии** (#1330; PR #1332, #1367, #1371) — каталог `shared/src/therapy/sessionWork/`, колонка `TherapistNote.work`, форма и показ под записью, событие `cabinet_session_work`; ручка `GET /api/therapy/notes/:clientId/work`, журнал «На сессиях» и лист техники берут пункты из итогов; сводка «Что было сделано» на «Обзоре» (`shared/src/therapy/sessionWork/workSummary.ts`, `webapp/src/components/therapist/ClientWorkSummary.tsx`).
 
 - ✅ **«Что делали»: живой спек чтения и записи `TherapistNote.work`** — «сохранил → нашёл» через HTTP и БД в `test/therapy-ownership-2.e2e-spec.ts` (#1330, PR2).
 
