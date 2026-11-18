@@ -11,7 +11,6 @@ import type {
   SchemaDomainGuideBuilder,
   SchemaGuide,
   TechniqueGuide,
-  TechniqueGuideBuilder,
   TechniqueId,
   Tr,
 } from './types';
