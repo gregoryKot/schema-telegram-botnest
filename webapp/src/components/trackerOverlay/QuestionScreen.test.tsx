@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { glue } from '../../../../shared/src/utils/typo';
 import { render, screen } from '@testing-library/react';
 import { QuestionScreen } from './QuestionScreen';
+import { getAnchorPools } from '../../../../shared/src/needs/anchorPools';
 import { NEED_HUE } from '../../../../shared/src/theme/entityHue';
 import { NEED_DATA_PAPER } from '../art/paper';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
@@ -15,12 +16,13 @@ const DATA = {
   examples: ['Смеялся с другом'], ranges: [],
 } as unknown as NeedExtra;
 
-const renderQ = (alert?: React.ReactNode) => render(
+const question = (alert?: React.ReactNode, value = 0) => (
   <QuestionScreen
-    idx={3} total={5} name="Спонтанность" needId="play" data={DATA} value={0} hue={NEED_HUE.play}
+    idx={3} total={5} name="Спонтанность" needId="play" data={DATA} value={value} hue={NEED_HUE.play}
     caption="10 июля" showOriginNote={false} alert={alert} onAnswer={vi.fn()} onMore={vi.fn()}
-  />,
+  />
 );
+const renderQ = (alert?: React.ReactNode) => render(question(alert));
 
 describe('QuestionScreen — лист потребности', () => {
   it('название — заголовок h1 на листе бумаги потребности с её знаком', () => {
@@ -61,16 +63,32 @@ describe('QuestionScreen — лист потребности', () => {
     expect(q).toContain('из\u00a0страха');
   });
 
-  // Ревью g2 r4: подписи ответов шли без glue — у «Границ» под «Наполовину» «…или с / защитой себя» оставляло «с»
-  // висеть в конце строки (на листе потребности те же описания уже склеены).
-  it('подписи ответов склеены: короткий предлог не висит в конце строки', () => {
-    const MID = 'Частично — что-то получилось: или с защитой себя, или с самоконтролем, но не всё';
-    render(<QuestionScreen idx={4} total={5} name="Самоконтроль" needId="limits" hue={NEED_HUE.limits} value={0}
-      data={{ ...DATA, ranges: [{ description: 'Мало' }, { description: MID }, { description: 'Много' }] } as NeedExtra}
-      showOriginNote={false} onAnswer={vi.fn()} onMore={vi.fn()} />);
-    const subs = [...document.querySelectorAll('.ns-word-sub')].map((n) => n.textContent);
-    expect(subs).toContain(glue(MID));
-    expect(subs.join(' ')).toContain('с\u00a0защитой');
+  const subs = () => [...document.querySelectorAll('.ns-word-sub')].map((n) => n.textContent ?? '');
+  const anchors = getAnchorPools('ty').play;
+
+  // Ревью g2 r4: подписи ответов шли без glue — короткий предлог повисал в конце строки.
+  it('подписи трёх якорных ответов — из пула потребности и склеены', () => {
+    renderQ();
+    const [low, mid, high] = subs();
+    expect(subs()).toHaveLength(3);
+    expect(anchors.low.map(glue)).toContain(low);
+    expect(anchors.mid.map(glue)).toContain(mid);
+    expect(anchors.high.map(glue)).toContain(high);
+  });
+
+  it('при каждом открытии вопроса подписи другие, а перерисовка и выбор ответа их не меняют', () => {
+    const first = renderQ();
+    let prev = subs();
+    first.rerender(question(undefined, 8));
+    expect(subs()).toEqual(prev);
+    first.unmount();
+    for (let i = 0; i < 10; i++) {
+      const next = renderQ();
+      const cur = subs();
+      cur.forEach((s, k) => expect(s).not.toBe(prev[k]));
+      prev = cur;
+      next.unmount();
+    }
   });
 
   it('шкала берёт цвет данных потребности', () => {
