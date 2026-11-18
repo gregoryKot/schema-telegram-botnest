@@ -7,7 +7,7 @@
 // тексты shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { TherapistGuideSection } from './TherapistGuideSection';
 import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS, CABINET_GUIDE_TABLE_EVENT } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
@@ -157,5 +157,29 @@ describe('TherapistGuideSection', () => {
     expect(screen.getByText('Ничего не нашлось')).toBeTruthy();
     fireEvent.change(search, { target: { value: '' } });
     expect(screen.getByRole('tablist')).toBeTruthy();
+  });
+});
+
+// Переход из общего поиска (⌘K): состояние маршрута { guideSheet } → открыт лист, состояние очищено.
+describe('лист из состояния маршрута', () => {
+  function State() {
+    return <output data-testid="state">{JSON.stringify(useLocation().state)}</output>;
+  }
+  const mountAt = async (guideSheet: unknown) => {
+    render(<MemoryRouter initialEntries={[{ pathname: '/cabinet/guide', state: { guideSheet } }]}><TherapistGuideSection /><State /></MemoryRouter>);
+    await screen.findByRole('tab', { name: 'Режимы' });
+  };
+
+  it('открывает лист по виду и id — тем же путём, что тап по строке; состояние маршрута очищается', async () => {
+    await mountAt({ kind: 'schema', id: 'abandonment' });
+    expect(await screen.findByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();
+    expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS.schema]);
+    expect(screen.getByTestId('state').textContent).not.toContain('guideSheet');
+  });
+
+  it('листа с таким id нет — ничего не открывается, состояние всё равно очищено', async () => {
+    await mountAt({ kind: 'mode', id: 'no_such_mode' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('state').textContent).toBe('null');
   });
 });
