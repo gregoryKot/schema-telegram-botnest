@@ -2,8 +2,8 @@ import type { ReactElement } from 'react';
 import type { ArtProps } from '../../components/art/paper';
 import { Breath, Cup, Ribbon, Strokes } from '../../components/art/PaperArt';
 import { Cluster, Talk } from '../../components/art/PaperArtSigns';
-import { ChildCare, Looming, Yield } from '../../components/art/GuideSigns';
-import { Horizon, Spotlight } from '../../components/art/GuideSignsTechniques';
+import { ChildCare, Looming, Shelter, Yield } from '../../components/art/GuideSigns';
+import { HeartFrame, Horizon, Spotlight } from '../../components/art/GuideSignsTechniques';
 import { Shield } from '../../components/art/GuideSignsModes';
 import { Flare } from '../../components/art/GuideSignsPractice';
 
@@ -25,6 +25,8 @@ const QUIZ_SIGN: Record<string, (p: ArtProps) => ReactElement> = {
   chemistry: Ribbon, // «Почему тянет не к тем?» — лента зацепила и закрутилась петлёй
   coping: Shield,   // «Сдаться, сбежать или напасть?» — кольцо-щит вокруг маленького круга
   anger: Flare,     // «Как ты злишься?» — часть вспыхнула зубчатым кругом, рядом ровный круг
+  lonely: Shelter,  // «Откуда твоё одиночество?» — своя часть за рамкой, остальные поодаль
+  feelings: HeartFrame, // «Можно ли мне чувствовать?» — сердце в рамке: чувство держат взаперти
 };
 
 /** Бумага строк списка по очереди: персик, небо, шалфей, бирюза, солома — соседи не совпадают. */
