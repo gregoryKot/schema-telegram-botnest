@@ -16,6 +16,11 @@ const poll = vi.fn();
 vi.mock('../../../shared/src/auth/loginTicketApi', () => ({
   createLoginTicketApi: () => ({ poll, start: vi.fn() }),
 }));
+const openTotpChallenge = vi.fn();
+vi.mock('../../../shared/src/auth/ticketOutcome', async (orig) => ({
+  ...(await orig<typeof import('../../../shared/src/auth/ticketOutcome')>()),
+  openTotpChallenge: (token: string) => openTotpChallenge(token),
+}));
 
 import { useAuth } from '../auth/authContext';
 import { api } from '../api';
@@ -79,6 +84,17 @@ describe('InstallPage — передача сессии', () => {
     expect(poll).toHaveBeenCalledWith(CODE);
     expect(window.location.hash).toBe('');
     expect(events()).toContain('handoff_ok');
+  });
+
+  it('у аккаунта 2FA: сессии нет, уходим на шаг кода с возвратом на установку', async () => {
+    poll.mockResolvedValue({ status: 'totp_required', challengeToken: 'ch' });
+    window.history.replaceState(null, '', `/install#h=${CODE}`);
+    renderPage();
+    await waitFor(() => expect(openTotpChallenge).toHaveBeenCalledWith('ch'));
+    expect(setAccessToken).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('auth_return_to')).toBe('/install');
+    expect(events()).not.toContain('handoff_ok');
+    expect(events()).not.toContain('handoff_failed');
   });
 
   it('expired: handoff_failed, страница остаётся анонимной с шагами', async () => {

@@ -33,6 +33,8 @@ import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
 import { issueHandoff, type HandoffInput } from './ticket-handoff';
 import { assertSiteAccount } from './site-login';
+import { grantTicketSession } from './ticket-session';
+import { TotpService } from '../totp.service';
 import type { StartTicketInput } from './ticket-start.types';
 import type {
   TicketForConfirm,
@@ -51,6 +53,7 @@ export class LoginTicketService {
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
     private readonly report: LoginTicketReport,
+    private readonly totp: TotpService,
     @Optional() private readonly securityLog?: SecurityLogService,
   ) {}
 
@@ -236,15 +239,12 @@ export class LoginTicketService {
     });
     if (claimed.count === 0) return { status: 'expired' };
 
-    const tokens = await this.auth.issueTokens(
-      row.approvedUserId,
-      ip,
-      userAgent,
-    );
-    // Единственный шаг, означающий «человек внутри». Пишется после claim,
-    // поэтому повторный опрос его не задваивает.
-    if (row.intent === 'login')
+    const deps = { auth: this.auth, totp: this.totp };
+    const ticket = { userId: row.approvedUserId, intent: row.intent };
+    const result = await grantTicketSession(deps, ticket, ip, userAgent);
+    // «Человек внутри» — только с сессией: с 2FA впереди ещё код.
+    if (result.status === 'linked' && row.intent === 'login')
       this.report.step('taken', row.hostId, row.provider);
-    return { status: 'linked', tokens };
+    return result;
   }
 }

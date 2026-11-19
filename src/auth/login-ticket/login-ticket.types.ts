@@ -37,7 +37,6 @@ export interface LinkPreview {
 
 /**
  * Ответ опроса.
- *
  * `denied` отделён от `expired` намеренно: «человек сказал, что это не он» и
  * «время вышло» — разные новости, и экран обязан говорить разное. Слить их в
  * одно значило бы показать «попробуйте ещё раз» тому, кого только что
@@ -47,6 +46,7 @@ export type TicketStatus =
   | { status: 'pending' }
   | { status: 'expired' }
   | { status: 'denied' }
+  | { status: 'totp_required'; challengeToken: string } // ticket-session.ts
   | { status: 'linked'; tokens: TokenPair };
 
 /** Строка билета в том виде, в каком её показывает бот при сверке. */
