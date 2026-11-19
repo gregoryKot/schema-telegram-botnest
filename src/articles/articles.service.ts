@@ -10,7 +10,7 @@ import type { ArticleDto } from './article.dto';
 
 // Поднимается вместе с правкой articles.seed.ts: пару «версия, хеш сида»
 // сверяет articles.seed.lock.spec.ts с articles.seed.lock.json.
-export const SEED_VERSION = '22';
+export const SEED_VERSION = '23';
 
 /** CRUD for blog articles. Public reads, admin-only writes. */
 @Injectable()
