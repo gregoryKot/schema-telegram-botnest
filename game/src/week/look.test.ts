@@ -19,6 +19,7 @@ describe('sashaLook — поза Саши по состоянию', () => {
   });
   it('без сил Саша плетётся, даже если нажат рывок', () => {
     expect(sashaLook({ ...run, resting: true, dashing: true })).toEqual({ anim: 'wk-trudge' });
+    expect(sashaLook({ ...run, resting: true, sitting: true })).toEqual({ sheet: 'wk_sasha_still', frame: 1 });
   });
   it('телефон в руке — только на земле; рывок его перебивает', () => {
     expect(sashaLook({ ...run, phone: true })).toEqual({ anim: 'wk-phone' });

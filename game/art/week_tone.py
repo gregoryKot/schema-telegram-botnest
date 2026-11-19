@@ -36,8 +36,8 @@ class Scene:
         t = np.clip((np.arange(self.h) - y0) / max(1, y1 - y0), 0, 1)
         self.light += (a0 + (a1 - a0) * t)[:, None].astype(np.float32)
 
-    def render(self, shadow='#8a93c8', sun='#fff3d6', colors=56, amp=6, post=None):
-        """Тень красит в shadow, свет — в sun; post(arr) — цветокор до палитры (сбой)."""
+    def render(self, shadow='#8a93c8', sun='#fff3d6', colors=56, amp=6, post=None, match=None):
+        """Тень красит в shadow, свет — в sun; post(arr) — цветокор до палитры (сбой); match — см. to_palette."""
         a = np.asarray(self.img, np.float32)
         L = np.clip(self.light, 0, 1.25)[..., None]
         lo, hi = np.array(rgb(shadow), np.float32) / 255, np.array(rgb(sun), np.float32) / 255
@@ -45,7 +45,7 @@ class Scene:
         out = np.clip(a * tint, 0, 255)
         if post:
             out = np.clip(post(out), 0, 255)
-        img = to_palette(out, colors, amp)
+        img = to_palette(out, colors, amp, match)
         img.putalpha(Image.eval(self.hole, lambda v: 0 if v else 255))
         return img
 
@@ -69,10 +69,17 @@ def pick_palette(arr, n):
                 cen[k] = (pts[m] * wt[m, None]).sum(0) / wt[m].sum()
     return np.round(cen).astype(np.uint8)
 
-def to_palette(arr, colors=56, amp=6):
-    """Свести к палитре: палитра берётся с чистой картинки, дизер по Байеру — только на переходах."""
+def to_palette(arr, colors=56, amp=6, match=None):
+    """Свести к палитре: палитра берётся с чистой картинки, дизер по Байеру — только на переходах.
+    match — картинка-сосед: близкие к её цветам оттенки берутся точно её, чтобы плитки сошлись встык."""
     h, w, _ = arr.shape
-    pal = Image.new('P', (1, 1)); pal.putpalette([int(v) for v in pick_palette(arr, colors).reshape(-1)])
+    cen = pick_palette(arr, colors)
+    if match is not None:
+        ref = np.array([c[:3] for _, c in match.getcolors(1 << 16) if c[3]], np.float32)
+        d = ((cen[:, None].astype(np.float32) - ref[None]) ** 2).sum(2)
+        near = d.min(1) < 10 ** 2
+        cen[near] = ref[d.argmin(1)][near].astype(np.uint8)
+    pal = Image.new('P', (1, 1)); pal.putpalette([int(v) for v in cen.reshape(-1)])
     b = (np.tile(BAYER4, (h // 4 + 1, w // 4 + 1))[:h, :w] - 0.5) * amp
     noisy = Image.fromarray(np.clip(arr + b[..., None], 0, 255).astype(np.uint8), 'RGB')
     return noisy.quantize(palette=pal, dither=Image.Dither.NONE).convert('RGBA')

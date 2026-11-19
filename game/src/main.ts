@@ -50,5 +50,7 @@ function start() {
 Promise.all([
   document.fonts.load('16px "Press Start 2P"', 'Йо'),
   document.fonts.load('16px "Press Start 2P"', 'RUN'),
+  document.fonts.load('500 16px "Handjet"', 'Йо'),
+  document.fonts.load('700 16px "Handjet"', 'Йо'),
 ]).then(start, start);
 setTimeout(start, 2000);

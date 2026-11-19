@@ -4,6 +4,7 @@
 // должен показывать «0/NaN/мусор» — правило №8 требует именно этого.
 import { formatGameMetrics } from './game-metrics.format';
 import type { GameMetrics } from './game-metrics.tally';
+import { emptyWeek } from './game-week.tally';
 import {
   GAME_CHAPTERS,
   GAME_CTA_PLACES,
@@ -41,6 +42,7 @@ const EMPTY: GameMetrics = {
   ctaClicksByTarget: { app: 0, booking: 0, bot: 0 },
   appArrivals: 0,
   shares: 0,
+  week: emptyWeek(),
 };
 
 describe('пустая база', () => {
@@ -73,6 +75,7 @@ describe('полный отчёт', () => {
     ctaClicksByTarget: { app: 9, booking: 4, bot: 2 },
     appArrivals: 7,
     shares: 8,
+    week: emptyWeek(),
   };
 
   it('показывает открытия с разбивкой по источникам', () => {

@@ -90,13 +90,17 @@ def office(glitch=False):
         _desk(s, bx + 28, 204, who, '#ffd0ea' if glitch else '#bfe8f0')
     s.lit((0, BASE - 5, s.w, BASE + 5), -0.14, 3, 'rect')       # стык стены и пола
     s.grade(0, 92, -0.06, 0.0); s.grade(BASE, H, -0.04, 0.1)
+    return finish(s, glitch)
+
+def finish(s, glitch, match=None):
+    """Свести сцену с полями PAD в плитку W; сбой — duotone, кислотное свечение проёмов, изгиб и разрывы."""
     post = None
     if glitch:
         tone = duotone(GLITCH_RAMP)
         glow = np.asarray(s.hole.filter(ImageFilter.GaussianBlur(8)), np.float32)[..., None] / 255 * 0.85
         glow = np.maximum(glow, np.asarray(s.sun, np.float32)[..., None] / 255 * 0.3)
         post = lambda a: tone(a) * (1 - glow) + np.array(rgb(ACID), np.float32) * glow
-    img = s.render(post=post, colors=40 if glitch else 56).crop((PAD, 0, PAD + W, H))
+    img = s.render(post=post, colors=40 if glitch else 56, match=match).crop((PAD, 0, PAD + W, H))
     return tear(warp(img)) if glitch else img
 
 def warp(img, amp=4):
