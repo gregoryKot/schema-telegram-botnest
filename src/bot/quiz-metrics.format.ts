@@ -28,6 +28,8 @@ export const QUIZ_LABELS: Record<string, string> = {
   chemistry: '🧲 «Тянет не к тем»',
   coping: '🛡 «Сдаться, сбежать или напасть»',
   anger: '🌋 «Как злюсь»',
+  lonely: '🌘 «Откуда одиночество»',
+  feelings: '🫧 «Можно ли чувствовать»',
 };
 
 const pct = (part: number, whole: number): string =>
