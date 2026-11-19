@@ -94,6 +94,7 @@ describe('CABINET_EVENTS ⊆ ANALYTICS_EVENTS', () => {
         'cabinet_guide_schema_open',
         'cabinet_guide_technique_open',
         'cabinet_guide_note_open',
+        'cabinet_guide_need_open',
         'cabinet_guide_table_open',
         'cabinet_guide_answer_show',
         'cabinet_guide_answer_link',

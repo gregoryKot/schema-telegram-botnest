@@ -1,14 +1,11 @@
-// «Справочник» терапевта (#995, шаг 4): четыре раздела — режимы по группам,
-// схемы по доменам, техники и «Для терапевта» — и поиск по названиям и текстам
-// листов сразу во всех разделах (guideReferenceSearch.ts). Чистая модель: тексты справочника (отдельный чанк,
-// guideLoader) плюс названия групп и доменов из реестров
-// shared/src/schemaTherapy/content/. Порядок групп и строк — как в реестрах;
-// режим или схема без своего раздела в справочнике в список не попадает,
-// пустая группа не показывается. Вид группы — лист бумаги её оттенка со знаком
-// у подписи (guideLook.ts: группа режимов, домен схем — те же таблицы, что у
-// клиента); у техник и «Для терапевта» знак свой у каждой строки, у листа — нет.
+// «Справочник» терапевта (#995, шаг 4): пять разделов — режимы по группам, схемы по доменам, потребности, техники и
+// «Для терапевта» — и поиск по названиям и текстам листов сразу во всех разделах (guideReferenceSearch.ts). Чистая модель:
+// тексты справочника (отдельный чанк, guideLoader) плюс названия групп и доменов из реестров shared/src/schemaTherapy/content/.
+// Порядок групп и строк — как в реестрах; режим или схема без своего раздела в справочнике в список не попадает, пустая
+// группа не показывается. Вид группы — лист бумаги её оттенка со знаком у подписи (guideLook.ts: группа режимов, домен схем —
+// те же таблицы, что у клиента); у потребностей, техник и «Для терапевта» знак свой у каждой строки, у листа — нет.
 import type { Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
-import type { Tr } from '../../../../shared/src/needs/types';
+import type { NeedId, Tr } from '../../../../shared/src/needs/types';
 import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
 import { MODE_GROUPS } from '../../../../shared/src/schemaTherapy/content/modeGroups';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
@@ -16,24 +13,26 @@ import { domainLook, modeGroupLook, type SheetLook, type SignKey } from '../../.
 import { modeGuideLook, practiceNoteLook, PRACTICE_HUE, schemaGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
 import { mergeCoping } from './guideReferenceCoping';
 import { techniqueGroups } from './guideReferenceTechniques';
+import { buildNeedGuides, needGroups } from './guideReferenceNeeds';
 
-export type ReferenceTab = 'modes' | 'schemas' | 'techniques' | 'practice';
+export type ReferenceTab = 'modes' | 'schemas' | 'needs' | 'techniques' | 'practice';
 
 export const REFERENCE_TABS: { id: ReferenceTab; label: string }[] = [
   { id: 'modes', label: 'Режимы' },
   { id: 'schemas', label: 'Схемы' },
+  { id: 'needs', label: 'Потребности' },
   { id: 'techniques', label: 'Техники' },
   { id: 'practice', label: 'Для терапевта' },
 ];
 
-/** Строка списка: открывает лист режима, схемы, техники или раздела «Для терапевта». */
+/** Строка списка: открывает лист режима, схемы, потребности, техники или раздела «Для терапевта». */
 export type ReferenceItem = {
   name: string;
-  /** Строка под названием: у техники и раздела «Для терапевта» — суть. */
+  /** Строка под названием: у потребности, техники и раздела «Для терапевта» — суть. */
   sub?: string;
   /** Знак листа (ключ реестра SignArt); нет — строка без картинки (не выдумываем чужую). */
   sign?: SignKey;
-} & ({ kind: 'mode' | 'schema' | 'note'; id: string } | { kind: 'technique'; id: TechniqueId });
+} & ({ kind: 'mode' | 'schema' | 'note'; id: string } | { kind: 'technique'; id: TechniqueId } | { kind: 'need'; id: NeedId });
 
 export interface ReferenceGroup {
   key: string;
@@ -52,7 +51,7 @@ export type Reference = Record<ReferenceTab, ReferenceGroup[]>;
 /** Вид списка (GuideReferenceList): листы групп в две колонки, карточки со знаком у строки, листы поиска в столбик. */
 export type ReferenceLayout = 'groups' | 'tiles' | 'rows';
 
-/** Режимы и схемы — группами, техники и «Для терапевта» — карточками, поиск — листами в столбик. */
+/** Режимы и схемы — группами, потребности, техники и «Для терапевта» — карточками, поиск — листами в столбик. */
 export function referenceLayout(tab: ReferenceTab, searching: boolean): ReferenceLayout {
   if (searching) return 'rows';
   return tab === 'modes' || tab === 'schemas' ? 'groups' : 'tiles';
@@ -67,7 +66,7 @@ const nonEmpty = (groups: ReferenceGroup[]) => groups.filter((g) => g.items.leng
 /** Лист без подписи и знака: домен, которого нет в таблице вида, не красится чужим оттенком. */
 const PLAIN_HUE = TECHNIQUES_HUE;
 
-/** Списки четырёх разделов в форме обращения `tr`. */
+/** Списки разделов в форме обращения `tr`. */
 export function buildReference(texts: ReferenceTexts, tr: Tr): Reference {
   const modeIds = new Set(texts.buildModeGuides(tr).map((g) => g.modeId));
   const schemaIds = new Set(
@@ -90,6 +89,7 @@ export function buildReference(texts: ReferenceTexts, tr: Tr): Reference {
         .filter((s) => schemaIds.has(s.id))
         .map((s) => ({ kind: 'schema' as const, id: s.id, name: s.name, sign: schemaGuideLook(s.id)?.sign })),
     }))),
+    needs: nonEmpty(needGroups(buildNeedGuides(texts, tr))),
     techniques: nonEmpty(techniqueGroups(texts.buildTechniqueGuides(tr))),
     practice: nonEmpty([{
       key: 'practice',

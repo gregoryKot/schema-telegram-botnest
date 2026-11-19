@@ -8,6 +8,7 @@ const EMPTY: GuideReferenceMetrics = {
   schemas30: 0,
   techniques30: 0,
   notes30: 0,
+  needs30: 0,
   tables30: 0,
 };
 
@@ -38,11 +39,12 @@ describe('formatGuideReferenceMetrics', () => {
       opens30: 9,
       therapists30: 3,
       modes30: 5,
+      needs30: 4,
       techniques30: 2,
       notes30: 1,
     });
     expect(text).toContain(
-      'Читали оттуда — режимы: 5, техники: 2, «Для терапевта»: 1',
+      'Читали оттуда — режимы: 5, потребности: 4, техники: 2, «Для терапевта»: 1',
     );
     expect(text).not.toContain('схемы');
     expect(text).not.toContain('Пока никто');
