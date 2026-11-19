@@ -2,20 +2,17 @@ import type { CSSProperties } from 'react';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
-import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { needLook } from '../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../shared/src/needs/types';
 import { glue } from '../../../shared/src/utils/typo';
+import { childhoodLevel } from '../../../shared/src/childhoodWheel/childhoodWheel';
+import { needDomain } from '../../../shared/src/schemaTherapy/schemaNeed';
 import { inkVars } from './history/needInk';
 import { DomainMark } from './DomainMark';
 import { childhoodScoreText } from './exercises/childhoodWheel/childhoodScoreText';
 import { TipHead } from './schemaSheets/TipHead';
 import '../styles/sheet-tracker.css';
-
-const NEED_DOMAIN_MAP: Record<string, string[]> = {
-  attachment: ['rejection'], autonomy: ['autonomy'], expression: ['other_directed', 'vigilance'], play: ['vigilance'], limits: ['limits'],
-};
 
 interface Props {
   needId: string;
@@ -36,15 +33,15 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
 
   if (!need) return null;
 
-  const level = childhoodRating !== undefined
-    ? (childhoodRating <= 3 ? 'low' : childhoodRating <= 6 ? 'medium' : 'high')
-    : null;
+  const zone = childhoodRating !== undefined ? childhoodLevel(childhoodRating) : null;
+  const level = zone === 'mid' ? 'medium' : zone;
   const rangeDesc = childhoodRating !== undefined ? childhoodScoreText(needId, childhoodRating) : null;
 
-  const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
-  const relatedSchemas = SCHEMA_DOMAINS
-    .filter(d => domainIds.includes(d.id))
-    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainId: d.id })));
+  // Схемы домена этой потребности (одна связка схема → домен → потребность на все экраны).
+  const domain = needDomain(needId);
+  const relatedSchemas = domain
+    ? domain.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainId: domain.id }))
+    : [];
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
   const look = needLook(needId as NeedId);

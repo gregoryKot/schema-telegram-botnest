@@ -82,7 +82,7 @@
 .chw-res-value { font-family: var(--serif); font-size: 28px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--need-text); }
 .chw-res-value span { font-family: var(--sans); font-size: 12px; color: var(--text-sub); }
 
-/* ── Возможные активные схемы: лист бумаги потребности, схемы — тихие кнопки на светлой бумаге ── */
+/* ── Схемы, которые могли сформироваться: лист бумаги потребности, схемы — тихие кнопки на светлой бумаге ── */
 .chw-hints { margin-top: 36px; }
 .chw-hints > .ds-label { margin: 0 0 8px; }
 .chw-hints-lede { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }

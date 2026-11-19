@@ -34,18 +34,20 @@ describe('pickCandidateMode', () => {
   it('берёт первый порыв, у которого есть соответствие', () => {
     expect(
       pickCandidateMode('sad', [
-        'impulse_agree',
+        'impulse_postpone',
         'impulse_sharp',
         'impulse_close',
       ]),
     ).toBe(IMPULSE_SECOND_DOOR.impulse_sharp);
   });
 
-  it('«Своё…» и «Согласиться…» без соответствия — первый режим ворот', () => {
+  it('«Своё…» и «Отложить…» без соответствия — первый режим ворот', () => {
     const first = (id: string) =>
       FEEL_GATES.find((g) => g.id === id)!.leaves[0].modeId;
     expect(pickCandidateMode('anger', ['impulse_own'])).toBe(first('anger'));
-    expect(pickCandidateMode('shame', ['impulse_agree'])).toBe(first('shame'));
+    expect(pickCandidateMode('shame', ['impulse_postpone'])).toBe(
+      first('shame'),
+    );
     expect(pickCandidateMode('drained', [])).toBe(first('drained'));
   });
 
