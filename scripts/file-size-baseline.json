@@ -945,7 +945,7 @@
   "src/articles/home-landing.content.ts": 173,
   "src/articles/home-seo.middleware.ts": 51,
   "src/articles/home-seo.render.ts": 58,
-  "src/articles/sitemap.middleware.ts": 68,
+  "src/articles/sitemap.middleware.ts": 70,
   "src/auth/auth-2fa.controller.ts": 162,
   "src/auth/auth-account.controller.ts": 225,
   "src/auth/auth-email-code.controller.ts": 53,
@@ -1541,7 +1541,7 @@
   "src/site-content/site-content.controller.ts": 13,
   "src/site-content/site-content.module.ts": 10,
   "src/site-content/site-content.service.ts": 108,
-  "src/site-pages.routes.ts": 42,
+  "src/site-pages.routes.ts": 50,
   "src/subscription/subscription-owner-card.ts": 60,
   "src/subscription/subscription-paid-after-cancel.ts": 57,
   "src/subscription/subscription-price.ts": 13,
@@ -3217,5 +3217,7 @@
   "webapp/src/sections/guide/useReferenceSheets.tsx": 50,
   "webapp/src/sections/practice/practiceRoute.ts": 33,
   "webapp/src/sections/practice/taskTitleText.ts": 9,
-  "webapp/src/sections/schemas/patternRoute.ts": 29
+  "webapp/src/sections/schemas/patternRoute.ts": 29,
+  "src/quiz/quiz-seo.middleware.ts": 26,
+  "src/quiz/quiz-seo.render.ts": 68
 }
