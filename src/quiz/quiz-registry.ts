@@ -13,6 +13,8 @@ import { buildBurnoutQuiz } from './quiz-burnout.data';
 import { buildProcrastinationQuiz } from './quiz-procrastination.data';
 import { buildAttachmentQuiz } from './quiz-attachment.data';
 import { buildChemistryQuiz } from './quiz-chemistry.data';
+import { buildCopingQuiz } from './quiz-coping.data';
+import { buildAngerQuiz } from './quiz-anger.data';
 
 export const QUIZ_IDS = [
   'drives',
@@ -26,6 +28,8 @@ export const QUIZ_IDS = [
   'procrastination',
   'attachment',
   'chemistry',
+  'coping',
+  'anger',
 ] as const;
 export type QuizId = (typeof QUIZ_IDS)[number];
 
@@ -41,6 +45,8 @@ const BUILDERS: Record<QuizId, (form: AddressForm) => Quiz> = {
   procrastination: buildProcrastinationQuiz,
   attachment: buildAttachmentQuiz,
   chemistry: buildChemistryQuiz,
+  coping: buildCopingQuiz,
+  anger: buildAngerQuiz,
 };
 
 export function isQuizId(value: string): value is QuizId {
