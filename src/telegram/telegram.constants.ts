@@ -27,7 +27,7 @@ export const cabinetTasksUrl = (taskId?: number): string =>
 export const BOT_COMMANDS = [
   { command: 'start', description: 'Открыть «Всё по схеме» 🧠' },
   { command: 'tests', description: 'Мини-тесты на 2 минуты 🎲' },
-  { command: 'game', description: 'Игра «Сквозь голову» 🎮' },
+  { command: 'game', description: 'Игра «Неделя» 🎮' },
   { command: 'settings', description: 'Настройки уведомлений ⚙️' },
   { command: 'donate', description: 'Поддержать проект 💛' },
   { command: 'about', description: 'О приложении и авторе ℹ️' },

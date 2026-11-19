@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { sceneForHash } from './route';
 
 describe('вход по хешу', () => {
-  it('без хеша и с чужим хешем — старая игра с титула', () => {
-    expect(sceneForHash('')).toEqual({ key: 'Start' });
-    expect(sceneForHash('#whatever')).toEqual({ key: 'Start' });
+  it('без хеша и с чужим хешем — «Неделя»', () => {
+    expect(sceneForHash('')).toEqual({ key: 'Week' });
+    expect(sceneForHash('#whatever')).toEqual({ key: 'Week' });
   });
   it('#week — новая игра', () => {
     expect(sceneForHash('#week')).toEqual({ key: 'Week' });
