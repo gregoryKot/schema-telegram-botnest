@@ -1,7 +1,7 @@
 // Тач-кнопки «Недели» поверх общих (controls.ts): свои подписи, сетка 2×2 (.week в index.html),
 // кнопка открывается, когда сюжет до неё дошёл. Четвёртая — ПАУЗА — живёт только здесь.
 import { IS_TOUCH, hold, localizeTouchUI, setTouchControls } from '../controls';
-import type { Act } from './monday';
+import type { Act } from './chapter';
 
 const BTN: Record<Act, string> = { overwork: 'tbtn-hit', scroll: 'tbtn-avoid', agree: 'tbtn-fawn', pause: 'tbtn-pause' };
 const ACTS = Object.keys(BTN) as Act[];
