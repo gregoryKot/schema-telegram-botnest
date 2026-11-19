@@ -83,9 +83,9 @@ describe('applyPersonalSiteChrome', () => {
 
   // Решение владельца 2026-10-24: /reviews в поиске — значит, своя страница, а не
   // копия главной (иначе поисковик склеит их по canonical).
-  it('/links: свой заголовок вкладки, canonical — главная (страница закрыта от поиска)', () => {
+  it('/privet: свой заголовок вкладки, canonical — главная (страница закрыта от поиска)', () => {
     const canonical = addLink('canonical', 'https://schemehappens.ru/');
-    applyPersonalSiteChrome(document, '/links');
+    applyPersonalSiteChrome(document, '/privet');
     expect(document.title).toBe('Григорий Котляревский – ссылки');
     expect(canonical.getAttribute('href')).toBe('https://kotlarewski.gr/');
   });
