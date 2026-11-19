@@ -1049,7 +1049,9 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
       # С кэшем скачивание браузеров пропускается, системные зависимости
       # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
-      - run: npx playwright install --with-deps chromium webkit
+      - name: браузеры Playwright (потолок времени и одна повторная попытка)
+        timeout-minutes: 7
+        run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
       # Вид на компьютере в каждом PR: e2e-browser/desktop-layout.spec.ts снимает
