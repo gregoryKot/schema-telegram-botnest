@@ -120,8 +120,8 @@ export class AuthTicketController {
 
   // ─── Шаг 4: контейнер забирает сессию ─────────────────────────────────────
   // Без JwtAuthGuard: длинный код и есть доказательство (token endpoint RFC
-  // 8628): при входе сессии нет вовсе, при привязке исходный аккаунт уже слит.
-  // Ставит куку неаутентифицированному запросу — отсюда requireCsrf.
+  // 8628). Ставит куку неаутентифицированному запросу — отсюда requireCsrf.
+  // Аккаунту с 2FA вместо сессии уходит вызов второго фактора (ticket-session.ts).
   @Post('poll')
   @Throttle({
     short: { limit: 40, ttl: 60_000 },
@@ -136,14 +136,12 @@ export class AuthTicketController {
     status: string;
     accessToken?: string;
     expiresIn?: number;
+    challengeToken?: string;
   }> {
     requireCsrf(req, 'ticket/poll', this.securityLog);
-    const result = await this.tickets.poll(
-      body.deviceCode,
-      req.ip,
-      req.headers['user-agent'],
-    );
-    if (result.status !== 'linked') return { status: result.status };
+    const ua = req.headers['user-agent'];
+    const result = await this.tickets.poll(body.deviceCode, req.ip, ua);
+    if (result.status !== 'linked') return result;
 
     setRefreshCookie(
       res,
