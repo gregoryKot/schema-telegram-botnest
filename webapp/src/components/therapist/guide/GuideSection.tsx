@@ -14,16 +14,3 @@ export function GuideSection({ title, text, action, children }: { title: string;
     </section>
   );
 }
-
-/** «Источники» внизу листа, мелко и серым: метки в квадратных скобках в тексте — эти книги. */
-export function GuideSources({ text }: { text: string }) {
-  if (!text.trim()) return null;
-  return (
-    <div className="gd-sources">
-      <GuideSection title="Источники">
-        <p className="ds-sub">{text}</p>
-        <p className="ds-sub">Метки в квадратных скобках в тексте — эти книги.</p>
-      </GuideSection>
-    </div>
-  );
-}

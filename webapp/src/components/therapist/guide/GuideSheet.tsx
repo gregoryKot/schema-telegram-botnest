@@ -10,7 +10,8 @@ import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclo
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
 import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
 import { GuideBetweenSessions } from './GuideBetweenSessions';
-import { GuideSection, GuideSources } from './GuideSection';
+import { GuideSection } from './GuideSection';
+import { GuideSources } from './GuideSources';
 import { sessionSeed, type PlanSeed } from './guidePlan';
 import { PlanButton } from './PlanButton';
 import { GuidePoints, GuideVoice } from './GuidePoints';
