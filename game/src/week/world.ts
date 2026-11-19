@@ -1,8 +1,8 @@
-// Мир «Понедельника»: пол, утро, преграды, люди, дверь. Столкновения держат невидимые блоки, поверх — арт из game/art/week*.py.
+// Мир главы: пол, утро или вечер, преграды, люди, цель. Столкновения держат невидимые блоки, поверх — арт из game/art/week*.py.
 import Phaser from 'phaser';
 import { GROUND_Y, H } from '../constants';
 import { GRID } from '../gridScale';
-import type { Chapter, Gate } from './monday';
+import type { Chapter, Gate } from './chapter';
 import { pileFrame } from './look';
 type Rect = Phaser.GameObjects.Rectangle;
 type Sprite = Phaser.GameObjects.Sprite;
@@ -14,7 +14,6 @@ export interface World {
   people: Sprite[]; // кадр 0 — с лицом, кадр 1 — без: лица видны, только пока сбоя нет
 }
 const BLOCK_ART: Record<number, string> = { 22: 'wk_curb', 30: 'wk_step', 60: 'wk_step_hi' };
-const WALKERS = ['wk_colleague_c', 'wk_colleague_b', 'wk_colleague_a'];
 const solid = (scene: Phaser.Scene, solids: World['solids'], x: number, w: number, h: number): Rect => {
   const r = scene.add.rectangle(x, GROUND_Y - h / 2, w, h, 0, 0);
   solids.add(r);
@@ -22,16 +21,16 @@ const solid = (scene: Phaser.Scene, solids: World['solids'], x: number, w: numbe
 };
 const stand = (scene: Phaser.Scene, key: string, x: number, frame = 0): Sprite =>
   scene.add.sprite(x, GROUND_Y + GRID, key, frame).setOrigin(0.5, 1).setScale(GRID);
-export function addGate(scene: Phaser.Scene, w: World, g: Gate): GateObj {
+export function addGate(scene: Phaser.Scene, w: World, g: Gate, art: Chapter['art']): GateObj {
   const width = g.kind === 'noise' ? 70 : g.kind === 'person' ? 30 : 40;
   const rect = solid(scene, w.solids, g.x, width, g.kind === 'person' ? 96 : g.h);
   // арт сдвинут вперёд от блока: Саша упирается в преграду, а не стоит внутри неё
-  const art = g.kind === 'pile' ? stand(scene, 'wk_piles', g.x + 8, pileFrame(g.h))
-    : g.kind === 'noise' ? stand(scene, 'wk_notif_wall', g.x + 8)
-    : stand(scene, 'wk_colleague_box', g.x + 30, 1).setFlipX(true);
-  art.setDepth(5);
-  const obj: GateObj = { ...g, open: false, rect, art };
-  if (g.kind === 'person') w.people.push(art);
+  const sprite = g.kind === 'pile' ? stand(scene, art.pile, g.x + 8, pileFrame(g.h))
+    : g.kind === 'noise' ? stand(scene, art.noise, g.x + 8)
+    : stand(scene, art.person, g.x + 30, 1).setFlipX(true);
+  sprite.setDepth(5);
+  const obj: GateObj = { ...g, open: false, rect, art: sprite };
+  if (g.kind === 'person') w.people.push(sprite);
   w.gates.push(obj);
   return obj;
 }
@@ -50,16 +49,17 @@ export function openGate(scene: Phaser.Scene, w: World, g: GateObj) {
 export function buildWorld(scene: Phaser.Scene, ch: Chapter): World {
   const solids = scene.physics.add.staticGroup();
   solids.add(scene.add.rectangle(ch.worldW / 2, GROUND_Y + (H - GROUND_Y) / 2, ch.worldW, H - GROUND_Y, 0, 0));
-  // утро: Мистер на подоконнике, лужа, бордюр и ступени
-  scene.add.sprite(ch.catX, GROUND_Y - 70 + GRID, 'wk_mister').setOrigin(0.5, 1).setScale(GRID).play('wk-mister');
-  scene.add.image(ch.puddleX, GROUND_Y + 10, 'wk_puddle').setScale(GRID);
+  // дома Мистер (утром — на подоконнике), на улице лужа, бордюр и ступени
+  if (ch.cat) scene.add.sprite(ch.cat.x, GROUND_Y - ch.cat.lift + GRID, 'wk_mister').setOrigin(0.5, 1).setScale(GRID).play('wk-mister');
+  if (ch.puddleX) scene.add.image(ch.puddleX, GROUND_Y + 10, 'wk_puddle').setScale(GRID);
   for (const b of ch.blocks) {
     solid(scene, solids, b.x, b.w, b.h);
     scene.add.image(b.x, GROUND_Y, BLOCK_ART[b.h]).setOrigin(0.5, 1).setScale(GRID).setDepth(2);
   }
-  const people = ch.people.map((x, i) => stand(scene, WALKERS[i % WALKERS.length], x).setFlipX(i % 2 === 0).setDepth(1));
-  const door = stand(scene, 'wk_door', ch.door.x).setDepth(2);
+  const walkers = ch.art.walkers;
+  const people = ch.people.map((x, i) => stand(scene, walkers[i % walkers.length], x).setFlipX(i % 2 === 0).setDepth(1));
+  const door = stand(scene, ch.art.door, ch.door.x).setDepth(2);
   const w: World = { solids, gates: [], door, people };
-  for (const g of ch.gates) addGate(scene, w, g);
+  for (const g of ch.gates) addGate(scene, w, g, ch.art);
   return w;
 }

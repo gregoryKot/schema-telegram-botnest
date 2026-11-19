@@ -1,4 +1,5 @@
-// Панель ПАУЗЫ: мир замер, вопрос и названия на выбор. Неверное тускнеет и остаётся — выбор продолжается.
+// Панель ПАУЗЫ: мир замер, вопрос и ответы на выбор. Неверный тускнеет и остаётся — выбор продолжается.
+// Шаг выбора задаёт сцена при каждом открытии: со «Среды» их два, подпись шага — в kicker.
 import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { IS_TOUCH } from '../controls';
@@ -9,13 +10,14 @@ const ROW_H = px(52), GAP = px(8); // строка выше 44: в неё поп
 export class PausePanel {
   private objs: Phaser.GameObjects.GameObject[] = [];
   private rows: Phaser.GameObjects.Container[] = [];
-  constructor(private scene: Phaser.Scene, private kicker: string, private question: string, private options: string[],
-    private onPick: (i: number) => void) {}
+  private kicker = ''; private question = ''; private options: string[] = [];
+  constructor(private scene: Phaser.Scene, private onPick: (i: number) => void) {}
 
   get shown() { return this.objs.length > 0; }
 
-  show() {
+  show(kicker: string, question: string, options: string[]) {
     if (this.shown) return;
+    Object.assign(this, { kicker, question, options });
     const s = this.scene, n = this.options.length, top = (H - (px(58) + n * ROW_H + (n - 1) * GAP)) / 2;
     const keep = <T extends Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.ScrollFactor & Phaser.GameObjects.Components.Depth>(o: T) => {
       o.setScrollFactor(0).setDepth(50); this.objs.push(o); return o;

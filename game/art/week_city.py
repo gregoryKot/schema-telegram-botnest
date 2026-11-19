@@ -1,5 +1,5 @@
 """Город за окнами и над улицей: утреннее небо и три гряды домов в дымке. Плитка 480x200, едет медленнее мира."""
-from week_tone import Scene
+from week_tone import Scene, rgb
 
 W, H = 480, 200
 
@@ -32,3 +32,23 @@ def city():
     _row(s, 185, 29, '#93aacd', '#ffe9b8', 24, 56, 36)
     s.lit((140, 60, 420, 230), 0.25, 30, 'ell')                 # солнце за домами
     return s.render(colors=40, amp=10)
+
+EVE_SKY = ((0, '#2b2760'), (70, '#5a3f86'), (120, '#b56a92'), (158, '#f39a7c'), (H, '#ffc98e'))
+
+def city_eve():
+    """Сумерки «Среды»: фиолетово-персиковое небо, гряды домов темнее, в окнах горит тёплый свет."""
+    s = Scene(W, H, '#2b2760', ambient=0.86)
+    for y in range(H):
+        (y0, c0), (y1, c1) = next((a, b) for a, b in zip(EVE_SKY, EVE_SKY[1:]) if y <= b[0])
+        t = (y - y0) / (y1 - y0); a, b = rgb(c0), rgb(c1)
+        s.rect((0, y, W, y), '#%02x%02x%02x' % tuple(round(a[k] + (b[k] - a[k]) * t) for k in range(3)))
+    for cx, cy, w in ((90, 96, 120), (300, 84, 150), (430, 112, 70)):   # перистые полосы в отсвете заката
+        for ox in (0, W, -W):
+            s.rect((cx - w // 2 + ox, cy, cx + w // 2 + ox, cy + 1), '#e48aa0'); s.rect((cx - w // 3 + ox, cy + 2, cx + w // 4 + ox, cy + 2), '#ffb08e')
+    for x, y in ((40, 14), (128, 30), (212, 8), (276, 40), (352, 18), (446, 34), (170, 52)):
+        s.rect((x, y, x, y), '#fff0d8')                          # первые звёзды
+    _row(s, 150, 3, '#8c6aa2', '#c98aa8', 30, 80, 26)
+    _row(s, 165, 11, '#6a4f8e', '#ffbf78', 30, 70, 30)
+    _row(s, 185, 29, '#3f3168', '#ffd27e', 24, 56, 36)
+    s.lit((180, 120, 520, 260), 0.18, 30, 'ell')                # отсвет зари у горизонта
+    return s.render(shadow='#4a3c86', sun='#fff4e8', colors=40, amp=10)

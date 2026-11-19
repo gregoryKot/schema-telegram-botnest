@@ -1,6 +1,6 @@
 // Подсказки «Недели» — чистая логика: что сейчас мешает Саше и какую кнопку подсветить.
 // Подсказка — мысль Саши и мигающая кнопка; правил-карточек нет (game/GAME_CONCEPT.md).
-import { OPENS, type Act, type GateKind } from './monday';
+import { OPENS, type Act, type GateKind } from './chapter';
 
 export type Need = Act | 'jump';
 /** Сколько Саша упирается, прежде чем подсказка всплывёт (и повторится). */

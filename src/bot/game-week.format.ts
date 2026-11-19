@@ -24,6 +24,7 @@ export function formatWeekLines(w: WeekMetrics): string[] {
   const lines = [`Новая игра «Неделя»: ${parts.join(' · ')}`];
   const next: string[] = [];
   if (w.wedStarted > 0) next.push(`пошли в «Среду» ${w.wedStarted}`);
+  if (w.wedDone > 0) next.push(`прошли «Среду» ${w.wedDone}`);
   if (w.firstDone > 0) next.push(`дошли до конца ${w.firstDone}`);
   if (next.length > 0) lines.push(`Дальше по неделе: ${next.join(' · ')}`);
   const rate = weekCtaRate(w);

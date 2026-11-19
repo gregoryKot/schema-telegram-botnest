@@ -13,7 +13,8 @@ const CRISIS_TEL = 'tel:88001004994';
 const CRISIS_CHILD_TEL = 'tel:88002000122';
 const PARAS: MsgKey[] = ['m_wk_card_p1', 'm_wk_card_p2', 'm_wk_card_p3'];
 
-export function showWeekCard(s: Phaser.Scene) {
+/** onNext — следующая глава вышла: вместо строки «Продолжение скоро» кнопка «Дальше — среда». */
+export function showWeekCard(s: Phaser.Scene, onNext?: () => void) {
   trackEvent('game_cta_shown', { from: 'hook' });
   const colW = px(332), left = px(30), btnW = px(216), btnH = px(44), btnX = W - px(30) - btnW / 2;
   const all: (Phaser.GameObjects.Text | Phaser.GameObjects.Container)[] = [];
@@ -30,7 +31,8 @@ export function showWeekCard(s: Phaser.Scene) {
   put(button(s, btnX, row(0), btnW, btnH, t('m_wk_card_btn_book'), SKIN.sun, () => openCta('hook', 'booking')));
   put(button(s, btnX, row(1), btnW, btnH, t('m_wk_card_btn_app'), SKIN.paper, () => openCta('hook', 'app')));
   put(button(s, btnX, row(2), btnW, btnH, t('m_wk_card_btn_share'), SKIN.night, () => shareWeek(t('m_wk_share_text'))));
-  put(button(s, btnX, row(3), btnW, btnH, t('m_wk_card_soon'), SKIN.ghost)); // следующая глава не вышла: строка, а не кнопка
+  if (onNext) put(button(s, btnX, row(3), btnW, btnH, t('m_wk_card_btn_next'), SKIN.night, onNext));
+  else put(button(s, btnX, row(3), btnW, btnH, t('m_wk_card_soon'), SKIN.ghost)); // следующая глава не вышла: строка, а не кнопка
 
   // кризисные линии: взрослая первой, детская второй; каждая — своя tel-ссылка с зоной нажатия во всю строку
   [['m_wk_crisis_adult', CRISIS_TEL], ['m_wk_crisis_child', CRISIS_CHILD_TEL]].forEach(([key, tel], i) => {

@@ -10,6 +10,7 @@ export interface WeekMetrics {
   clicksOther: number; // клик без известной цели
   shares: number;
   wedStarted: number;
+  wedDone: number; // прошли «Среду» до конца
   firstDone: number;
 }
 
@@ -21,6 +22,7 @@ export const emptyWeek = (): WeekMetrics => ({
   clicksOther: 0,
   shares: 0,
   wedStarted: 0,
+  wedDone: 0,
   firstDone: 0,
 });
 
@@ -54,6 +56,7 @@ export function tallyWeekRow(
   }
   if (row.name === 'game_chapter_done') {
     if (row.chapter === 'first') w.firstDone += c;
+    else if (row.chapter === 'wed') w.wedDone += c;
     else if (row.chapter !== 'mon') return false; // конец хука виден как показ карточки
     return true;
   }
