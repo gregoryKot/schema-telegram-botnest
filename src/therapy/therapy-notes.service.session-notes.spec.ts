@@ -37,13 +37,30 @@ function makeService(rels: Rel[]) {
           .sort(cmp)
           .slice(0, take);
       }),
-      count: jest.fn(
+      // OR — «раньше по порядку сессий» из findSessionNote: date, createdAt, id.
+      count: jest.fn(async ({ where }: any) => {
+        const val = (x: any) => (x instanceof Date ? x.getTime() : x);
+        const lt = (n: any, c: any) =>
+          Object.entries(c).every(([k, v]: [string, any]) =>
+            v !== null && typeof v === 'object' && 'lt' in v
+              ? val(n[k]) < val(v.lt)
+              : val(n[k]) === val(v),
+          );
+        return notes.filter(
+          (n) =>
+            n.therapistId === where.therapistId &&
+            n.clientId === where.clientId &&
+            (!where.OR || where.OR.some((c: any) => lt(n, c))),
+        ).length;
+      }),
+      findFirst: jest.fn(
         async ({ where }: any) =>
-          notes.filter(
+          notes.find(
             (n) =>
+              n.id === where.id &&
               n.therapistId === where.therapistId &&
               n.clientId === where.clientId,
-          ).length,
+          ) ?? null,
       ),
       create: jest.fn(async ({ data }: any) => {
         const row = { id: nextId++, createdAt: new Date(), ...data };
@@ -176,6 +193,41 @@ describe('TherapyNotesService — заметки о сессиях (session note
 
     await service.deleteNote(T1, created.id);
     expect(notes).toHaveLength(0);
+  });
+
+  it('getNote: запись за пределами страницы читается по id с номером сессии', async () => {
+    const { service } = makeService([activeRel]);
+    const early = await service.createNote(T1, CLIENT, {
+      date: '2025-01-01',
+      text: 'самая ранняя',
+    });
+    for (let i = 0; i < SESSION_NOTES_PAGE; i++)
+      await service.createNote(T1, CLIENT, {
+        date: '2026-03-01',
+        text: `n${i}`,
+      });
+    const page = await service.getNotes(T1, CLIENT);
+    expect(page.notes.some((n) => n.id === early.id)).toBe(false);
+
+    const found = await service.getNote(T1, CLIENT, early.id);
+    expect(found.note.text).toBe('самая ранняя');
+    expect(found.number).toBe(1);
+    const last = await service.getNote(T1, CLIENT, page.notes[0].id);
+    expect(last.number).toBe(SESSION_NOTES_PAGE + 1);
+  });
+
+  it('getNote: чужой терапевт — отказ, чужой id записи — 404', async () => {
+    const { service } = makeService([activeRel]);
+    const note = await service.createNote(T1, CLIENT, {
+      date: '2026-03-01',
+      text: 'секрет',
+    });
+    await expect(service.getNote(T2, CLIENT, note.id)).rejects.toThrow(
+      'No active relation',
+    );
+    await expect(service.getNote(T1, CLIENT, note.id + 1)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('getNotes на пустой истории — пустой массив, без падения', async () => {
