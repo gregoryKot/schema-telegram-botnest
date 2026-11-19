@@ -1,5 +1,5 @@
 // Блок «Страница ссылок» для /stats (правило №8): какие кнопки нажимают на
-// kotlarewski.gr/links и из каких соцсетей приходят. Чистый форматтер.
+// kotlarewski.gr/privet и из каких соцсетей приходят. Чистый форматтер.
 import {
   LINKS_PAGE_FROM,
   LINKS_PAGE_TARGETS,
