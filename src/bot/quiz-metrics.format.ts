@@ -26,6 +26,8 @@ export const QUIZ_LABELS: Record<string, string> = {
   procrastination: '⏳ «Прокрастинация»',
   attachment: '🫂 «Стиль привязанности»',
   chemistry: '🧲 «Тянет не к тем»',
+  coping: '🛡 «Сдаться, сбежать или напасть»',
+  anger: '🌋 «Как злюсь»',
 };
 
 const pct = (part: number, whole: number): string =>
