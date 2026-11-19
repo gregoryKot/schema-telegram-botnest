@@ -12,8 +12,13 @@ export function useLowPhone(): boolean {
   useEffect(() => {
     const update = () => setLow(lowPhone());
     window.addEventListener('resize', update);
+    const mq = typeof window.matchMedia === 'function' ? window.matchMedia(LOW_PHONE_MEDIA) : null;
+    mq?.addEventListener?.('change', update);
     update();
-    return () => window.removeEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      mq?.removeEventListener?.('change', update);
+    };
   }, []);
   return low;
 }
