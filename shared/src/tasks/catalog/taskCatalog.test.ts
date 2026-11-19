@@ -90,6 +90,25 @@ describe('buildTaskCatalog на данных справочника', () => {
     }
   });
 
+  // Задание из каталога уходит и клиенту без аккаунта: отсылка к экрану приложения для него невыполнима.
+  const APP_REFERENCE =
+    /«Практик|«Паттерн|«Сегодня»|«Мой путь»|в приложени|в кабинет|на сайте|в боте|в (этом )?разделе|во вкладк|откр[оы][йт][а-я]* (в|упражнение|раздел|экран)|наж[аи]?[мт]/i;
+
+  it('ни один текст и ни одно «зачем» не отсылает к экранам приложения', () => {
+    expect(
+      'Открыть в «Практиках» упражнение «Критик или забота?».',
+    ).toMatch(APP_REFERENCE);
+    expect('Когда тянет к еде, экрану или покупкам').not.toMatch(APP_REFERENCE);
+    for (const form of [(ty: string) => ty, (_: string, vy: string) => vy]) {
+      for (const task of buildTaskCatalog(guide, form)) {
+        expect(task.why, task.title).not.toMatch(APP_REFERENCE);
+        for (const variant of task.variants) {
+          expect(variant.text, task.title).not.toMatch(APP_REFERENCE);
+        }
+      }
+    }
+  });
+
   it('у семи названий тексты в режимах и схемах разные — видны все варианты', () => {
     const many = catalog.filter((t) => t.variants.length > 1);
     expect(many.map((t) => t.title)).toContain('Прямая просьба');
