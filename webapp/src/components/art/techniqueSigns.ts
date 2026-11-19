@@ -38,6 +38,7 @@ const SCHEMA_TECHNIQUE_SIGN: Record<SchemaTechniqueId, GuideSign> = {
   body_grounding: 'breath',
   values_overview: 'horizon',
   couple_mode_cycle: 'ribbon',
+  online_chairwork: 'talk',
 };
 
 const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
