@@ -4,7 +4,6 @@ import { setupMenu } from './menu';
 import { initTouchControls } from './controls';
 import { initAnalytics } from './analytics';
 import { audio } from './audio';
-import { loadHeavySprites } from './loadHeavy';
 import { pauseInPortrait } from './rotate';
 import { W, H, PHYS } from './constants';
 
@@ -44,7 +43,6 @@ function start() {
   pauseInPortrait(game);
   initAnalytics();
   audio.unlockOnFirstGesture(); // тач-кнопки — HTML вне канваса; ловим жест на документе
-  loadHeavySprites(game);       // тяжёлые спрайты — в фоне, не блокируя меню
 }
 
 Promise.all([
