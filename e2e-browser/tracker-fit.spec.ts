@@ -49,24 +49,32 @@ async function fifthAnswerBottom(page: Page) {
   };
 }
 
-test(`вопрос трекера ${PHONE.width}×${PHONE.height}: у каждого из пяти вопросов пятый ответ выше ${PHONE.fold}`, async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: PHONE.width, height: PHONE.height });
-  await openTracker(page);
-  const dots = page.locator('.tk2-overlay .tq-dot-hit');
-  await expect(dots).toHaveCount(5);
-  for (let i = 0; i < 5; i++) {
-    await expect(dots.nth(i)).toHaveAttribute('aria-current', 'step');
-    const need = await dots.nth(i).getAttribute('aria-label');
-    const { bottom, sheet } = await fifthAnswerBottom(page);
-    expect(
-      bottom,
-      `«${need}»: низ пятого ответа под сгибом (лист потребности ${sheet}px)`,
-    ).toBeLessThanOrEqual(PHONE.fold);
-    if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
-  }
-});
+// Низкий телефон (Chrome на Android 360×640, Safari с панелями 390×664): компактная раскладка
+// (LOW_PHONE_MEDIA) — описание потребности под тапом, ответы плотнее; запас до края окна — 8px.
+const LOW_PHONES = [
+  { width: 360, height: 640, fold: 632 },
+  { width: 390, height: 664, fold: 656 },
+];
+
+for (const vp of [PHONE, ...LOW_PHONES])
+  test(`вопрос трекера ${vp.width}×${vp.height}: у каждого из пяти вопросов пятый ответ выше ${vp.fold}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    await openTracker(page);
+    const dots = page.locator('.tk2-overlay .tq-dot-hit');
+    await expect(dots).toHaveCount(5);
+    for (let i = 0; i < 5; i++) {
+      await expect(dots.nth(i)).toHaveAttribute('aria-current', 'step');
+      const need = await dots.nth(i).getAttribute('aria-label');
+      const { bottom, sheet } = await fifthAnswerBottom(page);
+      expect(
+        bottom,
+        `«${need}»: низ пятого ответа под сгибом (лист потребности ${sheet}px)`,
+      ).toBeLessThanOrEqual(vp.fold);
+      if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
+    }
+  });
 
 // Первый показ — осознанное исключение из запаса 830 (раздел b07, «Не сделано»): строка «откуда это»
 // в три строки над листом; ужата до ~841 (было 855, в main 928), дальше — только короче сам текст.
@@ -159,11 +167,8 @@ for (const vp of [
 // Подписи под ответами меняются с каждым открытием, поэтому один показ запас не доказывает:
 // в каждую строку ставим по очереди весь её пул и берём самую высокую. «Мало» и «В основном да»
 // обязаны уложиться в одну строку — на двух строках пятый ответ уходит под сгиб.
-for (const vp of [
-  { width: 390, height: 844, fold: PHONE.fold },
-  { width: 360, height: 640, fold: null },
-]) {
-  test(`подписи ответов ${vp.width}×${vp.height}: короткие — в одну строку${vp.fold ? `, худший набор из пулов выше ${vp.fold}` : ''}`, async ({
+for (const vp of [PHONE, ...LOW_PHONES]) {
+  test(`подписи ответов ${vp.width}×${vp.height}: короткие — в одну строку, худший набор из пулов выше ${vp.fold}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height });
@@ -205,11 +210,10 @@ for (const vp of [
         m.wrapped,
         `${NEED_ORDER[i]}: подпись не влезла в одну строку`,
       ).toEqual([]);
-      if (vp.fold)
-        expect(
-          m.worst,
-          `${NEED_ORDER[i]}: худший набор подписей уводит пятый ответ под сгиб`,
-        ).toBeLessThanOrEqual(vp.fold);
+      expect(
+        m.worst,
+        `${NEED_ORDER[i]}: худший набор подписей уводит пятый ответ под сгиб`,
+      ).toBeLessThanOrEqual(vp.fold);
       if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
     }
   });
