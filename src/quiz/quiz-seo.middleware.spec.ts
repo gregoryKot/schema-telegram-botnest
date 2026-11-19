@@ -49,7 +49,9 @@ describe('quizSeoMiddleware', () => {
       expect(res.status).toBe(200);
       const desc = esc(quizDescription(quiz));
       expect(res.text).toContain(`<title>${esc(quiz.title)} — мини-тест`);
-      expect(res.text).toContain(`<meta name="description" content="${desc}" />`);
+      expect(res.text).toContain(
+        `<meta name="description" content="${desc}" />`,
+      );
       expect(res.text).toContain(
         `<meta property="og:description" content="${desc}" />`,
       );
@@ -61,15 +63,24 @@ describe('quizSeoMiddleware', () => {
   );
 
   it('/tests → список со ссылкой на каждый тест', async () => {
-    const res = await request(app).get('/tests/').set('Host', 'schemehappens.ru');
-    expect(res.text).toContain(`<link rel="canonical" href="${SITE_URL}/tests" />`);
-    for (const id of QUIZ_IDS) expect(res.text).toContain(`href="/tests/${id}"`);
+    const res = await request(app)
+      .get('/tests/')
+      .set('Host', 'schemehappens.ru');
+    expect(res.text).toContain(
+      `<link rel="canonical" href="${SITE_URL}/tests" />`,
+    );
+    for (const id of QUIZ_IDS)
+      expect(res.text).toContain(`href="/tests/${id}"`);
   });
 
   it('неизвестный id, чужой путь, алиас-хост, нет сборки → SPA', async () => {
     const host = 'schemehappens.ru';
-    expect((await request(app).get('/tests/nope').set('Host', host)).text).toBe('SPA');
-    expect((await request(app).get('/today').set('Host', host)).text).toBe('SPA');
+    expect((await request(app).get('/tests/nope').set('Host', host)).text).toBe(
+      'SPA',
+    );
+    expect((await request(app).get('/today').set('Host', host)).text).toBe(
+      'SPA',
+    );
     expect(
       (await request(app).get('/tests').set('Host', 'kotlarewski.gr')).text,
     ).toBe('SPA');
