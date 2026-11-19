@@ -42,11 +42,20 @@ export function buildProcrastinationQuiz(form: AddressForm): Quiz {
           'Важная задача, срок через неделю. Почему вы не начинаете?',
         ),
         options: [
-          { label: 'Нужно сначала продумать всё до мелочей', resultId: 'standards' },
+          {
+            label: 'Нужно сначала продумать всё до мелочей',
+            resultId: 'standards',
+          },
           { label: 'Всё равно выйдет хуже, чем у других', resultId: 'failure' },
           { label: 'Скучно. Есть дела поинтереснее', resultId: 'selfcontrol' },
-          { label: 'От одной мысли о ней тяжело, лучше отвлечься', resultId: 'soother' },
-          { label: 'Её поручили, хотя меня никто не спрашивал', resultId: 'subjugation' },
+          {
+            label: 'От одной мысли о ней тяжело, лучше отвлечься',
+            resultId: 'soother',
+          },
+          {
+            label: 'Её поручили, хотя меня никто не спрашивал',
+            resultId: 'subjugation',
+          },
         ],
       },
       {
@@ -56,11 +65,26 @@ export function buildProcrastinationQuiz(form: AddressForm): Quiz {
           'Вы наконец садитесь за дело. Что происходит?',
         ),
         options: [
-          { label: 'Переписываю первый абзац в пятый раз', resultId: 'standards' },
-          { label: 'Вижу, как мало знаю, и опускаются руки', resultId: 'failure' },
-          { label: 'Через пять минут тянет проверить телефон', resultId: 'selfcontrol' },
-          { label: 'Накатывает тревога, и я включаю сериал', resultId: 'soother' },
-          { label: 'Делаю медленно и нехотя, назло сроку', resultId: 'subjugation' },
+          {
+            label: 'Переписываю первый абзац в пятый раз',
+            resultId: 'standards',
+          },
+          {
+            label: 'Вижу, как мало знаю, и опускаются руки',
+            resultId: 'failure',
+          },
+          {
+            label: 'Через пять минут тянет проверить телефон',
+            resultId: 'selfcontrol',
+          },
+          {
+            label: 'Накатывает тревога, и я включаю сериал',
+            resultId: 'soother',
+          },
+          {
+            label: 'Делаю медленно и нехотя, назло сроку',
+            resultId: 'subjugation',
+          },
         ],
       },
       {
@@ -70,11 +94,23 @@ export function buildProcrastinationQuiz(form: AddressForm): Quiz {
           'Срок сорван. Что вы говорите себе?',
         ),
         options: [
-          { label: 'Лучше поздно и хорошо, чем вовремя и плохо', resultId: 'standards' },
-          { label: 'Как всегда: у меня ничего не выходит', resultId: 'failure' },
-          { label: 'Ничего страшного, в следующий раз начну раньше', resultId: 'selfcontrol' },
+          {
+            label: 'Лучше поздно и хорошо, чем вовремя и плохо',
+            resultId: 'standards',
+          },
+          {
+            label: 'Как всегда: у меня ничего не выходит',
+            resultId: 'failure',
+          },
+          {
+            label: 'Ничего страшного, в следующий раз начну раньше',
+            resultId: 'selfcontrol',
+          },
           { label: 'Стараюсь вообще об этом не думать', resultId: 'soother' },
-          { label: 'Сами виноваты: нечего было давить', resultId: 'subjugation' },
+          {
+            label: 'Сами виноваты: нечего было давить',
+            resultId: 'subjugation',
+          },
         ],
       },
       {
@@ -84,10 +120,19 @@ export function buildProcrastinationQuiz(form: AddressForm): Quiz {
           'Какие дела вы откладываете дольше всего?',
         ),
         options: [
-          { label: 'Те, где важно не ударить в грязь лицом', resultId: 'standards' },
+          {
+            label: 'Те, где важно не ударить в грязь лицом',
+            resultId: 'standards',
+          },
           { label: 'Новые, в которых у меня мало опыта', resultId: 'failure' },
-          { label: 'Скучные и однообразные: отчёты, уборка', resultId: 'selfcontrol' },
-          { label: 'Те, что поднимают неприятные чувства', resultId: 'soother' },
+          {
+            label: 'Скучные и однообразные: отчёты, уборка',
+            resultId: 'selfcontrol',
+          },
+          {
+            label: 'Те, что поднимают неприятные чувства',
+            resultId: 'soother',
+          },
           { label: 'Те, что от меня требуют другие', resultId: 'subjugation' },
         ],
       },
@@ -98,10 +143,19 @@ export function buildProcrastinationQuiz(form: AddressForm): Quiz {
           'Друг предлагает: «Давайте сделаем вместе». Вам:',
         ),
         options: [
-          { label: 'Неловко: увидит черновик, а он сырой', resultId: 'standards' },
-          { label: 'Страшно: станет видно, что я не тяну', resultId: 'failure' },
+          {
+            label: 'Неловко: увидит черновик, а он сырой',
+            resultId: 'standards',
+          },
+          {
+            label: 'Страшно: станет видно, что я не тяну',
+            resultId: 'failure',
+          },
           { label: 'Отлично: вдвоём не так скучно', resultId: 'selfcontrol' },
-          { label: 'Легче: в одиночку с этим слишком тяжело', resultId: 'soother' },
+          {
+            label: 'Легче: в одиночку с этим слишком тяжело',
+            resultId: 'soother',
+          },
           { label: 'Напряжно: ещё один контролёр', resultId: 'subjugation' },
         ],
       },
@@ -114,9 +168,15 @@ export function buildProcrastinationQuiz(form: AddressForm): Quiz {
         options: [
           { label: 'Разрешение сделать неидеально', resultId: 'standards' },
           { label: 'Уверенность, что у меня получится', resultId: 'failure' },
-          { label: 'Награда сразу после, а не когда-нибудь', resultId: 'selfcontrol' },
+          {
+            label: 'Награда сразу после, а не когда-нибудь',
+            resultId: 'selfcontrol',
+          },
           { label: 'Чтобы стало чуть спокойнее внутри', resultId: 'soother' },
-          { label: 'Право решить, как и когда это делать', resultId: 'subjugation' },
+          {
+            label: 'Право решить, как и когда это делать',
+            resultId: 'subjugation',
+          },
         ],
       },
     ],
