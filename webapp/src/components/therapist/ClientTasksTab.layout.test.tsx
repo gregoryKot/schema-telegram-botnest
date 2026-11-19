@@ -7,8 +7,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { ClientTasksTab } from './ClientTasksTab';
-import type { ClientDetail } from './clientSheetTypes';
 import { readCss } from '../../styles/cssRules.test-helpers';
+import { makeClient, makeClientDetail } from './clientDetail.test-helpers';
 
 afterEach(cleanup);
 
@@ -19,8 +19,8 @@ const task = (id: number, over: Record<string, unknown> = {}) => ({
 });
 
 function rows() {
-  const detail = { clientTasks: [task(1), task(2, { done: true, completedAt: '2026-11-05T10:00:00Z' })], selectedClient: { telegramId: -5 } };
-  const { container } = render(<ClientTasksTab detail={detail as unknown as ClientDetail} onAssign={vi.fn()} />);
+  const detail = makeClientDetail({ clientTasks: [task(1), task(2, { done: true, completedAt: '2026-11-05T10:00:00Z' })], selectedClient: makeClient({ telegramId: -5 }) });
+  const { container } = render(<ClientTasksTab detail={detail} onAssign={vi.fn()} />);
   return [...container.querySelectorAll('.cp-task-list > .cp-task')];
 }
 

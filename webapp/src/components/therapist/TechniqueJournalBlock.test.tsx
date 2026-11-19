@@ -7,7 +7,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import type { ClientDetail } from './clientSheetTypes';
 import type { ConceptModeLink, ConceptSchemaLink } from '../../../../shared/src/apiTypes';
 import { TechniqueJournalBlock } from './TechniqueJournalBlock';
 import type { TherapistNote } from '../../../../shared/src/apiTypes';
@@ -28,6 +27,7 @@ vi.mock('../../../../shared/src/schemaTherapy/guide', async () => {
 });
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), getSessionWork: vi.fn(), listCustomModes: vi.fn() }, reportClientError: vi.fn() }));
 import { api } from '../../api';
+import { makeClient, makeClientDetail, partialConcept } from './clientDetail.test-helpers';
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -45,19 +45,14 @@ const abandonment = { ...emptySchemaLink('abandonment'), done: [{ techniqueId: '
 function setup({ modeLinks = [critic] as ConceptModeLink[], schemaLinks = [abandonment] as ConceptSchemaLink[], failed = false, conceptLink = true, takeFocus = undefined as (() => boolean) | undefined, notesPage = undefined as TherapistNotesPage | undefined } = {}) {
   const onOpenConcept = vi.fn();
   const onOpenSession = vi.fn();
-  const detail = {
-    concept: { schemaIds: [], modeIds: [], modeLinks, schemaLinks },
-    localConcept: {},
-    activeSchemaIds: [],
-    patchConcept: vi.fn(),
-    clientTasks: [],
+  const detail = makeClientDetail({
+    concept: partialConcept({ schemaIds: [], modeIds: [], modeLinks, schemaLinks }),
     conceptLoad: { failed, reloading: false },
-    reloadConcept: vi.fn(),
-    ...(notesPage && { notesPage, notes: notesPage.notes, selectedClient: { telegramId: 42 } }),
-  };
+    ...(notesPage && { notesPage, notes: notesPage.notes, selectedClient: makeClient({ telegramId: 42 }) }),
+  });
   render(
     <MemoryRouter>
-      <TechniqueJournalBlock detail={detail as unknown as ClientDetail} onOpenConcept={conceptLink ? onOpenConcept : undefined} takeFocus={takeFocus} onOpenSession={onOpenSession} />
+      <TechniqueJournalBlock detail={detail} onOpenConcept={conceptLink ? onOpenConcept : undefined} takeFocus={takeFocus} onOpenSession={onOpenSession} />
     </MemoryRouter>,
   );
   return { detail, onOpenConcept, onOpenSession };
