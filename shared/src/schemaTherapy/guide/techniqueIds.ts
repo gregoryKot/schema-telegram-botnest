@@ -31,7 +31,8 @@ export type SchemaTechniqueId =
   | 'play_and_joy'
   | 'body_grounding'
   | 'values_overview'
-  | 'couple_mode_cycle';
+  | 'couple_mode_cycle'
+  | 'online_chairwork';
 
 /** Техники из других подходов (#1366): у записи заполнены `approach` и `pairsWith`. */
 export type BorrowedTechniqueId =
