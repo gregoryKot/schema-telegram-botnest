@@ -1,5 +1,4 @@
 // Сетевая половина билета входа — одна копия на оба фронтенда (правило №3).
-//
 // Без авторизации: билет затем и нужен, что у контейнера сессии ещё нет.
 // Доказательством служит длинный секрет, который никогда не покидает этот
 // контейнер (RFC 8628), поэтому `credentials: 'include'` тут обязателен —
@@ -14,9 +13,10 @@ export interface StartedTicket {
 }
 
 export interface PolledTicket {
-  status: 'pending' | 'linked' | 'denied' | 'expired';
+  status: 'pending' | 'linked' | 'denied' | 'expired' | 'totp_required';
   accessToken?: string;
   expiresIn?: number;
+  challengeToken?: string;
 }
 
 export interface LoginTicketApi {
