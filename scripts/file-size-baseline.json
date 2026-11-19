@@ -1271,7 +1271,7 @@
   "src/bot/gratitude-merge.ts": 132,
   "src/bot/guide-reference-metrics.format.ts": 31,
   "src/bot/guide-reference-metrics.service.ts": 45,
-  "src/bot/guide-reference-metrics.types.ts": 9,
+  "src/bot/guide-reference-metrics.types.ts": 10,
   "src/bot/healthy-adult.attempts.ts": 47,
   "src/bot/healthy-adult.data.ts": 164,
   "src/bot/healthy-adult.dto.ts": 50,
