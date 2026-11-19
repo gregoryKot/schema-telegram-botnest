@@ -1,6 +1,7 @@
 import type { ReferenceItem } from './guideReferenceModel';
 import { bodyKey, snippet, type ReferenceBody } from './guideReferenceBody';
-import { findTerm, textTokens, type QueryTerm } from '../../../../shared/src/search/searchQuery';
+import { nameCovered, nameHas } from './guideReferenceName';
+import { findTerm, type QueryTerm } from '../../../../shared/src/search/searchQuery';
 
 // Вес листа в выдаче «Справочника»: слово в названии листа весит больше, чем в подписи группы, а та — больше,
 // чем в тексте; название, покрытое запросом целиком, — выше всех. В тексте ищутся слова от трёх букв — иначе подходит всё.
@@ -12,7 +13,7 @@ export function rankItem(item: ReferenceItem, title: string, terms: QueryTerm[],
   let score = 0;
   let sub: string | undefined;
   for (const term of terms) {
-    if (findTerm(item.name, term)) { score += WEIGHT.name; continue; }
+    if (nameHas(item, term)) { score += WEIGHT.name; continue; }
     if (findTerm(title, term, false)) { score += WEIGHT.title; continue; }
     if (term.word.length < MIN_BODY_WORD) continue;
     for (const paragraph of body?.get(bodyKey(item)) ?? []) {
@@ -24,7 +25,6 @@ export function rankItem(item: ReferenceItem, title: string, terms: QueryTerm[],
     }
   }
   if (score === 0) return null;
-  const nameWords = textTokens(item.name).filter((t) => t.word.length >= MIN_BODY_WORD);
-  if (nameWords.length > 0 && nameWords.every((t) => terms.some((q) => t.stem.startsWith(q.stem)))) score += WEIGHT.wholeName;
+  if (nameCovered(item, terms, MIN_BODY_WORD)) score += WEIGHT.wholeName;
   return { item: sub === undefined ? item : { ...item, sub }, score };
 }
