@@ -2,37 +2,40 @@
 import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { IS_TOUCH } from '../controls';
-import { FONT } from './hud';
+import { C, FONT, SKIN, button, hex, px } from './ui';
 
-const ROW_H = 52; // на телефоне кадр идёт 1:1 и мельче — с запасом над 44
+const ROW_H = px(52), GAP = px(8); // строка выше 44: в неё попадают пальцем
 
 export class PausePanel {
   private objs: Phaser.GameObjects.GameObject[] = [];
-  private rows: Phaser.GameObjects.Text[] = [];
-  constructor(private scene: Phaser.Scene, private question: string, private options: string[],
+  private rows: Phaser.GameObjects.Container[] = [];
+  constructor(private scene: Phaser.Scene, private kicker: string, private question: string, private options: string[],
     private onPick: (i: number) => void) {}
 
   get shown() { return this.objs.length > 0; }
 
   show() {
     if (this.shown) return;
-    const s = this.scene, top = H * 0.2;
-    const fixed = (o: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Text) => { o.setScrollFactor(0).setDepth(50); this.objs.push(o); return o; };
-    fixed(s.add.rectangle(W / 2, H / 2, W, H, 0x101018, 0.72));
-    fixed(s.add.text(W / 2, top, this.question, { fontFamily: FONT, fontSize: '12px', color: '#f0f0f4' }).setOrigin(0.5));
-    this.rows = this.options.map((text, i) => {
-      const label = IS_TOUCH ? text : `${i + 1}  ${text}`;
-      const row = s.add.text(W / 2, top + 30 + i * (ROW_H + 8), label, {
-        fontFamily: FONT, fontSize: '10px', color: '#f0f0f4', backgroundColor: '#3a3a46', align: 'center',
-        fixedWidth: W - 80, fixedHeight: ROW_H, padding: { y: (ROW_H - 10) / 2 },
-      }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
-      row.on('pointerdown', () => this.onPick(i));
-      fixed(row);
-      return row;
-    });
+    const s = this.scene, n = this.options.length, top = (H - (px(58) + n * ROW_H + (n - 1) * GAP)) / 2;
+    const keep = <T extends Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.ScrollFactor & Phaser.GameObjects.Components.Depth>(o: T) => {
+      o.setScrollFactor(0).setDepth(50); this.objs.push(o); return o;
+    };
+    const text = (y: number, str: string, size: number, color: number) =>
+      keep(s.add.text(W / 2, y, str, { fontFamily: FONT, fontSize: `${px(size)}px`, fontStyle: '700', color: hex(color) }).setOrigin(0.5));
+    keep(s.add.rectangle(W / 2, H / 2, W, H, C.deep, 0.86));
+    text(top + px(8), this.kicker, 15, C.haze).setLetterSpacing(px(4));
+    text(top + px(32), this.question, 26, C.paper);
+    this.rows = this.options.map((label, i) => keep(button(s, W / 2, top + px(58) + ROW_H / 2 + i * (ROW_H + GAP), W - px(120), ROW_H,
+      IS_TOUCH ? label : `${i + 1}   ${label}`, SKIN.night, () => this.onPick(i), 19)));
   }
 
-  markWrong(i: number) { this.rows[i]?.setAlpha(0.35); }
+  /** Неверное название: строка вздрагивает и гаснет — оно не подошло, выбор остаётся. */
+  markWrong(i: number) {
+    const row = this.rows[i];
+    if (!row || row.alpha < 1) return;
+    row.setAlpha(0.4);
+    this.scene.tweens.add({ targets: row, x: row.x + px(6), duration: 50, yoyo: true, repeat: 2 });
+  }
 
   hide() {
     for (const o of this.objs) o.destroy();

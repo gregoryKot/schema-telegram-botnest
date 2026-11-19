@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  RULES, agree, clockText, glitchLevel, isResting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock,
+  RULES, agree, clockText, glitchLevel, isResting, isSitting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock,
   scroll, tick,
 } from './habits';
 
@@ -22,6 +22,7 @@ describe('ПЕРЕРАБОТАТЬ', () => {
     let s = start();
     while (s.energy > 0) s = overwork(s);
     expect(isResting(s)).toBe(true);
+    expect(isSitting(s)).toBe(true); // сначала садится
     s = tick(s, RULES.restMs - 1);
     expect(isResting(s)).toBe(true);
     s = tick(s, 1);

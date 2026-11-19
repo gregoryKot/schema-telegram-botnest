@@ -11,7 +11,6 @@ export interface World {
   solids: Phaser.Physics.Arcade.StaticGroup;
   gates: GateObj[];
   door: Sprite;
-  boss: Sprite;
   people: Sprite[]; // кадр 0 — с лицом, кадр 1 — без: лица видны, только пока сбоя нет
 }
 const BLOCK_ART: Record<number, string> = { 22: 'wk_curb', 30: 'wk_step', 60: 'wk_step_hi' };
@@ -60,8 +59,7 @@ export function buildWorld(scene: Phaser.Scene, ch: Chapter): World {
   }
   const people = ch.people.map((x, i) => stand(scene, WALKERS[i % WALKERS.length], x).setFlipX(i % 2 === 0).setDepth(1));
   const door = stand(scene, 'wk_door', ch.door.x).setDepth(2);
-  const boss = stand(scene, 'wk_boss', 0).setFlipX(true).setDepth(3).setVisible(false);
-  const w: World = { solids, gates: [], door, boss, people };
+  const w: World = { solids, gates: [], door, people };
   for (const g of ch.gates) addGate(scene, w, g);
   return w;
 }

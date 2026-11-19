@@ -5,6 +5,10 @@ import home from '../assets/bg_wk_home.png';
 import street from '../assets/bg_wk_street.png';
 import office from '../assets/bg_wk_office.png';
 import officeGlitch from '../assets/bg_wk_office_glitch.png';
+import corridor from '../assets/bg_wk_corridor.png';
+import corridorGlitch from '../assets/bg_wk_corridor_glitch.png';
+import bossRoom from '../assets/bg_wk_boss_room.png';
+import arch from '../assets/wk_arch.png';
 import notifWall from '../assets/wk_notif_wall.png';
 import curb from '../assets/wk_curb.png';
 import step from '../assets/wk_step.png';
@@ -13,7 +17,6 @@ import puddle from '../assets/wk_puddle.png';
 import piles from '../assets/wk_piles.png';
 import door from '../assets/wk_door.png';
 import mister from '../assets/wk_mister.png';
-import boss from '../assets/wk_boss.png';
 import colA from '../assets/wk_colleague_a.png';
 import colB from '../assets/wk_colleague_b.png';
 import colC from '../assets/wk_colleague_c.png';
@@ -21,9 +24,10 @@ import colBox from '../assets/wk_colleague_box.png';
 
 const sasha = import.meta.glob<string>('../assets/wk_sasha_*.png', { eager: true, import: 'default' });
 const IMAGES = { bg_wk_city: city, bg_wk_home: home, bg_wk_street: street, bg_wk_office: office, bg_wk_office_glitch: officeGlitch,
+  bg_wk_corridor: corridor, bg_wk_corridor_glitch: corridorGlitch, bg_wk_boss_room: bossRoom, wk_arch: arch,
   wk_notif_wall: notifWall, wk_curb: curb, wk_step: step, wk_step_hi: stepHi, wk_puddle: puddle };
 const SHEETS: Record<string, [url: string, fw: number, fh: number]> = {
-  wk_piles: [piles, 26, 88], wk_door: [door, 34, 62], wk_mister: [mister, 36, 36], wk_boss: [boss, 40, 60],
+  wk_piles: [piles, 26, 88], wk_door: [door, 34, 62], wk_mister: [mister, 36, 36],
   wk_colleague_a: [colA, 40, 60], wk_colleague_b: [colB, 40, 60], wk_colleague_c: [colC, 40, 60], wk_colleague_box: [colBox, 40, 60],
 };
 for (const [path, url] of Object.entries(sasha)) SHEETS[path.slice(path.lastIndexOf('/') + 1, -4)] = [url, 40, 60];
