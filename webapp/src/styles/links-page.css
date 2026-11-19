@@ -30,6 +30,8 @@ html[data-theme="dark"] .links-page {
 @supports (color: oklch(from red l c h)) {
   html:not([data-theme="dark"]) .links-page { --lk-note: oklch(from var(--c-amber) .928 .066 calc(h + 18)); }
 }
+/* Пока открыт баннер куки (position: fixed внизу), страница длиннее на его высоту: нижние кнопки докручиваются выше него. */
+body:has(.cookie-banner-wrap) .links-page { padding-bottom: calc(160px + var(--safe-bottom)); }
 .links-col { position: relative; max-width: clamp(440px, 34vw, 480px); margin: 0 auto; }
 .links-page a { color: inherit; text-decoration: none; }
 .links-page h2 { margin: 0; font-family: var(--lk-serif); font-weight: 500; font-size: 18px; line-height: 1.2; letter-spacing: -.01em; }
