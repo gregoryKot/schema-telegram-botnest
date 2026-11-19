@@ -39,7 +39,7 @@ def _door(s, x0, n, glitch):
     s.rect((x0 - 3, 125, x0 + 32, BASE - 1), '#eef3f2'); s.rect((x0, 128, x0 + 29, BASE - 1), '#a8765a')
     s.rect((x0 + 3, 132, x0 + 26, 156), '#b98663'); s.rect((x0 + 3, 162, x0 + 26, 186), '#b98663')
     s.rect((x0 + 24, 158, x0 + 27, 159), '#f0a830')
-    if glitch:                                                 # за каждой дверью горит то же, что за её
+    if glitch:                                                 # сбой: под каждой дверью кислотная щель — любая может быть её
         s.rect((x0 + 1, BASE - 2, x0 + 28, BASE - 1), ACID); s.lit((x0 - 4, BASE - 4, x0 + 33, BASE + 6), 0, 3, 'rect', sun=True)
     s.lit((x0, 128, x0 + 29, 131), -0.25, 0, 'rect'); s.lit((x0 - 6, BASE - 2, x0 + 36, BASE + 6), -0.18, 2, 'rect')
     px, col = x0 + 38, ACID if glitch else '#39415c'

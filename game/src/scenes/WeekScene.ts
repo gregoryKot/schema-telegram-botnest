@@ -49,7 +49,7 @@ export class WeekScene extends Phaser.Scene {
   private notifKeys: MsgKey[] = [];
   private beat = 0; private dashT = 0; private phoneT = 0; private faceT = 0;
   private peakMs = 0; private peakHabit = false; private notifAcc = 0; private notifN = 0;
-  private nextPeakPile = 0;
+  private nextPeakPile = 0; private bossX = 0;
 
   constructor() { super('Week'); }
   preload() { preloadWeekArt(this); }
@@ -62,7 +62,7 @@ export class WeekScene extends Phaser.Scene {
     this.st = newWeekState(ch.startClock);
     this.ps = newPause();
     makeWeekAnims(this);
-    this.back = new WeekBackdrop(this, ch.beats[0].x, ch.beats[1].x - 60, ch.worldW);
+    this.back = new WeekBackdrop(this, ch.beats[0].x, ch.beats[1].x - 60, ch.hallX, ch.worldW);
     this.physics.world.setBounds(0, -H, ch.worldW, 2 * H);
     this.world = buildWorld(this, ch);
 
@@ -240,10 +240,10 @@ export class WeekScene extends Phaser.Scene {
     this.freeze(false);
     this.ctl.drain(); // тап по названию — не прыжок
     this.st = nameGlitch(this.st);
-    this.clearNotifs();
+    this.clearNotifs(); this.hud.hush();
     for (const g of this.world.gates) openGate(this, this.world, g);
     this.world.door.x = this.player.x + this.ch.door.nearSteps; // коридор — десять шагов
-    this.world.boss.setPosition(this.world.door.x + 56, GROUND_Y + GRID).setVisible(true);
+    this.bossX = this.back.settle(this.world.door.x);
     audio.gate();
   }
 
@@ -252,7 +252,7 @@ export class WeekScene extends Phaser.Scene {
     this.body.setVelocity(0, 0);
     setTouchControls(false);
     trackEvent('game_chapter_done', { chapter: this.ch.id });
-    this.hud.say(t(this.ch.end.bossLine), this.world.boss.x, GROUND_Y - ui(96), 3000);
+    this.hud.say(t(this.ch.end.bossLine), this.bossX, GROUND_Y - 132, 3000);
     this.time.delayedCall(1800, () => this.hud.think(t(this.ch.end.afterThought), 2400));
     this.time.delayedCall(4400, () => this.hud.end(() => showWeekCard(this)));
   }

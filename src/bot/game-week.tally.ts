@@ -4,7 +4,6 @@ import type { GameEventRow } from './game-metrics.tally';
 /** Воронка новой игры «Неделя»: главы mon/wed/first, места зова hook/final. */
 export interface WeekMetrics {
   started: number; // начали «Понедельник»
-  hookDone: number; // дошли до конца хука
   ctaShown: number; // увидели карточку после хука
   clicksBooking: number;
   clicksApp: number;
@@ -16,7 +15,6 @@ export interface WeekMetrics {
 
 export const emptyWeek = (): WeekMetrics => ({
   started: 0,
-  hookDone: 0,
   ctaShown: 0,
   clicksBooking: 0,
   clicksApp: 0,
@@ -55,9 +53,8 @@ export function tallyWeekRow(
     return true;
   }
   if (row.name === 'game_chapter_done') {
-    if (row.chapter === 'mon') w.hookDone += c;
-    else if (row.chapter === 'first') w.firstDone += c;
-    else return false;
+    if (row.chapter === 'first') w.firstDone += c;
+    else if (row.chapter !== 'mon') return false; // конец хука виден как показ карточки
     return true;
   }
   return false;

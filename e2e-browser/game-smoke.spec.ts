@@ -350,6 +350,8 @@ const weekState = (page: Page) =>
         'bg_wk_street',
         'bg_wk_office',
         'bg_wk_office_glitch',
+        'bg_wk_corridor',
+        'bg_wk_boss_room',
         'wk_piles',
       ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,

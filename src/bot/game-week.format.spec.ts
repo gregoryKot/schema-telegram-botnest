@@ -33,7 +33,6 @@ describe('новая игра «Неделя» в /stats', () => {
     const w: WeekMetrics = {
       ...emptyWeek(),
       started: 50,
-      hookDone: 40,
       ctaShown: 35,
       clicksBooking: 4,
       clicksApp: 6,
@@ -73,7 +72,6 @@ describe('новая игра «Неделя» в /stats', () => {
     ]);
     expect(m.week).toMatchObject({
       started: 10,
-      hookDone: 8,
       ctaShown: 7,
       clicksBooking: 2,
       clicksApp: 1,

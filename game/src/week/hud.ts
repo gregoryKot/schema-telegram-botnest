@@ -92,6 +92,8 @@ export class WeekHud {
     this.thought?.destroy();
     this.thought = this.bubble(text, 'think', 0, 0, ms);
   }
+  /** Мысль обрывается: сбой назван. */
+  hush() { this.thought?.destroy(); }
   /** Уведомление сбоя: падает сверху кадра; через одно — белое, как в стене уведомлений. */
   notif(text: string, x: number, n: number): Label {
     const b = label(this.scene, text, n % 3 === 2 ? SKIN.paper : SKIN.acid, { tail: 'say', size: 16, bold: true });
