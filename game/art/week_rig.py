@@ -1,34 +1,39 @@
-"""Люди «Недели»: один риг на всех — Саша, коллеги. Кадр 44x72, показ x2, взгляд вправо.
+"""Люди «Недели»: один риг на всех. Кадр 40x60, показ x2, взгляд вправо; рост фигуры — около 50 px.
 
 Поза — углы суставов в градусах от вертикали (вперёд — плюс); голова — ручной штамп,
 тело и конечности — примитивы в карту материалов (px.Canvas), красит общий px.render.
-Мимики нет: характер держат поза и силуэт, лицо — один пиксель глаза.
+Мимики нет: характер держат поза и силуэт, лицо — глаз в два пикселя. Тени уходят в синеву, свет — в тёплое.
 """
 import math
 from px import Canvas, Mat
 
-FW, FH = 44, 72
+FW, FH = 40, 60
 GY = FH - 1
-OUT = '#2b2730'
+OUT = '#231a36'
 (FAR_ARM, FAR_LEG, FAR_SHOE, PACK, STRAP, TORSO, LEG, SHOE, SOLE, HOOD, HAIR, SKIN, EYE, PHONES, CUP,
- ARM, HAND, BLANK, LID) = range(1, 20)
+ ARM, HAND, BLANK, LID, PROP, PROP2, GLOW) = range(1, 23)
+SKIN_A = ('#b9755c', '#e3a583', '#f6c9a8')
 
-def mats(top, top_far, legs, legs_far, hair, skin=('#a87f6c', '#c9a28c', '#dcb8a0'), pack=None):
-    """Материалы фигуры: top/legs — рампы (тень, тон, свет) одежды, *_far — дальние конечности."""
+def mats(top, legs, hair, skin=SKIN_A, pack=None, prop=('#b98a5a', '#dcb07a', '#f2d3a2'), shoe=('#aab2cc', '#eef1f7', '#ffffff')):
+    """Материалы фигуры: top/legs — рампы (тень, тон, свет); дальние конечности — на тон темнее."""
+    far = lambda r: (r[0], r[0], r[1])
     m = {
-        FAR_ARM: Mat(*top_far, out=OUT, z=1), FAR_LEG: Mat(*legs_far, out=OUT, z=1),
-        FAR_SHOE: Mat('#8e8a84', '#b8b4aa', '#b8b4aa', out=OUT, z=1, rim=False),
-        TORSO: Mat(*top, out=OUT, z=3, shade=2), LEG: Mat(*legs, out=OUT, z=2),
-        SHOE: Mat('#b8b4aa', '#e6e2d8', '#f4f1ea', out=OUT, z=2), SOLE: Mat('#6e6a66', '#8e8a84', '#8e8a84', out=OUT, z=2, rim=False),
-        HOOD: Mat(*top, out=OUT, z=5, shade=2), HAIR: Mat(*hair, out=OUT, z=5),
+        FAR_ARM: Mat(*far(top), out=OUT, z=1), FAR_LEG: Mat(*far(legs), out=OUT, z=1),
+        FAR_SHOE: Mat(shoe[0], shoe[0], shoe[0], out=OUT, z=1, rim=False),
+        TORSO: Mat(*top, out=OUT, z=3, shade=2, dither=False), LEG: Mat(*legs, out=OUT, z=2),
+        SHOE: Mat(*shoe, out=OUT, z=2), SOLE: Mat('#5b6382', '#5b6382', '#5b6382', out=OUT, z=2, rim=False),
+        HOOD: Mat(*top, out=OUT, z=5, shade=1, dither=False), HAIR: Mat(*hair, out=OUT, z=5),
         SKIN: Mat(*skin, out=OUT, z=4, shade=0, rim=False), EYE: Mat(OUT, OUT, OUT, out=OUT, z=4, shade=0, rim=False),
         LID: Mat(skin[0], skin[0], skin[0], out=OUT, z=4, shade=0, rim=False),
-        PHONES: Mat('#2b2730', '#3e3c44', '#5e5c66', out=OUT, z=6, shade=0), CUP: Mat('#b8b4aa', '#e6e2d8', '#f4f1ea', out=OUT, z=7, shade=1, dither=False),
+        PHONES: Mat('#231a36', '#3b3357', '#6a628c', out=OUT, z=6, shade=0),
+        CUP: Mat('#aab2cc', '#eef1f7', '#ffffff', out=OUT, z=7, shade=1, dither=False),
         ARM: Mat(*top, out=OUT, z=8), HAND: Mat(*skin, out=OUT, z=8, shade=0, rim=False),
-        BLANK: Mat('#a8a49c', '#c4bfb4', '#d8d2c4', out=OUT, z=4, shade=1, dither=False),
+        BLANK: Mat('#cfc8e0', '#ece8f4', '#ffffff', out=OUT, z=4, shade=1, dither=False),
+        PROP: Mat(*prop, out=OUT, z=9, shade=2), PROP2: Mat('#231a36', '#2c2a44', '#4a4870', out=OUT, z=9, shade=0),
+        GLOW: Mat('#9fe8f0', '#d8fbff', '#ffffff', out=OUT, z=10, shade=0, rim=False),
     }
     if pack:
-        m[PACK] = Mat(*pack, out=OUT, z=2, shade=2)
+        m[PACK] = Mat(*pack, out=OUT, z=2, shade=2, dither=False)
         m[STRAP] = Mat(pack[0], pack[0], pack[1], out=OUT, z=4, shade=0, rim=False)
     return m
 
@@ -49,8 +54,8 @@ def _shoe(c, x, y, ang, upper, sole=None):
     """Кед у конца голени: носок вперёд, пятка назад; ang — наклон стопы (0 — плашмя)."""
     a = math.radians(ang)
     dx, dy = math.cos(a), -math.sin(a)
-    toe, heel = (x + 6 * dx, y + 6 * dy), (x - 2 * dx, y - 2 * dy)
-    c.line([heel, toe], upper, 4)
+    toe, heel = (x + 5 * dx, y + 5 * dy), (x - 1.5 * dx, y - 1.5 * dy)
+    c.line([heel, toe], upper, 3)
     if sole:
         c.line([(heel[0], heel[1] + 2), (toe[0], toe[1] + 2)], sole, 1)
 
@@ -63,38 +68,40 @@ def _stamp(c, rows, key, x, y):
 
 def figure(p, look):
     """Поза p + внешность look -> RGBA-кадр. p: hip=(x, выс. над землёй), lean, legs=((бедро, голень)x2: дальняя, ближняя),
-    arms=(так же), feet=(наклоны стоп), head=(dx, dy), face; look: mats, head, key, pack, phones."""
+    arms=(так же), feet=(наклоны стоп), head=(dx, dy), hold='phone'|'box'; look: mats, head, key, pack (0..1 — груз), phones."""
     c = Canvas(FW, FH)
     hx, hy = p['hip'][0], GY - p['hip'][1]
     lean = p.get('lean', 0)
-    sx, sy = _pt(hx, hy, 180 - lean, 18)                       # плечи
+    sx, sy = _pt(hx, hy, 180 - lean, 14)                       # плечи
     (fl, nl), (fa, na) = p['legs'], p['arms']
     feet = p.get('feet', (0, 0))
-    # дальние конечности
-    ex, ey = _limb(c, hx + 1, hy, fl[0], fl[1], 13, 12, FAR_LEG, 6, 5)
+    ex, ey = _limb(c, hx + 1, hy, fl[0], fl[1], 10, 10, FAR_LEG, 5, 4)
     _shoe(c, ex, ey, feet[0], FAR_SHOE)
-    hx2, hy2 = _limb(c, sx + 1, sy + 3, fa[0], fa[1], 10, 9, FAR_ARM, 4, 4)
-    c.ell((hx2 - 2, hy2 - 2, hx2 + 2, hy2 + 2), FAR_ARM)
-    # рюкзак за спиной
-    if look.get('pack'):
-        bx, by = sx - 8, sy + 2
-        c.d.rounded_rectangle((bx - 4, by, bx + 4, by + 16), 3, fill=PACK)
-    # ближняя нога, торс
-    ex, ey = _limb(c, hx - 1, hy, nl[0], nl[1], 13, 12, LEG, 6, 5)
+    fx, fy = _limb(c, sx + 1, sy + 2, fa[0], fa[1], 8, 7, FAR_ARM, 4, 3)
+    load = look.get('pack')
+    if load is not None:                                       # рюкзак за спиной: растёт с грузом
+        bx, by, g = sx - 7, sy + 1, round(4 * load)
+        c.d.rounded_rectangle((bx - 3 - g, by - g // 2, bx + 3, by + 12 + g), 3, fill=PACK)
+    ex, ey = _limb(c, hx - 1, hy, nl[0], nl[1], 10, 10, LEG, 5, 4)
     _shoe(c, ex, ey, feet[1], SHOE, SOLE)
-    w = look.get('width', 6)
+    w = look.get('width', 5)
     c.poly([(hx - w, hy + 2), (hx + w, hy + 2), (sx + w, sy), (sx + w - 1, sy - 1), (sx - w + 1, sy - 1), (sx - w, sy)], TORSO)
-    if look.get('pack'):
-        c.line([(sx + 1, sy), (sx - 3, sy + 13)], STRAP, 2)
-    # голова
+    if load is not None:
+        c.line([(sx + 1, sy), (sx - 3, sy + 10)], STRAP, 2)
     hdx, hdy = p.get('head', (0, 0))
     rows = look['head']
-    ox, oy = round(sx + 1 + lean / 5 + hdx) - len(rows[0]) // 2, round(sy - len(rows) + hdy)
-    _stamp(c, p.get('face') or rows, look['key'], ox, oy)
+    ox, oy = round(sx + 1 + lean / 5 + hdx) - len(rows[0]) // 2, round(sy - len(rows) + 1 + hdy)
+    _stamp(c, rows, look['key'], ox, oy)
     if look.get('phones'):                                     # наушники на шее: дуга и чашка
-        c.line([(sx - 5, sy), (sx + 4, sy)], PHONES, 3)
-        c.ell((sx - 2, sy - 1, sx + 4, sy + 6), CUP)
-    # ближняя рука
-    ex, ey = _limb(c, sx - 1, sy + 3, na[0], na[1], 10, 9, ARM, 5, 4)
-    c.ell((ex - 2, ey - 2, ex + 2, ey + 2), HAND)
+        c.line([(sx - 4, sy), (sx + 3, sy)], PHONES, 2)
+        c.ell((sx - 2, sy - 1, sx + 3, sy + 4), CUP)
+    ex, ey = _limb(c, sx - 1, sy + 2, na[0], na[1], 8, 7, ARM, 4, 3)
+    hold = p.get('hold')
+    if hold == 'box':                                          # коробка в обеих руках
+        c.rect((ex - 3, ey - 9, ex + 9, ey + 2), PROP)
+        c.line([(ex - 3, ey - 5), (ex + 9, ey - 5)], PROP2, 1)
+    c.ell((ex - 1.5, ey - 1.5, ex + 1.5, ey + 1.5), HAND)
+    if hold == 'phone':                                        # телефон светит в лицо
+        c.rect((ex, ey - 5, ex + 2, ey - 1), PROP2)
+        c.line([(ex, ey - 4), (ex, ey - 2)], GLOW, 1)
     return c.render(look['mats'])

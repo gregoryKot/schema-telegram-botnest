@@ -1,68 +1,65 @@
-"""Эталон «Недели» на утверждение: лист персонажей и два кадра «как в игре» (обычный офис и сбой).
-Пишет только превью в out/ — в game/src/assets ничего не ставит (до «да» владельца на эталон)."""
+"""Арт хука «Недели» («Понедельник. Офис»): люди, фоны, вещи. `build()` отдаёт ассеты по именам файлов
+и пишет в out/ превью — кадры «как в игре» в размере телефона (виден низ кадра от строки 90)."""
 from PIL import Image
-from px import C, up, strip
-from cat import pose, paint, SKIN
-from poses import IDLE
+from px import up, strip
 from week_cast import cast
-from week_office import office, door_glitch, near, LANE, VIEW_H, W, DOOR
-from week_glitch import warp, tears, bubble, lift
+from week_city import city
+from week_office import office, FEET, ACID
+from week_street import street, home
+from week_props import props
 
-# Мистер в свете «Недели»: вместо закатной кромки — нейтральная
-CAT_SKIN = dict(SKIN, top='#5a5560', rim='#8c8c90', rim2='#b6b6ba')
+SHEETS = ('idle', 'walk', 'run', 'phone', 'air', 'dash', 'still')
 
-def cat():
-    return paint(pose(IDLE), CAT_SKIN)
+def assets():
+    c = cast()
+    made = {'bg_wk_city': city(), 'bg_wk_office': office(), 'bg_wk_office_glitch': office(True),
+            'bg_wk_street': street(), 'bg_wk_home': home()}
+    for k in SHEETS:
+        made['wk_sasha_' + k] = strip(c['sasha_' + k]); made[f'wk_sasha_{k}_heavy'] = strip(c[f'sasha_{k}_heavy'])
+    for k in ('colleague_a', 'colleague_b', 'colleague_c', 'colleague_box', 'boss'):
+        made['wk_' + k] = strip(c[k])
+    made.update(props())
+    return made, c
 
-def _put(img, spr, x, feet_y):
-    img.alpha_composite(spr, (x, feet_y - spr.height + 1))
+def _put(img, spr, x, feet=FEET):
+    img.alpha_composite(spr, (x, feet - spr.height + 1))
 
-def shadow(img, x, y, w=22):
-    px = img.load()
-    for i in range(x - w // 2, x + w // 2):
-        for j in (y, y + 1):
-            if (i + j) % 2 == 0 and 0 <= i < img.width and 0 <= j < img.height:
-                px[i, j] = C('#8c8880')
+def _frame(layers, tint=None):
+    f = Image.new('RGBA', (480, 270), (0, 0, 0, 255))
+    f.alpha_composite(layers[0])
+    if tint:
+        f = Image.blend(f, Image.new('RGBA', f.size, tint), 0.55)
+    for l, x in layers[1:]:
+        f.alpha_composite(l, (x, 0))
+    return f
 
-def frame_calm(c):
-    img = office()
-    for x, key in ((118, 'kollega_b'), (190, 'sasha_stand'), (330, 'kollega_a')):
-        shadow(img, x + 21, LANE); _put(img, c[key], x, LANE)
-    near(img)
-    return img.crop((0, 0, W, VIEW_H))
-
-def frame_glitch(c):
-    img = tears(warp(office(glitch=True)))
-    door_glitch(img, lift(DOOR[0] + 16))
-    for x, spr in ((120, c['kollega_b_blank']), (170, c['kollega_a_blank']), (250, c['sasha_run'][3])):
-        y = LANE - lift(x + 21)
-        shadow(img, x + 21, y); _put(img, spr, x, y)
-    for x, y, w, h in ((176, 96, 30, 16), (300, 52, 36, 20), (262, 128, 26, 14), (346, 150, 30, 16), (372, 84, 22, 12), (214, 40, 24, 12)):
-        img.alpha_composite(bubble(w, h), (x, y))
-    near(img)
-    return img.crop((0, 0, W, VIEW_H))
-
-def sheet(c):
-    """Лист персонажей: все в одном масштабе, Мистер — мерка."""
-    row = [c['sasha_stand'], c['sasha_pause'], c['sasha_run'][0], c['sasha_run'][3], c['kollega_a'], c['kollega_a_blank'],
-           c['kollega_b'], c['kollega_b_blank']]
-    s = Image.new('RGBA', (len(row) * 50 + 110, 100), C('#dcd6c8'))
-    for y in range(88, 100):
-        for x in range(s.width):
-            s.putpixel((x, y), C('#b8b2a6' if y > 88 else '#6e6a66'))
-    for i, f in enumerate(row):
-        _put(s, f, 6 + i * 50, 88)
-    _put(s, c['boss'], len(row) * 50 + 8, 88)
-    _put(s, cat(), len(row) * 50 + 62, 88)
-    return s
+def previews(made, c):
+    m = made; cell = lambda key, i, w: m[key].crop((i * w, 0, (i + 1) * w, m[key].height))
+    morning = _frame([m['bg_wk_city'], (m['bg_wk_home'], 0), (m['bg_wk_street'], 180)])
+    morning.alpha_composite(cell('wk_mister', 0, 36), (2, 145)); _put(morning, c['sasha_walk'][1], 70)
+    street_f = _frame([m['bg_wk_city'], (m['bg_wk_street'], 0)])
+    _put(street_f, m['wk_curb'], 150); _put(street_f, c['sasha_air'][0], 100, FEET - 20); _put(street_f, m['wk_puddle'], 236, FEET + 4)
+    _put(street_f, m['wk_step'], 262); _put(street_f, m['wk_step_hi'], 297)
+    calm = _frame([m['bg_wk_city'], (m['bg_wk_office'], 0)])
+    for x, spr in ((40, c['sasha_walk'][3]), (150, c['colleague_c'][0]), (216, c['colleague_b'][0])):
+        _put(calm, spr, x)
+    _put(calm, cell('wk_door', 0, 34), 270)
+    glitch = _frame([m['bg_wk_city'], (m['bg_wk_office_glitch'], 0)], tint=(70, 20, 120, 255))
+    _put(glitch, cell('wk_piles', 1, 26), 96); _put(glitch, cell('wk_piles', 5, 26), 150); _put(glitch, m['wk_notif_wall'], 190)
+    _put(glitch, c['sasha_run'][2], 40); _put(glitch, c['colleague_box'][1], 236); _put(glitch, cell('wk_door', 1, 34), 282)
+    phone = lambda f, x=0: up(f.crop((x, 90, x + 320, 270)), 3).convert('RGB')
+    sheet = Image.new('RGBA', (40 * 20, 124), (0x9f, 0xb4, 0xc0, 255))
+    sheet.alpha_composite(strip(c['sasha_idle'][:1] + c['sasha_walk'][:3] + c['sasha_run'] + c['sasha_phone'][:2] + c['sasha_air']
+                                + c['sasha_dash'][:1] + c['sasha_still'][:3]), (0, 0))
+    sheet.alpha_composite(strip(c['sasha_run_heavy'][:2] + c['colleague_a'] + c['colleague_b'] + c['colleague_c']
+                                + c['colleague_box'][:2] + c['boss']), (0, 62))
+    return {'week_morning': phone(morning), 'week_street': phone(street_f), 'week_office_calm': phone(calm),
+            'week_office_glitch': phone(glitch), 'week_cast': up(sheet, 3).convert('RGB')}
 
 def build(out='out'):
-    c = cast()
-    made = {'week_cast': sheet(c), 'week_office_calm': frame_calm(c), 'week_office_glitch': frame_glitch(c),
-            'week_sasha_run': strip(c['sasha_run'])}
-    for k, img in made.items():
-        bg = Image.new('RGBA', img.size, C('#dcd6c8')); bg.alpha_composite(img)
-        up(bg, 3 if k == 'week_sasha_run' else 2).convert('RGB').save(f'{out}/{k}.png')
+    made, c = assets()
+    for k, img in previews(made, c).items():
+        img.save(f'{out}/{k}.png')
     return made
 
 if __name__ == '__main__':
