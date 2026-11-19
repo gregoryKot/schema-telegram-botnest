@@ -13,10 +13,8 @@ export const LINKS: readonly LinkItem[] = [
     placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
   },
   {
-    kind: 'plain', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,
-    note: 'послания дважды в день',
-    // Строка из пула канала (src/bot/healthy-adult.data.ts, «одна строка»).
-    quote: 'Чтобы иметь право на бережность, не нужно быть в форме.',
+    kind: 'note', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,
+    note: 'Та часть внутри, которая заботится о наших потребностях и останавливает Критика. Канал помогает слышать её чаще.',
   },
   { kind: 'plain', title: 'Канал о схема-терапии', places: SCHEMA_CHANNEL_PLACES },
   { kind: 'plain', title: 'Обо мне и как я работаю', main: { id: 'about', href: '/' } },

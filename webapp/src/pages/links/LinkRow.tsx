@@ -10,7 +10,7 @@ import { trackLinksClick } from './trackLinksClick';
 export function LinkRow({ link }: { link: ReadyLink }) {
   const { main } = link;
   if (link.kind === 'feature') return <li className="lk-item"><ProjectCard link={link} /></li>;
-  if (link.quote) return <li className="lk-item"><HealthyAdultNote link={link} /></li>;
+  if (link.kind === 'note') return <li className="lk-item"><HealthyAdultNote link={link} /></li>;
   if (!main) {
     return <li className="lk-row"><div className="lk-row-in"><h2>{link.title}</h2><PlaceIcons link={link} /></div></li>;
   }
