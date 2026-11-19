@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { SignArt } from '../../components/art/SignArt';
 import { SignGroup, SignGroupHead } from '../../components/schemaSheets/SignGroup';
 import type { ReferenceGroup, ReferenceItem, ReferenceLayout } from './guideReferenceModel';
@@ -18,16 +19,13 @@ const rows = (g: Pick<ReferenceGroup, 'look' | 'items'>, onOpen: Open) => g.item
     <span className="ds-chev" aria-hidden="true" />
   </button>
 ));
-/**
- * Список «Справочника» (guide-reference.css). Группа — лист бумаги своего оттенка (SignGroup, как у клиента):
- * знак группы или домена у подписи один раз. Лист с подгруппами (`parts`: три копинга на листе неба) — без
- * общей шапки, у подгруппы своя (SignGroupHead) и свой белый список. `groups` — листы в две колонки,
- * `tiles` — белые карточки по две в ряд, `rows` — поиск, листы в столбик. Тап по строке открывает её лист.
- */
+/** Список «Справочника» (guide-reference.css): лист группы — SignGroup; лист с подгруппами (`parts`, три копинга) — без общей
+ *  шапки, у подгруппы своя. `groups` — листы колонками, `tiles` — белые карточки, `rows` — поиск столбиком. */
 export function GuideReferenceList({ groups, layout, onOpen }: { groups: ReferenceGroup[]; layout: ReferenceLayout; onOpen: Open }) {
+  const short = groups.filter((g) => !g.parts).length; // листы без подгрупп: столько рядов рядом с высоким листом
   return (
     <div className="gr-wrap">{/* контейнер для @container: колонки зависят от ширины списка, а не окна */}
-      <div className={`gr-list gr-list--${layout}`}>
+      <div className={`gr-list gr-list--${layout}${short < groups.length ? ' has-tall' : ''}`} style={{ '--gr-rows': Math.max(1, short) } as CSSProperties}>
         {groups.map((g) => g.parts ? (
           <SignGroup key={g.key} look={g.look} rowsClassName="gr-parts">
             {g.parts.map((p) => (

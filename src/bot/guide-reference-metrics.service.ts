@@ -16,6 +16,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['schemas30', 'cabinet_guide_schema_open'],
   ['techniques30', 'cabinet_guide_technique_open'],
   ['notes30', 'cabinet_guide_note_open'],
+  ['needs30', 'cabinet_guide_need_open'],
   ['tables30', 'cabinet_guide_table_open'],
 ];
 
@@ -24,7 +25,6 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
 export class GuideReferenceMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
     const block = formatGuideReferenceMetrics(await this.getMetrics());
     return withGuideAnswerLines(this.prisma, block);

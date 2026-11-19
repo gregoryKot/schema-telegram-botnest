@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // «Справочник» терапевта (#995, шаг 4): пока чанк текстов грузится — силуэт
-// списка; потом режимы по группам, схемы по доменам, техники и «Для
+// списка; потом режимы по группам, схемы по доменам, потребности, техники и «Для
 // терапевта». Тап открывает тот же лист, что в схеме случая клиента, но без
 // клиента: без «Дать заданием», отметок «Делали сегодня» и истории. События —
 // cabinet_guide_*, а не concept_guide_* схемы случая. Разделы — фикстура, не
@@ -62,7 +62,7 @@ describe('TherapistGuideSection', () => {
     // оговорка об источниках и адрес для ошибок — сразу под шапкой (на сайте — Telegram автора)
     expect(screen.getByText(/могут содержать ошибки/).textContent).toMatch(/обязательно напиши: @kotlarewski$/);
     expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Техники', 'Для терапевта']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Для терапевта']);
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT]);
   });
 
@@ -117,6 +117,24 @@ describe('TherapistGuideSection', () => {
     expect(within(sheet).getByText('Найти сцену')).toBeTruthy();
     expectNoClientControls();
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.technique);
+  });
+
+  it('«Потребности»: строка с подписью, тап — лист с доменом и схемами; схема открывается поверх, «Закрыть» возвращает к потребности', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('tab', { name: 'Потребности' }));
+    const rows = screen.getAllByRole('button', { name: /Привязанность/ });
+    expect(rows).toHaveLength(1); // потребности без домена со схемами в справочнике в списке нет
+    expect(within(rows[0]).getByText('Безопасность и связь')).toBeTruthy();
+    fireEvent.click(rows[0]);
+    const sheet = screen.getByRole('dialog', { name: 'Привязанность' });
+    expect(within(sheet).getByText('Нарушение связи и отвержение')).toBeTruthy();
+    expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.need);
+    fireEvent.click(within(sheet).getByRole('button', { name: new RegExp(SCHEMA_NAME.replace('/', '\\/')) }));
+    const schema = screen.getByRole('dialog', { name: SCHEMA_NAME });
+    expect(sheet.compareDocumentPosition(schema) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy(); // позже в DOM — выше
+    expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.schema);
+    fireEvent.click(within(schema).getByRole('button', { name: 'Закрыть' }));
+    expect(screen.getByRole('dialog', { name: 'Привязанность' })).toBeTruthy();
   });
 
   it('«Для терапевта»: раздел с сутью, тап — лист с пунктами и источниками; «Закрыть» — обратно', async () => {
