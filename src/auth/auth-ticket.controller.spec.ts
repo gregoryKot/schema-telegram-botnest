@@ -230,6 +230,20 @@ describe('POST ticket/poll', () => {
     ).toEqual({ status: 'denied' });
   });
 
+  it('у аккаунта 2FA — контейнеру уходит вызов второго фактора, без токена и куки', async () => {
+    const { ctl, tickets } = makeCtl();
+    (tickets.poll as jest.Mock).mockResolvedValue({
+      status: 'totp_required',
+      challengeToken: 'ch',
+    });
+    const res = makeRes();
+
+    expect(
+      await ctl.poll({ deviceCode: 'd'.repeat(64) }, makeReq(), res),
+    ).toEqual({ status: 'totp_required', challengeToken: 'ch' });
+    expect(res.cookie).not.toHaveBeenCalled();
+  });
+
   it('подтверждён — refresh-кука ставится ЭТОМУ контейнеру, вместе с access', async () => {
     const { ctl, tickets } = makeCtl();
     (tickets.poll as jest.Mock).mockResolvedValue({
