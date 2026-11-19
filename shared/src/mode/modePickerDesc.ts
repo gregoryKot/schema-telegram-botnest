@@ -13,7 +13,7 @@ export const POPULAR_MODE_IDS = [
 export const MODE_DESC: Record<string, string> = {
   vulnerable_child: 'Беспомощность, грусть, страх — нуждается в защите',
   lonely_child: 'Одиночество и непонятость даже среди людей',
-  abandoned_child: 'Страх, что бросят, тревога при угрозе отношениям',
+  abandoned_child: 'Страх, что бросят, и боль от того, что обижали',
   humiliated_child: 'Стыд и ощущение дефективности, страх осуждения',
   dependent_child: 'Нужна постоянная поддержка, боится самостоятельных решений',
   angry_child: 'Злость из-за неудовлетворённых потребностей',
