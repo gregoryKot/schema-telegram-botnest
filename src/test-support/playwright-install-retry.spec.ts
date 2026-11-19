@@ -1,7 +1,14 @@
 // scripts/playwright-install-retry.sh исполняется с подставным npx: зависшая или упавшая
 // установка браузеров повторяется один раз и не съедает таймаут джобы.
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -23,11 +30,18 @@ function run(behaviours: string[]): { status: number | null; calls: string[] } {
     chmodSync(join(dir, 'npx'), 0o755);
     chmodSync(join(dir, 'sudo'), 0o755);
     const res = spawnSync('bash', [SCRIPT, 'chromium', 'webkit'], {
-      env: { ...process.env, PATH: `${dir}:${process.env.PATH ?? ''}`, PLAYWRIGHT_INSTALL_ATTEMPT_SECONDS: '1' },
+      env: {
+        ...process.env,
+        PATH: `${dir}:${process.env.PATH ?? ''}`,
+        PLAYWRIGHT_INSTALL_ATTEMPT_SECONDS: '1',
+      },
       encoding: 'utf8',
       timeout: 20_000,
     });
-    return { status: res.status, calls: readFileSync(log, 'utf8').trim().split('\n') };
+    return {
+      status: res.status,
+      calls: readFileSync(log, 'utf8').trim().split('\n'),
+    };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -59,7 +73,9 @@ describe('playwright-install-retry.sh', () => {
   });
 
   it('workflow ставят браузеры только через скрипт, шаг — со своим timeout-minutes', () => {
-    for (const file of readdirSync(WORKFLOWS).filter((f) => f.endsWith('.yml'))) {
+    for (const file of readdirSync(WORKFLOWS).filter((f) =>
+      f.endsWith('.yml'),
+    )) {
       const lines = readFileSync(join(WORKFLOWS, file), 'utf8').split('\n');
       lines.forEach((line, i) => {
         if (/^\s*#/.test(line)) return;
