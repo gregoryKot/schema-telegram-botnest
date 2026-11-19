@@ -1,4 +1,4 @@
-// Страница ссылок kotlarewski.gr/links: откуда пришли (meta.from события
+// Страница ссылок kotlarewski.gr/privet: откуда пришли (meta.from события
 // links_page_click); цели клика — linksPageTargets.ts. Серверная копия —
 // src/analytics/links-page.constants.ts, сверка — links-page.sync.spec.ts.
 // Файл без импортов: спек бэкенда исполняет его как есть.

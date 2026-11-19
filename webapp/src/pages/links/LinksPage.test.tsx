@@ -83,7 +83,7 @@ describe('LinksPage', () => {
   });
 
   it('клик шлёт событие с кнопкой и источником из utm_source', () => {
-    window.history.replaceState({}, '', '/links?utm_source=instagram');
+    window.history.replaceState({}, '', '/privet?utm_source=instagram');
     render(<LinksPage />);
     fireEvent.click(screen.getByText('Статьи'));
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'articles', from: 'instagram' }, { keepalive: true });
