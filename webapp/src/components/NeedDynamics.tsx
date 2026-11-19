@@ -5,6 +5,14 @@ import { needTrend } from '../../../shared/src/history/needTrend';
 import { SPARK_H, SPARK_W, WEEK_DAYS, sparkY, sparklineGeometry, weekWindow } from '../../../shared/src/history/sparkline';
 import { fmtIndex } from '../../../shared/src/needs/dayIndex';
 import { glue } from '../../../shared/src/utils/typo';
+import { childhoodLevel, type ChildhoodLevel } from '../../../shared/src/childhoodWheel/childhoodWheel';
+
+/** Подпись к оценке из «Колеса детства»: зоны — общий порог `childhoodLevel`. */
+const CHILDHOOD_NOTE: Record<ChildhoodLevel, string> = {
+  low: 'Давняя чувствительная зона – вероятно паттерн, а не ситуация',
+  mid: 'В детстве её хватало не всегда: низкая оценка сейчас может быть и паттерном, и ситуацией',
+  high: 'В детстве удовлетворялась. Если сейчас низко – скорее истощение',
+};
 
 /**
  * Главное содержание листа «Динамика потребности»: направление за неделю Literata 40, спарклайн
@@ -60,9 +68,7 @@ export function NeedDynamics({ needId, history, selectedIdx = 0, childhoodValue 
               )}
             </div>
             <p className="tk2-child-note">
-              {glue(childhoodValue <= 4
-                ? 'Давняя чувствительная зона – вероятно паттерн, а не ситуация'
-                : 'В детстве удовлетворялась. Если сейчас низко – скорее истощение')}
+              {glue(CHILDHOOD_NOTE[childhoodLevel(childhoodValue)])}
             </p>
           </div>
         </div>
