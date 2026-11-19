@@ -5,7 +5,7 @@ import type { Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoa
 import { buildNeedData, NEED_ORDER, type NeedId, type Tr } from '../../../../shared/src/needs/needData';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
 import { needLook } from '../../../../shared/src/theme/entityLook';
-import { domainNeedId } from '../../components/therapist/ysqRows';
+import { domainNeedId } from '../../../../shared/src/schemaTherapy/schemaNeed';
 import { TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
 import type { ReferenceGroup } from './guideReferenceModel';
 
