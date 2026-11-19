@@ -344,9 +344,13 @@ const weekState = (page: Page) =>
       revealed: [...sc.revealed],
       gates: sc.world.gates.map((g) => ({ x: g.x, open: g.open })),
       gateCount: sc.world.gates.length,
-      art: ['bg_wk_home', 'bg_wk_street', 'bg_wk_office', 'bg_wk_office_glitch', 'wk_piles'].every((k) =>
-        sc.textures.exists(k),
-      ),
+      art: [
+        'bg_wk_home',
+        'bg_wk_street',
+        'bg_wk_office',
+        'bg_wk_office_glitch',
+        'wk_piles',
+      ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,
       texts: sc.children.list
         .filter((o) => o.type === 'Text')
@@ -406,7 +410,9 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     expect(s.x).toBeLessThan(4700);
     const gatesBefore = s.gateCount;
     await tapKey(page, 'KeyZ');
-    await expect.poll(() => gateOpen(page, 4700), { timeout: 15_000 }).toBe(true);
+    await expect
+      .poll(() => gateOpen(page, 4700), { timeout: 15_000 })
+      .toBe(true);
     s = await weekState(page);
     expect(s.energy).toBeLessThan(100);
     expect(s.piles).toBeGreaterThan(0);
@@ -416,7 +422,9 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     await weekGoTo(page, 9380, 'scroll');
     const before = (await weekState(page)).clockMin;
     await tapKey(page, 'KeyX');
-    await expect.poll(() => gateOpen(page, 9500), { timeout: 15_000 }).toBe(true);
+    await expect
+      .poll(() => gateOpen(page, 9500), { timeout: 15_000 })
+      .toBe(true);
     s = await weekState(page);
     expect(s.clockMin).toBeGreaterThan(before + 60);
     expect(s.color).toBeLessThan(1);

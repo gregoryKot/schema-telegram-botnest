@@ -19,7 +19,7 @@ import colB from '../assets/wk_colleague_b.png';
 import colC from '../assets/wk_colleague_c.png';
 import colBox from '../assets/wk_colleague_box.png';
 
-const sasha = import.meta.glob('../assets/wk_sasha_*.png', { eager: true, import: 'default' }) as Record<string, string>;
+const sasha = import.meta.glob<string>('../assets/wk_sasha_*.png', { eager: true, import: 'default' });
 const IMAGES = { bg_wk_city: city, bg_wk_home: home, bg_wk_street: street, bg_wk_office: office, bg_wk_office_glitch: officeGlitch,
   wk_notif_wall: notifWall, wk_curb: curb, wk_step: step, wk_step_hi: stepHi, wk_puddle: puddle };
 const SHEETS: Record<string, [url: string, fw: number, fh: number]> = {
