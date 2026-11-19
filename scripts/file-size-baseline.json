@@ -278,7 +278,7 @@
   "shared/src/diary/useGratitudeItems.ts": 84,
   "shared/src/exercises/exerciseCatalog.ts": 48,
   "shared/src/flashcard/flashcardNames.ts": 27,
-  "shared/src/flashcard/modes.ts": 82,
+  "shared/src/flashcard/modes.ts": 85,
   "shared/src/flashcard/modeView.ts": 45,
   "shared/src/flashcard/types.ts": 26,
   "shared/src/history/needTrend.ts": 62,
