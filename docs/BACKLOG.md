@@ -67,6 +67,8 @@
 
 - ⬜ **Флак e2e: «два одновременных запроса теста — одно задание, оба ответа 2xx»** — находка CI PR #1460 (джоба `migrations`, прогон 44548291144): `test/notify-from-other.e2e-spec.ts:118` упал — один из двух параллельных `POST /api/therapy/request-ysq/:id` вернул не 2xx; в логе Postgres три подряд `could not serialize access`, то есть все `SERIALIZATION_RETRIES = 3` (`src/prisma/serializable-retry.ts`) исчерпаны без паузы между попытками. На `main` тот же тест прошёл.
 
+- ⬜ **Флак vitest: «запрошенный раздел прокручивается в видимую область… один раз»** — находка CI PR #1460 (джоба `webapp`, прогон 44549236988): `webapp/src/components/SettingsSheet.test.tsx:156` — `expected [] to deeply equal ['s-data']`; проверка стоит сразу после `await renderSheet()`, а прокрутку запускает эффект `useSettingsScroll(ready)` (`webapp/src/components/settingsSheet/settingsLaunch.ts`). Локально 3 прогона из 3 зелёные, на `main` тест прошёл.
+
 - ⬜ **CI: шаг `npx playwright install --with-deps` в `browser-smoke` зависает до таймаута джобы** — `.github/workflows/ci.yml:1054`, джоба `timeout-minutes: 15`. 2026-11-18 трижды: main (run 44274142183), PR #1373 (run 44281424615), PR #1388 (run 44286891733); перезапуск проходит. Нужен свой `timeout-minutes` у шага и одна автоповторная попытка.
 - ⬜ **Свои знаки у новых техник** — техники, добавленные в #1366, берут знак родственной (`webapp/src/components/art/techniqueSigns.ts`); свой рисунок каждой — дизайн-задача по `docs/design/PAPER_2026-11.md`.
 - ⬜ **ДПДГ (EMDR) в справочник не добавлена осознанно** — #1366: техника требует отдельного обучения; решит владелец, нужна ли справочная запись без шагов.
