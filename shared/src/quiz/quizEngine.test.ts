@@ -2,6 +2,7 @@
 // видит чужой результат про себя, поэтому подсчёт закреплён кейсами.
 import { describe, expect, it } from 'vitest';
 import { computeQuizResultId, type QuizDto } from './quizEngine';
+import { getQuiz } from '../../../src/quiz/quiz-registry';
 
 // Маленький синтетический тест: 3 вопроса, голоса прозрачны.
 const TINY: QuizDto = {
@@ -82,5 +83,25 @@ describe('computeQuizResultId: подсчёт большинства голос�
   it('quiz без results (некорректные данные) — null для любых пиков', () => {
     const noResults: QuizDto = { ...TINY, results: [] };
     expect(computeQuizResultId(noResults, [0, 0, 0])).toBeNull();
+  });
+
+  it('«Критик или Здоровый Взрослый»: ничья с маскировкой критика достаётся маскировке, а не голосу Здорового Взрослого', () => {
+    const voice = getQuiz('ty', 'voice')!;
+    const pick = (ids: string[]) =>
+      voice.questions.map((q, i) =>
+        q.options.findIndex((o) => o.resultId === ids[i]),
+      );
+    expect(
+      computeQuizResultId(
+        voice,
+        pick(['adult', 'adult', 'label', 'label', 'duty', 'absolute']),
+      ),
+    ).toBe('label');
+    expect(
+      computeQuizResultId(
+        voice,
+        pick(['adult', 'adult', 'adult', 'label', 'duty', 'absolute']),
+      ),
+    ).toBe('adult');
   });
 });

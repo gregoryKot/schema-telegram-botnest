@@ -53,22 +53,21 @@ async function diary(prisma: PrismaService, days: ReportDays): Promise<string> {
     prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT COUNT(DISTINCT "userId")::bigint AS c FROM "Rating" WHERE date = ${today}
       `,
-    // Заходившие за месяц/неделю, «могут уйти» и «ядро» (≥3 разных дня за
-    // неделю, docs/LAUNCH_STRATEGY.md §5) — одним проходом в SQL. Раньше —
-    // findMany с distinct и take: 5000: Prisma дедуплицирует в памяти поверх
-    // ORDER BY id, и выше ~170 человек в день свежие дни выпадали — «ядро»
-    // показывало 0 из 500 (аудит 2026-10). «Могут уйти» = последний день
-    // в окне месяца раньше недели.
+    // Заходившие за месяц/неделю, «могут уйти» (последний день в окне месяца
+    // раньше недели) и «ядро» (≥3 разных дня за неделю, docs/LAUNCH_STRATEGY.md
+    // §5) — одним проходом в SQL: findMany с distinct и take терял свежие дни.
+    // «+ 0» прячет порядок индекса (userId, date): иначе планировщик через раз
+    // читает его целиком вместо окна месяца по (date, userId) — docs/PERF_PLANS.md, P7.
     prisma.$queryRaw<Array<Record<ActivityKey, bigint>>>`
         SELECT count(*)::bigint AS month30,
                count(*) FILTER (WHERE t.last_day >= ${d7})::bigint AS week7,
                count(*) FILTER (WHERE t.last_day < ${d7})::bigint AS churn,
                count(*) FILTER (WHERE t.days7 >= 3)::bigint AS core
         FROM (
-          SELECT p."userId", max(p.date) AS last_day,
+          SELECT p.uid, max(p.date) AS last_day,
                  count(*) FILTER (WHERE p.date >= ${d7}) AS days7
-          FROM (SELECT DISTINCT "userId", date FROM "Rating" WHERE date >= ${d30}) p
-          GROUP BY p."userId"
+          FROM (SELECT DISTINCT "userId" + 0 AS uid, date FROM "Rating" WHERE date >= ${d30}) p
+          GROUP BY p.uid
         ) t
       `,
   ]);

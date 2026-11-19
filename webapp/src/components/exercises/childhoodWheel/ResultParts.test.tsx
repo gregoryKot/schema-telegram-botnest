@@ -16,7 +16,7 @@ const attachment = NEEDS[0];
 describe('NeedRateRow', () => {
   const ends = (container: HTMLElement) => [...container.querySelectorAll('.ex2-cw-end')].map((e) => e.classList.contains('is-on'));
 
-  it('полюс ближе к оценке выделен: ≤4 — «дефицит», ≥8 — «насыщение», середина и «не оценено» — ни один', () => {
+  it('полюс ближе к оценке выделен: ≤4 — «дефицит», ≥7 — «насыщение», середина и «не оценено» — ни один', () => {
     const look = (value: number | undefined) => {
       const { container, unmount } = render(<NeedRateRow need={attachment} value={value} onChange={vi.fn()} />);
       const on = ends(container);
@@ -26,7 +26,8 @@ describe('NeedRateRow', () => {
     expect(look(2)).toEqual([true, false]);
     expect(look(4)).toEqual([true, false]);
     expect(look(5)).toEqual([false, false]);
-    expect(look(8)).toEqual([false, true]);
+    expect(look(6)).toEqual([false, false]);
+    expect(look(7)).toEqual([false, true]);
     expect(look(undefined)).toEqual([false, false]);
   });
 
@@ -44,11 +45,12 @@ describe('NeedRateRow', () => {
 });
 
 describe('ResultRows', () => {
-  it('текст полюса по оценке: ≤4 — низкий, ≥8 — высокий, между — «Где-то между»', () => {
+  it('текст полюса по оценке: ≤4 — низкий, ≥7 — высокий, между — «Где-то между»', () => {
     render(<ResultRows ratings={{ attachment: 4, autonomy: 8, expression: 5, play: 6, limits: 7 }} />);
     expect(screen.getByText(NEEDS[0].low)).toBeTruthy();
     expect(screen.getByText(NEEDS[1].high)).toBeTruthy();
-    expect(screen.getAllByText('Где-то между. Бывало по-разному.')).toHaveLength(3);
+    expect(screen.getByText(NEEDS[4].high)).toBeTruthy();
+    expect(screen.getAllByText('Где-то между. Бывало по-разному.')).toHaveLength(2);
   });
 });
 

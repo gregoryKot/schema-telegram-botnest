@@ -27,9 +27,9 @@ export const CASE_IMPULSES: CaseChip[] = [
 ];
 
 /**
- * Порыв → modeId вероятной второй двери. Ключ есть не для каждого чипа:
- * «Согласиться…» и «Своё…» не указывают на конкретный режим достаточно
- * уверенно, чтобы предполагать за человека, поэтому в реестре их нет.
+ * Порыв → modeId вероятной второй двери. Ключа нет у «Своё…» и у «Отложить…»:
+ * откладывание бывает и Недисциплинированным Ребёнком, и Избегающим Защитником
+ * («тяжесть, всё откладываю» в modeBodyCues.ts) — за человека не угадываем.
  */
 export const IMPULSE_SECOND_DOOR: Record<string, string> = {
   impulse_close: 'avoidant_protector',
@@ -37,7 +37,7 @@ export const IMPULSE_SECOND_DOOR: Record<string, string> = {
   impulse_silence: 'compliant_surrenderer',
   impulse_perfect: 'perfectionistic_oc',
   impulse_sharp: 'angry_child',
-  impulse_postpone: 'undisciplined_child',
+  impulse_agree: 'compliant_surrenderer',
 };
 
 /**
