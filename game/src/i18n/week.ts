@@ -83,7 +83,7 @@ export const WEEK = {
   m_wk_wed_hint_agree: wk("Проще сказать «да»"),
   m_wk_wed_cost_agree: wk("+обещание · прыжок ниже"),
   m_wk_wed_p1_unloved: wk("Мама меня не любит"),
-  m_wk_wed_p1_voice: wk("Это мой строгий голос, а не мама"),
+  m_wk_wed_p1_voice: wk("Это Требовательный Критик — мамиными словами"),
   m_wk_wed_p1_lazy: wk("Я правда мало стараюсь"),
   m_wk_wed_between: wk("Названо. А стены стоят — что мне нужно?"),
   m_wk_wed_p2_question: wk("Что мне сейчас нужно?"),
