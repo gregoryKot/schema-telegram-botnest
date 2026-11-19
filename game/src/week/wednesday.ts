@@ -19,11 +19,11 @@ export const WEDNESDAY: Chapter = {
   cat: { x: 300, lift: 0 },
   beats: [
     // спокойно: звонок и первые обычные вопросы звучат от телефона впереди
-    { x: 360, clock: hm(19, 45), say: 'm_wk_wed_call', atDoor: true, msg: true, goal: 'm_wk_goal_mom' },
-    { x: 760, say: 'm_wk_wed_mom_hi', atDoor: true },
-    { x: 1160, say: 'm_wk_wed_mom_work', atDoor: true },
+    { x: 300, clock: hm(19, 45), say: 'm_wk_wed_call', atDoor: true, msg: true, goal: 'm_wk_goal_mom' },
+    { x: 600, say: 'm_wk_wed_mom_hi', atDoor: true },
+    { x: 880, say: 'm_wk_wed_mom_work', atDoor: true },
     // вопрос задел: телефон уезжает вперёд, мамины слова сыплются сверху
-    { x: 1450, pace: 'run', clock: hm(19, 50), glitch: 0.5, notifs: ['m_wk_wed_n_others', 'm_wk_wed_n_tired'] },
+    { x: 1100, pace: 'run', clock: hm(19, 50), glitch: 0.5, notifs: ['m_wk_wed_n_others', 'm_wk_wed_n_tired'] },
     { x: 3400, reveal: 'overwork' },
     { x: 6500, clock: hm(20, 30), glitch: 0.7, reveal: 'scroll' },
     { x: 10700, clock: hm(21, 10), reveal: 'agree', say: 'm_wk_wed_mom_ask', sayAt: 11350 },
@@ -39,7 +39,7 @@ export const WEDNESDAY: Chapter = {
   ],
   people: [],
   art: { pile: 'wk_piles', noise: 'wk_call_wall', person: 'wk_mom_screen', door: 'wk_mom_call', walkers: [] },
-  door: { x: 1700, keepAway: 380, nearSteps: 300, pauseAfterMs: 8000, peakPileEvery: 900 },
+  door: { x: 1250, keepAway: 380, nearSteps: 300, pauseAfterMs: 8000, peakPileEvery: 900 },
   agreeThanks: 'm_wk_wed_mom_thanks',
   hints: { overwork: 'm_wk_wed_hint_overwork', scroll: 'm_wk_wed_hint_scroll', agree: 'm_wk_wed_hint_agree' },
   costs: { agree: 'm_wk_wed_cost_agree' },

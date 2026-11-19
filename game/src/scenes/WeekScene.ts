@@ -168,7 +168,7 @@ export class WeekScene extends Phaser.Scene {
     if (b.goal) { this.coach.goal(b.goal); this.coach.tagDoor(); }
     if (b.say) {
       const at = b.atDoor ? this.world.door.x : b.sayAt; // реплика от цели звучит, пока Саша к ней идёт
-      if (at !== undefined) this.hud.say(t(b.say), at, GROUND_Y - ui(b.atDoor ? 112 : 96), b.atDoor ? 4600 : 6000, b.msg ? 'msg' : 'say');
+      if (at !== undefined) this.hud.say(t(b.say), at, GROUND_Y - ui(b.atDoor ? 112 : 96), b.atDoor ? 3400 : 6000, b.msg ? 'msg' : 'say');
       else this.hud.think(t(b.say));
     }
   }
