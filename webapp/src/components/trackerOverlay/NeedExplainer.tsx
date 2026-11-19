@@ -7,10 +7,9 @@ import { useLowPhone } from '../useLowPhone';
 const EXAMPLES_SHOWN = 2;
 export function NeedExplainer({ data }: { data: NeedExtra | undefined }) {
   const examples = useExampleWindow(data?.name ?? '', data?.examples, EXAMPLES_SHOWN);
-  const low = useLowPhone();
+  const folded = useLowPhone() && examples.length > 0;
   if (!data) return null;
   const desc = <p className="tq-desc">{glue(data.desc)}</p>;
-  const folded = low && examples.length > 0;
   return (
     <>
       {!folded && desc}
