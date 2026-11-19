@@ -24,6 +24,10 @@ import { enterWeekTouch, leaveWeekTouch, revealWeekAct } from '../week/touch';
 import { makeWeekAnims, preloadWeekArt } from '../week/art';
 import { WeekBackdrop } from '../week/backdrop';
 import { sashaLook } from '../week/look';
+import { showWeekIntro } from '../week/intro';
+import { WeekCoach } from '../week/coach';
+import { peakDue } from '../week/guide';
+import { isWeekDone, markWeekDone } from '../week/progress';
 
 const DASH_SPEED = 520, DASH_MS = 260, PHONE_MS = 1200, LOW_PILE = 45, TALL_PILE = 170;
 const LABEL: Record<Act, MsgKey> = {
@@ -45,6 +49,8 @@ export class WeekScene extends Phaser.Scene {
   private ctl!: WeekInput;
   private hud!: WeekHud;
   private panel!: PausePanel;
+  private coach!: WeekCoach;
+  private started = false; private runMs = 0; // бег идёт после заставки; runMs — для срока пика
   private notifs: Phaser.GameObjects.Container[] = [];
   private notifKeys: MsgKey[] = [];
   private beat = 0; private dashT = 0; private phoneT = 0; private faceT = 0;
@@ -57,7 +63,7 @@ export class WeekScene extends Phaser.Scene {
   create() {
     const ch = this.ch;
     Object.assign(this, { done: false, baseGlitch: 0, pace: ch.startPace, beat: 0, nextPeakPile: 0, dashT: 0, phoneT: 0, faceT: 0,
-      peakMs: 0, peakHabit: false, notifAcc: 0, notifN: 0, notifs: [], notifKeys: [] });
+      peakMs: 0, peakHabit: false, notifAcc: 0, notifN: 0, notifs: [], notifKeys: [], started: false, runMs: 0 });
     this.revealed = new Set();
     this.st = newWeekState(ch.startClock);
     this.ps = newPause();
@@ -76,9 +82,15 @@ export class WeekScene extends Phaser.Scene {
     this.ctl = new WeekInput(this);
     this.hud = new WeekHud(this);
     this.panel = new PausePanel(this, t(LABEL.pause), t(ch.pause.question), ch.pause.options.map(k => t(k)), i => this.pick(i));
-    enterWeekTouch({ overwork: t(LABEL.overwork), scroll: t(LABEL.scroll), agree: t(LABEL.agree), pause: t(LABEL.pause) });
+    this.coach = new WeekCoach(this, this.hud);
+    enterWeekTouch({ overwork: t(LABEL.overwork), scroll: t(LABEL.scroll), agree: t(LABEL.agree), pause: t(LABEL.pause) }, t('m_wk_act_pause_hold'));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, leaveWeekTouch);
-    this.hud.title(t(ch.title));
+    showWeekIntro(this, { day: ch.title, again: isWeekDone(ch.id), sasha: this.sasha }, () => {
+      this.started = true;
+      this.ctl.drain(); // касание «старт» — не прыжок
+      setTouchControls(true);
+      this.coach.goal(ch.goal);
+    });
 
     audio.setMode('day');
     const begin = () => { audio.ensure(); audio.startMusic(); trackEvent('game_chapter_start', { chapter: ch.id }); };
@@ -93,11 +105,13 @@ export class WeekScene extends Phaser.Scene {
   private get body() { return this.player.body as Phaser.Physics.Arcade.Body; }
 
   update(_time: number, dtRaw: number) {
-    if (this.done) { this.hud.update(this.st, 0, this.player.x, this.player.y - 62); this.draw(0); return; }
+    if (this.done || !this.started) { this.body.setVelocityX(0); this.hud.update(this.st, 0, this.player.x, this.player.y - 62); this.draw(0); return; }
     const dt = Math.min(dtRaw, 50);
     this.stepPause(dt);
     if (this.ps.open) { this.draw(1); return; } // мир замер
     this.st = tick(this.st, dt);
+    this.runMs += dt;
+    if (this.baseGlitch < 1 && peakDue(this.runMs, this.st.clockMin, RULES.clockCap)) this.forcePeak();
     this.stepBeats();
     if (this.peak) {
       this.peakMs += dt;
@@ -116,6 +130,9 @@ export class WeekScene extends Phaser.Scene {
     for (const p of people) p.setFrame(glitch < 0.05 || this.faceT > 0 ? 0 : 1);
     this.draw(glitch);
     this.hud.update(this.st, holdProgress(this.ps), px, py - 62); // над головой спрайта
+    const b = this.body;
+    this.coach.step(dt, { x: px, blocked: b.blocked.right && !this.busy && !this.ps.open, jumpFactor: jumpFactor(this.st), peak: this.peak,
+      revealed: [...this.revealed], world: this.world, blocks: this.ch.blocks });
     if (this.st.named && Math.abs(px - door.x) < 34) this.finish();
   }
 
@@ -128,15 +145,22 @@ export class WeekScene extends Phaser.Scene {
     this.sasha.setPosition(this.player.x, b.bottom + GRID);
     this.back.update(this.cameras.main.scrollX, this.st.named ? 0 : glitch);
   }
-  private stepBeats() {
+  /** Время вышло или телефон унёс часы к встрече — пик наступает здесь: темп мест по пути, остальное — пика. */
+  private forcePeak() {
+    const peakAt = this.ch.beats.findIndex(b => b.glitch === 1);
+    for (; this.beat < peakAt; this.beat++) { const p = this.ch.beats[this.beat].pace; if (p) this.pace = p; }
+    this.stepBeats(true);
+  }
+  private stepBeats(force = false) {
     const b = this.ch.beats[this.beat];
-    if (!b || this.player.x < b.x) return;
+    if (!b || (!force && this.player.x < b.x)) return;
     this.beat++;
     if (b.pace) this.pace = b.pace;
     if (b.clock) this.st = reachClock(this.st, b.clock);
     if (b.glitch !== undefined) this.baseGlitch = b.glitch;
     if (b.reveal) this.reveal(b.reveal);
     if (b.notifs) this.notifKeys = b.notifs;
+    if (b.goal) { this.coach.goal(b.goal); this.coach.tagDoor(); }
     if (b.say) {
       if (b.sayAt !== undefined) this.hud.say(t(b.say), b.sayAt, GROUND_Y - ui(96), 6000, b.msg ? 'msg' : 'say');
       else this.hud.think(t(b.say));
@@ -148,22 +172,24 @@ export class WeekScene extends Phaser.Scene {
     this.revealed.add(act);
     revealWeekAct(act);
     this.hud.keysHint([...this.revealed].map(a => `${ACT_KEYS[a]} ${t(LABEL[a])}`).join('  '));
-    if (act === 'pause') this.hud.think(`${t(LABEL.pause)}: ${t('m_wk_act_pause_hold')}`, 5000);
+    this.coach.reveal(act);
   }
 
   private stepActs() {
     const act = this.ctl.act();
     if (!act || !this.revealed.has(act) || this.busy) return;
     this.doAct(act);
+    this.coach.used(act);
   }
 
   /** Привычка срабатывает всегда; что она убрала и чего стоила — видно в мире. */
   doAct(act: Act) {
     const peak = this.peak, px = this.player.x, w = this.world;
+    const cost = (key: MsgKey) => this.coach.cost(peak ? 'm_wk_cost_peak' : key, px, this.player.y - 70);
     if (peak) this.peakHabit = true;
     if (act === 'overwork') {
       this.st = overwork(this.st, peak);
-      this.dashT = DASH_MS; audio.dash();
+      this.dashT = DASH_MS; audio.dash(); cost('m_wk_cost_overwork');
       const g = gateInReach(w.gates, act, px + 110, 130);
       if (g) openGate(this, w, g);
       // цена: дел больше — новые стопки встают на пути; на пике рывок упирается в высокую
@@ -173,6 +199,7 @@ export class WeekScene extends Phaser.Scene {
       const before = this.st;
       this.st = scroll(this.st, peak);
       this.phoneT = peak ? 400 : PHONE_MS; // на пике телефон гаснет сам
+      cost('m_wk_cost_scroll');
       if (this.st === before) return;
       audio.freeze(); this.clearNotifs();
       const g = gateInReach(w.gates, act, px + 150, 300);
@@ -181,7 +208,7 @@ export class WeekScene extends Phaser.Scene {
       const g = gateInReach(w.gates, act, px, 170);
       this.st = agree(this.st, !!g);
       if (!g) return;
-      openGate(this, w, g); audio.pickup();
+      openGate(this, w, g); audio.pickup(); this.coach.cost('m_wk_cost_agree', px, this.player.y - 70);
       this.faceT = 1300;
       this.hud.say(t(this.ch.agreeThanks), g.x + 30, GROUND_Y - ui(96), 2400);
     }
@@ -193,7 +220,7 @@ export class WeekScene extends Phaser.Scene {
     this.phoneT = Math.max(0, this.phoneT - dt);
     if (this.dashT > 0) { this.dashT -= dt; b.setVelocityX(DASH_SPEED); return; }
     b.setVelocityX(runSpeed({ pace: this.pace, resting, named: this.st.named, hold: holdProgress(this.ps), sitting: isSitting(this.st) }));
-    if (jump && b.blocked.down && !resting) { b.setVelocityY(PHYS.jumpVel * jumpFactor(this.st)); audio.jump(); }
+    if (jump && b.blocked.down && !resting) { b.setVelocityY(PHYS.jumpVel * jumpFactor(this.st)); audio.jump(); this.coach.used('jump'); }
   }
 
   /** На пике коридор не кончается: стопки встают впереди, пока сбой не назван. */
@@ -221,6 +248,7 @@ export class WeekScene extends Phaser.Scene {
   private stepPause(dt: number) {
     if (!this.revealed.has('pause') || this.st.named) return;
     if (this.ps.open) { const i = this.ctl.choice(); if (i !== null) this.pick(i); return; }
+    if (this.ctl.pauseHeld) this.coach.used('pause');
     this.ps = holdPause(this.ps, dt, this.ctl.pauseHeld && !isResting(this.st));
     if (this.ps.open) this.freeze(true);
   }
@@ -250,8 +278,9 @@ export class WeekScene extends Phaser.Scene {
   private finish() {
     this.done = true;
     this.body.setVelocity(0, 0);
-    setTouchControls(false);
+    setTouchControls(false); this.coach.done();
     trackEvent('game_chapter_done', { chapter: this.ch.id });
+    markWeekDone(this.ch.id);
     this.hud.say(t(this.ch.end.bossLine), this.bossX, GROUND_Y - 132, 3000);
     this.time.delayedCall(1800, () => this.hud.think(t(this.ch.end.afterThought), 2400));
     this.time.delayedCall(4400, () => this.hud.end(() => showWeekCard(this)));

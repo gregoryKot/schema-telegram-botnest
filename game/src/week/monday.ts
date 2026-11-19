@@ -19,6 +19,7 @@ export interface Beat {
   sayAt?: number;   // …над этой точкой (нет — мысль над Сашей)
   msg?: boolean;    // …сообщение в телефоне, а не реплика вслух
   notifs?: MsgKey[]; // какие уведомления сыплются дальше
+  goal?: MsgKey;    // цель под часами меняется (и дверь получает бирку)
 }
 
 const hm = (h: number, m: number) => h * 60 + m;
@@ -27,7 +28,8 @@ const LOW = 45, TALL = 170; // низкую стопку перепрыгива�
 
 export const MONDAY = {
   id: 'mon',
-  title: 'm_wk_mon_title' as MsgKey,
+  title: 'm_wk_intro_day' as MsgKey, // крупно в заставке
+  goal: 'm_wk_goal_work' as MsgKey,
   worldW: 120000, // коридор не кончается: бега хватит на минуты после пика
   startX: 120,
   startClock: hm(8, 40),
@@ -41,8 +43,8 @@ export const MONDAY = {
   beats: [
     { x: 360, pace: 'jog' },                                                        // из квартиры на улицу
     { x: 2160, pace: 'walk' },                                                      // офис, свой стол
-    { x: 2330, clock: hm(11, 0), say: 'm_wk_mon_boss_msg', sayAt: 2420, msg: true },
-    { x: 2900, pace: 'run', glitch: 0.5, notifs: ['m_wk_mon_notif_report', 'm_wk_mon_notif_urgent'] },
+    { x: 2330, clock: hm(11, 0), say: 'm_wk_mon_boss_msg', sayAt: 2420, msg: true, goal: 'm_wk_goal_boss' },
+    { x: 2900, pace: 'run', glitch: 0.5, say: 'm_wk_mon_glitch_thought', notifs: ['m_wk_mon_notif_report', 'm_wk_mon_notif_urgent'] },
     { x: 4300, clock: hm(11, 30), reveal: 'overwork' },
     { x: 9000, clock: hm(12, 10), glitch: 0.7, reveal: 'scroll',
       notifs: ['m_wk_mon_notif_call', 'm_wk_mon_notif_report', 'm_wk_mon_notif_urgent'] },

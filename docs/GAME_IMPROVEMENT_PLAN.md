@@ -1,5 +1,7 @@
 # Игра «Run Through Your Mind»: план улучшений
 
+> **Устарело:** документ о прежней игре (Мистер, главы 1–4); её заменила «Неделя» — концепт в [game/GAME_CONCEPT.md](../game/GAME_CONCEPT.md).
+
 Дата: 2026-09-03. Основание — реестр находок
 [GAME_ANALYSIS.md](GAME_ANALYSIS.md) (ссылки вида С1, И2, Т3, К4, В5 — оттуда).
 Концепт автора — [game/GAME_CONCEPT.md](../game/GAME_CONCEPT.md), статус
