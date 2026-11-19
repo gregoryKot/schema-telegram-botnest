@@ -18,7 +18,7 @@ export const RULES = {
   scrollJumpMin: 130, scrollFade: 0.34, scrollCalmMs: 2500,
   agreeJumpLoss: 0.12, minJump: 0.6,
   restMs: 2200, restEnergy: 40, sitMs: 1000,
-  clockCap: 14 * 60 + 58, // встреча в 15:00 — телефон не уносит дальше двери
+  clockCap: 14 * 60 + 58, // по умолчанию — хук: встреча в 15:00; у главы свой потолок (Chapter.clockCap)
 } as const;
 
 export function newWeekState(clockMin: number): WeekState {
@@ -36,11 +36,11 @@ export function overwork(s: WeekState, peak = false): WeekState {
 }
 
 /** ПРОЛИСТАТЬ: сбой гаснет, часы перескакивают, мир сереет. На пике телефон гаснет сам — ничего не меняется. */
-export function scroll(s: WeekState, peak = false): WeekState {
+export function scroll(s: WeekState, peak = false, cap: number = RULES.clockCap): WeekState {
   if (peak) return s;
   return {
     ...s,
-    clockMin: Math.max(s.clockMin, Math.min(s.clockMin + RULES.scrollJumpMin, RULES.clockCap)),
+    clockMin: Math.max(s.clockMin, Math.min(s.clockMin + RULES.scrollJumpMin, cap)),
     color: Math.max(0, +(s.color - RULES.scrollFade).toFixed(2)),
     calmMs: RULES.scrollCalmMs, calmLevel: 0,
   };

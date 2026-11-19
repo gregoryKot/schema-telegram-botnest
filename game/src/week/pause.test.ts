@@ -29,6 +29,13 @@ describe('ПАУЗА', () => {
     expect(p).toMatchObject({ open: false, named: true });
     expect(holdPause(p, PAUSE_HOLD_MS, true).open).toBe(false);
   });
+  it('два шага: верный ответ первого закрывает паузу без названия, второй шаг держится заново', () => {
+    const half = choosePause(choosePause(opened(), 0, 1, false), 1, 1, false);
+    expect(half).toMatchObject({ open: false, named: false, step: 1, tried: [] });
+    const again = holdPause(half, PAUSE_HOLD_MS, true);
+    expect(again.open).toBe(true);
+    expect(choosePause(again, 2, 2, true)).toMatchObject({ open: false, named: true, step: 1 });
+  });
   it('без открытой паузы выбор ничего не делает', () => {
     const p = newPause();
     expect(choosePause(p, 2, 2)).toBe(p);

@@ -112,6 +112,8 @@ interface WeekSceneLike {
     named: boolean;
   };
   ps: { open: boolean };
+  ch: { id: string };
+  half: boolean;
   done: boolean;
   started: boolean;
   busy: boolean;
@@ -133,6 +135,8 @@ const weekState = (page: Page) =>
       x: sc.player.x,
       doorAhead: sc.world.door.x - sc.player.x,
       open: sc.ps.open,
+      chapter: sc.ch.id,
+      half: sc.half,
       peak: sc.peak,
       busy: sc.busy,
       done: sc.done,
@@ -148,6 +152,12 @@ const weekState = (page: Page) =>
         'bg_wk_corridor',
         'bg_wk_boss_room',
         'wk_piles',
+        'bg_wk_city_eve',
+        'bg_wk_flat',
+        'bg_wk_flat_glitch',
+        'wk_mom_screen',
+        'wk_call_wall',
+        'wk_mom_call',
       ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,
       // подписи пузырей и кнопок лежат внутри контейнеров
@@ -198,6 +208,17 @@ const startWeek = async (page: Page, touch = false) => {
 };
 const gateOpen = async (page: Page, x: number) =>
   (await weekState(page)).gates.find((g) => g.x === x)?.open;
+/** Кнопка карточки (контейнер с подписью) — нажатие как пальцем. */
+const pressCardButton = (page: Page, text: string) =>
+  page.evaluate((label) => {
+    const sc = (window as unknown as GameWindow).__game!.scene.getScene(
+      'Week',
+    ) as WeekSceneLike;
+    const btn = sc.children.list.find((o) =>
+      o.list?.some((c) => c.text === label),
+    ) as unknown as { emit(e: string): void };
+    btn.emit('pointerdown');
+  }, text);
 /** Нажатие с удержанием на кадр-другой: JustDown читается в update сцены; прошлое действие должно кончиться. */
 const tapKey = async (page: Page, code: string, ms = 120) => {
   await expect
@@ -306,10 +327,10 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     expect((await weekState(page)).texts).toContain(
       'Глянь отчёт до четверга, ладно?',
     );
-    // карточка после хука: зов, продолжение, «поделиться» и кризисная строка двумя линиями
+    // карточка после хука: зов, продолжение («Дальше — среда»), «поделиться» и кризисная строка двумя линиями
     await expect
       .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
-      .toContain('Продолжение скоро');
+      .toContain('Дальше — среда');
     const card = (await weekState(page)).texts;
     for (const line of [
       'Записаться на первую встречу',
@@ -339,6 +360,86 @@ test.describe('игра «Неделя»: каркас «Понедельник�
       btn.emit('pointerdown');
     });
     await expect.poll(() => events).toContain('game_cta_click');
+
+    // «Дальше — среда» открывает следующую главу в той же сцене
+    await pressCardButton(page, 'Дальше — среда');
+    await expect
+      .poll(async () => (await weekState(page)).chapter, { timeout: 15_000 })
+      .toBe('wed');
+    expect((await weekState(page)).texts).toContain('СРЕДА');
+  });
+
+  test('«Среда»: от звонка до тёплой фразы — ПАУЗА в два шага: назвать, затем что нужно', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openGame(page, 'wed', 'Week');
+    const start = await weekState(page);
+    expect(start.chapter).toBe('wed');
+    expect(start.texts).toContain('Это Саша. Вечер дома, звонит мама');
+    expect(start.art).toBe(true);
+    await startWeek(page);
+    // привычки открываются по сюжету и берут цену и здесь
+    await weekGoTo(page, 3420, 'overwork');
+    await weekGoTo(page, 6520, 'scroll');
+    await weekGoTo(page, 10720, 'agree');
+    await weekGoTo(page, 11200);
+    await tapKey(page, 'KeyC');
+    await expect
+      .poll(async () => (await weekState(page)).load, { timeout: 15_000 })
+      .toBe(1);
+    // пик: мама-телефон держится впереди, привычки не помогают — появляется ПАУЗА
+    await weekGoTo(page, 17060);
+    await expect
+      .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
+      .toBe(true);
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).revealed, { timeout: 15_000 })
+      .toContain('pause');
+    const hold = async () => {
+      await page.keyboard.down('KeyV');
+      await expect
+        .poll(async () => (await weekState(page)).open, { timeout: 15_000 })
+        .toBe(true);
+      await page.keyboard.up('KeyV');
+    };
+    // шаг 1: назвать. Верное название не гасит сбой — стены стоят, Саша думает, что нужно
+    await hold();
+    let s = await weekState(page);
+    expect(s.texts).toContain('ПАУЗА · шаг 1 из 2: назвать');
+    await tapKey(page, 'Digit2');
+    await expect
+      .poll(async () => (await weekState(page)).half, { timeout: 15_000 })
+      .toBe(true);
+    s = await weekState(page);
+    expect(s.named).toBe(false);
+    expect(s.texts).toContain('Названо. А стены стоят — что мне нужно?');
+    // шаг 2: что нужно. Неверный ответ оставляет выбор, верный открывает путь к маме
+    await hold();
+    s = await weekState(page);
+    expect(s.texts).toContain('Что мне сейчас нужно?');
+    await tapKey(page, 'Digit1');
+    expect((await weekState(page)).open).toBe(true);
+    await tapKey(page, 'Digit3');
+    await expect
+      .poll(async () => (await weekState(page)).named, { timeout: 15_000 })
+      .toBe(true);
+    await expect
+      .poll(async () => (await weekState(page)).done, { timeout: 30_000 })
+      .toBe(true);
+    expect((await weekState(page)).texts).toContain(
+      'Я просто соскучилась. Береги себя',
+    );
+    // конец главы без зова: продолжение скоро, ещё раз, поделиться
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
+      .toContain('Продолжение скоро');
+    const end = (await weekState(page)).texts;
+    expect(end).toContain('Ещё раз');
+    expect(end).not.toContain('Записаться на первую встречу');
+    for (const name of ['game_chapter_start', 'game_chapter_done'])
+      expect(events).toContain(name);
   });
 
   test('/game/ без хеша открывает «Неделю»', async ({ page }) => {
