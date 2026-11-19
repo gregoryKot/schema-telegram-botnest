@@ -45,6 +45,16 @@ describe('LinksPage', () => {
     expect(shown).toEqual(readyLinks(LINKS).flatMap(itemLinks).map((l) => [l.href, null]));
   });
 
+  it('порядок: запись, «Обо мне» сразу под ней, проект, список, «Здоровый Взрослый» последним', () => {
+    render(<LinksPage />);
+    const heads = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(heads.slice(0, 2)).toEqual(['/#booking', '/']);
+    const titles = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(titles).toEqual(['Всё по схеме', 'Канал о схема-терапии', 'Здоровый Взрослый']);
+    const items = [...document.querySelectorAll('.links-list > li')];
+    expect(items.at(-1)?.textContent).toContain('Здоровый Взрослый');
+  });
+
   it('значки площадок — соседи основной ссылки, ссылок внутри ссылок нет', () => {
     const { container } = render(<LinksPage />);
     expect(container.querySelector('a a')).toBeNull();

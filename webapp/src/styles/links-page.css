@@ -1,5 +1,5 @@
-/* Страница ссылок визитки (/links): ровный тёплый фон, шапка с фотокарточкой, кнопка записи,
-   карточка проекта, жёлтая записка и общий список строк. Одна сетка, наклон — только у фото.
+/* Страница ссылок визитки (/links): ровный тёплый фон, шапка с фотокарточкой, кнопка записи и «о себе»,
+   карточка проекта, общий список строк и жёлтая записка; у трёх пунктов — «?» с раскрытием. Одна сетка, наклон — только у фото.
    Цвета — токены бумаги; терракота — --accent-on-light (акцент визитки здесь индиго).
    Тень-подложка без размытия — только у кнопки записи и записки, остальное — тонкие рамки. */
 .links-page {
@@ -58,6 +58,14 @@ html[data-theme="dark"] .links-page {
 .lk-cta b { display: block; font-size: clamp(17px, 5.2vw, 19px); font-weight: 800; letter-spacing: -.01em; }
 .lk-cta small { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--lk-on-cta) 86%, var(--lk-cta)); }
 
+/* «Обо мне» — вторичная кнопка сразу под записью: контур, а не заливка. */
+.lk-item--sub { margin-top: 10px; }
+.lk-sub {
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 16px;
+  border: 1.5px solid color-mix(in srgb, var(--lk-ink) 70%, transparent); border-radius: 14px; background: var(--lk-paper);
+  font-family: var(--lk-serif); font-weight: 500; font-size: 17px; line-height: 1.2;
+}
+
 /* Карточка проекта и записка — одна рамка-коробка. */
 .lk-box { padding: 16px; border: 1px solid var(--lk-line); border-radius: 14px; background: var(--lk-paper); }
 .lk-card-top { display: flex; align-items: center; gap: 10px; }
@@ -79,13 +87,13 @@ html[data-theme="dark"] .links-page {
 
 /* Записка «Здоровый Взрослый»: жёлтый листок — одно цветное пятно страницы. */
 .lk-note { border-color: transparent; background: var(--lk-note); box-shadow: 0 4px 0 var(--lk-note-shade); }
-.lk-note-text { margin: 8px 0 12px; font-size: 14px; line-height: 1.4; }
+.lk-note-text { margin: 8px 0 0; font-size: 14px; line-height: 1.4; }
 
 /* Общий список: строки одной высоты в одной рамке, между ними тонкие разделители. */
 .lk-row { border: 1px solid var(--lk-line); border-bottom-width: 0; background: var(--lk-paper); }
 .lk-item + .lk-row { margin-top: 16px; border-radius: 14px 14px 0 0; }
 .lk-row + .lk-row { border-top-color: var(--paper-sunk); }
-.lk-row:last-child { border-bottom-width: 1px; border-radius: 0 0 14px 14px; }
+.lk-row:last-child, .lk-row:has(+ .lk-item) { border-bottom-width: 1px; border-radius: 0 0 14px 14px; }
 .lk-row-in {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 12px 0 16px;
   font-family: var(--lk-serif); font-weight: 500; font-size: 17px; line-height: 1.2; border-radius: inherit;
@@ -93,6 +101,36 @@ html[data-theme="dark"] .links-page {
 .links-page .lk-row-in h2 { font-size: 17px; letter-spacing: 0; }
 @media (min-width: 360px) { .lk-row-in h2 { white-space: nowrap; } }
 .lk-row-in .lk-places { gap: 6px; }
+/* Строка с «?» в 360px с значками в одну линию не встаёт: значки — под названием, как у записки. */
+.lk-row-in.lk-head { justify-content: flex-start; padding: 12px 12px 14px 16px; }
+.lk-row-in.lk-head .lk-places { order: 2; flex-basis: 100%; margin-top: 10px; }
+
+/* «?» у названия: круг 22px, зона нажатия 44 (::before). Корень Disclosure — display: contents,
+   шапка переносит подпись и абзац строками ниже; закрытый абзац сжат в 0fr и скрыт от чтения. */
+.lk-head { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 0; }
+.lk-head > p { order: 1; flex-basis: 100%; }
+.lk-more { display: contents; }
+.lk-q {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: 1px solid color-mix(in srgb, var(--text-sub) 50%, transparent);
+  border-radius: 50%; background: none; color: var(--text-sub); font: 600 12px/1 var(--font-sans); cursor: pointer;
+}
+.lk-q::before { content: ''; position: absolute; inset: -11px; }
+.lk-q[aria-expanded="true"] { border-color: var(--lk-ink); background: color-mix(in srgb, var(--lk-ink) 8%, transparent); color: var(--lk-ink); }
+.lk-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.lk-more-body { order: 1; flex-basis: 100%; display: grid; grid-template-rows: 1fr; }
+.lk-more-body[hidden] { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; }
+.lk-more-in { min-height: 0; overflow: hidden; font-family: var(--font-sans); font-weight: 400; }
+.lk-more-in p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--text-sub); }
+.lk-quotes { list-style: none; margin: 8px 0 0; padding: 0; }
+.lk-quotes li {
+  margin-top: 6px; padding-left: 10px; border-left: 2px solid color-mix(in srgb, var(--lk-pen) 45%, transparent);
+  font-family: var(--lk-serif); font-style: italic; font-size: 14px; line-height: 1.4;
+}
+.lk-note .lk-q { border-color: color-mix(in srgb, var(--lk-ink) 40%, transparent); color: color-mix(in srgb, var(--lk-ink) 75%, transparent); }
+.lk-note .lk-q[aria-expanded="true"] { border-color: var(--lk-ink); color: var(--lk-ink); }
+.lk-note > .lk-places { margin-top: 12px; }
+.lk-note .lk-more-in p { color: color-mix(in srgb, var(--lk-ink) 78%, transparent); }
 .lk-go { margin-right: 4px; font-family: var(--font-sans); color: var(--text-sub); transition: transform .15s ease; }
 
 /* Значки площадок: спокойный круг 40px с мягкой заливкой. */
@@ -111,7 +149,7 @@ html[data-theme="dark"] .links-page {
   background: none; border: 0; border-radius: 50%; color: var(--text-sub); cursor: pointer;
 }
 
-.lk-cta:focus-visible, .lk-open:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: 3px; }
+.lk-cta:focus-visible, .lk-sub:focus-visible, .lk-open:focus-visible, .lk-q:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: 3px; }
 a.lk-row-in:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: -3px; }
 .lk-place:focus-visible { outline: none; }
 .lk-place:focus-visible .lk-place-dot { outline: 2px solid var(--lk-pen); outline-offset: 2px; }
@@ -120,12 +158,15 @@ a.lk-row-in:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: -3
 @media (hover: hover) {
   .lk-cta:hover { transform: translateY(-1px); }
   .lk-open:hover, .lk-place:hover .lk-place-dot { background: var(--lk-ink); color: var(--lk-paper); }
-  a.lk-row-in:hover .lk-go { transform: translateX(3px); }
+  a.lk-row-in:hover .lk-go, .lk-sub:hover .lk-go { transform: translateX(3px); }
+  .lk-q:hover { border-color: var(--lk-ink); color: var(--lk-ink); }
   .links-theme:hover { color: var(--lk-ink); }
 }
 
 /* Появление: только когда движение не отключено в системе. */
 @media (prefers-reduced-motion: no-preference) {
   .links-col { animation: lk-in .45s cubic-bezier(.2, .7, .2, 1) both; }
+  .lk-more-body { transition: grid-template-rows .28s ease, opacity .2s ease, visibility 0s; }
+  .lk-more-body[hidden] { transition: grid-template-rows .24s ease, opacity .16s ease, visibility 0s linear .24s; }
 }
 @keyframes lk-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

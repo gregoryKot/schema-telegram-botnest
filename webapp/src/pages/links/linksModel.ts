@@ -9,9 +9,16 @@ export interface PlaceLink extends Linked {
   title: 'Telegram' | 'MAX' | 'Threads' | 'ВКонтакте';
 }
 
+/** Раскрытие «?» у названия: о чём (для имени кнопки «Подробнее о …»), абзац и цитаты-примеры. */
+export interface LinkMore {
+  about: string;
+  text: string;
+  quotes?: readonly string[];
+}
+
 export interface LinkItem {
-  /** primary — главная кнопка (одна), feature — карточка проекта, note — жёлтая записка, plain — остальные. */
-  kind: 'primary' | 'feature' | 'note' | 'plain';
+  /** primary — кнопка записи, secondary — кнопка под ней, feature — карточка проекта, note — жёлтая записка, plain — список. */
+  kind: 'primary' | 'secondary' | 'feature' | 'note' | 'plain';
   title: string;
   /** Вторая строка — что это. */
   note?: string;
@@ -22,6 +29,7 @@ export interface LinkItem {
   /** Что открывают значки, для их доступного имени («… в Telegram»); по умолчанию — название. */
   placesName?: string;
   places?: readonly PlaceLink[];
+  more?: LinkMore;
 }
 
 type Ready<T extends Linked> = T & { href: string };

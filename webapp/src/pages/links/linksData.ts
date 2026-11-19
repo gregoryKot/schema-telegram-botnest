@@ -1,23 +1,30 @@
-// Пункты страницы ссылок kotlarewski.gr/privet — сверху вниз. Поменять адрес или
-// подпись — правка одной строки здесь или в linksPlaces.ts (площадки-зеркала).
+// Пункты страницы ссылок kotlarewski.gr/privet — сверху вниз. Поменять адрес, подпись
+// или текст под «?» (more) — правка одной строки здесь или в linksPlaces.ts (площадки-зеркала).
 import { TG_URL } from '../landing/constants';
 import type { LinkItem } from './linksModel';
 import { HEALTHY_ADULT_PLACES, PROJECT_PLACES, SCHEMA_CHANNEL_PLACES } from './linksPlaces';
 
 export const LINKS: readonly LinkItem[] = [
   { kind: 'primary', title: 'Записаться на консультацию', note: 'Первая встреча бесплатно · 15 минут', main: { id: 'booking', href: '/#booking' } },
+  { kind: 'secondary', title: 'Обо мне и как я работаю', main: { id: 'about', href: '/' } },
   {
     kind: 'feature', title: 'Всё по схеме', main: { id: 'project', href: 'https://schemehappens.ru' },
     note: 'Приложение для себя и рабочий кабинет для терапевтов',
     cta: 'Открыть приложение',
     placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
+    more: { about: 'проекте «Всё по схеме»', text: 'Для себя — трекер потребностей, дневники схем и режимов, тест на схемы и практики. Для терапевтов — кабинет: клиенты, концептуализация случая, задания между сессиями. Бесплатно и без рекламы.' },
   },
+  {
+    kind: 'plain', title: 'Канал о схема-терапии', places: SCHEMA_CHANNEL_PLACES,
+    more: { about: 'канале о схема-терапии', text: 'Здесь делюсь своим путём в схема-терапии и тем, что знаю о ней: как устроены схемы и режимы и что помогает на практике.' },
+  },
+  { kind: 'plain', title: 'Статьи', main: { id: 'articles', href: '/articles' } },
+  { kind: 'plain', title: 'Написать лично', main: { id: 'write', href: TG_URL } },
   {
     kind: 'note', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,
     note: 'Та часть внутри, которая заботится о наших потребностях и останавливает Критика. Канал помогает слышать её чаще.',
+    more: { about: 'канале «Здоровый Взрослый»', text: 'Утром и вечером — короткое послание голосом Здорового Взрослого. Например:',
+      // Цитаты — из пула канала (src/bot/healthy-adult.data.ts), без обращения на «ты».
+      quotes: ['Не всё нужно понять сегодня. Часть можно оставить непонятой и лечь спать.', 'Можно передумать. Решение, которое перестало подходить, не приговор.'] },
   },
-  { kind: 'plain', title: 'Канал о схема-терапии', places: SCHEMA_CHANNEL_PLACES },
-  { kind: 'plain', title: 'Обо мне и как я работаю', main: { id: 'about', href: '/' } },
-  { kind: 'plain', title: 'Статьи', main: { id: 'articles', href: '/articles' } },
-  { kind: 'plain', title: 'Написать лично', main: { id: 'write', href: TG_URL } },
 ];
