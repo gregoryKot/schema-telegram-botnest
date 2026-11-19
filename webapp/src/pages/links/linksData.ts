@@ -8,16 +8,13 @@ export const LINKS: readonly LinkItem[] = [
   { kind: 'primary', title: 'Записаться на консультацию', note: 'Первая встреча бесплатно · 15 минут', main: { id: 'booking', href: '/#booking' } },
   {
     kind: 'feature', title: 'Всё по схеме', main: { id: 'project', href: 'https://schemehappens.ru' },
-    roles: [
-      { who: 'Для себя', what: 'трекер потребностей, дневники, тест схем' },
-      { who: 'Для терапевтов', what: 'карточки клиентов, концептуализация, задания' },
-    ],
+    note: 'Приложение для себя и рабочий кабинет для терапевтов',
     cta: 'Открыть приложение',
-    placesLabel: 'Бот в мессенджере', placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
+    placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
   },
   {
     kind: 'plain', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,
-    note: 'Короткие послания голосом Здорового Взрослого — дважды в день',
+    note: 'послания дважды в день',
     // Строка из пула канала (src/bot/healthy-adult.data.ts, «одна строка»).
     quote: 'Чтобы иметь право на бережность, не нужно быть в форме.',
   },
