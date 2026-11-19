@@ -1,6 +1,8 @@
 // Листы «Справочника» в общем поиске: по запросу — движок самого справочника (rankReference); он
-// отбрасывает родовые слова («режим», «схема») и не прощает опечаток — тогда лист ищется по названию.
-import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
+// отбрасывает родовые слова («режим», «схема») и не прощает опечаток — тогда лист ищется по названию и синонимам.
+import { rowScoreWithAliases } from '../../../../shared/src/search/aliasScore';
+import { ROW_SCORE } from '../../../../shared/src/search/rankRows';
+import { searchAliases } from '../../../../shared/src/schemaTherapy/searchAliases';
 import type { ReferenceItem } from '../../sections/guide/guideReferenceModel';
 import { rankReference, referenceLeaves } from '../../sections/guide/guideReferenceSearch';
 import { THERAPIST_NAV } from '../appShell/navLook';
@@ -23,6 +25,9 @@ function guideRow({ item, snippet, section, title }: Leaf, run: PaletteInput['ru
   };
 }
 
+/** Вес листа по названию и его поисковым синонимам (другие переводы названий схем и режимов). */
+const leafScore = (item: ReferenceItem, query: string) => rowScoreWithAliases(item.name, '', query, searchAliases(item.kind, item.id));
+
 /** Все листы справочника — среди них «Недавнее» находит лист по ключу. */
 export function allGuideRows({ guide, run }: PaletteInput): CmdRow[] {
   return guide ? referenceLeaves(guide.ref).map((leaf) => guideRow(leaf, run)) : [];
@@ -35,10 +40,10 @@ export function guideRows({ guide, query, run }: PaletteInput): { row: CmdRow; s
   if (hits.length > 0) {
     // Название не совпало (нашлось в тексте листа) — наименьший вес, порядок справочника сохраняется.
     return hits.slice(0, GUIDE_SHOWN)
-      .map((hit) => ({ row: guideRow(hit, run), score: Math.max(rowScore(hit.item.name, '', query), ROW_SCORE.text) }));
+      .map((hit) => ({ row: guideRow(hit, run), score: Math.max(leafScore(hit.item, query), ROW_SCORE.text) }));
   }
   return referenceLeaves(guide.ref)
-    .map((leaf) => ({ row: guideRow(leaf, run), score: rowScore(leaf.item.name, '', query) }))
+    .map((leaf) => ({ row: guideRow(leaf, run), score: leafScore(leaf.item, query) }))
     .filter((r) => r.score > ROW_SCORE.none)
     .sort((a, b) => b.score - a.score)
     .slice(0, GUIDE_SHOWN);

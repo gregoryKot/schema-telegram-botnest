@@ -9,6 +9,7 @@ import { TokenBridge } from './auth/TokenBridge';
 import { AccountPage } from './pages/AccountPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
+import { KeepStateRedirect } from './components/KeepStateRedirect';
 import { ScrollLock } from './hooks/ScrollLock';
 import { ScrollToTop } from './hooks/ScrollToTop';
 import { RouteErrorScreen } from './components/RouteErrorScreen';
@@ -129,8 +130,8 @@ const appRoutes = [
           { path: '/schemas',           element: null },
           { path: '/profile',           element: null },
           { path: '/practice',          element: null },
-          { path: '/help',              element: <Navigate to="/practice" replace /> },
-          { path: '/exercises',         element: <Navigate to="/practice" replace /> },
+          { path: '/help',              element: <KeepStateRedirect to="/practice" /> },
+          { path: '/exercises',         element: <KeepStateRedirect to="/practice" /> },
           { path: '/cabinet',           element: null },
           { path: '/cabinet/:clientId', element: null },
           { path: '/cabinet/:clientId/:tab', element: null }, // вкладка карточки (therapist/clientTabRoute)
@@ -143,9 +144,8 @@ const appRoutes = [
 // ── Domain detection + router ────────────────────────────────────────────────
 // Домен и роутер считаются при первом рендере, а не при импорте модуля: App.test
 // подменяет адрес и рендерит App без пересборки всего графа (docs/open/ci-tests.md).
-// Кэш по объекту location: в браузере он один — роутер создаётся один раз (и
-// StrictMode, дважды зовущий рендер, второго не создаст); в тесте у каждого
-// подменённого адреса свой объект — свой роутер.
+// Кэш по объекту location: в браузере он один — роутер создаётся один раз (и StrictMode, дважды
+// зовущий рендер, второго не создаст); в тесте у каждого подменённого адреса свой объект — свой роутер.
 const routers = new WeakMap<Location, ReturnType<typeof createBrowserRouter>>();
 
 function routerFor(loc: Location) {
