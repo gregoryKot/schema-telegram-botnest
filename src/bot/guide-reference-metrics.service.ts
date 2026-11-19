@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import { countEventsByKey } from './event-counts';
+import { countEventsGrouped } from './event-counts-grouped';
 import { formatGuideReferenceMetrics } from './guide-reference-metrics.format';
 import type { GuideReferenceMetrics } from './guide-reference-metrics.types';
 import { withGuideAnswerLines } from './guide-answer-metrics';
@@ -16,6 +16,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['schemas30', 'cabinet_guide_schema_open'],
   ['techniques30', 'cabinet_guide_technique_open'],
   ['notes30', 'cabinet_guide_note_open'],
+  ['needs30', 'cabinet_guide_need_open'],
   ['tables30', 'cabinet_guide_table_open'],
 ];
 
@@ -24,7 +25,6 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
 export class GuideReferenceMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
     const block = formatGuideReferenceMetrics(await this.getMetrics());
     return withGuideAnswerLines(this.prisma, block);
@@ -38,7 +38,7 @@ export class GuideReferenceMetricsService {
         by: ['userId'],
         where: { name: OPEN_EVENT, createdAt, userId: { not: null } },
       }),
-      countEventsByKey(this.prisma, COUNTED, createdAt),
+      countEventsGrouped(this.prisma, COUNTED, createdAt),
     ]);
     return { ...counted, therapists30: therapists.length };
   }
