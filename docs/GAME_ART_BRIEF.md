@@ -1,5 +1,7 @@
 # Игра: арт-бриф — что перерисовать и промпты для генерации
 
+> **Устарело:** документ о прежней игре (Мистер, главы 1–4); её заменила «Неделя» — концепт в [game/GAME_CONCEPT.md](../game/GAME_CONCEPT.md).
+
 > Кот с #1320 — кадр 36×36, показ ×2 (`game/art/cat.py`); размеры «48×48» ниже описывают старые листы.
 
 Продолжение [GAME_ANALYSIS.md](GAME_ANALYSIS.md) и [GAME_IMPROVEMENT_PLAN.md](GAME_IMPROVEMENT_PLAN.md).

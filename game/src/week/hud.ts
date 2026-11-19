@@ -70,7 +70,7 @@ export class WeekHud {
       plate(this.hold, px0 - HOLD_W / 2, py - px(16), HOLD_W, px(10), SKIN.night);
       this.hold.fillStyle(C.paper).fillRect(px0 - HOLD_W / 2 + px(4), py - px(13), (HOLD_W - px(8)) * hold, px(4));
     }
-    if (this.thought?.active) this.thought.setPosition(this.clampX(px0, this.thought.getData('w') as number), py - px(8));
+    if (this.thought?.active) this.thought.setPosition(this.clampX(px0, this.thought.getData('w') as number), Math.max(py - px(8), (this.thought.getData('h') as number) + px(4))); // в прыжке пузырь не уходит за верх кадра
   }
 
   private clampX(x: number, w: number) {
@@ -80,7 +80,7 @@ export class WeekHud {
   private bubble(text: string, kind: BubbleKind, x: number, y: number, ms: number): Box {
     const { skin, tail, dot } = BUBBLE[kind];
     const b = label(this.scene, text, skin, { tail, dot, maxW: 280, bold: kind === 'msg' });
-    b.box.setData('w', b.w).setDepth(42).setPosition(this.clampX(x, b.w), y).setScale(0.6).setAlpha(0);
+    b.box.setData('w', b.w).setData('h', b.h).setDepth(42).setPosition(this.clampX(x, b.w), y).setScale(0.6).setAlpha(0);
     this.scene.tweens.add({ targets: b.box, scale: 1, alpha: 1, duration: 140, ease: 'Back.Out' });
     this.scene.time.delayedCall(ms, () => b.box.destroy());
     return b.box;

@@ -39,6 +39,8 @@ export class WeekCoach {
     this.goalBox = b.setScrollFactor(0).setDepth(42).setPosition(W / 2, px(56)).setScale(1.25);
     this.s.tweens.add({ targets: b, scale: 1, duration: 360, ease: 'Back.Out' });
   }
+  /** Глава кончилась: цель и бирка не лезут на карточку. */
+  done() { this.goalBox?.destroy(); this.doorTag?.destroy(); this.goalBox = this.doorTag = null; }
   /** Бирка над дверью начальницы: появляется вместе с сообщением и идёт за дверью. */
   tagDoor() {
     if (this.doorTag) return;

@@ -27,7 +27,7 @@ import { sashaLook } from '../week/look';
 import { showWeekIntro } from '../week/intro';
 import { WeekCoach } from '../week/coach';
 import { peakDue } from '../week/guide';
-import { isWeekDone, markWeekDone } from '../progress';
+import { isWeekDone, markWeekDone } from '../week/progress';
 
 const DASH_SPEED = 520, DASH_MS = 260, PHONE_MS = 1200, LOW_PILE = 45, TALL_PILE = 170;
 const LABEL: Record<Act, MsgKey> = {
@@ -278,7 +278,7 @@ export class WeekScene extends Phaser.Scene {
   private finish() {
     this.done = true;
     this.body.setVelocity(0, 0);
-    setTouchControls(false);
+    setTouchControls(false); this.coach.done();
     trackEvent('game_chapter_done', { chapter: this.ch.id });
     markWeekDone(this.ch.id);
     this.hud.say(t(this.ch.end.bossLine), this.bossX, GROUND_Y - 132, 3000);
