@@ -113,6 +113,23 @@
   .tq-note { margin-bottom: calc(-1 * var(--space-8)); }
   .tq-note-x::after { inset: -13px -10px; } /* строка 18,2 + 26 — зона «Понятно» по-прежнему ≥44 */
 }
+/* Низкий телефон (360×640, 390×664; LOW_PHONE_MEDIA): пять ответов с худшими подписями — на первом экране.
+   Полоса 44, лист — надпись, название и знак в два ряда; описание — под тапом вместе с примерами (NeedExplainer);
+   ответы плотнее, зона нажатия ≥48. Сверка — e2e-browser/tracker-fit.spec.ts. */
+@media (max-width: 560px) and (max-height: 700px) {
+  .tk2-overlay:not(.qe-sheet) .tq-bar { min-height: 44px; }
+  .tq-ask { padding-top: var(--space-4); }
+  .tq-ask .pa-spread, .tq-ask .pa-spread-main { gap: 10px; }
+  .tq-ask .pa-spread-side .pa-sheet.tq-sheet { padding: 8px 16px 0; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { margin-top: 0; font-size: 22px; }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 76px; margin-right: -6px; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { margin-top: 4px; }
+  .tq-examples .tq-desc { padding-bottom: var(--space-8); font-size: 14px; line-height: 1.45; }
+  .tq-ask .tq-question { font-size: 15px; line-height: 1.4; }
+  .tq-ask .ns-words { gap: 6px; }
+  .tq-ask .ns-word { min-height: 48px; padding-inline: 14px; }
+  .tq-ask .ns-word-main { gap: 2px; padding: 4px 0; }
+}
 /* Узкий телефон (поле листа ≤300 — окно ≤372): название 22, знак 88; ≤260 (окно 320) — название 20:
    «Привязанность» встаёт рядом со знаком, а не вылезает за край. */
 @container pa-sheet (max-width: 300px) {
