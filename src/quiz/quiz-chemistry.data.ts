@@ -8,7 +8,8 @@ export function buildChemistryQuiz(form: AddressForm): Quiz {
     id: 'chemistry',
     emoji: '🧲',
     title: 'Почему тянет не к тем?',
-    teaser: 'Искра с тем, рядом с кем больно, а с надёжным скучно. Откуда это притяжение.',
+    teaser:
+      'Искра с тем, рядом с кем больно, а с надёжным скучно. Откуда это притяжение.',
     intro: t(
       form,
       'Бывает так: тёплый, надёжный человек кажется скучным, а искра вспыхивает с тем, ' +
@@ -32,10 +33,22 @@ export function buildChemistryQuiz(form: AddressForm): Quiz {
           'Кто вам сразу кажется интересным?',
         ),
         options: [
-          { label: 'Тот, кто то пропадает, то появляется', resultId: 'abandon' },
-          { label: 'Сдержанный, закрытый, «вещь в себе»', resultId: 'deprived' },
-          { label: 'Тот, кому сейчас трудно и нужна помощь', resultId: 'rescuer' },
-          { label: 'Уверенный человек, который всё решает сам', resultId: 'subjugate' },
+          {
+            label: 'Тот, кто то пропадает, то появляется',
+            resultId: 'abandon',
+          },
+          {
+            label: 'Сдержанный, закрытый, «вещь в себе»',
+            resultId: 'deprived',
+          },
+          {
+            label: 'Тот, кому сейчас трудно и нужна помощь',
+            resultId: 'rescuer',
+          },
+          {
+            label: 'Уверенный человек, который всё решает сам',
+            resultId: 'subjugate',
+          },
           { label: 'Тот, чьё одобрение надо заслужить', resultId: 'defect' },
         ],
       },
@@ -43,17 +56,35 @@ export function buildChemistryQuiz(form: AddressForm): Quiz {
         text: 'Свидание с внимательным, надёжным человеком. Что внутри?',
         options: [
           { label: 'Спокойно, но пресно: нет волнения', resultId: 'abandon' },
-          { label: 'Странно, когда обо мне так заботятся', resultId: 'deprived' },
-          { label: 'Скучновато: тут никого не нужно спасать', resultId: 'rescuer' },
-          { label: 'Не знаю, чего хочу, жду решения другого', resultId: 'subjugate' },
-          { label: 'Жду, когда меня разглядят и разочаруются', resultId: 'defect' },
+          {
+            label: 'Странно, когда обо мне так заботятся',
+            resultId: 'deprived',
+          },
+          {
+            label: 'Скучновато: тут никого не нужно спасать',
+            resultId: 'rescuer',
+          },
+          {
+            label: 'Не знаю, чего хочу, жду решения другого',
+            resultId: 'subjugate',
+          },
+          {
+            label: 'Жду, когда меня разглядят и разочаруются',
+            resultId: 'defect',
+          },
         ],
       },
       {
         text: 'Что удерживает в отношениях, где плохо?',
         options: [
-          { label: 'Страх остаться совсем без близкого человека', resultId: 'abandon' },
-          { label: 'Привычка: большего, кажется, и не бывает', resultId: 'deprived' },
+          {
+            label: 'Страх остаться совсем без близкого человека',
+            resultId: 'abandon',
+          },
+          {
+            label: 'Привычка: большего, кажется, и не бывает',
+            resultId: 'deprived',
+          },
           { label: 'Без меня человек пропадёт', resultId: 'rescuer' },
           { label: 'Уйти страшно: будет скандал', resultId: 'subjugate' },
           { label: 'Мысль, что лучшего мне не достанется', resultId: 'defect' },
@@ -66,10 +97,22 @@ export function buildChemistryQuiz(form: AddressForm): Quiz {
           'Партнёр отдалился на пару дней. Как вы?',
         ),
         options: [
-          { label: 'Места себе не нахожу, пишу снова и снова', resultId: 'abandon' },
-          { label: 'Привычно. Никто и не обязан быть рядом', resultId: 'deprived' },
-          { label: 'Волнуюсь, всё ли у партнёра в порядке', resultId: 'rescuer' },
-          { label: 'Подстраиваюсь, лишь бы не было недовольства', resultId: 'subjugate' },
+          {
+            label: 'Места себе не нахожу, пишу снова и снова',
+            resultId: 'abandon',
+          },
+          {
+            label: 'Привычно. Никто и не обязан быть рядом',
+            resultId: 'deprived',
+          },
+          {
+            label: 'Волнуюсь, всё ли у партнёра в порядке',
+            resultId: 'rescuer',
+          },
+          {
+            label: 'Подстраиваюсь, лишь бы не было недовольства',
+            resultId: 'subjugate',
+          },
           { label: 'Ищу, что во мне не так', resultId: 'defect' },
         ],
       },
@@ -91,7 +134,10 @@ export function buildChemistryQuiz(form: AddressForm): Quiz {
         text: 'Что знакомо с детства?',
         options: [
           { label: 'Близкие то были рядом, то исчезали', resultId: 'abandon' },
-          { label: 'Обо мне заботились, но тепла было мало', resultId: 'deprived' },
+          {
+            label: 'Обо мне заботились, но тепла было мало',
+            resultId: 'deprived',
+          },
           { label: 'Приходилось заботиться о взрослых', resultId: 'rescuer' },
           { label: 'Моё мнение мало что решало', resultId: 'subjugate' },
           { label: 'Меня часто сравнивали и стыдили', resultId: 'defect' },

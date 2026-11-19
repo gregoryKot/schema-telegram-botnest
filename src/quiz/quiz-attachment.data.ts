@@ -7,8 +7,13 @@ export function buildAttachmentQuiz(form: AddressForm): Quiz {
   return {
     id: 'attachment',
     emoji: '🫂',
-    title: t(form, 'Какой у тебя стиль привязанности?', 'Какой у вас стиль привязанности?'),
-    teaser: 'Что поднимается рядом с близкими: страх потери, пустота, настороженность или стыд.',
+    title: t(
+      form,
+      'Какой у тебя стиль привязанности?',
+      'Какой у вас стиль привязанности?',
+    ),
+    teaser:
+      'Что поднимается рядом с близкими: страх потери, пустота, настороженность или стыд.',
     intro: t(
       form,
       'О привязанности обычно говорят типами: «тревожный», «избегающий». Схема-терапия ' +
@@ -30,10 +35,22 @@ export function buildAttachmentQuiz(form: AddressForm): Quiz {
           'Близкий человек несколько часов не отвечает на сообщение. Что у вас внутри?',
         ),
         options: [
-          { label: 'Тревога: вдруг что-то не так и меня оставят', resultId: 'abandon' },
-          { label: 'Привычно. Ко мне никто особо и не спешит', resultId: 'deprived' },
-          { label: 'Перебираю, что во мне могло оттолкнуть', resultId: 'defect' },
-          { label: 'Подозрение: от меня что-то скрывают', resultId: 'mistrust' },
+          {
+            label: 'Тревога: вдруг что-то не так и меня оставят',
+            resultId: 'abandon',
+          },
+          {
+            label: 'Привычно. Ко мне никто особо и не спешит',
+            resultId: 'deprived',
+          },
+          {
+            label: 'Перебираю, что во мне могло оттолкнуть',
+            resultId: 'defect',
+          },
+          {
+            label: 'Подозрение: от меня что-то скрывают',
+            resultId: 'mistrust',
+          },
           { label: 'Почти ничего. Так даже спокойнее', resultId: 'detached' },
         ],
       },
@@ -42,9 +59,15 @@ export function buildAttachmentQuiz(form: AddressForm): Quiz {
         options: [
           { label: 'Чем ближе, тем страшнее потерять', resultId: 'abandon' },
           { label: 'Человек рядом, а одиноко всё равно', resultId: 'deprived' },
-          { label: 'Страшно: узнают получше — и разочаруются', resultId: 'defect' },
+          {
+            label: 'Страшно: узнают получше — и разочаруются',
+            resultId: 'defect',
+          },
           { label: 'Присматриваюсь, где подвох', resultId: 'mistrust' },
-          { label: 'Хочется отойти на шаг и сбавить близость', resultId: 'detached' },
+          {
+            label: 'Хочется отойти на шаг и сбавить близость',
+            resultId: 'detached',
+          },
         ],
       },
       {
@@ -55,9 +78,15 @@ export function buildAttachmentQuiz(form: AddressForm): Quiz {
         ),
         options: [
           { label: 'Панику: это конец, сейчас уйдут', resultId: 'abandon' },
-          { label: 'Опять никто не понял, что мне было нужно', resultId: 'deprived' },
+          {
+            label: 'Опять никто не понял, что мне было нужно',
+            resultId: 'deprived',
+          },
           { label: 'Вину: со мной правда трудно', resultId: 'defect' },
-          { label: 'Жду удара: сказанное обернут против меня', resultId: 'mistrust' },
+          {
+            label: 'Жду удара: сказанное обернут против меня',
+            resultId: 'mistrust',
+          },
           { label: 'Ничего. Замолкаю, и внутри пусто', resultId: 'detached' },
         ],
       },
@@ -68,18 +97,36 @@ export function buildAttachmentQuiz(form: AddressForm): Quiz {
           'Что вам труднее всего в близости?',
         ),
         options: [
-          { label: 'Разлука: кажется, что связь вот-вот порвётся', resultId: 'abandon' },
-          { label: 'Просить о поддержке: всё равно не дадут', resultId: 'deprived' },
+          {
+            label: 'Разлука: кажется, что связь вот-вот порвётся',
+            resultId: 'abandon',
+          },
+          {
+            label: 'Просить о поддержке: всё равно не дадут',
+            resultId: 'deprived',
+          },
           { label: 'Показывать себя без прикрас', resultId: 'defect' },
-          { label: 'Доверять: открыться — значит дать оружие', resultId: 'mistrust' },
-          { label: 'Чувствовать: с людьми будто за стеклом', resultId: 'detached' },
+          {
+            label: 'Доверять: открыться — значит дать оружие',
+            resultId: 'mistrust',
+          },
+          {
+            label: 'Чувствовать: с людьми будто за стеклом',
+            resultId: 'detached',
+          },
         ],
       },
       {
         text: 'Близкий человек говорит, что любит. Первая реакция?',
         options: [
-          { label: 'Радость, а следом страх: надолго ли?', resultId: 'abandon' },
-          { label: 'Приятно, но меня как будто всё равно не видят', resultId: 'deprived' },
+          {
+            label: 'Радость, а следом страх: надолго ли?',
+            resultId: 'abandon',
+          },
+          {
+            label: 'Приятно, но меня как будто всё равно не видят',
+            resultId: 'deprived',
+          },
           { label: 'Не верится: узнают ближе — разлюбят', resultId: 'defect' },
           { label: 'Сразу вопрос: что за этим стоит?', resultId: 'mistrust' },
           { label: 'Неловко. Хочется сменить тему', resultId: 'detached' },
@@ -89,9 +136,18 @@ export function buildAttachmentQuiz(form: AddressForm): Quiz {
         text: 'Вечер в одиночестве. Как он проходит?',
         options: [
           { label: 'Проверяю телефон: напишут ли', resultId: 'abandon' },
-          { label: 'Никто не спросит, как прошёл день. Привычно', resultId: 'deprived' },
-          { label: 'Прокручиваю, что сегодня сказано не так', resultId: 'defect' },
-          { label: 'Спокойнее, чем с людьми: никто не подставит', resultId: 'mistrust' },
+          {
+            label: 'Никто не спросит, как прошёл день. Привычно',
+            resultId: 'deprived',
+          },
+          {
+            label: 'Прокручиваю, что сегодня сказано не так',
+            resultId: 'defect',
+          },
+          {
+            label: 'Спокойнее, чем с людьми: никто не подставит',
+            resultId: 'mistrust',
+          },
           { label: 'Хорошо. Без людей проще и ровнее', resultId: 'detached' },
         ],
       },
