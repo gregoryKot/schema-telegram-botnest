@@ -19,6 +19,11 @@ export const QUIZ_LABELS: Record<string, string> = {
   critic: '🎙 «Внутренний критик»',
   voice: '🎧 «Критик или Здоровый Взрослый»',
   battery: '🔋 «Батарейка»',
+  anxiety: '🌀 «Откуда тревога»',
+  impostor: '🎭 «Синдром самозванца»',
+  pleaser: '🙊 «Трудно сказать нет»',
+  burnout: '🔥 «Что выжигает»',
+  procrastination: '⏳ «Прокрастинация»',
 };
 
 const pct = (part: number, whole: number): string =>
