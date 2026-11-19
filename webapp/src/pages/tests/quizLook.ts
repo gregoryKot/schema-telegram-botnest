@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import type { ArtProps } from '../../components/art/paper';
-import { Breath, Cup, Strokes } from '../../components/art/PaperArt';
+import { Breath, Cup, Ribbon, Strokes } from '../../components/art/PaperArt';
 import { Cluster, Talk } from '../../components/art/PaperArtSigns';
-import { Looming, Yield } from '../../components/art/GuideSigns';
+import { ChildCare, Looming, Yield } from '../../components/art/GuideSigns';
 import { Horizon, Spotlight } from '../../components/art/GuideSignsTechniques';
 
 // Знак мини-теста по id — тот же язык, что в приложении (docs/design/PAPER_MOTIFS_2026-11.md,
@@ -19,6 +19,8 @@ const QUIZ_SIGN: Record<string, (p: ArtProps) => ReactElement> = {
   pleaser: Yield,   // «Трудно сказать нет» — своя часть изогнулась по краю чужой
   burnout: Cup,     // «Что тебя выжигает?» — чашка, из которой всё отдано
   procrastination: Horizon, // «Что стоит за прокрастинацией?» — дело маячит на горизонте
+  attachment: ChildCare, // «Стиль привязанности» — маленький круг в объятиях большого
+  chemistry: Ribbon, // «Почему тянет не к тем?» — лента зацепила и закрутилась петлёй
 };
 
 /** Бумага строк списка по очереди: персик, небо, шалфей, бирюза, солома — соседи не совпадают. */
