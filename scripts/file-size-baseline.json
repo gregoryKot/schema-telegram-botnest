@@ -2297,7 +2297,7 @@
   "webapp/src/components/NeedAdviceModal.tsx": 49,
   "webapp/src/components/needDataColor.ts": 20,
   "webapp/src/components/NeedDetailSheet.tsx": 95,
-  "webapp/src/components/NeedDynamics.tsx": 72,
+  "webapp/src/components/NeedDynamics.tsx": 78,
   "webapp/src/components/NeedHistorySheet.tsx": 92,
   "webapp/src/components/NeedScale.tsx": 47,
   "webapp/src/components/NeedTodayActions.tsx": 36,
