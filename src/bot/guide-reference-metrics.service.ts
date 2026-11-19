@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import { countEventsByKey } from './event-counts';
+import { countEventsGrouped } from './event-counts-grouped';
 import { formatGuideReferenceMetrics } from './guide-reference-metrics.format';
 import type { GuideReferenceMetrics } from './guide-reference-metrics.types';
 import { withGuideAnswerLines } from './guide-answer-metrics';
@@ -38,7 +38,7 @@ export class GuideReferenceMetricsService {
         by: ['userId'],
         where: { name: OPEN_EVENT, createdAt, userId: { not: null } },
       }),
-      countEventsByKey(this.prisma, COUNTED, createdAt),
+      countEventsGrouped(this.prisma, COUNTED, createdAt),
     ]);
     return { ...counted, therapists30: therapists.length };
   }

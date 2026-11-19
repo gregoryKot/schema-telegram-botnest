@@ -7,14 +7,22 @@ function makeService(opts: {
   counts?: Record<string, number>;
   groups?: Array<{ userId: bigint | null }>;
 }) {
-  const count = jest.fn(({ where }: { where: { name: string } }) =>
-    Promise.resolve(opts.counts?.[where.name] ?? 0),
+  // Два groupBy: по userId — терапевты, по name — счётчики листов одним запросом.
+  const groupBy = jest.fn(
+    ({ by, where }: { by: string[]; where: { name: { in?: string[] } } }) =>
+      Promise.resolve(
+        by[0] === 'userId'
+          ? (opts.groups ?? [])
+          : (where.name.in ?? [])
+              .filter((name) => opts.counts?.[name])
+              .map((name) => ({ name, _count: { _all: opts.counts?.[name] } })),
+      ),
   );
-  const groupBy = jest.fn(() => Promise.resolve(opts.groups ?? []));
+  // count — счётчики карточки-ответа (guide-answer-metrics) в render().
+  const count = jest.fn(() => Promise.resolve(0));
   const prisma = { analyticsEvent: { count, groupBy } };
   return {
     service: new GuideReferenceMetricsService(prisma as never),
-    count,
     groupBy,
   };
 }
@@ -53,12 +61,15 @@ describe('GuideReferenceMetricsService', () => {
   });
 
   it('окно createdAt >= 30 дней назад; терапевты — по открытию, без анонимов', async () => {
-    const { service, count, groupBy } = makeService({});
+    const { service, groupBy } = makeService({});
     await service.getMetrics();
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'cabinet_guide_open', createdAt: { gte: SINCE } },
-    });
-    expect(count).toHaveBeenCalledTimes(7);
+    expect(groupBy).toHaveBeenCalledTimes(2);
+    expect(groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['name'],
+        where: expect.objectContaining({ createdAt: { gte: SINCE } }),
+      }),
+    );
     expect(groupBy).toHaveBeenCalledWith({
       by: ['userId'],
       where: {
