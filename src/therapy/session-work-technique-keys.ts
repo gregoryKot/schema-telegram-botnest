@@ -97,4 +97,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
       'result',
     ],
     'technique:life_line': ['stones', 'flowers', 'noticed', 'next'],
+    'technique:online_chairwork': ['variant', 'modes', 'result'],
   };
