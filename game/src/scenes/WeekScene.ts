@@ -1,7 +1,8 @@
-// «Неделя», каркас главы на серых блоках: Саша бежит сам, игрок прыгает и выбирает привычки с ценой;
+// «Неделя», глава «Понедельник»: Саша бежит сам, игрок прыгает и выбирает привычки с ценой;
 // дверь держится впереди, бег останавливает и дверь открывает только ПАУЗА. Глава — данные (week/monday.ts), цена — чистые функции (week/habits.ts).
 import Phaser from 'phaser';
 import { W, H, GROUND_Y, PHYS } from '../constants';
+import { GRID } from '../gridScale';
 import { setTouchControls } from '../controls';
 import { audio } from '../audio';
 import { t, type MsgKey } from '../i18n';
@@ -17,9 +18,11 @@ import { WeekHud, FONT } from '../week/hud';
 import { PausePanel } from '../week/pausePanel';
 import { ACT_KEYS, WeekInput } from '../week/input';
 import { enterWeekTouch, leaveWeekTouch, revealWeekAct } from '../week/touch';
+import { makeWeekAnims, preloadWeekArt } from '../week/art';
+import { WeekBackdrop } from '../week/backdrop';
+import { sashaLook } from '../week/look';
 
 const DASH_SPEED = 520, DASH_MS = 260, PHONE_MS = 1200, LOW_PILE = 45, TALL_PILE = 170;
-const WARM = 0x4a4038, COLD = 0x2c3038;
 const LABEL: Record<Act, MsgKey> = {
   overwork: 'm_wk_act_overwork', scroll: 'm_wk_act_scroll', agree: 'm_wk_act_agree', pause: 'm_wk_act_pause',
 };
@@ -34,8 +37,8 @@ export class WeekScene extends Phaser.Scene {
   done = false;
   baseGlitch = 0; // сколько сбоя в этом месте главы
   pace: Pace = 'walk';
-  private pack!: Phaser.GameObjects.Rectangle;
-  private phone!: Phaser.GameObjects.Rectangle;
+  sasha!: Phaser.GameObjects.Sprite;
+  private back!: WeekBackdrop;
   private ctl!: WeekInput;
   private hud!: WeekHud;
   private panel!: PausePanel;
@@ -46,6 +49,7 @@ export class WeekScene extends Phaser.Scene {
   private nextPeakPile = 0;
 
   constructor() { super('Week'); }
+  preload() { preloadWeekArt(this); }
 
   create() {
     const ch = this.ch;
@@ -54,16 +58,16 @@ export class WeekScene extends Phaser.Scene {
     this.revealed = new Set();
     this.st = newWeekState(ch.startClock);
     this.ps = newPause();
-    this.cameras.main.setBackgroundColor(WARM);
+    makeWeekAnims(this);
+    this.back = new WeekBackdrop(this, ch.beats[0].x, ch.beats[1].x - 60, ch.worldW);
     this.physics.world.setBounds(0, -H, ch.worldW, 2 * H);
     this.world = buildWorld(this, ch);
 
-    this.player = this.add.rectangle(ch.startX, GROUND_Y - 22, 22, 44, 0xc4c4cc).setDepth(10);
+    this.player = this.add.rectangle(ch.startX, GROUND_Y - 22, 22, 44, 0, 0); // тело для столкновений; видно Сашу — спрайт
     this.physics.add.existing(this.player);
     (this.player.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.world.solids);
-    this.pack = this.add.rectangle(0, 0, 10, 14, 0x6e6e78).setDepth(9);
-    this.phone = this.add.rectangle(0, 0, 8, 12, 0xe8f0ff).setDepth(11).setVisible(false);
+    this.sasha = this.add.sprite(ch.startX, GROUND_Y, 'wk_sasha_idle').setOrigin(0.5, 1).setScale(GRID).setDepth(10);
     this.cameras.main.setBounds(0, 0, ch.worldW, H).startFollow(this.player, true, 0.12, 0.12, -W * 0.2, 0); // Саша слева: видно, что впереди
 
     this.ctl = new WeekInput(this);
@@ -86,10 +90,10 @@ export class WeekScene extends Phaser.Scene {
   private get body() { return this.player.body as Phaser.Physics.Arcade.Body; }
 
   update(_time: number, dtRaw: number) {
-    if (this.done) { this.hud.update(this.st, 0, this.player.x, this.player.y - 22); return; }
+    if (this.done) { this.hud.update(this.st, 0, this.player.x, this.player.y - 62); this.draw(0); return; }
     const dt = Math.min(dtRaw, 50);
     this.stepPause(dt);
-    if (this.ps.open) return; // мир замер
+    if (this.ps.open) { this.draw(1); return; } // мир замер
     this.st = tick(this.st, dt);
     this.stepBeats();
     if (this.peak) {
@@ -102,26 +106,32 @@ export class WeekScene extends Phaser.Scene {
     this.stepPeakPiles();
     this.stepNotifs(dt, glitch);
 
-    const { door, faces } = this.world, px = this.player.x, py = this.player.y;
+    const { door, people } = this.world, px = this.player.x, py = this.player.y;
     door.x = doorX(door.x, px, this.glitching, this.st.named, this.ch.door);
-    door.setScale(this.peak ? 2 : 1);
+    door.setScale(this.peak ? GRID * 2 : GRID).setFrame(this.glitching ? 1 : 0);
     this.faceT = Math.max(0, this.faceT - dt);
-    for (const f of faces) f.setVisible(glitch < 0.05 || this.faceT > 0);
-    const size = 10 + 6 * this.st.load;
-    this.pack.setPosition(px - (11 + size / 2), py - 4).setSize(size, size + 4);
-    this.phone.setPosition(px + 14, py - 6).setVisible(this.phoneT > 0);
-    this.player.setFillStyle(isResting(this.st) ? 0x80808a : 0xc4c4cc);
-    this.hud.update(this.st, holdProgress(this.ps), px, py - 22);
+    for (const p of people) p.setFrame(glitch < 0.05 || this.faceT > 0 ? 0 : 1);
+    this.draw(glitch);
+    this.hud.update(this.st, holdProgress(this.ps), px, py - 62); // над головой спрайта
     if (this.st.named && Math.abs(px - door.x) < 34) this.finish();
   }
 
+  /** Кадр Саши и фон: поза — по состоянию бега (week/look.ts), сбой проявляется в офисе. */
+  private draw(glitch: number) {
+    const b = this.body, hold = holdProgress(this.ps);
+    const look = sashaLook({ frozen: this.ps.open || hold >= 0.98, resting: isResting(this.st), dashing: this.dashT > 0, onGround: b.blocked.down,
+      vy: b.velocity.y, phone: this.phoneT > 0, speed: this.done ? 0 : Math.abs(b.velocity.x), load: this.st.load });
+    if ('anim' in look) this.sasha.play(look.anim, true); else { this.sasha.anims.stop(); this.sasha.setTexture(look.sheet, look.frame); }
+    this.sasha.setPosition(this.player.x, b.bottom + GRID);
+    this.back.update(this.cameras.main.scrollX, this.st.named ? 0 : glitch);
+  }
   private stepBeats() {
     const b = this.ch.beats[this.beat];
     if (!b || this.player.x < b.x) return;
     this.beat++;
     if (b.pace) this.pace = b.pace;
     if (b.clock) this.st = reachClock(this.st, b.clock);
-    if (b.glitch !== undefined) { this.baseGlitch = b.glitch; this.cameras.main.setBackgroundColor(COLD); }
+    if (b.glitch !== undefined) this.baseGlitch = b.glitch;
     if (b.reveal) this.reveal(b.reveal);
     if (b.notifs) this.notifKeys = b.notifs;
     if (b.say) {
@@ -152,7 +162,7 @@ export class WeekScene extends Phaser.Scene {
       this.st = overwork(this.st, peak);
       this.dashT = DASH_MS; audio.dash();
       const g = gateInReach(w.gates, act, px + 110, 130);
-      if (g) openGate(this, g);
+      if (g) openGate(this, w, g);
       // цена: дел больше — новые стопки встают на пути; на пике рывок упирается в высокую
       if (peak) addGate(this, w, { x: px + 200, kind: 'pile', h: TALL_PILE });
       else for (let i = 0; i < RULES.overworkPiles; i++) addGate(this, w, { x: px + 420 + i * 300, kind: 'pile', h: LOW_PILE });
@@ -163,12 +173,12 @@ export class WeekScene extends Phaser.Scene {
       if (this.st === before) return;
       audio.freeze(); this.clearNotifs();
       const g = gateInReach(w.gates, act, px + 150, 300);
-      if (g) openGate(this, g);
+      if (g) openGate(this, w, g);
     } else if (act === 'agree') {
       const g = gateInReach(w.gates, act, px, 170);
       this.st = agree(this.st, !!g);
       if (!g) return;
-      openGate(this, g); audio.pickup();
+      openGate(this, w, g); audio.pickup();
       this.faceT = 1300;
       this.hud.say(t(this.ch.agreeThanks), g.x, GROUND_Y - 110, 2400);
     }
@@ -198,7 +208,7 @@ export class WeekScene extends Phaser.Scene {
     this.notifAcc = 0;
     const key = this.notifKeys[this.notifN++ % this.notifKeys.length];
     const x = Phaser.Math.Between(120, W - 120);
-    const n = this.add.text(x, -20, t(key), { fontFamily: FONT, fontSize: '10px', color: '#1c1c22', backgroundColor: '#c8ccd8',
+    const n = this.add.text(x, -20, t(key), { fontFamily: FONT, fontSize: '10px', color: '#ffffff', backgroundColor: '#ff3ea5',
       padding: { x: 6, y: 5 } }).setOrigin(0.5).setDepth(8).setScrollFactor(0);
     this.notifs.push(n);
     this.tweens.add({ targets: n, y: GROUND_Y - 16, duration: 3400, onComplete: () => {
@@ -230,9 +240,9 @@ export class WeekScene extends Phaser.Scene {
     this.ctl.drain(); // тап по названию — не прыжок
     this.st = nameGlitch(this.st);
     this.clearNotifs();
-    for (const g of this.world.gates) openGate(this, g);
+    for (const g of this.world.gates) openGate(this, this.world, g);
     this.world.door.x = this.player.x + this.ch.door.nearSteps; // коридор — десять шагов
-    this.cameras.main.setBackgroundColor(WARM);
+    this.world.boss.setPosition(this.world.door.x + 56, GROUND_Y + GRID).setVisible(true);
     audio.gate();
   }
 
