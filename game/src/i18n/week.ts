@@ -20,6 +20,10 @@ export const WEEK = {
   m_wk_intro_again: wk("Понедельник уже пройден — можно ещё раз"),
   m_wk_intro_tap: wk("Касание — прыжок"),
   m_wk_intro_start: wk("касание — старт"),
+  m_wk_intro_auto: wk("Саша идёт сам"),
+  m_wk_intro_key: wk("Пробел — прыжок"),
+  m_wk_intro_start_key: wk("пробел — старт"),
+  m_wk_intro_about: wk("Пять минут про то, что бывает у всех"),
   m_wk_name: wk("Саша"),
   m_wk_goal_work: wk("цель: дойти до офиса"),
   m_wk_goal_boss: wk("цель: к начальнице к 15:00"),
@@ -39,7 +43,6 @@ export const WEEK = {
   m_wk_cost_peak: wk("не помогает"),
 
   // «Понедельник. Офис» — строки внутри мира, по порядку кадров
-  m_wk_mon_title: wk("Понедельник. Офис"),
   m_wk_mon_boss_msg: wk("Зайди ко мне в 15:00"),
   m_wk_mon_notif_report: wk("Отчёт готов?"),
   m_wk_mon_notif_call: wk("Созвон через 5 минут"),

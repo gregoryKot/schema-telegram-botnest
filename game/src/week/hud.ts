@@ -101,12 +101,6 @@ export class WeekHud {
     return b;
   }
 
-  title(text: string) {
-    const b = label(this.scene, text, SKIN.paper, { size: 26, bold: true, padX: 18, padY: 8 });
-    b.box.setScrollFactor(0).setDepth(42).setPosition(W / 2, H * 0.36).setAlpha(0);
-    this.scene.tweens.add({ targets: b.box, alpha: 1, y: H * 0.34, duration: 300 });
-    this.scene.tweens.add({ targets: b.box, alpha: 0, delay: 2400, duration: 600, onComplete: () => b.box.destroy() });
-  }
   /** Конец главы: мир уходит в тёмный индиго — поверх встаёт карточка. */
   end(onDark: () => void) {
     this.ended = true;
