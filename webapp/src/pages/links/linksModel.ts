@@ -10,15 +10,13 @@ export interface PlaceLink extends Linked {
 }
 
 export interface LinkItem {
-  /** primary — главная кнопка (одна), feature — карточка проекта, plain — остальные. */
-  kind: 'primary' | 'feature' | 'plain';
+  /** primary — главная кнопка (одна), feature — карточка проекта, note — жёлтая записка, plain — остальные. */
+  kind: 'primary' | 'feature' | 'note' | 'plain';
   title: string;
   /** Вторая строка — что это. */
   note?: string;
   /** Карточка проекта: подпись кнопки-действия. */
   cta?: string;
-  /** Пример содержимого — цитата под подписью. */
-  quote?: string;
   /** Основная ссылка пункта; нет поля — пункт ведёт только значками. null — адреса пока нет. */
   main?: Linked;
   /** Что открывают значки, для их доступного имени («… в Telegram»); по умолчанию — название. */
