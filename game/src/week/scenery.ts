@@ -1,8 +1,8 @@
-// Фон главы по её месту: офис хука или вечерняя квартира «Среды».
+// Фон главы по её месту: офис хука, вечерняя квартира «Среды» или квартира друзей «Пятницы».
 import type Phaser from 'phaser';
 import type { Chapter } from './chapter';
 import { WeekBackdrop } from './backdrop';
-import { FlatBackdrop } from './flatBackdrop';
+import { FlatBackdrop, PARTY } from './flatBackdrop';
 
 export interface Backdrop {
   /** glitch — сколько сбоя сейчас (0..1). */
@@ -13,5 +13,6 @@ export interface Backdrop {
 
 export function makeBackdrop(scene: Phaser.Scene, ch: Chapter): Backdrop {
   if (ch.scenery === 'flat') return new FlatBackdrop(scene);
+  if (ch.scenery === 'party') return new FlatBackdrop(scene, PARTY);
   return new WeekBackdrop(scene, ch.beats[0].x, ch.beats[1].x - 60, ch.hallX ?? ch.worldW, ch.worldW);
 }

@@ -22,12 +22,15 @@ export interface Beat {
   notifs?: MsgKey[]; // какие строки сыплются сверху дальше
   goal?: MsgKey;    // цель под часами меняется (и цель получает бирку)
 }
+/** Срыв ПАУЗЫ («Пятница»): мир замирает на ms и срывается сам; tag — плашка после, thought — мысль Саши. */
+export interface PauseSlip { ms: number; tag: MsgKey; thought: MsgKey }
 /** Шаг ПАУЗЫ: вопрос и названия; kicker — подпись шага, когда шагов больше одного. */
 export interface PauseStep { kicker?: MsgKey; question: MsgKey; options: MsgKey[]; correct: number }
 
 export interface Chapter {
-  id: 'mon' | 'wed';
-  scenery: 'office' | 'flat';   // какой фон рисует сцена (week/scenery.ts)
+  id: 'mon' | 'wed' | 'fri';
+  scenery: 'office' | 'flat' | 'party'; // какой фон рисует сцена (week/scenery.ts)
+  invite?: MsgKey;              // кнопка в конце прошлой главы, которая ведёт в эту
   title: MsgKey; about: MsgKey; again: MsgKey; who: MsgKey; // заставка
   goal: MsgKey; targetTag: MsgKey;
   worldW: number; startX: number; startClock: number; startPace: Pace;
@@ -41,7 +44,8 @@ export interface Chapter {
   door: { x: number; keepAway: number; nearSteps: number; pauseAfterMs: number; peakPileEvery: number };
   agreeThanks: MsgKey;
   hints?: Partial<Record<Act, MsgKey>>; costs?: Partial<Record<Act, MsgKey>>;
-  pause: { steps: PauseStep[]; between?: MsgKey }; // between — мысль, когда первый шаг пройден, а сбой не ушёл
+  // between — мысль, когда первый шаг пройден, а сбой не ушёл; slips — первые удержания срываются (навык, не кнопка)
+  pause: { steps: PauseStep[]; between?: MsgKey; slips?: PauseSlip[] };
   end: { line: MsgKey; after: MsgKey; card: 'hook' | 'end' };
 }
 
