@@ -29,14 +29,21 @@ describe('check-owner-waiting.mjs', () => {
   });
 
   it('строка без рекомендации, ссылки и даты — exit 1 с номером строки и списком', () => {
-    const res = runGate(GATE, doc('## Ждёт владельца\n\n- **Рисуем в стиле эталона?**\n'));
+    const res = runGate(
+      GATE,
+      doc('## Ждёт владельца\n\n- **Рисуем в стиле эталона?**\n'),
+    );
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('docs/BACKLOG.md:7');
-    expect(res.stderr).toContain('«Рекомендация:», ссылка на чат или артефакт, дата YYYY-MM-DD');
+    expect(res.stderr).toContain(
+      '«Рекомендация:», ссылка на чат или артефакт, дата YYYY-MM-DD',
+    );
   });
 
   it('раздел без строк и без «Пусто.», либо «Пусто.» рядом с вопросом — exit 1', () => {
     expect(runGate(GATE, doc('## Ждёт владельца\n')).status).toBe(1);
-    expect(runGate(GATE, doc(`## Ждёт владельца\n\nПусто.\n${GOOD}\n`)).status).toBe(1);
+    expect(
+      runGate(GATE, doc(`## Ждёт владельца\n\nПусто.\n${GOOD}\n`)).status,
+    ).toBe(1);
   });
 });
