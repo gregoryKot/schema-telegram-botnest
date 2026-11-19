@@ -302,7 +302,7 @@ test.describe('игра: телефон в портрете', () => {
   });
 });
 
-// «Неделя»: каркас «Понедельника» на серых блоках, вход по скрытому хешу #week. Саша бежит сам.
+// «Неделя»: «Понедельник» с артом хука, вход по скрытому хешу #week. Саша бежит сам.
 interface WeekGate {
   x: number;
   kind: string;
@@ -325,6 +325,8 @@ interface WeekSceneLike {
   player: { x: number; y: number; body: { reset(x: number, y: number): void } };
   world: { gates: WeekGate[]; door: { x: number } };
   children: { list: Obj[] };
+  textures: { exists(key: string): boolean };
+  sasha: { texture: { key: string } };
 }
 const weekState = (page: Page) =>
   page.evaluate(() => {
@@ -342,6 +344,10 @@ const weekState = (page: Page) =>
       revealed: [...sc.revealed],
       gates: sc.world.gates.map((g) => ({ x: g.x, open: g.open })),
       gateCount: sc.world.gates.length,
+      art: ['bg_wk_home', 'bg_wk_street', 'bg_wk_office', 'bg_wk_office_glitch', 'wk_piles'].every((k) =>
+        sc.textures.exists(k),
+      ),
+      sashaSheet: sc.sasha.texture.key,
       texts: sc.children.list
         .filter((o) => o.type === 'Text')
         .map((o) => o.text ?? ''),
@@ -384,6 +390,9 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     const start = await weekState(page);
     expect(start.texts).toContain('Понедельник. Офис');
     expect(start.revealed).toEqual([]);
+    // арт хука загружен, Саша нарисован своим листом, а не блоком
+    expect(start.art).toBe(true);
+    expect(start.sashaSheet).toMatch(/^wk_sasha_/);
 
     // утро: ни одной клавиши — Саша идёт сам
     await expect
