@@ -4,6 +4,7 @@ import { GRID } from '../gridScale';
 export interface SashaView {
   frozen: boolean;   // ПАУЗА удержана до остановки
   resting: boolean;  // сил нет — плетётся
+  sitting?: boolean; // …а первую секунду сидит
   dashing: boolean;
   onGround: boolean;
   vy: number;
@@ -17,6 +18,7 @@ export type SashaLook = { anim: string } | { sheet: string; frame: number };
 export function sashaLook(v: SashaView): SashaLook {
   const heavy = v.load > 0 ? '_heavy' : '';
   if (v.frozen) return { sheet: `wk_sasha_still${heavy}`, frame: 0 };
+  if (v.sitting) return { sheet: `wk_sasha_still${heavy}`, frame: 1 };
   if (v.resting) return { anim: `wk-trudge${heavy}` };
   if (v.dashing) return { anim: `wk-dash${heavy}` };
   if (!v.onGround) return { sheet: `wk_sasha_air${heavy}`, frame: v.vy < 0 ? 0 : 1 };
