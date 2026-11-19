@@ -41,3 +41,37 @@ describe('ПАУЗА', () => {
     expect(choosePause(p, 2, 2)).toBe(p);
   });
 });
+
+describe('ПАУЗА срывается («Пятница»)', () => {
+  const PLAN = [900, 2600];
+  const hold = (p = newPause()) => holdPause(p, PAUSE_HOLD_MS, true, PLAN);
+  it('первое удержание не открывает выбор: мир замирает и срывается сам, держат кнопку или нет', () => {
+    const a = hold();
+    expect(a.open).toBe(false);
+    expect(a.slipMs).toBe(900);
+    expect(holdPause(a, 400, false, PLAN).slipMs).toBe(500);
+    const b = holdPause(holdPause(a, 400, false, PLAN), 500, true, PLAN);
+    expect(b).toMatchObject({ slipMs: 0, slips: 1, open: false, tried: [], step: 0 });
+  });
+  it('после срыва кнопку нужно отпустить: зажатая с прошлого раза не считается', () => {
+    const slipped = holdPause(hold(), 900, true, PLAN);
+    expect(holdPause(slipped, PAUSE_HOLD_MS, true, PLAN).heldMs).toBe(0);
+    const released = holdPause(slipped, 16, false, PLAN);
+    expect(holdPause(released, PAUSE_HOLD_MS, true, PLAN).slipMs).toBe(2600);
+  });
+  it('вторая попытка держится дольше первой, третья открывает выбор; на втором шаге срывов нет', () => {
+    let p = newPause();
+    for (const ms of PLAN) {
+      p = hold(p);
+      expect(p.slipMs).toBe(ms);
+      p = holdPause(holdPause(p, ms, false, PLAN), 16, false, PLAN);
+    }
+    p = hold(p);
+    expect(p.open).toBe(true);
+    p = choosePause(p, 1, 1, false);
+    expect(hold(p).open).toBe(true);
+  });
+  it('без плана срывов ПАУЗА открывается с первого удержания', () => {
+    expect(holdPause(newPause(), PAUSE_HOLD_MS, true).open).toBe(true);
+  });
+});
