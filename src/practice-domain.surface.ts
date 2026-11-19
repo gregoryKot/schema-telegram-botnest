@@ -16,7 +16,7 @@ export const PRACTICE_PAGES: readonly string[] = [
   '/donate',
   '/privacy',
   '/offer',
-  '/links', // страница ссылок для шапок соцсетей, не для поиска
+  '/privet', // страница ссылок для шапок соцсетей, не для поиска; синонимы — practice-domain.redirects.ts
 ];
 /** Префиксы страниц с параметром (`/articles/:slug`). */
 export const PRACTICE_PAGE_PREFIXES: readonly string[] = ['/articles/'];
