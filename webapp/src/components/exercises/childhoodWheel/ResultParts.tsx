@@ -3,11 +3,8 @@ import { useTr } from '../../../utils/addressForm';
 import { NeedArt } from '../../art/NeedArt';
 import { inkVars } from '../../history/needInk';
 import { ExNext } from '../ExNext';
+import { childhoodLevel } from '../../../../../shared/src/childhoodWheel/childhoodWheel';
 import { NEEDS } from './needs';
-
-/** Ниже этой оценки и выше этой — текст полюса шкалы, между — «Где-то между». */
-const LOW_MAX = 4;
-const HIGH_MIN = 8;
 
 /**
  * Пять оценок результата плотным списком: знак потребности, название и полюс шкалы, к которому оценка
@@ -23,7 +20,7 @@ export function ResultRows({ ratings }: { ratings: Record<string, number> }) {
             <span className="pp-row-art" aria-hidden="true"><NeedArt id={n.id} size="row" /></span>
             <span className="chw-res-body">
               <span className="chw-res-label">{n.label}</span>
-              <span className="chw-res-text">{r <= LOW_MAX ? n.low : r >= HIGH_MIN ? n.high : 'Где-то между. Бывало по-разному.'}</span>
+              <span className="chw-res-text">{{ low: n.low, high: n.high, mid: 'Где-то между. Бывало по-разному.' }[childhoodLevel(r)]}</span>
             </span>
             <span className="chw-res-value">{r}<span>/10</span></span>
           </li>

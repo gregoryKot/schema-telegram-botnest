@@ -11,6 +11,7 @@
 // сортировка) — им не нужно переходить на хук.
 import { useAddressForm, type AddressForm } from '../utils/addressForm';
 import { buildYsqSchemas } from './ysqSchemasContent';
+import { getNeedData, NEED_ORDER } from '../needs/needData';
 
 export interface SchemaInfo {
   name: string;
@@ -47,13 +48,12 @@ export function useYsqSchemas(): SchemaInfo[] {
 // разведённый по форме текст через useYsqSchemas().
 export const SCHEMAS: SchemaInfo[] = getYsqSchemas('ty');
 
-export const NEED_LABELS: Record<string, string> = {
-  attachment: 'Привязанность',
-  autonomy: 'Автономия',
-  expression: 'Выражение',
-  play: 'Игра/Радость',
-  limits: 'Самоконтроль',
-};
+// Названия потребностей — из трекера (shared/src/needs/content): «Совпадает с дневником: …»
+// называет ту потребность, которую человек видит в дневнике. От формы обращения не зависят.
+const NEED_DATA = getNeedData('ty');
+export const NEED_LABELS: Record<string, string> = Object.fromEntries(
+  NEED_ORDER.map((id) => [id, NEED_DATA[id].name]),
+);
 
 export const DOMAIN_ORDER = [
   'attachment',

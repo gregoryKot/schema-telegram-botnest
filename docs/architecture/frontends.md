@@ -111,7 +111,7 @@
 | `shared/src/quickActions/` | меню «+»: реестр, порядок, скрытые, drag |
 | `shared/src/quiz/` | `quizEngine`: мини-тесты, подсчёт результата на клиенте |
 | `shared/src/schema/` | шаги и пояснения дневника схем, черновик |
-| `shared/src/schemaTherapy/` | контент схем и режимов (`schemaTherapyData`), типы |
+| `shared/src/schemaTherapy/` | контент схем и режимов (`schemaTherapyData`), типы; `schemaNeed.ts` — связка схема → домен → потребность (`domainNeedId`, `needDomain`): схемы потребности для колеса детства и листа потребности |
 | `shared/src/screens/` | `screenBlocks`: порядок блоков экранов |
 | `shared/src/selfHelp/` | текст «Важное о самопомощи» |
 | `shared/src/settings/` | константы уведомлений, тексты, выбор ты/вы |

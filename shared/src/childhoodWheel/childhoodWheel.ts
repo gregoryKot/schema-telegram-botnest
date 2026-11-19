@@ -3,6 +3,7 @@ import {
   ALL_SCHEMAS,
   type FlatSchema,
 } from '../schemaTherapy/schemaTherapyData';
+import { needDomain } from '../schemaTherapy/schemaNeed';
 
 // Логика «Колеса детства», общая для сайта и мини-аппа: порог низкой зоны,
 // сборка сохранённых оценок, схемы, которые могут стоять за дефицитом.
@@ -11,6 +12,18 @@ export type ChildhoodRatings = Record<NeedId, number>;
 
 /** Оценка ≤ этого значения считается дефицитом потребности в детстве. */
 export const LOW_NEED_MAX = 4;
+
+/** Оценка ≥ этого значения: потребности в детстве хватало. */
+export const ENOUGH_NEED_MIN = 7;
+
+export type ChildhoodLevel = 'low' | 'mid' | 'high';
+
+/** Зона оценки: дефицит, середина или «хватало». Один порог на все экраны колеса и лист потребности. */
+export function childhoodLevel(score: number): ChildhoodLevel {
+  if (score <= LOW_NEED_MAX) return 'low';
+  if (score >= ENOUGH_NEED_MIN) return 'high';
+  return 'mid';
+}
 
 /** Стартовое положение ползунков (нейтральная середина, не «сохранённое»). */
 export function defaultChildhoodRatings(): ChildhoodRatings {
@@ -49,55 +62,16 @@ export function childhoodAverage(ratings: Record<string, number>): number {
   return Math.round((sum / NEED_ORDER.length) * 10) / 10;
 }
 
-/** Тон бейджа примера: красный — дефицит, зелёный — насыщение. */
-export function exampleTone(score: number): 'low' | 'mid' | 'high' {
-  if (score <= 3) return 'low';
-  if (score < 8) return 'mid';
-  return 'high';
-}
-
-/** Домен и схемы (по id из SCHEMA_DOMAINS), которые могут формироваться при дефиците потребности. */
-export const CHILDHOOD_SCHEMA_HINTS: Record<
-  NeedId,
-  { domain: string; schemaIds: string[] }
-> = {
-  attachment: {
-    domain: 'Нарушение связи и отвержение',
-    schemaIds: [
-      'abandonment',
-      'mistrust',
-      'emotional_deprivation',
-      'defectiveness',
-    ],
-  },
-  autonomy: {
-    domain: 'Нарушенная автономия',
-    schemaIds: ['dependence', 'failure', 'enmeshment'],
-  },
-  expression: {
-    domain: 'Направленность на других + Сверхбдительность и подавление эмоций',
-    schemaIds: [
-      'subjugation',
-      'self_sacrifice',
-      'emotion_inhibition_fear',
-      'emotional_inhibition',
-      'approval_seeking',
-    ],
-  },
-  play: {
-    domain: 'Сверхбдительность и подавление эмоций',
-    schemaIds: [
-      'unrelenting_standards',
-      'negativity',
-      'punitiveness_self',
-      'punitiveness_others',
-    ],
-  },
-  limits: {
-    domain: 'Нарушенные границы',
-    schemaIds: ['entitlement', 'insufficient_self_control'],
-  },
-};
+/** Домен и схемы (по id из SCHEMA_DOMAINS), которые могут сложиться при дефиците потребности: домен этой потребности. */
+export const CHILDHOOD_SCHEMA_HINTS = Object.fromEntries(
+  NEED_ORDER.map((id) => {
+    const d = needDomain(id);
+    return [
+      id,
+      { domain: d?.domain ?? '', schemaIds: d?.schemas.map((s) => s.id) ?? [] },
+    ];
+  }),
+) as Record<NeedId, { domain: string; schemaIds: string[] }>;
 
 export function hintSchemas(id: NeedId): FlatSchema[] {
   return CHILDHOOD_SCHEMA_HINTS[id].schemaIds
