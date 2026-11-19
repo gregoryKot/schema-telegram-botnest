@@ -4,6 +4,7 @@
     "src/api/telegram-auth.guard.ts": 93.1,
     "src/auth/auth.service.ts": 95.39,
     "src/auth/login-ticket/login-ticket.service.ts": 100,
+    "src/auth/login-ticket/ticket-session.ts": 100,
     "src/auth/max-init-data.ts": 100,
     "src/auth/merge-combine-rules.ts": 96.88,
     "src/auth/merge-combine.ts": 86.79,
