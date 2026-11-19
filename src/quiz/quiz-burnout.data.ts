@@ -32,10 +32,22 @@ export function buildBurnoutQuiz(form: AddressForm): Quiz {
           'Пятница, вечер. Что чаще всего у вас в голове?',
         ),
         options: [
-          { label: 'Что можно было сделать лучше за неделю', resultId: 'standards' },
-          { label: 'Кому ещё обещано помочь на выходных', resultId: 'sacrifice' },
-          { label: 'Ничего. Внутри ровно и как-то пусто', resultId: 'inhibition' },
-          { label: 'Скорее бы лечь с телефоном и не думать', resultId: 'soother' },
+          {
+            label: 'Что можно было сделать лучше за неделю',
+            resultId: 'standards',
+          },
+          {
+            label: 'Кому ещё обещано помочь на выходных',
+            resultId: 'sacrifice',
+          },
+          {
+            label: 'Ничего. Внутри ровно и как-то пусто',
+            resultId: 'inhibition',
+          },
+          {
+            label: 'Скорее бы лечь с телефоном и не думать',
+            resultId: 'soother',
+          },
         ],
       },
       {
@@ -45,10 +57,22 @@ export function buildBurnoutQuiz(form: AddressForm): Quiz {
           'Вам предлагают отпуск прямо сейчас. Первая мысль:',
         ),
         options: [
-          { label: 'Сначала доделаю, иначе отдых не в радость', resultId: 'standards' },
-          { label: 'А кто без меня справится с делами семьи?', resultId: 'sacrifice' },
-          { label: 'Можно. Хотя радости от этой мысли нет', resultId: 'inhibition' },
-          { label: 'Наконец-то отключусь от всего и от всех', resultId: 'soother' },
+          {
+            label: 'Сначала доделаю, иначе отдых не в радость',
+            resultId: 'standards',
+          },
+          {
+            label: 'А кто без меня справится с делами семьи?',
+            resultId: 'sacrifice',
+          },
+          {
+            label: 'Можно. Хотя радости от этой мысли нет',
+            resultId: 'inhibition',
+          },
+          {
+            label: 'Наконец-то отключусь от всего и от всех',
+            resultId: 'soother',
+          },
         ],
       },
       {
@@ -58,9 +82,18 @@ export function buildBurnoutQuiz(form: AddressForm): Quiz {
           'На работе завал. Как вы с ним обходитесь?',
         ),
         options: [
-          { label: 'Сижу допоздна и проверяю всё по два раза', resultId: 'standards' },
-          { label: 'Беру и чужие задачи: коллегам ещё хуже', resultId: 'sacrifice' },
-          { label: 'Молча тяну. Жаловаться не в моих правилах', resultId: 'inhibition' },
+          {
+            label: 'Сижу допоздна и проверяю всё по два раза',
+            resultId: 'standards',
+          },
+          {
+            label: 'Беру и чужие задачи: коллегам ещё хуже',
+            resultId: 'sacrifice',
+          },
+          {
+            label: 'Молча тяну. Жаловаться не в моих правилах',
+            resultId: 'inhibition',
+          },
           { label: 'Работаю рывками, между ними — лента', resultId: 'soother' },
         ],
       },
@@ -71,9 +104,18 @@ export function buildBurnoutQuiz(form: AddressForm): Quiz {
           'Близкий спрашивает: «Как вы?» Что вы отвечаете?',
         ),
         options: [
-          { label: 'Нормально, просто много дел, надо успеть', resultId: 'standards' },
-          { label: 'Сразу перевожу разговор на его заботы', resultId: 'sacrifice' },
-          { label: '«Всё хорошо» — даже когда всё совсем не так', resultId: 'inhibition' },
+          {
+            label: 'Нормально, просто много дел, надо успеть',
+            resultId: 'standards',
+          },
+          {
+            label: 'Сразу перевожу разговор на его заботы',
+            resultId: 'sacrifice',
+          },
+          {
+            label: '«Всё хорошо» — даже когда всё совсем не так',
+            resultId: 'inhibition',
+          },
           { label: 'Отшучиваюсь и ухожу в телефон', resultId: 'soother' },
         ],
       },
@@ -84,18 +126,33 @@ export function buildBurnoutQuiz(form: AddressForm): Quiz {
           'Отчего вам особенно тяжело?',
         ),
         options: [
-          { label: 'Результат никогда не дотягивает до планки', resultId: 'standards' },
-          { label: 'Все что-то просят, а меня никто не спросит', resultId: 'sacrifice' },
-          { label: 'Чувства будто под крышкой, не выходят', resultId: 'inhibition' },
+          {
+            label: 'Результат никогда не дотягивает до планки',
+            resultId: 'standards',
+          },
+          {
+            label: 'Все что-то просят, а меня никто не спросит',
+            resultId: 'sacrifice',
+          },
+          {
+            label: 'Чувства будто под крышкой, не выходят',
+            resultId: 'inhibition',
+          },
           { label: 'Ничего не радует, только отвлекает', resultId: 'soother' },
         ],
       },
       {
         text: 'Выдался свободный час. Как он проходит?',
         options: [
-          { label: 'Трачу его на то, что можно улучшить', resultId: 'standards' },
+          {
+            label: 'Трачу его на то, что можно улучшить',
+            resultId: 'standards',
+          },
           { label: 'Помогаю тому, кто попросил', resultId: 'sacrifice' },
-          { label: 'Делаю что-то полезное и спокойное', resultId: 'inhibition' },
+          {
+            label: 'Делаю что-то полезное и спокойное',
+            resultId: 'inhibition',
+          },
           { label: 'Пролистываю ленту, и час пролетает', resultId: 'soother' },
         ],
       },
