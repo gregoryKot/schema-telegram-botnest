@@ -1,6 +1,7 @@
 """Люди «Недели»: Саша (все позы хука), коллеги с лицом и без, начальница.
 Саша — холодное серое худи и горчичный рюкзак: единственное тёплое пятно героя, видно на любом фоне."""
 import math
+from PIL import ImageOps
 from px import strip
 from week_rig import figure, mats, HOOD, HAIR, SKIN, EYE, LID, BLANK, SKIN_A
 
@@ -88,6 +89,8 @@ TALK = dict(hip=(19, 20), legs=((3, 0), (-5, -2)), arms=((10, 60), (-4, 30)))
 CARRY = dict(hip=(19, 20), legs=((3, 0), (-4, -2)), arms=((30, 80), (34, 84)), hold='box')
 MUG = dict(hip=(19, 20), legs=((3, 1), (-3, -1)), arms=((8, 20), (20, 120)))
 SIT_DESK = dict(hip=(15, 15), legs=((86, 2), (82, -2)), arms=((30, 84), (24, 86)))
+# начальница за столом: подняла голову от монитора, ладони ещё на клавиатуре
+SIT_UP = dict(SIT_DESK, lean=-4, arms=((40, 92), (34, 96)), head=(-1, -1))
 # пауза: стопы вместе, ладонь на груди, голова чуть вниз, глаза закрыты
 PAUSE = dict(hip=(19, 20), legs=((2, 0), (-2, 0)), arms=((4, 10), (18, 150)), head=(0, 1))
 # без сил: сидит на полу, колени к груди, голова опущена
@@ -140,6 +143,7 @@ def cast():
     c['colleague_box'] = [figure(CARRY, person(**PEOPLE['a'])), figure(CARRY, person(**PEOPLE['a'], blank=True)),
                           figure(TALK, person(**PEOPLE['a']))]
     c['boss'] = [figure(MUG, person(**BOSS)), figure(MUG, person(**BOSS, blank=True))]
+    c['boss_sit'] = ImageOps.mirror(figure(SIT_UP, person(**BOSS)))      # лицом влево, к двери
     return c
 
 if __name__ == '__main__':

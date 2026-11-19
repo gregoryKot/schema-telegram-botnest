@@ -19,6 +19,30 @@
       font-style: normal; font-weight: 400; font-display: swap;
       src: url('/game/fonts/ps2p-latin.woff2') format('woff2');
     }
+    /* «Неделя»: узкий модульный шрифт — длинные строки читаются на ширине телефона.
+       В latin-файлах ноль заменён на знак без точки: с точкой он читался как 8 (номер телефона доверия). */
+    @font-face {
+      font-family: 'Handjet';
+      font-style: normal; font-weight: 500; font-display: swap;
+      src: url('/game/fonts/handjet-cyrillic-500.woff2') format('woff2');
+      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+    @font-face {
+      font-family: 'Handjet';
+      font-style: normal; font-weight: 500; font-display: swap;
+      src: url('/game/fonts/handjet-latin-500.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Handjet';
+      font-style: normal; font-weight: 700; font-display: swap;
+      src: url('/game/fonts/handjet-cyrillic-700.woff2') format('woff2');
+      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+    @font-face {
+      font-family: 'Handjet';
+      font-style: normal; font-weight: 700; font-display: swap;
+      src: url('/game/fonts/handjet-latin-700.woff2') format('woff2');
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       margin: 0;
@@ -71,7 +95,19 @@
     /* Саша бежит сам: влево-вправо в «Неделе» нет, место слева остаётся под касание-прыжок */
     #touch-controls.week .dpad { visibility: hidden; pointer-events: none; }
     #touch-controls.week .action-pad { display: grid; grid-template-columns: 100px 100px 62px; align-items: end; }
-    #touch-controls.week .tbtn.act { width: 100px; height: 44px; font-size: 8px; }
+    #touch-controls.week .tbtn.act {
+      width: 100px; height: 44px; font: 700 15px 'Handjet', 'Press Start 2P', monospace; letter-spacing: 0.5px;
+      background: #2b2060; border: 2px solid #231a36; border-radius: 6px; color: #fff6e6;
+      box-shadow: inset 0 -4px 0 #17103a, inset 0 0 0 1px #6753b8;
+    }
+    #touch-controls.week .tbtn.act.pressed { background: #3b2d80; box-shadow: inset 0 0 0 1px #6753b8; transform: translateY(2px); }
+    #touch-controls.week #tbtn-pause { background: #fff6e6; color: #231a36; box-shadow: inset 0 -4px 0 #d9c9b0; }
+    #touch-controls.week #tbtn-pause.pressed { background: #ffe9c2; box-shadow: none; }
+    #touch-controls.week #tbtn-jump {
+      background: #2b2060; border: 2px solid #231a36; color: #fff6e6; border-radius: 50%;
+      box-shadow: inset 0 -4px 0 #17103a, inset 0 0 0 1px #6753b8;
+    }
+    #touch-controls.week #tbtn-jump.pressed { background: #3b2d80; box-shadow: inset 0 0 0 1px #6753b8; transform: translateY(2px); }
     #touch-controls.week #tbtn-jump { grid-column: 3; grid-row: 1 / span 2; }
     .tbtn {
       width: 58px; height: 58px;

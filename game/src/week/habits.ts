@@ -17,7 +17,7 @@ export const RULES = {
   overworkCost: 30, overworkPiles: 2, overworkCalmMs: 2000, overworkCalmLevel: 0.3,
   scrollJumpMin: 130, scrollFade: 0.34, scrollCalmMs: 2500,
   agreeJumpLoss: 0.12, minJump: 0.6,
-  restMs: 2200, restEnergy: 40,
+  restMs: 2200, restEnergy: 40, sitMs: 1000,
   clockCap: 14 * 60 + 58, // встреча в 15:00 — телефон не уносит дальше двери
 } as const;
 
@@ -81,6 +81,8 @@ export function tick(s: WeekState, dtMs: number): WeekState {
 }
 
 export const isResting = (s: WeekState): boolean => s.restMs > 0;
+/** Первую секунду без сил Саша сидит, потом поднимается и плетётся. */
+export const isSitting = (s: WeekState): boolean => s.restMs > RULES.restMs - RULES.sitMs;
 
 export function clockText(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;

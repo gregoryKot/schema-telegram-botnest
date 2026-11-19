@@ -9,12 +9,15 @@ import { t, type MsgKey } from '../i18n';
 import { MONDAY, doorX, gateInReach, type Act } from '../week/monday';
 import { runSpeed, type Pace } from '../week/run';
 import {
-  RULES, agree, glitchLevel, isResting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock, scroll,
+  RULES, agree, glitchLevel, isResting, isSitting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock, scroll,
   tick, type WeekState,
 } from '../week/habits';
 import { choosePause, holdPause, holdProgress, newPause, type PauseState } from '../week/pause';
 import { addGate, buildWorld, openGate, type World } from '../week/world';
-import { WeekHud, FONT } from '../week/hud';
+import { WeekHud } from '../week/hud';
+import { showWeekCard } from '../week/card';
+import { trackEvent } from '../analytics';
+import { px as ui } from '../week/ui';
 import { PausePanel } from '../week/pausePanel';
 import { ACT_KEYS, WeekInput } from '../week/input';
 import { enterWeekTouch, leaveWeekTouch, revealWeekAct } from '../week/touch';
@@ -42,7 +45,7 @@ export class WeekScene extends Phaser.Scene {
   private ctl!: WeekInput;
   private hud!: WeekHud;
   private panel!: PausePanel;
-  private notifs: Phaser.GameObjects.Text[] = [];
+  private notifs: Phaser.GameObjects.Container[] = [];
   private notifKeys: MsgKey[] = [];
   private beat = 0; private dashT = 0; private phoneT = 0; private faceT = 0;
   private peakMs = 0; private peakHabit = false; private notifAcc = 0; private notifN = 0;
@@ -72,13 +75,13 @@ export class WeekScene extends Phaser.Scene {
 
     this.ctl = new WeekInput(this);
     this.hud = new WeekHud(this);
-    this.panel = new PausePanel(this, t(ch.pause.question), ch.pause.options.map(k => t(k)), i => this.pick(i));
+    this.panel = new PausePanel(this, t(LABEL.pause), t(ch.pause.question), ch.pause.options.map(k => t(k)), i => this.pick(i));
     enterWeekTouch({ overwork: t(LABEL.overwork), scroll: t(LABEL.scroll), agree: t(LABEL.agree), pause: t(LABEL.pause) });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, leaveWeekTouch);
     this.hud.title(t(ch.title));
 
     audio.setMode('day');
-    const begin = () => { audio.ensure(); audio.startMusic(); };
+    const begin = () => { audio.ensure(); audio.startMusic(); trackEvent('game_chapter_start', { chapter: ch.id }); };
     this.input.once('pointerdown', begin);
     this.input.keyboard?.once('keydown', begin);
   }
@@ -119,7 +122,7 @@ export class WeekScene extends Phaser.Scene {
   /** Кадр Саши и фон: поза — по состоянию бега (week/look.ts), сбой проявляется в офисе. */
   private draw(glitch: number) {
     const b = this.body, hold = holdProgress(this.ps);
-    const look = sashaLook({ frozen: this.ps.open || hold >= 0.98, resting: isResting(this.st), dashing: this.dashT > 0, onGround: b.blocked.down,
+    const look = sashaLook({ frozen: this.ps.open || hold >= 0.98, resting: isResting(this.st), sitting: isSitting(this.st), dashing: this.dashT > 0, onGround: b.blocked.down,
       vy: b.velocity.y, phone: this.phoneT > 0, speed: this.done ? 0 : Math.abs(b.velocity.x), load: this.st.load });
     if ('anim' in look) this.sasha.play(look.anim, true); else { this.sasha.anims.stop(); this.sasha.setTexture(look.sheet, look.frame); }
     this.sasha.setPosition(this.player.x, b.bottom + GRID);
@@ -135,7 +138,7 @@ export class WeekScene extends Phaser.Scene {
     if (b.reveal) this.reveal(b.reveal);
     if (b.notifs) this.notifKeys = b.notifs;
     if (b.say) {
-      if (b.sayAt !== undefined) this.hud.say(t(b.say), b.sayAt, GROUND_Y - 110, 6000);
+      if (b.sayAt !== undefined) this.hud.say(t(b.say), b.sayAt, GROUND_Y - ui(96), 6000, b.msg ? 'msg' : 'say');
       else this.hud.think(t(b.say));
     }
   }
@@ -180,7 +183,7 @@ export class WeekScene extends Phaser.Scene {
       if (!g) return;
       openGate(this, w, g); audio.pickup();
       this.faceT = 1300;
-      this.hud.say(t(this.ch.agreeThanks), g.x, GROUND_Y - 110, 2400);
+      this.hud.say(t(this.ch.agreeThanks), g.x + 30, GROUND_Y - ui(96), 2400);
     }
   }
 
@@ -189,7 +192,7 @@ export class WeekScene extends Phaser.Scene {
     const b = this.body, jump = this.ctl.jump(), resting = isResting(this.st);
     this.phoneT = Math.max(0, this.phoneT - dt);
     if (this.dashT > 0) { this.dashT -= dt; b.setVelocityX(DASH_SPEED); return; }
-    b.setVelocityX(runSpeed({ pace: this.pace, resting, named: this.st.named, hold: holdProgress(this.ps) }));
+    b.setVelocityX(runSpeed({ pace: this.pace, resting, named: this.st.named, hold: holdProgress(this.ps), sitting: isSitting(this.st) }));
     if (jump && b.blocked.down && !resting) { b.setVelocityY(PHYS.jumpVel * jumpFactor(this.st)); audio.jump(); }
   }
 
@@ -207,9 +210,7 @@ export class WeekScene extends Phaser.Scene {
     if (this.notifAcc < 700) return;
     this.notifAcc = 0;
     const key = this.notifKeys[this.notifN++ % this.notifKeys.length];
-    const x = Phaser.Math.Between(120, W - 120);
-    const n = this.add.text(x, -20, t(key), { fontFamily: FONT, fontSize: '10px', color: '#ffffff', backgroundColor: '#ff3ea5',
-      padding: { x: 6, y: 5 } }).setOrigin(0.5).setDepth(8).setScrollFactor(0);
+    const n = this.hud.notif(t(key), Phaser.Math.Between(W * 0.2, W * 0.8), this.notifN).box;
     this.notifs.push(n);
     this.tweens.add({ targets: n, y: GROUND_Y - 16, duration: 3400, onComplete: () => {
       this.notifs = this.notifs.filter(o => o !== n); n.destroy();
@@ -250,8 +251,9 @@ export class WeekScene extends Phaser.Scene {
     this.done = true;
     this.body.setVelocity(0, 0);
     setTouchControls(false);
-    this.hud.say(t(this.ch.end.bossLine), this.world.door.x, GROUND_Y - 120, 3000);
+    trackEvent('game_chapter_done', { chapter: this.ch.id });
+    this.hud.say(t(this.ch.end.bossLine), this.world.boss.x, GROUND_Y - ui(96), 3000);
     this.time.delayedCall(1800, () => this.hud.think(t(this.ch.end.afterThought), 2400));
-    this.time.delayedCall(4400, () => this.hud.end(t('m_wk_card_soon')));
+    this.time.delayedCall(4400, () => this.hud.end(() => showWeekCard(this)));
   }
 }

@@ -13,6 +13,7 @@ const HOTLINE = '8-800-100-49-94';
 interface Obj {
   type: string;
   text?: string;
+  list?: Obj[];
   x: number;
   y: number;
   depth: number;
@@ -352,7 +353,9 @@ const weekState = (page: Page) =>
         'wk_piles',
       ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,
+      // подписи пузырей и кнопок лежат внутри контейнеров
       texts: sc.children.list
+        .flatMap((o) => [o, ...(o.list ?? [])])
         .filter((o) => o.type === 'Text')
         .map((o) => o.text ?? ''),
     };
@@ -476,9 +479,39 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     expect((await weekState(page)).texts).toContain(
       'Глянь отчёт до четверга, ладно?',
     );
+    // карточка после хука: зов, продолжение, «поделиться» и кризисная строка двумя линиями
     await expect
       .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
       .toContain('Продолжение скоро');
+    const card = (await weekState(page)).texts;
+    for (const line of [
+      'Записаться на первую встречу',
+      'Попробовать в приложении',
+      'Поделиться',
+      'если тяжело прямо сейчас — 8-800-100-49-94, бесплатно',
+      'детям и подросткам — 8-800-2000-122',
+    ])
+      expect(card).toContain(line);
+    expect(card.some((l) => l.startsWith('В схема-терапии учатся'))).toBe(true);
+    for (const name of [
+      'game_chapter_start',
+      'game_chapter_done',
+      'game_cta_shown',
+    ])
+      expect(events).toContain(name);
+
+    // зов: нажатие «Записаться» уходит событием (новая вкладка в смоке не открывается)
+    await page.evaluate(() => {
+      window.open = () => null;
+      const sc = (window as unknown as GameWindow).__game!.scene.getScene(
+        'Week',
+      ) as WeekSceneLike;
+      const btn = sc.children.list.find((o) =>
+        o.list?.some((c) => c.text === 'Записаться на первую встречу'),
+      ) as unknown as { emit(e: string): void };
+      btn.emit('pointerdown');
+    });
+    await expect.poll(() => events).toContain('game_cta_click');
   });
 
   test.describe('с телефона', () => {

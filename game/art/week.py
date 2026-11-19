@@ -7,13 +7,15 @@ from week_city import city
 from week_office import office, FEET, ACID
 from week_street import street, home
 from week_props import props
+from week_corridor import corridor, boss_room, arch, DOOR_X
 
 SHEETS = ('idle', 'walk', 'run', 'phone', 'air', 'dash', 'still')
 
 def assets():
     c = cast()
     made = {'bg_wk_city': city(), 'bg_wk_office': office(), 'bg_wk_office_glitch': office(True),
-            'bg_wk_street': street(), 'bg_wk_home': home()}
+            'bg_wk_street': street(), 'bg_wk_home': home(), 'bg_wk_corridor': corridor(),
+            'bg_wk_corridor_glitch': corridor(True), 'bg_wk_boss_room': boss_room(), 'wk_arch': arch()}
     for k in SHEETS:
         made['wk_sasha_' + k] = strip(c['sasha_' + k]); made[f'wk_sasha_{k}_heavy'] = strip(c[f'sasha_{k}_heavy'])
     for k in ('colleague_a', 'colleague_b', 'colleague_c', 'colleague_box', 'boss'):
@@ -53,8 +55,27 @@ def previews(made, c):
                                 + c['sasha_dash'][:1] + c['sasha_still'][:3]), (0, 0))
     sheet.alpha_composite(strip(c['sasha_run_heavy'][:2] + c['colleague_a'] + c['colleague_b'] + c['colleague_c']
                                 + c['colleague_box'][:2] + c['boss']), (0, 62))
-    return {'week_morning': phone(morning), 'week_street': phone(street_f), 'week_office_calm': phone(calm),
+    return {**halls(m, c, cell), 'week_morning': phone(morning), 'week_street': phone(street_f), 'week_office_calm': phone(calm),
             'week_office_glitch': phone(glitch), 'week_cast': up(sheet, 3).convert('RGB')}
+
+def halls(m, c, cell):
+    """Коридор: опенспейс | портал | плитка x2 (виден шов плиток), сбой; кабинет начальницы со вставкой и дверью."""
+    wide = lambda f: up(f.crop((0, 90, f.width, 270)), 2).convert('RGB')
+    out = {}
+    for tag, g in (('calm', ''), ('glitch', '_glitch')):
+        f = Image.new('RGBA', (960, 270), (0, 0, 0, 255))
+        for x in (0, 480):
+            f.alpha_composite(_frame([m['bg_wk_city']], (70, 20, 120, 255) if g else None), (x, 0))
+        f.alpha_composite(m['bg_wk_office' + g].crop((240, 0, 480, 270)), (0, 0))
+        f.alpha_composite(m['bg_wk_corridor' + g], (240, 0)); f.alpha_composite(m['bg_wk_corridor' + g].crop((0, 0, 240, 270)), (720, 0))
+        _put(f, m['wk_arch'], 240 - 14)
+        _put(f, c['sasha_run'][2], 300); _put(f, cell('wk_piles', 2, 26), 520); _put(f, cell('wk_piles', 4, 26), 700)
+        _put(f, cell('wk_door', 1 if g else 0, 34), 860)
+        out['week_corridor_' + tag] = wide(f)
+    room = _frame([m['bg_wk_city'], (m['bg_wk_corridor'], 0), (m['bg_wk_boss_room'], 240)])
+    _put(room, cell('wk_door', 0, 34), 240 + DOOR_X - 17); _put(room, c['sasha_walk'][2], 170)
+    out['week_boss_room'] = wide(room)
+    return out
 
 def build(out='out'):
     made, c = assets()

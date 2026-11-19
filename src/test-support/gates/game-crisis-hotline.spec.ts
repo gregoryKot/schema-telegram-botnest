@@ -52,6 +52,18 @@ describe('кризисная строка игры', () => {
     );
   });
 
+  it('карточка после хука «Недели» ставит обе линии и ведёт на их tel:', () => {
+    const card = read('game/src/week/card.ts');
+    const childTel = [...hotlines.matchAll(/tel: '([^']+)'/g)][1]?.[1];
+    expect(childTel).toBe('tel:88002000122');
+    expect(card).toContain(`const CRISIS_TEL = '${tel}';`);
+    expect(card).toContain(`const CRISIS_CHILD_TEL = '${childTel}';`);
+    // взрослая линия стоит первой, детская — второй
+    expect(card).toMatch(
+      /\['m_wk_crisis_adult', CRISIS_TEL\], \['m_wk_crisis_child', CRISIS_CHILD_TEL\]/,
+    );
+  });
+
   it('нажатие ведёт на тот же tel:, что и карточка продукта', () => {
     expect(cta).toContain(`const CRISIS_TEL = '${tel}';`);
   });

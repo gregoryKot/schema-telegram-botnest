@@ -17,6 +17,7 @@ export interface Beat {
   reveal?: Act;     // появляется кнопка
   say?: MsgKey;     // строка внутри мира…
   sayAt?: number;   // …над этой точкой (нет — мысль над Сашей)
+  msg?: boolean;    // …сообщение в телефоне, а не реплика вслух
   notifs?: MsgKey[]; // какие уведомления сыплются дальше
 }
 
@@ -39,7 +40,7 @@ export const MONDAY = {
   beats: [
     { x: 360, pace: 'jog' },                                                        // из квартиры на улицу
     { x: 2160, pace: 'walk' },                                                      // офис, свой стол
-    { x: 2330, clock: hm(11, 0), say: 'm_wk_mon_boss_msg', sayAt: 2420 },
+    { x: 2330, clock: hm(11, 0), say: 'm_wk_mon_boss_msg', sayAt: 2420, msg: true },
     { x: 2900, pace: 'run', glitch: 0.5, notifs: ['m_wk_mon_notif_report', 'm_wk_mon_notif_urgent'] },
     { x: 4300, clock: hm(11, 30), reveal: 'overwork' },
     { x: 9000, clock: hm(12, 10), glitch: 0.7, reveal: 'scroll',

@@ -24,6 +24,7 @@ describe('бег «Недели»', () => {
   it('после названия сбоя — шагом, каким бы ни был темп места', () => {
     expect(runSpeed({ ...base, named: true })).toBe(PACE.walk);
     expect(runSpeed({ ...base, named: true, resting: true, hold: 1 })).toBe(PACE.walk);
+    expect(runSpeed({ ...base, resting: true, sitting: true })).toBe(0); // сидит без сил
   });
   it('время хода считается по темпу каждого отрезка', () => {
     const beats = [{ x: 180, pace: 'run' as const }, { x: 410 }, { x: 640, pace: 'walk' as const }];
