@@ -26,4 +26,14 @@ describe('TodayHead', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Зачем это?' }));
     expect(onWhy).toHaveBeenCalledTimes(1);
   });
+
+  it('лупа «Поиск» зовёт onSearch; без него кнопки нет', () => {
+    const onSearch = vi.fn();
+    const { rerender, container } = render(<TodayHead firstName="" onWhy={() => {}} onSearch={onSearch} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Поиск' }));
+    expect(onSearch).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('button.find-btn.search-find')).toBeTruthy();
+    rerender(<TodayHead firstName="" onWhy={() => {}} />);
+    expect(screen.queryByRole('button', { name: 'Поиск' })).toBeNull();
+  });
 });

@@ -32,9 +32,11 @@ describe('therapist-clients.css: имя в карточке клиента', () 
     expect(markup).toContain('className="pp-leaf tc-card"');
   });
   it('лупа палитры видна только там, где нет строки .topbar (телефон)', () => {
-    expect(rule('.tc-find')).toContain('display: none');
-    const phone = css.slice(css.indexOf('@media (max-width: 767px)'));
-    expect(phone).toMatch(/\.tc-find \{ display: inline-flex; \}/);
+    // Общая кнопка FindButton (.find-btn, index.css) — у кабинета с классом-меткой .tc-find.
+    const shell = readFileSync(join(__dirname, '../index.css'), 'utf8');
+    expect(shell).toMatch(/\.find-btn \{\s*display: none;/);
+    expect(shell).toMatch(/\.topbar \{ display: none; \}\s*\.find-btn \{ display: inline-flex; \}/);
+    expect(readFileSync(join(__dirname, '../components/therapist/ClientListHero.tsx'), 'utf8')).toContain('className="tc-find"');
   });
   it('колонка имени во flex-строке сжимается: .tc-who — min-width: 0', () => {
     expect(rule('.tc-who')).toContain('min-width: 0');

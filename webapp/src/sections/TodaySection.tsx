@@ -16,14 +16,14 @@ interface Props {
   ratings: Record<string, number>;
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
   onOpenTracker: () => void;
-  refreshKey?: number;
+  refreshKey?: number; onSearch?: () => void;
 }
 
 // Главная «Сегодня» (docs/design/CLIENT_SIMPLE_2026-10.md): приветствие, «Зачем это?»
 // и три действия — трекер, «Что случилось», дневник (лист QuickEntrySheet). Владелец
 // 2026-11-05: «на экране только 3 кнопки и больше ничего» — задания, лента дня,
 // сигнальная карточка, «Подышим» и строка про терапию переехали на «Ещё».
-export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refreshKey }: Props) {
+export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refreshKey, onSearch }: Props) {
   const data = useTodayData(refreshKey);
   const { profile, feed, casesToday, lastAt, diariesLoaded, reloadDiaries } = data;
   const [caseOpen, setCaseOpen] = useState(false);
@@ -38,7 +38,7 @@ export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refr
 
   return (
     <div className="ds-page ds-page--fit ct-page">
-      <TodayHead firstName={firstName} onWhy={why.open} />
+      <TodayHead firstName={firstName} onWhy={why.open} onSearch={onSearch} />
 
       <HomeTiles
         ratings={ratings}

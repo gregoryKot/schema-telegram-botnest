@@ -20,24 +20,24 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
+import { LINKS_PAGE_ALIASES } from './pages/links/linksAliases';
 import { LoginRoute } from './pages/login/LoginRoute'; // вход и служебные — после прочих: их PaperOutcome (sceneKit) иначе переставляет CSS-чанки (b26)
 import { AuthCallback } from './pages/AuthCallback';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage'; // не ленивый: ячейки кода общие с /account (главный поток) — иначе auth-login.css уезжает в общий чанк раньше index.css (check-css-link-order)
-// Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
-const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage }))); // lazy: тянет редактор TipTap, главному бандлу он не нужен
 import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
 const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
 
-// Редкие экраны по ссылке (служебные, /link, объединение, донат, 404) — ленивыми маршрутами, не в
-// главном чанке (бандл-храповик, b26–b28); вход (/login) остаётся в нём — первый экран.
+// Редкие экраны по ссылке (служебные, /link, объединение, донат, 404) — ленивыми маршрутами, не в главном чанке; вход (/login) остаётся в нём.
 const lazyRoute = (load: () => Promise<ComponentType>) => async () => ({ Component: await load() });
 const linkRoute = lazyRoute(async () => (await import('./pages/LinkDevicePage')).LinkDevicePage);
 const mergeRoute = lazyRoute(async () => (await import('./pages/MergePage')).MergePage);
 const donateRoute = lazyRoute(async () => (await import('./pages/DonatePage')).DonatePage);
 const linksRoute = lazyRoute(async () => (await import('./pages/links/LinksPage')).LinksPage); // страница ссылок визитки
+const linksMovedRoute = lazyRoute(async () => (await import('./pages/links/LinksMovedRedirect')).LinksMovedRedirect);
 const notFoundRoute = lazyRoute(async () => (await import('./pages/NotFoundPage')).NotFoundPage);
 const authConfirmRoute = lazyRoute(async () => (await import('./pages/AuthConfirmPage')).AuthConfirmPage);
 const authErrorRoute = lazyRoute(async () => (await import('./pages/AuthErrorPage')).AuthErrorPage);
@@ -76,11 +76,11 @@ const personalRoutes = [
       { path: '/booking/manage', element: <BookingPaidRoute /> },
       { path: '/privacy',        element: <Suspense fallback={null}><PrivacyPage /></Suspense> },
       { path: '/offer',          element: <Suspense fallback={null}><OfferPage /></Suspense> },
-      { path: '/links',          lazy: linksRoute },
+      { path: '/privet',         lazy: linksRoute },
+      ...LINKS_PAGE_ALIASES.map((path) => ({ path, lazy: linksMovedRoute })), // синонимы → /privet с query и хешем
     ],
   },
-  // Вне бренда визитки — осознанно:
-  // /admin и редиректы — служебный инструмент, одинаковый на обоих доменах.
+  // Вне бренда визитки — осознанно: /admin и редиректы — служебный инструмент, одинаковый на обоих доменах.
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
   { path: '/booking-admin',  element: <Navigate to="/admin" replace /> },
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },

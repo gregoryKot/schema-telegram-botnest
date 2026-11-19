@@ -9,11 +9,11 @@ import {
   GAME_CTA_TARGETS,
   type GameCtaTarget,
 } from '../analytics/game-cta.constants';
+import { formatWeekLines, isWeekEmpty } from './game-week.format';
 import type { GameMetrics } from './game-metrics.tally';
 
-// Блок «Игра» для /stats (правило №8): игра — третий фронтенд (game/,
-// Phaser), шлёт события анонимно (реестр — game-events.constants.ts). Чистый
-// форматтер (тест включает пустую БД), язык без терминов — «поделились игрой».
+// Блок «Игра» для /stats (правило №8): чистый форматтер, события игры анонимны
+// (реестр — game-events.constants.ts); тест включает пустую БД.
 
 // Человеческие подписи — то, что видит владелец в /stats, а не сырые слаги.
 const SOURCE_LABELS: Record<GameEntrySource, string> = {
@@ -47,13 +47,11 @@ const isEmpty = (m: GameMetrics): boolean =>
   m.ctaShown === 0 &&
   m.ctaClicks === 0 &&
   m.appArrivals === 0 &&
-  m.shares === 0;
+  m.shares === 0 &&
+  isWeekEmpty(m.week);
 
-/** Текстовый блок для /stats. Чистая функция. */
 export function formatGameMetrics(m: GameMetrics): string {
-  if (isEmpty(m)) {
-    return '🎮 <b>Игра</b>: за 30 дней никто не открывал.';
-  }
+  if (isEmpty(m)) return '🎮 <b>Игра</b>: за 30 дней никто не открывал.';
   const lines = ['🎮 <b>Игра</b> (за месяц)'];
 
   if (m.opens > 0) {
@@ -104,5 +102,6 @@ export function formatGameMetrics(m: GameMetrics): string {
     lines.push(`Поделились игрой: ${m.shares}`);
   }
 
+  lines.push(...formatWeekLines(m.week));
   return lines.join('\n');
 }

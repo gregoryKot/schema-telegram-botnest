@@ -40,6 +40,30 @@ describe('кризисная строка игры', () => {
     expect(line?.[2]).toContain(display);
   });
 
+  it('в текстах «Недели» — взрослая и детская линии из того же источника', () => {
+    const week = read('game/src/i18n/week.ts');
+    const child = [...hotlines.matchAll(/display: '([^']+)'/g)][1]?.[1];
+    expect(child).toBe('8-800-2000-122');
+    expect(/m_wk_crisis_adult: wk\("([^"]+)"\)/.exec(week)?.[1]).toContain(
+      display,
+    );
+    expect(/m_wk_crisis_child: wk\("([^"]+)"\)/.exec(week)?.[1]).toContain(
+      child,
+    );
+  });
+
+  it('карточка после хука «Недели» ставит обе линии и ведёт на их tel:', () => {
+    const card = read('game/src/week/card.ts');
+    const childTel = [...hotlines.matchAll(/tel: '([^']+)'/g)][1]?.[1];
+    expect(childTel).toBe('tel:88002000122');
+    expect(card).toContain(`const CRISIS_TEL = '${tel}';`);
+    expect(card).toContain(`const CRISIS_CHILD_TEL = '${childTel}';`);
+    // взрослая линия стоит первой, детская — второй
+    expect(card).toMatch(
+      /\['m_wk_crisis_adult', CRISIS_TEL\], \['m_wk_crisis_child', CRISIS_CHILD_TEL\]/,
+    );
+  });
+
   it('нажатие ведёт на тот же tel:, что и карточка продукта', () => {
     expect(cta).toContain(`const CRISIS_TEL = '${tel}';`);
   });

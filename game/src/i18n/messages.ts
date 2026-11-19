@@ -2,9 +2,8 @@
 // silently break the other, and `satisfies` makes a missing translation a compile
 // error. Add a line here, reference by key via t('m_...'). Interpolation: use
 // {name} placeholders and pass vars to t(key, { name: value }).
-
+import { WEEK } from './week';
 export interface Msg { ru: string; en: string; }
-
 export const M = {
   m_part_i: { ru: "Часть I", en: "Part I" },
   m_what_gets_in_the_way: { ru: "Что мешает жить", en: "What gets in the way" },
@@ -217,7 +216,7 @@ export const M = {
   m_book_therapist: { ru: "или записаться к терапевту", en: "or book a therapist" },
   m_support_game: { ru: "поддержать игру 💛", en: "support the game 💛" },
   m_you_ran_through_your_own_mind: { ru: "🐈‍⬛  путь сквозь свою голову — позади.", en: "🐈‍⬛  you ran through your own mind." },
-  m_your_biggest_enemy: { ru: "твой главный враг —", en: "your biggest enemy —" },
+  m_your_biggest_enemy: { ru: "сильнее всего мешает:", en: "what gets in your way most:" },
   m_you_can_t_beat_it_alone: { ru: "справиться можно. просто трудно и долго.\nс терапевтом есть опора. дальше — терапия.", en: "you can get through this — it's just slow and hard.\nwith a therapist, you have support. next — therapy." },
   m_share: { ru: "поделиться »", en: "share »" },
   m_or_back_to_menu: { ru: "или — в меню", en: "or — back to menu" },
@@ -267,8 +266,8 @@ export const M = {
   m_hud_understood: { ru: "{u}/{tot} понято", en: "{u}/{tot} understood" },
   m_next_chapter: { ru: "дальше — «{title}». {act}", en: "next — «{title}». {act}" },
   m_share_text: {
-    ru: "«Сквозь голову» — игра про то, что мешает жить. Мой главный враг — {enemy}. А твой?",
-    en: "I ran through my own mind in this game. My biggest enemy — {enemy}. What's yours?",
+    ru: "«Сквозь голову» — игра про то, что мешает жить. Мне сильнее всего мешает {enemy}. А тебе?",
+    en: "I ran through my own mind in this game. What gets in my way most: {enemy}. What about you?",
   },
   m_barg_zone: { ru: "терапия — дорого… может, потом?", en: "therapy's pricey… maybe later?" },
   m_barg_hit: { ru: "споришь о цене — она только растёт.", en: "haggle over the price — it only climbs." },
@@ -322,6 +321,7 @@ export const M = {
   // кризисная строка (правило №7 CLAUDE.md): номер — тот же, что в shared/src/utils/crisisMarkers.ts;
   // дубль держит в согласии тест src/test-support/gates/game-crisis-hotline.spec.ts
   m_crisis_line: { ru: "если тяжело прямо сейчас — 8-800-100-49-94, бесплатно", en: "if it's hard right now — 8-800-100-49-94, free (Russia)" },
+  ...WEEK,
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

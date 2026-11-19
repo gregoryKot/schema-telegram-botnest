@@ -1,84 +1,131 @@
-/* Страница ссылок визитки (/links): один столбец, токены визитки. Свечение —
-   градиентом по сплошному фону (без размытия); появление — transform/opacity. */
+/* Страница ссылок визитки (/links): ровный тёплый фон, шапка с фотокарточкой, кнопка записи,
+   карточка проекта, жёлтая записка и общий список строк. Одна сетка, наклон — только у фото.
+   Цвета — токены бумаги; терракота — --accent-on-light (акцент визитки здесь индиго).
+   Тень-подложка без размытия — только у кнопки записи и записки, остальное — тонкие рамки. */
 .links-page {
-  min-height: 100dvh;
-  padding: 28px 16px 40px;
-  color: var(--text);
-  background:
-    radial-gradient(120% 340px at 50% -80px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
-    var(--bg);
+  --lk-paper: var(--surface);
+  --lk-line: var(--line);
+  --lk-ink: var(--text);
+  --lk-pen: var(--accent-on-light);
+  --lk-cta: var(--accent-on-light);
+  --lk-on-cta: var(--surface);
+  --lk-tape: color-mix(in srgb, var(--c-ochre) 30%, var(--surface));
+  --lk-note: color-mix(in srgb, var(--c-amber) 28%, var(--surface));
+  --lk-note-shade: color-mix(in srgb, var(--c-ochre) 45%, var(--lk-note));
+  --lk-serif: 'Literata', Georgia, serif;
+  width: 100%; min-height: 100dvh; align-self: flex-start; overflow-x: clip;
+  padding: clamp(36px, calc((100vw - 440px) * 0.12), 64px) 16px 32px;
+  font-family: var(--font-sans); color: var(--lk-ink); background: var(--panel);
 }
-.links-col { position: relative; max-width: 440px; margin: 0 auto; }
+html[data-theme="dark"] .links-page {
+  --lk-pen: var(--c-clay-strong);
+  --lk-cta: var(--c-clay);
+  --lk-on-cta: var(--bg-rail);
+  --lk-tape: color-mix(in srgb, var(--c-ochre) 22%, var(--surface-3));
+  --lk-note: color-mix(in srgb, var(--c-amber) 21%, var(--surface));
+  --lk-note-shade: color-mix(in srgb, var(--bg-rail) 35%, black);
+  background: var(--bg-rail);
+}
+/* Чистый жёлтый тем же тоном, что --c-amber: смесью с бумагой он выходит бежевым. */
+@supports (color: oklch(from red l c h)) {
+  html:not([data-theme="dark"]) .links-page { --lk-note: oklch(from var(--c-amber) .928 .066 calc(h + 18)); }
+}
+.links-col { position: relative; max-width: clamp(440px, 34vw, 480px); margin: 0 auto; }
+.links-page a { color: inherit; text-decoration: none; }
+.links-page h2 { margin: 0; font-family: var(--lk-serif); font-weight: 500; font-size: 18px; line-height: 1.2; letter-spacing: -.01em; }
+
+/* Шапка: фотокарточка со скотчем (единственная «ручная» деталь) + привет. Наклейка визитки скрыта. */
+.lk-hello { display: grid; grid-template-columns: 104px 1fr; gap: 20px; align-items: center; padding: 6px 4px 0; }
+.author-photo.lk-photo { padding: 6px 6px 8px; border-radius: 5px; transform: rotate(-3deg); box-shadow: 0 0 0 1px var(--lk-line); }
+.author-photo.lk-photo::before { top: -9px; width: 56px; height: 18px; margin-left: -28px; background: var(--lk-tape); transform: rotate(-5deg); }
+.author-photo.lk-photo .author-photo-img { height: auto; border-radius: 3px; }
+.author-photo.lk-photo .author-photo-sticker { display: none; }
+.lk-hi { min-width: 0; }
+.lk-pen { display: block; font-family: var(--lk-serif); font-style: italic; font-size: 26px; line-height: 1; color: var(--lk-pen); }
+.lk-hi h1 { margin: 8px 0 0; font-family: var(--lk-serif); font-weight: 500; font-size: clamp(19px, 5.6vw, 21px); line-height: 1.18; letter-spacing: -.01em; }
+.lk-hi p { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
+.lk-nb { white-space: nowrap; }
+
+.links-list { list-style: none; margin: 28px 0 0; padding: 0; }
+.lk-item { margin-top: 16px; }
+
+/* Кнопка записи. */
+.lk-cta {
+  display: block; padding: 14px 18px 15px; border-radius: 14px; background: var(--lk-cta);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--lk-cta) 70%, black); transition: transform .15s ease, box-shadow .15s ease;
+}
+.links-page .lk-cta { color: var(--lk-on-cta); }
+.lk-cta b { display: block; font-size: clamp(17px, 5.2vw, 19px); font-weight: 800; letter-spacing: -.01em; }
+.lk-cta small { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--lk-on-cta) 86%, var(--lk-cta)); }
+
+/* Карточка проекта и записка — одна рамка-коробка. */
+.lk-box { padding: 16px; border: 1px solid var(--lk-line); border-radius: 14px; background: var(--lk-paper); }
+.lk-card-top { display: flex; align-items: center; gap: 10px; }
+.links-page .lk-card-title { font-size: 21px; }
+.lk-card-note { margin: 8px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
+.lk-card-go { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.lk-card-go .lk-places { gap: 6px; }
+.lk-or { display: none; font-size: 13px; color: var(--text-sub); }
+/* Уже 360px кнопка и значки в строку не встают: значки ниже, с подписью. */
+@media (max-width: 359px) {
+  .lk-open { flex-basis: 100%; }
+  .lk-or { display: block; }
+}
+.lk-open {
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 8px;
+  border: 1.5px solid var(--lk-ink); border-radius: 12px; font-size: 15px; font-weight: 700; white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+/* Записка «Здоровый Взрослый»: жёлтый листок — одно цветное пятно страницы. */
+.lk-note { border-color: transparent; background: var(--lk-note); box-shadow: 0 4px 0 var(--lk-note-shade); }
+.lk-note-text { margin: 8px 0 12px; font-size: 14px; line-height: 1.4; }
+
+/* Общий список: строки одной высоты в одной рамке, между ними тонкие разделители. */
+.lk-row { border: 1px solid var(--lk-line); border-bottom-width: 0; background: var(--lk-paper); }
+.lk-item + .lk-row { margin-top: 16px; border-radius: 14px 14px 0 0; }
+.lk-row + .lk-row { border-top-color: var(--paper-sunk); }
+.lk-row:last-child { border-bottom-width: 1px; border-radius: 0 0 14px 14px; }
+.lk-row-in {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 12px 0 16px;
+  font-family: var(--lk-serif); font-weight: 500; font-size: 17px; line-height: 1.2; border-radius: inherit;
+}
+.links-page .lk-row-in h2 { font-size: 17px; letter-spacing: 0; }
+@media (min-width: 360px) { .lk-row-in h2 { white-space: nowrap; } }
+.lk-row-in .lk-places { gap: 6px; }
+.lk-go { margin-right: 4px; font-family: var(--font-sans); color: var(--text-sub); transition: transform .15s ease; }
+
+/* Значки площадок: спокойный круг 40px с мягкой заливкой. */
+.lk-places { display: flex; align-items: center; gap: 8px; flex: none; }
+.lk-place { border-radius: 50%; }
+.lk-place-dot {
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--lk-ink) 8%, transparent); color: var(--lk-ink);
+  transition: transform .15s ease, background-color .15s ease, color .15s ease;
+}
+.lk-place-max { font-size: 10px; font-weight: 800; letter-spacing: .04em; }
 
 .links-theme {
-  position: absolute; top: -16px; right: -6px;
-  width: 44px; height: 44px;
+  position: absolute; right: -10px; top: -36px; z-index: 1; width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
-  background: none; border: 0; border-radius: 50%;
-  color: var(--text-sub); cursor: pointer;
+  background: none; border: 0; border-radius: 50%; color: var(--text-sub); cursor: pointer;
 }
 
-.links-head { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 22px; }
-.links-name {
-  margin: 14px 0 0;
-  font-family: var(--serif); font-weight: 400;
-  font-size: clamp(30px, 9vw, 38px); line-height: 1.05; letter-spacing: -0.02em;
-}
-.links-about { margin: 8px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
-
-.links-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-
-.lk {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 56px; padding: 12px 18px;
-  border: 1px solid var(--line); border-radius: 18px;
-  background: var(--surface); color: var(--text);
-  text-decoration: none;
-  transition: transform .15s ease, border-color .15s ease;
-}
-.lk-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.lk-title { font-size: 15.5px; font-weight: 600; line-height: 1.25; }
-.lk-note { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
-.lk-arrow { flex-shrink: 0; font-size: 17px; color: var(--text-faint); transition: transform .15s ease; }
-
-/* Главная кнопка — единственная с акцентной заливкой. */
-.lk-primary { min-height: 68px; border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-.lk-primary .lk-title { font-size: 17px; }
-.lk-primary .lk-note { color: color-mix(in srgb, var(--on-accent) 82%, transparent); }
-.lk-primary .lk-arrow { font-size: 20px; color: var(--on-accent); }
-
-/* Карточка проекта — крупнее остальных. */
-.lk-feature {
-  align-items: flex-end; padding: 18px;
-  border-color: var(--accent-line);
-  background:
-    radial-gradient(140% 120% at 100% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
-    var(--surface);
-}
-.lk-feature .lk-text { gap: 6px; }
-.lk-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-.lk-feature .lk-title { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.05; letter-spacing: -0.01em; }
-.lk-feature .lk-arrow { color: var(--accent); font-size: 20px; }
-
-.lk:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.lk:active { transform: scale(.985); }
+.lk-cta:focus-visible, .lk-open:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: 3px; }
+a.lk-row-in:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: -3px; }
+.lk-place:focus-visible { outline: none; }
+.lk-place:focus-visible .lk-place-dot { outline: 2px solid var(--lk-pen); outline-offset: 2px; }
+.lk-place:active .lk-place-dot { transform: scale(.94); }
+.lk-cta:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--lk-cta) 70%, black); }
 @media (hover: hover) {
-  .lk:hover { border-color: var(--line-strong); transform: translateY(-1px); }
-  .lk-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
-  .lk-feature:hover { border-color: var(--accent); }
-  .lk:hover .lk-arrow { transform: translateX(3px); }
-  .links-theme:hover { color: var(--text); }
+  .lk-cta:hover { transform: translateY(-1px); }
+  .lk-open:hover, .lk-place:hover .lk-place-dot { background: var(--lk-ink); color: var(--lk-paper); }
+  a.lk-row-in:hover .lk-go { transform: translateX(3px); }
+  .links-theme:hover { color: var(--lk-ink); }
 }
 
-/* Каскадное появление: только когда движение не отключено в системе. */
+/* Появление: только когда движение не отключено в системе. */
 @media (prefers-reduced-motion: no-preference) {
-  .links-head, .lk-item { animation: lk-in .5s cubic-bezier(.2, .7, .2, 1) both; }
-  .lk-item:nth-child(1) { animation-delay: 90ms; }
-  .lk-item:nth-child(2) { animation-delay: 145ms; }
-  .lk-item:nth-child(3) { animation-delay: 200ms; }
-  .lk-item:nth-child(4) { animation-delay: 255ms; }
-  .lk-item:nth-child(5) { animation-delay: 310ms; }
-  .lk-item:nth-child(6) { animation-delay: 365ms; }
-  .lk-item:nth-child(7) { animation-delay: 420ms; }
+  .links-col { animation: lk-in .45s cubic-bezier(.2, .7, .2, 1) both; }
 }
-@keyframes lk-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes lk-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

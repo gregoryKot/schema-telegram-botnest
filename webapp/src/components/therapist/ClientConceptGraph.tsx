@@ -34,7 +34,7 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
   const work = useSessionWork(detail);
   const guide = useConceptGuide({
-    onAssign, tasks: detail.clientTasks, onOpenJournal, under: backRef,
+    onAssign, tasks: detail.clientTasks, onOpenJournal, under: backRef, plan: { clientId: detail.selectedClient?.telegramId },
     graph: { ...g.graphProps, workMarks: (from) => workMarks(work.entries, from) },
   });
   const expand = () => {

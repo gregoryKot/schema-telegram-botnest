@@ -11,6 +11,7 @@ import {
   PRACTICE_PAGES,
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.surface';
+import { LINKS_PAGE_ALIASES } from './practice-domain.redirects';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -82,9 +83,14 @@ describe('robots.txt визитки ⇄ страницы визитки', () => 
     expect(isAllowed(robots, '/donate')).toBe(false);
   });
 
-  it('закрыта /links — страница для шапок соцсетей, не для поиска', () => {
-    expect(robots).toMatch(/^Disallow: \/links$/m);
-    expect(isAllowed(robots, '/links?utm_source=instagram')).toBe(false);
+  it('закрыта /privet — страница для шапок соцсетей, не для поиска', () => {
+    expect(robots).toMatch(/^Disallow: \/privet$/m);
+    expect(isAllowed(robots, '/privet?utm_source=instagram')).toBe(false);
+  });
+
+  it.each(LINKS_PAGE_ALIASES)('синоним %s закрыт своей строкой', (alias) => {
+    expect(robots.split('\n')).toContain(`Disallow: ${alias}`);
+    expect(isAllowed(robots, `${alias}?utm_source=instagram`)).toBe(false);
   });
 
   it('ссылки клиентов закрыты вместе с параметрами', () => {

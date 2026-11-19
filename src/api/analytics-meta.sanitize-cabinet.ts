@@ -1,4 +1,7 @@
-import { TASK_ASSIGN_SOURCES } from '../analytics/cabinet-events.constants';
+import {
+  SEARCH_RESULT_KINDS,
+  TASK_ASSIGN_SOURCES,
+} from '../analytics/cabinet-events.constants';
 import { PLAN_RUBRICS, PLAN_STATUSES } from '../therapy/therapy-plan.types';
 
 type Meta = Record<string, unknown>;
@@ -6,6 +9,7 @@ type Meta = Record<string, unknown>;
 const RUBRIC_SET = new Set<string>(PLAN_RUBRICS);
 const STATUS_SET = new Set<string>(PLAN_STATUSES);
 const TASK_SOURCE_SET = new Set<string>(TASK_ASSIGN_SOURCES);
+const SEARCH_KIND_SET = new Set<string>(SEARCH_RESULT_KINDS);
 const SESSION_WORK_KINDS = ['technique', 'exercise', 'custom'];
 
 // «Что делали» в итогах сессии: число пунктов и виды, без названий и текста.
@@ -20,7 +24,7 @@ function sanitizeSessionWork(meta: Meta): Meta | undefined {
 
 /** События, чью meta разбирает sanitizeCabinetMeta. */
 export const hasCabinetMeta = (name: string): boolean =>
-  /^(cabinet_session_work|task_assign_source|therapy_plan_item_\w+)$/.test(
+  /^(cabinet_session_work|task_assign_source|search_result_open|therapy_plan_item_\w+)$/.test(
     name,
   );
 
@@ -47,6 +51,16 @@ export function sanitizeCabinetMeta(
     const { source } = meta;
     return typeof source === 'string' && TASK_SOURCE_SET.has(source)
       ? { source }
+      : undefined;
+  }
+  if (name === 'search_result_open') {
+    // Вид результата, «был ли запрос» и «из недавнего»; сам запрос сюда не доходит.
+    // Клиент старой сборки поля recent не шлёт — это «не из недавнего».
+    const { kind, typed, recent } = meta;
+    if (typeof kind !== 'string' || !SEARCH_KIND_SET.has(kind))
+      return undefined;
+    return typeof typed === 'boolean'
+      ? { kind, typed, recent: recent === true }
       : undefined;
   }
   return undefined;

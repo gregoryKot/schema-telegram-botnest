@@ -15,7 +15,7 @@ import { PublicEventDto } from './dto/public-event.dto';
 import { sanitizePublicCrisisMeta } from './public-crisis.sanitize';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
 import { sanitizeAssetRecoveredMeta } from '../analytics/asset-recovery.constants';
-import { sanitizeLinksPageMeta } from '../analytics/links-page.constants';
+import { sanitizeLinksPageMeta } from '../analytics/links-page.sanitize';
 
 // Анонимная аналитика (правило №8): мини-тест, клик на сайт практики, блок
 // установки, игра (game/, правило №5/№14), кризисная карточка записи, повтор

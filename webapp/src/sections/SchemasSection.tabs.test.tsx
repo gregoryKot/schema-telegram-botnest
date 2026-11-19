@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 
 const mobile = vi.hoisted(() => ({ value: true }));
 vi.mock('../components/useIsMobile', () => ({ useIsMobile: () => mobile.value }));
@@ -49,35 +50,35 @@ beforeEach(() => { cleanup(); localStorage.clear(); mobile.value = true; });
 
 describe('SchemasSection: вкладки на телефоне', () => {
   it('«Схемы» по умолчанию: строка теста, схемы списком, карта под сворачиванием', () => {
-    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     expect(ids()).toEqual(['hero', 'test-row', 'expressed', 'my-list']);
     expect(screen.getByRole('tab', { name: 'Схемы' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Паттерны');
   });
   it('карта схем свёрнута и раскрывается по «Все N схем»', () => {
-    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     expect(screen.queryByTestId('map')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Все \d+ схем/ }));
     expect(screen.getByTestId('map')).toBeTruthy();
   });
   it('«Режимы» — подсказка сверху, мои режимы строками и баннер; полная карта свёрнута', () => {
-    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('tab', { name: 'Режимы' }));
     expect(ids()).toEqual(['modes-hero', 'my-modes', 'mode-map']);
     expect(screen.queryByTestId('modes-map')).toBeNull();
   });
   it('карта режимов раскрывается по «Все режимы»', () => {
-    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('tab', { name: 'Режимы' }));
     fireEvent.click(screen.getByRole('button', { name: /^Все режимы/ }));
     expect(screen.getByTestId('modes-map')).toBeTruthy();
   });
   it('«Потребности» — только потребности, вкладка запоминается', () => {
-    const { unmount } = render(<SchemasSection onOpenSchema={vi.fn()} />);
+    const { unmount } = render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     fireEvent.click(screen.getByRole('tab', { name: 'Потребности' }));
     expect(ids()).toEqual(['needs']);
     unmount();
-    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     expect(ids()).toEqual(['needs']);
   });
 });
@@ -85,7 +86,7 @@ describe('SchemasSection: вкладки на телефоне', () => {
 describe('SchemasSection: десктоп', () => {
   it('вкладок нет, виден весь экран прежним составом', () => {
     mobile.value = false;
-    render(<SchemasSection onOpenSchema={vi.fn()} />);
+    render(<SchemasSection onOpenSchema={vi.fn()} />, { wrapper: MemoryRouter });
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(ids()).toEqual(['hero', 'expressed', 'test-card', 'my-chips', 'map', 'modes', 'mode-map', 'needs']);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Мои паттерны');

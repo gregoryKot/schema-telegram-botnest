@@ -1,5 +1,7 @@
 # Игра «Run Through Your Mind»: анализ по четырём срезам
 
+> **Устарело:** документ о прежней игре (Мистер, главы 1–4); её заменила «Неделя» — концепт в [game/GAME_CONCEPT.md](../game/GAME_CONCEPT.md).
+
 Дата: 2026-09-03. План действий по этим находкам —
 [GAME_IMPROVEMENT_PLAN.md](GAME_IMPROVEMENT_PLAN.md). Концепт автора —
 [game/GAME_CONCEPT.md](../game/GAME_CONCEPT.md).

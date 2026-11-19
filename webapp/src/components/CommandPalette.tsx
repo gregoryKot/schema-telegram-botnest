@@ -1,18 +1,18 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { api } from '../api';
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { useTr } from '../utils/addressForm';
-import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
-import type { TherapyClientSummary, UserId } from '../api';
-import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
-import { clientAvatarInitials, clientDisplayName } from '../../../shared/src/therapy/clientInitials';
-import { clientStatus } from './therapist/rosterOrder';
-import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
-import { clientHue } from '../lib/tone';
+import type { QuickActionId } from '../../../shared/src/quickActions/quickActions';
+import type { UserId } from '../api';
 import { CmdList, type CmdRow } from './CommandPaletteList';
-import { quickActionSign } from './quickActionSign';
-import { SECTION_LOOK } from './appShell/navLook';
+import { CMD_LIST_ID, cmdOptionId } from './commandPalette/listIds';
+import { searchPalette } from './commandPalette/paletteRows';
+import { readRecent } from './commandPalette/paletteRecent';
+import { paletteExamples, paletteHelp, palettePlaceholder } from './commandPalette/paletteTexts';
+import { runPaletteRow, usePaletteActions } from './commandPalette/usePaletteActions';
+import { usePaletteClientData } from './commandPalette/usePaletteClientData';
+import { usePaletteGuide } from './commandPalette/usePaletteGuide';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useVisualViewportHeight } from '../hooks/useVisualViewportHeight';
 import type { Section } from './appShell/navigation';
 import { useScreenShare } from './appShell/screenShareMode';
 import '../styles/command-palette.css';
@@ -27,25 +27,28 @@ interface Props {
   onQuickAction?: (id: QuickActionId) => void;
 }
 
-const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
-  { id: 'today',   label: 'Сегодня',  sub: 'Главная',   hint: '⌘ 1' },
-  { id: 'diary',   label: 'Записи',   sub: 'Дневники',  hint: '⌘ 2' },
-  { id: 'more',    label: 'Ещё',      sub: 'Всё остальное', hint: '⌘ 3' },
-  { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '' },
-  { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '' },
-  { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
-];
-
-// ── Component ──────────────────────────────────────────────────────────────────
+/**
+ * Общий поиск ⌘K: клиенты и вкладки их карточек, разделы, листы «Справочника», задания (кабинет терапевта),
+ * в режиме клиента — схемы, режимы, упражнения, свои планы и задания, действия; у всех — настройки и статьи. Строки собирает commandPalette/paletteRows.ts, действия строк и второй шаг «Кому дать
+ * задание?» — usePaletteActions.ts: событие search_result_open без текста запроса и ключ строки в
+ * «Недавнее» (paletteRecent.ts). На телефоне панель — во весь видимый экран над клавиатурой.
+ */
+/** Высота и сдвиг видимой области — переменными для телефонной раскладки (command-palette.css). */
+function viewportVars(viewport: { height: number; offsetTop: number } | null): CSSProperties | undefined {
+  if (!viewport) return undefined;
+  return { '--cmd-vvh': `${viewport.height}px`, '--cmd-vvt': `${viewport.offsetTop}px` } as CSSProperties;
+}
 
 export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, onToggleMode, onOpenClient, onQuickAction }: Props) {
   const tr = useTr();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
-  const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   // «Показ экрана» (сайдбар кабинета): имён клиентов нет и здесь, даже по поиску.
   const screenShare = useScreenShare();
   const inputRef = useRef<HTMLInputElement>(null);
+  // «Недавнее» читается один раз при открытии: открытая сейчас строка появится в нём в следующий раз.
+  const [recent] = useState(readRecent);
+  const viewport = useVisualViewportHeight();
   // «Назад» браузера закрывает палитру; действие строки — goBack(action), после снятия
   // записи. Escape — через стек диалогов: поверх палитры закроет только верхнее окно.
   const goBack = useHistorySheet(onClose);
@@ -56,61 +59,49 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  // Fetch clients for therapists
+  const therapist = userRole === 'THERAPIST';
+  const cabinet = therapist && !!therapistMode;
+  const { clients, own, articles } = usePaletteClientData(therapist, cabinet);
+  const guide = usePaletteGuide(cabinet, tr);
+  const { assign, run: actions, leaveAssign } = usePaletteActions({ onNavigate, onOpenClient, onToggleMode, onQuickAction, clients, guide, setQuery: setQ, inputRef });
+  const mode = { therapist, therapistMode: cabinet, screenShare };
+  const found = useMemo(
+    () => searchPalette({ query: q, tr, therapist, therapistMode: !!therapistMode, screenShare, clients, own, articles, guide, recent, assign, run: actions }),
+    [q, tr, therapist, therapistMode, screenShare, clients, own, articles, guide, recent, assign, actions],
+  );
+  const rows = found.rows;
+  const examples = useMemo(() => paletteExamples(guide, cabinet), [guide, cabinet]);
+  const typed = q.trim() !== '';
+  const run = (row: CmdRow | undefined) => runPaletteRow(row, typed, goBack);
+  const runRef = useRef(run);
+  useEffect(() => { runRef.current = run; });
+
   useEffect(() => {
-    if (userRole === 'THERAPIST') {
-      api.getTherapyClients().then(setClients).catch(() => {});
+    const last = rows.length - 1;
+    // Клавиатурный выбор прокручивается в видимую область; первая строка — список в самый верх (видна подпись группы).
+    function move(e: KeyboardEvent, to: number) {
+      e.preventDefault();
+      if (to < 0) return;
+      setSel(to);
+      const list = document.getElementById(CMD_LIST_ID)?.parentElement;
+      if (to === 0 && list) list.scrollTop = 0;
+      else document.getElementById(cmdOptionId(to))?.scrollIntoView?.({ block: 'nearest' });
     }
-  }, [userRole]);
-
-  const rows = useMemo<CmdRow[]>(() => {
-    const clientRows: CmdRow[] = screenShare ? [] : clients.map(c => ({
-      label: clientDisplayName(c),
-      ...(isActiveToday(c) ? { sub: 'Активность сегодня' } : { sub: clientStatus(c).label }),
-      hint: 'Открыть карточку',
-      mark: { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) },
-      search: clientDisplayName(c),
-      action: () => onOpenClient?.(c.telegramId),
-    }));
-
-    // In therapist cabinet — skip client navigation sections
-    const navRows: CmdRow[] = therapistMode ? [] : NAV_ITEMS.map(n => ({
-      label: n.label, sub: n.sub, hint: n.hint, mark: { sign: SECTION_LOOK[n.id].sign },
-      search: `${n.label} ${n.sub}`,
-      action: () => onNavigate(n.id),
-    }));
-
-    const toggle = therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в кабинет терапевта';
-    const toggleSub = therapistMode ? 'Клиентский вид' : 'Кабинет';
-    const actionRows: CmdRow[] = [
-      ...(userRole === 'THERAPIST' ? [{
-        label: toggle, sub: toggleSub, mark: { sign: 'cluster' as const }, search: `${toggle} ${toggleSub}`,
-        action: () => onToggleMode?.(),
-      }] : []),
-      // Те же быстрые действия, что в «+» на телефоне (общий реестр); группа — подписью над строками.
-      ...(!therapistMode ? buildPlusActions(tr).flatMap(g => g.actions.map(a => ({
-        group: g.title, label: a.label, sub: a.sub, mark: { sign: quickActionSign(a.id) },
-        search: `${a.label} ${g.title} ${a.sub}`,
-        action: () => onQuickAction?.(a.id),
-      }))) : []),
-    ];
-
-    // Регистр и «ё/е» не различаются — тот же поиск, что в списке клиентов.
-    return [...clientRows, ...navRows, ...actionRows].filter(r => matchesSearch(r.search, q));
-  }, [q, clients, screenShare, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
-
-  useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(rows.length - 1, s + 1)); }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setSel(s => Math.max(0, s - 1)); }
-      if (e.key === 'Enter')     { e.preventDefault(); goBack(rows[sel]?.action); }
+      if (e.key === 'ArrowDown') move(e, Math.min(last, sel + 1));
+      if (e.key === 'ArrowUp')   move(e, Math.max(0, sel - 1));
+      if (e.key === 'Home' && !typed) move(e, Math.min(last, 0));
+      if (e.key === 'End' && !typed)  move(e, last); // набран запрос — Home и End остаются полю
+      if (e.key === 'Enter')     { e.preventDefault(); runRef.current(rows[sel]); }
+      if (e.key === 'Backspace' && assign && q === '') leaveAssign(); // пустое поле второго шага — назад к поиску
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [rows, sel, goBack]);
+    // На перехвате: панель гасит всплытие Enter (чтобы не закрыть бэкдроп), до window на всплытии он не доходит.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [rows, sel, typed, assign, q, leaveAssign]);
 
   return (
-    <div className="cmd-backdrop" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть"
+    <div className="cmd-backdrop" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть" style={viewportVars(viewport)}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBack(); } }}>
       {/* onClick/onKeyDown — stopPropagation: клик или Enter/Space (печатая в
           поиске) не должны всплыть до бэкдропа и закрыть палитру. role="dialog"
@@ -131,12 +122,23 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder={userRole === 'THERAPIST' && !screenShare ? 'Клиент, страница, действие…' : 'Найти страницу или действие…'}
+            placeholder={palettePlaceholder(mode, !!assign)}
+            role="combobox" aria-label="Поиск" aria-autocomplete="list" aria-controls={CMD_LIST_ID}
+            aria-expanded={rows.length > 0} aria-activedescendant={rows[sel] ? cmdOptionId(sel) : undefined}
           />
+          {/* Телефон: бэкдропа не видно — «Отмена» закрывает палитру; на компьютере кнопка скрыта стилем. */}
+          <button type="button" className="ds-link cmd-cancel" onClick={() => (assign ? leaveAssign() : goBack())}>{assign ? 'Назад' : 'Отмена'}</button>
         </div>
-        {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не найдено» под ней. */}
-        <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={(row) => goBack(row.action)}
-                 note={screenShare && userRole === 'THERAPIST' ? 'Клиенты скрыты: включён показ экрана' : undefined} />
+        {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не нашлось» под ней. */}
+        {assign
+          ? <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={run} searching={typed} highlight={typed ? found.query : ''}
+                     help={typed ? undefined : 'Откроется лист нового задания в карточке клиента'}
+                     emptyText="Клиент с таким именем не нашёлся" />
+          : <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={run} searching={typed}
+                     highlight={typed ? found.query : ''} fixedQuery={found.layoutFixed ? found.query.trim() : undefined}
+                     help={paletteHelp(mode)}
+                     examples={examples} onExample={(example) => { setQ(example); inputRef.current?.focus(); }}
+                     note={screenShare && therapist ? 'Клиенты скрыты: включён показ экрана' : undefined} />}
       </div>
     </div>
   );

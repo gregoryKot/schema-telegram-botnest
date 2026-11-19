@@ -54,7 +54,7 @@ export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
 // api.trackPublicEvent (userId = null). Парный allow-list
 // (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts (синхронно).
 export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
-// Клик по кнопке страницы ссылок kotlarewski.gr/links: meta { target, from } — analytics/linksPage.ts.
+// Клик по кнопке страницы ссылок kotlarewski.gr/privet: meta { target, from } — analytics/linksPage.ts.
 export const LINKS_PAGE_CLICK_EVENT = 'links_page_click';
 // Лендинг открыт кнопкой финала игры (?from=game), без meta; пара — GAME_EVENTS.
 export const GAME_APP_ARRIVE_EVENT = 'game_app_arrive';
@@ -166,16 +166,7 @@ export const CLIENT_CONCEPT_OPENED_EVENT = 'client_concept_opened';
 // «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
 // (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
 export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
-// «Справочник» терапевта (#995, /cabinet/guide): открыл раздел; оттуда — лист режима, схемы, техники, «Для терапевта».
-export const CABINET_GUIDE_OPEN_EVENT = 'cabinet_guide_open';
-export const CABINET_GUIDE_SHEET_EVENTS = {
-  mode: 'cabinet_guide_mode_open',
-  schema: 'cabinet_guide_schema_open',
-  technique: 'cabinet_guide_technique_open',
-  note: 'cabinet_guide_note_open',
-} as const;
-// «Схемы» в «Справочнике» переключили на вид «Таблицей»: все схемы и три копинга рядом.
-export const CABINET_GUIDE_TABLE_EVENT = 'cabinet_guide_table_open';
+export * from './analyticsCabinetGuide'; // «Справочник» терапевта: cabinet_guide_*
 
 // Запись клиента из приложения (#546): открыл лист «Записаться на сессию» из «Мой терапевт», без меты; шлётся
 // литералом из ClientBookingSheet (его видит analytics-sync). Созданную бронь (`client_booking_created`) пишет

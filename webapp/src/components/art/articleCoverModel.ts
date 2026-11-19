@@ -9,6 +9,10 @@
 
 /** slug → оттенок бумаги (--h). Порядок — от новых статей к старым, как в списке. */
 export const ARTICLE_COVER_HUE: Readonly<Record<string, number>> = {
+  'tipy-privyazannosti-i-schema-terapiya': 195,
+  'emotsionalnoe-vygoranie-i-schema-terapiya': 135,
+  'pochemu-ya-ne-umeyu-govorit-net': 240,
+  'sindrom-samozvantsa': 70,
   'schema-terapiya-pri-nizkoy-samootsenke': 45,
   'schematerapia-vda': 290,
   'zdoroviy-vzrosliy-bez-terapii': 70,

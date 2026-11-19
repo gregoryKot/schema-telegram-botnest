@@ -5,6 +5,7 @@ import os
 import sys
 from PIL import Image
 from px import save, check
+import week
 import poses, ground, ledges, street, sky, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers, cabinet, zone
 
 ASSETS, OUT = '../src/assets', 'out'
@@ -14,12 +15,13 @@ def main():
     made = {}
     for mod in (poses, ground, ledges, sky, street, light, doc, foes, pickups, room, furniture, bedroom, home_foes, road, hawkers, cabinet, zone):
         made.update(mod.build())
+    made.update(week.build(OUT))                        # «Неделя»: арт хука и превью-кадры
     for k, img in made.items():
         limit = 64 if k.startswith('bg_') else 32    # фоны: дымка множит оттенки
         check(img, k, limit)
         if '--install' in sys.argv:
             save(img, f'{ASSETS}/{k}.png', limit)
-    sheet = preview(made)
+    sheet = preview({k: v for k, v in made.items() if 'wk_' not in k})
     sheet.convert('RGB').save(f'{OUT}/wave1.png')       # превью: цветов больше, чем в индексной PNG
     print('\n'.join(f'{k}: {v.size}' for k, v in made.items()))
 

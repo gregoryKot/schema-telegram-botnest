@@ -43,7 +43,7 @@ export interface CatalogGroup {
   items: CatalogTask[];
 }
 
-const GROUP_TITLES: Record<CatalogGroupId, string> = {
+export const CATALOG_GROUP_TITLES: Record<CatalogGroupId, string> = {
   modes: 'При режимах',
   schemas: 'При схемах',
 };
@@ -122,7 +122,7 @@ export function searchTaskCatalog(
   return (['modes', 'schemas'] as const)
     .map((id) => ({
       id,
-      title: GROUP_TITLES[id],
+      title: CATALOG_GROUP_TITLES[id],
       items: found.filter((t) => t.group === id),
     }))
     .filter((g) => g.items.length > 0);

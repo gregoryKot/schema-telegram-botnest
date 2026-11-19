@@ -53,6 +53,8 @@
    отступы — от --fit-room, кегли и картинки — от --fit-size, они уменьшаются последними.
    От 840px высоты — исходные размеры. Сверка — e2e-browser/today-fit.spec.ts. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* «Зачем это?» и лупа поиска — вместе у правого края. */
+  .ct-head-why { margin-left: auto; }
   .ct-page .ct-head { margin-bottom: calc(var(--fit-room) * .04); }
   .ct-page .ct-home { gap: calc(12px + var(--fit-room) * .04); }
   .ct-main.pp-block { padding: calc(12px + var(--fit-room) * .06) 0 calc(14px + var(--fit-room) * .07); gap: calc(12px + var(--fit-room) * .05); }

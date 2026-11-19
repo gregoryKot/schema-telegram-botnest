@@ -11,6 +11,7 @@ import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
 import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
+import { SEARCH_RESULT_KINDS } from '../analytics/cabinet-events.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -404,6 +405,25 @@ describe('трипваер: EntryDeleteType фронта = ENTRY_DELETE_TYPES б
 
   it('списки совпадают в обе стороны', () => {
     expect([...front].sort()).toEqual([...ENTRY_DELETE_TYPES].sort());
+  });
+});
+
+// Вид открытой строки общего поиска (meta.kind события search_result_open): значение,
+// которого нет на бэке, sanitizeMeta выбросит, и вид пропадёт из /stats.
+describe('трипваер: SEARCH_RESULT_KINDS фронта = бэка (правило №4)', () => {
+  const FRONT = 'shared/src/share/searchAnalytics.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const m = src.match(/export const SEARCH_RESULT_KINDS\s*=\s*\[([^\]]+)\]/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('список SEARCH_RESULT_KINDS найден и непуст', () => {
+    expect(front.length).toBeGreaterThan(0);
+  });
+
+  it('списки совпадают в обе стороны', () => {
+    expect([...front].sort()).toEqual([...SEARCH_RESULT_KINDS].sort());
   });
 });
 

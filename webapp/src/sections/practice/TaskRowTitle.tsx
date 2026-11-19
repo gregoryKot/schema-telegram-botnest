@@ -3,17 +3,17 @@
 import type { UserTask } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { catalogTaskParts, taskWhy } from '../../../../shared/src/tasks/catalog/taskWhy';
-import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
+import { taskTitleText } from './taskTitleText';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 
 export function TaskRowTitle({ task }: { task: UserTask }) {
   const tr = useTr();
   const why = taskWhy(task.catalogId, tr);
-  if (!why) return <div className="cp-task-title">{glueSpaces(resolveTaskDisplayText(task, 'compact'))}</div>;
-  const { title, what } = catalogTaskParts(task.text);
+  if (!why) return <div className="cp-task-title">{glueSpaces(taskTitleText(task, tr))}</div>;
+  const { what } = catalogTaskParts(task.text);
   return (
     <>
-      <div className="cp-task-title">{glueSpaces(title)}</div>
+      <div className="cp-task-title">{glueSpaces(taskTitleText(task, tr))}</div>
       {what && <p className="cp-task-part">{glueSpaces(what)}</p>}
       <p className="cp-task-part"><span className="cp-task-part-label">Зачем</span>{glueSpaces(why)}</p>
     </>

@@ -50,4 +50,44 @@ describe('sanitizeMeta: события плана работы', () => {
       expect(sanitizeMeta('task_assign_source', meta)).toBeUndefined();
     }
   });
+
+  it('search_result_open: вид из списка, «был ли запрос» и «из недавнего»; текст запроса — мимо', () => {
+    for (const kind of [
+      'client',
+      'client_tab',
+      'section',
+      'guide',
+      'task',
+      'action',
+      'pattern',
+      'exercise',
+      'plan',
+      'own_task',
+      'article',
+      'setting',
+    ]) {
+      expect(
+        sanitizeMeta('search_result_open', {
+          kind,
+          typed: true,
+          query: 'покинутость',
+        }),
+      ).toEqual({ kind, typed: true, recent: false });
+    }
+    expect(
+      sanitizeMeta('search_result_open', {
+        kind: 'client',
+        typed: false,
+        recent: true,
+      }),
+    ).toEqual({ kind: 'client', typed: false, recent: true });
+    for (const meta of [
+      { kind: 'page', typed: true },
+      { kind: 'guide' },
+      { kind: 'guide', typed: 'да' },
+      {},
+    ]) {
+      expect(sanitizeMeta('search_result_open', meta)).toBeUndefined();
+    }
+  });
 });

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Шов «клик → fetch»: кнопки /links открываются в той же вкладке, событие обязано
+// Шов «клик → fetch»: кнопки /privet открываются в той же вкладке, событие обязано
 // уйти keepalive-запросом; остальные публичные события идут как прежде.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api } from '../../api';

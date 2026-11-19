@@ -8,8 +8,7 @@ export interface PlanSeed {
   rubric: PlanRubric;
   /** Поле статьи справочника — уходит в `source.field` пункта. */
   field: string;
-  /** Подпись рубрики — заголовок листа и имя кнопки для ридера. */
-  label: string;
+  label: string; // подпись рубрики — заголовок листа и имя кнопки для ридера
   parts: string[];
 }
 
@@ -19,13 +18,16 @@ export type PlanDraft = PlanSeed & { source: PlanSource };
 type Channel = 'relationship' | 'cognitive' | 'experiential' | 'behavioral';
 
 /** Направление «Как работать» листа режима — по предложениям. */
-export const channelSeed = (key: Channel, text: string): PlanSeed => ({
-  rubric: key, field: key, label: PLAN_RUBRIC_LABEL[key], parts: splitSentences(text),
-});
+export const channelSeed = (key: Channel, text: string): PlanSeed => ({ rubric: key, field: key, label: PLAN_RUBRIC_LABEL[key], parts: splitSentences(text) });
 
 /** «На сессии»: техники раздела, каждая — своей частью. */
 export const sessionSeed = (techniques: readonly TechniqueGuide[]): PlanSeed => ({
   rubric: 'session', field: 'techniques', label: PLAN_RUBRIC_LABEL.session, parts: techniques.map((t) => t.name),
+});
+
+/** Рубрика «Между сессиями» целиком (плашка «Обычно в методе»): названия пунктов, каждое — своей частью. */
+export const betweenRubricSeed = (items: readonly BetweenSessionsItem[]): PlanSeed => ({
+  rubric: 'between', field: 'betweenSessions', label: PLAN_RUBRIC_LABEL.between, parts: items.map((i) => i.title),
 });
 
 /** Пункт «Между сессиями»: название и пояснение или инструкция по предложениям. */
@@ -34,6 +36,4 @@ export const betweenSeed = (item: BetweenSessionsItem): PlanSeed => ({
   parts: [item.title, ...splitSentences((item.kind === 'task' ? item.note : item.text) ?? '')],
 });
 
-export const planDraft = (seed: PlanSeed, from: GuideFrom): PlanDraft => ({
-  ...seed, source: { kind: from.kind, id: from.id, field: seed.field },
-});
+export const planDraft = (seed: PlanSeed, from: GuideFrom): PlanDraft => ({ ...seed, source: { kind: from.kind, id: from.id, field: seed.field } });

@@ -8,6 +8,8 @@
 }
 .cmd-search { padding: 12px 16px; border-bottom: 1px solid var(--paper-sunk); display: flex; align-items: center; gap: 12px; }
 .cmd-search .ds-input { flex: 1; min-width: 0; }
+/* «Отмена» — только на телефоне: там панель закрывает бэкдроп целиком. */
+.cmd-search .cmd-cancel { display: none; }
 .cmd-icon { color: var(--text-sub); flex-shrink: 0; display: flex; align-items: center; }
 /* Нижний край списка гаснет — видно, что ниже есть ещё; поле снизу — последняя строка в конце прокрутки
    выходит из тени целиком. Высота режет строку (48) примерно пополам: край списка в зазоре между группами
@@ -20,7 +22,7 @@
   mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
 }
 .cmd-group { margin: 0; padding: 14px 12px 4px; }
-.cmd-row { display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 8px; border-bottom: none; border-radius: 14px; font-size: 14px; color: var(--text-sub); min-height: 48px; box-sizing: border-box; }
+.cmd-row { display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 8px; border-bottom: none; border-radius: 14px; font-size: 14px; color: var(--text-sub); min-height: 48px; box-sizing: border-box; scroll-margin: 8px 0 28px; }
 .cmd-row.is-sel { background: var(--paper-tint); color: var(--text); }
 .cmd-mark { width: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .cmd-mark .pp-art--row { width: 40px; height: 22px; }
@@ -33,14 +35,33 @@
 /* Подпись не режется краем: не влезла рядом с именем — встаёт строкой ниже и переносится там
    (лист на телефоне: «вдох короче выдоха — сигнал телу, что опасности нет» уходила за экран). */
 .cmd-sub { min-width: 0; color: var(--text-sub); text-wrap: pretty; }
+/* Совпадение с запросом: заливка без жирного — ширина строки не прыгает; читается и на выбранной строке. */
+.cmd-hit { background: color-mix(in srgb, var(--c-amber) 34%, transparent); color: inherit; border-radius: 4px; }
 .cmd-hint { flex-shrink: 0; font-size: 12px; }
 .cmd-note { margin: 0; padding: 14px 16px 6px; }
 .cmd-empty { padding: 18px 16px 8px; }
+/* Приглушённая строка под последним из показанных клиентов — в колонке подписей, не выбирается. */
+.cmd-after { margin: 0; padding: 2px 12px 6px 64px; }
+/* Примеры запросов — одна строка с прокруткой вбок: три чипа в столбик сталкивали клиентов вниз.
+   Чип — кнопка под палец (44px); хвост ::after — отступ за последним чипом в конце прокрутки. */
+.cmd-examples { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 4px 0 6px 16px; overflow-x: auto; scroll-padding-inline: 16px; scrollbar-width: none; }
+.cmd-examples::-webkit-scrollbar { display: none; }
+.cmd-examples > * { flex-shrink: 0; white-space: nowrap; }
+.cmd-examples::after { content: ''; flex: 0 0 8px; }
+.cmd-chip { min-height: 44px; font-size: 13.5px; padding: 5px 14px; }
 
-/* Телефон: лист снизу во всю ширину, строки выше — под палец. */
+/* Телефон: панель во весь видимый экран от верха — поле не прыгает с числом результатов, список
+   занимает остаток. Высота и сдвиг — видимая область над клавиатурой (--cmd-vvh, --cmd-vvt ставит
+   CommandPalette.tsx); строки выше — под палец. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .cmd-backdrop { place-items: end stretch; padding: 0; }
-  .cmd-panel { width: 100%; max-width: none; border-radius: 28px 28px 0 0; box-shadow: none; padding-bottom: var(--safe-bottom); }
-  .cmd-list { max-height: 70vh; }
+  /* Запасное, когда visualViewport нет: весь экран от верха. */
+  .cmd-backdrop { display: block; padding: 0; --cmd-vvh: 100dvh; --cmd-vvt: 0px; }
+  .ds-card.cmd-panel {
+    position: absolute; top: var(--cmd-vvt); left: 0; width: 100%; max-width: none; height: var(--cmd-vvh);
+    display: flex; flex-direction: column; box-sizing: border-box; border-radius: 0; box-shadow: none; padding-top: var(--safe-top);
+  }
+  .cmd-search { flex-shrink: 0; padding-right: 8px; }
+  .cmd-search .cmd-cancel { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 44px; min-height: 44px; padding: 0 8px; }
+  .cmd-list { flex: 1; min-height: 0; max-height: none; overflow-y: auto; padding-bottom: calc(24px + var(--safe-bottom)); }
   .cmd-row { min-height: 52px; }
 }

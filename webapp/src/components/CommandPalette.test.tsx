@@ -16,12 +16,20 @@ import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const getTherapyClients = vi.fn();
+const trackEvent = vi.fn();
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 vi.mock('../api', () => ({
-  api: { getTherapyClients: (...a: unknown[]) => getTherapyClients(...a) },
+  api: {
+    getTherapyClients: (...a: unknown[]) => getTherapyClients(...a), trackEvent: (...a: unknown[]) => trackEvent(...a), listArticles: () => Promise.resolve([]),
+    getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]),
+  },
 }));
+
+const HELP = 'Схемы и режимы, упражнения, свои планы и задания, разделы и действия, статьи и настройки';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   getTherapyClients.mockResolvedValue([]);
 });
 
@@ -82,28 +90,41 @@ describe('CommandPalette — навигация', () => {
 describe('CommandPalette — поиск', () => {
   it('фильтрует пункты по подстроке запроса (регистронезависимо)', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'дневник' } });
+    fireEvent.change(screen.getByPlaceholderText('Схема, упражнение, задание, раздел…'), { target: { value: 'дневник' } });
     expect(screen.getByText('Записи')).toBeTruthy();
     expect(screen.queryByText('Сегодня')).toBeNull();
   });
 
-  it('пустой результат поиска показывает «Ничего не найдено»', () => {
+  it('пустой результат поиска показывает «Ничего не нашлось»', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'zzz-нет-такого' } });
-    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('Схема, упражнение, задание, раздел…'), { target: { value: 'zzz-нет-такого' } });
+    expect(screen.getByText('Ничего не нашлось')).toBeTruthy();
+    expect(screen.getByText('Здесь ищутся: схемы и режимы, упражнения, свои планы и задания, разделы и действия, статьи и настройки')).toBeTruthy();
   });
 });
 
 describe('CommandPalette — подпись поля поиска', () => {
   it('клиенту — без слова «клиент»: клиентов у него в палитре нет', () => {
     renderPalette({ userRole: 'CLIENT' });
-    expect(screen.getByPlaceholderText('Найти страницу или действие…')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Схема, упражнение, задание, раздел…')).toBeTruthy();
   });
 
-  it('терапевту — «Клиент, страница, действие…» (короче: на 390 прежняя обрезалась)', () => {
-    getTherapyClients.mockResolvedValue([]);
+  it('терапевту в режиме клиента — «Клиент, схема, упражнение, раздел…» (короче: на 390 прежняя обрезалась)', () => {
+    renderPalette({ userRole: 'THERAPIST' });
+    expect(screen.getByPlaceholderText('Клиент, схема, упражнение, раздел…')).toBeTruthy();
+  });
+
+  it('в кабинете терапевта — с листами справочника; под полем — что ищется', () => {
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
-    expect(screen.getByPlaceholderText('Клиент, страница, действие…')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Клиент, вкладка, задание, лист справочника…')).toBeTruthy();
+    expect(screen.getByText('Клиенты и их вкладки, задания, листы справочника, разделы и действия, статьи и настройки')).toBeTruthy();
+  });
+
+  it('клиенту под полем — что ищется; ввод убирает подсказку', () => {
+    renderPalette({ userRole: 'CLIENT' });
+    expect(screen.getByText(HELP)).toBeTruthy();
+    fireEvent.change(screen.getByPlaceholderText('Схема, упражнение, задание, раздел…'), { target: { value: 'зап' } });
+    expect(screen.queryByText(HELP)).toBeNull();
   });
 });
 
@@ -140,6 +161,43 @@ describe('CommandPalette — клавиатура', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('поле — combobox: activedescendant указывает на выбранную строку; Home и End — первая и последняя', () => {
+    renderPalette();
+    const input = screen.getByRole('combobox', { name: 'Поиск' });
+    const options = screen.getAllByRole('option');
+    const active = () => document.getElementById(input.getAttribute('aria-activedescendant') ?? '');
+    expect(input.getAttribute('aria-controls')).toBe(screen.getByRole('listbox').id);
+    expect(active()).toBe(options[0]);
+    expect(options[0].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(window, { key: 'End' });
+    expect(active()).toBe(options[options.length - 1]);
+    fireEvent.keyDown(window, { key: 'Home' });
+    expect(active()).toBe(options[0]);
+    fireEvent.change(input, { target: { value: 'а' } });
+    expect(fireEvent.keyDown(window, { key: 'End' })).toBe(true); // запрос набран — End остаётся полю
+    fireEvent.change(input, { target: { value: 'ыыыыыы' } });
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('выбранная клавиатурой строка прокручивается в видимую область; движение мыши выбирает без прокрутки', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      renderPalette();
+      const options = screen.getAllByRole('option');
+      fireEvent.mouseMove(options[2]);
+      expect(options[2].getAttribute('aria-selected')).toBe('true');
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      fireEvent.keyDown(window, { key: 'ArrowDown' });
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.instances[0]).toBe(options[3]);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+    } finally {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
+  });
+
   it('ArrowDown двигает выделение на следующую строку перед Enter', () => {
     const onNavigate = vi.fn();
     renderPalette({ onNavigate });
@@ -171,12 +229,12 @@ describe('CommandPalette — клиенты терапевта', () => {
     ]);
     renderPalette({ userRole: 'THERAPIST', therapistMode: true });
     await screen.findByText('Семён');
-    const search = screen.getByPlaceholderText('Клиент, страница, действие…');
+    const search = screen.getByPlaceholderText('Клиент, вкладка, задание, лист справочника…');
     fireEvent.change(search, { target: { value: 'семен' } });
-    expect(screen.getByText('Семён')).toBeTruthy();
+    expect(screen.getAllByText('Семён')[0]).toBeTruthy(); // клиент и следом вкладки его карточки
     expect(screen.queryByText('Алена')).toBeNull();
     fireEvent.change(search, { target: { value: 'Алёна' } });
-    expect(screen.getByText('Алена')).toBeTruthy();
+    expect(screen.getAllByText('Алена')[0]).toBeTruthy();
     expect(screen.queryByText('Семён')).toBeNull();
   });
 
@@ -219,7 +277,7 @@ describe('CommandPalette — клиенты терапевта', () => {
   // синхронный пересчёт `rows` (смена текста поиска), чтобы момент смены TZ
   // совпадал с моментом пересчёта «сегодня», а не терялся в микротаске.
   it('клиент, активный сегодня по календарному дню сервера, помечен в любой зоне', async () => {
-    const search = () => screen.getByPlaceholderText('Клиент, страница, действие…');
+    const search = () => screen.getByPlaceholderText('Клиент, схема, упражнение, раздел…');
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
@@ -273,7 +331,7 @@ describe('CommandPalette — быстрые действия («+» на тел�
 
   it('действия находятся поиском по названию группы и подписи', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Найти страницу или действие…'), { target: { value: 'успокоиться' } });
+    fireEvent.change(screen.getByPlaceholderText('Схема, упражнение, задание, раздел…'), { target: { value: 'успокоиться' } });
     expect(screen.getByText('Техника «Стоп»')).toBeTruthy();
     expect(screen.queryByText('Трекер потребностей')).toBeNull();
   });

@@ -1,31 +1,23 @@
-// Кнопки страницы ссылок kotlarewski.gr/links — сверху вниз. Поменять адрес или
-// подпись — правка одной строки здесь; id — из общего списка с сервером.
-import type { LinksPageTarget } from '../../../../shared/src/analytics/linksPage';
+// Пункты страницы ссылок kotlarewski.gr/privet — сверху вниз. Поменять адрес или
+// подпись — правка одной строки здесь или в linksPlaces.ts (площадки-зеркала).
 import { TG_URL } from '../landing/constants';
-
-export interface LinkItem {
-  id: LinksPageTarget;
-  title: string;
-  /** Вторая строка — только у записи и у карточки проекта. */
-  note?: string;
-  /** null — адреса пока нет, кнопка не показывается. */
-  href: string | null;
-  /** primary — главная кнопка (одна), feature — карточка проекта, plain — остальные. */
-  kind: 'primary' | 'feature' | 'plain';
-}
+import type { LinkItem } from './linksModel';
+import { HEALTHY_ADULT_PLACES, PROJECT_PLACES, SCHEMA_CHANNEL_PLACES } from './linksPlaces';
 
 export const LINKS: readonly LinkItem[] = [
-  { id: 'booking', kind: 'primary', title: 'Записаться на консультацию', note: 'Первая встреча бесплатно · 15 минут', href: '/#booking' },
-  { id: 'project', kind: 'feature', title: 'Всё по схеме', note: 'Бесплатное приложение самопомощи по схема-терапии: трекер потребностей, дневники, тест схем', href: 'https://schemehappens.ru' },
-  { id: 'channel_ha', kind: 'plain', title: 'Канал «Здоровый Взрослый»', href: null }, // адрес от владельца
-  { id: 'channel_schema', kind: 'plain', title: 'Канал о схема-терапии', href: 'https://t.me/SchemeHappens' },
-  { id: 'about', kind: 'plain', title: 'Обо мне и как я работаю', href: '/' },
-  { id: 'articles', kind: 'plain', title: 'Статьи', href: '/articles' },
-  { id: 'write', kind: 'plain', title: 'Написать лично', href: TG_URL },
+  { kind: 'primary', title: 'Записаться на консультацию', note: 'Первая встреча бесплатно · 15 минут', main: { id: 'booking', href: '/#booking' } },
+  {
+    kind: 'feature', title: 'Всё по схеме', main: { id: 'project', href: 'https://schemehappens.ru' },
+    note: 'Приложение для себя и рабочий кабинет для терапевтов',
+    cta: 'Открыть приложение',
+    placesName: 'Бот «Всё по схеме»', places: PROJECT_PLACES,
+  },
+  {
+    kind: 'note', title: 'Здоровый Взрослый', places: HEALTHY_ADULT_PLACES,
+    note: 'Та часть внутри, которая заботится о наших потребностях и останавливает Критика. Канал помогает слышать её чаще.',
+  },
+  { kind: 'plain', title: 'Канал о схема-терапии', places: SCHEMA_CHANNEL_PLACES },
+  { kind: 'plain', title: 'Обо мне и как я работаю', main: { id: 'about', href: '/' } },
+  { kind: 'plain', title: 'Статьи', main: { id: 'articles', href: '/articles' } },
+  { kind: 'plain', title: 'Написать лично', main: { id: 'write', href: TG_URL } },
 ];
-
-export type ReadyLink = LinkItem & { href: string };
-
-/** Кнопки с адресом — то, что рисует страница. */
-export const readyLinks = (links: readonly LinkItem[] = LINKS): ReadyLink[] =>
-  links.filter((l): l is ReadyLink => l.href !== null);

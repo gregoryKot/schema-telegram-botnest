@@ -5,13 +5,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ARTICLE_SEED } from './articles.seed';
-import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
+import { syncArticleSeed } from './articles.seed-sync';
 import type { ArticleDto } from './article.dto';
 
-// Bump when built-in article content changes: instances refresh seeds on start.
-const SEED_VERSION = '18';
-const SEED_VERSION_KEY = 'articlesSeedVersion';
+// Поднимается вместе с правкой articles.seed.ts: пару «версия, хеш сида»
+// сверяет articles.seed.lock.spec.ts с articles.seed.lock.json.
+export const SEED_VERSION = '20';
 
 /** CRUD for blog articles. Public reads, admin-only writes. */
 @Injectable()
@@ -20,53 +19,12 @@ export class ArticlesService implements OnModuleInit {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // Seed / refresh the built-in articles (the ones that used to be hardcoded in
-  // the webapp). Version-gated: on an empty table we insert everything; on a
-  // SEED_VERSION bump we refresh the built-in articles' text/diagrams by slug.
+  // Сид встроенных статей: пустая таблица заполняется, при смене SEED_VERSION
+  // статьи обновляются по slug, кроме правленых в админке (articles.seed-sync.ts).
   // Обложки статей рисует сайт по slug (webapp/src/components/art/articleCoverScenes.ts).
   // Статьи, созданные админом (слаги вне сида), сид не трогает.
   async onModuleInit() {
-    const stored = await this.prisma.bookingSetting.findUnique({
-      where: { key: SEED_VERSION_KEY },
-    });
-    if (stored?.value === SEED_VERSION) return;
-
-    const seed = ARTICLE_SEED.map((a) => ({
-      ...a,
-      date: new Date(a.date),
-      // The diagram is a separate field rendered client-side — it is NOT baked
-      // into `content`, so editing an article never strips it.
-      diagramKey: ARTICLE_DIAGRAM_KEYS[a.slug] ?? null,
-    }));
-
-    for (const a of seed) {
-      const existing = await this.prisma.article.findUnique({
-        where: { slug: a.slug },
-      });
-      if (!existing) {
-        await this.prisma.article.create({ data: a });
-      } else {
-        // Обновляем текст и ключ диаграммы встроенной статьи.
-        await this.prisma.article.update({
-          where: { slug: a.slug },
-          data: {
-            title: a.title,
-            description: a.description,
-            content: a.content,
-            date: a.date,
-            readMin: a.readMin,
-            diagramKey: a.diagramKey,
-          },
-        });
-      }
-    }
-
-    await this.prisma.bookingSetting.upsert({
-      where: { key: SEED_VERSION_KEY },
-      create: { key: SEED_VERSION_KEY, value: SEED_VERSION },
-      update: { value: SEED_VERSION },
-    });
-    this.logger.log(`Articles seeded/refreshed to version ${SEED_VERSION}`);
+    await syncArticleSeed(this.prisma, SEED_VERSION, this.logger);
   }
 
   async list() {

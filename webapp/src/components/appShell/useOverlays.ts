@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
 import { isOverlayQuickAction, type OverlayQuickActionId } from '../quickActions/quickActionRouting';
+import { useSettingsOpen } from '../settingsSheet/settingsLaunch';
 
 type TrackerTab = 'today' | 'history';
 
-// Флаги видимости оверлеев AppShell + их сеттеры. Вынесено из AppShell.tsx
-// (правило №10) — сама логика эффектов, завязанных на эти флаги (обновление
-// Today/Profile после закрытия, одноразовый дисклеймер терапевта), осталась
-// в родителе, потому что зависит и от другого состояния родителя (section,
-// therapistMode, userRole).
+// Флаги видимости оверлеев AppShell + их сеттеры. Вынесено из AppShell.tsx (правило №10) — сама логика
+// эффектов, завязанных на эти флаги (обновление Today/Profile после закрытия, одноразовый дисклеймер
+// терапевта), осталась в родителе: зависит и от другого его состояния (section, therapistMode, userRole).
+// «Настройки» открывает и запрос снаружи (общий поиск, settingsLaunch.ts).
 export function useOverlays() {
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useSettingsOpen();
   const [showPractices, setShowPractices] = useState(false);
   const [showPlans, setShowPlans] = useState(false);
   const [showSchemaInfo, setShowSchemaInfo] = useState(false);

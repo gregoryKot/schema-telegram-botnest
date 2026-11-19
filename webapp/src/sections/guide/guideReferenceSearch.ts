@@ -1,43 +1,64 @@
 import { runStarts } from '../../../../shared/src/utils/runStarts';
-import { normalizeSearchText } from '../../../../shared/src/utils/searchNormalize';
 import { REFERENCE_TABS, type Reference, type ReferenceGroup, type ReferenceItem } from './guideReferenceModel';
-import { bodyKey, snippet, type ReferenceBody } from './guideReferenceBody';
+import type { ReferenceBody } from './guideReferenceBody';
 import { leafGroups } from './guideReferenceCoping';
+import { parseSearchQuery } from '../../../../shared/src/search/searchQuery';
+import { rankItem } from './guideReferenceRank';
 
 /**
  * Поиск «Справочника» терапевта по названиям и текстам листов во всех разделах (модель — guideReferenceModel.ts).
- * Запрос делится на слова, лист подходит, когда каждое нашлось в названии или в тексте (`body`; в тексте ищутся
- * слова от трёх букв — иначе подходит всё). Слово нашлось только в тексте — под названием кусок абзаца с ним. Найденное остаётся на листе своей группы: строки одной группы
- * режимов или одного домена идут серией — у серии один лист со знаком у подписи, строки знак не
- * повторяют (три Критика подряд — один знак, а не три; та же «серия», что у плиток чек-ина клиента,
- * runStarts). У техник и «Для терапевта» групп нет: один лист на раздел, подпись — имя раздела, знак у
- * строки свой. Регистр и «ё/е» не различаются (matchesSearch). Пустой запрос — пустой список: экран
- * тогда показывает выбранный раздел. Подгруппа листа (копинг) ищется как своя группа — leafGroups.
+ * Запрос разбирает parseSearchQuery (служебные слова выпадают, падеж не важен); лист подходит, когда нашлось
+ * хотя бы одно слово. Выдача — по убыванию веса (rankItem), при равном весе — порядок реестра. Соседние строки
+ * одной группы идут серией: у серии один лист со знаком у подписи (runStarts); у техник и «Для терапевта» подпись —
+ * имя раздела. Пустой запрос и запрос из служебных слов — пустой список. Подгруппа листа (копинг) — своя группа.
  */
-const MIN_BODY_WORD = 3;
+export interface ReferenceHit {
+  /** Ключ группы листа в выдаче: раздел и группа. */
+  key: string;
+  /** Подпись группы; у листа без группы — имя раздела. */
+  title: string;
+  /** Имя раздела справочника («Режимы», «Схемы»…). */
+  section: string;
+  look: ReferenceGroup['look'];
+  /** Лист; когда слово нашлось в тексте, `sub` — кусок абзаца. */
+  item: ReferenceItem;
+  /** Кусок абзаца с найденным словом; совпало только название или подпись — нет. */
+  snippet?: string;
+  score: number;
+}
+
+/** Все листы справочника в порядке реестра, каждый — с подписью группы и именем раздела. */
+export function referenceLeaves(ref: Reference): (Pick<ReferenceHit, 'key' | 'title' | 'section' | 'look'> & { item: ReferenceItem })[] {
+  return REFERENCE_TABS.flatMap((tab) => leafGroups(ref[tab.id]).flatMap((group) => group.items.map((item) => (
+    { item, key: `${tab.id}:${group.key}`, title: group.title ?? tab.label, section: tab.label, look: group.look }
+  ))));
+}
+
+/** Плоская выдача по убыванию веса: ею пользуются список «Справочника» и общий поиск (палитра ⌘K). */
+export function rankReference(ref: Reference, query: string, body?: ReferenceBody): ReferenceHit[] {
+  const terms = parseSearchQuery(query);
+  if (terms.length === 0) return [];
+  const hits: ReferenceHit[] = referenceLeaves(ref).flatMap(({ item, ...leaf }) => {
+    const hit = rankItem(item, leaf.title, terms, body);
+    if (!hit) return [];
+    return [{ ...hit, snippet: hit.item === item ? undefined : hit.item.sub, ...leaf }];
+  });
+  return hits.sort((a, b) => b.score - a.score); // сортировка устойчива: при равном весе остаётся порядок реестра
+}
 
 export function searchReference(ref: Reference, query: string, body?: ReferenceBody): ReferenceGroup[] {
-  const words = normalizeSearchText(query).split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-  /** Строка с куском текста под названием, если совпадение — в тексте листа; не подошла — null. */
-  const match = (item: ReferenceItem): ReferenceItem | null => {
-    const name = normalizeSearchText(item.name);
-    const inBody = words.filter((w) => !name.includes(w));
-    if (inBody.length === 0) return item;
-    if (inBody.some((w) => w.length < MIN_BODY_WORD)) return null;
-    const paragraphs = body?.get(bodyKey(item)) ?? [];
-    const hits = inBody.map((w) => paragraphs.find((p) => normalizeSearchText(p).includes(w)));
-    return hits[0] !== undefined && hits.every((p) => p !== undefined) ? { ...item, sub: snippet(hits[0], inBody[0]) } : null;
-  };
-  return REFERENCE_TABS.flatMap((tab) => {
-    const hits = leafGroups(ref[tab.id]).flatMap((group) => group.items
-      .flatMap((item) => { const hit = match(item); return hit ? [{ group, item: hit }] : []; }));
-    const starts = runStarts(hits.map((h) => h.group.key));
-    const found: ReferenceGroup[] = [];
-    hits.forEach(({ group, item }, i) => {
-      if (starts[i]) found.push({ key: `${tab.id}:${group.key}`, title: group.title ?? tab.label, look: group.look, items: [] });
-      found[found.length - 1].items.push(item);
-    });
-    return found;
+  const hits = rankReference(ref, query, body);
+  const starts = runStarts(hits.map((h) => h.key));
+  const found: ReferenceGroup[] = [];
+  const seen = new Map<string, number>();
+  hits.forEach(({ key, title, look, item }, i) => {
+    if (starts[i]) {
+      const n = seen.get(key) ?? 0;
+      seen.set(key, n + 1);
+      // Группа может встретиться дважды (между её листами встал более точный чужой) — ключ листа остаётся уникальным.
+      found.push({ key: n === 0 ? key : `${key}#${n}`, title, look, items: [] });
+    }
+    found[found.length - 1].items.push(item);
   });
+  return found;
 }

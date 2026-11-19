@@ -1,6 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PaperEmpty } from '../components/art/PaperEmpty';
-import { useLocation } from 'react-router-dom';
 import { api, type TherapyRelationInfo } from '../api';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
@@ -24,6 +23,8 @@ import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
 import { CatalogsBlock } from './practice/CatalogsBlock';
+import { useRoutePractice } from './practice/practiceRoute';
+import type { ExId } from '../../../shared/src/exercises/exerciseCatalog';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { isSessionToday, upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import '../styles/client-practice.css';
@@ -44,7 +45,6 @@ interface Props {
 export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenPlans, onOpenTracker, onOpenDiaries, onOpenSchema, refreshKey, onTasksChanged }: Props) {
   const tr = useTr();
   const phone = useIsMobile();
-  const location = useLocation();
   const childhoodDone = !!localStorage.getItem(CHILDHOOD_DONE_KEY);
 
   const stats = useExerciseStats();
@@ -63,16 +63,9 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   });
   const onSos = tools.isShown('flashcard') ? openFlashcard : undefined;
 
-  // Detect openSchemaEx state from navigation. «Мне плохо» топбара сюда больше
-  // не ведёт — карточка открывается поверх текущего раздела (AppOverlays).
-  useEffect(() => {
-    const state = location.state as { openSchemaEx?: string } | null;
-    if (state?.openSchemaEx) {
-      launcher.openExercise({ ex: 'schema', id: state.openSchemaEx });
-      window.history.replaceState({}, '', '/practice');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- намеренно неполные зависимости (mount-only / стабильные ссылки); добавление рискует ре-фетч-циклами
-  }, []);
+  const openLibrary = (id: ExId) => { if (id === 'wheel') { onOpenChildhoodWheel(); return; } launcher.openExercise({ ex: id }); };
+  // Состояние маршрута: упражнение или «Мои планы» из общего поиска, карточка схемы из «О схеме».
+  useRoutePractice({ exercise: openLibrary, plans: onOpenPlans, schemaCard: id => launcher.openExercise({ ex: 'schema', id }) });
 
   useEffect(() => {
     let ignore = false;
@@ -131,7 +124,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         phone={phone}
         stats={stats}
         items={cards}
-        onOpen={id => { if (id === 'wheel') { onOpenChildhoodWheel(); return; } launcher.openExercise({ ex: id }); }}
+        onOpen={openLibrary}
       />
 
       {tools.isShown('tasks') && <section className="cp-block">

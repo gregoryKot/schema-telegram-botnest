@@ -15,7 +15,8 @@ const CLIENT: TherapyClientSummary = {
   meetingDays: [], schemaIds: [],
 };
 const getTherapyClients = vi.fn(() => Promise.resolve([CLIENT]));
-vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients() } }));
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
+vi.mock('../api', () => ({ api: { getTherapyClients: () => getTherapyClients(), trackEvent: vi.fn(), listArticles: () => Promise.resolve([]), getTasks: () => Promise.resolve([]), getPlanHistory: () => Promise.resolve([]) } }));
 
 afterEach(() => { cleanup(); setScreenShare(false); });
 
@@ -35,11 +36,13 @@ describe('CommandPalette — «Показ экрана»', () => {
     await renderPalette();
     expect(screen.queryByText('Иван')).toBeNull();
     expect(screen.getByText(NOTE)).toBeTruthy();
-    fireEvent.change(screen.getByPlaceholderText(/Найти/), { target: { value: 'ива' } });
+    fireEvent.change(screen.getByPlaceholderText('Лист справочника, раздел…'), { target: { value: 'ива' } });
     expect(screen.queryByText('Иван')).toBeNull();
-    // Аудит 2026-11: одна строка почему, без второй «Ничего не найдено» под ней.
+    // Аудит 2026-11: одна строка почему, без второй «Ничего не нашлось» под ней.
     expect(screen.getByText(NOTE)).toBeTruthy();
-    expect(screen.queryByText('Ничего не найдено')).toBeNull();
+    expect(screen.queryByText('Ничего не нашлось')).toBeNull();
+    // Подсказка, что ищется, — без слова «клиенты».
+    expect(screen.getByText('Здесь ищутся: листы справочника, разделы и действия, статьи и настройки')).toBeTruthy();
   });
 
   it('контроль: без режима клиент на месте и подписи нет; выключение возвращает его сразу', async () => {

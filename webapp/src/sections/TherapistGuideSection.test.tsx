@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 // «Справочник» терапевта (#995, шаг 4): пока чанк текстов грузится — силуэт
-// списка; потом режимы по группам, схемы по доменам, техники и «Для
+// списка; потом режимы по группам, схемы по доменам, потребности, техники и «Для
 // терапевта». Тап открывает тот же лист, что в схеме случая клиента, но без
 // клиента: без «Дать заданием», отметок «Делали сегодня» и истории. События —
 // cabinet_guide_*, а не concept_guide_* схемы случая. Разделы — фикстура, не
 // тексты shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { TherapistGuideSection } from './TherapistGuideSection';
 import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS, CABINET_GUIDE_TABLE_EVENT } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
@@ -62,7 +62,7 @@ describe('TherapistGuideSection', () => {
     // оговорка об источниках и адрес для ошибок — сразу под шапкой (на сайте — Telegram автора)
     expect(screen.getByText(/могут содержать ошибки/).textContent).toMatch(/обязательно напиши: @kotlarewski$/);
     expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Техники', 'Для терапевта']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Для терапевта']);
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT]);
   });
 
@@ -119,6 +119,24 @@ describe('TherapistGuideSection', () => {
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.technique);
   });
 
+  it('«Потребности»: строка с подписью, тап — лист с доменом и схемами; схема открывается поверх, «Закрыть» возвращает к потребности', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('tab', { name: 'Потребности' }));
+    const rows = screen.getAllByRole('button', { name: /Привязанность/ });
+    expect(rows).toHaveLength(1); // потребности без домена со схемами в справочнике в списке нет
+    expect(within(rows[0]).getByText('Безопасность и связь')).toBeTruthy();
+    fireEvent.click(rows[0]);
+    const sheet = screen.getByRole('dialog', { name: 'Привязанность' });
+    expect(within(sheet).getByText('Нарушение связи и отвержение')).toBeTruthy();
+    expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.need);
+    fireEvent.click(within(sheet).getByRole('button', { name: new RegExp(SCHEMA_NAME.replace('/', '\\/')) }));
+    const schema = screen.getByRole('dialog', { name: SCHEMA_NAME });
+    expect(sheet.compareDocumentPosition(schema) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy(); // позже в DOM — выше
+    expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.schema);
+    fireEvent.click(within(schema).getByRole('button', { name: 'Закрыть' }));
+    expect(screen.getByRole('dialog', { name: 'Привязанность' })).toBeTruthy();
+  });
+
   it('«Для терапевта»: раздел с сутью, тап — лист с пунктами и источниками; «Закрыть» — обратно', async () => {
     await mount();
     fireEvent.click(screen.getByRole('tab', { name: 'Для терапевта' }));
@@ -152,10 +170,34 @@ describe('TherapistGuideSection', () => {
     expect(screen.queryByRole('tablist')).toBeNull();
     const found = screen.getByRole('region', { name: 'Техники' });
     expect(within(found).getByRole('button', { name: /^Работа со стульями/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Уязвимый Ребёнок' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Детские режимы' })).toBeNull(); // режим — только ссылкой в карточке-ответе
     fireEvent.change(search, { target: { value: 'щщщ' } });
     expect(screen.getByText('Ничего не нашлось')).toBeTruthy();
     fireEvent.change(search, { target: { value: '' } });
     expect(screen.getByRole('tablist')).toBeTruthy();
+  });
+});
+
+// Переход из общего поиска (⌘K): состояние маршрута { guideSheet } → открыт лист, состояние очищено.
+describe('лист из состояния маршрута', () => {
+  function State() {
+    return <output data-testid="state">{JSON.stringify(useLocation().state)}</output>;
+  }
+  const mountAt = async (guideSheet: unknown) => {
+    render(<MemoryRouter initialEntries={[{ pathname: '/cabinet/guide', state: { guideSheet } }]}><TherapistGuideSection /><State /></MemoryRouter>);
+    await screen.findByRole('tab', { name: 'Режимы' });
+  };
+
+  it('открывает лист по виду и id — тем же путём, что тап по строке; состояние маршрута очищается', async () => {
+    await mountAt({ kind: 'schema', id: 'abandonment' });
+    expect(await screen.findByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();
+    expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS.schema]);
+    expect(screen.getByTestId('state').textContent).not.toContain('guideSheet');
+  });
+
+  it('листа с таким id нет — ничего не открывается, состояние всё равно очищено', async () => {
+    await mountAt({ kind: 'mode', id: 'no_such_mode' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('state').textContent).toBe('null');
   });
 });
