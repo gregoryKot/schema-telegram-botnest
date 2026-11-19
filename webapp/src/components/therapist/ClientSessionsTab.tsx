@@ -53,7 +53,7 @@ export function ClientSessionsTab({ detail, takeFocus }: Props) {
         {noteError && <div className="tb-error">{noteError}</div>}
       </div>
 
-      <SessionArchive page={notesPage} removeNote={removeNote} takeFocus={takeFocus} customModes={customModes} />
+      <SessionArchive page={notesPage} removeNote={removeNote} takeFocus={takeFocus} customModes={customModes} clientId={detail.selectedClient?.telegramId} />
     </div>
   );
 }

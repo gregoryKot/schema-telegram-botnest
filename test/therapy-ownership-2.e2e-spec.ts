@@ -72,6 +72,7 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
   }
 
   let mapId: number;
+  let noteId: number;
 
   beforeAll(async () => {
     await prisma.user.create({ data: { id: T3, role: 'THERAPIST' } });
@@ -99,6 +100,13 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     expect(work.body.entries).toEqual([
       { noteId: note.body.id, date: '2026-07-22', work: [WORK_ITEM] },
     ]);
+
+    // Одна запись по id — так открывается запись за пределами страницы заметок.
+    const one = await t3.get(`/api/therapy/notes/${C2_ID}/one/${note.body.id}`);
+    expect(one.body.number).toBe(1);
+    expect(one.body.note.text).toBe('заметка до разрыва связи');
+    expect(one.body.note.work).toEqual([WORK_ITEM]);
+    noteId = note.body.id as number;
 
     const concept = await t3.post(`/api/therapy/conceptualization/${C2_ID}`, {
       earlyExperience: 'опыт клиента C2',
@@ -155,6 +163,8 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     const work = await t3.get(`/api/therapy/notes/${C2_ID}/work`);
     expect(work.status).toBe(403);
     expect(JSON.stringify(work.body)).not.toContain('спор с Критиком');
+    const one = await t3.get(`/api/therapy/notes/${C2_ID}/one/${noteId}`);
+    expect(one.status).toBe(403);
   });
 
   it('после разрыва связи T3 не может читать концептуализацию C2', async () => {
