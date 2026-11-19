@@ -194,6 +194,31 @@ describe('опрос', () => {
     await waitFor(() => expect(onSession).toHaveBeenCalledWith('a', 900));
   });
 
+  // Вход через MAX подтверждают в мини-приложении без кода — второй фактор
+  // спрашивает сайт: сессии в ответе нет, опрос на этом кончается.
+  it('у аккаунта 2FA — вместо сессии вызов уходит на шаг кода, опрос остановлен', async () => {
+    const api = makeApi({
+      poll: vi
+        .fn()
+        .mockResolvedValue({ status: 'totp_required', challengeToken: 'ch' }),
+    });
+    const onSession = vi.fn();
+    const onTotpChallenge = vi.fn();
+    const deps = { api, hostId: 'web', ...DEPS, onSession, onTotpChallenge };
+    const { result } = renderHook(() => useLoginTicket(deps));
+
+    await act(async () => {
+      await result.current.begin('max');
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+
+    expect(onTotpChallenge).toHaveBeenCalledWith('ch');
+    expect(onSession).not.toHaveBeenCalled();
+    expect(api.poll).toHaveBeenCalledTimes(1);
+  });
+
   it('«это не я» — отдельное состояние, не истечение', async () => {
     const api = makeApi({
       poll: vi.fn().mockResolvedValue({ status: 'denied' }),

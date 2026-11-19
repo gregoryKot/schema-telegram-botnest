@@ -27,16 +27,29 @@ import flatGlitch from '../assets/bg_wk_flat_glitch.png';
 import callWall from '../assets/wk_call_wall.png';
 import momScreen from '../assets/wk_mom_screen.png';
 import momCall from '../assets/wk_mom_call.png';
+import party from '../assets/bg_wk_party.png';
+import partyGlitch from '../assets/bg_wk_party_glitch.png';
+import exitFloor from '../assets/bg_wk_exit_floor.png';
+import maskWall from '../assets/wk_mask_wall.png';
+import dishes from '../assets/wk_dishes.png';
+import friendCake from '../assets/wk_friend_cake.png';
+import guestAsk from '../assets/wk_guest_ask.png';
+import guestA from '../assets/wk_guest_a.png';
+import guestB from '../assets/wk_guest_b.png';
+import guestC from '../assets/wk_guest_c.png';
 
 const sasha = import.meta.glob<string>('../assets/wk_sasha_*.png', { eager: true, import: 'default' });
 const IMAGES = { bg_wk_city: city, bg_wk_home: home, bg_wk_street: street, bg_wk_office: office, bg_wk_office_glitch: officeGlitch,
   bg_wk_corridor: corridor, bg_wk_corridor_glitch: corridorGlitch, bg_wk_boss_room: bossRoom, wk_arch: arch,
   wk_notif_wall: notifWall, wk_curb: curb, wk_step: step, wk_step_hi: stepHi, wk_puddle: puddle,
-  bg_wk_city_eve: cityEve, bg_wk_flat: flat, bg_wk_flat_glitch: flatGlitch, wk_call_wall: callWall }; // «Среда»
+  bg_wk_city_eve: cityEve, bg_wk_flat: flat, bg_wk_flat_glitch: flatGlitch, wk_call_wall: callWall, // «Среда»
+  bg_wk_party: party, bg_wk_party_glitch: partyGlitch, bg_wk_exit_floor: exitFloor, wk_mask_wall: maskWall }; // «Пятница»
 const SHEETS: Record<string, [url: string, fw: number, fh: number]> = {
   wk_piles: [piles, 26, 88], wk_door: [door, 34, 62], wk_mister: [mister, 36, 36],
   wk_colleague_a: [colA, 40, 60], wk_colleague_b: [colB, 40, 60], wk_colleague_c: [colC, 40, 60], wk_colleague_box: [colBox, 40, 60],
   wk_mom_screen: [momScreen, 40, 60], wk_mom_call: [momCall, 34, 62],
+  wk_dishes: [dishes, 26, 88], wk_friend_cake: [friendCake, 34, 62], wk_guest_ask: [guestAsk, 40, 60],
+  wk_guest_a: [guestA, 40, 60], wk_guest_b: [guestB, 40, 60], wk_guest_c: [guestC, 40, 60],
 };
 for (const [path, url] of Object.entries(sasha)) SHEETS[path.slice(path.lastIndexOf('/') + 1, -4)] = [url, 40, 60];
 

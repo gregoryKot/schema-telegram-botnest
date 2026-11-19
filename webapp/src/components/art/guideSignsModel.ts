@@ -32,12 +32,12 @@ export { MODE_GROUP_SIGN };
 export { TECHNIQUE_SIGN } from './techniqueSigns';
 
 /**
- * Знак раздела «Для терапевта» (id из guide/practice.ts; сверка — тестом модели). Восемь —
+ * Знак раздела «Для терапевта» (id из guide/practice.ts; сверка — тестом модели). Девять —
  * готовый мотив: тупик — Ribbon (зацепило и закрутилось), ошибки в методе — Check (сверить
  * себя по списку), схемы терапевта — Layers (свои слои), группа — Cluster (несколько кругов
  * вместе), намеренная практика — Beads (настройка: три уровня на одной нити), рамка метода —
  * Limits (рамка), суицидальные мысли — Heart (бережно, как кризисный вход «Мне плохо»),
- * влюблённость — HeartFrame (тепло и граница: это и есть эмпатическая конфронтация). Два —
+ * влюблённость — HeartFrame (тепло и граница), онлайн-формат — Together (двое рядом). Два —
  * свои (GuideSignsPractice.tsx): «болтовня» — Chatter, злость — Flare.
  */
 export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
@@ -48,6 +48,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   group_therapy: 'cluster',
   impasses: 'ribbon',
   method_errors: 'check',
+  online_format: 'together',
   romance_and_partner: 'heart_frame',
   suicidal_thoughts: 'heart',
   therapist_schemas: 'layers',
