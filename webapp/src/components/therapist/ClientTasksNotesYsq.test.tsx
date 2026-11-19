@@ -42,7 +42,7 @@ describe('ClientTasksTab', () => {
     const onAssign = vi.fn();
     render(<ClientTasksTab detail={detailOf({ clientTasks: [], selectedClient: client(7) })} onAssign={onAssign} />);
     fireEvent.click(screen.getByText('Письмо себе в детстве'));
-    expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self' });
+    expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self', origin: 'template' });
     fireEvent.click(screen.getByText('Дневник режима'));
     expect(onAssign).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'custom', text: expect.stringContaining('Дневник режима') }));
     fireEvent.click(screen.getByText('+ Назначить'));

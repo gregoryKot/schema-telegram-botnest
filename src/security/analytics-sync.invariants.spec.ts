@@ -11,7 +11,10 @@ import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
 import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
-import { SEARCH_RESULT_KINDS } from '../analytics/cabinet-events.constants';
+import {
+  SEARCH_RESULT_KINDS,
+  TASK_ASSIGN_SOURCES,
+} from '../analytics/cabinet-events.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -433,6 +436,23 @@ describe('трипваер: SEARCH_RESULT_KINDS фронта = бэка (пра�
 
   it('списки совпадают в обе стороны', () => {
     expect([...front].sort()).toEqual([...SEARCH_RESULT_KINDS].sort());
+  });
+});
+
+// Источник назначенного задания (meta.source события task_assign_source): та же пара списков.
+describe('трипваер: TASK_ASSIGN_SOURCES фронта = бэка (правило №4)', () => {
+  const src = readFileSync(
+    join(ROOT, 'shared/src/share/taskAssignAnalytics.ts'),
+    'utf8',
+  );
+  const m = src.match(/export const TASK_ASSIGN_SOURCES\s*=\s*\[([^\]]+)\]/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('списки непусты и совпадают в обе стороны', () => {
+    expect(front.length).toBeGreaterThan(0);
+    expect([...front].sort()).toEqual([...TASK_ASSIGN_SOURCES].sort());
   });
 });
 
