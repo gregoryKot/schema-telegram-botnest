@@ -4,6 +4,8 @@ import { Breath, Cup, Ribbon, Strokes } from '../../components/art/PaperArt';
 import { Cluster, Talk } from '../../components/art/PaperArtSigns';
 import { ChildCare, Looming, Yield } from '../../components/art/GuideSigns';
 import { Horizon, Spotlight } from '../../components/art/GuideSignsTechniques';
+import { Shield } from '../../components/art/GuideSignsModes';
+import { Flare } from '../../components/art/GuideSignsPractice';
 
 // Знак мини-теста по id — тот же язык, что в приложении (docs/design/PAPER_MOTIFS_2026-11.md,
 // «Мотив → смысл»). Тексты тестов живут на сервере (src/quiz/quiz-*.data.ts); у каждого
@@ -21,6 +23,8 @@ const QUIZ_SIGN: Record<string, (p: ArtProps) => ReactElement> = {
   procrastination: Horizon, // «Что стоит за прокрастинацией?» — дело маячит на горизонте
   attachment: ChildCare, // «Стиль привязанности» — маленький круг в объятиях большого
   chemistry: Ribbon, // «Почему тянет не к тем?» — лента зацепила и закрутилась петлёй
+  coping: Shield,   // «Сдаться, сбежать или напасть?» — кольцо-щит вокруг маленького круга
+  anger: Flare,     // «Как ты злишься?» — часть вспыхнула зубчатым кругом, рядом ровный круг
 };
 
 /** Бумага строк списка по очереди: персик, небо, шалфей, бирюза, солома — соседи не совпадают. */
