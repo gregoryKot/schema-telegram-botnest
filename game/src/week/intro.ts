@@ -3,10 +3,11 @@
 import Phaser from 'phaser';
 import { W } from '../constants';
 import { IS_TOUCH } from '../controls';
-import { t, type MsgKey } from '../i18n';
+import { t } from '../i18n';
+import type { Chapter } from './chapter';
 import { C, FONT, SKIN, hex, label, plate, px } from './ui';
 
-export interface IntroOpts { day: MsgKey; again: boolean; sasha: Phaser.GameObjects.Sprite }
+export interface IntroOpts { ch: Pick<Chapter, 'title' | 'about' | 'again' | 'who'>; again: boolean; sasha: Phaser.GameObjects.Sprite }
 
 export function showWeekIntro(s: Phaser.Scene, o: IntroOpts, onStart: () => void) {
   const x0 = px(286), w = W - x0 - px(24), y0 = px(58), pad = px(18);
@@ -16,9 +17,9 @@ export function showWeekIntro(s: Phaser.Scene, o: IntroOpts, onStart: () => void
     s.add.text(pad, y, text, { fontFamily: FONT, fontSize: `${px(size)}px`, fontStyle: bold ? '700' : '500', color: hex(color),
       wordWrap: { width: w - 2 * pad } });
   const parts: Phaser.GameObjects.GameObject[] = [g,
-    txt(px(12), t(o.again ? 'm_wk_intro_again' : 'm_wk_intro_about'), 14, C.haze),
-    txt(px(30), t(o.day), 40, C.paper, true),
-    txt(px(78), t('m_wk_intro_who'), 20, C.paper)];
+    txt(px(12), t(o.again ? o.ch.again : o.ch.about), 14, C.haze),
+    txt(px(30), t(o.ch.title), 40, C.paper, true),
+    txt(px(78), t(o.ch.who), 20, C.paper)];
   // как управлять: две строки горчичным — тем же цветом, что силы и рюкзак
   const how = [t('m_wk_intro_auto'), t(IS_TOUCH ? 'm_wk_intro_tap' : 'm_wk_intro_key')];
   how.forEach((line, i) => {

@@ -8,7 +8,7 @@ import { jumpHeight, needFor, pickHint, type Need } from './guide';
 import { ACT_KEYS } from './input';
 import { callWeekAct } from './touch';
 import { SKIN, label, px } from './ui';
-import type { Act } from './monday';
+import type { Act, Chapter } from './chapter';
 import type { World } from './world';
 import type { WeekHud } from './hud';
 
@@ -30,7 +30,7 @@ export class WeekCoach {
   private stuckMs = 0; private sinceHint = Infinity;
   private calling = new Set<Need>();
 
-  constructor(private s: Phaser.Scene, private hud: WeekHud) {}
+  constructor(private s: Phaser.Scene, private hud: WeekHud, private ch: Pick<Chapter, 'hints' | 'targetTag'>) {}
 
   /** Цель под часами: сменилась — плашка вспыхивает. */
   goal(key: MsgKey) {
@@ -41,13 +41,15 @@ export class WeekCoach {
   }
   /** Глава кончилась: цель и бирка не лезут на карточку. */
   done() { this.goalBox?.destroy(); this.doorTag?.destroy(); this.goalBox = this.doorTag = null; }
-  /** Бирка над дверью начальницы: появляется вместе с сообщением и идёт за дверью. */
+  /** Бирка над целью главы (дверь начальницы, телефон с мамой): появляется вместе с целью и идёт за ней. */
   tagDoor() {
     if (this.doorTag) return;
-    this.doorTag = label(this.s, t('m_wk_door_tag'), SKIN.acid, { size: 15, bold: true, tail: 'say', padX: 8, padY: 3 }).box.setDepth(6);
+    this.doorTag = label(this.s, t(this.ch.targetTag), SKIN.acid, { size: 15, bold: true, tail: 'say', padX: 8, padY: 3 }).box.setDepth(6);
   }
   /** Кнопка появилась — Саша думает, зачем она, кнопка мигает до первого нажатия. */
   reveal(act: Act) { this.hint(act); }
+  /** Кнопка мигает без мысли: мысль уже сказала сцена (второй шаг ПАУЗЫ). */
+  blink(act: Act) { this.sinceHint = 0; this.calling.add(act); callWeekAct(act, true); }
   /** Нажали — мигать перестаёт. */
   used(n: Need) {
     if (n === 'jump') this.stuckMs = 0;
@@ -82,7 +84,8 @@ export class WeekCoach {
     this.calling.add(n);
     callWeekAct(n, true);
     if (n === 'jump') { this.showTip(t(IS_TOUCH ? 'm_wk_intro_tap' : 'm_wk_intro_key')); return; }
-    this.hud.think(IS_TOUCH ? t(HINT[n]) : `${t(HINT[n])} [${ACT_KEYS[n]}]`, 4200);
+    const line = t(this.ch.hints?.[n] ?? HINT[n]);
+    this.hud.think(IS_TOUCH ? line : `${line} [${ACT_KEYS[n]}]`, 4200);
   }
   /** Подсказка управления — не мысль Саши, а горчичная плашка над ним. */
   private showTip(text: string) {

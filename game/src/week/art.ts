@@ -1,4 +1,4 @@
-// Арт «Понедельника» (game/art/week*.py): загрузка листов и анимации Саши. Кадры выбирает week/look.ts.
+// Арт «Недели» (game/art/week*.py): загрузка листов и анимации Саши. Кадры выбирает week/look.ts.
 import Phaser from 'phaser';
 import city from '../assets/bg_wk_city.png';
 import home from '../assets/bg_wk_home.png';
@@ -21,14 +21,22 @@ import colA from '../assets/wk_colleague_a.png';
 import colB from '../assets/wk_colleague_b.png';
 import colC from '../assets/wk_colleague_c.png';
 import colBox from '../assets/wk_colleague_box.png';
+import cityEve from '../assets/bg_wk_city_eve.png';
+import flat from '../assets/bg_wk_flat.png';
+import flatGlitch from '../assets/bg_wk_flat_glitch.png';
+import callWall from '../assets/wk_call_wall.png';
+import momScreen from '../assets/wk_mom_screen.png';
+import momCall from '../assets/wk_mom_call.png';
 
 const sasha = import.meta.glob<string>('../assets/wk_sasha_*.png', { eager: true, import: 'default' });
 const IMAGES = { bg_wk_city: city, bg_wk_home: home, bg_wk_street: street, bg_wk_office: office, bg_wk_office_glitch: officeGlitch,
   bg_wk_corridor: corridor, bg_wk_corridor_glitch: corridorGlitch, bg_wk_boss_room: bossRoom, wk_arch: arch,
-  wk_notif_wall: notifWall, wk_curb: curb, wk_step: step, wk_step_hi: stepHi, wk_puddle: puddle };
+  wk_notif_wall: notifWall, wk_curb: curb, wk_step: step, wk_step_hi: stepHi, wk_puddle: puddle,
+  bg_wk_city_eve: cityEve, bg_wk_flat: flat, bg_wk_flat_glitch: flatGlitch, wk_call_wall: callWall }; // «Среда»
 const SHEETS: Record<string, [url: string, fw: number, fh: number]> = {
   wk_piles: [piles, 26, 88], wk_door: [door, 34, 62], wk_mister: [mister, 36, 36],
   wk_colleague_a: [colA, 40, 60], wk_colleague_b: [colB, 40, 60], wk_colleague_c: [colC, 40, 60], wk_colleague_box: [colBox, 40, 60],
+  wk_mom_screen: [momScreen, 40, 60], wk_mom_call: [momCall, 34, 62],
 };
 for (const [path, url] of Object.entries(sasha)) SHEETS[path.slice(path.lastIndexOf('/') + 1, -4)] = [url, 40, 60];
 
