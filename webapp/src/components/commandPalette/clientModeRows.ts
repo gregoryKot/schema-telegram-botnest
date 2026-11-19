@@ -1,6 +1,6 @@
 // Строки общего поиска только режима клиента: свои задания, упражнения, схемы и режимы, свои планы.
 // Группа по запросу — не больше лимита, лучшие по весу первыми; при равном весе порядок модуля строк.
-import { rankRows } from '../../../../shared/src/search/rankRows';
+import { rankRowsWithAliases } from '../../../../shared/src/search/aliasScore';
 import type { CmdRow } from './cmdRow';
 import { allOwnTaskRows, allPlanRows } from './ownRows';
 import type { PaletteInput } from './paletteInput';
@@ -18,5 +18,5 @@ export function allClientModeRows(input: PaletteInput): CmdRow[] {
 
 export function clientModeRows(input: PaletteInput): { row: CmdRow; score: number }[] {
   return SOURCES.flatMap((rows) =>
-    rankRows(rows(input), input.query, (row) => ({ label: row.label, text: row.search })).slice(0, CLIENT_GROUP_SHOWN));
+    rankRowsWithAliases(rows(input), input.query, (row) => ({ label: row.label, text: row.search, aliases: row.aliases })).slice(0, CLIENT_GROUP_SHOWN));
 }

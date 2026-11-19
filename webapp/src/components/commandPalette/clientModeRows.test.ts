@@ -47,6 +47,16 @@ describe('схемы, режимы и упражнения', () => {
     expect(clientModeRows(input({ query: 'мысленно возвращаться' }))).toEqual([]);
   });
 
+  it('другой перевод названия («заброшенность», и с опечаткой) находит схему; подпись — каноническая', () => {
+    const abandonment = ALL_SCHEMAS.find((s) => s.id === 'abandonment')!;
+    for (const query of ['заброшенность', 'заброшеность']) {
+      const [row] = buildPaletteRows(input({ query })).filter((r) => r.group === GROUP.schemas);
+      expect(row).toMatchObject({ key: 'pattern:schema:abandonment', label: abandonment.name });
+    }
+    const [mode] = buildPaletteRows(input({ query: 'карающий родитель' })).filter((r) => r.group === GROUP.modes);
+    expect(mode).toMatchObject({ key: 'pattern:mode:punitive_critic', label: 'Карающий Критик' });
+  });
+
   it('группа по запросу — не больше лимита; упражнения не повторяют подписи действий «+»', () => {
     const modes = clientModeRows(input({ query: 'ребёнок' })).filter((r) => r.row.group === GROUP.modes);
     expect(modes).toHaveLength(CLIENT_GROUP_SHOWN);
