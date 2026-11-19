@@ -1,4 +1,4 @@
-// Пункты страницы ссылок kotlarewski.gr/links — сверху вниз. Поменять адрес или
+// Пункты страницы ссылок kotlarewski.gr/privet — сверху вниз. Поменять адрес или
 // подпись — правка одной строки здесь или в linksPlaces.ts (площадки-зеркала).
 import { TG_URL } from '../landing/constants';
 import type { LinkItem } from './linksModel';

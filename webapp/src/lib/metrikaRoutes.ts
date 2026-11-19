@@ -13,7 +13,7 @@
 export const METRIKA_PUBLIC_PATHS: ReadonlySet<string> = new Set([
   '/',
   '/articles',
-  '/reviews', '/links',
+  '/reviews', '/privet',
   '/tests',
   '/subscribe',
   '/donate',
