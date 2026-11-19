@@ -1,108 +1,132 @@
-/* Страница ссылок визитки (/links) — «стол с бумагами»: фон-стол с точечной сеткой, шапка с
-   фотокарточкой, кнопка записи, полоски-ссылки. Листки (карточка проекта, записка, ярлык) —
-   links-paper.css. Цвета — токены бумаги; терракота пера — --accent-on-light (акцент визитки
-   здесь индиго). Тени — сдвинутые без размытия; появление — transform/opacity. */
+/* Страница ссылок визитки (/links): ровный тёплый фон, шапка с фотокарточкой, кнопка записи,
+   карточка проекта, жёлтая записка и общий список строк. Одна сетка, наклон — только у фото.
+   Цвета — токены бумаги; терракота — --accent-on-light (акцент визитки здесь индиго).
+   Тень-подложка без размытия — только у кнопки записи и записки, остальное — тонкие рамки. */
 .links-page {
-  --lk-desk: var(--panel);
-  --lk-dot: var(--panel-line);
   --lk-paper: var(--surface);
-  --lk-shade: var(--line-hover);
+  --lk-line: var(--line);
   --lk-ink: var(--text);
-  --lk-ink-shade: var(--text);
   --lk-pen: var(--accent-on-light);
   --lk-cta: var(--accent-on-light);
   --lk-on-cta: var(--surface);
   --lk-tape: color-mix(in srgb, var(--c-ochre) 30%, var(--surface));
+  --lk-note: color-mix(in srgb, var(--c-amber) 34%, var(--surface));
+  --lk-note-shade: color-mix(in srgb, var(--c-ochre) 55%, var(--lk-note));
   --lk-serif: 'Literata', Georgia, serif;
   width: 100%; min-height: 100dvh; align-self: flex-start; overflow-x: clip;
-  padding: clamp(38px, calc((100vw - 440px) * 0.12), 96px) 16px 36px;
-  font-family: var(--font-sans); color: var(--lk-ink);
-  background: radial-gradient(var(--lk-dot) 1.1px, transparent 1.2px) 0 0 / 18px 18px var(--lk-desk);
+  padding: clamp(36px, calc((100vw - 440px) * 0.12), 64px) 16px 32px;
+  font-family: var(--font-sans); color: var(--lk-ink); background: var(--panel);
 }
 html[data-theme="dark"] .links-page {
-  --lk-desk: var(--bg-rail);
-  --lk-dot: var(--surface-3);
-  --lk-shade: color-mix(in srgb, var(--bg-rail) 35%, black);
-  --lk-ink-shade: color-mix(in srgb, var(--bg-rail) 35%, black);
   --lk-pen: var(--c-clay-strong);
   --lk-cta: var(--c-clay);
   --lk-on-cta: var(--bg-rail);
-  --lk-tape: color-mix(in srgb, var(--c-ochre) 45%, var(--surface));
+  --lk-tape: color-mix(in srgb, var(--c-ochre) 22%, var(--surface-3));
+  --lk-note: color-mix(in srgb, var(--c-amber) 21%, var(--surface));
+  --lk-note-shade: color-mix(in srgb, var(--bg-rail) 35%, black);
+  background: var(--bg-rail);
+}
+/* Чистый жёлтый тем же тоном, что --c-amber: смесью с бумагой он выходит бежевым. */
+@supports (color: oklch(from red l c h)) {
+  html:not([data-theme="dark"]) .links-page { --lk-note: oklch(from var(--c-amber) .915 .085 calc(h + 18)); }
 }
 .links-col { position: relative; max-width: clamp(440px, 34vw, 480px); margin: 0 auto; }
 .links-page a { color: inherit; text-decoration: none; }
-.lk-pen { font-family: var(--lk-serif); font-style: italic; color: var(--lk-pen); }
-.lk-hand { display: block; flex: none; color: var(--lk-pen); }
+.links-page h2 { margin: 0; font-family: var(--lk-serif); font-weight: 500; font-size: 18px; line-height: 1.2; letter-spacing: -.01em; }
 
-/* Шапка: фотокарточка + привет. Наклон держит figure — подпись едет вместе с карточкой. */
-.lk-hello { display: grid; grid-template-columns: clamp(118px, 39vw, 142px) 1fr; gap: clamp(14px, 5vw, 20px); align-items: start; }
-.lk-photo-fig { position: relative; transform: rotate(-3.5deg); }
-.lk-photo-fig figcaption { position: absolute; left: 0; right: 14px; bottom: 4px; text-align: right; font-size: 13.5px; line-height: 1.3; }
-.author-photo.lk-photo { padding: 8px 8px 26px; border-radius: 6px; transform: none; box-shadow: 7px 8px 0 var(--lk-shade); }
-.author-photo.lk-photo::before { top: -11px; width: 74px; height: 22px; margin-left: -37px; background: var(--lk-tape); transform: rotate(-5deg); }
+/* Шапка: фотокарточка со скотчем (единственная «ручная» деталь) + привет. Наклейка визитки скрыта. */
+.lk-hello { display: grid; grid-template-columns: 104px 1fr; gap: 20px; align-items: center; padding: 6px 4px 0; }
+.author-photo.lk-photo { padding: 6px 6px 8px; border-radius: 5px; transform: rotate(-3deg); box-shadow: 0 0 0 1px var(--lk-line); }
+.author-photo.lk-photo::before { top: -9px; width: 56px; height: 18px; margin-left: -28px; background: var(--lk-tape); transform: rotate(-5deg); }
 .author-photo.lk-photo .author-photo-img { height: auto; border-radius: 3px; }
-.author-photo.lk-photo .author-photo-sticker {
-  left: -12px; right: auto; bottom: -30px; width: 62px; height: 62px; border-radius: 15px;
-  transform: rotate(-9deg); box-shadow: 4px 5px 0 color-mix(in srgb, var(--c-moss) 55%, var(--lk-paper));
-}
-.author-photo.lk-photo .author-photo-sticker .scn-sign { width: 48px; }
-.lk-hi { padding-top: 2px; min-width: 0; }
-.lk-hi .lk-pen { display: block; font-size: clamp(28px, 9.4vw, 34px); line-height: 1; }
-.lk-hi h1 { margin: 8px 0 0; font-family: var(--lk-serif); font-weight: 500; font-size: clamp(18px, 5.6vw, 20px); line-height: 1.16; letter-spacing: -.01em; }
-.lk-hi p { margin: 8px 0 0; font-size: 14px; line-height: 1.4; font-weight: 500; color: var(--text-sub); }
-.lk-marker { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--c-amber) 45%, transparent) 62%); }
+.author-photo.lk-photo .author-photo-sticker { display: none; }
+.lk-hi { min-width: 0; }
+.lk-pen { display: block; font-family: var(--lk-serif); font-style: italic; font-size: 26px; line-height: 1; color: var(--lk-pen); }
+.lk-hi h1 { margin: 8px 0 0; font-family: var(--lk-serif); font-weight: 500; font-size: clamp(19px, 5.6vw, 21px); line-height: 1.18; letter-spacing: -.01em; }
+.lk-hi p { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
+.lk-nb { white-space: nowrap; }
 
-.links-list { list-style: none; margin: 0; padding: 0; }
+.links-list { list-style: none; margin: 28px 0 0; padding: 0; }
+.lk-item { margin-top: 16px; }
 
-/* Главная кнопка с пометкой пером и стрелкой к ней. */
-.lk-ask { position: relative; margin-top: 52px; }
-.lk-why { position: absolute; right: 52px; top: -27px; font-size: 14.5px; line-height: 1.3; white-space: nowrap; }
-.lk-why-arrow { position: absolute; right: 14px; top: -27px; }
+/* Кнопка записи. */
 .lk-cta {
-  position: relative; display: block; padding: 15px 20px 16px; border-radius: 16px;
-  background: var(--lk-cta); transform: rotate(-1deg); box-shadow: 6px 7px 0 var(--lk-ink-shade);
-  transition: transform .15s ease, box-shadow .15s ease;
+  display: block; padding: 14px 18px 15px; border-radius: 14px; background: var(--lk-cta);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--lk-cta) 70%, black); transition: transform .15s ease, box-shadow .15s ease;
 }
 .links-page .lk-cta { color: var(--lk-on-cta); }
-.lk-cta b { display: block; font-size: clamp(17.5px, 5.4vw, 19.5px); font-weight: 800; letter-spacing: -.01em; }
+.lk-cta b { display: block; font-size: clamp(17px, 5.2vw, 19px); font-weight: 800; letter-spacing: -.01em; }
 .lk-cta small { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--lk-on-cta) 86%, var(--lk-cta)); }
 
-/* Полоски-ссылки: три бумажки с лёгким наклоном и сдвигом. */
-.lk-strip-item { margin-top: 14px; }
-.lk-item:not(.lk-strip-item) + .lk-strip-item { margin-top: 30px; }
-.lk-strip {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  min-height: 58px; padding: 8px 18px; border-radius: 4px;
-  background: var(--lk-paper); box-shadow: 4px 5px 0 var(--lk-shade);
-  font-family: var(--lk-serif); font-weight: 500; font-size: 18.5px; line-height: 1.2;
-  transition: transform .15s ease;
+/* Карточка проекта и записка — одна рамка-коробка. */
+.lk-box { padding: 16px; border: 1px solid var(--lk-line); border-radius: 14px; background: var(--lk-paper); }
+.lk-card-top { display: flex; align-items: center; gap: 10px; }
+.links-page .lk-card-title { font-size: 21px; }
+.lk-card-note { margin: 8px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
+.lk-card-go { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.lk-card-go .lk-places { gap: 6px; }
+.lk-or { display: none; font-size: 13px; color: var(--text-sub); }
+/* Уже 360px кнопка и значки в строку не встают: значки ниже, с подписью. */
+@media (max-width: 359px) {
+  .lk-open { flex-basis: 100%; }
+  .lk-or { display: block; }
 }
-.lk-strip-item:nth-last-child(3) .lk-strip { transform: rotate(-.9deg); }
-.lk-strip-item:nth-last-child(2) .lk-strip { transform: rotate(.7deg); margin-right: 54px; }
-.lk-strip-item:nth-last-child(1) .lk-strip { transform: rotate(-.5deg); margin-left: 28px; }
+.lk-open {
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 8px;
+  border: 1.5px solid var(--lk-ink); border-radius: 12px; font-size: 15px; font-weight: 700; white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
 
-.links-foot { margin-top: 28px; text-align: center; font-size: 14px; }
+/* Записка «Здоровый Взрослый»: жёлтый листок — одно цветное пятно страницы. */
+.lk-note { border-color: transparent; background: var(--lk-note); box-shadow: 0 4px 0 var(--lk-note-shade); }
+.lk-note-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.lk-note-title small { font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: color-mix(in srgb, var(--lk-ink) 72%, var(--lk-note)); }
+.lk-quote { margin: 8px 0 12px; font-family: var(--lk-serif); font-style: italic; font-size: 17px; line-height: 1.34; }
+
+/* Общий список: строки одной высоты в одной рамке, между ними тонкие разделители. */
+.lk-row { border: 1px solid var(--lk-line); border-bottom: 0; background: var(--lk-paper); }
+.lk-item + .lk-row { margin-top: 16px; border-radius: 14px 14px 0 0; }
+.lk-row:last-child { border-bottom: 1px solid var(--lk-line); border-radius: 0 0 14px 14px; }
+.lk-row-in {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 12px 0 16px;
+  font-family: var(--lk-serif); font-weight: 500; font-size: 17px; line-height: 1.2; border-radius: inherit;
+}
+.links-page .lk-row-in h2 { font-size: 17px; letter-spacing: 0; }
+@media (min-width: 360px) { .lk-row-in h2 { white-space: nowrap; } }
+.lk-row-in .lk-places { gap: 6px; }
+.lk-go { margin-right: 4px; font-family: var(--font-sans); color: var(--text-sub); transition: transform .15s ease; }
+
+/* Значки площадок: спокойный круг 40px с мягкой заливкой. */
+.lk-places { display: flex; align-items: center; gap: 8px; flex: none; }
+.lk-place { border-radius: 50%; }
+.lk-place-dot {
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--lk-ink) 8%, transparent); color: var(--lk-ink);
+  transition: transform .15s ease, background-color .15s ease, color .15s ease;
+}
+.lk-place-max { font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+
 .links-theme {
   position: absolute; right: -10px; top: -36px; z-index: 1; width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
   background: none; border: 0; border-radius: 50%; color: var(--text-sub); cursor: pointer;
 }
 
-.lk-cta:focus-visible, .lk-strip:focus-visible, .lk-open:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: 3px; }
-.lk-cta:active { transform: rotate(-1deg) translate(3px, 4px); box-shadow: 3px 3px 0 var(--lk-ink-shade); }
+.lk-cta:focus-visible, .lk-open:focus-visible, .links-theme:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: 3px; }
+a.lk-row-in:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: -3px; }
+.lk-place:focus-visible { outline: none; }
+.lk-place:focus-visible .lk-place-dot { outline: 2px solid var(--lk-pen); outline-offset: 2px; }
+.lk-place:active .lk-place-dot { transform: scale(.94); }
+.lk-cta:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--lk-cta) 70%, black); }
 @media (hover: hover) {
-  .lk-cta:hover { transform: rotate(-1deg) translate(-1px, -2px); box-shadow: 7px 9px 0 var(--lk-ink-shade); }
-  .lk-strip-item .lk-strip:hover { transform: translateY(-2px); }
+  .lk-cta:hover { transform: translateY(-1px); }
+  .lk-open:hover, .lk-place:hover .lk-place-dot { background: var(--lk-ink); color: var(--lk-paper); }
+  a.lk-row-in:hover .lk-go { transform: translateX(3px); }
   .links-theme:hover { color: var(--lk-ink); }
 }
 
-/* Каскадное появление: только когда движение не отключено в системе. Едет пункт, наклон — у листка внутри. */
+/* Появление: только когда движение не отключено в системе. */
 @media (prefers-reduced-motion: no-preference) {
-  .lk-hello, .lk-item { animation: lk-in .5s cubic-bezier(.2, .7, .2, 1) both; }
-  .lk-item:nth-child(1) { animation-delay: 90ms; }
-  .lk-item:nth-child(2) { animation-delay: 145ms; }
-  .lk-item:nth-child(3) { animation-delay: 200ms; }
-  .lk-item:nth-child(4) { animation-delay: 255ms; }
-  .lk-item:nth-child(n+5) { animation-delay: 310ms; }
+  .links-col { animation: lk-in .45s cubic-bezier(.2, .7, .2, 1) both; }
 }
-@keyframes lk-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes lk-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

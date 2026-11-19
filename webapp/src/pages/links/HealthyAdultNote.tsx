@@ -1,15 +1,14 @@
-// Записка на кнопке: строка из канала «Здоровый Взрослый», что это за канал и значки площадок.
+// Жёлтая записка — единственное цветное пятно страницы: канал «Здоровый Взрослый»,
+// строка из него и значки площадок.
 import type { ReadyLink } from './linksModel';
 import { PlaceIcons } from './PlaceIcons';
 
 export function HealthyAdultNote({ link }: { link: ReadyLink }) {
   return (
-    <section className="lk-paper lk-sticky">
-      <span className="lk-pin" aria-hidden />
+    <section className="lk-box lk-note">
+      <h2 className="lk-note-title">{link.title}{link.note && <small>{link.note}</small>}</h2>
       <blockquote className="lk-quote">{link.quote}</blockquote>
-      <p className="lk-sig"><span aria-hidden>— </span>{link.title}</p>
-      {link.note && <p className="lk-about">{link.note}</p>}
-      <div className="lk-line"><PlaceIcons link={link} /></div>
+      <PlaceIcons link={link} />
     </section>
   );
 }
