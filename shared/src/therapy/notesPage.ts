@@ -36,14 +36,16 @@ export function addNoteToPage(
   return { notes: older ? page.notes : sorted, total: page.total + 1 };
 }
 
-/** Удалённая заметка: total уменьшается, только если она была в показанных. */
+/** Удалённая заметка: total − 1, но не ниже числа показанных. Её нет среди показанных —
+ * значит, она из скрытых (открыта из журнала по id): меняется только total. */
 export function removeNoteFromPage(
   page: TherapistNotesPage,
   id: number,
 ): TherapistNotesPage {
   const notes = page.notes.filter((n) => n.id !== id);
-  if (notes.length === page.notes.length) return page;
-  return { notes, total: Math.max(0, page.total - 1) };
+  const shown = notes.length < page.notes.length;
+  if (!shown && hiddenCount(page) === 0) return page;
+  return { notes, total: Math.max(notes.length, page.total - 1) };
 }
 
 /** Сколько заметок есть на сервере, но не показано. */
