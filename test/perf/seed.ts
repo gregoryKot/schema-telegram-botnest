@@ -124,8 +124,18 @@ export async function seedPerfHorizon(
     // Docker даёт по умолчанию (SQLSTATE 53100 — так упала первая джоба `perf`).
     // Замеру этой памяти нужен мизер, поднимать /dev/shm в CI не нужно —
     // цифры и разбор в docs/PERF_PLANS.md. Цена последовательности — секунда.
-    for (const [table] of steps) {
-      await pool.query(`VACUUM (ANALYZE) "${table}"`);
+    //
+    // Статистика — по всей таблице, а не по случайной выборке (300 × target
+    // строк): на выборке оценки гуляют от прогона к прогону, и запрос с двумя
+    // равноценными по стоимости планами мигает между ними (docs/PERF_PLANS.md).
+    const vac = await pool.connect();
+    try {
+      await vac.query('SET default_statistics_target = 10000');
+      for (const [table] of steps) {
+        await vac.query(`VACUUM (ANALYZE) "${table}"`);
+      }
+    } finally {
+      vac.release();
     }
     log(`сид + VACUUM ANALYZE: ${((Date.now() - started) / 1000).toFixed(1)}с`);
     const sorted = Object.fromEntries(steps.map(([t]) => [t, counts[t] ?? 0]));
