@@ -4,7 +4,7 @@ import { glue } from '../../../../shared/src/utils/typo';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { NeedExplainer } from './NeedExplainer';
 import { resetExampleRotation } from '../../../../shared/src/needs/exampleRotation';
-import { LOW_PHONE_MEDIA } from '../../utils/phoneLayout';
+import { LOW_PHONE_MEDIA } from '../useLowPhone';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
 
 const pool = ['Кто-то обнял', 'Был разговор, где услышали', 'Третий пример', 'Четвёртый пример', 'Пятый пример', 'Шестой пример'];

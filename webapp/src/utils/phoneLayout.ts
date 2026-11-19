@@ -19,6 +19,3 @@ export function isPhoneLayout(): boolean {
   if (typeof window.matchMedia === 'function') return window.matchMedia(PHONE_MEDIA).matches;
   return window.innerWidth < 768;
 }
-
-/** Низкий телефон (360×640, 390×664): вопрос трекера ужимается, чтобы пять ответов встали на первый экран. */
-export const LOW_PHONE_MEDIA = '(max-width: 560px) and (max-height: 700px)';
