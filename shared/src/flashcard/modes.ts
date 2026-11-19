@@ -1,6 +1,7 @@
 // Контент карточки схемы (режимы/потребности/шаги) — единственная копия (правило №3 CLAUDE.md).
 // Вид режима — ENTITY_LOOK группы (FLASHCARD_MODE_GROUP в modeView.ts), цвета здесь нет.
 import type { FlashcardEntry, ModeData, NeedData, Step } from './types';
+import { getNeedData } from '../needs/needData';
 
 export const STORAGE_KEY = 'schema_flashcards';
 
@@ -61,12 +62,14 @@ export const buildModes = (
   },
 ];
 
+// Имя потребности — из трекера (needs/content, `name`): карточка и дневник называют её одинаково.
+const T = getNeedData('ty');
 export const NEEDS: NeedData[] = [
-  { id: 'attachment', emoji: '💙', label: 'Привязанность' },
-  { id: 'autonomy', emoji: '🔑', label: 'Автономия' },
-  { id: 'expression', emoji: '🎨', label: 'Выражение' },
-  { id: 'play', emoji: '🎉', label: 'Спонтанность' },
-  { id: 'limits', emoji: '🛡️', label: 'Самоконтроль' },
+  { id: 'attachment', emoji: '💙', label: T.attachment.name },
+  { id: 'autonomy', emoji: '🔑', label: T.autonomy.name },
+  { id: 'expression', emoji: '🎨', label: T.expression.name },
+  { id: 'play', emoji: '🎉', label: T.play.name },
+  { id: 'limits', emoji: '🛡️', label: T.limits.name },
 ];
 
 export const STEPS: Step[] = ['mode', 'response', 'need', 'action'];
