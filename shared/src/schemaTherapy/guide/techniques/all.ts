@@ -9,6 +9,7 @@ import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
 import { buildChildCareTechniques } from './childCare';
 import { buildBodyValuesTechniques } from './bodyValues';
+import { buildOnlineTechniques } from './online';
 import { buildBorrowedCbtTechniques } from './borrowedCbt';
 import { buildBorrowedDbtTechniques } from './borrowedDbt';
 import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
@@ -26,6 +27,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildEvidenceWorkTechniques,
   buildChildCareTechniques,
   buildBodyValuesTechniques,
+  buildOnlineTechniques,
   buildBorrowedCbtTechniques,
   buildBorrowedDbtTechniques,
   buildBorrowedThirdWaveTechniques,

@@ -17,10 +17,11 @@ import { CORE_TECHNIQUE_SIGN } from './techniqueSigns';
 
 const tr = (ty: string) => ty;
 
-/** Десять разделов «Для терапевта» (#1013). */
+/** Одиннадцать разделов «Для терапевта» (#1013; онлайн-формат — из карты Кембриджа). */
 const NOTE_IDS = [
   'impasses', 'chatting', 'method_errors', 'therapist_schemas', 'group_therapy',
   'deliberate_practice', 'frame_additions', 'angry_client', 'suicidal_thoughts', 'romance_and_partner',
+  'online_format',
 ];
 
 describe('знаки листов подсказок', () => {
