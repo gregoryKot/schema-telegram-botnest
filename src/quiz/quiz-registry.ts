@@ -6,8 +6,19 @@ import { buildDrivesQuiz } from './quiz-drives.data';
 import { buildCriticQuiz } from './quiz-critic.data';
 import { buildBatteryQuiz } from './quiz-battery.data';
 import { buildVoiceQuiz } from './quiz-voice.data';
+import { buildAnxietyQuiz } from './quiz-anxiety.data';
+import { buildImpostorQuiz } from './quiz-impostor.data';
+import { buildPleaserQuiz } from './quiz-pleaser.data';
 
-export const QUIZ_IDS = ['drives', 'critic', 'voice', 'battery'] as const;
+export const QUIZ_IDS = [
+  'drives',
+  'critic',
+  'voice',
+  'battery',
+  'anxiety',
+  'impostor',
+  'pleaser',
+] as const;
 export type QuizId = (typeof QUIZ_IDS)[number];
 
 const BUILDERS: Record<QuizId, (form: AddressForm) => Quiz> = {
@@ -15,6 +26,9 @@ const BUILDERS: Record<QuizId, (form: AddressForm) => Quiz> = {
   critic: buildCriticQuiz,
   voice: buildVoiceQuiz,
   battery: buildBatteryQuiz,
+  anxiety: buildAnxietyQuiz,
+  impostor: buildImpostorQuiz,
+  pleaser: buildPleaserQuiz,
 };
 
 export function isQuizId(value: string): value is QuizId {
