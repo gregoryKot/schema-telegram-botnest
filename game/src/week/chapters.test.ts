@@ -7,11 +7,11 @@ import { M } from '../i18n/messages';
 import { OPENS, peakX, type Chapter } from './chapter';
 import { CHAPTERS, chapterFromHash, nextChapter } from './chapters';
 import { secondsTo } from './run';
-import { agree, jumpFactor, newWeekState } from './habits';
+import { agree, jumpFactor, newWeekState, scroll } from './habits';
 
 const jumpH = (factor: number) => (PHYS.jumpVel * factor) ** 2 / (2 * PHYS.gravity);
 const keys = (ch: Chapter) => [ch.title, ch.about, ch.again, ch.who, ch.goal, ch.targetTag, ch.agreeThanks, ch.end.line, ch.end.after,
-  ...(ch.pause.between ? [ch.pause.between] : []), ...Object.values(ch.hints ?? {}), ...Object.values(ch.costs ?? {}),
+  ...(ch.pause.between ? [ch.pause.between] : []), ...(ch.invite ? [ch.invite] : []), ...(ch.pause.slips ?? []).flatMap(s => [s.tag, s.thought]), ...Object.values(ch.hints ?? {}), ...Object.values(ch.costs ?? {}),
   ...ch.pause.steps.flatMap(s => [s.question, ...s.options, ...(s.kicker ? [s.kicker] : [])]),
   ...ch.beats.flatMap(b => [...(b.say ? [b.say] : []), ...(b.notifs ?? []), ...(b.goal ? [b.goal] : [])])];
 
@@ -65,16 +65,34 @@ describe.each(CHAPTERS.map(ch => [ch.id, ch] as const))('глава %s — да�
 });
 
 describe('порядок глав', () => {
-  it('хук ведёт в среду, у среды продолжения пока нет', () => {
+  it('хук ведёт в среду, среда — в пятницу, у пятницы продолжения пока нет', () => {
     expect(nextChapter(CHAPTERS[0])?.id).toBe('wed');
-    expect(nextChapter(CHAPTERS[1])).toBeUndefined();
+    expect(nextChapter(CHAPTERS[1])?.id).toBe('fri');
+    expect(nextChapter(CHAPTERS[1])?.invite).toBe('m_wk_fri_invite');
+    expect(nextChapter(CHAPTERS[2])).toBeUndefined();
   });
   it('хеш открывает среду, остальное — хук', () => {
     expect(chapterFromHash('#wed').id).toBe('wed');
+    expect(chapterFromHash('#fri').id).toBe('fri');
     expect(chapterFromHash('#week').id).toBe('mon');
     expect(chapterFromHash('').id).toBe('mon');
   });
   it('у среды ПАУЗА в два шага: назвать, затем что нужно', () => {
     expect(CHAPTERS[1].pause.steps).toHaveLength(2);
+  });
+  it('в пятнице ПАУЗА срывается, и каждая следующая попытка держится дольше; раньше срывов нет', () => {
+    const ms = CHAPTERS[2].pause.slips!.map(s => s.ms);
+    expect(ms.length).toBeGreaterThan(0);
+    expect([...ms].sort((a, b) => a - b)).toEqual(ms);
+    expect(new Set(ms).size).toBe(ms.length);
+    expect(CHAPTERS[0].pause.slips ?? []).toHaveLength(0);
+    expect(CHAPTERS[1].pause.slips ?? []).toHaveLength(0);
+  });
+  it('в пятнице первой открывается ПРОЛИСТАТЬ, и два ухода в телефон съедают вечер до пика', () => {
+    const fri = CHAPTERS[2];
+    expect(fri.beats.find(b => b.reveal)?.reveal).toBe('scroll');
+    let st = newWeekState(fri.startClock);
+    st = scroll(scroll(st, false, fri.clockCap), false, fri.clockCap);
+    expect(st.clockMin).toBe(fri.clockCap);
   });
 });

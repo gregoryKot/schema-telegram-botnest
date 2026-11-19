@@ -13,7 +13,8 @@ import {
   RULES, agree, glitchLevel, isResting, isSitting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock, scroll,
   tick, type WeekState,
 } from '../week/habits';
-import { choosePause, holdPause, holdProgress, newPause, type PauseState } from '../week/pause';
+import { choosePause, holdPause, holdProgress, isFrozen, newPause, type PauseState } from '../week/pause';
+import { SlipView } from '../week/slip';
 import { addGate, buildWorld, openGate, type World } from '../week/world';
 import { WordRain } from '../week/rain';
 import { WeekHud } from '../week/hud';
@@ -52,7 +53,7 @@ export class WeekScene extends Phaser.Scene {
   private ctl!: WeekInput;
   private hud!: WeekHud;
   private panel!: PausePanel;
-  private coach!: WeekCoach;
+  private coach!: WeekCoach; private slip!: SlipView;
   private started = false; private runMs = 0; // бег идёт после заставки; runMs — для срока пика
   private rain!: WordRain;
   half = false; // первый шаг ПАУЗЫ пройден, сбой стих, но не ушёл
@@ -87,6 +88,7 @@ export class WeekScene extends Phaser.Scene {
     this.hud = new WeekHud(this);
     this.panel = new PausePanel(this, i => this.pick(i));
     this.coach = new WeekCoach(this, this.hud, ch);
+    this.slip = new SlipView(this, this.hud, this.coach, ch.pause.slips);
     this.rain = new WordRain(this, this.hud);
     enterWeekTouch({ overwork: t(LABEL.overwork), scroll: t(LABEL.scroll), agree: t(LABEL.agree), pause: t(LABEL.pause) }, t('m_wk_act_pause_hold'));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, leaveWeekTouch);
@@ -113,7 +115,7 @@ export class WeekScene extends Phaser.Scene {
     if (this.done || !this.started) { this.body.setVelocityX(0); this.hud.update(this.st, 0, this.player.x, this.player.y - 62); this.draw(0); return; }
     const dt = Math.min(dtRaw, 50);
     this.stepPause(dt);
-    if (this.ps.open) { this.draw(1); return; } // мир замер
+    if (isFrozen(this.ps)) { this.draw(1); return; } // мир замер
     this.st = tick(this.st, dt);
     this.runMs += dt;
     if (this.baseGlitch < 1 && peakDue(this.runMs, this.st.clockMin, this.ch.clockCap)) this.forcePeak();
@@ -144,7 +146,7 @@ export class WeekScene extends Phaser.Scene {
   /** Кадр Саши и фон: поза — по состоянию бега (week/look.ts), сбой проявляется в офисе. */
   private draw(glitch: number) {
     const b = this.body, hold = holdProgress(this.ps);
-    const look = sashaLook({ frozen: this.ps.open || hold >= 0.98, resting: isResting(this.st), sitting: isSitting(this.st), dashing: this.dashT > 0, onGround: b.blocked.down,
+    const look = sashaLook({ frozen: isFrozen(this.ps) || hold >= 0.98, resting: isResting(this.st), sitting: isSitting(this.st), dashing: this.dashT > 0, onGround: b.blocked.down,
       vy: b.velocity.y, phone: this.phoneT > 0, speed: this.done ? 0 : Math.abs(b.velocity.x), load: this.st.load });
     if ('anim' in look) this.sasha.play(look.anim, true); else { this.sasha.anims.stop(); this.sasha.setTexture(look.sheet, look.frame); }
     this.sasha.setPosition(this.player.x, b.bottom + GRID);
@@ -240,8 +242,9 @@ export class WeekScene extends Phaser.Scene {
     if (!this.revealed.has('pause') || this.st.named) return;
     if (this.ps.open) { const i = this.ctl.choice(); if (i !== null) this.pick(i); return; }
     if (this.ctl.pauseHeld) this.coach.used('pause');
-    this.ps = holdPause(this.ps, dt, this.ctl.pauseHeld && !isResting(this.st));
-    if (this.ps.open) this.freeze(true);
+    const was = this.ps;
+    this.ps = holdPause(was, dt, this.ctl.pauseHeld && !isResting(this.st), this.ch.pause.slips?.map(s => s.ms));
+    if (this.ps.open) this.freeze(true); else this.slip.step(was, this.ps);
   }
 
   private freeze(on: boolean) {
@@ -287,6 +290,6 @@ export class WeekScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => this.hud.think(t(ch.end.after), 2400));
     const go = (id: string) => () => this.scene.restart({ ch: id });
     this.time.delayedCall(4400, () => this.hud.end(() => (ch.end.card === 'hook'
-      ? showWeekCard(this, next && go(next.id)) : showWeekEnd(this, { day: ch.title, again: go(ch.id) }))));
+      ? showWeekCard(this, next && go(next.id)) : showWeekEnd(this, { day: ch.title, again: go(ch.id), next: next && { label: next.invite ?? 'm_wk_card_btn_next', go: go(next.id) } }))));
   }
 }

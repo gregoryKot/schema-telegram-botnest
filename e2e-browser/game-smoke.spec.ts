@@ -111,7 +111,7 @@ interface WeekSceneLike {
     load: number;
     named: boolean;
   };
-  ps: { open: boolean };
+  ps: { open: boolean; slips: number; slipMs: number };
   ch: { id: string };
   half: boolean;
   done: boolean;
@@ -135,6 +135,8 @@ const weekState = (page: Page) =>
       x: sc.player.x,
       doorAhead: sc.world.door.x - sc.player.x,
       open: sc.ps.open,
+      slips: sc.ps.slips,
+      slipMs: sc.ps.slipMs,
       chapter: sc.ch.id,
       half: sc.half,
       peak: sc.peak,
@@ -158,6 +160,13 @@ const weekState = (page: Page) =>
         'wk_mom_screen',
         'wk_call_wall',
         'wk_mom_call',
+        'bg_wk_party',
+        'bg_wk_party_glitch',
+        'bg_wk_exit_floor',
+        'wk_friend_cake',
+        'wk_guest_ask',
+        'wk_dishes',
+        'wk_mask_wall',
       ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,
       // подписи пузырей и кнопок лежат внутри контейнеров
@@ -186,23 +195,30 @@ const weekGoTo = async (page: Page, x: number, act?: string) => {
 };
 /** Заставка слушает ввод через 250 мс; старт — пробел или касание кадра, пока сцена не скажет `started`. */
 const startWeek = async (page: Page, touch = false) => {
-  await page.waitForTimeout(300);
-  if (touch) {
-    const cv = (await page.locator('canvas').boundingBox())!;
-    await page.touchscreen.tap(cv.x + cv.width * 0.3, cv.y + cv.height * 0.4);
-  } else await page.keyboard.press('Space');
+  const started = () =>
+    page.evaluate(
+      () =>
+        (
+          (window as unknown as GameWindow).__game!.scene.getScene(
+            'Week',
+          ) as WeekSceneLike
+        ).started,
+    );
+  // арт всех глав грузится до заставки: нажатие повторяется, пока сцена его не услышит
   await expect
     .poll(
-      () =>
-        page.evaluate(
-          () =>
-            (
-              (window as unknown as GameWindow).__game!.scene.getScene(
-                'Week',
-              ) as WeekSceneLike
-            ).started,
-        ),
-      { timeout: 10_000 },
+      async () => {
+        if (await started()) return true;
+        if (touch) {
+          const cv = (await page.locator('canvas').boundingBox())!;
+          await page.touchscreen.tap(
+            cv.x + cv.width * 0.3,
+            cv.y + cv.height * 0.4,
+          );
+        } else await page.keyboard.press('Space');
+        return false;
+      },
+      { timeout: 15_000, intervals: [300] },
     )
     .toBe(true);
 };
@@ -431,13 +447,102 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     expect((await weekState(page)).texts).toContain(
       'Я просто соскучилась. Береги себя',
     );
-    // конец главы без зова: продолжение скоро, ещё раз, поделиться
+    // конец главы без зова: дальше — пятница, ещё раз, поделиться
     await expect
       .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
-      .toContain('Продолжение скоро');
+      .toContain('Дальше — пятница');
     const end = (await weekState(page)).texts;
     expect(end).toContain('Ещё раз');
     expect(end).not.toContain('Записаться на первую встречу');
+    for (const name of ['game_chapter_start', 'game_chapter_done'])
+      expect(events).toContain(name);
+    await pressCardButton(page, 'Дальше — пятница');
+    await expect
+      .poll(async () => (await weekState(page)).chapter, { timeout: 15_000 })
+      .toBe('fri');
+    expect((await weekState(page)).texts).toContain('ПЯТНИЦА');
+  });
+
+  test('«Пятница»: ПАУЗА срывается дважды без штрафа, с третьего удержания держится; Саша остаётся', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openGame(page, 'fri', 'Week');
+    const start = await weekState(page);
+    expect(start.chapter).toBe('fri');
+    expect(start.texts).toContain('Это Саша. Вечеринка у друзей');
+    expect(start.art).toBe(true);
+    await startWeek(page);
+    // первой открывается ПРОЛИСТАТЬ: два ухода в телефон — и вечер прошёл мимо, пик наступает сам
+    await weekGoTo(page, 3420, 'scroll');
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).clockMin, { timeout: 15_000 })
+      .toBe(22 * 60 + 30);
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
+      .toBe(true);
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).revealed, { timeout: 15_000 })
+      .toContain('pause');
+    // срыв: мир замирает и срывается сам; Саша на месте, сил и груза столько же, плашка объясняет
+    const slip = async (n: number, tag: string, thought: string) => {
+      const before = await weekState(page);
+      await page.keyboard.down('KeyV');
+      await expect
+        .poll(async () => (await weekState(page)).slipMs, { timeout: 15_000 })
+        .toBeGreaterThan(0);
+      expect((await weekState(page)).texts).toContain('держится…');
+      await expect
+        .poll(async () => (await weekState(page)).slips, { timeout: 15_000 })
+        .toBe(n);
+      await page.keyboard.up('KeyV');
+      const s = await weekState(page);
+      expect(s.open).toBe(false);
+      expect(s.texts).toContain(tag);
+      expect(s.texts).toContain(thought);
+      expect(s.energy).toBe(before.energy);
+      expect(s.x).toBeGreaterThanOrEqual(before.x);
+      await page.waitForTimeout(150); // кнопка отпущена — сцена это увидела
+    };
+    await slip(
+      1,
+      'сорвалось — так бывает',
+      'Сорвалось. Это навык, а не кнопка. Ещё раз',
+    );
+    await slip(2, 'уже дольше', 'Продержалось дольше. Ещё раз — и удержу');
+    const hold = async () => {
+      await page.keyboard.down('KeyV');
+      await expect
+        .poll(async () => (await weekState(page)).open, { timeout: 15_000 })
+        .toBe(true);
+      await page.keyboard.up('KeyV');
+    };
+    // третье удержание держится: назвать, затем что нужно
+    await hold();
+    expect((await weekState(page)).texts).toContain(
+      'ПАУЗА держится · шаг 1 из 2: назвать',
+    );
+    await tapKey(page, 'Digit2');
+    await expect
+      .poll(async () => (await weekState(page)).half, { timeout: 15_000 })
+      .toBe(true);
+    await hold();
+    await tapKey(page, 'Digit2');
+    await expect
+      .poll(async () => (await weekState(page)).named, { timeout: 15_000 })
+      .toBe(true);
+    await expect
+      .poll(async () => (await weekState(page)).done, { timeout: 30_000 })
+      .toBe(true);
+    expect((await weekState(page)).texts).toContain(
+      'О, ты тут! Держи кусок, я рядом',
+    );
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
+      .toContain('Продолжение скоро');
     for (const name of ['game_chapter_start', 'game_chapter_done'])
       expect(events).toContain(name);
   });
