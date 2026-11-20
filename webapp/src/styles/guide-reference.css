@@ -84,7 +84,7 @@
   position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   padding-block: 8px; background: var(--bg);
 }
-.gst-seg > .ds-seg-btn { flex: 0 0 auto; white-space: nowrap; }
+.gst-seg > .ds-seg-btn { white-space: nowrap; }
 /* Знак стиля — сквозной: в переключателе, в шапке колонки, у подписи клетки; цвет стиля — --gst-c/--gst-ink
    (COPING_STYLES, токены --coping-*). */
 .gst-seg-sign, .gst-sign { display: inline-flex; vertical-align: middle; margin-right: 6px; }

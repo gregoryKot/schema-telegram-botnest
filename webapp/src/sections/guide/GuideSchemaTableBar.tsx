@@ -5,12 +5,14 @@ import type { CopingFilter, TableDepth } from './guideSchemaTableModel';
 
 interface SegOption<T extends string> { id: T; label: string; art?: ReactNode }
 
-/** Ряд ds-seg кнопок справочника: вид «Схем», стиль копинга, глубина таблицы. */
-export function GuideSeg<T extends string>({ options, value, onPick, label, className = '' }: {
-  options: readonly SegOption<T>[]; value: T; onPick: (v: T) => void; label: string; className?: string;
+/** Ряд ds-seg кнопок справочника: вид «Схем», стиль копинга, глубина таблицы. На телефоне — во всю
+ *  ширину (full) или лентой с прокруткой (scroll); голый ds-seg запрещён (dsPrimitives.test.ts). */
+export function GuideSeg<T extends string>({ options, value, onPick, label, fit, className = '' }: {
+  options: readonly SegOption<T>[]; value: T; onPick: (v: T) => void; label: string; fit: 'full' | 'scroll'; className?: string;
 }) {
+  const seg = fit === 'full' ? 'ds-seg ds-seg--full' : 'ds-seg ds-seg--scroll';
   return (
-    <div className={`ds-seg ${className}`} role="group" aria-label={label}>
+    <div className={`${seg} ${className}`} role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.id} type="button" aria-pressed={value === o.id}
@@ -35,8 +37,8 @@ export function GuideSchemaTableBar({ filter, depth, onFilter, onDepth }: {
 }) {
   return (
     <div className="gst-bar">
-      <GuideSeg options={FILTERS} value={filter} onPick={onFilter} label="Стиль копинга" className="gst-seg" />
-      <GuideSeg options={DEPTHS} value={depth} onPick={onDepth} label="Подробность текста" />
+      <GuideSeg options={FILTERS} value={filter} onPick={onFilter} label="Стиль копинга" fit="scroll" className="gst-seg" />
+      <GuideSeg options={DEPTHS} value={depth} onPick={onDepth} label="Подробность текста" fit="full" />
     </div>
   );
 }

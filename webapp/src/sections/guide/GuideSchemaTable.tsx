@@ -15,7 +15,7 @@ const SCHEMA_VIEWS: { id: SchemaView; label: string }[] = [{ id: 'list', label: 
 
 /** Вид раздела «Схемы» рядом с вкладками: список по доменам или общая таблица копингов. */
 export function SchemaViewSwitch({ view, onPick }: { view: SchemaView; onPick: (v: SchemaView) => void }) {
-  return <GuideSeg options={SCHEMA_VIEWS} value={view} onPick={onPick} label="Вид раздела «Схемы»" className="ds-seg--full" />;
+  return <GuideSeg options={SCHEMA_VIEWS} value={view} onPick={onPick} label="Вид раздела «Схемы»" fit="full" />;
 }
 
 interface Props {
