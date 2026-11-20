@@ -31,7 +31,7 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
     name: 'Дневник схем и режимов',
     summary:
       'Бланк на одну ситуацию: что случилось, что почувствовалось и подумалось, какая схема сработала и как на это смотрит Здоровый Взрослый.',
-    when: 'Середина терапии, когда клиент уже узнаёт свои схемы. Между сессиями — в моменты, когда схема сработала; на сессии — разбор записей [Янг, 2003].',
+    when: 'Середина терапии, когда клиент уже узнаёт свои схемы. Между сессиями — в моменты, когда схема сработала; на сессии — разбор записей [Янг, 2003]. В финале дневник целиком ведёт клиент: сам разбирает трудные ситуации и ищет здоровый взгляд, а записи и флэшкарты всё больше нацелены на будущие трудные ситуации [Кембридж, гл. 12].',
     steps: [
       'Заполнить первый бланк вместе на сессии, на свежем случае.',
       'Дома записывать по горячим следам: триггер, чувства, мысли, что получилось сделать.',
@@ -51,6 +51,6 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Клиент с Жёсткими Стандартами превращает дневник в экзамен, клиент с Карающим Критиком — в список улик против себя. Пустой бланк — тоже материал: что помешало, какой режим не дал писать.',
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, приложение B «Cognitive Logbook for Modes».',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, приложение B «Cognitive Logbook for Modes»; [Кембридж, гл. 12].',
   },
 ];
