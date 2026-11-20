@@ -67,6 +67,7 @@ export const SIGN_KEYS = [
   'grown',
   'chatter',
   'flare',
+  'roots',
   // AppSigns.tsx — практики «здесь и сейчас», безопасное место, «тот же человек»
   'grounded',
   'pause',

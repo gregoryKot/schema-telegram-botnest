@@ -7,6 +7,8 @@ import { buildPracticeEnding } from './practiceEnding';
 import { buildPracticeOnline } from './practiceOnline';
 import { buildPracticeSituations } from './practiceSituations';
 import { buildPracticeTherapist } from './practiceTherapist';
+import { buildPracticeYoungSession } from './practiceYoungSession';
+import { buildPracticeYoungStart } from './practiceYoungStart';
 
 /**
  * «Для терапевта»: что добавляют к рамке другие книги, три источника
@@ -128,4 +130,6 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeCourse(tr),
   ...buildPracticeChange(tr),
   ...buildPracticeEnding(tr),
+  ...buildPracticeYoungStart(tr),
+  ...buildPracticeYoungSession(tr),
 ];

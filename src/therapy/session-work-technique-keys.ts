@@ -90,12 +90,7 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
       'plan',
     ],
     'technique:window_of_tolerance': ['signsUp', 'signsDown', 'returns'],
-    'technique:stop_rewind_explore': [
-      'moment',
-      'rewind',
-      'explored',
-      'result',
-    ],
+    'technique:stop_rewind_explore': ['moment', 'rewind', 'explored', 'result'],
     'technique:life_line': ['stones', 'flowers', 'noticed', 'next'],
     'technique:online_chairwork': ['variant', 'modes', 'result'],
     'technique:schema_attunement': ['moment', 'feeling', 'schema', 'bridge'],
@@ -109,4 +104,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     ],
     'technique:need_now_question': ['need', 'done', 'mood'],
     'technique:downward_arrow': ['thought', 'bottom', 'schema'],
+    'technique:schema_dialogue': ['schema', 'arguments', 'answers', 'who'],
   };

@@ -19,6 +19,7 @@ import { buildBodyValuesTechniques } from './bodyValues';
 import { buildOnlineTechniques } from './online';
 import { buildAttunementNeedsTechniques } from './attunementNeeds';
 import { buildMeaningGuiltTechniques } from './meaningGuilt';
+import { buildSchemaDialogueTechniques } from './schemaDialogue';
 import { buildBorrowedCbtTechniques } from './borrowedCbt';
 import { buildBorrowedDbtTechniques } from './borrowedDbt';
 import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
@@ -46,6 +47,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
   buildMeaningGuiltTechniques,
+  buildSchemaDialogueTechniques,
   buildBorrowedCbtTechniques,
   buildBorrowedDbtTechniques,
   buildBorrowedThirdWaveTechniques,
