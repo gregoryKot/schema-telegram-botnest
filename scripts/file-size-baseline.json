@@ -3086,7 +3086,7 @@
   "webapp/src/sections/guide/guideReferenceSearch.ts": 64,
   "webapp/src/sections/guide/GuideReferenceSkeleton.tsx": 21,
   "webapp/src/sections/guide/guideReferenceTechniques.ts": 27,
-  "webapp/src/sections/guide/GuideSchemaTable.tsx": 137,
+  "webapp/src/sections/guide/GuideSchemaTable.tsx": 113,
   "webapp/src/sections/guide/GuideSchemaTableBar.tsx": 44,
   "webapp/src/sections/guide/guideSchemaTableModel.ts": 61,
   "webapp/src/sections/guide/guideSheetRoute.ts": 37,
