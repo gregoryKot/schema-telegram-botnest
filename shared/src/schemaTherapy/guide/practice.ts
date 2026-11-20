@@ -3,6 +3,7 @@ import { buildPracticeAssessment } from './practiceAssessment';
 import { buildPracticeConceptualization } from './practiceConceptualization';
 import { buildPracticeCourse } from './practiceCourse';
 import { buildPracticeChange } from './practiceChange';
+import { buildPracticeEnding } from './practiceEnding';
 import { buildPracticeOnline } from './practiceOnline';
 import { buildPracticeSituations } from './practiceSituations';
 
@@ -123,6 +124,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
       'Заботиться о себе по плану. План заботы о себе и место для своего Счастливого Ребёнка — часть профессиональной гигиены [Хис, гл. 16, Валлианатоу и Мирович].',
       'Успокоить себя перед трудным шагом. Перед конфронтацией или границей сказать своей детской части: «я принимаю это, всё не может быть идеально». И помнить про Уязвимого Ребёнка клиента за стенами копинга [Хис, гл. 14, Бихэри].',
       'Нести тяжёлое на супервизию. Суицидальные мысли, самоповреждения, диссоциацию, комплексную травму, первый рескриптинг воспоминания о насилии — полный список в «Подробнее».',
+      'Не продлевать терапию из-за отката перед концом. Клиент раздражается на модель и язык режимов, делает знакомые нездоровые выборы, а у терапевта поднимаются тревога, досада, уныние — часто от Требовательного Критика терапевта, по которому тот «должен» снять все проблемы клиента. Сначала с сочувствием признать свои чувства и посмотреть, из какой своей истории и схем они растут. Клиенту сказать о своей тревоге за его план, выбор оставить ему и предложить проверить, от Здорового Взрослого ли решение. Такой случай — на супервизию [Кембридж, гл. 12].',
     ],
     voice: [
       tr(
@@ -135,7 +137,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
       'Разъярённый Ребёнок, угрозы, режимы Агрессор и Хищник на этапе обучения выходят за рамки онлайн-практики.',
       'Оставаться собой в работе помогают разбор своих схем и ценностей, отклики коллег, супервизия и личная терапия [Хис, гл. 15, ван Фресвайк]. Завершение терапии будит схемы привязанности у обоих [Хис, гл. 20].',
     ],
-    sources: '[Хис, гл. 14–16, 20]',
+    sources: '[Хис, гл. 14–16, 20], [Кембридж, гл. 12]',
   },
   ...buildPracticeSituations(tr),
   ...buildPracticeOnline(tr),
@@ -143,4 +145,5 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeConceptualization(tr),
   ...buildPracticeCourse(tr),
   ...buildPracticeChange(tr),
+  ...buildPracticeEnding(tr),
 ];

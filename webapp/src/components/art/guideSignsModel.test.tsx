@@ -17,13 +17,13 @@ import { CORE_TECHNIQUE_SIGN } from './techniqueSigns';
 
 const tr = (ty: string) => ty;
 
-/** Двадцать четыре раздела «Для терапевта» (#1013; онлайн-формат, оценка и ход терапии — из карты Кембриджа). */
+/** Двадцать шесть разделов «Для терапевта» (#1013; онлайн-формат, оценка, ход терапии, финал и травма — из карты Кембриджа). */
 const NOTE_IDS = [
   'impasses', 'chatting', 'method_errors', 'therapist_schemas', 'group_therapy',
   'deliberate_practice', 'frame_additions', 'angry_client', 'suicidal_thoughts', 'romance_and_partner',
   'online_format', 'first_session', 'complaint_to_mode', 'story_as_mode_signal', 'stages_of_change',
   'case_conceptualization', 'history_interview', 'therapy_aims', 'evidence_limits', 'session_structure',
-  'self_disclosure', 'experiential_avoidance', 'exact_scene', 'change_blocks',
+  'self_disclosure', 'experiential_avoidance', 'exact_scene', 'change_blocks', 'ending_phase', 'complex_trauma',
 ];
 
 describe('знаки листов подсказок', () => {
@@ -102,7 +102,7 @@ describe('знаки листов подсказок', () => {
     expect(practiceNoteSign('chatting')).not.toBe(TECHNIQUE_SIGN.chairwork);
     const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(CORE_TECHNIQUE_SIGN).includes(s));
     expect(shared.sort()).toEqual([
-      'breath', 'flashcard', 'grown', 'heart', 'heart_frame', 'pattern_steps', 'pebbles', 'rescript',
+      'breath', 'flashcard', 'grown', 'heart', 'heart_frame', 'horizon', 'pattern_steps', 'pebbles', 'rescript',
       'scales', 'sheets', 'spotlight', 'talk', 'talk_past',
     ]);
   });
