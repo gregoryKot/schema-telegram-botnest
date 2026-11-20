@@ -66,8 +66,11 @@ description: Наполнить «Справочник» терапевта из
   и в `sources`. Факт, которого нет в книге, не дописывается.
 - Форма — поля `types.ts`; обращение — через `tr`, род нейтральный, термины по
   `docs/TERMINOLOGY.md`, голос — `docs/VOICE.md` (гейты `texts.md` проверят).
-- Новая техника: id в `techniqueIds.ts`, текст в `techniques/*`, группа —
-  `webapp/src/sections/guide/guideReferenceTechniques.ts`, знак —
+- Новая техника или заметка «Для терапевта» обязана иметь поле `group` из
+  закрытого списка (`TechniqueGroupId`, `PracticeGroupId` в `types.ts`; порядок и
+  подписи — `guideGroups.ts`): ближайшая по смыслу группа. Новая группа — отдельное
+  решение владельца, в пачку не входит. Гейт — `guide/guideGroups.test.ts`.
+- Новая техника: id в `techniqueIds.ts`, текст в `techniques/*`, знак —
   `webapp/src/components/art/techniqueSigns.ts`; тесты `guide.test.ts` и
   `sources.test.ts` зелёные.
 - После мержа пачки — статус карты и строки «Решение» обновлены в том же PR.

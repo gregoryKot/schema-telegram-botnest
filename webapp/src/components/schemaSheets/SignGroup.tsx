@@ -7,6 +7,7 @@
 // (YsqNeedHead, знак потребности), одна шапка вместо копии .ss-group-* (ревью g5 r1).
 import type { CSSProperties, ReactNode } from 'react';
 import type { SheetLook, SignKey } from '../../../../shared/src/theme/entityLook';
+import { Disclosure } from '../../../../shared/src/components/Disclosure';
 import { SignArt } from '../art/SignArt';
 import { glueIf } from '../../../../shared/src/utils/typo';
 import '../../styles/sheet-schemas.css';
@@ -46,14 +47,30 @@ interface Props {
   aside?: ReactNode; label?: string; headAs?: 'h2' | 'h3'; // label — aria-label секции, headAs — уровень заголовка шапки
   /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). plain — тихая группа без листа и белой карточки (пикеры терапевта, g11 r1). */
   rowsClassName?: string; plain?: boolean;
+  /** Под подписью — простыми словами (группы «Техник» справочника). */
+  hint?: string;
+  /** Шапка — кнопка: тап сворачивает и разворачивает строки (общая Disclosure), по умолчанию раскрыто. */
+  fold?: boolean;
   children: ReactNode;
 }
 
-export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, aside, label, headAs, rowsClassName, plain, children }: Props) {
+export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, aside, label, headAs, rowsClassName, plain, hint, fold, children }: Props) {
+  const rows = rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows';
+  if (fold) {
+    return (
+      <Disclosure
+        defaultOpen style={{ '--h': look.hue } as CSSProperties}
+        classes={{ root: 'pp-paper sg-group', btn: 'sg-head sg-fold-head', label: 'sg-name sg-fold-name', chev: 'ds-fold-chev', body: rows }}
+        title={<><span className="ds-label">{glueIf(title)}</span>{hint && <span className="sg-hint">{hint}</span>}</>}
+      >
+        {children}
+      </Disclosure>
+    );
+  }
   return (
     <section className={plain ? 'sg-group sg-group--plain' : 'pp-paper sg-group'} aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
       {(title !== undefined || signs.length > 0) && <SignGroupHead signs={signs} title={title} aside={aside} as={headAs} />}
-      <div className={rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows'}>{children}</div>
+      <div className={rows}>{children}</div>
     </section>
   );
 }

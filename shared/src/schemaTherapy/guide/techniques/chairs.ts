@@ -5,6 +5,7 @@ export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
   {
     // Живой язык (2026-11): до пяти шагов, «Как это звучит», остальное — под «Подробнее».
     id: 'chairwork',
+    group: 'experiential',
     name: 'Работа со стульями',
     summary:
       'У каждого режима свой стул и свой голос. Клиент видит свои части со стороны и учится отвечать им из Здорового Взрослого.',
@@ -51,6 +52,7 @@ export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'historical_role_play',
+    group: 'experiential',
     name: 'Историческая ролевая игра',
     summary:
       'Сцену из детства разыгрывают в ролях, потом меняются ролями. Клиент видит ситуацию глазами значимого взрослого и пробует ответить по-новому.',
@@ -73,6 +75,7 @@ export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'mode_interview',
+    group: 'formulation',
     name: 'Интервью режима',
     summary:
       'Клиент садится на стул режима и говорит от его лица. Терапевт расспрашивает, зачем режим нужен, — и становится видно, что он делает и чего боится.',
