@@ -5,6 +5,7 @@ import type {
 import type { WorkField } from './fields';
 import { SCHEMA_TECHNIQUE_WORK } from './techniqueWorkSchema';
 import { BORROWED_TECHNIQUE_WORK } from './techniqueWorkBorrowed';
+import { CAMBRIDGE_TECHNIQUE_WORK } from './techniqueWorkCambridge';
 
 export type TechniqueWorkDef = { name: string; fields: readonly WorkField[] };
 
@@ -139,5 +140,6 @@ const CORE_TECHNIQUE_WORK: Record<CoreTechniqueId, TechniqueWorkDef> = {
 export const TECHNIQUE_WORK: Record<TechniqueId, TechniqueWorkDef> = {
   ...CORE_TECHNIQUE_WORK,
   ...SCHEMA_TECHNIQUE_WORK,
+  ...CAMBRIDGE_TECHNIQUE_WORK,
   ...BORROWED_TECHNIQUE_WORK,
 };
