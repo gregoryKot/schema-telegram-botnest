@@ -22,7 +22,9 @@ function makeService(opts: {
   const count = jest.fn(() => Promise.resolve(0));
   // guideMark.groupBy — клиенты отметок «Про клиента» (guide-mark-metrics) в render().
   const guideMark = { groupBy: jest.fn(() => Promise.resolve([])) };
-  const prisma = { analyticsEvent: { count, groupBy }, guideMark };
+  // findMany — клиенты копингов «Про клиента» (meta.clientId событий).
+  const findMany = jest.fn(() => Promise.resolve([]));
+  const prisma = { analyticsEvent: { count, groupBy, findMany }, guideMark };
   return {
     service: new GuideReferenceMetricsService(prisma as never),
     groupBy,

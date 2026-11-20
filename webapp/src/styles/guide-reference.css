@@ -127,3 +127,6 @@
   font: inherit; font-size: 14px; line-height: 1.25; text-align: left; color: var(--text); cursor: pointer;
 }
 .gr-answer-link:hover { border-color: var(--line-hover); color: var(--accent); }
+
+/* «Про клиента» под раскрытой клеткой (#1484) */
+.ds-link.gst-mark { margin: 4px 12px 10px; }

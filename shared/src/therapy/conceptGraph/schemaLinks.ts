@@ -5,6 +5,7 @@
 import type { ConceptSchemaLink } from '../../apiTypes';
 import { laneOfMode } from './modeLanes';
 import { normalizeTechniqueMarks } from './techniqueMarks';
+import { copingFields } from './schemaCoping';
 
 export function emptySchemaLink(schemaId: string): ConceptSchemaLink {
   return { schemaId, belief: '', origin: '', needIds: [] };
@@ -48,6 +49,7 @@ export function normalizeSchemaLinks(raw: unknown): ConceptSchemaLink[] {
       origin: str(r.origin),
       needIds: strings(r.needIds),
       ...(done.length > 0 ? { done } : {}),
+      ...copingFields(r),
     });
   }
   return out;
@@ -76,7 +78,8 @@ export function isSchemaLinkEmpty(link: ConceptSchemaLink): boolean {
   return (
     link.belief.trim() === '' &&
     link.origin.trim() === '' &&
-    link.needIds.length === 0
+    link.needIds.length === 0 &&
+    (link.coping?.length ?? 0) === 0
   );
 }
 

@@ -25,9 +25,9 @@ export function useReferenceSheets(texts: Guide, tr: Tr) {
   const [needId, setNeedId] = useState<NeedId | null>(null);
   const need = useMemo(() => (needId ? buildNeedGuides(texts, tr).find((n) => n.id === needId) : undefined), [texts, tr, needId]);
   const note = noteId ? texts.practiceNotes(tr).find((n) => n.id === noteId) : undefined;
-  // plan без клиента: лист «В план» даёт выбрать клиентов; лист «Для терапевта» — с тем же «Про клиента»
+  // plan и «Про клиента» без клиента: листы дают выбрать клиентов; лист «Для терапевта» — с тем же «Про клиента»
   const guide = useConceptGuide({
-    track: REFERENCE_TRACK, plan: {},
+    track: REFERENCE_TRACK, plan: {}, pickClient: true,
     over: note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />,
   });
   const open = (item: ReferenceItem) => {
@@ -49,5 +49,5 @@ export function useReferenceSheets(texts: Guide, tr: Tr) {
       {guide.sheets}
     </>
   );
-  return { open, sheets };
+  return { open, sheets, markCoping: guide.markCoping };
 }
