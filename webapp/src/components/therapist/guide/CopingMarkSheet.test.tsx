@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { describeCrisisField } from '../../../test-support/crisisCardHarness';
 import { CopingMarkSheet } from './CopingMarkSheet';
 
 const h = vi.hoisted(() => ({
@@ -61,4 +62,15 @@ describe('CopingMarkSheet — «Про клиента» из «Справочн�
     expect(body).not.toHaveProperty('schemaIds');
     expect(body.schemaLinksPatch.upsert[0]).not.toHaveProperty('coping');
   });
+});
+
+// Свободный текст «как это у клиента» — кризисная детекция до сохранения (правило №7).
+describeCrisisField('webapp/src/components/therapist/guide/CopingMarkSheet.tsx', {
+  label: 'как это проявляется у клиента',
+  open: async () => {
+    show();
+    fireEvent.click(await screen.findByRole('button', { name: /Борис/ }));
+    await screen.findByLabelText('Как это проявляется у клиента');
+  },
+  enter: (text) => fireEvent.change(screen.getByLabelText('Как это проявляется у клиента'), { target: { value: text } }),
 });

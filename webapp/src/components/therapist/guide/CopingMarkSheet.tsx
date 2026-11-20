@@ -17,19 +17,24 @@ type Picked = { id: UserId; name: string };
 
 /** Отметка у выбранного клиента: схема случая с сервера; undefined — грузится, null — не загрузилась. */
 function useRemoteTarget(client: Picked | null, cell: CopingCell): CopingTarget | null | undefined {
-  const [concept, setConcept] = useState<{ row: ClientConceptualization | null } | null | undefined>(undefined);
+  // ответ помнит, чей он: у другого клиента — ещё грузится
+  const [loaded, setLoaded] = useState<{ id: UserId; row: ClientConceptualization | null; failed?: true } | null>(null);
   useEffect(() => {
     if (!client) return;
     let alive = true;
-    setConcept(undefined);
-    api.getConceptualization(client.id).then((row) => { if (alive) setConcept({ row }); }, () => { if (alive) setConcept(null); });
+    api.getConceptualization(client.id).then(
+      (row) => { if (alive) setLoaded({ id: client.id, row }); },
+      () => { if (alive) setLoaded({ id: client.id, row: null, failed: true }); },
+    );
     return () => { alive = false; };
   }, [client]);
-  if (!client || !concept) return concept === null ? null : undefined;
+  if (!client || loaded?.id !== client.id) return undefined;
+  if (loaded.failed) return null;
+  const row = loaded.row;
   return {
     name: client.name,
-    ...copingState(normalizeSchemaLinks(concept.row?.schemaLinks), cell),
-    apply: async (action) => setConcept({ row: await applyCopingRemote(api, client.id, cell, action, concept.row) }),
+    ...copingState(normalizeSchemaLinks(row?.schemaLinks), cell),
+    apply: async (action) => setLoaded({ id: client.id, row: await applyCopingRemote(api, client.id, cell, action, row) }),
   };
 }
 
