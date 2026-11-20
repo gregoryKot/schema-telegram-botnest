@@ -17,7 +17,10 @@ import {
 import { SECTION_TITLES } from './addressTitles';
 
 const BASELINE = fileURLToPath(
-  new URL('../../../../../scripts/guide-addresses-baseline.json', import.meta.url),
+  new URL(
+    '../../../../../scripts/guide-addresses-baseline.json',
+    import.meta.url,
+  ),
 );
 const UPDATE =
   'UPDATE_GUIDE_ADDRESSES=1 npx vitest run src/schemaTherapy/guide/address (в shared/)';
