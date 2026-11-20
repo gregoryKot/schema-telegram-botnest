@@ -573,7 +573,7 @@
   "shared/src/tasks/catalog/taskCatalog.ts": 138,
   "shared/src/tasks/catalog/taskWhy.ts": 38,
   "shared/src/tasks/catalog/taskWhyModes.ts": 104,
-  "shared/src/tasks/catalog/taskWhySchemas.ts": 61,
+  "shared/src/tasks/catalog/taskWhySchemas.ts": 63,
   "shared/src/tasks/taskPayload.ts": 46,
   "shared/src/tasks/taskProgress.ts": 35,
   "shared/src/tasks/taskRoute.ts": 71,
