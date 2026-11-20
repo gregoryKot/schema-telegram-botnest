@@ -165,6 +165,7 @@ model User {
   analyticsEvents        AnalyticsEvent[]
   bookings               Booking[]
   pushSubscriptions      PushSubscription[]
+  guideMarks             GuideMark[]
 }
 
 // Подписка браузера на уведомления в приложении (веб-пуши, src/push/).
@@ -626,6 +627,24 @@ model TherapyPlanItem {
   updatedAt   DateTime  @updatedAt
 
   @@index([therapistId, clientId, position])
+}
+
+// Отметка «Про клиента» из «Справочника» (#1484): раздел по адресу
+// (shared/src/schemaTherapy/guide/address/) у клиента терапевта. Копинги схемы
+// сюда не идут — они в ClientConceptualization.schemaLinks. clientId без FK,
+// как у TherapyPlanItem: у офлайн-клиента он отрицательный (-TherapyRelation.id).
+model GuideMark {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  therapist   User     @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+  clientId    BigInt
+  address     String   // адрес раздела после реестра переименований
+  note        String?  // шифруется: «как это у него»
+  snapshot    String   // шифруется: текст раздела на момент отметки
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([therapistId, clientId, address])
 }
 
 model ClientConceptualization {

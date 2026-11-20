@@ -95,6 +95,11 @@ function registeredControllerClasses(): Set<string> {
     const literalRe = /controllers\s*:\s*\[([^\]]*)\]/g;
     for (let m = literalRe.exec(text); m !== null; m = literalRe.exec(text)) {
       addNames(m[1], registered);
+      // `...ИМЯ` внутри списка — часть реестра вынесена (therapy.module.ts → casework.ts).
+      for (const [, spread] of m[1].matchAll(/\.\.\.(\w+)/g)) {
+        const resolved = resolveIndirectArray(text, file, spread);
+        if (resolved) addNames(resolved, registered);
+      }
     }
     const indirectMatch = /controllers\s*:\s*(\w+)/.exec(text);
     if (indirectMatch) {

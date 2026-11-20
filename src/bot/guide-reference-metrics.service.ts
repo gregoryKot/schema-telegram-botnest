@@ -4,7 +4,7 @@ import type { AnalyticsEventName } from '../analytics/analytics.constants';
 import { countEventsGrouped } from './event-counts-grouped';
 import { formatGuideReferenceMetrics } from './guide-reference-metrics.format';
 import type { GuideReferenceMetrics } from './guide-reference-metrics.types';
-import { withGuideAnswerLines } from './guide-answer-metrics';
+import { withGuideExtras } from './guide-mark-metrics';
 
 const OPEN_EVENT: AnalyticsEventName = 'cabinet_guide_open';
 
@@ -27,7 +27,7 @@ export class GuideReferenceMetricsService {
 
   async render(): Promise<string> {
     const block = formatGuideReferenceMetrics(await this.getMetrics());
-    return withGuideAnswerLines(this.prisma, block);
+    return withGuideExtras(this.prisma, block);
   }
 
   async getMetrics(): Promise<GuideReferenceMetrics> {
