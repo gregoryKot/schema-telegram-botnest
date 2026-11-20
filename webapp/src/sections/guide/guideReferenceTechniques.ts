@@ -4,11 +4,12 @@
 import type { PracticeNote, TechniqueGuide } from '../../../../shared/src/schemaTherapy/guide';
 import { PRACTICE_GROUPS, TECHNIQUE_GROUPS, type GuideGroup } from '../../../../shared/src/schemaTherapy/guide/guideGroups';
 import { practiceNoteLook, PRACTICE_HUE, techniqueGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
+import type { PaperHue } from '../../../../shared/src/theme/entityLook';
 import type { ReferenceGroup, ReferenceItem } from './guideReferenceModel';
 
 /** Записи по группам: пустую группу отсеивает buildReference. */
 export function byGroup<Id extends string, T extends { group: Id }>(
-  groups: readonly GuideGroup<Id>[], records: T[], toItem: (r: T) => ReferenceItem, hue: number,
+  groups: readonly GuideGroup<Id>[], records: T[], toItem: (r: T) => ReferenceItem, hue: PaperHue,
 ): ReferenceGroup[] {
   return groups.map((g) => ({
     key: g.id, title: g.title, hint: g.hint, fold: true, look: { hue },
