@@ -1,6 +1,8 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildPracticeAssessment } from './practiceAssessment';
 import { buildPracticeConceptualization } from './practiceConceptualization';
+import { buildPracticeCourse } from './practiceCourse';
+import { buildPracticeChange } from './practiceChange';
 import { buildPracticeOnline } from './practiceOnline';
 import { buildPracticeSituations } from './practiceSituations';
 
@@ -139,4 +141,6 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeOnline(tr),
   ...buildPracticeAssessment(tr),
   ...buildPracticeConceptualization(tr),
+  ...buildPracticeCourse(tr),
+  ...buildPracticeChange(tr),
 ];
