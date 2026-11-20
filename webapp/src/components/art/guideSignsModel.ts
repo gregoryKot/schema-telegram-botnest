@@ -46,7 +46,8 @@ export { TECHNIQUE_SIGN } from './techniqueSigns';
  * (гл. 1, 2, 5, 6, 8, 9): цели — Grown (рост Здорового Взрослого), данные — Scales (взвесить),
  * сессия — Shelter (начало с подстройки), самораскрытие — Breath (пауза и сверка с собой),
  * работа с чувствами — Rescript (через образ), дословная сцена — Pebbles (факты по одному),
- * блоки — Flashcard (одно из средств против блока).
+ * блоки — Flashcard (одно из средств против блока). Финал и травма (гл. 12, 14): завершение —
+ * Horizon (взгляд вперёд), сложная травма — Shield (защита, которой ребёнку не дали).
  */
 export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   angry_client: 'flare',
@@ -54,7 +55,9 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   change_blocks: 'flashcard',
   chatting: 'chatter',
   complaint_to_mode: 'spotlight',
+  complex_trauma: 'shield',
   deliberate_practice: 'beads',
+  ending_phase: 'horizon',
   evidence_limits: 'scales',
   exact_scene: 'pebbles',
   experiential_avoidance: 'rescript',
