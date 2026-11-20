@@ -21,9 +21,9 @@ describe('schemaTherapyData', () => {
     expect(ALL_SCHEMAS).toHaveLength(20);
   });
 
-  it('содержит 35 режимов в 6 группах', () => {
+  it('содержит 36 режимов в 6 группах', () => {
     expect(MODE_GROUPS).toHaveLength(6);
-    expect(ALL_MODES).toHaveLength(35);
+    expect(ALL_MODES).toHaveLength(36);
   });
 
   it('ALL_SCHEMAS и ALL_MODES без дублей id', () => {

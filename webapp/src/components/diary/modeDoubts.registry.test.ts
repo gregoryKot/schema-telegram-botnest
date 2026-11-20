@@ -10,8 +10,8 @@ const REGISTRY_IDS = new Set(
 );
 
 describe('modeDoubts ↔ MODE_GROUPS синхронность (webapp)', () => {
-  it('ровно 38 пар в реестре', () => {
-    expect(MODE_DOUBT_PAIRS).toHaveLength(38);
+  it('ровно 39 пар в реестре', () => {
+    expect(MODE_DOUBT_PAIRS).toHaveLength(39);
   });
 
   it('каждый id из MODE_DOUBT_PAIRS существует в MODE_GROUPS', () => {
