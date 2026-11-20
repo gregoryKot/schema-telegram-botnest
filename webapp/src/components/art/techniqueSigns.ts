@@ -1,7 +1,7 @@
 // Знак листа техники. У первых 14 техник знак свой; техники, добавленные позже (#1366),
 // берут знак родственной техники или мотива — своих рисунков у них пока нет.
 import type {
-  BorrowedTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -54,10 +54,20 @@ const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
   window_of_tolerance: 'limits',
   stop_rewind_explore: 'talk_past',
   life_line: 'ribbon',
+  downward_arrow: 'layers',
+};
+
+const CAMBRIDGE_TECHNIQUE_SIGN: Record<CambridgeTechniqueId, GuideSign> = {
+  schema_attunement: 'spotlight',
+  responsibility_pie: 'scales',
+  courtroom: 'scales',
+  healthy_adult_three_chairs: 'grown',
+  need_now_question: 'cup',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
+  ...CAMBRIDGE_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };
