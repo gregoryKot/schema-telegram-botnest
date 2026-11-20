@@ -2,7 +2,6 @@
 // сверка полноты — guide/guide.test.ts. Адреса разделов (#1484) — ./address: цикл импорта безопасен, функции зовутся при обходе.
 import type {
   ModeGuide,
-  ModeGuideBuilder,
   PracticeNote,
   SchemaDomainGuide,
   SchemaDomainGuideBuilder,
@@ -11,14 +10,8 @@ import type {
   TechniqueId,
   Tr,
 } from './types';
-import { buildVulnerableChildGuides } from './modes/child';
-import { buildAngryChildGuides } from './modes/childAngry';
-import { buildCriticGuides } from './modes/critic';
-import { buildSurrenderGuides } from './modes/surrender';
-import { buildAvoidanceGuides } from './modes/avoidance';
-import { buildOvercontrolGuides } from './modes/overcontrol';
-import { buildAttackGuides } from './modes/attack';
-import { buildHealthyGuides } from './modes/healthy';
+import { MODE_BUILDERS } from './modes/all';
+import { withSessionSigns } from './modes/sessionSigns';
 import { buildRejectionGuides } from './schemas/rejection';
 import { buildAutonomyGuides } from './schemas/autonomy';
 import { buildLimitsGuides } from './schemas/limits';
@@ -26,17 +19,6 @@ import { buildOtherDirectedGuides } from './schemas/otherDirected';
 import { buildVigilanceGuides } from './schemas/vigilance';
 import { TECHNIQUE_BUILDERS } from './techniques/all';
 import { buildPracticeNotes } from './practice';
-
-const MODE_BUILDERS: ModeGuideBuilder[] = [
-  buildVulnerableChildGuides,
-  buildAngryChildGuides,
-  buildCriticGuides,
-  buildSurrenderGuides,
-  buildAvoidanceGuides,
-  buildOvercontrolGuides,
-  buildAttackGuides,
-  buildHealthyGuides,
-];
 
 const DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
   buildRejectionGuides,
@@ -48,7 +30,7 @@ const DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
 
 /** Все разделы режимов в порядке групп. */
 export function buildModeGuides(tr: Tr): ModeGuide[] {
-  return MODE_BUILDERS.flatMap((build) => build(tr));
+  return MODE_BUILDERS.flatMap((build) => build(tr)).map(withSessionSigns);
 }
 
 /** Вся библиотека техник. */
