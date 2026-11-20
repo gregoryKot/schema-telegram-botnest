@@ -42,14 +42,22 @@ export { TECHNIQUE_SIGN } from './techniqueSigns';
  * (Кембридж, гл. 3–4) берут знак техники с тем же смыслом: первая сессия — ChildCare
  * (ограниченное родительство с первой встречи), режим по манере рассказа — Talk, жалоба → режим —
  * Spotlight (интервью с режимом), расспрос о детстве — TalkPast, концептуализация — Sheets
- * (письменная форма), стадии изменений — PatternSteps (шаги к перемене).
+ * (письменная форма), стадии изменений — PatternSteps (шаги к перемене). Ход терапии и перемены
+ * (гл. 1, 2, 5, 6, 8, 9): цели — Grown (рост Здорового Взрослого), данные — Scales (взвесить),
+ * сессия — Shelter (начало с подстройки), самораскрытие — Breath (пауза и сверка с собой),
+ * работа с чувствами — Rescript (через образ), дословная сцена — Pebbles (факты по одному),
+ * блоки — Flashcard (одно из средств против блока).
  */
 export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   angry_client: 'flare',
   case_conceptualization: 'sheets',
+  change_blocks: 'flashcard',
   chatting: 'chatter',
   complaint_to_mode: 'spotlight',
   deliberate_practice: 'beads',
+  evidence_limits: 'scales',
+  exact_scene: 'pebbles',
+  experiential_avoidance: 'rescript',
   first_session: 'child_care',
   frame_additions: 'limits',
   group_therapy: 'cluster',
@@ -58,10 +66,13 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   method_errors: 'check',
   online_format: 'together',
   romance_and_partner: 'heart_frame',
+  self_disclosure: 'breath',
+  session_structure: 'shelter',
   stages_of_change: 'pattern_steps',
   story_as_mode_signal: 'talk',
   suicidal_thoughts: 'heart',
   therapist_schemas: 'layers',
+  therapy_aims: 'grown',
 };
 
 /** Знак раздела «Для терапевта»; раздела нет в таблице — без знака (не выдумываем). */
