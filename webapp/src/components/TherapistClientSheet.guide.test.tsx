@@ -34,11 +34,11 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   };
 });
 vi.mock('../api', () => ({
-  api: { getGuideMarks: () => Promise.resolve({ marks: [] }), ...Object.fromEntries([
+  api: Object.fromEntries([
     'getTherapyClients', 'getTherapyInvites', 'getCardClaims', 'getTherapyTasksForClient', 'getTherapistNotes',
     'getConceptualization', 'getTherapyClientData', 'getClientSchemaNotes', 'getClientModeNotes',
-    'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent',
-  ].map((k) => [k, vi.fn()])) },
+    'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent', 'getGuideMarks',
+  ].map((k) => [k, vi.fn()])),
   reportClientError: vi.fn(),
 }));
 import { api } from '../api';
@@ -48,6 +48,7 @@ const mockApi = api as unknown as Record<string, Mock>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockApi.getGuideMarks.mockResolvedValue({ marks: [] });
   mockApi.getTherapyClients.mockResolvedValue([{
     telegramId: 7, name: 'Анна', clientAlias: null, streak: 0, lastActiveDate: null, todayIndex: null,
     recentIndexHistory: [], relationCreatedAt: '2026-01-01T00:00:00.000Z', therapyStartDate: null,

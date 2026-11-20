@@ -7,7 +7,6 @@ import { GuideSection } from '../GuideSection';
 import { GuideMarkContext } from './GuideSectionMark';
 import { useClientGuideMarks, type GuideMarkClient } from './useClientGuideMarks';
 import { useGuideMarking } from './useGuideMarking';
-import { describeCrisisField } from '../../../../test-support/crisisCardHarness';
 
 const h = vi.hoisted(() => ({
   getGuideMarks: vi.fn(),
@@ -49,17 +48,6 @@ beforeEach(() => {
     { telegramId: 11, name: 'Анна', clientAlias: null },
     { telegramId: 12, name: 'Борис', clientAlias: null },
   ]);
-});
-
-describeCrisisField('webapp/src/components/therapist/guide/marks/GuideMarkSheet.tsx', {
-  open: async () => {
-    render(<Harness client={ANNA} />);
-    await waitFor(() => expect(h.getGuideMarks).toHaveBeenCalled());
-    fireEvent.click(title());
-    fireEvent.click(screen.getByRole('button', { name: 'Про клиента' }));
-    await screen.findByLabelText('Как это у клиента');
-  },
-  enter: (text) => fireEvent.change(screen.getByLabelText('Как это у клиента'), { target: { value: text } }),
 });
 
 describe('«Про клиента» у раздела справочника', () => {

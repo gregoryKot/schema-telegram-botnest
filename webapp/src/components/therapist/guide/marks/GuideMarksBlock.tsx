@@ -21,7 +21,7 @@ export function GuideMarksBlock({ marks, conceptEmpty, onRemove }: {
   if (marks?.length === 0) {
     return conceptEmpty ? <p className="ds-sub gd-mark-hint">{tr('Отмечай', 'Отмечайте')} в Справочнике «Про клиента» — это появится здесь</p> : null;
   }
-  const label = tr('Из справочника — что ты отмечаешь «Про клиента»', 'Из справочника — что вы отметили «Про клиента»');
+  const label = tr('Из справочника — что ты отмечаешь «Про клиента»', 'Из справочника — что вы отмечаете «Про клиента»');
   if (marks === undefined || guide === undefined) {
     return (
       <section aria-label="Из справочника" aria-busy="true" className="gd-marks">
