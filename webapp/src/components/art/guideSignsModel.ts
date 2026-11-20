@@ -15,7 +15,7 @@ export const GUIDE_SIGNS = [
   'child_care', 'yield', 'shelter', 'shield', 'looming', 'together', 'cluster',
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
   'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
-  'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare',
+  'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare', 'cup', 'join',
 ] as const;
 
 export type GuideSign = (typeof GUIDE_SIGNS)[number];
@@ -47,7 +47,8 @@ export { TECHNIQUE_SIGN } from './techniqueSigns';
  * сессия — Shelter (начало с подстройки), самораскрытие — Breath (пауза и сверка с собой),
  * работа с чувствами — Rescript (через образ), дословная сцена — Pebbles (факты по одному),
  * блоки — Flashcard (одно из средств против блока). Финал и травма (гл. 12, 14): завершение —
- * Horizon (взгляд вперёд), сложная травма — Shield (защита, которой ребёнку не дали).
+ * Horizon (взгляд вперёд), сложная травма — Shield (защита, которой ребёнку не дали). Выгорание (гл. 18) —
+ * Cup знаков приложения (пусто, и это повод отдохнуть), приёмы группы (гл. 17) — Join (одна часть на всех).
  */
 export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   angry_client: 'flare',
@@ -74,7 +75,9 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   stages_of_change: 'pattern_steps',
   story_as_mode_signal: 'talk',
   suicidal_thoughts: 'heart',
+  group_techniques: 'join',
   therapist_schemas: 'layers',
+  therapist_wellbeing: 'cup',
   therapy_aims: 'grown',
 };
 
