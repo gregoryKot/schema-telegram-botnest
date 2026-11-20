@@ -8,6 +8,8 @@ import type {
 import {
   GUIDE_CHANNELS,
   PLAN_RUBRIC_LABEL,
+  channelLabel,
+  type GuideChannel,
 } from '../../../therapy/plan/planItem';
 import type { GuideArticleKind } from './addressFormat';
 
@@ -75,10 +77,9 @@ const SCHEMA_TITLES: Titles<
 
 const MODE_TITLES: Titles<ModeGuide> = {
   ...COMMON,
-  ...(Object.fromEntries(GUIDE_CHANNELS) as Record<
-    (typeof GUIDE_CHANNELS)[number][0],
-    string
-  >),
+  ...(Object.fromEntries(
+    GUIDE_CHANNELS.map((c) => [c.id, channelLabel(c)]),
+  ) as Record<GuideChannel, string>),
   what: 'Что это',
   goal: 'Цель',
 };

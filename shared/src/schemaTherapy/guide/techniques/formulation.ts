@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'mode_map',
+    group: 'formulation',
     name: 'Карта режимов вместе с клиентом',
     summary:
       'Терапевт и клиент рисуют на одном листе режимы клиента: кто они, откуда взялись, что говорят и делают. Дальше вся терапия ссылается на этот лист.',
@@ -42,6 +43,7 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'schema_diary',
+    group: 'cognitive',
     name: 'Дневник схем и режимов',
     summary:
       'Бланк на одну ситуацию: что случилось, что почувствовалось и подумалось, какая схема сработала и как на это смотрит Здоровый Взрослый.',

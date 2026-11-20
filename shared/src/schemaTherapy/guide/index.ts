@@ -104,4 +104,11 @@ export type {
   SchemaGuide,
   TechniqueGuide,
   TechniqueId,
+  TechniqueGroupId,
+  PracticeGroupId,
 } from './types';
+export {
+  PRACTICE_GROUPS,
+  TECHNIQUE_GROUPS,
+  type GuideGroup,
+} from './guideGroups';

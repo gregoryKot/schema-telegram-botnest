@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
 const draft: PlanDraft = {
-  rubric: 'cognitive', field: 'cognitive', label: 'Через понимание',
+  rubric: 'cognitive', field: 'cognitive', label: 'Когнитивные (через понимание)',
   parts: ['Оценить риск [Арнтц, 5.1.1].', 'Потом — за и против.'],
   source: { kind: 'mode', id: 'bully_attack', field: 'cognitive' },
 };

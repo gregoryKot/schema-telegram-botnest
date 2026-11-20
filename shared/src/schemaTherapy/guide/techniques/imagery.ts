@@ -5,6 +5,7 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
   {
     // Живой язык (2026-11): до пяти шагов, «Как это звучит», остальное — под «Подробнее».
     id: 'imagery_rescripting',
+    group: 'experiential',
     name: 'Рескриптинг в воображении',
     summary:
       'Клиент возвращается в детскую сцену, где ему чего-то не хватило. Туда приходит взрослый и даёт ребёнку нужное: защиту, заботу, право злиться.',
@@ -47,6 +48,7 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'future_imagery',
+    group: 'experiential',
     name: 'Образ будущего: репетиция трудного шага',
     summary:
       'Трудную сцену из будущего сначала проживают в воображении. Клиент из Здорового Взрослого делает то, чего раньше не давала сделать схема.',
@@ -73,6 +75,7 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'healthy_adult_imagery',
+    group: 'experiential',
     name: 'Образ Здорового Взрослого',
     summary:
       'Клиент находит Здорового Взрослого в своём же опыте и уходит с ключами к нему: воспоминание, поза, образ, точка в теле.',

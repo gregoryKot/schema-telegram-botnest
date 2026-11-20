@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'diagnostic_imagery',
+    group: 'formulation',
     name: 'Диагностическое воображение и «аффективный мост»',
     summary:
       'От сегодняшнего чувства клиент с закрытыми глазами переходит к детскому образу с тем же чувством. Так видно, откуда схема и какой потребности не хватило.',
@@ -31,6 +32,7 @@ export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'safe_place_imagery',
+    group: 'experiential',
     name: 'Безопасное место в воображении',
     summary:
       'Клиент строит образ места, где спокойно и ничто не угрожает. С него начинают и им заканчивают работу в воображении; дома он помогает успокоиться.',
@@ -55,6 +57,7 @@ export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'mode_dialogue_imagery',
+    group: 'experiential',
     name: 'Диалог режимов в воображении',
     summary:
       'В образе ситуации режимы получают облик и голос, и Здоровый Взрослый разговаривает с каждым: останавливает Критика, договаривается с копингом, заботится о Ребёнке.',

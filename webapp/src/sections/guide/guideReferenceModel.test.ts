@@ -56,7 +56,7 @@ describe('buildReference', () => {
 
   it('техники и «Для терапевта» — с сутью строкой ниже и своим знаком; раздел без знака — без картинки', () => {
     const { techniques, practice } = buildReference(texts(), tr);
-    expect(techniques[0].title).toBeUndefined();
+    expect(techniques.map((g) => g.title)).toEqual(['Эмпирические']); // пустые группы отсеяны
     expect(techniques[0].items[0]).toEqual({
       kind: 'technique', id: 'imagery_rescripting', name: 'Рескриптинг образов', sub: FIXTURE_TECHNIQUES[0].summary,
       sign: 'rescript',
@@ -93,13 +93,13 @@ describe('searchReference', () => {
     expect(searchReference(ref, '   ')).toEqual([]);
   });
 
-  it('совпадения из всех разделов; регистр и «ё» не важны; у техник и «Для терапевта» лист — имя раздела', () => {
+  it('совпадения из всех разделов; регистр и «ё» не важны; у техник и «Для терапевта» лист — их группа', () => {
     const found = searchReference(ref, 'РЕБЕНОК');
     expect(found.map((g) => g.title)).toEqual(['Детские режимы']);
     expect(found[0].items.map((i) => i.id)).toEqual(['vulnerable_child', 'angry_child']);
     const mixed = searchReference(ref, 'ов');
-    expect(mixed.map((g) => g.title)).toEqual(['Здоровые режимы', 'Нарушение связи и отвержение', 'Техники', 'Для терапевта']);
-    expect(mixed.map((g) => g.key)).toEqual(['modes:healthy', 'schemas:rejection', 'techniques:techniques', 'practice:practice']);
+    expect(mixed.map((g) => g.title)).toEqual(['Здоровые режимы', 'Нарушение связи и отвержение', 'Эмпирические', 'Терапевт и формат']);
+    expect(mixed.map((g) => g.key)).toEqual(['modes:healthy', 'schemas:rejection', 'techniques:experiential', 'practice:therapist']);
     expect(mixed.flatMap((g) => g.items.map((i) => i.name))).toEqual([
       'Здоровый Взрослый', 'Недоверие / Ожидание жестокого обращения', 'Рескриптинг образов', 'Групповой формат',
     ]);
