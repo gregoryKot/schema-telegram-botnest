@@ -62,6 +62,13 @@ export const SHARED_NAME_ONLY_TOKENS = [
   '--sheet-bg-2',
   '--track-color',
   '--fg-rgb',
+  // Стили копинга: COPING_STYLES (shared/src/schemaTherapy/guide/copingStyles.ts).
+  '--coping-surrender',
+  '--coping-surrender-ink',
+  '--coping-avoidance',
+  '--coping-avoidance-ink',
+  '--coping-overcompensation',
+  '--coping-overcompensation-ink',
 ];
 
 // Где ищем фолбэки. webapp и shared — dist/сборки сюда не попадают.

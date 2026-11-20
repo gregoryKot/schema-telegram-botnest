@@ -28,6 +28,13 @@ const SHARED_NAME_ONLY_TOKENS = [
   '--sheet-bg-2',
   '--track-color',
   '--fg-rgb',
+  // Стили копинга: COPING_STYLES (shared/src/schemaTherapy/guide/copingStyles.ts).
+  '--coping-surrender',
+  '--coping-surrender-ink',
+  '--coping-avoidance',
+  '--coping-avoidance-ink',
+  '--coping-overcompensation',
+  '--coping-overcompensation-ink',
 ];
 
 const VALID_TOKENS_CSS = `:root, [data-theme='light'] {\n  --accent: #9a5b3e;\n}\n[data-theme='dark'] {\n  --accent: #c97d5a;\n}\n`;
