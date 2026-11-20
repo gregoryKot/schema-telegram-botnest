@@ -12,6 +12,7 @@ import { TaskCreateSheet } from '../../TaskCreateSheet';
 import { PaperEmpty } from '../../art/PaperEmpty';
 import type { ClientDetail } from '../clientSheetTypes';
 import { useConceptGuide } from '../guide/useConceptGuide';
+import { guideMarkClient } from '../guide/marks/useClientGuideMarks';
 import { PlanGoals } from './PlanGoals';
 import { PlanItemForm } from './PlanItemForm';
 import { PlanItemRow } from './PlanItemRow';
@@ -48,7 +49,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
   const tr = useTr();
   const navigate = useNavigate();
   const plan = usePlanItems(selectedClient.telegramId);
-  const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload } });
+  const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload }, client: guideMarkClient(selectedClient) });
   const texts = useGuide();
   const [adding, setAdding] = useState(false);
   const [rubric, setRubric] = useState<PlanRubric>('custom');

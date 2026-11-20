@@ -17,6 +17,7 @@ const CLAIMS = `${T}/card-claims`;
 const ALL_TASKS = `${T}/tasks/all`;
 const MODE_MAPS = { prefix: `${T}/mode-maps/` };
 const PLANS = { prefix: `${T}/plan/` };
+const GUIDE_MARKS = { prefix: `${T}/guide-marks` };
 
 /** Всё, что кабинет кеширует про одного клиента (GET с :clientId). */
 const clientKeys = (id: string): InvalidationTarget[] => [
@@ -161,6 +162,9 @@ export const THERAPY_RULES: Rule[] = [
     pattern: /^\/api\/therapy\/plan\/order\/(-?\d+)$/,
     targets: (m) => [`${T}/plan/${m[1]}`],
   },
+  // «Про клиента» (#1484): отметка меняет и список клиента, и «уже отмечено» по адресу.
+  simple('PUT', /^\/api\/therapy\/guide-marks\/-?\d+$/, GUIDE_MARKS),
+  simple('DELETE', /^\/api\/therapy\/guide-marks\/items\/\d+$/, GUIDE_MARKS),
   simple('POST', /^\/api\/therapy\/custom-modes$/, `${T}/custom-modes`),
   simple('DELETE', /^\/api\/therapy\/custom-modes\/\d+$/, `${T}/custom-modes`),
 ];

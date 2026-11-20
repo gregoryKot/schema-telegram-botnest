@@ -38,7 +38,7 @@ vi.mock('../api', () => ({
     'getTherapyClients', 'getTherapyInvites', 'getCardClaims', 'getTherapyTasksForClient', 'getTherapistNotes',
     'getConceptualization', 'getTherapyClientData', 'getClientSchemaNotes', 'getClientModeNotes',
     'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent',
-  ].map((k) => [k, vi.fn()])),
+  ].map((k) => [k, vi.fn()]).concat([['getGuideMarks', () => Promise.resolve({ marks: [] })]])),
   reportClientError: vi.fn(),
 }));
 import { api } from '../api';

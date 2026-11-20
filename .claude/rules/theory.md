@@ -91,7 +91,9 @@ Jacob; Farrell & Shaw), сводка терминов [docs/TERMINOLOGY.md](../.
 выводит `guide/address/`, руками не пишется; переименование или удаление раздела —
 строка в `address/addressRenames.ts`, новый смысл отметки — строка в
 `address/addressTargets.ts`, на экране раздел — только через `GuideSection`.
-Сторож — `shared/src/schemaTherapy/guide/address/address.test.ts`; подробно — навык
+Сторожа — `shared/src/schemaTherapy/guide/address/address.test.ts` и (листы рисуют разделы
+только через `GuideSection`, адрес каждого находит текст)
+`webapp/src/components/therapist/guide/guideSectionOnly.test.tsx`; подробно — навык
 [book-to-guide](../skills/book-to-guide/SKILL.md).
 
 Механизм: гейта на смысл нет. Дифф по путям из маски сверяет с этим чек-листом
