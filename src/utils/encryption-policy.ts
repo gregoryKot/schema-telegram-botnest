@@ -184,6 +184,11 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     sourceId: ID,
     sourceField: ID,
   },
+  GuideMark: {
+    address: plain('адрес раздела справочника из кода, не свободный текст'),
+    note: enc(`${TH}/guide-marks.service.ts`),
+    snapshot: enc(`${TH}/guide-marks.service.ts`),
+  },
   ClientConceptualization: {
     schemaIds: enc(`${TH}/concept-store.ts`),
     modeIds: enc(`${TH}/concept-store.ts`),
