@@ -1,5 +1,4 @@
-// id записей справочника заданий — копия ключей `shared/src/tasks/catalog/taskWhy*.ts` (бэкенд не
-// импортирует shared). По ним DTO проверяет `catalogId`; сверка — task-catalog-ids.parity.spec.ts.
+// id заданий справочника для DTO `catalogId` — копия ключей `shared/src/tasks/catalog/taskWhy*.ts` (parity.spec).
 export const TASK_CATALOG_ID_MAX = 80;
 
 export const TASK_CATALOG_IDS: readonly string[] = [
@@ -7,6 +6,7 @@ export const TASK_CATALOG_IDS: readonly string[] = [
   'что-мне-сегодня-дали',
   'прямая-просьба',
   'отсроченная-проверка',
+  'приятное-для-своей-детской-части',
   'список-положительных-посланий',
   'лестница-самостоятельных-шагов',
   'ничего-кроме-ярости-или-с-яростью-приходит-и-грусть',
