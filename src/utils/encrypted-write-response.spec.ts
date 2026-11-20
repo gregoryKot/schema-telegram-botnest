@@ -44,6 +44,8 @@ const mods = loadWithKeys({ key: 'c4'.repeat(32) }, () => ({
   tasks:
     require('../therapy/therapy-tasks.service') as typeof import('../therapy/therapy-tasks.service'),
   plan: require('../therapy/therapy-plan.service') as typeof import('../therapy/therapy-plan.service'),
+  marks:
+    require('../therapy/guide-marks.service') as typeof import('../therapy/guide-marks.service'),
 }));
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -75,6 +77,7 @@ function makeServices() {
     userPhraseCheck: table({ inWarmWords: false }),
     therapistNote: table(),
     therapyPlanItem: table({ status: 'planned', taskId: null }),
+    guideMark: table(),
     modeMap: table({ nodes: [], edges: [] }),
     therapistCustomMode: table(),
     clientConceptualization: table(),
@@ -100,6 +103,9 @@ function makeServices() {
       ),
     tasks: new mods.tasks.TherapyTasksService(db, {} as never),
     plan: new mods.plan.TherapyPlanService(db, relations),
+    marks: new mods.marks.GuideMarksService(db, relations, {
+      track: async () => undefined,
+    } as never),
   };
 }
 type Services = ReturnType<typeof makeServices>;
@@ -303,6 +309,19 @@ const CASES: Case[] = [
         })
         .then((items) => items[0]),
     read: (s, w) => s.plan.list(THERAPIST, USER).then(byId(w)),
+  },
+  {
+    model: 'GuideMark',
+    route: 'PUT /api/therapy/guide-marks/:clientId',
+    write: (s) =>
+      s.marks
+        .save(THERAPIST, USER, {
+          address: 'mode:vulnerable_child/experiential',
+          snapshot: 'текст раздела',
+          note: 'как это у неё',
+        })
+        .then((r) => r.mark),
+    read: (s, w) => s.marks.list(THERAPIST, USER).then(byId(w)),
   },
   {
     model: 'ClientConceptualization',

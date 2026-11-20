@@ -261,6 +261,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
     "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
     'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
+  guide_mark_added:
+    'серверное событие: пишет GuideMarksService.trackAdded при создании ' +
+    'отметки «Про клиента» (PUT /api/therapy/guide-marks/:clientId); meta с ' +
+    'клиента отбрасывается (SERVER_META_EVENTS), /stats считает строки с kind',
   ysq_data_deleted:
     'серверное событие: пишет YsqController после транзакции DELETE ' +
     '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
@@ -391,7 +395,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
     // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
     // 57 — game_start/tutorial_done/tutorial_skip/over: старая игра удалена, /stats ещё читает их строки.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(57);
+    // 58 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(58);
   });
 });
 

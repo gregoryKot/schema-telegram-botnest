@@ -419,6 +419,31 @@ describe('MergeService — реестры таблиц и SQL-инвариант
         values: [SRC, SRC],
       },
       {
+        label: 'GuideMark: drop source(therapistId) row, чей ключ уже у target',
+        sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."therapistId" = ? AND t."therapistId" = ? AND t."clientId" = s."clientId" AND t."address" = s."address"',
+        values: [SRC, TGT],
+      },
+      {
+        label: 'GuideMark: UPDATE therapistId',
+        sql: 'UPDATE "GuideMark" SET "therapistId" = ? WHERE "therapistId" = ? AND "clientId" <> ?',
+        values: [TGT, SRC, TGT],
+      },
+      {
+        label: 'GuideMark: drop source(clientId) row, чей ключ уже у target',
+        sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."clientId" = ? AND t."clientId" = ? AND t."therapistId" = s."therapistId" AND t."address" = s."address"',
+        values: [SRC, TGT],
+      },
+      {
+        label: 'GuideMark: UPDATE clientId',
+        sql: 'UPDATE "GuideMark" SET "clientId" = ? WHERE "clientId" = ? AND "therapistId" <> ?',
+        values: [TGT, SRC, TGT],
+      },
+      {
+        label: 'GuideMark: DELETE cleanup (self-loop guard)',
+        sql: 'DELETE FROM "GuideMark" WHERE "therapistId" = ? OR "clientId" = ?',
+        values: [SRC, SRC],
+      },
+      {
         label:
           'TherapistCustomMode: UPDATE therapistId (без unique — просто remap)',
         sql: 'UPDATE "TherapistCustomMode" SET "therapistId" = ? WHERE "therapistId" = ?',

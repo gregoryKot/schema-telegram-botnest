@@ -51,6 +51,9 @@
 //                   YsqController после транзакции, meta.attempts — сколько
 //                   пройденных попыток стёрто. С клиента meta не принимается,
 //                   /stats («Удаление своих записей») считает строки с attempts.
+//   guide_mark_added — отметка «Про клиента» из «Справочника» (#1484): пишет
+//                   GuideMarksService.trackAdded при создании (не при правке),
+//                   meta.kind — GUIDE_MARK_KINDS (src/therapy/guide-mark-address.ts).
 export const SERVER_EVENTS = [
   'auth_rejected',
   'client_error',
@@ -66,6 +69,7 @@ export const SERVER_EVENTS = [
   'messenger_launch',
   'messenger_launch_failed',
   'ysq_data_deleted',
+  'guide_mark_added',
 ] as const;
 
 // meta этих событий пишет только сервер: «Напомню через час» — бот, запуск в
@@ -77,4 +81,5 @@ export const SERVER_META_EVENTS: ReadonlySet<string> = new Set([
   'messenger_launch_failed',
   'reminder_snoozed',
   'ysq_data_deleted',
+  'guide_mark_added',
 ]);
