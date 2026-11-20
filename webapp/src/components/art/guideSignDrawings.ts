@@ -8,13 +8,15 @@ import type { ArtProps } from './paper';
 import type { GuideSign } from './guideSignsModel';
 import { Limits } from './NeedArt';
 import { Breath, Cup, Layers, Pebbles, Ribbon, Sheets } from './PaperArt';
-import { Beads, Check, Cluster, Heart, Talk } from './PaperArtSigns';
+import { Beads, Check, Cluster, Heart, Leaf, Talk } from './PaperArtSigns';
 import { ChildCare, Looming, Shelter, Shield, Together, Yield } from './GuideSignsModes';
 import {
   Flashcard, Grown, HeartFrame, Horizon, PatternSteps, Rescript, Scales, Spotlight, TalkPast,
 } from './GuideSignsTechniques';
 import { Chatter, Flare } from './GuideSignsPractice';
-import { Join } from './AppSigns';
+import { Haven, Join, Pause } from './AppSigns';
+import { CopingAvoidance, CopingOvercompensation } from './CopingSigns';
+import { Roots } from './GuideSignsYoung';
 
 export const GUIDE_SIGN_ART: Record<GuideSign, (p: ArtProps) => ReactElement> = {
   child_care: ChildCare,
@@ -47,4 +49,6 @@ export const GUIDE_SIGN_ART: Record<GuideSign, (p: ArtProps) => ReactElement> = 
   flare: Flare,
   cup: Cup,
   join: Join,
+  pause: Pause, haven: Haven, leaf: Leaf, roots: Roots,
+  coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation,
 };
