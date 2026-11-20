@@ -1,5 +1,5 @@
 // Ворота выбора режима «по базовым чувствам» (monitoring-modes-ux-s8rzyd):
-// покрытие 35/35 modeId, отсутствие дублей ВНУТРИ ворот (дубли МЕЖДУ
+// покрытие 36/36 modeId, отсутствие дублей ВНУТРИ ворот (дубли МЕЖДУ
 // воротами — намеренные кросс-входы), достижимость известных кросс-входов и
 // неизменность домашней таксономии (findTestGroupByModeId/modeChain).
 import { describe, it, expect } from 'vitest';
@@ -19,7 +19,7 @@ import { MODE_UNKNOWN_GROUP, SECOND_DOORS } from './modeBodyCues';
 const gate = (id: string) => FEEL_GATES.find((g) => g.id === id);
 const leafIds = (id: string) => gate(id)?.leaves.map((l) => l.modeId) ?? [];
 
-describe('FEEL_GATES — покрытие 35/35', () => {
+describe('FEEL_GATES — покрытие 36/36', () => {
   it('MODE_PICKER_GROUPS — это FEEL_GATES (та же ссылка)', () => {
     expect(MODE_PICKER_GROUPS).toBe(FEEL_GATES);
   });
@@ -42,7 +42,7 @@ describe('FEEL_GATES — покрытие 35/35', () => {
     expect(gate('unknown')).toBeTruthy();
   });
 
-  it('каждый modeId из ALL_TEST_MODE_IDS встречается хотя бы в одних воротах (35/35)', () => {
+  it('каждый modeId из ALL_TEST_MODE_IDS встречается хотя бы в одних воротах (36/36)', () => {
     const union = new Set(
       FEEL_GATES.flatMap((g) => g.leaves.map((l) => l.modeId)),
     );

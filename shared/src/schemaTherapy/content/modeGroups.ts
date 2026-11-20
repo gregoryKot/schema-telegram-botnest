@@ -1,10 +1,11 @@
 import type { ModeGroup } from '../types';
 import { MODE_GROUP_HUE, toneHex } from '../../theme/entityHue';
+import { OVERCOMPENSATION_MODE_ITEMS } from './modeGroupsOvercompensation';
 
 // Единственный источник контента схема-терапии (правило №3 CLAUDE.md):
 // раньше дублировался построчно в обоих фронтендах, теперь берут отсюда.
 
-// ─── 35 Modes (schema-therapy.ru/modes, МИСТ) ──────────────────────────────
+// ─── 36 Modes (schema-therapy.ru/modes, МИСТ) ──────────────────────────────
 
 export const MODE_GROUPS: ModeGroup[] = [
   {
@@ -132,86 +133,7 @@ export const MODE_GROUPS: ModeGroup[] = [
     id: 'coping_overcompensation',
     group: 'Копинг: Гиперкомпенсация',
     color: toneHex(MODE_GROUP_HUE.coping_overcompensation),
-    items: [
-      {
-        id: 'self_aggrandiser',
-        name: 'Самовозвеличиватель',
-        emoji: '🔥',
-        short: 'Ощущение особости и превосходства над другими',
-      },
-      {
-        id: 'overcontroller',
-        name: 'Гиперконтролёр',
-        emoji: '🎛️',
-        short: 'Стремится всё контролировать, тревожится от неопределённости',
-      },
-      {
-        id: 'perfectionistic_oc',
-        name: 'Перфекционист-Гиперконтролёр',
-        emoji: '✅',
-        short: 'Недостижимые стандарты, страх малейшей ошибки',
-      },
-      {
-        id: 'suspicious_oc',
-        name: 'Подозрительный Гиперконтролёр',
-        emoji: '🔍',
-        short: 'Постоянная настороженность, ищет скрытые угрозы',
-      },
-      {
-        id: 'invincible_oc',
-        name: 'Неуязвимый Гиперконтролёр',
-        emoji: '🛡️',
-        short: 'Отрицает слабость — броня не снимается никогда',
-      },
-      {
-        id: 'flagellating_oc',
-        name: 'Самобичующий Гиперконтролёр',
-        emoji: '😩',
-        short: 'Наказывает себя заранее, чтобы опередить чужое наказание',
-      },
-      {
-        id: 'compulsive_oc',
-        name: 'Компульсивный Гиперконтролёр',
-        emoji: '🔁',
-        short: 'Навязчивые ритуалы и действия для снижения тревоги',
-      },
-      {
-        id: 'worrying_oc',
-        name: 'Беспокоящийся Гиперконтролёр',
-        emoji: '😟',
-        short: 'Хроническое беспокойство о будущих катастрофах',
-      },
-      {
-        id: 'bully_attack',
-        name: 'Агрессор',
-        emoji: '👊',
-        short: 'Добивается своего через запугивание и агрессию',
-      },
-      {
-        id: 'manipulative',
-        name: 'Манипулятор',
-        emoji: '🎭',
-        short: 'Влияет на людей косвенно, скрывая истинные намерения',
-      },
-      {
-        id: 'predator',
-        name: 'Хищник',
-        emoji: '🦊',
-        short: 'Холодно и расчётливо устраняет соперника или угрозу',
-      },
-      {
-        id: 'attention_seeker',
-        name: 'Ищущий Внимания и Одобрения',
-        emoji: '🌟',
-        short: 'Постоянно ищет признания и похвалы от окружающих',
-      },
-      {
-        id: 'pollyanna',
-        name: 'Поллианна',
-        emoji: '🌈',
-        short: 'Отрицает проблемы, видит всё в розовом цвете',
-      },
-    ],
+    items: OVERCOMPENSATION_MODE_ITEMS,
   },
   {
     id: 'critic',
