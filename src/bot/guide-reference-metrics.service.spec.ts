@@ -20,7 +20,9 @@ function makeService(opts: {
   );
   // count — счётчики карточки-ответа (guide-answer-metrics) в render().
   const count = jest.fn(() => Promise.resolve(0));
-  const prisma = { analyticsEvent: { count, groupBy } };
+  // guideMark.groupBy — клиенты отметок «Про клиента» (guide-mark-metrics) в render().
+  const guideMark = { groupBy: jest.fn(() => Promise.resolve([])) };
+  const prisma = { analyticsEvent: { count, groupBy }, guideMark };
   return {
     service: new GuideReferenceMetricsService(prisma as never),
     groupBy,

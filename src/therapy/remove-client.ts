@@ -3,8 +3,8 @@ import { endClientRelations } from './end-client-relations';
 import { THERAPIST_REMOVED } from './relation-end-reason';
 
 // Удаление клиента терапевтом (правило №10: вынесено из TherapyClientDataService).
-// Насовсем стираются заметки по сессиям, концептуализация, план работы и
-// именные карты режимов (ModeMap) терапевта: это его записи о клиенте, и удаляет он их явно.
+// Насовсем стираются заметки по сессиям, концептуализация, план работы, отметки
+// справочника (GuideMark) и карты режимов (ModeMap): это записи терапевта о клиенте.
 // Иначе карты остались бы сиротами (офлайн-клиент) или всплыли при повторном
 // подключении того же клиента. TherapistCustomMode — палитра терапевта, не
 // трогаем. Все WHERE ограничены therapistId — чужой терапевт ничего не заденет.
@@ -30,6 +30,7 @@ export async function removeTherapistClient(
       await tx.clientConceptualization.deleteMany({ where: own });
       await tx.modeMap.deleteMany({ where: own });
       await tx.therapyPlanItem.deleteMany({ where: own });
+      await tx.guideMark.deleteMany({ where: own });
       await endClientRelations(tx, own, THERAPIST_REMOVED);
     });
     return;
@@ -40,6 +41,7 @@ export async function removeTherapistClient(
     prisma.clientConceptualization.deleteMany({ where: own }),
     prisma.modeMap.deleteMany({ where: own }),
     prisma.therapyPlanItem.deleteMany({ where: own }),
+    prisma.guideMark.deleteMany({ where: own }),
     prisma.userTask.deleteMany({
       where: { userId: cid, assignedBy: therapistId },
     }),
