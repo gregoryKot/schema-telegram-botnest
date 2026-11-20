@@ -97,8 +97,11 @@ describe('TherapistGuideSection', () => {
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_TABLE_EVENT]);
     const domain = screen.getByRole('region', { name: 'Нарушение связи и отвержение' });
     const row = within(domain).getByRole('row', { name: new RegExp(SCHEMA_NAME) });
-    expect(within(row).getByText('Выбирает недоступных партнёров')).toBeTruthy();
-    expect(within(row).getByText('Цепляется и контролирует')).toBeTruthy();
+    expect(within(row).getByText('Держится за ненадёжных')).toBeTruthy(); // в клетке — выжимка, не полный текст
+    expect(within(row).queryByText('Выбирает недоступных партнёров')).toBeNull();
+    fireEvent.click(within(row).getByRole('button', { name: /Держится за ненадёжных/ }));
+    expect(within(row).getByText('Выбирает недоступных партнёров')).toBeTruthy(); // тап раскрывает полный пример
+    expect(within(row).queryByText('Цепляется и контролирует')).toBeNull(); // раскрыта одна клетка
     expect(within(domain).getByRole('columnheader', { name: 'Гиперкомпенсация' })).toBeTruthy();
     fireEvent.click(within(row).getByRole('button', { name: new RegExp(SCHEMA_NAME) }));
     expect(screen.getByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();

@@ -72,5 +72,9 @@ export const SIGN_KEYS = [
   'pause',
   'haven',
   'join',
+  // CopingSigns.tsx — стили копинга (COPING_STYLES, shared/src/schemaTherapy/guide/copingStyles.ts)
+  'coping_surrender',
+  'coping_avoidance',
+  'coping_overcompensation',
 ] as const;
 export type SignKey = (typeof SIGN_KEYS)[number];
