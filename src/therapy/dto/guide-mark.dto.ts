@@ -9,10 +9,7 @@ import {
   GUIDE_MARK_NOTE_MAX,
   GUIDE_MARK_SNAPSHOT_MAX,
 } from '../../utils/text-limits';
-import { GUIDE_ADDRESS_MAX } from '../guide-mark-address';
-
-// Адрес раздела: форма `<вид>:<id>/<путь>`; вид и смысл проверяет сервис.
-const ADDRESS_SHAPE = /^[a-z]+:[A-Za-z0-9_-]+\/[A-Za-z0-9_.]+$/;
+import { ADDRESS_SHAPE, GUIDE_ADDRESS_MAX } from '../guide-mark-address';
 
 /** Отметка «Про клиента»: повтор того же адреса правит запись, а не плодит дубль. */
 export class SaveGuideMarkDto {

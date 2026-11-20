@@ -1,20 +1,30 @@
-import { getModeById, getSchemaById } from '../../../../../shared/src/schemaTherapy/schemaTherapyData';
-import type { TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
+import type { Tr } from '../../../../../shared/src/schemaTherapy/guide/types';
 import type { Guide } from '../../../../../shared/src/therapy/conceptGraph/guideLoader';
-import type { PlanSource } from '../../../../../shared/src/therapy/plan/planItem';
+import { planItemAddress } from '../../../../../shared/src/therapy/plan/planAddress';
+import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
 
-type Tr = Parameters<Guide['modeGuide']>[0];
+/** Ссылка «Из справочника» у пункта плана. */
+export interface PlanSourceLink {
+  /** «Уязвимый Ребёнок · Через понимание»; раздела нет — заголовок пути по адресу. */
+  title: string;
+  /** Адрес не находит раздел: ссылки нет, пометка «раздел изменился»; текст пункта — сохранённый. */
+  changed: boolean;
+  /** Статья, которую открывает ссылка; null — открыть нечем. */
+  open: { kind: 'mode' | 'schema' | 'technique'; id: string } | null;
+}
 
 /**
- * Название статьи справочника, из которой взят пункт плана, — для ссылки «Из справочника: … →».
- * null — ссылки нет: тексты справочника ещё не приехали, либо статьи с таким id больше нет.
+ * Откуда пункт плана — по адресу раздела (resolveAddress, как блок «Из справочника» у отметок).
+ * null — пункт свой либо тексты справочника ещё не приехали.
  */
-export function planSourceTitle(guide: Guide | null | undefined, tr: Tr, source: PlanSource | null): string | null {
-  if (!guide || !source) return null;
-  switch (source.kind) {
-    case 'mode': return guide.modeGuide(tr, source.id) ? getModeById(source.id)?.name ?? null : null;
-    case 'schema': return guide.schemaGuide(tr, source.id) ? getSchemaById(source.id)?.name ?? null : null;
-    case 'technique': return guide.techniqueGuide(tr, source.id as TechniqueId)?.name ?? null;
-    default: return null;
+export function planSourceLink(guide: Guide | null | undefined, tr: Tr, item: Pick<PlanItem, 'sourceAddress' | 'source'>): PlanSourceLink | null {
+  const address = planItemAddress(item);
+  if (!guide || !address) return null;
+  const found = guide.resolveAddress(address, tr);
+  if (found) {
+    const open = found.kind === 'note' ? null : { kind: found.kind, id: found.articleId };
+    return { title: `${found.articleTitle} · ${found.sectionTitle}`, changed: false, open };
   }
+  const p = guide.parseAddress(address);
+  return { title: p ? guide.sectionTitle(p.kind, p.path) : 'Раздел справочника', changed: true, open: null };
 }

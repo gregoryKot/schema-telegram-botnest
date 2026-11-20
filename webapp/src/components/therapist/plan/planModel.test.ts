@@ -4,7 +4,7 @@ import { canAssign, cleanText, groupPlan, isEmptyPlan, movePlanItem, nextStatus,
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
-  source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
+  sourceAddress: null, source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
 });
 
 describe('groupPlan', () => {

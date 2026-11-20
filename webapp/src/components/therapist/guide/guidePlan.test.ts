@@ -27,6 +27,6 @@ describe('guidePlan — заготовка пункта плана из стат
 
   it('заготовка помнит статью: вид, id и поле', () => {
     const draft = planDraft(channelSeed('behavioral', 'Договориться.'), { kind: 'mode', id: 'bully_attack' });
-    expect(draft.source).toEqual({ kind: 'mode', id: 'bully_attack', field: 'behavioral' });
+    expect(draft.sourceAddress).toBe('mode:bully_attack/behavioral');
   });
 });

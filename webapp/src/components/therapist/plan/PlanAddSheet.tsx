@@ -54,7 +54,7 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
     setBusy(true);
     setError('');
     try {
-      await api.createPlanItems({ clientIds: picked, rubric: draft.rubric, text: clean, source: draft.source });
+      await api.createPlanItems({ clientIds: picked, rubric: draft.rubric, text: clean, sourceAddress: draft.sourceAddress });
       trackPlanItemAdded(api, draft.rubric, true);
       onAdded?.();
       if (alive.current) setDone(true);

@@ -618,9 +618,11 @@ model TherapyPlanItem {
   text        String    // шифруется
   status      String    @default("planned") // 'planned' | 'active' | 'done'
   position    Int       @default(0)
-  sourceKind  String?   // статья справочника: 'schema' | 'mode' | 'technique'
+  sourceAddress String? // адрес раздела справочника (#1484): `mode:<id>/cognitive`
+  // Источник до адресов: читается, только если sourceAddress пуст (planAddress.ts).
+  sourceKind  String?
   sourceId    String?
-  sourceField String?   // поле статьи, из которого взят текст
+  sourceField String?
   taskId      Int?      // задание, которым пункт выдан клиенту
   task        UserTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())

@@ -21,6 +21,8 @@ export const GUIDE_MARK_KINDS = [
 export type GuideMarkKind = (typeof GUIDE_MARK_KINDS)[number];
 
 export const GUIDE_ADDRESS_MAX = 200;
+// Форма адреса в DTO: `<вид>:<id>/<путь>`; вид и смысл проверяет сервис.
+export const ADDRESS_SHAPE = /^[a-z]+:[A-Za-z0-9_-]+\/[A-Za-z0-9_.]+$/;
 
 const KIND_SET: ReadonlySet<string> = new Set(GUIDE_MARK_ARTICLE_KINDS);
 const SHAPE =
