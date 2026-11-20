@@ -89,5 +89,14 @@ Jacob; Farrell & Shaw), сводка терминов [docs/TERMINOLOGY.md](../.
 - Неверное в чужой области (дубль понятия, находка по пути) не чинится, а
   записывается строкой в `docs/BACKLOG.md`: что, где, чем доказано (№26).
 
+## Адреса разделов «Справочника» (#1484)
+
+Раздел справочника — поле типа в `shared/src/schemaTherapy/guide/types.ts`, адрес
+выводит `guide/address/`, руками не пишется; переименование или удаление раздела —
+строка в `address/addressRenames.ts`, новый смысл отметки — строка в
+`address/addressTargets.ts`, на экране раздел — только через `GuideSection`.
+Сторож — `shared/src/schemaTherapy/guide/address/address.test.ts`; подробно — навык
+[book-to-guide](../skills/book-to-guide/SKILL.md).
+
 Механизм: гейта на смысл нет. Дифф по путям из маски сверяет с этим чек-листом
 `rules-reviewer` (`.claude/agents/rules-reviewer.md`).

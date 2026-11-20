@@ -70,6 +70,8 @@ scripts/recorded-fixtures-baseline.json   merge=ratchet-min
 scripts/repo-secrets-baseline.json        merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
 scripts/zero-coverage-baseline.json       merge=ratchet-min
+# Известные адреса справочника (адрес → заголовок): две ветки, дописавшие адреса, сводятся по ключам.
+scripts/guide-addresses-baseline.json      merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max

@@ -1,8 +1,5 @@
-/**
- * Сборка подсказок терапевту (#995): режимы и библиотека техник. Тексты —
- * в guide/modes/* и guide/techniques/*, типы — guide/types.ts. Сверка
- * полноты — guide/guide.test.ts.
- */
+// Сборка подсказок терапевту (#995): тексты — guide/modes/*, guide/techniques/*, типы — guide/types.ts,
+// сверка полноты — guide/guide.test.ts. Адреса разделов (#1484) — ./address: цикл импорта безопасен, функции зовутся при обходе.
 import type {
   ModeGuide,
   ModeGuideBuilder,
@@ -94,6 +91,8 @@ export function practiceNotes(tr: Tr): PracticeNote[] {
 export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
   return buildTechniqueGuides(tr).find((t) => t.id === id) ?? null;
 }
+
+export * from './address';
 
 export type {
   BetweenSessionsItem,
