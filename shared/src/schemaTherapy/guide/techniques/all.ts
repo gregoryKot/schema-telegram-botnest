@@ -3,14 +3,18 @@ import { buildImageryRescriptingTechniques } from './imageryRescripting';
 import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
 import { buildChairTechniques } from './chairs';
+import { buildEmpathicConfrontationTechniques } from './empathicConfrontation';
 import { buildStanceTechniques } from './stance';
 import { buildHomeworkTechniques } from './homework';
+import { buildPatternBreakingTechniques } from './patternBreaking';
+import { buildLimitedReparentingTechniques } from './limitedReparenting';
 import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
 import { buildChildCareTechniques } from './childCare';
+import { buildBodyGroundingTechniques } from './bodyGrounding';
 import { buildBodyValuesTechniques } from './bodyValues';
 import { buildOnlineTechniques } from './online';
 import { buildAttunementNeedsTechniques } from './attunementNeeds';
@@ -26,14 +30,18 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryTechniques,
   buildChairworkTechniques,
   buildChairTechniques,
+  buildEmpathicConfrontationTechniques,
   buildStanceTechniques,
   buildHomeworkTechniques,
+  buildPatternBreakingTechniques,
+  buildLimitedReparentingTechniques,
   buildRelationshipTechniques,
   buildImageryMoreTechniques,
   buildImageryModeDialogueTechniques,
   buildFormulationTechniques,
   buildEvidenceWorkTechniques,
   buildChildCareTechniques,
+  buildBodyGroundingTechniques,
   buildBodyValuesTechniques,
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
