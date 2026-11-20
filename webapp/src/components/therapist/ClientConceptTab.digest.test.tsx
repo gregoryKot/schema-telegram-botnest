@@ -10,6 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../api', () => ({
   api: {
+    getGuideMarks: () => Promise.resolve({ marks: [] }),
     getTherapyTasksForClient: vi.fn(),
     getTherapistNotes: vi.fn(),
     getConceptualization: vi.fn(),

@@ -26,7 +26,7 @@ vi.mock('../../../../shared/src/schemaTherapy/guide', async () => {
     schemaGuide: () => null,
   };
 });
-vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), getSessionWork: vi.fn(), listCustomModes: vi.fn() }, reportClientError: vi.fn() }));
+vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), getSessionWork: vi.fn(), listCustomModes: vi.fn(), getGuideMarks: () => Promise.resolve({ marks: [] }) }, reportClientError: vi.fn() }));
 import { api } from '../../api';
 
 beforeEach(() => {

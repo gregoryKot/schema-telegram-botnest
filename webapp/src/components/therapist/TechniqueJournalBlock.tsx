@@ -11,6 +11,7 @@ import { SkeletonList } from '../Skeleton';
 import type { ClientDetail } from './clientSheetTypes';
 import { clientConceptLinks } from './useClientConceptGraph';
 import { useConceptGuide } from './guide/useConceptGuide';
+import { guideMarkClient } from './guide/marks/useClientGuideMarks';
 import { useSessionWork } from './useSessionWork';
 import { hasCustomMode, useCustomModeNames, type NamedMode } from './useCustomModeNames';
 
@@ -39,7 +40,7 @@ export function TechniqueJournalBlock({ detail, onOpenConcept, takeFocus, onOpen
   const work = useSessionWork(detail);
   const customModes = useCustomModeNames(work.entries.some((e) => hasCustomMode(e.work)));
   const guide = useConceptGuide({
-    tasks: detail.clientTasks, plan: { clientId: detail.selectedClient?.telegramId },
+    tasks: detail.clientTasks, plan: { clientId: detail.selectedClient?.telegramId }, client: guideMarkClient(detail.selectedClient),
     graph: {
       source, onChangeLink: handlers.onChangeLink, onChangeSchemaLink: handlers.onChangeSchemaLink,
       workMarks: (from) => workMarks(work.entries, from),

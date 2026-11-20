@@ -4,6 +4,7 @@ import { GuideSection } from './GuideSection';
 import { GuidePoints } from './GuidePoints';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 import { schemaGuideLook } from './guideLook';
+import { articleAddress } from './marks/guideMarkModel';
 
 type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView };
 
@@ -26,6 +27,7 @@ const COPING = [
  */
 export function SchemaGuideSheet({ schemaName, view, ...actions }: Props) {
   const { guide, domainNote } = view;
+  const at = articleAddress('schema', guide.schemaId);
   const coping = COPING.filter(([key]) => guide.coping[key].trim());
   const modes = guide.modeIds.flatMap((id) => getModeById(id)?.name ?? []);
   const voice = [guide.reparenting, ...(guide.voice ?? [])];
@@ -43,17 +45,17 @@ export function SchemaGuideSheet({ schemaName, view, ...actions }: Props) {
   return (
     <GuideSheet
       label="Схема" title={schemaName} lede={guide.essence} voice={voice} view={view} {...actions}
-      look={schemaGuideLook(guide.schemaId)}
+      look={schemaGuideLook(guide.schemaId)} at={at}
       moreParts={[
         { title: 'Копинг', children: copingList || undefined },
-        { title: 'Типичные режимы', text: modes.join(', ') },
-        { title: 'Общее для домена', text: domainNote },
+        { title: 'Типичные режимы', text: modes.join(', '), address: at('modeIds') },
+        { title: 'Общее для домена', text: domainNote, address: at('domainNote') },
       ]}
     >
-      <GuideSection title="Потребность" text={guide.need} />
-      <GuideSection title="В кабинете" text={guide.inSession} />
+      <GuideSection title="Потребность" text={guide.need} address={at('need')} />
+      <GuideSection title="В кабинете" text={guide.inSession} address={at('inSession')} />
       {interventions.length > 0 && (
-        <GuideSection title="Что делать">
+        <GuideSection title="Что делать" address={at('interventions')}>
           <GuidePoints items={interventions} />
         </GuideSection>
       )}

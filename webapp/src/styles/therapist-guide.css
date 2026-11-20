@@ -78,3 +78,29 @@
 .pa-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 16px; line-height: 1.5; color: var(--text); cursor: pointer; }
 .pa-check + .pa-check { border-top: 1px solid var(--paper-sunk); }
 .pa-check > input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+
+/* «Про клиента» (#1484, marks/GuideSectionMark.tsx): тап по разделу подсвечивает его, рядом кнопка;
+   отмеченный клиенту раздел (справочник из карточки) — с полосой акцента и именем. */
+.gd-mark-title { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; text-align: left; cursor: pointer; }
+.gd-picked, .gd-marked { border-radius: 12px; box-shadow: 0 0 0 8px var(--paper-tint); background: var(--paper-tint); }
+.gd-marked { border-left: 3px solid var(--accent); padding-left: 10px; }
+.gd-mark-row { display: flex; flex-direction: column; gap: 8px; }
+.gd-mark-who { font-size: 14px; font-weight: 600; color: var(--accent); }
+.gd-mark-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 400;
+  padding: 10px 16px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 15px;
+}
+.gd-mark-hint { margin: 12px 0 0; }
+/* Блок «Из справочника» под схемой случая (marks/GuideMarksBlock.tsx). */
+.gd-marks { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.gd-marks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.gd-marks-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; }
+.gd-marks-item + .gd-marks-item { border-top: 1px solid var(--paper-sunk); }
+.gd-marks-item > .gd-min { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.gd-marks-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.gd-marks-changed { font-style: italic; }
+.gd-mark-x {
+  flex: none; min-width: 44px; min-height: 44px; border: 0; border-radius: 50%; background: none;
+  font-size: 22px; line-height: 1; color: var(--text-sub); cursor: pointer;
+}
+.gd-mark-x:hover { background: var(--paper-tint); color: var(--text); }

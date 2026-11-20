@@ -6,12 +6,12 @@ import { betweenSeed, type PlanSeed } from './guidePlan';
 import { PlanButton } from './PlanButton';
 
 /** «Между сессиями»: название, серым пояснение или инструкция и «давали …», «Дать заданием». */
-export function GuideBetweenSessions({ items, onAssign, onPlan, notes }: {
-  items: BetweenSessionsItem[]; onAssign?: (item: BetweenSessionsItem) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes;
+export function GuideBetweenSessions({ items, address, onAssign, onPlan, notes }: {
+  items: BetweenSessionsItem[]; address?: string; onAssign?: (item: BetweenSessionsItem) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes;
 }) {
   if (items.length === 0) return null;
   return (
-    <GuideSection title={PLAN_RUBRIC_LABEL.between}>
+    <GuideSection title={PLAN_RUBRIC_LABEL.between} address={address}>
       <ul className="tcp-guide-list">
         {items.map((item, i) => {
           const sub = item.kind === 'task' ? item.note : item.text;

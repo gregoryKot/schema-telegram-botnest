@@ -6,7 +6,7 @@ export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types'
 import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { Currency } from '../../shared/src/booking/priceRegion'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
-import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi'; import { createPlanApi } from '../../shared/src/therapy/plan/planApi';
+import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi'; import { createPlanApi } from '../../shared/src/therapy/plan/planApi'; import { createGuideMarksApi } from '../../shared/src/therapy/guideMarks/guideMarksApi';
 import { createEntryApi } from '../../shared/src/api/entryApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import {
@@ -16,7 +16,7 @@ import {
   authedFetch,
   get,
   post,
-  postJson, patchJson, type SendOptions,
+  postJson, patchJson, putJson, type SendOptions,
   del,
   setTokenProvider,
   setRefreshHandler,
@@ -139,7 +139,7 @@ export const api = {
   ...buildSharedApi(transport),
   ...ratingApi,
   // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
-  ...createPracticeSessionsApi(transport), ...createPlanApi({ ...transport, patchJson }), // план работы с клиентом (#1337)
+  ...createPracticeSessionsApi(transport), ...createPlanApi({ ...transport, patchJson }), ...createGuideMarksApi({ ...transport, putJson }), // план (#1337), «Про клиента» (#1484)
   ...createEntryApi(transport), // запись по id для «Моего пути», страницы «Записей»
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и анонимная аналитика (userId = null).
