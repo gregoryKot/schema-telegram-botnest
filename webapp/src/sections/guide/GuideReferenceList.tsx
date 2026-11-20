@@ -36,7 +36,7 @@ export function GuideReferenceList({ groups, layout, onOpen }: { groups: Referen
             ))}
           </SignGroup>
         ) : (
-          <SignGroup key={g.key} look={g.look} title={g.title} label={g.title} headAs="h2" rowsClassName="gr-rows">{rows(g, onOpen)}</SignGroup>
+          <SignGroup key={g.key} look={g.look} title={g.title} hint={g.hint} fold={g.fold} label={g.title} headAs="h2" rowsClassName="gr-rows">{rows(g, onOpen)}</SignGroup>
         ))}
       </div>
     </div>

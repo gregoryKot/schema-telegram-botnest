@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'positive_data_log',
+    group: 'cognitive',
     name: 'Журнал позитивных данных и шкала-континуум',
     summary:
       'Клиент каждый день записывает факты, которые не сходятся со схемой, а крайнюю оценку себя переносит на шкалу от 0 до 100 рядом с другими людьми.',
@@ -32,6 +33,7 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'behavioral_experiment',
+    group: 'behavioral',
     name: 'Поведенческий эксперимент',
     summary:
       'Клиент проверяет предсказание схемы делом: заранее записывает, чего ждёт, делает шаг и сравнивает ожидание с тем, что вышло.',

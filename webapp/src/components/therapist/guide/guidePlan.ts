@@ -1,7 +1,7 @@
 import type { BetweenSessionsItem, TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
 import { splitSentences } from '../../../../../shared/src/schemaTherapy/guide/sentences';
 import type { GuideFrom } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
-import { PLAN_RUBRIC_LABEL, type PlanRubric, type PlanSource } from '../../../../../shared/src/therapy/plan/planItem';
+import { PLAN_RUBRIC_LABEL, type GuideChannel, type PlanRubric, type PlanSource } from '../../../../../shared/src/therapy/plan/planItem';
 
 /** Что кнопка «В план» несёт в лист: рубрика плана, поле статьи и текст по частям. */
 export interface PlanSeed {
@@ -15,10 +15,8 @@ export interface PlanSeed {
 /** Заготовка пункта: то же и статья, из которой он взят. */
 export type PlanDraft = PlanSeed & { source: PlanSource };
 
-type Channel = 'relationship' | 'cognitive' | 'experiential' | 'behavioral';
-
 /** Направление «Как работать» листа режима — по предложениям. */
-export const channelSeed = (key: Channel, text: string): PlanSeed => ({ rubric: key, field: key, label: PLAN_RUBRIC_LABEL[key], parts: splitSentences(text) });
+export const channelSeed = (key: GuideChannel, text: string): PlanSeed => ({ rubric: key, field: key, label: PLAN_RUBRIC_LABEL[key], parts: splitSentences(text) });
 
 /** «На сессии»: техники раздела, каждая — своей частью. */
 export const sessionSeed = (techniques: readonly TechniqueGuide[]): PlanSeed => ({

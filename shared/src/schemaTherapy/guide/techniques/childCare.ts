@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'transitional_objects',
+    group: 'relationship',
     name: 'Переходные объекты и запись голоса терапевта',
     summary:
       'Клиент уносит с сессии то, что напоминает о терапевте и о сказанном: записку, небольшую вещь, аудиозапись. Между встречами это держит связь, когда схема говорит «никого нет».',
@@ -28,6 +29,7 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'play_and_joy',
+    group: 'experiential',
     name: 'Игра и радость для Счастливого Ребёнка',
     summary:
       'Терапевт приносит в сессию игру, юмор и удовольствие без цели — чтобы у клиента появился опыт спонтанности, которого не хватило в детстве.',

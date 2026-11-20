@@ -4,6 +4,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
   {
     id: 'ending_phase',
+    group: 'therapist',
     title: 'Завершение терапии',
     summary:
       'О конце терапии говорят заранее: сама новость о нём будит схемы. Финал нужен, чтобы закрепить перемены в поведении, укрепить Здорового Взрослого и проститься так, чтобы прощание стало новым опытом [Кембридж, гл. 12].',
@@ -35,6 +36,7 @@ export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'complex_trauma',
+    group: 'start',
     title: 'Сложная травма: как о ней спросить',
     summary:
       'О травме из детства клиент часто молчит, пока не спросят, и приходит с другим запросом. Терапевт спрашивает сам, держится уверенно и оставляет клиенту решать, сколько рассказать [Кембридж, гл. 14].',
