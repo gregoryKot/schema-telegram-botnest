@@ -1,6 +1,5 @@
 // Вкладки «Техники» и «Для терапевта» «Справочника» (#1484): записи раскладываются по своему полю `group` в порядке
-// закрытого списка групп (shared/src/schemaTherapy/guide/guideGroups.ts), внутри группы — порядок библиотеки.
-// Списков id здесь нет: новая запись встаёт в свою группу сама. Группа сворачивается (`fold`).
+// закрытого списка групп (shared/…/guide/guideGroups.ts), внутри — порядок библиотеки; списков id здесь нет.
 import type { PracticeNote, TechniqueGuide } from '../../../../shared/src/schemaTherapy/guide';
 import { PRACTICE_GROUPS, TECHNIQUE_GROUPS, type GuideGroup } from '../../../../shared/src/schemaTherapy/guide/guideGroups';
 import { practiceNoteLook, PRACTICE_HUE, techniqueGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
