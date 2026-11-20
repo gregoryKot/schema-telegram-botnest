@@ -82,9 +82,25 @@ describe('removeNoteFromPage', () => {
     expect(res.total).toBe(4);
   });
 
-  it('несуществующий id не трогает total и возвращает ту же страницу', () => {
-    const page = { notes: [note(1, '2026-01-01')], total: 3 };
+  it('показано всё: неизвестный id не трогает total и возвращает ту же страницу', () => {
+    const page = { notes: [note(1, '2026-01-01')], total: 1 };
     expect(removeNoteFromPage(page, 99)).toBe(page);
+  });
+
+  it('скрытая заметка (нет среди показанных): total − 1, показанные на месте', () => {
+    const page = { notes: [note(2, '2026-02-01')], total: 3 };
+    const res = removeNoteFromPage(page, 99);
+    expect(res.notes).toEqual(page.notes);
+    expect(res.total).toBe(2);
+  });
+
+  it('total не уходит ниже числа показанных', () => {
+    const page = {
+      notes: [note(2, '2026-02-01'), note(1, '2026-01-01')],
+      total: 1,
+    };
+    expect(removeNoteFromPage(page, 99)).toBe(page);
+    expect(removeNoteFromPage({ ...page, total: 2 }, 1).total).toBe(1);
   });
 
   it('total не уходит в минус', () => {
