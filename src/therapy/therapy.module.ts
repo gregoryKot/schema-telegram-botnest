@@ -15,8 +15,7 @@ import { TherapyPlanController } from './therapy-plan.controller';
 import { TherapyPlanService } from './therapy-plan.service';
 import { TherapyNotesController } from './therapy-notes.controller';
 import { ModeMapsController } from './mode-maps.controller';
-import { ConceptAppendController } from './concept-append.controller';
-import { ClientConceptController } from './client-concept.controller';
+import { CASEWORK_CONTROLLERS, CASEWORK_PROVIDERS } from './casework';
 import { TherapistRequestService } from './therapist-request.service';
 import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { TherapistExitService } from './therapist-exit.service';
@@ -37,8 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyPlanController,
     TherapyNotesController,
     ModeMapsController,
-    ConceptAppendController,
-    ClientConceptController,
+    ...CASEWORK_CONTROLLERS,
   ],
   providers: [
     TherapyRelationsService,
@@ -46,6 +44,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyTasksService,
     TherapyTasksViewService,
     TherapyPlanService,
+    ...CASEWORK_PROVIDERS,
     TherapyNotesService,
     TherapyClientDataService,
     ModeMapsService,

@@ -60,6 +60,7 @@ export const KNOWN_TABLES = new Set<string>([
   'ClientConceptualization',
   'ModeMap',
   'TherapyPlanItem',
+  'GuideMark',
   'TherapistCustomMode',
   'User',
 ]);
@@ -238,13 +239,12 @@ export class MergeService {
         UPDATE "ClientConceptualization" SET "clientId" = ${targetId}
         WHERE "clientId" = ${sourceId} AND "therapistId" <> ${targetId}
       `);
-      // Step C: anything still pointing at source on either side would create
-      // a self-loop (therapist === client) — drop.
+      // Step C: what still points at source would be a self-loop — drop.
       await tx.$executeRaw(Prisma.sql`
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 4d. ModeMap и TherapyPlanItem — merge-therapist-side.ts.
+      // 4d. ModeMap, TherapyPlanItem и GuideMark — merge-therapist-side.ts.
       await remapTherapistSideRows(tx, sourceId, targetId);
 
       // 4e. TherapistCustomMode (только therapistId, без unique) — просто remap.

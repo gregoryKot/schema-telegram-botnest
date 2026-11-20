@@ -3,9 +3,7 @@
  * (находка аудита 2026-10-11, backend#29).
  *
  * Лимит стоит в DTO (`@MaxLength`) и больше нигде: превышение — 400 от
- * глобального ValidationPipe. Раньше контроллеры дополнительно резали поле
- * `.slice(0, N)` с другим N — заметка на 6000 знаков отвечала 201 и теряла
- * хвост молча. Гейт `scripts/check-body-truncation.mjs` держит это в CI.
+ * ValidationPipe, без `.slice(0, N)` (гейт `scripts/check-body-truncation.mjs`).
  *
  * Значения зеркалятся фронтендами (`shared/src/limits/textLimits.ts`, имя в
  * имя): textarea с `maxLength` и счётчиком остатка. Расхождение двух копий
@@ -41,3 +39,5 @@ export const NOTE_CARD_FIELD_MAX = 3000; // карточка схемы или �
 export const LETTER_TEXT_MAX = 10000; // письмо себе в детстве
 export const SAFE_PLACE_TEXT_MAX = 10000; // безопасное место: описание целиком (общее впечатление и органы чувств одной строкой)
 export const PLAN_ITEM_TEXT_MAX = 5000; // пункт плана работы с клиентом (рубрика справочника целиком помещается)
+export const GUIDE_MARK_NOTE_MAX = 1000; // «Про клиента» из справочника: строка «как это у него»
+export const GUIDE_MARK_SNAPSHOT_MAX = 20000; // «Про клиента»: текст раздела справочника на момент отметки
