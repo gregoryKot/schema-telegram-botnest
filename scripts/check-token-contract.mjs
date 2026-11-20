@@ -15,9 +15,9 @@
 //
 // Список токенов первого типа гейт не хранит сам — берёт прямо из
 // tokens.css (там же и живёт), чтобы не превратиться в третью копию,
-// которая расходится с первой. Список второго типа хранится здесь
-// (значения для него намеренно НЕ в tokens.css) и продублирован в
-// token-contract.spec.ts (фикстуры теста). Отдельного TS-модуля с именами нет: без
+// которая расходится с первой. Список второго типа — token-contract-rules.mjs
+// (значения для него намеренно НЕ в tokens.css), его же читает
+// token-contract.spec.ts. Отдельного TS-модуля с именами нет: без
 // реального потребителя в прод-коде он был бы мёртвым файлом (правило №11
 // CLAUDE.md) — сам tokens.css уже достаточно документирован для этой роли.
 //
@@ -31,45 +31,12 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { SHARED_NAME_ONLY_TOKENS } from './token-contract-rules.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const TOKENS_CSS_PATH = 'shared/src/theme/tokens.css';
 const APP_CSS = ['webapp/src/index.css'];
 
-// Токены, которые обязаны быть объявлены в index.css (на них ссылается
-// shared/), а значение задаёт сам сайт (фон/поверхности, статусные цвета).
-export const SHARED_NAME_ONLY_TOKENS = [
-  '--accent-red',
-  // Текст на залитом --accent-red: иначе следующая красная кнопка снова
-  // напишет '#fff' и получит в тёмной теме 2.94:1. Контраст
-  // самой ПАРЫ считает webapp/src/index.css.contrast.test.ts.
-  '--on-accent-red',
-  '--accent-orange',
-  '--accent-yellow',
-  '--accent-green',
-  '--accent-blue',
-  '--accent-pink',
-  '--bg',
-  '--surface',
-  '--surface-2',
-  '--text',
-  '--text-sub',
-  '--text-faint',
-  '--line',
-  '--border-color',
-  '--nav-bg',
-  '--sheet-bg',
-  '--sheet-bg-2',
-  '--track-color',
-  '--fg-rgb',
-  // Стили копинга: COPING_STYLES (shared/src/schemaTherapy/guide/copingStyles.ts).
-  '--coping-surrender',
-  '--coping-surrender-ink',
-  '--coping-avoidance',
-  '--coping-avoidance-ink',
-  '--coping-overcompensation',
-  '--coping-overcompensation-ink',
-];
 
 // Где ищем фолбэки. webapp и shared — dist/сборки сюда не попадают.
 const FALLBACK_SCAN_DIRS = ['webapp/src', 'shared/src'];

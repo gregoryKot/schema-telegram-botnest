@@ -118,7 +118,7 @@
   "scripts/check-telegram-chat-id.mjs": 63,
   "scripts/check-timer-cleanup.mjs": 132,
   "scripts/check-tiny-fonts.mjs": 153,
-  "scripts/check-token-contract.mjs": 249,
+  "scripts/check-token-contract.mjs": 216,
   "scripts/check-unwatched-code.mjs": 176,
   "scripts/check-utility-inline.mjs": 140,
   "scripts/check-var-alpha-suffix.mjs": 151,
