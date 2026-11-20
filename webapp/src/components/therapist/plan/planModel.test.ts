@@ -16,7 +16,7 @@ describe('groupPlan', () => {
       item({ id: 4, rubric: 'between', position: 1 }),
     ]);
     expect(groups.map((g) => g.rubric)).toEqual(['relationship', 'between', 'custom']);
-    expect(groups.map((g) => g.label)).toEqual(['В отношениях', 'Между сессиями', 'Своё']);
+    expect(groups.map((g) => g.label)).toEqual(['Терапевтические отношения (в отношениях)', 'Между сессиями', 'Своё']);
     expect(groups[1].items.map((i) => i.id)).toEqual([4, 2]);
   });
 

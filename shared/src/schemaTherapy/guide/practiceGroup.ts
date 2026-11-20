@@ -8,6 +8,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
   {
     id: 'group_therapy',
+    group: 'therapist',
     title: 'Групповая схема-терапия',
     summary:
       'Группа становится «семьёй», где ограниченное родительство дают два терапевта. При пограничном расстройстве личности группу ставят рядом с индивидуальными сессиями, а не вместо них.',
@@ -33,6 +34,7 @@ export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'group_techniques',
+    group: 'therapist',
     title: 'Приёмы групповой работы с режимами',
     summary:
       'В группе режимы сажают на общий стул: у Защитника и Критика один стул на всех, рескриптинг тоже общий. Каждый узнаёт в общем режиме своего, а спорить с Критиком всей группой легче [Кембридж, гл. 17].',

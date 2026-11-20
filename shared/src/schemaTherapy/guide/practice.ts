@@ -22,6 +22,7 @@ import { buildPracticeTherapist } from './practiceTherapist';
 export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   {
     id: 'frame_additions',
+    group: 'method',
     title: 'Что добавляют к рамке метода другие книги',
     summary:
       'Основа метода остаётся прежней. Другие книги добавляют к ней мерило заботы, работу с телом, тонкости диагностики и карту режимов на стульях.',
@@ -43,6 +44,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'impasses',
+    group: 'stuck',
     title: 'Откуда берутся тупики',
     summary:
       'Почти любой тупик с тяжёлым клиентом — одна из трёх причин: режим не узнан, приём выбран не тот или режимы терапевта сцепились с режимами клиента.',
@@ -68,6 +70,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'chatting',
+    group: 'stuck',
     title: '«Болтовня» вместо терапии',
     summary:
       'Сильный копинговый режим заполняет сессию подробностями и рассуждениями, и до чувств дело не доходит. Хуже всего, когда к нему присоединяется копинг терапевта.',
@@ -92,6 +95,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'method_errors',
+    group: 'stuck',
     title: 'Частые ошибки в методе',
     summary:
       'Ошибки, которые встречаются чаще всего: от путаницы схемы с поведением до ухода терапевта от работы через чувства.',

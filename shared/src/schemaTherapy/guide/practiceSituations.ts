@@ -9,6 +9,7 @@ import { buildPracticeGroup } from './practiceGroup';
 export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
   {
     id: 'angry_client',
+    group: 'hard',
     title: 'Клиент злится',
     summary:
       'Злость сначала проясняют и признают понятной — в том числе злость на самого терапевта. Потом ищут, что её запустило и где ещё так бывает [Рёдигер, гл. 13].',
@@ -38,6 +39,7 @@ export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'suicidal_thoughts',
+    group: 'hard',
     title: 'Суицидальные мысли',
     summary:
       'О суициде часто говорит защитный режим. Тут помогают честность терапевта, план на крайний случай и супервизия.',
@@ -65,6 +67,7 @@ export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'romance_and_partner',
+    group: 'hard',
     title: 'Влюблённость в терапевта и партнёр за кадром',
     summary:
       'Рёдигер считает влюблённость в терапевта одной из масок Отстранённого Защитника. Говорить о ней всё равно придётся, и у него на это шесть шагов [Рёдигер, гл. 13].',
@@ -93,6 +96,7 @@ export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
   ...buildPracticeGroup(tr),
   {
     id: 'deliberate_practice',
+    group: 'therapist',
     title: 'Намеренная практика для терапевта',
     summary:
       'Навык отрабатывают короткими кругами: реплика клиента, ответ терапевта, отклик тренера, повтор. Так учатся лучше, чем на лекциях.',

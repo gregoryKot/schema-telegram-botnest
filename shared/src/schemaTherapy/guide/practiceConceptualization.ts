@@ -4,6 +4,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
   {
     id: 'history_interview',
+    group: 'start',
     title: 'Расспрос о детстве и родителях',
     summary:
       'Расспрос о детстве начинают с каждого из родителей и других близких взрослых: какими они были, как менялись отношения, где остались неудовлетворённые потребности [Кембридж, прил.].',
@@ -27,6 +28,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'case_conceptualization',
+    group: 'start',
     title: 'Концептуализация случая',
     summary:
       'Концептуализация объясняет, как схемы и режимы породили проблемы клиента и как их поддерживают. Её пишут до начала лечения по форме ISST и уточняют по ходу [Кембридж, гл. 4].',
@@ -51,6 +53,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'stages_of_change',
+    group: 'stuck',
     title: 'Стадии изменений',
     summary:
       'Готовность клиента меняться подсказывает, с чего начинать. Книга раскладывает интервенции схема-терапии по стадиям изменений Прохаски и ДиКлементе [Кембридж, гл. 3, рис. 3.1].',

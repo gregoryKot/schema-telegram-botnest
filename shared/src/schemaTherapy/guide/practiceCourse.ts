@@ -4,6 +4,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
   {
     id: 'therapy_aims',
+    group: 'start',
     title: 'Четыре цели терапии',
     summary:
       'Схема-терапия держит в фокусе четыре цели: вернуть связь с базовыми потребностями, ослабить схемы, заменить дезадаптивный копинг и вырастить Здорового Взрослого [Кембридж, гл. 1].',
@@ -23,6 +24,7 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'evidence_limits',
+    group: 'method',
     title: 'Границы доказательной базы',
     summary:
       'Исследования схема-терапии отбирали клиентов строго. С клиентом, у которого есть исключённые там расстройства, разумно ждать более скромных перемен, чем в публикациях [Кембридж, гл. 2].',
@@ -40,6 +42,7 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'session_structure',
+    group: 'start',
     title: 'Структура сессии',
     summary:
       'Сессия гибкая, но собранная: три части по 15–20 минут — подстройка, работа и итог. Так терапевт не застревает в одном сочувствии и не уходит от главных тем [Кембридж, гл. 5].',
@@ -68,6 +71,7 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'self_disclosure',
+    group: 'hard',
     title: 'Самораскрытие терапевта',
     summary:
       'Подлинность входит в ограниченное родительство: клиент знает о терапевте немного личного, терапевт честно говорит о своих реакциях. Перед самораскрытием — три вопроса [Кембридж, гл. 6].',
