@@ -98,4 +98,15 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     ],
     'technique:life_line': ['stones', 'flowers', 'noticed', 'next'],
     'technique:online_chairwork': ['variant', 'modes', 'result'],
+    'technique:schema_attunement': ['moment', 'feeling', 'schema', 'bridge'],
+    'technique:responsibility_pie': ['belief', 'causes', 'share'],
+    'technique:courtroom': ['charge', 'defence', 'verdict'],
+    'technique:healthy_adult_three_chairs': [
+      'situation',
+      'compassion',
+      'reframe',
+      'action',
+    ],
+    'technique:need_now_question': ['need', 'done', 'mood'],
+    'technique:downward_arrow': ['thought', 'bottom', 'schema'],
   };
