@@ -9,6 +9,7 @@ import type { ClientDetail } from '../clientSheetTypes';
 
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
+  getGuideMarks: () => Promise.resolve({ marks: [] }),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));

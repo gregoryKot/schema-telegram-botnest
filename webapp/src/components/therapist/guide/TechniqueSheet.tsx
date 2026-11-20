@@ -6,6 +6,7 @@ import { techniqueGuideLook } from './guideLook';
 import { GuidePoints, GuideVoice } from './GuidePoints';
 import { GuidePage } from './GuideSheet';
 import { TechniqueMarkRow, type TechniqueMarkProps } from './TechniqueMarkRow';
+import { articleAddress } from './marks/guideMarkModel';
 
 /**
  * Лист техники (#995): герой с сутью и знаком техники, «Как это звучит», когда
@@ -20,19 +21,23 @@ import { TechniqueMarkRow, type TechniqueMarkProps } from './TechniqueMarkRow';
 export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
   technique: TechniqueGuide; mark?: TechniqueMarkProps; onClose: () => void; backRef?: MutableRefObject<SheetBack | null>;
 }) {
+  const at = articleAddress('technique', t.id);
   return (
     <GuidePage
       label={t.approach ? `Из другого подхода · ${t.approach}` : 'Техника'} title={t.name} lede={t.summary} onClose={onClose} backRef={backRef}
       look={techniqueGuideLook(t.id)}
       more={t.more} sources={t.sources}
-      moreParts={[{ title: 'Когда не делать', text: t.cautions }, { title: 'Доказательность', text: t.evidence }]}
+      moreParts={[
+        { title: 'Когда не делать', text: t.cautions, address: at('cautions') },
+        { title: 'Доказательность', text: t.evidence, address: at('evidence') },
+      ]}
     >
       {mark && <TechniqueMarkRow {...mark} />}
-      <GuideVoice lines={t.voice} />
-      <GuideSection title="Когда" text={t.when} />
-      <GuideSection title="В схема-терапии" text={t.pairsWith} />
+      <GuideVoice lines={t.voice} address={at('voice')} />
+      <GuideSection title="Когда" text={t.when} address={at('when')} />
+      <GuideSection title="В схема-терапии" text={t.pairsWith} address={at('pairsWith')} />
       {t.steps.length > 0 && (
-        <GuideSection title="Как проводить">
+        <GuideSection title="Как проводить" address={at('steps')}>
           <GuidePoints items={t.steps} ordered />
         </GuideSection>
       )}

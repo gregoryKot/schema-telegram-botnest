@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../../api';
 import { ConceptGraph } from '../../../../shared/src/therapy/conceptGraph/ConceptGraph';
 import type { ClientDetail } from './clientSheetTypes';
@@ -10,7 +10,9 @@ import type { AssignPreset } from './assignTemplates';
 import { workMarks } from '../../../../shared/src/therapy/sessionWork/sessionJournal';
 import { useSessionWork } from './useSessionWork';
 import { useConceptGuide } from './guide/useConceptGuide';
-import { clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
+import { GuideMarksBlock } from './guide/marks/GuideMarksBlock';
+import { guideMarkClient } from './guide/marks/useClientGuideMarks';
+import { markCounts } from './guide/marks/guideMarkModel';
 
 // Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и правки —
 // useClientConceptGraph, одни на оба места. Действия (картинка, весь экран, холст) в потоке уходят
@@ -34,19 +36,21 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
   const backRef = useRef<SheetBack | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
   const work = useSessionWork(detail);
+  const client = guideMarkClient(detail.selectedClient);
   const guide = useConceptGuide({
     onAssign, tasks: detail.clientTasks, onOpenJournal, under: backRef, plan: { clientId: detail.selectedClient?.telegramId },
-    graph: {
-      ...g.graphProps, workMarks: (from) => workMarks(work.entries, from),
-      clientName: detail.selectedClient ? clientDisplayName(detail.selectedClient) : undefined,
-    },
+    graph: { ...g.graphProps, workMarks: (from) => workMarks(work.entries, from), clientName: client?.name }, client,
   });
+  // «Про клиента» (#1484): счётчик на узлах схемы и режима, блок «Из справочника» под схемой.
+  const guideMarks = guide.marks?.marks;
+  const counts = useMemo(() => markCounts(guideMarks ?? []), [guideMarks]);
+  const { source } = g.graphProps;
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');
     setHeld(flowRef.current?.offsetHeight ?? 0);
   };
   const graph = (
-    <div ref={graphRef} className="tcp-graph"><ConceptGraph {...g.graphProps} guide={guide.actions} /></div>
+    <div ref={graphRef} className="tcp-graph"><ConceptGraph {...g.graphProps} guide={guide.actions} markCounts={counts} /></div>
   );
   return (
     <>
@@ -65,6 +69,10 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
       ) : (
         <div ref={flowRef} style={{ minWidth: 0 }}>{graph}</div>
       )}
+      <GuideMarksBlock
+        marks={guideMarks} onRemove={guide.marking.remove}
+        conceptEmpty={source.modeIds.length === 0 && source.schemaIds.length === 0}
+      />
       {guide.sheets}
     </>
   );

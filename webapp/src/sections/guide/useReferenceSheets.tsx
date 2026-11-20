@@ -23,10 +23,13 @@ const REFERENCE_TRACK: GuideOpenTrack = {
 export function useReferenceSheets(texts: Guide, tr: Tr) {
   const [noteId, setNoteId] = useState<string | null>(null);
   const [needId, setNeedId] = useState<NeedId | null>(null);
-  // plan и «Про клиента» без клиента: листы дают выбрать клиентов
-  const guide = useConceptGuide({ track: REFERENCE_TRACK, plan: {}, pickClient: true });
   const need = useMemo(() => (needId ? buildNeedGuides(texts, tr).find((n) => n.id === needId) : undefined), [texts, tr, needId]);
   const note = noteId ? texts.practiceNotes(tr).find((n) => n.id === noteId) : undefined;
+  // plan и «Про клиента» без клиента: листы дают выбрать клиентов; лист «Для терапевта» — с тем же «Про клиента»
+  const guide = useConceptGuide({
+    track: REFERENCE_TRACK, plan: {}, pickClient: true,
+    over: note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />,
+  });
   const open = (item: ReferenceItem) => {
     if (item.kind === 'mode') guide.actions.onOpenMode(item.id);
     else if (item.kind === 'schema') guide.actions.onOpenSchema(item.id);
@@ -44,7 +47,6 @@ export function useReferenceSheets(texts: Guide, tr: Tr) {
       {/* до листов схемы и техники: лист схемы, открытый из потребности, встаёт поверх порядком в DOM */}
       {need && <NeedGuideSheet need={need} onOpenSchema={guide.actions.onOpenSchema} onClose={() => setNeedId(null)} />}
       {guide.sheets}
-      {note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />}
     </>
   );
   return { open, sheets, markCoping: guide.markCoping };

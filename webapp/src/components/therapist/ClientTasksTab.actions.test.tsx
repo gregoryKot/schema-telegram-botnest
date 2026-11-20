@@ -11,7 +11,7 @@ import type { ClientDetail } from './clientSheetTypes';
 import type { UserTask } from '../../api';
 
 vi.mock('../../api', () => ({
-  api: { deleteTherapyTask: vi.fn(), completeTask: vi.fn() },
+  api: { deleteTherapyTask: vi.fn(), completeTask: vi.fn(), getGuideMarks: () => Promise.resolve({ marks: [] }) },
 }));
 import { api } from '../../api';
 
