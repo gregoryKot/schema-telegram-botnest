@@ -165,12 +165,14 @@ describe('TechniqueJournalBlock', () => {
     expect(api.trackEvent).toHaveBeenCalledWith(CONCEPT_GUIDE_JOURNAL_ENTRY_EVENT);
   });
 
-  it('у клиента есть ранние записи — их пункты приходят ручкой и стоят строкой без перехода', async () => {
+  it('у клиента есть ранние записи — их пункты приходят ручкой, тап открывает и раннюю запись', async () => {
     vi.mocked(api.getSessionWork).mockResolvedValue({ entries: [{ noteId: 1, date: '2026-01-09', work: [workItem({ modeIds: [] })] }] });
-    setup({ modeLinks: [], schemaLinks: [], notesPage: { notes: [note(2, '2026-11-05', [workItem()])], total: 2 } });
+    const { onOpenSession } = setup({ modeLinks: [], schemaLinks: [], notesPage: { notes: [note(2, '2026-11-05', [workItem()])], total: 2 } });
     expect(await screen.findByText('9 янв')).toBeTruthy();
     expect(api.getSessionWork).toHaveBeenCalledWith(42);
-    expect(screen.getAllByRole('button', { name: /Работа со стульями/ })).toHaveLength(1); // ранняя запись на «Сессиях» не показана
+    // Записи 1 нет среди показанных на «Сессиях» — её догрузит архив (SessionArchive).
+    fireEvent.click(screen.getByRole('button', { name: /^9 янв: Работа со стульями, запись сессии$/ }));
+    expect(onOpenSession).toHaveBeenCalledWith(1);
   });
 
   it('ранние записи не загрузились — журнал честно неполный', async () => {

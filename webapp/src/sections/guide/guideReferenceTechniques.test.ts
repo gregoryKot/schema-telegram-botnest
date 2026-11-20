@@ -15,10 +15,10 @@ describe('techniqueGroups', () => {
     expect(other.items.map((i) => i.name)).toEqual(['Дефузия']);
   });
 
-  it('библиотека: 29 техник схема-терапии и 12 из других подходов; у каждой из двенадцати — подход и с чем сочетается', () => {
+  it('библиотека: 30 техник схема-терапии и 12 из других подходов; у каждой из двенадцати — подход и с чем сочетается', () => {
     const guides = buildTechniqueGuides(tr);
     const [own, other] = techniqueGroups(guides);
-    expect([own.items.length, other.items.length]).toEqual([29, 12]);
+    expect([own.items.length, other.items.length]).toEqual([30, 12]);
     for (const t of guides.filter((g) => g.approach)) expect(t.pairsWith?.trim(), t.id).toBeTruthy();
     for (const t of guides.filter((g) => !g.approach)) expect(t.pairsWith, t.id).toBeUndefined();
   });

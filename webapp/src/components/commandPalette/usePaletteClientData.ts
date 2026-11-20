@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError, type ArticleSummary, type TherapyClientSummary } from '../../api';
 import type { PaletteInput } from './paletteInput';
 
+/** Планы в поиске — за год: больше ручка истории не отдаёт (src/api/plans.controller.ts). */
+const PLAN_SEARCH_DAYS = 365;
 const EMPTY: PaletteInput['own'] = { tasks: [], plans: [] };
 /** Сбой загрузки строк не показывается (их просто нет), но уходит отчётом наверх. */
 const failed = (what: string) => () => reportClientError({ message: `search: ${what} не загрузились`, section: 'commandPalette' });
@@ -24,7 +26,7 @@ export function usePaletteClientData(therapist: boolean, cabinet: boolean): { cl
     if (cabinet) return;
     let alive = true;
     api.getTasks().then((tasks) => { if (alive) setOwn((o) => ({ ...o, tasks })); }).catch(failed('задания'));
-    api.getPlanHistory().then((plans) => { if (alive) setOwn((o) => ({ ...o, plans })); }).catch(failed('планы'));
+    api.getPlanHistory(PLAN_SEARCH_DAYS).then((plans) => { if (alive) setOwn((o) => ({ ...o, plans })); }).catch(failed('планы'));
     return () => { alive = false; };
   }, [cabinet]);
   return { clients, own: cabinet ? EMPTY : own, articles };

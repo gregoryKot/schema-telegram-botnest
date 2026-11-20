@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt, encryptJson } from '../utils/crypto';
 import { requireAffected } from '../utils/require-affected';
-import { findSessionNotesPage } from './session-notes-page';
+import { findSessionNote, findSessionNotesPage } from './session-notes-page';
 import { findSessionWork } from './session-work-list';
 import type { SessionWorkItem } from './session-work';
 import { conceptView } from './concept-store';
@@ -30,6 +30,12 @@ export class TherapyNotesService {
   async getSessionWork(therapistId: bigint, clientId: bigint) {
     await this.relationsService.assertHasClient(therapistId, clientId);
     return findSessionWork(this.prisma, therapistId, clientId);
+  }
+
+  /** Одна запись с номером сессии — когда она за пределами страницы заметок. */
+  async getNote(therapistId: bigint, clientId: bigint, noteId: number) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    return findSessionNote(this.prisma, therapistId, clientId, noteId);
   }
 
   async createNote(

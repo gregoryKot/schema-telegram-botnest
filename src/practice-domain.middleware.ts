@@ -5,13 +5,11 @@ import {
   PRACTICE_PAGES,
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.surface';
+import { practicePageRedirect } from './practice-domain.redirects';
 import { practiceRobots, practiceSitemap } from './practice-domain.seo';
 
-// Доменная стратегия (2026-09-08 / 2026-09-16): практика (kotlarewski.gr)
-// теперь отдаёт только визитку. Раньше алиас отдавал весь SPA и API: кука
-// oauth_state ставилась на хосте алиаса, а колбэк OAuth приходил на
-// канонический хост — вход падал; последующий редирект-фикс без сужения
-// поверхности зациклился. Решение ниже — allow-list визитки, остальное 301.
+// Практика (kotlarewski.gr) отдаёт только визитку: allow-list ниже, остальное 301
+// (правило №19 — кука OAuth с алиаса не доходила до колбэка на каноническом хосте).
 const PRACTICE_HOST = 'kotlarewski.gr';
 /** Хосты-алиасы, которым статьи/главная переписывают canonical и og:url на
  *  собственный хост (единый allow-list: app.module, article-seo.middleware).
@@ -28,30 +26,26 @@ const REDIRECT_HOSTS = new Set([
 const PRACTICE_SITEMAP = practiceSitemap(PRACTICE_HOST);
 const PRACTICE_ROBOTS = practiceRobots(PRACTICE_HOST);
 
-// Allow-list визитки живёт в соседнем модуле (правило №10), но по-прежнему
-// доступен отсюда: на него ссылаются спеки и комментарии.
+// Allow-list визитки живёт в соседнем модуле, но доступен и отсюда (спеки).
 export { PRACTICE_API_PREFIXES, PRACTICE_PAGES, PRACTICE_PAGE_PREFIXES };
 
 // Хвостовой слэш не различает маршрут ('/donate/' === '/donate'); корень не трогаем.
 const stripTrailingSlash = (path: string): string =>
   path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 
-// Бандл SPA и иконки визитки (`/assets/index.js`, `/favicon-personal-96.png`)
-// узнаются по точке в последнем сегменте пути.
+// Статика визитки (`/assets/index.js`, иконки) — точка в последнем сегменте пути.
 const isStaticAsset = (path: string): boolean =>
   path.slice(path.lastIndexOf('/') + 1).includes('.');
 
-// Матч по сегменту пути, а не по подстроке: '/api/booking' пропускает
-// '/api/booking/slots', но не '/api/bookingx'.
+// Матч по сегменту: '/api/booking' пропускает '/api/booking/slots', не '/api/bookingx'.
 const matchesPrefix = (path: string, prefixes: readonly string[]): boolean =>
   prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 
 /**
  * Функциональный middleware (без DI — чистая функция, тестируется напрямую):
  * - kotlarewski.ru и www-варианты → 301 на kotlarewski.gr (путь+query);
- * - kotlarewski.gr отдаёт свои sitemap/robots, статику SPA визитки и
- *   allow-list страниц/API визитки (PRACTICE_PAGES/PRACTICE_API_PREFIXES);
- *   всё остальное — 301 на канонический хост (путь+query сохраняются);
+ * - kotlarewski.gr отдаёт свои sitemap/robots, статику SPA и allow-list страниц/API
+ *   визитки; переехавшая страница — 301 на новый путь, остальное — 301 на канонический хост;
  * - schemehappens.ru middleware не трогает.
  */
 export function practiceDomainMiddleware(
@@ -104,6 +98,12 @@ export function practiceDomainMiddleware(
   if (path === '/api' || path.startsWith('/api/')) {
     if (matchesPrefix(path, PRACTICE_API_PREFIXES)) next();
     else toCanonical();
+    return;
+  }
+
+  const moved = practicePageRedirect(path, req.originalUrl);
+  if (moved) {
+    res.redirect(301, moved);
     return;
   }
 

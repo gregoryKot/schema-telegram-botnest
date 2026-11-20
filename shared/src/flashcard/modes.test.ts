@@ -5,6 +5,7 @@
 // только здесь (правило №3 CLAUDE.md) — тест покрывает ОБА фронтенда разом.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildModes, NEEDS, STEPS, STORAGE_KEY, loadLocal } from './modes';
+import { getNeedData, NEED_ORDER } from '../needs/needData';
 
 // JS \b видит только ASCII-«word»-символы — на кириллице граница слова не
 // срабатывает (\bты\b не матчит даже начало строки). Заменяем \b на явную
@@ -41,6 +42,16 @@ describe('NEEDS/STEPS: контент непустой', () => {
       expect(n.label.trim().length).toBeGreaterThan(0);
       expect(n.emoji.length).toBeGreaterThan(0);
     }
+  });
+
+  it('потребность названа так же, как в трекере', () => {
+    const tracker = getNeedData('ty');
+    expect(NEEDS.map((n) => [n.id, n.label])).toEqual(
+      NEED_ORDER.map((id) => [id, tracker[id].name]),
+    );
+    expect(NEEDS.find((n) => n.id === 'expression')?.label).toBe(
+      'Выражение чувств',
+    );
   });
 
   it('четыре шага в фиксированном порядке', () => {

@@ -26,6 +26,7 @@
     "src/auth/telegram-init-data.ts",
     "src/auth/max-init-data.ts",
     "src/auth/login-ticket/login-ticket.service.ts",
+    "src/auth/login-ticket/ticket-session.ts",
     "src/auth/merge.service.ts",
     "src/auth/merge-subscriptions.ts",
     "src/auth/merge-combine.ts",

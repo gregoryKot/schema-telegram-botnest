@@ -30,7 +30,7 @@ export const MODE_GROUPS: ModeGroup[] = [
         id: 'abandoned_child',
         name: 'Покинутый Ребёнок',
         emoji: '💔',
-        short: 'Страх, что бросят, тревога при угрозе близким отношениям',
+        short: 'Страх, что бросят, и боль от того, что обижали',
       },
       {
         id: 'humiliated_child',
@@ -234,7 +234,7 @@ export const MODE_GROUPS: ModeGroup[] = [
         id: 'guilt_critic',
         name: 'Внушающий Вину Критик',
         emoji: '😔',
-        short: 'Постоянное чувство вины и самообвинения',
+        short: 'Голос долга перед другими: вызывает вину за собственные потребности и за отказ',
       },
     ],
   },

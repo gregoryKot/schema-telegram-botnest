@@ -132,6 +132,26 @@ describe('quiz-data: контент мини-тестов', () => {
     expect(new Set(adultAt).size).toBeGreaterThan(1);
   });
 
+  it('«кто у руля»: лента и сериалы — Отстранённый Самоутешитель, а не Отстранённый Защитник', () => {
+    const drives = buildQuizzes('ty').find((q) => q.id === 'drives')!;
+    const options = drives.questions.flatMap((q) => q.options);
+    const soother = options.filter((o) => o.resultId === 'soother');
+    expect(soother.length).toBeGreaterThan(0);
+    for (const o of options.filter((x) =>
+      /лент|сериал|серию|видео/i.test(x.label),
+    ))
+      expect(o.resultId).toBe('soother');
+  });
+
+  it('«батарейка»: каждая потребность — в одинаковом числе вопросов', () => {
+    const battery = buildQuizzes('ty').find((q) => q.id === 'battery')!;
+    const perNeed = new Map<string, number>();
+    for (const q of battery.questions)
+      for (const id of new Set(q.options.map((o) => o.resultId)))
+        perNeed.set(id, (perNeed.get(id) ?? 0) + 1);
+    expect(new Set(perNeed.values()).size).toBe(1);
+  });
+
   it('quizResultIdSet отдаёт пары «тест:результат» для санитизации meta', () => {
     const set = quizResultIdSet();
     expect(set.has('drives:critic')).toBe(true);

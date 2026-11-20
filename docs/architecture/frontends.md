@@ -111,7 +111,7 @@
 | `shared/src/quickActions/` | меню «+»: реестр, порядок, скрытые, drag |
 | `shared/src/quiz/` | `quizEngine`: мини-тесты, подсчёт результата на клиенте |
 | `shared/src/schema/` | шаги и пояснения дневника схем, черновик |
-| `shared/src/schemaTherapy/` | контент схем и режимов (`schemaTherapyData`), типы |
+| `shared/src/schemaTherapy/` | контент схем и режимов (`schemaTherapyData`), типы; `schemaNeed.ts` — связка схема → домен → потребность (`domainNeedId`, `needDomain`): схемы потребности для колеса детства и листа потребности |
 | `shared/src/screens/` | `screenBlocks`: порядок блоков экранов |
 | `shared/src/selfHelp/` | текст «Важное о самопомощи» |
 | `shared/src/settings/` | константы уведомлений, тексты, выбор ты/вы |
@@ -129,7 +129,7 @@
 ### `game/`
 - Заморожена. Отдельный пакет (Phaser 3 + Vite, `base '/game/'`), `shared/` не использует. Собирается в `Dockerfile` и копируется в `dist/game/` собранного webapp, отдаётся на `/game`.
 - Под eslint- и file-size-храповиками; dead-files, jscpd и полы покрытия её не смотрят. Не трогать без прямой просьбы. Номер телефона доверия в ней продублирован вручную (сверка тестом `src/test-support/gates/game-crisis-hotline.spec.ts`).
-- **Тесты:** vitest под node, `npm test --prefix game` (CI — джоба `eslint`). Phaser в node не импортируется: под тестом только модули без Phaser и DOM — арифметику выносят в чистый модуль, как `game/src/hudMath.ts` из `hudLayout.ts`. `*.test.ts` в сборку не попадает, `i18n:check` его пропускает.
+- **Тесты:** vitest под node, `npm test --prefix game` (CI — джоба `eslint`). Phaser в node не импортируется: под тестом только модули без Phaser и DOM — арифметику выносят в чистый модуль, как `game/src/gridScale.ts`. `*.test.ts` в сборку не попадает, `i18n:check` его пропускает.
 
 ### Как фронт ходит в бэк
 - Компонент → `api.метод()` (`webapp/src/api.ts`) → `get/post/postJson/patchJson/del` из `apiClient.ts` → `authedFetch` → `fetchWithTimeout` (15 с) → `${BASE}/api/...`.

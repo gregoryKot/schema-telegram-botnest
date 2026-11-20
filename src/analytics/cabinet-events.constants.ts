@@ -1,10 +1,9 @@
 // События кабинета терапевта на сайте — реестр рядом с фичей (вынесен из analytics.constants.ts
 // по правилу №10, как CONCEPT_EVENTS). Только сайт, без meta (кроме cabinet_session_work): что именно было на экране
 // и кто из клиентов в списке, в событие не попадает (правило №7). Блоки в /stats — src/bot/screen-share-metrics.*, src/bot/guide-reference-metrics.*.
-//   cabinet_screen_share_on — терапевт включил «Показ экрана» в левом сайдбаре: список клиентов
-//                             спрятан в сайдбаре и в палитре «Перейти к…». Выключение не шлётся.
-//   cabinet_guide_open — открыл «Справочник» в меню терапевта (/cabinet/guide); cabinet_guide_{mode,schema,technique,note}_open —
-//     открыл оттуда лист режима, схемы, техники или раздела «Для терапевта» (какой именно — нет). Те же листы из схемы
+//   cabinet_screen_share_on — терапевт включил «Показ экрана» в левом сайдбаре: список клиентов спрятан в сайдбаре и в палитре «Перейти к…». Выключение не шлётся.
+//   cabinet_guide_open — открыл «Справочник» в меню терапевта (/cabinet/guide); cabinet_guide_{mode,schema,technique,note,need}_open —
+//     открыл оттуда лист режима, схемы, техники, раздела «Для терапевта» или потребности (какой именно — нет). Те же листы из схемы
 //     случая клиента — concept_guide_* (concept-events.constants.ts): справочник без клиента считается отдельно.
 //   cabinet_guide_answer_show / _link — над выдачей поиска показана карточка-ответ / переход по её ссылке; без листа и запроса.
 //   cabinet_session_work    — сохранил итоги сессии с пунктами «Что делали» (#1330); meta { items, kinds }:
@@ -23,6 +22,7 @@ export const CABINET_EVENTS = [
   'cabinet_guide_schema_open',
   'cabinet_guide_technique_open',
   'cabinet_guide_note_open',
+  'cabinet_guide_need_open',
   'cabinet_guide_table_open',
   'cabinet_guide_answer_show',
   'cabinet_guide_answer_link',
