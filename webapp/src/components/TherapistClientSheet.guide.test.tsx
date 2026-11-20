@@ -34,11 +34,11 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   };
 });
 vi.mock('../api', () => ({
-  api: Object.fromEntries([
+  api: { getGuideMarks: () => Promise.resolve({ marks: [] }), ...Object.fromEntries([
     'getTherapyClients', 'getTherapyInvites', 'getCardClaims', 'getTherapyTasksForClient', 'getTherapistNotes',
     'getConceptualization', 'getTherapyClientData', 'getClientSchemaNotes', 'getClientModeNotes',
     'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent',
-  ].map((k) => [k, vi.fn()]).concat([['getGuideMarks', () => Promise.resolve({ marks: [] })]])),
+  ].map((k) => [k, vi.fn()])) },
   reportClientError: vi.fn(),
 }));
 import { api } from '../api';
