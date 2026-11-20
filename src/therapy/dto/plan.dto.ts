@@ -17,8 +17,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PLAN_ITEM_TEXT_MAX } from '../../utils/text-limits';
-import { GUIDE_ADDRESS_MAX } from '../guide-mark-address';
-import { ADDRESS_SHAPE } from './guide-mark.dto';
+import { ADDRESS_SHAPE, GUIDE_ADDRESS_MAX } from '../guide-mark-address';
 import {
   PLAN_RUBRICS,
   PLAN_SOURCE_KINDS,
