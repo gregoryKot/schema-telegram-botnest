@@ -5,7 +5,7 @@ import { betweenRubricSeed, betweenSeed, channelSeed, planDraft, sessionSeed } f
 describe('guidePlan — заготовка пункта плана из статьи справочника', () => {
   it('направление «Как работать»: рубрика и поле — ключ направления, текст по предложениям', () => {
     const seed = channelSeed('cognitive', 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.');
-    expect(seed).toMatchObject({ rubric: 'cognitive', field: 'cognitive', label: 'Через понимание' });
+    expect(seed).toMatchObject({ rubric: 'cognitive', field: 'cognitive', label: 'Когнитивные (через понимание)' });
     expect(seed.parts).toEqual(['Оценить риск [Арнтц, 5.1.1].', 'Потом — за и против.']);
   });
 

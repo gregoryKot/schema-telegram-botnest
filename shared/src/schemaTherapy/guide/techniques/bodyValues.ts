@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'body_grounding',
+    group: 'experiential',
     name: 'Работа с телом и заземление',
     summary:
       'Терапевт замечает, что происходит в теле клиента, и использует это: по телу находит режим, через опору, дыхание и ощущения возвращает клиента в комнату.',
@@ -33,6 +34,7 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'values_overview',
+    group: 'cognitive',
     name: 'Ценности и «взгляд сверху»',
     summary:
       'Клиент выясняет, что для него важно, и учится смотреть на столкновение своих режимов со стороны — чтобы выбирать шаг по ценностям, а не по схеме.',
@@ -57,6 +59,7 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'couple_mode_cycle',
+    group: 'formulation',
     name: 'Цикл столкновения режимов в паре',
     summary:
       'Терапевт и пара рисуют круг ссоры: режим одного запускает режим другого, тот отвечает — и так по кругу. Противником становится цикл, а не партнёр.',

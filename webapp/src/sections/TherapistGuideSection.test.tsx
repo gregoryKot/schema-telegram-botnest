@@ -115,6 +115,10 @@ describe('TherapistGuideSection', () => {
     await mount();
     fireEvent.click(screen.getByRole('tab', { name: 'Техники' }));
     expect(screen.getByText('Возвращаемся в детскую сцену и меняем её конец.')).toBeTruthy();
+    const head = screen.getByRole('button', { name: /^Эмпирические/ }); // группа по полю group, раскрыта
+    fireEvent.click(head);
+    expect(screen.queryByRole('button', { name: /^Рескриптинг образов/ })).toBeNull();
+    fireEvent.click(head);
     fireEvent.click(screen.getByRole('button', { name: /^Рескриптинг образов/ }));
     const sheet = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(sheet).getByText('Найти сцену')).toBeTruthy();
@@ -171,7 +175,7 @@ describe('TherapistGuideSection', () => {
     const search = screen.getByRole('searchbox', { name: 'Найти в справочнике' });
     fireEvent.change(search, { target: { value: 'СТУЛ' } });
     expect(screen.queryByRole('tablist')).toBeNull();
-    const found = screen.getByRole('region', { name: 'Техники' });
+    const found = screen.getByRole('region', { name: 'Эмпирические' });
     expect(within(found).getByRole('button', { name: /^Работа со стульями/ })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Детские режимы' })).toBeNull(); // режим — только ссылкой в карточке-ответе
     fireEvent.change(search, { target: { value: 'щщщ' } });

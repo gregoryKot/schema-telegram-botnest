@@ -4,6 +4,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeOnline: PracticeNotesBuilder = (tr) => [
   {
     id: 'online_format',
+    group: 'therapist',
     title: 'Онлайн-формат',
     summary:
       'По результатам и по силе альянса онлайн-терапия не уступает очной. Клиентам, у которых много стыда, через экран часто даже легче открыться [Кембридж, гл. 20].',

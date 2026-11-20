@@ -7,6 +7,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
   {
     id: 'therapist_schemas',
+    group: 'therapist',
     title: 'Схемы терапевта и супервизия',
     summary:
       'Свои схемы есть у каждого терапевта, и на сессии они включаются. Их знают, замечают, где они сцепились со схемами клиента, а трудные случаи несут на супервизию.',
@@ -38,6 +39,7 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'therapist_wellbeing',
+    group: 'therapist',
     title: 'Выгорание и забота терапевта о себе',
     summary:
       'Терапевт выгорает и от лишней вовлечённости, и от отстранения. Беречь силы помогают сострадание вместо слитой эмпатии, супервизия, своя терапия и забота о своих потребностях.',
