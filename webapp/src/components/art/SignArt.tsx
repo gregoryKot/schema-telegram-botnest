@@ -15,6 +15,7 @@ import { Check, Leaf, Wheel, type CheckPlate } from './PaperArtSigns';
 import { Limits, NeedArt } from './NeedArt';
 import { DomainArt } from './DomainArt';
 import { Grounded, Haven, Join, Pause } from './AppSigns';
+import { CopingAvoidance, CopingOvercompensation, CopingSurrender } from './CopingSigns';
 import { GUIDE_SIGN_ART } from './guideSignDrawings';
 import { CountedSign } from './CountedSign';
 import { countedDrawing } from '../../../../shared/src/share/kit/countedSigns';
@@ -34,6 +35,7 @@ const BY_KEY: Record<SignKey, Art> = {
   domain_rejection: domain(1), domain_autonomy: domain(2), domain_limits: domain(3),
   domain_other_directed: domain(4), domain_vigilance: domain(5),
   grounded: Grounded, pause: Pause, haven: Haven, join: Join,
+  coping_surrender: CopingSurrender, coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation,
 };
 
 /** Знак по ключу; ключа нет в реестре (данные с сервера, старая запись) — ничего, без выдуманной картинки.
