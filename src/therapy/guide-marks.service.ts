@@ -19,6 +19,8 @@ import {
   type GuideMarkArticleKind,
   type GuideMarkKind,
 } from './guide-mark-address';
+import { decryptConceptFields } from './concept-store';
+import { CONCEPT_COPING_STYLES } from './dto/concept-links.dto';
 
 const GUIDE_MARK_SCHEMA: EncryptSchema = {
   strings: ['note', 'snapshot'],
@@ -69,6 +71,18 @@ export function guideMarkAddress(raw: string): {
   return { address, kind: parts.kind };
 }
 
+/** Адрес копинга схемы (`schema:<id>/coping.<стиль>`) или null. */
+export function copingAddress(
+  raw: string,
+): { schemaId: string; style: string } | null {
+  const parts = parseGuideAddress(normalizeGuideAddress(raw));
+  if (!parts || parts.kind !== 'schema') return null;
+  const m = /^coping\.([a-z]+)$/.exec(parts.path);
+  return m && (CONCEPT_COPING_STYLES as readonly string[]).includes(m[1])
+    ? { schemaId: parts.articleId, style: m[1] }
+    : null;
+}
+
 // Отметки «Про клиента» из «Справочника» (#1484): видит и правит только
 // терапевт клиента. Доступ — assertHasClient ('No active relation' → 403 в
 // контроллере); снятие по id перепроверяет связь с клиентом отметки.
@@ -94,12 +108,36 @@ export class GuideMarksService {
     therapistId: bigint,
     rawAddress: string,
   ): Promise<string[]> {
+    const coping = copingAddress(rawAddress);
+    if (coping) return this.clientsWithCoping(therapistId, coping);
     const { address } = guideMarkAddress(rawAddress);
     const rows = await this.prisma.guideMark.findMany({
       where: { therapistId, address },
       select: { clientId: true },
     });
     return rows.map((r) => String(r.clientId));
+  }
+
+  /** Копинг схемы живёт в schemaLinks схемы случая (#1484): поиск по расшифрованным связям. */
+  private async clientsWithCoping(
+    therapistId: bigint,
+    { schemaId, style }: { schemaId: string; style: string },
+  ): Promise<string[]> {
+    const rows = await this.prisma.clientConceptualization.findMany({
+      where: { therapistId },
+      select: { clientId: true, schemaLinks: true },
+    });
+    return rows
+      .filter((row) => {
+        const links = decryptConceptFields(row).schemaLinks;
+        return (Array.isArray(links) ? links : []).some(
+          (l: { schemaId?: unknown; coping?: unknown }) =>
+            l?.schemaId === schemaId &&
+            Array.isArray(l.coping) &&
+            l.coping.includes(style),
+        );
+      })
+      .map((row) => String(row.clientId));
   }
 
   /** Создать или поправить: повтор того же адреса тому же клиенту — правка. */
@@ -139,8 +177,17 @@ export class GuideMarksService {
     await this.prisma.guideMark.deleteMany({ where: { id, therapistId } });
   }
 
-  /** Событие новой отметки; копинг (schemaLinks) зовёт его с kind 'coping'. */
-  trackAdded(therapistId: bigint, kind: GuideMarkKind): Promise<void> {
-    return this.analytics.track(therapistId, 'guide_mark_added', { kind });
+  /**
+   * Событие новой отметки; копинг (schemaLinks) зовёт его с kind 'coping' и
+   * clientId: строк GuideMark у копинга нет, клиентов в /stats считают по событию.
+   */
+  trackAdded(
+    therapistId: bigint,
+    kind: GuideMarkKind,
+    clientId?: bigint,
+  ): Promise<void> {
+    const meta =
+      clientId === undefined ? { kind } : { kind, clientId: String(clientId) };
+    return this.analytics.track(therapistId, 'guide_mark_added', meta);
   }
 }

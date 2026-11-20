@@ -1,5 +1,6 @@
 // Типы и размеры диаграммы концептуализации. Раскладка (diagramLayout.ts) — чистая
 // функция: модель графа и ширина → фигуры, секции и линии в пикселях; тесты без DOM.
+import type { CopingStyleId } from '../../../schemaTherapy/guide/copingStyles';
 
 /** Секция диаграммы: у каждой свой заголовок и своя кнопка добавления. */
 export type SectionId = 'modes' | 'schemas' | 'needs' | 'healthy';
@@ -42,6 +43,8 @@ export interface DiagramNode {
   modeId?: string;
   schemaId?: string;
   needId?: string;
+  /** Стили копинга у схемы — знаки в углу фигуры (#1484). */
+  coping?: CopingStyleId[];
   /** Режим или схема без единой связи и текста: бледный контур. */
   empty?: boolean;
 }

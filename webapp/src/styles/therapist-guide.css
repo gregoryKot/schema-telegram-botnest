@@ -78,3 +78,9 @@
 .pa-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 16px; line-height: 1.5; color: var(--text); cursor: pointer; }
 .pa-check + .pa-check { border-top: 1px solid var(--paper-sunk); }
 .pa-check > input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+/* «Про клиента» на стиле копинга (#1484): отмеченный у клиента стиль — полоска и плашка цвета стиля */
+.gd-coping-on { padding-left: var(--space-8); border-left: 3px solid var(--gst-c); background: color-mix(in srgb, var(--gst-c) 8%, transparent); }
+.gd-coping-who { font-weight: 400; color: var(--text-sub); }
+.cm-client { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px; margin-top: var(--space-8); }
+.cm-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); }
+.gd-coping .ds-link.gd-plan { display: flex; width: fit-content; margin-top: 6px; }

@@ -10,6 +10,7 @@ import type { AssignPreset } from './assignTemplates';
 import { workMarks } from '../../../../shared/src/therapy/sessionWork/sessionJournal';
 import { useSessionWork } from './useSessionWork';
 import { useConceptGuide } from './guide/useConceptGuide';
+import { clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 
 // Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и правки —
 // useClientConceptGraph, одни на оба места. Действия (картинка, весь экран, холст) в потоке уходят
@@ -35,7 +36,10 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
   const work = useSessionWork(detail);
   const guide = useConceptGuide({
     onAssign, tasks: detail.clientTasks, onOpenJournal, under: backRef, plan: { clientId: detail.selectedClient?.telegramId },
-    graph: { ...g.graphProps, workMarks: (from) => workMarks(work.entries, from) },
+    graph: {
+      ...g.graphProps, workMarks: (from) => workMarks(work.entries, from),
+      clientName: detail.selectedClient ? clientDisplayName(detail.selectedClient) : undefined,
+    },
   });
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');

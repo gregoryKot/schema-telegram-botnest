@@ -23,7 +23,8 @@ const REFERENCE_TRACK: GuideOpenTrack = {
 export function useReferenceSheets(texts: Guide, tr: Tr) {
   const [noteId, setNoteId] = useState<string | null>(null);
   const [needId, setNeedId] = useState<NeedId | null>(null);
-  const guide = useConceptGuide({ track: REFERENCE_TRACK, plan: {} }); // plan без клиента: лист «В план» даёт выбрать клиентов
+  // plan и «Про клиента» без клиента: листы дают выбрать клиентов
+  const guide = useConceptGuide({ track: REFERENCE_TRACK, plan: {}, pickClient: true });
   const need = useMemo(() => (needId ? buildNeedGuides(texts, tr).find((n) => n.id === needId) : undefined), [texts, tr, needId]);
   const note = noteId ? texts.practiceNotes(tr).find((n) => n.id === noteId) : undefined;
   const open = (item: ReferenceItem) => {
@@ -46,5 +47,5 @@ export function useReferenceSheets(texts: Guide, tr: Tr) {
       {note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />}
     </>
   );
-  return { open, sheets };
+  return { open, sheets, markCoping: guide.markCoping };
 }

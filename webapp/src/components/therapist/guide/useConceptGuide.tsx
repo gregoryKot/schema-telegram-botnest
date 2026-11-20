@@ -11,6 +11,9 @@ import { guideAssignPreset } from './guideAssign';
 import { betweenRubricSeed, planDraft, sessionSeed, type PlanDraft } from './guidePlan';
 import { guideJournal, type GuideGraph } from './guideJournal';
 import { ConceptGuideSheets, type GuideOpen } from './ConceptGuideSheets';
+import { CopingMarkSheet } from './CopingMarkSheet';
+import { copingState, graphCopingTarget, type CopingCell } from './copingMark';
+import type { SchemaCopingMarks } from './SchemaGuideSheet';
 
 const CLOSED: GuideOpen = { sheet: null, technique: null };
 
@@ -42,7 +45,7 @@ const CONCEPT_TRACK: GuideOpenTrack = {
  * передаёт свои (`track`), чтобы открытия не смешивались. `plan` — кнопки «В план» у рубрик листа и плашки, лист
  * выбора частей поверх: с `clientId` — в план этого клиента, без — терапевт выбирает клиентов.
  */
-export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under, plan }: {
+export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under, plan, pickClient }: {
   onAssign?: (preset: AssignPreset) => void;
   tasks?: readonly GuideTask[];
   graph?: GuideGraph;
@@ -50,8 +53,18 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
   onOpenJournal?: () => void;
   under?: RefObject<SheetBack | null>;
   plan?: { clientId?: UserId; onAdded?: () => void };
+  /** «Про клиента» на копингах без карточки («Справочник»): лист выбора клиента. */
+  pickClient?: boolean;
 } = {}) {
   const [open, setOpen] = useState<GuideOpen>(CLOSED);
+  const [cell, setCell] = useState<CopingCell | null>(null);
+  const client = graph?.clientName;
+  // «Про клиента» на стиле копинга (#1484): из карточки — сразу её клиент, из «Справочника» — выбор.
+  const copingFor = client || pickClient ? (schemaId: string): SchemaCopingMarks => ({
+    onMark: (style) => setCell({ schemaId, style }),
+    clientName: client,
+    marked: graph && ((style) => copingState(graph.source.schemaLinks, { schemaId, style }).marked),
+  }) : undefined;
   const [draft, setDraft] = useState<PlanDraft | null>(null);
   const backRefs = { section: useRef<SheetBack | null>(null), technique: useRef<SheetBack | null>(null) };
   const leaveThen = (then: () => void) => {
@@ -89,10 +102,13 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
     <>
       <ConceptGuideSheets
         open={open} actions={actions} journal={journal} backRefs={backRefs}
-        onPlan={plan && ((seed, from) => setDraft(planDraft(seed, from)))}
+        onPlan={plan && ((seed, from) => setDraft(planDraft(seed, from)))} copingFor={copingFor}
         onCloseSheet={() => setOpen(CLOSED)} onCloseTechnique={() => setOpen((o) => ({ ...o, technique: null }))}
       />
       {plan && draft && <PlanAddSheet draft={draft} clientId={plan.clientId} onAdded={plan.onAdded} onClose={() => setDraft(null)} />}
+      {cell && copingFor && (
+        <CopingMarkSheet cell={cell} fixed={graph && client ? graphCopingTarget(graph, client, cell) : undefined} onClose={() => setCell(null)} />
+      )}
     </>
   );
   // id отметки — строка из данных; техники нет в библиотеке — лист не откроется (techniqueGuide → null).
@@ -101,5 +117,5 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
     setOpen({ sheet: null, technique: { id: techniqueId as TechniqueId, from, day } });
   };
   const anyOpen = open.sheet !== null || open.technique !== null; // журнал держит листы, пока открыт лист снятой отметки
-  return { actions, sheets, openMark, anyOpen };
+  return { actions, sheets, openMark, anyOpen, markCoping: copingFor && ((c: CopingCell) => setCell(c)) };
 }

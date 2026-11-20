@@ -87,6 +87,7 @@ export function schemaNode(card: GraphSchemaCard, w: number): DiagramNode {
     bodyLines: BODY_LINES.schema,
     color: card.color,
     schemaId: card.id,
+    ...(card.coping.length > 0 ? { coping: card.coping } : {}),
     empty: card.empty,
   };
   return {

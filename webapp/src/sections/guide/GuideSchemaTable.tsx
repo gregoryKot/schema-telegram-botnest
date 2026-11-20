@@ -2,7 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { SignGroup } from '../../components/schemaSheets/SignGroup';
 import { SignArt } from '../../components/art/SignArt';
 import type { SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
-import { COPING_STYLES, type CopingStyle } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
+import { COPING_STYLES, type CopingStyle, type CopingStyleId } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
 import type { ReferenceGroup, ReferenceItem } from './guideReferenceModel';
 import {
   buildSchemaTable, cellKey, showsFull, toggleCell, visibleStyles,
@@ -23,6 +23,8 @@ interface Props {
   groups: ReferenceGroup[];
   guides: SchemaDomainGuide[];
   onOpen: (item: ReferenceItem) => void;
+  /** «Про клиента» у раскрытой клетки (#1484); нет — без кнопки. */
+  onMark?: (cell: { schemaId: string; style: CopingStyleId }) => void;
 }
 
 /** Цвет стиля для клетки и заголовка колонки: --gst-c — заливка, --gst-ink — текст. */
@@ -42,7 +44,7 @@ function StyleLabel({ style, className }: { style: CopingStyle; className: strin
  * жирная выжимка, полный текст — в «Подробно» или по тапу (одна раскрытая клетка). На узком контейнере
  * строка — карточка схемы с подписанными клетками (guide-reference.css). Тап по схеме открывает её лист.
  */
-export function GuideSchemaTable({ groups, guides, onOpen }: Props) {
+export function GuideSchemaTable({ groups, guides, onOpen, onMark }: Props) {
   const table = useMemo(() => buildSchemaTable(groups, guides), [groups, guides]);
   const [filter, setFilter] = useState<CopingFilter>('all');
   const [depth, setDepth] = useState<TableDepth>('short');
@@ -61,6 +63,11 @@ export function GuideSchemaTable({ groups, guides, onOpen }: Props) {
           {headline && <strong className="gst-head">{headline}</strong>}
           {showsFull(depth, open, key, headline) && <span className="gst-full">{r.coping[s.id]}</span>}
         </button>
+        {onMark && open === key && (
+          <button type="button" className="ds-link gd-plan gst-mark" aria-label={`Про клиента: ${s.label}`} onClick={() => onMark({ schemaId: r.item.id, style: s.id })}>
+            Про клиента
+          </button>
+        )}
       </td>
     );
   };
@@ -70,7 +77,7 @@ export function GuideSchemaTable({ groups, guides, onOpen }: Props) {
         <p className="gst-lede">
           Одна схема — три способа с ней жить.{' '}
           {COPING_STYLES.map((s) => `${s.label}: человек ${s.gist}.`).join(' ')} В строках — примеры: один человек переходит между стилями в разных ситуациях. В клетке —
-          суть одной строкой, тап по ней раскрывает полный пример.
+          суть одной строкой, тап по ней раскрывает полный пример и кнопку «Про клиента»: стиль ляжет в схему случая клиента.
         </p>
         <GuideSchemaTableBar filter={filter} depth={depth} onFilter={setFilter} onDepth={setDepth} />
         {table.map((g) => (

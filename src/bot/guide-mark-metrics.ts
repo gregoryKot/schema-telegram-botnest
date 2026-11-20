@@ -1,7 +1,8 @@
 // Отметки «Про клиента» из «Справочника» (#1484) — строка блока «Справочник
 // терапевта» в /stats. N — события guide_mark_added с kind (пишет только сервер),
-// M — разные пары «терапевт — клиент» среди отметок GuideMark за те же 7 дней:
-// клиента в событии нет, а снятые отметки клиентами уже не считаются.
+// M — разные пары «терапевт — клиент» среди отметок GuideMark за те же 7 дней
+// (снятые уже не считаются) и событий копинга: строк GuideMark у копинга нет,
+// клиента несёт meta.clientId события.
 import type { PrismaService } from '../prisma/prisma.service';
 import {
   GUIDE_MARK_KINDS,
@@ -39,7 +40,7 @@ export async function getGuideMarkMetrics(
   prisma: PrismaService,
 ): Promise<GuideMarkMetrics> {
   const createdAt = { gte: new Date(Date.now() - 7 * 86_400_000) };
-  const [counts, pairs] = await Promise.all([
+  const [counts, pairs, coping] = await Promise.all([
     Promise.all(
       GUIDE_MARK_KINDS.map((kind) =>
         prisma.analyticsEvent.count({
@@ -55,11 +56,25 @@ export async function getGuideMarkMetrics(
       by: ['therapistId', 'clientId'],
       where: { createdAt },
     }),
+    prisma.analyticsEvent.findMany({
+      where: {
+        name: 'guide_mark_added',
+        createdAt,
+        meta: { path: ['kind'], equals: 'coping' },
+      },
+      select: { userId: true, meta: true },
+    }),
   ]);
+  const clients = new Set(pairs.map((p) => `${p.therapistId}:${p.clientId}`));
+  for (const e of coping) {
+    const client = (e.meta as { clientId?: unknown } | null)?.clientId;
+    if (e.userId != null && typeof client === 'string')
+      clients.add(`${e.userId}:${client}`);
+  }
   const byKind = Object.fromEntries(
     GUIDE_MARK_KINDS.map((k, i) => [k, counts[i]]),
   ) as Record<GuideMarkKind, number>;
-  return { byKind, clients7: pairs.length };
+  return { byKind, clients7: clients.size };
 }
 
 /** Блок «Справочник терапевта» с дописанными строками: готовый ответ и отметки. */

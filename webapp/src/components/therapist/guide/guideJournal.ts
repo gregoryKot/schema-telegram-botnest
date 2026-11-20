@@ -7,9 +7,13 @@ import { fmtDate, todayStr } from '../../../../../shared/src/utils/format';
 
 /** Связи схемы случая и их правка — то же, что получает граф (useClientConceptGraph → graphProps). */
 export interface GuideGraph {
-  source: { modeLinks: ConceptModeLink[]; schemaLinks: ConceptSchemaLink[] };
+  source: { modeLinks: ConceptModeLink[]; schemaLinks: ConceptSchemaLink[]; schemaIds?: string[] };
   onChangeLink: (link: ConceptModeLink) => void;
   onChangeSchemaLink: (link: ConceptSchemaLink) => void;
+  /** Добавить схему в схему случая (отметка копинга схемы, которой там нет). */
+  onAddSchema?: (schemaId: string) => void;
+  /** Имя клиента карточки: «Про клиента» отмечает сразу его. */
+  clientName?: string;
   /** Дни из итогов сессий («Что делали») — в «делали …» листа; отметку ими не снять. */
   workMarks?: (from: GuideFrom) => ConceptTechniqueMark[];
 }

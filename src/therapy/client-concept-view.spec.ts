@@ -109,6 +109,7 @@ describe('clientConceptView — что видит клиент', () => {
         schemaId: 'defectiveness',
         belief: 'Со мной что-то не так',
         needIds: ['acceptance'],
+        coping: [],
       },
     ]);
   });
@@ -136,6 +137,24 @@ describe('clientConceptView — что видит клиент', () => {
     expect(view.modeLinks[0]).not.toHaveProperty('done');
     expect(view.schemaLinks[0]).not.toHaveProperty('done');
     expect(JSON.stringify(view)).not.toMatch(/chairwork|2026-11-05/);
+  });
+
+  // «Про клиента» из «Справочника» (#1484): стили копинга клиент видит на схеме,
+  // «как это у него» — рабочая запись терапевта.
+  it('стили копинга уходят клиенту, заметки к ним — нет', () => {
+    const enc = encryptConceptFields({
+      schemaLinks: [
+        {
+          ...schemaLink,
+          coping: ['surrender', 'чужое'],
+          copingNotes: { surrender: 'уступает начальнику — ЗАМЕТКА' },
+        },
+      ],
+    });
+    const view = clientConceptView(row(enc))!;
+    expect(view.schemaLinks[0].coping).toEqual(['surrender']);
+    expect(view.schemaLinks[0]).not.toHaveProperty('copingNotes');
+    expect(JSON.stringify(view)).not.toContain('ЗАМЕТКА');
   });
 
   // Колесо потребностей (needLinks) — рабочая запись терапевта: оценки и

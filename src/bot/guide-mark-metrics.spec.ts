@@ -31,9 +31,15 @@ describe('formatGuideMarkLine', () => {
 
 describe('getGuideMarkMetrics / withGuideExtras', () => {
   type Where = { name: string; meta?: { equals: string } };
-  const prisma = (kinds: Record<string, number>, pairs: number) =>
+  type Ev = { userId: bigint | null; meta: unknown };
+  const prisma = (
+    kinds: Record<string, number>,
+    pairs: number,
+    coping: Ev[] = [],
+  ) =>
     ({
       analyticsEvent: {
+        findMany: () => Promise.resolve(coping),
         count: ({ where }: { where: Where }) =>
           Promise.resolve(
             where.name === 'guide_mark_added'
@@ -43,7 +49,12 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
       },
       guideMark: {
         groupBy: () =>
-          Promise.resolve(Array.from({ length: pairs }, () => ({}))),
+          Promise.resolve(
+            Array.from({ length: pairs }, (_, i) => ({
+              therapistId: 1n,
+              clientId: BigInt(i + 1),
+            })),
+          ),
       },
     }) as never;
 
@@ -54,6 +65,17 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
       byKind: { ...none, mode: 4, note: 1 },
       clients7: 2,
     });
+  });
+
+  it('клиенты копинга — из meta.clientId событий, без дублей с GuideMark', async () => {
+    const coping: Ev[] = [
+      { userId: 1n, meta: { kind: 'coping', clientId: '1' } }, // тот же клиент, что в GuideMark
+      { userId: 1n, meta: { kind: 'coping', clientId: '9' } },
+      { userId: 1n, meta: { kind: 'coping', clientId: '9' } },
+      { userId: 1n, meta: { kind: 'coping' } }, // без клиента — не считается
+    ];
+    const m = await getGuideMarkMetrics(prisma({ coping: 4 }, 1, coping));
+    expect(m.clients7).toBe(2);
   });
 
   it('строка дописана к блоку справочника', async () => {

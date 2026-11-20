@@ -20,6 +20,7 @@ export const CONCEPT_MODE_ALIAS_MAX = 80; // графическая концеп
 export const CONCEPT_MODE_TEXT_MAX = 1000; // графическая концептуализация: истоки / проявления / работа с режимом
 export const CONCEPT_SCHEMA_TEXT_MAX = 1000; // графическая концептуализация: убеждение схемы / как нарушалась потребность
 export const CONCEPT_TECHNIQUE_MARKS_MAX = 50; // графическая концептуализация: отметок «Делали сегодня» у одной связи режима или схемы (худшее тело запроса < потолка, concept-save.dto.spec.ts)
+export const CONCEPT_COPING_NOTE_MAX = 300; // схема случая: «как это у него» к стилю копинга схемы (отметка «Про клиента» из «Справочника»)
 export const CONCEPT_SCHEMA_IDS_MAX = 40; // концептуализация: схем в общем списке (в форме Янга 18, потолок — ради худшего тела запроса); его же держит дописывание с холста (concept-append.ts)
 export const CUSTOM_MODE_NAME_MAX = 80; // название своего режима на карте
 export const CUSTOM_MODE_EMOJI_MAX = 8; // значок своего режима
