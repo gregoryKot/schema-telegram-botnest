@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'limited_reparenting',
+    group: 'relationship',
     name: 'Ограниченное родительство как позиция',
     summary:
       'Терапевт в рамках терапии даёт то, чего клиент недополучил в детстве: тепло, стабильность, признание, опору и границы.',
@@ -37,6 +38,7 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'limit_setting',
+    group: 'relationship',
     name: 'Установление границ',
     summary:
       'Терапевт называет поведение, которое вредит клиенту или терапии, объясняет границу от себя и заранее говорит о последствиях.',
@@ -65,6 +67,7 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'anger_expression',
+    group: 'experiential',
     name: 'Выражение гнева: дать злости выйти',
     summary:
       'Терапевт даёт Сердитому Ребёнку выговориться до конца, признаёт, что за злостью стоит, и только потом помогает сказать о потребности по-взрослому.',

@@ -4,6 +4,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
   {
     id: 'first_session',
+    group: 'start',
     title: 'Первая сессия',
     summary:
       'Первая встреча длится до 90 минут: начать связь и впервые понять трудности. Клиент уходит с опытом, что его услышали и почувствовали, а советы подождут [Кембридж, гл. 3, бокс 3.1].',
@@ -35,6 +36,7 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'complaint_to_mode',
+    group: 'start',
     title: 'С какой жалобой приходит какой режим',
     summary:
       'Жалоба подсказывает, с каким режимом вероятнее всего придётся встретиться. Это первая гипотеза: почти у каждого клиента режимов несколько [Кембридж, гл. 3, табл. 3.2].',
@@ -57,6 +59,7 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'story_as_mode_signal',
+    group: 'start',
     title: 'Режим по тому, как клиент рассказывает',
     summary:
       'Режим слышно в самой манере рассказа: связен ли он, звучат ли в нём чувства, есть ли в нём другие люди. По ней же видно, насколько силён Здоровый Взрослый [Кембридж, гл. 3].',

@@ -4,6 +4,7 @@ import type { PracticeNotesBuilder } from './types';
 export const buildPracticeChange: PracticeNotesBuilder = (tr) => [
   {
     id: 'experiential_avoidance',
+    group: 'stuck',
     title: 'Когда терапевт откладывает работу с чувствами',
     summary:
       'Эмпирические техники часто откладывают из неуверенности и страха навредить. Работу с чувствами начинают рано, дозируют по силам клиента и объясняют ему, зачем она [Кембридж, гл. 8].',
@@ -29,6 +30,7 @@ export const buildPracticeChange: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'exact_scene',
+    group: 'stuck',
     title: 'Восстановить сцену дословно',
     summary:
       'Рассказ о ссоре проходит через линзу схемы. Чтобы увидеть поведение, которое её поддерживает, терапевт восстанавливает сцену дословно: слова, тон, ответ другого [Кембридж, гл. 9].',
@@ -57,6 +59,7 @@ export const buildPracticeChange: PracticeNotesBuilder = (tr) => [
   },
   {
     id: 'change_blocks',
+    group: 'stuck',
     title: 'Шаг не сделан: ищем блок',
     summary:
       'Невыполненное поведенческое задание становится материалом сессии: ищут, какой режим остановил шаг, и разбирают блок по порядку, вплоть до паузы в терапии [Кембридж, бокс 9.10].',

@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'behavioral_activation',
+    group: 'behavioral',
     approach: 'Поведенческая активация',
     name: 'Поведенческая активация',
     summary:
@@ -33,6 +34,7 @@ export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'socratic_dialogue',
+    group: 'cognitive',
     approach: 'Когнитивная терапия',
     name: 'Сократический диалог',
     summary:
@@ -59,6 +61,7 @@ export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'exposure',
+    group: 'behavioral',
     approach: 'Поведенческая терапия',
     name: 'Экспозиция',
     summary:

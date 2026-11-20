@@ -5,6 +5,7 @@ export const buildStanceTechniques: TechniqueGuideBuilder = (tr) => [
   {
     // Живой язык (2026-11): до пяти шагов, «Как это звучит», остальное — под «Подробнее».
     id: 'empathic_confrontation',
+    group: 'relationship',
     name: 'Эмпатическая конфронтация',
     summary:
       'В одной реплике терапевт признаёт, зачем режим нужен, и прямо говорит, чего он стоит клиенту сейчас.',
@@ -38,6 +39,7 @@ export const buildStanceTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'self_compassion',
+    group: 'experiential',
     name: 'Самосострадание в четыре шага',
     summary:
       'Навык Здорового Взрослого: назвать чувство, сказать себе, почему оно понятно сейчас и после всего, что было, и заметить, как успокаивается тело.',
@@ -68,6 +70,7 @@ export const buildStanceTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'mindfulness',
+    group: 'cognitive',
     name: 'Осознанность',
     summary:
       'Навык Здорового Взрослого: заметить, что включилась схема, назвать режим и отступить на шаг — вместо того чтобы действовать из него.',

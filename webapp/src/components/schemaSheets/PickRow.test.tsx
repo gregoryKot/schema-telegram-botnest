@@ -37,6 +37,18 @@ describe('PickDone', () => {
 });
 
 describe('SignGroup', () => {
+  it('fold: раскрыта, подпись простыми словами под заголовком; тап по шапке сворачивает и разворачивает', () => {
+    render(<SignGroup look={{ hue: 45 }} title="Когнитивные" hint="через понимание" fold><span>строка</span></SignGroup>);
+    const head = screen.getByRole('button', { name: /Когнитивные.*через понимание/ });
+    expect(head.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('строка')).toBeTruthy();
+    fireEvent.click(head);
+    expect(head.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText('строка')).toBeNull();
+    fireEvent.click(head);
+    expect(screen.getByText('строка')).toBeTruthy();
+  });
+
   it('лист бумаги вида группы, подпись и число; без знака — без слота знака', () => {
     const { container } = render(<SignGroup look={{ hue: 240 }} title="Группа" aside={2}><span>строка</span></SignGroup>);
     const group = container.querySelector<HTMLElement>('.sg-group')!;

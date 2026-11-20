@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildOnlineTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'online_chairwork',
+    group: 'experiential',
     name: 'Стулья онлайн',
     summary:
       'Работа со стульями по видео. Стулом становится место перед камерой, стул в кабинете терапевта или стул в комнате клиента — вариант выбирают по фазе терапии.',

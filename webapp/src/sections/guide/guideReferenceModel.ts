@@ -10,9 +10,9 @@ import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
 import { MODE_GROUPS } from '../../../../shared/src/schemaTherapy/content/modeGroups';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
 import { domainLook, modeGroupLook, type SheetLook, type SignKey } from '../../../../shared/src/theme/entityLook';
-import { modeGuideLook, practiceNoteLook, PRACTICE_HUE, schemaGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
+import { modeGuideLook, schemaGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
 import { mergeCoping } from './guideReferenceCoping';
-import { techniqueGroups } from './guideReferenceTechniques';
+import { practiceGroups, techniqueGroups } from './guideReferenceTechniques';
 import { buildNeedGuides, needGroups } from './guideReferenceNeeds';
 
 export type ReferenceTab = 'modes' | 'schemas' | 'needs' | 'techniques' | 'practice';
@@ -36,8 +36,12 @@ export type ReferenceItem = {
 
 export interface ReferenceGroup {
   key: string;
-  /** Подпись группы; у техник и «Для терапевта» её нет — список один. */
+  /** Подпись группы; у потребностей её нет — список один. */
   title?: string;
+  /** Под подписью — простыми словами (группы «Техник»: «через понимание»). */
+  hint?: string;
+  /** Группа сворачивается тапом по шапке (группы «Техник» и «Для терапевта»); по умолчанию раскрыта. */
+  fold?: boolean;
   /** Бумага листа группы и её знак (группа режимов, домен схем): знак стоит у подписи один раз,
    *  строки группы его не повторяют. Без знака (техники, «Для терапевта») — знак у каждой строки свой. */
   look: SheetLook;
@@ -91,12 +95,6 @@ export function buildReference(texts: ReferenceTexts, tr: Tr): Reference {
     }))),
     needs: nonEmpty(needGroups(buildNeedGuides(texts, tr))),
     techniques: nonEmpty(techniqueGroups(texts.buildTechniqueGuides(tr))),
-    practice: nonEmpty([{
-      key: 'practice',
-      look: { hue: PRACTICE_HUE },
-      items: texts.practiceNotes(tr).map((n) => ({
-        kind: 'note' as const, id: n.id, name: n.title, sub: n.summary, sign: practiceNoteLook(n.id).sign,
-      })),
-    }]),
+    practice: nonEmpty(practiceGroups(texts.practiceNotes(tr))),
   };
 }
