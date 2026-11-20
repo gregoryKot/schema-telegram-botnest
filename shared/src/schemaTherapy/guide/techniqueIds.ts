@@ -58,9 +58,13 @@ export type CambridgeTechniqueId =
   | 'healthy_adult_three_chairs'
   | 'need_now_question';
 
+/** Техники схема-терапии из книги Янга (пачка 8 карты). */
+export type YoungTechniqueId = 'schema_dialogue';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
   | SchemaTechniqueId
   | CambridgeTechniqueId
+  | YoungTechniqueId
   | BorrowedTechniqueId;

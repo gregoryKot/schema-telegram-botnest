@@ -7,6 +7,7 @@
 // GuideSignsTechniques.tsx, два знака «Для терапевта» — GuideSignsPractice.tsx). Тип техники —
 // только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import { MODE_GROUP_SIGN, modeGroupLook, modeLook } from '../../../../shared/src/theme/entityLook';
+import { YOUNG_PRACTICE_NOTE_SIGN } from './practiceSignsYoung';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
@@ -16,6 +17,7 @@ export const GUIDE_SIGNS = [
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
   'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
   'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare', 'cup', 'join',
+  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots',
 ] as const;
 
 export type GuideSign = (typeof GUIDE_SIGNS)[number];
@@ -79,6 +81,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   therapist_schemas: 'layers',
   therapist_wellbeing: 'cup',
   therapy_aims: 'grown',
+  ...YOUNG_PRACTICE_NOTE_SIGN,
 };
 
 /** Знак раздела «Для терапевта»; раздела нет в таблице — без знака (не выдумываем). */

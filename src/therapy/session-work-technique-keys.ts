@@ -109,4 +109,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     ],
     'technique:need_now_question': ['need', 'done', 'mood'],
     'technique:downward_arrow': ['thought', 'bottom', 'schema'],
+    'technique:schema_dialogue': ['schema', 'arguments', 'answers', 'who'],
   };
