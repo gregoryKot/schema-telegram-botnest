@@ -516,6 +516,7 @@
   "schema:approval_seeking/inSession": "В кабинете",
   "schema:approval_seeking/interventions": "Что делать",
   "schema:approval_seeking/modeIds": "Типичные режимы",
+  "schema:approval_seeking/more": "Подробнее",
   "schema:approval_seeking/need": "Потребность",
   "schema:approval_seeking/stuck": "Где застревают",
   "schema:approval_seeking/techniques": "На сессии",
