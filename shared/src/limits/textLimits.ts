@@ -16,7 +16,6 @@ export const CONCEPT_MODE_ALIAS_MAX = 80; // графическая концеп
 export const CONCEPT_MODE_TEXT_MAX = 1000; // графическая концептуализация: истоки / проявления / работа с режимом
 export const CONCEPT_SCHEMA_TEXT_MAX = 1000; // графическая концептуализация: убеждение схемы / как нарушалась потребность
 export const CONCEPT_TECHNIQUE_MARKS_MAX = 50; // графическая концептуализация: отметок «Делали сегодня» у одной связи режима или схемы (худшее тело запроса < потолка, concept-save.dto.spec.ts)
-export const CONCEPT_COPING_NOTE_MAX = 300; // схема случая: «как это у него» к стилю копинга схемы (отметка «Про клиента» из «Справочника»)
 export const CONCEPT_SCHEMA_IDS_MAX = 40; // концептуализация: схем в общем списке (в форме Янга 18, потолок — ради худшего тела запроса)
 export const CUSTOM_MODE_NAME_MAX = 80; // название своего режима на карте
 export const CUSTOM_MODE_EMOJI_MAX = 8; // значок своего режима
@@ -63,3 +62,4 @@ export function charCounterState(
 export const PLAN_ITEM_TEXT_MAX = 5000; // пункт плана работы с клиентом (рубрика справочника целиком помещается)
 export const GUIDE_MARK_NOTE_MAX = 1000; // «Про клиента» из справочника: строка «как это у него»
 export const GUIDE_MARK_SNAPSHOT_MAX = 20000; // «Про клиента»: текст раздела справочника на момент отметки
+export const CONCEPT_COPING_NOTE_MAX = 300; // схема случая: «как это у клиента» к стилю копинга схемы (отметка «Про клиента» из «Справочника»)
