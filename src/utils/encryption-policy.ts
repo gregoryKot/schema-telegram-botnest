@@ -180,6 +180,9 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     rubric: ID,
     text: enc(`${TH}/therapy-plan.service.ts`),
     status: ID,
+    sourceAddress: plain(
+      'адрес раздела справочника из кода, не свободный текст',
+    ),
     sourceKind: ID,
     sourceId: ID,
     sourceField: ID,

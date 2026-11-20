@@ -15,7 +15,7 @@ vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 const draft: PlanDraft = {
   rubric: 'cognitive', field: 'cognitive', label: 'Когнитивные (через понимание)',
   parts: ['Оценить риск [Арнтц, 5.1.1].', 'Потом — за и против.'],
-  source: { kind: 'mode', id: 'bully_attack', field: 'cognitive' },
+  sourceAddress: 'mode:bully_attack/cognitive',
 };
 const show = (clientId?: number, onAdded?: () => void) =>
   render(<MemoryRouter><PlanAddSheet draft={draft} clientId={clientId} onAdded={onAdded} onClose={() => {}} /></MemoryRouter>);
@@ -39,7 +39,7 @@ describe('PlanAddSheet — «В план» из справочника', () => {
     add();
     await waitFor(() => expect(screen.getByText('Добавлено в план')).toBeTruthy());
     expect(h.createPlanItems).toHaveBeenCalledWith({
-      clientIds: ['7'], rubric: 'cognitive', text: 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.', source: draft.source,
+      clientIds: ['7'], rubric: 'cognitive', text: 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.', sourceAddress: draft.sourceAddress,
     });
     expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_added', { rubric: 'cognitive', fromGuide: true });
     expect(onAdded).toHaveBeenCalled();

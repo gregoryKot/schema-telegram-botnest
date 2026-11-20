@@ -44,7 +44,7 @@ export const PLAN_RUBRIC_LABEL: Record<PlanRubric, string> = {
 export const PLAN_STATUSES = ['planned', 'active', 'done'] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
-/** Статья справочника, из которой взят пункт: вид, id статьи и поле рубрики. */
+/** Источник пункта до адресов (#1484): вид, id статьи и поле рубрики — переводит planAddress.ts. */
 export interface PlanSource {
   kind: 'schema' | 'mode' | 'technique';
   id: string;
@@ -58,6 +58,8 @@ export interface PlanItem {
   text: string;
   status: PlanStatus;
   position: number;
+  /** Адрес раздела справочника; null — свой пункт или пункт до адресов (тогда `source`). */
+  sourceAddress: string | null;
   source: PlanSource | null;
   /** Задание, которым пункт выдан клиенту; задание удалили — null. */
   taskId: number | null;

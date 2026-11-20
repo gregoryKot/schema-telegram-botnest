@@ -2,13 +2,14 @@ import { useState } from 'react';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
 import { MMIcon } from '../../modeMapIcons';
 import { PlanItemForm } from './PlanItemForm';
+import type { PlanSourceLink } from './planSource';
 import { canAssign, statusLabel } from './planModel';
 
 interface Props {
   item: PlanItem;
   busy: boolean;
-  /** Название статьи справочника; null — ссылки нет (пункт свой или статью убрали). */
-  sourceTitle: string | null;
+  /** Откуда пункт (planSourceLink); null — пункт свой или тексты справочника не приехали. */
+  sourceLink: PlanSourceLink | null;
   onCycleStatus: () => void;
   onOpenSource: () => void;
   onAssign: () => void;
@@ -24,7 +25,7 @@ interface Props {
 }
 
 /** Пункт плана: статус-кнопка (тап — следующий статус), текст, откуда пункт, действия — видны всегда. */
-export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove }: Props) {
+export function PlanItemRow({ item, busy, sourceLink, onCycleStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove }: Props) {
   const [editing, setEditing] = useState(false);
   const label = statusLabel(item.status);
   return (
@@ -47,9 +48,10 @@ export function PlanItemRow({ item, busy, sourceTitle, onCycleStatus, onOpenSour
             <button type="button" className="ds-link pl-source" disabled={busy} onClick={onRetryLink}>Повторить</button>
           </div>
         )}
-        {(sourceTitle || item.taskId != null || (!editing && canAssign(item) && !linkPending)) && (
+        {(sourceLink || item.taskId != null || (!editing && canAssign(item) && !linkPending)) && (
           <div className="pl-meta">
-            {sourceTitle && <button type="button" className="ds-link pl-source" onClick={onOpenSource}>Из справочника: {sourceTitle} →</button>}
+            {sourceLink?.open && <button type="button" className="ds-link pl-source" onClick={onOpenSource}>Из справочника: {sourceLink.title} →</button>}
+            {sourceLink && !sourceLink.open && <span className="ds-sub">Из справочника: {sourceLink.title}{sourceLink.changed && ' · раздел изменился'}</span>}
             {!editing && canAssign(item) && !linkPending && <button type="button" className="ds-link pl-source" disabled={busy} onClick={onAssign}>Дать заданием</button>}
             {item.taskId != null && <span className="ds-badge ds-badge--line">выдано заданием</span>}
           </div>
