@@ -681,6 +681,7 @@
   "schema:negativity/inSession": "В кабинете",
   "schema:negativity/interventions": "Что делать",
   "schema:negativity/modeIds": "Типичные режимы",
+  "schema:negativity/more": "Подробнее",
   "schema:negativity/need": "Потребность",
   "schema:negativity/stuck": "Где застревают",
   "schema:negativity/techniques": "На сессии",
