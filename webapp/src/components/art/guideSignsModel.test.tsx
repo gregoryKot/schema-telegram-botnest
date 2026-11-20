@@ -17,11 +17,12 @@ import { CORE_TECHNIQUE_SIGN } from './techniqueSigns';
 
 const tr = (ty: string) => ty;
 
-/** Одиннадцать разделов «Для терапевта» (#1013; онлайн-формат — из карты Кембриджа). */
+/** Семнадцать разделов «Для терапевта» (#1013; онлайн-формат и шесть разделов оценки — из карты Кембриджа). */
 const NOTE_IDS = [
   'impasses', 'chatting', 'method_errors', 'therapist_schemas', 'group_therapy',
   'deliberate_practice', 'frame_additions', 'angry_client', 'suicidal_thoughts', 'romance_and_partner',
-  'online_format',
+  'online_format', 'first_session', 'complaint_to_mode', 'story_as_mode_signal', 'stages_of_change',
+  'case_conceptualization', 'history_interview',
 ];
 
 describe('знаки листов подсказок', () => {
@@ -99,7 +100,7 @@ describe('знаки листов подсказок', () => {
     expect(practiceNoteSign('group_therapy')).toBe('cluster');
     expect(practiceNoteSign('chatting')).not.toBe(TECHNIQUE_SIGN.chairwork);
     const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(CORE_TECHNIQUE_SIGN).includes(s));
-    expect(shared.sort()).toEqual(['heart', 'heart_frame']);
+    expect(shared.sort()).toEqual(['heart', 'heart_frame', 'pattern_steps', 'sheets', 'spotlight', 'talk', 'talk_past']);
   });
 
   it('схема — номер своего домена; неизвестная — 0', () => {

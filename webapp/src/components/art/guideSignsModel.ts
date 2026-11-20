@@ -38,18 +38,28 @@ export { TECHNIQUE_SIGN } from './techniqueSigns';
  * вместе), намеренная практика — Beads (настройка: три уровня на одной нити), рамка метода —
  * Limits (рамка), суицидальные мысли — Heart (бережно, как кризисный вход «Мне плохо»),
  * влюблённость — HeartFrame (тепло и граница), онлайн-формат — Together (двое рядом). Два —
- * свои (GuideSignsPractice.tsx): «болтовня» — Chatter, злость — Flare.
+ * свои (GuideSignsPractice.tsx): «болтовня» — Chatter, злость — Flare. Шесть разделов оценки
+ * (Кембридж, гл. 3–4) берут знак техники с тем же смыслом: первая сессия — ChildCare
+ * (ограниченное родительство с первой встречи), режим по манере рассказа — Talk, жалоба → режим —
+ * Spotlight (интервью с режимом), расспрос о детстве — TalkPast, концептуализация — Sheets
+ * (письменная форма), стадии изменений — PatternSteps (шаги к перемене).
  */
 export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   angry_client: 'flare',
+  case_conceptualization: 'sheets',
   chatting: 'chatter',
+  complaint_to_mode: 'spotlight',
   deliberate_practice: 'beads',
+  first_session: 'child_care',
   frame_additions: 'limits',
   group_therapy: 'cluster',
+  history_interview: 'talk_past',
   impasses: 'ribbon',
   method_errors: 'check',
   online_format: 'together',
   romance_and_partner: 'heart_frame',
+  stages_of_change: 'pattern_steps',
+  story_as_mode_signal: 'talk',
   suicidal_thoughts: 'heart',
   therapist_schemas: 'layers',
 };
