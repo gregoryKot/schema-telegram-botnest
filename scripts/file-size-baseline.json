@@ -1722,7 +1722,7 @@
   "src/therapy/streak-expire.ts": 54,
   "src/therapy/streak-progress.ts": 54,
   "src/therapy/streak-window.ts": 80,
-  "src/therapy/task-catalog-ids.ts": 74,
+  "src/therapy/task-catalog-ids.ts": 75,
   "src/therapy/therapist-exit.service.ts": 39,
   "src/therapy/therapist-name.ts": 6,
   "src/therapy/therapist-request.applicant.ts": 114,
