@@ -22,8 +22,9 @@ const tr = (_ty: string, vy: string) => vy;
 const noop = () => {};
 const CTX: GuideMarkCtx = { selected: null, select: noop, onMark: noop, onUnmark: noop };
 
-// Листы без статьи-адреса: потребность (её нет среди видов статьи) и каркас (разделы приходят пропсами).
-const NO_ARTICLE = new Set(['NeedGuideSheet.tsx', 'GuideSheet.tsx']);
+// Листы без статьи-адреса: потребность (её нет среди видов статьи), каркас (разделы приходят пропсами)
+// и лист отметки копинга (форма отметки, не раздел справочника).
+const NO_ARTICLE = new Set(['NeedGuideSheet.tsx', 'GuideSheet.tsx', 'CopingMarkSheet.tsx']);
 // Раздел-обёртка без своего текста: адреса — у каналов внутри (GuidePoints).
 const WRAPPERS = ['Как работать'];
 
