@@ -36,9 +36,10 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
   const backRef = useRef<SheetBack | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
   const work = useSessionWork(detail);
+  const client = guideMarkClient(detail.selectedClient);
   const guide = useConceptGuide({
     onAssign, tasks: detail.clientTasks, onOpenJournal, under: backRef, plan: { clientId: detail.selectedClient?.telegramId },
-    graph: { ...g.graphProps, workMarks: (from) => workMarks(work.entries, from) }, client: guideMarkClient(detail.selectedClient),
+    graph: { ...g.graphProps, workMarks: (from) => workMarks(work.entries, from), clientName: client?.name }, client,
   });
   // «Про клиента» (#1484): счётчик на узлах схемы и режима, блок «Из справочника» под схемой.
   const guideMarks = guide.marks?.marks;

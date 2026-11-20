@@ -9,6 +9,7 @@
 // причиной. Тем же видом клиент выгружает свои данные (export-policy.client.ts).
 import type { ClientConceptualization } from '@prisma/client';
 import { decryptConceptFields } from './concept-store';
+import { CONCEPT_COPING_STYLES } from './dto/concept-links.dto';
 
 /** Колонки строки, которые видит клиент. */
 export const CLIENT_CONCEPT_FIELDS = [
@@ -52,11 +53,12 @@ export interface ClientModeLink {
   manifest: string;
 }
 
-/** Схема на схеме клиента: без `origin` (детский опыт). */
+/** Схема на схеме клиента: без `origin` (детский опыт) и заметок к стилям копинга (`copingNotes`). */
 export interface ClientSchemaLink {
   schemaId: string;
   belief: string;
   needIds: string[];
+  coping: string[];
 }
 
 export interface ClientConceptView {
@@ -88,10 +90,13 @@ const modeLink = (l: Obj): ClientModeLink => ({
   manifest: str(l.manifest),
 });
 
+const COPING: readonly string[] = CONCEPT_COPING_STYLES;
+
 const schemaLink = (l: Obj): ClientSchemaLink => ({
   schemaId: str(l.schemaId),
   belief: str(l.belief),
   needIds: strs(l.needIds),
+  coping: strs(l.coping).filter((s) => COPING.includes(s)),
 });
 
 /** Строка концептуализации → вид клиента; не показана — null. */

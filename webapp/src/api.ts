@@ -150,6 +150,7 @@ export const api = {
   saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>> | import('../../shared/src/therapy/conceptGraph/conceptPatch').ConceptPatchRequest, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body, opts), // патч с версией строки — 409, если её изменили
   appendConceptualization: (clientId: UserId, body: ConceptAppendBody, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}/append`, body, opts), // холст дописывает: сервер объединяет, не удаляет
   shareConceptualization: (clientId: UserId, shared: boolean) => patchJson<{ sharedWithClientAt: string | null }>(`/api/therapy/conceptualization/${clientId}/share`, { shared }), // тумблер «Показать клиенту»
+  getGuideMarkClients: (address: string) => get<{ clientIds: string[] }>(`/api/therapy/guide-marks?address=${encodeURIComponent(address)}`), // «уже отмечено» в листе «Про клиента» (#1484)
   getMyConcept: () => get<ClientSharedConcept>('/api/therapy/my-concept'), // схема случая клиента; не показана — 404
   getTherapyClientHistory: (clientId: UserId) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше

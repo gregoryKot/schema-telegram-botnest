@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
-import { GuideMarksService } from './guide-marks.service';
+import { copingAddress, GuideMarksService } from './guide-marks.service';
+import { encryptConceptFields } from './concept-store';
 
 const T1 = 11n;
 const T2 = 12n;
@@ -98,5 +99,34 @@ describe('GuideMarksService', () => {
     expect(track).toHaveBeenCalledWith(T1, 'guide_mark_added', {
       kind: 'coping',
     });
+  });
+});
+
+// Копинг схемы живёт в schemaLinks (#1484): «уже отмечено» ищется по схеме случая, не по GuideMark.
+describe('GuideMarksService.clientsWithAddress — копинг схемы', () => {
+  it('находит клиентов, у которых стиль отмечен на этой схеме', async () => {
+    const row = (clientId: bigint, coping: string[]) => ({
+      clientId,
+      ...encryptConceptFields({
+        schemaLinks: [{ schemaId: 'subjugation', coping }],
+      }),
+    });
+    const findMany = jest.fn(async () => [
+      row(C1, ['surrender']),
+      row(22n, ['avoidance']),
+    ]);
+    const service = new GuideMarksService(
+      { clientConceptualization: { findMany } } as never,
+      {} as never,
+      {} as never,
+    );
+    await expect(
+      service.clientsWithAddress(T1, 'schema:subjugation/coping.surrender'),
+    ).resolves.toEqual([String(C1)]);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { therapistId: T1 } }),
+    );
+    expect(copingAddress('schema:subjugation/coping.denial')).toBeNull();
+    expect(copingAddress('mode:x/coping.surrender')).toBeNull();
   });
 });

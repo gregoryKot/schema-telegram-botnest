@@ -3,7 +3,9 @@
 import 'reflect-metadata';
 import {
   ArrayMaxSize,
+  ArrayUnique,
   IsArray,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -11,6 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
+  CONCEPT_COPING_NOTE_MAX,
   CONCEPT_MODE_ALIAS_MAX,
   CONCEPT_MODE_TEXT_MAX,
   CONCEPT_SCHEMA_TEXT_MAX,
@@ -77,6 +80,31 @@ export class ConceptModeLinkDto {
   done?: ConceptTechniqueMarkDto[];
 }
 
+/** Стили копинга схемы (COPING_STYLES в shared/src/schemaTherapy/guide/copingStyles.ts). */
+export const CONCEPT_COPING_STYLES = [
+  'surrender',
+  'avoidance',
+  'overcompensation',
+] as const;
+
+/** «Как это у него» по стилю — рабочая запись терапевта, клиенту не уходит. */
+export class ConceptCopingNotesDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(CONCEPT_COPING_NOTE_MAX)
+  surrender?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(CONCEPT_COPING_NOTE_MAX)
+  avoidance?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(CONCEPT_COPING_NOTE_MAX)
+  overcompensation?: string;
+}
+
 /**
  * Тексты одной схемы в графической концептуализации (контракт —
  * `ConceptSchemaLink` в shared/src/apiTypes.ts): убеждение клиента и
@@ -112,4 +140,17 @@ export class ConceptSchemaLinkDto {
   @ValidateNested({ each: true })
   @Type(() => ConceptTechniqueMarkDto)
   done?: ConceptTechniqueMarkDto[];
+
+  // Отметки «Про клиента» из «Справочника» (#1484): стили видит клиент, заметки — нет.
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(CONCEPT_COPING_STYLES.length)
+  @ArrayUnique()
+  @IsIn(CONCEPT_COPING_STYLES, { each: true })
+  coping?: (typeof CONCEPT_COPING_STYLES)[number][];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ConceptCopingNotesDto)
+  copingNotes?: ConceptCopingNotesDto;
 }

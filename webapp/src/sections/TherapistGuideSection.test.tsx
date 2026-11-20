@@ -102,6 +102,7 @@ describe('TherapistGuideSection', () => {
     fireEvent.click(within(row).getByRole('button', { name: /Держится за ненадёжных/ }));
     expect(within(row).getByText('Выбирает недоступных партнёров')).toBeTruthy(); // тап раскрывает полный пример
     expect(within(row).queryByText('Цепляется и контролирует')).toBeNull(); // раскрыта одна клетка
+    expect(within(row).getAllByRole('button', { name: /^Про клиента/ })).toHaveLength(1); // «Про клиента» — у раскрытой клетки
     expect(within(domain).getByRole('columnheader', { name: 'Гиперкомпенсация' })).toBeTruthy();
     fireEvent.click(within(row).getByRole('button', { name: new RegExp(SCHEMA_NAME) }));
     expect(screen.getByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();

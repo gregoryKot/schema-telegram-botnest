@@ -127,3 +127,24 @@ describe('SchemaGuideSheet', () => {
     expect(screen.queryByRole('button', { name: /Дать заданием/ })).toBeNull();
   });
 });
+
+// «Про клиента» (#1484): из карточки клиента отмеченный стиль подсвечен его именем, тап — лист отметки.
+describe('SchemaGuideSheet — «Про клиента» на стиле копинга', () => {
+  it('отмеченный у клиента стиль — с его именем; кнопка стиля зовёт отметку', () => {
+    const onMark = vi.fn();
+    render(
+      <MemoryRouter>
+        <SchemaGuideSheet
+          schemaName={NAME} view={FIXTURE_SCHEMA_VIEW} onOpenTechnique={() => {}} onClose={() => {}}
+          coping={{ onMark, clientName: 'Анна', marked: (s) => s === 'surrender' }}
+        />
+      </MemoryRouter>,
+    );
+    openMore();
+    const coping = region('Копинг');
+    expect(coping.getAllByRole('term')[0].textContent).toBe('Капитуляция · отмечено у Анна');
+    expect(coping.getAllByRole('term')[1].textContent).not.toContain('отмечено');
+    fireEvent.click(coping.getByRole('button', { name: 'Про клиента: Гиперкомпенсация' }));
+    expect(onMark).toHaveBeenCalledWith('overcompensation');
+  });
+});
