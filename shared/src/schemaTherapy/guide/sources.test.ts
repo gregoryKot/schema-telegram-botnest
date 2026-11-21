@@ -1,6 +1,7 @@
 // Полка книг: каждая метка в тексте справочника ведёт на книгу из GUIDE_SOURCES.
 import { describe, it, expect } from 'vitest';
 import {
+  buildConcernGuides,
   buildModeGuides,
   buildSchemaDomainGuides,
   buildTechniqueGuides,
@@ -26,6 +27,7 @@ const allText = strings([
   buildSchemaDomainGuides(ty),
   buildTechniqueGuides(ty),
   practiceNotes(ty),
+  buildConcernGuides(ty),
 ]).join('\n');
 
 describe('полка книг справочника', () => {

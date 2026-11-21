@@ -23,6 +23,7 @@ const texts = (over: Partial<ReferenceTexts> = {}): ReferenceTexts => ({
   ],
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [],
+  buildConcernGuides: () => [],
   ...over,
 });
 
@@ -71,7 +72,7 @@ describe('раздел «Потребности» в справочнике', ()
   const ref = buildReference(texts(), tr);
 
   it('третья вкладка, карточками; строка — знак потребности, название и подпись; лист нейтральной бумаги без знака', () => {
-    expect(REFERENCE_TABS.map((t) => t.label)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Для терапевта']);
+    expect(REFERENCE_TABS.map((t) => t.label)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Запросы', 'Для терапевта']);
     expect(referenceLayout('needs', false)).toBe('tiles');
     expect(ref.needs).toEqual(needGroups(buildNeedGuides(texts(), tr)));
     expect(ref.needs).toHaveLength(1);

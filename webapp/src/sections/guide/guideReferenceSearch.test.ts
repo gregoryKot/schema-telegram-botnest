@@ -23,6 +23,7 @@ const texts: ReferenceTexts = {
   }],
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [{ ...FIXTURE_PRACTICE_NOTE, points: ['Сверить контрперенос с супервизором'] }],
+  buildConcernGuides: () => [],
 };
 const ref = buildReference(texts, tr);
 const body = buildReferenceBody(texts, tr);
