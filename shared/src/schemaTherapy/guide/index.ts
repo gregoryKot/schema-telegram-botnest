@@ -4,7 +4,6 @@ import type {
   ModeGuide,
   PracticeNote,
   SchemaDomainGuide,
-  SchemaDomainGuideBuilder,
   SchemaGuide,
   TechniqueGuide,
   TechniqueId,
@@ -12,21 +11,9 @@ import type {
 } from './types';
 import { MODE_BUILDERS } from './modes/all';
 import { withSessionSigns } from './modes/sessionSigns';
-import { buildRejectionGuides } from './schemas/rejection';
-import { buildAutonomyGuides } from './schemas/autonomy';
-import { buildLimitsGuides } from './schemas/limits';
-import { buildOtherDirectedGuides } from './schemas/otherDirected';
-import { buildVigilanceGuides } from './schemas/vigilance';
+import { SCHEMA_DOMAIN_BUILDERS } from './schemas/domains';
 import { TECHNIQUE_BUILDERS } from './techniques/all';
 import { buildPracticeNotes } from './practice';
-
-const DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
-  buildRejectionGuides,
-  buildAutonomyGuides,
-  buildLimitsGuides,
-  buildOtherDirectedGuides,
-  buildVigilanceGuides,
-];
 
 /** Все разделы режимов в порядке групп. */
 export function buildModeGuides(tr: Tr): ModeGuide[] {
@@ -45,7 +32,7 @@ export function modeGuide(tr: Tr, modeId: string): ModeGuide | null {
 
 /** Домены схем в порядке справочника, со своими схемами. */
 export function buildSchemaDomainGuides(tr: Tr): SchemaDomainGuide[] {
-  return DOMAIN_BUILDERS.map((build) => build(tr));
+  return SCHEMA_DOMAIN_BUILDERS.map((build) => build(tr));
 }
 
 /** Все разделы схем. */
@@ -75,6 +62,7 @@ export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
 }
 
 export * from './address';
+export { COPING_ABOUT } from './schemas/copingAbout';
 
 export type {
   BetweenSessionsItem,

@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { SignGroup } from '../../components/schemaSheets/SignGroup';
 import { SignArt } from '../../components/art/SignArt';
-import type { SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
+import { COPING_ABOUT, type SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
 import { COPING_STYLES, type CopingStyle, type CopingStyleId } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
 import type { ReferenceGroup, ReferenceItem } from './guideReferenceModel';
 import {
@@ -76,7 +76,7 @@ export function GuideSchemaTable({ groups, guides, onOpen, onMark }: Props) {
       <div className="gst-list">
         <p className="gst-lede">
           Одна схема — три способа с ней жить.{' '}
-          {COPING_STYLES.map((s) => `${s.label}: человек ${s.gist}.`).join(' ')} В строках — примеры: один человек переходит между стилями в разных ситуациях. В клетке —
+          {COPING_STYLES.map((s) => `${s.label}: человек ${s.gist}.`).join(' ')} {COPING_ABOUT} В строках — примеры: один человек переходит между стилями в разных ситуациях. В клетке —
           суть одной строкой, тап по ней раскрывает полный пример и кнопку «Про клиента»: стиль ляжет в схему случая клиента.
         </p>
         <GuideSchemaTableBar filter={filter} depth={depth} onFilter={setFilter} onDepth={setDepth} />
