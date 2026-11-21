@@ -730,6 +730,7 @@
   "schema:punitiveness_others/inSession": "В кабинете",
   "schema:punitiveness_others/interventions": "Что делать",
   "schema:punitiveness_others/modeIds": "Типичные режимы",
+  "schema:punitiveness_others/more": "Подробнее",
   "schema:punitiveness_others/need": "Потребность",
   "schema:punitiveness_others/stuck": "Где застревают",
   "schema:punitiveness_others/techniques": "На сессии",
