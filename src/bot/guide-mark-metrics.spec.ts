@@ -4,7 +4,14 @@ import {
   withGuideExtras,
 } from './guide-mark-metrics';
 
-const none = { coping: 0, schema: 0, mode: 0, technique: 0, note: 0 };
+const none = {
+  coping: 0,
+  schema: 0,
+  mode: 0,
+  technique: 0,
+  note: 0,
+  concern: 0,
+};
 
 describe('formatGuideMarkLine', () => {
   it('пустая БД — человеческая строка без нулей', () => {

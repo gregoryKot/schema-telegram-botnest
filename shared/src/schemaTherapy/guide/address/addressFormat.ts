@@ -8,6 +8,7 @@ export const GUIDE_ARTICLE_KINDS = [
   'mode',
   'technique',
   'note',
+  'concern',
 ] as const;
 export type GuideArticleKind = (typeof GUIDE_ARTICLE_KINDS)[number];
 
@@ -23,12 +24,8 @@ const ADDRESS_RE = new RegExp(
   `^(${GUIDE_ARTICLE_KINDS.join('|')}):([A-Za-z0-9_-]+)/(${SEGMENT}(?:\\.${SEGMENT})*)$`,
 );
 
-export function formatAddress({
-  kind,
-  articleId,
-  path,
-}: GuideAddressParts): string {
-  return `${kind}:${articleId}/${path}`;
+export function formatAddress(a: GuideAddressParts): string {
+  return `${a.kind}:${a.articleId}/${a.path}`;
 }
 
 /** Разбор адреса; null — строка не адрес (чужой вид, пустой путь, лишние знаки). */

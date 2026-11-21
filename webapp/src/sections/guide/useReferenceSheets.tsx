@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../../api';
 import type { Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
-import type { NeedId, Tr } from '../../../../shared/src/needs/types';
+import type { Tr } from '../../../../shared/src/needs/types';
 import { useConceptGuide, type GuideOpenTrack } from '../../components/therapist/guide/useConceptGuide';
 import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNoteSheet';
-import { NeedGuideSheet } from '../../components/therapist/guide/NeedGuideSheet';
 import type { ReferenceItem } from './guideReferenceModel';
-import { buildNeedGuides } from './guideReferenceNeeds';
+import { useListSheets } from './useListSheets';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
 const REFERENCE_TRACK: GuideOpenTrack = {
@@ -18,34 +17,30 @@ const REFERENCE_TRACK: GuideOpenTrack = {
 /**
  * Листы «Справочника»: `open` открывает лист строки списка, `sheets` — открытые листы. Режим, схема и техника —
  * те же листы, что в схеме случая (useConceptGuide), без клиента: без «Дать заданием», отметок и истории;
- * «В план» — с выбором клиентов. Потребность и раздел «Для терапевта» — свои листы.
+ * «В план» — с выбором клиентов. Потребность, запрос (useListSheets) и раздел «Для терапевта» — свои листы.
  */
 export function useReferenceSheets(texts: Guide, tr: Tr) {
   const [noteId, setNoteId] = useState<string | null>(null);
-  const [needId, setNeedId] = useState<NeedId | null>(null);
-  const need = useMemo(() => (needId ? buildNeedGuides(texts, tr).find((n) => n.id === needId) : undefined), [texts, tr, needId]);
   const note = noteId ? texts.practiceNotes(tr).find((n) => n.id === noteId) : undefined;
-  // plan и «Про клиента» без клиента: листы дают выбрать клиентов; лист «Для терапевта» — с тем же «Про клиента»
+  const list = useListSheets(texts, tr);
+  // plan и «Про клиента» без клиента: листы дают выбрать клиентов; листы «Для терапевта» и запроса — с тем же «Про клиента»
   const guide = useConceptGuide({
     track: REFERENCE_TRACK, plan: {}, pickClient: true,
-    over: note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />,
+    over: <>{note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />}{list.over}</>,
   });
   const open = (item: ReferenceItem) => {
+    if (list.open(item)) return;
     if (item.kind === 'mode') guide.actions.onOpenMode(item.id);
     else if (item.kind === 'schema') guide.actions.onOpenSchema(item.id);
     else if (item.kind === 'technique') guide.actions.onOpenTechnique(item.id);
-    else if (item.kind === 'need') {
-      api.trackEvent('cabinet_guide_need_open');
-      setNeedId(item.id);
-    } else {
+    else {
       api.trackEvent('cabinet_guide_note_open');
       setNoteId(item.id);
     }
   };
   const sheets = (
     <>
-      {/* до листов схемы и техники: лист схемы, открытый из потребности, встаёт поверх порядком в DOM */}
-      {need && <NeedGuideSheet need={need} onOpenSchema={guide.actions.onOpenSchema} onClose={() => setNeedId(null)} />}
+      {list.under(guide.actions.onOpenSchema)}
       {guide.sheets}
     </>
   );

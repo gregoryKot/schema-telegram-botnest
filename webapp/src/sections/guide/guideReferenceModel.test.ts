@@ -4,9 +4,10 @@
 // поиск — по названиям во всех разделах, без учёта регистра и «ё», найденное
 // лежит на листе своей группы — знак группы один раз на серию.
 import { describe, it, expect } from 'vitest';
-import { buildReference, referenceLayout, type ReferenceTexts } from './guideReferenceModel';
+import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceTexts } from './guideReferenceModel';
+import { CONCERNS_HINT, CONCERNS_TITLE } from './guideReferenceConcerns';
 import { searchReference } from './guideReferenceSearch';
-import type { ModeGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
+import type { ConcernGuide, ModeGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
 import {
   FIXTURE_GUIDE,
   FIXTURE_PRACTICE_NOTE,
@@ -17,6 +18,7 @@ import {
 const tr = (ty: string) => ty;
 const mode = (modeId: string): ModeGuide => ({ ...FIXTURE_GUIDE, modeId });
 const schema = (schemaId: string): SchemaGuide => ({ ...FIXTURE_SCHEMA_GUIDE, schemaId });
+const CONCERN: ConcernGuide = { id: 'bpd', name: 'Пограничное расстройство', goal: 'Вырастить Здорового Взрослого', essence: 'Нестабильность', sources: '' };
 
 function texts(over: Partial<ReferenceTexts> = {}): ReferenceTexts {
   return {
@@ -28,6 +30,7 @@ function texts(over: Partial<ReferenceTexts> = {}): ReferenceTexts {
     ],
     buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
     practiceNotes: () => [FIXTURE_PRACTICE_NOTE, { ...FIXTURE_PRACTICE_NOTE, id: 'свой_раздел', title: 'Свой раздел' }],
+    buildConcernGuides: () => [CONCERN, { ...CONCERN, id: 'свой_запрос', name: 'Свой запрос' }],
     ...over,
   };
 }
@@ -72,6 +75,22 @@ describe('buildReference', () => {
 
   it('раздел без текстов — пустой список, а не группа без строк', () => {
     expect(buildReference(texts({ practiceNotes: () => [] }), tr).practice).toEqual([]);
+    expect(buildReference(texts({ buildConcernGuides: () => [] }), tr).concerns).toEqual([]);
+  });
+
+  it('«Запросы» — одна группа с подписью «что это и зачем», строки с целью и своим знаком на бирюзе', () => {
+    const [group, ...rest] = buildReference(texts(), tr).concerns;
+    expect(rest).toEqual([]);
+    expect(group).toMatchObject({ title: CONCERNS_TITLE, hint: CONCERNS_HINT, look: { hue: 195 } });
+    expect(group.items).toEqual([
+      { kind: 'concern', id: 'bpd', name: 'Пограничное расстройство', sub: 'Вырастить Здорового Взрослого', sign: 'ribbon' },
+      { kind: 'concern', id: 'свой_запрос', name: 'Свой запрос', sub: 'Вырастить Здорового Взрослого', sign: undefined },
+    ]);
+  });
+
+  it('вкладка «Запросы» стоит между «Техниками» и «Для терапевта»', () => {
+    const ids = REFERENCE_TABS.map((t) => t.id);
+    expect(ids.slice(ids.indexOf('techniques'), ids.indexOf('practice') + 1)).toEqual(['techniques', 'concerns', 'practice']);
   });
 });
 

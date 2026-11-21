@@ -11,6 +11,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { TherapistGuideSection } from './TherapistGuideSection';
 import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS, CABINET_GUIDE_TABLE_EVENT } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
+import { CONCERNS_HINT } from './guide/guideReferenceConcerns';
 import { FIXTURE_PRACTICE_NOTE as NOTE } from '../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
@@ -20,6 +21,10 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
     buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: f.FIXTURE_DOMAIN_NOTE, schemas: [f.FIXTURE_SCHEMA_GUIDE] }],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     practiceNotes: () => [f.FIXTURE_PRACTICE_NOTE],
+    buildConcernGuides: () => [{
+      id: 'bpd', name: 'Пограничное расстройство личности', goal: 'Вырастить Здорового Взрослого',
+      essence: 'Нестабильность почти во всём', criteria: ['Пять из девяти признаков'], sources: '[Арнтц ПРЛ, гл. 1]',
+    }],
     modeGuide: (_tr: unknown, id: string) => (id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null),
     schemaGuide: (_tr: unknown, id: string) =>
       id === 'abandonment' ? { guide: f.FIXTURE_SCHEMA_GUIDE, domainNote: f.FIXTURE_DOMAIN_NOTE } : null,
@@ -62,7 +67,7 @@ describe('TherapistGuideSection', () => {
     // оговорка об источниках и адрес для ошибок — сразу под шапкой (на сайте — Telegram автора)
     expect(screen.getByText(/могут содержать ошибки/).textContent).toMatch(/обязательно напиши: @kotlarewski$/);
     expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Для терапевта']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Запросы', 'Для терапевта']);
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT]);
   });
 
@@ -158,6 +163,22 @@ describe('TherapistGuideSection', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.note);
+  });
+
+  it('«Запросы»: подпись «что это и зачем», строка с целью, тап — лист с сутью и критериями; «Закрыть» — обратно', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('tab', { name: 'Запросы' }));
+    expect(screen.getByText(CONCERNS_HINT)).toBeTruthy();
+    const row = screen.getByRole('button', { name: /^Пограничное расстройство личности/ });
+    expect(within(row).getByText('Вырастить Здорового Взрослого')).toBeTruthy();
+    fireEvent.click(row);
+    const sheet = screen.getByRole('dialog', { name: 'Пограничное расстройство личности' });
+    expect(within(sheet).getByText('Нестабильность почти во всём')).toBeTruthy();
+    expect(within(sheet).getByRole('region', { name: 'Критерии' })).toBeTruthy();
+    expect(within(sheet).getByText('Пять из девяти признаков')).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.concern);
   });
 
   it('лист — панель над затемнённым списком: тап по затемнению закрывает её', async () => {

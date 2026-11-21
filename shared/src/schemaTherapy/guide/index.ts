@@ -76,8 +76,5 @@ export type {
   TechniqueGroupId,
   PracticeGroupId,
 } from './types';
-export {
-  PRACTICE_GROUPS,
-  TECHNIQUE_GROUPS,
-  type GuideGroup,
-} from './guideGroups';
+export * from './guideGroups';
+export * from './concerns/all';

@@ -12,26 +12,11 @@ import {
   type GuideChannel,
 } from '../../../therapy/plan/planItem';
 import type { GuideArticleKind } from './addressFormat';
+import { CONCERN_TITLES } from './addressTitlesConcern';
 
 // Заголовки разделов — как на листах справочника (webapp/src/components/therapist/guide/*Sheet.tsx).
 // Тип требует заголовок у каждого поля статьи, кроме служебных: новое поле в types.ts без строки здесь — красный tsc.
-type Meta =
-  | 'schemaId'
-  | 'modeId'
-  | 'id'
-  | 'name'
-  | 'title'
-  | 'sources'
-  | 'approach'
-  | 'group'
-  | 'reparenting';
-type Titles<A, Extra extends string = never> = Record<
-  Exclude<keyof A, Meta> | Extra,
-  string
->;
-
-/** Служебные поля статьи (id, название, источники, группа) — не разделы; `reparenting` входит в «Как это звучит». */
-export const META_FIELDS: ReadonlySet<string> = new Set<Meta>([
+const META = [
   'schemaId',
   'modeId',
   'id',
@@ -41,7 +26,15 @@ export const META_FIELDS: ReadonlySet<string> = new Set<Meta>([
   'approach',
   'group',
   'reparenting',
-]);
+] as const;
+type Meta = (typeof META)[number];
+export type Titles<A, Extra extends string = never> = Record<
+  Exclude<keyof A, Meta> | Extra,
+  string
+>;
+
+/** Служебные поля статьи (id, название, источники, группа) — не разделы; `reparenting` входит в «Как это звучит». */
+export const META_FIELDS: ReadonlySet<string> = new Set<string>(META);
 
 const COMMON = {
   voice: 'Как это звучит',
@@ -111,4 +104,5 @@ export const SECTION_TITLES: Record<
   mode: MODE_TITLES,
   technique: TECHNIQUE_TITLES,
   note: NOTE_TITLES,
+  concern: CONCERN_TITLES,
 };

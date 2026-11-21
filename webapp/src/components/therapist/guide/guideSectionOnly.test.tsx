@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import * as guide from '../../../../../shared/src/schemaTherapy/guide';
 import { resolveModeGuide, resolveSchemaGuide } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import { GuideMarkContext, type GuideMarkCtx } from './marks/GuideSectionMark';
+import { ConcernGuideSheet } from './ConcernGuideSheet';
 import { ModeGuideSheet } from './ModeGuideSheet';
 import { PracticeNoteSheet } from './PracticeNoteSheet';
 import { SchemaGuideSheet } from './SchemaGuideSheet';
@@ -64,6 +65,7 @@ describe('адрес каждого раздела на листе находи�
     ['mode', () => guide.buildModeGuides(tr).map((g) => <ModeGuideSheet key="m" modeName="x" view={resolveModeGuide(guide, tr, g.modeId)!} {...sheet} />)],
     ['technique', () => guide.buildTechniqueGuides(tr).map((t) => <TechniqueSheet key="t" technique={t} onClose={noop} />)],
     ['note', () => guide.practiceNotes(tr).map((n) => <PracticeNoteSheet key="n" note={n} onClose={noop} />)],
+    ['concern', () => guide.buildConcernGuides(tr).map((c) => <ConcernGuideSheet key="c" concern={c} onClose={noop} />)],
   ] as const)('%s', (_kind, build) => {
     const addresses = build().flatMap(shown);
     expect(addresses.length).toBeGreaterThan(0);
