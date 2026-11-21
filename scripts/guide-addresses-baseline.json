@@ -1,4 +1,12 @@
 {
+  "concern:bpd/comorbidity": "Спутники и что лечить первым",
+  "concern:bpd/criteria": "Критерии",
+  "concern:bpd/differential": "С чем путают",
+  "concern:bpd/essence": "Суть",
+  "concern:bpd/evidence": "Исследования",
+  "concern:bpd/goal": "Цель",
+  "concern:bpd/origins": "Откуда берётся",
+  "concern:bpd/voice": "Как это звучит",
   "mode:abandoned_child/behavioral": "В жизни",
   "mode:abandoned_child/betweenSessions": "Между сессиями",
   "mode:abandoned_child/cognitive": "Через понимание",

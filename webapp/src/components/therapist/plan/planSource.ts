@@ -22,7 +22,7 @@ export function planSourceLink(guide: Guide | null | undefined, tr: Tr, item: Pi
   if (!guide || !address) return null;
   const found = guide.resolveAddress(address, tr);
   if (found) {
-    const open = found.kind === 'note' ? null : { kind: found.kind, id: found.articleId };
+    const open = found.kind === 'note' || found.kind === 'concern' ? null : { kind: found.kind, id: found.articleId };
     return { title: `${found.articleTitle} · ${found.sectionTitle}`, changed: false, open };
   }
   const p = guide.parseAddress(address);

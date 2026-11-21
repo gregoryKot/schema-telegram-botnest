@@ -17,7 +17,7 @@ const GUIDES: SchemaDomainGuide[] = [
   { domainId: 'rejection', note: '', schemas: [schema('mistrust'), schema('abandonment')] },
 ];
 const groups = (guides: SchemaDomainGuide[]) => buildReference({
-  buildModeGuides: () => [], buildTechniqueGuides: () => [], practiceNotes: () => [],
+  buildModeGuides: () => [], buildTechniqueGuides: () => [], practiceNotes: () => [], buildConcernGuides: () => [],
   buildSchemaDomainGuides: () => guides,
 }, tr).schemas;
 
