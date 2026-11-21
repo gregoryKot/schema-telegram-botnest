@@ -1,12 +1,12 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { SignGroup } from '../../components/schemaSheets/SignGroup';
 import { SignArt } from '../../components/art/SignArt';
-import { COPING_ABOUT, type SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
+import type { SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
+import { COPING_ABOUT } from '../../../../shared/src/schemaTherapy/guide/schemas/copingAbout';
 import { COPING_STYLES, type CopingStyle, type CopingStyleId } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
 import type { ReferenceGroup, ReferenceItem } from './guideReferenceModel';
 import {
-  buildSchemaTable, cellKey, showsFull, toggleCell, visibleStyles,
-  type CopingFilter, type SchemaTableRow, type TableDepth,
+  buildSchemaTable, cellKey, showsFull, toggleCell, visibleStyles, type CopingFilter, type SchemaTableRow, type TableDepth,
 } from './guideSchemaTableModel';
 import { GuideSchemaTableBar, GuideSeg } from './GuideSchemaTableBar';
 

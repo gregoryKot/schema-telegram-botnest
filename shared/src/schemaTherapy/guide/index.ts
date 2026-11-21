@@ -62,7 +62,6 @@ export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
 }
 
 export * from './address';
-export { COPING_ABOUT } from './schemas/copingAbout';
 
 export type {
   BetweenSessionsItem,
