@@ -1,7 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { futureImageryMore } from './imageryFutureMore';
+import { futureMoreAll } from './imageryArntz';
 
-/** Техники: future_imagery, healthy_adult_imagery. */
 export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'future_imagery',
@@ -23,10 +22,11 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
         'Представьте ту часть себя, которая знает, что граница нужна. Сядьте прямо: сейчас решает она. Что вы хотите сказать отцу?',
       ),
     ],
-    more: futureImageryMore,
+    more: futureMoreAll,
     cautions:
       'Не требовать здорового ответа слишком рано: самому планировать здоровое действие клиент учится постепенно [Кембридж, гл. 10].',
-    sources: '[Кембридж, бокс 9.12, гл. 10], [Янг, гл. 4, 5], [Арнтц, 9.4]',
+    sources:
+      '[Кембридж, бокс 9.12, гл. 10], [Янг, гл. 4, 5], [Арнтц, 9.4], [Арнтц ПРЛ, гл. 5]',
   },
   {
     id: 'healthy_adult_imagery',
