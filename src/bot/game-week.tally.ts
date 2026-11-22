@@ -1,11 +1,11 @@
 import { WEEK_CTA_PLACES } from '../analytics/game-week.constants';
 import type { GameEventRow } from './game-metrics.tally';
 
-/** Воронка новой игры «Неделя»: главы mon/wed/fri/sun/first, места зова hook/final. */
+/** Воронка новой игры «Неделя»: главы mon/wed/fri/sun/first, места зова hook/final/menu. */
 export interface WeekMetrics {
   started: number; // начали «Понедельник»
-  ctaShown: number; // увидели карточку после хука
-  clicksBooking: number;
+  ctaShown: number; // увидели карточку после хука; показ финальной сюда не входит
+  clicksBooking: number; // клики со всех мест: хук, финал, меню
   clicksApp: number;
   clicksOther: number; // клик без известной цели
   shares: number;
@@ -15,7 +15,8 @@ export interface WeekMetrics {
   friDone: number; // прошли «Пятницу» до конца
   sunStarted: number;
   sunDone: number; // прошли «Воскресенье» до конца
-  firstDone: number;
+  firstStarted: number;
+  firstDone: number; // прошли «Первую встречу» — конец игры
 }
 
 export const emptyWeek = (): WeekMetrics => ({
@@ -31,6 +32,7 @@ export const emptyWeek = (): WeekMetrics => ({
   friDone: 0,
   sunStarted: 0,
   sunDone: 0,
+  firstStarted: 0,
   firstDone: 0,
 });
 
@@ -46,7 +48,8 @@ export function tallyWeekRow(
   if (row.name === 'game_cta_shown' || row.name === 'game_share') {
     if (!isWeekPlace(row.place)) return false;
     if (row.name === 'game_share') w.shares += c;
-    else w.ctaShown += c;
+    // Конец игры считает firstDone: показ финальной карточки воронку хука не раздувает.
+    else if (row.place === 'hook') w.ctaShown += c;
     return true;
   }
   if (row.name === 'game_cta_click') {
@@ -61,6 +64,7 @@ export function tallyWeekRow(
     else if (row.chapter === 'wed') w.wedStarted += c;
     else if (row.chapter === 'fri') w.friStarted += c;
     else if (row.chapter === 'sun') w.sunStarted += c;
+    else if (row.chapter === 'first') w.firstStarted += c;
     else return false;
     return true;
   }
