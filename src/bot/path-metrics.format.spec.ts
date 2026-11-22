@@ -26,8 +26,8 @@ describe('formatPathMetrics', () => {
       shifted30: 1,
     });
     expect(text).toContain('Путей собрано: 3');
-    expect(text).toContain('Фаз начато: 5');
+    expect(text).toContain('Этапов начато: 5');
     expect(text).toContain('Раз сдвигали сроки: 1');
-    expect(text).not.toMatch(/Фаз завершено|Черновиков|NaN|: 0/);
+    expect(text).not.toMatch(/Этапов завершено|Черновиков|NaN|: 0/);
   });
 });

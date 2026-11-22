@@ -5,8 +5,8 @@ import type { PathMetrics } from './path-metrics.types';
 const ROWS: [keyof PathMetrics, string][] = [
   ['created30', 'Путей собрано'],
   ['drafts30', 'Черновиков собрано'],
-  ['phasesStarted30', 'Фаз начато'],
-  ['phasesFinished30', 'Фаз завершено'],
+  ['phasesStarted30', 'Этапов начато'],
+  ['phasesFinished30', 'Этапов завершено'],
   ['sessionsMarked30', 'Итогов сессий с пунктами плана'],
   ['shifted30', 'Раз сдвигали сроки'],
 ];
