@@ -49,7 +49,8 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
     try {
       // по одному: ручка плана создаёт один пункт; сбой посередине оставляет созданное в плане
       for (const row of chosen) {
-        await api.createPlanItems({ clientIds: [String(clientId)], rubric: 'session', text: row.title, sourceAddress: row.address, phaseId: row.phaseId });
+        const body = { clientIds: [String(clientId)], rubric: 'session' as const, text: row.title, sourceAddress: row.address, phaseId: row.phaseId };
+        await api.createPlanItems(body);
         ok += 1;
       }
     } catch {
