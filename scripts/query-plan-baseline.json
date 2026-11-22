@@ -47,6 +47,10 @@
     "therapist-notes": {
       "blocks": 174,
       "msCeiling": 500
+    },
+    "therapist-path": {
+      "blocks": 27,
+      "msCeiling": 500
     }
   },
   "seqScanAllowed": {}

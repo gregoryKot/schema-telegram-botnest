@@ -17,6 +17,7 @@ const CLAIMS = `${T}/card-claims`;
 const ALL_TASKS = `${T}/tasks/all`;
 const MODE_MAPS = { prefix: `${T}/mode-maps/` };
 const PLANS = { prefix: `${T}/plan/` };
+const PATHS = { prefix: `${T}/path/` };
 const GUIDE_MARKS = { prefix: `${T}/guide-marks` };
 
 /** Всё, что кабинет кеширует про одного клиента (GET с :clientId). */
@@ -28,6 +29,7 @@ const clientKeys = (id: string): InvalidationTarget[] => [
   `${T}/tasks/client/${id}`,
   `${T}/mode-maps/${id}`,
   `${T}/plan/${id}`,
+  `${T}/path/${id}`,
   { prefix: `${T}/client/${id}/` }, // diary, schema-notes, mode-notes
 ];
 
@@ -162,6 +164,26 @@ export const THERAPY_RULES: Rule[] = [
     pattern: /^\/api\/therapy\/plan\/order\/(-?\d+)$/,
     targets: (m) => [`${T}/plan/${m[1]}`],
   },
+  // Путь терапии (#1522): ручки с :clientId знают клиента, правка/смена/удаление
+  // этапа знают только id этапа — сбрасываем пути кабинета целиком.
+  {
+    method: 'POST',
+    pattern: /^\/api\/therapy\/path\/(-?\d+)(?:\/phases(?:\/order)?)?$/,
+    targets: (m) => [`${T}/path/${m[1]}`],
+  },
+  {
+    method: 'PATCH',
+    pattern: /^\/api\/therapy\/path\/(-?\d+)$/,
+    targets: (m) => [`${T}/path/${m[1]}`],
+  },
+  {
+    method: 'DELETE',
+    pattern: /^\/api\/therapy\/path\/(-?\d+)$/,
+    targets: (m) => [`${T}/path/${m[1]}`],
+  },
+  simple('PATCH', /^\/api\/therapy\/path\/phases\/\d+$/, PATHS),
+  simple('POST', /^\/api\/therapy\/path\/phases\/\d+\/advance$/, PATHS),
+  simple('DELETE', /^\/api\/therapy\/path\/phases\/\d+$/, PATHS),
   // «Про клиента» (#1484): отметка меняет и список клиента, и «уже отмечено» по адресу.
   simple('PUT', /^\/api\/therapy\/guide-marks\/-?\d+$/, GUIDE_MARKS),
   simple('DELETE', /^\/api\/therapy\/guide-marks\/items\/\d+$/, GUIDE_MARKS),
