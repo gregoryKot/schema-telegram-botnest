@@ -48,8 +48,12 @@ describe('кризисная строка игры', () => {
     expect(read('game/src/week/card.ts')).toContain('crisisLines(');
     expect(read('game/src/week/sunday.ts')).toMatch(/^\s*crisis: true,$/m);
     // глава с crisis: строка в углу всю главу (coach) и на экране конца (endCard через сцену)
-    expect(read('game/src/week/coach.ts')).toMatch(/if \(ch\.crisis\) this\.crisis = crisisLines\(/);
-    expect(read('game/src/week/endCard.ts')).toMatch(/if \(o\.crisis\) crisisLines\(/);
+    expect(read('game/src/week/coach.ts')).toMatch(
+      /if \(ch\.crisis\) this\.crisis = crisisLines\(/,
+    );
+    expect(read('game/src/week/endCard.ts')).toMatch(
+      /if \(o\.crisis\) crisisLines\(/,
+    );
     expect(read('game/src/scenes/WeekScene.ts')).toContain('crisis: ch.crisis');
   });
 });
