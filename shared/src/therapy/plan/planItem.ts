@@ -41,7 +41,14 @@ export const PLAN_RUBRIC_LABEL: Record<PlanRubric, string> = {
   custom: 'Своё',
 };
 
-export const PLAN_STATUSES = ['planned', 'active', 'done'] as const;
+/** Тап по статусу ходит по кругу первых трёх; «отложено» и «не нужно» ставят явно (путь клиента, #1522). */
+export const PLAN_STATUSES = [
+  'planned',
+  'active',
+  'done',
+  'postponed',
+  'dropped',
+] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
 /** Источник пункта до адресов (#1484): вид, id статьи и поле рубрики — переводит planAddress.ts. */
