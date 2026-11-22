@@ -52,7 +52,8 @@ const TEMPLATE_HUE: Record<string, PaperHue> = {
 /** Префикс id листа шаблона; тот же, что TEMPLATE_SHEET_PREFIX (guide/phases/templateSheets.ts) — сверяет pathLook.test.ts. */
 export const TEMPLATE_SHEET_PREFIX_ID = 'template_';
 
-export const phaseLook = (key: TemplateLookKey): Look => (key === 'ending' ? ENDING_LOOK : PHASE_LOOK[key]);
+export const phaseLook = (key: TemplateLookKey): Look =>
+  key === 'ending' ? ENDING_LOOK : PHASE_LOOK[key];
 
 /** Вид листа вкладки по id: стадия, обзор, сквозная тема или шаблон; неизвестный — сирень без знака. */
 export function pathSheetLook(id: string): SheetLook {

@@ -60,8 +60,13 @@ describe.each([
       for (const p of t.phases) {
         if (p.look === 'ending') {
           expect(p.guidePhaseIds, `${t.id}.${p.id}`).toEqual(['autonomy']);
-          expect(keys.indexOf('autonomy'), `${t.id}.${p.id}`).toBeLessThan(keys.indexOf('ending'));
-          expect(keys.indexOf('autonomy'), `${t.id}.${p.id}`).toBeGreaterThanOrEqual(0);
+          expect(keys.indexOf('autonomy'), `${t.id}.${p.id}`).toBeLessThan(
+            keys.indexOf('ending'),
+          );
+          expect(
+            keys.indexOf('autonomy'),
+            `${t.id}.${p.id}`,
+          ).toBeGreaterThanOrEqual(0);
         } else expect(p.guidePhaseIds, `${t.id}.${p.id}`).toContain(p.look);
       }
     }
@@ -69,7 +74,9 @@ describe.each([
 
   it('вид фазы «автономия» общего шаблона — знак автономии, а не соседней стадии', () => {
     const general = templates.find((t) => t.id === 'general');
-    expect(general?.phases.find((p) => p.id === 'autonomy')?.look).toBe('autonomy');
+    expect(general?.phases.find((p) => p.id === 'autonomy')?.look).toBe(
+      'autonomy',
+    );
     expect(general?.phases.find((p) => p.id === 'ending')?.look).toBe('ending');
   });
 
