@@ -10,7 +10,7 @@
 //     число пунктов и их виды (technique / exercise / custom). Какая техника и текст полей — нет. Строка в /stats — блок src/bot/concept-graph-metrics.* (рядом с журналом техник).
 //   cabinet_guide_table_open — в «Справочнике» переключил «Схемы» на вид «Таблицей» (все схемы и три копинга).
 //   task_assign_source — терапевт назначил задание в листе «Новое задание»; meta { source } из
-//     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника или свой текст. Блок — src/bot/task-assign-metrics.*.
+//     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника, свой текст, «Дать заданием» из листа справочника, шаблон вкладки «Задания». Блок — src/bot/task-assign-metrics.*.
 //   search_result_open — в общем поиске (⌘K, у клиента и у терапевта) открыли результат; meta { kind, typed, recent }:
 //     вид из SEARCH_RESULT_KINDS (клиент, вкладка его карточки, раздел, лист справочника, задание из справочника, действие; у клиента — схема или режим «Паттернов», упражнение, свой план, своё задание; у всех — статья, настройка), был ли введён запрос и открыт ли результат из «Недавнего». Текста запроса, имени клиента, названий листа и задания нет. Блок — src/bot/search-metrics.*.
 import { PLAN_EVENTS } from './plan-events.constants';
@@ -32,7 +32,9 @@ export const CABINET_EVENTS = [
   'search_result_open',
 ] as const;
 
-export const TASK_ASSIGN_SOURCES = ['tile', 'catalog', 'custom'] as const;
+// Парный список фронта — shared/src/share/taskAssignAnalytics.ts (сверка — analytics-sync.invariants.spec.ts).
+// prettier-ignore
+export const TASK_ASSIGN_SOURCES = ['tile', 'catalog', 'custom', 'guide', 'template'] as const;
 export type TaskAssignSource = (typeof TASK_ASSIGN_SOURCES)[number];
 
 // prettier-ignore
