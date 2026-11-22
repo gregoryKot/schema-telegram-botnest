@@ -45,6 +45,7 @@ export const buildSubjugationGuide = (tr: Tr): SchemaGuide => ({
     'imagery_rescripting',
     'future_imagery',
     'pattern_breaking',
+    'anger_expression',
   ],
   betweenSessions: [
     {

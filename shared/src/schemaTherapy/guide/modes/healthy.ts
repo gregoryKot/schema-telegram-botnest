@@ -37,6 +37,7 @@ export const buildHealthyGuides: ModeGuideBuilder = (tr) => [
       'chairwork',
       'flashcards',
       'future_imagery',
+      'play_and_joy',
     ],
     betweenSessions: [
       {
