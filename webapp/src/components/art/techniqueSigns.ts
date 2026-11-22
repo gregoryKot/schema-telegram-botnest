@@ -2,7 +2,7 @@
 // берут знак родственной техники или мотива — своих рисунков у них пока нет.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
-  YoungTechniqueId,
+  YoungTechniqueId, ArntzTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -70,10 +70,15 @@ const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = {
   schema_dialogue: 'talk',
 };
 
+const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
+  current_role_play: 'talk',
+};
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
   ...CAMBRIDGE_TECHNIQUE_SIGN,
   ...YOUNG_TECHNIQUE_SIGN,
+  ...ARNTZ_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };
