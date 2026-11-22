@@ -13,6 +13,7 @@ const phase = (over: Partial<PathPhase>): PathPhase => ({
 });
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), trackEvent: vi.fn(),
+  getPlanWork: vi.fn(() => Promise.resolve({ entries: [] })),
   getGuideMarks: () => Promise.resolve({ marks: [] }),
   getTherapyPath: vi.fn(),
 }));

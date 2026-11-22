@@ -213,7 +213,7 @@
   "shared/src/api/ratingApi.ts": 94,
   "shared/src/api/readErrorBody.ts": 38,
   "shared/src/api/readJsonBody.ts": 15,
-  "shared/src/api/sharedApi.ts": 298,
+  "shared/src/api/sharedApi.ts": 297,
   "shared/src/api/unwritableError.ts": 44,
   "shared/src/apiTypes.ts": 214,
   "shared/src/auth/authSeen.ts": 32,

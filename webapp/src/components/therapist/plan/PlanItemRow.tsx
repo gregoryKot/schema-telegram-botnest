@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { PlanItem, PlanStatus } from '../../../../../shared/src/therapy/plan/planItem';
 import { MMIcon } from '../../modeMapIcons';
 import { PlanItemForm } from './PlanItemForm';
@@ -12,17 +12,16 @@ interface Props {
   busy: boolean;
   /** Откуда пункт (planSourceLink); null — пункт свой или тексты справочника не приехали. */
   sourceLink: PlanSourceLink | null;
+  work?: ReactNode;
   onSetStatus: (status: PlanStatus) => void;
   onOpenSource: () => void;
   onAssign: () => void;
   /** Задание создано, но отметка в пункте не дошла: вместо «Дать заданием» — повтор отметки. */
-  linkPending: boolean;
-  onRetryLink: () => void;
+  linkPending: boolean; onRetryLink: () => void;
   onSaveText: (text: string) => Promise<boolean>;
   onDelete: () => void;
   /** Есть ли сосед в рубрике выше / ниже; оба false — пункт в рубрике один, стрелок нет. */
-  canUp: boolean;
-  canDown: boolean;
+  canUp: boolean; canDown: boolean;
   onMove: (dir: -1 | 1) => void;
   /** Фазы пути: есть — у строки «В фазу…» и перетаскивание; нет (раскладка «По каналам») — ни того, ни другого. */
   phases?: PhaseOption[];
@@ -30,7 +29,7 @@ interface Props {
 }
 
 /** Пункт плана: статус-кнопка (тап — меню из пяти статусов), текст, откуда пункт, действия — видны всегда. */
-export function PlanItemRow({ item, busy, sourceLink, onSetStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove, phases, onSetPhase }: Props) {
+export function PlanItemRow({ item, busy, sourceLink, work, onSetStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove, phases, onSetPhase }: Props) {
   const [editing, setEditing] = useState(false);
   return (
     <div className={rowClass(item.status)} {...rowDragProps(item.id, !!phases && !editing)}>
@@ -41,6 +40,7 @@ export function PlanItemRow({ item, busy, sourceLink, onSetStatus, onOpenSource,
         ) : (
           <div className="pl-text">{item.text}</div>
         )}
+        {!editing && work}
         {linkPending && (
           <div className="pl-meta" role="alert">
             <span className="tb-error">Задание создано, но не отметилось в плане</span>
