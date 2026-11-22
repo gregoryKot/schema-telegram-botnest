@@ -22,7 +22,7 @@ export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
 
 // Таблицы БЕЗ FK на User (каскад их не снесёт) → явный DELETE по диапазону.
 // prettier-ignore
-const NO_FK_TABLES = ['ClientConceptualization.therapistId', 'UserTask.userId', 'TherapistNote.therapistId', 'TherapistCustomMode.therapistId', 'ModeMap.therapistId'];
+const NO_FK_TABLES = ['ClientConceptualization.therapistId', 'UserTask.userId', 'TherapistNote.therapistId', 'TherapistCustomMode.therapistId', 'ModeMap.therapistId', 'TherapyPath.therapistId'];
 
 // Параллельных соединений: узкое место сида — вставка 2 млн событий, 2,7 млн
 // оценок и 2,1 млн строк очереди; они независимы и в параллель укладываются

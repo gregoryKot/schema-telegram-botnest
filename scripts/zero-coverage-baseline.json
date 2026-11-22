@@ -9,5 +9,7 @@
   "src/push/push.dto.ts": "DTO из декораторов class-validator; единственные функции — фабрики @Type(() => …), их зовёт ValidationPipe в test/push-ownership.e2e-spec.ts — e2e вне юнит-подсчёта",
   "src/therapy/dto/plan.dto.ts": "DTO из декораторов class-validator; единственные функции — фабрика @Type(() => …) и условие @ValidateIf, их зовёт ValidationPipe в test/therapy-plan.e2e-spec.ts — e2e вне юнит-подсчёта",
   "src/therapy/therapy-plan.controller.ts": "контроллер под e2e-смоком ownership test/therapy-plan.e2e-spec.ts (роль, чужой клиент, пустое тело, все пять ручек) — e2e в этот подсчёт юнит-покрытия не входит; логика — в TherapyPlanService под юнитом",
+  "src/therapy/dto/path.dto.ts": "DTO из декораторов class-validator; единственные функции — фабрика @Type(() => …) и условия @ValidateIf, их зовёт ValidationPipe в test/therapy-path.e2e-spec.ts — e2e в этот подсчёт юнит-покрытия не входит",
+  "src/therapy/therapy-path.controller.ts": "контроллер под e2e-смоком ownership test/therapy-path.e2e-spec.ts (роль, чужой клиент, чужая фаза, пустое тело, все девять ручек) — e2e в этот подсчёт юнит-покрытия не входит",
   "src/therapy/guide-marks.controller.ts": "контроллер отметок справочника под e2e-смоком ownership test/guide-marks.e2e-spec.ts (роль, чужой клиент, пустое тело) — e2e в этот подсчёт юнит-покрытия не входит; логика — в GuideMarksService под юнитом"
 }

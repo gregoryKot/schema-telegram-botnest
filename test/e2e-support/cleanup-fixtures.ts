@@ -92,6 +92,8 @@ export async function cleanupOwnershipFixtures(
   await prisma.therapistNote.deleteMany({ where: pairSide });
   await prisma.clientConceptualization.deleteMany({ where: pairSide });
   await prisma.therapyPlanItem.deleteMany({ where: pairSide });
+  // Фазы пути уходят каскадом (в фейке остаются сиротами — их никто не читает).
+  await prisma.therapyPath.deleteMany({ where: pairSide });
   await prisma.guideMark.deleteMany({ where: pairSide });
   await prisma.modeMap.deleteMany({ where: pairSide });
   await prisma.therapistCustomMode.deleteMany({
