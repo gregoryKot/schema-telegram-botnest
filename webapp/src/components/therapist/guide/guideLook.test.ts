@@ -21,9 +21,9 @@ describe('guideLook', () => {
     expect(schemaGuideLook('нет_такой')).toBeNull();
   });
 
-  it('техника — персик и свой знак; «Для терапевта» — небо кабинета, раздел без знака — без картинки', () => {
-    expect(techniqueGuideLook('chairwork')).toEqual({ hue: PAPER_HUE.peach, sign: 'talk' });
-    expect(practiceNoteLook('impasses')).toEqual({ hue: ENTITY_LOOK.therapist.hue, sign: 'ribbon' });
-    expect(practiceNoteLook('свой_раздел')).toEqual({ hue: ENTITY_LOOK.therapist.hue, sign: undefined });
+  it('техника и раздел «Для терапевта» — бумага своей группы и свой знак; раздел без знака — без картинки', () => {
+    expect(techniqueGuideLook({ id: 'chairwork', group: 'experiential' })).toEqual({ hue: PAPER_HUE.plum, sign: 'talk' });
+    expect(practiceNoteLook({ id: 'impasses', group: 'stuck' })).toEqual({ hue: PAPER_HUE.clay, sign: 'ribbon' });
+    expect(practiceNoteLook({ id: 'свой_раздел', group: 'therapist' })).toEqual({ hue: PAPER_HUE.sky, sign: undefined });
   });
 });

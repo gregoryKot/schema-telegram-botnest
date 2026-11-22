@@ -129,7 +129,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
-      look: 'healing',
+      look: 'autonomy',
     },
     {
       id: 'monthly',
@@ -153,7 +153,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
-      look: 'autonomy',
+      look: 'ending',
     },
   ],
   caveats: [

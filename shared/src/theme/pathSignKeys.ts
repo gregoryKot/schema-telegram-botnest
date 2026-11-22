@@ -18,5 +18,7 @@ export const PATH_SIGN_KEYS = [
   'path_checklist',
   'path_protocols',
   'path_template',
+  // PathSignsEnding.tsx — фаза шаблона после автономии
+  'path_ending',
 ] as const;
 export type PathSign = (typeof PATH_SIGN_KEYS)[number];
