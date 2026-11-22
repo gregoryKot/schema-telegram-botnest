@@ -7,7 +7,7 @@ import type { PlanItem } from '../../../../shared/src/therapy/plan/planItem';
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), getTherapyPath: vi.fn(), updatePlanItem: vi.fn(),
 }));
-vi.mock('../../api', () => ({ api: h }));
+vi.mock('../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
 import { SessionPlanBlock } from './SessionPlanBlock';
 

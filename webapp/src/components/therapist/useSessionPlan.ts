@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, type UserId } from '../../api';
+import { api, reportClientError, type UserId } from '../../api';
 import type { PlanItem, PlanStatus } from '../../../../shared/src/therapy/plan/planItem';
 import type { TherapyPath } from '../../../../shared/src/therapy/path/pathModel';
 import { currentPhaseIndex } from '../../../../shared/src/therapy/path/pathPlan';
@@ -43,6 +43,7 @@ export function useSessionPlan(clientId: UserId, reloadKey?: number) {
       setData((d) => d && { ...d, statuses: { ...d.statuses, [item.id]: next } });
     } catch {
       setError('Не удалось сохранить статус пункта');
+      reportClientError({ message: 'session plan status save failed', section: 'therapist.sessionPlan' });
     } finally {
       setBusyId(null);
     }
