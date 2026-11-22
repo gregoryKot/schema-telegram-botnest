@@ -42,6 +42,7 @@ export const buildEmotionalDeprivationGuide = (tr: Tr): SchemaGuide => ({
     'chairwork',
     'cognitive_work',
     'pattern_breaking',
+    'diagnostic_imagery',
   ],
   betweenSessions: [
     {

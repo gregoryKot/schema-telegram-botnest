@@ -43,6 +43,7 @@ export const buildSelfSacrificeGuide = (tr: Tr): SchemaGuide => ({
     'imagery_rescripting',
     'pros_cons',
     'pattern_breaking',
+    'couple_mode_cycle',
   ],
   betweenSessions: [
     {
