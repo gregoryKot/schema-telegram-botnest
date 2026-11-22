@@ -35,7 +35,7 @@ describe('«Что делали» в форме итогов', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Сохранить' }).disabled).toBe(true);
     click('Что делали на сессии — добавить');
     const picker = screen.getByRole('group', { name: 'Что делали: выбор' });
-    expect(within(within(picker).getByRole('group', { name: 'Техники' })).getAllByRole('button')).toHaveLength(49);
+    expect(within(within(picker).getByRole('group', { name: 'Техники' })).getAllByRole('button')).toHaveLength(50);
     expect(within(within(picker).getByRole('group', { name: 'Упражнения' })).getAllByRole('button')).toHaveLength(8);
     expect(within(within(picker).getByRole('group', { name: 'Своё' })).getAllByRole('button')).toHaveLength(1);
   });

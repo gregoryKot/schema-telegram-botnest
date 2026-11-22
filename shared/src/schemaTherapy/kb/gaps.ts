@@ -52,6 +52,7 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> =
       'responsibility_pie',
       'courtroom',
       'schema_dialogue',
+      'current_role_play',
       'behavioral_activation',
       'socratic_dialogue',
       'exposure',
