@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { bodyGroundingMore } from './arntzTechniqueMore';
 
 /** Тело: body_grounding. */
 export const buildBodyGroundingTechniques: TechniqueGuideBuilder = (tr) => [
@@ -27,12 +28,10 @@ export const buildBodyGroundingTechniques: TechniqueGuideBuilder = (tr) => [
         'Почувствуйте стопы на полу. Назовите три предмета, которые видите.',
       ),
     ],
-    more: [
-      'При расстройствах пищевого поведения [Кембридж, гл. 15] телесная работа идёт вместе с поведенческой: питание прежде всего, бунт против Критика, разрешение «занимать больше места» — и весом, и просьбами о своём. Учат замечать сигналы тела изнутри и его положение в пространстве — интероцепцию и проприоцепцию. Ощущение себя в теле, а не только в голове, растят игровыми образами репарентинга через чувства («трава под ногами») и практиками телесной осознанности.',
-    ],
+    more: bodyGroundingMore,
     cautions:
       'У клиентов с травмой внимание к телу само бывает триггером: начинают с коротких отрезков и нейтральных ощущений. Заземление возвращает контакт, но не заменяет работу с тем, от чего клиент ушёл.',
     sources:
-      'Heath G., Startup H. (eds.). Creative Methods in Schema Therapy: Advances and Innovation in Clinical Practice. Routledge, 2020, гл. 3 «Somatic perspective in schema therapy»; [Кембридж, гл. 15, бокс 14.2].',
+      'Heath G., Startup H. (eds.). Creative Methods in Schema Therapy: Advances and Innovation in Clinical Practice. Routledge, 2020, гл. 3 «Somatic perspective in schema therapy»; [Кембридж, гл. 15, бокс 14.2]; [Арнтц ПРЛ, гл. 5].',
   },
 ];
