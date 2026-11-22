@@ -9,6 +9,7 @@ import type { TherapyClientSummary } from '../../../api';
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
   getGuideMarks: () => Promise.resolve({ marks: [] }),
+  getTherapyPath: vi.fn(() => Promise.resolve({ path: null as unknown })),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));
@@ -150,5 +151,27 @@ describe('ClientPlanTab', () => {
     await screen.findByText('Не удалось переставить пункт');
     expect(h.getTherapyPlan).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(Array.from(document.querySelectorAll('.pl-text')).map((n) => n.textContent)).toEqual(['Первый', 'Второй']));
+  });
+
+  it('раскладка: есть путь — «По фазам», пункт стоит в своей фазе; «По каналам» — рубрики, как раньше', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Карта режимов', phaseId: 11 }), item({ id: 2, rubric: 'between', text: 'Дневник', position: 1 })]);
+    h.getTherapyPath.mockResolvedValueOnce({ path: {
+      id: 1, clientId: '7', startDate: '2026-11-02', templateId: null, createdAt: '', updatedAt: '',
+      phases: [{ id: 11, position: 0, name: 'Оценка', goal: null, weeks: 6, templatePhaseId: null, startedAt: '2026-11-02', endedAt: null, criteriaDone: [], note: null }],
+    } });
+    renderTab();
+    await screen.findByText('Оценка');
+    expect(screen.getByRole('button', { name: 'По фазам' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Без фазы')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Опустить ниже' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'По каналам' }));
+    expect(screen.getAllByRole('heading', { level: 3 }).map((n) => n.textContent)).toEqual(['Между сессиями', 'Своё']);
+  });
+
+  it('пути нет — по умолчанию «По каналам»', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Свой пункт' })]);
+    renderTab();
+    await screen.findByText('Свой пункт');
+    expect(screen.getByRole('button', { name: 'По каналам' }).getAttribute('aria-pressed')).toBe('true');
   });
 });
