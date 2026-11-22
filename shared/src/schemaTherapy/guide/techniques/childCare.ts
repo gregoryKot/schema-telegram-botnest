@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import * as extra from './childCareMore';
 
 /** Забота о детских режимах: transitional_objects, play_and_joy. */
 export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
@@ -22,10 +23,11 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
         'Я запишу это вам на телефон. Когда покажется, что меня нет и никогда не было, — включите и послушайте.',
       ),
     ],
+    more: extra.transitionalObjectsMore,
     cautions:
       'Объект напоминает о связи, но не заменяет ни сессию, ни кризисный план. Что именно клиент получает, терапевт решает заранее — это часть границ ограниченного родительства.',
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 12, бокс 12.5].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 12, бокс 12.5]; [Арнтц ПРЛ, гл. 10].',
   },
   {
     id: 'play_and_joy',
@@ -34,22 +36,17 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
     summary:
       'Терапевт приносит в сессию игру, юмор и удовольствие без цели — чтобы у клиента появился опыт спонтанности, которого не хватило в детстве.',
     when: 'Потребность в спонтанности и игре осталась без ответа: клиент всё делает «по делу», отдых считает ленью, Требовательный Критик не выключается. И как противовес тяжёлой работе с воображением [Локвуд и Шоу, 2012]. Простые упражнения: вместе выдувать мыльные пузыри, надувать и отпускать шарики, рисовать смешное, рассказывать анекдоты. В групповой схема-терапии так делают постоянно, в индивидуальной тоже можно. Игру соединяют с борьбой против Карающего Критика: уродливую фигурку Критика сажают на его стул, ругают и выбрасывают, а его послания «выдувают» в воздушный шарик и лопают. Тяжёлое становится детской забавой и освобождает [Арнтц ПРЛ, гл. 5].',
-    steps: [
-      'Расспросить, что радовало в детстве и было ли можно играть. Что радует сейчас — хотя бы на минуту.',
-      'Начать с малого прямо на сессии: шутка, рисунок, игра в мяч, смешная история. Терапевт играет вместе с клиентом, а не наблюдает.',
-      'Заметить, кто вмешался. Критик («глупости»), Защитник («мне всё равно») — назвать режим и вернуться к игре.',
-      'Договориться о радости между сессиями: одно занятие без пользы и результата, в календаре, как встреча.',
-      'На следующей сессии спросить, как это было, — и что помешало, если не вышло.',
-    ],
+    steps: extra.playAndJoySteps,
     voice: [
       tr(
         'У этого занятия не будет никакой пользы — в этом и смысл. Что тебе хотелось бы сделать просто потому, что нравится?',
         'У этого занятия не будет никакой пользы — в этом и смысл. Что вам хотелось бы сделать просто потому, что нравится?',
       ),
     ],
+    more: extra.playAndJoyMore,
     cautions:
       'Игра не к месту, когда клиент в остром горе или в Уязвимом Ребёнке и ждёт, что его услышат: шутка тогда звучит как отказ слушать. Клиенту со стыдом игра поначалу кажется проверкой — тут терапевт дурачится первым.',
     sources:
-      'Lockwood G., Shaw I. Schema Therapy and the Role of Joy and Play. В: van Vreeswijk M., Broersen J., Nadort M. (eds.). The Wiley-Blackwell Handbook of Schema Therapy. Wiley-Blackwell, 2012, ч. III, гл. 5. Heath G., Startup H. (eds.). Creative Methods in Schema Therapy. Routledge, 2020, гл. 10 «Spontaneity and Play in Schema Therapy». [Арнтц ПРЛ, гл. 5].',
+      'Lockwood G., Shaw I. Schema Therapy and the Role of Joy and Play. В: van Vreeswijk M., Broersen J., Nadort M. (eds.). The Wiley-Blackwell Handbook of Schema Therapy. Wiley-Blackwell, 2012, ч. III, гл. 5. Heath G., Startup H. (eds.). Creative Methods in Schema Therapy. Routledge, 2020, гл. 10 «Spontaneity and Play in Schema Therapy». [Арнтц ПРЛ, гл. 5, 10].',
   },
 ];
