@@ -26,6 +26,7 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
       id: 'bpd', name: 'Пограничное расстройство личности', goal: 'Вырастить Здорового Взрослого',
       essence: 'Нестабильность почти во всём', criteria: ['Пять из девяти признаков'], sources: '[Арнтц ПРЛ, гл. 1]',
     }],
+    needGuides: () => [],
     buildPhaseGuides: () => [
       { id: 'overview', name: 'Как устроен путь', goal: 'Карта, а не расписание', essence: 'Фазы условные', sources: '[Кембридж, гл. 1]' },
       {
