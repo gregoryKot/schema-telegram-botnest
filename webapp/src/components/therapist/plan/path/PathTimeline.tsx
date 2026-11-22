@@ -10,10 +10,14 @@ import { PathPhaseCard } from './PathPhaseCard';
 import { PathPhaseForm } from './PathPhaseForm';
 import { PathPhaseTools } from './PathPhaseTools';
 import { buildPathView, toggleCriterion, type PhaseRow } from './pathView';
+import type { PlanItems } from '../usePlanItems';
+import { PhaseAddItem } from './PhaseAddItem';
+import { usePhaseDrop } from './phaseDrop';
 import type { PathState } from './usePath';
 
 interface Props {
   path: PathState;
+  plan: PlanItems;
   current: TherapyPath;
   items: PlanItem[];
   templates: PathTemplate[];
@@ -21,7 +25,7 @@ interface Props {
 }
 
 /** Лента фаз с правкой и группа «Без фазы». Раскрытая на телефоне — выбранная руками, до выбора — из модели. */
-export function PathTimeline({ path, current, items, templates, renderRow }: Props) {
+export function PathTimeline({ path, plan, current, items, templates, renderRow }: Props) {
   const view = buildPathView(current, items, templates);
   const [picked, setPicked] = useState<number | null>(null);
   const openId = picked ?? view.rows[view.openIndex]?.phase.id ?? null;
@@ -29,6 +33,14 @@ export function PathTimeline({ path, current, items, templates, renderRow }: Pro
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [removing, setRemoving] = useState<PhaseRow | null>(null);
   const last = view.rows.length - 1;
+  const phases = view.rows.map((r) => ({ id: r.phase.id, name: r.phase.name }));
+  // Бросили строку на фазу или «Без фазы» — тот же перенос, что в меню «В фазу…».
+  const moveTo = (phaseId: number | null) => (itemId: number) => {
+    const item = items.find((i) => i.id === itemId);
+    if (item) void plan.setPhase(item, phaseId);
+  };
+  const unphasedDrop = usePhaseDrop(moveTo(null));
+  const addTo = (phaseId: number | null) => (text: string) => plan.addToPhase(phaseId, 'custom', text);
 
   const act = (row: PhaseRow) => {
     // переход — днём терапевта: он отмечает, когда фаза началась на деле
@@ -58,6 +70,7 @@ export function PathTimeline({ path, current, items, templates, renderRow }: Pro
             onCriterion={(n) => void path.patchPhase(row.phase.id, { criteriaDone: toggleCriterion(row.phase.criteriaDone, n) }, 'Не удалось отметить критерий')}
             onAction={() => act(row)}
             onShift={(weeks) => void path.shiftPhase(row.phase.id, weeks)}
+            phases={phases} onDropItem={moveTo(row.phase.id)} onAddItem={addTo(row.phase.id)} addBusy={plan.busyId === 'new'}
             tools={(
               <PathPhaseTools
                 name={row.phase.name} busy={path.busy} canUp={row.index > 0} canDown={row.index < last}
@@ -76,10 +89,11 @@ export function PathTimeline({ path, current, items, templates, renderRow }: Pro
           <div><button type="button" className="ds-btn ds-btn--secondary" onClick={() => { path.clearError(); setEditing('new'); }}>+ Добавить фазу</button></div>
         )}
       </div>
-      {view.unphased.length > 0 && (
-        <section className="ph-unphased">
+      {view.rows.length > 0 && (
+        <section className={`ph-unphased${unphasedDrop.over ? ' is-drop' : ''}`} {...unphasedDrop.props}>
           <h3 className="ds-label">Без фазы</h3>
-          <div className="pp-leaf pl-list">{view.unphased.map((item) => renderRow(item))}</div>
+          {view.unphased.length > 0 && <div className="pp-leaf pl-list">{view.unphased.map((item) => renderRow(item, undefined, phases))}</div>}
+          <PhaseAddItem busy={plan.busyId === 'new'} onAdd={addTo(null)} />
         </section>
       )}
       {removing && (

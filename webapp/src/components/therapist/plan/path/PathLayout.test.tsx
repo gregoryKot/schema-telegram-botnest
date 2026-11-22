@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock('../../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
+import type { PlanItems } from '../usePlanItems';
 import { PathLayout } from './PathLayout';
 import { usePath } from './usePath';
 
@@ -30,7 +31,7 @@ const items: PlanItem[] = [];
 
 function Harness() {
   const state = usePath(7);
-  return <PathLayout path={state} items={items} renderRow={(i) => <div key={i.id}>{i.text}</div>} />;
+  return <PathLayout path={state} plan={{ busyId: null } as PlanItems} items={items} renderRow={(i) => <div key={i.id}>{i.text}</div>} />;
 }
 const renderLayout = () => render(<MemoryRouter><Harness /></MemoryRouter>);
 
