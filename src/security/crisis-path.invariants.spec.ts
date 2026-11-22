@@ -96,6 +96,8 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'терапевт: текст пункта плана из справочника («В план»)',
   'webapp/src/components/therapist/plan/PlanItemForm.tsx':
     'терапевт: текст пункта плана работы с клиентом',
+  'webapp/src/components/therapist/plan/path/PathPhaseForm.tsx':
+    'терапевт: цель фазы пути клиента',
   // Вид «Поля» уехал из ClientConceptTab/ConceptSheet в отдельные файлы
   // (правило №10): запись переехала за <textarea>, а не добавилась. Поля
   // связей режимов графической концептуализации — ConceptTextField (shared,
@@ -196,8 +198,10 @@ describe('трипваер: кризисная детекция для своб�
     // пишет терапевт, тот же класс, что SessionWorkItemCard.
     // 22 → 23 (2026-11, «В план» #1337): plan/PlanAddSheet.tsx — тот же текст
     // пункта плана, что в PlanItemForm, только взятый из справочника.
+    // 23 → 24 (путь клиента #1522): plan/path/PathPhaseForm.tsx — цель фазы
+    // пишет терапевт, тот же класс, что PlanItemForm.
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      23,
+      24,
     );
   });
 
@@ -260,6 +264,8 @@ describe('трипваер: кризисная детекция для своб�
 
 // (C2) Короткое поле не о переживаниях. Сокращать можно, добавлять — с ревью.
 const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
+  'webapp/src/components/therapist/plan/path/PathPhaseForm.tsx':
+    'терапевт: название фазы пути и срок в неделях',
   // Имя, контакт, код — у поля свой формат, о себе там не пишут.
   'webapp/src/pages/login/RecoveryCodeField.tsx':
     'резервный код входа 2FA (hex), о переживаниях там не пишут',
