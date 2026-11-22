@@ -229,7 +229,7 @@
   "scripts/telegram-chat-id-flow.mjs": 138,
   "scripts/telegram-chat-id-objects.mjs": 84,
   "scripts/telegram-chat-id-params.mjs": 38,
-  "scripts/telegram-chat-id-resolve.mjs": 70,
+  "scripts/telegram-chat-id-resolve.mjs": 25,
   "scripts/timer-cleanup-rules.mjs": 134,
   "scripts/webvisor-fields-scan.mjs": 109,
   "scripts/zero-coverage-rules.mjs": 68,
