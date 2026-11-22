@@ -13,6 +13,7 @@ import {
 } from '../utils/crypto-record';
 import type { PlanItemView, PlanSource } from './therapy-plan.types';
 import { parseGuideAddress } from './guide-mark-address';
+import { assertPhaseOfPair } from './therapy-plan.phase';
 
 const PLAN_SCHEMA: EncryptSchema = {
   strings: ['text'],
@@ -33,6 +34,7 @@ export interface PlanItemPatch {
   status?: string;
   rubric?: string;
   taskId?: number | null;
+  phaseId?: number | null;
 }
 
 // Одна расшифровка на все ответы: список, создание и правка отдают одну форму.
@@ -51,6 +53,7 @@ function toView(row: TherapyPlanItem): PlanItemView {
         ? { kind: r.sourceKind, id: r.sourceId, field: r.sourceField }
         : null,
     taskId: r.taskId,
+    phaseId: r.phaseId,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   };
@@ -136,12 +139,19 @@ export class TherapyPlanService {
       });
       if (!task) throw new NotFoundException('Task not found');
     }
+    if (patch.phaseId != null)
+      await assertPhaseOfPair(
+        this.prisma,
+        { therapistId, ...item },
+        patch.phaseId,
+      );
     const data = encryptRecord(
       {
         ...(patch.text !== undefined && { text: patch.text }),
         ...(patch.status !== undefined && { status: patch.status }),
         ...(patch.rubric !== undefined && { rubric: patch.rubric }),
         ...(patch.taskId !== undefined && { taskId: patch.taskId }),
+        ...(patch.phaseId !== undefined && { phaseId: patch.phaseId }),
       },
       PLAN_SCHEMA,
     );

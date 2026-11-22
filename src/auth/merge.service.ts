@@ -60,6 +60,8 @@ export const KNOWN_TABLES = new Set<string>([
   'ClientConceptualization',
   'ModeMap',
   'TherapyPlanItem',
+  'TherapyPath',
+  'TherapyPathPhase',
   'GuideMark',
   'TherapistCustomMode',
   'User',
@@ -244,7 +246,7 @@ export class MergeService {
         DELETE FROM "ClientConceptualization" WHERE "therapistId" = ${sourceId} OR "clientId" = ${sourceId}
       `);
 
-      // 4d. ModeMap, TherapyPlanItem и GuideMark — merge-therapist-side.ts.
+      // 4d. ModeMap, TherapyPlanItem, TherapyPath и GuideMark — merge-therapist-side.ts.
       await remapTherapistSideRows(tx, sourceId, targetId);
 
       // 4e. TherapistCustomMode (только therapistId, без unique) — просто remap.
