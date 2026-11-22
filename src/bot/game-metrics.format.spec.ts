@@ -26,15 +26,11 @@ const emptyChapters = () =>
     chapter,
     started: 0,
     finished: 0,
-    deaths: 0,
   }));
 
 const EMPTY: GameMetrics = {
   opens: 0,
   opensBySource: emptySources(),
-  starts: 0,
-  tutorialDone: 0,
-  tutorialSkipped: 0,
   chapters: emptyChapters(),
   ctaShown: 0,
   ctaClicks: 0,
@@ -60,14 +56,11 @@ describe('полный отчёт', () => {
   const FULL: GameMetrics = {
     opens: 120,
     opensBySource: { site: 80, bot: 20, share: 10, direct: 5, other: 5 },
-    starts: 100,
-    tutorialDone: 70,
-    tutorialSkipped: 30,
     chapters: [
-      { chapter: 'chapter1', started: 90, finished: 60, deaths: 20 },
-      { chapter: 'chapter2', started: 55, finished: 30, deaths: 70 },
-      { chapter: 'chapter3', started: 20, finished: 10, deaths: 5 },
-      { chapter: 'chapter4', started: 5, finished: 3, deaths: 0 },
+      { chapter: 'chapter1', started: 90, finished: 60 },
+      { chapter: 'chapter2', started: 55, finished: 30 },
+      { chapter: 'chapter3', started: 20, finished: 10 },
+      { chapter: 'chapter4', started: 5, finished: 3 },
     ],
     ctaShown: 40,
     ctaClicks: 15,
@@ -85,18 +78,13 @@ describe('полный отчёт', () => {
     );
   });
 
-  it('показывает старты и воронку обучения', () => {
-    const out = formatGameMetrics(FULL);
-    expect(out).toContain(
-      'Нажали «начать»: 100 · обучение прошли 70, пропустили 30',
-    );
-  });
-
   it('показывает воронку по каждой начатой главе', () => {
     const out = formatGameMetrics(FULL);
-    expect(out).toContain('• Глава 1: 90 → 60 · 20 раз');
-    expect(out).toContain('• Глава 2: 55 → 30 · 70 раз');
-    expect(out).toContain('• Глава 4: 5 → 3 · 0 раз');
+    expect(out).toContain(
+      'Главы (начали → дошли до конца):\n• Глава 1: 90 → 60\n',
+    );
+    expect(out).toContain('• Глава 2: 55 → 30\n');
+    expect(out).toContain('• Глава 4: 5 → 3\n');
   });
 
   it('показывает приглашение к терапии с разбивкой по местам (нулевое место не перечисляется)', () => {
@@ -121,7 +109,7 @@ describe('полный отчёт', () => {
 });
 
 describe('частичный отчёт', () => {
-  it('только opens: нет строк про начало игры, главы, приглашение или шаринг', () => {
+  it('только opens: нет строк про главы, приглашение или шаринг', () => {
     const out = formatGameMetrics({
       ...EMPTY,
       opens: 10,
@@ -129,7 +117,6 @@ describe('частичный отчёт', () => {
     });
 
     expect(out).toContain('Открыли: 10 — с сайта 10');
-    expect(out).not.toContain('Нажали «начать»');
     expect(out).not.toContain('Главы (');
     expect(out).not.toContain('Приглашение к терапии');
     expect(out).not.toContain('Поделились');
@@ -147,13 +134,12 @@ describe('частичный отчёт', () => {
     expect(out).not.toContain('по ссылке от друга');
   });
 
-  it('глава без стартов не печатается, даже если у неё есть finished/deaths', () => {
+  it('глава без стартов не печатается, даже если у неё есть finished', () => {
     const chapters = emptyChapters();
-    chapters[1] = { chapter: 'chapter2', started: 0, finished: 0, deaths: 3 };
+    chapters[1] = { chapter: 'chapter2', started: 0, finished: 3 };
     const out = formatGameMetrics({ ...EMPTY, opens: 1, chapters });
 
-    // deaths без стартов — историческая аномалия (глава открылась старой
-    // версией клиента), started === 0 у всех — весь блок «Главы» пропущен.
+    // finished без стартов — аномалия; started === 0 у всех — блок «Главы» пропущен.
     expect(out).not.toContain('Главы (');
   });
 
@@ -167,11 +153,5 @@ describe('частичный отчёт', () => {
     const out = formatGameMetrics({ ...EMPTY, appArrivals: 2 });
     expect(out).toContain('Пришли из игры на сайт: 2');
     expect(out).not.toContain('никто не открывал');
-  });
-
-  it('нажали «начать» без прохождения/пропуска обучения — без суффикса про обучение', () => {
-    const out = formatGameMetrics({ ...EMPTY, starts: 5 });
-    expect(out).toContain('Нажали «начать»: 5');
-    expect(out).not.toContain('обучение');
   });
 });
