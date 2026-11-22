@@ -1,9 +1,6 @@
 // Карточки схем/режимов: userId только из req (см. CLAUDE.md правило про
-// денормализацию mySchemaIds/UserSchemaNote), а schemaId/modeId обязаны
-// пройти формат [a-z_]{1,64} — иначе можно протащить произвольный ключ
-// (SQL-инъекция маловероятна через Prisma, но ломает денормализованный
-// реестр и чужой JSON).
-import { BadRequestException } from '@nestjs/common';
+// денормализацию mySchemaIds/UserSchemaNote). schemaId/modeId — id справочника,
+// проверку держит DTO (src/therapy/dto/kb-id.validator.spec.ts).
 import { NotesController } from './notes.controller';
 import type { NotesService } from '../bot/notes.service';
 
@@ -33,17 +30,6 @@ describe('NotesController.getSchemaNotes / getModeNotes', () => {
 });
 
 describe('NotesController.upsertSchemaNote', () => {
-  it('невалидный schemaId (не [a-z_]{1,64}) → BadRequestException, сервис не вызван', async () => {
-    const { controller, notesService } = makeController();
-    await expect(
-      controller.upsertSchemaNote(makeReq(), {
-        schemaId: 'abandonment-1', // дефис — вне [a-z_]
-        triggers: 'x',
-      }),
-    ).rejects.toThrow(BadRequestException);
-    expect(notesService.upsertSchemaNote).not.toHaveBeenCalled();
-  });
-
   it('валидный schemaId → сохраняет под userId из req, поля тримятся сервисом-обёрткой', async () => {
     const { controller, notesService } = makeController();
     await controller.upsertSchemaNote(makeReq(3n), {
@@ -73,16 +59,6 @@ describe('NotesController.upsertSchemaNote', () => {
 });
 
 describe('NotesController.upsertModeNote', () => {
-  it('невалидный modeId → BadRequestException', async () => {
-    const { controller, notesService } = makeController();
-    await expect(
-      controller.upsertModeNote(makeReq(), {
-        modeId: 'Punitive Parent', // пробел/заглавные — вне формата
-      }),
-    ).rejects.toThrow(BadRequestException);
-    expect(notesService.upsertModeNote).not.toHaveBeenCalled();
-  });
-
   it('валидный modeId — needs тримится и передаётся отдельным полем', async () => {
     const { controller, notesService } = makeController();
     await controller.upsertModeNote(makeReq(7n), {

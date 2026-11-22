@@ -25,6 +25,12 @@ const modeIds = () => ALL_MODES.map((m) => m.id);
 
 export const MODE_TABLES: readonly KbTable[] = [
   {
+    file: 'src/therapy/kb-ids.ts',
+    kind: 'mode',
+    coverage: 'all',
+    syncSpec: 'src/therapy/kb-ids.sync.spec.ts',
+  },
+  {
     file: 'shared/src/schemaTherapy/guide/modes/all.ts',
     kind: 'mode',
     coverage: 'all',

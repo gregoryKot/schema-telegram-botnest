@@ -6,6 +6,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
+import { IsKbId } from '../../therapy/dto/kb-id.validator';
 import { DAY_NOTE_MERGED_MAX } from '../../bot/day-note-limit';
 import { MODE_NOTE_FIELDS } from '../../bot/notes.service';
 import { NOTE_CARD_FIELD_MAX } from '../../utils/text-limits';
@@ -69,6 +70,8 @@ export class NoteFieldsDto {
 
 export class SchemaNoteDto extends NoteFieldsDto {
   @IsString()
+  @MaxLength(64)
+  @IsKbId('schema')
   schemaId!: string;
 
   @IsOptional()
@@ -79,6 +82,8 @@ export class SchemaNoteDto extends NoteFieldsDto {
 
 export class ModeNoteDto extends NoteFieldsDto {
   @IsString()
+  @MaxLength(64)
+  @IsKbId('mode')
   modeId!: string;
 
   @IsOptional()
