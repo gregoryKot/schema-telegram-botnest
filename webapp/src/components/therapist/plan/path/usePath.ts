@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError, type UserId } from '../../../../api';
 import type { PathPhasePatch, PathResponse } from '../../../../../../shared/src/therapy/path/pathApi';
-import type { PathPhaseDraft, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
+import type { PathPhase, PathPhaseDraft, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
+import { trackPathCreated, trackPathDatesShifted, trackPathPhaseFinished, trackPathPhaseStarted } from '../../../../../../shared/src/share/pathAnalytics';
 import { movePhaseIds } from './pathView';
 
 /**
@@ -56,14 +57,40 @@ export function usePath(clientId: UserId) {
   return {
     path, failed, busy, error, reload,
     clearError: () => setError(''),
-    create: (startDate: string, templateId: string | null, phases: PathPhaseDraft[]) =>
-      run('Не удалось собрать путь', () => api.createTherapyPath(clientId, { startDate, templateId, phases })),
+    create: async (startDate: string, templateId: string | null, phases: PathPhaseDraft[]) => {
+      const ok = await run('Не удалось собрать путь', () => api.createTherapyPath(clientId, { startDate, templateId, phases }));
+      if (ok) trackPathCreated(api, templateId);
+      return ok;
+    },
+    /** «Начать фазу» / «Завершить фазу» с днём `date`; событие — после ответа сервера. */
+    startPhase: async (phase: PathPhase, date: string) => {
+      const ok = await patchPhase(phase.id, { startedAt: date }, 'Не удалось начать фазу');
+      if (ok) trackPathPhaseStarted(api, phase.templatePhaseId);
+      return ok;
+    },
+    finishPhase: async (phase: PathPhase, date: string) => {
+      const ok = await patchPhase(phase.id, { endedAt: date }, 'Не удалось завершить фазу');
+      if (ok) trackPathPhaseFinished(api, phase.templatePhaseId);
+      return ok;
+    },
     patchPhase,
     setStartDate: (startDate: string) => run('Не удалось изменить старт', () => api.setTherapyPathStart(clientId, startDate)),
     /** «Сдвинуть сроки»: у текущей фазы больше недель — плановый конец не раньше сегодня. */
-    shiftPhase: (id: number, weeks: number) => patchPhase(id, { weeks }, 'Не удалось сдвинуть сроки'),
-    /** Закрыть фазу днём `date`, следующую начать тем же днём. */
-    advance: (id: number, date: string) => run('Не удалось перейти к следующей фазе', () => api.advancePathPhase(id, date)),
+    shiftPhase: async (id: number, weeks: number) => {
+      const ok = await patchPhase(id, { weeks }, 'Не удалось сдвинуть сроки');
+      if (ok) trackPathDatesShifted(api);
+      return ok;
+    },
+    /** Закрыть фазу `phase` днём `date`, следующую (если есть) начать тем же днём. */
+    advance: async (phase: PathPhase, date: string) => {
+      const ok = await run('Не удалось перейти к следующей фазе', () => api.advancePathPhase(phase.id, date));
+      if (ok) {
+        trackPathPhaseFinished(api, phase.templatePhaseId);
+        const next = path?.phases.find((p) => p.position > phase.position);
+        if (next) trackPathPhaseStarted(api, next.templatePhaseId);
+      }
+      return ok;
+    },
     addPhase: (draft: PathPhaseDraft) => run('Не удалось добавить фазу', () => api.addPathPhase(clientId, draft)),
     removePhase: (id: number) => run('Не удалось удалить фазу', () => api.deletePathPhase(clientId, id)),
     /** Фаза меняется местами с соседом (dir: -1 — выше); сервер получает весь порядок. */

@@ -12,7 +12,7 @@ import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planIte
 
 const h = vi.hoisted(() => ({
   getTherapyPath: vi.fn(), createTherapyPath: vi.fn(), updatePathPhase: vi.fn(), advancePathPhase: vi.fn(),
-  addPathPhase: vi.fn(), setTherapyPathStart: vi.fn(), deletePathPhase: vi.fn(), reorderPathPhases: vi.fn(),
+  addPathPhase: vi.fn(), setTherapyPathStart: vi.fn(), deletePathPhase: vi.fn(), reorderPathPhases: vi.fn(), trackEvent: vi.fn(),
 }));
 vi.mock('../../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
@@ -51,6 +51,7 @@ describe('PathLayout', () => {
       startDate: todayStr(), templateId: 'general', phases: phaseDraftsFromTemplate(general),
     }));
     await screen.findByRole('heading', { name: 'Оценка и концептуализация' });
+    expect(h.trackEvent).toHaveBeenCalledWith('therapy_path_created', { template: 'general' });
   });
 
   it('«Пустой путь» уходит без фаз и без шаблона', async () => {
@@ -61,6 +62,7 @@ describe('PathLayout', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Пустой путь/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Собрать' }));
     await waitFor(() => expect(h.createTherapyPath).toHaveBeenCalledWith(7, expect.objectContaining({ templateId: null, phases: [] })));
+    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_path_created', { template: 'empty' }));
   });
 
   it('текущая фаза: отметка критерия шлёт criteriaDone, «Завершить и перейти» — advance сегодняшним днём', async () => {
@@ -75,6 +77,10 @@ describe('PathLayout', () => {
     await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(1, { criteriaDone: [1] }));
     fireEvent.click(screen.getByRole('button', { name: 'Завершить и перейти к следующей' }));
     await waitFor(() => expect(h.advancePathPhase).toHaveBeenCalledWith(1, todayStr()));
+    await waitFor(() => expect(h.trackEvent.mock.calls).toEqual([
+      ['therapy_path_phase_finished', { phase: 'assessment' }],
+      ['therapy_path_phase_started', { phase: 'custom' }],
+    ]));
   });
 
   it('текущей нет — «Начать фазу» ставит startedAt; путь не загрузился — «Повторить»', async () => {
@@ -85,6 +91,7 @@ describe('PathLayout', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Повторить' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Начать фазу' }));
     await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(1, { startedAt: todayStr() }));
+    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_path_phase_started', { phase: 'assessment' }));
   });
 
   describe('правка фаз', () => {
@@ -143,5 +150,6 @@ describe('PathLayout', () => {
     expect((await screen.findByText(/закончилась 4 недели назад/)).textContent).toContain('сдвинуть сроки?');
     fireEvent.click(screen.getByRole('button', { name: 'Сдвинуть сроки' }));
     await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(5, { weeks: 6 }));
+    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_path_dates_shifted'));
   });
 });

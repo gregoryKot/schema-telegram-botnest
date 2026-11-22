@@ -72,7 +72,7 @@ export function usePlanItems(clientId: UserId) {
   const setStatus = async (item: PlanItem, status: PlanStatus) => {
     replace({ ...item, status });
     const ok = await patch(item.id, { status });
-    if (ok) trackPlanItemStatus(api, status);
+    if (ok) trackPlanItemStatus(api, status, item.phaseId !== null);
     // Откат — только статуса и в актуальном пункте: остальные поля могли измениться.
     else if (alive.current) setItems((prev) => prev && prev.map((i) => (i.id === item.id ? { ...i, status: item.status } : i)));
   };
