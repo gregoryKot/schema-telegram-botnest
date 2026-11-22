@@ -1,6 +1,7 @@
 import type { TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import { PHASE_TITLES } from '../../../../../shared/src/schemaTherapy/guide/address/addressTitlesPhase';
-import { PHASE_LOOK, phaseLabel, type PhaseView } from '../../../sections/guide/guideReferencePhases';
+import { pathSheetLook } from '../../../../../shared/src/theme/pathLook';
+import { phaseLabel, type PhaseView } from '../../../sections/guide/guideReferencePhases';
 import { GuideLinkRows } from './GuideLinkRows';
 import { GuideSection } from './GuideSection';
 import { GuidePoints, GuideVoice } from './GuidePoints';
@@ -44,7 +45,7 @@ export function PhaseGuideSheet({ view, onOpenMode, onOpenTechnique, onOpenNote,
   return (
     <GuidePage
       label={phaseLabel(view.step, phase.group)} title={phase.name} lede={phase.essence} onClose={onClose}
-      look={PHASE_LOOK} more={phase.more} sources={phase.sources}
+      look={pathSheetLook(phase.id)} more={phase.more} sources={phase.sources}
     >
       {BEFORE.map(part)}
       {modes.length > 0 && (
