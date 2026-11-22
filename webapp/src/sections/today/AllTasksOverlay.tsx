@@ -12,6 +12,7 @@ import { todayStr } from '../../utils/format';
 import { groupTasks } from '../practice/taskListModel';
 import { TaskListGroups } from '../tasks/TaskListGroups';
 import { TaskSaveError } from './TaskSaveError';
+import { spotKey, useSpotlight } from '../../hooks/useSpotlight';
 
 interface Props {
   /** «Задания» в «Ещё», «Все цели» в «Практике». */
@@ -27,6 +28,8 @@ interface Props {
   error?: boolean;
   /** Список ещё грузится (узел «Задания» открывается сразу): силуэт строк, а не «пусто». */
   loading?: boolean;
+  /** Задание из общего поиска или ссылки, которое открыть нечем: строка прокручивается в вид и подсвечивается. */
+  spotlightTaskId?: number;
 }
 
 // Полный список заданий — один на «Задания» (Ещё) и «Все цели» (Практика). QA 2026-11 (A-З8): строка — общий TaskRow
@@ -34,7 +37,8 @@ interface Props {
 // на компьютере — разворотом слева, на телефоне — полосой сверху; список — группами, как на «Практиках»; пусто — тот
 // же лист в полный рост со сценой (Sprout с Check, как у «Запланировано»), подписью и одной кнопкой. Открыть задание и «+ Поставить цель» — сначала снять свою запись
 // истории (goBack(then)): трекер и дневники лежат ниже оверлея (z-index 80 < 200).
-export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, onComplete, onAdd, error = false, loading = false }: Props) {
+export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, onComplete, onAdd, error = false, loading = false, spotlightTaskId }: Props) {
+  useSpotlight(spotlightTaskId === undefined ? null : spotKey('task', spotlightTaskId), !loading);
   const goBack = useHistorySheet(onClose);
   const phone = useIsMobile();
   const tr = useTr();
