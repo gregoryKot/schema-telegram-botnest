@@ -96,7 +96,7 @@
 
 
 
-- ⬜ **Гейт на загрузку модулей внутри `it` для спеков волны А** — после #1305 внутри `it` модули ещё грузят `client-key.spec.ts`, `practice-ics.spec.ts`, `rotate-all.spec.ts`, `therapy-notes.service.conceptualization.spec.ts`: Stryker (perTest) засчитывает тесту код уровня модуля, статика становится «гибридной», как уронившая `merge.service.ts` до 52.94 (#1278). Полы пока держатся, гейта нет — новый такой спек над графом импортов `mutate` повторит провал. Перенести загрузку в `beforeAll` или отсекать такие тесты в `scripts/stryker/covering-test-files.cjs`, плюс гейт на `require`/`loadWithKeys` внутри `it`; подробности — `docs/open/ci-tests.md`, «гибридной».
+- ⬜ **Загрузка модулей внутри `it`: остаток в 10 спеках** — гейт `scripts/check-spec-load-in-test.mjs` нашёл, кроме четырёх исправленных, ещё 165 загрузок в тестах: `src/utils/crypto.spec.ts` (72), `crypto-record.spec.ts` (24), `encrypt-migration.spec.ts` (23), `crypto-keys.spec.ts` (9), `crypto-record.writable.spec.ts` (8), `src/account/data-export.service.spec.ts` (9), `src/infra/self-check/clinical-labels-status.spec.ts` (8), `src/booking/caldav-owner-event.spec.ts` (6), `therapy-notes.service.session-notes.spec.ts` (3), `therapy-relations.service.spec.ts` (3). Долг заморожен в `scripts/spec-load-in-test-baseline.json` (только вниз); перенос в `beforeAll` у крипто-спеков меняет статику волны А — делать с ночным прогоном Stryker и сверкой полов.
 
 
 
@@ -219,6 +219,7 @@
 - ✅ **Нижняя навигация — плавающая капсула-«стекло» (вариант А)** — без размытия: заливка и кромка токенами `--glass-*` (`webapp/src/index.css`), «линза» активного пункта, той же заливкой «Зачем это?», блик у залитой `ds-btn` (`webapp/src/styles/cabinet.css`). Владелец 2026-11-18, #1375. Владельцу: проверить плавность на телефоне в установленном приложении — PerfHud, пять тапов по строке версии в «О приложении».
 
 - ✅ **Знак на экране загрузки** — вместо пустого экрана до запуска бандла: знак продукта и «Всё по схеме» в `#root` (`webapp/index.html`), проявляется через 0,3 с; визитка вырезает блок (`src/practice-preview.ts`). Владелец 2026-11-18, #1374.
+- ✅ **Гейт на загрузку модулей внутри `it` для спеков над мутационной зоной** — `scripts/check-spec-load-in-test.mjs` (джоба `checks`): спек, чей граф импортов доходит до `mutate` Stryker, не грузит модуль внутри `it`/`test` — ни напрямую (`require`, `loadWithKeys`, `jest.isolateModules`), ни вызовом функции-загрузчика. В `client-key.spec.ts`, `practice-ics.spec.ts`, `rotate-all.spec.ts`, `therapy-notes.service.conceptualization.spec.ts` загрузка поднята на уровень файла; остаток в 10 спеках заморожен бейслайном — строка в «Следующее».
 
 - ✅ **Справочник заданий, часть 3: новые техники** (#1366; PR #1372, #1388, #1389) — список владельца из 27 техник целиком: 15 из схема-терапии и 12 из других подходов отдельной группой «Из других подходов» (`BorrowedTechniqueId`, поля `approach` и `pairsWith`, `webapp/src/sections/guide/guideReferenceTechniques.ts`, подпись подхода и «В схема-терапии» в `TechniqueSheet.tsx`). Всего 41; написанное по смыслу — в очереди вычитки `docs/open/owner.md`.
 
