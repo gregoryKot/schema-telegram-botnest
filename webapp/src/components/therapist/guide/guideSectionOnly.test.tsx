@@ -16,6 +16,8 @@ import { GuideMarkContext, type GuideMarkCtx } from './marks/GuideSectionMark';
 import { ConcernGuideSheet } from './ConcernGuideSheet';
 import { phaseView } from '../../../sections/guide/guideReferencePhases';
 import { ModeGuideSheet } from './ModeGuideSheet';
+import { NeedGuideSheet } from './NeedGuideSheet';
+import { buildNeedGuides } from '../../../sections/guide/guideReferenceNeeds';
 import { PhaseGuideSheet } from './PhaseGuideSheet';
 import { PracticeNoteSheet } from './PracticeNoteSheet';
 import { SchemaGuideSheet } from './SchemaGuideSheet';
@@ -27,7 +29,7 @@ const CTX: GuideMarkCtx = { selected: null, select: noop, onMark: noop, onUnmark
 
 // Листы без статьи-адреса: потребность (её нет среди видов статьи), каркас (разделы приходят пропсами)
 // и лист отметки копинга (форма отметки, не раздел справочника).
-const NO_ARTICLE = new Set(['NeedGuideSheet.tsx', 'GuideSheet.tsx', 'CopingMarkSheet.tsx']);
+const NO_ARTICLE = new Set(['GuideSheet.tsx', 'CopingMarkSheet.tsx']);
 // Раздел-обёртка без своего текста: адреса — у каналов внутри (GuidePoints).
 const WRAPPERS = ['Как работать'];
 
@@ -69,6 +71,7 @@ describe('адрес каждого раздела на листе находи�
     ['note', () => guide.practiceNotes(tr).map((n) => <PracticeNoteSheet key="n" note={n} onClose={noop} />)],
     ['concern', () => guide.buildConcernGuides(tr).map((c) => <ConcernGuideSheet key="c" concern={c} onClose={noop} />)],
     ['phase', () => guide.buildPhaseGuides(tr).map((p, _i, all) => <PhaseGuideSheet key="p" view={phaseView(guide, tr, all, p.id)!} onOpenMode={noop} onOpenTechnique={noop} onOpenNote={noop} onOpenPhase={noop} onClose={noop} />)],
+    ['need', () => buildNeedGuides(guide, tr).map((n) => <NeedGuideSheet key="n" need={n} onOpenSchema={noop} onClose={noop} />)],
   ] as const)('%s', (_kind, build) => {
     const addresses = build().flatMap(shown);
     expect(addresses.length).toBeGreaterThan(0);

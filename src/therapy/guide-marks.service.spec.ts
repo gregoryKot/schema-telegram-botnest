@@ -59,7 +59,7 @@ describe('GuideMarksService', () => {
 
   it.each([
     ['копинг схемы идёт в schemaLinks', 'schema:subjugation/coping.surrender'],
-    ['чужой вид', 'need:safety/text'],
+    ['чужой вид', 'tab:safety/text'],
     ['не адрес', 'mode:/x'],
   ])('%s — 400, ничего не записано', async (_n, address) => {
     const { service, guideMark } = make();

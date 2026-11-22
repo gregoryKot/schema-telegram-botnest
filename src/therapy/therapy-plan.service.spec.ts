@@ -92,7 +92,7 @@ describe('TherapyPlanService', () => {
   it('не адрес справочника — 400, строк нет', async () => {
     const { service } = setup();
     await expect(
-      service.create(T, [C1], { ...item, sourceAddress: 'need:safety/text' }),
+      service.create(T, [C1], { ...item, sourceAddress: 'tab:safety/text' }),
     ).rejects.toThrow('Bad guide address');
     expect(await service.list(T, C1)).toEqual([]);
   });
