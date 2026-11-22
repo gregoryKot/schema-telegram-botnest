@@ -8,6 +8,7 @@ import {
   isSerializationFailure,
   SERIALIZATION_RETRIES,
 } from './serializable-retry';
+import { RETRY_BASE_DELAY_MS, retryDelayMs } from './retry-backoff';
 
 const onCommit = () =>
   Object.assign(new Error('TransactionWriteConflict'), {
@@ -38,8 +39,20 @@ describe('isSerializationFailure', () => {
   });
 });
 
+describe('retryDelayMs', () => {
+  it('пауза случайна в [потолок/2, потолок), потолок удваивается', () => {
+    expect(retryDelayMs(1, () => 0)).toBe(RETRY_BASE_DELAY_MS / 2);
+    expect(retryDelayMs(1, () => 0.999)).toBeLessThanOrEqual(
+      RETRY_BASE_DELAY_MS,
+    );
+    expect(retryDelayMs(3, () => 0)).toBe(RETRY_BASE_DELAY_MS * 2);
+    expect(retryDelayMs(3, () => 0.5)).toBe(RETRY_BASE_DELAY_MS * 3);
+  });
+});
+
 describe('inSerializableTx', () => {
   const exhausted = () => new ConflictException('повтор не помог');
+  const noWait = { sleep: () => Promise.resolve() };
 
   const coded = (code: string) => Object.assign(new Error(code), { code });
 
@@ -61,18 +74,55 @@ describe('inSerializableTx', () => {
   it('конфликт на COMMIT → повтор → результат второй попытки', async () => {
     const { prisma, $transaction, levels } = prismaFailing([onCommit()]);
     await expect(
-      inSerializableTx(prisma, () => Promise.resolve('ok'), exhausted),
+      inSerializableTx(prisma, () => Promise.resolve('ok'), exhausted, noWait),
     ).resolves.toBe('ok');
     expect($transaction).toHaveBeenCalledTimes(2);
     expect(levels).toEqual(['Serializable', 'Serializable']);
   });
 
-  it(`${SERIALIZATION_RETRIES} конфликта подряд → onExhausted()`, async () => {
+  it('между попытками — растущая пауза; после успеха и перед отказом её нет', async () => {
+    const slept: number[] = [];
+    const timing = {
+      sleep: (ms: number) => {
+        slept.push(ms);
+        return Promise.resolve();
+      },
+      random: () => 0,
+    };
+    const ok = prismaFailing([coded('P2034'), onCommit()]);
+    await inSerializableTx(
+      ok.prisma,
+      () => Promise.resolve(1),
+      exhausted,
+      timing,
+    );
+    expect(slept).toEqual([RETRY_BASE_DELAY_MS / 2, RETRY_BASE_DELAY_MS]);
+
+    slept.length = 0;
+    const bad = prismaFailing(
+      Array.from({ length: SERIALIZATION_RETRIES }, () => coded('P2034')),
+    );
+    await expect(
+      inSerializableTx(bad.prisma, () => Promise.resolve(1), exhausted, timing),
+    ).rejects.toThrow('повтор не помог');
+    expect(slept).toHaveLength(SERIALIZATION_RETRIES - 1);
+  });
+
+  it('по умолчанию ждёт настоящим таймером, не меньше половины потолка', async () => {
+    const { prisma } = prismaFailing([coded('P2034')]);
+    const started = Date.now();
+    await inSerializableTx(prisma, () => Promise.resolve('ok'), exhausted);
+    expect(Date.now() - started).toBeGreaterThanOrEqual(
+      RETRY_BASE_DELAY_MS / 2 - 2,
+    );
+  });
+
+  it(`${SERIALIZATION_RETRIES} конфликтов подряд → onExhausted()`, async () => {
     const { prisma, $transaction } = prismaFailing(
       Array.from({ length: SERIALIZATION_RETRIES }, () => coded('P2034')),
     );
     await expect(
-      inSerializableTx(prisma, () => Promise.resolve('ok'), exhausted),
+      inSerializableTx(prisma, () => Promise.resolve('ok'), exhausted, noWait),
     ).rejects.toThrow('повтор не помог');
     expect($transaction).toHaveBeenCalledTimes(SERIALIZATION_RETRIES);
   });
