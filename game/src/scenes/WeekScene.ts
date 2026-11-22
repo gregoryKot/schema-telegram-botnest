@@ -7,7 +7,7 @@ import { setTouchControls } from '../controls';
 import { audio } from '../audio';
 import { t, type MsgKey } from '../i18n';
 import { doorX, gateInReach, type Act, type Chapter } from '../week/chapter';
-import { chapterById, nextChapter } from '../week/chapters';
+import { chapterById } from '../week/chapters';
 import { runSpeed, type Pace } from '../week/run';
 import {
   RULES, agree, glitchLevel, isResting, isSitting, jumpFactor, nameGlitch, newWeekState, overwork, reachClock, scroll,
@@ -18,8 +18,7 @@ import { SlipView } from '../week/slip';
 import { addGate, buildWorld, openGate, type World } from '../week/world';
 import { WordRain } from '../week/rain';
 import { WeekHud } from '../week/hud';
-import { showWeekCard } from '../week/card';
-import { showWeekEnd } from '../week/endCard';
+import { showChapterEnd } from '../week/ending';
 import { trackEvent } from '../analytics';
 import { px as ui } from '../week/ui';
 import { PausePanel } from '../week/pausePanel';
@@ -167,8 +166,8 @@ export class WeekScene extends Phaser.Scene {
     if (b.notifs) this.rain.keys = b.notifs;
     if (b.goal) { this.coach.goal(b.goal); this.coach.tagDoor(); }
     if (b.say) {
-      const at = b.atDoor ? this.world.door.x : b.sayAt; // реплика от цели звучит, пока Саша к ней идёт
-      if (at !== undefined) this.hud.say(t(b.say), at, GROUND_Y - ui(b.atDoor ? 112 : 96), b.atDoor ? 3400 : 6000, b.msg ? 'msg' : 'say');
+      if (b.atDoor && !b.msg) this.hud.voice(t(b.say), this.world.door, GROUND_Y - ui(112)); // реплика цели идёт вместе с ней
+      else if (b.atDoor || b.sayAt !== undefined) this.hud.say(t(b.say), b.sayAt ?? this.world.door.x, GROUND_Y - ui(b.atDoor ? 112 : 96), b.atDoor ? 3400 : 6000, b.msg ? 'msg' : 'say');
       else this.hud.think(t(b.say));
     }
   }
@@ -195,6 +194,8 @@ export class WeekScene extends Phaser.Scene {
     if (peak) this.peakHabit = true;
     if (this.ch.hollow) { // зацепиться не за что: рывок в пустоту, телефон гаснет сам, цена — строка «почему»
       if (act === 'overwork') { this.dashT = DASH_MS; audio.dash(); } else if (act === 'scroll') this.phoneT = 400;
+      const note = this.ch.notice?.[act]; // цель замечает привычку вслух
+      if (note) return void this.hud.voice(t(note), w.door, GROUND_Y - ui(112));
       return void this.coach.cost(this.ch.costs?.[act] ?? 'm_wk_cost_peak', px, this.player.y - 70);
     }
     if (act === 'overwork') {
@@ -286,13 +287,11 @@ export class WeekScene extends Phaser.Scene {
     this.done = true;
     this.body.setVelocity(0, 0);
     setTouchControls(false); this.coach.done();
-    const ch = this.ch, next = nextChapter(ch);
+    const ch = this.ch;
     trackEvent('game_chapter_done', { chapter: ch.id });
     markWeekDone(ch.id);
     this.hud.say(t(ch.end.line), ch.end.msg ? this.player.x : this.bossX, GROUND_Y - 132, 3000, ch.end.msg ? 'msg' : 'say');
     this.time.delayedCall(1800, () => this.hud.think(t(ch.end.after), 2400));
-    const go = (id: string) => () => this.scene.restart({ ch: id });
-    this.time.delayedCall(4400, () => this.hud.end(() => (ch.end.card === 'hook'
-      ? showWeekCard(this, next && go(next.id)) : showWeekEnd(this, { day: ch.title, crisis: ch.crisis, again: go(ch.id), next: next && { label: next.invite ?? 'm_wk_card_btn_next', go: go(next.id) } }))));
+    this.time.delayedCall(4400, () => this.hud.end(() => showChapterEnd(this, ch, id => () => this.scene.restart({ ch: id }))));
   }
 }
