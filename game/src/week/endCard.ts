@@ -1,11 +1,12 @@
-// Конец главы без зова (между главами ссылок нет — зов живёт в сюжете): день пройден, путь в следующую главу (или «продолжение скоро»), «ещё раз» и «поделиться».
+// Конец главы без зова (между главами ссылок нет — зов живёт в сюжете): день пройден (у тяжёлой главы — с кризисной строкой), путь в следующую главу (или «продолжение скоро»), «ещё раз» и «поделиться».
 import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { t, type MsgKey } from '../i18n';
 import { C, FONT, SKIN, button, hex, px } from './ui';
 import { shareWeek } from './share';
+import { crisisLines } from './crisis';
 
-export interface EndOpts { day: MsgKey; again: () => void; next?: { label: MsgKey; go: () => void } }
+export interface EndOpts { day: MsgKey; again: () => void; next?: { label: MsgKey; go: () => void }; crisis?: boolean }
 
 export function showWeekEnd(s: Phaser.Scene, o: EndOpts) {
   const all: (Phaser.GameObjects.Text | Phaser.GameObjects.Container)[] = [];
@@ -19,5 +20,6 @@ export function showWeekEnd(s: Phaser.Scene, o: EndOpts) {
   else put(button(s, W / 2, y0, bw, bh, t('m_wk_card_soon'), SKIN.ghost)); // следующая глава не вышла: строка, а не кнопка
   put(button(s, W / 2 - bw / 4 - px(4), y0 + bh + px(10), bw / 2 - px(4), bh, t('m_wk_end_again'), SKIN.paper, o.again));
   put(button(s, W / 2 + bw / 4 + px(4), y0 + bh + px(10), bw / 2 - px(4), bh, t('m_wk_card_btn_share'), SKIN.night, () => shareWeek(t('m_wk_share_text'))));
+  if (o.crisis) crisisLines(s, H - px(42)).forEach(put);
   all.forEach((x, i) => s.tweens.add({ targets: x, alpha: 1, duration: 400, delay: 140 * i }));
 }
