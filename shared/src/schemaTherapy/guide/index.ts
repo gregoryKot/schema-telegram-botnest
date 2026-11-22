@@ -62,6 +62,7 @@ export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
 }
 
 export * from './address';
+export * from './backlinks';
 
 export type {
   BetweenSessionsItem,

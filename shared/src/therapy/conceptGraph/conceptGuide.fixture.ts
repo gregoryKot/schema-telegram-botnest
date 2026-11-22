@@ -59,6 +59,7 @@ export const FIXTURE_GUIDE: ModeGuide = {
 export const FIXTURE_VIEW: ModeGuideView = {
   guide: FIXTURE_GUIDE,
   techniques: FIXTURE_TECHNIQUES,
+  schemas: [],
 };
 
 export const FIXTURE_SCHEMA_GUIDE: SchemaGuide = {
