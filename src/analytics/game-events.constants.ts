@@ -19,15 +19,11 @@ import { WEEK_CHAPTER_SET, WEEK_CTA_PLACE_SET } from './game-week.constants';
 // Имена событий игры (спредятся в (PUBLIC_)ANALYTICS_EVENTS).
 export const GAME_EVENTS = [
   'game_open', // открыл страницу игры (meta.src)
-  'game_start', // нажал «начать» в меню (без meta)
-  'game_tutorial_done', // прошёл обучение (без meta)
-  'game_tutorial_skip', // пропустил обучение (без meta)
   'game_chapter_start', // начал главу (meta.chapter)
   'game_chapter_done', // дошёл до конца главы (meta.chapter)
   'game_cta_shown', // увидел приглашение к терапии (meta.from)
   'game_cta_click', // нажал приглашение (meta.from, meta.to)
   'game_share', // нажал «поделиться» (meta.from)
-  'game_over', // экран «сил не осталось» (meta.chapter)
   'game_app_arrive', // лендинг открыт кнопкой финала (?from=game), без meta
 ] as const;
 export type GameEventName = (typeof GAME_EVENTS)[number];
@@ -88,11 +84,7 @@ export function sanitizeGameMeta(
           : 'other',
     };
   }
-  if (
-    name === 'game_chapter_start' ||
-    name === 'game_chapter_done' ||
-    name === 'game_over'
-  ) {
+  if (name === 'game_chapter_start' || name === 'game_chapter_done') {
     const chapter = meta?.chapter;
     return typeof chapter === 'string' &&
       (GAME_CHAPTER_SET.has(chapter) || WEEK_CHAPTER_SET.has(chapter))
