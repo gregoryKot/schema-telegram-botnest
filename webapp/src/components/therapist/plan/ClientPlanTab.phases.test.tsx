@@ -86,4 +86,29 @@ describe('ClientPlanTab: по фазам', () => {
     expect(h.createPlanItems).toHaveBeenCalledWith({ clientIds: ['7'], rubric: 'custom', text: 'Письмо себе' });
     expect(within(card).getByText('Письмо себе')).toBeTruthy();
   });
+
+  it('статус меняется через меню пяти статусов', async () => {
+    h.updatePlanItem.mockResolvedValue(item({ id: 1, text: 'Дневник', phaseId: 1, status: 'done' }));
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: /^Статус:/ }));
+    expect(screen.getAllByRole('menuitemradio').filter((n) => !/Оценка|Работа|Без фазы/.test(n.textContent ?? ''))).toHaveLength(5);
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'сделано' }));
+    await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { status: 'done' }));
+  });
+
+  it('строку можно бросить на «Без фазы»: phaseId null', async () => {
+    h.updatePlanItem.mockResolvedValue(item({ id: 1, text: 'Дневник', phaseId: null }));
+    await open();
+    const target = document.querySelector('.ph-unphased')!;
+    const data: Record<string, string> = { 'application/plan-item': '1' };
+    fireEvent.drop(target, { dataTransfer: { types: Object.keys(data), getData: (t: string) => data[t], dropEffect: '' } });
+    await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { phaseId: null }));
+  });
+
+  it('в «По каналам» строка не перетаскивается', async () => {
+    await open();
+    expect(document.querySelector('.pl-item')!.getAttribute('draggable')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'По каналам' }));
+    expect(document.querySelector('.pl-item')!.getAttribute('draggable')).not.toBe('true');
+  });
 });
