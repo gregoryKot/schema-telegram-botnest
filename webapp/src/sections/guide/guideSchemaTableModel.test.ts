@@ -2,7 +2,7 @@
 // реестра и копинг её листа; схемы без листа и пустого домена в таблице нет.
 import { describe, it, expect } from 'vitest';
 import { buildReference } from './guideReferenceModel';
-import { buildSchemaTable, COPING_COLUMNS } from './guideSchemaTableModel';
+import { buildSchemaTable, cellKey, showsFull, toggleCell, visibleStyles } from './guideSchemaTableModel';
 import type { SchemaDomainGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
 import { FIXTURE_SCHEMA_GUIDE } from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
@@ -17,7 +17,7 @@ const GUIDES: SchemaDomainGuide[] = [
   { domainId: 'rejection', note: '', schemas: [schema('mistrust'), schema('abandonment')] },
 ];
 const groups = (guides: SchemaDomainGuide[]) => buildReference({
-  buildModeGuides: () => [], buildTechniqueGuides: () => [], practiceNotes: () => [],
+  buildModeGuides: () => [], buildTechniqueGuides: () => [], practiceNotes: () => [], buildConcernGuides: () => [],
   buildSchemaDomainGuides: () => guides,
 }, tr).schemas;
 
@@ -39,7 +39,31 @@ describe('buildSchemaTable', () => {
     expect(table.map((g) => g.key)).toEqual(['rejection']);
   });
 
-  it('колонки — три копинга в порядке листа схемы', () => {
-    expect(COPING_COLUMNS.map((c) => c.key)).toEqual(['surrender', 'avoidance', 'overcompensation']);
+  it('к строке — выжимки копинга схемы', () => {
+    const [row] = buildSchemaTable(groups(GUIDES), GUIDES)[0].rows;
+    expect(row.headline).toEqual({ surrender: 'Держится за ненадёжных', avoidance: 'Уходит первым', overcompensation: 'Цепляется и ревнует' });
+  });
+});
+
+describe('вид таблицы', () => {
+  it('«Все три» — три колонки в порядке листа, один стиль — одна колонка', () => {
+    expect(visibleStyles('all').map((s) => s.id)).toEqual(['surrender', 'avoidance', 'overcompensation']);
+    expect(visibleStyles('avoidance').map((s) => s.id)).toEqual(['avoidance']);
+  });
+
+  it('тап раскрывает клетку, повторный сворачивает, другая клетка сменяет раскрытую', () => {
+    const a = cellKey('failure', 'surrender');
+    const b = cellKey('failure', 'avoidance');
+    expect(toggleCell(null, a)).toBe(a);
+    expect(toggleCell(a, a)).toBeNull();
+    expect(toggleCell(a, b)).toBe(b);
+  });
+
+  it('полный текст — в «Подробно», у раскрытой клетки и у клетки без выжимки', () => {
+    const k = cellKey('failure', 'surrender');
+    expect(showsFull('short', null, k, 'Делает вполсилы')).toBe(false);
+    expect(showsFull('full', null, k, 'Делает вполсилы')).toBe(true);
+    expect(showsFull('short', k, k, 'Делает вполсилы')).toBe(true);
+    expect(showsFull('short', null, k, undefined)).toBe(true);
   });
 });

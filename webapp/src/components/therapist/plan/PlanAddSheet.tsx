@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, reportClientError, type TherapyClientSummary, type UserId } from '../../../api';
+import { api, reportClientError, type UserId } from '../../../api';
 import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
 import { PLAN_ITEM_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 import { joinSentences } from '../../../../../shared/src/schemaTherapy/guide/sentences';
@@ -8,6 +8,7 @@ import { clientDisplayName } from '../../../../../shared/src/therapy/clientIniti
 import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
 import { Skeleton } from '../../Skeleton';
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
+import { useTherapyClientList } from '../useTherapyClientList';
 import type { PlanDraft } from '../guide/guidePlan';
 import { cleanText } from './planModel';
 
@@ -33,21 +34,13 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
   // сервер длиннее предела не примет — собранный текст режется до него
   const compose = (parts: string[]) => joinSentences(parts).slice(0, PLAN_ITEM_TEXT_MAX);
   const [text, setText] = useState(() => compose(draft.parts));
-  // undefined — список грузится, null — не пришёл
-  const [clients, setClients] = useState<TherapyClientSummary[] | null | undefined>(undefined);
+  const clients = useTherapyClientList(clientId != null);
   const [picked, setPicked] = useState<string[]>(clientId != null ? [String(clientId)] : []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  useEffect(() => {
-    if (clientId != null) return;
-    api.getTherapyClients().then(
-      (list) => { if (alive.current) setClients(list); },
-      () => { if (alive.current) setClients(null); },
-    );
-  }, [clientId]);
 
   const togglePart = (i: number) => {
     const next = checked.map((c, j) => (j === i ? !c : c));
@@ -61,7 +54,7 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
     setBusy(true);
     setError('');
     try {
-      await api.createPlanItems({ clientIds: picked, rubric: draft.rubric, text: clean, source: draft.source });
+      await api.createPlanItems({ clientIds: picked, rubric: draft.rubric, text: clean, sourceAddress: draft.sourceAddress });
       trackPlanItemAdded(api, draft.rubric, true);
       onAdded?.();
       if (alive.current) setDone(true);

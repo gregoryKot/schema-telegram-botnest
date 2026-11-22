@@ -8,7 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ClientTasksTab } from './ClientTasksTab';
 import type { ClientDetail } from './clientSheetTypes';
 
-vi.mock('../../api', () => ({ api: {} }));
+vi.mock('../../api', () => ({ api: { getGuideMarks: () => Promise.resolve({ marks: [] }) } }));
 const phone = vi.hoisted(() => ({ value: false }));
 vi.mock('../useIsMobile', () => ({ useIsMobile: () => phone.value }));
 

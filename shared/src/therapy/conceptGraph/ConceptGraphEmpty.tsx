@@ -1,3 +1,4 @@
+import { useTr } from '../../utils/addressForm';
 import { useConceptPaper } from './conceptPaper';
 
 export const EMPTY_START_LABEL = 'Отметить схемы';
@@ -11,6 +12,7 @@ export const EMPTY_START_LABEL = 'Отметить схемы';
  */
 export function ConceptGraphEmpty({ onStart }: { onStart: () => void }) {
   const paper = useConceptPaper();
+  const tr = useTr();
   return (
     <div data-export-skip data-concept-empty className="cg-empty">
       {paper?.emptyScene}
@@ -21,6 +23,13 @@ export function ConceptGraphEmpty({ onStart }: { onStart: () => void }) {
       >
         {EMPTY_START_LABEL}
       </button>
+      {/* Откуда ещё берутся схемы: отметка «Про клиента» на копинге в «Справочнике» (#1484) */}
+      <p className="ds-sub">
+        {tr(
+          'Отмечай в Справочнике «Про клиента» — это появится здесь',
+          'Отмечайте в Справочнике «Про клиента» — это появится здесь',
+        )}
+      </p>
     </div>
   );
 }

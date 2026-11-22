@@ -40,7 +40,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const [tab, setTab] = useState<ReferenceTab>('modes');
   const [query, setQuery] = useState('');
   const [schemaView, setSchemaView] = useState<SchemaView>('list');
-  const { open, sheets } = useReferenceSheets(texts, tr);
+  const { open, sheets, markCoping } = useReferenceSheets(texts, tr);
   const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
   const body = useMemo(() => buildReferenceBody(texts, tr), [texts, tr]);
   const found = useMemo(() => searchReference(ref, query, body), [ref, query, body]);
@@ -75,7 +75,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
         </div>
       )}
       {answer && <GuideAnswerCard answer={answer} onOpen={open} />}
-      {schemaTable && <GuideSchemaTable groups={ref.schemas} guides={schemaGuides} onOpen={open} />}
+      {schemaTable && <GuideSchemaTable groups={ref.schemas} guides={schemaGuides} onOpen={open} onMark={markCoping} />}
       {!schemaTable && (searching && found.length === 0
         ? <p className="ds-empty">Ничего не нашлось</p>
         : <GuideReferenceList groups={searching ? found : ref[tab]} layout={referenceLayout(tab, searching)} onOpen={open} />)}

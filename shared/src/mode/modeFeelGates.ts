@@ -49,10 +49,8 @@ for (const group of MODE_TEST_GROUPS) {
 /** Домашний лист режима (label/desc/emoji из MODE_TEST_GROUPS), с точечным
  *  переопределением текста (label/desc) — для листьев, которым раскладка
  *  ворот требует формулировку второго входа, а не домашнюю. Все вызовы ниже —
- *  литеральные modeId, покрытые modeFeelGates.test.ts (35/35 + per-gate
- *  проверки), поэтому LEAF_LOOKUP.get гарантированно находит базовый лист —
- *  недостижимая ветка на опечатку не заводится (уронила бы coverage-храповик
- *  без реального сценария вызова). */
+ *  литеральные modeId, покрытые modeFeelGates.test.ts, поэтому LEAF_LOOKUP.get находит базовый лист;
+ *  ветка на опечатку не заводится (уронила бы coverage-храповик без сценария вызова). */
 function leafFor(
   modeId: string,
   override?: Partial<Pick<ModeTestLeaf, 'label' | 'desc'>>,
@@ -115,6 +113,7 @@ export const FEEL_GATES: FeelGate[] = [
       leafFor('enraged_child'),
       leafFor('angry_protector', fromDoor('anger', 'angry_protector')),
       leafFor('bully_attack', fromDoor('anger', 'bully_attack')),
+      leafFor('scolding_oc'),
       leafFor('stubborn_child'),
       leafFor('impulsive_child'),
     ],

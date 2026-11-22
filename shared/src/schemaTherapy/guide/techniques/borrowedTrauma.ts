@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildBorrowedTraumaTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'window_of_tolerance',
+    group: 'borrowed',
     approach: 'Терапия травмы',
     name: '«Окно толерантности»',
     summary:
@@ -32,6 +33,7 @@ export const buildBorrowedTraumaTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'stop_rewind_explore',
+    group: 'borrowed',
     approach: 'Терапия, основанная на ментализации',
     name: 'Ментализация: «стоп, перемотка, исследование»',
     summary:
@@ -59,6 +61,7 @@ export const buildBorrowedTraumaTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'life_line',
+    group: 'formulation',
     approach: 'Нарративная экспозиционная терапия',
     name: 'Линия жизни',
     summary:

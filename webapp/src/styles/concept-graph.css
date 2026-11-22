@@ -160,3 +160,10 @@
   .tcp-graph [data-concept-diagram] { width: calc(100% + 32px) !important; margin-inline: -16px; }
   .cfs-body [data-concept-diagram] { width: calc(100% + 40px) !important; margin-inline: -20px; }
 }
+
+/* Счётчик отметок «Про клиента» в углу узла схемы и режима (#1484, DiagramMarkCount). */
+.cg-mark-count {
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; pointer-events: none;
+  display: grid; place-items: center; font-size: 12px; font-weight: 600; line-height: 1;
+  background: var(--accent); color: var(--on-accent);
+}

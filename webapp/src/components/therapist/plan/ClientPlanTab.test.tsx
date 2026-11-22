@@ -9,6 +9,7 @@ import type { ClientDetail } from '../clientSheetTypes';
 
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
+  getGuideMarks: () => Promise.resolve({ marks: [] }),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));
@@ -23,7 +24,7 @@ import { ClientPlanTab } from './ClientPlanTab';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
-  source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
+  sourceAddress: null, source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
 });
 const client = { telegramId: 7, name: 'Анна' } as unknown as TherapyClientSummary;
 const patchConcept = vi.fn();

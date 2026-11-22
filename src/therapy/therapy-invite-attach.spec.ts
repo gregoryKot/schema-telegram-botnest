@@ -66,6 +66,11 @@ function make(o: Opts) {
     therapistNote: { updateMany: rec('note.updateMany') },
     modeMap: { updateMany: rec('map.updateMany') },
     therapyPlanItem: { updateMany: rec('plan.updateMany') },
+    guideMark: {
+      findMany: jest.fn(async () => [{ address: 'mode:x/when' }]),
+      deleteMany: rec('mark.deleteMany'),
+      updateMany: rec('mark.updateMany'),
+    },
     clientConceptualization: {
       findFirst: conc,
       update: rec('conc.update'),
@@ -92,6 +97,25 @@ describe('attachOfflineCard', () => {
         where: { therapistId: TH, clientId: -7n },
         data: { clientId: CLIENT },
       });
+  });
+
+  it('отметки справочника переезжают; адрес, уже отмеченный на аккаунте, — нет', async () => {
+    const { tx, prisma, calls } = make({});
+    await attachOfflineCard(prisma, TH, CLIENT, 7);
+    expect(tx.guideMark.deleteMany).toHaveBeenCalledWith({
+      where: {
+        therapistId: TH,
+        clientId: -7n,
+        address: { in: ['mode:x/when'] },
+      },
+    });
+    expect(tx.guideMark.updateMany).toHaveBeenCalledWith({
+      where: { therapistId: TH, clientId: -7n },
+      data: { clientId: CLIENT },
+    });
+    expect(calls.indexOf('mark.deleteMany')).toBeLessThan(
+      calls.indexOf('mark.updateMany'),
+    );
   });
 
   it('концептуализация только на карточке — переводится на аккаунт', async () => {
@@ -238,10 +262,10 @@ describe('attachOfflineCard: покрытие моделей схемы', () => 
     join(__dirname, '../../prisma/schema.prisma'),
     'utf8',
   );
-  const source = readFileSync(
-    join(__dirname, './therapy-invite-attach.ts'),
-    'utf8',
-  );
+  // Перенос отметок справочника вынесен (guide-mark-move.ts) — читаем оба файла.
+  const source = ['./therapy-invite-attach.ts', './guide-mark-move.ts']
+    .map((f) => readFileSync(join(__dirname, f), 'utf8'))
+    .join('\n');
   const models = [...schema.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm)]
     .filter(
       ([, , body]) =>
