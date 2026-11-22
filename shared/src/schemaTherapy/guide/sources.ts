@@ -82,6 +82,12 @@ export const GUIDE_SOURCES: GuideSource[] = [
     title: 'Диагностика ранних дезадаптивных схем',
   },
   {
+    key: 'Бехари',
+    author: 'В. Бехари',
+    title:
+      'Обезоружить нарцисса. Как выжить и стать счастливым рядом с эгоцентриком, 2-е изд., 2013 (рус. изд. 2019)',
+  },
+  {
     key: 'Статьи',
     title:
       'Research Articles on Schema Therapy in Major Scientific Journals, 1992–2018',
