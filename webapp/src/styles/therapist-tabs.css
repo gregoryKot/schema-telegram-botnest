@@ -236,6 +236,13 @@
 }
 .pl-status--active { background: var(--paper-tint); color: var(--text); }
 .pl-status--done { background: var(--ok-bg); border-color: transparent; color: var(--ok-ink); }
+.pl-status--postponed, .pl-status--dropped { color: var(--text-faint); }
+.pl-item.is-quiet .pl-text { color: var(--text-faint); }
+.pl-item.is-dropped .pl-text { text-decoration: line-through; }
+.pl-menu-anchor { display: inline-flex; flex: none; }
+.ds-menu-item.pl-menu-item { min-height: 44px; }
+.pl-menu-mark { flex: none; width: 16px; color: var(--accent); }
+.pl-item[draggable="true"] { cursor: grab; }
 .pl-status:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pl-status:disabled { cursor: default; }
 .pl-body { flex: 1; min-width: 0; padding-top: 10px; }
