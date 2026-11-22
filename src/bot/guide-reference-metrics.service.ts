@@ -18,6 +18,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['notes30', 'cabinet_guide_note_open'],
   ['needs30', 'cabinet_guide_need_open'],
   ['concerns30', 'cabinet_guide_concern_open'],
+  ['phases30', 'cabinet_guide_phase_open'],
   ['tables30', 'cabinet_guide_table_open'],
 ];
 

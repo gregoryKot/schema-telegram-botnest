@@ -8,6 +8,7 @@ import {
 } from '../index';
 import type { Tr } from '../types';
 import { GUIDE_ARTICLE_KINDS, type GuideArticleKind } from './addressFormat';
+import { phaseArticles } from './addressArticlesPhase';
 import { sectionsOf } from './addressSections';
 
 /** Статья справочника, разложенная на разделы: путь раздела → его текст (непустой). */
@@ -79,6 +80,7 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
         techniques: c.techniques?.map(techniqueName),
       }),
     })),
+  phase: phaseArticles,
 };
 
 /** Все статьи справочника (или одного вида) с разделами, в форме обращения `tr`. */

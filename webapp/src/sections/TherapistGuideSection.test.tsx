@@ -12,6 +12,7 @@ import { TherapistGuideSection } from './TherapistGuideSection';
 import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS, CABINET_GUIDE_TABLE_EVENT } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
 import { CONCERNS_HINT } from './guide/guideReferenceConcerns';
+import { PHASES_HINT } from './guide/guideReferencePhases';
 import { FIXTURE_PRACTICE_NOTE as NOTE } from '../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
@@ -25,6 +26,13 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
       id: 'bpd', name: 'Пограничное расстройство личности', goal: 'Вырастить Здорового Взрослого',
       essence: 'Нестабильность почти во всём', criteria: ['Пять из девяти признаков'], sources: '[Арнтц ПРЛ, гл. 1]',
     }],
+    buildPhaseGuides: () => [
+      { id: 'overview', name: 'Как устроен путь', goal: 'Карта, а не расписание', essence: 'Фазы условные', sources: '[Кембридж, гл. 1]' },
+      {
+        id: 'bonding', name: 'Установление связи', goal: 'Безопасность и доверие', essence: 'Первые месяцы работы', tasks: ['Собрать историю'],
+        modeIds: ['vulnerable_child', 'нет_такого'], techniques: ['imagery_rescripting'], noteIds: ['group_therapy'], sources: '[Кембридж, гл. 1]',
+      },
+    ],
     modeGuide: (_tr: unknown, id: string) => (id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null),
     schemaGuide: (_tr: unknown, id: string) =>
       id === 'abandonment' ? { guide: f.FIXTURE_SCHEMA_GUIDE, domainNote: f.FIXTURE_DOMAIN_NOTE } : null,
@@ -67,7 +75,7 @@ describe('TherapistGuideSection', () => {
     // оговорка об источниках и адрес для ошибок — сразу под шапкой (на сайте — Telegram автора)
     expect(screen.getByText(/могут содержать ошибки/).textContent).toMatch(/обязательно напиши: @kotlarewski$/);
     expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Запросы', 'Для терапевта']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Запросы', 'Путь терапии', 'Для терапевта']);
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT]);
   });
 
@@ -179,6 +187,44 @@ describe('TherapistGuideSection', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.concern);
+  });
+
+  it('«Путь терапии»: лента с номерами; лист фазы ведёт на режим, технику, заметку и соседний лист — «Закрыть» возвращает к фазе', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('tab', { name: 'Путь терапии' }));
+    expect(screen.getByText(PHASES_HINT)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Как устроен путь/ }).querySelector('.gr-step')).toBeNull();
+    const row = screen.getByRole('button', { name: /Установление связи/ });
+    expect(row.querySelector('.gr-step')?.textContent).toBe('1');
+    fireEvent.click(row);
+    const phase = () => screen.getByRole('dialog', { name: 'Установление связи' });
+    expect(within(phase()).getByText('Фаза 1')).toBeTruthy();
+    expect(within(phase()).getByText('Собрать историю')).toBeTruthy();
+    expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS.phase]);
+    // режим без листа в справочнике в переходы не попадает
+    const modes = within(phase()).getByRole('region', { name: 'Режимы в фокусе' });
+    expect([...modes.querySelectorAll('.ds-list-row .ds-list-title')].map((b) => b.textContent)).toEqual(['Уязвимый Ребёнок']);
+    const steps: [string, string, string, string][] = [
+      ['Режимы в фокусе', 'Уязвимый Ребёнок', 'Уязвимый Ребёнок', CABINET_GUIDE_SHEET_EVENTS.mode],
+      ['Типичные техники', 'Рескриптинг образов', 'Рескриптинг образов', CABINET_GUIDE_SHEET_EVENTS.technique],
+      ['Для терапевта', NOTE.title, NOTE.title, CABINET_GUIDE_SHEET_EVENTS.note],
+    ];
+    for (const [region, link, dialog, event] of steps) {
+      fireEvent.click(within(within(phase()).getByRole('region', { name: region })).getByRole('button', { name: new RegExp(`^${link}`) }));
+      const over = screen.getByRole('dialog', { name: dialog });
+      // под-лист стоит в DOM после листа фазы — при равном z-index он сверху
+      expect(phase().compareDocumentPosition(over) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(tracked()).toContain(event);
+      fireEvent.click(within(over).getByRole('button', { name: 'Закрыть' }));
+      expect(screen.queryByRole('dialog', { name: dialog })).toBeNull();
+      expect(phase()).toBeTruthy();
+    }
+    fireEvent.click(within(phase()).getByRole('button', { name: 'Раньше: Как устроен путь' }));
+    const overview = screen.getByRole('dialog', { name: 'Как устроен путь' });
+    expect(within(overview).getByText('Путь терапии')).toBeTruthy();
+    expect(within(overview).getByRole('button', { name: 'Дальше: Установление связи' })).toBeTruthy();
+    fireEvent.click(within(overview).getByRole('button', { name: 'Закрыть' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('лист — панель над затемнённым списком: тап по затемнению закрывает её', async () => {
