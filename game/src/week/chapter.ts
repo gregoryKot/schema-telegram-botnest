@@ -28,8 +28,8 @@ export interface PauseSlip { ms: number; tag: MsgKey; thought: MsgKey }
 export interface PauseStep { kicker?: MsgKey; question: MsgKey; options: MsgKey[]; correct: number }
 
 export interface Chapter {
-  id: 'mon' | 'wed' | 'fri';
-  scenery: 'office' | 'flat' | 'party'; // какой фон рисует сцена (week/scenery.ts)
+  id: 'mon' | 'wed' | 'fri' | 'sun';
+  scenery: 'office' | 'flat' | 'party' | 'quiet'; // какой фон рисует сцена (week/scenery.ts)
   invite?: MsgKey;              // кнопка в конце прошлой главы, которая ведёт в эту
   title: MsgKey; about: MsgKey; again: MsgKey; who: MsgKey; // заставка
   goal: MsgKey; targetTag: MsgKey;
@@ -41,12 +41,16 @@ export interface Chapter {
   people: number[];             // прохожие: лица — только когда сбоя нет
   art: { pile: string; noise: string; person: string; door: string; walkers: string[] };
   // цель главы: пока идёт сбой, держится впереди на keepAway; после названия — в nearSteps
-  door: { x: number; keepAway: number; nearSteps: number; pauseAfterMs: number; peakPileEvery: number };
+  // peakScale — во сколько раз цель вырастает на пике (нет — вдвое)
+  door: { x: number; keepAway: number; nearSteps: number; pauseAfterMs: number; peakPileEvery: number; peakScale?: number };
+  hollow?: boolean;             // привычкам не за что зацепиться («Воскресенье»): срабатывают вхолостую, costs говорят почему
+  crisis?: boolean;             // тяжёлая глава: кризисная строка на экране всю главу и в её конце (правило №7)
   agreeThanks: MsgKey;
   hints?: Partial<Record<Act, MsgKey>>; costs?: Partial<Record<Act, MsgKey>>;
   // between — мысль, когда первый шаг пройден, а сбой не ушёл; slips — первые удержания срываются (навык, не кнопка)
-  pause: { steps: PauseStep[]; between?: MsgKey; slips?: PauseSlip[] };
-  end: { line: MsgKey; after: MsgKey; card: 'hook' | 'end' };
+  // named — мысль, когда сбой назван и до цели десять шагов
+  pause: { steps: PauseStep[]; between?: MsgKey; slips?: PauseSlip[]; named?: MsgKey };
+  end: { line: MsgKey; after: MsgKey; card: 'hook' | 'end'; msg?: boolean }; // msg — последняя строка приходит сообщением
 }
 
 export const hm = (h: number, m: number) => h * 60 + m;

@@ -1,7 +1,7 @@
 import { WEEK_CTA_PLACES } from '../analytics/game-week.constants';
 import type { GameEventRow } from './game-metrics.tally';
 
-/** Воронка новой игры «Неделя»: главы mon/wed/fri/first, места зова hook/final. */
+/** Воронка новой игры «Неделя»: главы mon/wed/fri/sun/first, места зова hook/final. */
 export interface WeekMetrics {
   started: number; // начали «Понедельник»
   ctaShown: number; // увидели карточку после хука
@@ -13,6 +13,8 @@ export interface WeekMetrics {
   wedDone: number; // прошли «Среду» до конца
   friStarted: number;
   friDone: number; // прошли «Пятницу» до конца
+  sunStarted: number;
+  sunDone: number; // прошли «Воскресенье» до конца
   firstDone: number;
 }
 
@@ -27,6 +29,8 @@ export const emptyWeek = (): WeekMetrics => ({
   wedDone: 0,
   friStarted: 0,
   friDone: 0,
+  sunStarted: 0,
+  sunDone: 0,
   firstDone: 0,
 });
 
@@ -56,6 +60,7 @@ export function tallyWeekRow(
     if (row.chapter === 'mon') w.started += c;
     else if (row.chapter === 'wed') w.wedStarted += c;
     else if (row.chapter === 'fri') w.friStarted += c;
+    else if (row.chapter === 'sun') w.sunStarted += c;
     else return false;
     return true;
   }
@@ -63,6 +68,7 @@ export function tallyWeekRow(
     if (row.chapter === 'first') w.firstDone += c;
     else if (row.chapter === 'wed') w.wedDone += c;
     else if (row.chapter === 'fri') w.friDone += c;
+    else if (row.chapter === 'sun') w.sunDone += c;
     else if (row.chapter !== 'mon') return false; // конец хука виден как показ карточки
     return true;
   }

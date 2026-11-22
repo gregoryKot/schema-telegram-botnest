@@ -9,6 +9,7 @@ import { NeedArt } from '../art/NeedArt';
 import { GlyphCheck, GlyphX } from '../exercises/ExGlyphs';
 import { inkVars } from '../history/needInk';
 import { planDateLabel } from '../../../../shared/src/practices/plansCopy';
+import { spotAttr, spotKey } from '../../hooks/useSpotlight';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 
 export function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: Dispatch<SetStateAction<PracticePlan[] | null>> }) {
@@ -24,7 +25,7 @@ export function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: Dis
   }
 
   return (
-    <div className={'ds-card sk-plan' + (isPending ? '' : ' is-closed')} style={inkVars(plan.needId) as CSSProperties}>
+    <div className={'ds-card sk-plan' + (isPending ? '' : ' is-closed')} style={inkVars(plan.needId) as CSSProperties} {...spotAttr(spotKey('plan', plan.id))}>
       <span className="pp-row-art">{needData && <NeedArt id={plan.needId} size="row" />}</span>
       <div className="sk-plan-body">
         <div className="sk-plan-meta">
