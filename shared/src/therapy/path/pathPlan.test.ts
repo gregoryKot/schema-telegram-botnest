@@ -131,7 +131,11 @@ describe('расхождение с планом', () => {
 
   it('текущей фазы нет — расхождения нет', () => {
     expect(
-      currentPhaseOverdue('2026-01-05', [{ weeks: 1, ...mark(null) }], '2027-01-01'),
+      currentPhaseOverdue(
+        '2026-01-05',
+        [{ weeks: 1, ...mark(null) }],
+        '2027-01-01',
+      ),
     ).toBeNull();
   });
 });
