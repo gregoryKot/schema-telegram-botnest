@@ -53,7 +53,7 @@ function setup() {
   };
   const service = new TherapyPathService(prisma as never, relations as never);
   const plan = new TherapyPlanService(prisma as never, relations as never);
-  return { service, plan, clients };
+  return { service, plan, clients, prisma };
 }
 
 const draft = (name: string, weeks = 4) => ({ name, weeks });
@@ -186,6 +186,47 @@ describe('TherapyPathService', () => {
     const last = await service.advance(T, b, '2027-06-01');
     expect(last.phases[2]).toMatchObject({ id: b, endedAt: '2027-06-01' });
     expect(last.phases[1].startedAt).toBe('2026-12-01');
+  });
+
+  it('конец фазы раньше начала — 400 в правке и переходе, в том числе когда пришла одна дата', async () => {
+    const { service } = setup();
+    const { phases } = await service.create(T, C1, input);
+    const a = phases[0].id;
+    await service.updatePhase(T, a, { startedAt: '2026-11-10' });
+    await expect(
+      service.updatePhase(T, a, { endedAt: '2026-11-09' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.updatePhase(T, a, {
+        startedAt: '2026-11-12',
+        endedAt: '2026-11-11',
+      }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(service.advance(T, a, '2026-11-09')).rejects.toThrow(
+      BadRequestException,
+    );
+    // ничего не записано
+    expect((await service.get(T, C1))?.phases[0].endedAt).toBeNull();
+
+    // тот же день и позже — можно; пришла только дата начала позже сохранённого конца — 400
+    await service.updatePhase(T, a, { endedAt: '2026-11-10' });
+    await expect(
+      service.updatePhase(T, a, { startedAt: '2026-11-11' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('addPhase: сначала берёт строку пути (замок против параллельного добавления), позиции подряд', async () => {
+    const { service, prisma } = setup();
+    await service.create(T, C1, input);
+    const table = prisma.therapyPath as {
+      update: (a: unknown) => Promise<unknown>;
+    };
+    const spy = jest.spyOn(table, 'update');
+    await service.addPhase(T, C1, draft('А'));
+    const path = await service.addPhase(T, C1, draft('Б'));
+    expect(spy).toHaveBeenCalledTimes(2);
+    const positions = path.phases.map((p) => p.position);
+    expect(new Set(positions).size).toBe(positions.length);
   });
 
   it('порядок: ids — ровно множество фаз пути, иначе 400 и порядок прежний', async () => {

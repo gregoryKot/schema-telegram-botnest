@@ -59,6 +59,9 @@ export function usePath(clientId: UserId) {
     create: (startDate: string, templateId: string | null, phases: PathPhaseDraft[]) =>
       run('Не удалось собрать путь', () => api.createTherapyPath(clientId, { startDate, templateId, phases })),
     patchPhase,
+    setStartDate: (startDate: string) => run('Не удалось изменить старт', () => api.setTherapyPathStart(clientId, startDate)),
+    /** «Сдвинуть сроки»: у текущей фазы больше недель — плановый конец не раньше сегодня. */
+    shiftPhase: (id: number, weeks: number) => patchPhase(id, { weeks }, 'Не удалось сдвинуть сроки'),
     /** Закрыть фазу днём `date`, следующую начать тем же днём. */
     advance: (id: number, date: string) => run('Не удалось перейти к следующей фазе', () => api.advancePathPhase(id, date)),
     addPhase: (draft: PathPhaseDraft) => run('Не удалось добавить фазу', () => api.addPathPhase(clientId, draft)),
