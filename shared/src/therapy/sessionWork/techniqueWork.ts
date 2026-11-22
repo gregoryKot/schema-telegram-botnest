@@ -7,6 +7,7 @@ import { SCHEMA_TECHNIQUE_WORK } from './techniqueWorkSchema';
 import { BORROWED_TECHNIQUE_WORK } from './techniqueWorkBorrowed';
 import { CAMBRIDGE_TECHNIQUE_WORK } from './techniqueWorkCambridge';
 import { YOUNG_TECHNIQUE_WORK } from './techniqueWorkYoung';
+import { ARNTZ_TECHNIQUE_WORK } from './techniqueWorkArntz';
 
 export type TechniqueWorkDef = { name: string; fields: readonly WorkField[] };
 
@@ -143,5 +144,6 @@ export const TECHNIQUE_WORK: Record<TechniqueId, TechniqueWorkDef> = {
   ...SCHEMA_TECHNIQUE_WORK,
   ...CAMBRIDGE_TECHNIQUE_WORK,
   ...YOUNG_TECHNIQUE_WORK,
+  ...ARNTZ_TECHNIQUE_WORK,
   ...BORROWED_TECHNIQUE_WORK,
 };
