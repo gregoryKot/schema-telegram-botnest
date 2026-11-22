@@ -1,11 +1,10 @@
 import type { NeedExtra, Tr } from '../types';
+import { NEED_NAMES } from '../needNames';
 import { playExamples } from './examples/play';
 
-// Контент потребности «Спонтанность» — единственный источник (правило
-// №3 CLAUDE.md): раньше дублировался построчно в webapp/src/needData.ts и
-// удалённом мини-аппе; сайт берёт его отсюда.
+// Контент потребности «Спонтанность» — единственный источник (правило №3 CLAUDE.md).
 export const buildPlay = (tr: Tr): NeedExtra => ({
-  name: 'Спонтанность',
+  name: NEED_NAMES.play,
   short: 'Спонт.',
   subtitle: 'Игра и радость',
   emoji: '🎉',

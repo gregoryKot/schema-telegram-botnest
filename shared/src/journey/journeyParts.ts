@@ -9,7 +9,7 @@ import {
   countActiveInHistory,
   historyScoresById,
 } from '../hooks/useYsqTest';
-import { JOURNEY_NEED_NAMES } from './journeyMeta';
+import { NEED_NAMES } from '../needs/needNames';
 import { DETAIL_FIELDS } from './journeyDetailFields';
 
 export interface JourneyResultPart {
@@ -118,7 +118,7 @@ export function buildJourneyResultParts(
       return part(str('practiceText'), 'Действие');
     case 'tracker_day': {
       // entry = Record<needId, value> — оценки дня из /api/ratings?date=…
-      const line = Object.entries(JOURNEY_NEED_NAMES)
+      const line = Object.entries(NEED_NAMES)
         .filter(([needId]) => typeof e[needId] === 'number')
         .map(([needId, name]) => `${name} — ${e[needId] as number}`)
         .join(' · ');
