@@ -69,11 +69,12 @@ describe('знаки листов подсказок', () => {
     for (const g of buildModeGuides(tr)) expect(modeSign(g.modeId), g.modeId).not.toBe('cluster');
   });
 
-  it('у каждой техники библиотеки есть знак; у первых 14 он свой', () => {
+  it('у каждой техники библиотеки есть знак, и он свой: общих между техниками нет', () => {
     const ids = buildTechniqueGuides(tr).map((t) => t.id);
     expect(ids.sort()).toEqual(Object.keys(TECHNIQUE_SIGN).sort());
-    const signs = Object.values(CORE_TECHNIQUE_SIGN);
-    expect(new Set(signs).size).toBe(signs.length);
+    const owners = new Map<string, string[]>();
+    for (const [id, sign] of Object.entries(TECHNIQUE_SIGN)) owners.set(sign, [...(owners.get(sign) ?? []), id]);
+    expect([...owners.values()].filter((list) => list.length > 1)).toEqual([]);
   });
 
   it('готовый мотив там, где он точно подходит', () => {
