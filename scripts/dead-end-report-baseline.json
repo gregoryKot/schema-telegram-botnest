@@ -127,6 +127,9 @@
     "status": "reports",
     "via": "createConceptMap"
   },
+  "webapp/src/components/therapist/useSessionPlan.ts::setError": {
+    "status": "reports"
+  },
   "webapp/src/components/therapist/useTasksBoard.ts::setFailed": {
     "status": "reports"
   },
