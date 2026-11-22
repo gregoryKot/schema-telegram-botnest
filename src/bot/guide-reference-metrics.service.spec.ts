@@ -47,6 +47,7 @@ describe('GuideReferenceMetricsService', () => {
         cabinet_guide_note_open: 1,
         cabinet_guide_need_open: 5,
         cabinet_guide_concern_open: 8,
+        cabinet_guide_phase_open: 9,
         cabinet_guide_table_open: 6,
         // те же листы из схемы случая сюда не попадают
         concept_guide_mode_open: 99,
@@ -62,6 +63,7 @@ describe('GuideReferenceMetricsService', () => {
       notes30: 1,
       needs30: 5,
       concerns30: 8,
+      phases30: 9,
       tables30: 6,
     });
   });

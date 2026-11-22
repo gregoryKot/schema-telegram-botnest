@@ -6,8 +6,9 @@
 import { describe, it, expect } from 'vitest';
 import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceTexts } from './guideReferenceModel';
 import { CONCERNS_HINT, CONCERNS_TITLE } from './guideReferenceConcerns';
+import { PHASES_HINT, PHASES_TITLE } from './guideReferencePhases';
 import { searchReference } from './guideReferenceSearch';
-import type { ConcernGuide, ModeGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
+import type { ConcernGuide, ModeGuide, PhaseGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
 import {
   FIXTURE_GUIDE,
   FIXTURE_PRACTICE_NOTE,
@@ -19,6 +20,7 @@ const tr = (ty: string) => ty;
 const mode = (modeId: string): ModeGuide => ({ ...FIXTURE_GUIDE, modeId });
 const schema = (schemaId: string): SchemaGuide => ({ ...FIXTURE_SCHEMA_GUIDE, schemaId });
 const CONCERN: ConcernGuide = { id: 'bpd', name: 'Пограничное расстройство', goal: 'Вырастить Здорового Взрослого', essence: 'Нестабильность', sources: '' };
+const PHASE: PhaseGuide = { id: 'overview', name: 'Как устроен путь', goal: 'Карта, а не расписание', essence: 'Фазы условные', sources: '' };
 
 function texts(over: Partial<ReferenceTexts> = {}): ReferenceTexts {
   return {
@@ -31,6 +33,7 @@ function texts(over: Partial<ReferenceTexts> = {}): ReferenceTexts {
     buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
     practiceNotes: () => [FIXTURE_PRACTICE_NOTE, { ...FIXTURE_PRACTICE_NOTE, id: 'свой_раздел', title: 'Свой раздел' }],
     buildConcernGuides: () => [CONCERN, { ...CONCERN, id: 'свой_запрос', name: 'Свой запрос' }],
+    buildPhaseGuides: () => [PHASE, { ...PHASE, id: 'bonding', name: 'Связь' }, { ...PHASE, id: 'change', name: 'Изменение' }],
     ...over,
   };
 }
@@ -88,9 +91,22 @@ describe('buildReference', () => {
     ]);
   });
 
-  it('вкладка «Запросы» стоит между «Техниками» и «Для терапевта»', () => {
+  it('«Путь терапии» — одна раскрытая группа с подписью «что это и зачем»: обзор без номера, фазы — по порядку с номерами', () => {
+    const [group, ...rest] = buildReference(texts(), tr).path;
+    expect(rest).toEqual([]);
+    expect(group).toMatchObject({ title: PHASES_TITLE, hint: PHASES_HINT, look: { hue: 290 } });
+    expect(group.fold).toBeUndefined();
+    expect(group.items).toEqual([
+      { kind: 'phase', id: 'overview', name: 'Как устроен путь', sub: 'Карта, а не расписание', step: undefined },
+      { kind: 'phase', id: 'bonding', name: 'Связь', sub: 'Карта, а не расписание', step: 1 },
+      { kind: 'phase', id: 'change', name: 'Изменение', sub: 'Карта, а не расписание', step: 2 },
+    ]);
+    expect(buildReference(texts({ buildPhaseGuides: () => [] }), tr).path).toEqual([]);
+  });
+
+  it('вкладки «Запросы» и «Путь терапии» стоят между «Техниками» и «Для терапевта»', () => {
     const ids = REFERENCE_TABS.map((t) => t.id);
-    expect(ids.slice(ids.indexOf('techniques'), ids.indexOf('practice') + 1)).toEqual(['techniques', 'concerns', 'practice']);
+    expect(ids.slice(ids.indexOf('techniques'))).toEqual(['techniques', 'concerns', 'path', 'practice']);
   });
 });
 
