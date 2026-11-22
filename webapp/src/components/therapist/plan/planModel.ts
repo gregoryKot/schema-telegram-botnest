@@ -1,9 +1,9 @@
 import {
-  PLAN_RUBRICS, PLAN_RUBRIC_LABEL, PLAN_STATUSES,
+  PLAN_RUBRICS, PLAN_RUBRIC_LABEL,
   type PlanItem, type PlanRubric, type PlanStatus,
 } from '../../../../../shared/src/therapy/plan/planItem';
 
-// Чистая модель вкладки «План работы» (#1337): порядок рубрик, цикл статуса, что показывать.
+// Чистая модель вкладки «План работы» (#1337): порядок рубрик, статусы, что показывать.
 
 export interface PlanGroup { rubric: PlanRubric; label: string; items: PlanItem[] }
 
@@ -43,12 +43,11 @@ export function statusLabel(status: string): string {
   return PLAN_STATUS_LABEL[status as PlanStatus] ?? PLAN_STATUS_LABEL.planned;
 }
 
-const TAP_CYCLE: readonly string[] = PLAN_STATUSES.slice(0, 3);
+/** «Отложено» и «не нужно» читаются тише остальных. */
+export const isQuietStatus = (status: string) => status === 'postponed' || status === 'dropped';
 
-/** Тап по статусу: намечено → в работе → сделано → намечено; из «отложено» и «не нужно» — в «намечено». */
-export function nextStatus(status: string): PlanStatus {
-  return PLAN_STATUSES[(TAP_CYCLE.indexOf(status) + 1) % TAP_CYCLE.length];
-}
+/** Фаза в меню «В фазу…». */
+export interface PhaseOption { id: number; name: string }
 
 export function isEmptyPlan(items: readonly PlanItem[]): boolean {
   return items.length === 0;

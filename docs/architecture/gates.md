@@ -97,6 +97,7 @@ node scripts/check-eslint-ratchet.mjs              # eslint-храповик, п
 node scripts/check-eslint-ratchet.mjs --changed    # то же по файлам, отличающимся от origin/main (секунды; любая находка — красное)
 npm run build                                      # nest build; npm run start:dev — бэкенд с watch
 npm run build --prefix webapp                      # tsc -b && vite build (в прод-сборке нужен VITE_BOT_USERNAME)
+npm run typecheck:test --prefix webapp             # типы сайта, код и тесты; `tsc --noEmit -p .` в webapp молчит: tsconfig.json — одни ссылки
 npm test --prefix webapp                           # vitest run; так же --prefix shared
 npm run test:e2e                                   # jest --config ./test/jest-e2e.json (часть спеков требует E2E_REAL_DB=1 и DATABASE_URL)
 npx prisma generate                                # после любых правок schema.prisma
