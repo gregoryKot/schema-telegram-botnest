@@ -1,13 +1,8 @@
 // Знак листа техники. У первых 14 техник знак свой; техники, добавленные позже (#1366),
 // берут знак родственной техники или мотива — своих рисунков у них пока нет.
 import type {
-  BorrowedTechniqueId,
-  CambridgeTechniqueId,
-  CoreTechniqueId,
-  SchemaTechniqueId,
-  TechniqueId,
-  YoungTechniqueId,
-  ArntzTechniqueId,
+  BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  YoungTechniqueId, ArntzTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 

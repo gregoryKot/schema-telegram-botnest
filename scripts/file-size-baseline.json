@@ -2126,7 +2126,7 @@
   "webapp/src/components/art/SignArt.tsx": 50,
   "webapp/src/components/art/StopPalms.tsx": 14,
   "webapp/src/components/art/strokeLen.ts": 22,
-  "webapp/src/components/art/techniqueSigns.ts": 89,
+  "webapp/src/components/art/techniqueSigns.ts": 84,
   "webapp/src/components/art/ValueStrokes.tsx": 34,
   "webapp/src/components/AuthGateViews.tsx": 28,
   "webapp/src/components/AuthorAvatar.tsx": 42,
