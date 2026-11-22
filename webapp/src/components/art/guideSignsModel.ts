@@ -7,6 +7,7 @@
 // GuideSignsTechniques.tsx, два знака «Для терапевта» — GuideSignsPractice.tsx). Тип техники —
 // только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import { MODE_GROUP_SIGN, modeGroupLook, modeLook } from '../../../../shared/src/theme/entityLook';
+import { TECHNIQUE_OWN_SIGN_KEYS } from '../../../../shared/src/theme/techniqueSignKeys';
 import { YOUNG_PRACTICE_NOTE_SIGN } from './practiceSignsYoung';
 import { ARNTZ_PRACTICE_NOTE_SIGN } from './practiceSignsArntz';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
@@ -19,6 +20,7 @@ export const GUIDE_SIGNS = [
   'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
   'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare', 'cup', 'join',
   'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots', 'strokes', 'grounded', 'wheel',
+  ...TECHNIQUE_OWN_SIGN_KEYS,
 ] as const;
 
 export type GuideSign = (typeof GUIDE_SIGNS)[number];
