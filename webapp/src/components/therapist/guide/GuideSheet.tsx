@@ -126,13 +126,13 @@ export function GuideSheet({ view, voice, at, moreParts = [], onOpenTechnique, o
   );
 }
 
-/** «На сессии»: знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
-function GuideTechniques({ techniques, address, onOpen, onPlan, notes, onOpenJournal }: {
-  techniques: TechniqueGuide[]; address: string; onOpen: (id: TechniqueId) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes; onOpenJournal?: () => void;
+/** «На сессии» (у фазы — свой заголовок): знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
+export function GuideTechniques({ techniques, address, onOpen, onPlan, notes, onOpenJournal, title = PLAN_RUBRIC_LABEL.session }: {
+  techniques: TechniqueGuide[]; address: string; onOpen: (id: TechniqueId) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes; onOpenJournal?: () => void; title?: string;
 }) {
   if (techniques.length === 0) return null;
   return (
-    <GuideSection title={PLAN_RUBRIC_LABEL.session} address={address} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
+    <GuideSection title={title} address={address} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
       <ul className="tcp-guide-list">
         {techniques.map((t) => (
           <li key={t.id} className="gd-tech">

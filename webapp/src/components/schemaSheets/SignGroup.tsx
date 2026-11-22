@@ -69,7 +69,7 @@ export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, a
   }
   return (
     <section className={plain ? 'sg-group sg-group--plain' : 'pp-paper sg-group'} aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
-      {(title !== undefined || signs.length > 0) && <SignGroupHead signs={signs} title={title} aside={aside} as={headAs} />}
+      {(title !== undefined || signs.length > 0) && <SignGroupHead signs={signs} title={title} aside={aside} as={headAs} />}{hint && <p className="sg-hint sg-hint--line">{hint}</p>}
       <div className={rows}>{children}</div>
     </section>
   );
