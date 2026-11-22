@@ -1,6 +1,8 @@
 import type { PracticeNotesBuilder } from './types';
+import { buildPracticeArntz } from './practiceArntz';
+import { experientialAvoidanceMore } from './practiceMoreArntz';
 
-/** «Для терапевта»: работа с чувствами и поведением (гл. 8, 9). Карта — docs/guide-sources/Кембридж.md. */
+/** «Для терапевта»: работа с чувствами и поведением (гл. 8, 9). Карта — docs/guide-sources/Кембридж.md; заметки по Арнцу — practiceArntz.ts. */
 export const buildPracticeChange: PracticeNotesBuilder = (tr) => [
   {
     id: 'experiential_avoidance',
@@ -21,12 +23,8 @@ export const buildPracticeChange: PracticeNotesBuilder = (tr) => [
         'Предлагаю упражнение в воображении: так легче дотянуться до того, что обычно прячется за спокойствием. Скажите, если станет слишком.',
       ),
     ],
-    more: [
-      'Метод вырос из ограничений когнитивной работы: она меняет убеждённость рассудка, а чувства часто остаются прежними. Эмпирические техники отнимают у схем эмоциональную силу и работают вместе с когнитивной, поведенческой работой и отношениями [Кембридж, гл. 8].',
-      'Конечная цель работы с режимами — укрепить Здорового Взрослого, чтобы он сам отвечал детским, копинговым и критикующим режимам [Кембридж, гл. 8].',
-      'Навык, который нужен терапевту, — проводить упражнения так, чтобы они помогали и оставались для клиента переносимыми [Кембридж, гл. 8].',
-    ],
-    sources: '[Кембридж, гл. 8, рис. 8.1]',
+    more: experientialAvoidanceMore,
+    sources: '[Кембридж, гл. 8, рис. 8.1], [Арнтц ПРЛ, гл. 3]',
   },
   {
     id: 'exact_scene',
@@ -89,4 +87,5 @@ export const buildPracticeChange: PracticeNotesBuilder = (tr) => [
     ],
     sources: '[Кембридж, гл. 9, бокс 9.10]',
   },
+  ...buildPracticeArntz(tr),
 ];
