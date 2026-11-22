@@ -2,10 +2,10 @@
 // намеренно не несёт свободный текст — он подтягивается здесь, через обычные
 // расшифровывающие эндпоинты, ТОЛЬКО по явному тапу пользователя на записи
 // (и перед отправкой виден в превью, как у карточки благодарности).
-// Запись с id открывается своим GET …/:id: поиск в списке находил только 30
-// последних, и 31-я открывалась пустой (R6, аудит 2026-11); шаг плана искали
-// в истории за год — старше года открывался пустым (хвост волны 2).
-import { type JourneyItem, JOURNEY_NEED_NAMES } from './journeyMeta';
+// Запись с id открывается своим GET …/:id, а не поиском в списке: в списке только
+// 30 последних, шаг плана — только за год, старшие открывались пустыми.
+import { type JourneyItem } from './journeyMeta';
+import { NEED_NAMES } from '../needs/needNames';
 import { computeScores, type YsqHistoryEntry } from '../hooks/useYsqTest';
 // Разбор записи в части карточек — рядом, в journeyParts (реэкспорт ниже:
 // у обоих фронтендов исторически один вход — этот модуль).
@@ -152,9 +152,7 @@ export async function fetchJourneyResult(
     const ratings = entry as Record<string, number> | undefined;
     const hasRatings =
       ratings &&
-      Object.keys(JOURNEY_NEED_NAMES).some(
-        (id) => typeof ratings[id] === 'number',
-      );
+      Object.keys(NEED_NAMES).some((id) => typeof ratings[id] === 'number');
     return hasRatings ? { parts, ratings } : null;
   }
   return parts.length ? { parts } : null;

@@ -2,15 +2,8 @@
 // сегодняшнего профиля потребностей сразу после заполнения трекера — первая
 // сессия даёт отдачу, а не только обещание «паттерн через 3–5 дней».
 // Показывается в Celebration. Формулировки нейтральные по обращению.
+import { NEED_NAMES } from '../needs/needNames';
 import { isRated } from '../needs/ratingRecord';
-
-const LABELS: Record<string, string> = {
-  attachment: 'Привязанность',
-  autonomy: 'Автономия',
-  expression: 'Выражение чувств',
-  play: 'Спонтанность',
-  limits: 'Самоконтроль',
-};
 
 /**
  * Возвращает фразу-интерпретацию, либо null, если оценок меньше пяти
@@ -40,5 +33,5 @@ export function todayInsightPhrase(
     return `Сегодня ровный день: все потребности примерно на одном уровне (${avg}/10).`;
   }
 
-  return `Сегодня опора — ${LABELS[strongId] ?? strongId} (${strongVal}/10), а больше всего внимания просит ${LABELS[weakId] ?? weakId} (${weakVal}/10).`;
+  return `Сегодня опора — ${NEED_NAMES[strongId] ?? strongId} (${strongVal}/10), а больше всего внимания просит ${NEED_NAMES[weakId] ?? weakId} (${weakVal}/10).`;
 }
