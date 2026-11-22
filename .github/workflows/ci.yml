@@ -302,6 +302,9 @@ jobs:
       # в security-log-redact.ts и перестал измеряться). Классификация в
       # scripts/mutation-zone-baseline.json; флага --update нет.
       - run: node scripts/check-mutation-zone.mjs
+      # Спек над мутационной зоной не грузит модули внутри `it`: Stryker засчитал
+      # бы тесту код уровня модуля. Долг — scripts/spec-load-in-test-baseline.json.
+      - run: node scripts/check-spec-load-in-test.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
@@ -663,7 +666,7 @@ jobs:
           npx jest --config ./test/jest-e2e.json --runInBand
           test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
           test/app-ownership-sweep-2.e2e-spec.ts test/app-ownership-sweep-3.e2e-spec.ts
-          test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts test/therapy-web-client.e2e-spec.ts test/therapy-plan.e2e-spec.ts test/guide-marks.e2e-spec.ts
+          test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts test/therapy-web-client.e2e-spec.ts test/therapy-plan.e2e-spec.ts test/therapy-path.e2e-spec.ts test/guide-marks.e2e-spec.ts
           test/client-booking-ownership.e2e-spec.ts
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts

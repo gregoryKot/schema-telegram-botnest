@@ -419,6 +419,17 @@ describe('MergeService — реестры таблиц и SQL-инвариант
         values: [SRC, SRC],
       },
       {
+        label:
+          'TherapyPath: drop source(therapistId) row, чья пара уже у target',
+        sql: 'DELETE FROM "TherapyPath" s USING "TherapyPath" t WHERE s."therapistId" = ? AND t."therapistId" = ? AND t."clientId" = s."clientId"',
+        values: [SRC, TGT],
+      },
+      {
+        label: 'TherapyPath: drop source(clientId) row, чья пара уже у target',
+        sql: 'DELETE FROM "TherapyPath" s USING "TherapyPath" t WHERE s."clientId" = ? AND t."clientId" = ? AND t."therapistId" = s."therapistId"',
+        values: [SRC, TGT],
+      },
+      {
         label: 'GuideMark: drop source(therapistId) row, чей ключ уже у target',
         sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."therapistId" = ? AND t."therapistId" = ? AND t."clientId" = s."clientId" AND t."address" = s."address"',
         values: [SRC, TGT],
