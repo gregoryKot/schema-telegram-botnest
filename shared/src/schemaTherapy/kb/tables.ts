@@ -64,6 +64,10 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     why: 'фаза «Путь терапии»: modeIds, techniques — проверка в guide/phases/phases.test.ts',
   },
   {
+    file: 'shared/src/therapy/path/templates/',
+    why: 'шаблон пути клиента: адреса разделов — проверка в path/templates/templates.test.ts',
+  },
+  {
     file: 'shared/src/mode/modeCards/',
     why: PART('MODE_CARDS (modeCards/index.ts)'),
   },
