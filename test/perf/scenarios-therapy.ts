@@ -10,6 +10,7 @@ import { getFormerTherapistInfo } from '../../src/therapy/former-therapist-info'
 import { TherapyClientDataService } from '../../src/therapy/therapy-client-data.service';
 import { TherapyNotesService } from '../../src/therapy/therapy-notes.service';
 import { TherapyRelationsService } from '../../src/therapy/therapy-relations.service';
+import { PATH_SCENARIOS } from './scenarios-path';
 import type { Scenario } from './scenarios';
 
 const relations = (prisma: PrismaService) =>
@@ -66,4 +67,5 @@ export const THERAPY_SCENARIOS: Scenario[] = [
       return card;
     },
   },
+  ...PATH_SCENARIOS,
 ];

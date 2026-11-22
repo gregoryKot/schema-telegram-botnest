@@ -70,6 +70,8 @@ export interface PlanItem {
   source: PlanSource | null;
   /** Задание, которым пункт выдан клиенту; задание удалили — null. */
   taskId: number | null;
+  /** Фаза пути клиента (pathModel.ts), к которой отнесён пункт; null — вне фаз. */
+  phaseId: number | null;
   createdAt: string;
   updatedAt: string;
 }
