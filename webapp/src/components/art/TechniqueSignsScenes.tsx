@@ -64,16 +64,17 @@ export function TalkNow({ size }: ArtProps) {
   );
 }
 
-/** Три стула Здорового Взрослого: большой круг между двумя меньшими, у каждого своё сиденье. */
+/** Три стула Здорового Взрослого: один и тот же круг на трёх сиденьях-ступенях — три шага ответа. */
 export function ThreeChairs({ size }: ArtProps) {
+  const seats = [{ x: 24, y: 46 }, { x: 60, y: 36 }, { x: 96, y: 26 }];
   return (
     <Svg size={size} viewBox={BOX}>
-      <circle cx="60" cy="22" r="17" fill={PAPER.moss} />
-      <circle cx="24" cy="42" r="11" fill={PAPER.clay} />
-      <circle cx="96" cy="42" r="11" fill={PAPER.plum} />
-      <rect x="46" y="42" width="28" height="6" rx="3" fill={PAPER.brown} />
-      <rect x="11" y="56" width="26" height="6" rx="3" fill={PAPER.brown} />
-      <rect x="83" y="56" width="26" height="6" rx="3" fill={PAPER.brown} />
+      {seats.map((c) => (
+        <g key={c.x}>
+          <rect x={c.x - 14} y={c.y + 10} width="28" height={54 - c.y} rx="5" fill={PAPER.sage} />
+          <circle cx={c.x} cy={c.y - 4} r="13" fill={PAPER.moss} />
+        </g>
+      ))}
     </Svg>
   );
 }
