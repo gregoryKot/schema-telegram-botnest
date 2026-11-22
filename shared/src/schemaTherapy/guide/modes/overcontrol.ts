@@ -142,6 +142,7 @@ export const buildOvercontrolGuides: ModeGuideBuilder = (tr) => [
       'empathic_confrontation',
       'imagery_rescripting',
       'pros_cons',
+      'positive_data_log',
     ],
     betweenSessions: [
       {

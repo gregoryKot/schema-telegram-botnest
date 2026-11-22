@@ -15,56 +15,91 @@ export const MODES_WITHOUT_SCHEMA: Readonly<Record<string, KbGap>> = {
   happy_child: { kind: 'theory', why: HEALTHY },
   good_parent: { kind: 'theory', why: HEALTHY },
   predator: {
-    kind: 'todo',
-    why: 'нужна глава о криминальной модели режимов: на полке источников её нет, решает владелец',
+    kind: 'theory',
+    why: 'режим из модели для правонарушителей (Bernstein, Arntz & de Vos 2007), литература не выводит его из конкретной схемы',
   },
 };
 
-const NO_SECTION =
-  'ни один раздел режима, схемы или запроса не зовёт технику — связать по книге';
+const PHASE =
+  'зовёт фаза терапии, а не режим, схема или запрос: считать ли фазы разделом — вопрос владельцу';
 
 /** Техники, которых нет ни в одном поле techniques раздела. */
-export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> =
-  Object.fromEntries(
-    [
-      'limited_reparenting',
-      'limit_setting',
-      'anger_expression',
-      'diagnostic_imagery',
-      'safe_place_imagery',
-      'mode_dialogue_imagery',
-      'mode_map',
-      'schema_diary',
-      'positive_data_log',
-      'behavioral_experiment',
-      'transitional_objects',
-      'play_and_joy',
-      'body_grounding',
-      'values_overview',
-      'couple_mode_cycle',
-      'online_chairwork',
-      'schema_attunement',
-      'healthy_adult_three_chairs',
-      'need_now_question',
-      'downward_arrow',
-      'responsibility_pie',
-      'courtroom',
-      'schema_dialogue',
-      'current_role_play',
-      'behavioral_activation',
-      'socratic_dialogue',
-      'exposure',
-      'chain_analysis',
-      'distress_tolerance',
-      'validation_levels',
-      'defusion',
-      'compassionate_self',
-      'motivational_interviewing',
-      'window_of_tolerance',
-      'stop_rewind_explore',
-      'life_line',
-    ].map((id) => [id, { kind: 'todo', why: NO_SECTION } satisfies KbGap]),
-  );
+export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
+  schema_attunement: {
+    kind: 'theory',
+    why: 'часть структуры любой сессии (разбор триггеров в первой трети), а не ответ на режим или схему',
+  },
+  online_chairwork: {
+    kind: 'theory',
+    why: 'формат видеосессии для любой работы со стульями: не зависит от режима или схемы',
+  },
+  mode_dialogue_imagery: {
+    kind: 'theory',
+    why: 'тот же диалог режимов, что на стульях, с закрытыми глазами: вариант формы для любого режима',
+  },
+  life_line: {
+    kind: 'theory',
+    why: 'сбор истории в начале терапии у любого клиента; ' + PHASE,
+  },
+  window_of_tolerance: {
+    kind: 'theory',
+    why: 'модель дозирования любой эмоциональной техники, а не работа с конкретным режимом или схемой',
+  },
+  validation_levels: {
+    kind: 'theory',
+    why: 'позиция терапевта на любой сессии, как и ограниченное родительство: конкретного режима у неё нет',
+  },
+  healthy_adult_three_chairs: {
+    kind: 'theory',
+    why:
+      'шаг средней фазы, где клиент сам отвечает любому своему режиму; ' +
+      PHASE,
+  },
+  motivational_interviewing: {
+    kind: 'theory',
+    why: 'приём для любого копингового режима, который не готов уступать; конкретного режима полка не называет',
+  },
+  body_grounding: {
+    kind: 'todo',
+    why: 'по тексту — Отстранённый Защитник («замечать тело»), но у режима 5 техник: заменить ли осознанность — решает владелец',
+  },
+  responsibility_pie: {
+    kind: 'todo',
+    why: 'по тексту — мнимая вина у Пунитивности к себе и Внушающего Вину Критика, у обоих 5 техник: кого вытеснить — решает владелец',
+  },
+  courtroom: {
+    kind: 'todo',
+    why: 'та же мнимая вина, что у диаграммы ответственности: место у Внушающего Вину Критика занято — решает владелец',
+  },
+  compassionate_self: {
+    kind: 'todo',
+    why: 'просится к Униженному Ребёнку (стыд), но текст раздела и полка источников связь не подтверждают — нужна книга владельца',
+  },
+  defusion: {
+    kind: 'todo',
+    why: 'просится к Критикам, у всех трёх по 5 техник, и текст раздела её не называет — решает владелец',
+  },
+  behavioral_activation: {
+    kind: 'todo',
+    why: 'депрессия: запроса «Депрессия» во вкладке нет — завести ли его, решает владелец',
+  },
+  need_now_question: {
+    kind: 'todo',
+    why: 'депрессия [Кембридж, гл. 13]: запроса «Депрессия» во вкладке нет — завести ли его, решает владелец',
+  },
+  chain_analysis: {
+    kind: 'todo',
+    why: 'просится в статью о ПРЛ (самоповреждение), но у статьи 6 техник из 6 — решает владелец',
+  },
+  stop_rewind_explore: {
+    kind: 'todo',
+    why: 'ментализация при ПРЛ и Агрессоре: у статьи ПРЛ 6 техник из 6, у Агрессора 5 — решает владелец',
+  },
+  current_role_play: {
+    kind: 'todo',
+    why: 'Арнтц ПРЛ, гл. 5: в статье ПРЛ места нет, а ролевую игру у Недисциплинированного Ребёнка текст не уточняет — решает владелец',
+  },
+};
 
 /**
  * Названия режимов в тексте раздела схемы без режима в её modeIds: `схема→режим`.
@@ -74,9 +109,5 @@ export const TEXT_MENTIONS_WITHOUT_LINK: Readonly<Record<string, KbGap>> = {
   'entitlement→vulnerable_child': {
     kind: 'theory',
     why: 'текст объясняет, что при «чистой» схеме режима нет, а при вторичной он принадлежит исходной схеме',
-  },
-  'unrelenting_standards→vulnerable_child': {
-    kind: 'todo',
-    why: 'режим назван, когда планка компенсирует Дефективность: характерен ли он для самой схемы — решает владелец по книге',
   },
 };

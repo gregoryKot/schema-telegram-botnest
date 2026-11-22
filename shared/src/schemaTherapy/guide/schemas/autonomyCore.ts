@@ -43,6 +43,7 @@ export const buildDependenceGuide = (tr: Tr): SchemaGuide => ({
     'imagery_rescripting',
     'chairwork',
     'empathic_confrontation',
+    'socratic_dialogue',
   ],
   betweenSessions: [
     {
@@ -100,7 +101,12 @@ export const buildVulnerabilityGuide = (tr: Tr): SchemaGuide => ({
     'Объяснить, как это устроено: тревожность усвоена в семье, а во всех четырёх вариантах работает одно и то же ожидание худшего [Касьяник].',
     'К копингу: беду «предотвращают» ритуалами, магическим мышлением, успокоительными и «оберегами» вроде доверенного провожатого. Всё это держит схему, потому что не даёт проверить, что справиться можно и без них [Янг, гл. 7].',
   ],
-  techniques: ['pattern_breaking', 'imagery_rescripting', 'flashcards'],
+  techniques: [
+    'pattern_breaking',
+    'imagery_rescripting',
+    'flashcards',
+    'exposure',
+  ],
   betweenSessions: [
     {
       kind: 'task',
