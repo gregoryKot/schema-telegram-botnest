@@ -23,6 +23,8 @@ const texts: ReferenceTexts = {
   }],
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [{ ...FIXTURE_PRACTICE_NOTE, points: ['Сверить контрперенос с супервизором'] }],
+  buildConcernGuides: () => [{ id: 'bpd', name: 'Пограничное расстройство', goal: 'цель', essence: 'суть', differential: ['Голос Критика — псевдогаллюцинация'], sources: '' }],
+  buildPhaseGuides: () => [{ id: 'bonding', name: 'Установление связи', goal: 'цель', essence: 'суть', transition: ['Клиент выдерживает конфронтацию'], noteIds: ['group_therapy'], sources: '' }],
 };
 const ref = buildReference(texts, tr);
 const body = buildReferenceBody(texts, tr);
@@ -72,6 +74,15 @@ describe('поиск по текстам листов', () => {
     expect(ids('angry_child')).toEqual([]);
   });
 
+  it('слово из статьи «Запросов» находит её лист', () => {
+    expect(only('псевдогаллюцинация')).toMatchObject({ kind: 'concern', id: 'bpd' });
+  });
+
+  it('слово из листа «Пути терапии» находит его лист; id заметки — не текст', () => {
+    expect(only('конфронтацию')).toMatchObject({ kind: 'phase', id: 'bonding', step: 1 });
+    expect(ids('group_therapy')).toEqual([]);
+  });
+
   it('без текстов поиск идёт только по названиям', () => {
     expect(searchReference(ref, 'тоской')).toEqual([]);
   });
@@ -92,5 +103,13 @@ describe('snippet', () => {
 
   it('короткий абзац — целиком', () => {
     expect(snippet('Гнев — сигнал.', 'гнев')).toBe('Гнев — сигнал.');
+  });
+});
+
+describe('поисковые синонимы названий', () => {
+  it('другой перевод названия схемы или режима находит лист; название, покрытое синонимом, — первым', () => {
+    expect(ids('заброшенность')).toEqual(['abandonment']);
+    expect(ids('злой ребёнок')[0]).toBe('angry_child');
+    expect(only('заброшенность').name).toBe('Покинутость / Нестабильность');
   });
 });

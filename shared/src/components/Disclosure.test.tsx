@@ -155,6 +155,17 @@ describe('Disclosure', () => {
     expect(body.hidden).toBe(false);
   });
 
+  it('keepMounted: кнопка ссылается на тело через aria-controls', () => {
+    render(
+      <Disclosure title="Подробнее" classes={CLASSES} keepMounted>
+        <p>Абзац</p>
+      </Disclosure>,
+    );
+    const btn = screen.getByRole('button', { name: 'Подробнее' });
+    const id = btn.getAttribute('aria-controls')!;
+    expect(document.getElementById(id)?.textContent).toBe('Абзац');
+  });
+
   it('chev: свой глиф места в шевроне, скрыт от чтения', () => {
     render(
       <Disclosure

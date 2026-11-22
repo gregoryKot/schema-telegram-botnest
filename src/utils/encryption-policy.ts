@@ -180,9 +180,17 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     rubric: ID,
     text: enc(`${TH}/therapy-plan.service.ts`),
     status: ID,
+    sourceAddress: plain(
+      'адрес раздела справочника из кода, не свободный текст',
+    ),
     sourceKind: ID,
     sourceId: ID,
     sourceField: ID,
+  },
+  GuideMark: {
+    address: plain('адрес раздела справочника из кода, не свободный текст'),
+    note: enc(`${TH}/guide-marks.service.ts`),
+    snapshot: enc(`${TH}/guide-marks.service.ts`),
   },
   ClientConceptualization: {
     schemaIds: enc(`${TH}/concept-store.ts`),

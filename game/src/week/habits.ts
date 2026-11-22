@@ -17,8 +17,8 @@ export const RULES = {
   overworkCost: 30, overworkPiles: 2, overworkCalmMs: 2000, overworkCalmLevel: 0.3,
   scrollJumpMin: 130, scrollFade: 0.34, scrollCalmMs: 2500,
   agreeJumpLoss: 0.12, minJump: 0.6,
-  restMs: 2200, restEnergy: 40,
-  clockCap: 14 * 60 + 58, // встреча в 15:00 — телефон не уносит дальше двери
+  restMs: 2200, restEnergy: 40, sitMs: 1000,
+  clockCap: 14 * 60 + 58, // по умолчанию — хук: встреча в 15:00; у главы свой потолок (Chapter.clockCap)
 } as const;
 
 export function newWeekState(clockMin: number): WeekState {
@@ -36,11 +36,11 @@ export function overwork(s: WeekState, peak = false): WeekState {
 }
 
 /** ПРОЛИСТАТЬ: сбой гаснет, часы перескакивают, мир сереет. На пике телефон гаснет сам — ничего не меняется. */
-export function scroll(s: WeekState, peak = false): WeekState {
+export function scroll(s: WeekState, peak = false, cap: number = RULES.clockCap): WeekState {
   if (peak) return s;
   return {
     ...s,
-    clockMin: Math.max(s.clockMin, Math.min(s.clockMin + RULES.scrollJumpMin, RULES.clockCap)),
+    clockMin: Math.max(s.clockMin, Math.min(s.clockMin + RULES.scrollJumpMin, cap)),
     color: Math.max(0, +(s.color - RULES.scrollFade).toFixed(2)),
     calmMs: RULES.scrollCalmMs, calmLevel: 0,
   };
@@ -81,6 +81,8 @@ export function tick(s: WeekState, dtMs: number): WeekState {
 }
 
 export const isResting = (s: WeekState): boolean => s.restMs > 0;
+/** Первую секунду без сил Саша сидит, потом поднимается и плетётся. */
+export const isSitting = (s: WeekState): boolean => s.restMs > RULES.restMs - RULES.sitMs;
 
 export function clockText(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;

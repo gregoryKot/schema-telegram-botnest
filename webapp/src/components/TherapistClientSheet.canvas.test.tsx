@@ -11,6 +11,7 @@ import { TherapistClientSheet } from './TherapistClientSheet';
 
 vi.mock('../api', () => ({
   api: {
+    getGuideMarks: () => Promise.resolve({ marks: [] }),
     getTherapyClients: vi.fn(),
     getTherapyInvites: vi.fn(() => Promise.resolve([])),
     getCardClaims: vi.fn(() => Promise.resolve([])),

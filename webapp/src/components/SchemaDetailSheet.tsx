@@ -88,7 +88,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
       )}
 
       <div className="ss-detail-actions">
-        <button onClick={() => navigate('/exercises', { state: { openSchemaEx: schemaId } })} className="ds-btn ss-detail-go">
+        <button onClick={() => navigate('/practice', { state: { openSchemaEx: schemaId } })} className="ds-btn ss-detail-go">
           Познакомиться →
         </button>
         <div className="ss-detail-row">

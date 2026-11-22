@@ -20,6 +20,8 @@ const texts: ReferenceTexts = {
   buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: 'домен', schemas: [{ ...FIXTURE_SCHEMA_GUIDE, schemaId: 'abandonment' }] }],
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [FIXTURE_PRACTICE_NOTE],
+  buildConcernGuides: () => [],
+  buildPhaseGuides: () => [],
 };
 const TASKS: CatalogTask[] = [
   { id: 'pismo-kritiku', title: 'Письмо Критику', variants: [{ text: 'Написать письмо', forModes: [], forSchemas: [] }], why: '', group: 'modes' },

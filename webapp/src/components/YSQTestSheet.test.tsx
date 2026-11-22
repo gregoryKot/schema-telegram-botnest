@@ -106,7 +106,7 @@ describe('YSQTestSheet — прохождение теста', () => {
     fireEvent.click(screen.getByText('Начать тест'));
     expect(screen.getByText(QUESTIONS[0])).toBeTruthy();
 
-    fireEvent.click(screen.getByText('Иногда бывает'));
+    fireEvent.click(screen.getByText('Немного про меня'));
     act(() => { vi.advanceTimersByTime(300); });
     expect(screen.getByText(QUESTIONS[1])).toBeTruthy();
   });
@@ -119,7 +119,7 @@ describe('YSQTestSheet — прохождение теста', () => {
     // (это намеренно: YsqTestHeader блокирует кнопку при page===0).
     expect((screen.getByLabelText('Назад') as HTMLButtonElement).disabled).toBe(true);
 
-    fireEvent.click(screen.getByText('Иногда бывает'));
+    fireEvent.click(screen.getByText('Немного про меня'));
     act(() => { vi.advanceTimersByTime(300); });
     expect(screen.getByText(QUESTIONS[1])).toBeTruthy();
 
@@ -134,10 +134,10 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ date: new Date().toISOString(), answers }));
   }
 
-  it('все ответы «Совсем не про меня» (1) → «Выраженных схем нет», без хардкод-чисел', async () => {
+  it('все ответы «Совсем не про меня» (1) → «ни одна схема не выражена», без хардкод-чисел', async () => {
     seedResult(1);
     renderSheet();
-    await waitFor(() => expect(screen.getByText('Выраженных схем нет — отличный результат.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/По ответам ни одна схема не выражена/)).toBeTruthy());
   });
 
   // «Читать карточку схемы» из результата (SchemaInfoSheet.handleViewSchemas) убирал тест из
@@ -178,10 +178,10 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     await waitFor(() => expect(parentClosed).toHaveBeenCalledTimes(1));
   });
 
-  it('все ответы «Полностью про меня» (6) → показывает активные схемы со РЕАЛЬНЫМ средним баллом', async () => {
+  it('все ответы «Точно про меня» (6) → показывает активные схемы со РЕАЛЬНЫМ средним баллом', async () => {
     seedResult(6);
     renderSheet();
-    await waitFor(() => expect(screen.queryByText('Выраженных схем нет — отличный результат.')).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/По ответам ни одна схема не выражена/)).toBeNull());
     // Средний балл 6.0 из 6 у каждой активной схемы — считается из ответов,
     // а не подставляется константой.
     expect(screen.getAllByText('6').length).toBeGreaterThan(0);
@@ -239,7 +239,7 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     fireEvent.click(screen.getByText('Начать заново'));
     vi.useFakeTimers();
     fireEvent.click(screen.getByText('Начать тест'));
-    fireEvent.click(screen.getByText('Иногда бывает'));
+    fireEvent.click(screen.getByText('Немного про меня'));
     act(() => { vi.advanceTimersByTime(300); });
     fireEvent.click(screen.getByLabelText('Закрыть')); // бросил на втором вопросе
     vi.useRealTimers();
@@ -248,7 +248,7 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     renderSheet();
     // Выраженные схемы прежнего итога на месте (все ответы 6 — схем много).
     await waitFor(() => expect(screen.getByText('Пройти заново')).toBeTruthy());
-    expect(screen.queryByText('Выраженных схем нет — отличный результат.')).toBeNull();
+    expect(screen.queryByText(/По ответам ни одна схема не выражена/)).toBeNull();
     // Новый заход ждёт черновиком: повторный ретейк зовёт продолжить, а не с нуля.
     fireEvent.click(screen.getByText('Пройти заново'));
     fireEvent.click(screen.getByText('Начать заново'));

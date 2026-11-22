@@ -108,23 +108,23 @@ const ANX_DEP = `
 
 const TRAUMA = `
 <figure class="dg">
-  <svg viewBox="0 0 640 250" role="img" aria-label="Шоковая травма и травма развития">
+  <svg viewBox="0 0 640 250" role="img" aria-label="Травматическое событие и травма развития">
     <rect class="dg-node" x="14" y="14" width="300" height="222" rx="16"/>
-    <text class="dg-cap-acc" x="34" y="44">ШОКОВАЯ · ТИП I</text>
-    <text class="dg-t" x="34" y="76">Одно событие</text>
-    <text class="dg-s" x="34" y="100">авария, потеря, нападение</text>
-    <text class="dg-s" x="34" y="124">→ классическое ПТСР</text>
-    <text class="dg-cap" x="34" y="164">ПЕРВАЯ ЛИНИЯ</text>
+    <text class="dg-cap-acc" x="34" y="44">ТРАВМАТИЧЕСКОЕ СОБЫТИЕ</text>
+    <text class="dg-t" x="34" y="76">Угроза жизни, насилие</text>
+    <text class="dg-s" x="34" y="100">однократно или повторно</text>
+    <text class="dg-s" x="34" y="124">→ ПТСР или кПТСР</text>
+    <text class="dg-cap" x="34" y="164">ПЕРВАЯ ЛИНИЯ ПРИ ПТСР</text>
     <text class="dg-s" x="34" y="188">EMDR, травмофокус. КПТ</text>
     <rect class="dg-accent" x="326" y="14" width="300" height="222" rx="16"/>
-    <text class="dg-cap-on" x="346" y="44">РАЗВИТИЯ · ТИП II</text>
+    <text class="dg-cap-on" x="346" y="44">ТРАВМА РАЗВИТИЯ</text>
     <text class="dg-t-on" x="346" y="76">Длится годами</text>
     <text class="dg-s-on" x="346" y="100">пренебрежение, нестабильность</text>
-    <text class="dg-s-on" x="346" y="124">→ комплексное ПТСР</text>
-    <text class="dg-cap-on" x="346" y="164">ЗДЕСЬ ОСОБЕННО СИЛЬНА</text>
+    <text class="dg-s-on" x="346" y="124">→ ранние дезадаптивные схемы</text>
+    <text class="dg-cap-on" x="346" y="164">С НИМИ РАБОТАЕТ</text>
     <text class="dg-t-on" x="346" y="190">Схема-терапия</text>
   </svg>
-  <figcaption><b>Травма травме рознь.</b> При одном остром событии первой линией идут EMDR и травмофокусированная КПТ; при хронической травме развития раскрывается схема-терапия.</figcaption>
+  <figcaption><b>Травма травме рознь.</b> При ПТСР первой линией идут EMDR и травмофокусированная КПТ; со схемами, которые оставила годами длившаяся травма развития, работает схема-терапия.</figcaption>
 </figure>`;
 
 const SUPPORT_VS_STRUCTURE = `
@@ -222,27 +222,23 @@ const STEPS = `
 
 const LAYERS = `
 <figure class="dg">
-  <svg viewBox="0 0 640 360" role="img" aria-label="Глубина фокуса: КПТ и схема-терапия">
-    <rect class="dg-node" x="20" y="20" width="56" height="70" rx="10"/>
-    <rect class="dg-accent" x="92" y="20" width="56" height="304" rx="10"/>
-    <line class="dg-flow-soft" x1="76" y1="90" x2="600" y2="90"/>
-    <line class="dg-flow" x1="148" y1="324" x2="600" y2="324"/>
-    <rect class="dg-node" x="168" y="20" width="432" height="70" rx="14"/>
-    <text class="dg-t" x="188" y="50">Мысли и поведение</text>
-    <text class="dg-s" x="188" y="70">то, что происходит сейчас</text>
-    <rect class="dg-chip" x="168" y="98" width="432" height="70" rx="14"/>
-    <text class="dg-t" x="188" y="128">Эмоциональные реакции</text>
-    <text class="dg-s" x="188" y="148">тревога, злость, стыд</text>
-    <rect class="dg-chip" x="168" y="176" width="432" height="70" rx="14"/>
-    <text class="dg-t" x="188" y="206">Убеждения о себе</text>
-    <text class="dg-s" x="188" y="226">«со мной что-то не так»</text>
-    <rect class="dg-chip" x="168" y="254" width="432" height="70" rx="14"/>
-    <text class="dg-t" x="188" y="284">Детский опыт и потребности</text>
-    <text class="dg-s" x="188" y="304">что не было закрыто тогда</text>
-    <text class="dg-cap" x="20" y="104">КПТ</text>
-    <text class="dg-cap-acc" x="92" y="338">Схема-терапия</text>
+  <svg viewBox="0 0 640 250" role="img" aria-label="Общая основа КПТ и схема-терапии и что добавляет схема-терапия">
+    <rect class="dg-node" x="14" y="14" width="300" height="222" rx="16"/>
+    <text class="dg-cap-acc" x="34" y="44">ОБЩЕЕ У ОБОИХ МЕТОДОВ</text>
+    <text class="dg-t" x="34" y="76">Мысли и убеждения</text>
+    <text class="dg-s" x="34" y="104">автоматические мысли</text>
+    <text class="dg-s" x="34" y="128">глубинные убеждения о себе</text>
+    <text class="dg-s" x="34" y="152">поведение и его проверка</text>
+    <text class="dg-s" x="34" y="176">задания между встречами</text>
+    <rect class="dg-accent" x="326" y="14" width="300" height="222" rx="16"/>
+    <text class="dg-cap-on" x="346" y="44">СХЕМА-ТЕРАПИЯ ДОБАВЛЯЕТ</text>
+    <text class="dg-t-on" x="346" y="76">Потребности и режимы</text>
+    <text class="dg-s-on" x="346" y="104">потребности детства без ответа</text>
+    <text class="dg-s-on" x="346" y="128">модель режимов</text>
+    <text class="dg-s-on" x="346" y="152">воображение и работа со стульями</text>
+    <text class="dg-s-on" x="346" y="176">ограниченное родительство</text>
   </svg>
-  <figcaption><b>Разная глубина фокуса.</b> КПТ хорошо работает с мыслями и поведением на поверхности. Схема-терапия идёт до самого дна — к убеждениям и детскому опыту, из которых всё остальное растёт.</figcaption>
+  <figcaption><b>Общая основа, разные инструменты.</b> Оба метода работают с мыслями, поведением и глубинными убеждениями. Схема-терапия ищет их источник в неудовлетворённых потребностях детства и меняет через режимы, воображение и отношения с терапевтом.</figcaption>
 </figure>`;
 
 const BELIEF_BEHAVIORS = `
@@ -316,8 +312,8 @@ const DURATION = `
     <text class="dg-t" x="510" y="92">Закрепление</text>
     <text class="dg-s" x="510" y="112">от нескольких месяцев</text>
     <rect class="dg-chip" x="20" y="160" width="600" height="60" rx="16"/>
-    <text class="dg-t" x="40" y="186">Итого: обычно от года до нескольких лет</text>
-    <text class="dg-s" x="40" y="206">при регулярных встречах — работа с паттерном, а не короткая интервенция</text>
+    <text class="dg-t" x="40" y="186">Итого: при расстройствах личности от года до трёх лет</text>
+    <text class="dg-s" x="40" y="206">при отдельных схемах короче, от полугода; встречи обычно раз в неделю</text>
   </svg>
   <figcaption><b>Три условных этапа.</b> Границы между ними размыты, а темп у каждого свой — но именно поэтому схема-терапия структурно дольше методов, нацеленных на один симптом.</figcaption>
 </figure>`;
@@ -351,6 +347,6 @@ export const DIAGRAM_OPTIONS: { key: string; label: string }[] = [
   { key: 'trauma', label: 'Сравнение травмы' },
   { key: 'fork', label: 'Развилка «подходит ли»' },
   { key: 'steps', label: 'Шаги (таймлайн)' },
-  { key: 'layers', label: 'Глубина фокуса (слои)' },
+  { key: 'layers', label: 'КПТ и схема-терапия: общее и разное' },
   { key: 'relations', label: 'Схема как фильтр (отношения)' },
 ];

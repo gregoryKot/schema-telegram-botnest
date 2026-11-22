@@ -26,6 +26,7 @@
     "src/auth/telegram-init-data.ts",
     "src/auth/max-init-data.ts",
     "src/auth/login-ticket/login-ticket.service.ts",
+    "src/auth/login-ticket/ticket-session.ts",
     "src/auth/merge.service.ts",
     "src/auth/merge-subscriptions.ts",
     "src/auth/merge-combine.ts",
@@ -34,15 +35,13 @@
     "src/api/telegram-auth.guard.ts",
     "src/auth/security-log.service.ts",
     "src/auth/security-log-redact.ts",
+    "src/auth/session-proof.ts",
     "src/auth/totp.service.ts",
     "src/auth/totp-code.ts",
     "src/auth/totp-attempts.ts",
     "src/auth/totp-recovery.ts",
     "src/therapy/therapy-relations.service.ts"
   ],
-  "mutator": {
-    "excludedMutations": ["CallExpression"]
-  },
   "reporters": [
     "clear-text",
     "progress",

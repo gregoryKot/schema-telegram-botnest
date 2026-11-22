@@ -27,6 +27,7 @@ import { useRoutePractice } from './practice/practiceRoute';
 import type { ExId } from '../../../shared/src/exercises/exerciseCatalog';
 import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { isSessionToday, upcomingSession } from '../../../shared/src/therapy/upcomingSession';
+import type { PlanFocus } from '../components/plans/planFocus';
 import '../styles/client-practice.css';
 
 const ToolsCustomizeSheet = lazy(() => import('../components/quickActions/ToolsCustomizeSheet').then(m => ({ default: m.ToolsCustomizeSheet })));
@@ -34,7 +35,8 @@ const ToolsCustomizeSheet = lazy(() => import('../components/quickActions/ToolsC
 interface Props {
   onOpenChildhoodWheel: () => void;
   onOpenPractices: () => void;
-  onOpenPlans: () => void;
+  /** `focus` — план из общего поиска (practiceRoute). */
+  onOpenPlans: (focus?: PlanFocus) => void;
   onOpenTracker: () => void;
   onOpenDiaries: () => void;
   onOpenSchema?: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes' }) => void;
@@ -58,7 +60,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [relation,       setRelation]       = useState<TherapyRelationInfo | null | undefined>(undefined);
   const [showCustomize,  setShowCustomize]  = useState(false);
   const { tools, cards, catalogRows } = usePracticeTools({
-    goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans,
+    goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans: () => onOpenPlans(),
     modesRow: { sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'), onClick: () => onOpenSchema?.({ tab: 'modes' }) },
   });
   const onSos = tools.isShown('flashcard') ? openFlashcard : undefined;

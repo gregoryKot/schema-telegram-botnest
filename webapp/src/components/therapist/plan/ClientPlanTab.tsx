@@ -4,7 +4,7 @@ import '../../../styles/therapist-tabs.css';
 import type { TherapyClientSummary } from '../../../api';
 import type { TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import { useGuide } from '../../../../../shared/src/therapy/conceptGraph/guideLoader';
-import type { PlanItem, PlanRubric, PlanSource } from '../../../../../shared/src/therapy/plan/planItem';
+import type { PlanItem, PlanRubric } from '../../../../../shared/src/therapy/plan/planItem';
 import { useTr } from '../../../utils/addressForm';
 import { HistoryConfirmDialog } from '../../HistoryConfirmDialog';
 import { Skeleton } from '../../Skeleton';
@@ -12,11 +12,12 @@ import { TaskCreateSheet } from '../../TaskCreateSheet';
 import { PaperEmpty } from '../../art/PaperEmpty';
 import type { ClientDetail } from '../clientSheetTypes';
 import { useConceptGuide } from '../guide/useConceptGuide';
+import { guideMarkClient } from '../guide/marks/useClientGuideMarks';
 import { PlanGoals } from './PlanGoals';
 import { PlanItemForm } from './PlanItemForm';
 import { PlanItemRow } from './PlanItemRow';
 import { groupPlan, isEmptyPlan } from './planModel';
-import { planSourceTitle } from './planSource';
+import { planSourceLink, type PlanSourceLink } from './planSource';
 import { usePlanItems } from './usePlanItems';
 
 interface Props {
@@ -48,7 +49,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
   const tr = useTr();
   const navigate = useNavigate();
   const plan = usePlanItems(selectedClient.telegramId);
-  const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload } });
+  const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload }, client: guideMarkClient(selectedClient) });
   const texts = useGuide();
   const [adding, setAdding] = useState(false);
   const [rubric, setRubric] = useState<PlanRubric>('custom');
@@ -56,7 +57,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
   const [confirmDelete, setConfirmDelete] = useState<PlanItem | null>(null);
   const { items } = plan;
 
-  const openSource = ({ kind, id }: PlanSource) => {
+  const openSource = ({ kind, id }: NonNullable<PlanSourceLink['open']>) => {
     if (kind === 'mode') guide.actions.onOpenMode(id);
     else if (kind === 'schema') guide.actions.onOpenSchema(id);
     else guide.actions.onOpenTechnique(id as TechniqueId);
@@ -78,20 +79,23 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
             <section key={g.rubric} className="pl-group">
               <h3 className="ds-label">{g.label}</h3>
               <div className="pp-leaf pl-list">
-                {g.items.map((item, idx) => (
-                  <PlanItemRow
-                    key={item.id} item={item} busy={plan.busyId !== null}
-                    sourceTitle={planSourceTitle(texts, tr, item.source)}
-                    onCycleStatus={() => void plan.cycleStatus(item)}
-                    onOpenSource={() => item.source && openSource(item.source)}
-                    onAssign={() => setAssignItem(item)}
-                    linkPending={item.taskId == null && plan.pendingLinks[item.id] != null}
-                    onRetryLink={() => void plan.retryLink(item.id)}
-                    onSaveText={(text) => plan.saveText(item.id, text)}
-                    onDelete={() => { plan.clearError(); setConfirmDelete(item); }}
-                    canUp={idx > 0} canDown={idx < g.items.length - 1} onMove={(dir) => void plan.move(item, dir)}
-                  />
-                ))}
+                {g.items.map((item, idx) => {
+                  const link = planSourceLink(texts, tr, item);
+                  return (
+                    <PlanItemRow
+                      key={item.id} item={item} busy={plan.busyId !== null}
+                      sourceLink={link}
+                      onCycleStatus={() => void plan.cycleStatus(item)}
+                      onOpenSource={() => link?.open && openSource(link.open)}
+                      onAssign={() => setAssignItem(item)}
+                      linkPending={item.taskId == null && plan.pendingLinks[item.id] != null}
+                      onRetryLink={() => void plan.retryLink(item.id)}
+                      onSaveText={(text) => plan.saveText(item.id, text)}
+                      onDelete={() => { plan.clearError(); setConfirmDelete(item); }}
+                      canUp={idx > 0} canDown={idx < g.items.length - 1} onMove={(dir) => void plan.move(item, dir)}
+                    />
+                  );
+                })}
               </div>
             </section>
           ))}

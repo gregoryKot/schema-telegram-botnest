@@ -15,6 +15,7 @@ import { Pool } from 'pg';
 import { PERF_ID_BASE as B, PERF_SEED_MARK } from './seed-profile';
 import { BOOKING_CLEANUP_SQL } from './seed-booking';
 import { json } from './seed-sql';
+import { vacuumAnalyze } from './seed-vacuum';
 import { buildSteps, THERAPY_AFTER } from './seed-steps';
 
 export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
@@ -115,18 +116,10 @@ export async function seedPerfHorizon(
         pool.query('SELECT pg_stat_force_next_flush()'),
       ),
     );
-    // Без свежей статистики планировщик слеп, а замер бессмыслен. VACUUM заодно
-    // строит карту видимости (как autovacuum на проде) — без неё в плане не
-    // бывает index-only scan.
-    //
-    // Вакуум — ПО ОДНОЙ таблице, в отличие от вставок выше: параллельный VACUUM
-    // просит ~41 МБ из /dev/shm, и четыре сразу не влезают в 64 МБ, которые
-    // Docker даёт по умолчанию (SQLSTATE 53100 — так упала первая джоба `perf`).
-    // Замеру этой памяти нужен мизер, поднимать /dev/shm в CI не нужно —
-    // цифры и разбор в docs/PERF_PLANS.md. Цена последовательности — секунда.
-    for (const [table] of steps) {
-      await pool.query(`VACUUM (ANALYZE) "${table}"`);
-    }
+    await vacuumAnalyze(
+      pool,
+      steps.map(([t]) => t),
+    );
     log(`сид + VACUUM ANALYZE: ${((Date.now() - started) / 1000).toFixed(1)}с`);
     const sorted = Object.fromEntries(steps.map(([t]) => [t, counts[t] ?? 0]));
     for (const [table, n] of Object.entries(sorted)) log(`  ${table}: ${n}`);

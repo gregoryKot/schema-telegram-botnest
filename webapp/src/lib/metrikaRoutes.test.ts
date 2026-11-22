@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { isPublicMetrikaRoute } from './metrikaRoutes';
 import { WEBVISOR_PATHS } from './webvisorRoutes';
+import { LINKS_PAGE_ALIASES } from '../pages/links/linksAliases';
 
 const isWebvisorRecordRoute = (p: string) => WEBVISOR_PATHS.test(p);
 
@@ -15,7 +16,7 @@ const PRIVATE = [
   '/auth/error', '/link', '/account', '/account/merge',
   '/today', '/diary', '/more', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId', '/cabinet/:clientId/:tab',
 ];
-const REDIRECTS = ['/booking-admin', '/articles-admin', '/help', '/exercises', '*'];
+const REDIRECTS = ['/booking-admin', '/articles-admin', ...LINKS_PAGE_ALIASES, '/help', '/exercises', '*'];
 
 function appRoutePaths(): string[] {
   const src = readFileSync(resolve(__dirname, '../App.tsx'), 'utf8');
@@ -24,12 +25,12 @@ function appRoutePaths(): string[] {
 const sample = (path: string) => path.replace(/:[A-Za-z]+/g, 'x');
 
 describe('isPublicMetrikaRoute', () => {
-  it.each(['/', '/articles', '/articles/some-slug', '/reviews', '/links', '/tests', '/tests/mode-quiz',
+  it.each(['/', '/articles', '/articles/some-slug', '/reviews', '/privet', '/tests', '/tests/mode-quiz',
     '/subscribe', '/donate', '/privacy', '/offer', '/install', '/book', '/booking/paid', '/booking/manage', '/articles/'])(
     '%s — публичный', (p) => expect(isPublicMetrikaRoute(p)).toBe(true));
 
   it.each(['/today', '/diary', '/more', '/cabinet', '/cabinet/42', '/account', '/account/merge', '/login',
-    '/auth/callback', '/link', '/admin', '/app/', '/app/today', '/profile', '/practice'])(
+    '/auth/callback', '/link', ...LINKS_PAGE_ALIASES, '/admin', '/app/', '/app/today', '/profile', '/practice'])(
     '%s — закрыт', (p) => expect(isPublicMetrikaRoute(p)).toBe(false));
 
   it('сегментное сравнение: /articles-admin и /booking-admin — не публичные', () => {

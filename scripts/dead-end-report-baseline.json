@@ -91,6 +91,9 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); переключатель «показать клиенту»"
   },
+  "webapp/src/components/therapist/guide/CopingMarkSheet.tsx::setError": {
+    "status": "reports"
+  },
   "webapp/src/components/therapist/plan/PlanAddSheet.tsx::setError": {
     "status": "reports"
   },

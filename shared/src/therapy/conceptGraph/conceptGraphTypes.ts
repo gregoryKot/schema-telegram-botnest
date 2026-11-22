@@ -2,6 +2,7 @@
 import type { ConceptModeLink, ConceptSchemaLink } from '../../apiTypes';
 import type { ConceptLane, CopingKind } from './modeLanes';
 import type { ConceptNeedLink } from './needLinks';
+import type { CopingStyleId } from '../../schemaTherapy/guide/copingStyles';
 
 export interface ConceptGraphSource {
   modeIds: string[];
@@ -44,6 +45,8 @@ export interface GraphSchemaCard extends GraphSchemaChip {
   origin: string;
   /** Блокируемые потребности в порядке NEED_ORDER (✗ на схеме случая). */
   needIds: string[];
+  /** Стили копинга клиента со схемой (знаки у фигуры схемы, #1484). */
+  coping: CopingStyleId[];
   empty: boolean;
 }
 

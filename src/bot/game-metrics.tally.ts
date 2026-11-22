@@ -10,9 +10,7 @@ import {
   GAME_CTA_TARGETS,
   type GameCtaTarget,
 } from '../analytics/game-cta.constants';
-
-// Раскладка строк запроса блока «Игра» по граням (src/chapter/place/to) —
-// чистая функция; запрос — game-metrics.service.ts, вывод — game-metrics.format.ts.
+import { emptyWeek, tallyWeekRow, type WeekMetrics } from './game-week.tally';
 
 /** Воронка одной главы: сколько начали, дошли до конца, умерло по дороге. */
 export interface GameChapterFunnel {
@@ -38,6 +36,7 @@ export interface GameMetrics {
   /** Сайт открылся кнопкой финала (?from=game). */
   appArrivals: number;
   shares: number;
+  week: WeekMetrics;
 }
 
 export interface GameEventRow {
@@ -75,8 +74,7 @@ const pick = <T extends string>(
 ): T | null =>
   v !== null && (ids as readonly string[]).includes(v) ? (v as T) : null;
 
-/** Мусорный src → other; мусорная глава выпадает из воронки; мусорные
- * place/to не идут в разбивку, но считаются в ctaClicks. */
+/** Мусорный src → other; мусорная глава выпадает; мусорные place/to — только в ctaClicks. */
 export function tallyGameRows(rows: readonly GameEventRow[]): GameMetrics {
   const byChapter = new Map(
     GAME_CHAPTERS.map((c) => [c, { started: 0, finished: 0, deaths: 0 }]),
@@ -94,9 +92,11 @@ export function tallyGameRows(rows: readonly GameEventRow[]): GameMetrics {
     ctaClicksByTarget: zeroRecord(GAME_CTA_TARGETS),
     appArrivals: 0,
     shares: 0,
+    week: emptyWeek(),
   };
   for (const row of rows) {
     const c = Number(row.c);
+    if (tallyWeekRow(m.week, row, c)) continue;
     const simpleKey = SIMPLE_COUNTERS[row.name];
     if (simpleKey) {
       m[simpleKey] += c;
