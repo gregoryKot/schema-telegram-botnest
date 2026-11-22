@@ -64,8 +64,7 @@ export class TherapyPlanController {
     @Param('id') id: string,
     @Body() body: UpdatePlanItemDto,
   ) {
-    const { text, status, rubric, taskId } = body;
-    if ([text, status, rubric, taskId].every((v) => v === undefined))
+    if (Object.values(body).every((v) => v === undefined))
       throw new BadRequestException('Nothing to update');
     return this.asTherapist(req, (tid) =>
       this.planService.update(tid, parseId(id), body),
