@@ -461,7 +461,7 @@
   "shared/src/schemaTherapy/guide/index.ts": 82,
   "shared/src/schemaTherapy/guide/modes/attack.ts": 262,
   "shared/src/schemaTherapy/guide/modes/avoidance.ts": 122,
-  "shared/src/schemaTherapy/guide/modes/child.ts": 183,
+  "shared/src/schemaTherapy/guide/modes/child.ts": 176,
   "shared/src/schemaTherapy/guide/modes/childAngry.ts": 207,
   "shared/src/schemaTherapy/guide/modes/critic.ts": 120,
   "shared/src/schemaTherapy/guide/modes/healthy.ts": 122,
@@ -482,7 +482,7 @@
   "shared/src/schemaTherapy/guide/techniques/all.ts": 57,
   "shared/src/schemaTherapy/guide/techniques/bodyValues.ts": 54,
   "shared/src/schemaTherapy/guide/techniques/chairs.ts": 65,
-  "shared/src/schemaTherapy/guide/techniques/childCare.ts": 52,
+  "shared/src/schemaTherapy/guide/techniques/childCare.ts": 47,
   "shared/src/schemaTherapy/guide/techniques/evidenceWork.ts": 59,
   "shared/src/schemaTherapy/guide/techniques/formulation.ts": 71,
   "shared/src/schemaTherapy/guide/techniques/homework.ts": 84,
@@ -3425,7 +3425,7 @@
   "scripts/telegram-chat-id-types.mjs": 104,
   "shared/src/schemaTherapy/guide/backlinks.ts": 89,
   "shared/src/schemaTherapy/guide/practiceGroupMore.ts": 31,
-  "shared/src/schemaTherapy/guide/techniques/childCareMore.ts": 16,
+  "shared/src/schemaTherapy/guide/techniques/childCareMore.ts": 12,
   "shared/src/schemaTherapy/guide/techniques/coupleModeCycleMore.ts": 16,
   "shared/src/therapy/path/pathApi.ts": 62,
   "shared/src/therapy/plan/planWork.ts": 77,
@@ -3464,5 +3464,7 @@
   "webapp/src/components/therapist/plan/PlanWorkLine.tsx": 8,
   "webapp/src/components/therapist/plan/usePlanWork.ts": 17,
   "webapp/src/components/therapist/SessionPlanBlock.tsx": 65,
-  "webapp/src/components/therapist/useSessionPlan.ts": 52
+  "webapp/src/components/therapist/useSessionPlan.ts": 52,
+  "shared/src/schemaTherapy/guide/modes/vulnerableChildMore.ts": 15,
+  "shared/src/schemaTherapy/guide/techniques/transitionalObjects.ts": 15
 }
