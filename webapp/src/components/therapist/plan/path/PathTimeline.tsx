@@ -45,9 +45,9 @@ export function PathTimeline({ path, plan, current, items, templates, renderRow 
   const act = (row: PhaseRow) => {
     // переход — днём терапевта: он отмечает, когда фаза началась на деле
     const today = todayStr();
-    if (row.action === 'advance') void path.advance(row.phase.id, today);
-    else if (row.action === 'start') void path.patchPhase(row.phase.id, { startedAt: today }, 'Не удалось начать фазу');
-    else if (row.action === 'finish') void path.patchPhase(row.phase.id, { endedAt: today }, 'Не удалось завершить фазу');
+    if (row.action === 'advance') void path.advance(row.phase, today);
+    else if (row.action === 'start') void path.startPhase(row.phase, today);
+    else if (row.action === 'finish') void path.finishPhase(row.phase, today);
   };
 
   return (

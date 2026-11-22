@@ -26,6 +26,7 @@ import { ConceptGraphMetricsService } from '../../src/bot/concept-graph-metrics.
 import { ScreenShareMetricsService } from '../../src/bot/screen-share-metrics.service';
 import { GuideReferenceMetricsService } from '../../src/bot/guide-reference-metrics.service';
 import { PlanMetricsService } from '../../src/bot/plan-metrics.service';
+import { PathMetricsService } from '../../src/bot/path-metrics.service';
 import { TaskAssignMetricsService } from '../../src/bot/task-assign-metrics.service';
 import { SearchMetricsService } from '../../src/bot/search-metrics.service';
 import { AuthHealthMetricsService } from '../../src/bot/auth-health-metrics.service';
@@ -72,6 +73,7 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new ScreenShareMetricsService(prisma),
     new GuideReferenceMetricsService(prisma),
     new PlanMetricsService(prisma),
+    new PathMetricsService(prisma),
     new TaskAssignMetricsService(prisma),
     new SearchMetricsService(prisma),
     new AuthHealthMetricsService(prisma),
