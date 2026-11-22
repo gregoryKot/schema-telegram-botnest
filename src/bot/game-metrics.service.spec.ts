@@ -130,7 +130,7 @@ describe('GameMetricsService.getMetrics', () => {
   });
 
   it('cta_click с мусорным местом считается в totals, но не в разбивке', async () => {
-    const { service } = build([row('game_cta_click', 6, { place: 'menu' })]);
+    const { service } = build([row('game_cta_click', 6, { place: 'nowhere' })]);
     const m = await service.getMetrics();
     expect(m.ctaClicks).toBe(6);
     for (const p of Object.values(m.ctaClicksByPlace)) expect(p).toBe(0);
