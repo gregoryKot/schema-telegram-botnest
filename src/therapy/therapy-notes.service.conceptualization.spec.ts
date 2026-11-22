@@ -100,13 +100,14 @@ describe('TherapyNotesService.getConceptualization', () => {
 // Crypto-модуль разбирает ENCRYPTION_KEY один раз при импорте: без ключа
 // encrypt() — identity, и тест «в БД не открытый текст» ничего бы не доказывал.
 // Сервис грузится свежей копией модулей под заданным ключом.
+const { TherapyNotesService: Keyed } = loadWithKeys(
+  { key: 'ab'.repeat(32) },
+  () =>
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('./therapy-notes.service') as typeof import('./therapy-notes.service'),
+);
+
 function makeKeyedService(rels: Rel[], conceptRow: any = null) {
-  const { TherapyNotesService: Keyed } = loadWithKeys(
-    { key: 'ab'.repeat(32) },
-    () =>
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require('./therapy-notes.service') as typeof import('./therapy-notes.service'),
-  );
   return makeService(rels, conceptRow, Keyed);
 }
 
