@@ -37,7 +37,13 @@ export const buildInsufficientSelfControlGuide = (tr: Tr): SchemaGuide => ({
     'Протест против заданий отличают от недисциплинированности. При упрямстве сначала вместе разбирают, зачем всё это, иначе задания так и не начнут выполняться [Арнтц, 7.4].',
     'Как и Привилегированность, схема живёт в Импульсивном и Недисциплинированном Ребёнке, а не в Уязвимом [Рафаэли, гл. 9]. У Фаррелл работа с этими режимами начинается с ролевой игры и флеш-карточки для Сердитого и Импульсивного Ребёнка [Фаррелл, 5.5.1].',
   ],
-  techniques: ['chairwork', 'pattern_breaking', 'flashcards', 'mindfulness'],
+  techniques: [
+    'chairwork',
+    'pattern_breaking',
+    'flashcards',
+    'mindfulness',
+    'distress_tolerance',
+  ],
   betweenSessions: [
     {
       kind: 'task',

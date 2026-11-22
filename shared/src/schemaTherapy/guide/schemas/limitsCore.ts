@@ -44,6 +44,7 @@ export const buildEntitlementGuide = (tr: Tr): SchemaGuide => ({
     'chairwork',
     'pros_cons',
     'pattern_breaking',
+    'limit_setting',
   ],
   betweenSessions: [
     {

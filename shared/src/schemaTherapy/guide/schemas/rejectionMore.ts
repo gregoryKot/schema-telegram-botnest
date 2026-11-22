@@ -40,6 +40,7 @@ export const buildAbandonmentGuide = (tr: Tr): SchemaGuide => ({
     'chairwork',
     'flashcards',
     'pattern_breaking',
+    'transitional_objects',
   ],
   betweenSessions: [
     {
@@ -98,7 +99,13 @@ export const buildMistrustGuide = (tr: Tr): SchemaGuide => ({
     'Можно позвать на сессию партнёра и на живом примере показать, где клиент читает его неверно. Подходит и группа поддержки переживших насилие [Янг, гл. 7].',
     'Если клиент сам жесток к людям, прекратить жестокость — прямая задача терапии, а терапевт служит образцом границ [Янг, гл. 7].',
   ],
-  techniques: ['imagery_rescripting', 'chairwork', 'pattern_breaking'],
+  techniques: [
+    'imagery_rescripting',
+    'chairwork',
+    'pattern_breaking',
+    'limited_reparenting',
+    'safe_place_imagery',
+  ],
   betweenSessions: [
     {
       kind: 'task',
