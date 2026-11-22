@@ -17,7 +17,7 @@ const template: PathTemplate = {
   sources: '[Кембридж, гл. 1]',
   phases: [
     {
-      id: 'a',
+      id: 'a', look: 'safety',
       name: 'Первая',
       goal: 'цель',
       therapist: 'Делает.',
@@ -31,7 +31,7 @@ const template: PathTemplate = {
       guidePhaseIds: ['safety', 'нет'],
     },
     {
-      id: 'b',
+      id: 'b', look: 'healing',
       name: 'Вторая',
       goal: 'цель',
       therapist: 'Делает.',
