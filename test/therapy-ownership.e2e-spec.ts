@@ -226,7 +226,7 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       () => c1.get('/api/therapy/custom-modes'),
       () =>
         c1.post(`/api/therapy/conceptualization/${C1_ID}/append`, {
-          modeIds: ['x'],
+          modeIds: ['angry_child'],
         }),
       () =>
         c1.post(`/api/therapy/conceptualization/${C1_ID}/needs`, {
