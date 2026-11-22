@@ -24,6 +24,7 @@ export const CABINET_EVENTS = [
   'cabinet_guide_note_open',
   'cabinet_guide_need_open',
   'cabinet_guide_concern_open',
+  'cabinet_guide_phase_open',
   'cabinet_guide_table_open',
   'cabinet_guide_answer_show',
   'cabinet_guide_answer_link',

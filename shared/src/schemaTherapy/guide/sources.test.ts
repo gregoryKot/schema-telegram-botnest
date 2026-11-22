@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildConcernGuides,
   buildModeGuides,
+  buildPhaseGuides,
   buildSchemaDomainGuides,
   buildTechniqueGuides,
   practiceNotes,
@@ -28,6 +29,7 @@ const allText = strings([
   buildTechniqueGuides(ty),
   practiceNotes(ty),
   buildConcernGuides(ty),
+  buildPhaseGuides(ty),
 ]).join('\n');
 
 describe('полка книг справочника', () => {
