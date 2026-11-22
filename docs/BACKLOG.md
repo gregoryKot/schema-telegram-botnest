@@ -61,6 +61,7 @@
 
 ## Следующее
 
+- ⬜ **Путь клиента: гонка добавления фазы и порядок дат фазы** — `src/therapy/therapy-path.service.ts` (`addPhase`: потолок 20 и `position` считаются без блокировки — два параллельных POST дадут дубль позиции; `advance`/`PATCH phases/:id` принимают `endedAt` раньше `startedAt`). Найдено `rules-reviewer` по PR #1538; порядок дат решить вместе с экраном (карточка 2 #1522).
 - ⬜ **`check-file-size-ratchet.mjs --update` в worktree переписывает бейслайн целиком** — выкидывает живые ключи и добавляет `game/`; замечено при мерже #1492; где: `scripts/check-file-size-ratchet.mjs`.
 - ⬜ **«Раздел изменился» и клиенты копингов в /stats — за PR 5b и PR 3 #1484** — PR 5a: бэкенд не импортирует `shared/` и текста разделов не знает, поэтому ответ `GET /api/therapy/guide-marks/:clientId` отдаёт `address` + `snapshot`, а «раздел изменился» (`resolveAddress(address) === null`) считает сайт; M в строке /stats (`src/bot/guide-mark-metrics.ts`) — пары из `GuideMark`, копинги PR 3 (в `schemaLinks`) должны добавить свой источник.
 - ⬜ **Снять старые колонки источника `TherapyPlanItem` (`sourceKind/sourceId/sourceField`)** — PR 6 #1484: «В план» пишет `sourceAddress`, миграция `20261120160000_plan_source_address` перевела старые строки; колонки оставлены — непереводимое не теряется, старый PWA ещё шлёт `source` (DTO его принимает, сайт переводит `planItemAddress`). Снять — когда в проде `sourceAddress IS NULL AND sourceKind IS NOT NULL` даёт 0 строк.
