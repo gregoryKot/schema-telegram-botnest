@@ -39,6 +39,9 @@ export const createPathApi = (t: PathTransport) => ({
       phases: PathPhaseDraft[];
     },
   ) => t.postJson<PathResponse>(`${BASE}/${clientId}`, body),
+  /** Старт пути, день `YYYY-MM-DD`: плановые даты фаз пересчитываются. */
+  setTherapyPathStart: (clientId: UserId, startDate: string) =>
+    t.patchJson<PathResponse>(`${BASE}/${clientId}`, { startDate }),
   addPathPhase: (clientId: UserId, draft: PathPhaseDraft) =>
     t.postJson<PathResponse>(`${BASE}/${clientId}/phases`, draft),
   /** Новый порядок: ровно все id фаз пути. */

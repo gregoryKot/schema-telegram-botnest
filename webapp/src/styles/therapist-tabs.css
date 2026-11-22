@@ -236,6 +236,13 @@
 }
 .pl-status--active { background: var(--paper-tint); color: var(--text); }
 .pl-status--done { background: var(--ok-bg); border-color: transparent; color: var(--ok-ink); }
+.pl-status--postponed, .pl-status--dropped { color: var(--text-faint); }
+.pl-item.is-quiet .pl-text { color: var(--text-faint); }
+.pl-item.is-dropped .pl-text { text-decoration: line-through; }
+.pl-menu-anchor { display: inline-flex; flex: none; }
+.ds-menu-item.pl-menu-item { min-height: 44px; }
+.pl-menu-mark { flex: none; width: 16px; color: var(--accent); }
+.pl-item[draggable="true"] { cursor: grab; }
 .pl-status:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pl-status:disabled { cursor: default; }
 .pl-body { flex: 1; min-width: 0; padding-top: 10px; }
@@ -257,3 +264,9 @@
   .pl-acts { margin-left: auto; gap: 0; }
   .pl-body { order: 1; flex-basis: 100%; padding-top: 0; }
 }
+/* «Из плана» в форме итогов: строка пункта с быстрыми статусами под текстом. */
+.spb-group { display: flex; flex-direction: column; gap: 4px; }
+.spb-row { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--paper-sunk); }
+.spb-acts { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 32px; }
+.ds-link.pl-work { color: var(--text-sub); font-weight: 400; font-size: 13px; text-decoration: none; }
+.spb-st { white-space: nowrap; }

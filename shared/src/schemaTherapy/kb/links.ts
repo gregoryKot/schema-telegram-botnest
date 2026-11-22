@@ -102,21 +102,37 @@ export const KB_LINKS: readonly KbLink[] = [
   },
 ];
 
+/** Режим → схемы, где он характерен (обратная сторона SchemaGuide.modeIds), одним проходом. */
+export function modeSchemaIndex(): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const g of buildSchemaGuides(tr)) {
+    for (const m of g.modeIds) out.set(m, [...(out.get(m) ?? []), g.schemaId]);
+  }
+  return out;
+}
+
 /** Схемы, для которых режим характерен (обратная сторона SchemaGuide.modeIds). */
 export function schemasOfMode(modeId: string): string[] {
-  return buildSchemaGuides(tr)
-    .filter((g) => g.modeIds.includes(modeId))
-    .map((g) => g.schemaId);
+  return modeSchemaIndex().get(modeId) ?? [];
+}
+
+/** Техника → разделы режимов, схем и запросов, которые её зовут, одним проходом. */
+export function techniqueUsageIndex(): Map<
+  string,
+  { kind: KbUsageKind; id: string }[]
+> {
+  const out = new Map<string, { kind: KbUsageKind; id: string }[]>();
+  for (const l of KB_LINKS.filter((x) => x.to === 'technique')) {
+    for (const [src, t] of l.pairs()) {
+      out.set(t, [...(out.get(t) ?? []), { kind: l.from, id: src }]);
+    }
+  }
+  return out;
 }
 
 /** Разделы режимов, схем и запросов, которые зовут технику. */
 export function usagesOfTechnique(
   id: string,
 ): { kind: KbUsageKind; id: string }[] {
-  return KB_LINKS.filter((l) => l.to === 'technique').flatMap((l) =>
-    l
-      .pairs()
-      .filter(([, t]) => t === id)
-      .map(([src]) => ({ kind: l.from, id: src })),
-  );
+  return techniqueUsageIndex().get(id) ?? [];
 }

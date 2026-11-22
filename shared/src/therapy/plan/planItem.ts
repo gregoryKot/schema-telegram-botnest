@@ -41,7 +41,7 @@ export const PLAN_RUBRIC_LABEL: Record<PlanRubric, string> = {
   custom: 'Своё',
 };
 
-/** Тап по статусу ходит по кругу первых трёх; «отложено» и «не нужно» ставят явно (путь клиента, #1522). */
+/** Статусы пункта: меню статуса показывает все пять (путь клиента, #1522). */
 export const PLAN_STATUSES = [
   'planned',
   'active',

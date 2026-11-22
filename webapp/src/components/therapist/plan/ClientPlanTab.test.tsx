@@ -8,6 +8,7 @@ import type { TherapyClientSummary } from '../../../api';
 
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
+  getPlanWork: vi.fn(() => Promise.resolve({ entries: [] as unknown[] })),
   getGuideMarks: () => Promise.resolve({ marks: [] }),
   getTherapyPath: vi.fn(() => Promise.resolve({ path: null as unknown })),
 }));
@@ -52,6 +53,8 @@ describe('ClientPlanTab', () => {
     expect(screen.queryByText('В плане пока пусто')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Статус: намечено/ }));
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /в работе/ }));
     await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { status: 'active' }));
     await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_status', { status: 'active' }));
 
@@ -106,6 +109,7 @@ describe('ClientPlanTab', () => {
     h.updatePlanItem.mockRejectedValue(new Error('net'));
     renderTab();
     fireEvent.click(await screen.findByRole('button', { name: /Статус: намечено/ }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /отложено/ }));
     await screen.findByText('Не удалось сохранить пункт');
     expect(screen.getByRole('button', { name: /Статус: намечено/ })).toBeTruthy();
     expect(h.trackEvent).not.toHaveBeenCalled();
@@ -166,6 +170,19 @@ describe('ClientPlanTab', () => {
     expect(screen.queryByRole('button', { name: 'Опустить ниже' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'По каналам' }));
     expect(screen.getAllByRole('heading', { level: 3 }).map((n) => n.textContent)).toEqual(['Между сессиями', 'Своё']);
+  });
+
+  it('шов «итоги → план»: ответ plan-work даёт строку «работали …», тап открывает последнюю запись', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Диалог на стульях' }), item({ id: 2, text: 'Без записей', position: 1 })]);
+    h.getPlanWork.mockResolvedValue({ entries: [
+      { noteId: 31, date: '2026-11-12', planItemIds: [1] }, { noteId: 20, date: '2026-10-29', planItemIds: [1] },
+    ] });
+    const onOpenSession = vi.fn();
+    render(<MemoryRouter><ClientPlanTab selectedClient={client} detail={detail} onOpenSession={onOpenSession} /></MemoryRouter>);
+    const line = await screen.findByRole('button', { name: 'работали 2 раза, последний — 12 ноября' });
+    expect(screen.getAllByText(/работали/)).toHaveLength(1);
+    fireEvent.click(line);
+    expect(onOpenSession).toHaveBeenCalledWith(31);
   });
 
   it('пути нет — по умолчанию «По каналам»', async () => {

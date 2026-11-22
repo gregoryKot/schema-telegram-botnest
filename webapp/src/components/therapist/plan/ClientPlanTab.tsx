@@ -11,12 +11,11 @@ import { TaskCreateSheet } from '../../TaskCreateSheet';
 import type { ClientDetail } from '../clientSheetTypes';
 import { useConceptGuide } from '../guide/useConceptGuide';
 import { guideMarkClient } from '../guide/marks/useClientGuideMarks';
-import { PlanGoals } from './PlanGoals';
-import { PlanChannels } from './PlanChannels';
+import { PlanGoals } from './PlanGoals'; import { PlanChannels } from './PlanChannels';
 import { PlanLayoutSwitch, type PlanLayout } from './PlanLayoutSwitch';
 import { makeRenderPlanRow } from './planRows';
 import type { PlanSourceLink } from './planSource';
-import { usePlanItems } from './usePlanItems';
+import { usePlanItems } from './usePlanItems'; import { usePlanWork } from './usePlanWork';
 import { PathLayout } from './path/PathLayout';
 import { usePath } from './path/usePath';
 
@@ -25,6 +24,7 @@ interface Props {
   detail: ClientDetail;
   /** Задание создано из пункта — доска «Задания» перечитывается. */
   onTasksChanged?: () => void;
+  onOpenSession?: (noteId: number) => void;
 }
 
 /** Силуэт плана: подпись рубрики и лист со строками «статус — текст». */
@@ -45,15 +45,15 @@ function PlanSkeleton() {
  * (useConceptGuide); «Дать заданием» — обычный лист «Новое задание» с текстом пункта, созданное задание
  * запоминается в пункте. Монтируется с ключом клиента: состояние плана — одного клиента.
  */
-export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props) {
+export function ClientPlanTab({ selectedClient, detail, onTasksChanged, onOpenSession }: Props) {
   const tr = useTr();
   const plan = usePlanItems(selectedClient.telegramId);
   const path = usePath(selectedClient.telegramId);
+  const work = usePlanWork(selectedClient.telegramId);
   const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload }, client: guideMarkClient(selectedClient) });
   const texts = useGuide();
   const [layout, setLayout] = useState<PlanLayout | null>(null);
-  const [assignItem, setAssignItem] = useState<PlanItem | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<PlanItem | null>(null);
+  const [assignItem, setAssignItem] = useState<PlanItem | null>(null); const [confirmDelete, setConfirmDelete] = useState<PlanItem | null>(null);
   const { items } = plan;
 
   const openSource = ({ kind, id }: NonNullable<PlanSourceLink['open']>) => {
@@ -61,7 +61,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
     else if (kind === 'schema') guide.actions.onOpenSchema(id);
     else guide.actions.onOpenTechnique(id as TechniqueId);
   };
-  const renderRow = makeRenderPlanRow({ plan, texts, tr, openSource, onAssign: setAssignItem, onDelete: setConfirmDelete });
+  const renderRow = makeRenderPlanRow({ plan, texts, tr, openSource, onAssign: setAssignItem, onDelete: setConfirmDelete, work, onOpenSession });
   // Раскладку выбирают руками; до выбора — по фазам, если путь есть. Ждём путь, чтобы раскладка не прыгала.
   const shown: PlanLayout = layout ?? (path.path ? 'phases' : 'channels');
 
@@ -78,7 +78,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
         <>
           <PlanLayoutSwitch value={shown} onChange={setLayout} />
           {shown === 'phases'
-            ? <PathLayout path={path} items={items} renderRow={renderRow} />
+            ? <PathLayout path={path} plan={plan} items={items} renderRow={renderRow} />
             : <PlanChannels items={items} plan={plan} renderRow={renderRow} />}
           {plan.error && !confirmDelete && <div className="tb-error" role="alert">{plan.error}</div>}
         </>

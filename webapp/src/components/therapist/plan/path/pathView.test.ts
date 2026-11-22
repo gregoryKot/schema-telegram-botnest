@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { PathPhase, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
 import { buildPathTemplates } from '../../../../../../shared/src/therapy/path/templates';
 import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planItem';
-import { buildPathView, formatPhaseRange, movePhaseIds, parseWeeks, toggleCriterion } from './pathView';
+import { buildPathView, formatPhaseRange, movePhaseIds, parseWeeks, shiftedWeeks, suggestPhaseId, toggleCriterion } from './pathView';
 
 const templates = buildPathTemplates((ty) => ty);
 const phase = (over: Partial<PathPhase>): PathPhase => ({
@@ -78,4 +78,38 @@ it('movePhaseIds: сосед по position меняется местами; на
 
 it('parseWeeks: целые недели 1..260, прочее — null', () => {
   expect(['3', '0', '2.5', '261', ''].map(parseWeeks)).toEqual([3, null, null, null, null]);
+});
+
+describe('расхождение с планом', () => {
+  const phases = [
+    phase({ id: 1, position: 0, weeks: 4, startedAt: '2026-01-12', endedAt: '2026-02-09' }),
+    phase({ id: 2, position: 1, weeks: 3, startedAt: '2026-02-09' }),
+  ];
+  it('у текущей фазы — недели после планового конца и новый срок; идём по плану — null', () => {
+    const late = buildPathView(path(phases), [], templates, '2026-03-23');
+    expect(late.rows.map((r) => r.overdue)).toEqual([null, { weeks: 3, shiftTo: 6 }]);
+    expect(buildPathView(path(phases), [], templates, '2026-03-05').rows[1].overdue).toBeNull();
+  });
+  it('новый срок упирается в потолок, а растить некуда — null', () => {
+    expect(shiftedWeeks(3, 6)).toBe(6);
+    expect(shiftedWeeks(3, 9999)).toBe(260);
+    expect(shiftedWeeks(260, 9999)).toBeNull();
+  });
+});
+
+describe('suggestPhaseId', () => {
+  const general = templates.find((t) => t.id === 'general')!;
+  const phases = [
+    phase({ id: 10, position: 0, templatePhaseId: 'assessment', startedAt: '2026-01-12', endedAt: '2026-02-09' }),
+    phase({ id: 11, position: 1, templatePhaseId: 'bonding', startedAt: '2026-02-09' }),
+  ];
+  it('адрес из рекомендованного фазы шаблона — эта фаза клиента', () => {
+    expect(suggestPhaseId(path(phases), general, 'technique:mode_map/summary')).toBe(10);
+    expect(suggestPhaseId(path(phases), general, 'technique:mode_map/steps')).toBe(10);
+  });
+  it('адрес не найден — текущая фаза; текущей нет — null', () => {
+    expect(suggestPhaseId(path(phases), general, 'mode:unknown/goal')).toBe(11);
+    expect(suggestPhaseId(path(phases), null, 'technique:mode_map/summary')).toBe(11);
+    expect(suggestPhaseId(path([phase({ id: 10 })]), general, undefined)).toBeNull();
+  });
 });

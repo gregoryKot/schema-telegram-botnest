@@ -8,6 +8,8 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
+import { IsKbId } from './kb-id.validator';
+import type { KbIdKind } from '../kb-ids';
 import {
   WORK_CUSTOM_NAME_MAX,
   WORK_ID_MAX,
@@ -16,13 +18,16 @@ import {
 } from '../session-work';
 import { StringsWithin } from './strings-within';
 
-const IdList = (): PropertyDecorator => (target, key) => {
-  IsOptional()(target, key);
-  IsArray()(target, key);
-  ArrayMaxSize(WORK_IDS_MAX)(target, key);
-  IsString({ each: true })(target, key);
-  MaxLength(WORK_ID_MAX, { each: true })(target, key);
-};
+const IdList =
+  (kind: KbIdKind): PropertyDecorator =>
+  (target, key) => {
+    IsOptional()(target, key);
+    IsArray()(target, key);
+    ArrayMaxSize(WORK_IDS_MAX)(target, key);
+    IsString({ each: true })(target, key);
+    MaxLength(WORK_ID_MAX, { each: true })(target, key);
+    IsKbId(kind, { each: true })(target, key);
+  };
 
 /**
  * Пункт «Что делали» в итогах сессии (контракт — `SessionWorkItem` в
@@ -47,13 +52,13 @@ export class SessionWorkItemDto {
   @MaxLength(WORK_CUSTOM_NAME_MAX)
   customName?: string;
 
-  @IdList()
+  @IdList('modeOrCustom')
   modeIds?: string[];
 
-  @IdList()
+  @IdList('schema')
   schemaIds?: string[];
 
-  @IdList()
+  @IdList('need')
   needIds?: string[];
 
   // Ключи сверяет каталог; здесь — только потолок длины ключа и значения.

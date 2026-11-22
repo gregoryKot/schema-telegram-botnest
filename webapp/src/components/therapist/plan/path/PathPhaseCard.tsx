@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import { MMIcon } from '../../../modeMapIcons';
+import type { PhaseOption } from '../planModel';
 import type { RenderPlanRow } from '../planRows';
+import { PathOverdueNote } from './PathOverdueNote';
+import { PhaseAddItem } from './PhaseAddItem';
+import { usePhaseDrop } from './phaseDrop';
 import { formatPhaseRange, type PhaseRow } from './pathView';
 
 interface Props {
@@ -12,19 +16,27 @@ interface Props {
   renderRow: RenderPlanRow;
   onCriterion: (n: number) => void;
   onAction: () => void;
+  onShift: (weeks: number) => void;
   /** Кнопки правки фазы — строкой в конце раскрытой фазы. */
   tools?: ReactNode;
+  /** Все фазы пути — для «В фазу…» у строк. */
+  phases: PhaseOption[];
+  /** Строку плана бросили на карточку. */
+  onDropItem: (itemId: number) => void;
+  onAddItem: (text: string) => Promise<boolean>;
+  addBusy: boolean;
 }
 
 const ACTION_LABEL = { start: 'Начать фазу', advance: 'Завершить и перейти к следующей', finish: 'Завершить фазу' } as const;
 
 /** Фаза на ленте: номер, срок с примерными датами, прогресс по пунктам; раскрытая — пункты, критерии, ошибки. */
-export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterion, onAction, tools }: Props) {
+export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterion, onAction, onShift, tools, phases, onDropItem, onAddItem, addBusy }: Props) {
+  const drop = usePhaseDrop(onDropItem);
   const { phase, tpl, progress } = row;
   const when = [`${phase.weeks} нед.`, `примерно ${formatPhaseRange(row.dates)}`, tpl?.sessionsHint].filter(Boolean).join(' · ');
   const criteria = tpl?.transition ?? [];
   return (
-    <article className={`pp-leaf ph-card${row.current ? ' is-current' : ''}${row.done ? ' is-done' : ''}${open ? ' is-open' : ''}`}>
+    <article className={`pp-leaf ph-card${row.current ? ' is-current' : ''}${row.done ? ' is-done' : ''}${open ? ' is-open' : ''}${drop.over ? ' is-drop' : ''}`} {...drop.props}>
       <header className="ph-head">
         <span className="ph-num" aria-hidden>{row.index + 1}</span>
         <div className="ph-title">
@@ -49,8 +61,10 @@ export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterio
         </div>
       )}
       <div className="ph-body">
+        {row.overdue && <PathOverdueNote overdue={row.overdue} busy={busy} onShift={onShift} />}
         {phase.goal && <p className="ph-goal">{phase.goal}</p>}
-        {row.items.length > 0 && <div className="pl-list ph-items">{row.items.map((item) => renderRow(item))}</div>}
+        {row.items.length > 0 && <div className="pl-list ph-items">{row.items.map((item) => renderRow(item, undefined, phases))}</div>}
+        <PhaseAddItem busy={addBusy} onAdd={onAddItem} />
         {criteria.length > 0 && (
           <fieldset className="ph-set">
             <legend className="ds-label">Критерии перехода</legend>
