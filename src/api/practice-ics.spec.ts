@@ -8,6 +8,16 @@ const KEY = 'a'.repeat(64);
 const load = (key: string): Mod =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   loadWithKeys({ key }, () => require('./practice-ics') as Mod);
+// Модули под каждым ключом грузятся при сборе файла, не внутри теста:
+// иначе Stryker засчитывает тесту код уровня модуля.
+const m = load(KEY);
+const other = load('b'.repeat(64));
+const noKey = load('');
+const crypto = loadWithKeys(
+  { key: KEY },
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  () => require('../utils/crypto') as typeof import('../utils/crypto'),
+);
 
 const EVENT = {
   text: 'Позвонить маме',
@@ -17,8 +27,6 @@ const EVENT = {
 const NOW = Date.UTC(2026, 10, 8, 12);
 
 describe('sealPracticeIcs / openPracticeIcs', () => {
-  const m = load(KEY);
-
   it('сохранил → открыл то же событие; в токене нет открытого текста', () => {
     const token = m.sealPracticeIcs(EVENT, NOW);
     expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -41,16 +49,10 @@ describe('sealPracticeIcs / openPracticeIcs', () => {
     ).toBeNull();
     expect(m.openPracticeIcs('does-not-exist-token', NOW)).toBeNull();
     expect(m.openPracticeIcs('x'.repeat(5000), NOW)).toBeNull();
-    const other = load('b'.repeat(64));
     expect(other.openPracticeIcs(token, NOW)).toBeNull();
   });
 
   it('шифротекст того же ключа без метки назначения (поле из БД) — null', () => {
-    const crypto = loadWithKeys(
-      { key: KEY },
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      () => require('../utils/crypto') as typeof import('../utils/crypto'),
-    );
     const json = JSON.stringify({ t: 'x', n: 'y', s: 1, e: NOW + 60_000 });
     const foreign = Buffer.from(crypto.encrypt(json), 'base64').toString(
       'base64url',
@@ -59,7 +61,6 @@ describe('sealPracticeIcs / openPracticeIcs', () => {
   });
 
   it('без ключа ссылку не выдаёт: открытый текст в адрес не кладётся', () => {
-    const noKey = load('');
     // Класс исключения из изолированной копии @nestjs/common — сверяем статус.
     expect(() => noKey.sealPracticeIcs(EVENT, NOW)).toThrow(
       expect.objectContaining({ status: 503 }),
@@ -68,8 +69,6 @@ describe('sealPracticeIcs / openPracticeIcs', () => {
 });
 
 describe('practiceIcsText', () => {
-  const m = load(KEY);
-
   // RFC 5545 складывает строки длиннее 75 байт — сверяем развёрнутый текст.
   const unfold = (ics: string) => ics.replace(/\r\n /g, '');
 
