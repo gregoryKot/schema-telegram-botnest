@@ -19,4 +19,11 @@ export const CABINET_GUIDE_ANSWER_EVENTS = {
 // Отметка «Про клиента» (#1484): пишет сервер при создании, meta { kind } — вид статьи или 'coping'. Фронт не шлёт.
 export const GUIDE_MARK_ADDED_EVENT = 'guide_mark_added';
 export type GuideMarkKind =
-  'schema' | 'mode' | 'technique' | 'note' | 'concern' | 'phase' | 'need' | 'coping';
+  | 'schema'
+  | 'mode'
+  | 'technique'
+  | 'note'
+  | 'concern'
+  | 'phase'
+  | 'need'
+  | 'coping';
