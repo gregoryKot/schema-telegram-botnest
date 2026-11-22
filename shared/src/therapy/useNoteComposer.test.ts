@@ -33,9 +33,22 @@ describe('useNoteComposer', () => {
     await act(async () => {
       await result.current.addNote();
     });
-    expect(create).toHaveBeenCalledWith(1, todayStr(), 'наблюдения', []);
+    expect(create).toHaveBeenCalledWith(1, todayStr(), 'наблюдения', [], []);
     expect(result.current.notesPage.notes.map((n) => n.id)).toEqual([5]);
     expect(result.current.newNoteText).toBe('');
+  });
+
+  it('«Из плана»: отмеченные id уходят в create, после сохранения отметки сброшены', async () => {
+    const { result, create } = setup();
+    act(() => {
+      result.current.setNewNoteText('т');
+      result.current.setNewNotePlanIds([4, 9]);
+    });
+    await act(async () => {
+      await result.current.addNote();
+    });
+    expect(create).toHaveBeenCalledWith(1, todayStr(), 'т', [], [4, 9]);
+    expect(result.current.newNotePlanIds).toEqual([]);
   });
 
   it('пункты «Что делали» сохраняются без текста, в каноническом виде; форма очищается', async () => {
@@ -62,7 +75,7 @@ describe('useNoteComposer', () => {
       await result.current.addNote();
     });
     const sent = [{ ...item, fields: { what: 'песок' } }];
-    expect(create).toHaveBeenCalledWith(1, todayStr(), '', sent);
+    expect(create).toHaveBeenCalledWith(1, todayStr(), '', sent, []);
     expect(onWorkSaved).toHaveBeenCalledWith(sent);
     expect(result.current.newNoteWork).toEqual([]);
   });

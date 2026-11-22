@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import type { Tr } from '../../../../../shared/src/schemaTherapy/guide/types';
 import type { Guide } from '../../../../../shared/src/therapy/conceptGraph/guideLoader';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
+import type { PlanWorkSummary } from '../../../../../shared/src/therapy/plan/planWork';
 import { PlanItemRow } from './PlanItemRow';
+import { PlanWorkLine } from './PlanWorkLine';
 import { planSourceLink, type PlanSourceLink } from './planSource';
 import type { PhaseOption } from './planModel';
 import type { PlanItems } from './usePlanItems';
@@ -17,16 +19,20 @@ interface Deps {
   openSource: (open: NonNullable<PlanSourceLink['open']>) => void;
   onAssign: (item: PlanItem) => void;
   onDelete: (item: PlanItem) => void;
+  /** Сводка «работали» по пунктам; `onOpenSession` — открыть запись (нет — строка без тапа). */
+  work?: Map<number, PlanWorkSummary>;
+  onOpenSession?: (noteId: number) => void;
 }
 
 /** Одна строка пункта с одними обработчиками для обеих раскладок плана: по каналам и по фазам. */
-export function makeRenderPlanRow({ plan, texts, tr, openSource, onAssign, onDelete }: Deps): RenderPlanRow {
+export function makeRenderPlanRow({ plan, texts, tr, openSource, onAssign, onDelete, work, onOpenSession }: Deps): RenderPlanRow {
   return function renderPlanRow(item, order, phases) {
     const link = planSourceLink(texts, tr, item);
+    const summary = work?.get(item.id);
     return (
       <PlanItemRow
         key={item.id} item={item} busy={plan.busyId !== null}
-        sourceLink={link}
+        sourceLink={link} work={summary && <PlanWorkLine summary={summary} onOpen={onOpenSession} />}
         onSetStatus={(status) => void plan.setStatus(item, status)}
         onOpenSource={() => link?.open && openSource(link.open)}
         onAssign={() => onAssign(item)}
