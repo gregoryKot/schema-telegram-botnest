@@ -3,6 +3,7 @@
 // error. Add a line here, reference by key via t('m_...'). Interpolation: use
 // {name} placeholders and pass vars to t(key, { name: value }).
 import { WEEK } from './week';
+import { FIRST_TEXT } from './first';
 export interface Msg { ru: string; en: string; }
 export const M = {
   m_rotate_line: { ru: "поверни телефон — игра идёт в альбомной", en: "rotate your phone to play in landscape" },
@@ -21,7 +22,7 @@ export const M = {
   m_support_the_project: { ru: "Поддержать проект 💛", en: "Support the project 💛" },
   m_close: { ru: "ЗАКРЫТЬ", en: "CLOSE" },
   m_game_title: { ru: "Сквозь голову", en: "Run Through Your Mind" },
-  ...WEEK,
+  ...WEEK, ...FIRST_TEXT,
 } satisfies Record<string, Msg>;
 
 export type MsgKey = keyof typeof M;

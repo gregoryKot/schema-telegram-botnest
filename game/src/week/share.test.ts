@@ -10,20 +10,21 @@ beforeEach(() => {
 describe('«поделиться» после хука', () => {
   it('есть системное окно — зовёт его с текстом и ссылкой с меткой', () => {
     const share = vi.fn(() => Promise.resolve()), open = vi.fn();
-    shareWeek('Неделя Саши', { share }, open);
+    shareWeek('Неделя Саши', 'final', { share }, open);
     expect(share).toHaveBeenCalledWith({ text: 'Неделя Саши', url: SHARE_URL });
     expect(open).not.toHaveBeenCalled();
-    expect(sent).toEqual([{ name: 'game_share', meta: { from: 'hook' } }]);
+    expect(sent).toEqual([{ name: 'game_share', meta: { from: 'final' } }]);
   });
 
   it('системного окна нет — открывает окно Telegram', () => {
     const open = vi.fn();
-    shareWeek('Неделя Саши', {}, open);
+    shareWeek('Неделя Саши', 'hook', {}, open);
     expect(open).toHaveBeenCalledWith(expect.stringContaining('https://t.me/share/url?url=' + encodeURIComponent(SHARE_URL)));
     expect(open.mock.calls[0][0]).toContain(encodeURIComponent('Неделя Саши'));
+    expect(sent).toEqual([{ name: 'game_share', meta: { from: 'hook' } }]);
   });
 
   it('отказ в системном окне игру не роняет', () => {
-    expect(() => shareWeek('x', { share: () => Promise.reject(new Error('cancel')) }, vi.fn())).not.toThrow();
+    expect(() => shareWeek('x', 'hook', { share: () => Promise.reject(new Error('cancel')) }, vi.fn())).not.toThrow();
   });
 });

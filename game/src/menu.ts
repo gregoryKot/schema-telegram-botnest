@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { audio } from './audio';
+import { openCta } from './therapyCta';
 import { t, lang, setLang, type MsgKey } from './i18n';
 
 interface LevelEntry { scene: string; label: string; enabled: boolean; }
@@ -19,6 +20,7 @@ function localizeMenu() {
   set('menu-sec-levels', 'm_c_h_a_p_t_e');
   set('menu-sec-support', 'm_s_u_p_p_o_r');
   set('menu-donate', 'm_support_the_project');
+  set('menu-app', 'm_open_app');
   set('menu-close', 'm_close');
   document.getElementById('menu-btn')?.setAttribute('aria-label', t('m_menu'));
   const langBtn = document.getElementById('menu-lang');
@@ -75,11 +77,12 @@ export function setupMenu(game: Phaser.Game) {
 
   btn.addEventListener('click', () => overlay.classList.contains('visible') ? close() : open());
   closeBtn.addEventListener('click', close);
+  document.getElementById('menu-app')?.addEventListener('click', () => openCta('menu', 'app')); // тихая ссылка: есть в каждой главе
   document.getElementById('menu-donate')?.addEventListener('click', () => {
     window.location.href = 'https://schemehappens.ru/donate';
   });
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); overlay.classList.contains('visible') ? close() : open(); }
+    if (e.key === 'Escape') { e.preventDefault(); if (overlay.classList.contains('visible')) close(); else open(); }
   });
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   musicBtn.addEventListener('click', () => { audio.setMusicEnabled(!audio.isMusicEnabled()); syncToggles(); });

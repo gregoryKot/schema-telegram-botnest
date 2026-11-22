@@ -347,7 +347,7 @@ describe('PublicEventsController', () => {
 
     track.mockClear();
     await expect(
-      controller.track({ name: 'game_cta_click', meta: { from: 'menu' } }),
+      controller.track({ name: 'game_cta_click', meta: { from: 'nowhere' } }),
     ).resolves.toEqual({ ok: true });
     expect(track).not.toHaveBeenCalled();
   });

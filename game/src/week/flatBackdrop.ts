@@ -12,10 +12,12 @@ const CALM = 0xffffff, VIOLET = 0x8a5cff;
 type Tile = Phaser.GameObjects.TileSprite;
 
 /** Какими листами рисуется комната; floor — полоса пола, которая в сбое едет к выходу (назад);
- *  dull — насколько сбой глушит музыку (1.43 — до тишины); mister — кот садится у цели, когда сбой назван. */
-export interface FlatArt { city: string; room: string; glitch: string; floor?: string; dull?: number; mister?: boolean }
-const WED: FlatArt = { city: 'bg_wk_city_eve', room: 'bg_wk_flat', glitch: 'bg_wk_flat_glitch' };
+ *  dull — насколько сбой глушит музыку (1.43 — до тишины); mister — кот садится у цели, когда сбой назван;
+ *  still — комната не сбоит вовсе (кабинет): сбой остаётся у Саши внутри. */
+export interface FlatArt { city: string; room: string; glitch: string; floor?: string; dull?: number; mister?: boolean; still?: boolean }
+export const WED: FlatArt = { city: 'bg_wk_city_eve', room: 'bg_wk_flat', glitch: 'bg_wk_flat_glitch' };
 export const PARTY: FlatArt = { city: 'bg_wk_city_eve', room: 'bg_wk_party', glitch: 'bg_wk_party_glitch', floor: 'bg_wk_exit_floor', dull: 1 };
+export const CABINET: FlatArt = { city: 'bg_wk_city_eve', room: 'bg_wk_cabinet', glitch: 'bg_wk_cabinet', still: true };
 export const QUIET: FlatArt = { city: 'bg_wk_city', room: 'bg_wk_quiet', glitch: 'bg_wk_quiet_void', dull: 1.43, mister: true };
 const FLOOR_TOP = 219, FLOOR_H = 48, FLOOR_PX_MS = 0.06; // строка и высота полосы пола, px арта; скорость — px арта в мс
 
@@ -42,7 +44,7 @@ export class FlatBackdrop implements Backdrop {
   }
 
   update(scrollX: number, glitch: number) {
-    this.level += ((glitch > 0.02 ? 0.72 + 0.28 * glitch : 0) - this.level) * 0.08;
+    this.level += ((glitch > 0.02 && !this.art.still ? 0.72 + 0.28 * glitch : 0) - this.level) * 0.08;
     this.city.tilePositionX = scrollX * 0.25 / GRID;
     this.flat.tilePositionX = this.glitch.tilePositionX = scrollX / GRID;
     const c = Phaser.Display.Color.Interpolate.ColorWithColor(
