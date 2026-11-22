@@ -1,9 +1,8 @@
 // Разбор для гейта check-telegram-chat-id.mjs (движок — там же: обход, отчёт).
 // Адрес отправки — первый аргумент `.sendMessage(`/`.sendPhoto(`/…, адресный
 // аргумент отправщика (`sendTg` — 0, `sendBounded` — 1) и значение `chat_id:`.
-// Нарушение — адрес, приведённый из id аккаунта (`userId`, `x.userId`, `uid`,
-// `user.id`, в том числе через `Number()`/`String()`/`BigInt()`/`.toString()`),
-// сразу или через одну переменную файла.
+// Нарушение — адрес, приведённый из id аккаунта (`userId`, `x.userId`, `uid`, `user.id`,
+// в том числе через `Number()`/`String()`/`BigInt()`/`.toString()`), сразу или через одну переменную файла.
 //
 // Межфайловый шаг: функция, чей параметр доходит до адреса (сам, через
 // приведение или одну переменную), сама становится отправщиком, и этот
@@ -17,11 +16,11 @@
 // литерала вызова `f({ chatId: userId })`, а у объекта-переменной `f(s)` — из
 // её литерала, присваивания или литерала, который возвращает функция-источник
 // (`telegram-chat-id-objects.mjs`; `resolveChatId`/`telegramIdFor` там —
-// законный адрес). Слепые зоны (образцы — в спеке): получатель без типа в
-// файле (`this.deps.bot.send(`), источник без объявления (`map.get(id)`).
+// законный адрес). Слепые зоны (образцы — в спеке): тип получателя или карты не объявлен в src.
 import { lineAt } from './gate-balance.mjs';
 import { callArgs, functionsOf } from './gate-functions.mjs';
 import { objectField } from './telegram-chat-id-objects.mjs';
+import { mapSources } from './telegram-chat-id-maps.mjs';
 import { declaring, fieldOf } from './telegram-chat-id-params.mjs';
 import { resolveDefs } from './telegram-chat-id-resolve.mjs';
 
@@ -79,12 +78,13 @@ export function findViolations(files) {
   // Объявления вызова: разрешённые (свой файл, импорт, класс) или все одноимённые.
   const defsOf = (f, call) => resolveDefs(files, f, fnsOf, call) ?? named(call.name);
   // Источник объекта-переменной — только разрешённый или единственный одноимённый.
-  const defsFor = (f, call) => resolveDefs(files, f, fnsOf, call) ?? (named(call.name).length === 1 ? named(call.name) : []);
+  const defsFor = (f, call) => mapSources(files, f, fnsOf, call) ?? resolveDefs(files, f, fnsOf, call) ?? (named(call.name).length === 1 ? named(call.name) : []);
   const ctx = { fnsOf, homeOf: (fn) => homeOf.get(fn), defsFor };
-  // Адресные аргументы вызова name(: общие для всех объявлений, куда он ведёт.
+  // Адресные аргументы вызова name(: общие для всех объявлений, куда он ведёт; у реализаций интерфейса (defs.any) — любой.
   const addressArgs = (f, call) => {
-    const sets = defsOf(f, call).map((d) => addr.get(d) ?? new Set());
-    const ks = sets.length ? [...sets[0]].filter((k) => sets.every((s) => s.has(k))) : [];
+    const defs = defsOf(f, call);
+    const sets = defs.map((d) => addr.get(d) ?? new Set());
+    const ks = defs.any ? [...new Set(sets.flatMap((s) => [...s]))] : sets.length ? [...sets[0]].filter((k) => sets.every((s) => s.has(k))) : [];
     return call.name in SEED_SENDERS ? [...new Set([SEED_SENDERS[call.name], ...ks])] : ks;
   };
   const sites = (f) => {
@@ -99,7 +99,7 @@ export function findViolations(files) {
       const list = callArgs(f.src, open);
       const via = m[2] in SEED_SENDERS ? undefined : m[2];
       const pre = m[1] === '.' ? '.' : m[1] ?? '';
-      const recv = pre === '.' ? /((?:this\.)?[A-Za-z_$][\w$]*)\s*$/.exec(f.src.slice(Math.max(0, m.index - 80), m.index))?.[1] : undefined;
+      const recv = pre === '.' ? /((?:this\.)?[A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$][\w$]*)*)\s*$/.exec(f.src.slice(Math.max(0, m.index - 80), m.index))?.[1] : undefined;
       for (const k of addressArgs(f, { pre, name: m[2], recv, open })) {
         const [i, field] = String(k).split('.');
         const arg = list[i] ?? '';
