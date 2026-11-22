@@ -6,7 +6,7 @@
 // совпадать (правило №4): manifest, два meta theme-color в index.html,
 // THEME_BG.light в utils/theme.ts и токен --bg светлого блока index.css.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const read = (rel: string) => readFileSync(resolve(__dirname, rel), 'utf8');
@@ -95,5 +95,46 @@ describe('цвет оболочки PWA — один на все места', ()
 describe('index.html', () => {
   it('ссылается на корневой манифест', () => {
     expect(indexHtml).toContain('<link rel="manifest" href="/manifest.webmanifest" />');
+  });
+});
+
+// Картинки запуска iOS: PNG и блок тегов пишет scripts/generate-ios-splash.mjs. iOS берёт
+// картинку только при точном совпадении её размера с экраном — иначе пустой кадр.
+describe('картинки запуска iOS (apple-touch-startup-image)', () => {
+  const tags = [...indexHtml.matchAll(/<link rel="apple-touch-startup-image" href="([^"]+)" media="([^"]+)" \/>/g)].map(
+    ([, href, media]) => {
+      const num = (re: RegExp) => Number(re.exec(media)?.[1]);
+      return {
+        href,
+        media,
+        w: num(/\(device-width: (\d+)px\)/),
+        h: num(/\(device-height: (\d+)px\)/),
+        dpr: num(/\(-webkit-device-pixel-ratio: (\d)\)/),
+        theme: /\(prefers-color-scheme: (light|dark)\)/.exec(media)?.[1],
+      };
+    },
+  );
+
+  it('каждому тегу соответствует PNG размером «экран × плотность», без альфы', () => {
+    expect(tags.length).toBeGreaterThanOrEqual(30);
+    for (const t of tags) {
+      expect(t.media).toContain('(orientation: portrait)');
+      expect(png(t.href), t.href).toEqual({ w: t.w * t.dpr, h: t.h * t.dpr, alpha: false });
+    }
+  });
+
+  it('у каждого экрана есть светлая и тёмная картинка, условия не повторяются', () => {
+    const screens = new Set(tags.map((t) => `${t.w}x${t.h}@${t.dpr}`));
+    for (const theme of ['light', 'dark']) {
+      expect(new Set(tags.filter((t) => t.theme === theme).map((t) => `${t.w}x${t.h}@${t.dpr}`))).toEqual(screens);
+    }
+    expect(new Set(tags.map((t) => t.media)).size).toBe(tags.length);
+  });
+
+  it('в папке нет файлов без тега, общий вес — до 500 КБ', () => {
+    const dir = resolve(__dirname, '../public/splash');
+    const files = readdirSync(dir);
+    expect(files.map((f) => `/splash/${f}`).sort()).toEqual(tags.map((t) => t.href).sort());
+    expect(files.reduce((sum, f) => sum + statSync(resolve(dir, f)).size, 0)).toBeLessThan(500 * 1024);
   });
 });
