@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { uid } from './request-utils';
 import { NotesService } from '../bot/notes.service';
@@ -16,10 +8,6 @@ import { SchemaNoteDto, ModeNoteDto, NoteFieldsDto } from './dto/notes.dto';
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
-
-// [a-z_]{1,64} — тот же формат, что и у остальных id-каллбэков (см. CLAUDE.md
-// «Telegram»: `callback_data` формата действие:параметр).
-const ID_RE = /^[a-z_]{1,64}$/;
 
 // Общие поля уже провалидированы DTO (@IsString/@MaxLength) — здесь только trim.
 function trimFields(body: NoteFieldsDto) {
@@ -46,8 +34,6 @@ export class NotesController {
 
   @Post('schema-notes')
   async upsertSchemaNote(@Req() req: AuthRequest, @Body() body: SchemaNoteDto) {
-    if (!ID_RE.test(body.schemaId))
-      throw new BadRequestException('invalid schemaId');
     return this.notesService.upsertSchemaNote(uid(req), body.schemaId, {
       ...trimFields(body),
       reality: body.reality?.trim(),
@@ -61,8 +47,6 @@ export class NotesController {
 
   @Post('mode-notes')
   async upsertModeNote(@Req() req: AuthRequest, @Body() body: ModeNoteDto) {
-    if (!ID_RE.test(body.modeId))
-      throw new BadRequestException('invalid modeId');
     return this.notesService.upsertModeNote(
       uid(req),
       body.modeId,
