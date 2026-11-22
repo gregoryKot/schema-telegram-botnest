@@ -85,6 +85,7 @@
   - `src/therapy/therapist-exit.service.ts` — отказ от роли (`DELETE therapist-role`, событие `therapist_resigned`) и бывший терапевт клиента (`GET former-therapist`, `former-therapist-info.ts`)
   - `src/therapy/therapy-plan.service.ts` — план работы с клиентом (`/api/therapy/plan`, `TherapyPlanItem`): только терапевт, создание сразу нескольким клиентам
   - `src/therapy/therapy-path.service.ts` — «Путь клиента» (`/api/therapy/path`, `TherapyPath`, `TherapyPathPhase`): только терапевт, фазы и сроки плана работы
+  - `src/therapy/therapy-notes.*` + `src/therapy/session-work*.ts` — итоги сессии и «Что делали»; связь итогов с планом — `TherapistNote.planItemIds` (без FK), отмеченные `planned` становятся `active`, чтение `GET notes/:clientId/plan-work` — `src/therapy/note-plan-work.ts`
 - Связи: Prisma (TherapyRelation, TherapistNote, TherapyPlanItem, TherapyPath, TherapyPathPhase, ClientConceptualization, ModeMap, TherapistCustomMode, UserTask, TherapistRequest); импортирует Bot/Notification/Auth/Analytics; сервисы зовут `src/api/` (diary, tracker → TherapyTasksService) и `src/telegram/`; все 6 контроллеров — `/api/therapy/*` под `TelegramAuthGuard`.
 - Подводные камни:
   - Доступ терапевта к чужим клиническим данным закрыт только `assertHasClient`; виртуальный клиент = отрицательный id `-TherapyRelation.id` (`clientId: null`, `src/therapy/relation-where.ts`), его `UserTask` лежат с отрицательным userId без FK и чистятся вручную (`src/therapy/remove-client.ts`).

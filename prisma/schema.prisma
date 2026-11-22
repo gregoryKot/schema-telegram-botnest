@@ -603,6 +603,7 @@ model TherapistNote {
   date        String   // YYYY-MM-DD
   text        String
   work        Json     @default("[]") // «Что делали»: шифротекст-строка (SessionWorkItem[]), [] — пунктов нет
+  planItemIds Int[]    @default([]) // пункты плана (TherapyPlanItem.id), над которыми работали; без FK, как clientId
   createdAt   DateTime @default(now())
 
   @@index([therapistId, clientId, createdAt])
@@ -616,7 +617,7 @@ model TherapyPlanItem {
   clientId    BigInt
   rubric      String    // PLAN_RUBRICS (src/therapy/therapy-plan.types.ts)
   text        String    // шифруется
-  status      String    @default("planned") // 'planned' | 'active' | 'done'
+  status      String    @default("planned") // PLAN_STATUSES: planned | active | done | postponed | dropped
   position    Int       @default(0)
   sourceAddress String? // адрес раздела справочника (#1484): `mode:<id>/cognitive`
   // Источник до адресов: читается, только если sourceAddress пуст (planAddress.ts).
