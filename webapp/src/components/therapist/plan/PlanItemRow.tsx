@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
+import type { PlanItem, PlanStatus } from '../../../../../shared/src/therapy/plan/planItem';
 import { MMIcon } from '../../modeMapIcons';
 import { PlanItemForm } from './PlanItemForm';
 import type { PlanSourceLink } from './planSource';
-import { canAssign, statusLabel } from './planModel';
+import { PhaseMenu, StatusMenu } from './PlanRowMenus';
+import { canAssign, type PhaseOption } from './planModel';
+import { rowClass, rowDragProps } from './planRowProps';
 
 interface Props {
   item: PlanItem;
   busy: boolean;
   /** Откуда пункт (planSourceLink); null — пункт свой или тексты справочника не приехали. */
   sourceLink: PlanSourceLink | null;
-  onCycleStatus: () => void;
+  onSetStatus: (status: PlanStatus) => void;
   onOpenSource: () => void;
   onAssign: () => void;
   /** Задание создано, но отметка в пункте не дошла: вместо «Дать заданием» — повтор отметки. */
@@ -22,20 +24,17 @@ interface Props {
   canUp: boolean;
   canDown: boolean;
   onMove: (dir: -1 | 1) => void;
+  /** Фазы пути: есть — у строки «В фазу…» и перетаскивание; нет (раскладка «По каналам») — ни того, ни другого. */
+  phases?: PhaseOption[];
+  onSetPhase?: (phaseId: number | null) => void;
 }
 
-/** Пункт плана: статус-кнопка (тап — следующий статус), текст, откуда пункт, действия — видны всегда. */
-export function PlanItemRow({ item, busy, sourceLink, onCycleStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove }: Props) {
+/** Пункт плана: статус-кнопка (тап — меню из пяти статусов), текст, откуда пункт, действия — видны всегда. */
+export function PlanItemRow({ item, busy, sourceLink, onSetStatus, onOpenSource, onAssign, linkPending, onRetryLink, onSaveText, onDelete, canUp, canDown, onMove, phases, onSetPhase }: Props) {
   const [editing, setEditing] = useState(false);
-  const label = statusLabel(item.status);
   return (
-    <div className={`pl-item${item.status === 'done' ? ' is-done' : ''}`}>
-      <button
-        type="button" className={`pl-status pl-status--${item.status}`} disabled={busy}
-        aria-label={`Статус: ${label}. Переключить`} onClick={onCycleStatus}
-      >
-        {label}
-      </button>
+    <div className={rowClass(item.status)} {...rowDragProps(item.id, !!phases && !editing)}>
+      <StatusMenu status={item.status} busy={busy} onPick={onSetStatus} />
       <div className="pl-body">
         {editing ? (
           <PlanItemForm initial={item.text} busy={busy} onSave={onSaveText} onClose={() => setEditing(false)} />
@@ -65,6 +64,7 @@ export function PlanItemRow({ item, busy, sourceLink, onCycleStatus, onOpenSourc
               <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Опустить ниже" disabled={busy || !canDown} onClick={() => onMove(1)}><MMIcon name="caret" size={16} /></button>
             </>
           )}
+          {phases && onSetPhase && <PhaseMenu item={item} busy={busy} phases={phases} onPick={onSetPhase} />}
           <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Изменить текст пункта" disabled={busy} onClick={() => setEditing(true)}><MMIcon name="edit" size={16} /></button>
           <button type="button" className="ds-btn ds-btn--icon tb-del" aria-label="Удалить пункт" disabled={busy} onClick={onDelete}><MMIcon name="trash" size={16} /></button>
         </div>
