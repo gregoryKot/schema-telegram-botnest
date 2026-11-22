@@ -42,6 +42,7 @@ export const buildBrief50Template: PathTemplateBuilder = () => ({
         phaseRef('safety'),
       ],
       guidePhaseIds: ['assessment', 'safety'],
+      look: 'assessment',
     },
     {
       id: 'past',
@@ -72,6 +73,7 @@ export const buildBrief50Template: PathTemplateBuilder = () => ({
         phaseRef('healing'),
       ],
       guidePhaseIds: ['awareness', 'healing'],
+      look: 'awareness',
     },
     {
       id: 'present',
@@ -99,6 +101,7 @@ export const buildBrief50Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy'),
       ],
       guidePhaseIds: ['managing', 'autonomy'],
+      look: 'managing',
     },
     {
       id: 'boosters',
@@ -123,6 +126,7 @@ export const buildBrief50Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
+      look: 'autonomy',
     },
   ],
   caveats: [

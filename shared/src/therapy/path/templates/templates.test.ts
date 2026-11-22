@@ -6,6 +6,7 @@ import {
   guideAddressArticles,
 } from '../../../schemaTherapy/guide';
 import type { Tr } from '../../../needs/types';
+import { PHASE_LOOK_KEYS } from '../../../theme/pathLook';
 import {
   buildPathTemplates,
   pathTemplate,
@@ -51,6 +52,17 @@ describe.each([
         expect(Number.isInteger(p.weeks), `${t.id}.${p.id}`).toBe(true);
         expect(p.weeks, `${t.id}.${p.id}`).toBeGreaterThan(0);
       }
+  });
+
+  it('вид фаз: ключи стадий не повторяются и идут в порядке пути', () => {
+    for (const t of templates) {
+      const at = t.phases.map((p) => PHASE_LOOK_KEYS.indexOf(p.look));
+      expect(
+        at.every((i) => i >= 0),
+        t.id,
+      ).toBe(true);
+      expect(at, t.id).toEqual([...new Set(at)].sort((a, b) => a - b));
+    }
   });
 
   it('адреса и этапы справочника существуют', () => {

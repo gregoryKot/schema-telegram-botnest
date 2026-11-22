@@ -83,6 +83,15 @@ describe('PathLayout', () => {
     ]));
   });
 
+  it('знак и бумага стадии — у фазы шаблона, своя фаза терапевта остаётся без них', async () => {
+    h.getTherapyPath.mockResolvedValue({ path: path([phase({ id: 1 }), phase({ id: 2, position: 1, name: 'Начало работы', templatePhaseId: null })]) });
+    const { container } = renderLayout();
+    await screen.findByRole('heading', { name: 'Начало работы' });
+    const cards = [...container.querySelectorAll('.ph-card')];
+    expect(cards.map((c) => c.querySelector('.ph-sign svg') !== null)).toEqual([true, false]);
+    expect((cards[0].querySelector('.ph-sign') as HTMLElement).style.getPropertyValue('--h')).toBe('310');
+  });
+
   it('текущей нет — «Начать фазу» ставит startedAt; путь не загрузился — «Повторить»', async () => {
     const idle = path([phase({ id: 1 })]);
     h.getTherapyPath.mockRejectedValueOnce(new Error('net')).mockResolvedValue({ path: idle });
