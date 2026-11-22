@@ -97,6 +97,9 @@
   "webapp/src/components/therapist/plan/PlanAddSheet.tsx::setError": {
     "status": "reports"
   },
+  "webapp/src/components/therapist/plan/path/usePath.ts::setError": {
+    "status": "reports"
+  },
   "webapp/src/components/therapist/plan/usePlanItems.ts::setError": {
     "status": "reports"
   },
