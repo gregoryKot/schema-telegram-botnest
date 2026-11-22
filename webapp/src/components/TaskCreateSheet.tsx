@@ -19,18 +19,18 @@ import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { taskPayloadText } from '../../../shared/src/tasks/taskPayload';
 import { assignLead, assignTilesNote, assignableOptions } from '../../../shared/src/tasks/assignCopy';
 import { catalogIdAfterEdit } from '../../../shared/src/tasks/catalog/taskWhy';
-import { taskAssignSource, trackTaskAssignSource } from '../../../shared/src/share/taskAssignAnalytics';
+import { taskAssignSource, trackTaskAssignSource, type TaskAssignOrigin } from '../../../shared/src/share/taskAssignAnalytics';
 import '../styles/sheet-tasks.css';
 import '../styles/task-create.css';
 
 interface Props {
   clientId?: UserId; clientName?: string;
-  /** Тип, текст и запись справочника, с которыми лист открывается (шаблоны, «Дать заданием»); zIndex — над листами концептуализации. */
-  defaultType?: TaskType; defaultText?: string; defaultCatalogId?: string; zIndex?: number;
+  /** Тип, текст и запись справочника, с которыми лист открывается (шаблоны, «Дать заданием»), и откуда заготовка (assignOrigin — в аналитику); zIndex — над листами концептуализации. */
+  defaultType?: TaskType; defaultText?: string; defaultCatalogId?: string; assignOrigin?: TaskAssignOrigin; zIndex?: number;
   onCreated: (task: UserTask) => void; onClose: () => void;
 }
 
-export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, defaultCatalogId, zIndex, onCreated, onClose }: Props) {
+export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, defaultCatalogId, zIndex, assignOrigin, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
   // Офлайн-клиенту — только «Своё задание» (shared/tasks/assignCopy).
@@ -80,7 +80,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
     setSaving(true); setError('');
     try {
       const task = await api.createTask({ type, text: finalText, targetDays: selected.hasStreak ? targetDays : undefined, dueDate: dueDate || undefined, clientId, catalogId: sentCatalogId ?? undefined });
-      if (clientId !== undefined) trackTaskAssignSource(api, taskAssignSource(type, sentCatalogId !== null));
+      if (clientId !== undefined) trackTaskAssignSource(api, taskAssignSource(type, sentCatalogId !== null, { origin: assignOrigin, type: defaultType }));
       onCreated(task);
       // Лист закрывается через историю: иначе его запись оставалась, и первое
       // «Назад» браузера после назначения ничего не делало (QA 2026-10-26).

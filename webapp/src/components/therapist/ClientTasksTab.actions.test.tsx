@@ -7,13 +7,13 @@ import { render as rtlRender, screen, cleanup, fireEvent, waitFor } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { useState } from 'react';
 import { ClientTasksTab } from './ClientTasksTab';
-import type { ClientDetail } from './clientSheetTypes';
 import type { UserTask } from '../../api';
 
 vi.mock('../../api', () => ({
   api: { deleteTherapyTask: vi.fn(), completeTask: vi.fn(), getGuideMarks: () => Promise.resolve({ marks: [] }) },
 }));
 import { api } from '../../api';
+import { makeClient, makeClientDetail } from './clientDetail.test-helpers';
 
 // Подтверждение пишет запись в историю (HistoryConfirmDialog) — нужен роутер.
 const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
@@ -29,7 +29,7 @@ const task = (id: number, over: Partial<UserTask> = {}): UserTask => ({
 
 function Harness({ initial, clientId }: { initial: UserTask[]; clientId: number }) {
   const [clientTasks, setClientTasks] = useState(initial);
-  const detail = { clientTasks, setClientTasks, selectedClient: { telegramId: clientId } } as unknown as ClientDetail;
+  const detail = makeClientDetail({ clientTasks, setClientTasks, selectedClient: makeClient({ telegramId: clientId }) });
   return <ClientTasksTab detail={detail} onAssign={vi.fn()} />;
 }
 

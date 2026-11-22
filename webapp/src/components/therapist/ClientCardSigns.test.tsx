@@ -11,9 +11,9 @@ import { ClientYSQTab } from './ClientYSQTab';
 import { ClientNotesTab } from './ClientNotesTab';
 import { ClientOverviewTab } from './ClientOverviewTab';
 import { ClientHeader } from './ClientHeader';
-import type { ClientDetail } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
 import { paperSignName } from '../../test-support/paperSign';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 beforeEach(() => { window.innerWidth = 1024; });
 afterEach(cleanup);
@@ -50,10 +50,7 @@ describe('пустые вкладки карточки клиента: знак 
   });
 
   it('пустой «Обзор»: сцена пустой схемы случая и путь к концептуализации', () => {
-    const detail = {
-      clientHistory: [], clientDiary: [], notes: [], localConcept: {}, concept: null, activeSchemaIds: [], activeModeIds: [],
-      exportCopied: false, setShowAssign: vi.fn(), setClientTab: vi.fn(), handleExport: vi.fn(),
-    } as unknown as ClientDetail;
+    const detail = makeClientDetail();
     const { container } = render(<MemoryRouter><ClientOverviewTab selectedClient={offline} detail={detail} /></MemoryRouter>);
     const col = container.querySelector('.tk-col') as HTMLElement;
     expect(col.querySelector('.tk-empty-scene svg.scn')).toBeTruthy();
@@ -65,11 +62,7 @@ describe('пустые вкладки карточки клиента: знак 
 describe('шапка карточки клиента', () => {
   it('рендерится: имя, «офлайн», «Встреча» с датой и вкладки; картинок в шапке нет', () => {
     const client = { ...offline, nextSession: '2099-11-11T09:00', meetingDays: [3] } as unknown as TherapyClientSummary;
-    const detail = {
-      clientSchemaNotesData: [], clientModeNotesData: [], clientTasks: [], notesPage: { notes: [], total: 0 },
-      clientData: null, clientDiary: [], clientTab: 'mode_map', renamingAlias: false, confirmingDelete: false,
-      deleteLoading: false, deleteError: '', setShowAssign: vi.fn(), setClientTab: vi.fn(),
-    } as unknown as ClientDetail;
+    const detail = makeClientDetail({ clientTab: 'mode_map' });
     const { container } = render(<MemoryRouter><ClientHeader selectedClient={client} detail={detail} switchView={vi.fn()} /></MemoryRouter>);
     expect(screen.getByRole('heading', { level: 1, name: 'Анна' })).toBeTruthy();
     expect(screen.getByText('офлайн')).toBeTruthy();
