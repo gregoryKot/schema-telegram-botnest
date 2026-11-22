@@ -10,6 +10,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { IsKbId } from './kb-id.validator';
 import { Type } from 'class-transformer';
 import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
 import { StringsWithin } from './strings-within';
@@ -40,6 +41,7 @@ export class ConceptualizationDto {
   @ArrayMaxSize(CONCEPT_SCHEMA_IDS_MAX) // его же держит дописывание с холста
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('schema', { each: true })
   schemaIds?: string[];
 
   @IsOptional()
@@ -47,6 +49,7 @@ export class ConceptualizationDto {
   @ArrayMaxSize(CONCEPT_MODE_IDS_MAX) // режимы модели и свои; его же держит дописывание с холста
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('modeOrCustom', { each: true })
   modeIds?: string[];
 
   @IsOptional()
