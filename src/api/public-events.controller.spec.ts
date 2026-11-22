@@ -326,9 +326,12 @@ describe('PublicEventsController', () => {
     });
   });
 
-  it('game_over с неизвестной главой не пишется, но ответ ok', async () => {
+  it('game_chapter_start с неизвестной главой не пишется, но ответ ok', async () => {
     await expect(
-      controller.track({ name: 'game_over', meta: { chapter: 'chapter9' } }),
+      controller.track({
+        name: 'game_chapter_start',
+        meta: { chapter: 'chapter9' },
+      }),
     ).resolves.toEqual({ ok: true });
     expect(track).not.toHaveBeenCalled();
   });
@@ -349,12 +352,12 @@ describe('PublicEventsController', () => {
     expect(track).not.toHaveBeenCalled();
   });
 
-  it('game_start пишется с пустой meta вне зависимости от присланных полей', async () => {
+  it('game_app_arrive пишется с пустой meta вне зависимости от присланных полей', async () => {
     await controller.track({
-      name: 'game_start',
+      name: 'game_app_arrive',
       meta: { anything: 'x' },
     });
-    expect(track).toHaveBeenCalledWith(null, 'game_start', {});
+    expect(track).toHaveBeenCalledWith(null, 'game_app_arrive', {});
   });
 
   // Инцидент 2026-11-04 (#928): сработавший повтор asset-recovery.js.
