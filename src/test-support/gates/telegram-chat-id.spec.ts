@@ -176,8 +176,22 @@ describe('check-telegram-chat-id.mjs', () => {
   const caller = (field: string, call: string) =>
     `export class Caller {\n  constructor(private readonly ${field}) {}\n  async go(userId: bigint) {\n    await ${call};\n  }\n}\n`;
   // Источник объекта: функция возвращает литерал с адресом.
-  const settings = (chatId: string) =>
-    `export function toSettings(r: Row) {\n  return { tz: r.tz, chatId: ${chatId} };\n}\n`;
+  const settings = (chatId: string, type = '') =>
+    `export function toSettings(r: Row)${type} {\n  return { tz: r.tz, chatId: ${chatId} };\n}\n`;
+  // Поля зависимостей объявлены интерфейсом в соседнем файле.
+  const DEPS =
+    'export interface Deps {\n  channel: Channel;\n  mail?: Pick<Mail, "send">;\n}\n';
+  // Интерфейс площадки и две реализации: одна шлёт в Telegram, вторая — нет.
+  const TARGETS = {
+    'src/ch/target.ts':
+      'export interface Target {\n  destination(): string;\n  send(post: Post, destination: string): Promise<void>;\n}\n',
+    'src/ch/tg.ts':
+      'export class TgTarget implements Target {\n  async send(post: Post, destination: string) {\n' +
+      '    await sendBounded(this.bot, destination, post.text, undefined);\n  }\n}\n',
+    'src/ch/vk.ts':
+      'export class VkTarget implements Target {\n  async send(post: Post, destination: string) {\n' +
+      '    await this.api.post(destination, post.text);\n  }\n}\n',
+  };
   // Две функции notify: в tg/ шлёт в Telegram, в mail/ — письмо.
   const NOTIFY_FILES = {
     'src/tg/notify.ts':
@@ -261,6 +275,56 @@ describe('check-telegram-chat-id.mjs', () => {
       },
       'src/x/caller.ts:3: адрес отправки «userId» — id аккаунта, а не чат (через notify)',
     ],
+    [
+      'объект из карты Map<K, V>: источник V кладёт userId',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts': settings('r.userId', ': Settings'),
+        'src/x/caller.ts': fn(
+          'const byUser = new Map<string, Settings>();\nconst s = byUser.get(String(userId));\nawait push(s, "hi");',
+        ),
+      },
+      'src/tg/settings.ts:2: адрес отправки «r.userId» — id аккаунта, а не чат (через push)',
+    ],
+    [
+      'объект из карты: тип карты — из типа возврата функции',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts':
+          settings('r.userId', ': Settings') +
+          'export async function loadAll(ids: bigint[]): Promise<Map<string, Settings>> {\n  return build(ids);\n}\n',
+        'src/x/caller.ts':
+          "import { loadAll } from '../tg/settings';\n" +
+          fn(
+            'const byUser = await loadAll([\n  userId,\n]);\nconst s = byUser.get(String(userId));\nawait push(s, "hi");',
+          ),
+      },
+      'src/tg/settings.ts:2: адрес отправки «r.userId» — id аккаунта, а не чат (через push)',
+    ],
+    [
+      'цепочка: this.deps.channel.send по полю интерфейса Deps',
+      {
+        'src/tg/channel.ts': CHANNEL,
+        'src/mail/mail.ts': MAIL,
+        'src/x/deps.ts': DEPS,
+        'src/x/caller.ts': caller(
+          'deps: Deps',
+          'this.deps.channel.send(post, String(userId))',
+        ),
+      },
+      'src/x/caller.ts:4: адрес отправки «String(userId)» — id аккаунта, а не чат (через send)',
+    ],
+    [
+      'интерфейс: метод любой реализации',
+      {
+        ...TARGETS,
+        'src/x/caller.ts': caller(
+          'target: Target',
+          'this.target.send(post, String(userId))',
+        ),
+      },
+      'src/x/caller.ts:4: адрес отправки «String(userId)» — id аккаунта, а не чат (через send)',
+    ],
   ])('красный, поток внутри функции: %s', (_name, files, line) => {
     const res = runGate('check-telegram-chat-id.mjs', files);
     expect(res.status).toBe(1);
@@ -308,13 +372,36 @@ describe('check-telegram-chat-id.mjs', () => {
       },
     ],
     [
-      // Известный пропуск: что лежит в карте, без типов не узнать.
-      'известный пропуск: объект из map.get',
+      // Известный пропуск: у карты нет типа в src — что в ней лежит, не узнать.
+      'известный пропуск: объект из map.get без типа карты',
       {
         'src/tg/push.ts': PUSH,
-        'src/tg/settings.ts': settings('r.userId'),
+        'src/tg/settings.ts': settings('r.userId', ': Settings'),
         'src/x/caller.ts': fn(
           'const s = byUser.get(String(userId));\nawait push(s, "hi");',
+        ),
+      },
+    ],
+    [
+      'объект из карты Map<K, V>: источник V кладёт настоящий чат',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts': settings(
+          'resolveChatId(r.id, r.tg)',
+          ': Settings',
+        ),
+        'src/x/caller.ts': fn(
+          'const byUser = new Map<string, Settings>();\nconst s = byUser.get(String(userId));\nawait push(s, "hi");',
+        ),
+      },
+    ],
+    [
+      'объект из карты: функция с другим типом возврата — не источник',
+      {
+        'src/tg/push.ts': PUSH,
+        'src/tg/settings.ts': settings('r.userId', ': Other'),
+        'src/x/caller.ts': fn(
+          'const byUser = new Map<string, Settings>();\nconst s = byUser.get(String(userId));\nawait push(s, "hi");',
         ),
       },
     ],
@@ -330,14 +417,47 @@ describe('check-telegram-chat-id.mjs', () => {
       },
     ],
     [
-      // Известный пропуск: тип получателя-цепочки в файле не виден — общий аргумент одноимённых.
-      'известный пропуск: this.deps.channel.send',
+      // Известный пропуск: тип Deps в src не объявлен — общий аргумент одноимённых.
+      'известный пропуск: this.deps.channel.send без объявления Deps',
       {
         'src/tg/channel.ts': CHANNEL,
         'src/mail/mail.ts': MAIL,
         'src/x/caller.ts': caller(
           'deps: Deps',
           'this.deps.channel.send(post, String(userId))',
+        ),
+      },
+    ],
+    [
+      'цепочка: this.deps.mail.send — почта, не Telegram',
+      {
+        'src/tg/channel.ts': CHANNEL,
+        'src/mail/mail.ts': MAIL,
+        'src/x/deps.ts': DEPS,
+        'src/x/caller.ts': caller(
+          'deps: Deps',
+          'this.deps.mail.send(String(userId), "subject")',
+        ),
+      },
+    ],
+    [
+      'интерфейс: адрес площадки, а не id аккаунта',
+      {
+        ...TARGETS,
+        'src/x/caller.ts': caller(
+          'target: Target',
+          'this.target.send(post, this.target.destination())',
+        ),
+      },
+    ],
+    [
+      'интерфейс без реализации-отправщика в Telegram',
+      {
+        'src/ch/target.ts': TARGETS['src/ch/target.ts'],
+        'src/ch/vk.ts': TARGETS['src/ch/vk.ts'],
+        'src/x/caller.ts': caller(
+          'target: Target',
+          'this.target.send(post, String(userId))',
         ),
       },
     ],
@@ -370,15 +490,45 @@ describe('check-telegram-chat-id.mjs', () => {
     ]);
   });
 
-  it('telegram-chat-id-resolve: класс получателя из типа поля, параметра и new', () => {
+  it('telegram-chat-id-resolve: голое имя — по импорту с as; this. — только свой файл', () => {
     const got: unknown = JSON.parse(
       importExport(
         'telegram-chat-id-resolve.mjs',
-        'receiverClass',
-        '(r) => [r("constructor(private readonly mail: Mail) {}", "this.mail"), r("const ch = new Channel(bot);", "ch"), r("x: Pick<Mail, \\"send\\">,", "x"), r("a.b: Mail,", "this.a.b")]',
+        'resolveDefs',
+        '(r) => { const a = { rel: "src/a.ts", src: "import { notify as n } from \\"./b\\";" }; const b = { rel: "src/b.ts", src: "" }; const fnsOf = (f) => (f === b ? [{ name: "notify", head: 5 }] : []); return [r([a, b], a, fnsOf, { pre: "", name: "n", open: -1 })?.[0]?.name ?? null, r([a, b], a, fnsOf, { pre: "this.", name: "n", open: -1 })]; }',
       ),
     );
-    expect(got).toEqual(['Mail', 'Channel', null, null]);
+    expect(got).toEqual(['notify', null]);
+  });
+
+  it('telegram-chat-id-types: тип имени из поля, параметра, new и обёртки; цепочка без объявления — null', () => {
+    const got: unknown = JSON.parse(
+      importExport(
+        'telegram-chat-id-types.mjs',
+        'typeOfName',
+        '(t) => [t("constructor(private readonly mail: Mail) {}", "mail"), t("const ch = new Channel(bot);", "ch"), t("x: Pick<Mail, \\"send\\">,", "x"), t("p: Promise<Mail>,", "p"), t("a.b: Mail,", "b")]',
+      ),
+    );
+    expect(got).toEqual(['Mail', 'Channel', 'Mail', null, null]);
+    const chain: unknown = JSON.parse(
+      importExport(
+        'telegram-chat-id-types.mjs',
+        'receiverType',
+        '(r) => { const f = { rel: "src/a.ts", src: "interface Deps { mail?: Pick<Mail, \\"send\\">; }\\nclass A { constructor(private deps: Deps) {} go() { const { mail } = this.deps; } }" }; return [r([f], f, "this.deps.mail")?.type, r([f], f, "mail")?.type, r([f], f, "this.deps.sms") ?? null, r([f], f, "this.other.mail") ?? null]; }',
+      ),
+    );
+    expect(chain).toEqual(['Mail', 'Mail', null, null]);
+  });
+
+  it('telegram-chat-id-maps: V из Map<K, V> — простой тип; сложный и не карта — null', () => {
+    const got: unknown = JSON.parse(
+      importExport(
+        'telegram-chat-id-maps.mjs',
+        'mapValue',
+        '(v) => [v("Promise<Map<string, SendSettings>>"), v("ReadonlyMap<bigint, Row> = x"), v("Map<string, Array<Row>>"), v("Map<string, A | B>"), v("Set<Row>")]',
+      ),
+    );
+    expect(got).toEqual(['SendSettings', 'Row', null, null, null]);
   });
 
   it('telegram-chat-id-params: поле берётся из литерала, у объекта-переменной — нет', () => {
