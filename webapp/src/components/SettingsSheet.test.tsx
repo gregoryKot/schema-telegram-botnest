@@ -153,9 +153,11 @@ describe('SettingsSheet — раздел из общего поиска', () => 
     requestSettingsOpen('s-data');
     const { unmount } = await renderSheet();
     const scrolled = () => vi.mocked(Element.prototype.scrollIntoView).mock.contexts.map((el) => (el as Element).id);
-    expect(scrolled()).toEqual(['s-data']);
+    // Прокрутку запускает эффект после загрузки настроек: заголовок уже на экране, эффект ещё нет.
+    await waitFor(() => expect(scrolled()).toEqual(['s-data']));
     unmount();
     await renderSheet();
+    await act(async () => {}); // эффект второго листа отработал
     expect(scrolled()).toEqual(['s-data']); // лист открыт заново — без запроса не прокручивается
   });
 });
