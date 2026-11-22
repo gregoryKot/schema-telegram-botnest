@@ -1,7 +1,11 @@
 // Обратная сторона связей на листах справочника: id — из kb/links.ts (правило базы знаний, раздел 2),
 // здесь только названия. Цикл импорта с ./index безопасен: функции зовутся при открытии листа.
 import { getModeById, getSchemaById } from '../schemaTherapyData';
-import { schemasOfMode, usagesOfTechnique, type KbUsageKind } from '../kb/links';
+import {
+  schemasOfMode,
+  usagesOfTechnique,
+  type KbUsageKind,
+} from '../kb/links';
 import { buildConcernGuides } from './index';
 import type { Tr } from './types';
 
@@ -33,7 +37,10 @@ export function modeSchemaLinks(modeId: string): GuideBacklink[] {
 }
 
 /** Где применяется техника, группами в порядке «режимы, схемы, запросы»; пустая группа не попадает. */
-export function techniqueUsageGroups(tr: Tr, techniqueId: string): GuideUsageGroup[] {
+export function techniqueUsageGroups(
+  tr: Tr,
+  techniqueId: string,
+): GuideUsageGroup[] {
   const usages = usagesOfTechnique(techniqueId);
   const concerns = new Map(buildConcernGuides(tr).map((c) => [c.id, c.name]));
   const nameOf: Record<KbUsageKind, (id: string) => string | undefined> = {
@@ -42,7 +49,9 @@ export function techniqueUsageGroups(tr: Tr, techniqueId: string): GuideUsageGro
     concern: (id) => concerns.get(id),
   };
   return (Object.keys(USAGE_LEADS) as KbUsageKind[]).flatMap((kind) => {
-    const ids = [...new Set(usages.filter((u) => u.kind === kind).map((u) => u.id))];
+    const ids = [
+      ...new Set(usages.filter((u) => u.kind === kind).map((u) => u.id)),
+    ];
     const items = ids.flatMap((id) => {
       const name = nameOf[kind](id);
       return name ? [{ id, name }] : [];
@@ -53,5 +62,7 @@ export function techniqueUsageGroups(tr: Tr, techniqueId: string): GuideUsageGro
 
 /** Группы одной строкой на группу: «Режимы: А, Б» — текст раздела для адреса. */
 export function usageLines(groups: GuideUsageGroup[]): string[] {
-  return groups.map((g) => `${g.lead}: ${g.items.map((i) => i.name).join(', ')}`);
+  return groups.map(
+    (g) => `${g.lead}: ${g.items.map((i) => i.name).join(', ')}`,
+  );
 }

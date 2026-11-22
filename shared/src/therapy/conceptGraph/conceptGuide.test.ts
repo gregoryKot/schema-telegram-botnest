@@ -24,7 +24,9 @@ const texts = {
       : null,
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   modeSchemaLinks: (modeId: string) =>
-    modeId === 'vulnerable_child' ? [{ id: 'abandonment', name: 'Покинутость' }] : [],
+    modeId === 'vulnerable_child'
+      ? [{ id: 'abandonment', name: 'Покинутость' }]
+      : [],
 };
 const ty = (t: string) => t;
 

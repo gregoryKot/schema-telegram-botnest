@@ -10,7 +10,11 @@ import type { Tr } from '../types';
 import { GUIDE_ARTICLE_KINDS, type GuideArticleKind } from './addressFormat';
 import { phaseArticles } from './addressArticlesPhase';
 import { sectionsOf } from './addressSections';
-import { modeSchemaLinks, techniqueUsageGroups, usageLines } from '../backlinks';
+import {
+  modeSchemaLinks,
+  techniqueUsageGroups,
+  usageLines,
+} from '../backlinks';
 
 /** Статья справочника, разложенная на разделы: путь раздела → его текст (непустой). */
 export interface GuideAddressArticle {
@@ -62,7 +66,10 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
       kind: 'technique' as const,
       id: t.id,
       title: t.name,
-      sections: sectionsOf({ ...t, usages: usageLines(techniqueUsageGroups(tr, t.id)) }),
+      sections: sectionsOf({
+        ...t,
+        usages: usageLines(techniqueUsageGroups(tr, t.id)),
+      }),
     })),
   note: (tr) =>
     practiceNotes(tr).map((n) => ({
