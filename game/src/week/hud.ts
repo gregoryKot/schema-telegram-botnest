@@ -23,7 +23,7 @@ export class WeekHud {
   private dark: Phaser.GameObjects.Rectangle;
   private hold: Phaser.GameObjects.Graphics;
   private keys: Text;
-  private thought: Box | null = null;
+  private thought: Box | null = null; private spoken: Box | null = null; private speaker?: { x: number };
   private shownSegs = -1; private shownMin = -1; private ended = false;
 
   constructor(private scene: Phaser.Scene) {
@@ -70,6 +70,7 @@ export class WeekHud {
       plate(this.hold, px0 - HOLD_W / 2, py - px(16), HOLD_W, px(10), SKIN.night);
       this.hold.fillStyle(C.paper).fillRect(px0 - HOLD_W / 2 + px(4), py - px(13), (HOLD_W - px(8)) * hold, px(4));
     }
+    if (this.spoken?.active) this.spoken.x = this.clampX(this.speaker!.x, this.spoken.getData('w') as number);
     if (this.thought?.active) this.thought.setPosition(this.clampX(px0, this.thought.getData('w') as number), Math.max(py - px(8), (this.thought.getData('h') as number) + px(4))); // в прыжке пузырь не уходит за верх кадра
   }
 
@@ -87,6 +88,8 @@ export class WeekHud {
   }
   /** Строка внутри мира — над точкой (сообщение, реплика). */
   say(text: string, x: number, y: number, ms = 3400, kind: BubbleKind = 'say') { this.bubble(text, kind, x, y, ms); }
+  /** Реплика цели — идёт вместе с ней: цель держится впереди, пока сбой не назван. */
+  voice(text: string, who: { x: number }, y: number, ms = 3400) { this.spoken = this.bubble(text, 'say', who.x, y, ms); this.speaker = who; }
   /** Мысль Саши — идёт вместе с ним. */
   think(text: string, ms = 3400) {
     this.thought?.destroy();
