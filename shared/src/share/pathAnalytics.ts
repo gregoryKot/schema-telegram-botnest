@@ -19,14 +19,18 @@ export function trackPathPhaseStarted(
   api: PathTracker,
   templatePhaseId: string | null,
 ): void {
-  api.trackEvent('therapy_path_phase_started', { phase: templatePhaseId ?? 'custom' });
+  api.trackEvent('therapy_path_phase_started', {
+    phase: templatePhaseId ?? 'custom',
+  });
 }
 
 export function trackPathPhaseFinished(
   api: PathTracker,
   templatePhaseId: string | null,
 ): void {
-  api.trackEvent('therapy_path_phase_finished', { phase: templatePhaseId ?? 'custom' });
+  api.trackEvent('therapy_path_phase_finished', {
+    phase: templatePhaseId ?? 'custom',
+  });
 }
 
 /** «Сдвинуть сроки» у фазы, что идёт дольше плана. */

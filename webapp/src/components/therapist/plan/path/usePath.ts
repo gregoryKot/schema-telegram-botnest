@@ -10,7 +10,7 @@ import { withPathEvents } from './pathEvents';
  * `failed` — не пришёл (сбой ≠ «пути нет»). Правка по одной, как в usePlanItems: пока запрос в пути (`busy`),
  * второй не уходит; отказ — строкой в `error`. Каждая ручка отвечает путём целиком — он и заменяет текущий.
  */
-export function usePath(clientId: UserId) {
+function usePathCore(clientId: UserId) {
   const [path, setPath] = useState<TherapyPath | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -54,7 +54,7 @@ export function usePath(clientId: UserId) {
   const patchPhase = (id: number, body: PathPhasePatch, failText = 'Не удалось сохранить фазу') =>
     run(failText, () => api.updatePathPhase(id, body));
 
-  return withPathEvents({
+  return {
     path, failed, busy, error, reload,
     clearError: () => setError(''),
     create: (startDate: string, templateId: string | null, phases: PathPhaseDraft[]) =>
@@ -71,7 +71,7 @@ export function usePath(clientId: UserId) {
       const next = path ? movePhaseIds(path.phases, id, dir) : null;
       return next ? run('Не удалось переставить фазу', () => api.reorderPathPhases(clientId, next)) : Promise.resolve(false);
     },
-  });
+  };
 }
-
+export const usePath = (clientId: UserId) => withPathEvents(usePathCore(clientId));
 export type PathState = ReturnType<typeof usePath>;
