@@ -58,6 +58,12 @@ describe('ClientSessionsTab — композер и таймлайн', () => {
     expect(d.addNote).not.toHaveBeenCalled();
   });
 
+  it('Ctrl+Enter с одними отмеченными пунктами плана сохраняет заметку', () => {
+    const d = make({ newNoteText: '', newNotePlanIds: [4] });
+    fireEvent.keyDown(screen.getByPlaceholderText(/Наблюдения/), { key: 'Enter', ctrlKey: true });
+    expect(d.addNote).toHaveBeenCalledTimes(1);
+  });
+
   it('номера сессий — по дате, а не по позиции в списке', () => {
     make({
       notesPage: {
