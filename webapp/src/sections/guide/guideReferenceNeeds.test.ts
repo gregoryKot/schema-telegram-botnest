@@ -8,7 +8,7 @@ import { searchReference } from './guideReferenceSearch';
 import { findReferenceItem } from './guideSheetRoute';
 import { buildNeedData, NEED_ORDER } from '../../../../shared/src/needs/needData';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
-import { buildSchemaDomainGuides } from '../../../../shared/src/schemaTherapy/guide';
+import { buildSchemaDomainGuides, needGuides } from '../../../../shared/src/schemaTherapy/guide';
 import { FIXTURE_SCHEMA_GUIDE, FIXTURE_TECHNIQUES } from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 const tr = (ty: string) => ty;
@@ -53,7 +53,7 @@ describe('buildNeedGuides', () => {
     const [attachment, play] = buildNeedGuides(texts(), tr);
     const data = buildNeedData(tr).attachment;
     expect(attachment).toEqual({
-      id: 'attachment', name: data.name, subtitle: data.subtitle, desc: data.desc,
+      id: 'attachment', name: data.name, subtitle: data.subtitle, guide: undefined,
       domain: { id: 'rejection', name: 'Нарушение связи и отвержение', note: NOTE },
       schemas: [
         { id: 'abandonment', name: 'Покинутость / Нестабильность', need: 'Надёжная связь' },
@@ -61,6 +61,17 @@ describe('buildNeedGuides', () => {
       ],
     });
     expect(play.id).toBe('play');
+  });
+
+  it('живые тексты: лист и подпись — текст для терапевта, клиентское описание в поиск не идёт', () => {
+    const data = buildNeedData(tr);
+    for (const n of buildNeedGuides({ buildSchemaDomainGuides, needGuides }, tr)) {
+      const guide = needGuides().find((g) => g.id === n.id)!;
+      expect(n.guide).toBe(guide);
+      expect(n.subtitle).toBe(guide.subtitle);
+      expect(needBody(n)).toContain(guide.frustration);
+      expect(needBody(n)).not.toContain(data[n.id].desc);
+    }
   });
 
   it('потребности без домена в справочнике и с доменом без схем в списке нет', () => {
