@@ -192,13 +192,13 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     templateId: ID,
   },
   TherapyPathPhase: {
-    name: enc(`${TH}/therapy-path.service.ts`),
-    goal: enc(`${TH}/therapy-path.service.ts`),
+    name: enc(`${TH}/therapy-path.view.ts`),
+    goal: enc(`${TH}/therapy-path.view.ts`),
     templatePhaseId: ID,
     startedAt: DATE,
     endedAt: DATE,
     criteriaDone: plain('номера отмеченных признаков фазы шаблона, не текст'),
-    note: enc(`${TH}/therapy-path.service.ts`),
+    note: enc(`${TH}/therapy-path.view.ts`),
   },
   GuideMark: {
     address: plain('адрес раздела справочника из кода, не свободный текст'),

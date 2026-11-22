@@ -40,7 +40,6 @@ describe('e2e smoke: путь клиента — ownership', () => {
     expect(join.body).toEqual({ ok: true });
   }
 
-  const BASE = '/api/therapy/path';
   const body = {
     startDate: '2026-11-02',
     templateId: 'general',
@@ -68,10 +67,10 @@ describe('e2e smoke: путь клиента — ownership', () => {
     await connect(T1, C1);
     await connect(T2, C2);
 
-    const created = await agentAs(T1).post(`${BASE}/${C1}`, body);
+    const created = await agentAs(T1).post(`/api/therapy/path/${C1}`, body);
     expect(created.status).toBe(201);
     phaseIds = created.body.path.phases.map((p: Phase) => p.id);
-    const foreign = await agentAs(T2).post(`${BASE}/${C2}`, body);
+    const foreign = await agentAs(T2).post(`/api/therapy/path/${C2}`, body);
     foreignPhaseId = foreign.body.path.phases[0].id as number;
   });
 
@@ -81,7 +80,7 @@ describe('e2e smoke: путь клиента — ownership', () => {
   });
 
   it('сохранил → нашёл: путь с фазами открытым текстом, в базе текст зашифрован; повтор — 409', async () => {
-    const res = await agentAs(T1).get(`${BASE}/${C1}`);
+    const res = await agentAs(T1).get(`/api/therapy/path/${C1}`);
     expect(res.status).toBe(200);
     expect(res.body.path).toMatchObject({
       clientId: String(C1),
@@ -106,29 +105,36 @@ describe('e2e smoke: путь клиента — ownership', () => {
     expect(row?.name).not.toBe('Оценка');
     expect(row?.goal).not.toBe('собрать картину');
 
-    expect((await agentAs(T1).post(`${BASE}/${C1}`, body)).status).toBe(409);
+    expect(
+      (await agentAs(T1).post(`/api/therapy/path/${C1}`, body)).status,
+    ).toBe(409);
   });
 
   it('чужой терапевт не читает и не пишет путь, фаза по id для него — 404', async () => {
     const t2 = agentAs(T2);
     const id = phaseIds[0];
     const denied = [
-      await t2.get(`${BASE}/${C1}`),
-      await t2.post(`${BASE}/${C1}`, body),
-      await t2.patch(`${BASE}/${C1}`, { startDate: '2027-01-01' }),
-      await t2.delete(`${BASE}/${C1}`),
-      await t2.post(`${BASE}/${C1}/phases`, { name: 'Чужая', weeks: 1 }),
-      await t2.post(`${BASE}/${C1}/phases/order`, { ids: phaseIds }),
+      await t2.get(`/api/therapy/path/${C1}`),
+      await t2.post(`/api/therapy/path/${C1}`, body),
+      await t2.patch(`/api/therapy/path/${C1}`, { startDate: '2027-01-01' }),
+      await t2.delete(`/api/therapy/path/${C1}`),
+      await t2.post(`/api/therapy/path/${C1}/phases`, {
+        name: 'Чужая',
+        weeks: 1,
+      }),
+      await t2.post(`/api/therapy/path/${C1}/phases/order`, { ids: phaseIds }),
     ];
     expect(denied.map((r) => r.status)).toEqual(denied.map(() => 403));
     const hidden = [
-      await t2.patch(`${BASE}/phases/${id}`, { name: 'взлом' }),
-      await t2.post(`${BASE}/phases/${id}/advance`, { date: '2026-12-01' }),
-      await t2.delete(`${BASE}/phases/${id}`),
+      await t2.patch(`/api/therapy/path/phases/${id}`, { name: 'взлом' }),
+      await t2.post(`/api/therapy/path/phases/${id}/advance`, {
+        date: '2026-12-01',
+      }),
+      await t2.delete(`/api/therapy/path/phases/${id}`),
     ];
     expect(hidden.map((r) => r.status)).toEqual(hidden.map(() => 404));
 
-    const mine = await agentAs(T1).get(`${BASE}/${C1}`);
+    const mine = await agentAs(T1).get(`/api/therapy/path/${C1}`);
     expect(mine.body.path.startDate).toBe(body.startDate);
     expect(mine.body.path.phases[0]).toMatchObject({
       name: 'Оценка',
@@ -138,12 +144,12 @@ describe('e2e smoke: путь клиента — ownership', () => {
 
   it('клиент и терапевт без пути: клиенту — 403, пути нет — { path: null }', async () => {
     const c1 = agentAs(C1);
-    expect((await c1.get(`${BASE}/${C1}`)).status).toBe(403);
-    expect((await c1.post(`${BASE}/${C1}`, body)).status).toBe(403);
-    await agentAs(T2).delete(`${BASE}/${C2}`);
-    const empty = await agentAs(T2).get(`${BASE}/${C2}`);
+    expect((await c1.get(`/api/therapy/path/${C1}`)).status).toBe(403);
+    expect((await c1.post(`/api/therapy/path/${C1}`, body)).status).toBe(403);
+    await agentAs(T2).delete(`/api/therapy/path/${C2}`);
+    const empty = await agentAs(T2).get(`/api/therapy/path/${C2}`);
     expect(empty.body).toEqual({ path: null });
-    const again = await agentAs(T2).post(`${BASE}/${C2}`, body);
+    const again = await agentAs(T2).post(`/api/therapy/path/${C2}`, body);
     foreignPhaseId = again.body.path.phases[0].id as number;
   });
 
@@ -157,11 +163,11 @@ describe('e2e smoke: путь клиента — ownership', () => {
       { ...body, phases: [{ ...phase, name: '   ' }] },
     ];
     for (const b of bad)
-      expect((await t1.post(`${BASE}/${C2}`, b)).status).toBe(400);
-    const url = `${BASE}/phases/${phaseIds[0]}`;
+      expect((await t1.post(`/api/therapy/path/${C2}`, b)).status).toBe(400);
+    const url = `/api/therapy/path/phases/${phaseIds[0]}`;
     const badPatch = [{}, { criteriaDone: [1, 1] }, { note: 'я'.repeat(4001) }];
     for (const b of badPatch) expect((await t1.patch(url, b)).status).toBe(400);
-    const order = await t1.post(`${BASE}/${C1}/phases/order`, {
+    const order = await t1.post(`/api/therapy/path/${C1}/phases/order`, {
       ids: [phaseIds[0]],
     });
     expect(order.status).toBe(400);
@@ -170,7 +176,7 @@ describe('e2e smoke: путь клиента — ownership', () => {
   it('владелец: правка фазы, новая фаза, порядок, переход, старт пути', async () => {
     const t1 = agentAs(T1);
     const [a, b] = phaseIds;
-    const patch = await t1.patch(`${BASE}/phases/${a}`, {
+    const patch = await t1.patch(`/api/therapy/path/phases/${a}`, {
       note: 'идёт медленно',
       criteriaDone: [0, 2],
       startedAt: '2026-11-03',
@@ -183,19 +189,19 @@ describe('e2e smoke: путь клиента — ownership', () => {
       startedAt: '2026-11-03',
     });
 
-    const added = await t1.post(`${BASE}/${C1}/phases`, {
+    const added = await t1.post(`/api/therapy/path/${C1}/phases`, {
       name: 'Завершение',
       weeks: 8,
     });
     expect(added.status).toBe(201);
     const c = added.body.path.phases[2].id as number;
-    const order = await t1.post(`${BASE}/${C1}/phases/order`, {
+    const order = await t1.post(`/api/therapy/path/${C1}/phases/order`, {
       ids: [a, c, b],
     });
     expect(order.status).toBe(200);
     expect(order.body.path.phases.map((p: Phase) => p.id)).toEqual([a, c, b]);
 
-    const advanced = await t1.post(`${BASE}/phases/${a}/advance`, {
+    const advanced = await t1.post(`/api/therapy/path/phases/${a}/advance`, {
       date: '2026-12-01',
     });
     expect(advanced.status).toBe(200);
@@ -209,7 +215,9 @@ describe('e2e smoke: путь клиента — ownership', () => {
       [null, null],
     ]);
 
-    const start = await t1.patch(`${BASE}/${C1}`, { startDate: '2026-11-09' });
+    const start = await t1.patch(`/api/therapy/path/${C1}`, {
+      startDate: '2026-11-09',
+    });
     expect(start.body.path.startDate).toBe('2026-11-09');
   });
 
@@ -230,13 +238,15 @@ describe('e2e smoke: путь клиента — ownership', () => {
     const list = await t1.get(`/api/therapy/plan/${C1}`);
     expect(list.body[0].phaseId).toBe(phaseIds[1]);
 
-    const del = await t1.delete(`${BASE}/phases/${phaseIds[1]}`);
+    const del = await t1.delete(`/api/therapy/path/phases/${phaseIds[1]}`);
     expect(del.body.path.phases.map((p: Phase) => p.id)).not.toContain(
       phaseIds[1],
     );
-    const gone = await t1.delete(`${BASE}/${C1}`);
+    const gone = await t1.delete(`/api/therapy/path/${C1}`);
     expect(gone.body).toEqual({ path: null });
-    expect((await t1.get(`${BASE}/${C1}`)).body).toEqual({ path: null });
+    expect((await t1.get(`/api/therapy/path/${C1}`)).body).toEqual({
+      path: null,
+    });
     expect(await prisma.therapyPath.count({ where: { therapistId: T1 } })).toBe(
       0,
     );
