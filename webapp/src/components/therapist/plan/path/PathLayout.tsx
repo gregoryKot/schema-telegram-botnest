@@ -11,11 +11,13 @@ import { PathCreateSheet } from './PathCreateSheet';
 import { PathDraftSheet } from './PathDraftSheet';
 import type { DraftRow } from './pathDraftView';
 import { PathEmpty } from './PathEmpty';
+import type { PlanItems } from '../usePlanItems';
 import { PathTimeline } from './PathTimeline';
 import type { PathState } from './usePath';
 
 interface Props {
   path: PathState;
+  plan: PlanItems;
   items: PlanItem[];
   renderRow: RenderPlanRow;
   /** «Предложить по концептуализации»: режимы и схемы клиента и куда вести из листа; нет — действия нет. */
@@ -48,7 +50,7 @@ function PathSkeleton() {
 }
 
 /** Раскладка «По фазам» (#1522): лента фаз пути; пути нет — объяснение и «Собрать путь». */
-export function PathLayout({ path, items, renderRow, draft }: Props) {
+export function PathLayout({ path, plan, items, renderRow, draft }: Props) {
   const tr = useTr();
   const templates = useMemo(() => buildPathTemplates(tr), [tr]);
   const [creating, setCreating] = useState(false);
@@ -65,7 +67,7 @@ export function PathLayout({ path, items, renderRow, draft }: Props) {
     );
   } else if (path.path === undefined) content = <PathSkeleton />;
   else if (path.path === null) content = <PathEmpty onCreate={() => { path.clearError(); setCreating(true); }} />;
-  else content = <PathTimeline path={path} current={path.path} items={items} templates={templates} renderRow={renderRow} />;
+  else content = <PathTimeline path={path} plan={plan} current={path.path} items={items} templates={templates} renderRow={renderRow} />;
 
   return (
     <div className="ph-wrap">

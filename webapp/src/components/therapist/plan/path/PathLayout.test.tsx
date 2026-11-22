@@ -6,15 +6,17 @@ import { MemoryRouter } from 'react-router-dom';
 import type { PathPhase, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
 import { phaseDraftsFromTemplate } from '../../../../../../shared/src/therapy/path/pathPlan';
 import { pathTemplate } from '../../../../../../shared/src/therapy/path/templates';
+import { shiftCalendarDay } from '../../../../../../shared/src/utils/calendarDate';
 import { todayStr } from '../../../../../../shared/src/utils/format';
 import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planItem';
 
 const h = vi.hoisted(() => ({
   getTherapyPath: vi.fn(), createTherapyPath: vi.fn(), updatePathPhase: vi.fn(), advancePathPhase: vi.fn(),
-  addPathPhase: vi.fn(), deletePathPhase: vi.fn(), reorderPathPhases: vi.fn(),
+  addPathPhase: vi.fn(), setTherapyPathStart: vi.fn(), deletePathPhase: vi.fn(), reorderPathPhases: vi.fn(),
 }));
 vi.mock('../../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
+import type { PlanItems } from '../usePlanItems';
 import { PathLayout } from './PathLayout';
 import { usePath } from './usePath';
 
@@ -29,7 +31,7 @@ const items: PlanItem[] = [];
 
 function Harness() {
   const state = usePath(7);
-  return <PathLayout path={state} items={items} renderRow={(i) => <div key={i.id}>{i.text}</div>} />;
+  return <PathLayout path={state} plan={{ busyId: null } as PlanItems} items={items} renderRow={(i) => <div key={i.id}>{i.text}</div>} />;
 }
 const renderLayout = () => render(<MemoryRouter><Harness /></MemoryRouter>);
 
@@ -119,5 +121,27 @@ describe('PathLayout', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
       await waitFor(() => expect(h.addPathPhase).toHaveBeenCalledWith(7, { name: 'Поддержка', goal: null, weeks: 4, templatePhaseId: null }));
     });
+  });
+
+  it('«Изменить старт»: поле даты, «Сохранить» шлёт день и закрывает поле', async () => {
+    h.getTherapyPath.mockResolvedValue({ path: path([phase({ id: 5 })]) });
+    h.setTherapyPathStart.mockResolvedValue({ path: { ...path([phase({ id: 5 })]), startDate: '2026-12-01' } });
+    renderLayout();
+    fireEvent.click(await screen.findByRole('button', { name: 'Изменить старт' }));
+    fireEvent.change(screen.getByDisplayValue('2026-11-02'), { target: { value: '2026-12-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(h.setTherapyPathStart).toHaveBeenCalledWith(7, '2026-12-01'));
+    await screen.findByRole('button', { name: 'Изменить старт' });
+  });
+
+  it('текущая фаза дольше плана: тихая строка и «Сдвинуть сроки» шлёт один PATCH с новым сроком', async () => {
+    const start = shiftCalendarDay(todayStr(), -42);
+    const late = { ...path([phase({ id: 5, weeks: 2, startedAt: start })]), startDate: start };
+    h.getTherapyPath.mockResolvedValue({ path: late });
+    h.updatePathPhase.mockResolvedValue({ path: late });
+    renderLayout();
+    expect((await screen.findByText(/закончилась 4 недели назад/)).textContent).toContain('сдвинуть сроки?');
+    fireEvent.click(screen.getByRole('button', { name: 'Сдвинуть сроки' }));
+    await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(5, { weeks: 6 }));
   });
 });

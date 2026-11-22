@@ -78,7 +78,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
         <>
           <PlanLayoutSwitch value={shown} onChange={setLayout} />
           {shown === 'phases'
-            ? <PathLayout path={path} items={items} renderRow={renderRow} draft={{ clientId: selectedClient.telegramId, modeIds: detail.activeModeIds, schemaIds: detail.activeSchemaIds, onOpen: openSource, onOpenConcept: () => detail.setClientTab('concept'), onAdded: plan.reload }} />
+            ? <PathLayout path={path} plan={plan} items={items} renderRow={renderRow} draft={{ clientId: selectedClient.telegramId, modeIds: detail.activeModeIds, schemaIds: detail.activeSchemaIds, onOpen: openSource, onOpenConcept: () => detail.setClientTab('concept'), onAdded: plan.reload }} />
             : <PlanChannels items={items} plan={plan} renderRow={renderRow} />}
           {plan.error && !confirmDelete && <div className="tb-error" role="alert">{plan.error}</div>}
         </>

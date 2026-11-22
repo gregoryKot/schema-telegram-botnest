@@ -49,8 +49,7 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
     try {
       // по одному: ручка плана создаёт один пункт; сбой посередине оставляет созданное в плане
       for (const row of chosen) {
-        const body = { clientIds: [String(clientId)], rubric: 'session' as const, text: row.title, sourceAddress: row.address, phaseId: row.phaseId };
-        await api.createPlanItems(body);
+        await api.createPlanItems({ clientIds: [String(clientId)], rubric: 'session', text: row.title, sourceAddress: row.address, phaseId: row.phaseId });
         ok += 1;
       }
     } catch {
@@ -100,7 +99,7 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
         ))}
         {added > 0 && <div className="ds-sub" role="status">Добавлено в план: {added}.</div>}
         {error && <div className="tb-error" role="alert">{error}</div>}
-        <div>
+        <div className="pd-bar">
           <button type="button" className="ds-btn" disabled={chosen.length === 0 || busy} aria-busy={busy || undefined} onClick={() => void save()}>
             Добавить выбранное ({chosen.length})
           </button>

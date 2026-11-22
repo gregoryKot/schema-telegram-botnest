@@ -52,6 +52,8 @@ describe('ClientPlanTab', () => {
     expect(screen.queryByText('В плане пока пусто')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Статус: намечено/ }));
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /в работе/ }));
     await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { status: 'active' }));
     await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_status', { status: 'active' }));
 
@@ -106,6 +108,7 @@ describe('ClientPlanTab', () => {
     h.updatePlanItem.mockRejectedValue(new Error('net'));
     renderTab();
     fireEvent.click(await screen.findByRole('button', { name: /Статус: намечено/ }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /отложено/ }));
     await screen.findByText('Не удалось сохранить пункт');
     expect(screen.getByRole('button', { name: /Статус: намечено/ })).toBeTruthy();
     expect(h.trackEvent).not.toHaveBeenCalled();
