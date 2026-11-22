@@ -7,10 +7,8 @@ import { trackEvent } from '../analytics';
 import { openCta } from '../therapyCta';
 import { C, FONT, SKIN, button, hex, px } from './ui';
 import { shareWeek } from './share';
+import { crisisLines } from './crisis';
 
-// Те же линии, что в shared/src/utils/crisisMarkers.ts; сверка — src/test-support/gates/game-crisis-hotline.spec.ts.
-const CRISIS_TEL = 'tel:88001004994';
-const CRISIS_CHILD_TEL = 'tel:88002000122';
 const PARAS: MsgKey[] = ['m_wk_card_p1', 'm_wk_card_p2', 'm_wk_card_p3'];
 
 /** onNext — следующая глава вышла: вместо строки «Продолжение скоро» кнопка «Дальше — среда». */
@@ -34,11 +32,6 @@ export function showWeekCard(s: Phaser.Scene, onNext?: () => void) {
   if (onNext) put(button(s, btnX, row(3), btnW, btnH, t('m_wk_card_btn_next'), SKIN.night, onNext));
   else put(button(s, btnX, row(3), btnW, btnH, t('m_wk_card_soon'), SKIN.ghost)); // следующая глава не вышла: строка, а не кнопка
 
-  // кризисные линии: взрослая первой, детская второй; каждая — своя tel-ссылка с зоной нажатия во всю строку
-  [['m_wk_crisis_adult', CRISIS_TEL], ['m_wk_crisis_child', CRISIS_CHILD_TEL]].forEach(([key, tel], i) => {
-    const ln = put(s.add.text(W / 2, H - px(42) + i * px(22), t(key as MsgKey), { fontFamily: FONT, fontSize: `${px(16)}px`, fontStyle: '500', color: hex(C.haze) })
-      .setOrigin(0.5).setPadding(px(40), px(3), px(40), px(3)).setInteractive({ useHandCursor: true }));
-    ln.on('pointerdown', () => { window.location.href = tel; });
-  });
+  crisisLines(s, H - px(42)).forEach(put);
   all.forEach((o, i) => s.tweens.add({ targets: o, alpha: 1, duration: 400, delay: 120 * i }));
 }

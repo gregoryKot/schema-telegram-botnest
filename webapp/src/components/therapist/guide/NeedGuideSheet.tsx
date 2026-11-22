@@ -1,5 +1,6 @@
 import { needLook } from '../../../../../shared/src/theme/entityLook';
 import type { NeedGuideView } from '../../../sections/guide/guideReferenceNeeds';
+import { GuideLinkRows } from './GuideLinkRows';
 import { GuideSection } from './GuideSection';
 import { GuidePage } from './GuideSheet';
 
@@ -18,20 +19,7 @@ export function NeedGuideSheet({ need, onOpenSchema, onClose }: {
         {need.domain.note.trim() && <p className="gd-text">{need.domain.note}</p>}
       </GuideSection>
       <GuideSection title="Схемы">
-        <div>
-          {need.schemas.map((s) => (
-            <button
-              key={s.id} type="button" className="ds-list-row ds-list-row--hover ds-list-row--nav ds-list-row--inset"
-              onClick={() => onOpenSchema(s.id)}
-            >
-              <span className="ds-list-body">
-                <span className="ds-list-title">{s.name}</span>
-                {s.need.trim() && <span className="ds-list-sub">{s.need}</span>}
-              </span>
-              <span className="ds-chev" aria-hidden="true" />
-            </button>
-          ))}
-        </div>
+        <GuideLinkRows items={need.schemas.map((s) => ({ id: s.id, name: s.name, sub: s.need }))} onOpen={onOpenSchema} />
       </GuideSection>
     </GuidePage>
   );
