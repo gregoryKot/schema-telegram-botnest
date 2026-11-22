@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { TasksHub } from './TasksHub';
 import { TASKS_SEEN_KEY } from './newTasks';
+import { SPOT_MS } from '../../hooks/useSpotlight';
 
 const exStub = (id: string) => (p: { onBack?: () => void }) => (
   <div data-testid={id}><button onClick={p.onBack}>Назад</button></div>
@@ -63,6 +64,18 @@ describe('TasksHub по ссылке из уведомления', () => {
     renderHub(3);
     expect(await screen.findByText('Задания', { selector: 'h1' })).toBeTruthy();
     expect(screen.getByText('Позвонить маме')).toBeTruthy();
+  });
+
+  it('строка «Своего задания» из поиска прокручена в вид и обведена, обводка гаснет сама; соседняя — нет', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    mockApi.getTasks.mockResolvedValue([task({ id: 1, type: 'custom', text: 'Другое' }), task({ id: 3, type: 'custom', text: 'Позвонить маме' })]);
+    renderHub(3);
+    const row = (await screen.findByText('Позвонить маме')).closest('[data-spot]')!;
+    await waitFor(() => expect(row.hasAttribute('data-spotlit')).toBe(true));
+    expect(scroll.mock.contexts).toEqual([row]);
+    expect(screen.getByText('Другое').closest('[data-spot]')!.hasAttribute('data-spotlit')).toBe(false);
+    await waitFor(() => expect(row.hasAttribute('data-spotlit')).toBe(false), { timeout: SPOT_MS + 1000 });
   });
 
   it('задания уже нет (выполнено или удалено) — список, а не пустой экран', async () => {
