@@ -302,6 +302,9 @@ jobs:
       # в security-log-redact.ts и перестал измеряться). Классификация в
       # scripts/mutation-zone-baseline.json; флага --update нет.
       - run: node scripts/check-mutation-zone.mjs
+      # Спек над мутационной зоной не грузит модули внутри `it`: Stryker засчитал
+      # бы тесту код уровня модуля. Долг — scripts/spec-load-in-test-baseline.json.
+      - run: node scripts/check-spec-load-in-test.mjs
       # Браузерный код вне src/ (public/*.js, инлайн-скрипты index.html) обязан
       # быть под тестом. Инцидент 2026-08-08: загрузчик моста MAX ловил чужой
       # параметр `tgWebAppData` подстрокой и ломал вход ВСЕМ пользователям
