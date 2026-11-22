@@ -47,9 +47,6 @@
   "src/auth/security-log-alert.ts": {
     "reason": "Выделен из security-log.service.ts (в `mutate` golden-auth): текст DM владельцу о событии безопасности — белый список полей без данных человека. В `mutate` не включён, прогона Stryker по нему не было — мутации текста и списка полей не измеряются, их держит security-log.service.spec.ts (точный текст и маркеры PII); долг волны, а не решение."
   },
-  "src/auth/session-proof.ts": {
-    "reason": "Вынесен из totp.service.ts (S12) до включения TOTP в `mutate` golden-auth: семья текущей сессии по refresh-куке и отзыв остальных сессий при включении 2FA. В `mutate` не включён, прогона Stryker по нему не было — мутации отзыва не измеряются, их держат auth-2fa.controller.spec.ts и step-up.spec.ts; долг волны, а не решение."
-  },
   "src/auth/totp-challenge.ts": {
     "reason": "Класс исключения и тип вызова 2FA без ветвлений: мутировать нечего, кроме литералов; причину `challenge_expired` пинит auth.service.spec.ts (протухший и битый вызов), экран — TwoFactorChallengePage.test.tsx."
   },
