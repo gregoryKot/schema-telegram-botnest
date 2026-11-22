@@ -68,6 +68,7 @@ export function AppOverlays({
     {ov.showPlans && (
       <Suspense fallback={null}>
         <PlansScreen
+          focus={ov.plansFocus}
           onClose={() => ov.setShowPlans(false)}
           onOpenTracker={() => { ov.setShowPlans(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
         />
