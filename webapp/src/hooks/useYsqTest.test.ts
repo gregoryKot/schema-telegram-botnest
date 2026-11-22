@@ -19,7 +19,8 @@ import {
   YSQ_RESULT_KEY,
   type YsqApi,
 } from './useYsqTest';
-import { computeActiveSchemas } from '../../../src/utils/ysq';
+import { computeActiveSchemas, computeYsqScores } from '../../../src/utils/ysq';
+import { ALL_SCHEMAS } from '../schemaTherapyData';
 
 function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
   return {
@@ -132,6 +133,12 @@ describe('computeScores', () => {
       ).length;
       expect(computeActiveSchemas(answers).length).toBe(frontActive);
     }
+  });
+
+  // Реестр kb/tables.ts: серверная копия опросника держит ровно id схем из shared.
+  it('id схем бэкенда совпадают с источником id схем', () => {
+    const ids = computeYsqScores([]).map((s) => s.id).sort();
+    expect(ids).toEqual(ALL_SCHEMAS.map((s) => s.id).sort());
   });
 });
 
