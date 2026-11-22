@@ -46,6 +46,7 @@ export const buildPunitiveCriticGuide = (tr: Tr): ModeGuide => ({
     'flashcards',
     'pros_cons',
     'self_compassion',
+    'current_role_play',
   ],
   betweenSessions: [
     {
