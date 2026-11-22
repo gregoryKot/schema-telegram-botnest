@@ -14,7 +14,9 @@ import * as guide from '../../../../../shared/src/schemaTherapy/guide';
 import { resolveModeGuide, resolveSchemaGuide } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import { GuideMarkContext, type GuideMarkCtx } from './marks/GuideSectionMark';
 import { ConcernGuideSheet } from './ConcernGuideSheet';
+import { phaseView } from '../../../sections/guide/guideReferencePhases';
 import { ModeGuideSheet } from './ModeGuideSheet';
+import { PhaseGuideSheet } from './PhaseGuideSheet';
 import { PracticeNoteSheet } from './PracticeNoteSheet';
 import { SchemaGuideSheet } from './SchemaGuideSheet';
 import { TechniqueSheet } from './TechniqueSheet';
@@ -66,6 +68,7 @@ describe('адрес каждого раздела на листе находи�
     ['technique', () => guide.buildTechniqueGuides(tr).map((t) => <TechniqueSheet key="t" technique={t} onClose={noop} />)],
     ['note', () => guide.practiceNotes(tr).map((n) => <PracticeNoteSheet key="n" note={n} onClose={noop} />)],
     ['concern', () => guide.buildConcernGuides(tr).map((c) => <ConcernGuideSheet key="c" concern={c} onClose={noop} />)],
+    ['phase', () => guide.buildPhaseGuides(tr).map((p, _i, all) => <PhaseGuideSheet key="p" view={phaseView(guide, tr, all, p.id)!} onOpenMode={noop} onOpenTechnique={noop} onOpenNote={noop} onOpenPhase={noop} onClose={noop} />)],
   ] as const)('%s', (_kind, build) => {
     const addresses = build().flatMap(shown);
     expect(addresses.length).toBeGreaterThan(0);

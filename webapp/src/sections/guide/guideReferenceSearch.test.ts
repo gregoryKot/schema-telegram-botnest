@@ -24,6 +24,7 @@ const texts: ReferenceTexts = {
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [{ ...FIXTURE_PRACTICE_NOTE, points: ['Сверить контрперенос с супервизором'] }],
   buildConcernGuides: () => [{ id: 'bpd', name: 'Пограничное расстройство', goal: 'цель', essence: 'суть', differential: ['Голос Критика — псевдогаллюцинация'], sources: '' }],
+  buildPhaseGuides: () => [{ id: 'bonding', name: 'Установление связи', goal: 'цель', essence: 'суть', transition: ['Клиент выдерживает конфронтацию'], noteIds: ['group_therapy'], sources: '' }],
 };
 const ref = buildReference(texts, tr);
 const body = buildReferenceBody(texts, tr);
@@ -75,6 +76,11 @@ describe('поиск по текстам листов', () => {
 
   it('слово из статьи «Запросов» находит её лист', () => {
     expect(only('псевдогаллюцинация')).toMatchObject({ kind: 'concern', id: 'bpd' });
+  });
+
+  it('слово из листа «Пути терапии» находит его лист; id заметки — не текст', () => {
+    expect(only('конфронтацию')).toMatchObject({ kind: 'phase', id: 'bonding', step: 1 });
+    expect(ids('group_therapy')).toEqual([]);
   });
 
   it('без текстов поиск идёт только по названиям', () => {
