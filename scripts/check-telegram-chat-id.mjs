@@ -32,7 +32,7 @@ function walk(rel, acc = []) {
   for (const name of readdirSync(join(ROOT, rel))) {
     const r = `${rel}/${name}`;
     if (statSync(join(ROOT, r)).isDirectory()) {
-      if (name !== 'node_modules' && name !== 'test-support') walk(r, acc);
+      if (name !== 'node_modules' && name !== 'test-support' && !name.startsWith('.')) walk(r, acc);
     } else if (/\.ts$/.test(name) && !/\.(spec|test)\.ts$|\.d\.ts$/.test(name)) acc.push(r);
   }
   return acc;
