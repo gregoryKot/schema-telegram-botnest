@@ -5,26 +5,22 @@
 //
 // За прогон — один PR. Очередь — открытые PR в main с auto-merge, не черновики,
 // без `do-not-merge`, старые первыми (правила — merge-queue-plan.mjs):
-//  - свежий PR с идущими проверками «в работе» — его ждут, остальных не трогают;
-//  - иначе первый отставший с зелёным или идущим прогоном обязательных проверок
-//    получает update-branch; конфликт (422) — пропуск, следующий по порядку;
-//  - красный и без прогона чинит агент.
+//  - свежий PR с прогоном самой очереди «в полёте» — его ждут; чужие идущие проверки не держат;
+//  - иначе первый отставший (зелёные по готовности, затем с идущим прогоном)
+//    получает update-branch; конфликт сводит merge-queue-conflict.mjs, не свёл —
+//    комментарий автору и метка, следующий по порядку; красный чинит агент.
 // Пуш от GITHUB_TOKEN ставит pull_request-прогон CI на одобрение
 // (action_required), а прогон ci.yml через dispatch ruleset в зачёт auto-merge
 // не берёт (#1104: 20 подтягиваний за день, мержа нет) — очередь одобряет свой прогон.
 //
 //   GITHUB_TOKEN=… GITHUB_REPOSITORY=owner/repo node scripts/merge-queue.mjs [--dry-run]
-// GITHUB_API_URL — база API (тест подставляет свой сервер), MERGE_QUEUE_POLL_MS — шаг ожидания.
+// GITHUB_API_URL — база API (тест подставляет свой сервер), MERGE_QUEUE_POLL_MS — шаг ожидания,
+// MERGE_QUEUE_GIT_DIR — полный клон с правом пуша; без него конфликт — просто пропуск.
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import {
-  BOT,
-  DEPENDABOT,
-  checksState,
-  planQueue,
-  queuedPulls,
-  requiredChecks,
-  runsToApprove,
-} from './merge-queue-plan.mjs';
+import { client } from './merge-queue-api.mjs';
+import { CONFLICT_LABEL, resolveConflict } from './merge-queue-conflict.mjs';
+import { BOT, DEPENDABOT, checksState, planQueue, queueRuns, queuedPulls, requiredChecks, runsToApprove } from './merge-queue-plan.mjs';
 
 const POLLS = 18;
 const CI = '.github/workflows/ci.yml';
@@ -35,26 +31,10 @@ async function main() {
   const token = process.env.GITHUB_TOKEN;
   const api = process.env.GITHUB_API_URL || 'https://api.github.com';
   const pollMs = Number(process.env.MERGE_QUEUE_POLL_MS ?? 5000);
+  const repoDir = process.env.MERGE_QUEUE_GIT_DIR;
   if (!repo || !token) throw new Error('нужны GITHUB_REPOSITORY и GITHUB_TOKEN');
 
-  const call = async (method, path, body) => {
-    const res = await fetch(api + path, {
-      method,
-      headers: {
-        authorization: `Bearer ${token}`,
-        accept: 'application/vnd.github+json',
-        'x-github-api-version': '2022-11-28',
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const text = await res.text();
-    return { status: res.status, ok: res.ok, data: text ? JSON.parse(text) : null };
-  };
-  const get = async (path) => {
-    const r = await call('GET', path);
-    if (!r.ok) throw new Error(`GET ${path}: HTTP ${r.status}`);
-    return r.data;
-  };
+  const { call, get } = client(api, token);
   const sleep = () => new Promise((done) => setTimeout(done, pollMs));
   const R = `/repos/${repo}`;
 
@@ -91,22 +71,51 @@ async function main() {
     const sha = p.head.sha;
     const { behind_by: behind } = await get(`${R}/compare/main...${sha}?per_page=1`);
     const { check_runs: runs } = await get(`${R}/commits/${sha}/check-runs?per_page=100`);
-    const pr = { number: p.number, sha, author: p.user.login, behind, checks: checksState(required, runs) };
+    const flagged = p.labels.some((l) => l.name === CONFLICT_LABEL);
+    const pr = { number: p.number, sha, branch: p.head.ref, flagged, author: p.user.login, behind, checks: checksState(required, runs) };
+    // Автор свёл конфликт сам — метка больше не правда.
+    if (flagged && behind === 0 && !dryRun) await call('DELETE', `${R}/issues/${p.number}/labels/${CONFLICT_LABEL}`);
+    if (behind === 0 && pr.checks.state === 'pending') {
+      const { workflow_runs: wf } = await get(`${R}/actions/runs?head_sha=${sha}&event=pull_request`);
+      pr.byQueue = queueRuns(wf, repo).length > 0;
+    }
     // Свежий PR без прогона: одобрение очереди могло не дойти в прошлый раз.
     if (behind === 0 && pr.checks.state === 'missing' && !dryRun && (await approve(sha)).approved) {
       pr.checks = { state: 'pending', last: 0 };
+      pr.byQueue = true;
     }
     console.log(`#${pr.number}: отстаёт на ${behind}, обязательные проверки — ${pr.checks.state}`);
     prs.push(pr);
   }
 
+  const settle = async (p, head, how) => {
+    let res = { ci: false, approved: 0 };
+    for (let i = 0; i < POLLS && !res.ci; i++) {
+      await sleep();
+      const step = await approve(head);
+      res = { ci: step.ci, approved: res.approved + step.approved };
+    }
+    if (!res.ci) console.log(`::warning::#${p.number}: прогон CI не появился — одобрит следующий прогон очереди`);
+    if (p.flagged) await call('DELETE', `${R}/issues/${p.number}/labels/${CONFLICT_LABEL}`);
+    console.log(`#${p.number}: отставал на ${p.behind}, ${how} (${p.sha} → ${head}), одобрено прогонов: ${res.approved}`);
+  };
+
+  const scriptsDir = dirname(fileURLToPath(import.meta.url));
+  const resolve = (p, pushClean) => resolveConflict(p, { repoDir, scriptsDir, pushClean, dryRun, call, R, settle });
+
   const { wait, candidates } = planQueue(prs, Date.now());
-  if (wait) return console.log(`#${wait.number} в работе: ветка свежая, ждём его мержа`);
+  if (wait) return console.log(`#${wait.number} в полёте: ветка свежая, ждём его мержа`);
   for (const p of candidates) {
+    // Без прогона: у конфликта с main CI не стартует; иное «без прогона» чинит агент.
+    if (p.checks.state === 'missing') {
+      if (await resolve(p, false)) return;
+      continue;
+    }
     if (dryRun) return console.log(`dry-run: подтянул бы #${p.number}`);
     const r = await call('PUT', `${R}/pulls/${p.number}/update-branch`, { expected_head_sha: p.sha });
     if (r.status === 422) {
-      console.log(`#${p.number}: update-branch отказал (422: конфликт или голова сменилась) — следующий`);
+      console.log(`#${p.number}: update-branch отказал (422: конфликт или голова сменилась)`);
+      if (await resolve(p, true)) return;
       continue;
     }
     if (!r.ok) {
@@ -123,16 +132,7 @@ async function main() {
       head = (await get(`${R}/pulls/${p.number}`)).head.sha;
     }
     if (head === p.sha) throw new Error(`#${p.number}: голова не сменилась после update-branch`);
-    let res = { ci: false, approved: 0 };
-    for (let i = 0; i < POLLS && !res.ci; i++) {
-      await sleep();
-      const step = await approve(head);
-      res = { ci: step.ci, approved: res.approved + step.approved };
-    }
-    if (!res.ci) console.log(`::warning::#${p.number}: прогон CI не появился — одобрит следующий прогон очереди`);
-    return console.log(
-      `#${p.number}: отставал на ${p.behind}, подтянут (${p.sha} → ${head}), одобрено прогонов: ${res.approved}`,
-    );
+    return settle(p, head, 'подтянут');
   }
   console.log('Подтягивать некого');
 }
