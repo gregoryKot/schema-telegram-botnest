@@ -68,7 +68,7 @@ export const referenceLayout = (tab: ReferenceTab, searching: boolean): Referenc
 export type ReferenceTexts = Pick<
   Guide,
   'buildModeGuides' | 'buildSchemaDomainGuides' | 'buildTechniqueGuides' | 'practiceNotes' | 'buildConcernGuides' | 'buildPhaseGuides'
->;
+> & Partial<Pick<Guide, 'needGuides'>>;
 
 const nonEmpty = (groups: ReferenceGroup[]) => groups.filter((g) => g.items.length > 0);
 /** Лист без подписи и знака: домен, которого нет в таблице вида, не красится чужим оттенком. */
