@@ -188,6 +188,33 @@ describe('TherapyPathService', () => {
     expect(last.phases[1].startedAt).toBe('2026-12-01');
   });
 
+  it('конец фазы раньше начала — 400 в правке и переходе, в том числе когда пришла одна дата', async () => {
+    const { service } = setup();
+    const { phases } = await service.create(T, C1, input);
+    const a = phases[0].id;
+    await service.updatePhase(T, a, { startedAt: '2026-11-10' });
+    await expect(
+      service.updatePhase(T, a, { endedAt: '2026-11-09' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.updatePhase(T, a, {
+        startedAt: '2026-11-12',
+        endedAt: '2026-11-11',
+      }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(service.advance(T, a, '2026-11-09')).rejects.toThrow(
+      BadRequestException,
+    );
+    // ничего не записано
+    expect((await service.get(T, C1))?.phases[0].endedAt).toBeNull();
+
+    // тот же день и позже — можно; пришла только дата начала позже сохранённого конца — 400
+    await service.updatePhase(T, a, { endedAt: '2026-11-10' });
+    await expect(
+      service.updatePhase(T, a, { startedAt: '2026-11-11' }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
   it('порядок: ids — ровно множество фаз пути, иначе 400 и порядок прежний', async () => {
     const { service } = setup();
     const { phases } = await service.create(T, C1, input);

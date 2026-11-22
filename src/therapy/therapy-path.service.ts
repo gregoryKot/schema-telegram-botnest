@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import type { TherapyPath } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { encryptRecord } from '../utils/crypto-record';
 import { TherapyRelationsService } from './therapy-relations.service';
 import {
   PATH_PHASES_MAX,
@@ -14,12 +13,12 @@ import {
   type PathPhasePatch,
   type TherapyPathView,
 } from './therapy-path.types';
+import { pathView, phaseData, phasesInOrder } from './therapy-path.view';
 import {
-  PATH_PHASE_SCHEMA,
-  pathView,
-  phaseData,
-  phasesInOrder,
-} from './therapy-path.view';
+  assertDatesInOrder,
+  assertPatchDates,
+  phasePatchData,
+} from './therapy-path.phase-patch';
 
 export interface PathInput {
   startDate: string;
@@ -122,20 +121,8 @@ export class TherapyPathService {
     patch: PathPhasePatch,
   ): Promise<TherapyPathView> {
     const { phase, path } = await this.ownedPhase(therapistId, id);
-    const data = encryptRecord(
-      {
-        ...(patch.name !== undefined && { name: patch.name }),
-        ...(patch.goal !== undefined && { goal: patch.goal }),
-        ...(patch.weeks !== undefined && { weeks: patch.weeks }),
-        ...(patch.note !== undefined && { note: patch.note }),
-        ...(patch.criteriaDone !== undefined && {
-          criteriaDone: patch.criteriaDone,
-        }),
-        ...(patch.startedAt !== undefined && { startedAt: patch.startedAt }),
-        ...(patch.endedAt !== undefined && { endedAt: patch.endedAt }),
-      },
-      PATH_PHASE_SCHEMA,
-    );
+    assertPatchDates(phase, patch);
+    const data = phasePatchData(patch);
     await this.prisma.therapyPathPhase.update({
       where: { id: phase.id },
       data,
@@ -150,9 +137,11 @@ export class TherapyPathService {
     date: string,
   ): Promise<TherapyPathView> {
     const { phase, path } = await this.ownedPhase(therapistId, id);
+    assertDatesInOrder(phase.startedAt, date);
     return this.prisma.$transaction(async (tx) => {
       const phases = await phasesInOrder(tx, path.id);
       const next = phases[phases.findIndex((p) => p.id === phase.id) + 1];
+      if (next) assertDatesInOrder(date, next.endedAt);
       await tx.therapyPathPhase.update({
         where: { id: phase.id },
         data: { endedAt: date },
@@ -211,7 +200,7 @@ export class TherapyPathService {
   private async ownedPhase(therapistId: bigint, id: number) {
     const phase = await this.prisma.therapyPathPhase.findFirst({
       where: { id },
-      select: { id: true, pathId: true },
+      select: { id: true, pathId: true, startedAt: true, endedAt: true },
     });
     const path: TherapyPath | null = phase
       ? await this.prisma.therapyPath.findFirst({

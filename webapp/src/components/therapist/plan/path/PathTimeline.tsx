@@ -5,6 +5,7 @@ import type { PathTemplate } from '../../../../../../shared/src/therapy/path/tem
 import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planItem';
 import type { RenderPlanRow } from '../planRows';
 import { HistoryConfirmDialog } from '../../../HistoryConfirmDialog';
+import { PathStartEdit } from './PathStartEdit';
 import { PathPhaseCard } from './PathPhaseCard';
 import { PathPhaseForm } from './PathPhaseForm';
 import { PathPhaseTools } from './PathPhaseTools';
@@ -39,6 +40,7 @@ export function PathTimeline({ path, current, items, templates, renderRow }: Pro
 
   return (
     <>
+      <PathStartEdit startDate={current.startDate} busy={path.busy} onSave={path.setStartDate} />
       <div className="ph-track">
         {view.rows.length === 0 && <p className="ds-sub">В пути пока нет фаз.</p>}
         {view.rows.map((row) => (editing === row.phase.id ? (
@@ -55,6 +57,7 @@ export function PathTimeline({ path, current, items, templates, renderRow }: Pro
             onToggle={() => setPicked(openId === row.phase.id ? -1 : row.phase.id)}
             onCriterion={(n) => void path.patchPhase(row.phase.id, { criteriaDone: toggleCriterion(row.phase.criteriaDone, n) }, 'Не удалось отметить критерий')}
             onAction={() => act(row)}
+            onShift={(weeks) => void path.shiftPhase(row.phase.id, weeks)}
             tools={(
               <PathPhaseTools
                 name={row.phase.name} busy={path.busy} canUp={row.index > 0} canDown={row.index < last}
