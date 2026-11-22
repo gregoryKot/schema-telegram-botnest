@@ -4,7 +4,13 @@
 // /rules/branches/main. Плюс форма .github/workflows/merge-queue.yml: у джобы
 // запись, поэтому событий PR и чекаута кода PR нет.
 import { execFileSync, spawn } from 'child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+} from 'fs';
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import { AddressInfo } from 'net';
 import { tmpdir } from 'os';
@@ -136,7 +142,11 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
           draft: !!x.draft,
           auto_merge: x.auto === false ? null : { merge_method: 'squash' },
           base: { ref: 'main' },
-          head: { sha: x.sha, ref: `b-${x.n}`, repo: { full_name: x.fork ? 'x/r' : REPO } },
+          head: {
+            sha: x.sha,
+            ref: `b-${x.n}`,
+            repo: { full_name: x.fork ? 'x/r' : REPO },
+          },
           labels: x.label ? [{ name: x.label }] : [],
           user: { login: x.author ?? 'gregoryKot' },
         })),
@@ -254,13 +264,16 @@ describe('merge-queue.mjs: один PR за раз', () => {
     expect(writes).toEqual([]);
     expect(out).toContain('#3 в полёте');
 
-    setup(prs, { runs: { 'sha-3': [{ ...going, triggering_actor: { login: 'someone' } }] } });
+    setup(prs, {
+      runs: { 'sha-3': [{ ...going, triggering_actor: { login: 'someone' } }] },
+    });
     await run();
     expect(updated()).toEqual([4]);
   });
 
   it('порядок готовности: раньше позеленевший — первым, идущий — после зелёных', async () => {
-    const at = (min: number) => checks('success', new Date(Date.parse(OLD) - min * 60_000).toISOString());
+    const at = (min: number) =>
+      checks('success', new Date(Date.parse(OLD) - min * 60_000).toISOString());
     setup([
       { n: 4, behind: 1, checks: PENDING },
       { n: 5, behind: 1, checks: at(1), update: 422 },
@@ -392,9 +405,19 @@ describe('merge-queue.mjs: конфликт с main', () => {
     git(join(tmp, 'seed'), 'commit', '-q', '-m', msg);
   };
   const backlog = (...done: string[]) =>
-    ['## Следующее', '- ⬜ дело', '', '## Сделано', ...done, '- ✅ старое', ''].join('\n');
-  const sizes = (n: number) => JSON.stringify({ 'src/a.ts': n, 'src/b.ts': 5 }, null, 2) + '\n';
-  const show = (ref: string, file: string) => git(origin, 'show', `${ref}:${file}`);
+    [
+      '## Следующее',
+      '- ⬜ дело',
+      '',
+      '## Сделано',
+      ...done,
+      '- ✅ старое',
+      '',
+    ].join('\n');
+  const sizes = (n: number) =>
+    JSON.stringify({ 'src/a.ts': n, 'src/b.ts': 5 }, null, 2) + '\n';
+  const show = (ref: string, file: string) =>
+    git(origin, 'show', `${ref}:${file}`);
 
   /** main и ветка PR разошлись: бэклог и бейслайн — всегда, `code` — ещё и в коде. */
   function diverge(opts: { code?: boolean; quiet?: boolean } = {}): string {
@@ -407,18 +430,33 @@ describe('merge-queue.mjs: конфликт с main', () => {
     mkdirSync(join(seed, 'docs'));
     mkdirSync(join(seed, 'scripts'));
     git(seed, 'checkout', '-q', '-b', 'main');
-    commit({ [BACKLOG]: backlog(), [SIZES]: sizes(10), 'x.ts': 'a\n', 'y.ts': 'y\n' }, 'база');
+    commit(
+      {
+        [BACKLOG]: backlog(),
+        [SIZES]: sizes(10),
+        'x.ts': 'a\n',
+        'y.ts': 'y\n',
+      },
+      'база',
+    );
     git(seed, 'push', '-q', 'origin', 'main');
     git(seed, 'checkout', '-q', '-b', 'b-4');
     commit(
       opts.quiet
         ? { 'y.ts': 'y2\n' }
-        : { [BACKLOG]: backlog('- ✅ ветка'), [SIZES]: sizes(12), ...(opts.code ? { 'x.ts': 'ветка\n' } : {}) },
+        : {
+            [BACKLOG]: backlog('- ✅ ветка'),
+            [SIZES]: sizes(12),
+            ...(opts.code ? { 'x.ts': 'ветка\n' } : {}),
+          },
       'ветка',
     );
     git(seed, 'push', '-q', 'origin', 'b-4');
     git(seed, 'checkout', '-q', 'main');
-    commit({ [BACKLOG]: backlog('- ✅ main'), [SIZES]: sizes(11), 'x.ts': 'main\n' }, 'main');
+    commit(
+      { [BACKLOG]: backlog('- ✅ main'), [SIZES]: sizes(11), 'x.ts': 'main\n' },
+      'main',
+    );
     git(seed, 'push', '-q', 'origin', 'main');
     git(tmp, 'clone', '-q', origin, clone);
     return git(origin, 'rev-parse', 'b-4');
@@ -439,8 +477,12 @@ describe('merge-queue.mjs: конфликт с main', () => {
     expect(code).toBe(0);
     expect(out).toContain('#4: отставал на 1, main влит очередью');
     expect(git(origin, 'rev-parse', 'b-4^1')).toBe(sha);
-    expect(git(origin, 'rev-parse', 'b-4^2')).toBe(git(origin, 'rev-parse', 'main'));
-    expect(show('b-4', BACKLOG)).toContain('- ✅ ветка\n- ✅ main\n- ✅ старое');
+    expect(git(origin, 'rev-parse', 'b-4^2')).toBe(
+      git(origin, 'rev-parse', 'main'),
+    );
+    expect(show('b-4', BACKLOG)).toContain(
+      '- ✅ ветка\n- ✅ main\n- ✅ старое',
+    );
     // счётчик складывается: 10 + (12 − 10) + (11 − 10)
     expect(JSON.parse(show('b-4', SIZES))['src/a.ts']).toBe(13);
     expect(writes.filter((w) => !w.startsWith('PUT'))).toEqual([
@@ -455,8 +497,10 @@ describe('merge-queue.mjs: конфликт с main', () => {
     expect(git(origin, 'rev-parse', 'b-4')).toBe(sha);
     expect(writes).toHaveLength(2);
     expect(writes[0]).toContain('POST /issues/4/comments');
-    expect(writes[0]).toContain('конфликт с `main` в `x.ts` — нужен автор');
-    expect(writes[1]).toBe('POST /issues/4/labels {"labels":["merge-conflict"]}');
+    expect(writes[0]).toContain('конфликт с `main` в `x.ts` (');
+    expect(writes[1]).toBe(
+      'POST /issues/4/labels {"labels":["merge-conflict"]}',
+    );
 
     await queue({ n: 4, behind: 1, checks: [], label: 'merge-conflict' }, sha);
     expect(writes).toEqual([]);
@@ -476,9 +520,40 @@ describe('merge-queue.mjs: конфликт с main', () => {
 
   it('голова PR уже другая или клона нет — пропуск без записи', async () => {
     diverge();
-    const { out } = await queue({ n: 4, behind: 1, checks: GREEN, update: 422 }, 'f'.repeat(40));
+    const { out } = await queue(
+      { n: 4, behind: 1, checks: GREEN, update: 422 },
+      'f'.repeat(40),
+    );
     expect(out).toContain('Подтягивать некого');
     expect(writes.filter((w) => !w.startsWith('PUT'))).toEqual([]);
+  });
+
+  it('main правил workflow: бот такое запушить не вправе — комментарий автору, ветка не тронута', async () => {
+    diverge();
+    mkdirSync(join(tmp, 'seed', '.github', 'workflows'), { recursive: true });
+    commit({ '.github/workflows/ci.yml': 'on: push\n' }, 'workflow');
+    git(join(tmp, 'seed'), 'push', '-q', 'origin', 'main');
+    const sha = git(origin, 'rev-parse', 'b-4');
+    await queue({ n: 4, behind: 2, checks: GREEN, update: 422 }, sha);
+    expect(git(origin, 'rev-parse', 'b-4')).toBe(sha);
+    expect(writes[1]).toContain('`.github/workflows/ci.yml`');
+  });
+
+  it('движок исполняет оба модуля, а имена драйверов сведения — те же, что в .gitattributes', () => {
+    const engine = readFileSync(SCRIPT, 'utf8');
+    for (const part of ['merge-queue-api.mjs', 'merge-queue-conflict.mjs'])
+      expect(engine).toContain(`from './${part}'`);
+    const modes: string[] = JSON.parse(
+      importExport('merge-queue-conflict.mjs', 'MODES', '(v) => v'),
+    );
+    const used = new Set(
+      [
+        ...readFileSync(join(ROOT, '.gitattributes'), 'utf8').matchAll(
+          /merge=(ratchet-\w+)/g,
+        ),
+      ].map((m) => m[1]),
+    );
+    expect([...used].sort()).toEqual(modes.map((m) => `ratchet-${m}`).sort());
   });
 
   it('--dry-run конфликт не пушит и не комментирует', async () => {

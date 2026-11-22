@@ -2,7 +2,9 @@
 // с конфликтом только в бейслайнах или бэклоге стоял `dirty`, пока не заметят.
 // Здесь main вливается в ветку PR git-ом с драйверами из .gitattributes;
 // что драйверы не свели — комментарий автору (раз, по метке). Тест —
-// src/test-support/gates/merge-queue-conflict.spec.ts.
+// src/test-support/gates/merge-queue.spec.ts.
+// Не проверено на живом GitHub: что `git push` от GITHUB_TOKEN порождает
+// pull_request-прогон на одобрение, как update-branch (строка в docs/BACKLOG.md).
 import { execFileSync } from 'child_process';
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
@@ -13,12 +15,12 @@ const BOT_NAME = 'github-actions[bot]';
 const BOT_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com';
 // Имена — как в scripts/setup-merge-drivers.mjs; скрипт берётся из чекаута
 // main (scriptsDir), а не из дерева PR: код ветки с правом записи не исполняется.
-const MODES = ['min', 'max', 'sum'];
+export const MODES = ['min', 'max', 'sum'];
 
 export function conflictComment(files) {
   const list = files.map((f) => `\`${f}\``).join(', ');
   return (
-    `Очередь мержа: конфликт с \`main\` в ${list} — нужен автор. ` +
+    `Очередь мержа: конфликт с \`main\` в ${list} (или правка workflow, которую бот влить не вправе) — нужен автор. ` +
     'Сведи локально: `git fetch origin main && git merge origin/main`, затем пуш. ' +
     `Метку \`${CONFLICT_LABEL}\` очередь снимет сама.`
   );
@@ -61,6 +63,9 @@ export function mergeMain({ repoDir, scriptsDir, branch, sha, pushClean, dryRun 
       return files.length ? { status: 'manual', files } : { status: 'failed', reason: 'merge упал без конфликтов' };
     }
     const head = git(tree, 'rev-parse', 'HEAD');
+    // Правку workflow из main GITHUB_TOKEN запушить не вправе — вливает автор.
+    const flows = git(tree, 'diff', '--name-only', sha, head, '--', '.github/workflows').split('\n').filter(Boolean);
+    if (flows.length) return { status: 'manual', files: flows };
     if (!dryRun) git(tree, 'push', '--quiet', `--force-with-lease=refs/heads/${branch}:${sha}`, 'origin', `HEAD:refs/heads/${branch}`);
     return { status: 'pushed', head };
   } catch (e) {
