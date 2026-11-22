@@ -35,6 +35,18 @@ describe('phaseSteps', () => {
   });
 });
 
+describe('вид листов в группах', () => {
+  it('каждая строка несёт знак и оттенок своего листа, стадии — разные оттенки', () => {
+    const ids = ['overview', 'assessment', 'safety', 'mode_order', 'template_general'];
+    const groups = phaseGroups([phase('overview'), phase('assessment'), phase('safety'), phase('mode_order', { group: 'topics' }), phase('template_general', { group: 'templates' })]);
+    const items = groups.flatMap((g) => g.items);
+    expect(items.map((i) => i.id)).toEqual(ids);
+    for (const i of items) expect([i.id, i.sign, i.hue === undefined]).toEqual([i.id, expect.any(String), false]);
+    expect(items[1].hue).not.toBe(items[2].hue);
+    expect([items[1].step, items[2].step]).toEqual([1, 2]);
+  });
+});
+
 describe('phaseView', () => {
   const phases = [
     phase('overview'),

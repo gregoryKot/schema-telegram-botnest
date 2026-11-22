@@ -11,6 +11,8 @@
 }
 .ph-card.is-current .ph-num { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .ph-card.is-done .ph-num { color: var(--text-faint); }
+.ph-sign { flex: none; box-sizing: border-box; width: 56px; padding: 7px 6px; border-radius: 12px; }
+.ph-sign .pp-art--row { display: block; width: 100%; height: auto; }
 .ph-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .ph-name { margin: 0; font: 700 16px/1.3 var(--sans); color: var(--text); overflow-wrap: break-word; }
 .ph-card.is-done .ph-name { color: var(--text-sub); }
