@@ -90,7 +90,7 @@ export const buildHealthyGuides: ModeGuideBuilder = (tr) => [
       'chairwork',
       'letters',
       'flashcards',
-      'imagery_rescripting',
+      'compassionate_self',
     ],
     betweenSessions: [
       {
