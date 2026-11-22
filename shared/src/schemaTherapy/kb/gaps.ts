@@ -21,7 +21,7 @@ export const MODES_WITHOUT_SCHEMA: Readonly<Record<string, KbGap>> = {
 };
 
 const PHASE =
-  'зовёт фаза терапии, а не режим, схема или запрос: считать ли фазы разделом — вопрос владельцу';
+  'её зовёт только фаза терапии, а фазы разделом не считаются (решение дирижёра)';
 
 /** Техники, которых нет ни в одном поле techniques раздела. */
 export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
