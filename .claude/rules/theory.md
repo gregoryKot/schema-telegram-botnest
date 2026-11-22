@@ -75,6 +75,10 @@ Jacob; Farrell & Shaw), сводка терминов [docs/TERMINOLOGY.md](../.
    Сомнительное убирается или смягчается, ссылки не выдумываются.
 7. **Без обещаний результата, диагнозов и медицинских утверждений.** О
    владельце: «работает в подходе схема-терапия», без титула.
+8. **Техника и заметка «Для терапевта» — в одной группе из закрытого списка:**
+   поле `group` (`shared/src/schemaTherapy/guide/types.ts`, порядок и подписи —
+   `guideGroups.ts`); новая группа — решение владельца. Гейт —
+   `shared/src/schemaTherapy/guide/guideGroups.test.ts`.
 
 ## Как править
 
@@ -84,6 +88,17 @@ Jacob; Farrell & Shaw), сводка терминов [docs/TERMINOLOGY.md](../.
   владельцу с рекомендацией в описании PR.
 - Неверное в чужой области (дубль понятия, находка по пути) не чинится, а
   записывается строкой в `docs/BACKLOG.md`: что, где, чем доказано (№26).
+
+## Адреса разделов «Справочника» (#1484)
+
+Раздел справочника — поле типа в `shared/src/schemaTherapy/guide/types.ts`, адрес
+выводит `guide/address/`, руками не пишется; переименование или удаление раздела —
+строка в `address/addressRenames.ts`, новый смысл отметки — строка в
+`address/addressTargets.ts`, на экране раздел — только через `GuideSection`.
+Сторожа — `shared/src/schemaTherapy/guide/address/address.test.ts` и (листы рисуют разделы
+только через `GuideSection`, адрес каждого находит текст)
+`webapp/src/components/therapist/guide/guideSectionOnly.test.tsx`; подробно — навык
+[book-to-guide](../skills/book-to-guide/SKILL.md).
 
 Механизм: гейта на смысл нет. Дифф по путям из маски сверяет с этим чек-листом
 `rules-reviewer` (`.claude/agents/rules-reviewer.md`).

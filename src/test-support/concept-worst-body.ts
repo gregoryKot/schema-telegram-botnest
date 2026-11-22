@@ -4,6 +4,7 @@
 // в UTF-8, как пересчёт в src/infra/body-limit.ts; `EMOJI` — 4 байта, а
 // @MaxLength (validator.js) считает пару суррогатов одним знаком.
 import {
+  CONCEPT_COPING_NOTE_MAX,
   CONCEPT_FIELD_TEXT_MAX,
   CONCEPT_MODE_ALIAS_MAX,
   CONCEPT_MODE_TEXT_MAX,
@@ -68,6 +69,12 @@ export const worstSchemaLink = (
   origin: ch.repeat(CONCEPT_SCHEMA_TEXT_MAX),
   needIds: cyrIds('n', 5),
   done: marks(done),
+  coping: ['surrender', 'avoidance', 'overcompensation'],
+  copingNotes: {
+    surrender: ch.repeat(CONCEPT_COPING_NOTE_MAX),
+    avoidance: ch.repeat(CONCEPT_COPING_NOTE_MAX),
+    overcompensation: ch.repeat(CONCEPT_COPING_NOTE_MAX),
+  },
 });
 
 /** Худший патч: всё до предела знаками `ch`, по `links` связей каждого вида. */

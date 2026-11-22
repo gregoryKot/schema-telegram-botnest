@@ -23,6 +23,7 @@ const texts: ReferenceTexts = {
   }],
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [{ ...FIXTURE_PRACTICE_NOTE, points: ['Сверить контрперенос с супервизором'] }],
+  buildConcernGuides: () => [{ id: 'bpd', name: 'Пограничное расстройство', goal: 'цель', essence: 'суть', differential: ['Голос Критика — псевдогаллюцинация'], sources: '' }],
 };
 const ref = buildReference(texts, tr);
 const body = buildReferenceBody(texts, tr);
@@ -70,6 +71,10 @@ describe('поиск по текстам листов', () => {
   it('слово короче трёх букв в тексте не ищется; идентификаторы — не текст', () => {
     expect(ids('на')).not.toContain('angry_child');
     expect(ids('angry_child')).toEqual([]);
+  });
+
+  it('слово из статьи «Запросов» находит её лист', () => {
+    expect(only('псевдогаллюцинация')).toMatchObject({ kind: 'concern', id: 'bpd' });
   });
 
   it('без текстов поиск идёт только по названиям', () => {

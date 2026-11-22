@@ -33,6 +33,7 @@ export function ConceptGraph({
   onAddSchema,
   track,
   guide,
+  markCounts,
 }: {
   source: ConceptGraphSource;
   onToggleMode: (modeId: string) => void;
@@ -42,6 +43,8 @@ export function ConceptGraph({
   onAddSchema: (schemaId: string) => void;
   track: (name: string, meta?: Record<string, unknown>) => void;
   guide?: ConceptGuideActions;
+  /** Отметки «Про клиента» по статье (`schema:<id>`, `mode:<id>`) — счётчик на узле (#1484). */
+  markCounts?: ReadonlyMap<string, number>;
 }) {
   const tr = useTr();
   const [open, setOpen] = useState<Open>(null);
@@ -89,6 +92,7 @@ export function ConceptGraph({
                 onClose={() => setAdd(null)}
               />
             ),
+            markCounts,
             onOpenMode: (id) => toggleOpen('mode', id),
             onOpenSchema: (id) => toggleOpen('schema', id),
             onAdd: (section) =>

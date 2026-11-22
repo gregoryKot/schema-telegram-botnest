@@ -53,10 +53,12 @@ describe('новая игра «Неделя» в /stats', () => {
       started: 10,
       wedStarted: 5,
       wedDone: 4,
+      friStarted: 3,
+      friDone: 2,
       firstDone: 2,
     }).join('\n');
     expect(out).toContain(
-      'пошли в «Среду» 5 · прошли «Среду» 4 · дошли до конца 2',
+      'пошли в «Среду» 5 · прошли «Среду» 4 · пошли в «Пятницу» 3 · прошли «Пятницу» 2 · дошли до конца 2',
     );
   });
 
@@ -70,6 +72,8 @@ describe('новая игра «Неделя» в /stats', () => {
       row({ name: 'game_share', place: 'hook', c: 1n }),
       row({ name: 'game_chapter_start', chapter: 'wed', c: 3n }),
       row({ name: 'game_chapter_done', chapter: 'wed', c: 2n }),
+      row({ name: 'game_chapter_start', chapter: 'fri', c: 2n }),
+      row({ name: 'game_chapter_done', chapter: 'fri', c: 1n }),
       row({ name: 'game_chapter_done', chapter: 'first', c: 1n }),
       row({ name: 'game_cta_shown', place: 'act1', c: 4n }),
       row({ name: 'game_chapter_start', chapter: 'chapter1', c: 5n }),
@@ -82,6 +86,8 @@ describe('новая игра «Неделя» в /stats', () => {
       shares: 1,
       wedStarted: 3,
       wedDone: 2,
+      friStarted: 2,
+      friDone: 1,
       firstDone: 1,
     });
     expect(m.ctaShown).toBe(4);

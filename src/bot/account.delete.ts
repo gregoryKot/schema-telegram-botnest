@@ -50,6 +50,9 @@ export async function deleteAllUserData(
     prisma.therapyPlanItem.deleteMany({
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),
+    prisma.guideMark.deleteMany({
+      where: { OR: [{ therapistId: uid }, { clientId: uid }] },
+    }),
     prisma.therapyRelation.deleteMany({
       where: { OR: [{ therapistId: uid }, { clientId: uid }] },
     }),

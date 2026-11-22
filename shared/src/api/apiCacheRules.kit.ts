@@ -6,7 +6,7 @@ import type { InvalidationTarget } from './apiCache';
 export type Body = Record<string, unknown> | undefined;
 
 export interface Rule {
-  method: 'POST' | 'DELETE' | 'PATCH';
+  method: 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   pattern: RegExp;
   /** true — мутация меняет учётную запись целиком (напр. удаление аккаунта). */
   clearAll?: true;

@@ -1,9 +1,10 @@
 import type { ModeGuideView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
-import { GUIDE_CHANNELS as CHANNELS } from '../../../../../shared/src/therapy/plan/planItem'; // четыре канала работы с режимом, пустой не показывается
+import { GUIDE_CHANNELS as CHANNELS, channelLabel } from '../../../../../shared/src/therapy/plan/planItem'; // четыре канала работы с режимом, пустой не показывается
 import { GuideSection } from './GuideSection';
 import { channelSeed } from './guidePlan';
 import { PlanButton } from './PlanButton';
 import { modeGuideLook } from './guideLook';
+import { articleAddress } from './marks/guideMarkModel';
 import { GuidePoints } from './GuidePoints';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 
@@ -17,17 +18,19 @@ type Props = GuideSheetActions & { modeName: string; view: ModeGuideView };
  */
 export function ModeGuideSheet({ modeName, view, ...actions }: Props) {
   const { guide } = view;
-  const channels = CHANNELS.flatMap(([key, lead]) => {
+  const at = articleAddress('mode', guide.modeId);
+  const channels = CHANNELS.flatMap(({ id: key, ...c }) => {
+    const lead = channelLabel(c);
     const text = guide[key]?.trim();
     const action = actions.onPlan && <PlanButton label={lead} onClick={() => actions.onPlan?.(channelSeed(key, text ?? ''))} />;
-    return text ? [{ lead, text, action }] : [];
+    return text ? [{ lead, text, action, address: at(key) }] : [];
   });
   return (
     <GuideSheet
       label="Режим" title={modeName} lede={guide.what} voice={guide.voice} view={view} {...actions}
-      look={modeGuideLook(guide.modeId)}
+      look={modeGuideLook(guide.modeId)} at={at}
     >
-      <GuideSection title="Цель" text={guide.goal} />
+      <GuideSection title="Цель" text={guide.goal} address={at('goal')} />
       {channels.length > 0 && (
         <GuideSection title="Как работать">
           <GuidePoints items={channels} />

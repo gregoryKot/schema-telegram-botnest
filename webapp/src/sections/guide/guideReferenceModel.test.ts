@@ -4,9 +4,10 @@
 // поиск — по названиям во всех разделах, без учёта регистра и «ё», найденное
 // лежит на листе своей группы — знак группы один раз на серию.
 import { describe, it, expect } from 'vitest';
-import { buildReference, referenceLayout, type ReferenceTexts } from './guideReferenceModel';
+import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceTexts } from './guideReferenceModel';
+import { CONCERNS_HINT, CONCERNS_TITLE } from './guideReferenceConcerns';
 import { searchReference } from './guideReferenceSearch';
-import type { ModeGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
+import type { ConcernGuide, ModeGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
 import {
   FIXTURE_GUIDE,
   FIXTURE_PRACTICE_NOTE,
@@ -17,6 +18,7 @@ import {
 const tr = (ty: string) => ty;
 const mode = (modeId: string): ModeGuide => ({ ...FIXTURE_GUIDE, modeId });
 const schema = (schemaId: string): SchemaGuide => ({ ...FIXTURE_SCHEMA_GUIDE, schemaId });
+const CONCERN: ConcernGuide = { id: 'bpd', name: 'Пограничное расстройство', goal: 'Вырастить Здорового Взрослого', essence: 'Нестабильность', sources: '' };
 
 function texts(over: Partial<ReferenceTexts> = {}): ReferenceTexts {
   return {
@@ -28,6 +30,7 @@ function texts(over: Partial<ReferenceTexts> = {}): ReferenceTexts {
     ],
     buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
     practiceNotes: () => [FIXTURE_PRACTICE_NOTE, { ...FIXTURE_PRACTICE_NOTE, id: 'свой_раздел', title: 'Свой раздел' }],
+    buildConcernGuides: () => [CONCERN, { ...CONCERN, id: 'свой_запрос', name: 'Свой запрос' }],
     ...over,
   };
 }
@@ -56,7 +59,7 @@ describe('buildReference', () => {
 
   it('техники и «Для терапевта» — с сутью строкой ниже и своим знаком; раздел без знака — без картинки', () => {
     const { techniques, practice } = buildReference(texts(), tr);
-    expect(techniques[0].title).toBeUndefined();
+    expect(techniques.map((g) => g.title)).toEqual(['Эмпирические']); // пустые группы отсеяны
     expect(techniques[0].items[0]).toEqual({
       kind: 'technique', id: 'imagery_rescripting', name: 'Рескриптинг образов', sub: FIXTURE_TECHNIQUES[0].summary,
       sign: 'rescript',
@@ -72,6 +75,22 @@ describe('buildReference', () => {
 
   it('раздел без текстов — пустой список, а не группа без строк', () => {
     expect(buildReference(texts({ practiceNotes: () => [] }), tr).practice).toEqual([]);
+    expect(buildReference(texts({ buildConcernGuides: () => [] }), tr).concerns).toEqual([]);
+  });
+
+  it('«Запросы» — одна группа с подписью «что это и зачем», строки с целью и своим знаком на бирюзе', () => {
+    const [group, ...rest] = buildReference(texts(), tr).concerns;
+    expect(rest).toEqual([]);
+    expect(group).toMatchObject({ title: CONCERNS_TITLE, hint: CONCERNS_HINT, look: { hue: 195 } });
+    expect(group.items).toEqual([
+      { kind: 'concern', id: 'bpd', name: 'Пограничное расстройство', sub: 'Вырастить Здорового Взрослого', sign: 'ribbon' },
+      { kind: 'concern', id: 'свой_запрос', name: 'Свой запрос', sub: 'Вырастить Здорового Взрослого', sign: undefined },
+    ]);
+  });
+
+  it('вкладка «Запросы» стоит между «Техниками» и «Для терапевта»', () => {
+    const ids = REFERENCE_TABS.map((t) => t.id);
+    expect(ids.slice(ids.indexOf('techniques'), ids.indexOf('practice') + 1)).toEqual(['techniques', 'concerns', 'practice']);
   });
 });
 
@@ -93,13 +112,13 @@ describe('searchReference', () => {
     expect(searchReference(ref, '   ')).toEqual([]);
   });
 
-  it('совпадения из всех разделов; регистр и «ё» не важны; у техник и «Для терапевта» лист — имя раздела', () => {
+  it('совпадения из всех разделов; регистр и «ё» не важны; у техник и «Для терапевта» лист — их группа', () => {
     const found = searchReference(ref, 'РЕБЕНОК');
     expect(found.map((g) => g.title)).toEqual(['Детские режимы']);
     expect(found[0].items.map((i) => i.id)).toEqual(['vulnerable_child', 'angry_child']);
     const mixed = searchReference(ref, 'ов');
-    expect(mixed.map((g) => g.title)).toEqual(['Здоровые режимы', 'Нарушение связи и отвержение', 'Техники', 'Для терапевта']);
-    expect(mixed.map((g) => g.key)).toEqual(['modes:healthy', 'schemas:rejection', 'techniques:techniques', 'practice:practice']);
+    expect(mixed.map((g) => g.title)).toEqual(['Здоровые режимы', 'Нарушение связи и отвержение', 'Эмпирические', 'Терапевт и формат']);
+    expect(mixed.map((g) => g.key)).toEqual(['modes:healthy', 'schemas:rejection', 'techniques:experiential', 'practice:therapist']);
     expect(mixed.flatMap((g) => g.items.map((i) => i.name))).toEqual([
       'Здоровый Взрослый', 'Недоверие / Ожидание жестокого обращения', 'Рескриптинг образов', 'Групповой формат',
     ]);

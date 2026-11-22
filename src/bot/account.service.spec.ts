@@ -46,6 +46,7 @@ function makePrisma() {
     'clientConceptualization',
     'therapistNote',
     'therapyPlanItem',
+    'guideMark',
     'therapyRelation',
     'modeMap',
     'therapistCustomMode',
@@ -93,6 +94,7 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
       'clientConceptualization',
       'therapistNote',
       'therapyPlanItem',
+      'guideMark',
     ]) {
       const args = prisma._calls[table]?.[0];
       expect(args).toBeDefined();

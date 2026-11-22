@@ -1,21 +1,34 @@
 import { describe, it, expect } from 'vitest';
 import * as guide from '../../../../../shared/src/schemaTherapy/guide';
 import { getModeById } from '../../../../../shared/src/schemaTherapy/schemaTherapyData';
-import { planSourceTitle } from './planSource';
+import { planSourceLink } from './planSource';
 
 const tr = (ty: string) => ty;
+const own = { sourceAddress: null, source: null };
 
-describe('planSourceTitle', () => {
-  it('статья есть — её название; техника — по имени из библиотеки', () => {
+describe('planSourceLink', () => {
+  it('сохранил адрес → нашёл раздел: статья и заголовок раздела, ссылка открывает статью', () => {
     const modeId = guide.buildModeGuides(tr)[0].modeId;
-    expect(planSourceTitle(guide, tr, { kind: 'mode', id: modeId, field: 'cognitive' })).toBe(getModeById(modeId)?.name);
-    const technique = guide.buildTechniqueGuides(tr)[0];
-    expect(planSourceTitle(guide, tr, { kind: 'technique', id: technique.id, field: 'steps' })).toBe(technique.name);
+    expect(planSourceLink(guide, tr, { ...own, sourceAddress: `mode:${modeId}/cognitive` })).toEqual({
+      title: `${getModeById(modeId)?.name} · ${guide.sectionTitle('mode', 'cognitive')}`, changed: false, open: { kind: 'mode', id: modeId },
+    });
   });
 
-  it('статьи нет, источника нет или тексты не приехали — ссылки нет', () => {
-    expect(planSourceTitle(guide, tr, { kind: 'schema', id: 'removed_article', field: 'session' })).toBeNull();
-    expect(planSourceTitle(guide, tr, null)).toBeNull();
-    expect(planSourceTitle(undefined, tr, { kind: 'mode', id: 'x', field: 'goal' })).toBeNull();
+  it('пункт до адресов: старый источник переводится в адрес', () => {
+    const technique = guide.buildTechniqueGuides(tr)[0];
+    const link = planSourceLink(guide, tr, { ...own, source: { kind: 'technique', id: technique.id, field: 'steps' } });
+    expect(link?.open).toEqual({ kind: 'technique', id: technique.id });
+    expect(link?.title.startsWith(`${technique.name} · `)).toBe(true);
+  });
+
+  it('раздела больше нет — заголовок по адресу и «раздел изменился», ссылки нет', () => {
+    expect(planSourceLink(guide, tr, { ...own, sourceAddress: 'mode:removed_article/cognitive' })).toEqual({
+      title: guide.sectionTitle('mode', 'cognitive'), changed: true, open: null,
+    });
+  });
+
+  it('свой пункт или тексты не приехали — ссылки нет', () => {
+    expect(planSourceLink(guide, tr, own)).toBeNull();
+    expect(planSourceLink(undefined, tr, { ...own, sourceAddress: 'mode:x/goal' })).toBeNull();
   });
 });
