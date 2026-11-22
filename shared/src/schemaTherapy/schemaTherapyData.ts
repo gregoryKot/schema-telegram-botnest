@@ -8,7 +8,7 @@ import { MODE_GROUPS } from './content/modeGroups';
 //, дублирование держалось только на
 // дисциплине копипаста (аудит парности, PR #349). Оба фронтенда теперь
 // ре-экспортируют этот модуль без изменений сигнатур. Сам текст — в
-// content/*.ts (эмоции / 20 схем / 35 режимов, правило №10); здесь только
+// content/*.ts (эмоции / 20 схем / 36 режимов, правило №10); здесь только
 // сборка и производные реестры/хелперы.
 export { EMOTIONS, INTENSITY_LABELS, SCHEMA_DOMAINS, MODE_GROUPS };
 export type { Schema, SchemaDomain, Mode, ModeGroup, Emotion } from './types';
