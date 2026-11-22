@@ -22,6 +22,7 @@ const KIND_WORDS: Record<GuideMarkKind, string> = {
   technique: 'техники',
   note: '«Для терапевта»',
   concern: 'запросы',
+  phase: 'путь терапии',
 };
 
 /** Строка блока; пустая БД — «пока ни одной». Чистая функция. */
