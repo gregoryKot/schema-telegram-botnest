@@ -42,7 +42,7 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
       'Записать предсказание точно: что произойдёт, когда и как это будет видно. Оценить уверенность в процентах.',
       'Придумать проверку вместе. Шаг небольшой, и исход заранее неизвестен — иначе это не эксперимент.',
       'Заранее обсудить, что помешает и что клиент сделает, если предсказание сбудется.',
-      'Провести — на сессии или между сессиями — и записать, что случилось на самом деле.',
+      'Провести — на сессии или между сессиями — и записать, что случилось на самом деле. Убеждения о терапевте проверяют прямо на нём: посмотреть в глаза, когда стыдно, или сказать «не понимаю» и следить за реакцией [Арнтц ПРЛ, гл. 4].',
       'Разобрать: что сошлось с предсказанием, что нет, какая теперь уверенность. Сформулировать вывод и следующую проверку.',
     ],
     voice: [
@@ -54,6 +54,6 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Эксперимент — проверка, а не испытание на смелость: слишком большой шаг заканчивается избеганием и новым доводом для схемы. Предсказание сбылось — это тоже данные: смотрим, что именно произошло и как клиент с этим справился.',
     sources:
-      'Bennett-Levy J., Butler G., Fennell M., Hackmann A., Mueller M., Westbrook D. (eds.). Oxford Guide to Behavioural Experiments in Cognitive Therapy. Oxford University Press, 2004. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 7, раздел «Experiments».',
+      'Bennett-Levy J., Butler G., Fennell M., Hackmann A., Mueller M., Westbrook D. (eds.). Oxford Guide to Behavioural Experiments in Cognitive Therapy. Oxford University Press, 2004. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 7, раздел «Experiments»; [Арнтц ПРЛ, гл. 4].',
   },
 ];
