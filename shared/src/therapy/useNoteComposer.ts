@@ -78,13 +78,16 @@ export function useNoteComposer(
     }
   }
 
-  async function removeNote(noteId: number) {
+  /** true — заметка удалена на сервере. */
+  async function removeNote(noteId: number): Promise<boolean> {
     const clientId = openClientIdRef.current;
     try {
       await send.remove(noteId);
       if (isOpen(clientId)) np.onNoteDeleted(noteId);
+      return true;
     } catch {
       if (isOpen(clientId)) setNoteError('Не удалось удалить заметку');
+      return false;
     }
   }
 
