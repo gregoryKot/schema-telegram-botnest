@@ -18,7 +18,7 @@ export const groupFrameMore: string[] = [
 ];
 
 /** Раздел «Подготовка клиента к группе» (Фаррелл, гл. 3.6). */
-export const buildPracticeGroupOrientation: PracticeNotesBuilder = (tr) => [
+export const buildGroupOrientation: PracticeNotesBuilder = (tr) => [
   {
     id: 'group_orientation',
     group: 'start',

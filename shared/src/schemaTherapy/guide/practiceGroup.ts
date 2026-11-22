@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { groupTherapyMore, groupTechniquesMore } from './practiceGroupMore';
-import { groupFrameMore, buildPracticeGroupOrientation } from './practiceGroupFrame';
+import { groupFrameMore, buildGroupOrientation } from './practiceGroupFrame';
 
 /** «Для терапевта»: групповая схема-терапия — рамка и приёмы (собирает practiceSituations.ts). */
 export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
@@ -43,5 +43,5 @@ export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
     more: groupTechniquesMore,
     sources: '[Кембридж, гл. 17, боксы 17.2, 17.3], [Арнтц ПРЛ, гл. 10]',
   },
-  ...buildPracticeGroupOrientation(tr),
+  ...buildGroupOrientation(tr),
 ];
