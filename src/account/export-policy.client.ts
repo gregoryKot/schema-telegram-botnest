@@ -79,6 +79,10 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
     status: 'withhold',
     reason: `план работы с клиентом — ${THERAPIST_WORK_MATERIAL}`,
   },
+  TherapyPath: {
+    status: 'withhold',
+    reason: `раскладка плана работы по фазам — ${THERAPIST_WORK_MATERIAL}`,
+  },
   GuideMark: {
     status: 'withhold',
     reason: `отметки терапевта «Про клиента» из справочника — ${THERAPIST_WORK_MATERIAL}`,

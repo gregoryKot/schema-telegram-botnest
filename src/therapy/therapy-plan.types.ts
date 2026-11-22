@@ -42,6 +42,8 @@ export interface PlanItemView {
   /** Источник до адресов: сайт переводит его в адрес, если sourceAddress пуст. */
   source: PlanSource | null;
   taskId: number | null;
+  /** Фаза пути клиента, к которой отнесён пункт; null — вне фаз. */
+  phaseId: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
