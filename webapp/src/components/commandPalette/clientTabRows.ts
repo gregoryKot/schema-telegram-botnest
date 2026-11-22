@@ -7,24 +7,24 @@ import { clientRef } from '../../../../shared/src/utils/clientRef';
 import type { TherapyClientSummary } from '../../api';
 import { CLIENT_TAB_LABELS } from '../therapist/clientTabLabels';
 import { clientCardPath } from '../therapist/clientTabRoute';
-import { clientMark } from './clientRows';
+import { clientMark } from './clientRows'; import { clientPathRow } from './clientPathRow';
 import type { CmdRow } from './cmdRow';
 import type { PaletteInput } from './paletteRows';
 
 export const CLIENT_TAB_GROUP = 'Карточка клиента';
-/** Сколько вкладок видно по запросу: все вкладки одного клиента. */
-export const CLIENT_TABS_SHOWN = 7;
+/** Сколько строк видно по запросу: все вкладки одного клиента и «Путь терапии». */
+export const CLIENT_TABS_SHOWN = 8;
 
 // «Обзор» — сама карточка: её открывает строка клиента.
 const TABS = CLIENT_TAB_LABELS.filter(([tab]) => tab !== 'overview');
 
 function tabRowsOf(c: TherapyClientSummary, run: PaletteInput['run']): CmdRow[] {
   const name = clientDisplayName(c);
-  return TABS.map(([tab, label]) => ({
+  return [...TABS.map(([tab, label]): CmdRow => ({
     key: `client-tab:${c.telegramId}:${tab}`, kind: 'client_tab', group: CLIENT_TAB_GROUP, label: `${name} · ${label}`,
     sub: 'Открыть вкладку', mark: clientMark(c), search: `${name} ${label}`,
     action: () => run.path(clientCardPath(clientRef(c), tab)),
-  }));
+  })), clientPathRow(c, run)];
 }
 
 /** Все вкладки всех клиентов — среди них «Недавнее» находит строку по ключу. При «Показе экрана» — пусто. */

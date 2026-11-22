@@ -110,8 +110,8 @@ export interface TherapistNote {
   clientId: UserId;
   date: string;
   text: string;
-  /** «Что делали» (#1330); у старых записей и чужих клиентов поля нет. */
-  work?: SessionWorkItem[];
+  work?: SessionWorkItem[]; // «Что делали» (#1330); у старых записей и чужих клиентов поля нет
+  planItemIds?: number[]; // отмеченные в записи пункты плана; у старых записей пусто или нет
   createdAt: string;
 }
 

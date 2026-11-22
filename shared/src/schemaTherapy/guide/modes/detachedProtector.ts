@@ -39,7 +39,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
     'empathic_confrontation',
     'mode_interview',
     'chairwork',
-    'mindfulness',
+    'body_grounding',
     'pros_cons',
   ],
   betweenSessions: [
