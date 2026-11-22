@@ -667,7 +667,7 @@
   "shared/src/schemaTherapy/guide/techniques/stance.ts": 64,
   "shared/src/schemaTherapy/guide/types.ts": 170,
   "shared/src/schemaTherapy/kb/check.ts": 138,
-  "shared/src/schemaTherapy/kb/gaps.ts": 99,
+  "shared/src/schemaTherapy/kb/gaps.ts": 117,
   "shared/src/schemaTherapy/kb/kbFs.test-helpers.ts": 37,
   "shared/src/schemaTherapy/kb/links.ts": 138,
   "shared/src/schemaTherapy/kb/mentions.ts": 59,
