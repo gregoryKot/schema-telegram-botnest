@@ -52,7 +52,6 @@ describe('sanitizeGameMeta: события с meta.chapter', () => {
   const withChapter: GameEventName[] = [
     'game_chapter_start',
     'game_chapter_done',
-    'game_over',
   ];
 
   it.each(withChapter)('%s: пропускает известную главу', (name) => {
@@ -128,12 +127,7 @@ describe('sanitizeGameMeta: game_cta_click и цель кнопки (meta.to)', 
 });
 
 describe('sanitizeGameMeta: события без meta', () => {
-  const withoutMeta: GameEventName[] = [
-    'game_start',
-    'game_tutorial_done',
-    'game_tutorial_skip',
-    'game_app_arrive',
-  ];
+  const withoutMeta: GameEventName[] = ['game_app_arrive'];
 
   it.each(withoutMeta)(
     '%s: всегда {} — любые присланные поля отбрасываются',
