@@ -1,5 +1,4 @@
-// Ручки плана работы с клиентом (#1337, только терапевт). Отдельным модулем, как practiceSessionsApi.ts:
-// api.ts сайта и sharedApi.ts упираются в лимит размера файла (правило №10).
+// Ручки плана работы с клиентом (#1337, терапевт): отдельным модулем — api.ts и sharedApi.ts упёрлись в лимит (№10).
 import type { UserId } from '../../userId';
 import type { PlanItem, PlanRubric, PlanStatus } from './planItem';
 
@@ -15,6 +14,7 @@ export interface PlanItemPatch {
   status?: PlanStatus;
   rubric?: PlanRubric;
   taskId?: number | null;
+  phaseId?: number | null; // null — вне фаз
 }
 
 const BASE = '/api/therapy/plan';
