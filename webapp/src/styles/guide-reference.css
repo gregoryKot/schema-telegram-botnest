@@ -130,3 +130,5 @@
 
 /* «Про клиента» под раскрытой клеткой (#1484) */
 .ds-link.gst-mark { margin: 4px 12px 10px; }
+/* Номер фазы «Пути терапии» на месте знака строки: тихая цифра Literata, как номер шага на листе техники (.gd-steps). */
+.gr-step { font-family: var(--serif); font-size: 24px; line-height: 1.2; color: var(--text-sub); }

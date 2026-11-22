@@ -11,6 +11,7 @@ const none = {
   technique: 0,
   note: 0,
   concern: 0,
+  phase: 0,
 };
 
 describe('formatGuideMarkLine', () => {

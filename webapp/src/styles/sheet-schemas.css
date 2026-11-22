@@ -19,6 +19,8 @@
 .sg-fold-head { width: calc(100% - 8px); min-height: 44px; padding: 0; border: none; background: none; color: inherit; text-align: left; cursor: pointer; }
 .sg-fold-name { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; color: var(--text-sub); }
 .sg-hint { font-size: 13px; line-height: 1.35; color: var(--text-muted); }
+/* Подсказка раскрытой группы без кнопки-шапки («Путь терапии»): строкой под подписью. */
+.sg-hint--line { margin: -6px 4px 10px; }
 .sg-fold-head[aria-expanded="false"] { margin-bottom: 2px; }
 .sg-aside { flex: none; font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 .sg-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
