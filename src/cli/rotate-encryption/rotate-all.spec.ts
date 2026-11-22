@@ -27,6 +27,12 @@ function load(key: string, old?: string) {
   }));
 }
 
+// Загрузка вне тестов: ключи читаются при импорте, модули без состояния.
+const a = load(KEY_A);
+const b = load(KEY_B, KEY_A);
+const c = load(KEY_C);
+const onlyNew = load(KEY_B);
+
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
   jest.restoreAllMocks();
@@ -65,8 +71,6 @@ const noteTarget: RotationTarget = { name: 'note', fields: ['text', 'tags'] };
 
 describe('rotateAll', () => {
   it('перешифровывает строку: читается новым ключом, старым — нет; условие несёт ключ и прежние значения', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const textA = a.crypto.encrypt('секретная заметка')!;
     const { client, updates } = fakeClient({
       note: [{ id: 7, text: textA, tags: null }],
@@ -81,15 +85,11 @@ describe('rotateAll', () => {
     expect(Object.keys(u.data)).toEqual(['text']);
     const stored = u.data.text as string;
     expect(b.crypto.decrypt(stored)).toBe('секретная заметка');
-    const onlyOld = load(KEY_A);
-    expect(onlyOld.crypto.decrypt(stored)).toBe(stored); // старым ключом не читается
-    const onlyNew = load(KEY_B);
+    expect(a.crypto.decrypt(stored)).toBe(stored); // старым ключом не читается
     expect(onlyNew.crypto.decrypt(stored)).toBe('секретная заметка');
   });
 
   it('составной ключ: условие по каждой колонке ключа, без «userId_type»', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const { client, updates } = fakeClient({
       diaryDraft: [
         { userId: 5n, type: 'schema', data: a.crypto.encrypt('{}') },
@@ -111,7 +111,6 @@ describe('rotateAll', () => {
   });
 
   it('null, массив и объект не трогает — обновления нет', async () => {
-    const b = load(KEY_B, KEY_A);
     const { client, updates } = fakeClient({
       note: [
         { id: 1, text: null, tags: null },
@@ -126,8 +125,6 @@ describe('rotateAll', () => {
   });
 
   it('строка, которую приложение изменило за время ротации (count 0), не считается и не ошибка', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const { client, count } = fakeClient({
       note: [{ id: 1, text: a.crypto.encrypt('x'), tags: null }],
     });
@@ -146,8 +143,6 @@ describe('rotateAll', () => {
   });
 
   it('падение одной модели не обрывает остальные: она в failed, остальные ротированы', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const { client, updates } = fakeClient({
       userLetter: [{ id: 1, text: a.crypto.encrypt('письмо') }],
       userFlashcard: [{ id: 2, reflection: a.crypto.encrypt('карточка') }],
@@ -173,8 +168,6 @@ describe('rotateAll', () => {
   });
 
   it('исключение из findMany тоже уходит в failed, дальше цикл идёт', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const { client, updates } = fakeClient(
       { userPractice: [{ id: 3, text: a.crypto.encrypt('практика') }] },
       ['userLetter'],
@@ -195,9 +188,6 @@ describe('rotateAll', () => {
   });
 
   it('значение, похожее на шифротекст, но не читаемое ни одним ключом, — в failed; читаемое соседнее поле всё равно ротируется', async () => {
-    const a = load(KEY_A);
-    const c = load(KEY_C);
-    const b = load(KEY_B, KEY_A); // ключа C у ротации нет
     const { client, updates } = fakeClient({
       note: [
         {
@@ -216,7 +206,6 @@ describe('rotateAll', () => {
   });
 
   it('легаси-открытый текст не считается нечитаемым', async () => {
-    const b = load(KEY_B, KEY_A);
     const { client } = fakeClient({
       note: [{ id: 1, text: 'просто текст с пробелами', tags: null }],
     });
@@ -227,8 +216,6 @@ describe('rotateAll', () => {
   });
 
   it('повторный прогон идемпотентен: значения остаются читаемыми', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const table = [
       { id: 1, text: a.crypto.encrypt('раз'), tags: null },
     ] as Row[];
@@ -248,8 +235,6 @@ describe('rotateAll', () => {
 
 describe('история концептуализаций', () => {
   it('строковые поля снапшотов ротируются, даты и не-строки — нет; условие несёт прежнюю историю', async () => {
-    const a = load(KEY_A);
-    const b = load(KEY_B, KEY_A);
     const history = [
       { savedAt: '2026-10-01', goals: a.crypto.encrypt('цели'), n: 3 },
       'мусор',
@@ -271,12 +256,10 @@ describe('история концептуализаций', () => {
     const s = snap as Row;
     expect(s.savedAt).toBe('2026-10-01');
     expect(s.n).toBe(3);
-    expect(load(KEY_B).crypto.decrypt(s.goals as string)).toBe('цели');
+    expect(onlyNew.crypto.decrypt(s.goals as string)).toBe('цели');
   });
 
   it('нечитаемое поле снапшота попадает в failed', async () => {
-    const c = load(KEY_C);
-    const b = load(KEY_B, KEY_A);
     const { client } = fakeClient({
       clientConceptualization: [
         { id: 'c1', history: [{ goals: c.crypto.encrypt('потеряно') }] },
@@ -292,7 +275,7 @@ describe('история концептуализаций', () => {
 });
 
 describe('summarize', () => {
-  const { rotate } = load(KEY_B);
+  const { rotate } = onlyNew;
 
   it('успех: можно убирать старый ключ', () => {
     expect(rotate.summarize({ rows: 12, failed: [] })).toBe(
