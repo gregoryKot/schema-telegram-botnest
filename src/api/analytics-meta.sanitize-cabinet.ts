@@ -2,12 +2,12 @@ import {
   SEARCH_RESULT_KINDS,
   TASK_ASSIGN_SOURCES,
 } from '../analytics/cabinet-events.constants';
-import { PLAN_RUBRICS, PLAN_STATUSES } from '../therapy/therapy-plan.types';
+import { sanitizePathMeta } from './analytics-meta.sanitize-path';
+import { PLAN_RUBRICS } from '../therapy/therapy-plan.types';
 
 type Meta = Record<string, unknown>;
 
 const RUBRIC_SET = new Set<string>(PLAN_RUBRICS);
-const STATUS_SET = new Set<string>(PLAN_STATUSES);
 const TASK_SOURCE_SET = new Set<string>(TASK_ASSIGN_SOURCES);
 const SEARCH_KIND_SET = new Set<string>(SEARCH_RESULT_KINDS);
 const SESSION_WORK_KINDS = ['technique', 'exercise', 'custom'];
@@ -24,7 +24,7 @@ function sanitizeSessionWork(meta: Meta): Meta | undefined {
 
 /** События, чью meta разбирает sanitizeCabinetMeta. */
 export const hasCabinetMeta = (name: string): boolean =>
-  /^(cabinet_session_work|task_assign_source|search_result_open|therapy_plan_item_\w+)$/.test(
+  /^(cabinet_session_work|task_assign_source|search_result_open|therapy_plan_item_\w+|therapy_path_\w+|therapy_plan_session_marked)$/.test(
     name,
   );
 
@@ -41,12 +41,12 @@ export function sanitizeCabinetMeta(
     if (typeof rubric !== 'string' || !RUBRIC_SET.has(rubric)) return undefined;
     return typeof fromGuide === 'boolean' ? { rubric, fromGuide } : undefined;
   }
-  if (name === 'therapy_plan_item_status') {
-    const { status } = meta;
-    return typeof status === 'string' && STATUS_SET.has(status)
-      ? { status }
-      : undefined;
-  }
+  if (
+    /^(therapy_path_|therapy_plan_session_marked|therapy_plan_item_status)/.test(
+      name,
+    )
+  )
+    return sanitizePathMeta(name, meta);
   if (name === 'task_assign_source') {
     const { source } = meta;
     return typeof source === 'string' && TASK_SOURCE_SET.has(source)

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import '../../../../styles/therapist-guide.css';
 import { api, reportClientError, type UserId } from '../../../../api';
 import { useGuide } from '../../../../../../shared/src/therapy/conceptGraph/guideLoader';
+import { trackPathDraftBuilt } from '../../../../../../shared/src/share/pathAnalytics';
 import { useTr } from '../../../../utils/addressForm';
 import { Skeleton } from '../../../Skeleton';
 import { ConceptFullscreenSheet, type SheetBack } from '../../ConceptFullscreenSheet';
@@ -40,8 +41,7 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
 
   const save = async () => {
     if (chosen.length === 0 || busy) return;
-    setBusy(true);
-    setError('');
+    setBusy(true); setError('');
     let ok = 0;
     try {
       // по одному: ручка плана создаёт один пункт; сбой посередине оставляет созданное в плане
@@ -53,7 +53,7 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
       reportClientError({ message: 'therapy path draft add failed', section: 'therapist.plan' });
       if (alive.current) setError(tr(`Добавлено ${ok} из ${chosen.length}. Остальное осталось в списке — попробуй ещё раз.`, `Добавлено ${ok} из ${chosen.length}. Остальное осталось в списке — попробуйте ещё раз.`));
     } finally {
-      if (ok > 0) onAdded();
+      if (ok > 0) { onAdded(); trackPathDraftBuilt(api, chosen.length); }
       if (alive.current) {
         setAdded((n) => n + ok);
         setBusy(false);

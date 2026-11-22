@@ -1,7 +1,4 @@
-export const NEED_NAMES: Record<string, string> = {
-  attachment: 'Привязанность', autonomy: 'Автономия',
-  expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Самоконтроль',
-};
+export { NEED_NAMES } from '../../../../shared/src/needs/needNames';
 
 export const ACHIEVEMENT_META: Record<string, { title: string; desc: string }> = {
   first_day:      { title: 'Первый шаг',   desc: 'Первая запись в дневнике' },

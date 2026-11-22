@@ -3,6 +3,8 @@
 // только у его раздела (аудит 2026-10, infra#28). Тест — на населённом И
 // пустом состоянии (правило №8): на чистой БД без NaN/undefined/мусора.
 
+import { NEED_NAMES } from './need-names';
+
 export interface PeopleData {
   totalUsers: number;
   newUsers7: number;
@@ -33,14 +35,6 @@ export interface NoticedData {
   /** 0 — вс … 6 — сб; null — за месяц не было ни одной записи. */
   bestDow: number | null;
 }
-
-const NEED_LABELS: Record<string, string> = {
-  attachment: 'Привязанность',
-  autonomy: 'Автономия',
-  expression: 'Выражение чувств',
-  play: 'Спонтанность',
-  limits: 'Самоконтроль',
-};
 
 const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 
@@ -76,7 +70,7 @@ export const formatNoticed = (d: NoticedData): string =>
   [
     `🔍 <b>Что заметили за неделю</b>`,
     d.lowestNeed
-      ? `Людям больше всего не хватает: ${NEED_LABELS[d.lowestNeed.needId] ?? d.lowestNeed.needId} (в среднем ${d.lowestNeed._avg.value?.toFixed(1)} из 10)`
+      ? `Людям больше всего не хватает: ${NEED_NAMES[d.lowestNeed.needId] ?? d.lowestNeed.needId} (в среднем ${d.lowestNeed._avg.value?.toFixed(1)} из 10)`
       : 'Пока мало данных о потребностях',
     `Чаще всего заполняют: ${d.bestDow === null ? 'пока мало записей, чтобы сказать' : DOW[d.bestDow]}`,
   ].join('\n');
