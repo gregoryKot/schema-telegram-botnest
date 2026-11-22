@@ -78,7 +78,6 @@
 
 
 
-- ⬜ **`npm audit`: 3 high в prod-зависимостях (`effect` через `@prisma/config`, `prisma`)** — `node scripts/npm-audit.mjs .` красный в precheck на чистом `main` (GHSA-7589-6fvf-x4pw, ReDoS в `effect` ≤3.22.0). Найдено при #1546, 2026-11-22.
 - ⬜ **Свои знаки у новых техник** — техники, добавленные в #1366, берут знак родственной (`webapp/src/components/art/techniqueSigns.ts`); свой рисунок каждой — дизайн-задача по `docs/design/PAPER_2026-11.md`.
 
 
