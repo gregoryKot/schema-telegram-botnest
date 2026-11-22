@@ -123,6 +123,22 @@ describe('картинки запуска iOS (apple-touch-startup-image)', () =
     }
   });
 
+  // Фон картинки — --bg своей темы (№4): сменили токен — генератор надо перезапустить.
+  it('в палитре каждой картинки есть --bg её темы', () => {
+    const css = read('./index.css');
+    const bg: Record<string, string | undefined> = {
+      light: /--bg:\s*(#[0-9a-f]{6});/i.exec(css)?.[1],
+      dark: /html\[data-theme="dark"\]\s*\{[^}]*?--bg:\s*(#[0-9a-f]{6});/i.exec(css)?.[1],
+    };
+    for (const t of tags) {
+      const buf = readFileSync(resolve(__dirname, '../public', t.href.slice(1)));
+      const at = buf.indexOf('PLTE', 0, 'latin1');
+      const palette = buf.subarray(at + 4, at + 4 + buf.readUInt32BE(at - 4)).toString('hex');
+      const colors = palette.match(/.{6}/g)?.map((c) => `#${c}`) ?? [];
+      expect(colors, t.href).toContain(bg[t.theme ?? '']?.toLowerCase());
+    }
+  });
+
   it('у каждого экрана есть светлая и тёмная картинка, условия не повторяются', () => {
     const screens = new Set(tags.map((t) => `${t.w}x${t.h}@${t.dpr}`));
     for (const theme of ['light', 'dark']) {

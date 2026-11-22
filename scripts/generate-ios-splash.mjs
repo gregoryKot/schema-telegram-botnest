@@ -1,6 +1,7 @@
 // Картинки запуска iOS (apple-touch-startup-image): установленное на iPhone/iPad приложение
 // показывает их до прихода index.html. Кадр повторяет экран загрузки #boot из webapp/index.html:
 // знак 88 pt на том же месте, фон — --bg темы. Подпись не рисуется: её шрифт у iOS свой.
+// Тему картинки iOS берёт у системы: при своей теме в приложении кадр сменит фон — ограничение iOS.
 // Запускается из generate-pwa-icons.mjs; PNG и блок тегов в index.html коммитятся.
 import sharp from 'sharp';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
