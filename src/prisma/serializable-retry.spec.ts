@@ -108,13 +108,19 @@ describe('inSerializableTx', () => {
     expect(slept).toHaveLength(SERIALIZATION_RETRIES - 1);
   });
 
-  it('по умолчанию ждёт настоящим таймером, не меньше половины потолка', async () => {
+  it('по умолчанию ждёт настоящим таймером в пределах потолка паузы', async () => {
+    const timer = jest.spyOn(global, 'setTimeout');
     const { prisma } = prismaFailing([coded('P2034')]);
-    const started = Date.now();
     await inSerializableTx(prisma, () => Promise.resolve('ok'), exhausted);
-    expect(Date.now() - started).toBeGreaterThanOrEqual(
-      RETRY_BASE_DELAY_MS / 2 - 2,
-    );
+    const waits = timer.mock.calls.map(([, ms]) => ms);
+    timer.mockRestore();
+    expect(
+      waits.some(
+        (ms) =>
+          Number(ms) >= RETRY_BASE_DELAY_MS / 2 &&
+          Number(ms) <= RETRY_BASE_DELAY_MS,
+      ),
+    ).toBe(true);
   });
 
   it(`${SERIALIZATION_RETRIES} конфликтов подряд → onExhausted()`, async () => {
