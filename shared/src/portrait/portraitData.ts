@@ -14,7 +14,7 @@
 // чтобы одна и та же схема не считалась дважды.
 import { NEED_ORDER, type NeedId } from '../needs/types';
 import { needColor } from '../needs/needColors';
-import { JOURNEY_NEED_NAMES } from '../journey/journeyMeta';
+import { NEED_NAMES } from '../needs/needNames';
 import { SCHEMAS, SCHEMA_NAME_TO_ID } from '../hooks/ysqSchemas';
 import {
   countActiveInHistory,
@@ -66,13 +66,13 @@ export function buildPortrait(input: PortraitInput): Portrait {
   }
 
   // Без `??`-фолбэков: NEED_ORDER — единственный источник id потребностей, и
-  // JOURNEY_NEED_NAMES (shared/src/journey/journeyMeta.ts) объявлен ровно по
+  // NEED_NAMES (shared/src/needs/needNames.ts) объявлен ровно по
   // тем же пяти ключам (сверка — тест «все пять id имеют подпись» в
   // portraitData.test.ts). Фолбэк здесь был бы недостижимой
   // веткой (правило №15: гейт не обходят кодом, который никогда не выполнится).
   const needs: PortraitNeed[] = NEED_ORDER.map((id) => ({
     id,
-    label: JOURNEY_NEED_NAMES[id],
+    label: NEED_NAMES[id],
     color: needColor(id),
     count: [...activeIds].filter((sid) => SCHEMA_TO_NEED[sid] === id).length,
   }));

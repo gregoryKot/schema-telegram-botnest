@@ -2,6 +2,8 @@
 // схем по доменам, сводка режимов, бары потребностей, столбики индекса,
 // превью дневника. Цвета не здесь — только hue (lib/tone.ts), тип записи и уровни.
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
+import { NEED_ORDER } from '../../../../shared/src/needs/types';
+import { NEED_NAMES } from '../../../../shared/src/needs/needNames';
 import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, indexLevel, type IndexLevel } from '../../lib/tone';
 
 export interface DomainTile {
@@ -47,18 +49,12 @@ export interface NeedBar {
   widthPct: number;
 }
 
-const NEED_ROWS = [
-  ['attachment', 'Привязанность'],
-  ['autonomy', 'Автономия'],
-  ['expression', 'Выражение чувств'],
-  ['play', 'Спонтанность'],
-  ['limits', 'Самоконтроль'],
-] as const;
 
 /** Бары потребностей дня; потребности без оценки пропускаются. */
 export function needBars(ratings: Record<string, number> | undefined): NeedBar[] {
   const bars: NeedBar[] = [];
-  for (const [id, label] of NEED_ROWS) {
+  for (const id of NEED_ORDER) {
+    const label = NEED_NAMES[id];
     const v = ratings?.[id];
     if (v == null) continue;
     bars.push({ id, label, hue: NEED_HUE[id], value: v, widthPct: Math.max(0, Math.min(10, v)) * 10 });
