@@ -94,7 +94,7 @@ describe('sanitizeGameMeta: события с meta.from', () => {
   });
 
   it.each(withFrom)('%s: незнакомое место дропает событие', (name) => {
-    expect(sanitizeGameMeta(name, { from: 'menu' })).toBeNull();
+    expect(sanitizeGameMeta(name, { from: 'nowhere' })).toBeNull();
     expect(sanitizeGameMeta(name, {})).toBeNull();
     expect(sanitizeGameMeta(name, undefined)).toBeNull();
   });
