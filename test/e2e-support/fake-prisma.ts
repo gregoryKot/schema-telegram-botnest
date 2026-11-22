@@ -113,7 +113,7 @@ export function makeFakePrisma() {
       })),
       userTable,
     ),
-    therapistNote: makeTable(),
+    therapistNote: withDefaults(makeTable(), { planItemIds: [] }), // @default([])
     ...makePathTables(),
     clientConceptualization: withUpdatedAt(makeTable()),
     modeMap: makeTable(),
