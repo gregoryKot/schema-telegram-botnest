@@ -259,7 +259,7 @@ describe('DataExportService.buildExport', () => {
         // D2 (аудит 2026-10): данные О человеке на стороне терапевта и связи
         // с другими людьми — не в файле, и файл об этом говорит.
         // ModeMap и концептуализация выдаются видом клиента, остальное — в withheld.
-        'ModeMap, TherapistNote, TherapyPlanItem, GuideMark, ClientConceptualization',
+        'ModeMap, TherapistNote, TherapyPlanItem, TherapyPath, GuideMark, ClientConceptualization',
         'Pair',
       ]),
     );

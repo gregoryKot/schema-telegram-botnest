@@ -187,6 +187,19 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     sourceId: ID,
     sourceField: ID,
   },
+  TherapyPath: {
+    startDate: DATE,
+    templateId: ID,
+  },
+  TherapyPathPhase: {
+    name: enc(`${TH}/therapy-path.view.ts`),
+    goal: enc(`${TH}/therapy-path.view.ts`),
+    templatePhaseId: ID,
+    startedAt: DATE,
+    endedAt: DATE,
+    criteriaDone: plain('номера отмеченных признаков фазы шаблона, не текст'),
+    note: enc(`${TH}/therapy-path.view.ts`),
+  },
   GuideMark: {
     address: plain('адрес раздела справочника из кода, не свободный текст'),
     note: enc(`${TH}/guide-marks.service.ts`),

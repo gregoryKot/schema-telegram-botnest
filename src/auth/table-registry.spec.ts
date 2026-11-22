@@ -130,6 +130,8 @@ const OTHER_MODELS: Record<string, string> = {
   Pair: 'две ссылки userId1/userId2 без колонки userId — отдельные UPDATE/DELETE в merge и deleteAllUserData',
   Subscription:
     'привязана по telegramId (оформляют из Telegram без веб-аккаунта): удаление — account.delete.ts по двум id, merge — merge-subscriptions.ts',
+  TherapyPathPhase:
+    'фаза «Пути клиента», каскад onDelete от TherapyPath — своей привязки к пользователю нет, уходит и переезжает с путём',
   SubscriptionCharge:
     'история списаний, каскад onDelete от Subscription — отдельной привязки к пользователю нет',
   // Честно: это персональные данные ВНЕ контура удаления аккаунта. Формы

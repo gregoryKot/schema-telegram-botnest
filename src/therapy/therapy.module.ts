@@ -13,6 +13,8 @@ import { TherapyCardClaimsController } from './therapy-card-claims.controller';
 import { TherapyTasksController } from './therapy-tasks.controller';
 import { TherapyPlanController } from './therapy-plan.controller';
 import { TherapyPlanService } from './therapy-plan.service';
+import { TherapyPathController } from './therapy-path.controller';
+import { TherapyPathService } from './therapy-path.service';
 import { TherapyNotesController } from './therapy-notes.controller';
 import { ModeMapsController } from './mode-maps.controller';
 import { CASEWORK_CONTROLLERS, CASEWORK_PROVIDERS } from './casework';
@@ -34,6 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyCardClaimsController,
     TherapyTasksController,
     TherapyPlanController,
+    TherapyPathController,
     TherapyNotesController,
     ModeMapsController,
     ...CASEWORK_CONTROLLERS,
@@ -44,6 +47,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyTasksService,
     TherapyTasksViewService,
     TherapyPlanService,
+    TherapyPathService,
     ...CASEWORK_PROVIDERS,
     TherapyNotesService,
     TherapyClientDataService,

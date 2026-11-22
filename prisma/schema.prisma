@@ -625,10 +625,47 @@ model TherapyPlanItem {
   sourceField String?
   taskId      Int?      // задание, которым пункт выдан клиенту
   task        UserTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  phaseId     Int?      // фаза «Пути клиента»; null — «Без фазы»
+  phase       TherapyPathPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([therapistId, clientId, position])
+}
+
+// «Путь клиента»: план работы по фазам во времени, один на пару терапевт–клиент.
+// clientId без FK, как у TherapyPlanItem (офлайн-клиент — отрицательный id).
+model TherapyPath {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  startDate   String   // YYYY-MM-DD
+  templateId  String?  // шаблон из shared/src/therapy/path/templates
+  phases      TherapyPathPhase[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([therapistId, clientId])
+}
+
+model TherapyPathPhase {
+  id              Int      @id @default(autoincrement())
+  pathId          Int
+  path            TherapyPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  position        Int      @default(0)
+  name            String   // шифруется
+  goal            String?  // шифруется
+  weeks           Int
+  templatePhaseId String?
+  startedAt       String?  // YYYY-MM-DD, фактическое начало
+  endedAt         String?  // YYYY-MM-DD, фактическое окончание
+  criteriaDone    Json     @default("[]") // номера отмеченных признаков перехода фазы шаблона
+  note            String?  // шифруется
+  planItems       TherapyPlanItem[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([pathId, position])
 }
 
 // Отметка «Про клиента» из «Справочника» (#1484): раздел по адресу
