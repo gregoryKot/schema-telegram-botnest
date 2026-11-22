@@ -21,6 +21,7 @@ const texts: ReferenceTexts = {
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
   practiceNotes: () => [FIXTURE_PRACTICE_NOTE],
   buildConcernGuides: () => [],
+  buildPhaseGuides: () => [],
 };
 const TASKS: CatalogTask[] = [
   { id: 'pismo-kritiku', title: 'Письмо Критику', variants: [{ text: 'Написать письмо', forModes: [], forSchemas: [] }], why: '', group: 'modes' },

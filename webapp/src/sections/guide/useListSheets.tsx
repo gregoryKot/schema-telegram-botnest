@@ -6,17 +6,19 @@ import { NeedGuideSheet } from '../../components/therapist/guide/NeedGuideSheet'
 import { ConcernGuideSheet } from '../../components/therapist/guide/ConcernGuideSheet';
 import type { ReferenceItem } from './guideReferenceModel';
 import { buildNeedGuides } from './guideReferenceNeeds';
+import { usePhaseSheet, type PhaseLinks } from './usePhaseSheet';
 
 /**
- * Листы «Справочника», которых нет в схеме случая: потребность и статья «Запросов». `open` открывает лист строки
- * своего вида и отвечает true; чужую строку не трогает. `under(onOpenSchema)` — лист потребности до листов схемы:
- * лист схемы, открытый из него, встаёт поверх порядком в DOM; `over` — статья, в слот `over` useConceptGuide
- * (внутри контекста отметок «Про клиента», как лист «Для терапевта»).
+ * Листы «Справочника», которых нет в схеме случая: потребность, статья «Запросов» и фаза «Пути терапии». `open` открывает
+ * лист строки своего вида и отвечает true; чужую строку не трогает. `under(links)` — листы потребности и фазы до листов
+ * схемы, режима и техники: открытый из них лист встаёт поверх порядком в DOM; `over` — статья, в слот `over`
+ * useConceptGuide (внутри контекста отметок «Про клиента», как лист «Для терапевта»).
  */
 export function useListSheets(texts: Guide, tr: Tr) {
   const [needId, setNeedId] = useState<NeedId | null>(null);
   const [concernId, setConcernId] = useState<string | null>(null);
   const need = useMemo(() => (needId ? buildNeedGuides(texts, tr).find((n) => n.id === needId) : undefined), [texts, tr, needId]);
+  const phase = usePhaseSheet(texts, tr);
   const concern = concernId ? texts.buildConcernGuides(tr).find((c) => c.id === concernId) : undefined;
   const open = (item: ReferenceItem): boolean => {
     if (item.kind === 'need') {
@@ -25,11 +27,12 @@ export function useListSheets(texts: Guide, tr: Tr) {
     } else if (item.kind === 'concern') {
       api.trackEvent('cabinet_guide_concern_open');
       setConcernId(item.id);
-    } else return false;
+    } else if (item.kind === 'phase') phase.open(item.id);
+    else return false;
     return true;
   };
-  const under = (onOpenSchema: (id: string) => void) =>
-    need && <NeedGuideSheet need={need} onOpenSchema={onOpenSchema} onClose={() => setNeedId(null)} />;
+  const under = (links: PhaseLinks & { onOpenSchema: (id: string) => void }) =>
+    <>{need && <NeedGuideSheet need={need} onOpenSchema={links.onOpenSchema} onClose={() => setNeedId(null)} />}{phase.sheet(links)}</>;
   const over = concern && <ConcernGuideSheet concern={concern} onClose={() => setConcernId(null)} />;
   return { open, under, over };
 }

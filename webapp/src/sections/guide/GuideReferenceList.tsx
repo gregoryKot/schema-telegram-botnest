@@ -5,13 +5,13 @@ import type { ReferenceGroup, ReferenceItem, ReferenceLayout } from './guideRefe
 import '../../styles/guide-reference.css';
 
 type Open = (item: ReferenceItem) => void;
-/** Строки группы: со знаком листа — без знака у строки; у листа без знака знак у каждой строки свой, под названием — суть. */
+/** Строки группы: со знаком листа — без знака у строки; у листа без знака знак у строки свой (у фазы — её номер), под названием — суть. */
 const rows = (g: Pick<ReferenceGroup, 'look' | 'items'>, onOpen: Open) => g.items.map((item) => (
   <button
     key={`${item.kind}:${item.id}`} type="button"
     className={`ds-list-row ds-list-row--hover ${g.look.sign ? 'ds-list-row--nav' : 'gr-row'}`} onClick={() => onOpen(item)}
   >
-    {!g.look.sign && <span className="pp-row-art">{item.sign && <SignArt sign={item.sign} size="row" />}</span>}
+    {!g.look.sign && <span className={`pp-row-art${item.step ? ' gr-step' : ''}`}>{item.step ?? (item.sign && <SignArt sign={item.sign} size="row" />)}</span>}
     <span className="ds-list-body">
       <span className="ds-list-title">{item.name}</span>
       {item.sub && <span className="ds-list-sub">{item.sub}</span>}
