@@ -26,8 +26,10 @@ describe('useNotesPage', () => {
     expect(result.current.notesPage.notes.map((n) => n.id)).toEqual([2, 1]);
     act(() => result.current.onNoteDeleted(1));
     expect(result.current.notesPage.total).toBe(105);
+    // 999 среди показанных нет — это скрытая запись, открытая из журнала: total тоже уменьшается.
     act(() => result.current.onNoteDeleted(999));
-    expect(result.current.notesPage.total).toBe(105);
+    expect(result.current.notesPage.total).toBe(104);
+    expect(result.current.notesPage.notes.map((n) => n.id)).toEqual([2]);
   });
 
   it('resetNotesPage возвращает пустую страницу', () => {

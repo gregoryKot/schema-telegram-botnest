@@ -1,5 +1,6 @@
 import { sanitizeMeta } from './analytics-meta.sanitize';
 import { PLAN_RUBRICS } from '../therapy/therapy-plan.types';
+import { TASK_ASSIGN_SOURCES } from '../analytics/cabinet-events.constants';
 
 describe('sanitizeMeta: события плана работы', () => {
   it('therapy_plan_item_added: только рубрика из списка и булев fromGuide', () => {
@@ -41,12 +42,12 @@ describe('sanitizeMeta: события плана работы', () => {
   });
 
   it('task_assign_source: только источник из списка, текст задания — мимо', () => {
-    for (const source of ['tile', 'catalog', 'custom']) {
+    for (const source of TASK_ASSIGN_SOURCES) {
       expect(sanitizeMeta('task_assign_source', { source, text: 'x' })).toEqual(
         { source },
       );
     }
-    for (const meta of [{ source: 'guide' }, { source: 1 }, {}]) {
+    for (const meta of [{ source: 'search' }, { source: 1 }, {}]) {
       expect(sanitizeMeta('task_assign_source', meta)).toBeUndefined();
     }
   });

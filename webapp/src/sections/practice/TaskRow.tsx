@@ -8,6 +8,7 @@ import { rowStatus } from './taskListModel';
 import { TaskDoneButton, TaskRowMeta } from './TaskRowParts';
 import { TaskRowTitle } from './TaskRowTitle';
 import { TaskSign } from './TaskSign';
+import { spotAttr, spotKey } from '../../hooks/useSpotlight';
 import '../../styles/client-practice.css';
 
 /** Строка задания/цели (b20): знак сущности слева, название (текст терапевта или клиента — glueSpaces), строка меты;
@@ -21,6 +22,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
   return (
     <div
       className={'ds-card ds-card--row ds-card--nav cp-task' + (st.openable ? ' ds-card--hover' : '') + (st.doneToday ? ' cp-task--done' : '')}
+      {...spotAttr(spotKey('task', task.id))}
       {...(st.openable ? pressable(onOpen) : {})}
     >
       <span className="pp-row-art"><TaskSign task={task} /></span>
