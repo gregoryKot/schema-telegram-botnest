@@ -97,6 +97,9 @@
   "webapp/src/components/therapist/plan/PlanAddSheet.tsx::setError": {
     "status": "reports"
   },
+  "webapp/src/components/therapist/plan/path/usePath.ts::setError": {
+    "status": "reports"
+  },
   "webapp/src/components/therapist/plan/usePlanItems.ts::setError": {
     "status": "reports"
   },
@@ -216,6 +219,10 @@
   "webapp/src/pages/admin/useSaveFeedback.tsx::setError": {
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/authCallback/EmailTokenConsume.tsx::setRetryReason": {
+    "status": "exempt",
+    "reason": "consumeEmailToken не отклоняется: сеть и ответ сервера он сам сводит к { kind: error } (тест consumeEmailToken.test.ts), экран «Нет связи» с «Повторить» рисуется из исхода"
   },
   "webapp/src/pages/landing/BookingForm.tsx::setStatus": {
     "status": "reports"

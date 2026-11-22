@@ -1,0 +1,64 @@
+/* «План работы» по фазам пути клиента (#1522, префикс ph-). Узко — вертикальная лента, раскрыта одна фаза;
+   колонка вкладки шире 720px — дорожки: фазы колонками с горизонтальной прокруткой, раскрыты все. */
+.ph-wrap { container: ph / inline-size; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ph-track { display: flex; flex-direction: column; gap: 14px; }
+.ph-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.ph-card.is-done { background: var(--paper-tint); box-shadow: none; }
+.ph-head { display: flex; align-items: flex-start; gap: 12px; }
+.ph-num {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font: 700 14px var(--sans); color: var(--text-sub); border: 1px solid var(--line-strong);
+}
+.ph-card.is-current .ph-num { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.ph-card.is-done .ph-num { color: var(--text-faint); }
+.ph-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ph-name { margin: 0; font: 700 16px/1.3 var(--sans); color: var(--text); overflow-wrap: break-word; }
+.ph-card.is-done .ph-name { color: var(--text-sub); }
+.ph-when { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.ph-flag { align-self: flex-start; font: 600 12px/1 var(--sans); padding: 5px 9px; border-radius: 10px; }
+.ph-flag--here { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.ph-flag--done { color: var(--text-faint); padding-left: 0; }
+.ph-tools { display: flex; align-items: center; flex: none; margin: -6px -8px 0 0; }
+.ph-toggle > svg { transition: transform .15s; }
+.ph-card.is-open .ph-toggle > svg { transform: rotate(180deg); }
+.ph-progress { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-sub); }
+.ph-bar { height: 4px; border-radius: 2px; background: var(--paper-sunk); overflow: hidden; }
+.ph-bar > span { display: block; height: 100%; background: var(--accent-green); }
+.ph-body { display: flex; flex-direction: column; gap: 14px; }
+.ph-card:not(.is-open) .ph-body { display: none; }
+.ph-goal { margin: 0; font: 400 15px/1.5 var(--serif); color: var(--text); }
+.ph-items { padding: 0; }
+.ph-set { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; }
+.ph-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; box-sizing: border-box; font-size: 15px; line-height: 1.45; color: var(--text); cursor: pointer; }
+.ph-check + .ph-check { border-top: 1px solid var(--paper-sunk); }
+.ph-check > input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--accent); }
+.ph-mistakes > summary { min-height: 44px; box-sizing: border-box; padding: 12px 0; cursor: pointer; font: 600 14px var(--sans); color: var(--text-sub); }
+.ph-mistakes ul { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.ph-action { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.ph-edit { display: flex; align-items: center; justify-content: flex-end; padding-top: 6px; margin-bottom: -6px; border-top: 1px solid var(--paper-sunk); }
+.ph-edit .ds-btn--icon.tb-del:disabled { background: transparent; border-color: transparent; opacity: .35; }
+.ph-form { display: flex; flex-direction: column; gap: 12px; }
+.ph-field { display: flex; flex-direction: column; gap: 6px; }
+.ph-field--weeks { max-width: 160px; }
+.ph-unphased { display: flex; flex-direction: column; gap: 10px; }
+.ph-create { display: flex; flex-direction: column; gap: 20px; padding: 8px 20px 32px; }
+.ph-tpls { gap: 10px; }
+.ph-tpls > legend { margin-bottom: 10px; }
+.ph-tpl { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 14px; cursor: pointer; }
+.ph-tpl.is-picked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ph-tpl > input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+.ph-tpl-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ph-tpl-name { font: 700 15px/1.3 var(--sans); color: var(--text); }
+.ph-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.ph-date { display: flex; flex-direction: column; gap: 8px; max-width: 240px; }
+
+@container ph (min-width: 720px) {
+  .ph-track { flex-direction: row; align-items: flex-start; overflow-x: auto; padding: 2px 8px 12px 2px; scroll-snap-type: x proximity; }
+  .ph-card { flex: 0 0 320px; scroll-snap-align: start; }
+  .ph-card:not(.is-open) .ph-body { display: flex; }
+  .ph-toggle { display: none; }
+}
+/* Строка пункта в узкой фазе — как на телефоне: статус и действия строкой, текст под ними. */
+.ph-card .pl-item { flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.ph-card .pl-acts { margin-left: auto; gap: 0; }
+.ph-card .pl-body { order: 1; flex-basis: 100%; padding-top: 0; }

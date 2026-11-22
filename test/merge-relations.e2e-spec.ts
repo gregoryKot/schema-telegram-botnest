@@ -153,6 +153,65 @@ describeOnRealDb(
         ).toBe(0);
       });
 
+      it('путь клиента: при совпадении пары остаётся путь target, путь без конфликта переезжает', async () => {
+        const ids = { in: ALL };
+        await prisma.therapyPath.deleteMany({
+          where: { OR: [{ therapistId: ids }, { clientId: ids }] },
+        });
+        const path = (
+          therapistId: bigint,
+          clientId: bigint,
+          startDate: string,
+        ) =>
+          prisma.therapyPath.create({
+            data: {
+              therapistId,
+              clientId,
+              startDate,
+              phases: { create: { name: startDate, weeks: 4 } },
+            },
+            include: { phases: true },
+          });
+        const lost = await path(TH, S, '2026-01-01'); // пара (TH, T) уже занята
+        await path(TH, T, '2026-02-02');
+        await path(S, Y, '2026-03-03'); // пара (T, Y) уже занята
+        await path(T, Y, '2026-04-04');
+        await path(S, Z, '2026-05-05');
+        const item = await prisma.therapyPlanItem.create({
+          data: {
+            therapistId: TH,
+            clientId: S,
+            rubric: 'custom',
+            text: 'x',
+            phaseId: lost.phases[0].id,
+          },
+        });
+
+        await app.get(MergeService).merge(S, T);
+
+        const rows = await prisma.therapyPath.findMany({
+          where: { OR: [{ therapistId: ids }, { clientId: ids }] },
+          include: { phases: true },
+          orderBy: { startDate: 'asc' },
+        });
+        expect(
+          rows.map((r) => [r.therapistId, r.clientId, r.phases[0]?.name]),
+        ).toEqual([
+          [TH, T, '2026-02-02'],
+          [T, Y, '2026-04-04'],
+          [T, Z, '2026-05-05'],
+        ]);
+        // Пункт плана проигравшего пути переехал и остался «Без фазы».
+        expect(
+          await prisma.therapyPlanItem.findUniqueOrThrow({
+            where: { id: item.id },
+          }),
+        ).toMatchObject({ therapistId: TH, clientId: T, phaseId: null });
+        await prisma.therapyPath.deleteMany({
+          where: { OR: [{ therapistId: ids }, { clientId: ids }] },
+        });
+      });
+
       it('партнёр виден один раз в любой ориентации, пара без конфликта переехала', async () => {
         await app.get(MergeService).merge(S, T);
 
