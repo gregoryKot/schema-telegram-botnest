@@ -12,10 +12,11 @@ import { suggestPhaseId } from './pathView';
 export function usePhasePick(clientId: string | null, sourceAddress: string) {
   const tr = useTr();
   const [loaded, setLoaded] = useState<{ clientId: string; path: TherapyPath } | null>(null);
-  const [chosen, setChosen] = useState<number | null | undefined>(undefined);
+  // Выбор привязан к клиенту: при смене клиента он сбрасывается без setState в эффекте.
+  const [pick, setPick] = useState<{ clientId: string | null; phaseId: number | null } | null>(null);
+  const chosen = pick && pick.clientId === clientId ? pick.phaseId : undefined;
+  const setChosen = (phaseId: number | null) => setPick({ clientId, phaseId });
   useEffect(() => {
-    setLoaded(null);
-    setChosen(undefined);
     if (clientId == null) return;
     let alive = true;
     api.getTherapyPath(clientId as UserId).then(
