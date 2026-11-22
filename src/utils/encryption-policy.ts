@@ -173,8 +173,8 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   TherapistNote: {
     date: DATE,
-    text: enc(`${TH}/therapy-notes.service.ts`),
-    work: enc(`${TH}/therapy-notes.service.ts`),
+    text: enc(`${TH}/session-note-create.ts`),
+    work: enc(`${TH}/session-note-create.ts`),
   },
   TherapyPlanItem: {
     rubric: ID,

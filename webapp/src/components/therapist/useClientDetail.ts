@@ -164,7 +164,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     saveStatus: conceptSave.saveStatus, savedAt: conceptSave.savedAt, retrySave: conceptSave.retrySave,
     newNoteText: notes.newNoteText, setNewNoteText: notes.setNewNoteText,
     newNoteDate: notes.newNoteDate, setNewNoteDate: notes.setNewNoteDate,
-    newNoteWork: notes.newNoteWork, setNewNoteWork: notes.setNewNoteWork,
+    newNoteWork: notes.newNoteWork, setNewNoteWork: notes.setNewNoteWork, newNotePlanIds: notes.newNotePlanIds, setNewNotePlanIds: notes.setNewNotePlanIds,
     noteSaving: notes.noteSaving, showAssign, setShowAssign,
     editingStartDate: sa.editingStartDate, setEditingStartDate: sa.setEditingStartDate,
     localStartDate: sa.localStartDate, setLocalStartDate: sa.setLocalStartDate,
