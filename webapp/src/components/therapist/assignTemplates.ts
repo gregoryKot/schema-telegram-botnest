@@ -1,14 +1,16 @@
+import type { TaskAssignOrigin } from '../../../../shared/src/share/taskAssignAnalytics';
 import type { TaskType } from '../taskCreate/taskOptions';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 import { ENTITY_LOOK, type Look } from '../../../../shared/src/theme/entityLook';
 import { taskEntity } from '../../sections/practice/taskEntity';
 
-/** С чем открывается лист назначения: тип и, для «Своего задания», текст; catalogId — запись справочника заданий. */
-export interface AssignPreset { type: TaskType; text?: string; catalogId?: string }
+/** С чем открывается лист назначения: тип и, для «Своего задания», текст; catalogId — запись справочника заданий; origin — откуда заготовка (аналитика). */
+export interface AssignPreset { type: TaskType; text?: string; catalogId?: string; origin?: TaskAssignOrigin }
 
 /** `look` — бумага и знак плитки: сущность задания, которое шаблон создаст (`taskEntity`, как у TaskSign строки и доски, r2). */
 interface AssignTemplate { title: string; sub: string; preset: AssignPreset; look: Look }
-const tpl = (title: string, sub: string, preset: AssignPreset): AssignTemplate => {
+const tpl = (title: string, sub: string, base: AssignPreset): AssignTemplate => {
+  const preset: AssignPreset = { ...base, origin: 'template' };
   const { hue, sign } = ENTITY_LOOK[taskEntity({ type: preset.type, text: preset.text ?? '' })];
   return { title, sub, preset, look: { hue, sign } };
 };
