@@ -40,6 +40,8 @@ import guestC from '../assets/wk_guest_c.png';
 import quiet from '../assets/bg_wk_quiet.png';
 import quietVoid from '../assets/bg_wk_quiet_void.png';
 import little from '../assets/wk_little.png';
+import cabinet from '../assets/bg_wk_cabinet.png';
+import therapist from '../assets/wk_therapist.png';
 
 const sasha = import.meta.glob<string>('../assets/wk_sasha_*.png', { eager: true, import: 'default' });
 const IMAGES = { bg_wk_city: city, bg_wk_home: home, bg_wk_street: street, bg_wk_office: office, bg_wk_office_glitch: officeGlitch,
@@ -47,13 +49,13 @@ const IMAGES = { bg_wk_city: city, bg_wk_home: home, bg_wk_street: street, bg_wk
   wk_notif_wall: notifWall, wk_curb: curb, wk_step: step, wk_step_hi: stepHi, wk_puddle: puddle,
   bg_wk_city_eve: cityEve, bg_wk_flat: flat, bg_wk_flat_glitch: flatGlitch, wk_call_wall: callWall, // «Среда»
   bg_wk_party: party, bg_wk_party_glitch: partyGlitch, bg_wk_exit_floor: exitFloor, wk_mask_wall: maskWall, // «Пятница»
-  bg_wk_quiet: quiet, bg_wk_quiet_void: quietVoid }; // «Воскресенье»
+  bg_wk_quiet: quiet, bg_wk_quiet_void: quietVoid, bg_wk_cabinet: cabinet }; // «Воскресенье», эпилог
 const SHEETS: Record<string, [url: string, fw: number, fh: number]> = {
   wk_piles: [piles, 26, 88], wk_door: [door, 34, 62], wk_mister: [mister, 36, 36],
   wk_colleague_a: [colA, 40, 60], wk_colleague_b: [colB, 40, 60], wk_colleague_c: [colC, 40, 60], wk_colleague_box: [colBox, 40, 60],
   wk_mom_screen: [momScreen, 40, 60], wk_mom_call: [momCall, 34, 62],
   wk_dishes: [dishes, 26, 88], wk_friend_cake: [friendCake, 34, 62], wk_guest_ask: [guestAsk, 40, 60],
-  wk_little: [little, 34, 62],
+  wk_little: [little, 34, 62], wk_therapist: [therapist, 104, 62],
   wk_guest_a: [guestA, 40, 60], wk_guest_b: [guestB, 40, 60], wk_guest_c: [guestC, 40, 60],
 };
 for (const [path, url] of Object.entries(sasha)) SHEETS[path.slice(path.lastIndexOf('/') + 1, -4)] = [url, 40, 60];

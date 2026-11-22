@@ -170,6 +170,8 @@ const weekState = (page: Page) =>
         'bg_wk_quiet',
         'bg_wk_quiet_void',
         'wk_little',
+        'bg_wk_cabinet',
+        'wk_therapist',
       ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,
       // подписи пузырей и кнопок лежат внутри контейнеров
@@ -633,12 +635,115 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     );
     await expect
       .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
-      .toContain('Продолжение скоро');
+      .toContain('Дальше — первая встреча');
     // конец тяжёлой главы — тоже с кризисной строкой
     for (const line of crisis)
       expect((await weekState(page)).texts).toContain(line);
     for (const name of ['game_chapter_start', 'game_chapter_done'])
       expect(events).toContain(name);
+    // после «Воскресенья» есть путь в эпилог
+    await pressCardButton(page, 'Дальше — первая встреча');
+    await expect
+      .poll(async () => (await weekState(page)).chapter, { timeout: 15_000 })
+      .toBe('first');
+  });
+
+  test('эпилог «Первая встреча»: терапевт замечает привычки вслух, ПАУЗА вдвоём, финальная карточка называет режимы', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openGame(page, 'first', 'Week');
+    const start = await weekState(page);
+    expect(start.chapter).toBe('first');
+    expect(start.texts).toContain('Это Саша. Первый раз у терапевта');
+    expect(start.art).toBe(true);
+    // тихая ссылка в приложение живёт в меню — оно есть в каждой главе
+    await expect(page.locator('#menu-app')).toHaveText('Открыть приложение');
+    await startWeek(page);
+    // комната не сбоит, а кресло держится впереди; преград нет
+    await weekGoTo(page, 1720, 'overwork');
+    const far = await weekState(page);
+    expect(far.gateCount).toBe(0);
+    expect(far.texts).toContain('цель: дойти до кресла');
+    expect(far.texts).toContain('терапевт');
+    // привычки приходят и сюда: терапевт замечает каждую вслух
+    await tapKey(page, 'KeyZ');
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 15_000 })
+      .toContain('Вы рассказываете, как сдают отчёт. Здесь оценок не ставят');
+    await weekGoTo(page, 4120, 'agree');
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 15_000 })
+      .toContain('Взгляд ушёл на часы. Время есть. Я здесь');
+    await tapKey(page, 'KeyC');
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 15_000 })
+      .toContain('Со мной можно не соглашаться');
+    const after = await weekState(page);
+    expect(after.energy).toBe(far.energy);
+    expect(after.doorAhead).toBeGreaterThan(300);
+    // пик: терапевт зовёт остановиться вместе — ПАУЗА в два шага
+    await weekGoTo(page, 5320);
+    await expect
+      .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
+      .toBe(true);
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).revealed, { timeout: 15_000 })
+      .toContain('pause');
+    const hold = async () => {
+      await page.keyboard.down('KeyV');
+      await expect
+        .poll(async () => (await weekState(page)).open, { timeout: 15_000 })
+        .toBe(true);
+      await page.keyboard.up('KeyV');
+    };
+    await hold();
+    expect((await weekState(page)).texts).toContain(
+      'ПАУЗА ВДВОЁМ · шаг 1 из 2: назвать',
+    );
+    await tapKey(page, 'Digit2');
+    await expect
+      .poll(async () => (await weekState(page)).half, { timeout: 15_000 })
+      .toBe(true);
+    await hold();
+    await tapKey(page, 'Digit3');
+    await expect
+      .poll(async () => (await weekState(page)).named, { timeout: 15_000 })
+      .toBe(true);
+    await expect
+      .poll(async () => (await weekState(page)).done, { timeout: 30_000 })
+      .toBe(true);
+    expect((await weekState(page)).texts).toContain(
+      'Сегодня мы ничего не чинили. Мы начали',
+    );
+    // финальная карточка: режимы по именам, зов и кризисная строка
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
+      .toContain('Пройти неделю заново');
+    const card = (await weekState(page)).texts;
+    for (const line of [
+      'Требовательный Критик',
+      'Отстранённый Защитник',
+      'Уязвимый Ребёнок',
+      'Здоровый Взрослый',
+      'Записаться на первую встречу',
+      'Попробовать в приложении',
+      'если тяжело прямо сейчас — 8-800-100-49-94, бесплатно',
+      'детям и подросткам — 8-800-2000-122',
+    ])
+      expect(card).toContain(line);
+    for (const name of [
+      'game_chapter_start',
+      'game_chapter_done',
+      'game_cta_shown',
+    ])
+      expect(events).toContain(name);
+    await pressCardButton(page, 'Пройти неделю заново');
+    await expect
+      .poll(async () => (await weekState(page)).chapter, { timeout: 15_000 })
+      .toBe('mon');
   });
 
   test('/game/ без хеша открывает «Неделю»', async ({ page }) => {
