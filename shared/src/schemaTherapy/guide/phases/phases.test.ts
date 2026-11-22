@@ -33,7 +33,9 @@ describe.each([
       expect(p.id).toMatch(/^[a-z][a-z0-9_]*$/);
       for (const text of [p.name, p.goal, p.essence])
         expect(text.trim()).not.toBe('');
-      expect(citedSources(p.sources).length).toBeGreaterThan(0);
+      // Лист шаблона может стоять на статье протокола: ссылка с годом, а не книга полки.
+      if (p.group === 'templates') expect(p.sources).toMatch(/\[[^\]]+\]/);
+      else expect(citedSources(p.sources).length).toBeGreaterThan(0);
     }
   });
 
