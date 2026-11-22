@@ -3,6 +3,7 @@
 // ConceptAppendSchemaLink в shared/src/therapy/conceptAppend.ts = свойства DTO. Бэкенд shared не
 // импортирует — контракт читается из файла (образец —
 // therapy-invite-code.parity.spec.ts).
+import { SCHEMA_IDS } from '../kb-ids';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { plainToInstance } from 'class-transformer';
@@ -55,7 +56,11 @@ describe('ConceptAppendDto', () => {
       modeIds: ['punitive_critic'],
       goals: 'полное тело холст не шлёт',
       modeLinks: [
-        { modeId: 'punitive_critic', schemaIds: ['shame'], alias: 'Судья' },
+        {
+          modeId: 'punitive_critic',
+          schemaIds: ['defectiveness'],
+          alias: 'Судья',
+        },
       ],
     });
     expect(props).toEqual([]);
@@ -74,24 +79,28 @@ describe('ConceptAppendDto', () => {
     await expect(
       check({ modeLinks: [{ modeId: long, schemaIds: [] }] }),
     ).resolves.toMatchObject({ props: ['modeLinks'] });
-    await expect(check({ modeIds: ['x'.repeat(64)] })).resolves.toMatchObject({
+    await expect(
+      check({ modeIds: [`cm_${'x'.repeat(61)}`] }),
+    ).resolves.toMatchObject({
       props: [],
     });
   });
 
   it('больше 40 режимов или 20 схем у связи — отказ', async () => {
-    const ids = (n: number) => Array.from({ length: n }, (_, i) => `m${i}`);
+    const ids = (n: number) => Array.from({ length: n }, (_, i) => `cm_${i}`);
+    const schemas = (n: number) =>
+      Array.from({ length: n }, (_, i) => SCHEMA_IDS[i % SCHEMA_IDS.length]);
     await expect(check({ modeIds: ids(41) })).resolves.toMatchObject({
       props: ['modeIds'],
     });
     await expect(
-      check({ modeLinks: [{ modeId: 'm', schemaIds: ids(21) }] }),
+      check({ modeLinks: [{ modeId: 'cm_m', schemaIds: schemas(21) }] }),
     ).resolves.toMatchObject({ props: ['modeLinks'] });
   });
 
   it('связь без schemaIds или с нестроковым id — отказ', async () => {
     await expect(
-      check({ modeLinks: [{ modeId: 'm' }] }),
+      check({ modeLinks: [{ modeId: 'cm_m' }] }),
     ).resolves.toMatchObject({ props: ['modeLinks'] });
     await expect(check({ modeIds: [42] })).resolves.toMatchObject({
       props: ['modeIds'],
@@ -148,11 +157,11 @@ describe('ConceptAppendDto — потребности', () => {
   it('неизвестная потребность — отказ (и у режима, и у схемы)', async () => {
     await expect(
       check({
-        modeLinks: [{ modeId: 'm', schemaIds: [], needIds: ['safety'] }],
+        modeLinks: [{ modeId: 'cm_m', schemaIds: [], needIds: ['safety'] }],
       }),
     ).resolves.toMatchObject({ props: ['modeLinks'] });
     await expect(
-      check({ schemaLinks: [{ schemaId: 's', needIds: ['safety'] }] }),
+      check({ schemaLinks: [{ schemaId: 'failure', needIds: ['safety'] }] }),
     ).resolves.toMatchObject({ props: ['schemaLinks'] });
   });
 
@@ -166,22 +175,25 @@ describe('ConceptAppendDto — потребности', () => {
       'play',
     ];
     await expect(
-      check({ schemaLinks: [{ schemaId: 's', needIds: six }] }),
+      check({ schemaLinks: [{ schemaId: 'failure', needIds: six }] }),
     ).resolves.toMatchObject({ props: ['schemaLinks'] });
     await expect(
       check({ schemaLinks: [{ schemaId: 'x'.repeat(65), needIds: [] }] }),
     ).resolves.toMatchObject({ props: ['schemaLinks'] });
     await expect(
-      check({ schemaLinks: [{ schemaId: 's' }] }),
+      check({ schemaLinks: [{ schemaId: 'failure' }] }),
     ).resolves.toMatchObject({ props: ['schemaLinks'] });
     await expect(
       check({ schemaLinks: [{ schemaId: 'x'.repeat(64), needIds: [] }] }),
+    ).resolves.toMatchObject({ props: ['schemaLinks'] });
+    await expect(
+      check({ schemaLinks: [{ schemaId: 'failure', needIds: [] }] }),
     ).resolves.toMatchObject({ props: [] });
   });
 
   it('больше 40 записей схем — отказ', async () => {
     const links = Array.from({ length: 41 }, (_, i) => ({
-      schemaId: `s${i}`,
+      schemaId: SCHEMA_IDS[i % SCHEMA_IDS.length],
       needIds: ['play'],
     }));
     await expect(check({ schemaLinks: links })).resolves.toMatchObject({

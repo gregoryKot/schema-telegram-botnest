@@ -6,6 +6,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
+import { IsKbId } from './kb-id.validator';
 import { NEED_IDS } from '../../bot/bot.service';
 
 // Вложенные DTO тела «дописать с холста» (concept-append.dto.ts): линии,
@@ -17,12 +18,14 @@ import { NEED_IDS } from '../../bot/bot.service';
 export class ConceptAppendLinkDto {
   @IsString()
   @MaxLength(64)
+  @IsKbId('modeOrCustom')
   modeId!: string;
 
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('schema', { each: true })
   schemaIds!: string[];
 
   @IsOptional()
@@ -36,6 +39,7 @@ export class ConceptAppendLinkDto {
 export class ConceptAppendSchemaLinkDto {
   @IsString()
   @MaxLength(64)
+  @IsKbId('schema')
   schemaId!: string;
 
   @IsArray()
