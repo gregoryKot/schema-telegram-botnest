@@ -1,5 +1,6 @@
 import type { MutableRefObject } from 'react';
 import type { TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
+import type { GuideUsageGroup } from '../../../../../shared/src/schemaTherapy/guide/backlinks';
 import type { SheetBack } from '../ConceptFullscreenSheet';
 import { GuideSection } from './GuideSection';
 import { techniqueGuideLook } from './guideLook';
@@ -16,11 +17,13 @@ import { articleAddress } from './marks/guideMarkModel';
  * `mark` — лист открыт из схемы случая или журнала техник клиента: под героем
  * «Делали сегодня» и сколько раз делали, за «делали …» — «журнал →»
  * (TechniqueMarkRow); без клиента — нет. `backRef` — goBack листа для «журнал →»
- * (useConceptGuide).
+ * (useConceptGuide). `usages` — «Где применяется» под «Подробнее»: режимы, схемы и запросы, которые зовут технику.
  */
-export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
-  technique: TechniqueGuide; mark?: TechniqueMarkProps; onClose: () => void; backRef?: MutableRefObject<SheetBack | null>;
+export function TechniqueSheet({ technique: t, usages = [], mark, onClose, backRef }: {
+  technique: TechniqueGuide; usages?: GuideUsageGroup[]; mark?: TechniqueMarkProps; onClose: () => void;
+  backRef?: MutableRefObject<SheetBack | null>;
 }) {
+  const used = usages.map((g) => ({ lead: g.lead, text: g.items.map((i) => i.name).join(', ') }));
   const at = articleAddress('technique', t.id);
   return (
     <GuidePage
@@ -30,6 +33,7 @@ export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
       moreParts={[
         { title: 'Когда не делать', text: t.cautions, address: at('cautions') },
         { title: 'Доказательность', text: t.evidence, address: at('evidence') },
+        { title: 'Где применяется', address: at('usages'), children: used.length > 0 ? <GuidePoints items={used} /> : undefined },
       ]}
     >
       {mark && <TechniqueMarkRow {...mark} />}

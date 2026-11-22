@@ -23,6 +23,10 @@ const texts = {
         }
       : null,
   buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
+  modeSchemaLinks: (modeId: string) =>
+    modeId === 'vulnerable_child'
+      ? [{ id: 'abandonment', name: 'Покинутость' }]
+      : [],
 };
 const ty = (t: string) => t;
 
@@ -34,6 +38,7 @@ describe('resolveModeGuide', () => {
       'chairwork',
       'imagery_rescripting',
     ]);
+    expect(view?.schemas).toEqual([{ id: 'abandonment', name: 'Покинутость' }]);
   });
 
   it('свой режим терапевта раздела не имеет — null, плашка покажет строку группы', () => {
