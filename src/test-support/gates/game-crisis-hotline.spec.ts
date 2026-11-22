@@ -54,6 +54,7 @@ describe('кризисная строка игры', () => {
     expect(read('game/src/week/endCard.ts')).toMatch(
       /if \(o\.crisis\) crisisLines\(/,
     );
-    expect(read('game/src/scenes/WeekScene.ts')).toContain('crisis: ch.crisis');
+    expect(read('game/src/week/ending.ts')).toContain('crisis: ch.crisis');
+    expect(read('game/src/week/finalCard.ts')).toContain('crisisLines(');
   });
 });
