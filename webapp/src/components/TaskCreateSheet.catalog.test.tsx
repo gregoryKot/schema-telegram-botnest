@@ -18,8 +18,8 @@ const first = catalog[0];
 const text = (task: typeof first, variant = 0) => customTaskText({ title: task.title, text: task.variants[variant].text });
 const textarea = () => screen.getByPlaceholderText('Например: позвонить другу раз в неделю') as HTMLTextAreaElement;
 
-function renderSheet(clientId?: UserId) {
-  render(<MemoryRouter><TaskCreateSheet clientId={clientId} onCreated={vi.fn()} onClose={vi.fn()} /></MemoryRouter>);
+function renderSheet(clientId?: UserId, preset: Partial<Parameters<typeof TaskCreateSheet>[0]> = {}) {
+  render(<MemoryRouter><TaskCreateSheet clientId={clientId} {...preset} onCreated={vi.fn()} onClose={vi.fn()} /></MemoryRouter>);
 }
 
 beforeEach(() => { vi.clearAllMocks(); });
@@ -73,6 +73,24 @@ describe('TaskCreateSheet — «Из справочника»', () => {
     await waitFor(() => expect(mockApi.createTask).toHaveBeenCalled());
     expect(mockApi.createTask.mock.calls[0][0]).toMatchObject({ text: 'своё', catalogId: undefined });
     expect(mockApi.trackEvent).toHaveBeenCalledWith('task_assign_source', { source: 'custom' });
+  });
+
+  it('лист открыт из «Дать заданием» или шаблона — источник guide / template, а после смены типа — плитка', async () => {
+    mockApi.createTask.mockResolvedValue({ id: 1 });
+    renderSheet(42, { defaultType: 'custom', defaultText: text(first), defaultCatalogId: first.id, assignOrigin: 'guide' });
+    fireEvent.click(screen.getByText('Назначить задание'));
+    await waitFor(() => expect(mockApi.trackEvent).toHaveBeenCalledWith('task_assign_source', { source: 'guide' }));
+    cleanup(); vi.clearAllMocks();
+
+    renderSheet(42, { defaultType: 'safe_place', assignOrigin: 'template' });
+    fireEvent.click(screen.getByText('Назначить задание'));
+    await waitFor(() => expect(mockApi.trackEvent).toHaveBeenCalledWith('task_assign_source', { source: 'template' }));
+    cleanup(); vi.clearAllMocks();
+
+    renderSheet(42, { defaultType: 'safe_place', assignOrigin: 'template' });
+    fireEvent.click(screen.getByText('Трекер потребностей'));
+    fireEvent.click(screen.getByText('Назначить задание'));
+    await waitFor(() => expect(mockApi.trackEvent).toHaveBeenCalledWith('task_assign_source', { source: 'tile' }));
   });
 
   it('поиск без совпадений — «Ничего не нашлось»; своей цели клиента раздел не показывается', async () => {
