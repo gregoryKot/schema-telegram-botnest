@@ -61,10 +61,6 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
     else if (kind === 'schema') guide.actions.onOpenSchema(id);
     else guide.actions.onOpenTechnique(id as TechniqueId);
   };
-  const draft = {
-    clientId: selectedClient.telegramId, modeIds: detail.activeModeIds, schemaIds: detail.activeSchemaIds,
-    onOpen: openSource, onOpenConcept: () => detail.setClientTab('concept'), onAdded: plan.reload,
-  };
   const renderRow = makeRenderPlanRow({ plan, texts, tr, openSource, onAssign: setAssignItem, onDelete: setConfirmDelete });
   // Раскладку выбирают руками; до выбора — по фазам, если путь есть. Ждём путь, чтобы раскладка не прыгала.
   const shown: PlanLayout = layout ?? (path.path ? 'phases' : 'channels');
@@ -82,7 +78,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
         <>
           <PlanLayoutSwitch value={shown} onChange={setLayout} />
           {shown === 'phases'
-            ? <PathLayout path={path} items={items} renderRow={renderRow} draft={draft} />
+            ? <PathLayout path={path} items={items} renderRow={renderRow} draft={{ clientId: selectedClient.telegramId, modeIds: detail.activeModeIds, schemaIds: detail.activeSchemaIds, onOpen: openSource, onOpenConcept: () => detail.setClientTab('concept'), onAdded: plan.reload }} />
             : <PlanChannels items={items} plan={plan} renderRow={renderRow} />}
           {plan.error && !confirmDelete && <div className="tb-error" role="alert">{plan.error}</div>}
         </>
