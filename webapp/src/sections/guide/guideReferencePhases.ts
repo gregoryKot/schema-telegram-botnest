@@ -1,6 +1,6 @@
-// Вкладка «Путь терапии»: условные фазы лентой по порядку (shared/…/guide/phases/). Одна раскрытая группа, её подпись и
-// подсказка отвечают «что это и зачем»; обзор идёт первым без номера, фазы — с номерами; бумага — своя сирень.
-import type { PhaseGuide, TechniqueGuide } from '../../../../shared/src/schemaTherapy/guide';
+// Вкладка «Путь терапии»: условные фазы лентой по порядку, за ней сквозные темы и шаблоны пути (shared/…/guide/phases/). Подпись и
+// подсказка группы отвечают «что это и зачем»; обзор идёт первым без номера, фазы — с номерами; бумага — своя сирень.
+import type { PathSheetGroupId, PhaseGuide, TechniqueGuide } from '../../../../shared/src/schemaTherapy/guide';
 import type { Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
 import type { Tr } from '../../../../shared/src/needs/types';
 import { getModeById } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
@@ -15,21 +15,31 @@ export const PHASES_HINT = 'Условная карта: фазы гибкие, 
 /** Обзорный лист пути: стоит первым и номера не получает. */
 export const PHASE_OVERVIEW_ID = 'overview';
 
-/** Номера листов по порядку: обзор — без номера, фазы — 1…N. */
-export function phaseSteps(ids: readonly string[]): Map<string, number> {
-  return new Map(ids.filter((id) => id !== PHASE_OVERVIEW_ID).map((id, i) => [id, i + 1]));
+/** Группы вкладки в порядке показа: подпись и подсказка «что это и зачем». */
+export const PATH_GROUPS: readonly { id: PathSheetGroupId; title: string; hint: string; label: string }[] = [
+  { id: 'path', title: PHASES_TITLE, hint: PHASES_HINT, label: 'Путь терапии' },
+  { id: 'topics', title: 'Сквозные темы', hint: 'Что идёт через все фазы: порядок режимов, техники, сессия, прогресс и застревание', label: 'Путь терапии' },
+  { id: 'templates', title: 'Шаблоны пути', hint: 'Готовые раскладки фаз по неделям: из протоколов исследований и сводной карты', label: 'Шаблон пути' },
+];
+const groupOf = (p: PhaseGuide): PathSheetGroupId => p.group ?? 'path';
+
+/** Номера листов ленты по порядку: обзор — без номера, фазы — 1…N; листы других групп номера не получают. */
+export function phaseSteps(guides: readonly Pick<PhaseGuide, 'id' | 'group'>[]): Map<string, number> {
+  const ids = guides.filter((p) => (p.group ?? 'path') === 'path' && p.id !== PHASE_OVERVIEW_ID).map((p) => p.id);
+  return new Map(ids.map((id, i) => [id, i + 1]));
 }
 
-/** Подпись листа в шапке: «Фаза N», у обзора — имя вкладки. */
-export const phaseLabel = (step: number | undefined): string => (step ? `Фаза ${step}` : 'Путь терапии');
+/** Подпись листа в шапке: «Фаза N», у обзора — имя вкладки, у шаблона — «Шаблон пути». */
+export const phaseLabel = (step: number | undefined, group: PathSheetGroupId = 'path'): string =>
+  step ? `Фаза ${step}` : PATH_GROUPS.find((g) => g.id === group)?.label ?? 'Путь терапии';
 
-/** Листы вкладки одной группой в порядке пути; пустую отсеет buildReference. */
+/** Листы вкладки группами: лента фаз в порядке пути, сквозные темы, шаблоны; пустую отсеет buildReference. */
 export function phaseGroups(guides: PhaseGuide[]): ReferenceGroup[] {
-  const steps = phaseSteps(guides.map((p) => p.id));
-  return [{
-    key: 'path', title: PHASES_TITLE, hint: PHASES_HINT, look: PHASE_LOOK,
-    items: guides.map((p) => ({ kind: 'phase', id: p.id, name: p.name, sub: p.goal, step: steps.get(p.id) })),
-  }];
+  const steps = phaseSteps(guides);
+  return PATH_GROUPS.map((g) => ({
+    key: g.id, title: g.title, hint: g.hint, look: PHASE_LOOK,
+    items: guides.filter((p) => groupOf(p) === g.id).map((p) => ({ kind: 'phase' as const, id: p.id, name: p.name, sub: p.goal, step: steps.get(p.id) })),
+  }));
 }
 
 /** Лист фазы с переходами: режимы, техники и заметки, у которых есть свой лист; соседние листы пути. */
@@ -47,16 +57,18 @@ type PhaseTexts = Pick<Guide, 'buildModeGuides' | 'buildTechniqueGuides' | 'prac
 const pick = <T>(ids: readonly string[] | undefined, find: (id: string) => T | undefined): T[] =>
   (ids ?? []).flatMap((id) => find(id) ?? []);
 
-/** Лист по id среди листов пути; такого нет — null. Ссылка без своего листа в справочнике выпадает. */
-export function phaseView(texts: PhaseTexts, tr: Tr, phases: PhaseGuide[], id: string): PhaseView | null {
-  const at = phases.findIndex((p) => p.id === id);
-  if (at < 0) return null;
-  const phase = phases[at];
+/** Лист по id среди листов вкладки; такого нет — null. Ссылка без своего листа в справочнике выпадает; соседи — из той же группы. */
+export function phaseView(texts: PhaseTexts, tr: Tr, all: PhaseGuide[], id: string): PhaseView | null {
+  const found = all.find((p) => p.id === id);
+  if (!found) return null;
+  const phases = all.filter((p) => groupOf(p) === groupOf(found));
+  const at = phases.indexOf(found);
+  const phase = found;
   const modeGuides = texts.buildModeGuides(tr);
   const techniques = texts.buildTechniqueGuides(tr);
   const notes = texts.practiceNotes(tr);
   return {
-    phase, step: phaseSteps(phases.map((p) => p.id)).get(id), prev: phases[at - 1], next: phases[at + 1],
+    phase, step: phaseSteps(all).get(id), prev: phases[at - 1], next: phases[at + 1],
     modes: pick(phase.modeIds, (modeId) => {
       const guide = modeGuides.find((g) => g.modeId === modeId);
       return guide && { id: modeId, name: getModeById(modeId)?.name ?? modeId, sub: guide.goal };
