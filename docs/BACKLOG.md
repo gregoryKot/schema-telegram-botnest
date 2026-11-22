@@ -62,7 +62,6 @@
 
 ## Следующее
 
-- ⬜ **Путь клиента: подключить `trackPathDraftBuilt`** (#1522) в PathDraftSheet после мержа #1548 — `webapp/src/components/therapist/plan/path/PathDraftSheet.tsx`; событие `therapy_path_draft_built`, имя, санитайзер и хелпер уже в main, вызова нет (доказано: `grep trackPathDraftBuilt webapp/src` пуст)
 - ⬜ **приоритет: до новых пачек book-to-guide · Связать Хищника со схемами** — 4 из 5 режимов без схемы связаны по текстам справочника; Хищник (`predator`) остался в `MODES_WITHOUT_SCHEMA` (`shared/src/schemaTherapy/kb/gaps.ts`): из имеющихся текстов его подтверждает только гиперкомпенсация Недоверия (`guide/schemas/coping.ts`), её уже несёт Агрессор, а криминальной модели режимов на полке `guide/sources.ts` нет — нужна глава из книги владельца; чем доказано: `kb/links.test.ts`.
 - ⬜ **приоритет: до новых пачек book-to-guide · Связать 35 техник с разделами** — 35 из 49 техник не зовёт ни один раздел режима, схемы или запроса (поле `techniques`); связать по книгам, строки — из `TECHNIQUES_WITHOUT_SECTION`; чем доказано: `shared/src/schemaTherapy/kb/links.test.ts`, `kb/gaps.ts`.
 - ⬜ **приоритет: до новых пачек book-to-guide · Уязвимый Ребёнок в тексте Жёстких стандартов** — пара `unrelenting_standards→vulnerable_child` в `TEXT_MENTIONS_WITHOUT_LINK` (`shared/src/schemaTherapy/kb/gaps.ts`): режим назван, когда планка компенсирует Дефективность; характерен ли он для самой схемы — решить по книге (Янг, гл. 7; Рафаэли, гл. 12); чем доказано: `kb/mentions.test.ts`.

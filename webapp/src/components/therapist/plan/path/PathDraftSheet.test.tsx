@@ -75,6 +75,7 @@ describe('PathDraftSheet — «Предложить по концептуали�
       { clientIds: ['7'], rubric: 'session', text: 'Отстранённый Защитник', sourceAddress: 'mode:detached_protector/goal', phaseId: 2 },
     ]]);
     expect(screen.getByText('Добавлено в план: 1.')).toBeTruthy();
+    expect(h.trackEvent).toHaveBeenCalledWith('therapy_path_draft_built', { picked: 1 });
   });
 
   it('сбой посередине: созданное остаётся, видно сколько добавлено', async () => {
