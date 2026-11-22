@@ -67,6 +67,13 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
     onOpenJournal: actions.onOpenJournal,
     backRef: backRefs?.section,
   });
+  const usages = texts && openTechnique ? texts.techniqueUsageGroups(tr, openTechnique.id) : [];
+  // Схема из листа режима встаёт на его место: лист раздела один, свой закрывается goBack(then).
+  const openSchema = (id: string) => {
+    const back = backRefs?.section.current;
+    if (back) back(() => actions.onOpenSchema(id));
+    else actions.onOpenSchema(id);
+  };
   const markFrom = openTechnique?.from;
   // Строка журнала за сегодня — та же кнопка «сегодня», что из схемы случая.
   const day = journal && openTechnique?.day !== journal.today() ? openTechnique?.day : undefined;
@@ -80,13 +87,13 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
   return (
     <>
       {sheet?.kind === 'mode' && modeView && (
-        <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} {...sheetProps(sheet)} />
+        <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} onOpenSchema={openSchema} {...sheetProps(sheet)} />
       )}
       {sheet?.kind === 'schema' && schemaView && (
         <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} {...sheetProps(sheet)} />
       )}
       {technique && (
-        <TechniqueSheet technique={technique} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />
+        <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />
       )}
     </>
   );
