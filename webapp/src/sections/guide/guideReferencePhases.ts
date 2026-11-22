@@ -1,4 +1,4 @@
-// Вкладка «Путь терапии»: условные фазы лентой по порядку, за ней шаблоны пути (shared/…/guide/phases/). Подпись и
+// Вкладка «Путь терапии»: условные фазы лентой по порядку, за ней сквозные темы и шаблоны пути (shared/…/guide/phases/). Подпись и
 // подсказка группы отвечают «что это и зачем»; обзор идёт первым без номера, фазы — с номерами; бумага — своя сирень.
 import type { PathSheetGroupId, PhaseGuide, TechniqueGuide } from '../../../../shared/src/schemaTherapy/guide';
 import type { Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
@@ -18,6 +18,7 @@ export const PHASE_OVERVIEW_ID = 'overview';
 /** Группы вкладки в порядке показа: подпись и подсказка «что это и зачем». */
 export const PATH_GROUPS: readonly { id: PathSheetGroupId; title: string; hint: string; label: string }[] = [
   { id: 'path', title: PHASES_TITLE, hint: PHASES_HINT, label: 'Путь терапии' },
+  { id: 'topics', title: 'Сквозные темы', hint: 'Что идёт через все фазы: порядок режимов, техники, сессия, прогресс и застревание', label: 'Путь терапии' },
   { id: 'templates', title: 'Шаблоны пути', hint: 'Готовые раскладки фаз по неделям: из протоколов исследований и сводной карты', label: 'Шаблон пути' },
 ];
 const groupOf = (p: PhaseGuide): PathSheetGroupId => p.group ?? 'path';
@@ -32,7 +33,7 @@ export function phaseSteps(guides: readonly Pick<PhaseGuide, 'id' | 'group'>[]):
 export const phaseLabel = (step: number | undefined, group: PathSheetGroupId = 'path'): string =>
   step ? `Фаза ${step}` : PATH_GROUPS.find((g) => g.id === group)?.label ?? 'Путь терапии';
 
-/** Листы вкладки группами: лента фаз в порядке пути, затем шаблоны; пустую отсеет buildReference. */
+/** Листы вкладки группами: лента фаз в порядке пути, сквозные темы, шаблоны; пустую отсеет buildReference. */
 export function phaseGroups(guides: PhaseGuide[]): ReferenceGroup[] {
   const steps = phaseSteps(guides);
   return PATH_GROUPS.map((g) => ({

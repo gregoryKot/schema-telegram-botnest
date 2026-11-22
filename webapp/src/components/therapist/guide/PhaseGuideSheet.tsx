@@ -14,7 +14,7 @@ export interface PhaseLinks {
   onOpenNote: (id: string) => void;
 }
 
-const BEFORE = ['goal', 'timing', 'tasks', 'stages', 'stance'] as const;
+const BEFORE = ['goal', 'timing', 'tasks', 'points', 'stages', 'stance'] as const;
 const AFTER = ['transition', 'mistakes', 'variants', 'stuck'] as const;
 
 /**

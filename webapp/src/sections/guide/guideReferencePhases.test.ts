@@ -26,9 +26,10 @@ describe('phaseSteps', () => {
   });
 
   it('группы вкладки: лента фаз с номерами, шаблоны отдельно и без номеров', () => {
-    const groups = phaseGroups([phase('overview'), phase('bonding'), phase('template_a', { group: 'templates' }), phase('template_b', { group: 'templates' })]);
+    const groups = phaseGroups([phase('overview'), phase('bonding'), phase('topic', { group: 'topics' }), phase('template_a', { group: 'templates' }), phase('template_b', { group: 'templates' })]);
     expect(groups.map((g) => [g.key, g.items.map((i) => [i.id, i.step])])).toEqual([
       ['path', [['overview', undefined], ['bonding', 1]]],
+      ['topics', [['topic', undefined]]],
       ['templates', [['template_a', undefined], ['template_b', undefined]]],
     ]);
   });

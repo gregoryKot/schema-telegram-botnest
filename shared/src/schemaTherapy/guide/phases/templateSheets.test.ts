@@ -80,8 +80,9 @@ describe('templateSheet', () => {
   });
 });
 
-it('листы шаблонов идут после ленты фаз', () => {
+it('листы шаблонов замыкают вкладку', () => {
   const groups = buildPhaseGuides((t) => t).map((p) => p.group ?? 'path');
-  expect(groups.indexOf('templates')).toBe(groups.lastIndexOf('path') + 1);
-  expect(groups.filter((g) => g === 'templates').length).toBeGreaterThan(2);
+  const tail = groups.slice(groups.indexOf('templates'));
+  expect(tail.length).toBeGreaterThan(2);
+  expect(new Set(tail)).toEqual(new Set(['templates']));
 });

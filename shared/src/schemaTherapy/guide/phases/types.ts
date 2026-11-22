@@ -19,6 +19,8 @@ export interface PhaseGuide extends GuideVoiceFields {
   timing?: string;
   /** Задачи фазы. */
   tasks?: string[];
+  /** Главное на листе сквозной темы, по пунктам. */
+  points?: string[];
   /** Фазы шаблона пути по порядку: название, срок, цель, что делает терапевт. */
   stages?: string[];
   /** Позиция терапевта и ограниченное родительство в этой фазе. */
@@ -40,7 +42,7 @@ export interface PhaseGuide extends GuideVoiceFields {
   sources: string;
 }
 
-/** Группы листов вкладки «Путь терапии»: лента фаз и шаблоны пути. */
-export type PathSheetGroupId = 'path' | 'templates';
+/** Группы листов вкладки «Путь терапии»: лента фаз, сквозные темы и шаблоны пути. */
+export type PathSheetGroupId = 'path' | 'topics' | 'templates';
 
 export type PhaseGuideBuilder = (tr: Tr) => PhaseGuide;

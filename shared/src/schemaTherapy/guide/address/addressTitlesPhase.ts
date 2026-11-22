@@ -7,6 +7,7 @@ export const PHASE_TITLES: Titles<PhaseGuide> = {
   essence: 'Что происходит',
   timing: 'Сроки',
   tasks: 'Задачи фазы',
+  points: 'Главное',
   stages: 'Фазы и сроки',
   stance: 'Позиция терапевта и ограниченное родительство',
   modeIds: 'Режимы в фокусе',
