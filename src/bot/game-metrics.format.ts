@@ -42,7 +42,6 @@ const chapterLabel = (chapter: GameChapter): string =>
 
 const isEmpty = (m: GameMetrics): boolean =>
   m.opens === 0 &&
-  m.starts === 0 &&
   m.chapters.every((c) => c.started === 0) &&
   m.ctaShown === 0 &&
   m.ctaClicks === 0 &&
@@ -62,21 +61,11 @@ export function formatGameMetrics(m: GameMetrics): string {
     lines.push(`Открыли: ${m.opens}${suffix}`);
   }
 
-  if (m.starts > 0) {
-    const tutorial =
-      m.tutorialDone > 0 || m.tutorialSkipped > 0
-        ? ` · обучение прошли ${m.tutorialDone}, пропустили ${m.tutorialSkipped}`
-        : '';
-    lines.push(`Нажали «начать»: ${m.starts}${tutorial}`);
-  }
-
   const startedChapters = m.chapters.filter((c) => c.started > 0);
   if (startedChapters.length > 0) {
-    lines.push('Главы (начали → дошли до конца · экран «сил не осталось»):');
+    lines.push('Главы (начали → дошли до конца):');
     for (const c of startedChapters) {
-      lines.push(
-        `• ${chapterLabel(c.chapter)}: ${c.started} → ${c.finished} · ${c.deaths} раз`,
-      );
+      lines.push(`• ${chapterLabel(c.chapter)}: ${c.started} → ${c.finished}`);
     }
   }
 

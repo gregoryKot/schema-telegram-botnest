@@ -1,7 +1,8 @@
 import type { PracticeNotesBuilder } from './types';
+import { sessionStructureMore } from './practiceMoreArntz';
 import { buildPracticeSelfDisclosure } from './practiceSelfDisclosure';
 
-/** «Для терапевта»: ход терапии (гл. 1, 2, 5, 6). Карта — docs/guide-sources/Кембридж.md. */
+/** «Для терапевта»: ход терапии (гл. 1, 2, 5, 6). Карты — docs/guide-sources/Кембридж.md, Арнц-ПРЛ.md (вариант сессии при ПРЛ). */
 export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
   {
     id: 'therapy_aims',
@@ -65,11 +66,8 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
         'Что вы забираете с сегодняшней встречи?',
       ),
     ],
-    more: [
-      'Концептуализация — компас. Простую схему режимов держат под рукой на каждой встрече: по ней объясняют, зачем нужна техника, и отмечают, какие режимы включились в сессии или после недавних триггеров [Кембридж, гл. 5].',
-      'Мотивация проседает от длины терапии и привычного копинга. Когда от клиента ждут больше заботы о себе, он может уходить от задач: помогают эмпатическая конфронтация и диалоги режимов, которые находят режим, блокирующий перемены [Кембридж, гл. 5].',
-    ],
-    sources: '[Кембридж, гл. 5, бокс 5.10]',
+    more: sessionStructureMore,
+    sources: '[Кембридж, гл. 5, бокс 5.10], [Арнтц ПРЛ, гл. 3]',
   },
   ...buildPracticeSelfDisclosure(tr),
 ];

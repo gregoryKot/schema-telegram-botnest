@@ -55,10 +55,13 @@ describe('новая игра «Неделя» в /stats', () => {
       wedDone: 4,
       friStarted: 3,
       friDone: 2,
+      sunStarted: 2,
+      sunDone: 1,
+      firstStarted: 3,
       firstDone: 2,
     }).join('\n');
     expect(out).toContain(
-      'пошли в «Среду» 5 · прошли «Среду» 4 · пошли в «Пятницу» 3 · прошли «Пятницу» 2 · дошли до конца 2',
+      'пошли в «Среду» 5 · прошли «Среду» 4 · пошли в «Пятницу» 3 · прошли «Пятницу» 2 · пошли в «Воскресенье» 2 · прошли «Воскресенье» 1 · пошли в «Первую встречу» 3 · дошли до конца 2',
     );
   });
 
@@ -74,6 +77,8 @@ describe('новая игра «Неделя» в /stats', () => {
       row({ name: 'game_chapter_done', chapter: 'wed', c: 2n }),
       row({ name: 'game_chapter_start', chapter: 'fri', c: 2n }),
       row({ name: 'game_chapter_done', chapter: 'fri', c: 1n }),
+      row({ name: 'game_chapter_start', chapter: 'sun', c: 2n }),
+      row({ name: 'game_chapter_done', chapter: 'sun', c: 1n }),
       row({ name: 'game_chapter_done', chapter: 'first', c: 1n }),
       row({ name: 'game_cta_shown', place: 'act1', c: 4n }),
       row({ name: 'game_chapter_start', chapter: 'chapter1', c: 5n }),
@@ -88,11 +93,42 @@ describe('новая игра «Неделя» в /stats', () => {
       wedDone: 2,
       friStarted: 2,
       friDone: 1,
+      sunStarted: 2,
+      sunDone: 1,
       firstDone: 1,
     });
     expect(m.ctaShown).toBe(4);
     expect(m.ctaClicks).toBe(0);
     expect(m.chapters[0].started).toBe(5);
     expect(weekCtaRate(m.week)).toBe(30);
+  });
+
+  it('tally: последняя глава, финальная карточка и ссылка в меню', () => {
+    const m = tallyGameRows([
+      row({ name: 'game_chapter_start', chapter: 'mon', c: 10n }),
+      row({ name: 'game_cta_shown', place: 'hook', c: 7n }),
+      row({ name: 'game_chapter_start', chapter: 'first', c: 4n }),
+      row({ name: 'game_chapter_done', chapter: 'first', c: 3n }),
+      row({ name: 'game_cta_shown', place: 'final', c: 3n }),
+      row({ name: 'game_cta_shown', place: 'menu', c: 9n }),
+      row({ name: 'game_cta_click', place: 'final', target: 'booking', c: 2n }),
+      row({ name: 'game_cta_click', place: 'menu', target: 'app', c: 1n }),
+      row({ name: 'game_share', place: 'final', c: 2n }),
+    ]);
+    expect(m.week).toMatchObject({
+      started: 10,
+      ctaShown: 7,
+      clicksBooking: 2,
+      clicksApp: 1,
+      shares: 2,
+      firstStarted: 4,
+      firstDone: 3,
+    });
+    expect(m.ctaShown).toBe(0);
+    expect(m.ctaClicks).toBe(0);
+    expect(m.shares).toBe(0);
+    const out = formatWeekLines(m.week).join('\n');
+    expect(out).toContain('пошли в «Первую встречу» 4 · дошли до конца 3');
+    expect(out).not.toMatch(BAD);
   });
 });

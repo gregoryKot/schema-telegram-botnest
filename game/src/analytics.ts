@@ -16,20 +16,16 @@ let ready = false;
 
 /** События, которые уезжают на бэкенд (парный реестр — GAME_EVENTS на бэке). */
 export type GameEventName =
-  | 'game_open' | 'game_start' | 'game_tutorial_done' | 'game_tutorial_skip'
+  | 'game_open'
   | 'game_chapter_start' | 'game_chapter_done'
-  | 'game_cta_shown' | 'game_cta_click' | 'game_share' | 'game_over';
+  | 'game_cta_shown' | 'game_cta_click' | 'game_share';
 
 // Цель Метрики для события бэкенда. Нет записи — событие только для /stats.
 const METRIKA_GOAL: Partial<Record<GameEventName, string>> = {
-  game_start: 'game_start',
-  game_tutorial_done: 'tutorial_done',
-  game_tutorial_skip: 'tutorial_skip',
   game_chapter_start: 'chapter_start',
   game_chapter_done: 'chapter_done',
   game_cta_click: 'cta_click',
   game_share: 'cta_share',
-  game_over: 'game_over',
 };
 
 /** Метки входа, которые ставят ссылки сайта, бота и кнопка «поделиться». */

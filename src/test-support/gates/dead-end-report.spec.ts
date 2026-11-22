@@ -5,7 +5,7 @@
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
-import { loadStringList } from './pattern-loader';
+import { callExport, importExport, loadStringList } from './pattern-loader';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const PAGE = 'webapp/src/pages/SubPage.tsx';
@@ -21,6 +21,8 @@ const page = (catchBody: string, extra = '') =>
     '}',
     '',
   ].join('\n');
+const effect = (body: string) =>
+  `export function X() {\n  useEffect(() => {\n    ${body}\n  }, []);\n}\n`;
 const run = (
   files: Record<string, string>,
   baseline: Record<string, unknown>,
@@ -197,9 +199,7 @@ describe('check-dead-end-report.mjs', () => {
     expect(ok.status).toBe(0);
   });
 
-  it('загрузка в useEffect: .then(сеттер) без .catch — красный; контроль: .catch, .then(ok, fail), return и вне эффекта', () => {
-    const effect = (body: string) =>
-      `export function X() {\n  useEffect(() => {\n    ${body}\n  }, []);\n}\n`;
+  it('загрузка в useEffect: .then(сеттер) без .catch — красный; контроль: .catch, .then(ok, fail) и вне эффекта', () => {
     const res = run({ [PAGE]: effect('api.load().then(setData);') }, {});
     expect(res.stderr).toContain(
       `${PAGE}::setData (L3): загрузка без обработки отказа (.then без .catch) без классификации`,
@@ -216,7 +216,6 @@ describe('check-dead-end-report.mjs', () => {
     const controls = [
       'api.load().then(setData).catch((e) => { reportClientError(e); });',
       'api.load().then(setData, () => reportClientError({}));',
-      'return api.load().then(setData);',
     ];
     for (const body of controls) {
       expect(run({ [PAGE]: effect(body) }, {}).stderr).toBe('');
@@ -224,6 +223,108 @@ describe('check-dead-end-report.mjs', () => {
     const onClick =
       'export function X() {\n  const go = () => api.load().then(setData);\n}\n';
     expect(run({ [PAGE]: onClick }, {}).status).toBe(0);
+  });
+
+  it('промис отдан дальше: получатель без .catch — красный; контроль: получатель ловит', () => {
+    const red = [
+      'return api.load().then(setData);',
+      'const p = api.load().then(setData);',
+      'const p = api.load().then(setData);\n    void Promise.all([p]);',
+      'void Promise.all([api.a().then(setData), api.b()]);',
+      'const load = () => { return api.load().then(setData); };\n    void load();',
+      'track(api.load().then(setData));',
+    ];
+    for (const body of red) {
+      const res = run({ [PAGE]: effect(body) }, {});
+      expect(res.stderr).toContain(
+        `${PAGE}::setData (L3): загрузка без обработки отказа (.then без .catch)`,
+      );
+    }
+    const green = [
+      'const p = api.load().then(setData);\n    p.catch(report);',
+      'const p = api.load().then(setData);\n    void Promise.allSettled([p]);',
+      'const p = api.load().then(setData);\n    Promise.all([p, q]).catch(report);',
+      'Promise.all([api.a().then(setData), api.b()]).catch(report);',
+      'const load = () => { return api.load().then(setData); };\n    load().catch(report);',
+      'track(api.load().then(setData)).catch(report);',
+      'api.a().then(() => { return api.b().then(setData); }).catch(report);',
+    ];
+    for (const body of green) {
+      expect(run({ [PAGE]: effect(body) }, {}).stderr).toBe('');
+    }
+  });
+
+  it('async-загрузчик: await вне try…catch — красный; контроль: try…catch, .catch у вызова, вне эффекта', () => {
+    const red = [
+      'void (async () => {\n      setData(await api.load());\n    })();',
+      'const load = async () => {\n      const d = await api.load();\n      setData(d);\n    };\n    void load();',
+      'void (async () => {\n      try { setData(await api.load()); } finally { setBusy(false); }\n    })();',
+    ];
+    for (const body of red) {
+      const res = run({ [PAGE]: effect(body) }, {});
+      expect(res.stderr).toMatch(
+        /SubPage\.tsx::set\w+ \(L\d\): загрузка без обработки отказа \(await вне try…catch\) без классификации/,
+      );
+    }
+    const outer =
+      'export function X() {\n  const load = useCallback(async () => {\n    setData(await api.load());\n  }, []);\n  useEffect(() => { void load(); }, [load]);\n}\n';
+    expect(run({ [PAGE]: outer }, {}).stderr).toContain(
+      `${PAGE}::setData (L3)`,
+    );
+    const green = [
+      'void (async () => {\n      try { setData(await api.load()); } catch (e) { reportClientError(e); }\n    })();',
+      '(async () => {\n      setData(await api.load());\n    })().catch(report);',
+      'const load = async () => {\n      setData(await api.load());\n    };\n    load().catch(report);',
+      'void (async () => {\n      await api.ping();\n    })();',
+    ];
+    for (const body of green) {
+      expect(run({ [PAGE]: effect(body) }, {}).stderr).toBe('');
+    }
+    const onClick =
+      'export function X() {\n  const go = async () => {\n    setData(await api.load());\n  };\n  return <button onClick={go} />;\n}\n';
+    expect(run({ [PAGE]: onClick }, {}).status).toBe(0);
+  });
+
+  it('разбор блоков (dead-end-report-blocks.mjs): чья функция, async, try с catch и без', () => {
+    const src =
+      'const load = useCallback(async () => { try { a(); } catch { b(); } }, []);\n' +
+      'function plain(): void { try { a(); } finally { b(); } }\n' +
+      'p.then((x) => { if (x) { c(); } });\n';
+    const blocks = callExport(
+      'dead-end-report-blocks.mjs',
+      'parseBlocks',
+      src,
+    ) as unknown as Array<Record<string, unknown>>;
+    const brief = blocks.map((b) =>
+      [
+        b.kind,
+        b.owner ?? '',
+        b.name ?? '',
+        b.isAsync ?? '',
+        b.caught ?? '',
+      ].join(':'),
+    );
+    expect(brief).toEqual([
+      'fn:named:load:true:',
+      'try::::true',
+      'ctrl::::',
+      'fn:named:plain:false:',
+      'try::::false',
+      'ctrl::::',
+      'fn:then::false:',
+      'ctrl::::',
+    ]);
+  });
+
+  it('цепочка (dead-end-report-flow.mjs): .then(ok, fail) — отказ обработан, запятая в колбэке — нет', () => {
+    const comma = (args: string) =>
+      importExport(
+        'dead-end-report-flow.mjs',
+        'hasTopLevelComma',
+        `(fn) => fn(${JSON.stringify(`(${args})`)}, 0, ${args.length + 1})`,
+      );
+    expect(comma('ok, fail')).toBe('true');
+    expect(comma('(a, b) => use(a, b)')).toBe('false');
   });
 
   it('область: верхний уровень components/ и тесты не сканируются', () => {
