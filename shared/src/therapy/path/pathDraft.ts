@@ -1,6 +1,7 @@
 // Черновик пути из концептуализации (#1522): по режимам и схемам клиента — что обычно делают в каждой фазе.
 // Детерминированно: техники берутся из разделов справочника, фаза — по порядку работы с режимами и шаблону.
 import { MODE_GROUPS } from '../../schemaTherapy/content/modeGroups';
+import type { TechniqueId } from '../../schemaTherapy/guide/techniqueIds';
 import type { PathPhase } from './pathModel';
 import type { PathTemplate } from './templates';
 import { modeRef, techniqueRef } from './templates/types';
@@ -26,8 +27,8 @@ export interface PathDraftPhase {
 
 /** Техники «На сессии» разделов справочника; раздела нет — пустой список. */
 export interface DraftGuide {
-  modeTechniques: (modeId: string) => readonly string[];
-  schemaTechniques: (schemaId: string) => readonly string[];
+  modeTechniques: (modeId: string) => readonly TechniqueId[];
+  schemaTechniques: (schemaId: string) => readonly TechniqueId[];
 }
 
 export interface PathDraftInput {

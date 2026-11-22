@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { modeGuide, resolveAddress, schemaGuide } from '../../schemaTherapy/guide';
+import { modeGuide, resolveAddress, schemaGuide, type TechniqueId } from '../../schemaTherapy/guide';
 import { buildPathDraft, type DraftGuide, type PathDraftInput } from './pathDraft';
 import { phaseDraftsFromTemplate } from './pathPlan';
 import { pathTemplate } from './templates';
@@ -11,13 +11,14 @@ const general = pathTemplate(tr, 'general')!;
 const phases = phaseDraftsFromTemplate(general).map((d, i) => ({
   id: i + 1, position: i, templatePhaseId: d.templatePhaseId, endedAt: null as string | null,
 }));
+const MODE_TECHNIQUES: Record<string, TechniqueId[]> = {
+  detached_protector: ['empathic_confrontation', 'chairwork'],
+  punitive_critic: ['chairwork', 'flashcards'],
+  vulnerable_child: ['imagery_rescripting'],
+  healthy_adult: ['pattern_breaking'],
+};
 const guide: DraftGuide = {
-  modeTechniques: (id) => ({
-    detached_protector: ['empathic_confrontation', 'chairwork'],
-    punitive_critic: ['chairwork', 'flashcards'],
-    vulnerable_child: ['imagery_rescripting'],
-    healthy_adult: ['pattern_breaking'],
-  })[id] ?? [],
+  modeTechniques: (id) => MODE_TECHNIQUES[id] ?? [],
   schemaTechniques: (id) => (id === 'abandonment' ? ['imagery_rescripting', 'schema_diary'] : []),
 };
 const draft = (over: Partial<PathDraftInput> = {}) =>
