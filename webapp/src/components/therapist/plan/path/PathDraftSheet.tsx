@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import '../../../../styles/therapist-guide.css';
 import { api, reportClientError, type UserId } from '../../../../api';
 import { useGuide } from '../../../../../../shared/src/therapy/conceptGraph/guideLoader';
@@ -33,10 +33,7 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
 
   const { path, template, modeIds, schemaIds, items } = src;
-  const groups = useMemo(
-    () => (guide ? pathDraftView(guide, tr, { path, template, modeIds, schemaIds, items }) : []),
-    [guide, tr, path, template, modeIds, schemaIds, items],
-  );
+  const groups = guide ? pathDraftView(guide, tr, { path, template, modeIds, schemaIds, items }) : [];
   const rows = groups.flatMap((g) => g.rows);
   const chosen = rows.filter((r) => picked.includes(r.address));
   const toggle = (address: string) => setPicked((p) => (p.includes(address) ? p.filter((a) => a !== address) : [...p, address]));
@@ -88,7 +85,7 @@ export function PathDraftSheet({ clientId, onOpen, onOpenConcept, onAdded, onClo
                 <label className="pa-check">
                   <input type="checkbox" checked={picked.includes(r.address)} onChange={() => toggle(r.address)} />
                   <span className="pd-text">
-                    <span>{r.title}</span>
+                    {r.title}
                     <span className="pd-why">{r.why}{r.typical ? ' · обычно в этой фазе' : ''}</span>
                   </span>
                 </label>

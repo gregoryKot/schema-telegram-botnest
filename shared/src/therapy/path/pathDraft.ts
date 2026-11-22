@@ -32,7 +32,10 @@ export interface DraftGuide {
 }
 
 export interface PathDraftInput {
-  phases: readonly Pick<PathPhase, 'id' | 'position' | 'templatePhaseId' | 'endedAt'>[];
+  phases: readonly Pick<
+    PathPhase,
+    'id' | 'position' | 'templatePhaseId' | 'endedAt'
+  >[];
   template: PathTemplate | null;
   modeIds: readonly string[];
   schemaIds: readonly string[];
@@ -44,7 +47,13 @@ export interface PathDraftInput {
 type Stage = 'coping' | 'critic' | 'child' | 'healthy' | 'schema';
 
 // Порядок работы с режимами: обойти копинги → ответить Критику → дать Ребёнку недостающее; Здоровый Взрослый — весь курс.
-const STAGE_ORDER: readonly Stage[] = ['coping', 'critic', 'child', 'healthy', 'schema'];
+const STAGE_ORDER: readonly Stage[] = [
+  'coping',
+  'critic',
+  'child',
+  'healthy',
+  'schema',
+];
 /** В каких фазах справочника (`guidePhaseIds` шаблона) идёт работа с группой. */
 const STAGE_PHASES: Record<Stage, readonly string[]> = {
   coping: ['safety', 'awareness'],
@@ -83,25 +92,44 @@ export function buildPathDraft(input: PathDraftInput): PathDraftPhase[] {
     .sort((a, b) => a.position - b.position)
     .flatMap((p) => {
       const tpl = template?.phases.find((t) => t.id === p.templatePhaseId);
-      return tpl ? [{ id: p.id, tpl, typical: new Set(tpl.recommended.map(articleOf)) }] : [];
+      return tpl
+        ? [{ id: p.id, tpl, typical: new Set(tpl.recommended.map(articleOf)) }]
+        : [];
     });
   if (open.length === 0) return [];
 
-  const planned = new Set(input.planned.flatMap((a) => (a ? [articleOf(a)] : [])));
+  const planned = new Set(
+    input.planned.flatMap((a) => (a ? [articleOf(a)] : [])),
+  );
   const sources = [
     ...input.modeIds.flatMap((id) => {
       const stage = MODE_STAGE.get(id);
-      return stage ? [{ reason: { kind: 'mode' as const, id }, stage, addresses: [modeRef(id), ...guide.modeTechniques(id).map(techniqueRef)] }] : [];
+      return stage
+        ? [
+            {
+              reason: { kind: 'mode' as const, id },
+              stage,
+              addresses: [
+                modeRef(id),
+                ...guide.modeTechniques(id).map(techniqueRef),
+              ],
+            },
+          ]
+        : [];
     }),
     ...input.schemaIds.map((id) => ({
-      reason: { kind: 'schema' as const, id }, stage: 'schema' as Stage, addresses: guide.schemaTechniques(id).map(techniqueRef),
+      reason: { kind: 'schema' as const, id },
+      stage: 'schema' as const,
+      addresses: guide.schemaTechniques(id).map(techniqueRef),
     })),
   ].sort((a, b) => STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage));
 
   const byArticle = new Map<string, PathDraftItem>();
   const byPhase = new Map<number, PathDraftItem[]>();
   for (const src of sources) {
-    const fits = open.filter((p) => p.tpl.guidePhaseIds.some((g) => STAGE_PHASES[src.stage].includes(g)));
+    const fits = open.filter((p) =>
+      p.tpl.guidePhaseIds.some((g) => STAGE_PHASES[src.stage].includes(g)),
+    );
     for (const address of src.addresses) {
       const article = articleOf(address);
       if (planned.has(article)) continue;
@@ -112,7 +140,11 @@ export function buildPathDraft(input: PathDraftInput): PathDraftPhase[] {
       }
       const phase = fits.find((p) => p.typical.has(article)) ?? fits[0];
       if (!phase) continue;
-      const item = { address, reasons: [src.reason], typical: phase.typical.has(article) };
+      const item = {
+        address,
+        reasons: [src.reason],
+        typical: phase.typical.has(article),
+      };
       byArticle.set(article, item);
       byPhase.set(phase.id, [...(byPhase.get(phase.id) ?? []), item]);
     }
