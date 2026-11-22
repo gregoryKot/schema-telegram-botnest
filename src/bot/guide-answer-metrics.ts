@@ -1,7 +1,7 @@
 // Карточка-ответ над выдачей поиска «Справочника» терапевта — строка блока «Справочник терапевта» в /stats.
 import type { PrismaService } from '../prisma/prisma.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import { countEventsByKey } from './event-counts';
+import { countEventsGrouped } from './event-counts-grouped';
 
 export interface GuideAnswerMetrics {
   answers30: number; // раз за месяц над выдачей поиска показана карточка-ответ
@@ -29,6 +29,6 @@ export async function withGuideAnswerLines(
   block: string,
 ): Promise<string> {
   const createdAt = { gte: new Date(Date.now() - 30 * 86_400_000) };
-  const metrics = await countEventsByKey(prisma, COUNTED, createdAt);
+  const metrics = await countEventsGrouped(prisma, COUNTED, createdAt);
   return [block, ...formatGuideAnswerLines(metrics)].join('\n');
 }

@@ -17,7 +17,7 @@ import { CORE_TECHNIQUE_SIGN } from './techniqueSigns';
 
 const tr = (ty: string) => ty;
 
-/** Двадцать восемь разделов «Для терапевта» (#1013; онлайн-формат, оценка, ход терапии, финал, травма, выгорание и группа — из карты Кембриджа). */
+/** Все разделы «Для терапевта» (#1013; по картам Кембриджа, Янга и Арнца — ПРЛ). */
 const NOTE_IDS = [
   'impasses', 'chatting', 'method_errors', 'therapist_schemas', 'group_therapy',
   'deliberate_practice', 'frame_additions', 'angry_client', 'suicidal_thoughts', 'romance_and_partner',
@@ -26,6 +26,7 @@ const NOTE_IDS = [
   'self_disclosure', 'experiential_avoidance', 'exact_scene', 'change_blocks', 'ending_phase', 'complex_trauma',
   'therapist_wellbeing', 'group_techniques', 'suitability', 'imagery_avoidance', 'life_decisions',
   'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps',
+  'homework_not_done', 'crisis_call', 'mode_flipping',
 ];
 
 describe('знаки листов подсказок', () => {

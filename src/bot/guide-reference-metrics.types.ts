@@ -7,5 +7,6 @@ export interface GuideReferenceMetrics {
   notes30: number; // раз открывали раздел «Для терапевта»
   needs30: number; // раз открывали лист потребности
   concerns30: number; // раз открывали статью вкладки «Запросы»
+  phases30: number; // раз открывали лист вкладки «Путь терапии»
   tables30: number; // раз включали у «Схем» вид «Таблицей»
 }
