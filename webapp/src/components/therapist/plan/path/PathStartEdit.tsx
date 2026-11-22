@@ -29,7 +29,7 @@ export function PathStartEdit({ startDate, busy, onSave }: Props) {
         <span className="ds-label">Старт пути</span>
         <input type="date" className="ds-input" value={value} onChange={(e) => setValue(e.target.value)} />
       </label>
-      <button type="button" className="ds-btn ds-btn--sm" disabled={!isCalendarDate(value) || busy} aria-busy={busy || undefined} onClick={() => void save()}>Сохранить</button>
+      <button type="button" className="ds-btn ds-btn--sm ph-quiet" disabled={!isCalendarDate(value) || busy} aria-busy={busy || undefined} onClick={() => void save()}>Сохранить</button>
       <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary ph-quiet" disabled={busy} onClick={() => setValue(null)}>Отмена</button>
     </div>
   );
