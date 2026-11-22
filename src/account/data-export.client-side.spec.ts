@@ -74,7 +74,7 @@ describe('exportClientSide — концептуализация', () => {
     expect(out.withheld).toEqual([
       expect.objectContaining({
         table:
-          'ModeMap, TherapistNote, TherapyPlanItem, GuideMark, ClientConceptualization',
+          'ModeMap, TherapistNote, TherapyPlanItem, TherapyPath, GuideMark, ClientConceptualization',
       }),
     ]);
     expect(out.withheld[0].reason).toContain('истоки, задачи терапии');
