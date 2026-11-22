@@ -27,8 +27,8 @@ export const createPlanApi = (t: PlanTransport) => ({
     clientIds: string[];
     rubric: PlanRubric;
     text: string;
-    /** Адрес раздела справочника, из которого взят пункт. */
-    sourceAddress?: string;
+    sourceAddress?: string; // раздел справочника
+    phaseId?: number; // фаза пути, только при одном клиенте
   }) => t.postJson<{ items: PlanItem[] }>(BASE, body),
   updatePlanItem: (id: number, body: PlanItemPatch) =>
     t.patchJson<PlanItem>(`${BASE}/items/${id}`, body),
