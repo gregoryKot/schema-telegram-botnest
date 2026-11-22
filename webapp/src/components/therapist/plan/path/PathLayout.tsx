@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import '../../../../styles/therapist-path.css';
+import type { UserId } from '../../../../api';
 import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planItem';
 import { phaseDraftsFromTemplate } from '../../../../../../shared/src/therapy/path/pathPlan';
 import { buildPathTemplates } from '../../../../../../shared/src/therapy/path/templates';
@@ -7,6 +8,8 @@ import { useTr } from '../../../../utils/addressForm';
 import { Skeleton } from '../../../Skeleton';
 import type { RenderPlanRow } from '../planRows';
 import { PathCreateSheet } from './PathCreateSheet';
+import { PathDraftSheet } from './PathDraftSheet';
+import type { DraftRow } from './pathDraftView';
 import { PathEmpty } from './PathEmpty';
 import type { PlanItems } from '../usePlanItems';
 import { PathTimeline } from './PathTimeline';
@@ -17,6 +20,17 @@ interface Props {
   plan: PlanItems;
   items: PlanItem[];
   renderRow: RenderPlanRow;
+  /** «Предложить по концептуализации»: режимы и схемы клиента и куда вести из листа; нет — действия нет. */
+  draft?: PathDraftLink;
+}
+
+export interface PathDraftLink {
+  clientId: UserId;
+  modeIds: readonly string[];
+  schemaIds: readonly string[];
+  onOpen: (open: DraftRow['open']) => void;
+  onOpenConcept: () => void;
+  onAdded: () => void;
 }
 
 /** Силуэт ленты: три фазы «номер — название — срок». */
@@ -36,10 +50,12 @@ function PathSkeleton() {
 }
 
 /** Раскладка «По фазам» (#1522): лента фаз пути; пути нет — объяснение и «Собрать путь». */
-export function PathLayout({ path, plan, items, renderRow }: Props) {
+export function PathLayout({ path, plan, items, renderRow, draft }: Props) {
   const tr = useTr();
   const templates = useMemo(() => buildPathTemplates(tr), [tr]);
   const [creating, setCreating] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const current = path.path;
 
   let content;
   if (path.failed) {
@@ -55,6 +71,9 @@ export function PathLayout({ path, plan, items, renderRow }: Props) {
 
   return (
     <div className="ph-wrap">
+      {draft && current && (
+        <div><button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setDrafting(true)}>Предложить по концептуализации</button></div>
+      )}
       {content}
       {path.error && !creating && <div className="tb-error" role="alert">{path.error}</div>}
       {creating && (
@@ -62,6 +81,13 @@ export function PathLayout({ path, plan, items, renderRow }: Props) {
           templates={templates} busy={path.busy} error={path.error}
           onCreate={(startDate, t) => path.create(startDate, t?.id ?? null, t ? phaseDraftsFromTemplate(t) : [])}
           onClose={() => setCreating(false)}
+        />
+      )}
+      {draft && current && drafting && (
+        <PathDraftSheet
+          {...draft} path={current} items={items}
+          template={templates.find((t) => t.id === current.templateId) ?? null}
+          onClose={() => setDrafting(false)}
         />
       )}
     </div>
