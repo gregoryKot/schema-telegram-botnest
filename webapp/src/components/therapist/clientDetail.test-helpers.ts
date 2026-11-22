@@ -31,7 +31,7 @@ export function makeClientDetail(overrides: Partial<ClientDetail> = {}): ClientD
     saveStatus: 'idle', savedAt: null, retrySave: vi.fn(),
     newNoteText: '', setNewNoteText: vi.fn(),
     newNoteDate: '', setNewNoteDate: vi.fn(),
-    newNoteWork: [], setNewNoteWork: vi.fn(),
+    newNoteWork: [], setNewNoteWork: vi.fn(), newNotePlanIds: [], setNewNotePlanIds: vi.fn(),
     noteSaving: false, showAssign: false, setShowAssign: vi.fn(),
     editingStartDate: false, setEditingStartDate: vi.fn(),
     localStartDate: '', setLocalStartDate: vi.fn(),

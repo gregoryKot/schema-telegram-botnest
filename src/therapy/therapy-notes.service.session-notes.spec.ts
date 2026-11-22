@@ -15,6 +15,8 @@ function makeService(rels: Rel[]) {
   let nextId = 1;
   const prisma: any = {
     ...makeRelationPrismaMock(rels),
+    $transaction: (fn: (tx: unknown) => unknown) => fn(prisma),
+    therapyPlanItem: { findMany: jest.fn(async () => []) },
     therapistNote: {
       // Мок честно исполняет orderBy (массив) и take: без этого «101 заметка →
       // 100» и «какую отрезало» проверяли бы мок, а не запрос сервиса.

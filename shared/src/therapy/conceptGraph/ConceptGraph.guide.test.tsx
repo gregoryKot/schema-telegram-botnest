@@ -13,6 +13,8 @@ import { modeFigure, schemaFigure } from './ConceptGraph.test-helpers';
 vi.mock('../../schemaTherapy/guide', async () => {
   const f = await import('./conceptGuide.fixture');
   return {
+    modeSchemaLinks: () => [],
+    techniqueUsageGroups: () => [],
     modeGuide: (_tr: unknown, id: string) =>
       id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null,
     schemaGuide: (_tr: unknown, id: string) =>

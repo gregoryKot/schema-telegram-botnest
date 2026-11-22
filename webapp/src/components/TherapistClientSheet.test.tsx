@@ -34,6 +34,9 @@ vi.mock('../api', () => ({
     addVirtualClient: vi.fn(),
     createTherapyInvite: vi.fn(),
     createTherapistNote: vi.fn(),
+    getTherapyPlan: vi.fn(() => Promise.resolve([])),
+    getTherapyPath: vi.fn(() => Promise.resolve({ path: null })),
+    getPlanWork: vi.fn(() => Promise.resolve({ entries: [] })),
     deleteTherapistNote: vi.fn(),
     requestYsq: vi.fn(),
     saveConceptualization: vi.fn(),
@@ -327,7 +330,7 @@ describe('TherapistClientSheet — вкладка «Сессии» (заметк
     });
     fireEvent.click(screen.getByText('Сохранить'));
 
-    await waitFor(() => expect(mockApi.createTherapistNote).toHaveBeenCalledWith(7, expect.any(String), 'Хорошая динамика', []));
+    await waitFor(() => expect(mockApi.createTherapistNote).toHaveBeenCalledWith(7, expect.any(String), 'Хорошая динамика', [], []));
     await screen.findByText('Хорошая динамика');
     expect(screen.queryByText('Заметок пока нет')).toBeNull();
   });

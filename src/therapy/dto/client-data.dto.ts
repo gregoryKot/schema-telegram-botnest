@@ -17,6 +17,7 @@ import { CLIENT_NAME_MAX, SESSION_NOTE_MAX } from '../../utils/text-limits';
 import { IsCalendarDay } from '../../utils/calendar-day';
 import { IsDayOrWallMoment } from '../../utils/wall-moment';
 import { NotFutureDay } from './not-future-day';
+import { PlanItemIds } from './plan-item-ids';
 
 /**
  * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
@@ -46,6 +47,7 @@ export class CreateSessionNoteDto {
   @ValidateNested({ each: true })
   @Type(() => SessionWorkItemDto)
   work?: SessionWorkItemDto[];
+  @PlanItemIds() planItemIds?: number[];
 }
 
 // therapyStartDate/nextSession: строка, null (сброс) или undefined (не менять).
