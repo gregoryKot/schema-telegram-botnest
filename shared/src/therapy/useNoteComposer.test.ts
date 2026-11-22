@@ -80,6 +80,15 @@ describe('useNoteComposer', () => {
     expect(result.current.newNoteWork).toEqual([]);
   });
 
+  it('одни отмеченные пункты плана сохраняются без текста', async () => {
+    const { result, create } = setup();
+    act(() => result.current.setNewNotePlanIds([4]));
+    await act(async () => {
+      await result.current.addNote();
+    });
+    expect(create).toHaveBeenCalledWith(1, todayStr(), '', [], [4]);
+  });
+
   it('пустой текст или нет открытого клиента — ничего не отправляет', async () => {
     const empty = setup();
     act(() => empty.result.current.setNewNoteText('   '));
