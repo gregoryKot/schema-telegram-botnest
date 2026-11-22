@@ -1,24 +1,24 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../../../styles/therapist-tabs.css';
 import type { TherapyClientSummary } from '../../../api';
 import type { TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import { useGuide } from '../../../../../shared/src/therapy/conceptGraph/guideLoader';
-import type { PlanItem, PlanRubric } from '../../../../../shared/src/therapy/plan/planItem';
+import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
 import { useTr } from '../../../utils/addressForm';
 import { HistoryConfirmDialog } from '../../HistoryConfirmDialog';
 import { Skeleton } from '../../Skeleton';
 import { TaskCreateSheet } from '../../TaskCreateSheet';
-import { PaperEmpty } from '../../art/PaperEmpty';
 import type { ClientDetail } from '../clientSheetTypes';
 import { useConceptGuide } from '../guide/useConceptGuide';
 import { guideMarkClient } from '../guide/marks/useClientGuideMarks';
 import { PlanGoals } from './PlanGoals';
-import { PlanItemForm } from './PlanItemForm';
-import { PlanItemRow } from './PlanItemRow';
-import { groupPlan, isEmptyPlan } from './planModel';
-import { planSourceLink, type PlanSourceLink } from './planSource';
+import { PlanChannels } from './PlanChannels';
+import { PlanLayoutSwitch, type PlanLayout } from './PlanLayoutSwitch';
+import { makeRenderPlanRow } from './planRows';
+import type { PlanSourceLink } from './planSource';
 import { usePlanItems } from './usePlanItems';
+import { PathLayout } from './path/PathLayout';
+import { usePath } from './path/usePath';
 
 interface Props {
   selectedClient: TherapyClientSummary;
@@ -40,19 +40,18 @@ function PlanSkeleton() {
 }
 
 /**
- * Вкладка «План работы» карточки клиента (#1337): сверху цель терапии (поле концептуализации), ниже пункты по
- * рубрикам справочника. Пункт со ссылкой на статью открывает её тем же листом, что схема случая
+ * Вкладка «План работы» карточки клиента (#1337): сверху цель терапии (поле концептуализации), ниже пункты —
+ * по рубрикам справочника или по фазам пути клиента (#1522); есть путь — по умолчанию по фазам. Пункт со ссылкой на статью открывает её тем же листом, что схема случая
  * (useConceptGuide); «Дать заданием» — обычный лист «Новое задание» с текстом пункта, созданное задание
  * запоминается в пункте. Монтируется с ключом клиента: состояние плана — одного клиента.
  */
 export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props) {
   const tr = useTr();
-  const navigate = useNavigate();
   const plan = usePlanItems(selectedClient.telegramId);
+  const path = usePath(selectedClient.telegramId);
   const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload }, client: guideMarkClient(selectedClient) });
   const texts = useGuide();
-  const [adding, setAdding] = useState(false);
-  const [rubric, setRubric] = useState<PlanRubric>('custom');
+  const [layout, setLayout] = useState<PlanLayout | null>(null);
   const [assignItem, setAssignItem] = useState<PlanItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<PlanItem | null>(null);
   const { items } = plan;
@@ -62,7 +61,9 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
     else if (kind === 'schema') guide.actions.onOpenSchema(id);
     else guide.actions.onOpenTechnique(id as TechniqueId);
   };
-  const addButton = <button type="button" className="ds-btn ds-btn--secondary" onClick={() => setAdding(true)}>+ Свой пункт</button>;
+  const renderRow = makeRenderPlanRow({ plan, texts, tr, openSource, onAssign: setAssignItem, onDelete: setConfirmDelete });
+  // Раскладку выбирают руками; до выбора — по фазам, если путь есть. Ждём путь, чтобы раскладка не прыгала.
+  const shown: PlanLayout = layout ?? (path.path ? 'phases' : 'channels');
 
   return (
     <div className="ds-page tb-page--narrow">
@@ -73,54 +74,12 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
           <span className="tb-error">План не загрузился.</span>
           <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={plan.reload}>Повторить</button>
         </div>
-      ) : items === null ? <PlanSkeleton /> : (
+      ) : items === null || (path.path === undefined && !path.failed && layout === null) ? <PlanSkeleton /> : (
         <>
-          {groupPlan(items).map((g) => (
-            <section key={g.rubric} className="pl-group">
-              <h3 className="ds-label">{g.label}</h3>
-              <div className="pp-leaf pl-list">
-                {g.items.map((item, idx) => {
-                  const link = planSourceLink(texts, tr, item);
-                  return (
-                    <PlanItemRow
-                      key={item.id} item={item} busy={plan.busyId !== null}
-                      sourceLink={link}
-                      onCycleStatus={() => void plan.cycleStatus(item)}
-                      onOpenSource={() => link?.open && openSource(link.open)}
-                      onAssign={() => setAssignItem(item)}
-                      linkPending={item.taskId == null && plan.pendingLinks[item.id] != null}
-                      onRetryLink={() => void plan.retryLink(item.id)}
-                      onSaveText={(text) => plan.saveText(item.id, text)}
-                      onDelete={() => { plan.clearError(); setConfirmDelete(item); }}
-                      canUp={idx > 0} canDown={idx < g.items.length - 1} onMove={(dir) => void plan.move(item, dir)}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-
-          {adding ? (
-            <div className="pp-leaf pl-add">
-              <PlanItemForm
-                rubric={rubric} onRubric={setRubric} busy={plan.busyId === 'new'}
-                onSave={(text) => plan.add(rubric, text)} onClose={() => setAdding(false)}
-              />
-            </div>
-          ) : isEmptyPlan(items) ? (
-            <div>
-              <PaperEmpty title="В плане пока пусто">
-                {tr(
-                  'Запиши сюда, что планируешь делать с клиентом: свои пункты или идеи из справочника: у рубрик «Как работать», «На сессии» и «Между сессиями» там есть кнопка «В план».',
-                  'Запишите сюда, что планируете делать с клиентом: свои пункты или идеи из справочника: у рубрик «Как работать», «На сессии» и «Между сессиями» там есть кнопка «В план».',
-                )}
-              </PaperEmpty>
-              <div className="tb-actions tb-mt16">
-                <button type="button" className="ds-btn" onClick={() => navigate('/cabinet/guide')}>Открыть справочник</button>
-                {addButton}
-              </div>
-            </div>
-          ) : <div>{addButton}</div>}
+          <PlanLayoutSwitch value={shown} onChange={setLayout} />
+          {shown === 'phases'
+            ? <PathLayout path={path} items={items} renderRow={renderRow} />
+            : <PlanChannels items={items} plan={plan} renderRow={renderRow} />}
           {plan.error && !confirmDelete && <div className="tb-error" role="alert">{plan.error}</div>}
         </>
       )}
