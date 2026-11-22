@@ -11,17 +11,12 @@ import { render, screen, cleanup, within, fireEvent } from '@testing-library/rea
 import { ClientOverviewTab } from './ClientOverviewTab';
 import type { ClientDetail } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 afterEach(cleanup);
 
 const client = { telegramId: -1, name: 'Анна', streak: 0, meetingDays: [], nextSession: null } as unknown as TherapyClientSummary;
-const detailOf = (o: Partial<ClientDetail> = {}) =>
-  ({
-    clientHistory: [], clientDiary: [], notes: [], localConcept: {}, concept: null,
-    activeSchemaIds: [], activeModeIds: [], exportCopied: false,
-    setShowAssign: vi.fn(), setClientTab: vi.fn(), handleExport: vi.fn(),
-    ...o,
-  }) as unknown as ClientDetail;
+const detailOf = makeClientDetail;
 
 describe('ClientOverviewTab', () => {
   it('цель, схемы, режимы, заметка и записи — подписи-заголовки h2; группы — бумага со знаком, без точек тона', () => {
@@ -30,9 +25,9 @@ describe('ClientOverviewTab', () => {
         localConcept: { goals: 'Меньше самокритики' },
         activeSchemaIds: ['abandonment', 'emotional_deprivation'],
         activeModeIds: ['vulnerable_child'],
-        notes: [{ id: 1, date: '2026-10-20', text: 'Текст заметки' }],
+        notes: [{ id: 1, therapistId: 1, clientId: -1, date: '2026-10-20', text: 'Текст заметки', createdAt: '2026-10-20T10:00:00Z' }],
         clientDiary: [{ type: 'gratitude', date: '2026-10-21', excerpt: 'Спасибо за день' }],
-      } as unknown as Partial<ClientDetail>)} />,
+      })} />,
     );
     const col = container.querySelector('.tk-col') as HTMLElement;
     expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Что было сделано', 'Последние записи']);

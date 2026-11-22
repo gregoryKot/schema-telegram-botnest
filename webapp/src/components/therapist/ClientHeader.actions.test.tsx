@@ -14,6 +14,7 @@ import { ClientOverviewTab } from './ClientOverviewTab';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 const DESKTOP = 1024;
 const PHONE = 390;
@@ -21,18 +22,7 @@ beforeEach(() => { window.innerWidth = DESKTOP; });
 afterEach(cleanup);
 
 const client = { telegramId: -1, name: 'Анна', clientAlias: null, streak: 0, meetingDays: [], nextSession: null } as unknown as TherapyClientSummary;
-const detailOf = (o: Partial<ClientDetail> = {}) =>
-  ({
-    clientSchemaNotesData: [], clientModeNotesData: [], clientTasks: [], notesPage: { notes: [], total: 0 },
-    clientData: null, clientDiary: [], clientHistory: [], clientTab: 'overview', notes: [],
-    localConcept: {}, concept: null, activeSchemaIds: [], activeModeIds: [],
-    renamingAlias: false, confirmingDelete: false, deleteLoading: false, deleteError: '',
-    editingNextSession: false, editingStartDate: false, exportCopied: false,
-    setShowAssign: vi.fn(), setClientTab: vi.fn(), handleExport: vi.fn(),
-    setRenamingAlias: vi.fn(), setAliasInput: vi.fn(), requestDeleteClient: vi.fn(),
-    deleteClient: vi.fn(), cancelDeleteClient: vi.fn(),
-    ...o,
-  }) as unknown as ClientDetail;
+const detailOf = makeClientDetail;
 
 const renderHeader = (detail: ClientDetail) =>
   render(

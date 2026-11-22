@@ -6,16 +6,17 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MeetingDaysCard } from './MeetingDaysCard';
 import type { ClientDetail } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 afterEach(cleanup);
 
 const client = (meetingDays: number[]) => ({ telegramId: 1, meetingDays }) as unknown as TherapyClientSummary;
-const detailOf = (o: { save?: ReturnType<typeof vi.fn>; saving?: boolean; error?: string } = {}) =>
-  ({
+const detailOf = (o: { save?: ClientDetail['saveSessionInfo']; saving?: boolean; error?: string } = {}) =>
+  makeClientDetail({
     saveSessionInfo: o.save ?? vi.fn().mockResolvedValue(true),
     sessionInfoSaving: o.saving ?? false,
     sessionInfoError: o.error ?? '',
-  }) as unknown as ClientDetail;
+  });
 
 describe('MeetingDaysCard', () => {
   it('показывает сохранённые дни в порядке недели (Пн … Вс)', () => {
