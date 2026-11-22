@@ -8,11 +8,7 @@ import { WORK_TOPICS } from './topics';
 import { COURSE_TOPICS } from './topicsCourse';
 import type { PhaseGuide, PhaseGuideBuilder } from './types';
 
-export type {
-  PathSheetGroupId,
-  PhaseGuide,
-  PhaseGuideBuilder,
-} from './types';
+export type { PathSheetGroupId, PhaseGuide, PhaseGuideBuilder } from './types';
 
 /** Сборщики листов в порядке пути: обзор, затем шесть фаз. */
 export const PHASE_BUILDERS: PhaseGuideBuilder[] = [

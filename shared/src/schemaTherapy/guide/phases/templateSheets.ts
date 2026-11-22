@@ -37,7 +37,8 @@ function stageLine(
   names: Map<string, string>,
 ): string {
   const term = [
-    weeksLabel(phase.weeks) + (phase.weeksFrom === 'estimate' ? ' условно' : ''),
+    weeksLabel(phase.weeks) +
+      (phase.weeksFrom === 'estimate' ? ' условно' : ''),
     phase.sessionsHint,
   ]
     .filter(Boolean)
@@ -60,8 +61,7 @@ function stageLine(
 const perPhase = (
   template: PathTemplate,
   pick: (p: PathTemplatePhase) => string[],
-): string[] =>
-  template.phases.map((p) => `${p.name}: ${pick(p).join('; ')}.`);
+): string[] => template.phases.map((p) => `${p.name}: ${pick(p).join('; ')}.`);
 
 /** Лист шаблона: фазы со сроками, критерии перехода и ошибки по фазам, переходы к режимам, техникам и заметкам. */
 export function templateSheet(
