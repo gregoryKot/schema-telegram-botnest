@@ -18,7 +18,7 @@ interface Props {
 
 export function ClientSessionsTab({ detail, takeFocus }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
-  const canSave = (!!newNoteText.trim() || detail.newNoteWork.length > 0) && !noteSaving; // с пунктами «Что делали» текст не обязателен
+  const canSave = (!!newNoteText.trim() || detail.newNoteWork.length > 0 || detail.newNotePlanIds.length > 0) && !noteSaving; // с пунктами «Что делали» или плана текст не обязателен
   // Свои режимы нужны выбору в открытом пункте и подписям записей, где они отмечены.
   const customModes = useCustomModeNames(detail.newNoteWork.length > 0 || notesPage.notes.some(n => hasCustomMode(n.work)));
   const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком

@@ -2,7 +2,7 @@ import type { Ref } from 'react';
 import type { TherapistNote } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { MMIcon } from '../modeMapIcons';
-import { SessionWorkList } from './SessionWorkList';
+import { SessionNoteExtras } from './SessionNoteExtras';
 import type { NamedMode } from './useCustomModeNames';
 
 interface Props {
@@ -13,11 +13,11 @@ interface Props {
   focus?: boolean;
   rowRef?: Ref<HTMLDivElement>;
   onDelete?: () => void;
-  customModes?: NamedMode[];
+  customModes?: NamedMode[]; planTitles?: ReadonlyMap<number, string>;
 }
 
 /** Строка архива заметок: номер сессии на рейке, дата, текст и «Что делали». */
-export function SessionNoteRow({ note, number, focus, rowRef, onDelete, customModes }: Props) {
+export function SessionNoteRow({ note, number, focus, rowRef, onDelete, customModes, planTitles }: Props) {
   return (
     <div ref={rowRef} className={focus ? 'tb-tl-row tb-tl-row--focus' : 'tb-tl-row'}>
       <div className="tb-tl-rail"><div className="tb-tl-dot">{number}</div><div className="tb-tl-line" /></div>
@@ -28,7 +28,7 @@ export function SessionNoteRow({ note, number, focus, rowRef, onDelete, customMo
           {onDelete && <button type="button" onClick={onDelete} aria-label="Удалить заметку" className="ds-btn ds-btn--icon tb-del tb-tl-del"><MMIcon name="trash" size={16} /></button>}
         </div>
         {note.text && <div className="tb-tl-text">{note.text}</div>}
-        <SessionWorkList work={note.work} customModes={customModes} />
+        <SessionNoteExtras note={note} customModes={customModes} planTitles={planTitles} />
       </div>
     </div>
   );

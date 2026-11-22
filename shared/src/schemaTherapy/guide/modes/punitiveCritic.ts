@@ -44,7 +44,7 @@ export const buildPunitiveCriticGuide = (tr: Tr): ModeGuide => ({
     'chairwork',
     'imagery_rescripting',
     'flashcards',
-    'pros_cons',
+    'positive_data_log',
     'self_compassion',
   ],
   betweenSessions: [

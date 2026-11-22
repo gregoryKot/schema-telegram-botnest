@@ -93,9 +93,9 @@ export const buildCriticGuides: ModeGuideBuilder = (tr) => [
     ],
     techniques: [
       'chairwork',
-      'mode_interview',
       'cognitive_work',
-      'pros_cons',
+      'courtroom',
+      'responsibility_pie',
       'pattern_breaking',
     ],
     betweenSessions: [
