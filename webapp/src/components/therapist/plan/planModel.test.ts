@@ -40,6 +40,7 @@ describe('статус', () => {
     expect(nextStatus('active')).toBe('done');
     expect(nextStatus('done')).toBe('planned');
     expect(nextStatus('чужой')).toBe('planned');
+    expect([nextStatus('postponed'), nextStatus('dropped')]).toEqual(['planned', 'planned']);
   });
 
   it('подписи; неизвестный статус читается как «намечено»', () => {
@@ -48,7 +49,7 @@ describe('статус', () => {
   });
 
   it('счёт по статусам', () => {
-    expect(planCounts([item({ status: 'done' }), item({ status: 'active' }), item({ status: 'done' })])).toEqual({ planned: 0, active: 1, done: 2 });
+    expect(planCounts([item({ status: 'done' }), item({ status: 'active' }), item({ status: 'done' })])).toEqual({ planned: 0, active: 1, done: 2, postponed: 0, dropped: 0 });
   });
 });
 

@@ -11,7 +11,13 @@ export const PLAN_RUBRICS = [
 ] as const;
 export type PlanRubric = (typeof PLAN_RUBRICS)[number];
 
-export const PLAN_STATUSES = ['planned', 'active', 'done'] as const;
+export const PLAN_STATUSES = [
+  'planned',
+  'active',
+  'done',
+  'postponed',
+  'dropped',
+] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
 // Вид статьи справочника в старом источнике пункта (до адресов, #1484).
