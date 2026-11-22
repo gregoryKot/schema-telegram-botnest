@@ -32,9 +32,14 @@
 .ph-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; box-sizing: border-box; font-size: 15px; line-height: 1.45; color: var(--text); cursor: pointer; }
 .ph-check + .ph-check { border-top: 1px solid var(--paper-sunk); }
 .ph-check > input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--accent); }
-.ph-mistakes > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font: 600 14px var(--sans); color: var(--text-sub); }
+.ph-mistakes > summary { min-height: 44px; box-sizing: border-box; padding: 12px 0; cursor: pointer; font: 600 14px var(--sans); color: var(--text-sub); }
 .ph-mistakes ul { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 .ph-action { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.ph-edit { display: flex; align-items: center; justify-content: flex-end; padding-top: 6px; margin-bottom: -6px; border-top: 1px solid var(--paper-sunk); }
+.ph-edit .ds-btn--icon.tb-del:disabled { background: transparent; border-color: transparent; opacity: .35; }
+.ph-form { display: flex; flex-direction: column; gap: 12px; }
+.ph-field { display: flex; flex-direction: column; gap: 6px; }
+.ph-field--weeks { max-width: 160px; }
 .ph-unphased { display: flex; flex-direction: column; gap: 10px; }
 .ph-create { display: flex; flex-direction: column; gap: 20px; padding: 8px 20px 32px; }
 .ph-tpls { gap: 10px; }

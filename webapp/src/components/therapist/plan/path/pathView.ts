@@ -2,7 +2,7 @@
 // какая фаза раскрыта на телефоне. Даты и «мы здесь» считает shared/pathPlan — здесь только сборка экрана.
 import { formatDateString, shiftCalendarDay } from '../../../../../../shared/src/utils/calendarDate';
 import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planItem';
-import type { PathPhase, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
+import { PATH_PHASE_WEEKS_MAX, type PathPhase, type TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
 import {
   currentPhaseIndex, nextPhaseIndex, phaseDates, progressByPhase,
   type PhaseDates, type PhaseProgress,
@@ -80,4 +80,20 @@ export function formatPhaseRange({ start, end }: PhaseDates): string {
 /** Отметка критерия перехода: номер добавляется или снимается, список — по возрастанию. */
 export function toggleCriterion(done: readonly number[], n: number): number[] {
   return done.includes(n) ? done.filter((x) => x !== n) : [...done, n].sort((a, b) => a - b);
+}
+
+/** Порядок фаз после перестановки фазы с соседом (dir: -1 — выше); край или фазы нет — null. */
+export function movePhaseIds(phases: readonly Pick<PathPhase, 'id' | 'position'>[], id: number, dir: -1 | 1): number[] | null {
+  const ids = [...phases].sort((a, b) => a.position - b.position).map((p) => p.id);
+  const from = ids.indexOf(id);
+  const to = from + dir;
+  if (from < 0 || to < 0 || to >= ids.length) return null;
+  [ids[from], ids[to]] = [ids[to], ids[from]];
+  return ids;
+}
+
+/** Срок из поля: целые недели в пределах пути; иначе null — кнопка закрыта. */
+export function parseWeeks(value: string): number | null {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= PATH_PHASE_WEEKS_MAX ? n : null;
 }

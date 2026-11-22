@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError, type UserId } from '../../../../api';
 import type { PathPhasePatch, PathResponse } from '../../../../../../shared/src/therapy/path/pathApi';
 import type { PathPhaseDraft, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
+import { movePhaseIds } from './pathView';
 
 /**
  * Путь открытого клиента (#1522): загрузка и правки. `path === undefined` — ещё грузится, `null` — пути нет,
@@ -60,6 +61,13 @@ export function usePath(clientId: UserId) {
     patchPhase,
     /** Закрыть фазу днём `date`, следующую начать тем же днём. */
     advance: (id: number, date: string) => run('Не удалось перейти к следующей фазе', () => api.advancePathPhase(id, date)),
+    addPhase: (draft: PathPhaseDraft) => run('Не удалось добавить фазу', () => api.addPathPhase(clientId, draft)),
+    removePhase: (id: number) => run('Не удалось удалить фазу', () => api.deletePathPhase(clientId, id)),
+    /** Фаза меняется местами с соседом (dir: -1 — выше); сервер получает весь порядок. */
+    movePhase: (id: number, dir: -1 | 1) => {
+      const next = path ? movePhaseIds(path.phases, id, dir) : null;
+      return next ? run('Не удалось переставить фазу', () => api.reorderPathPhases(clientId, next)) : Promise.resolve(false);
+    },
   };
 }
 

@@ -12,7 +12,7 @@ interface Props {
   renderRow: RenderPlanRow;
   onCriterion: (n: number) => void;
   onAction: () => void;
-  /** Кнопки правки фазы в шапке. */
+  /** Кнопки правки фазы — строкой в конце раскрытой фазы. */
   tools?: ReactNode;
 }
 
@@ -34,7 +34,6 @@ export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterio
           <div className="ph-when">{when}</div>
         </div>
         <div className="ph-tools">
-          {tools}
           <button
             type="button" className="ds-btn ds-btn--icon tb-del ph-toggle" aria-expanded={open}
             aria-label={open ? `Свернуть фазу «${phase.name}»` : `Раскрыть фазу «${phase.name}»`} onClick={onToggle}
@@ -80,6 +79,7 @@ export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterio
             {row.action !== 'start' && criteria.length > 0 && <span className="ds-sub">отмечено {row.criteriaDone} из {criteria.length}</span>}
           </div>
         )}
+        {tools}
       </div>
     </article>
   );

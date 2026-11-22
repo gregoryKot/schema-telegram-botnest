@@ -11,6 +11,7 @@ import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planIte
 
 const h = vi.hoisted(() => ({
   getTherapyPath: vi.fn(), createTherapyPath: vi.fn(), updatePathPhase: vi.fn(), advancePathPhase: vi.fn(),
+  addPathPhase: vi.fn(), deletePathPhase: vi.fn(), reorderPathPhases: vi.fn(),
 }));
 vi.mock('../../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
@@ -82,5 +83,41 @@ describe('PathLayout', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Повторить' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Начать фазу' }));
     await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(1, { startedAt: todayStr() }));
+  });
+
+  describe('правка фаз', () => {
+    const two = path([phase({ id: 1, startedAt: '2026-11-02' }), phase({ id: 2, position: 1, name: 'Начало работы', goal: null, weeks: 8, templatePhaseId: null })]);
+    beforeEach(() => { h.getTherapyPath.mockResolvedValue({ path: two }); });
+
+    it('карандаш — форма фазы; новый срок уходит PATCH-ем вместе с названием и целью', async () => {
+      h.updatePathPhase.mockResolvedValue({ path: two });
+      renderLayout();
+      fireEvent.click(await screen.findByRole('button', { name: 'Изменить фазу «Оценка и концептуализация»' }));
+      fireEvent.change(screen.getByLabelText('Срок, недель'), { target: { value: '9' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+      await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(1, { name: 'Оценка и концептуализация', goal: 'Понять схемы', weeks: 9 }));
+    });
+
+    it('«Фазу ниже» шлёт весь порядок; удаление — через подтверждение', async () => {
+      h.reorderPathPhases.mockResolvedValue({ path: two });
+      h.deletePathPhase.mockResolvedValue({ path: path([two.phases[1]]) });
+      renderLayout();
+      fireEvent.click((await screen.findAllByRole('button', { name: 'Фазу ниже' }))[0]);
+      await waitFor(() => expect(h.reorderPathPhases).toHaveBeenCalledWith(7, [2, 1]));
+      fireEvent.click(screen.getByRole('button', { name: 'Удалить фазу «Оценка и концептуализация»' }));
+      expect(h.deletePathPhase).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+      await waitFor(() => expect(h.deletePathPhase).toHaveBeenCalledWith(7, 1));
+      await waitFor(() => expect(screen.queryByRole('heading', { name: 'Оценка и концептуализация' })).toBeNull());
+    });
+
+    it('«Добавить фазу» — своя фаза без шаблона', async () => {
+      h.addPathPhase.mockResolvedValue({ path: two });
+      renderLayout();
+      fireEvent.click(await screen.findByRole('button', { name: '+ Добавить фазу' }));
+      fireEvent.change(screen.getByLabelText(/Название/), { target: { value: ' Поддержка ' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+      await waitFor(() => expect(h.addPathPhase).toHaveBeenCalledWith(7, { name: 'Поддержка', goal: null, weeks: 4, templatePhaseId: null }));
+    });
   });
 });

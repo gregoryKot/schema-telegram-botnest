@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { PathPhase, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
 import { buildPathTemplates } from '../../../../../../shared/src/therapy/path/templates';
 import type { PlanItem } from '../../../../../../shared/src/therapy/plan/planItem';
-import { buildPathView, formatPhaseRange, toggleCriterion } from './pathView';
+import { buildPathView, formatPhaseRange, movePhaseIds, parseWeeks, toggleCriterion } from './pathView';
 
 const templates = buildPathTemplates((ty) => ty);
 const phase = (over: Partial<PathPhase>): PathPhase => ({
@@ -68,4 +68,14 @@ describe('formatPhaseRange', () => {
 it('toggleCriterion: отметка добавляется по порядку и снимается', () => {
   expect(toggleCriterion([2], 0)).toEqual([0, 2]);
   expect(toggleCriterion([0, 2], 2)).toEqual([0]);
+});
+
+it('movePhaseIds: сосед по position меняется местами; на краю — null', () => {
+  const ps = [{ id: 5, position: 1 }, { id: 4, position: 0 }, { id: 6, position: 2 }];
+  expect(movePhaseIds(ps, 5, 1)).toEqual([4, 6, 5]);
+  expect(movePhaseIds(ps, 4, -1)).toBeNull();
+});
+
+it('parseWeeks: целые недели 1..260, прочее — null', () => {
+  expect(['3', '0', '2.5', '261', ''].map(parseWeeks)).toEqual([3, null, null, null, null]);
 });
