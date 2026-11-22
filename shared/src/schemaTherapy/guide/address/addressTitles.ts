@@ -14,6 +14,7 @@ import {
 import type { GuideArticleKind } from './addressFormat';
 import { CONCERN_TITLES } from './addressTitlesConcern';
 import { PHASE_TITLES } from './addressTitlesPhase';
+import { NEED_TITLES } from './addressTitlesNeed';
 
 // Заголовки разделов — как на листах справочника (webapp/src/components/therapist/guide/*Sheet.tsx).
 // Тип требует заголовок у каждого поля статьи, кроме служебных: новое поле в types.ts без строки здесь — красный tsc.
@@ -27,6 +28,7 @@ const META = [
   'approach',
   'group',
   'reparenting',
+  'subtitle',
 ] as const;
 type Meta = (typeof META)[number];
 export type Titles<A, Extra extends string = never> = Record<
@@ -107,4 +109,5 @@ export const SECTION_TITLES: Record<
   note: NOTE_TITLES,
   concern: CONCERN_TITLES,
   phase: PHASE_TITLES,
+  need: NEED_TITLES,
 };
