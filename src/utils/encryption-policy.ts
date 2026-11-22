@@ -178,7 +178,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   TherapyPlanItem: {
     rubric: ID,
-    text: enc(`${TH}/therapy-plan.service.ts`),
+    text: enc(`${TH}/therapy-plan.view.ts`),
     status: ID,
     sourceAddress: plain(
       'адрес раздела справочника из кода, не свободный текст',

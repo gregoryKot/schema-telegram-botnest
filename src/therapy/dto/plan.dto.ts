@@ -17,34 +17,14 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PLAN_ITEM_TEXT_MAX } from '../../utils/text-limits';
+import { PlanSourceDto } from './plan-source.dto';
 import { ADDRESS_SHAPE, GUIDE_ADDRESS_MAX } from '../guide-mark-address';
-import {
-  PLAN_RUBRICS,
-  PLAN_SOURCE_KINDS,
-  PLAN_STATUSES,
-} from '../therapy-plan.types';
+import { PLAN_RUBRICS, PLAN_STATUSES } from '../therapy-plan.types';
 
 // Потолки тела запроса: клиентов за один «В план» и пунктов в одном плане.
 export const PLAN_CLIENTS_MAX = 50;
 export const PLAN_ITEMS_MAX = 200;
 const INT32_MAX = 2_147_483_647;
-
-/** Старый источник (клиент до адресов #1484): статья справочника и её поле. */
-export class PlanSourceDto {
-  @IsString()
-  @IsIn(PLAN_SOURCE_KINDS)
-  kind!: string;
-
-  @IsString()
-  @MaxLength(64)
-  @Matches(/^[a-z0-9_]+$/i)
-  id!: string;
-
-  @IsString()
-  @MaxLength(64)
-  @Matches(/^[a-z0-9_]+$/i)
-  field!: string;
-}
 
 export class CreatePlanItemsDto {
   // Строки цифр, как ClientIdField: минус — у офлайн-клиента.
@@ -76,6 +56,13 @@ export class CreatePlanItemsDto {
   @ValidateNested()
   @Type(() => PlanSourceDto)
   source?: PlanSourceDto;
+
+  // Фаза пути клиента; только при одном клиенте (сервис проверяет принадлежность).
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(INT32_MAX)
+  phaseId?: number;
 }
 
 export class UpdatePlanItemDto {

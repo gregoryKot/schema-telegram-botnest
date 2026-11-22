@@ -75,17 +75,16 @@ describe('ClientPlanTab: по фазам', () => {
     await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { phaseId: 2 }));
   });
 
-  it('«+ Свой пункт» в фазе: создаёт в рубрике «Своё» и тут же относит к фазе', async () => {
-    h.createPlanItems.mockResolvedValue({ items: [item({ id: 9, text: 'Письмо себе' })] });
-    h.updatePlanItem.mockResolvedValue(item({ id: 9, text: 'Письмо себе', phaseId: 2 }));
+  it('«+ Свой пункт» в фазе: один запрос создания с phaseId', async () => {
+    h.createPlanItems.mockResolvedValue({ items: [item({ id: 9, text: 'Письмо себе', phaseId: 2 })] });
     await open();
     const card = screen.getByRole('heading', { name: 'Работа' }).closest('article')!;
     fireEvent.click(within(card).getByText('+ Свой пункт'));
     fireEvent.change(screen.getByLabelText('Текст пункта'), { target: { value: 'Письмо себе' } });
     fireEvent.click(screen.getByText('Сохранить'));
-    await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(9, { phaseId: 2 }));
-    expect(h.createPlanItems).toHaveBeenCalledWith({ clientIds: ['7'], rubric: 'custom', text: 'Письмо себе' });
-    expect(within(card).getByText('Письмо себе')).toBeTruthy();
+    await waitFor(() => expect(h.createPlanItems).toHaveBeenCalledWith({ clientIds: ['7'], rubric: 'custom', text: 'Письмо себе', phaseId: 2 }));
+    expect(h.updatePlanItem).not.toHaveBeenCalled();
+    expect(await within(card).findByText('Письмо себе')).toBeTruthy();
   });
 
   it('статус меняется через меню пяти статусов', async () => {
