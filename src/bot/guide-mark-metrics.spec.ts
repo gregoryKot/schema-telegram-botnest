@@ -12,6 +12,7 @@ const none = {
   note: 0,
   concern: 0,
   phase: 0,
+  need: 0,
 };
 
 describe('formatGuideMarkLine', () => {

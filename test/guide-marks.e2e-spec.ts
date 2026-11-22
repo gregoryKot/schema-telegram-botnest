@@ -128,7 +128,7 @@ describe('e2e smoke: отметки «Про клиента» — ownership', ()
     const t1 = agentAs(T1);
     const bad = [
       { ...mark, address: 'schema:subjugation/coping.surrender' },
-      { ...mark, address: 'need:safety/text' },
+      { ...mark, address: 'tab:safety/text' },
       { ...mark, snapshot: '' },
       { ...mark, note: 'x'.repeat(1001) },
     ];
