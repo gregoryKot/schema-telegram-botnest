@@ -5,9 +5,9 @@
 // годится: повторная проверка внутри транзакции не видит чужой
 // незакоммиченной вставки, и обе стороны пишут.
 import type { Prisma } from '@prisma/client';
+import { realSleep, retryDelayMs, type RetryTiming } from './retry-backoff';
 
 export const SERIALIZATION_RETRIES = 3;
-
 interface MaybeConflict {
   code?: unknown;
   cause?: { kind?: unknown; originalCode?: unknown };
@@ -18,8 +18,7 @@ interface MaybeConflict {
  * `@prisma/adapter-pg`: на запросе внутри транзакции — `P2034`; на COMMIT —
  * голый `DriverAdapterError` с `cause.kind = 'TransactionWriteConflict'`,
  * `cause.originalCode = '40001'` (форма с живого Postgres,
- * test/notify-from-other.e2e-spec.ts). До 2026-11 ловился только `P2034`, и
- * конфликт на COMMIT уходил наружу 500 вместо повтора.
+ * test/notify-from-other.e2e-spec.ts).
  */
 export function isSerializationFailure(err: unknown): boolean {
   if (typeof err !== 'object' || err === null) return false;
@@ -40,14 +39,14 @@ export interface SerializableClient {
 }
 
 /**
- * Выполняет `fn` в Serializable-транзакции; на P2034 повторяет до
- * `SERIALIZATION_RETRIES` раз, затем бросает `onExhausted()`. Любая другая
- * ошибка (включая брошенную внутри `fn` для отката) уходит наружу сразу.
+ * `fn` в Serializable-транзакции; на конфликте — повтор после паузы, всего до
+ * `SERIALIZATION_RETRIES` попыток, затем `onExhausted()`. Прочее — сразу наружу.
  */
 export async function inSerializableTx<T>(
   prisma: SerializableClient,
   fn: (tx: Prisma.TransactionClient) => Promise<T>,
   onExhausted: () => Error,
+  { sleep = realSleep, random = Math.random }: RetryTiming = {},
 ): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
@@ -55,6 +54,7 @@ export async function inSerializableTx<T>(
     } catch (err) {
       if (!isSerializationFailure(err)) throw err;
       if (attempt >= SERIALIZATION_RETRIES) throw onExhausted();
+      await sleep(retryDelayMs(attempt, random));
     }
   }
 }
