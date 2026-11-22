@@ -34,6 +34,8 @@ export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
   planned: 'намечено',
   active: 'в работе',
   done: 'сделано',
+  postponed: 'отложено',
+  dropped: 'не нужно',
 };
 
 /** Подпись статуса; неизвестный статус читается как «намечено». */
@@ -41,10 +43,11 @@ export function statusLabel(status: string): string {
   return PLAN_STATUS_LABEL[status as PlanStatus] ?? PLAN_STATUS_LABEL.planned;
 }
 
-/** Тап по статусу: намечено → в работе → сделано → намечено. */
+const TAP_CYCLE: readonly string[] = PLAN_STATUSES.slice(0, 3);
+
+/** Тап по статусу: намечено → в работе → сделано → намечено; из «отложено» и «не нужно» — в «намечено». */
 export function nextStatus(status: string): PlanStatus {
-  const i = (PLAN_STATUSES as readonly string[]).indexOf(status);
-  return PLAN_STATUSES[(i + 1) % PLAN_STATUSES.length];
+  return PLAN_STATUSES[(TAP_CYCLE.indexOf(status) + 1) % TAP_CYCLE.length];
 }
 
 export function isEmptyPlan(items: readonly PlanItem[]): boolean {
@@ -64,7 +67,7 @@ export function cleanText(text: string): string | null {
 
 /** Сколько пунктов в каком статусе — строка под заголовком вкладки. */
 export function planCounts(items: readonly PlanItem[]): Record<PlanStatus, number> {
-  const counts: Record<PlanStatus, number> = { planned: 0, active: 0, done: 0 };
+  const counts: Record<PlanStatus, number> = { planned: 0, active: 0, done: 0, postponed: 0, dropped: 0 };
   for (const i of items) counts[i.status in counts ? i.status : 'planned'] += 1;
   return counts;
 }
