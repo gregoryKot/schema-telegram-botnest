@@ -28,7 +28,13 @@ export const buildInhibitionGuides = (tr: Tr): SchemaGuide[] => [
       'От Эмоциональной скованности отличается мотивом: сдерживает страх срыва, а не стыд или правила.',
       'У Янга это одна схема с Эмоциональной скованностью: под страхом срыва обычно тот же стыд и ожидание наказания или ухода близких [Янг, гл. 1, 7].',
     ],
-    techniques: ['chairwork', 'pattern_breaking', 'mode_interview'],
+    techniques: [
+      'chairwork',
+      'pattern_breaking',
+      'mode_interview',
+      'anger_expression',
+      'behavioral_experiment',
+    ],
     betweenSessions: [
       {
         kind: 'task',

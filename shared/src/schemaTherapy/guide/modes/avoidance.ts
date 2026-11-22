@@ -41,6 +41,7 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
       'mode_interview',
       'pros_cons',
       'future_imagery',
+      'schema_diary',
     ],
     betweenSessions: [
       {

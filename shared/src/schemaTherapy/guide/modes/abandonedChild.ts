@@ -35,6 +35,7 @@ export const buildAbandonedChildGuide = (tr: Tr): ModeGuide => ({
     'chairwork',
     'flashcards',
     'pattern_breaking',
+    'transitional_objects',
   ],
   betweenSessions: [
     {
