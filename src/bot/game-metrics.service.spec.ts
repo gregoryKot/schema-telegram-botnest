@@ -33,15 +33,12 @@ describe('GameMetricsService.getMetrics', () => {
     const { service } = build([]);
     const m = await service.getMetrics();
     expect(m.opens).toBe(0);
-    expect(m.starts).toBe(0);
     expect(m.ctaShown).toBe(0);
     expect(m.ctaClicks).toBe(0);
     expect(m.shares).toBe(0);
     expect(m.chapters).toHaveLength(4);
     for (const c of m.chapters) {
-      expect(c).toEqual(
-        expect.objectContaining({ started: 0, finished: 0, deaths: 0 }),
-      );
+      expect(c).toEqual(expect.objectContaining({ started: 0, finished: 0 }));
     }
     for (const src of Object.values(m.opensBySource)) expect(src).toBe(0);
     for (const p of Object.values(m.ctaClicksByPlace)) expect(p).toBe(0);
@@ -73,7 +70,6 @@ describe('GameMetricsService.getMetrics', () => {
     const { service } = build([
       row('game_chapter_start', 55, { chapter: 'chapter2' }),
       row('game_chapter_done', 30, { chapter: 'chapter2' }),
-      row('game_over', 70, { chapter: 'chapter2' }),
       row('game_chapter_start', 90, { chapter: 'chapter1' }),
     ]);
     const m = await service.getMetrics();
@@ -82,7 +78,6 @@ describe('GameMetricsService.getMetrics', () => {
       chapter: 'chapter2',
       started: 55,
       finished: 30,
-      deaths: 70,
     });
     const ch1 = m.chapters.find((c) => c.chapter === 'chapter1')!;
     expect(ch1.started).toBe(90);
@@ -91,11 +86,11 @@ describe('GameMetricsService.getMetrics', () => {
   it('глава вне GAME_CHAPTERS не участвует в totals (защита от рассинхрона)', async () => {
     const { service } = build([
       row('game_chapter_start', 7, { chapter: 'chapter9' }),
-      row('game_over', 3, { chapter: null }),
+      row('game_chapter_done', 3, { chapter: null }),
     ]);
     const m = await service.getMetrics();
     for (const c of m.chapters) expect(c.started).toBe(0);
-    for (const c of m.chapters) expect(c.deaths).toBe(0);
+    for (const c of m.chapters) expect(c.finished).toBe(0);
   });
 
   it('cta_click: известное место считается и в totals, и в разбивке', async () => {
@@ -136,18 +131,26 @@ describe('GameMetricsService.getMetrics', () => {
     for (const p of Object.values(m.ctaClicksByPlace)) expect(p).toBe(0);
   });
 
-  it('простые счётчики (start/tutorial/share) не путаются между собой', async () => {
+  it('простые счётчики (cta_shown/share/app_arrive) не путаются между собой', async () => {
     const { service } = build([
-      row('game_start', 20),
-      row('game_tutorial_done', 14),
-      row('game_tutorial_skip', 6),
+      row('game_cta_shown', 20),
+      row('game_app_arrive', 6),
       row('game_share', 9),
     ]);
     const m = await service.getMetrics();
-    expect(m.starts).toBe(20);
-    expect(m.tutorialDone).toBe(14);
-    expect(m.tutorialSkipped).toBe(6);
+    expect(m.ctaShown).toBe(20);
+    expect(m.appArrivals).toBe(6);
     expect(m.shares).toBe(9);
+  });
+
+  it('строка незнакомого события (осталась в БД от старой игры) ничего не меняет', async () => {
+    const { service } = build([
+      row('game_over', 70, { chapter: 'chapter2' }),
+      row('game_start', 20),
+    ]);
+    expect(await service.getMetrics()).toEqual(
+      await build([]).service.getMetrics(),
+    );
   });
 
   it('ходит в БД один раз, с окном не короче 29 дней', async () => {
