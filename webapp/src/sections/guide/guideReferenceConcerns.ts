@@ -7,9 +7,10 @@ import type { ReferenceGroup } from './guideReferenceModel';
 
 export const CONCERNS_HUE: PaperHue = PAPER_HUE.teal;
 
-/** Знак статьи: ПРЛ — Ribbon, чувства и отношения закручивает из крайности в крайность. */
+/** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (быть видимым вместо связи). */
 export const CONCERN_SIGN: Record<string, GuideSign> = {
   bpd: 'ribbon',
+  narcissism: 'spotlight',
 };
 
 export const concernGuideLook = (id: string): SheetLook => ({
