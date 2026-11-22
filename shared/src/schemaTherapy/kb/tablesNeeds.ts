@@ -5,9 +5,9 @@ import { CHILDHOOD_EXAMPLES } from '../../childhoodWheel/childhoodExamples';
 import { defaultChildhoodRatings } from '../../childhoodWheel/childhoodWheel';
 import { NEEDS } from '../../flashcard/modes';
 import { DOMAIN_ORDER, getYsqSchemas } from '../../hooks/ysqSchemas';
-import { JOURNEY_NEED_NAMES } from '../../journey/journeyMeta';
 import { buildAnchorPools } from '../../needs/anchorPools';
 import { NEED_COLOR_ORDER } from '../../needs/needColors';
+import { NEED_NAMES } from '../../needs/needNames';
 import { buildNeedData } from '../../needs/needData';
 import { needGuides } from '../guide/needs';
 import { CURATED } from '../../practices/curated';
@@ -42,13 +42,11 @@ export const NEED_TABLES: readonly KbTable[] = [
   keyed('shared/src/hooks/ysqSchemasContent.ts', () =>
     getYsqSchemas('ty').map((s) => s.needId),
   ),
-  keyed('shared/src/journey/journeyMeta.ts', () =>
-    Object.keys(JOURNEY_NEED_NAMES),
-  ),
   keyed('shared/src/needs/anchorPools.ts', () =>
     Object.keys(buildAnchorPools(tr)),
   ),
   keyed('shared/src/needs/needColors.ts', () => NEED_COLOR_ORDER),
+  keyed('shared/src/needs/needNames.ts', () => Object.keys(NEED_NAMES)),
   keyed('shared/src/needs/needData.ts', () => Object.keys(buildNeedData(tr))),
   keyed('shared/src/schemaTherapy/guide/needs.ts', () =>
     needGuides().map((n) => n.id),
@@ -59,14 +57,11 @@ export const NEED_TABLES: readonly KbTable[] = [
   keyed('shared/src/therapy/conceptGraph/diagram/diagramCircle.ts', () =>
     Object.keys(NEED_SLOT),
   ),
-  byText('shared/src/utils/todayInsight.ts'),
   byText('webapp/src/components/art/NeedArt.tsx'),
   byText('webapp/src/components/exercises/childhoodWheel/needs.ts'),
   byText('webapp/src/components/history/needInk.ts'),
-  byText('webapp/src/components/therapist/clientOverviewModel.ts'),
   byText('webapp/src/sections/practice/catalogCounts.ts'),
-  byText('webapp/src/sections/profile/profileMeta.ts'),
-  byText('src/bot/admin-stats.sections.ts'),
   byText('src/bot/bot.service.ts'),
+  byText('src/bot/need-names.ts'),
   byText('src/quiz/quiz-battery.data.ts'),
 ];

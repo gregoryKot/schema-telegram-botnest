@@ -3,10 +3,10 @@
 // (шаринг из детального вида записи).
 // Возвращает готовые пропсы для per-frontend ShareCardSheet.
 import { useMemo, useState } from 'react';
+import { NEED_NAMES } from '../needs/needNames';
 import {
   type JourneyItem,
   type JourneyPeriod,
-  JOURNEY_NEED_NAMES,
   JOURNEY_PERIOD_SUBTITLE,
   JOURNEY_PERIOD_TITLE,
   formatJourneyDay,
@@ -47,17 +47,17 @@ export type JourneyShareState =
   | { kind: 'feed' }
   | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
 
-/** Строки карточки «Мой день» (пять столбиков, needsDayCard) из оценок трекера — порядок как в JOURNEY_NEED_NAMES.
+/** Строки карточки «Мой день» (пять столбиков, needsDayCard) из оценок трекера — порядок как в NEED_NAMES.
  * Пропущенная потребность не превращается в ноль (правило «никаких заглушек»).
  * Чистая (тест: пустые/частичные оценки). */
 export function journeyDayRows(
   ratings: Record<string, number> | undefined,
 ): NeedsDayRow[] {
-  return Object.keys(JOURNEY_NEED_NAMES).map((id) => {
+  return Object.keys(NEED_NAMES).map((id) => {
     const value = ratings?.[id];
     return {
       id,
-      label: JOURNEY_NEED_NAMES[id],
+      label: NEED_NAMES[id],
       value: value ?? null,
       valueText: value !== undefined ? String(value) : '—',
     };
@@ -68,7 +68,7 @@ export function journeyDayRows(
 export function journeyDayIndex(
   ratings: Record<string, number> | undefined,
 ): string {
-  const vals = Object.keys(JOURNEY_NEED_NAMES)
+  const vals = Object.keys(NEED_NAMES)
     .map((id) => ratings?.[id])
     .filter((v): v is number => typeof v === 'number');
   return fmtIndex(

@@ -1,11 +1,10 @@
 import type { NeedExtra, Tr } from '../types';
+import { NEED_NAMES } from '../needNames';
 import { autonomyExamples } from './examples/autonomy';
 
-// Контент потребности «Автономия» — единственный источник (правило
-// №3 CLAUDE.md): раньше дублировался построчно в webapp/src/needData.ts и
-// удалённом мини-аппе; сайт берёт его отсюда.
+// Контент потребности «Автономия» — единственный источник (правило №3 CLAUDE.md).
 export const buildAutonomy = (tr: Tr): NeedExtra => ({
-  name: 'Автономия',
+  name: NEED_NAMES.autonomy,
   short: 'Автон.',
   subtitle: 'Компетентность и идентичность',
   emoji: '🧭',

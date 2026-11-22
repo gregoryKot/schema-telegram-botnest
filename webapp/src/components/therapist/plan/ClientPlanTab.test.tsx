@@ -56,7 +56,7 @@ describe('ClientPlanTab', () => {
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
     fireEvent.click(screen.getByRole('menuitemradio', { name: /в работе/ }));
     await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { status: 'active' }));
-    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_status', { status: 'active' }));
+    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_status', { status: 'active', inPhase: false }));
 
     fireEvent.change(screen.getByDisplayValue('Меньше срывов'), { target: { value: 'Меньше срывов и больше опоры' } });
     expect(patchConcept).toHaveBeenCalledWith({ goals: 'Меньше срывов и больше опоры' });
