@@ -5,8 +5,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { useState } from 'react';
 import { ConceptVersionHistory } from './ConceptVersionHistory';
-import type { ClientDetail } from '../clientSheetTypes';
 import type { ConceptSnapshot } from '../../../../../shared/src/apiTypes';
+import { makeClientDetail, partialConcept } from '../clientDetail.test-helpers';
 
 afterEach(cleanup);
 
@@ -17,8 +17,8 @@ const SNAPSHOT: ConceptSnapshot = {
 
 function History() {
   const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
-  const detail = { concept: { history: [SNAPSHOT] }, expandedSnapshot, setExpandedSnapshot, restoreConcept: () => {} };
-  return <ConceptVersionHistory detail={detail as unknown as ClientDetail} />;
+  const detail = makeClientDetail({ concept: partialConcept({ history: [SNAPSHOT] }), expandedSnapshot, setExpandedSnapshot });
+  return <ConceptVersionHistory detail={detail} />;
 }
 
 const row = () => screen.getByRole('button', { name: /Версия 1/ });

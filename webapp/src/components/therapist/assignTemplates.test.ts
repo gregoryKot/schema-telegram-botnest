@@ -32,4 +32,8 @@ describe('ASSIGN_TEMPLATES', () => {
     }
     expect(ASSIGN_TEMPLATES.some(t => /аудио|imagery/i.test(t.title + t.sub))).toBe(false);
   });
+
+  it('каждый шаблон помечен источником template — для события task_assign_source', () => {
+    for (const t of ASSIGN_TEMPLATES) expect(t.preset.origin).toBe('template');
+  });
 });
