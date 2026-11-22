@@ -11,6 +11,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { IsKbId } from './kb-id.validator';
 import { Type } from 'class-transformer';
 import {
   CONCEPT_COPING_NOTE_MAX,
@@ -36,6 +37,7 @@ import { ConceptTechniqueMarkDto } from './concept-technique-mark.dto';
 export class ConceptModeLinkDto {
   @IsString()
   @MaxLength(64)
+  @IsKbId('modeOrCustom')
   modeId!: string;
 
   @IsOptional()
@@ -48,6 +50,7 @@ export class ConceptModeLinkDto {
   @ArrayMaxSize(20)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('schema', { each: true })
   schemaIds?: string[];
 
   @IsOptional()
@@ -55,6 +58,7 @@ export class ConceptModeLinkDto {
   @ArrayMaxSize(20)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('need', { each: true })
   needIds?: string[];
 
   @IsOptional()
@@ -115,6 +119,7 @@ export class ConceptCopingNotesDto {
 export class ConceptSchemaLinkDto {
   @IsString()
   @MaxLength(64)
+  @IsKbId('schema')
   schemaId!: string;
 
   @IsOptional()
@@ -132,6 +137,7 @@ export class ConceptSchemaLinkDto {
   @ArrayMaxSize(5)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('need', { each: true })
   needIds?: string[];
 
   @IsOptional()
