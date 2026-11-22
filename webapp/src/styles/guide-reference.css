@@ -132,3 +132,15 @@
 .ds-link.gst-mark { margin: 4px 12px 10px; }
 /* Номер фазы «Пути терапии» на месте знака строки: тихая цифра Literata, как номер шага на листе техники (.gd-steps). */
 .gr-step { font-family: var(--serif); font-size: 24px; line-height: 1.2; color: var(--text-sub); }
+/* Строки с оттенком («Путь терапии»): каждая — бумажная карточка своего оттенка (.pp-paper, --h), группа стоит без общей бумаги
+   (SignGroup plain). Знак крупнее обычного (64px), номер фазы — над ним. Селектор в 3 класса: button.ds-list-row (0,1,1) иначе
+   стирает бумагу. */
+.gr-rows:has(> .gr-row--paper) { gap: 10px; }
+.gr-list .gr-rows > .gr-row.gr-row--paper {
+  grid-template-columns: 64px minmax(0, 1fr) auto; gap: 4px 14px; padding: 14px 16px; border: none; border-radius: 16px;
+  background: oklch(0.915 0.03 var(--h));
+}
+.gr-list .gr-rows > .gr-row.gr-row--paper:hover { background: oklch(0.895 0.04 var(--h)); }
+.gr-mark { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.gr-mark .pp-art--row { width: 64px; height: auto; }
+.gr-row--paper .ds-list-sub { color: var(--text-sub); }

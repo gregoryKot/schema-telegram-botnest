@@ -42,6 +42,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('assessment'),
       ],
       guidePhaseIds: ['assessment', 'safety'],
+      look: 'assessment',
     },
     {
       id: 'intensive',
@@ -74,6 +75,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('healing'),
       ],
       guidePhaseIds: ['safety', 'awareness', 'healing'],
+      look: 'awareness',
     },
     {
       id: 'patterns',
@@ -100,6 +102,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy'),
       ],
       guidePhaseIds: ['managing', 'autonomy'],
+      look: 'managing',
     },
     {
       id: 'biweekly',
@@ -126,6 +129,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
+      look: 'healing',
     },
     {
       id: 'monthly',
@@ -149,6 +153,7 @@ export const buildBpd24Template: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
+      look: 'autonomy',
     },
   ],
   caveats: [
