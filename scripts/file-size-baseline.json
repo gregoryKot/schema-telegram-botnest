@@ -2832,7 +2832,7 @@
   "webapp/src/components/therapist/noteLook.ts": 16,
   "webapp/src/components/therapist/notesModel.ts": 106,
   "webapp/src/components/therapist/OfflineInviteCard.tsx": 80,
-  "webapp/src/components/therapist/plan/ClientPlanTab.tsx": 151,
+  "webapp/src/components/therapist/plan/ClientPlanTab.tsx": 110,
   "webapp/src/components/therapist/plan/PlanAddSheet.tsx": 134,
   "webapp/src/components/therapist/plan/PlanGoals.tsx": 38,
   "webapp/src/components/therapist/plan/PlanItemForm.tsx": 45,
