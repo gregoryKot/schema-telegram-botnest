@@ -61,6 +61,8 @@ export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
   return buildTechniqueGuides(tr).find((t) => t.id === id) ?? null;
 }
 
+export { needGuides } from './needs';
+export type { NeedGuide } from './needTypes';
 export * from './address';
 export * from './backlinks';
 

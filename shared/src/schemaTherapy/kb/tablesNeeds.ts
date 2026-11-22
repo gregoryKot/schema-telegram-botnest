@@ -9,6 +9,7 @@ import { JOURNEY_NEED_NAMES } from '../../journey/journeyMeta';
 import { buildAnchorPools } from '../../needs/anchorPools';
 import { NEED_COLOR_ORDER } from '../../needs/needColors';
 import { buildNeedData } from '../../needs/needData';
+import { needGuides } from '../guide/needs';
 import { CURATED } from '../../practices/curated';
 import { NEED_INK_ORDER } from '../../share/kit/ink';
 import { NEED_HUE } from '../../theme/entityHue';
@@ -49,6 +50,9 @@ export const NEED_TABLES: readonly KbTable[] = [
   ),
   keyed('shared/src/needs/needColors.ts', () => NEED_COLOR_ORDER),
   keyed('shared/src/needs/needData.ts', () => Object.keys(buildNeedData(tr))),
+  keyed('shared/src/schemaTherapy/guide/needs.ts', () =>
+    needGuides().map((n) => n.id),
+  ),
   keyed('shared/src/practices/curated.ts', () => Object.keys(CURATED)),
   keyed('shared/src/share/kit/ink.ts', () => NEED_INK_ORDER),
   keyed('shared/src/theme/entityHue.ts', () => Object.keys(NEED_HUE)),
