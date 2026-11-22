@@ -551,7 +551,7 @@
   "shared/src/schemaTherapy/guide/modes/angryChild.ts": 66,
   "shared/src/schemaTherapy/guide/modes/attack.ts": 262,
   "shared/src/schemaTherapy/guide/modes/avoidance.ts": 123,
-  "shared/src/schemaTherapy/guide/modes/child.ts": 183,
+  "shared/src/schemaTherapy/guide/modes/child.ts": 176,
   "shared/src/schemaTherapy/guide/modes/childAngry.ts": 214,
   "shared/src/schemaTherapy/guide/modes/critic.ts": 120,
   "shared/src/schemaTherapy/guide/modes/detachedProtector.ts": 68,
@@ -635,8 +635,8 @@
   "shared/src/schemaTherapy/guide/techniques/chairs.ts": 65,
   "shared/src/schemaTherapy/guide/techniques/chairwork.ts": 39,
   "shared/src/schemaTherapy/guide/techniques/chairworkMore.ts": 25,
-  "shared/src/schemaTherapy/guide/techniques/childCare.ts": 52,
-  "shared/src/schemaTherapy/guide/techniques/childCareMore.ts": 16,
+  "shared/src/schemaTherapy/guide/techniques/childCare.ts": 47,
+  "shared/src/schemaTherapy/guide/techniques/childCareMore.ts": 12,
   "shared/src/schemaTherapy/guide/techniques/coupleModeCycleMore.ts": 16,
   "shared/src/schemaTherapy/guide/techniques/empathicConfrontation.ts": 46,
   "shared/src/schemaTherapy/guide/techniques/empathicConfrontationMore.ts": 17,
@@ -3473,5 +3473,7 @@
   "webapp/src/utils/useCabinetLightTheme.ts": 11,
   "webapp/src/utils/useUiPrefsStartupSync.ts": 51,
   "webapp/vite.config.ts": 53,
-  "webapp/vite.live.config.ts": 13
+  "webapp/vite.live.config.ts": 13,
+  "shared/src/schemaTherapy/guide/modes/vulnerableChildMore.ts": 15,
+  "shared/src/schemaTherapy/guide/techniques/transitionalObjects.ts": 15
 }
