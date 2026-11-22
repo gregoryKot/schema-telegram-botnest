@@ -214,6 +214,10 @@
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
   },
+  "webapp/src/pages/authCallback/EmailTokenConsume.tsx::setRetryReason": {
+    "status": "exempt",
+    "reason": "consumeEmailToken не отклоняется: сеть и ответ сервера он сам сводит к { kind: error } (тест consumeEmailToken.test.ts), экран «Нет связи» с «Повторить» рисуется из исхода"
+  },
   "webapp/src/pages/landing/BookingForm.tsx::setStatus": {
     "status": "reports"
   },
