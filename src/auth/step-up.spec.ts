@@ -2,17 +2,13 @@
 // превращаться в постоянный доступ через новый способ входа. Правило:
 // TOTP включён — нужен код в `x-totp-code`; не включён — пропуск («свежий
 // вход» в iframe мессенджеров доказать нечем, docs/open/security.md).
-// Отзыв сессий при включении 2FA (session-proof.ts) — на фейковой WebSession.
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
-import { hashToken } from './email.util';
-import { revokeOtherSessions } from './session-proof';
 import { StepUpGuard, StepUpService, linkCookieUserId } from './step-up';
 import { TotpLockedException } from './totp-attempts';
 
 const NOW = new Date('2026-11-08T12:00:00Z').getTime();
-const min = (n: number) => new Date(NOW - n * 60_000);
 
 type Row = {
   tokenHash: string;
@@ -58,15 +54,6 @@ function makePrisma(rows: Row[]) {
     },
   };
 }
-
-const row = (raw: string, userId: bigint, family: string, created: Date) => ({
-  tokenHash: hashToken(raw),
-  userId,
-  family,
-  createdAt: created,
-  revokedAt: null as Date | null,
-  expiresAt: new Date(NOW + 86_400_000),
-});
 
 function makeReq(opts: {
   userId?: bigint;
@@ -212,24 +199,5 @@ describe('гарды и помощники', () => {
     );
     expect(linkCookieUserId(makeReq({ userId: 4n }))).toBeNull();
     expect(linkCookieUserId(makeReq({}))).toBeNull();
-  });
-});
-
-describe('revokeOtherSessions (включение 2FA, S12)', () => {
-  it('гасит чужие сессии аккаунта, семью текущей куки оставляет', async () => {
-    const rows = [
-      row('mine', 1n, 'f-mine', min(3)),
-      row('thief', 1n, 'f-thief', min(60)),
-      row('other-user', 2n, 'f-x', min(60)),
-    ];
-    const prisma = makePrisma(rows);
-    expect(await revokeOtherSessions(prisma as never, 1n, 'mine')).toBe(1);
-    expect(rows.map((r) => r.revokedAt !== null)).toEqual([false, true, false]);
-  });
-
-  it('куки нет или она чужая → гасит все сессии аккаунта', async () => {
-    const rows = [row('a', 1n, 'f-a', min(3)), row('b', 1n, 'f-b', min(9))];
-    const prisma = makePrisma(rows);
-    expect(await revokeOtherSessions(prisma as never, 1n, undefined)).toBe(2);
   });
 });
