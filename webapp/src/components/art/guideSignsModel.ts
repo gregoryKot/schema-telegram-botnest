@@ -8,6 +8,7 @@
 // только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import { MODE_GROUP_SIGN, modeGroupLook, modeLook } from '../../../../shared/src/theme/entityLook';
 import { YOUNG_PRACTICE_NOTE_SIGN } from './practiceSignsYoung';
+import { ARNTZ_PRACTICE_NOTE_SIGN } from './practiceSignsArntz';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
@@ -17,7 +18,7 @@ export const GUIDE_SIGNS = [
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
   'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
   'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare', 'cup', 'join',
-  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots',
+  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots', 'strokes', 'grounded', 'wheel',
 ] as const;
 
 export type GuideSign = (typeof GUIDE_SIGNS)[number];
@@ -49,8 +50,7 @@ export { TECHNIQUE_SIGN } from './techniqueSigns';
  * сессия — Shelter (начало с подстройки), самораскрытие — Breath (пауза и сверка с собой),
  * работа с чувствами — Rescript (через образ), дословная сцена — Pebbles (факты по одному),
  * блоки — Flashcard (одно из средств против блока). Финал и травма (гл. 12, 14): завершение —
- * Horizon (взгляд вперёд), сложная травма — Shield (защита, которой ребёнку не дали). Выгорание (гл. 18) —
- * Cup знаков приложения (пусто, и это повод отдохнуть), приёмы группы (гл. 17) — Join (одна часть на всех).
+ * Horizon (взгляд вперёд), сложная травма — Shield (защита, которой ребёнку не дали). Выгорание (гл. 18) — Cup знаков приложения (пусто, и это повод отдохнуть), приёмы группы (гл. 17) — Join (одна часть на всех).
  */
 export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   angry_client: 'flare',
@@ -81,7 +81,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   therapist_schemas: 'layers',
   therapist_wellbeing: 'cup',
   therapy_aims: 'grown',
-  ...YOUNG_PRACTICE_NOTE_SIGN,
+  ...YOUNG_PRACTICE_NOTE_SIGN, ...ARNTZ_PRACTICE_NOTE_SIGN,
 };
 
 /** Знак раздела «Для терапевта»; раздела нет в таблице — без знака (не выдумываем). */
