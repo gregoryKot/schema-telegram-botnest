@@ -44,6 +44,7 @@ const mods = loadWithKeys({ key: 'c4'.repeat(32) }, () => ({
   tasks:
     require('../therapy/therapy-tasks.service') as typeof import('../therapy/therapy-tasks.service'),
   plan: require('../therapy/therapy-plan.service') as typeof import('../therapy/therapy-plan.service'),
+  path: require('../therapy/therapy-path.service') as typeof import('../therapy/therapy-path.service'),
   marks:
     require('../therapy/guide-marks.service') as typeof import('../therapy/guide-marks.service'),
 }));
@@ -77,6 +78,8 @@ function makeServices() {
     userPhraseCheck: table({ inWarmWords: false }),
     therapistNote: table(),
     therapyPlanItem: table({ status: 'planned', taskId: null }),
+    therapyPath: table(),
+    therapyPathPhase: table({ criteriaDone: [] }),
     guideMark: table(),
     modeMap: table({ nodes: [], edges: [] }),
     therapistCustomMode: table(),
@@ -103,6 +106,7 @@ function makeServices() {
       ),
     tasks: new mods.tasks.TherapyTasksService(db, {} as never),
     plan: new mods.plan.TherapyPlanService(db, relations),
+    path: new mods.path.TherapyPathService(db, relations),
     marks: new mods.marks.GuideMarksService(db, relations, {
       track: async () => undefined,
     } as never),
@@ -309,6 +313,16 @@ const CASES: Case[] = [
         })
         .then((items) => items[0]),
     read: (s, w) => s.plan.list(THERAPIST, USER).then(byId(w)),
+  },
+  {
+    model: 'TherapyPathPhase',
+    route: 'POST /api/therapy/path/:clientId',
+    write: (s) =>
+      s.path.create(THERAPIST, USER, {
+        startDate: '2026-11-02',
+        phases: [{ name: 'Оценка', goal: 'собрать картину', weeks: 4 }],
+      }),
+    read: (s) => s.path.get(THERAPIST, USER),
   },
   {
     model: 'GuideMark',

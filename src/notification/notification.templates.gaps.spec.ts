@@ -94,24 +94,18 @@ describe('renderTemplate — practice_reminder / practice_missed', () => {
     expect(callbacks(result)).toEqual([]);
   });
 
-  it('practice_missed: день недели — из таблицы по индексу, без индекса — «Вчера»', () => {
-    const named = renderTemplate('practice_missed', { weekday: 5 })!;
-    expect(named.text).toContain('План на пятницу');
-    const yesterday = renderTemplate('practice_missed', {})!;
-    expect(yesterday.text).toContain('Вчера был план');
-    expect(yesterday.text).toContain('как получилось?');
-    expect(callbacks(yesterday)).toEqual([]);
-  });
-
-  it('practice_missed: строка в weekday и текст плана из старого payload не рендерятся', () => {
+  it('practice_missed: постоянный текст «Вчера», старый payload не рендерится', () => {
     const result = renderTemplate('practice_missed', {
-      weekday: 'на пятницу',
+      weekday: 5,
       day: 'на пятницу',
       practiceText: 'написать письмо',
       planId: 7,
     })!;
     expect(result.text).not.toContain('письмо');
+    expect(result.text).not.toContain('пятниц');
     expect(result.text).toContain('Вчера был план');
+    expect(result.text).toContain('как получилось?');
+    expect(callbacks(result)).toEqual([]);
   });
 });
 

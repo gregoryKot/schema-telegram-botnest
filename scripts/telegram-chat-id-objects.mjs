@@ -5,13 +5,13 @@
 // `s.chatId = …`, из литерала, который возвращает функция-источник
 // (`const s = toSendSettings(r)` → `return { chatId: resolveChatId(…) }`), а
 // если `s` — параметр вызывающего, адрес идёт выше по нему (`s.chatId`).
-// Слепая зона: источник без объявления в src (`map.get(id)`, ответ Prisma) —
-// без типов не узнать, что внутри.
+// Объект из карты (`map.get(id)`) — telegram-chat-id-maps.mjs. Слепая зона:
+// источник без объявления и без типа в src (ответ Prisma, карта без `Map<K, V>`).
 import { matchBrace, matchParen, skipString } from './gate-balance.mjs';
 import { fieldOf } from './telegram-chat-id-params.mjs';
 
 const esc = (s) => s.replace(/\$/g, '\\$');
-const CALL_RE = /^(?:await\s+)?(?:(this\.)|((?:this\.)?[A-Za-z_$][\w$]*)\.)?([A-Za-z_$][\w$]*)\s*(?:<[^()]*>)?\(/;
+const CALL_RE = /^(?:await\s+)?(?:(this\.)|((?:this\.)?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\.)?([A-Za-z_$][\w$]*)\s*(?:<[^()]*>)?\(/;
 
 /** Выражение с позиции i до `;`, `,` или перевода строки верхнего уровня. */
 function exprAt(src, i) {
@@ -27,7 +27,7 @@ function exprAt(src, i) {
 }
 
 /** Ближайшее до at `const|let|var name = …`: { at, init }; нет — null. */
-function declBefore(src, name, at) {
+export function declBefore(src, name, at) {
   const re = new RegExp(String.raw`\b(?:const|let|var)\s+${esc(name)}\s*(?::[^=;]+)?=(?![=>])\s*`, 'g');
   let last = null;
   for (const m of src.matchAll(re)) if (m.index < at) last = m;

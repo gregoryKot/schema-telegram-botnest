@@ -102,6 +102,13 @@ export class UpdatePlanItemDto {
   @Min(1)
   @Max(INT32_MAX)
   taskId?: number | null;
+
+  // null снимает пункт с фазы пути.
+  @ValidateIf((o: UpdatePlanItemDto) => o.phaseId != null)
+  @IsInt()
+  @Min(1)
+  @Max(INT32_MAX)
+  phaseId?: number | null;
 }
 
 export class ReorderPlanDto {
