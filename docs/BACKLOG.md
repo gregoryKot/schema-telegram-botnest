@@ -73,8 +73,6 @@
 
 
 
-- ⬜ **Запись сессии за пределами 100 показанных нельзя удалить** — находка той же задачи: ранняя запись открывается из журнала «На сессиях» (`webapp/src/components/therapist/EarlySessionNote.tsx`), но кнопки удаления у неё нет, а в архиве её не видно (`SessionArchive.tsx`); счётчик `removeNoteFromPage` (`shared/src/therapy/notesPage.ts`) для скрытой записи total не уменьшает.
-
 - ⬜ **Флак e2e: «два одновременных запроса теста — одно задание, оба ответа 2xx»** — находка CI PR #1460 (джоба `migrations`, прогон 44548291144): `test/notify-from-other.e2e-spec.ts:118` упал — один из двух параллельных `POST /api/therapy/request-ysq/:id` вернул не 2xx; в логе Postgres три подряд `could not serialize access`, то есть все `SERIALIZATION_RETRIES = 3` (`src/prisma/serializable-retry.ts`) исчерпаны без паузы между попытками. На `main` тот же тест прошёл.
 
 
@@ -112,7 +110,6 @@
 - ⬜ **Гейт `check-dead-end-report.mjs` не видит два вида загрузчика** — `async`-загрузчик с `await` без `try` и промис, отданный дальше (аргумент, присваивание, `return`), идут мимо правил `scripts/check-dead-end-report-rules.mjs`: сбой там может рисоваться как «пусто» без отчёта (№14). Подробности — `docs/open/audit-2026-10.md`, «остаток слепого пятна»; найдено в #1303.
 - ⬜ **Пропуск скрытых каталогов в `check-telegram-chat-id.mjs` и `check-dead-end-report.mjs`** — оба обходят дерево `readdirSync`+`statSync` без пропуска `.`-имён (первый в момент пакета c3-16 переписывал параллельный c3-11, #1308; второго нет в брифе c3-16 и ни в одном открытом PR — пакета-владельца нет, берёт любая сессия); при живом `src/.jest-cache` ручной запуск падает на гонке удаления. Добавить `name.startsWith('.')` у рекурсии и убрать файл из `NOT_YET` в `src/test-support/gates/source-walk.spec.ts`.
 - ⬜ **`scripts/file-size-baseline.json` на `main` не знает новых файлов** — `game/src/{foes,gridScale}.ts`, `webapp/src/sections/guide/{GuideSchemaTable.tsx,guideSchemaTableModel.ts}`; видно по `node scripts/check-file-size-ratchet.mjs --update` на чистом `main`.
-- ⬜ **`ClientDetail` в тестах карточки клиента собирается руками через `as unknown as`** — новое поле ловится только падением теста (так было с `webapp/src/components/therapist/ClientSessionsTab.limit.test.tsx`); нужна общая фабрика.
 
 
 ## Идеи
@@ -171,6 +168,8 @@
 - ✅ **«Что делали»: тап по строке журнала открывает и раннюю запись** (#1330; PR #1460) — запись за пределами 100 показанных заметок догружается по id (`GET /api/therapy/notes/:clientId/one/:noteId`, `src/therapy/session-notes-page.ts`) и встаёт под архивом с номером сессии (`webapp/src/components/therapist/EarlySessionNote.tsx`).
 - ✅ **«Что делали»: посмотрено глазами в браузере** (#1330; PR #1460) — форма итогов, журнал «На сессиях» с переходом к записи и сводка «Что было сделано» открыты под терапевтом в Playwright на 390×844 и 1280×800 (стаб API); поправлена подсветка открытой записи (`.tb-tl-row--focus`), находки — строками в «Следующее».
 
+- ✅ **Ранняя запись сессии удаляется из карточки** (PR #1474): запись за пределами 100 показанных, открытая из журнала «На сессиях» (`webapp/src/components/therapist/EarlySessionNote.tsx`), получила ту же кнопку и то же подтверждение, что строки архива (`SessionArchive.tsx`); после удаления уходит с экрана, `removeNoteFromPage` (`shared/src/therapy/notesPage.ts`) уменьшает total и для скрытой записи, журнал перечитывается по новому total.
+- ✅ **Общая фабрика `ClientDetail` для тестов карточки клиента** (PR #1474): `makeClientDetail` в `webapp/src/components/therapist/clientDetail.test-helpers.ts` возвращает полный типизированный объект `useClientDetail` — новое поле хука ломает компиляцию в одном месте; тесты вкладок переведены на неё, `as unknown as ClientDetail` в них не осталось.
 - ✅ **Баннер куки на визитке: читается в тёмной теме, не закрывает кнопки `/privet`** (PR #1456, находка #1392): лист баннера светлый в любой теме, поэтому чернила на нём — под `light-lock` (`webapp/src/components/CookieBanner.tsx`); пока баннер открыт, страница ссылок длиннее на его высоту (`webapp/src/styles/links-page.css`). Сверено скриншотами Playwright 360×740 в обеих темах.
 
 - ✅ **Теория, слепая перепроверка B: тексты приложения** (PR #1444, карточка #1440): определения Самопожертвования и Негативизма, 18 схем у Янга и 20 по YSQ-R, общее определение схемы (`shared/src/schemaTherapy/content/schemaDefinition.ts`), режимы (Гневный Защитник, Покинутый Ребёнок, Внушающий Вину Критик, Перфекционист, Сердитый и Разъярённый), оговорки безопасности в «Письме» и домашнем рескриптинге, объяснения привязанности и автономии, «Гиперкомпенсатор» в `docs/TERMINOLOGY.md`.
