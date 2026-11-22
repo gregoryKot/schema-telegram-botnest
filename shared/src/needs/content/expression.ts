@@ -1,11 +1,10 @@
 import type { NeedExtra, Tr } from '../types';
+import { NEED_NAMES } from '../needNames';
 import { expressionExamples } from './examples/expression';
 
-// Контент потребности «Выражение чувств» — единственный источник (правило
-// №3 CLAUDE.md): раньше дублировался построчно в webapp/src/needData.ts и
-// удалённом мини-аппе; сайт берёт его отсюда.
+// Контент потребности «Выражение чувств» — единственный источник (правило №3 CLAUDE.md).
 export const buildExpression = (tr: Tr): NeedExtra => ({
-  name: 'Выражение чувств',
+  name: NEED_NAMES.expression,
   short: 'Выраж.',
   subtitle: 'Свобода самовыражения',
   emoji: '💬',

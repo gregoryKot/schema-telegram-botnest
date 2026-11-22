@@ -1,11 +1,10 @@
 import type { NeedExtra, Tr } from '../types';
+import { NEED_NAMES } from '../needNames';
 import { attachmentExamples } from './examples/attachment';
 
-// Контент потребности «Привязанность» — единственный источник (правило
-// №3 CLAUDE.md): раньше дублировался построчно в webapp/src/needData.ts и
-// удалённом мини-аппе; сайт берёт его отсюда.
+// Контент потребности «Привязанность» — единственный источник (правило №3 CLAUDE.md).
 export const buildAttachment = (tr: Tr): NeedExtra => ({
-  name: 'Привязанность',
+  name: NEED_NAMES.attachment,
   short: 'Привяз.',
   subtitle: 'Безопасность и связь',
   emoji: '🤝',
