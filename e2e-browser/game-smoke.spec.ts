@@ -167,6 +167,9 @@ const weekState = (page: Page) =>
         'wk_guest_ask',
         'wk_dishes',
         'wk_mask_wall',
+        'bg_wk_quiet',
+        'bg_wk_quiet_void',
+        'wk_little',
       ].every((k) => sc.textures.exists(k)),
       sashaSheet: sc.sasha.texture.key,
       // подписи пузырей и кнопок лежат внутри контейнеров
@@ -542,7 +545,98 @@ test.describe('игра «Неделя»: каркас «Понедельник�
     );
     await expect
       .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
+      .toContain('Дальше — воскресенье');
+    await pressCardButton(page, 'Дальше — воскресенье');
+    await expect
+      .poll(async () => (await weekState(page)).chapter, { timeout: 15_000 })
+      .toBe('sun');
+    for (const name of ['game_chapter_start', 'game_chapter_done'])
+      expect(events).toContain(name);
+  });
+
+  test('«Воскресенье»: привычкам не за что зацепиться, ПАУЗА в два шага; кризисная строка на экране всю главу', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openGame(page, 'sun', 'Week');
+    const start = await weekState(page);
+    expect(start.chapter).toBe('sun');
+    expect(start.texts).toContain('Это Саша. Выходной, дома никого');
+    expect(start.art).toBe(true);
+    const crisis = [
+      'если тяжело прямо сейчас — 8-800-100-49-94, бесплатно',
+      'детям и подросткам — 8-800-2000-122',
+    ];
+    for (const line of crisis) expect(start.texts).toContain(line);
+    await startWeek(page);
+    // тихий сбой: маленький Саша впереди и не приближается, преград нет
+    await weekGoTo(page, 1720, 'overwork');
+    const far = await weekState(page);
+    expect(far.gateCount).toBe(0);
+    expect(far.texts).toContain('цель: дойти до маленького Саши');
+    expect(far.texts).toContain('Саша, 6 лет');
+    for (const line of crisis) expect(far.texts).toContain(line);
+    // привычки срабатывают вхолостую: сил, часов и груза столько же, строка говорит почему
+    await tapKey(page, 'KeyZ');
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 15_000 })
+      .toContain('дел нет');
+    await weekGoTo(page, 4120, 'agree');
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 15_000 })
+      .toContain('лента кончилась');
+    await tapKey(page, 'KeyC');
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 15_000 })
+      .toContain('соглашаться не с кем');
+    const after = await weekState(page);
+    expect(after.energy).toBe(far.energy);
+    expect(after.load).toBe(far.load);
+    expect(after.gateCount).toBe(0);
+    expect(after.doorAhead).toBeGreaterThan(300);
+    // пик: привычка и тут вхолостую — появляется ПАУЗА, она держится с первого раза
+    await weekGoTo(page, 5320);
+    await expect
+      .poll(async () => (await weekState(page)).peak, { timeout: 15_000 })
+      .toBe(true);
+    await tapKey(page, 'KeyX');
+    await expect
+      .poll(async () => (await weekState(page)).revealed, { timeout: 15_000 })
+      .toContain('pause');
+    expect((await weekState(page)).gateCount).toBe(0);
+    const hold = async () => {
+      await page.keyboard.down('KeyV');
+      await expect
+        .poll(async () => (await weekState(page)).open, { timeout: 15_000 })
+        .toBe(true);
+      await page.keyboard.up('KeyV');
+    };
+    await hold();
+    expect(
+      (await weekState(page)).texts.some((t) => t.includes('Мне одиноко')),
+    ).toBe(true);
+    await tapKey(page, 'Digit3');
+    await expect
+      .poll(async () => (await weekState(page)).half, { timeout: 15_000 })
+      .toBe(true);
+    await hold();
+    await tapKey(page, 'Digit1');
+    await expect
+      .poll(async () => (await weekState(page)).named, { timeout: 15_000 })
+      .toBe(true);
+    await expect
+      .poll(async () => (await weekState(page)).done, { timeout: 30_000 })
+      .toBe(true);
+    expect((await weekState(page)).texts).toContain(
+      'Женя: я хожу к терапевту, мне помогает',
+    );
+    await expect
+      .poll(async () => (await weekState(page)).texts, { timeout: 30_000 })
       .toContain('Продолжение скоро');
+    // конец тяжёлой главы — тоже с кризисной строкой
+    for (const line of crisis)
+      expect((await weekState(page)).texts).toContain(line);
     for (const name of ['game_chapter_start', 'game_chapter_done'])
       expect(events).toContain(name);
   });

@@ -10,6 +10,7 @@ from week_props import props
 from week_corridor import corridor, boss_room, arch, DOOR_X
 import week_wed
 import week_fri
+import week_sun
 
 SHEETS = ('idle', 'walk', 'run', 'phone', 'air', 'dash', 'still')
 
@@ -24,6 +25,7 @@ def assets():
         made['wk_' + k] = strip(c[k])
     made.update(props()); made.update(week_wed.assets())          # «Среда. Звонок маме»
     made.update(week_fri.assets())                                 # «Пятница. Вечеринка»
+    made.update(week_sun.assets())                                 # «Воскресенье. Тишина»
     return made, c
 
 def _put(img, spr, x, feet=FEET):
@@ -82,7 +84,7 @@ def halls(m, c, cell):
 
 def build(out='out'):
     made, c = assets()
-    for k, img in {**previews(made, c), **week_wed.previews(made, c), **week_fri.previews(made, c)}.items():
+    for k, img in {**previews(made, c), **week_wed.previews(made, c), **week_fri.previews(made, c), **week_sun.previews(made, c)}.items():
         img.save(f'{out}/{k}.png')
     return made
 
