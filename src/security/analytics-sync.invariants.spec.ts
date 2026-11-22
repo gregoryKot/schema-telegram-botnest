@@ -49,14 +49,6 @@ function findTrackedEvents(): Set<string> {
 // каждое с реальной причиной. Список может только СОКРАЩАТЬСЯ (если событие
 // перейдёт на литерал вместо константы — можно убрать отсюда).
 const BACKEND_ONLY: Record<string, string> = {
-  game_start:
-    'слала только старая игра (удалена, #1382); старые строки в БД ещё читает /stats — убрать вместе с блоком /stats, строка в docs/BACKLOG.md',
-  game_tutorial_done:
-    'слала только старая игра (удалена, #1382); старые строки в БД ещё читает /stats — убрать вместе с блоком /stats, строка в docs/BACKLOG.md',
-  game_tutorial_skip:
-    'слала только старая игра (удалена, #1382); старые строки в БД ещё читает /stats — убрать вместе с блоком /stats, строка в docs/BACKLOG.md',
-  game_over:
-    'слала только старая игра (удалена, #1382); старые строки в БД ещё читает /stats — убрать вместе с блоком /stats, строка в docs/BACKLOG.md',
   share_card:
     'шлётся через импортируемую константу SHARE_CARD_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — ' +
@@ -394,9 +386,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 51 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
     // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
     // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
-    // 57 — game_start/tutorial_done/tutorial_skip/over: старая игра удалена, /stats ещё читает их строки.
-    // 58 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(58);
+    // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(54);
   });
 });
 
