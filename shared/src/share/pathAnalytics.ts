@@ -7,10 +7,6 @@ interface PathTracker {
   trackEvent(name: string, meta?: Record<string, unknown>): void;
 }
 
-/** Ключ фазы для события: фаза из шаблона — её id, своя — 'custom'. */
-export const pathPhaseKey = (templatePhaseId: string | null): string =>
-  templatePhaseId ?? 'custom';
-
 /** Путь собран; templateId null — пустой путь. */
 export function trackPathCreated(
   api: PathTracker,
@@ -23,18 +19,14 @@ export function trackPathPhaseStarted(
   api: PathTracker,
   templatePhaseId: string | null,
 ): void {
-  api.trackEvent('therapy_path_phase_started', {
-    phase: pathPhaseKey(templatePhaseId),
-  });
+  api.trackEvent('therapy_path_phase_started', { phase: templatePhaseId ?? 'custom' });
 }
 
 export function trackPathPhaseFinished(
   api: PathTracker,
   templatePhaseId: string | null,
 ): void {
-  api.trackEvent('therapy_path_phase_finished', {
-    phase: pathPhaseKey(templatePhaseId),
-  });
+  api.trackEvent('therapy_path_phase_finished', { phase: templatePhaseId ?? 'custom' });
 }
 
 /** «Сдвинуть сроки» у фазы, что идёт дольше плана. */
@@ -57,9 +49,9 @@ export function withPlanMarkTracking<A extends unknown[], R>(
   api: PathTracker,
   create: (...args: [...A, number[]]) => Promise<R>,
 ): (...args: [...A, number[]]) => Promise<R> {
-  return async (...args: [...A, number[]]) => {
-    const note = await create(...args);
-    trackPlanSessionMarked(api, (args[args.length - 1] as number[]).length);
-    return note;
-  };
+  return (...args) =>
+    create(...args).then((note) => {
+      trackPlanSessionMarked(api, (args[args.length - 1] as number[]).length);
+      return note;
+    });
 }
