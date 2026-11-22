@@ -10,12 +10,14 @@ import { describe, it, expect } from 'vitest';
 import {
   SCHEMAS,
   SCHEMA_NAME_TO_ID,
+  NEED_LABELS,
   getYsqSchemas,
   buildYsqSchemas,
 } from './ysqSchemas';
 import { SCHEMA_DOMAINS } from '../schemaTherapy/content/schemaDomains';
 import { DOMAIN_HUE, NEED_HUE } from '../theme/entityHue';
 import type { NeedId } from '../needs/types';
+import { getNeedData, NEED_ORDER } from '../needs/needData';
 
 // Остаточные «ты»-формы (местоимения/императивы) — грубая проверка гейта
 // check-second-person.mjs на резолвленном тексте формы «вы», и наоборот.
@@ -114,6 +116,12 @@ describe('ysqSchemas: имена совпадают с реестром схем
       expect(NEED_HUE[needId as NeedId]).toBe(DOMAIN_HUE[domain!.id]);
     },
   );
+
+  it('подписи потребностей — названия из трекера («Совпадает с дневником» называет существующую)', () => {
+    const tracker = getNeedData('ty');
+    for (const id of NEED_ORDER) expect(NEED_LABELS[id]).toBe(tracker[id].name);
+    expect(NEED_LABELS.play).toBe('Спонтанность');
+  });
 
   it('у каждого ключа SCHEMA_NAME_TO_ID есть схема в опроснике', () => {
     const names = new Set(SCHEMAS.map((s) => s.name));

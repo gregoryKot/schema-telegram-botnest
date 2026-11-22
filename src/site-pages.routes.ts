@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { LandingText } from './booking/landing-price';
 import { homeSeoMiddleware } from './articles/home-seo.middleware';
+import { quizSeoMiddleware } from './quiz/quiz-seo.middleware';
 import { PRICE_FILE_ROUTES, priceFilesMiddleware } from './infra/price-files';
 import { PRACTICE_ALIAS_HOSTS } from './practice-domain.middleware';
 import {
@@ -35,6 +36,13 @@ export function configureSitePages(
   consumer
     .apply(homeSeoMiddleware(html, landingText))
     .forRoutes({ path: '/', method: RequestMethod.GET });
+  // Мини-тесты: title/description/OG и текст теста для поисковика.
+  consumer
+    .apply(quizSeoMiddleware(html, landingText))
+    .forRoutes(
+      { path: 'tests', method: RequestMethod.GET },
+      { path: 'tests/*path', method: RequestMethod.GET },
+    );
   const files = { '/llms.txt': read('llms.txt'), '/index.html': html };
   consumer
     .apply(priceFilesMiddleware(files, landingText))

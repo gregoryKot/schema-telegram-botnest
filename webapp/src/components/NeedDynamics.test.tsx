@@ -26,6 +26,19 @@ describe('NeedDynamics', () => {
     expect(screen.getByText(/сейчас 8,0/)).toBeTruthy();
   });
 
+  it('подпись детства — по общему порогу колеса: 4 дефицит, 5–6 середина, 7 «хватало»', () => {
+    const note = (v: number) => {
+      const { container } = render(<NeedDynamics needId="play" history={TWO_WEEKS} childhoodValue={v} />);
+      const text = container.querySelector('.tk2-child-note')?.textContent?.replace(/\s/g, ' ') ?? '';
+      cleanup();
+      return text;
+    };
+    expect(note(4)).toMatch(/^Давняя чувствительная зона/);
+    expect(note(5)).toMatch(/^В детстве её хватало не всегда/);
+    expect(note(6)).toMatch(/^В детстве её хватало не всегда/);
+    expect(note(7)).toMatch(/^В детстве удовлетворялась/);
+  });
+
   it('без детства — ни пунктира, ни строки детства', () => {
     const { container } = render(<NeedDynamics needId="play" history={TWO_WEEKS} />);
     expect(container.querySelector('.tk2-ref')).toBeNull();

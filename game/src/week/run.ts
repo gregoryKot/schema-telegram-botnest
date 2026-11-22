@@ -10,11 +10,13 @@ export interface RunInput {
   resting: boolean; // силы на нуле — Саша плетётся
   named: boolean;   // сбой назван
   hold: number;     // доля удержания ПАУЗЫ, 0..1
+  sitting?: boolean; // сил нет совсем — сидит
 }
 
 /** Скорость Саши сейчас. Удержание ПАУЗЫ тормозит до полной остановки; привычки бег не останавливают. */
-export function runSpeed({ pace, resting, named, hold }: RunInput): number {
+export function runSpeed({ pace, resting, named, hold, sitting }: RunInput): number {
   if (named) return PACE.walk;
+  if (sitting) return 0;
   const base = resting ? PACE.trudge : PACE[pace];
   return base * (1 - Math.min(1, Math.max(0, hold)));
 }

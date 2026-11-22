@@ -1,4 +1,4 @@
-// Страница ссылок kotlarewski.gr/links: событие links_page_click
+// Страница ссылок kotlarewski.gr/privet: событие links_page_click
 // { target, from } — какую кнопку нажали и из какой соцсети пришли. Гость без
 // входа, поэтому событие анонимное (POST /api/public-event). Парные списки на
 // сайте — shared/src/analytics/linksPage*.ts (сверка — links-page.sync.spec.ts).

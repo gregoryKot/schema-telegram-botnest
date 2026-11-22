@@ -3,6 +3,7 @@ import { YsqSyncNote } from './YsqSyncNote';
 import { TherapyCaution } from '../therapy/TherapyCaution';
 import { EntitySheet } from '../paper/EntitySheet';
 import { YsqQuizScene } from './YsqQuizScene';
+import { ANSWER_LABELS } from '../../hooks/useYsqTest';
 
 type Tr = (ty: string, vy: string) => string;
 
@@ -27,7 +28,7 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
   ];
   return (
     <>
-      <EntitySheet look="ysq" title="Тест на схемы" sub="Паттерны мышления и поведения, сложившиеся в детстве"
+      <EntitySheet look="ysq" title="Тест на схемы" sub="Убеждения о себе и других вместе с их чувствами, сложившиеся в детстве"
         art={<YsqQuizScene />} titleAs="h1" className="ss-hero ss-ysq-hero" />
       <div className="ss-facts">
         {facts.map(([title, desc]) => (
@@ -39,7 +40,7 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
         <div className="ds-label">Шкала ответов</div>
         <div className="ss-legend">
           {[1, 2, 3, 4, 5, 6].map(n => <div key={n} className={`ss-legend-n${n >= 4 ? ' is-high' : ''}`}>{n}</div>)}
-          <div className="ss-legend-t">Совсем не про меня</div><div className="ss-legend-t">Полностью про меня</div>
+          <div className="ss-legend-t">{ANSWER_LABELS[0]}</div><div className="ss-legend-t">{ANSWER_LABELS[5]}</div>
         </div>
       </div>
 

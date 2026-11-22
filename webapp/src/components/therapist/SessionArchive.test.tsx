@@ -6,6 +6,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render as rtlRender, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SessionArchive } from './SessionArchive';
+import { api } from '../../api';
+
+vi.mock('../../api', () => ({ api: { getTherapistNote: vi.fn(), listCustomModes: vi.fn() }, reportClientError: vi.fn() }));
 import type { TherapistNote } from '../../api';
 import { paperSignName } from '../../test-support/paperSign';
 
@@ -81,5 +84,63 @@ describe('SessionArchive', () => {
     expect(scroll).toHaveBeenCalledTimes(1);
     expect(container.querySelector('.tb-tl-row--focus')?.textContent).toContain('заметка 2');
     expect(takeFocus).toHaveBeenCalledTimes(1);
+  });
+
+  describe('запись из журнала за пределами показанных', () => {
+    const early = { ...rows(1)[0], id: 900, date: '2025-03-04', text: 'ранняя заметка' };
+    const open = (removeNote = vi.fn()) => render(<SessionArchive page={{ notes: rows(100), total: 105 }} removeNote={removeNote} takeFocus={() => 900} clientId={42} />);
+    const confirmDelete = async (container: HTMLElement) => {
+      await screen.findByText('ранняя заметка');
+      fireEvent.click(container.querySelector('.tb-tl-row--focus [aria-label="Удалить заметку"]')!);
+      expect(screen.getByText(/^Заметка о сессии 3 от 4 .+ 2025 удалится насовсем\.$/)).toBeTruthy();
+      fireEvent.click(screen.getByText('Удалить'));
+    };
+
+    it('удаляется тем же подтверждением, что показанная, и уходит с экрана', async () => {
+      vi.mocked(api.getTherapistNote).mockResolvedValue({ note: early, number: 3 });
+      const removeNote = vi.fn().mockResolvedValue(true);
+      const { container } = open(removeNote);
+      await confirmDelete(container);
+      await waitFor(() => expect(screen.queryByText('ранняя заметка')).toBeNull());
+      expect(removeNote).toHaveBeenCalledWith(900);
+      await waitFor(() => expect(screen.queryByText('Удалить заметку?')).toBeNull());
+      expect(screen.queryByText('Более ранняя запись')).toBeNull();
+    });
+
+    it('удаление не прошло — запись остаётся на экране', async () => {
+      vi.mocked(api.getTherapistNote).mockResolvedValue({ note: early, number: 3 });
+      const removeNote = vi.fn().mockResolvedValue(false);
+      const { container } = open(removeNote);
+      await confirmDelete(container);
+      await waitFor(() => expect(screen.queryByText('Удалить заметку?')).toBeNull());
+      expect(screen.getByText('ранняя заметка')).toBeTruthy();
+    });
+
+    it('догружается по id и встаёт под архивом со своим номером, подсвечена', async () => {
+      const scroll = vi.fn();
+      Element.prototype.scrollIntoView = scroll;
+      vi.mocked(api.getTherapistNote).mockResolvedValue({ note: early, number: 3 });
+      const { container } = open();
+      expect(await screen.findByText('ранняя заметка')).toBeTruthy();
+      expect(api.getTherapistNote).toHaveBeenCalledWith(42, 900);
+      const row = container.querySelector('.tb-tl-row--focus')!;
+      expect(row.textContent).toContain('Сессия 3');
+      expect(row.nextElementSibling).toBeNull(); // раньше всех показанных — в конце
+      expect(scroll).toHaveBeenCalled();
+    });
+
+    it('не загрузилась — строка об этом и «Повторить» грузит снова', async () => {
+      vi.mocked(api.getTherapistNote).mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ note: early, number: 3 });
+      open();
+      expect(await screen.findByText('Запись не загрузилась.')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+      expect(await screen.findByText('ранняя заметка')).toBeTruthy();
+    });
+
+    it('запись среди показанных ручку не зовёт', () => {
+      vi.mocked(api.getTherapistNote).mockClear();
+      render(<SessionArchive page={{ notes: rows(3), total: 3 }} removeNote={vi.fn()} takeFocus={() => 2} clientId={42} />);
+      expect(api.getTherapistNote).not.toHaveBeenCalled();
+    });
   });
 });

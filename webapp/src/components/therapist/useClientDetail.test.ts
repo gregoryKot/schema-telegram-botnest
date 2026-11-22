@@ -243,4 +243,19 @@ describe('addNote / removeNote', () => {
     await act(async () => { await result.current.removeNote(1); });
     expect(result.current.notesPage.total).toBe(104);
   });
+  it('ранняя запись (нет среди показанных): та же ручка удаления, total − 1, показанные на месте; отказ — false', async () => {
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [{ id: 1, date: '2026-01-01' }], total: 105 });
+    mockApi.deleteTherapistNote.mockResolvedValue(undefined);
+    const { result } = await openedHook();
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.removeNote(900); });
+    expect(ok).toBe(true);
+    expect(mockApi.deleteTherapistNote).toHaveBeenCalledWith(900);
+    expect(result.current.notes.map(n => n.id)).toEqual([1]);
+    expect(result.current.notesPage.total).toBe(104);
+    mockApi.deleteTherapistNote.mockRejectedValue(new Error('network'));
+    await act(async () => { ok = await result.current.removeNote(901); });
+    expect(ok).toBe(false);
+    expect(result.current.notesPage.total).toBe(104);
+  });
 });

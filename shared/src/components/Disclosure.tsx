@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 
 /** Классы вида: общий ds-fold сайта (DS_FOLD) или свои (аккордеон карты схем); без них — инлайн-вид. */
 export interface DisclosureClasses {
@@ -33,11 +33,9 @@ const INLINE_BTN: CSSProperties = {
 };
 
 /**
- * Раскрывашка — одна механика на все места (№3): кнопка-заголовок (≥44, aria-expanded,
- * видна всегда, не только по :hover) и содержимое под ней; закрытое не монтируется.
- * `defaultOpen` — только начальное состояние, дальше решает человек; `open` с `onToggle` —
- * раскрытие снаружи (справочник держит открытым один домен). `keepMounted` — закрытое тело
- * остаётся в DOM под `hidden` (история «Выполнено» не перезапрашивается при раскрытии).
+ * Раскрывашка — одна механика на все места (№3): кнопка-заголовок (≥44, aria-expanded, не по :hover) и тело под ней.
+ * `defaultOpen` — только начальное состояние; `open` с `onToggle` — раскрытие снаружи (справочник держит один домен).
+ * `keepMounted` — закрытое тело в DOM под `hidden`, кнопка ссылается на него aria-controls («Выполнено» не перезапрашивается).
  */
 export function Disclosure({
   title,
@@ -72,6 +70,7 @@ export function Disclosure({
   children: ReactNode;
 }) {
   const [own, setOwn] = useState(defaultOpen);
+  const bodyId = useId();
   const open = openProp ?? own;
   const root = [classes?.root, className].filter(Boolean).join(' ');
   return (
@@ -79,6 +78,7 @@ export function Disclosure({
       <button
         type="button"
         aria-expanded={open}
+        aria-controls={keepMounted ? bodyId : undefined}
         onClick={onToggle ?? (() => setOwn((v) => !v))}
         className={classes?.btn}
         style={classes ? undefined : INLINE_BTN}
@@ -91,7 +91,7 @@ export function Disclosure({
         </span>
       </button>
       {(open || keepMounted) && (
-        <div className={classes?.body} hidden={!open}>
+        <div id={bodyId} className={classes?.body} hidden={!open}>
           {children}
         </div>
       )}

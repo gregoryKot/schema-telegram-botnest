@@ -112,6 +112,7 @@ function makeDb(rels: Rel[]) {
     therapyPlanItem: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },
+    guideMark: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
     },

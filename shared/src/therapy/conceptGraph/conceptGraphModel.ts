@@ -88,6 +88,7 @@ function buildSchemas(src: ConceptGraphSource): GraphSchemaCard[] {
           belief: link.belief.trim(),
           origin: link.origin.trim(),
           needIds: NEED_ORDER.filter((id) => blocked.has(id)),
+          coping: link.coping ?? [],
           empty: isSchemaLinkEmpty(link),
         };
       }),

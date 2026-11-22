@@ -290,6 +290,9 @@ jobs:
       # сессию), у правил .claude/rules есть paths, карта кода называет все
       # каталоги и гейты, пути и ссылки живы. Бейслайна и --update нет.
       - run: node scripts/check-agent-docs.mjs
+      # Вопросы владельцу лежат в одном месте: раздел «Ждёт владельца» в бэклоге
+      # стоит первым, строка — с вопросом, рекомендацией, ссылкой и датой.
+      - run: node scripts/check-owner-waiting.mjs
       # Пути в обратных кавычках CLAUDE.md, docs/SECURITY.md, docs/README.md и
       # .claude/rules/*.md существуют в дереве (аудит 2026-10: битые указатели
       # CLAUDE.md чинили руками, #643). Исключения — scripts/doc-refs-baseline.json.
@@ -663,7 +666,7 @@ jobs:
           npx jest --config ./test/jest-e2e.json --runInBand
           test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
           test/app-ownership-sweep-2.e2e-spec.ts test/app-ownership-sweep-3.e2e-spec.ts
-          test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts test/therapy-web-client.e2e-spec.ts test/therapy-plan.e2e-spec.ts
+          test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts test/therapy-web-client.e2e-spec.ts test/therapy-plan.e2e-spec.ts test/guide-marks.e2e-spec.ts
           test/client-booking-ownership.e2e-spec.ts
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts
@@ -1049,7 +1052,9 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
       # С кэшем скачивание браузеров пропускается, системные зависимости
       # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
-      - run: npx playwright install --with-deps chromium webkit
+      - name: браузеры Playwright (потолок времени и одна повторная попытка)
+        timeout-minutes: 7
+        run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
       # Вид на компьютере в каждом PR: e2e-browser/desktop-layout.spec.ts снимает

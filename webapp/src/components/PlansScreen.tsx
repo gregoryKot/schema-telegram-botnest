@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
 import { SkeletonList } from './Skeleton';
@@ -12,25 +12,33 @@ import { PlanCard } from './plans/PlanCard';
 import { EntitySheet } from './paper/EntitySheet';
 import { PaperAlert } from './paper/PaperAlert';
 import { GlyphArrowLeft } from './exercises/ExGlyphs';
+import { spotKey, useSpotlight } from '../hooks/useSpotlight';
+import { todayStr } from '../../../shared/src/utils/format';
+import { planHistoryDays, type PlanFocus } from './plans/planFocus';
 import { useNotifyReach } from '../../../shared/src/settings/useNotifyReach';
 
 interface Props {
   onClose: () => void;
   onOpenTracker?: () => void;
+  /** План из общего поиска: период растёт до его дня, строка прокручивается в вид и подсвечивается. */
+  focus?: PlanFocus | null;
 }
 
 // «История планов» (b20): шапка — лист плана (шалфей 135 + Check из ENTITY_LOOK) с итогом «1 активный · 3
 // завершённых» и полосой мха; пусто — тот же лист «Планов пока нет» и пять плиток потребностей (NeedTiles);
 // сбой — наклейка PaperAlert с повтором; строки — PlanCard. «Закрыть» — в полосе листа, а не кнопкой в шапке.
-export function PlansScreen({ onClose, onOpenTracker }: Props) {
+export function PlansScreen({ onClose, onOpenTracker, focus }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
   const notifyReach = useNotifyReach(api.getSettings); // «с напоминанием» — только если дойдёт (U5)
   // Сбой ≠ пусто (пара к miniapp-фиксу #371): отказ раньше рисовал «Планов
   // пока нет». Здесь — через канонический для webapp useAsyncData.failed.
-  const plansFetcher = useCallback(() => api.getPlanHistory(30), []);
+  const [days] = useState(() => planHistoryDays(focus, todayStr()));
+  const plansFetcher = useCallback(() => api.getPlanHistory(days), [days]);
   const { data: plans, reload: load, setData: setPlans, failed: loadFailed } =
     useAsyncData<PracticePlan[] | null>(plansFetcher, null);
+
+  useSpotlight(focus ? spotKey('plan', focus.id) : null, plans !== null);
 
   const pending   = (plans ?? []).filter(p => p.done === null);
   const completed = (plans ?? []).filter(p => p.done !== null);

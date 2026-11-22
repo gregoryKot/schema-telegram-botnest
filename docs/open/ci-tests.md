@@ -123,18 +123,6 @@
   A/B не делали, а код загрузки исполняет любой импортирующий спек, и кто из них
   единственный судья, не известно. Сейчас они Ignored (`ignoreStatic: true`);
   включая статику (запись выше) — мерить заново.
-- **Мутатор `CallExpression` из Stryker 10 выключен в волне golden-auth**
-  (`mutator.excludedMutations` в `stryker.golden-auth.config.json`, с перехода
-  на Stryker 10). Он стирает вызов-оператор (`foo();` → `;`), `throw new X()` и
-  вызов внутри выражения (→ `void 0`), если в нём нет других мутантов. В
-  остальных волнах (bot, golden-payments, crisis, outbox, зонтичный
-  `stryker.config.json`) включён: выжили два `logger.warn` в
-  `payment.booking-webhook.ts` (помечены `// Stryker disable next-line
-  CallExpression` с причиной) и `removeLocal` в `ratingOutbox.ts` (закрыт
-  тестом). В golden-auth по подсчёту инструментером — +6 мутантов в
-  `crypto-record.ts` и по 1–2 в прочих файлах. Включение — отдельным PR
-  (строка в `docs/BACKLOG.md`): снять исключение, прогнать волну, выживших
-  закрыть тестом или пометкой с причиной, полы — `--update` по прогону.
 - **Таймаутов у шагов `ci.yml` нет, потолок только у джоб.** Гейт
   `src/test-support/gates/job-timeouts.spec.ts` требует `timeout-minutes`
   на уровне джобы; шаг (`vitest`, `migrate deploy`) может занять весь потолок

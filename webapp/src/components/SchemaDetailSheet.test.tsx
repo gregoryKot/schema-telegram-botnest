@@ -7,7 +7,7 @@
 // useHistorySheet.test.tsx (MemoryRouter обязателен для useNavigate/useLocation).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { SchemaDetailSheet } from './SchemaDetailSheet';
 import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
 
@@ -19,6 +19,7 @@ vi.mock('../api', () => ({
 }));
 import { api } from '../api';
 import { plainText } from '../test-support/plainText';
+import { practiceTargetOf } from '../sections/practice/practiceRoute';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function renderSheet(schemaId = 'emotional_deprivation', onClose = vi.fn()) {
@@ -165,6 +166,21 @@ describe('SchemaDetailSheet — «Познакомиться →» закрыв�
     const [goButton] = screen.getAllByText('Познакомиться →');
     fireEvent.click(goButton);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // Регрессия: переход шёл на /exercises, а редирект оттуда терял состояние — упражнение не открывалось.
+  it('ведёт в «Практики» с карточкой этой схемы в состоянии маршрута', () => {
+    const seen: { pathname: string; state: unknown }[] = [];
+    const Probe = () => { const { pathname, state } = useLocation(); seen.push({ pathname, state }); return null; };
+    render(
+      <MemoryRouter>
+        <Probe />
+        <SchemaDetailSheet schemaId="abandonment" onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getAllByText('Познакомиться →')[0]);
+    expect(seen.at(-1)).toEqual({ pathname: '/practice', state: { openSchemaEx: 'abandonment' } });
+    expect(practiceTargetOf(seen.at(-1)?.state)).toEqual({ kind: 'schemaCard', id: 'abandonment' });
   });
 });
 

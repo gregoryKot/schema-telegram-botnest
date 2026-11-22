@@ -1,7 +1,8 @@
 // Знак листа техники. У первых 14 техник знак свой; техники, добавленные позже (#1366),
 // берут знак родственной техники или мотива — своих рисунков у них пока нет.
 import type {
-  BorrowedTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  YoungTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -38,6 +39,7 @@ const SCHEMA_TECHNIQUE_SIGN: Record<SchemaTechniqueId, GuideSign> = {
   body_grounding: 'breath',
   values_overview: 'horizon',
   couple_mode_cycle: 'ribbon',
+  online_chairwork: 'talk',
 };
 
 const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
@@ -53,10 +55,25 @@ const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
   window_of_tolerance: 'limits',
   stop_rewind_explore: 'talk_past',
   life_line: 'ribbon',
+  downward_arrow: 'layers',
+};
+
+const CAMBRIDGE_TECHNIQUE_SIGN: Record<CambridgeTechniqueId, GuideSign> = {
+  schema_attunement: 'spotlight',
+  responsibility_pie: 'scales',
+  courtroom: 'scales',
+  healthy_adult_three_chairs: 'grown',
+  need_now_question: 'cup',
+};
+
+const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = {
+  schema_dialogue: 'talk',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
+  ...CAMBRIDGE_TECHNIQUE_SIGN,
+  ...YOUNG_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

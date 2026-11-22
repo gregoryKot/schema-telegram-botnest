@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { TherapyPlanItem } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
@@ -8,6 +12,7 @@ import {
   type EncryptSchema,
 } from '../utils/crypto-record';
 import type { PlanItemView, PlanSource } from './therapy-plan.types';
+import { parseGuideAddress } from './guide-mark-address';
 
 const PLAN_SCHEMA: EncryptSchema = {
   strings: ['text'],
@@ -17,6 +22,9 @@ const PLAN_SCHEMA: EncryptSchema = {
 export interface PlanItemInput {
   rubric: string;
   text: string;
+  /** Адрес раздела справочника, из которого взят пункт. */
+  sourceAddress?: string;
+  /** Старый клиент (до адресов) шлёт вид/id/поле — пишутся как раньше. */
   source?: PlanSource;
 }
 
@@ -37,6 +45,7 @@ function toView(row: TherapyPlanItem): PlanItemView {
     text: r.text,
     status: r.status,
     position: r.position,
+    sourceAddress: r.sourceAddress,
     source:
       r.sourceKind && r.sourceId && r.sourceField
         ? { kind: r.sourceKind, id: r.sourceId, field: r.sourceField }
@@ -72,6 +81,8 @@ export class TherapyPlanService {
     clientIds: bigint[],
     input: PlanItemInput,
   ): Promise<PlanItemView[]> {
+    if (input.sourceAddress && !parseGuideAddress(input.sourceAddress))
+      throw new BadRequestException('Bad guide address');
     for (const clientId of clientIds) {
       await this.relationsService.assertHasClient(therapistId, clientId);
     }
@@ -92,6 +103,7 @@ export class TherapyPlanService {
                 rubric: input.rubric,
                 text: input.text,
                 position: (last?.position ?? -1) + 1,
+                sourceAddress: input.sourceAddress ?? null,
                 sourceKind: input.source?.kind ?? null,
                 sourceId: input.source?.id ?? null,
                 sourceField: input.source?.field ?? null,
