@@ -14,6 +14,7 @@ export const buildSubjugationGuide = (tr: Tr): SchemaGuide => ({
     'angry_child',
     'stubborn_child',
     'guilt_critic',
+    'demanding_critic',
     'compliant_surrenderer',
     'bully_attack',
   ],

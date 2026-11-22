@@ -8,18 +8,16 @@ export interface KbGap {
 }
 
 const HEALTHY = 'здоровый режим — цель работы, а не следствие схемы';
-const BOOK = 'связать со схемами по книге (Янг, Арнтц, Кембридж)';
 
 /** Режимы, которых нет ни в одном SchemaGuide.modeIds. */
 export const MODES_WITHOUT_SCHEMA: Readonly<Record<string, KbGap>> = {
   healthy_adult: { kind: 'theory', why: HEALTHY },
   happy_child: { kind: 'theory', why: HEALTHY },
   good_parent: { kind: 'theory', why: HEALTHY },
-  angry_protector: { kind: 'todo', why: BOOK },
-  compulsive_oc: { kind: 'todo', why: BOOK },
-  scolding_oc: { kind: 'todo', why: BOOK },
-  manipulative: { kind: 'todo', why: BOOK },
-  predator: { kind: 'todo', why: BOOK },
+  predator: {
+    kind: 'todo',
+    why: 'нужна глава о криминальной модели режимов: на полке источников её нет, решает владелец',
+  },
 };
 
 const NO_SECTION =
@@ -73,27 +71,11 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> =
  */
 export const TEXT_MENTIONS_WITHOUT_LINK: Readonly<Record<string, KbGap>> = {
   'entitlement→vulnerable_child': {
-    kind: 'todo',
-    why: 'текст говорит, что при «чистой» схеме режима нет: переписать без названия или оставить',
-  },
-  'entitlement→compliant_surrenderer': {
-    kind: 'todo',
-    why: 'назван режим терапевта, а не клиента: переписать без названия режима',
-  },
-  'insufficient_self_control→stubborn_child': {
-    kind: 'todo',
-    why: 'различение с Упрямым Ребёнком: решить по книге, характерен ли он для схемы',
-  },
-  'insufficient_self_control→punitive_critic': {
-    kind: 'todo',
-    why: 'пример при ПРЛ: решить по книге, характерен ли режим для схемы',
-  },
-  'subjugation→demanding_critic': {
-    kind: 'todo',
-    why: 'режим назван в работе на стульях: решить по книге, характерен ли он для схемы',
+    kind: 'theory',
+    why: 'текст объясняет, что при «чистой» схеме режима нет, а при вторичной он принадлежит исходной схеме',
   },
   'unrelenting_standards→vulnerable_child': {
     kind: 'todo',
-    why: 'режим назван в упражнении в воображении: решить по книге, связать ли',
+    why: 'режим назван, когда планка компенсирует Дефективность: характерен ли он для самой схемы — решает владелец по книге',
   },
 };
