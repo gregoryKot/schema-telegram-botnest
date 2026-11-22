@@ -6,17 +6,23 @@ import { PlanButton } from './PlanButton';
 import { modeGuideLook } from './guideLook';
 import { articleAddress } from './marks/guideMarkModel';
 import { GuidePoints } from './GuidePoints';
+import { GuideLinkRows } from './GuideLinkRows';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 
-type Props = GuideSheetActions & { modeName: string; view: ModeGuideView };
+type Props = GuideSheetActions & {
+  modeName: string; view: ModeGuideView;
+  /** Тап по схеме «Типичен для схем» — её лист; нет — названия строкой. */
+  onOpenSchema?: (schemaId: string) => void;
+};
 
 /**
  * Лист режима (#995): герой — что это за режим и знак на бумаге его группы (modeGuideLook), «Как это
  * звучит», цель, «Как работать» — каналы пунктами, затем общий хвост листа
  * раздела (GuideSheet): техники «На сессии», задания «Между сессиями»,
- * «Подробнее» и источники. Открывается «Подробнее о режиме» на плашке «Обычно в методе».
+ * «Подробнее» и источники. Под «Подробнее» — «Типичен для схем» (обратная сторона «Типичных режимов» схемы).
+ * Открывается «Подробнее о режиме» на плашке «Обычно в методе».
  */
-export function ModeGuideSheet({ modeName, view, ...actions }: Props) {
+export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Props) {
   const { guide } = view;
   const at = articleAddress('mode', guide.modeId);
   const channels = CHANNELS.flatMap(({ id: key, ...c }) => {
@@ -29,6 +35,7 @@ export function ModeGuideSheet({ modeName, view, ...actions }: Props) {
     <GuideSheet
       label="Режим" title={modeName} lede={guide.what} voice={guide.voice} view={view} {...actions}
       look={modeGuideLook(guide.modeId)} at={at}
+      moreParts={[schemasPart(view, at('schemas'), onOpenSchema)]}
     >
       <GuideSection title="Цель" text={guide.goal} address={at('goal')} />
       {channels.length > 0 && (
@@ -38,4 +45,10 @@ export function ModeGuideSheet({ modeName, view, ...actions }: Props) {
       )}
     </GuideSheet>
   );
+}
+
+function schemasPart({ schemas }: ModeGuideView, address: string, onOpen?: (id: string) => void) {
+  const title = 'Типичен для схем';
+  if (!onOpen) return { title, text: schemas.map((s) => s.name).join(', '), address };
+  return { title, address, children: schemas.length > 0 ? <GuideLinkRows items={schemas} onOpen={onOpen} /> : undefined };
 }
