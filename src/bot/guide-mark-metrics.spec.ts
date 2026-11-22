@@ -53,6 +53,8 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
               ? (kinds[where.meta?.equals ?? ''] ?? 0)
               : 0,
           ),
+        // Счётчики «готового ответа» (guide-answer-metrics): событий нет.
+        groupBy: () => Promise.resolve([]),
       },
       guideMark: {
         groupBy: () =>
