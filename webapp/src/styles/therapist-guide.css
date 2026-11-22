@@ -85,6 +85,9 @@
 .pd-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
 .pd-why { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
 .pd-open { flex: none; min-width: 44px; min-height: 44px; padding: 0 4px; }
+/* Действие листа держится у нижнего края при прокрутке; фон сплошной — строки уходят под него. */
+.pd-bar { position: sticky; bottom: 0; z-index: 1; padding: 12px 0 calc(12px + var(--safe-bottom)); background: var(--bg); border-top: 1px solid var(--paper-sunk); }
+.pd-bar > .ds-btn { min-height: 44px; }
 /* «Про клиента» на стиле копинга (#1484): отмеченный у клиента стиль — полоска и плашка цвета стиля */
 .gd-coping-on { padding-left: var(--space-8); border-left: 3px solid var(--gst-c); background: color-mix(in srgb, var(--gst-c) 8%, transparent); }
 .gd-coping-who { font-weight: 400; color: var(--text-sub); }
