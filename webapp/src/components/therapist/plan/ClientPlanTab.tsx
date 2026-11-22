@@ -11,7 +11,7 @@ import { TaskCreateSheet } from '../../TaskCreateSheet';
 import type { ClientDetail } from '../clientSheetTypes';
 import { useConceptGuide } from '../guide/useConceptGuide';
 import { guideMarkClient } from '../guide/marks/useClientGuideMarks';
-import { PlanGoals } from './PlanGoals'; import { PlanChannels } from './PlanChannels';
+import { useLayoutFromUrl } from './planLayoutParam'; import { PlanGoals } from './PlanGoals'; import { PlanChannels } from './PlanChannels';
 import { PlanLayoutSwitch, type PlanLayout } from './PlanLayoutSwitch';
 import { makeRenderPlanRow } from './planRows';
 import type { PlanSourceLink } from './planSource';
@@ -52,7 +52,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged, onOpenSe
   const work = usePlanWork(selectedClient.telegramId);
   const guide = useConceptGuide({ plan: { clientId: selectedClient.telegramId, onAdded: plan.reload }, client: guideMarkClient(selectedClient) });
   const texts = useGuide();
-  const [layout, setLayout] = useState<PlanLayout | null>(null);
+  const [layout, setLayout] = useState<PlanLayout | null>(useLayoutFromUrl());
   const [assignItem, setAssignItem] = useState<PlanItem | null>(null); const [confirmDelete, setConfirmDelete] = useState<PlanItem | null>(null);
   const { items } = plan;
 

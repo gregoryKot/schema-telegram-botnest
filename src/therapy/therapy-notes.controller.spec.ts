@@ -192,6 +192,23 @@ describe('TherapyNotesController.createNote', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('пустой text с отмеченными пунктами плана принимается; без пунктов — по-прежнему 400', async () => {
+    const { controller, notes } = makeController();
+    await controller.createNote(makeReq(3n), '5', {
+      date: '2026-07-01',
+      text: '',
+      planItemIds: [4],
+    });
+    expect(notes.createNote.mock.calls[0][2].planItemIds).toEqual([4]);
+    await expect(
+      controller.createNote(makeReq(3n), '5', {
+        date: '2026-07-01',
+        text: '',
+        planItemIds: [],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
   it('текст длиннее прежних 5000 доходит до сервиса целиком: лимит один, в DTO (backend#29)', async () => {
     const { controller, notes } = makeController();
     const longText = 'а'.repeat(6000);
