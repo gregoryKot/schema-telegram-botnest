@@ -13,6 +13,12 @@ const tr: Tr = (t) => t;
 
 export const SCHEMA_TECHNIQUE_TABLES: readonly KbTable[] = [
   {
+    file: 'src/therapy/kb-ids.ts',
+    kind: 'schema',
+    coverage: 'all',
+    syncSpec: 'src/therapy/kb-ids.sync.spec.ts',
+  },
+  {
     file: 'shared/src/schemaTherapy/guide/schemas/domains.ts',
     kind: 'schema',
     coverage: 'all',

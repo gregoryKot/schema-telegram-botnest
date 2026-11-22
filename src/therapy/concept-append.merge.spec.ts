@@ -2,7 +2,7 @@
 // дублей, связи режима сохраняют свои тексты. Запись в «БД» и история —
 // concept-append.spec.ts.
 import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+import { validate, type ValidationError } from 'class-validator';
 import { mergeConceptAppend, type ConceptAppendState } from './concept-append';
 import {
   APPEND_LINK_SCHEMAS_MAX,
@@ -15,6 +15,23 @@ import {
 } from './dto/conceptualization.dto';
 import { ConceptSaveDto } from './dto/concept-save.dto';
 import { CONCEPT_SCHEMA_IDS_MAX } from '../utils/text-limits';
+
+// Здесь сверяются потолки, а не справочник: схем всего 20 при потолке списка 40,
+// поэтому id выдуманы, и отказ «неизвестный id» (isKbId) не считается.
+async function ceilingErrors(dto: object): Promise<string[]> {
+  const out: string[] = [];
+  const walk = (errs: ValidationError[]) => {
+    for (const e of errs) {
+      const kinds = Object.keys(e.constraints ?? {}).filter(
+        (k) => k !== 'isKbId',
+      );
+      if (kinds.length > 0) out.push(e.property);
+      walk(e.children ?? []);
+    }
+  };
+  walk(await validate(dto, { whitelist: true }));
+  return out;
+}
 
 const empty = (): ConceptAppendState => ({
   modeIds: [],
@@ -153,13 +170,12 @@ describe('mergeConceptAppend', () => {
     const dto = plainToInstance(ConceptualizationDto, {
       modeLinks: patch.modeLinks,
     });
-    await expect(validate(dto, { whitelist: true })).resolves.toEqual([]);
+    await expect(ceilingErrors(dto)).resolves.toEqual([]);
     // Контрольный образец: на одну связь больше — полное сохранение отказало бы.
     const over = plainToInstance(ConceptualizationDto, {
       modeLinks: [...patch.modeLinks!, { modeId: 'extra' }],
     });
-    const errs = await validate(over, { whitelist: true });
-    expect(errs.map((e) => e.property)).toContain('modeLinks');
+    expect(await ceilingErrors(over)).toContain('modeLinks');
   });
 
   // Сверх потолка общего списка следующее сохранение полей (ConceptSaveDto)
@@ -179,7 +195,7 @@ describe('mergeConceptAppend', () => {
     );
     expect(patch.schemaIds).toEqual([...have, 's39']);
     const ok = plainToInstance(ConceptSaveDto, { schemaIds: patch.schemaIds });
-    await expect(validate(ok, { whitelist: true })).resolves.toEqual([]);
+    await expect(ceilingErrors(ok)).resolves.toEqual([]);
     // Список полон — дописывать некуда, поле в патч не попадает.
     expect(
       mergeConceptAppend(
@@ -191,8 +207,7 @@ describe('mergeConceptAppend', () => {
     const over = plainToInstance(ConceptSaveDto, {
       schemaIds: [...patch.schemaIds!, 'extra'],
     });
-    const errs = await validate(over, { whitelist: true });
-    expect(errs.map((e) => e.property)).toContain('schemaIds');
+    expect(await ceilingErrors(over)).toContain('schemaIds');
   });
 
   it('общий список режимов не растёт сверх CONCEPT_MODE_IDS_MAX: сохранение после дописывания проходит', async () => {
@@ -211,7 +226,7 @@ describe('mergeConceptAppend', () => {
     const ok = plainToInstance(ConceptualizationDto, {
       modeIds: patch.modeIds,
     });
-    await expect(validate(ok, { whitelist: true })).resolves.toEqual([]);
+    await expect(ceilingErrors(ok)).resolves.toEqual([]);
     expect(
       mergeConceptAppend(
         { ...empty(), modeIds: patch.modeIds! },
@@ -222,8 +237,7 @@ describe('mergeConceptAppend', () => {
     const over = plainToInstance(ConceptualizationDto, {
       modeIds: [...patch.modeIds!, 'extra'],
     });
-    const errs = await validate(over, { whitelist: true });
-    expect(errs.map((e) => e.property)).toContain('modeIds');
+    expect(await ceilingErrors(over)).toContain('modeIds');
   });
 });
 
@@ -381,11 +395,10 @@ describe('mergeConceptAppend — потребности', () => {
     const ok = plainToInstance(ConceptualizationDto, {
       schemaLinks: patch.schemaLinks,
     });
-    await expect(validate(ok, { whitelist: true })).resolves.toEqual([]);
+    await expect(ceilingErrors(ok)).resolves.toEqual([]);
     const over = plainToInstance(ConceptualizationDto, {
       schemaLinks: [...patch.schemaLinks!, { schemaId: 'extra' }],
     });
-    const errs = await validate(over, { whitelist: true });
-    expect(errs.map((e) => e.property)).toContain('schemaLinks');
+    expect(await ceilingErrors(over)).toContain('schemaLinks');
   });
 });
