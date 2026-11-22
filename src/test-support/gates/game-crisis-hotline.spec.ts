@@ -33,15 +33,23 @@ describe('кризисная строка игры', () => {
     );
   });
 
-  it('карточка после хука «Недели» ставит обе линии и ведёт на их tel:', () => {
-    const card = read('game/src/week/card.ts');
+  it('кризисные линии «Недели» (crisis.ts) ведут на tel: из источника, взрослая первой', () => {
+    const crisis = read('game/src/week/crisis.ts');
     const childTel = [...hotlines.matchAll(/tel: '([^']+)'/g)][1]?.[1];
     expect(childTel).toBe('tel:88002000122');
-    expect(card).toContain(`const CRISIS_TEL = '${tel}';`);
-    expect(card).toContain(`const CRISIS_CHILD_TEL = '${childTel}';`);
-    // взрослая линия стоит первой, детская — второй
-    expect(card).toMatch(
+    expect(crisis).toContain(`const CRISIS_TEL = '${tel}';`);
+    expect(crisis).toContain(`const CRISIS_CHILD_TEL = '${childTel}';`);
+    expect(crisis).toMatch(
       /\['m_wk_crisis_adult', CRISIS_TEL\], \['m_wk_crisis_child', CRISIS_CHILD_TEL\]/,
     );
+  });
+
+  it('линии стоят на карточке после хука, всю главу «Воскресенье» и в её конце', () => {
+    expect(read('game/src/week/card.ts')).toContain('crisisLines(');
+    expect(read('game/src/week/sunday.ts')).toMatch(/^\s*crisis: true,$/m);
+    // глава с crisis: строка в углу всю главу (coach) и на экране конца (endCard через сцену)
+    expect(read('game/src/week/coach.ts')).toMatch(/if \(ch\.crisis\) this\.crisis = crisisLines\(/);
+    expect(read('game/src/week/endCard.ts')).toMatch(/if \(o\.crisis\) crisisLines\(/);
+    expect(read('game/src/scenes/WeekScene.ts')).toContain('crisis: ch.crisis');
   });
 });
