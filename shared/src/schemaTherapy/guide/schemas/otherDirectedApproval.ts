@@ -35,7 +35,7 @@ export const buildApprovalSeekingGuide = (tr: Tr): SchemaGuide => ({
     'Признак схемы — крупные решения (профессия, партнёр) приняты под чужой взгляд, а не по своим желаниям; статус, деньги и внешность нужны ради одобрения, а не ради власти [Янг, гл. 1].',
     'Желание одобрения само по себе нормально: цель — умерить его и уравновесить своими чувствами и склонностями, а не искоренить [Янг, гл. 7].',
   ],
-  techniques: ['pros_cons', 'pattern_breaking', 'chairwork'],
+  techniques: ['pros_cons', 'pattern_breaking', 'chairwork', 'values_overview'],
   betweenSessions: [
     {
       kind: 'task',
