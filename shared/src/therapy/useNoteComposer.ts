@@ -51,7 +51,7 @@ export function useNoteComposer(
   async function addNote() {
     const clientId = openClientIdRef.current;
     const work = normalizeSessionWork(newNoteWork);
-    if (clientId == null || (!newNoteText.trim() && work.length === 0)) return;
+    if (clientId == null || (!newNoteText.trim() && work.length === 0 && newNotePlanIds.length === 0)) return;
     setNoteSaving(true);
     setNoteError('');
     try {
