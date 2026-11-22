@@ -1,16 +1,17 @@
 // Понятность хука: цель под часами, бирка над дверью, подсказка, когда Саша упёрся, цена привычки у Саши.
 // Что подсказать — чистая логика (week/guide.ts); здесь только показ и мигание DOM-кнопок (week/touch.ts).
 import Phaser from 'phaser';
-import { W, GROUND_Y, PHYS } from '../constants';
+import { W, H, GROUND_Y, PHYS } from '../constants';
 import { IS_TOUCH } from '../controls';
 import { t, type MsgKey } from '../i18n';
 import { jumpHeight, needFor, pickHint, type Need } from './guide';
 import { ACT_KEYS } from './input';
 import { callWeekAct } from './touch';
-import { SKIN, label, px } from './ui';
+import { C, SKIN, hex, label, px } from './ui';
 import type { Act, Chapter } from './chapter';
 import type { World } from './world';
 import type { WeekHud } from './hud';
+import { crisisLines } from './crisis';
 
 const HINT: Record<Act, MsgKey> = {
   overwork: 'm_wk_hint_overwork', scroll: 'm_wk_hint_scroll', agree: 'm_wk_hint_agree', pause: 'm_wk_hint_pause',
@@ -29,8 +30,12 @@ export class WeekCoach {
   private tip: Box | null = null;
   private stuckMs = 0; private sinceHint = Infinity;
   private calling = new Set<Need>();
+  private crisis: Phaser.GameObjects.Text[] = [];
 
-  constructor(private s: Phaser.Scene, private hud: WeekHud, private ch: Pick<Chapter, 'hints' | 'targetTag'>) {}
+  constructor(private s: Phaser.Scene, private hud: WeekHud, private ch: Pick<Chapter, 'hints' | 'targetTag' | 'crisis'>) {
+    // тяжёлая глава: выход виден всю главу, а не только в конце — тихо, в нижнем углу, вне кнопок
+    if (ch.crisis) this.crisis = crisisLines(s, H - px(58), 13).map(l => l.setScrollFactor(0).setDepth(42).setOrigin(0, 0.5).setX(-px(28)).setStroke(hex(C.ink), px(3)));
+  }
 
   /** Цель под часами: сменилась — плашка вспыхивает. */
   goal(key: MsgKey) {
@@ -40,7 +45,7 @@ export class WeekCoach {
     this.s.tweens.add({ targets: b, scale: 1, duration: 360, ease: 'Back.Out' });
   }
   /** Глава кончилась: цель и бирка не лезут на карточку. */
-  done() { this.goalBox?.destroy(); this.doorTag?.destroy(); this.goalBox = this.doorTag = null; }
+  done() { for (const o of [this.goalBox, this.doorTag, ...this.crisis]) o?.destroy(); this.goalBox = this.doorTag = null; this.crisis = []; }
   /** Бирка над целью главы (дверь начальницы, телефон с мамой): появляется вместе с целью и идёт за ней. */
   tagDoor() {
     if (this.doorTag) return;
