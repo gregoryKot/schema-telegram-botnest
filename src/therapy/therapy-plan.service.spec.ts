@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   createFakeTable,
   createFakeTransaction,
@@ -21,6 +21,17 @@ function setup() {
         updatedAt: new Date(),
       }),
     }),
+    // фаза 1 — путь T и C1; фаза 2 — путь другого терапевта; фаза 3 — путь T и C2
+    therapyPath: createFakeTable([
+      { id: 1, therapistId: T, clientId: C1 },
+      { id: 2, therapistId: OTHER_T, clientId: C1 },
+      { id: 3, therapistId: T, clientId: C2 },
+    ]),
+    therapyPathPhase: createFakeTable([
+      { id: 1, pathId: 1 },
+      { id: 2, pathId: 2 },
+      { id: 3, pathId: 3 },
+    ]),
     userTask: createFakeTable([
       { id: 1, userId: C1, assignedBy: T },
       { id: 2, userId: C2, assignedBy: T },
@@ -151,6 +162,21 @@ describe('TherapyPlanService', () => {
     expect(
       (await service.update(T, created.id, { taskId: null })).taskId,
     ).toBeNull();
+  });
+
+  it('пункт создаётся сразу с фазой пути этого клиента; чужая фаза и несколько клиентов отвергаются', async () => {
+    const { service } = setup();
+    const [created] = await service.create(T, [C1], { ...item, phaseId: 1 });
+    expect(created.phaseId).toBe(1);
+    for (const phaseId of [2, 3, 404]) {
+      await expect(
+        service.create(T, [C1], { ...item, phaseId }),
+      ).rejects.toThrow(NotFoundException);
+    }
+    await expect(
+      service.create(T, [C1, C2], { ...item, phaseId: 1 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(await service.list(T, C1)).toHaveLength(1);
   });
 
   it('чужой терапевт не читает, не правит и не удаляет пункт, даже ведя того же клиента', async () => {

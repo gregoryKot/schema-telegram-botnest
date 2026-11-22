@@ -1,8 +1,6 @@
 {
   "src/api/dto/gratitude-diary.dto.ts:GratitudeDiaryDto.date": "Календарный день: формат YYYY-MM-DD проверяется регэкспом в контроллере до записи, строка длиннее отвергается.",
-  "src/api/dto/notes.dto.ts:ModeNoteDto.modeId": "Идентификатор режима: notes.controller.ts проверяет `[a-z_]{1,64}` (ID_RE) до записи.",
   "src/api/dto/notes.dto.ts:SaveNoteDto.date": "Календарный день: формат YYYY-MM-DD проверяется регэкспом в контроллере до записи, строка длиннее отвергается.",
-  "src/api/dto/notes.dto.ts:SchemaNoteDto.schemaId": "Идентификатор схемы: контроллер проверяет `[a-z_]{1,64}` (ID_RE) до записи.",
   "src/api/dto/pairs.dto.ts:PairCodeDto.code": "Код пары: joinPair проверяет `[A-Z0-9]{5,12}`; в leavePair код только ищется в БД и нигде не сохраняется.",
   "src/api/dto/ratings.dto.ts:SaveRatingDto.date": "Календарный день: формат YYYY-MM-DD проверяется регэкспом в контроллере до записи, строка длиннее отвергается.",
   "src/api/dto/tools.dto.ts:FlashcardDto.modeId": "Идентификатор режима: exercises.controller.ts проверяет `[a-z_]{1,64}` до записи.",

@@ -67,7 +67,7 @@ describe('адрес каждого раздела на листе находи�
   it.each([
     ['schema', () => guide.buildSchemaGuides(tr).map((g) => <SchemaGuideSheet key="s" schemaName="x" view={resolveSchemaGuide(guide, tr, g.schemaId)!} {...sheet} />)],
     ['mode', () => guide.buildModeGuides(tr).map((g) => <ModeGuideSheet key="m" modeName="x" view={resolveModeGuide(guide, tr, g.modeId)!} {...sheet} />)],
-    ['technique', () => guide.buildTechniqueGuides(tr).map((t) => <TechniqueSheet key="t" technique={t} onClose={noop} />)],
+    ['technique', () => guide.buildTechniqueGuides(tr).map((t) => <TechniqueSheet key="t" technique={t} usages={guide.techniqueUsageGroups(tr, t.id)} onClose={noop} />)],
     ['note', () => guide.practiceNotes(tr).map((n) => <PracticeNoteSheet key="n" note={n} onClose={noop} />)],
     ['concern', () => guide.buildConcernGuides(tr).map((c) => <ConcernGuideSheet key="c" concern={c} onClose={noop} />)],
     ['phase', () => guide.buildPhaseGuides(tr).map((p, _i, all) => <PhaseGuideSheet key="p" view={phaseView(guide, tr, all, p.id)!} onOpenMode={noop} onOpenTechnique={noop} onOpenNote={noop} onOpenPhase={noop} onClose={noop} />)],

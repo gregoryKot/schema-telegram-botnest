@@ -71,16 +71,17 @@ const SCHEMA_TITLES: Titles<
   domainNote: 'Общее для домена',
 };
 
-const MODE_TITLES: Titles<ModeGuide> = {
+const MODE_TITLES: Titles<ModeGuide, 'schemas'> = {
   ...COMMON,
   ...(Object.fromEntries(
     GUIDE_CHANNELS.map((c) => [c.id, channelLabel(c)]),
   ) as Record<GuideChannel, string>),
   what: 'Что это',
   goal: 'Цель',
+  schemas: 'Типичен для схем',
 };
 
-const TECHNIQUE_TITLES: Titles<TechniqueGuide> = {
+const TECHNIQUE_TITLES: Titles<TechniqueGuide, 'usages'> = {
   voice: COMMON.voice,
   more: COMMON.more,
   summary: 'Суть',
@@ -89,6 +90,7 @@ const TECHNIQUE_TITLES: Titles<TechniqueGuide> = {
   steps: 'Как проводить',
   cautions: 'Когда не делать',
   evidence: 'Доказательность',
+  usages: 'Где применяется',
 };
 
 const NOTE_TITLES: Titles<PracticeNote> = {

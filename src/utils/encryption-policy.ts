@@ -173,12 +173,12 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   TherapistNote: {
     date: DATE,
-    text: enc(`${TH}/therapy-notes.service.ts`),
-    work: enc(`${TH}/therapy-notes.service.ts`),
+    text: enc(`${TH}/session-note-create.ts`),
+    work: enc(`${TH}/session-note-create.ts`),
   },
   TherapyPlanItem: {
     rubric: ID,
-    text: enc(`${TH}/therapy-plan.service.ts`),
+    text: enc(`${TH}/therapy-plan.view.ts`),
     status: ID,
     sourceAddress: plain(
       'адрес раздела справочника из кода, не свободный текст',

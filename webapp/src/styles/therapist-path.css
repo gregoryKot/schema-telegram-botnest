@@ -65,3 +65,7 @@
 .ph-card .pl-item { flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .ph-card .pl-acts { margin-left: auto; gap: 0; }
 .ph-card .pl-body { order: 1; flex-basis: 100%; padding-top: 0; }
+.ph-overdue { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.ph-start { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px 12px; }
+.ph-start > .ds-sub { align-self: center; }
+.ph-quiet { min-height: 44px; }

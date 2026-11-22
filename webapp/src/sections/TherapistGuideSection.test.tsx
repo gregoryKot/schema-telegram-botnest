@@ -18,6 +18,8 @@ import { FIXTURE_PRACTICE_NOTE as NOTE } from '../../../shared/src/therapy/conce
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
   return {
+    modeSchemaLinks: () => [],
+    techniqueUsageGroups: () => [],
     buildModeGuides: () => [f.FIXTURE_GUIDE],
     buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: f.FIXTURE_DOMAIN_NOTE, schemas: [f.FIXTURE_SCHEMA_GUIDE] }],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,

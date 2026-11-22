@@ -4,16 +4,12 @@ import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTex
 import { PLAN_ITEM_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 import { joinSentences } from '../../../../../shared/src/schemaTherapy/guide/sentences';
 import { trackPlanItemAdded } from '../../../../../shared/src/share/planAnalytics';
-import { clientDisplayName } from '../../../../../shared/src/therapy/clientInitials';
 import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
-import { Skeleton } from '../../Skeleton';
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
-import { useTherapyClientList } from '../useTherapyClientList';
+import { PlanClientPicker } from './PlanClientPicker';
 import type { PlanDraft } from '../guide/guidePlan';
 import { cleanText } from './planModel';
-
-/** Сервер принимает за раз не больше стольких клиентов. */
-const CLIENTS_MAX = 50;
+import { usePhasePick } from './path/usePhasePick';
 
 interface Props {
   draft: PlanDraft;
@@ -34,8 +30,8 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
   // сервер длиннее предела не примет — собранный текст режется до него
   const compose = (parts: string[]) => joinSentences(parts).slice(0, PLAN_ITEM_TEXT_MAX);
   const [text, setText] = useState(() => compose(draft.parts));
-  const clients = useTherapyClientList(clientId != null);
   const [picked, setPicked] = useState<string[]>(clientId != null ? [String(clientId)] : []);
+  const pick = usePhasePick(picked.length === 1 ? picked[0] : null, draft.sourceAddress);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -54,7 +50,7 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
     setBusy(true);
     setError('');
     try {
-      await api.createPlanItems({ clientIds: picked, rubric: draft.rubric, text: clean, sourceAddress: draft.sourceAddress });
+      await api.createPlanItems({ clientIds: picked, rubric: draft.rubric, text: clean, sourceAddress: draft.sourceAddress, ...(pick.phaseId != null && { phaseId: pick.phaseId }) });
       trackPlanItemAdded(api, draft.rubric, true);
       onAdded?.();
       if (alive.current) setDone(true);
@@ -100,22 +96,16 @@ export function PlanAddSheet({ draft, clientId, onAdded, onClose }: Props) {
               />
             </div>
             {clientId == null && (
-              <fieldset className="pa-block pa-set">
-                <legend className="ds-label">Кому в план</legend>
-                {clients === undefined && <Skeleton height={44} />}
-                {clients === null && <span className="tb-error" role="alert">Список клиентов не загрузился</span>}
-                {clients?.length === 0 && <span className="ds-sub">Клиентов пока нет — план ведётся в карточке клиента.</span>}
-                {clients?.map((c) => {
-                  const id = String(c.telegramId);
-                  const on = picked.includes(id);
-                  return (
-                    <label key={id} className="pa-check">
-                      <input type="checkbox" checked={on} disabled={!on && picked.length >= CLIENTS_MAX} onChange={() => toggleClient(id)} />
-                      <span>{clientDisplayName(c)}</span>
-                    </label>
-                  );
-                })}
-              </fieldset>
+              <PlanClientPicker picked={picked} onToggle={toggleClient} />
+            )}
+            {pick.phases.length > 0 && (
+              <label className="pa-block">
+                <span className="ds-label">Фаза пути</span>
+                <select className="ds-input" value={pick.phaseId ?? ''} onChange={(e) => pick.setPhaseId(e.target.value ? Number(e.target.value) : null)}>
+                  {pick.phases.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  <option value="">Без фазы</option>
+                </select>
+              </label>
             )}
             {error && <div className="tb-error" role="alert">{error}</div>}
             <div>
