@@ -107,7 +107,8 @@ describe('свои задания и планы', () => {
     expect(rows.map((r) => r.key)).toEqual(['plan:2', 'plan:1']);
     expect(rows[1]).toMatchObject({ kind: 'plan', group: GROUP.plans, label: 'Позвать друга на чай', sub: expect.stringMatching(/ · выполнен$/) });
     rows[0].action();
-    expect(handlers.practice).toHaveBeenCalledWith({ kind: 'plans' });
+    // Строка несёт сам план: «История планов» догрузит период до его дня и подсветит строку.
+    expect(handlers.practice).toHaveBeenCalledWith({ kind: 'plans', focus: { id: 2, date: own.plans.find((p) => p.id === 2)!.scheduledDate } });
     expect(buildPaletteRows(input({ query: 'лечь', own }))).toHaveLength(CLIENT_GROUP_SHOWN);
   });
 
