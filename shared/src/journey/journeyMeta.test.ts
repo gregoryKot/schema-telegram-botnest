@@ -2,9 +2,9 @@
 // заземление, «Стоп»), добавленные вместе с shared/src/practices, плюс
 // остальные чистые функции архива (сортировка/фильтр/подпись/группировка).
 import { describe, it, expect } from 'vitest';
+import { NEED_NAMES } from '../needs/needNames';
 import {
   JOURNEY_TYPE_META,
-  JOURNEY_NEED_NAMES,
   journeyTypeMeta,
   sortJourneyItems,
   filterJourneyItems,
@@ -119,10 +119,10 @@ describe('journeyItemSubtitle', () => {
     ).toBeNull();
   });
 
-  it('needId → название потребности из JOURNEY_NEED_NAMES', () => {
+  it('needId → название потребности из NEED_NAMES', () => {
     expect(
       journeyItemSubtitle({ type: 'practice', at: '', needId: 'play' }, src),
-    ).toBe(JOURNEY_NEED_NAMES.play);
+    ).toBe(NEED_NAMES.play);
   });
 
   it('ничего из трёх полей нет — null', () => {
