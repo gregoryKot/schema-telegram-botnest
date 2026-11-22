@@ -3,13 +3,14 @@ import { api, reportClientError, type UserId } from '../../../../api';
 import type { PathPhasePatch, PathResponse } from '../../../../../../shared/src/therapy/path/pathApi';
 import type { PathPhaseDraft, TherapyPath } from '../../../../../../shared/src/therapy/path/pathModel';
 import { movePhaseIds } from './pathView';
+import { withPathEvents } from './pathEvents';
 
 /**
  * Путь открытого клиента (#1522): загрузка и правки. `path === undefined` — ещё грузится, `null` — пути нет,
  * `failed` — не пришёл (сбой ≠ «пути нет»). Правка по одной, как в usePlanItems: пока запрос в пути (`busy`),
  * второй не уходит; отказ — строкой в `error`. Каждая ручка отвечает путём целиком — он и заменяет текущий.
  */
-export function usePath(clientId: UserId) {
+function usePathCore(clientId: UserId) {
   const [path, setPath] = useState<TherapyPath | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -62,7 +63,6 @@ export function usePath(clientId: UserId) {
     setStartDate: (startDate: string) => run('Не удалось изменить старт', () => api.setTherapyPathStart(clientId, startDate)),
     /** «Сдвинуть сроки»: у текущей фазы больше недель — плановый конец не раньше сегодня. */
     shiftPhase: (id: number, weeks: number) => patchPhase(id, { weeks }, 'Не удалось сдвинуть сроки'),
-    /** Закрыть фазу днём `date`, следующую начать тем же днём. */
     advance: (id: number, date: string) => run('Не удалось перейти к следующей фазе', () => api.advancePathPhase(id, date)),
     addPhase: (draft: PathPhaseDraft) => run('Не удалось добавить фазу', () => api.addPathPhase(clientId, draft)),
     removePhase: (id: number) => run('Не удалось удалить фазу', () => api.deletePathPhase(clientId, id)),
@@ -73,5 +73,5 @@ export function usePath(clientId: UserId) {
     },
   };
 }
-
+export const usePath = (clientId: UserId) => withPathEvents(usePathCore(clientId));
 export type PathState = ReturnType<typeof usePath>;

@@ -13,7 +13,7 @@
 //     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника, свой текст, «Дать заданием» из листа справочника, шаблон вкладки «Задания». Блок — src/bot/task-assign-metrics.*.
 //   search_result_open — в общем поиске (⌘K, у клиента и у терапевта) открыли результат; meta { kind, typed, recent }:
 //     вид из SEARCH_RESULT_KINDS (клиент, вкладка его карточки, раздел, лист справочника, задание из справочника, действие; у клиента — схема или режим «Паттернов», упражнение, свой план, своё задание; у всех — статья, настройка), был ли введён запрос и открыт ли результат из «Недавнего». Текста запроса, имени клиента, названий листа и задания нет. Блок — src/bot/search-metrics.*.
-import { PLAN_EVENTS } from './plan-events.constants';
+import { PLAN_PATH_EVENTS } from './path-events.constants';
 export const CABINET_EVENTS = [
   'cabinet_session_work',
   'cabinet_screen_share_on',
@@ -28,7 +28,7 @@ export const CABINET_EVENTS = [
   'cabinet_guide_table_open',
   'cabinet_guide_answer_show',
   'cabinet_guide_answer_link',
-  ...PLAN_EVENTS, // вкладка «План работы» карточки клиента
+  ...PLAN_PATH_EVENTS, // вкладка «План работы» карточки клиента: план, путь клиента
   'task_assign_source',
   'search_result_open',
 ] as const;
