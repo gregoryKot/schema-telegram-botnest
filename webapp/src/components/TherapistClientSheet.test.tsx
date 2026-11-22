@@ -17,6 +17,7 @@ import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers
 
 vi.mock('../api', () => ({
   api: {
+    getGuideMarks: () => Promise.resolve({ marks: [] }),
     getTherapyClients: vi.fn(),
     getTherapyInvites: vi.fn(() => Promise.resolve([])),
     getCardClaims: vi.fn(() => Promise.resolve([])),

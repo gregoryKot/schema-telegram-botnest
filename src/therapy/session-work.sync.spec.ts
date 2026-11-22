@@ -36,7 +36,7 @@ describe('session-work ↔ shared/src/therapy/sessionWork', () => {
     for (const [id, defs] of Object.entries<any>(site.EXERCISE_WORK_FIELDS))
       expected[`exercise:${id}`] = keysOf(defs);
     expect(server.SESSION_WORK_KEYS).toEqual(expected);
-    expect(Object.keys(expected)).toHaveLength(42 + 8 + 1);
+    expect(Object.keys(expected)).toHaveLength(49 + 8 + 1);
   });
 
   it('границы совпадают', () => {

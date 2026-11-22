@@ -47,10 +47,24 @@ export type BorrowedTechniqueId =
   | 'motivational_interviewing'
   | 'window_of_tolerance'
   | 'stop_rewind_explore'
-  | 'life_line';
+  | 'life_line'
+  | 'downward_arrow';
+
+/** Техники схема-терапии из Кембриджского руководства (пачка 7 карты). */
+export type CambridgeTechniqueId =
+  | 'schema_attunement'
+  | 'responsibility_pie'
+  | 'courtroom'
+  | 'healthy_adult_three_chairs'
+  | 'need_now_question';
+
+/** Техники схема-терапии из книги Янга (пачка 8 карты). */
+export type YoungTechniqueId = 'schema_dialogue';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
   | SchemaTechniqueId
+  | CambridgeTechniqueId
+  | YoungTechniqueId
   | BorrowedTechniqueId;

@@ -67,10 +67,15 @@ export const SIGN_KEYS = [
   'grown',
   'chatter',
   'flare',
+  'roots',
   // AppSigns.tsx — практики «здесь и сейчас», безопасное место, «тот же человек»
   'grounded',
   'pause',
   'haven',
   'join',
+  // CopingSigns.tsx — стили копинга (COPING_STYLES, shared/src/schemaTherapy/guide/copingStyles.ts)
+  'coping_surrender',
+  'coping_avoidance',
+  'coping_overcompensation',
 ] as const;
 export type SignKey = (typeof SIGN_KEYS)[number];

@@ -203,6 +203,16 @@
   --accent-orange: var(--c-clay-strong);
   --accent-pink:   var(--c-plum);
 
+  /* Стили копинга (COPING_STYLES, shared/src/schemaTherapy/guide/copingStyles.ts): один цвет на стиль во
+     всём приложении — заливка знака и плашки и текст (-ink, читаемый вариант того же оттенка). Тёмная тема
+     не повторяет их: var() считается на том же html, где она переопределяет --c-* и --accent-*. */
+  --coping-surrender:            var(--c-slate);
+  --coping-surrender-ink:        var(--accent-blue);
+  --coping-avoidance:            var(--c-moss);
+  --coping-avoidance-ink:        var(--accent-green);
+  --coping-overcompensation:     var(--c-clay);
+  --coping-overcompensation-ink: var(--accent-orange);
+
   /* Текст НА залитом --accent-red (кнопка «Снять роль», «Да, удалить всё
      навсегда») — та же роль, что --on-accent у акцента, и по той же причине
      отдельным токеном: белый годится только в светлой теме. Белый на светлом

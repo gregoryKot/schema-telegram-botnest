@@ -10,7 +10,7 @@ import { ClientTasksTab } from './ClientTasksTab';
 import type { UserTask } from '../../api';
 
 vi.mock('../../api', () => ({
-  api: { deleteTherapyTask: vi.fn(), completeTask: vi.fn() },
+  api: { deleteTherapyTask: vi.fn(), completeTask: vi.fn(), getGuideMarks: () => Promise.resolve({ marks: [] }) },
 }));
 import { api } from '../../api';
 import { makeClient, makeClientDetail } from './clientDetail.test-helpers';

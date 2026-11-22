@@ -17,6 +17,7 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
     buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: f.FIXTURE_DOMAIN_NOTE, schemas: [f.FIXTURE_SCHEMA_GUIDE] }],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     practiceNotes: () => [f.FIXTURE_PRACTICE_NOTE],
+    buildConcernGuides: () => [],
   };
 });
 const trackEvent = vi.fn();

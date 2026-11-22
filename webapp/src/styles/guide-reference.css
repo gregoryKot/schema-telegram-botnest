@@ -79,6 +79,25 @@
 .gst-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .gst-schema:hover .gst-name { color: var(--accent); }
 .gst-desc { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+/* Липкая шапка: стиль копинга и глубина. Фон — сплошной цвет страницы: строки уходят под неё. */
+.gst-bar {
+  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding-block: 8px; background: var(--bg);
+}
+.gst-seg > .ds-seg-btn { white-space: nowrap; }
+/* Знак стиля — сквозной: в переключателе, в шапке колонки, у подписи клетки; цвет стиля — --gst-c/--gst-ink
+   (COPING_STYLES, токены --coping-*). */
+.gst-seg-sign, .gst-sign { display: inline-flex; vertical-align: middle; margin-right: 6px; }
+.gst-label, .gst-col { display: flex; align-items: center; color: var(--gst-ink); }
+.gst-cell {
+  display: flex; flex-direction: column; gap: 4px; width: 100%; min-height: 44px; margin-top: 4px; padding: 8px 10px;
+  border: none; border-left: 3px solid var(--gst-c); border-radius: 0 8px 8px 0; background: none;
+  font: inherit; font-size: 14px; line-height: 1.45; color: var(--text); text-align: left; cursor: pointer;
+}
+.gst-cell:hover { background: color-mix(in srgb, var(--gst-c) 6%, transparent); }
+.gst-cell.is-open { background: color-mix(in srgb, var(--gst-c) 14%, transparent); }
+.gst-head { font-weight: 600; }
+.gst-full { color: var(--text); }
 
 @container (min-width: 640px) {
   .gst-table { display: table; table-layout: fixed; }
@@ -89,6 +108,7 @@
   .gst-table th, .gst-table td { display: table-cell; vertical-align: top; padding: 14px 16px; }
   .gst-table thead th { padding-block: 12px 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--paper-sunk); }
   .gst-table thead th:first-child { width: 28%; }
+  .gst-table td { padding: 10px 8px; }
   .gst-label { display: none; }
   .gst-schema { min-height: 0; padding: 0; }
 }
@@ -107,3 +127,6 @@
   font: inherit; font-size: 14px; line-height: 1.25; text-align: left; color: var(--text); cursor: pointer;
 }
 .gr-answer-link:hover { border-color: var(--line-hover); color: var(--accent); }
+
+/* «Про клиента» под раскрытой клеткой (#1484) */
+.ds-link.gst-mark { margin: 4px 12px 10px; }

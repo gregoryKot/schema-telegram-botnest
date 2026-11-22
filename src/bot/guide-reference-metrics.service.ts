@@ -4,7 +4,7 @@ import type { AnalyticsEventName } from '../analytics/analytics.constants';
 import { countEventsGrouped } from './event-counts-grouped';
 import { formatGuideReferenceMetrics } from './guide-reference-metrics.format';
 import type { GuideReferenceMetrics } from './guide-reference-metrics.types';
-import { withGuideAnswerLines } from './guide-answer-metrics';
+import { withGuideExtras } from './guide-mark-metrics';
 
 const OPEN_EVENT: AnalyticsEventName = 'cabinet_guide_open';
 
@@ -17,6 +17,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['techniques30', 'cabinet_guide_technique_open'],
   ['notes30', 'cabinet_guide_note_open'],
   ['needs30', 'cabinet_guide_need_open'],
+  ['concerns30', 'cabinet_guide_concern_open'],
   ['tables30', 'cabinet_guide_table_open'],
 ];
 
@@ -27,7 +28,7 @@ export class GuideReferenceMetricsService {
 
   async render(): Promise<string> {
     const block = formatGuideReferenceMetrics(await this.getMetrics());
-    return withGuideAnswerLines(this.prisma, block);
+    return withGuideExtras(this.prisma, block);
   }
 
   async getMetrics(): Promise<GuideReferenceMetrics> {
