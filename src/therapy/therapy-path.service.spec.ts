@@ -53,7 +53,7 @@ function setup() {
   };
   const service = new TherapyPathService(prisma as never, relations as never);
   const plan = new TherapyPlanService(prisma as never, relations as never);
-  return { service, plan, clients };
+  return { service, plan, clients, prisma };
 }
 
 const draft = (name: string, weeks = 4) => ({ name, weeks });
@@ -213,6 +213,20 @@ describe('TherapyPathService', () => {
     await expect(
       service.updatePhase(T, a, { startedAt: '2026-11-11' }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('addPhase: сначала берёт строку пути (замок против параллельного добавления), позиции подряд', async () => {
+    const { service, prisma } = setup();
+    await service.create(T, C1, input);
+    const table = prisma.therapyPath as {
+      update: (a: unknown) => Promise<unknown>;
+    };
+    const spy = jest.spyOn(table, 'update');
+    await service.addPhase(T, C1, draft('А'));
+    const path = await service.addPhase(T, C1, draft('Б'));
+    expect(spy).toHaveBeenCalledTimes(2);
+    const positions = path.phases.map((p) => p.position);
+    expect(new Set(positions).size).toBe(positions.length);
   });
 
   it('порядок: ids — ровно множество фаз пути, иначе 400 и порядок прежний', async () => {

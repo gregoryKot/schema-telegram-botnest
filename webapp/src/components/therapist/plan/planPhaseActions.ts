@@ -17,18 +17,14 @@ interface Ctx {
 /** Контекст — функцией: хук не передаёт ref в вызов при рендере. */
 export function phaseActions(ctx: () => Ctx) {
   return {
-    /** Новый пункт сразу в фазе: создание принимает фазу только правкой — создаём и тут же PATCH. */
+    /** Новый пункт сразу в фазе: один запрос, сервер проверяет принадлежность фазы. */
     addToPhase: (phaseId: number | null, rubric: PlanRubric, text: string) => {
-      const { clientId, alive, run, add, setItems, replace } = ctx();
+      const { clientId, alive, run, add, setItems } = ctx();
       if (phaseId === null) return add(rubric, text);
       return run('new', 'Не удалось добавить пункт в фазу', async () => {
-        const { items: created } = await api.createPlanItems({ clientIds: [String(clientId)], rubric, text });
+        const { items: created } = await api.createPlanItems({ clientIds: [String(clientId)], rubric, text, phaseId });
         trackPlanItemAdded(api, rubric, false);
         if (alive.current) setItems((prev) => [...(prev ?? []), ...created]);
-        for (const c of created) {
-          const saved = await api.updatePlanItem(c.id, { phaseId });
-          if (alive.current) replace(saved);
-        }
       });
     },
     /** Перенос в фазу (null — «Без фазы»); ответ сервера обновляет пункт. */

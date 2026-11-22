@@ -104,6 +104,11 @@ export class TherapyPathService {
   ): Promise<TherapyPathView> {
     const path = await this.mine(therapistId, clientId);
     return this.prisma.$transaction(async (tx) => {
+      // Блокировка строки пути: параллельный addPhase ждёт и видит новую фазу.
+      await tx.therapyPath.update({
+        where: { id: path.id },
+        data: { updatedAt: new Date() },
+      });
       const phases = await phasesInOrder(tx, path.id);
       if (phases.length >= PATH_PHASES_MAX)
         throw new BadRequestException('Too many phases');

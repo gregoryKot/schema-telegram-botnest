@@ -12,7 +12,7 @@ interface Props {
 
 /** «Кому в план» из общего справочника: список клиентов терапевта, отмеченные получают пункт. */
 export function PlanClientPicker({ picked, onToggle }: Props) {
-  const clients = useTherapyClientList(true);
+  const clients = useTherapyClientList();
   return (
         <fieldset className="pa-block pa-set">
           <legend className="ds-label">Кому в план</legend>
