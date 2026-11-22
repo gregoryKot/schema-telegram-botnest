@@ -6,8 +6,8 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
 import { ClientHeaderBadges } from './ClientHeaderBadges';
-import type { ClientDetail } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-26T12:00:00Z')); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -15,7 +15,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 const client = (o: Partial<TherapyClientSummary>) =>
   ({ telegramId: -1, streak: 0, meetingDays: [], nextSession: null, ...o }) as unknown as TherapyClientSummary;
 const detail = (setLocalNextSession = vi.fn()) =>
-  ({ editingNextSession: false, setEditingNextSession: vi.fn(), setLocalNextSession }) as unknown as ClientDetail;
+  makeClientDetail({ setLocalNextSession });
 
 describe('ближайшая сессия в карточке клиента', () => {
   it('прошедшая дата при еженедельной субботе — ближайшая суббота, правка начинается с неё', () => {
@@ -43,7 +43,7 @@ describe('ближайшая сессия в карточке клиента', (
 
   it('«Начало терапии»: без даты — «Не указана» и «Указать →», с датой — «Изменить →»', () => {
     const setLocal = vi.fn();
-    const d = { editingStartDate: false, setEditingStartDate: vi.fn(), setLocalStartDate: setLocal } as unknown as ClientDetail;
+    const d = makeClientDetail({ setLocalStartDate: setLocal });
     const { unmount } = render(<StartDateCard selectedClient={client({ therapyStartDate: null })} detail={d} />);
     expect(screen.getByText('Не указана').className).toBe('tk-meet-none');
     fireEvent.click(screen.getByText('Указать →'));
@@ -55,7 +55,7 @@ describe('ближайшая сессия в карточке клиента', (
   });
 
   it('«Начало терапии» в правке — поле даты с lang="ru"; значение — ISO, как и без lang', () => {
-    const d = { editingStartDate: true, localStartDate: '2026-01-15', setEditingStartDate: vi.fn(), setLocalStartDate: vi.fn(), saveSessionInfo: vi.fn() } as unknown as ClientDetail;
+    const d = makeClientDetail({ editingStartDate: true, localStartDate: '2026-01-15' });
     render(<StartDateCard selectedClient={client({ therapyStartDate: '2026-01-15' })} detail={d} />);
     const input = screen.getByLabelText('Начало терапии') as HTMLInputElement;
     expect(input.lang).toBe('ru');

@@ -1,15 +1,13 @@
 // @vitest-environment jsdom
 // T-11 (QA 2026-11): после перехода кнопкой с «Обзора» активная вкладка должна
 // оказаться в видимой части полосы. До правки полоса не прокручивалась.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ClientTabs } from './ClientTabs';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
-const detailWith = (clientTab: ClientTab) => ({
-  clientSchemaNotesData: [], clientModeNotesData: [], clientTasks: [], clientDiary: [],
-  notesPage: { notes: [], total: 0 }, clientData: null, clientTab, setClientTab: vi.fn(),
-}) as unknown as ClientDetail;
+const detailWith = (clientTab: ClientTab) => makeClientDetail({ clientTab });
 
 describe('ClientTabs', () => {
   it('скрытая активная вкладка встаёт по центру полосы прокруткой самой полосы; смена вкладки — снова', () => {
@@ -28,7 +26,7 @@ describe('ClientTabs', () => {
   });
 
   it('счётчик вкладки — тихий: класс tk-count, только при числе > 0', () => {
-    render(<ClientTabs detail={{ ...detailWith('overview'), clientTasks: [{}, {}] } as unknown as ClientDetail} />);
+    render(<ClientTabs detail={{ ...detailWith('overview'), clientTasks: [{}, {}] as ClientDetail['clientTasks'] }} />);
     expect(screen.getByRole('tab', { name: /^Задания/ }).querySelector('.tk-count')!.textContent).toBe('2');
     expect(screen.getByRole('tab', { name: 'Сессии' }).querySelector('.ds-count')).toBeNull();
   });
