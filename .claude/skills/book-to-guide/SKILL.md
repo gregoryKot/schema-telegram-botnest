@@ -19,7 +19,10 @@ description: Наполнить «Справочник» терапевта из
   метка → авторы и название. Сверка меток в текстах — `sources.test.ts`.
 - **Карта покрытия книги** — `docs/guide-sources/<метка>.md`, по файлу на книгу.
 - **Тексты** — `shared/src/schemaTherapy/guide/` (`modes/`, `schemas/`,
-  `techniques/`, `practice*.ts`); форма раздела — `types.ts`.
+  `techniques/`, `concerns/` — запросы и расстройства, `practice*.ts`, `address/` —
+  адреса разделов); форма раздела — `types.ts`.
+- **Структура, связи, чек-листы добавления** — `.claude/rules/knowledge-base.md`;
+  сторож — `shared/src/schemaTherapy/kb/`.
 
 ## 1. Полка
 
@@ -73,6 +76,10 @@ description: Наполнить «Справочник» терапевта из
 - Новая техника: id в `techniqueIds.ts`, текст в `techniques/*`, знак —
   `webapp/src/components/art/techniqueSigns.ts`; тесты `guide.test.ts` и
   `sources.test.ts` зелёные.
+- Каждая связь из книги — в поле связи (`modeIds`, `techniques`, `schemaIds`), не
+  только в текст; закрытая дыра — строка удалена из `kb/gaps.ts`; новая запись —
+  чек-лист раздела 5 правила `knowledge-base.md`. Проверка —
+  `cd shared && npx vitest run src/schemaTherapy src/mode`.
 - После мержа пачки — статус карты и строки «Решение» обновлены в том же PR.
 
 ## Адреса разделов: «Про клиента» без правки экранов (#1484)

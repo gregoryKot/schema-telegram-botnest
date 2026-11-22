@@ -11,6 +11,16 @@ const NO_SHARE = {
 };
 const SINCE = new Date(NOW.getTime() - 30 * 86_400_000);
 
+interface NameIn {
+  in: string[];
+}
+/** Имена событий, которые сервис просит посчитать общим groupBy по имени. */
+const countedNames = (groupBy: jest.Mock): string[] =>
+  groupBy.mock.calls
+    .map(([arg]: [{ by: string[]; where: { name: NameIn } }]) => arg)
+    .filter((arg) => arg.by[0] === 'name')
+    .flatMap((arg) => arg.where.name.in);
+
 function makeService(opts: {
   opens?: number;
   linked?: number;
@@ -68,12 +78,22 @@ function makeService(opts: {
           : byName[where.name],
       ),
   );
-  const groupBy = jest.fn(({ where }: { where: { name: string } }) =>
-    Promise.resolve(
-      (where.name === 'client_concept_opened'
-        ? opts.clientGroups
-        : opts.groups) ?? [],
-    ),
+  // by: ['name'] — счётчики таблицы одним запросом (строки только у ненулевых);
+  // by: ['userId'] — разные люди, открывшие схему.
+  const groupBy = jest.fn(
+    ({ by, where }: { by: string[]; where: { name: string | NameIn } }) => {
+      if (by[0] === 'name')
+        return Promise.resolve(
+          (where.name as NameIn).in
+            .filter((name) => byName[name] > 0)
+            .map((name) => ({ name, _count: { _all: byName[name] } })),
+        );
+      return Promise.resolve(
+        (where.name === 'client_concept_opened'
+          ? opts.clientGroups
+          : opts.groups) ?? [],
+      );
+    },
   );
   const conceptCount = jest.fn(() => Promise.resolve(opts.sharedNow ?? 0));
   const prisma = {
@@ -128,28 +148,16 @@ describe('ConceptGraphMetricsService', () => {
   });
 
   it('спрашивает нужные события и окно createdAt >= 30 дней назад', async () => {
-    const { service, count, groupBy } = makeService({});
+    const { service, groupBy } = makeService({});
     await service.getMetrics();
 
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_graph_open', createdAt: { gte: SINCE } },
-    });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_mode_linked', createdAt: { gte: SINCE } },
-    });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_schema_linked', createdAt: { gte: SINCE } },
-    });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_canvas_open', createdAt: { gte: SINCE } },
-    });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_graph_fullscreen', createdAt: { gte: SINCE } },
-    });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_save_retry', createdAt: { gte: SINCE } },
-    });
-    expect(groupBy).toHaveBeenCalledTimes(2); // терапевты схемы и клиенты, открывшие свою
+    expect(countedNames(groupBy)).toContain('concept_graph_open');
+    expect(countedNames(groupBy)).toContain('concept_mode_linked');
+    expect(countedNames(groupBy)).toContain('concept_schema_linked');
+    expect(countedNames(groupBy)).toContain('concept_canvas_open');
+    expect(countedNames(groupBy)).toContain('concept_graph_fullscreen');
+    expect(countedNames(groupBy)).toContain('concept_save_retry');
+    expect(groupBy).toHaveBeenCalledTimes(3); // счётчики по имени, терапевты схемы и клиенты, открывшие свою
   });
 
   it('переносы на холст считаются отдельно: чужие события в их счёт не попадают', async () => {
@@ -240,38 +248,34 @@ describe('ConceptGraphMetricsService', () => {
   });
 
   it('связь холста с полями (#963): оба направления считаются отдельно и видны в /stats', async () => {
-    const { service, count } = makeService({ syncToMap: 4, syncFromMap: 9 });
+    const { service, groupBy } = makeService({ syncToMap: 4, syncFromMap: 9 });
     await expect(service.getMetrics()).resolves.toMatchObject({
       opens30: 0,
       canvasOpen30: 0,
       syncToMap30: 4,
       syncFromMap30: 9,
     });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_sync_from_map', createdAt: { gte: SINCE } },
-    });
+    expect(countedNames(groupBy)).toContain('concept_sync_from_map');
     const text = await service.render();
     expect(text).toContain('Дописывали на карту из полей: 4 раз');
     expect(text).toContain('Холст дописывал в концептуализацию: 9 раз');
   });
 
   it('колесо потребностей на холсте считается отдельно и видно в /stats', async () => {
-    const { service, count } = makeService({ syncFromMap: 2, needsRated: 6 });
+    const { service, groupBy } = makeService({ syncFromMap: 2, needsRated: 6 });
     await expect(service.getMetrics()).resolves.toMatchObject({
       opens30: 0,
       syncFromMap30: 2,
       needsRated30: 6,
     });
-    expect(count).toHaveBeenCalledWith({
-      where: { name: 'concept_needs_rated', createdAt: { gte: SINCE } },
-    });
+    expect(countedNames(groupBy)).toContain('concept_needs_rated');
     await expect(service.render()).resolves.toContain(
       'Колесо потребностей на холсте заполняли 6 раз',
     );
   });
 
   it('подсказки терапевту (#995): листы режима, схемы, техники, «Дать заданием», отметки техник и журнал считаются отдельно и видны в /stats', async () => {
-    const { service, count } = makeService({
+    const { service, groupBy } = makeService({
       opens: 3,
       guide: [5, 4, 8, 2, 6, 3, 7],
     });
@@ -294,9 +298,7 @@ describe('ConceptGraphMetricsService', () => {
       'concept_guide_journal_open',
       'concept_guide_journal_entry',
     ]) {
-      expect(count).toHaveBeenCalledWith({
-        where: { name, createdAt: { gte: SINCE } },
-      });
+      expect(countedNames(groupBy)).toContain(name);
     }
     await expect(service.render()).resolves.toContain(
       'Подсказки терапевту — листы режимов: 5, листы схем: 4, листы техник: 8, «Дать заданием»: 2, отметили техник: 6, переходили в журнал техник: 3, открывали технику из журнала: 7',
