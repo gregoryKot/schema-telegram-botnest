@@ -61,10 +61,14 @@ export type CambridgeTechniqueId =
 /** Техники схема-терапии из книги Янга (пачка 8 карты). */
 export type YoungTechniqueId = 'schema_dialogue';
 
+/** Техники из книги Арнца и ван Гендерен о ПРЛ (карта «Арнц-ПРЛ»). */
+export type ArntzTechniqueId = 'current_role_play';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
   | SchemaTechniqueId
   | CambridgeTechniqueId
   | YoungTechniqueId
+  | ArntzTechniqueId
   | BorrowedTechniqueId;
