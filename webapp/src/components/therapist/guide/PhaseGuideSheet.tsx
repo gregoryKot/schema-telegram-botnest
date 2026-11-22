@@ -14,8 +14,8 @@ export interface PhaseLinks {
   onOpenNote: (id: string) => void;
 }
 
-const BEFORE = ['goal', 'timing', 'tasks', 'stance'] as const;
-const AFTER = ['transition', 'variants', 'stuck'] as const;
+const BEFORE = ['goal', 'timing', 'tasks', 'stages', 'stance'] as const;
+const AFTER = ['transition', 'mistakes', 'variants', 'stuck'] as const;
 
 /**
  * Лист вкладки «Путь терапии»: каркас GuidePage — в шапке «Фаза N» (у обзора — «Путь терапии»), герой с тем, что в фазе
@@ -43,7 +43,7 @@ export function PhaseGuideSheet({ view, onOpenMode, onOpenTechnique, onOpenNote,
   ];
   return (
     <GuidePage
-      label={phaseLabel(view.step)} title={phase.name} lede={phase.essence} onClose={onClose}
+      label={phaseLabel(view.step, phase.group)} title={phase.name} lede={phase.essence} onClose={onClose}
       look={PHASE_LOOK} more={phase.more} sources={phase.sources}
     >
       {BEFORE.map(part)}

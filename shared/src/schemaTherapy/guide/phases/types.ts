@@ -8,6 +8,8 @@ import type { GuideVoiceFields, TechniqueId, Tr } from '../types';
 export interface PhaseGuide extends GuideVoiceFields {
   /** Латиница, уникален: ключ листа и адрес раздела. */
   id: string;
+  /** Группа листа на вкладке; нет — лента фаз. */
+  group?: PathSheetGroupId;
   name: string;
   /** Суть фазы одной строкой: под названием в ленте. */
   goal: string;
@@ -17,6 +19,8 @@ export interface PhaseGuide extends GuideVoiceFields {
   timing?: string;
   /** Задачи фазы. */
   tasks?: string[];
+  /** Фазы шаблона пути по порядку: название, срок, цель, что делает терапевт. */
+  stages?: string[];
   /** Позиция терапевта и ограниченное родительство в этой фазе. */
   stance?: string;
   /** Режимы в фокусе (id из modeGroups.ts). */
@@ -27,11 +31,16 @@ export interface PhaseGuide extends GuideVoiceFields {
   noteIds?: string[];
   /** Признаки, что пора к следующей фазе. */
   transition?: string[];
+  /** Частые ошибки. */
+  mistakes?: string[];
   /** Где книги расходятся. */
   variants?: string[];
   /** Где застревают. */
   stuck?: string;
   sources: string;
 }
+
+/** Группы листов вкладки «Путь терапии»: лента фаз и шаблоны пути. */
+export type PathSheetGroupId = 'path' | 'templates';
 
 export type PhaseGuideBuilder = (tr: Tr) => PhaseGuide;
