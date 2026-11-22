@@ -49,7 +49,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
         'Часть «отличий» на деле есть у всех, например фантазии, которых стыдятся [Янг, гл. 7].',
         'Поведенчески: лестница экспозиций к группам через домашние задания, приёмы против социальной тревоги, тренинг навыков общения; при сильной тревоге — вопрос о лекарствах к врачу. Группы по общей беде или интересу ценнее случайных: там скорее примут [Янг, гл. 7].',
       ],
-      techniques: ['imagery_rescripting', 'pattern_breaking'],
+      techniques: ['imagery_rescripting', 'pattern_breaking', 'exposure'],
       betweenSessions: [
         {
           kind: 'custom',

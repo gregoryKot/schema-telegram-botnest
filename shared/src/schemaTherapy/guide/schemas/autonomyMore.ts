@@ -41,6 +41,7 @@ export const buildEnmeshmentGuide = (tr: Tr): SchemaGuide => ({
     'imagery_rescripting',
     'letters',
     'pattern_breaking',
+    'schema_dialogue',
   ],
   betweenSessions: [
     {
