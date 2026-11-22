@@ -64,6 +64,7 @@ describe('templateSheet', () => {
 
   it('критерии и ошибки — по фазам; переходы — по видам и без повторов', () => {
     expect(sheet.transition).toEqual(['Первая: раз; два.', 'Вторая: три.']);
+    expect(sheet.caveats).toBeUndefined();
     expect(sheet.mistakes).toEqual(['Первая: ошибка.', 'Вторая: промах.']);
     expect(sheet.techniques).toEqual(['chairwork']);
     expect(sheet.modeIds).toEqual(['healthy_adult']);

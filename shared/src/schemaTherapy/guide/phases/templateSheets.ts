@@ -83,7 +83,7 @@ export function templateSheet(
     noteIds: recommendedIds(template, 'note'),
     transition: perPhase(template, (p) => p.transition),
     mistakes: perPhase(template, (p) => p.mistakes),
-    variants: template.caveats,
+    caveats: template.caveats,
     sources: template.sources,
   };
 }

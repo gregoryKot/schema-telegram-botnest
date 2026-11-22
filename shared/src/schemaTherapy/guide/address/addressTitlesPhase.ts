@@ -15,6 +15,7 @@ export const PHASE_TITLES: Titles<PhaseGuide> = {
   noteIds: 'Для терапевта',
   transition: 'Признаки перехода дальше',
   mistakes: 'Частые ошибки',
+  caveats: 'Оговорки',
   variants: 'Где книги расходятся',
   stuck: 'Где застревают',
   voice: 'Как это звучит',

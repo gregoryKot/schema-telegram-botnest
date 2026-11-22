@@ -15,7 +15,7 @@ export interface PhaseLinks {
 }
 
 const BEFORE = ['goal', 'timing', 'tasks', 'points', 'stages', 'stance'] as const;
-const AFTER = ['transition', 'mistakes', 'variants', 'stuck'] as const;
+const AFTER = ['transition', 'mistakes', 'caveats', 'variants', 'stuck'] as const;
 
 /**
  * Лист вкладки «Путь терапии»: каркас GuidePage — в шапке «Фаза N» (у обзора — «Путь терапии»), герой с тем, что в фазе

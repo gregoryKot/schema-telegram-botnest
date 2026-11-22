@@ -35,6 +35,8 @@ export interface PhaseGuide extends GuideVoiceFields {
   transition?: string[];
   /** Частые ошибки. */
   mistakes?: string[];
+  /** Оговорки листа шаблона: что в нём практический вывод. */
+  caveats?: string[];
   /** Где книги расходятся. */
   variants?: string[];
   /** Где застревают. */
