@@ -6,9 +6,8 @@ import {
 import type { TherapyPlanItem } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
-import { encryptRecord } from '../utils/crypto-record';
 import type { PlanItemView, PlanSource } from './therapy-plan.types';
-import { PLAN_SCHEMA, toView } from './therapy-plan.view';
+import { encryptPlan, toView } from './therapy-plan.view';
 import { parseGuideAddress } from './guide-mark-address';
 import { assertPhaseOfPair } from './therapy-plan.phase';
 
@@ -80,21 +79,18 @@ export class TherapyPlanService {
         });
         created.push(
           await tx.therapyPlanItem.create({
-            data: encryptRecord(
-              {
-                therapistId,
-                clientId,
-                rubric: input.rubric,
-                text: input.text,
-                position: (last?.position ?? -1) + 1,
-                sourceAddress: input.sourceAddress ?? null,
-                sourceKind: input.source?.kind ?? null,
-                sourceId: input.source?.id ?? null,
-                sourceField: input.source?.field ?? null,
-                phaseId: input.phaseId ?? null,
-              },
-              PLAN_SCHEMA,
-            ),
+            data: encryptPlan({
+              therapistId,
+              clientId,
+              rubric: input.rubric,
+              text: input.text,
+              position: (last?.position ?? -1) + 1,
+              sourceAddress: input.sourceAddress ?? null,
+              sourceKind: input.source?.kind ?? null,
+              sourceId: input.source?.id ?? null,
+              sourceField: input.source?.field ?? null,
+              phaseId: input.phaseId ?? null,
+            }),
           }),
         );
       }
@@ -127,16 +123,13 @@ export class TherapyPlanService {
         { therapistId, ...item },
         patch.phaseId,
       );
-    const data = encryptRecord(
-      {
-        ...(patch.text !== undefined && { text: patch.text }),
-        ...(patch.status !== undefined && { status: patch.status }),
-        ...(patch.rubric !== undefined && { rubric: patch.rubric }),
-        ...(patch.taskId !== undefined && { taskId: patch.taskId }),
-        ...(patch.phaseId !== undefined && { phaseId: patch.phaseId }),
-      },
-      PLAN_SCHEMA,
-    );
+    const data = encryptPlan({
+      ...(patch.text !== undefined && { text: patch.text }),
+      ...(patch.status !== undefined && { status: patch.status }),
+      ...(patch.rubric !== undefined && { rubric: patch.rubric }),
+      ...(patch.taskId !== undefined && { taskId: patch.taskId }),
+      ...(patch.phaseId !== undefined && { phaseId: patch.phaseId }),
+    });
     const row = await this.prisma.therapyPlanItem.update({
       where: { id: item.id },
       data,

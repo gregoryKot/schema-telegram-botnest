@@ -1,11 +1,19 @@
 import type { TherapyPlanItem } from '@prisma/client';
-import { decryptRecord, type EncryptSchema } from '../utils/crypto-record';
+import {
+  decryptRecord,
+  encryptRecord,
+  type EncryptSchema,
+} from '../utils/crypto-record';
 import type { PlanItemView } from './therapy-plan.types';
 
-export const PLAN_SCHEMA: EncryptSchema = {
+const PLAN_SCHEMA: EncryptSchema = {
   strings: ['text'],
   model: 'TherapyPlanItem',
 };
+
+// Схема и обе стороны шифрования — в одном модуле: реестр шифрования сверяет этот файл.
+export const encryptPlan = <T extends Record<string, unknown>>(data: T): T =>
+  encryptRecord(data, PLAN_SCHEMA);
 
 // Одна расшифровка на все ответы: список, создание и правка отдают одну форму.
 export function toView(row: TherapyPlanItem): PlanItemView {
