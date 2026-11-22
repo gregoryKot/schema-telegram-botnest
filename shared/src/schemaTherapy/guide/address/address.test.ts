@@ -119,7 +119,7 @@ describe('parse/format и реестр переименований', () => {
     for (const bad of [
       '',
       'schema:x',
-      'need:x/what',
+      'tab:x/what',
       'schema:x/',
       'schema:x/1a',
       'schema:x/a..b',

@@ -6,6 +6,7 @@ import {
   buildPhaseGuides,
   buildSchemaDomainGuides,
   buildTechniqueGuides,
+  needGuides,
   practiceNotes,
 } from './index';
 import {
@@ -30,6 +31,7 @@ const allText = strings([
   practiceNotes(ty),
   buildConcernGuides(ty),
   buildPhaseGuides(ty),
+  needGuides(),
 ]).join('\n');
 
 describe('полка книг справочника', () => {
