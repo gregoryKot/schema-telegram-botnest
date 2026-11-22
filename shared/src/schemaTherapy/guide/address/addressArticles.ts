@@ -11,8 +11,8 @@ import { GUIDE_ARTICLE_KINDS, type GuideArticleKind } from './addressFormat';
 import { phaseArticles } from './addressArticlesPhase';
 import { sectionsOf } from './addressSections';
 import {
-  modeSchemaLinks,
-  techniqueUsageGroups,
+  modeSchemaLinksAll,
+  techniqueUsageGroupsAll,
   usageLines,
 } from '../backlinks';
 
@@ -49,8 +49,9 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
         }),
       })),
     ),
-  mode: (tr, techniqueName) =>
-    buildModeGuides(tr).map((g) => ({
+  mode: (tr, techniqueName) => {
+    const schemas = modeSchemaLinksAll();
+    return buildModeGuides(tr).map((g) => ({
       kind: 'mode' as const,
       id: g.modeId,
       title: modeName(g.modeId) || g.modeId,
@@ -58,19 +59,22 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
         ...g,
         techniques: g.techniques.map(techniqueName),
         // Обратная сторона SchemaGuide.modeIds: «Типичен для схем».
-        schemas: modeSchemaLinks(g.modeId).map((s) => s.name),
+        schemas: (schemas.get(g.modeId) ?? []).map((s) => s.name),
       }),
-    })),
-  technique: (tr) =>
-    buildTechniqueGuides(tr).map((t) => ({
+    }));
+  },
+  technique: (tr) => {
+    const usages = techniqueUsageGroupsAll(tr);
+    return buildTechniqueGuides(tr).map((t) => ({
       kind: 'technique' as const,
       id: t.id,
       title: t.name,
       sections: sectionsOf({
         ...t,
-        usages: usageLines(techniqueUsageGroups(tr, t.id)),
+        usages: usageLines(usages.get(t.id) ?? []),
       }),
-    })),
+    }));
+  },
   note: (tr) =>
     practiceNotes(tr).map((n) => ({
       kind: 'note' as const,

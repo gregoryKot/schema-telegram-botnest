@@ -2,8 +2,8 @@
 // здесь только названия. Цикл импорта с ./index безопасен: функции зовутся при открытии листа.
 import { getModeById, getSchemaById } from '../schemaTherapyData';
 import {
-  schemasOfMode,
-  usagesOfTechnique,
+  modeSchemaIndex,
+  techniqueUsageIndex,
   type KbUsageKind,
 } from '../kb/links';
 import { buildConcernGuides } from './index';
@@ -28,36 +28,57 @@ const USAGE_LEADS: Record<KbUsageKind, string> = {
   concern: 'Запросы',
 };
 
-/** Схемы, для которых режим типичен; id без схемы в реестре пропускается. */
-export function modeSchemaLinks(modeId: string): GuideBacklink[] {
-  return schemasOfMode(modeId).flatMap((id) => {
-    const name = getSchemaById(id)?.name;
+const named = (
+  ids: readonly string[],
+  nameOf: (id: string) => string | undefined,
+) =>
+  [...new Set(ids)].flatMap((id) => {
+    const name = nameOf(id);
     return name ? [{ id, name }] : [];
   });
+
+/** Режим → схемы, для которых он типичен, сразу для всех режимов; id без схемы в реестре пропускается. */
+export function modeSchemaLinksAll(): Map<string, GuideBacklink[]> {
+  const schemaName = (id: string) => getSchemaById(id)?.name;
+  return new Map(
+    [...modeSchemaIndex()].map(([m, ids]) => [m, named(ids, schemaName)]),
+  );
 }
 
-/** Где применяется техника, группами в порядке «режимы, схемы, запросы»; пустая группа не попадает. */
-export function techniqueUsageGroups(
+export function modeSchemaLinks(modeId: string): GuideBacklink[] {
+  return modeSchemaLinksAll().get(modeId) ?? [];
+}
+
+/** Техника → «Где применяется» группами «режимы, схемы, запросы», сразу для всех техник; пустых групп нет. */
+export function techniqueUsageGroupsAll(
   tr: Tr,
-  techniqueId: string,
-): GuideUsageGroup[] {
-  const usages = usagesOfTechnique(techniqueId);
+): Map<string, GuideUsageGroup[]> {
   const concerns = new Map(buildConcernGuides(tr).map((c) => [c.id, c.name]));
   const nameOf: Record<KbUsageKind, (id: string) => string | undefined> = {
     mode: (id) => getModeById(id)?.name,
     schema: (id) => getSchemaById(id)?.name,
     concern: (id) => concerns.get(id),
   };
-  return (Object.keys(USAGE_LEADS) as KbUsageKind[]).flatMap((kind) => {
-    const ids = [
-      ...new Set(usages.filter((u) => u.kind === kind).map((u) => u.id)),
-    ];
-    const items = ids.flatMap((id) => {
-      const name = nameOf[kind](id);
-      return name ? [{ id, name }] : [];
-    });
-    return items.length > 0 ? [{ kind, lead: USAGE_LEADS[kind], items }] : [];
-  });
+  const kinds = Object.keys(USAGE_LEADS) as KbUsageKind[];
+  return new Map(
+    [...techniqueUsageIndex()].map(([t, usages]) => [
+      t,
+      kinds.flatMap((kind) => {
+        const ids = usages.filter((u) => u.kind === kind).map((u) => u.id);
+        const items = named(ids, nameOf[kind]);
+        return items.length > 0
+          ? [{ kind, lead: USAGE_LEADS[kind], items }]
+          : [];
+      }),
+    ]),
+  );
+}
+
+export function techniqueUsageGroups(
+  tr: Tr,
+  techniqueId: string,
+): GuideUsageGroup[] {
+  return techniqueUsageGroupsAll(tr).get(techniqueId) ?? [];
 }
 
 /** Группы одной строкой на группу: «Режимы: А, Б» — текст раздела для адреса. */
