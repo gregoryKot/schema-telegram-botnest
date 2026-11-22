@@ -34,7 +34,7 @@ export interface ConcernGuide extends GuideVoiceFields {
   /** План на кризис, самоповреждение, связь между сессиями. */
   crisis?: string[];
   /** Терапевтические отношения при этом запросе. */
-  relationship?: string;
+  relationship?: string[];
   /** Что и как рассказать клиенту. */
   psychoeducation?: string[];
   /** Группа, стационар, пары и другие форматы. */
