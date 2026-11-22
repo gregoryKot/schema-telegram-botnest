@@ -58,7 +58,7 @@
 | Статья сайта | `src/articles/articles.seed.ts` (+ поднять `SEED_VERSION` в `src/articles/articles.service.ts` и записать пару в `src/articles/articles.seed.lock.json`), [docs/ARTICLES.md](ARTICLES.md); обложка — бумага по slug в `webapp/src/components/art/articleCoverModel.ts` и сцена в `articleCoverScenes.ts` (рисунки `ArticleScenes*.tsx`, таблица «Обложки статей» в [design/PAPER_MOTIFS_2026-11.md](design/PAPER_MOTIFS_2026-11.md)) | texts, telegram, frontend-visual |
 | Фраза канала «Здоровый Взрослый» | `src/bot/healthy-adult.data.ts` + миграция; площадки — `src/channel/channel.providers.ts` | telegram, texts |
 | Красный CI | [architecture/gates.md](architecture/gates.md) → строка гейта → его шапка | gates |
-| PR с auto-merge висит в BEHIND, очередь мержа | `.github/workflows/merge-queue.yml` → `scripts/merge-queue.mjs` (правила — `merge-queue-plan.mjs`); dry-run — dispatch с `dry_run` | gates |
+| PR с auto-merge висит в BEHIND или в конфликте, очередь мержа | `.github/workflows/merge-queue.yml` → `scripts/merge-queue.mjs` (правила — `merge-queue-plan.mjs`, сведение конфликта — `merge-queue-conflict.mjs`); dry-run — dispatch с `dry_run` | gates |
 | Конфликт слияния | `git fetch origin main && git merge origin/main` локально | gates (№13) |
 | Прод лёг, деплой не доехал | `deploy/entrypoint.mjs`, [docs/RUNBOOKS.md](RUNBOOKS.md) (grep по сервису) | ops |
 | Задача размыта | `/grill-me` | — |
