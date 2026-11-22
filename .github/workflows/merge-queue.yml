@@ -1,10 +1,12 @@
 # Очередь мержа: под `strict` auto-merge ждёт ветку со свежим main, но сам её
 # не обновляет. Здесь по одному PR за раз отставший PR с auto-merge получает
-# update-branch, а его прогон CI — одобрение. Правила — шапка
+# update-branch (конфликт в бейслайнах и бэклоге сводится merge-драйверами и
+# пушится в ветку PR), а его прогон CI — одобрение. Правила — шапка
 # scripts/merge-queue.mjs, тест — src/test-support/gates/merge-queue.spec.ts.
 name: Очередь мержа
 
-# Событий PR нет: у джобы запись, код PR она не чекаутит и не исполняет.
+# Событий PR нет: у джобы запись. Дерево PR она берёт только как данные для
+# слияния (отдельный worktree), а исполняет скрипты main.
 on:
   push:
     branches: [main]
@@ -43,13 +45,15 @@ jobs:
       # Чекаут без `ref:` — код main (у workflow_run тоже), а не PR.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
-          sparse-checkout: scripts
+          # Полная история и токен в клоне: слияние main в ветку PR и пуш в неё.
+          fetch-depth: 0
+          persist-credentials: true
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: Подтянуть один отставший PR и одобрить его прогон CI
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MERGE_QUEUE_GIT_DIR: ${{ github.workspace }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: node scripts/merge-queue.mjs $DRY_RUN
