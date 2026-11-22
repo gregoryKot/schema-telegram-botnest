@@ -106,4 +106,7 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:downward_arrow': ['thought', 'bottom', 'schema'],
     'technique:schema_dialogue': ['schema', 'arguments', 'answers', 'who'],
     'technique:current_role_play': ['scene', 'oldView', 'newView', 'newStep'],
+    'technique:two_axis_check': ['rule', 'picture', 'newView'],
+    'technique:need_cycle': ['scene', 'mode', 'need', 'action'],
+    'technique:guess_the_mode': ['modes', 'signs'],
   };
