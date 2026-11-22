@@ -66,18 +66,21 @@ describe.each(CHAPTERS.map(ch => [ch.id, ch] as const))('глава %s — да�
 });
 
 describe('порядок глав', () => {
-  it('хук ведёт в среду, среда — в пятницу, пятница — в воскресенье, у воскресенья продолжения пока нет', () => {
+  it('хук ведёт в среду, среда — в пятницу, пятница — в воскресенье, воскресенье — в эпилог, дальше глав нет', () => {
     expect(nextChapter(CHAPTERS[0])?.id).toBe('wed');
     expect(nextChapter(CHAPTERS[1])?.id).toBe('fri');
     expect(nextChapter(CHAPTERS[1])?.invite).toBe('m_wk_fri_invite');
     expect(nextChapter(CHAPTERS[2])?.id).toBe('sun');
     expect(nextChapter(CHAPTERS[2])?.invite).toBe('m_wk_sun_invite');
-    expect(nextChapter(CHAPTERS[3])).toBeUndefined();
+    expect(nextChapter(CHAPTERS[3])?.id).toBe('first');
+    expect(nextChapter(CHAPTERS[3])?.invite).toBe('m_wk_first_invite');
+    expect(nextChapter(CHAPTERS[4])).toBeUndefined();
   });
   it('хеш открывает среду, остальное — хук', () => {
     expect(chapterFromHash('#wed').id).toBe('wed');
     expect(chapterFromHash('#fri').id).toBe('fri');
     expect(chapterFromHash('#sun').id).toBe('sun');
+    expect(chapterFromHash('#first').id).toBe('first');
     expect(chapterFromHash('#week').id).toBe('mon');
     expect(chapterFromHash('').id).toBe('mon');
   });
@@ -100,7 +103,18 @@ describe('порядок глав', () => {
       expect(sun.costs?.[act], act).toBeDefined();
       expect(sun.beats.some(b => b.reveal === act), act).toBe(true);
     }
-    expect(CHAPTERS.filter(c => c.hollow || c.crisis).map(c => c.id)).toEqual(['sun']);
+    expect(CHAPTERS.filter(c => c.crisis).map(c => c.id)).toEqual(['sun']);
+  });
+  it('в эпилоге преград нет, каждую привычку терапевт замечает вслух, а конец ведёт на финальную карточку', () => {
+    const first = CHAPTERS[4];
+    expect(first.hollow).toBe(true);
+    for (const act of ['overwork', 'scroll', 'agree'] as const) {
+      expect(first.notice?.[act], act).toBeDefined();
+      expect(first.beats.some(b => b.reveal === act), act).toBe(true);
+    }
+    expect(first.pause.steps).toHaveLength(2);
+    expect(CHAPTERS.filter(c => c.end.card === 'final').map(c => c.id)).toEqual(['first']);
+    expect(CHAPTERS.filter(c => c.hollow).map(c => c.id)).toEqual(['sun', 'first']);
   });
   it('в пятнице первой открывается ПРОЛИСТАТЬ, и два ухода в телефон съедают вечер до пика', () => {
     const fri = CHAPTERS[2];
