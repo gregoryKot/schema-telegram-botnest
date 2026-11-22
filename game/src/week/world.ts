@@ -1,72 +1,65 @@
-// Мир «Понедельника» на серых блоках: пол, утро, преграды, люди, дверь. Арта нет — только прямоугольники.
+// Мир главы: пол, утро или вечер, преграды, люди, цель. Столкновения держат невидимые блоки, поверх — арт из game/art/week*.py.
 import Phaser from 'phaser';
 import { GROUND_Y, H } from '../constants';
-import type { Chapter, Gate } from './monday';
-
+import { GRID } from '../gridScale';
+import type { Chapter, Gate } from './chapter';
+import { pileFrame } from './look';
 type Rect = Phaser.GameObjects.Rectangle;
-export interface GateObj extends Gate { open: boolean; rect: Rect; face?: Rect }
+type Sprite = Phaser.GameObjects.Sprite;
+export interface GateObj extends Gate { open: boolean; rect: Rect; art: Sprite }
 export interface World {
   solids: Phaser.Physics.Arcade.StaticGroup;
   gates: GateObj[];
-  door: Rect;
-  faces: Rect[]; // лица людей: видны, только пока сбоя нет
+  door: Sprite;
+  people: Sprite[]; // кадр 0 — с лицом, кадр 1 — без: лица видны, только пока сбоя нет
 }
-
-const C = { floor: 0x4a4a52, block: 0x6e6e78, pile: 0x8a8a94, noise: 0x5c6a86, person: 0x9a9aa4, face: 0xe6d6c4,
-  door: 0x7a5c3a, cat: 0x101014, sill: 0x8c7a5c, puddle: 0x44607c, desk: 0x5a5a64 };
-
-const solid = (scene: Phaser.Scene, solids: World['solids'], x: number, w: number, h: number, color: number): Rect => {
-  const r = scene.add.rectangle(x, GROUND_Y - h / 2, w, h, color);
+const BLOCK_ART: Record<number, string> = { 22: 'wk_curb', 30: 'wk_step', 60: 'wk_step_hi' };
+const solid = (scene: Phaser.Scene, solids: World['solids'], x: number, w: number, h: number): Rect => {
+  const r = scene.add.rectangle(x, GROUND_Y - h / 2, w, h, 0, 0);
   solids.add(r);
   return r;
 };
-
-const person = (scene: Phaser.Scene, x: number, faces: Rect[]): Rect => {
-  const face = scene.add.rectangle(x, GROUND_Y - 80, 12, 6, C.face).setDepth(6).setVisible(false);
-  faces.push(face);
-  return face;
-};
-
-export function addGate(scene: Phaser.Scene, w: World, g: Gate): GateObj {
+const stand = (scene: Phaser.Scene, key: string, x: number, frame = 0): Sprite =>
+  scene.add.sprite(x, GROUND_Y + GRID, key, frame).setOrigin(0.5, 1).setScale(GRID);
+export function addGate(scene: Phaser.Scene, w: World, g: Gate, art: Chapter['art']): GateObj {
   const width = g.kind === 'noise' ? 70 : g.kind === 'person' ? 30 : 40;
-  const h = g.kind === 'person' ? 96 : g.h;
-  const rect = solid(scene, w.solids, g.x, width, h, C[g.kind]).setDepth(5);
-  if (g.kind === 'noise') rect.setAlpha(0.75);
-  const obj: GateObj = { ...g, open: false, rect };
-  if (g.kind === 'person') obj.face = person(scene, g.x, w.faces);
+  const rect = solid(scene, w.solids, g.x, width, g.kind === 'person' ? 96 : g.h);
+  // арт сдвинут вперёд от блока: Саша упирается в преграду, а не стоит внутри неё
+  const sprite = g.kind === 'pile' ? stand(scene, art.pile, g.x + 8, pileFrame(g.h))
+    : g.kind === 'noise' ? stand(scene, art.noise, g.x + 8)
+    : stand(scene, art.person, g.x + 30, 1).setFlipX(true);
+  sprite.setDepth(5);
+  const obj: GateObj = { ...g, open: false, rect, art: sprite };
+  if (g.kind === 'person') w.people.push(sprite);
   w.gates.push(obj);
   return obj;
 }
-
-/** Преграда убрана: столкновения нет сразу, блок гаснет; человек остаётся стоять в стороне. */
-export function openGate(scene: Phaser.Scene, g: GateObj) {
+/** Преграда убрана: столкновения нет сразу, арт гаснет; человек отдал коробку и остаётся стоять в стороне. */
+export function openGate(scene: Phaser.Scene, w: World, g: GateObj) {
   if (g.open) return;
   g.open = true;
   (g.rect.body as Phaser.Physics.Arcade.StaticBody).enable = false;
-  if (g.kind === 'person') { g.rect.setAlpha(0.45).setDepth(1); return; }
-  scene.tweens.add({ targets: g.rect, alpha: 0, duration: 260, onComplete: () => g.rect.destroy() });
+  if (g.kind === 'person') {
+    w.people = w.people.filter(p => p !== g.art);
+    g.art.setFrame(2).setDepth(1);
+    return;
+  }
+  scene.tweens.add({ targets: g.art, alpha: 0, y: g.art.y + 8, duration: 260, onComplete: () => g.art.destroy() });
 }
-
 export function buildWorld(scene: Phaser.Scene, ch: Chapter): World {
   const solids = scene.physics.add.staticGroup();
-  const floor = scene.add.rectangle(ch.worldW / 2, GROUND_Y + (H - GROUND_Y) / 2, ch.worldW, H - GROUND_Y, C.floor);
-  solids.add(floor);
-  const w: World = { solids, gates: [], door: null as unknown as Rect, faces: [] };
-
-  // утро: подоконник с Мистером, лужа, бордюр и ступени
-  scene.add.rectangle(ch.catX, GROUND_Y - 70, 70, 8, C.sill);
-  scene.add.rectangle(ch.catX, GROUND_Y - 84, 26, 20, C.cat);
-  scene.add.rectangle(ch.puddleX, GROUND_Y + 3, 90, 6, C.puddle);
-  for (const b of ch.blocks) solid(scene, solids, b.x, b.w, b.h, C.block);
-  scene.add.rectangle(ch.deskX, GROUND_Y - 22, 90, 44, C.desk).setDepth(1);
-
-  for (const x of ch.people) {
-    scene.add.rectangle(x, GROUND_Y - 48, 30, 96, C.person).setAlpha(0.45).setDepth(1);
-    person(scene, x, w.faces);
+  solids.add(scene.add.rectangle(ch.worldW / 2, GROUND_Y + (H - GROUND_Y) / 2, ch.worldW, H - GROUND_Y, 0, 0));
+  // дома Мистер (утром — на подоконнике), на улице лужа, бордюр и ступени
+  if (ch.cat) scene.add.sprite(ch.cat.x, GROUND_Y - ch.cat.lift + GRID, 'wk_mister').setOrigin(0.5, 1).setScale(GRID).play('wk-mister');
+  if (ch.puddleX) scene.add.image(ch.puddleX, GROUND_Y + 10, 'wk_puddle').setScale(GRID);
+  for (const b of ch.blocks) {
+    solid(scene, solids, b.x, b.w, b.h);
+    scene.add.image(b.x, GROUND_Y, BLOCK_ART[b.h]).setOrigin(0.5, 1).setScale(GRID).setDepth(2);
   }
-  for (const g of ch.gates) addGate(scene, w, g);
-  // разметка пола: без неё на серых блоках бега не видно
-  for (let x = 0; x < ch.worldW; x += 160) scene.add.rectangle(x, GROUND_Y + 2, 60, 4, C.block).setAlpha(0.5);
-  w.door = scene.add.rectangle(ch.door.x, GROUND_Y, 56, 110, C.door).setOrigin(0.5, 1).setDepth(2);
+  const walkers = ch.art.walkers;
+  const people = ch.people.map((x, i) => stand(scene, walkers[i % walkers.length], x).setFlipX(i % 2 === 0).setDepth(1));
+  const door = stand(scene, ch.art.door, ch.door.x).setDepth(2);
+  const w: World = { solids, gates: [], door, people };
+  for (const g of ch.gates) addGate(scene, w, g, ch.art);
   return w;
 }

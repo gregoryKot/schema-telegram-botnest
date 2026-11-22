@@ -1,11 +1,10 @@
-// sitemap.xml и robots.txt визитки kotlarewski.gr (отдаёт их
-// practice-domain.middleware.ts; вынесено из него по правилу №10).
-
+// sitemap.xml и robots.txt визитки kotlarewski.gr (отдаёт practice-domain.middleware.ts).
 /** Страницы визитки в поиске — решение владельца 2026-10-24: главная (брендовые
  *  запросы) и /reviews («Почему здесь нет отзывов» отвечает на запрос «… отзывы»).
- *  Остальное закрыто: статьи и приложение канонично живут на schemehappens.ru,
- *  /subscribe и /donate — копии страниц продукта, /book — ссылка для клиентов.
+ *  Остальное закрыто: статьи и приложение живут на schemehappens.ru, /subscribe и /donate — копии продукта.
  *  Каждая страница визитки классифицирована в practice-domain.seo.spec.ts. */
+import { LINKS_PAGE_ALIASES } from './practice-domain.redirects';
+
 export const PRACTICE_INDEXED_PAGES: readonly string[] = ['/', '/reviews'];
 
 export const practiceSitemap = (host: string): string =>
@@ -30,7 +29,8 @@ Disallow: /book
 Disallow: /admin
 Disallow: /booking-admin
 Disallow: /articles-admin
-Disallow: /links
+Disallow: /privet
+${LINKS_PAGE_ALIASES.map((p) => `Disallow: ${p}`).join('\n')}
 
 Sitemap: https://${host}/sitemap.xml
 `;

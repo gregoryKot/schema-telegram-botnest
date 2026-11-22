@@ -56,7 +56,7 @@ describe('e2e smoke: план работы с клиентом — ownership', (
     const created = await agentAs(T1).post('/api/therapy/plan', {
       ...item,
       clientIds: [String(C1)],
-      source: { kind: 'schema', id: 'abandonment', field: 'cognitive' },
+      sourceAddress: 'schema:abandonment/cognitive',
     });
     expect(created.status).toBe(201);
     itemId = created.body.items[0].id as number;
@@ -77,7 +77,8 @@ describe('e2e smoke: план работы с клиентом — ownership', (
         clientId: String(C1),
         status: 'planned',
         position: 0,
-        source: { kind: 'schema', id: 'abandonment', field: 'cognitive' },
+        sourceAddress: 'schema:abandonment/cognitive',
+        source: null,
         taskId: null,
       }),
     ]);

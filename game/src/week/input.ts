@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { touch } from '../controls';
 import { weekTouch } from './touch';
-import type { Act } from './monday';
+import type { Act } from './chapter';
 
 type Key = Phaser.Input.Keyboard.Key;
 const just = Phaser.Input.Keyboard.JustDown;

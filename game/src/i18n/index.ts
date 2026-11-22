@@ -31,7 +31,7 @@ export function setLang(l: Lang) {
 
 /**
  * Локализованная строка по ключу. Подстановка {placeholder} из vars.
- *   t('m_hud_understood', { u: 3, tot: 5 })
+ *   t('m_wk_key', { name: value })
  */
 export function t(key: MsgKey, vars?: Record<string, string | number>): string {
   let s = M[key][lang];

@@ -46,7 +46,7 @@ describe('ModeGuideSheet', () => {
     expect(within(screen.getByRole('region', { name: 'Цель' })).getByText(FIXTURE_GUIDE.goal)).toBeTruthy();
     const leads = within(screen.getByRole('region', { name: 'Как работать' })).getAllByRole('listitem')
       .map((li) => li.querySelector('.gd-lead')?.textContent);
-    expect(leads).toEqual(['В отношениях', 'Через понимание', 'Через чувства и образы']);
+    expect(leads).toEqual(['Терапевтические отношения (в отношениях)', 'Когнитивные (через понимание)', 'Эмпирические (через чувства и образы)']);
     expect(screen.getByText(FIXTURE_GUIDE.sources)).toBeTruthy();
   });
 

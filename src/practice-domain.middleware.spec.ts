@@ -10,6 +10,10 @@ import {
   PRACTICE_PAGES,
   PRACTICE_PAGE_PREFIXES,
 } from './practice-domain.middleware';
+import {
+  LINKS_PAGE_ALIASES,
+  LINKS_PAGE_PATH,
+} from './practice-domain.redirects';
 
 function run(
   hostname: string,
@@ -257,6 +261,46 @@ describe('practiceDomainMiddleware', () => {
       expect(sent.redirect).toBeUndefined();
     });
 
+    it.each(LINKS_PAGE_ALIASES)(
+      'синоним %s?utm_source=instagram → 301 на /privet, строка запроса сохранена',
+      (alias) => {
+        const { sent, nextCalled } = run(
+          'kotlarewski.gr',
+          alias,
+          `${alias}?utm_source=instagram`,
+        );
+        expect(sent.redirect).toEqual([301, '/privet?utm_source=instagram']);
+        expect(nextCalled).toBe(false);
+      },
+    );
+
+    it.each([
+      ['/links', '/links', '/privet'],
+      ['/links', '/links/?a=1&b=2', '/privet?a=1&b=2'],
+      ['/hi', '/hi?utm_source=telegram', '/privet?utm_source=telegram'],
+    ])('%s (%s) → 301 %s', (path, originalUrl, location) => {
+      expect(run('kotlarewski.gr', path, originalUrl).sent.redirect).toEqual([
+        301,
+        location,
+      ]);
+    });
+
+    it.each(['/hip', '/menu', '/links2'])(
+      '%s — не синоним (матч по целому пути) → 301 на канонический хост',
+      (path) => {
+        expect(run('kotlarewski.gr', path).sent.redirect).toEqual([
+          301,
+          `https://schemehappens.ru${path}`,
+        ]);
+      },
+    );
+
+    it('schemehappens.ru/links визитку не знает — редирект синонима не действует', () => {
+      const { sent, nextCalled } = run('schemehappens.ru', '/links');
+      expect(sent.redirect).toBeUndefined();
+      expect(nextCalled).toBe(true);
+    });
+
     it('/articles/some-slug → next (страница с параметром)', () => {
       const { sent, nextCalled } = run('kotlarewski.gr', '/articles/some-slug');
       expect(nextCalled).toBe(true);
@@ -415,6 +459,27 @@ describe('practiceDomainMiddleware', () => {
 
     it('страницы без параметра совпадают с PRACTICE_PAGES', () => {
       expect(new Set(pages)).toEqual(new Set(PRACTICE_PAGES));
+    });
+
+    // Синонимы страницы ссылок: сервер отвечает 301, SPA строит маршруты-редиректы
+    // из своей копии списка — копии обязаны совпадать, а маршруты — строиться из неё.
+    it('синонимы страницы ссылок: список и адрес совпадают с копией сайта, personalRoutes строит из неё маршруты', () => {
+      const front = readFileSync(
+        join(__dirname, '..', 'webapp/src/pages/links/linksAliases.ts'),
+        'utf8',
+      );
+      const list =
+        /LINKS_PAGE_ALIASES[^=]*= \[([^\]]*)\]/.exec(front)?.[1] ?? '';
+      const frontAliases = [...list.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+      expect(frontAliases).toEqual([...LINKS_PAGE_ALIASES]);
+      expect(/LINKS_PAGE_PATH = '([^']+)'/.exec(front)?.[1]).toBe(
+        LINKS_PAGE_PATH,
+      );
+      expect(block).toContain('...LINKS_PAGE_ALIASES.map(');
+      expect(pages).toContain(LINKS_PAGE_PATH);
+      for (const alias of LINKS_PAGE_ALIASES) {
+        expect(PRACTICE_PAGES).not.toContain(alias);
+      }
     });
 
     it('префиксы страниц с параметром совпадают с PRACTICE_PAGE_PREFIXES', () => {

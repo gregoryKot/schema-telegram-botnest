@@ -15,7 +15,7 @@ describe('ExplainerPaperCard', () => {
       const { container } = render(<ExplainerPaperCard type={type} what={explainers[type].what} why={explainers[type].why} />);
       return plainText(container.querySelector('.cd-explainer-what'));
     });
-    expect(texts[0]).toMatch(/^Так в схема-терапии называют болезненное убеждение о себе и других/);
+    expect(texts[0]).toMatch(/^Так в схема-терапии называют устойчивый узор из воспоминаний/);
     expect(texts[1]).toMatch(/^Состояние, которое включается, когда задета схема:/);
   });
 

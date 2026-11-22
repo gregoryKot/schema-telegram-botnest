@@ -23,6 +23,11 @@ describe('состояние маршрута «Практик»', () => {
     go(practiceRouteState({ kind: 'plans' }));
     await waitFor(() => expect(open.plans).toHaveBeenCalledTimes(1));
     cleanup();
+    // План из общего поиска едет в «Историю планов» вместе с днём; кривая цель — обычный вход.
+    go(practiceRouteState({ kind: 'plans', focus: { id: 5, date: '2026-03-01' } }));
+    await waitFor(() => expect(open.plans).toHaveBeenLastCalledWith({ id: 5, date: '2026-03-01' }));
+    expect(practiceTargetOf({ practiceOpen: { kind: 'plans', focus: { id: '5', date: 'вчера' } } })).toEqual({ kind: 'plans' });
+    cleanup();
     go({ openSchemaEx: 'abandonment' });
     await waitFor(() => expect(open.schemaCard).toHaveBeenCalledWith('abandonment'));
     expect(open.exercise).toHaveBeenCalledTimes(1);

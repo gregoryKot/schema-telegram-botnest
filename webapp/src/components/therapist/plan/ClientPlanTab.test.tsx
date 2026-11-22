@@ -5,10 +5,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
 import type { TherapyClientSummary } from '../../../api';
-import type { ClientDetail } from '../clientSheetTypes';
 
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
+  getGuideMarks: () => Promise.resolve({ marks: [] }),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));
@@ -20,18 +20,15 @@ vi.mock('../../TaskCreateSheet', () => ({
 }));
 
 import { ClientPlanTab } from './ClientPlanTab';
+import { makeClientDetail } from '../clientDetail.test-helpers';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
-  source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
+  sourceAddress: null, source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
 });
 const client = { telegramId: 7, name: 'Анна' } as unknown as TherapyClientSummary;
 const patchConcept = vi.fn();
-const detail = {
-  localConcept: { goals: 'Меньше срывов' }, concept: null, conceptLoad: { failed: false, reloading: false },
-  patchConcept, setClientTab: vi.fn(), saveStatus: 'idle', savedAt: null, retrySave: vi.fn(), conceptError: '',
-  reloadConcept: vi.fn(), onTaskAssigned: vi.fn(),
-} as unknown as ClientDetail;
+const detail = makeClientDetail({ localConcept: { goals: 'Меньше срывов' }, patchConcept });
 const renderTab = () => render(<MemoryRouter><ClientPlanTab selectedClient={client} detail={detail} /></MemoryRouter>);
 
 beforeEach(() => { vi.clearAllMocks(); });

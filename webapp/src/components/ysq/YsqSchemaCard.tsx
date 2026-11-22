@@ -42,7 +42,7 @@ export function YsqSchemaCard({ schema, avg, n5plus, nQuestions, tip, delta, dia
       {showDiaryHint && (
         <div className="pp-paper ss-res-hint">
           <span className="ss-res-hint-sign" aria-hidden="true"><SignArt sign="strokes" size="nav" /></span>
-          <span>Совпадает с дневником: «{NEED_LABELS[schema.needId]}» стабильно низкая</span>
+          <span>Совпадает с дневником: потребность «{NEED_LABELS[schema.needId]}» низкая по последней оценке</span>
         </div>
       )}
 

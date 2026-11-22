@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties } from 'react';
+import { CopingSigns, copingText } from './DiagramCopingSigns';
 import { DiagramNodeText, EMPTY_HINT } from './DiagramNodeText';
 import { DiagramShapeSvg } from './DiagramShape';
 import { nodeHue } from './diagramPaper';
@@ -27,7 +28,7 @@ function buttonProps(
       };
     case 'schema':
       return {
-        'aria-label': `Схема ${node.name}: убеждение и опыт`,
+        'aria-label': `Схема ${node.name}${copingText(node)}: убеждение и опыт`,
         'aria-expanded': !!open,
         'aria-describedby': node.empty ? `${node.id}:empty` : undefined,
         title: node.empty ? EMPTY_HINT : undefined,
@@ -103,6 +104,7 @@ export function DiagramNodeView({
         ghost={node.kind === 'placeholder'}
       />
       <DiagramNodeText node={node} top={dy} />
+      <CopingSigns node={node} top={dy} />
     </button>
   );
 }

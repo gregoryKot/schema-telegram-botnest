@@ -36,7 +36,7 @@ describe('useConceptGuide — «В план» с плашки', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Добавить в план' }));
     await waitFor(() => expect(h.createPlanItems).toHaveBeenCalledWith({
       clientIds: ['7'], rubric: 'between', text: 'Письмо себе. Встреча со своим маленьким Я',
-      source: { kind: 'mode', id: 'vulnerable_child', field: 'betweenSessions' },
+      sourceAddress: 'mode:vulnerable_child/betweenSessions',
     }));
   });
 

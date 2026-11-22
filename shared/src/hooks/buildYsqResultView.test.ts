@@ -53,6 +53,27 @@ describe('buildYsqResultView', () => {
     expect(view?.activeByDomain.every((d) => d.schemas.length > 0)).toBe(true);
   });
 
+  it('порядок — по среднему баллу, как у терапевта и в «Моих схемах», а не по доле «5–6»', () => {
+    // Покинутость: пять «5» и три «1» из 8 — средний 3.5, «5–6» больше половины.
+    // Недоверие: все пять «4» — средний 4, «5–6» нет. Выражены обе (вторая по среднему).
+    const [abandonment, mistrust] = [
+      'Покинутость / Нестабильность',
+      'Недоверие / Ожидание жестокого обращения',
+    ].map((n) => SCHEMAS.find((s) => s.name === n)!);
+    const answers = QUESTIONS.map(() => 1);
+    abandonment.questions.slice(0, 5).forEach((q) => (answers[q - 1] = 5));
+    mistrust.questions.forEach((q) => (answers[q - 1] = 4));
+    const scores = computeScores(answers);
+    expect(scores[abandonment.name].pct5plus).toBeGreaterThan(50);
+    expect(scores[abandonment.name].avg).toBeLessThan(
+      scores[mistrust.name].avg,
+    );
+    const names = buildYsqResultView(scores, [], null)!.activeSchemas.map(
+      (s) => s.name,
+    );
+    expect(names.slice(0, 2)).toEqual([mistrust.name, abandonment.name]);
+  });
+
   it('счётчик активных склоняется: 1 / 2-4 / 5+', () => {
     const label = (n: number) =>
       buildYsqResultView(

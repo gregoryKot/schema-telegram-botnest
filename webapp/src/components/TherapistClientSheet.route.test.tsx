@@ -15,6 +15,7 @@ import { parseClientRef } from '../../../shared/src/utils/clientRef';
 
 vi.mock('../api', () => ({
   api: {
+    getGuideMarks: () => Promise.resolve({ marks: [] }),
     getTherapyClients: vi.fn(), getTherapyInvites: vi.fn(() => Promise.resolve([])), getCardClaims: vi.fn(() => Promise.resolve([])), getTherapyTasksForClient: vi.fn(),
     getTherapistNotes: vi.fn(), getConceptualization: vi.fn(), getTherapyClientData: vi.fn(),
     getClientSchemaNotes: vi.fn(), getClientModeNotes: vi.fn(), getTherapyClientHistory: vi.fn(),
