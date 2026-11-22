@@ -30,7 +30,7 @@ export function PlanPickMenu<T extends string | number | null>({ options, curren
         {children}
       </button>
       {open && (
-        <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label={label} portal>
+        <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label={label} className="pl-menu" portal>
           {options.map((o) => (
             <button
               key={String(o.value)} type="button" role="menuitemradio" aria-checked={o.value === current}

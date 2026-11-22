@@ -1,5 +1,5 @@
 /* «План работы» по фазам пути клиента (#1522, префикс ph-). Узко — вертикальная лента, раскрыта одна фаза;
-   колонка вкладки шире 720px — дорожки: фазы колонками с горизонтальной прокруткой, раскрыты все. */
+   колонка вкладки шире 720px — фазы колонками в сетке (лишние переносятся ниже, а не режутся краем), раскрыты все. */
 .ph-wrap { container: ph / inline-size; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .ph-track { display: flex; flex-direction: column; gap: 14px; }
 .ph-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
@@ -30,6 +30,9 @@
 .ph-card:not(.is-open) .ph-body { display: none; }
 .ph-goal { margin: 0; font: 400 15px/1.5 var(--serif); color: var(--text); }
 .ph-items { padding: 0; }
+/* Крайние пункты не добавляют свой отступ к зазору тела фазы. */
+.ph-items > .pl-item:first-child { padding-top: 0; }
+.ph-items > .pl-item:last-child { padding-bottom: 0; }
 .ph-set { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; }
 .ph-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; box-sizing: border-box; font-size: 15px; line-height: 1.45; color: var(--text); cursor: pointer; }
 .ph-check + .ph-check { border-top: 1px solid var(--paper-sunk); }
@@ -58,8 +61,8 @@
 .ph-date { display: flex; flex-direction: column; gap: 8px; max-width: 240px; }
 
 @container ph (min-width: 720px) {
-  .ph-track { flex-direction: row; align-items: flex-start; overflow-x: auto; padding: 2px 8px 12px 2px; scroll-snap-type: x proximity; }
-  .ph-card { flex: 0 0 320px; scroll-snap-align: start; }
+  /* 340px — в колонку влезает строка пункта: статус, «В фазу…» и две иконки (сверка — therapistPathLayout.test.ts). */
+  .ph-track { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); align-items: start; }
   .ph-card:not(.is-open) .ph-body { display: flex; }
   .ph-toggle { display: none; }
 }

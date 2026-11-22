@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { placeMenu } from './dropdownPlace';
 
 // Выпадающее меню у кнопки: fixed от якоря, прижато к экрану; закрывается кликом по
 // подложке и Escape. Одно на тулбар карты и «⋯ Ещё» концептуализации. role="menu" —
@@ -20,9 +21,9 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className,
   useLayoutEffect(() => {
     const r = anchorRef.current?.getBoundingClientRect();
     if (!r) return;
-    const WIDTH = Math.min(width, window.innerWidth - 16), MARGIN = 8;
-    const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - MARGIN - WIDTH));
-    setPos({ left, top: r.bottom + 4 });
+    // Размер — живой, после раскладки: меню с шириной по содержимому; в jsdom замер нулевой — берём width.
+    const m = dropRef.current?.getBoundingClientRect();
+    setPos(placeMenu(r, { width: m?.width || Math.min(width, window.innerWidth - 16), height: m?.height ?? 0 }, { width: window.innerWidth, height: window.innerHeight }));
   }, [anchorRef, width]);
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
@@ -52,12 +53,10 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className,
       <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
         className="ds-backdrop" style={{ zIndex: 39 }} />
-      {pos && (
-        <div ref={dropRef} role={role} aria-label={label} onKeyDown={onKeyDown}
-          className={`ds-menu${className ? ` ${className}` : ''}`} style={{ top: pos.top, left: pos.left }}>
-          {children}
-        </div>
-      )}
+      <div ref={dropRef} role={role} aria-label={label} onKeyDown={onKeyDown}
+        className={`ds-menu${className ? ` ${className}` : ''}`} style={pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0, visibility: 'hidden' }}>
+        {children}
+      </div>
     </>
   );
   return portal ? createPortal(menu, document.body) : menu;
