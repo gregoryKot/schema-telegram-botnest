@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PhaseGuide } from '../../../../shared/src/schemaTherapy/guide';
 import { FIXTURE_GUIDE, FIXTURE_PRACTICE_NOTE, FIXTURE_TECHNIQUES } from '../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
-import { phaseLabel, phaseSteps, phaseView } from './guideReferencePhases';
+import { phaseGroups, phaseLabel, phaseSteps, phaseView } from './guideReferencePhases';
 
 const tr = (ty: string) => ty;
 const phase = (id: string, over: Partial<PhaseGuide> = {}): PhaseGuide => ({ id, name: id, goal: 'цель', essence: 'суть', sources: '', ...over });
@@ -15,13 +15,23 @@ const texts = {
 
 describe('phaseSteps', () => {
   it('обзор номера не получает, фазы нумеруются по порядку с единицы', () => {
-    expect([...phaseSteps(['overview', 'bonding', 'change'])]).toEqual([['bonding', 1], ['change', 2]]);
+    expect([...phaseSteps([phase('overview'), phase('bonding'), phase('template_x', { group: 'templates' }), phase('change')])]).toEqual([['bonding', 1], ['change', 2]]);
     expect(phaseSteps([]).size).toBe(0);
   });
 
   it('подпись листа: «Фаза N», у обзора — имя вкладки', () => {
     expect(phaseLabel(3)).toBe('Фаза 3');
     expect(phaseLabel(undefined)).toBe('Путь терапии');
+    expect(phaseLabel(undefined, 'templates')).toBe('Шаблон пути');
+  });
+
+  it('группы вкладки: лента фаз с номерами, шаблоны отдельно и без номеров', () => {
+    const groups = phaseGroups([phase('overview'), phase('bonding'), phase('topic', { group: 'topics' }), phase('template_a', { group: 'templates' }), phase('template_b', { group: 'templates' })]);
+    expect(groups.map((g) => [g.key, g.items.map((i) => [i.id, i.step])])).toEqual([
+      ['path', [['overview', undefined], ['bonding', 1]]],
+      ['topics', [['topic', undefined]]],
+      ['templates', [['template_a', undefined], ['template_b', undefined]]],
+    ]);
   });
 });
 
@@ -45,6 +55,13 @@ describe('phaseView', () => {
     const first = phaseView(texts, tr, phases, 'overview')!;
     expect([first.step, first.prev, first.next?.id]).toEqual([undefined, undefined, 'bonding']);
     expect(phaseView(texts, tr, phases, 'change')?.next).toBeUndefined();
+  });
+
+  it('соседи шаблона — только шаблоны, номера у него нет', () => {
+    const all = [...phases, phase('template_a', { group: 'templates' }), phase('template_b', { group: 'templates' })];
+    const view = phaseView(texts, tr, all, 'template_a')!;
+    expect([view.step, view.prev, view.next?.id]).toEqual([undefined, undefined, 'template_b']);
+    expect(phaseView(texts, tr, all, 'change')?.next).toBeUndefined();
   });
 
   it('неизвестный лист — null', () => {
