@@ -29,7 +29,7 @@ export function allPlanRows({ own, run }: PaletteInput): CmdRow[] {
     key: `plan:${p.id}`, kind: 'plan', group: PLAN_GROUP, label: p.practiceText,
     sub: planDateLabel(p.scheduledDate) + (p.done ? ' · выполнен' : ''),
     mark: { sign: ENTITY_LOOK.plan.sign }, search: p.practiceText,
-    action: () => run.practice({ kind: 'plans' }),
+    action: () => run.practice({ kind: 'plans', focus: { id: p.id, date: p.scheduledDate } }),
   }));
 }
 

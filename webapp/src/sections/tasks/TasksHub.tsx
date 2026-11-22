@@ -26,7 +26,7 @@ interface Props {
 // (goBack(then) в AllTasksOverlay): пока они открыты, списка нет; закрылись —
 // список возвращается. Список закрыт рукой («Назад») и ничего не открыто — узел
 // закрывается сам. По ссылке с заданием список ждёт загрузки: задание с листом
-// открывается сразу, остальные — списком (tasksLaunch.taskToOpen).
+// открывается сразу, остальные — списком со своей строкой в виду и в обводке (tasksLaunch.taskToOpen, useSpotlight).
 export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged, openTaskId }: Props) {
   // taskError — отказ «Готово» или новой цели: до 2026-11 узел его не показывал, сбой проходил молча.
   const { tasks, taskHistory, taskError, loaded, completeTask, afterCreate } = useTaskActions(refreshKey);
@@ -35,6 +35,7 @@ export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoo
   const [waiting, setWaiting] = useState(openTaskId !== undefined);
   const [listOpen, setListOpen] = useState(openTaskId === undefined);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
+  const [spotId, setSpotId] = useState<number>();
   const launcher = useTaskLauncher({ onOpenDiaries, onOpenTracker, onOpenChildhoodWheel, onTaskDone: id => completeTask(id, onTasksChanged) });
   const { openTask } = launcher;
   const busy = !!launcher.open || showTaskCreate || waiting;
@@ -50,7 +51,7 @@ export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoo
     pendingId.current = null;
     const task = taskToOpen(tasks, id);
     if (task) openTask(task);
-    else setListOpen(true);
+    else { setSpotId(id); setListOpen(true); }
     setWaiting(false);
   }, [loaded, tasks, openTask]);
   // Что лежит в узле, человек увидел: счётчик «новых» на «Ещё» гаснет.
@@ -66,7 +67,7 @@ export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoo
           onOpen={launcher.openTask}
           onComplete={task => completeTask(task.id, onTasksChanged)}
           onAdd={() => setShowTaskCreate(true)}
-          error={taskError} loading={!loaded}
+          error={taskError} loading={!loaded} spotlightTaskId={spotId}
         />
       )}
       {showTaskCreate && (
