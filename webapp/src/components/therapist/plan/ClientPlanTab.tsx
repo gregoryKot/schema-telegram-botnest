@@ -78,7 +78,7 @@ export function ClientPlanTab({ selectedClient, detail, onTasksChanged }: Props)
         <>
           <PlanLayoutSwitch value={shown} onChange={setLayout} />
           {shown === 'phases'
-            ? <PathLayout path={path} items={items} renderRow={renderRow} />
+            ? <PathLayout path={path} plan={plan} items={items} renderRow={renderRow} />
             : <PlanChannels items={items} plan={plan} renderRow={renderRow} />}
           {plan.error && !confirmDelete && <div className="tb-error" role="alert">{plan.error}</div>}
         </>

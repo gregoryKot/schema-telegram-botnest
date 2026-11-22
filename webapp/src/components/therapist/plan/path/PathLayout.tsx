@@ -8,11 +8,13 @@ import { Skeleton } from '../../../Skeleton';
 import type { RenderPlanRow } from '../planRows';
 import { PathCreateSheet } from './PathCreateSheet';
 import { PathEmpty } from './PathEmpty';
+import type { PlanItems } from '../usePlanItems';
 import { PathTimeline } from './PathTimeline';
 import type { PathState } from './usePath';
 
 interface Props {
   path: PathState;
+  plan: PlanItems;
   items: PlanItem[];
   renderRow: RenderPlanRow;
 }
@@ -34,7 +36,7 @@ function PathSkeleton() {
 }
 
 /** Раскладка «По фазам» (#1522): лента фаз пути; пути нет — объяснение и «Собрать путь». */
-export function PathLayout({ path, items, renderRow }: Props) {
+export function PathLayout({ path, plan, items, renderRow }: Props) {
   const tr = useTr();
   const templates = useMemo(() => buildPathTemplates(tr), [tr]);
   const [creating, setCreating] = useState(false);
@@ -49,7 +51,7 @@ export function PathLayout({ path, items, renderRow }: Props) {
     );
   } else if (path.path === undefined) content = <PathSkeleton />;
   else if (path.path === null) content = <PathEmpty onCreate={() => { path.clearError(); setCreating(true); }} />;
-  else content = <PathTimeline path={path} current={path.path} items={items} templates={templates} renderRow={renderRow} />;
+  else content = <PathTimeline path={path} plan={plan} current={path.path} items={items} templates={templates} renderRow={renderRow} />;
 
   return (
     <div className="ph-wrap">
