@@ -97,9 +97,9 @@ describe('buildReference', () => {
     expect(group).toMatchObject({ title: PHASES_TITLE, hint: PHASES_HINT, look: { hue: 290 } });
     expect(group.fold).toBeUndefined();
     expect(group.items).toEqual([
-      { kind: 'phase', id: 'overview', name: 'Как устроен путь', sub: 'Карта, а не расписание', step: undefined },
-      { kind: 'phase', id: 'bonding', name: 'Связь', sub: 'Карта, а не расписание', step: 1 },
-      { kind: 'phase', id: 'change', name: 'Изменение', sub: 'Карта, а не расписание', step: 2 },
+      { kind: 'phase', id: 'overview', name: 'Как устроен путь', sub: 'Карта, а не расписание', step: undefined, sign: 'path_overview', hue: 290 },
+      { kind: 'phase', id: 'bonding', name: 'Связь', sub: 'Карта, а не расписание', step: 1, hue: 290 }, // лист без своего вида — сирень без знака
+      { kind: 'phase', id: 'change', name: 'Изменение', sub: 'Карта, а не расписание', step: 2, hue: 290 },
     ]);
     expect(buildReference(texts({ buildPhaseGuides: () => [] }), tr).path).toEqual([]);
   });

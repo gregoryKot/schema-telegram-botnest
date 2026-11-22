@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import viteConfig from '../../vite.config.ts';
 
 const THEME = resolve(__dirname, '../../../shared/src/theme');
-const GROUP = ['entityLook', 'entityLookMaps', 'entityHue', 'signKeys', 'techniqueSignKeys'];
+const GROUP = ['entityLook', 'entityLookMaps', 'entityHue', 'signKeys', 'techniqueSignKeys', 'pathSignKeys'];
 
 type Group = { name: string; test: RegExp; priority?: number };
 type ConfigShape = { build: { rolldownOptions: { output: { codeSplitting: { groups: Group[] } } } } };

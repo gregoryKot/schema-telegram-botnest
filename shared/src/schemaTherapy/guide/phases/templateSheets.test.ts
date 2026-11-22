@@ -18,6 +18,7 @@ const template: PathTemplate = {
   phases: [
     {
       id: 'a',
+      look: 'safety',
       name: 'Первая',
       goal: 'цель',
       therapist: 'Делает.',
@@ -32,6 +33,7 @@ const template: PathTemplate = {
     },
     {
       id: 'b',
+      look: 'healing',
       name: 'Вторая',
       goal: 'цель',
       therapist: 'Делает.',

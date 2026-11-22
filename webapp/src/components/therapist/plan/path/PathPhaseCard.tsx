@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { phaseLook } from '../../../../../../shared/src/theme/pathLook';
+import { SignArt } from '../../../art/SignArt';
 import { MMIcon } from '../../../modeMapIcons';
 import type { PhaseOption } from '../planModel';
 import type { RenderPlanRow } from '../planRows';
@@ -35,10 +37,16 @@ export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterio
   const { phase, tpl, progress } = row;
   const when = [`${phase.weeks} нед.`, `примерно ${formatPhaseRange(row.dates)}`, tpl?.sessionsHint].filter(Boolean).join(' · ');
   const criteria = tpl?.transition ?? [];
+  const look = tpl && phaseLook(tpl.look); // своя фаза терапевта без шаблона — без знака и бумаги
   return (
     <article className={`pp-leaf ph-card${row.current ? ' is-current' : ''}${row.done ? ' is-done' : ''}${open ? ' is-open' : ''}${drop.over ? ' is-drop' : ''}`} {...drop.props}>
       <header className="ph-head">
         <span className="ph-num" aria-hidden>{row.index + 1}</span>
+        {look && (
+          <span className="ph-sign pp-paper" style={{ '--h': look.hue } as CSSProperties} aria-hidden>
+            <SignArt sign={look.sign} size="row" />
+          </span>
+        )}
         <div className="ph-title">
           {row.current && <span className="ph-flag ph-flag--here">мы здесь</span>}
           {row.done && <span className="ph-flag ph-flag--done">пройдена</span>}

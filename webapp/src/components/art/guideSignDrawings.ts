@@ -17,6 +17,7 @@ import { Chatter, Flare } from './GuideSignsPractice';
 import { Grounded, Haven, Join, Pause } from './AppSigns';
 import { CopingAvoidance, CopingOvercompensation } from './CopingSigns';
 import { Roots } from './GuideSignsYoung';
+import { PATH_SIGN_ART } from './pathSignDrawings';
 import { TECHNIQUE_OWN_SIGN_ART } from './techniqueOwnSignDrawings';
 
 export const GUIDE_SIGN_ART: Record<GuideSign, (p: ArtProps) => ReactElement> = {
@@ -53,4 +54,5 @@ export const GUIDE_SIGN_ART: Record<GuideSign, (p: ArtProps) => ReactElement> = 
   pause: Pause, haven: Haven, leaf: Leaf, roots: Roots, strokes: Strokes, grounded: Grounded, wheel: Wheel,
   coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation,
   ...TECHNIQUE_OWN_SIGN_ART,
+  ...PATH_SIGN_ART,
 };
