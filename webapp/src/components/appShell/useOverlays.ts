@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { QuickActionId } from '../../../../shared/src/quickActions/quickActions';
 import { isOverlayQuickAction, type OverlayQuickActionId } from '../quickActions/quickActionRouting';
+import type { PlanFocus } from '../plans/planFocus';
 import { useSettingsOpen } from '../settingsSheet/settingsLaunch';
 
 type TrackerTab = 'today' | 'history';
@@ -13,6 +14,7 @@ export function useOverlays() {
   const [showSettings, setShowSettings] = useSettingsOpen();
   const [showPractices, setShowPractices] = useState(false);
   const [showPlans, setShowPlans] = useState(false);
+  const [plansFocus, setPlansFocus] = useState<PlanFocus | null>(null); // план из общего поиска
   const [showSchemaInfo, setShowSchemaInfo] = useState(false);
   const [schemaAutoStartTest, setSchemaAutoStartTest] = useState(false);
   const [schemaInitialTab, setSchemaInitialTab] = useState<'needs'|'schemas'|'modes'>('needs');
@@ -46,7 +48,7 @@ export function useOverlays() {
   return {
     showSettings, setShowSettings,
     showPractices, setShowPractices,
-    showPlans, setShowPlans,
+    showPlans, setShowPlans, plansFocus, setPlansFocus,
     showSchemaInfo, setShowSchemaInfo,
     schemaAutoStartTest, setSchemaAutoStartTest,
     schemaInitialTab,

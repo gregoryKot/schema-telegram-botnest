@@ -1098,6 +1098,9 @@ textarea:focus-visible {
    всё» читалось выбором. С клавиатуры кольцо есть сразу, а после первого Tab — и в «тихом» окне. */
 [data-focus='quiet'] :focus-visible, [data-focus='quiet']:focus-visible { outline: none; }
 
+/* Строка, к которой привёл общий поиск (hooks/useSpotlight.ts): обводка без движения, снимается таймером. */
+[data-spotlit] { outline: 2px solid var(--accent); outline-offset: -2px; }
+
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках
    (utils/reducedMotion.ts ставит html[data-reduce-motion="1"]).
