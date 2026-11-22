@@ -8,6 +8,9 @@ describe('TaskAssignMetricsService', () => {
       { name: 'task_assign_source', source: 'catalog' },
       { name: 'task_assign_source', source: 'catalog' },
       { name: 'task_assign_source', source: 'tile' },
+      { name: 'task_assign_source', source: 'guide' },
+      { name: 'task_assign_source', source: 'template' },
+      { name: 'task_assign_source', source: 'template' },
       { name: 'therapy_plan_item_added', source: 'custom' },
     ];
     const count = jest.fn(({ where }: { where: Where }) =>
@@ -24,6 +27,8 @@ describe('TaskAssignMetricsService', () => {
       tile30: 1,
       catalog30: 2,
       custom30: 0,
+      guide30: 1,
+      template30: 2,
     });
   });
 });
