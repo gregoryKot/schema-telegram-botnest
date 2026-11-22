@@ -608,7 +608,7 @@
   "shared/src/schemaTherapy/guide/schemas/limitsMore.ts": 69,
   "shared/src/schemaTherapy/guide/schemas/otherDirected.ts": 23,
   "shared/src/schemaTherapy/guide/schemas/otherDirectedApproval.ts": 65,
-  "shared/src/schemaTherapy/guide/schemas/otherDirectedSacrifice.ts": 74,
+  "shared/src/schemaTherapy/guide/schemas/otherDirectedSacrifice.ts": 75,
   "shared/src/schemaTherapy/guide/schemas/otherDirectedSubjugation.ts": 77,
   "shared/src/schemaTherapy/guide/schemas/rejection.ts": 72,
   "shared/src/schemaTherapy/guide/schemas/rejectionCore.ts": 134,
