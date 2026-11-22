@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
-import { canAssign, cleanText, groupPlan, isEmptyPlan, movePlanItem, nextStatus, planCounts, statusLabel } from './planModel';
+import { canAssign, cleanText, groupPlan, isEmptyPlan, isQuietStatus, movePlanItem, planCounts, statusLabel } from './planModel';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
@@ -35,12 +35,9 @@ describe('groupPlan', () => {
 });
 
 describe('статус', () => {
-  it('цикл: намечено → в работе → сделано → намечено', () => {
-    expect(nextStatus('planned')).toBe('active');
-    expect(nextStatus('active')).toBe('done');
-    expect(nextStatus('done')).toBe('planned');
-    expect(nextStatus('чужой')).toBe('planned');
-    expect([nextStatus('postponed'), nextStatus('dropped')]).toEqual(['planned', 'planned']);
+  it('«отложено» и «не нужно» — тихие статусы', () => {
+    expect(['postponed', 'dropped'].map(isQuietStatus)).toEqual([true, true]);
+    expect(['planned', 'active', 'done'].map(isQuietStatus)).toEqual([false, false, false]);
   });
 
   it('подписи; неизвестный статус читается как «намечено»', () => {
