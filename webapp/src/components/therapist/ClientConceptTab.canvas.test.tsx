@@ -10,6 +10,7 @@ import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 
 vi.mock('../../api', () => ({
   api: {
+    getGuideMarks: () => Promise.resolve({ marks: [] }),
     getTherapyTasksForClient: vi.fn(),
     getTherapistNotes: vi.fn(),
     getConceptualization: vi.fn(),

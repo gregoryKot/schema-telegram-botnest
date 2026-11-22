@@ -31,6 +31,8 @@ const MOCKED_API_METHODS = [
   'getNote', 'saveNote',
   // CrisisCard.test.tsx, многие другие — fire-and-forget аналитика
   'trackEvent',
+  // therapist/guide/CopingMarkSheet.test.tsx — «уже отмечено» в листе «Про клиента»
+  'getGuideMarkClients',
   // SettingsSheet.test.tsx
   'getSettings', 'getPair', 'getTherapyRelation', 'getTherapistRequest', 'getExport', 'deleteAllUserData',
   // settingsSheet/DataSection.test.tsx

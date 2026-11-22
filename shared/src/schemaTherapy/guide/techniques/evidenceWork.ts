@@ -4,16 +4,17 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'positive_data_log',
+    group: 'cognitive',
     name: 'Журнал позитивных данных и шкала-континуум',
     summary:
       'Клиент каждый день записывает факты, которые не сходятся со схемой, а крайнюю оценку себя переносит на шкалу от 0 до 100 рядом с другими людьми.',
-    when: 'Середина терапии: схема уже названа, а клиент «головой понимает, но не верит». Схема отсеивает всё, что с ней не сходится, — журнал собирает именно это [Падески, 1994; Арнц и ван Гендерен, гл. 6].',
+    when: 'Середина терапии: схема уже названа, а клиент «головой понимает, но не верит». Схема отсеивает всё, что с ней не сходится, — журнал собирает именно это [Падески, 1994; Арнц и ван Гендерен, гл. 6]. Шкала особенно нужна против Карающего Критика с его глобальным вердиктом «я плохая мать», «со мной нельзя иметь дело» [Кембридж, гл. 7].',
     steps: [
       'Сформулировать новое убеждение словами клиента — то, которое хочется укрепить: «со мной можно иметь дело», «я справляюсь».',
       'Договориться, что считается записью: любой факт в его пользу, даже мелкий. Первые две-три записи найти вместе на сессии.',
       'Дома — записывать каждый день, по горячим следам. На сессии — читать вслух и замечать, как схема обесценивает запись: «это не считается».',
       'Шкала. Начертить линию от 0 до 100 для качества, в котором клиент ставит себе ноль. Расставить на ней знакомых людей, потом себя.',
-      'Разбить качество на признаки, оценить себя по каждому и сравнить с первой оценкой.',
+      'Разбить вердикт на признаки, из которых он сложен, и оценить себя по каждому от 0 до 10 — или нарисовать под каждый признак двухполюсную шкалу, от худшего края до лучшего («холодная — заботливая»). Получившийся профиль сравнить с первой оценкой: обычно вердикт раздут одним признаком [Кембридж, гл. 7].',
     ],
     voice: [
       tr(
@@ -28,10 +29,11 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Журнал не требует «думать позитивно»: в него идут факты, а не похвала себе. Пустая страница — материал для сессии: чаще всего факты были, но схема их не пропустила.',
     sources:
-      'Padesky C. A. Schema change processes in cognitive therapy. Clinical Psychology & Psychotherapy, 1994, 1(5), 267–278. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 6 «Cognitive Techniques»: «Positive Logbook», «Evaluation on a Visual Analogue Scale».',
+      'Padesky C. A. Schema change processes in cognitive therapy. Clinical Psychology & Psychotherapy, 1994, 1(5), 267–278. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 6 «Cognitive Techniques»: «Positive Logbook», «Evaluation on a Visual Analogue Scale»; [Кембридж, гл. 7].',
   },
   {
     id: 'behavioral_experiment',
+    group: 'behavioral',
     name: 'Поведенческий эксперимент',
     summary:
       'Клиент проверяет предсказание схемы делом: заранее записывает, чего ждёт, делает шаг и сравнивает ожидание с тем, что вышло.',
@@ -40,7 +42,7 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
       'Записать предсказание точно: что произойдёт, когда и как это будет видно. Оценить уверенность в процентах.',
       'Придумать проверку вместе. Шаг небольшой, и исход заранее неизвестен — иначе это не эксперимент.',
       'Заранее обсудить, что помешает и что клиент сделает, если предсказание сбудется.',
-      'Провести — на сессии или между сессиями — и записать, что случилось на самом деле.',
+      'Провести — на сессии или между сессиями — и записать, что случилось на самом деле. Убеждения о терапевте проверяют прямо на нём: посмотреть в глаза, когда стыдно, или сказать «не понимаю» и следить за реакцией [Арнтц ПРЛ, гл. 4].',
       'Разобрать: что сошлось с предсказанием, что нет, какая теперь уверенность. Сформулировать вывод и следующую проверку.',
     ],
     voice: [
@@ -52,6 +54,6 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Эксперимент — проверка, а не испытание на смелость: слишком большой шаг заканчивается избеганием и новым доводом для схемы. Предсказание сбылось — это тоже данные: смотрим, что именно произошло и как клиент с этим справился.',
     sources:
-      'Bennett-Levy J., Butler G., Fennell M., Hackmann A., Mueller M., Westbrook D. (eds.). Oxford Guide to Behavioural Experiments in Cognitive Therapy. Oxford University Press, 2004. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 7, раздел «Experiments».',
+      'Bennett-Levy J., Butler G., Fennell M., Hackmann A., Mueller M., Westbrook D. (eds.). Oxford Guide to Behavioural Experiments in Cognitive Therapy. Oxford University Press, 2004. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 7, раздел «Experiments»; [Арнтц ПРЛ, гл. 4].',
   },
 ];

@@ -17,6 +17,8 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
     buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: f.FIXTURE_DOMAIN_NOTE, schemas: [f.FIXTURE_SCHEMA_GUIDE] }],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     practiceNotes: () => [f.FIXTURE_PRACTICE_NOTE],
+    buildConcernGuides: () => [],
+    buildPhaseGuides: () => [],
   };
 });
 const trackEvent = vi.fn();
@@ -60,6 +62,15 @@ describe('CommandPalette — листы справочника', () => {
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'guide', typed: true, recent: false });
     expect(JSON.stringify(trackEvent.mock.calls)).not.toContain('покинутость');
+  });
+
+  // Находка #1406: «заброшеность» в кабинете давала «Ничего не нашлось» — схема в справочнике под другим именем.
+  it.each(['заброшенность', 'заброшеность'])('другой перевод названия «%s» находит лист схемы под каноническим именем', async (query) => {
+    renderPalette();
+    await screen.findByRole('button', { name: SCHEMA });
+    fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: query } });
+    fireEvent.click(screen.getByRole('option', { name: new RegExp(SCHEMA) }));
+    expect(screen.getByTestId('where').textContent).toBe('/cabinet/guide {"kind":"schema","id":"abandonment"}');
   });
 
   it('чип-пример подставляет запрос в поле; раздел кабинета открывается по адресу, typed=false', async () => {

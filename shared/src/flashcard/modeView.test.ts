@@ -25,6 +25,19 @@ describe('flashcardModeView', () => {
     expect(view.label).not.toBe('punitive_critic');
   });
 
+  it('Критик — две карточки с разным ответом; старая карточка «critic» остаётся подписанной', () => {
+    const punitive = modes.find((m) => m.id === 'punitive_critic')!;
+    const demanding = modes.find((m) => m.id === 'demanding_critic')!;
+    expect(punitive.label).toBe('Карающий Критик');
+    expect(punitive.response).toMatch(/останавливает/);
+    expect(demanding.label).toBe('Требовательный Критик');
+    expect(demanding.response).toMatch(/договориться/);
+    expect(flashcardModeView('critic', modes)).toEqual({
+      label: 'Критик',
+      groupId: 'critic',
+    });
+  });
+
   it('неизвестный id — без подписи и без группы (режим не выдумывается)', () => {
     expect(flashcardModeView('no_such_mode', modes)).toEqual({
       label: null,

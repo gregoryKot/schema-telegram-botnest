@@ -13,7 +13,7 @@ import type { AssignPreset } from '../assignTemplates';
  */
 export function guideAssignPreset(item: BetweenSessionsItem): AssignPreset {
   if (item.kind === 'custom') {
-    return { type: 'custom', text: customTaskText(item), catalogId: catalogTaskId(item.title) };
+    return { type: 'custom', text: customTaskText(item), catalogId: catalogTaskId(item.title), origin: 'guide' };
   }
-  return { type: item.type satisfies TaskType };
+  return { type: item.type satisfies TaskType, origin: 'guide' };
 }

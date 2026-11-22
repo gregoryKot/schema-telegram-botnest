@@ -10,7 +10,8 @@ import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclo
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
 import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
 import { GuideBetweenSessions } from './GuideBetweenSessions';
-import { GuideSection, GuideSources } from './GuideSection';
+import { GuideSection } from './GuideSection';
+import { GuideSources } from './GuideSources';
 import { sessionSeed, type PlanSeed } from './guidePlan';
 import { PlanButton } from './PlanButton';
 import { GuidePoints, GuideVoice } from './GuidePoints';
@@ -22,7 +23,7 @@ import '../../../styles/therapist-guide.css';
 const GUIDE_COLUMN = 680;
 
 /** Раздел под «Подробнее»: подпись и абзац или своё содержимое (копинг схемы). Пустой не рисуется. */
-export interface GuideMorePart { title: string; text?: string; children?: ReactNode }
+export interface GuideMorePart { title: string; text?: string; children?: ReactNode; address?: string }
 
 interface PageProps {
   /** Что за лист — подпись в шапке: «Техника», «Режим», «Схема». */
@@ -69,7 +70,7 @@ export function GuidePage({ label, title, lede, look, onClose, more = [], morePa
           <div className="gd-more">
             <Disclosure classes={DS_FOLD} title="Подробнее">
               {items.length > 0 && <GuidePoints items={items} />}
-              {parts.map((p) => <GuideSection key={p.title} title={p.title} text={p.text}>{p.children}</GuideSection>)}
+              {parts.map((p) => <GuideSection key={p.title} title={p.title} text={p.text} address={p.address}>{p.children}</GuideSection>)}
             </Disclosure>
           </div>
         )}
@@ -97,6 +98,8 @@ export interface GuideSheetActions {
 
 type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'> & {
   voice?: string[];
+  /** Адрес раздела статьи по пути (articleAddress): «Про клиента» у общих разделов листа. */
+  at: (path: string) => string;
   view: GuideHintView & { guide: { stuck?: string; sources: string; more?: string[] } };
 };
 
@@ -108,28 +111,28 @@ type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'>
  * guideHistory.ts), за «делали …» — «журнал →» (`onOpenJournal`); `backRef` идёт
  * в каркас (GuidePage). Пустой раздел не рисуется.
  */
-export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAssign, onPlan, onClose, notes, onOpenJournal, children, ...page }: Props) {
+export function GuideSheet({ view, voice, at, moreParts = [], onOpenTechnique, onAssign, onPlan, onClose, notes, onOpenJournal, children, ...page }: Props) {
   const { guide, techniques } = view;
   return (
     <GuidePage
       {...page} onClose={onClose} sources={guide.sources} more={guide.more}
-      moreParts={[...moreParts, { title: 'Где застревают', text: guide.stuck }]}
+      moreParts={[...moreParts, { title: 'Где застревают', text: guide.stuck, address: at('stuck') }]}
     >
-      <GuideVoice lines={voice} />
+      <GuideVoice lines={voice} address={at('voice')} />
       {children}
-      <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} onPlan={onPlan} notes={notes} onOpenJournal={onOpenJournal} />
-      <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} onPlan={onPlan} notes={notes} />
+      <GuideTechniques techniques={techniques} address={at('techniques')} onOpen={onOpenTechnique} onPlan={onPlan} notes={notes} onOpenJournal={onOpenJournal} />
+      <GuideBetweenSessions items={guide.betweenSessions} address={at('betweenSessions')} onAssign={onAssign} onPlan={onPlan} notes={notes} />
     </GuidePage>
   );
 }
 
-/** «На сессии»: знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
-function GuideTechniques({ techniques, onOpen, onPlan, notes, onOpenJournal }: {
-  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes; onOpenJournal?: () => void;
+/** «На сессии» (у фазы — свой заголовок): знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
+export function GuideTechniques({ techniques, address, onOpen, onPlan, notes, onOpenJournal, title = PLAN_RUBRIC_LABEL.session }: {
+  techniques: TechniqueGuide[]; address: string; onOpen: (id: TechniqueId) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes; onOpenJournal?: () => void; title?: string;
 }) {
   if (techniques.length === 0) return null;
   return (
-    <GuideSection title={PLAN_RUBRIC_LABEL.session} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
+    <GuideSection title={title} address={address} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
       <ul className="tcp-guide-list">
         {techniques.map((t) => (
           <li key={t.id} className="gd-tech">

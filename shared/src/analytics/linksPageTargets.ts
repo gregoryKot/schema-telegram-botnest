@@ -1,4 +1,4 @@
-// Страница ссылок kotlarewski.gr/links: белый список целей клика (meta.target
+// Страница ссылок kotlarewski.gr/privet: белый список целей клика (meta.target
 // события links_page_click). Серверная копия — src/analytics/links-page.constants.ts,
 // сверка — links-page.sync.spec.ts. Файл без импортов: спек бэкенда исполняет его как есть.
 

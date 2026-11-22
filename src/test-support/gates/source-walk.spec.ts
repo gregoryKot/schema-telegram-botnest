@@ -202,13 +202,8 @@ const gateCode = (file: string) =>
     .split('\n')
     .filter((l) => !COMMENT_LINE.test(l))
     .join('\n');
-// Ещё без пропуска — оба в docs/BACKLOG.md: telegram-chat-id переписывал
-// параллельный пакет c3-11 (#1308), dead-end-report вне брифа c3-16, владельца
-// нет. Починил — убери из списка (тест «исключение не шире нужного» напомнит).
-const NOT_YET = new Set([
-  'check-telegram-chat-id.mjs',
-  'check-dead-end-report.mjs',
-]);
+// Гейты-обходчики, которым пропуск ещё не добавлен; сейчас таких нет.
+const NOT_YET = new Set<string>([]);
 const RECURSION = /вызывает сама себя|recursive: true/;
 
 describe('гейты scripts/check-*.mjs не заходят в скрытые каталоги', () => {
@@ -247,6 +242,8 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
         'check-hover-only-reveal.mjs',
         'check-utility-inline.mjs',
         'check-public-scripts.mjs',
+        'check-telegram-chat-id.mjs',
+        'check-dead-end-report.mjs',
       ]),
     );
   });
@@ -293,6 +290,21 @@ describe('гейты scripts/check-*.mjs не заходят в скрытые �
       (dir) => ({
         'scripts/public-scripts-baseline.json': '{}',
         [`webapp/public/${dir}/loader.js`]: 'load();\n',
+      }),
+    ],
+    [
+      'check-telegram-chat-id.mjs',
+      (dir) => ({
+        [`src/${dir}/notify.ts`]:
+          'export async function f() {\n  await bot.telegram.sendMessage(Number(userId), text);\n}\n',
+      }),
+    ],
+    [
+      'check-dead-end-report.mjs',
+      (dir) => ({
+        'scripts/dead-end-report-baseline.json': '{}',
+        [`webapp/src/pages/${dir}/P.tsx`]:
+          'export function P() {\n  useEffect(() => {\n    api.load().then(setData);\n  }, []);\n}\n',
       }),
     ],
   ];

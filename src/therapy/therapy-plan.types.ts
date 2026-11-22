@@ -11,10 +11,16 @@ export const PLAN_RUBRICS = [
 ] as const;
 export type PlanRubric = (typeof PLAN_RUBRICS)[number];
 
-export const PLAN_STATUSES = ['planned', 'active', 'done'] as const;
+export const PLAN_STATUSES = [
+  'planned',
+  'active',
+  'done',
+  'postponed',
+  'dropped',
+] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
-// Вид статьи справочника, из которой взят пункт.
+// Вид статьи справочника в старом источнике пункта (до адресов, #1484).
 export const PLAN_SOURCE_KINDS = ['schema', 'mode', 'technique'] as const;
 
 export interface PlanSource {
@@ -31,8 +37,13 @@ export interface PlanItemView {
   text: string;
   status: string;
   position: number;
+  /** Адрес раздела справочника (#1484); null — свой пункт или пункт до адресов. */
+  sourceAddress: string | null;
+  /** Источник до адресов: сайт переводит его в адрес, если sourceAddress пуст. */
   source: PlanSource | null;
   taskId: number | null;
+  /** Фаза пути клиента, к которой отнесён пункт; null — вне фаз. */
+  phaseId: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

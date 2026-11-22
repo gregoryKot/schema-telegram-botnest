@@ -49,6 +49,13 @@ describe('IMPULSE_SECOND_DOOR — сверка с реестром режимо�
     },
   );
 
+  // Раскладка совпадает с тестом режимов: «Соглашаюсь, хотя внутри против» — Послушный
+  // Капитулянт; «Отложить» двузначно (Недисциплинированный Ребёнок или Избегающий Защитник).
+  it('«Согласиться…» — Послушный Капитулянт, «Отложить…» без двери', () => {
+    expect(IMPULSE_SECOND_DOOR.impulse_agree).toBe('compliant_surrenderer');
+    expect(IMPULSE_SECOND_DOOR).not.toHaveProperty('impulse_postpone');
+  });
+
   it('ключи — реальные id из CASE_IMPULSES', () => {
     const impulseIds = new Set(CASE_IMPULSES.map((c) => c.id));
     for (const chipId of Object.keys(IMPULSE_SECOND_DOOR)) {
@@ -74,24 +81,24 @@ describe('suggestSecondDoor', () => {
     );
   });
 
-  it('чип без записи в реестре (impulse_agree/impulse_own) не даёт подсказки', () => {
+  it('чип без записи в реестре (impulse_postpone/impulse_own) не даёт подсказки', () => {
     expect(
       suggestSecondDoor(
         'shame',
-        ['impulse_agree', 'impulse_own'],
+        ['impulse_postpone', 'impulse_own'],
         'humiliated_child',
       ),
     ).toBeNull();
   });
 
   it('первое расхождение среди нескольких порывов побеждает', () => {
-    // impulse_agree не в реестре — пропускается; impulse_sharp совпадает с
+    // impulse_postpone не в реестре — пропускается; impulse_sharp совпадает с
     // выбранным режимом — тоже пропускается; impulse_phone расходится и
     // побеждает.
     expect(
       suggestSecondDoor(
         'anger',
-        ['impulse_agree', 'impulse_sharp', 'impulse_phone'],
+        ['impulse_postpone', 'impulse_sharp', 'impulse_phone'],
         'angry_child',
       ),
     ).toBe('detached_self_soother');

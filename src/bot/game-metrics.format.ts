@@ -9,11 +9,11 @@ import {
   GAME_CTA_TARGETS,
   type GameCtaTarget,
 } from '../analytics/game-cta.constants';
+import { formatWeekLines, isWeekEmpty } from './game-week.format';
 import type { GameMetrics } from './game-metrics.tally';
 
-// Блок «Игра» для /stats (правило №8): игра — третий фронтенд (game/,
-// Phaser), шлёт события анонимно (реестр — game-events.constants.ts). Чистый
-// форматтер (тест включает пустую БД), язык без терминов — «поделились игрой».
+// Блок «Игра» для /stats (правило №8): чистый форматтер, события игры анонимны
+// (реестр — game-events.constants.ts); тест включает пустую БД.
 
 // Человеческие подписи — то, что видит владелец в /stats, а не сырые слаги.
 const SOURCE_LABELS: Record<GameEntrySource, string> = {
@@ -42,18 +42,15 @@ const chapterLabel = (chapter: GameChapter): string =>
 
 const isEmpty = (m: GameMetrics): boolean =>
   m.opens === 0 &&
-  m.starts === 0 &&
   m.chapters.every((c) => c.started === 0) &&
   m.ctaShown === 0 &&
   m.ctaClicks === 0 &&
   m.appArrivals === 0 &&
-  m.shares === 0;
+  m.shares === 0 &&
+  isWeekEmpty(m.week);
 
-/** Текстовый блок для /stats. Чистая функция. */
 export function formatGameMetrics(m: GameMetrics): string {
-  if (isEmpty(m)) {
-    return '🎮 <b>Игра</b>: за 30 дней никто не открывал.';
-  }
+  if (isEmpty(m)) return '🎮 <b>Игра</b>: за 30 дней никто не открывал.';
   const lines = ['🎮 <b>Игра</b> (за месяц)'];
 
   if (m.opens > 0) {
@@ -64,21 +61,11 @@ export function formatGameMetrics(m: GameMetrics): string {
     lines.push(`Открыли: ${m.opens}${suffix}`);
   }
 
-  if (m.starts > 0) {
-    const tutorial =
-      m.tutorialDone > 0 || m.tutorialSkipped > 0
-        ? ` · обучение прошли ${m.tutorialDone}, пропустили ${m.tutorialSkipped}`
-        : '';
-    lines.push(`Нажали «начать»: ${m.starts}${tutorial}`);
-  }
-
   const startedChapters = m.chapters.filter((c) => c.started > 0);
   if (startedChapters.length > 0) {
-    lines.push('Главы (начали → дошли до конца · экран «сил не осталось»):');
+    lines.push('Главы (начали → дошли до конца):');
     for (const c of startedChapters) {
-      lines.push(
-        `• ${chapterLabel(c.chapter)}: ${c.started} → ${c.finished} · ${c.deaths} раз`,
-      );
+      lines.push(`• ${chapterLabel(c.chapter)}: ${c.started} → ${c.finished}`);
     }
   }
 
@@ -104,5 +91,6 @@ export function formatGameMetrics(m: GameMetrics): string {
     lines.push(`Поделились игрой: ${m.shares}`);
   }
 
+  lines.push(...formatWeekLines(m.week));
   return lines.join('\n');
 }

@@ -5,7 +5,7 @@ import { betweenRubricSeed, betweenSeed, channelSeed, planDraft, sessionSeed } f
 describe('guidePlan — заготовка пункта плана из статьи справочника', () => {
   it('направление «Как работать»: рубрика и поле — ключ направления, текст по предложениям', () => {
     const seed = channelSeed('cognitive', 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.');
-    expect(seed).toMatchObject({ rubric: 'cognitive', field: 'cognitive', label: 'Через понимание' });
+    expect(seed).toMatchObject({ rubric: 'cognitive', field: 'cognitive', label: 'Когнитивные (через понимание)' });
     expect(seed.parts).toEqual(['Оценить риск [Арнтц, 5.1.1].', 'Потом — за и против.']);
   });
 
@@ -27,6 +27,6 @@ describe('guidePlan — заготовка пункта плана из стат
 
   it('заготовка помнит статью: вид, id и поле', () => {
     const draft = planDraft(channelSeed('behavioral', 'Договориться.'), { kind: 'mode', id: 'bully_attack' });
-    expect(draft.source).toEqual({ kind: 'mode', id: 'bully_attack', field: 'behavioral' });
+    expect(draft.sourceAddress).toBe('mode:bully_attack/behavioral');
   });
 });

@@ -1,14 +1,14 @@
 import type { Tr } from '../../../../shared/src/needs/types';
 import { normalizeSearchText } from '../../../../shared/src/utils/searchNormalize';
 import type { ReferenceItem, ReferenceTexts } from './guideReferenceModel';
+import { buildNeedGuides, needBody } from './guideReferenceNeeds';
 
 /** Тексты листов для поиска: ключ строки списка → абзацы её листа в порядке полей. */
 export type ReferenceBody = Map<string, string[]>;
 
 export const bodyKey = (item: Pick<ReferenceItem, 'kind' | 'id'>) => `${item.kind}:${item.id}`;
-
 // Служебные поля раздела: идентификаторы и ссылки на другие листы — не текст для чтения.
-const SKIP = new Set(['id', 'modeId', 'schemaId', 'domainId', 'modeIds', 'techniques', 'kind', 'type', 'name', 'title']);
+const SKIP = new Set(['id', 'modeId', 'schemaId', 'domainId', 'modeIds', 'schemaIds', 'noteIds', 'techniques', 'kind', 'type', 'name', 'title']);
 
 /** Все строки раздела, включая вложенные списки и пункты «Между сессиями» (их заголовок — текст, не имя листа). */
 function strings(value: unknown, nested = false): string[] {
@@ -26,12 +26,13 @@ export function buildReferenceBody(texts: ReferenceTexts, tr: Tr): ReferenceBody
   texts.buildModeGuides(tr).forEach((g) => body.set(bodyKey({ kind: 'mode', id: g.modeId }), strings(g)));
   texts.buildSchemaDomainGuides(tr).forEach((d) => d.schemas.forEach((s) => body.set(bodyKey({ kind: 'schema', id: s.schemaId }), strings(s))));
   texts.buildTechniqueGuides(tr).forEach((t) => body.set(bodyKey({ kind: 'technique', id: t.id }), strings(t)));
+  buildNeedGuides(texts, tr).forEach((n) => body.set(bodyKey({ kind: 'need', id: n.id }), needBody(n)));
   texts.practiceNotes(tr).forEach((n) => body.set(bodyKey({ kind: 'note', id: n.id }), strings(n)));
+  texts.buildConcernGuides(tr).forEach((c) => body.set(bodyKey({ kind: 'concern', id: c.id }), strings(c)));
+  texts.buildPhaseGuides(tr).forEach((p) => body.set(bodyKey({ kind: 'phase', id: p.id }), strings(p)));
   return body;
 }
-
-const BEFORE = 30;
-const AFTER = 90;
+const [BEFORE, AFTER] = [30, 90]; // символов до и после найденного слова в куске абзаца
 
 /** Кусок абзаца вокруг найденного слова: по границам слов, обрезанный край — с «…». */
 export function snippet(paragraph: string, word: string): string {

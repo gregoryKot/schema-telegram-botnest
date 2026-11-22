@@ -19,12 +19,22 @@ describe('buildVerdict', () => {
     expect(buildVerdict(['person', 'fear']).title).toBe('Почти забота');
   });
 
-  it('от трёх до шести примет — смешанный голос', () => {
+  it('от трёх до шести примет и есть «про дело» — смешанный голос', () => {
     expect(buildVerdict(['person', 'fear', 'worth']).title).toBe(
       'Голос смешанный',
     );
-    expect(buildVerdict(PHRASE_MARK_IDS.slice(0, 6)).title).toBe(
-      'Голос смешанный',
+    expect(
+      buildVerdict(['goal', 'person', 'label', 'fear', 'never', 'absolute'])
+        .title,
+    ).toBe('Голос смешанный');
+  });
+
+  it('«про дело» нет совсем («я ничтожество») — говорит критик даже на трёх-четырёх приметах', () => {
+    const v = buildVerdict(['notok', 'person', 'label']);
+    expect(v.title).toBe('Говорит критик');
+    expect(v.text).toMatch(/Про дело в этой фразе ничего нет/);
+    expect(buildVerdict(['notok', 'person', 'label', 'absolute']).title).toBe(
+      'Говорит критик',
     );
   });
 

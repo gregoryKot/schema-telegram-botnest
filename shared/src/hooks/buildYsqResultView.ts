@@ -9,10 +9,9 @@ import type { ResultView } from './ysqTest.types';
 
 type Scores = ReturnType<typeof import('./ysqScoring').computeScores>;
 
-// Сборка результата теста для UI: сортировка схем по выраженности, разбивка
-// активных по доменам, подпись даты и дельта к прошлому прохождению.
-// Чистая функция — вынесена из useYsqTest.ts (правило №10), хук зовёт её
-// внутри useMemo.
+// Сборка результата теста для UI: схемы по среднему баллу, как у терапевта и в «Моих
+// схемах», затем по доле «5–6»; разбивка активных по доменам, подпись даты и дельта
+// к прошлому прохождению. Чистая функция из useYsqTest.ts, хук зовёт её в useMemo.
 export function buildYsqResultView(
   scores: Scores | null,
   history: YsqHistoryEntry[],
@@ -21,8 +20,8 @@ export function buildYsqResultView(
   if (!scores) return null;
   const sortedSchemas = [...SCHEMAS].sort(
     (a, b) =>
-      scores[b.name].pct5plus - scores[a.name].pct5plus ||
-      scores[b.name].avg - scores[a.name].avg,
+      scores[b.name].avg - scores[a.name].avg ||
+      scores[b.name].pct5plus - scores[a.name].pct5plus,
   );
   const activeSchemas = sortedSchemas.filter((s) =>
     isSchemaScoreActive(scores[s.name]),

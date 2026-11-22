@@ -11,7 +11,7 @@ import type { SheetBack } from '../ConceptFullscreenSheet';
 import type { GuideJournal } from './guideJournal';
 import type { PlanSeed } from './guidePlan';
 import { ModeGuideSheet } from './ModeGuideSheet';
-import { SchemaGuideSheet } from './SchemaGuideSheet';
+import { SchemaGuideSheet, type SchemaCopingMarks } from './SchemaGuideSheet';
 import { TechniqueSheet } from './TechniqueSheet';
 
 /**
@@ -41,8 +41,10 @@ export interface GuideBackRefs {
  * по заданиям клиента (`actions.tasks`) и отметкам связи раздела (`journal`);
  * за «делали …» — «журнал →» (`actions.onOpenJournal`).
  */
-export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, onCloseSheet, onCloseTechnique }: {
+export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, copingFor, onCloseSheet, onCloseTechnique }: {
   open: GuideOpen; actions: ConceptGuideActions; journal?: GuideJournal; backRefs?: GuideBackRefs;
+  /** «Про клиента» у стилей копинга листа схемы; нет — без кнопок. */
+  copingFor?: (schemaId: string) => SchemaCopingMarks;
   /** «В план» у рубрик листа раздела; нет — без кнопок. */
   onPlan?: (seed: PlanSeed, from: GuideFrom) => void;
   onCloseSheet: () => void; onCloseTechnique: () => void;
@@ -81,7 +83,7 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, o
         <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} {...sheetProps(sheet)} />
       )}
       {sheet?.kind === 'schema' && schemaView && (
-        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} {...sheetProps(sheet)} />
+        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} {...sheetProps(sheet)} />
       )}
       {technique && (
         <TechniqueSheet technique={technique} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />

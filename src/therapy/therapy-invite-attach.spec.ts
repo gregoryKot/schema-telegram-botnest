@@ -16,6 +16,7 @@ interface Opts {
   target?: Record<string, unknown> | null;
   offlineConc?: { id: number; updatedAt: Date } | null;
   existingConc?: { id: number; updatedAt: Date } | null;
+  accountPath?: { id: number } | null;
 }
 
 function make(o: Opts) {
@@ -66,6 +67,16 @@ function make(o: Opts) {
     therapistNote: { updateMany: rec('note.updateMany') },
     modeMap: { updateMany: rec('map.updateMany') },
     therapyPlanItem: { updateMany: rec('plan.updateMany') },
+    therapyPath: {
+      findFirst: jest.fn(async () => o.accountPath ?? null),
+      deleteMany: rec('path.deleteMany'),
+      updateMany: rec('path.updateMany'),
+    },
+    guideMark: {
+      findMany: jest.fn(async () => [{ address: 'mode:x/when' }]),
+      deleteMany: rec('mark.deleteMany'),
+      updateMany: rec('mark.updateMany'),
+    },
     clientConceptualization: {
       findFirst: conc,
       update: rec('conc.update'),
@@ -92,6 +103,48 @@ describe('attachOfflineCard', () => {
         where: { therapistId: TH, clientId: -7n },
         data: { clientId: CLIENT },
       });
+  });
+
+  it('отметки справочника переезжают; адрес, уже отмеченный на аккаунте, — нет', async () => {
+    const { tx, prisma, calls } = make({});
+    await attachOfflineCard(prisma, TH, CLIENT, 7);
+    expect(tx.guideMark.deleteMany).toHaveBeenCalledWith({
+      where: {
+        therapistId: TH,
+        clientId: -7n,
+        address: { in: ['mode:x/when'] },
+      },
+    });
+    expect(tx.guideMark.updateMany).toHaveBeenCalledWith({
+      where: { therapistId: TH, clientId: -7n },
+      data: { clientId: CLIENT },
+    });
+    expect(calls.indexOf('mark.deleteMany')).toBeLessThan(
+      calls.indexOf('mark.updateMany'),
+    );
+  });
+
+  it('путь карточки переезжает на аккаунт, если у пары пути ещё нет', async () => {
+    const { tx, prisma } = make({});
+    await attachOfflineCard(prisma, TH, CLIENT, 7);
+    expect(tx.therapyPath.findFirst).toHaveBeenCalledWith({
+      where: { therapistId: TH, clientId: CLIENT },
+      select: { id: true },
+    });
+    expect(tx.therapyPath.updateMany).toHaveBeenCalledWith({
+      where: { therapistId: TH, clientId: -7n },
+      data: { clientId: CLIENT },
+    });
+    expect(tx.therapyPath.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('путь у аккаунта уже есть — карточный удаляется, а не переносится (unique по паре)', async () => {
+    const { tx, prisma } = make({ accountPath: { id: 3 } });
+    await attachOfflineCard(prisma, TH, CLIENT, 7);
+    expect(tx.therapyPath.deleteMany).toHaveBeenCalledWith({
+      where: { therapistId: TH, clientId: -7n },
+    });
+    expect(tx.therapyPath.updateMany).not.toHaveBeenCalled();
   });
 
   it('концептуализация только на карточке — переводится на аккаунт', async () => {
@@ -238,10 +291,10 @@ describe('attachOfflineCard: покрытие моделей схемы', () => 
     join(__dirname, '../../prisma/schema.prisma'),
     'utf8',
   );
-  const source = readFileSync(
-    join(__dirname, './therapy-invite-attach.ts'),
-    'utf8',
-  );
+  // Перенос отметок справочника вынесен (guide-mark-move.ts) — читаем оба файла.
+  const source = ['./therapy-invite-attach.ts', './guide-mark-move.ts']
+    .map((f) => readFileSync(join(__dirname, f), 'utf8'))
+    .join('\n');
   const models = [...schema.matchAll(/^model (\w+) \{([\s\S]*?)^\}/gm)]
     .filter(
       ([, , body]) =>
