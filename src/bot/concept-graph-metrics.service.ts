@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import { countEventsByKey } from './event-counts';
+import { countEventsGrouped } from './event-counts-grouped';
 import { formatConceptGraphMetrics } from './concept-graph-metrics.format';
 import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
@@ -77,7 +77,7 @@ export class ConceptGraphMetricsService {
         }),
         shareOf(true),
         shareOf(false),
-        countEventsByKey(this.prisma, COUNTED, createdAt),
+        countEventsGrouped(this.prisma, COUNTED, createdAt),
       ]);
     return {
       ...counted,

@@ -11,6 +11,7 @@ export const GUIDE_MARK_ARTICLE_KINDS = [
   'technique',
   'note',
   'concern',
+  'phase',
 ] as const;
 export type GuideMarkArticleKind = (typeof GUIDE_MARK_ARTICLE_KINDS)[number];
 

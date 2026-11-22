@@ -27,8 +27,13 @@ describe('withGuideAnswerLines', () => {
   const prisma = (counts: Record<string, number>) =>
     ({
       analyticsEvent: {
-        count: ({ where }: { where: { name: string } }) =>
-          Promise.resolve(counts[where.name] ?? 0),
+        // Как в Postgres: у события без строк группы нет.
+        groupBy: ({ where }: { where: { name: { in: string[] } } }) =>
+          Promise.resolve(
+            where.name.in
+              .filter((name) => name in counts)
+              .map((name) => ({ name, _count: { _all: counts[name] } })),
+          ),
       },
     }) as never;
 

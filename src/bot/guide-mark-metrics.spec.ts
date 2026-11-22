@@ -11,6 +11,7 @@ const none = {
   technique: 0,
   note: 0,
   concern: 0,
+  phase: 0,
 };
 
 describe('formatGuideMarkLine', () => {
@@ -53,6 +54,8 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
               ? (kinds[where.meta?.equals ?? ''] ?? 0)
               : 0,
           ),
+        // Счётчики «готового ответа» (guide-answer-metrics): событий нет.
+        groupBy: () => Promise.resolve([]),
       },
       guideMark: {
         groupBy: () =>

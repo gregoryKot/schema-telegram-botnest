@@ -13,6 +13,7 @@ import {
 } from '../../../therapy/plan/planItem';
 import type { GuideArticleKind } from './addressFormat';
 import { CONCERN_TITLES } from './addressTitlesConcern';
+import { PHASE_TITLES } from './addressTitlesPhase';
 
 // Заголовки разделов — как на листах справочника (webapp/src/components/therapist/guide/*Sheet.tsx).
 // Тип требует заголовок у каждого поля статьи, кроме служебных: новое поле в types.ts без строки здесь — красный tsc.
@@ -105,4 +106,5 @@ export const SECTION_TITLES: Record<
   technique: TECHNIQUE_TITLES,
   note: NOTE_TITLES,
   concern: CONCERN_TITLES,
+  phase: PHASE_TITLES,
 };

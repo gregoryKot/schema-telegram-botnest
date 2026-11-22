@@ -17,6 +17,7 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     practiceNotes: () => [f.FIXTURE_PRACTICE_NOTE],
     buildConcernGuides: () => [],
+    buildPhaseGuides: () => [],
   };
 });
 const trackEvent = vi.fn();

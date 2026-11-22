@@ -14,8 +14,9 @@ import { mergeCoping } from './guideReferenceCoping';
 import { practiceGroups, techniqueGroups } from './guideReferenceTechniques';
 import { buildNeedGuides, needGroups } from './guideReferenceNeeds';
 import { concernGroups } from './guideReferenceConcerns';
+import { phaseGroups } from './guideReferencePhases';
 
-export type ReferenceTab = 'modes' | 'schemas' | 'needs' | 'techniques' | 'concerns' | 'practice';
+export type ReferenceTab = 'modes' | 'schemas' | 'needs' | 'techniques' | 'concerns' | 'path' | 'practice';
 
 export const REFERENCE_TABS: { id: ReferenceTab; label: string }[] = [
   { id: 'modes', label: 'Режимы' },
@@ -23,17 +24,19 @@ export const REFERENCE_TABS: { id: ReferenceTab; label: string }[] = [
   { id: 'needs', label: 'Потребности' },
   { id: 'techniques', label: 'Техники' },
   { id: 'concerns', label: 'Запросы' },
+  { id: 'path', label: 'Путь терапии' },
   { id: 'practice', label: 'Для терапевта' },
 ];
 
-/** Строка списка: открывает лист своего вида (режим, схема, потребность, техника, запрос, «Для терапевта»). */
+/** Строка списка: открывает лист своего вида (режим, схема, потребность, техника, запрос, фаза, «Для терапевта»). */
 export type ReferenceItem = {
   name: string;
   /** Строка под названием: у потребности, техники и раздела «Для терапевта» — суть. */
   sub?: string;
   /** Знак листа (ключ реестра SignArt); нет — строка без картинки (не выдумываем чужую). */
   sign?: SignKey;
-} & ({ kind: 'mode' | 'schema' | 'note' | 'concern'; id: string } | { kind: 'technique'; id: TechniqueId } | { kind: 'need'; id: NeedId });
+  step?: number; // номер фазы в ленте «Пути терапии»: стоит на месте знака
+} & ({ kind: 'mode' | 'schema' | 'note' | 'concern' | 'phase'; id: string } | { kind: 'technique'; id: TechniqueId } | { kind: 'need'; id: NeedId });
 
 export interface ReferenceGroup {
   key: string;
@@ -62,7 +65,7 @@ export const referenceLayout = (tab: ReferenceTab, searching: boolean): Referenc
 
 export type ReferenceTexts = Pick<
   Guide,
-  'buildModeGuides' | 'buildSchemaDomainGuides' | 'buildTechniqueGuides' | 'practiceNotes' | 'buildConcernGuides'
+  'buildModeGuides' | 'buildSchemaDomainGuides' | 'buildTechniqueGuides' | 'practiceNotes' | 'buildConcernGuides' | 'buildPhaseGuides'
 >;
 
 const nonEmpty = (groups: ReferenceGroup[]) => groups.filter((g) => g.items.length > 0);
@@ -95,6 +98,7 @@ export function buildReference(texts: ReferenceTexts, tr: Tr): Reference {
     needs: nonEmpty(needGroups(buildNeedGuides(texts, tr))),
     techniques: nonEmpty(techniqueGroups(texts.buildTechniqueGuides(tr))),
     concerns: nonEmpty(concernGroups(texts.buildConcernGuides(tr))),
+    path: nonEmpty(phaseGroups(texts.buildPhaseGuides(tr))),
     practice: nonEmpty(practiceGroups(texts.practiceNotes(tr))),
   };
 }
