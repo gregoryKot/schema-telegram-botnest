@@ -75,8 +75,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     title: 'Креативная работа с режимами: фигурки, маски, рисунок',
     status: 'planned',
     source: 'Хис',
-    chapters: [],
-    note: 'карты книги нет',
+    chapters: ['гл. 9', 'гл. 10', 'гл. 11'],
   },
   {
     id: 'body_mode_positions',
