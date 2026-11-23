@@ -49,10 +49,10 @@ describe('NeedGuideSheet', () => {
     expect(screen.getByText(NEED.domain.name)).toBeTruthy();
   });
 
-  it('схемы домена — строки с непокрытой потребностью; тап открывает лист схемы', () => {
+  it('схемы домена — чипы; тап открывает лист схемы', () => {
     const { onOpenSchema, onClose } = renderSheet();
     const rows = within(screen.getByRole('region', { name: 'Схемы домена' })).getAllByRole('button');
-    expect(rows.map((r) => r.textContent)).toEqual(['Покинутость / НестабильностьНадёжная, предсказуемая связь', 'Недоверие / Ожидание жестокого обращения']);
+    expect(rows.map((r) => r.textContent)).toEqual(['Покинутость / Нестабильность', 'Недоверие / Ожидание жестокого обращения']);
     fireEvent.click(rows[1]);
     expect(onOpenSchema).toHaveBeenCalledWith('mistrust');
     expect(onClose).not.toHaveBeenCalled();

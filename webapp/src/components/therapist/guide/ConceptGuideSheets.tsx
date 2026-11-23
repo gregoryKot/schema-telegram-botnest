@@ -68,9 +68,9 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
     backRef: backRefs?.section,
   });
   const usages = texts && openTechnique ? texts.techniqueUsageGroups(tr, openTechnique.id) : [];
-  // Схема из листа режима (и режим из листа схемы) встаёт на его место: лист раздела один, свой закрывается goBack(then).
+  // Схема из листа режима (режим из листа схемы, оба из техники) встаёт на место: goBack нижнего листа снимает и верхний.
   const swapTo = (go: (id: string) => void) => (id: string) => {
-    const back = backRefs?.section.current;
+    const back = backRefs?.section.current ?? backRefs?.technique.current;
     if (back) back(() => go(id)); else go(id);
   };
   const [openSchema, openMode] = [swapTo(actions.onOpenSchema), swapTo(actions.onOpenMode)];
@@ -93,7 +93,7 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
         <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} onOpenMode={openMode} {...sheetProps(sheet)} />
       )}
       {technique && (
-        <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />
+        <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onOpenMode={openMode} onOpenSchema={openSchema} onClose={onCloseTechnique} backRef={backRefs?.technique} />
       )}
     </>
   );

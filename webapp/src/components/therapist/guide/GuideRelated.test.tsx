@@ -40,4 +40,11 @@ describe('GuideRelated', () => {
     expect(screen.getByText('Альфа, Бета')).toBeTruthy();
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
+
+  it('своя подпись блока («Где применяется» техники) — группы внутри неё', () => {
+    render(<GuideRelated title="Где применяется" groups={[group({ address: undefined })]} />);
+    const block = within(screen.getByRole('region', { name: 'Где применяется' }));
+    expect(block.getByRole('region', { name: 'Схемы' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Связано' })).toBeNull();
+  });
 });
