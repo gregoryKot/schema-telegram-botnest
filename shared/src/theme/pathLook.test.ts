@@ -48,10 +48,11 @@ describe('pathSheetLook', () => {
     });
   });
 
-  it('все ключи знаков пути заняты листами', () => {
+  it('все ключи знаков пути заняты листами или фазой «завершение»', () => {
     const used = new Set([
       ...buildPhaseGuides(tr).map((p) => pathSheetLook(p.id).sign),
       pathSheetLook(`${TEMPLATE_SHEET_PREFIX}general`).sign,
+      phaseLook('ending').sign,
     ]);
     expect([...PATH_SIGN_KEYS].filter((k) => !used.has(k))).toEqual([]);
   });

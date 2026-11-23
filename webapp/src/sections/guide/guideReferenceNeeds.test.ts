@@ -83,15 +83,15 @@ describe('buildNeedGuides', () => {
 describe('раздел «Потребности» в справочнике', () => {
   const ref = buildReference(texts(), tr);
 
-  it('третья вкладка, карточками; строка — знак потребности, название и подпись; лист нейтральной бумаги без знака', () => {
+  it('третья вкладка, карточками; строка — знак потребности, название и подпись на бумаге своего домена', () => {
     expect(REFERENCE_TABS.map((t) => t.label)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Запросы', 'Путь терапии', 'Для терапевта']);
     expect(referenceLayout('needs', false)).toBe('tiles');
     expect(ref.needs).toEqual(needGroups(buildNeedGuides(texts(), tr)));
     expect(ref.needs).toHaveLength(1);
-    expect(ref.needs[0].look).toEqual(ref.techniques[0].look);
+    expect(ref.needs[0].look).toEqual({ hue: 45 });
     expect(ref.needs[0].items).toEqual([
-      { kind: 'need', id: 'attachment', name: 'Привязанность', sub: 'Безопасность и связь', sign: 'need_attachment' },
-      { kind: 'need', id: 'play', name: 'Спонтанность', sub: 'Игра и радость', sign: 'need_play' },
+      { kind: 'need', id: 'attachment', name: 'Привязанность', sub: 'Безопасность и связь', sign: 'need_attachment', hue: 28 },
+      { kind: 'need', id: 'play', name: 'Спонтанность', sub: 'Игра и радость', sign: 'need_play', hue: 310 },
     ]);
   });
 
