@@ -12,21 +12,6 @@ export function ago(ts: number, now: number): string {
  * невидима). Чистый форматтер поверх снимка state.ts. Язык простой — «не
  * работает», а не «probe failed».
  */
-// Пробы, чей зелёный исход пока стоит на документации площадки, а не на
-// записанном ответе: /stats показывает их detail, пока ответ не лёг в фикстуру.
-const UNRECORDED_GREEN = new Set(['postbox', 'yandexOAuth']);
-
-function unrecordedGreen(snap: SelfCheckSnapshot): string {
-  const lines = snap.results
-    .filter(
-      (r) => r.ok && UNRECORDED_GREEN.has(r.id) && r.detail !== 'выключено',
-    )
-    .map((r) => `• ${r.title}: ${r.detail}`);
-  return lines.length
-    ? `\nОтветы новых площадок (ждут записи в тесты):\n${lines.join('\n')}`
-    : '';
-}
-
 export function formatSelfCheck(
   snap: SelfCheckSnapshot,
   now: number = Date.now(),
@@ -37,10 +22,9 @@ export function formatSelfCheck(
   }
   const when = `Последняя проверка: ${ago(snap.ranAt, now)}.`;
   const failed = snap.results.filter((r) => !r.ok);
-  const green = unrecordedGreen(snap);
   if (failed.length === 0) {
-    return `${title}\n${when} Всё в порядке.${green}`;
+    return `${title}\n${when} Всё в порядке.`;
   }
   const lines = failed.map((f) => `• ${f.title}: ${f.detail}`);
-  return `${title}\n${when} Не в порядке:\n${lines.join('\n')}${green}`;
+  return `${title}\n${when} Не в порядке:\n${lines.join('\n')}`;
 }

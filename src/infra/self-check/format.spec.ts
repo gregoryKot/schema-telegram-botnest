@@ -73,29 +73,4 @@ describe('formatSelfCheck', () => {
     };
     expect(formatSelfCheck(snap, NOW)).toContain('3 дн назад');
   });
-
-  it('зелёная проба с незаписанным ответом площадки — detail виден, «выключено» нет', () => {
-    const entry = (id: string, title: string, detail: string) => ({
-      id,
-      title,
-      ok: true,
-      detail,
-      reportInHealth: false,
-    });
-    const text = formatSelfCheck(
-      {
-        ranAt: NOW,
-        results: [
-          entry('postbox', 'Почта: Postbox', 'ключ принят (HTTP 400: X)'),
-          entry('yandexOAuth', 'Вход через Яндекс', 'выключено'),
-          entry('db', 'База данных', 'отвечает'),
-        ],
-      },
-      NOW,
-    );
-    expect(text).toContain('Всё в порядке');
-    expect(text).toContain('• Почта: Postbox: ключ принят (HTTP 400: X)');
-    expect(text).not.toContain('Яндекс');
-    expect(text).not.toContain('отвечает');
-  });
 });
