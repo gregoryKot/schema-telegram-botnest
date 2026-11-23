@@ -702,7 +702,7 @@
   "shared/src/schemaTherapy/kb/tables.ts": 115,
   "shared/src/schemaTherapy/kb/tablesModes.ts": 142,
   "shared/src/schemaTherapy/kb/tablesNeeds.ts": 67,
-  "shared/src/schemaTherapy/kb/tablesSchemas.ts": 88,
+  "shared/src/schemaTherapy/kb/tablesSchemas.ts": 96,
   "shared/src/schemaTherapy/schemaNeed.ts": 23,
   "shared/src/schemaTherapy/schemaTherapyData.ts": 46,
   "shared/src/schemaTherapy/searchAliases.ts": 99,
