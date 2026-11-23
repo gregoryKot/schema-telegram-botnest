@@ -26,7 +26,7 @@ const NOTE_IDS = [
   'self_disclosure', 'experiential_avoidance', 'exact_scene', 'change_blocks', 'ending_phase', 'complex_trauma',
   'therapist_wellbeing', 'group_techniques', 'suitability', 'imagery_avoidance', 'life_decisions',
   'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps',
-  'homework_not_done', 'crisis_call', 'mode_flipping',
+  'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation',
 ];
 
 describe('знаки листов подсказок', () => {
