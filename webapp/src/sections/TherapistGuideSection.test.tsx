@@ -187,6 +187,7 @@ describe('TherapistGuideSection', () => {
     fireEvent.click(row);
     const sheet = screen.getByRole('dialog', { name: 'Пограничное расстройство личности' });
     expect(within(sheet).getByText('Нестабильность почти во всём')).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole('tab', { name: 'Диагностика' }));
     expect(within(sheet).getByRole('region', { name: 'Критерии' })).toBeTruthy();
     expect(within(sheet).getByText('Пять из девяти признаков')).toBeTruthy();
     fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
