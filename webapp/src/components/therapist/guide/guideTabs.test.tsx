@@ -13,6 +13,8 @@ import { GuideSection } from './GuideSection';
 import { GuideTabs } from './GuideTabs';
 import { ModeGuideSheet } from './ModeGuideSheet';
 import { SchemaGuideSheet } from './SchemaGuideSheet';
+import { ConcernGuideSheet } from './ConcernGuideSheet';
+import { TechniqueSheet } from './TechniqueSheet';
 import { markedTabs, tabOfPath, type TabbedKind } from './guideTabsModel';
 
 const tr = (_ty: string, vy: string) => vy;
@@ -50,6 +52,13 @@ const sheet = { onOpenTechnique: noop, onClose: noop };
 describe('лист кладёт раздел на вкладку из таблицы', () => {
   it.each([
     ['schema', () => guide.buildSchemaGuides(tr).map((g) => <SchemaGuideSheet key="s" schemaName="x" view={resolveSchemaGuide(guide, tr, g.schemaId)!} {...sheet} />)],
+    ['technique', () => guide.buildTechniqueGuides(tr).map((t) => <TechniqueSheet key="t" technique={t} usages={guide.techniqueUsageGroups(tr, t.id)} onClose={noop} />)],
+    ['concern', () => guide.buildConcernGuides(tr).map((c) => (
+      <ConcernGuideSheet
+        key="c" concern={c} techniques={(c.techniques ?? []).flatMap((id) => guide.techniqueGuide(tr, id) ?? [])}
+        onOpenMode={noop} onOpenSchema={noop} onOpenTechnique={noop} onClose={noop}
+      />
+    ))],
     ['mode', () => guide.buildModeGuides(tr).map((g) => <ModeGuideSheet key="m" modeName="x" view={resolveModeGuide(guide, tr, g.modeId)!} {...sheet} />)],
   ] as const)('%s', (kind, build) => {
     const pairs = build().flatMap(placed);

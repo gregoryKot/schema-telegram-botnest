@@ -10,9 +10,8 @@ import { usePhaseSheet, type PhaseLinks } from './usePhaseSheet';
 
 /**
  * Листы «Справочника», которых нет в схеме случая: потребность, статья «Запросов» и фаза «Пути терапии». `open` открывает
- * лист строки своего вида и отвечает true; чужую строку не трогает. `under(links)` — листы потребности и фазы до листов
- * схемы, режима и техники: открытый из них лист встаёт поверх порядком в DOM; `over` — статья, в слот `over`
- * useConceptGuide (внутри контекста отметок «Про клиента», как лист «Для терапевта»).
+ * лист строки своего вида и отвечает true; чужую строку не трогает. `under(links)` — листы потребности, запроса и фазы
+ * до листов схемы, режима и техники: открытый из них лист встаёт поверх порядком в DOM.
  */
 export function useListSheets(texts: Guide, tr: Tr) {
   const [needId, setNeedId] = useState<NeedId | null>(null);
@@ -31,8 +30,21 @@ export function useListSheets(texts: Guide, tr: Tr) {
     else return false;
     return true;
   };
-  const under = (links: PhaseLinks & { onOpenSchema: (id: string) => void }) =>
-    <>{need && <NeedGuideSheet need={need} onOpenSchema={links.onOpenSchema} onClose={() => setNeedId(null)} />}{phase.sheet(links)}</>;
-  const over = concern && <ConcernGuideSheet concern={concern} onClose={() => setConcernId(null)} />;
-  return { open, under, over };
+  const techniques = useMemo(
+    () => (concern?.techniques ?? []).flatMap((id) => texts.techniqueGuide(tr, id) ?? []),
+    [texts, tr, concern],
+  );
+  const under = (links: PhaseLinks & { onOpenSchema: (id: string) => void }) => (
+    <>
+      {need && <NeedGuideSheet need={need} onOpenSchema={links.onOpenSchema} onClose={() => setNeedId(null)} />}
+      {concern && (
+        <ConcernGuideSheet
+          concern={concern} techniques={techniques} onOpenMode={links.onOpenMode} onOpenSchema={links.onOpenSchema}
+          onOpenTechnique={links.onOpenTechnique} onClose={() => setConcernId(null)}
+        />
+      )}
+      {phase.sheet(links)}
+    </>
+  );
+  return { open, under };
 }
