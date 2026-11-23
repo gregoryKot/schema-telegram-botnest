@@ -1,6 +1,7 @@
 // «Справочник» терапевта, «Схемы» → «Таблицей»: все схемы рядом — короткое описание из реестра
 // (schemaDomains.ts, desc), три стиля копинга из листа схемы (guide/schemas/*) и их выжимки
 // (copingHeadlines.ts). Домены, их вид и порядок строк — те же, что у списка «Схем» (buildReference).
+import type { CSSProperties } from 'react';
 import type { SchemaCoping, SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
 import { COPING_STYLES, type CopingStyle, type CopingStyleId } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
 import { SCHEMA_COPING_HEADLINES } from '../../../../shared/src/schemaTherapy/guide/schemas/copingHeadlines';
@@ -59,3 +60,6 @@ export function toggleCell(open: string | null, key: string): string | null {
 export function showsFull(depth: TableDepth, open: string | null, key: string, headline: string | undefined): boolean {
   return depth === 'full' || open === key || !headline;
 }
+
+/** Цвет стиля для блока шапки, клетки и заголовка колонки: --gst-c — заливка, --gst-ink — текст. */
+export const styleVars = (s: CopingStyle) => ({ '--gst-c': s.color, '--gst-ink': s.ink }) as CSSProperties;

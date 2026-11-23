@@ -29,6 +29,8 @@
 .sg-group--plain { padding: 0; border-radius: 0; }
 .sg-group--plain > .sg-head { margin: 0 0 8px; }
 .sg-group--plain > .sg-rows { border-radius: 0; background: none; overflow: visible; }
+/* Тихая свёртка («Техники», «Запросы» справочника): шапка-кнопка во всю ширину, под ней — карточки строк своих оттенков. */
+.sg-group--plain > .sg-fold-head { width: 100%; }
 /* Несколько знаков (копинги справочника: Yield, Shelter, Shield) — 44 вплотную; на узком листе (320)
    подпись уходит под знаки, а не за край. */
 .sg-signs { display: flex; flex: none; gap: 2px; }
