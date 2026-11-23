@@ -1,8 +1,9 @@
 import { BPD_COMORBIDITY } from './bpdComorbidity';
+import { buildBpdTail } from './bpdEducation';
 import { BPD_ALL_SECTIONS } from './bpdRelationship';
 import type { ConcernGuideBuilder } from './types';
 
-/** Пограничное расстройство личности: суть, критерии, истоки, спутники, дифференциальная; остальные разделы — bpdSections.ts. */
+/** Пограничное расстройство личности: суть, критерии, истоки, спутники, дифференциальная; остальные разделы — bpdSections.ts, bpdEducation.ts. */
 export const buildBpdGuide: ConcernGuideBuilder = (tr) => ({
   id: 'bpd',
   name: 'Пограничное расстройство личности',
@@ -28,20 +29,6 @@ export const buildBpdGuide: ConcernGuideBuilder = (tr) => ({
     'При расстройстве аутистического спектра схема-терапию адаптируют: если аутистические трудности не слишком выражены, она помогает с расстройством личности, но цель — расстройство личности, а не РАС. Антисоциальное расстройство личности индивидуальной работе не мешает: в судебных клиниках схема-терапия дала хорошие результаты [Арнтц ПРЛ, гл. 2].',
   ],
   ...BPD_ALL_SECTIONS,
-  techniques: [
-    'limited_reparenting',
-    'mode_map',
-    'imagery_rescripting',
-    'chairwork',
-    'limit_setting',
-    'downward_arrow',
-    'current_role_play',
-  ],
-  voice: [
-    tr(
-      'Многие люди слышат своего внутреннего критика как настоящий голос. С тобой так бывает? На чей голос он похож?',
-      'Многие люди слышат своего внутреннего критика как настоящий голос. С вами так бывает? На чей голос он похож?',
-    ),
-  ],
-  sources: '[Арнтц ПРЛ, гл. 1–9, 11–12]',
+  ...buildBpdTail(tr),
+  sources: '[Арнтц ПРЛ, гл. 1–12, прил. А]',
 });
