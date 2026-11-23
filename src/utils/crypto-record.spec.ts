@@ -48,6 +48,38 @@ function foreign() {
 
 const SCHEMA = { strings: ['text'], jsonArrays: ['items'] };
 
+// Общие экземпляры для тестов поведения; свежая загрузка (load/foreign) — только
+// там, где важно троттлинг-состояние модуля, сбросить которое нечем.
+let keyedA: CryptoModule;
+let loggerA: NestLogger;
+let keyedB: CryptoModule;
+let loggerB: NestLogger;
+let keyedB2: CryptoModule;
+let keyless: CryptoModule;
+beforeAll(() => {
+  keyedA = load(KEY_A);
+  loggerA = isolatedLogger;
+  keyedB = load(KEY_B);
+  loggerB = isolatedLogger;
+  keyedB2 = load(KEY_B);
+  keyless = load('');
+});
+
+/** foreign() на общих экземплярах: без свежего троттлинга, для тестов без счёта логов. */
+function foreignShared() {
+  const stored = {
+    id: 5,
+    text: keyedA.encrypt('секретная заметка')!,
+    items: keyedA.encryptJson(['abandonment', 'defectiveness']),
+  };
+  const err = jest
+    .spyOn(loggerB.prototype, 'error')
+    .mockImplementation(() => undefined);
+  return { a: keyedA, b: keyedB, stored, err };
+}
+const quietA = () =>
+  jest.spyOn(loggerA.prototype, 'error').mockImplementation(() => undefined);
+
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
   jest.restoreAllMocks();
@@ -55,12 +87,12 @@ afterEach(() => {
 
 describe('tryDecrypt: расшифровка без побочных эффектов', () => {
   it('свой ключ → ok с текстом', () => {
-    const { encrypt, tryDecrypt } = load(KEY_A);
+    const { encrypt, tryDecrypt } = keyedA;
     expect(tryDecrypt(encrypt('привет'))).toEqual({ ok: true, text: 'привет' });
   });
 
   it('чужой ключ → не ok и looksCipher: true, в лог не пишет', () => {
-    const { stored, b, err } = foreign();
+    const { stored, b, err } = foreignShared();
     expect(b.tryDecrypt(stored.text)).toEqual({ ok: false, looksCipher: true });
     expect(err).not.toHaveBeenCalled();
   });
@@ -74,13 +106,13 @@ describe('tryDecrypt: расшифровка без побочных эффек�
     ['пусто', ''],
     ['null', null],
   ])('%s → не ok и looksCipher: false', (_n, value) => {
-    const { tryDecrypt } = load(KEY_A);
+    const { tryDecrypt } = keyedA;
     expect(tryDecrypt(value)).toEqual({ ok: false, looksCipher: false });
   });
 
   it('без ключей ничего не расшифровать, но и тревоги нет', () => {
-    const blob = load(KEY_A).encrypt('текст')!;
-    const { tryDecrypt } = load('');
+    const blob = keyedA.encrypt('текст')!;
+    const { tryDecrypt } = keyless;
     expect(tryDecrypt(blob)).toEqual({ ok: false, looksCipher: false });
   });
 
@@ -93,7 +125,7 @@ describe('tryDecrypt: расшифровка без побочных эффек�
 
 describe('decryptRecord: провал расшифровки — явный исход, а не строка вместо массива', () => {
   it('jsonArrays под чужим ключом → [] и маркер, а не base64-блоб', () => {
-    const { stored, b } = foreign();
+    const { stored, b } = foreignShared();
     const row = b.decryptRecord(stored, SCHEMA);
     expect(row.items).toEqual([]);
     expect(Array.isArray(row.items)).toBe(true);
@@ -101,17 +133,15 @@ describe('decryptRecord: провал расшифровки — явный ис
   });
 
   it('строковое поле под чужим ключом: прежнее сырое значение (fail-open), но в маркере', () => {
-    const { stored, b } = foreign();
+    const { stored, b } = foreignShared();
     const row = b.decryptRecord(stored, { strings: ['text'] });
     expect(row.text).toBe(stored.text);
     expect(b.unreadableFields(row)).toEqual(['text']);
   });
 
   it('свой ключ: всё читается, маркера нет, тревоги нет', () => {
-    const a = load(KEY_A);
-    const err = jest
-      .spyOn(isolatedLogger.prototype, 'error')
-      .mockImplementation(() => undefined);
+    const a = keyedA;
+    const err = quietA();
     const data = { id: 1, text: 'заметка', items: ['a', 'b'] };
     const row = a.decryptRecord(a.encryptRecord(data, SCHEMA), SCHEMA);
     expect(row).toEqual(data);
@@ -120,10 +150,8 @@ describe('decryptRecord: провал расшифровки — явный ис
   });
 
   it('контроль: легаси-plaintext (текст, JSON-строка, готовый массив) — не провал', () => {
-    const a = load(KEY_A);
-    const err = jest
-      .spyOn(isolatedLogger.prototype, 'error')
-      .mockImplementation(() => undefined);
+    const a = keyedA;
+    const err = quietA();
     const rows = [
       { text: 'старая заметка с пробелами', items: '["x","y"]' },
       { text: 'ещё одна', items: ['уже', 'массив'] },
@@ -143,10 +171,8 @@ describe('decryptRecord: провал расшифровки — явный ис
   ])(
     'jsonArrays: %s → [] и маркер (строка в роли списка недопустима)',
     (_n, v) => {
-      const a = load(KEY_A);
-      jest
-        .spyOn(isolatedLogger.prototype, 'error')
-        .mockImplementation(() => undefined);
+      const a = keyedA;
+      quietA();
       const row = a.decryptRecord({ items: v }, { jsonArrays: ['items'] });
       expect(row.items).toEqual([]);
       expect(a.unreadableFields(row)).toEqual(['items']);
@@ -156,10 +182,8 @@ describe('decryptRecord: провал расшифровки — явный ис
   it.each(['не json', 'null'])(
     'jsonArrays: расшифровалось, но внутри %s → [] и маркер',
     (inner) => {
-      const a = load(KEY_A);
-      jest
-        .spyOn(isolatedLogger.prototype, 'error')
-        .mockImplementation(() => undefined);
+      const a = keyedA;
+      quietA();
       const row = a.decryptRecord(
         { items: a.encrypt(inner) },
         { jsonArrays: ['items'] },
@@ -170,7 +194,7 @@ describe('decryptRecord: провал расшифровки — явный ис
   );
 
   it('маркер переживает {...row}, не виден в ключах и в JSON', () => {
-    const { stored, b } = foreign();
+    const { stored, b } = foreignShared();
     const row = b.decryptRecord(stored, SCHEMA);
     expect(b.unreadableFields({ ...row })).toEqual(['text', 'items']);
     expect(Object.keys(row)).toEqual(['id', 'text', 'items']);
@@ -182,21 +206,21 @@ describe('decryptRecord: провал расшифровки — явный ис
   });
 
   it('повторное чтение уже помеченной строки дописывает, а не теряет маркер', () => {
-    const { stored, b } = foreign();
+    const { stored, b } = foreignShared();
     const once = b.decryptRecord(stored, { strings: ['text'] });
     const twice = b.decryptRecord(once, { jsonArrays: ['items'] });
     expect(b.unreadableFields(twice)).toEqual(['text', 'items']);
   });
 
   it('маркер узнаётся между копиями модуля (Symbol.for, не Symbol)', () => {
-    const { stored, b } = foreign();
+    const { stored, b } = foreignShared();
     const row = b.decryptRecord(stored, SCHEMA);
-    const other = load(KEY_B);
+    const other = keyedB2;
     expect(other.unreadableFields(row)).toEqual(['text', 'items']);
   });
 
   it('ключ маркера — Symbol.for с фиксированным именем (контракт между копиями модуля)', () => {
-    const { stored, b } = foreign();
+    const { stored, b } = foreignShared();
     const row = b.decryptRecord(stored, SCHEMA);
     const key = Symbol.for('schema-botnest.unreadableFields');
     expect((row as Record<symbol, unknown>)[key]).toEqual(['text', 'items']);
@@ -205,17 +229,15 @@ describe('decryptRecord: провал расшифровки — явный ис
   it('шифротекстоподобная строка в jsonArrays не читается как JSON, даже если по виду это число', () => {
     // 48 цифр — строгий base64 длиной ≥29 байт, то есть «похоже на шифротекст»,
     // и при этом валидный JSON. Принять её за легаси-значение нельзя.
-    const a = load(KEY_A);
-    jest
-      .spyOn(isolatedLogger.prototype, 'error')
-      .mockImplementation(() => undefined);
+    const a = keyedA;
+    quietA();
     const row = a.decryptRecord({ items: '1'.repeat(48) }, SCHEMA);
     expect(row.items).toEqual([]);
     expect(a.unreadableFields(row)).toEqual(['items']);
   });
 
   it('поля вне схемы не расшифровываются, даже если в них лежит шифротекст', () => {
-    const a = load(KEY_A);
+    const a = keyedA;
     const blob = a.encrypt('секрет')!;
     const json = a.encryptJson(['x'])!;
     const row = { 'Stryker was here': blob, other: json };
@@ -225,7 +247,7 @@ describe('decryptRecord: провал расшифровки — явный ис
   });
 
   it('unreadableFields у обычного объекта — пустой список', () => {
-    expect(load(KEY_A).unreadableFields({ a: 1 })).toEqual([]);
+    expect(keyedA.unreadableFields({ a: 1 })).toEqual([]);
   });
 });
 

@@ -77,13 +77,22 @@ describe('KEYS: разбор ENCRYPTION_KEY и ENCRYPTION_KEY_OLD', () => {
 });
 
 describe('keyedDigests: HMAC под подключом каждого ключа', () => {
+  let keyless: KeysModule;
+  let rotated: KeysModule;
+  let keyed: KeysModule;
+  beforeAll(() => {
+    keyless = loadKeys({});
+    rotated = loadKeys({ key: KEY_A, old: KEY_B });
+    keyed = loadKeys({ key: KEY_A });
+  });
+
   it('без ключей — current null и пустой all', () => {
-    const { keyedDigests } = loadKeys({});
+    const { keyedDigests } = keyless;
     expect(keyedDigests('room', 'x')).toEqual({ current: null, all: [] });
   });
 
   it('current совпадает с первым из all; старый ключ даёт другой дайджест', () => {
-    const { keyedDigests } = loadKeys({ key: KEY_A, old: KEY_B });
+    const { keyedDigests } = rotated;
     const d = keyedDigests('room', 'client-1');
     expect(d.all).toHaveLength(2);
     expect(d.current).toBe(d.all[0]);
@@ -92,7 +101,7 @@ describe('keyedDigests: HMAC под подключом каждого ключа
   });
 
   it('метка и данные входят в дайджест', () => {
-    const { keyedDigests } = loadKeys({ key: KEY_A });
+    const { keyedDigests } = keyed;
     const base = keyedDigests('room', 'client-1').current;
     expect(keyedDigests('other', 'client-1').current).not.toBe(base);
     expect(keyedDigests('room', 'client-2').current).not.toBe(base);

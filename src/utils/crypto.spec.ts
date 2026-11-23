@@ -41,6 +41,28 @@ function loadCrypto(env: {
   return mod!;
 }
 
+// Тесты поведения берут готовые экземпляры (beforeAll); свежая загрузка в тесте —
+// только когда предмет теста сама загрузка (разбор ключей, падение на буте) или
+// троттлинг error-лога, который нечем сбросить.
+let keyedA: CryptoModule;
+let loggerA: NestLogger;
+let keyedB: CryptoModule;
+let keyless: CryptoModule;
+let loggerKeyless: NestLogger;
+let rotatedMod: CryptoModule;
+let onlyB: CryptoModule;
+let oldOnly: CryptoModule;
+beforeAll(() => {
+  keyedA = loadCrypto({ key: KEY_A });
+  loggerA = isolatedLogger;
+  keyedB = loadCrypto({ key: KEY_B });
+  keyless = loadCrypto({});
+  loggerKeyless = isolatedLogger;
+  rotatedMod = loadCrypto({ key: KEY_B, old: KEY_A });
+  onlyB = loadCrypto({ key: KEY_B });
+  oldOnly = loadCrypto({ old: KEY_A });
+});
+
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
   jest.restoreAllMocks();
@@ -48,7 +70,7 @@ afterEach(() => {
 
 describe('encrypt/decrypt roundtrip', () => {
   it('расшифровывает то, что зашифровал (кириллица, эмодзи, переносы)', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = keyedA;
     const text = 'Дневник: мне тяжело 😔\nно я справляюсь';
     const blob = encrypt(text);
     expect(blob).not.toBe(text);
@@ -56,7 +78,7 @@ describe('encrypt/decrypt roundtrip', () => {
   });
 
   it('шифротекст — base64-блоб формата iv(12)+tag(16)+data', () => {
-    const { encrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt } = keyedA;
     const blob = encrypt('x')!;
     const buf = Buffer.from(blob, 'base64');
     // 12 IV + 16 GCM-тэг + 1 байт данных
@@ -64,19 +86,19 @@ describe('encrypt/decrypt roundtrip', () => {
   });
 
   it('два шифрования одного текста дают разные блобы (случайный IV)', () => {
-    const { encrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt } = keyedA;
     expect(encrypt('одинаковый текст')).not.toBe(encrypt('одинаковый текст'));
   });
 
   it('ровно 29 декодированных байт (iv12+tag16+1 байт данных) — минимально валидный шифротекст, decrypt его реально расшифровывает, а не отбрасывает как "слишком короткий" (граница < vs <=)', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = keyedA;
     const blob = encrypt('x')!;
     expect(Buffer.from(blob, 'base64').length).toBe(29);
     expect(decrypt(blob)).toBe('x');
   });
 
   it('null/undefined/пустая строка проходят насквозь', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = keyedA;
     expect(encrypt(null)).toBeNull();
     expect(encrypt(undefined)).toBeNull();
     expect(encrypt('')).toBe('');
@@ -85,9 +107,9 @@ describe('encrypt/decrypt roundtrip', () => {
   });
 
   it('легаси-плейнтекст (не base64-блоб) возвращается как есть без error-лога', () => {
-    const { decrypt } = loadCrypto({ key: KEY_A });
+    const { decrypt } = keyedA;
     const warn = jest
-      .spyOn(isolatedLogger.prototype, 'error')
+      .spyOn(loggerA.prototype, 'error')
       .mockImplementation(() => {});
     expect(decrypt('обычная старая заметка')).toBe('обычная старая заметка');
     expect(warn).not.toHaveBeenCalled();
@@ -96,7 +118,7 @@ describe('encrypt/decrypt roundtrip', () => {
 
 describe('конфигурация ключей', () => {
   it('без ключа в dev — passthrough (encrypt и decrypt не трогают текст)', () => {
-    const { encrypt, decrypt } = loadCrypto({});
+    const { encrypt, decrypt } = keyless;
     expect(encrypt('текст')).toBe('текст');
     expect(decrypt('текст')).toBe('текст');
   });
@@ -156,10 +178,10 @@ describe('конфигурация ключей', () => {
     expect(Buffer.from(blob, 'base64').length).toBe(
       12 + 16 + 'текст'.length * 2,
     );
-    expect(loadCrypto({ key: KEY_A }).decrypt(blob)).toBe('текст');
+    expect(keyedA.decrypt(blob)).toBe('текст');
     const padded = loadCrypto({ key: `  ${KEY_A} ` }).encrypt('текст')!;
     expect(padded).not.toBe('текст');
-    expect(loadCrypto({ key: KEY_A }).decrypt(padded)).toBe('текст');
+    expect(keyedA.decrypt(padded)).toBe('текст');
   });
 
   // Якоря HEX_KEY_RE. Без `^` подходил бы мусор перед ключом, без `$` — после
@@ -203,8 +225,8 @@ describe('конфигурация ключей', () => {
   it('ENCRYPTION_KEY_OLD: пробелы вокруг ключей и пустые элементы списка — не ошибка, ключи читают', () => {
     // Вставка в панель хостинга даёт пробелы и хвостовую запятую; такой
     // список в production не должен ронять бут, а ключи в нём — работать.
-    const a = loadCrypto({ key: KEY_A }).encrypt('от ключа A')!;
-    const b = loadCrypto({ key: KEY_B }).encrypt('от ключа B')!;
+    const a = keyedA.encrypt('от ключа A')!;
+    const b = keyedB.encrypt('от ключа B')!;
     const rotated = loadCrypto({
       key: 'cc'.repeat(32),
       old: ` ${KEY_A} , ${KEY_B} ,,`,
@@ -234,7 +256,7 @@ describe('конфигурация ключей', () => {
   it('битый старый ключ вне production не роняет загрузку — отбрасывается, текущий и валидные старые работают', () => {
     // Падать на бут из-за мусора в OLD нужно только в проде; в dev/тестах
     // молчаливо игнорируем, чтобы не ломать локальный запуск.
-    const fromA = loadCrypto({ key: KEY_A }).encrypt('от ключа A')!;
+    const fromA = keyedA.encrypt('от ключа A')!;
     const mod = loadCrypto({ key: KEY_B, old: `zz${KEY_A},${KEY_A}` });
     expect(mod.decrypt(fromA)).toBe('от ключа A');
     expect(mod.decrypt(mod.encrypt('свежее'))).toBe('свежее');
@@ -250,7 +272,7 @@ describe('конфигурация ключей', () => {
     // Модуль грузим НЕ в production (падения при загрузке не будет), затем окружение
     // переключается в production уже после загрузки — encrypt() обязан среагировать
     // на это при следующем вызове, а не полагаться только на проверку из loadKeys().
-    const { encrypt } = loadCrypto({ nodeEnv: 'test' });
+    const { encrypt } = keyless;
     process.env.NODE_ENV = 'production';
     expect(() => encrypt('текст')).toThrow(/ENCRYPTION_KEY is not configured/);
   });
@@ -262,9 +284,9 @@ describe('ALL_KEYS: полное отсутствие ключей (ни current
     // отфильтрованным, ALL_KEYS.length перестал бы быть 0 — decrypt() пошёл бы в цикл
     // расшифровки, впустую перебрал бы "ключ" null и с шумом сообщил бы о порче данных,
     // хотя на самом деле шифрование просто не настроено вовсе.
-    const { decrypt } = loadCrypto({}); // ни ENCRYPTION_KEY, ни ENCRYPTION_KEY_OLD
+    const { decrypt } = keyless; // ни ENCRYPTION_KEY, ни ENCRYPTION_KEY_OLD
     const warn = jest
-      .spyOn(isolatedLogger.prototype, 'error')
+      .spyOn(loggerKeyless.prototype, 'error')
       .mockImplementation(() => {});
     const blobShaped = Buffer.alloc(30, 1).toString('base64'); // валиден по форме (>=29 байт)
     expect(decrypt(blobShaped)).toBe(blobShaped);
@@ -274,43 +296,43 @@ describe('ALL_KEYS: полное отсутствие ключей (ни current
 
 describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
   it('блоб, зашифрованный старым ключом, читается через ENCRYPTION_KEY_OLD', () => {
-    const oldMod = loadCrypto({ key: KEY_A });
+    const oldMod = keyedA;
     const blob = oldMod.encrypt('данные до ротации');
 
-    const rotated = loadCrypto({ key: KEY_B, old: KEY_A });
+    const rotated = rotatedMod;
     expect(rotated.decrypt(blob)).toBe('данные до ротации');
   });
 
   it('новые записи шифруются ТОЛЬКО текущим ключом (старый — read-only)', () => {
-    const rotated = loadCrypto({ key: KEY_B, old: KEY_A });
+    const rotated = rotatedMod;
     const blob = rotated.encrypt('данные после ротации');
 
-    const onlyNew = loadCrypto({ key: KEY_B });
+    const onlyNew = onlyB;
     expect(onlyNew.decrypt(blob)).toBe('данные после ротации');
   });
 
   it('reencrypt перешифровывает старый блоб текущим ключом', () => {
-    const oldMod = loadCrypto({ key: KEY_A });
+    const oldMod = keyedA;
     const oldBlob = oldMod.encrypt('перешифруй меня');
 
-    const rotated = loadCrypto({ key: KEY_B, old: KEY_A });
+    const rotated = rotatedMod;
     const newBlob = rotated.reencrypt(oldBlob);
     expect(newBlob).not.toBe(oldBlob);
 
     // после удаления ENCRYPTION_KEY_OLD данные обязаны остаться читаемыми
-    const onlyNew = loadCrypto({ key: KEY_B });
+    const onlyNew = onlyB;
     expect(onlyNew.decrypt(newBlob)).toBe('перешифруй меня');
   });
 
   it('reencrypt не трогает плейнтекст и null', () => {
-    const { reencrypt } = loadCrypto({ key: KEY_A });
+    const { reencrypt } = keyedA;
     expect(reencrypt('просто текст')).toBe('просто текст');
     expect(reencrypt(null)).toBeNull();
   });
 
   it('ENCRYPTION_KEY_OLD принимает несколько ключей через запятую', () => {
-    const a = loadCrypto({ key: KEY_A }).encrypt('от ключа A');
-    const b = loadCrypto({ key: KEY_B }).encrypt('от ключа B');
+    const a = keyedA.encrypt('от ключа A');
+    const b = keyedB.encrypt('от ключа B');
 
     const third = loadCrypto({
       key: 'cc'.repeat(32),
@@ -321,7 +343,7 @@ describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
   });
 
   it('старый ключ из ENCRYPTION_KEY_OLD парсится в Buffer правильной длины (32 байта), а не остаётся сырой hex-строкой — иначе createDecipheriv валится на длине ключа и расшифровка молча не срабатывает', () => {
-    const oldMod = loadCrypto({ key: KEY_A });
+    const oldMod = keyedA;
     const blob = oldMod.encrypt('чувствительный текст под старым ключом')!;
 
     const warn = jest
@@ -339,15 +361,15 @@ describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
     // до decrypt() (успешно расшифрует через OLD-ключ) и затем до encrypt() — а encrypt()
     // без CURRENT_KEY в dev/test-режиме возвращает текст КАК ЕСТЬ, т.е. plaintext секрет
     // вместо исходного шифроблока.
-    const encrypted = loadCrypto({ key: KEY_A }).encrypt(
+    const encrypted = keyedA.encrypt(
       'чувствительные данные, не должны утечь в plaintext',
     )!;
-    const { reencrypt } = loadCrypto({ old: KEY_A }); // CURRENT_KEY отсутствует
+    const { reencrypt } = oldOnly; // CURRENT_KEY отсутствует
     expect(reencrypt(encrypted)).toBe(encrypted);
   });
 
   it('reencrypt: значение, которое decrypt() распознал как легаси-плейнтекст (не шифроблок), не прогоняется через encrypt() заново', () => {
-    const { reencrypt } = loadCrypto({ key: KEY_A });
+    const { reencrypt } = keyedA;
     const legacyPlain = 'ещё одна легаси-запись без шифрования';
     expect(reencrypt(legacyPlain)).toBe(legacyPlain);
   });
@@ -412,9 +434,9 @@ describe('GCM-аутентификация и алерт о порче (ауди
   // base64 может дать ≥29 байт и провалить GCM, но это не порча: без этой
   // проверки каждая такая строка будила бы владельца ложной тревогой.
   it('длинный легаси-plaintext (не строгий base64) не поднимает тревогу', () => {
-    const { decrypt } = loadCrypto({ key: KEY_A });
+    const { decrypt } = keyedA;
     const err = jest
-      .spyOn(isolatedLogger.prototype, 'error')
+      .spyOn(loggerA.prototype, 'error')
       .mockImplementation(() => {});
     const legacy = 'ivan.petrov.very.long.address@example-organisation.com';
     expect(decrypt(legacy)).toBe(legacy);
@@ -422,7 +444,7 @@ describe('GCM-аутентификация и алерт о порче (ауди
   });
 
   it('блоб от неизвестного ключа (неполная ротация) тоже даёт error-лог', () => {
-    const foreign = loadCrypto({ key: KEY_A }).encrypt('чужой ключ')!;
+    const foreign = keyedA.encrypt('чужой ключ')!;
     const { decrypt } = loadCrypto({ key: KEY_B });
     const warn = jest
       .spyOn(isolatedLogger.prototype, 'error')
@@ -474,13 +496,13 @@ describe('GCM-аутентификация и алерт о порче (ауди
 
 describe('encryptJson / decryptJson', () => {
   it('roundtrip массива и объекта', () => {
-    const { encryptJson, decryptJson } = loadCrypto({ key: KEY_A });
+    const { encryptJson, decryptJson } = keyedA;
     const items = [{ id: 1, text: 'пункт' }, 'строка'];
     expect(decryptJson(encryptJson(items))).toEqual(items);
   });
 
   it('null → null; мусор после расшифровки → null', () => {
-    const { encrypt, encryptJson, decryptJson } = loadCrypto({ key: KEY_A });
+    const { encrypt, encryptJson, decryptJson } = keyedA;
     expect(encryptJson(null)).toBeNull();
     // валидный блоб, но внутри не JSON
     expect(decryptJson(encrypt('не json'))).toBeNull();
@@ -489,13 +511,13 @@ describe('encryptJson / decryptJson', () => {
 
 describe('looksLikeCiphertext (используется classify в encrypt-migration.rows.ts для защиты от двойного шифрования)', () => {
   it('настоящий шифроблок распознаётся как «похоже на шифротекст»', () => {
-    const { encrypt, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { encrypt, looksLikeCiphertext } = keyedA;
     const blob = encrypt('данные')!;
     expect(looksLikeCiphertext(blob)).toBe(true);
   });
 
   it('обычный плейнтекст (не base64 нужной длины) — не похож на шифротекст', () => {
-    const { looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { looksLikeCiphertext } = keyedA;
     expect(looksLikeCiphertext('anxiety,anger')).toBe(false);
     expect(looksLikeCiphertext('')).toBe(false);
     expect(looksLikeCiphertext(null)).toBe(false);
@@ -503,7 +525,7 @@ describe('looksLikeCiphertext (используется classify в encrypt-migr
   });
 
   it('короткий base64-блоб (< 29 байт) и мусор с недопустимыми символами — не похожи на шифротекст', () => {
-    const { looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { looksLikeCiphertext } = keyedA;
     expect(looksLikeCiphertext(Buffer.from('short').toString('base64'))).toBe(
       false,
     );
@@ -512,7 +534,7 @@ describe('looksLikeCiphertext (используется classify в encrypt-migr
   });
 
   it('невалидный символ (пробел) внутри строки правильной длины (кратной 4, декод >=29 байт) не считается шифротекстом — регэксп обязан быть заякорён и слева (^), и справа ($)', () => {
-    const { encrypt, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { encrypt, looksLikeCiphertext } = keyedA;
     // достаточно длинный текст, чтобы порча одного символа не увела декодированную
     // длину ниже 29 байт — иначе тест ловил бы длину, а не алфавит
     const blob = encrypt(
@@ -525,7 +547,7 @@ describe('looksLikeCiphertext (используется classify в encrypt-migr
   });
 
   it('длина строки не кратна 4 — не похоже на шифротекст, даже если алфавит валиден', () => {
-    const { encrypt, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { encrypt, looksLikeCiphertext } = keyedA;
     const blob = encrypt(
       'текст такой длины, чтобы обрезка на 1 символ не увела декодированную длину ниже 29 байт',
     )!;
@@ -535,14 +557,14 @@ describe('looksLikeCiphertext (используется classify в encrypt-migr
   });
 
   it('ровно 29 декодированных байт — граница >= (не >), считается шифротекстом', () => {
-    const { encrypt, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { encrypt, looksLikeCiphertext } = keyedA;
     const blob = encrypt('x')!;
     expect(Buffer.from(blob, 'base64').length).toBe(29);
     expect(looksLikeCiphertext(blob)).toBe(true);
   });
 
   it('длина декодируется именно как base64, а не как utf8-байты самой строки — короткий (28 байт) payload с длинной (40 символов) base64-записью не должен ложно распознаваться как шифротекст', () => {
-    const { looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { looksLikeCiphertext } = keyedA;
     // 28 декодированных байт (< 29 — НЕ шифротекст), но сама base64-строка длиной
     // 40 символов (её utf8-длина как текста была бы >= 29 — если бы decode шёл
     // как utf8 вместо base64, проверка длины ложно прошла бы)
@@ -557,7 +579,7 @@ describe('encryptRecord / decryptRecord (схема записи)', () => {
   const SCHEMA = { strings: ['text'], jsonArrays: ['items'] };
 
   it('roundtrip: шифрует объявленные поля, не трогает id/userId/enum', () => {
-    const { encryptRecord, decryptRecord } = loadCrypto({ key: KEY_A });
+    const { encryptRecord, decryptRecord } = keyedA;
     const data = {
       id: 7,
       userId: 42n,
@@ -576,20 +598,20 @@ describe('encryptRecord / decryptRecord (схема записи)', () => {
   });
 
   it('null-поля остаются null', () => {
-    const { encryptRecord, decryptRecord } = loadCrypto({ key: KEY_A });
+    const { encryptRecord, decryptRecord } = keyedA;
     const stored = encryptRecord({ text: null, items: null }, SCHEMA);
     expect(stored).toEqual({ text: null, items: null });
     expect(decryptRecord(stored, SCHEMA)).toEqual({ text: null, items: null });
   });
 
   it('forward-compat: легаси-строка с уже десериализованным JSON-полем возвращается как есть', () => {
-    const { decryptRecord } = loadCrypto({ key: KEY_A });
+    const { decryptRecord } = keyedA;
     const legacyRow = { text: 'плейнтекст', items: ['уже', 'массив'] };
     expect(decryptRecord(legacyRow, SCHEMA)).toEqual(legacyRow);
   });
 
   it('jsonArrays-поле реально шифруется (в хранимом значении нет читаемого текста) — это не эквивалент незашифрованного JSON.stringify', () => {
-    const { encryptRecord, looksLikeCiphertext } = loadCrypto({ key: KEY_A });
+    const { encryptRecord, looksLikeCiphertext } = keyedA;
     const stored = encryptRecord(
       { items: ['секретный пункт', 'ещё один секрет'] },
       { jsonArrays: ['items'] },
@@ -606,13 +628,13 @@ describe('encryptRecord/decryptRecord: необъявленные поля не 
   const PLACEHOLDER = 'Stryker was here';
 
   it('encryptRecord: поле без объявления в strings/jsonArrays не меняется', () => {
-    const { encryptRecord } = loadCrypto({ key: KEY_A });
+    const { encryptRecord } = keyedA;
     const data = { id: 1, [PLACEHOLDER]: 'не должно измениться' };
     expect(encryptRecord(data, {})[PLACEHOLDER]).toBe('не должно измениться');
   });
 
   it('decryptRecord: поле без объявления в strings/jsonArrays не меняется', () => {
-    const { decryptRecord } = loadCrypto({ key: KEY_A });
+    const { decryptRecord } = keyedA;
     const row = { id: 1, [PLACEHOLDER]: 'плейнтекст' };
     expect(decryptRecord(row, {})[PLACEHOLDER]).toBe('плейнтекст');
   });
@@ -620,13 +642,13 @@ describe('encryptRecord/decryptRecord: необъявленные поля не 
 
 describe('encryptRecord/decryptRecord: undefined-поле остаётся undefined, а не превращается в null', () => {
   it('encryptRecord пропускает undefined-поле (не подставляет encrypt(undefined) === null)', () => {
-    const { encryptRecord } = loadCrypto({ key: KEY_A });
+    const { encryptRecord } = keyedA;
     const data: Record<string, unknown> = { id: 1, text: undefined };
     expect(encryptRecord(data, { strings: ['text'] }).text).toBeUndefined();
   });
 
   it('decryptRecord пропускает undefined-поле (не подставляет decrypt(undefined) === null)', () => {
-    const { decryptRecord } = loadCrypto({ key: KEY_A });
+    const { decryptRecord } = keyedA;
     const row: Record<string, unknown> = { id: 1, text: undefined };
     expect(decryptRecord(row, { strings: ['text'] }).text).toBeUndefined();
   });
