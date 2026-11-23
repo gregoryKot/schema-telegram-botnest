@@ -93,6 +93,7 @@ describe('check-spec-load-in-test.mjs', () => {
     ['пустая причина', "loadAsSubject('', () => load('a'))"],
     ['причина из пробелов', "loadAsSubject('  ', () => load('a'))"],
     ['причина не литералом', "loadAsSubject(WHY, () => load('a'))"],
+    ['причина шаблоном', "loadAsSubject(`${WHY}`, () => load('a'))"],
     [
       'загрузка рядом с обёрткой',
       "loadAsSubject('причина', () => 1); load('a')",

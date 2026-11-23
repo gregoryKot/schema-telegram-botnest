@@ -5,7 +5,7 @@ import { functionsOf } from './gate-functions.mjs';
 // Загрузка своего модуля: относительный require/import(), загрузчик под ключами, изоляция реестра jest.
 const LOAD_RE = /\brequire\s*\(\s*['"`]\.|\bimport\s*\(\s*['"`]\.|\bloadWithKeys\s*\(|\bjest\s*\.\s*isolateModules(?:Async)?\s*\(/g;
 const TEST_RE = /(?<![\w$.])(?:it|test)(?:\s*\.\s*[\w$]+)*\s*\(/g;
-const SUBJECT_RE = /(?<![\w$.])loadAsSubject\s*\(\s*(['"`])([^'"`\n]*)\1\s*,/g;
+const SUBJECT_RE = /(?<![\w$.])loadAsSubject\s*\(\s*(['"])([^'"\n]*)\1\s*,/g;
 const esc = (s) => s.replace(/\$/g, '\\$');
 
 /** Скобки `loadAsSubject('причина', …)`: загрузка — предмет теста. Пустая причина исключения не даёт. */
