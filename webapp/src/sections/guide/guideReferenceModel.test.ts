@@ -65,15 +65,15 @@ describe('buildReference', () => {
     expect(techniques.map((g) => g.title)).toEqual(['Эмпирические']); // пустые группы отсеяны
     expect(techniques[0].items[0]).toEqual({
       kind: 'technique', id: 'imagery_rescripting', name: 'Рескриптинг образов', sub: FIXTURE_TECHNIQUES[0].summary,
-      sign: 'rescript',
+      sign: 'rescript', hue: 310, // бумага группы «Эмпирические»
     });
     expect(practice[0].items).toEqual([
-      { kind: 'note', id: 'group_therapy', name: 'Групповой формат', sub: FIXTURE_PRACTICE_NOTE.summary, sign: 'cluster' },
-      { kind: 'note', id: 'свой_раздел', name: 'Свой раздел', sub: FIXTURE_PRACTICE_NOTE.summary, sign: undefined },
+      { kind: 'note', id: 'group_therapy', name: 'Групповой формат', sub: FIXTURE_PRACTICE_NOTE.summary, sign: 'cluster', hue: practice[0].look.hue },
+      { kind: 'note', id: 'свой_раздел', name: 'Свой раздел', sub: FIXTURE_PRACTICE_NOTE.summary, sign: undefined, hue: practice[0].look.hue },
     ]);
-    // у листа техник и «Для терапевта» знака нет — он у каждой строки свой
-    expect([techniques[0].look, practice[0].look]).toEqual([{ hue: 45 }, { hue: 240 }
-    ]);
+    // у листа техник и «Для терапевта» знака нет — он у каждой строки свой; бумага — своей группы
+    expect(techniques[0].look).toEqual({ hue: 310 });
+    expect(practice[0].look.sign).toBeUndefined();
   });
 
   it('раздел без текстов — пустой список, а не группа без строк', () => {
@@ -86,8 +86,8 @@ describe('buildReference', () => {
     expect(rest).toEqual([]);
     expect(group).toMatchObject({ title: CONCERNS_TITLE, hint: CONCERNS_HINT, look: { hue: 195 } });
     expect(group.items).toEqual([
-      { kind: 'concern', id: 'bpd', name: 'Пограничное расстройство', sub: 'Вырастить Здорового Взрослого', sign: 'ribbon' },
-      { kind: 'concern', id: 'свой_запрос', name: 'Свой запрос', sub: 'Вырастить Здорового Взрослого', sign: undefined },
+      { kind: 'concern', id: 'bpd', name: 'Пограничное расстройство', sub: 'Вырастить Здорового Взрослого', sign: 'ribbon', hue: 195 },
+      { kind: 'concern', id: 'свой_запрос', name: 'Свой запрос', sub: 'Вырастить Здорового Взрослого', sign: undefined, hue: 195 },
     ]);
   });
 

@@ -28,7 +28,7 @@ export function TechniqueSheet({ technique: t, usages = [], mark, onClose, backR
   return (
     <GuidePage
       label={t.approach ? `Из другого подхода · ${t.approach}` : 'Техника'} title={t.name} lede={t.summary} onClose={onClose} backRef={backRef}
-      look={techniqueGuideLook(t.id)}
+      look={techniqueGuideLook(t)}
       more={t.more} sources={t.sources}
       moreParts={[
         { title: 'Когда не делать', text: t.cautions, address: at('cautions') },

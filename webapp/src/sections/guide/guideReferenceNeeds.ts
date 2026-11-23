@@ -45,12 +45,12 @@ export function buildNeedGuides(texts: NeedTexts, tr: Tr): NeedGuideView[] {
   });
 }
 
-/** Один лист нейтральной бумаги, как у техник: знак у каждой строки свой. */
+/** Карточка потребности — на бумаге своего домена (NEED_HUE), знак у каждой свой. */
 export function needGroups(views: NeedGuideView[]): ReferenceGroup[] {
   return [{
     key: 'needs',
     look: { hue: TECHNIQUES_HUE },
-    items: views.map((n) => ({ kind: 'need' as const, id: n.id, name: n.name, sub: n.subtitle, sign: needLook(n.id).sign })),
+    items: views.map((n) => ({ kind: 'need' as const, id: n.id, name: n.name, sub: n.subtitle, ...needLook(n.id) })),
   }];
 }
 

@@ -5,7 +5,7 @@
 import type { Look, SheetLook } from './entityLook';
 import { PAPER_HUE, type PaperHue } from './signKeys';
 
-/** Стадии пути по порядку: ключ вида фазы шаблона (PathTemplatePhase.look) и лист справочника с тем же id. */
+/** Стадии пути по порядку: id листа справочника и ключ вида фазы шаблона (PathTemplatePhase.look). */
 export const PHASE_LOOK_KEYS = [
   'assessment',
   'safety',
@@ -24,6 +24,12 @@ export const PHASE_LOOK: Record<PhaseLookKey, Look> = {
   healing: { hue: 195, sign: 'path_healing' },
   autonomy: { hue: 240, sign: 'path_autonomy' },
 };
+
+/** Фаза шаблона после автономии (завершение, поддерживающие встречи): листа справочника у неё нет, круг палитры идёт дальше — сирень. */
+export const ENDING_LOOK: Look = { hue: 290, sign: 'path_ending' };
+/** Ключ вида фазы шаблона: стадия справочника, которой фаза соответствует (одна из её guidePhaseIds), или завершение. */
+export const TEMPLATE_LOOK_KEYS = [...PHASE_LOOK_KEYS, 'ending'] as const;
+export type TemplateLookKey = (typeof TEMPLATE_LOOK_KEYS)[number];
 
 /** Обзор, сквозные темы и шаблоны: лист пути → вид (id листов — shared/…/guide/phases/). */
 const OTHER_LOOK: Record<string, Look> = {
@@ -46,7 +52,8 @@ const TEMPLATE_HUE: Record<string, PaperHue> = {
 /** Префикс id листа шаблона; тот же, что TEMPLATE_SHEET_PREFIX (guide/phases/templateSheets.ts) — сверяет pathLook.test.ts. */
 export const TEMPLATE_SHEET_PREFIX_ID = 'template_';
 
-export const phaseLook = (key: PhaseLookKey): Look => PHASE_LOOK[key];
+export const phaseLook = (key: TemplateLookKey): Look =>
+  key === 'ending' ? ENDING_LOOK : PHASE_LOOK[key];
 
 /** Вид листа вкладки по id: стадия, обзор, сквозная тема или шаблон; неизвестный — сирень без знака. */
 export function pathSheetLook(id: string): SheetLook {

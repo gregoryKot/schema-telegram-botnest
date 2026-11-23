@@ -131,7 +131,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('autonomy'),
       ],
       guidePhaseIds: ['autonomy'],
-      look: 'managing',
+      look: 'autonomy',
     },
     {
       id: 'ending',
@@ -158,7 +158,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
-      look: 'autonomy',
+      look: 'ending',
     },
   ],
   caveats: [
