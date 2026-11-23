@@ -1,5 +1,5 @@
 import type { TechniqueGuide, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
-import { MORE_TECHNIQUES_TITLE } from '../../../../../shared/src/schemaTherapy/guide/address';
+import { MORE_TECHNIQUES_TITLE } from '../../../../../shared/src/schemaTherapy/guide/address/addressTitles';
 import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
 import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
 import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclosure';

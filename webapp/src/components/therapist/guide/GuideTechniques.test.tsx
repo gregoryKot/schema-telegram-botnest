@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModeGuideSheet } from './ModeGuideSheet';
-import { MORE_TECHNIQUES_TITLE } from '../../../../../shared/src/schemaTherapy/guide/address';
+import { MORE_TECHNIQUES_TITLE } from '../../../../../shared/src/schemaTherapy/guide/address/addressTitles';
 import { FIXTURE_TECHNIQUES, FIXTURE_VIEW } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 const [main, extra] = FIXTURE_TECHNIQUES;
