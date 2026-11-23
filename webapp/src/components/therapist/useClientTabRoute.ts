@@ -11,7 +11,7 @@ import type { TherapyClientSummary } from '../../api';
 import { clientRef, matchesClientRef } from '../../../../shared/src/utils/clientRef';
 import type { ClientTab } from './clientSheetTypes';
 import type { TasksBoard } from './useTasksBoard';
-import { keepLayoutSearch } from './plan/planLayoutParam';
+import { keepLayoutSearch } from './plan/keepLayoutSearch';
 import { clientCardPath, clientTabFromPath, listTabFromPath, listTabPath, type ListTab } from './clientTabRoute';
 
 interface Params {
@@ -24,8 +24,7 @@ interface Params {
 export function useClientTabRoute({ view, openClientRef, detail, board }: Params) {
   const { pathname, search, state } = useLocation();
   const navigate = useNavigate();
-  const routeTab = clientTabFromPath(pathname);
-  const listTab = listTabFromPath(pathname);
+  const [routeTab, listTab] = [clientTabFromPath(pathname), listTabFromPath(pathname)];
   const { selectedClient, clientTab } = detail;
   // Открыта карточка именно того клиента, что в адресе (не прежний, не без адреса в тестах).
   const onCard = view === 'client' && selectedClient != null && matchesClientRef(selectedClient, openClientRef);

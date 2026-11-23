@@ -13,11 +13,5 @@ export function planPhasesPath(ref: string): string {
   return `${clientCardPath(ref, 'plan')}?layout=phases`;
 }
 
-/** Из строки запроса — только `layout`: раскладка плана переживает смену вкладки карточки. */
-export function keepLayoutSearch(search: string): string {
-  const v = layoutFromSearch(search);
-  return v ? `?layout=${v}` : '';
-}
-
 /** Раскладка, с которой вкладку открыли по адресу (читается один раз, при монтировании). */
 export const useLayoutFromUrl = (): PlanLayout | null => layoutFromSearch(useLocation().search);
