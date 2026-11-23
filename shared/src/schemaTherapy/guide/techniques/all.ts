@@ -12,6 +12,7 @@ import { buildPatternBreakingTechniques } from './patternBreaking';
 import { buildLimitedReparentingTechniques } from './limitedReparenting';
 import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
+import { buildSafetyBubbleTechniques } from './safetyBubble';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
@@ -42,6 +43,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildLimitedReparentingTechniques,
   buildRelationshipTechniques,
   buildImageryMoreTechniques,
+  buildSafetyBubbleTechniques,
   buildImageryModeDialogueTechniques,
   buildFormulationTechniques,
   buildEvidenceWorkTechniques,
