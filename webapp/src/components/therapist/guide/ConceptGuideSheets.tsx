@@ -74,6 +74,12 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
     if (back) back(() => actions.onOpenSchema(id));
     else actions.onOpenSchema(id);
   };
+  // Режим из листа схемы — так же.
+  const openMode = (id: string) => {
+    const back = backRefs?.section.current;
+    if (back) back(() => actions.onOpenMode(id));
+    else actions.onOpenMode(id);
+  };
   const markFrom = openTechnique?.from;
   // Строка журнала за сегодня — та же кнопка «сегодня», что из схемы случая.
   const day = journal && openTechnique?.day !== journal.today() ? openTechnique?.day : undefined;
@@ -90,7 +96,7 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
         <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} onOpenSchema={openSchema} {...sheetProps(sheet)} />
       )}
       {sheet?.kind === 'schema' && schemaView && (
-        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} {...sheetProps(sheet)} />
+        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} onOpenMode={openMode} {...sheetProps(sheet)} />
       )}
       {technique && (
         <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />

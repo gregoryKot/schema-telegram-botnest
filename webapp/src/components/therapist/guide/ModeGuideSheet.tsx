@@ -6,7 +6,7 @@ import { PlanButton } from './PlanButton';
 import { modeGuideLook } from './guideLook';
 import { articleAddress } from './marks/guideMarkModel';
 import { GuidePoints } from './GuidePoints';
-import { GuideLinkRows } from './GuideLinkRows';
+import { guideLinksPart } from './guideLinksPart';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 
 type Props = GuideSheetActions & {
@@ -35,7 +35,7 @@ export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Pro
     <GuideSheet
       label="Режим" title={modeName} lede={guide.what} voice={guide.voice} view={view} {...actions}
       look={modeGuideLook(guide.modeId)} at={at}
-      moreParts={[schemasPart(view, at('schemas'), onOpenSchema)]}
+      moreParts={[guideLinksPart('Типичен для схем', view.schemas, at('schemas'), onOpenSchema)]}
     >
       <GuideSection title="Цель" text={guide.goal} address={at('goal')} />
       {channels.length > 0 && (
@@ -45,10 +45,4 @@ export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Pro
       )}
     </GuideSheet>
   );
-}
-
-function schemasPart({ schemas }: ModeGuideView, address: string, onOpen?: (id: string) => void) {
-  const title = 'Типичен для схем';
-  if (!onOpen) return { title, text: schemas.map((s) => s.name).join(', '), address };
-  return { title, address, children: schemas.length > 0 ? <GuideLinkRows items={schemas} onOpen={onOpen} /> : undefined };
 }

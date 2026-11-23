@@ -11,6 +11,7 @@ import type { TherapyClientSummary } from '../../api';
 import { clientRef, matchesClientRef } from '../../../../shared/src/utils/clientRef';
 import type { ClientTab } from './clientSheetTypes';
 import type { TasksBoard } from './useTasksBoard';
+import { keepLayoutSearch } from './plan/planLayoutParam';
 import { clientCardPath, clientTabFromPath, listTabFromPath, listTabPath, type ListTab } from './clientTabRoute';
 
 interface Params {
@@ -21,7 +22,7 @@ interface Params {
 }
 
 export function useClientTabRoute({ view, openClientRef, detail, board }: Params) {
-  const { pathname, state } = useLocation();
+  const { pathname, search, state } = useLocation();
   const navigate = useNavigate();
   const routeTab = clientTabFromPath(pathname);
   const listTab = listTabFromPath(pathname);
@@ -38,7 +39,7 @@ export function useClientTabRoute({ view, openClientRef, detail, board }: Params
   useEffect(() => {
     if (!onCard) return;
     const to = clientCardPath(clientRef(selectedClient), clientTab);
-    if (to !== pathname) navigate(to, { replace: true, state });
+    if (to !== pathname) navigate({ pathname: to, search: keepLayoutSearch(search) }, { replace: true, state });
     // onCard — в зависимостях: с доски карточку открывают сразу на «Заданиях», а
     // адрес /cabinet/<код> приходит следующим рендером — без него вкладка из адреса терялась.
   }, [clientTab, selectedClient, onCard]); // eslint-disable-line react-hooks/exhaustive-deps
