@@ -79,6 +79,7 @@ const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
 
 const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   healthy_adult_plan: 'plan_ahead',
+  safety_bubble: 'bubble',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
