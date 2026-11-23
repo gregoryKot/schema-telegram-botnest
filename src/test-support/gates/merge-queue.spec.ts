@@ -481,7 +481,7 @@ describe('merge-queue.mjs: конфликт с main', () => {
       git(origin, 'rev-parse', 'main'),
     );
     expect(show('b-4', BACKLOG)).toContain(
-      '- ✅ ветка\n- ✅ main\n- ✅ старое',
+      '- ✅ main\n- ✅ ветка\n- ✅ старое',
     );
     // счётчик складывается: 10 + (12 − 10) + (11 − 10)
     expect(JSON.parse(show('b-4', SIZES))['src/a.ts']).toBe(13);
@@ -543,17 +543,51 @@ describe('merge-queue.mjs: конфликт с main', () => {
     const engine = readFileSync(SCRIPT, 'utf8');
     for (const part of ['merge-queue-api.mjs', 'merge-queue-conflict.mjs'])
       expect(engine).toContain(`from './${part}'`);
-    const modes: string[] = JSON.parse(
-      importExport('merge-queue-conflict.mjs', 'MODES', '(v) => v'),
+    const drivers: string[] = JSON.parse(
+      importExport(
+        'merge-drivers-check.mjs',
+        'driverConfig',
+        "(f) => f('/s').filter((a) => a !== '-c').map((a) => a.split('.')[1])",
+      ),
     );
     const used = new Set(
       [
         ...readFileSync(join(ROOT, '.gitattributes'), 'utf8').matchAll(
-          /merge=(ratchet-\w+)/g,
+          /^[^#\n]*merge=([\w-]+)/gm,
         ),
       ].map((m) => m[1]),
     );
-    expect([...used].sort()).toEqual(modes.map((m) => `ratchet-${m}`).sort());
+    used.delete('union');
+    expect([...used].sort()).toEqual(drivers.sort());
+  });
+
+  // Ветка PR отведена до починки: в её .gitattributes бэклог ещё `union`.
+  it('бэклог: строка, закрытая в main, не воскресает и у ветки со старым merge=union', async () => {
+    const open = (...rows: string[]) =>
+      backlog().replace('- ⬜ дело', rows.join('\n'));
+    const sha = diverge();
+    const seed = join(tmp, 'seed');
+    git(seed, 'checkout', '-q', '-B', 'main', 'main~1');
+    commit(
+      {
+        '.gitattributes': `${BACKLOG} merge=union\n`,
+        [BACKLOG]: open('- ⬜ a', '- ⬜ b', '- ⬜ c'),
+      },
+      'база 2',
+    );
+    git(seed, 'checkout', '-q', '-B', 'b-4');
+    commit({ [BACKLOG]: open('- ⬜ a', '- ⬜ c', '- ✅ b (ветка)') }, 'ветка');
+    git(seed, 'checkout', '-q', 'main');
+    commit({ [BACKLOG]: open('- ⬜ a', '- ⬜ b', '- ✅ c (main)') }, 'main');
+    git(seed, 'push', '-q', '--force', 'origin', 'main', 'b-4');
+    expect(sha).not.toBe(git(origin, 'rev-parse', 'b-4'));
+    await queue(
+      { n: 4, behind: 1, checks: GREEN, update: 422 },
+      git(origin, 'rev-parse', 'b-4'),
+    );
+    expect(show('b-4', BACKLOG)).toBe(
+      open('- ⬜ a', '- ✅ c (main)', '- ✅ b (ветка)').trimEnd(),
+    );
   });
 
   it('--dry-run конфликт не пушит и не комментирует', async () => {
