@@ -68,6 +68,9 @@ export const CABINET_FIXTURES: Record<string, unknown> = {
   [`GET /api/therapy/client/${id}/mode-notes`]: [],
   [`GET /api/therapy/client-history/${id}`]: [],
   [`GET /api/therapy/client/${id}/diary`]: [],
+  [`GET /api/therapy/plan/${id}`]: [],
+  [`GET /api/therapy/path/${id}`]: { path: null },
+  [`GET /api/therapy/guide-marks/${id}`]: { marks: [] },
 };
 
 /** Сессия терапевта с офлайн-клиентом; листы первого входа уже видены. Зовётся до goto. */

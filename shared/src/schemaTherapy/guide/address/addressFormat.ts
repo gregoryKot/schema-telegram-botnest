@@ -10,6 +10,7 @@ export const GUIDE_ARTICLE_KINDS = [
   'note',
   'concern',
   'phase',
+  'need',
 ] as const;
 export type GuideArticleKind = (typeof GUIDE_ARTICLE_KINDS)[number];
 

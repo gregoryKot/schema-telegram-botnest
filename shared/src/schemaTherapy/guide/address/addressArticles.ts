@@ -9,6 +9,7 @@ import {
 import type { Tr } from '../types';
 import { GUIDE_ARTICLE_KINDS, type GuideArticleKind } from './addressFormat';
 import { phaseArticles } from './addressArticlesPhase';
+import { needArticles } from './addressArticlesNeed';
 import { sectionsOf } from './addressSections';
 import {
   modeSchemaLinksAll,
@@ -95,6 +96,7 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
       }),
     })),
   phase: phaseArticles,
+  need: needArticles,
 };
 
 /** Все статьи справочника (или одного вида) с разделами, в форме обращения `tr`. */

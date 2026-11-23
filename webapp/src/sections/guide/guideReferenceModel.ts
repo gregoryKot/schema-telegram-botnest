@@ -8,7 +8,7 @@ import type { NeedId, Tr } from '../../../../shared/src/needs/types';
 import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
 import { MODE_GROUPS } from '../../../../shared/src/schemaTherapy/content/modeGroups';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
-import { domainLook, modeGroupLook, type SheetLook, type SignKey } from '../../../../shared/src/theme/entityLook';
+import { domainLook, modeGroupLook, type PaperHue, type SheetLook, type SignKey } from '../../../../shared/src/theme/entityLook';
 import { modeGuideLook, schemaGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
 import { mergeCoping } from './guideReferenceCoping';
 import { practiceGroups, techniqueGroups } from './guideReferenceTechniques';
@@ -35,7 +35,9 @@ export type ReferenceItem = {
   sub?: string;
   /** Знак листа (ключ реестра SignArt); нет — строка без картинки (не выдумываем чужую). */
   sign?: SignKey;
-  step?: number; // номер фазы в ленте «Пути терапии»: стоит на месте знака
+  step?: number; // номер фазы в ленте «Пути терапии»: над знаком (у строки с оттенком) или на его месте
+  /** Оттенок самого листа: строка рисуется бумажной карточкой этого оттенка (лист «Пути терапии»). */
+  hue?: PaperHue;
 } & ({ kind: 'mode' | 'schema' | 'note' | 'concern' | 'phase'; id: string } | { kind: 'technique'; id: TechniqueId } | { kind: 'need'; id: NeedId });
 
 export interface ReferenceGroup {
@@ -66,7 +68,7 @@ export const referenceLayout = (tab: ReferenceTab, searching: boolean): Referenc
 export type ReferenceTexts = Pick<
   Guide,
   'buildModeGuides' | 'buildSchemaDomainGuides' | 'buildTechniqueGuides' | 'practiceNotes' | 'buildConcernGuides' | 'buildPhaseGuides'
->;
+> & Partial<Pick<Guide, 'needGuides'>>;
 
 const nonEmpty = (groups: ReferenceGroup[]) => groups.filter((g) => g.items.length > 0);
 /** Лист без подписи и знака: домен, которого нет в таблице вида, не красится чужим оттенком. */

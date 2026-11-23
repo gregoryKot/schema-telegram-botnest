@@ -59,6 +59,11 @@ const PART = (table: string) =>
 export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
   { file: 'shared/src/schemaTherapy/guide/modes/', why: LINKS_CHECKED },
   { file: 'shared/src/schemaTherapy/guide/schemas/', why: LINKS_CHECKED },
+  { file: 'shared/src/schemaTherapy/guide/concerns/', why: LINKS_CHECKED },
+  {
+    file: 'shared/src/schemaTherapy/guide/concerns/',
+    why: 'статья «Запросов»: modeIds, schemaIds, techniques — проверка в guide/concerns/concerns.test.ts',
+  },
   {
     file: 'shared/src/schemaTherapy/guide/phases/',
     why: 'фаза «Путь терапии»: modeIds, techniques — проверка в guide/phases/phases.test.ts',
@@ -78,6 +83,10 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
   {
     file: 'shared/src/mode/modeTestControl.ts',
     why: PART('MODE_TEST_GROUPS (mode/modeTest.ts)'),
+  },
+  {
+    file: 'shared/src/therapy/sessionWork/techniqueWorkArntz.ts',
+    why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
   },
   {
     file: 'shared/src/therapy/sessionWork/techniqueWorkBorrowed.ts',

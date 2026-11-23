@@ -1,5 +1,6 @@
 import type { TechniqueId } from '../../../schemaTherapy/guide/techniqueIds';
 import type { Tr } from '../../../needs/types';
+import type { TemplateLookKey } from '../../../theme/pathLook';
 
 /**
  * Шаблон пути клиента: упорядоченные фазы со сроками. Из шаблона собирается путь клиента (#1522) и лист
@@ -28,6 +29,9 @@ export interface PathTemplatePhase {
   recommended: string[];
   /** Этапы справочника (id листов вкладки «Путь терапии»), которым фаза соответствует. */
   guidePhaseIds: string[];
+  /** Вид фазы: знак и оттенок стадии справочника из её `guidePhaseIds` (по смыслу, не по порядку);
+   *  `ending` — фаза после автономии. В шаблоне ключи не повторяются. */
+  look: TemplateLookKey;
 }
 
 export interface PathTemplate {

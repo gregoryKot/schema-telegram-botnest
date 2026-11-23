@@ -1,15 +1,17 @@
 // Вкладка «Путь терапии»: условные фазы лентой по порядку, за ней сквозные темы и шаблоны пути (shared/…/guide/phases/). Подпись и
-// подсказка группы отвечают «что это и зачем»; обзор идёт первым без номера, фазы — с номерами; бумага — своя сирень.
+// подсказка группы отвечают «что это и зачем»; обзор идёт первым без номера, фазы — с номерами. Каждый лист — своя бумага
+// и свой знак (pathSheetLook, shared/src/theme/pathLook.ts): стадии идут по кругу палитры, как путь.
 import type { PathSheetGroupId, PhaseGuide, TechniqueGuide } from '../../../../shared/src/schemaTherapy/guide';
 import type { Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
 import type { Tr } from '../../../../shared/src/needs/types';
 import { getModeById } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
-import { PAPER_HUE, type PaperHue, type SheetLook } from '../../../../shared/src/theme/entityLook';
+import { PAPER_HUE, type SheetLook } from '../../../../shared/src/theme/entityLook';
+import { pathSheetLook } from '../../../../shared/src/theme/pathLook';
 import type { GuideLink } from '../../components/therapist/guide/GuideLinkRows';
 import type { ReferenceGroup } from './guideReferenceModel';
 
-export const PHASES_HUE: PaperHue = PAPER_HUE.lilac;
-export const PHASE_LOOK: SheetLook = { hue: PHASES_HUE };
+/** Группа без своей бумаги: каждая строка — карточка оттенка своего листа. */
+const GROUP_LOOK: SheetLook = { hue: PAPER_HUE.lilac };
 export const PHASES_TITLE = 'Фазы по порядку';
 export const PHASES_HINT = 'Условная карта: фазы гибкие, клиент проходит их не по прямой и возвращается назад';
 /** Обзорный лист пути: стоит первым и номера не получает. */
@@ -37,8 +39,11 @@ export const phaseLabel = (step: number | undefined, group: PathSheetGroupId = '
 export function phaseGroups(guides: PhaseGuide[]): ReferenceGroup[] {
   const steps = phaseSteps(guides);
   return PATH_GROUPS.map((g) => ({
-    key: g.id, title: g.title, hint: g.hint, look: PHASE_LOOK,
-    items: guides.filter((p) => groupOf(p) === g.id).map((p) => ({ kind: 'phase' as const, id: p.id, name: p.name, sub: p.goal, step: steps.get(p.id) })),
+    key: g.id, title: g.title, hint: g.hint, look: GROUP_LOOK,
+    items: guides.filter((p) => groupOf(p) === g.id).map((p) => {
+      const look = pathSheetLook(p.id);
+      return { kind: 'phase' as const, id: p.id, name: p.name, sub: p.goal, step: steps.get(p.id), sign: look.sign, hue: look.hue };
+    }),
   }));
 }
 

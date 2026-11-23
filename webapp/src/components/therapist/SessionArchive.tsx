@@ -6,7 +6,7 @@ import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 import type { TherapistNotesPage } from '../../../../shared/src/therapy/notesPage';
 import { Sign } from './SignArt';
-import { SessionNoteRow } from './SessionNoteRow';
+import { SessionNoteRow } from './SessionNoteRow'; import { useSessionPlanTitles } from './useSessionPlanTitles';
 import { EarlySessionNote } from './EarlySessionNote';
 import type { UserId } from '../../../../shared/src/userId';
 import type { NamedMode } from './useCustomModeNames';
@@ -25,7 +25,7 @@ export function SessionArchive({ page, removeNote, takeFocus, customModes, clien
   const [focusId, setFocusId] = useState(() => takeFocus?.() ?? null);
   const focusRef = useRef<HTMLDivElement>(null);
   useEffect(() => { focusRef.current?.scrollIntoView?.({ block: 'center' }); }, []);
-  const { notes, total } = page;
+  const { notes, total } = page; const planTitles = useSessionPlanTitles(clientId, notes);
   const numbers = sessionNumbers(notes, total);
   const early = focusId !== null && clientId != null && !notes.some(n => n.id === focusId);
   // Одно подтверждение на показанные записи и на раннюю (её в `notes` нет — номер приходит с ней).
@@ -49,7 +49,7 @@ export function SessionArchive({ page, removeNote, takeFocus, customModes, clien
         notes.map(note => (
           <SessionNoteRow
             key={note.id} note={note} number={numbers.get(note.id)} focus={note.id === focusId} rowRef={note.id === focusId ? focusRef : undefined}
-            onDelete={() => setConfirmNote({ id: note.id, date: note.date, number: numbers.get(note.id) })} customModes={customModes}
+            onDelete={() => setConfirmNote({ id: note.id, date: note.date, number: numbers.get(note.id) })} customModes={customModes} planTitles={planTitles}
           />
         ))
       )}

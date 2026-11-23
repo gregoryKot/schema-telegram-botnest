@@ -40,6 +40,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('assessment'),
       ],
       guidePhaseIds: ['assessment'],
+      look: 'assessment',
     },
     {
       id: 'bonding',
@@ -71,6 +72,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('safety'),
       ],
       guidePhaseIds: ['safety'],
+      look: 'safety',
     },
     {
       id: 'change',
@@ -103,6 +105,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('healing'),
       ],
       guidePhaseIds: ['awareness', 'managing', 'healing'],
+      look: 'awareness',
     },
     {
       id: 'autonomy',
@@ -128,6 +131,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('autonomy'),
       ],
       guidePhaseIds: ['autonomy'],
+      look: 'autonomy',
     },
     {
       id: 'ending',
@@ -154,6 +158,7 @@ export const buildGeneralTemplate: PathTemplateBuilder = () => ({
         phaseRef('autonomy', 'transition'),
       ],
       guidePhaseIds: ['autonomy'],
+      look: 'ending',
     },
   ],
   caveats: [

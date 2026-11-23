@@ -27,5 +27,9 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'defusion',
   'pie',
   'rewind',
+  // TechniqueSignsArntz.tsx — техники из книги Арнца и ван Гендерен о ПРЛ
+  'scatter',
+  'need_ring',
+  'guess_mode',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

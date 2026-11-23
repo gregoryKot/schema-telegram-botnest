@@ -4,6 +4,7 @@ import { COPING_STYLES, type CopingStyleId } from '../../../../../shared/src/sch
 import type { SchemaGuideView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import { GuideSection } from './GuideSection';
 import { GuidePoints } from './GuidePoints';
+import { guideLinksPart } from './guideLinksPart';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 import { schemaGuideLook } from './guideLook';
 import { articleAddress } from './marks/guideMarkModel';
@@ -15,7 +16,7 @@ export interface SchemaCopingMarks {
   marked?: (style: CopingStyleId) => boolean;
 }
 
-type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; coping?: SchemaCopingMarks };
+type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; coping?: SchemaCopingMarks; onOpenMode?: (modeId: string) => void };
 
 /**
  * Лист схемы (#995): герой — суть схемы и знак её домена на бумаге домена (schemaGuideLook), «Как это
@@ -27,13 +28,12 @@ type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; co
  * «Где застревают». Пустой раздел не рисуется. Открывается «Подробнее о схеме»
  * на плашке «Обычно в методе».
  */
-export function SchemaGuideSheet({ schemaName, view, coping: marks, ...actions }: Props) {
+export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, ...actions }: Props) {
   const { guide, domainNote } = view;
   const at = articleAddress('schema', guide.schemaId);
   // Три стиля копинга — порядок справочника; пустая строка не показывается.
   const coping = COPING_STYLES.filter((s) => guide.coping[s.id].trim());
-  const modes = guide.modeIds.flatMap((id) => getModeById(id)?.name ?? []);
-  const voice = [guide.reparenting, ...(guide.voice ?? [])];
+  const modes = guide.modeIds.flatMap((id) => { const m = getModeById(id); return m ? [{ id, name: m.name }] : []; });
   const interventions = guide.interventions.filter((i) => i.trim());
   const copingList = coping.length > 0 && (
     <dl className="gd-coping">
@@ -60,11 +60,11 @@ export function SchemaGuideSheet({ schemaName, view, coping: marks, ...actions }
   );
   return (
     <GuideSheet
-      label="Схема" title={schemaName} lede={guide.essence} voice={voice} view={view} {...actions}
+      label="Схема" title={schemaName} lede={guide.essence} voice={[guide.reparenting, ...(guide.voice ?? [])]} view={view} {...actions}
       look={schemaGuideLook(guide.schemaId)} at={at}
       moreParts={[
         { title: 'Копинг', children: copingList || undefined },
-        { title: 'Типичные режимы', text: modes.join(', '), address: at('modeIds') },
+        guideLinksPart('Типичные режимы', modes, at('modeIds'), onOpenMode),
         { title: 'Общее для домена', text: domainNote, address: at('domainNote') },
       ]}
     >

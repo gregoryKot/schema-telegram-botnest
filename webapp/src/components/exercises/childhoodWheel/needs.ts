@@ -1,7 +1,7 @@
 // Пять потребностей «Колеса детства»: подписи и тексты полюсов шкалы.
 // Цвет потребности — не здесь, а NEED_HUE из lib/tone.ts (одна палитра с кабинетом).
-// Вынесено из ChildhoodWheelEx.tsx (правило №10).
 import type { NeedId } from '../../../../../shared/src/needs/types';
+import { NEED_NAMES } from '../../../../../shared/src/needs/needNames';
 
 export interface WheelNeed {
   id: NeedId;
@@ -14,7 +14,7 @@ export interface WheelNeed {
 export const NEEDS: WheelNeed[] = [
   {
     id: 'attachment',
-    label: 'Привязанность',
+    label: NEED_NAMES.attachment,
     question:
       'Был ли рядом взрослый, который замечал, когда было плохо, и откликался?',
     low: 'Взрослый отсутствовал или был непредсказуем. В трудный момент некому было обратиться.',
@@ -22,7 +22,7 @@ export const NEEDS: WheelNeed[] = [
   },
   {
     id: 'autonomy',
-    label: 'Автономия',
+    label: NEED_NAMES.autonomy,
     question:
       'Было ли доверие – иметь своё мнение, делать выборы по возрасту, ошибаться?',
     low: 'Контролировали, решали за ребёнка, критиковали. Ошибка была катастрофой.',
@@ -30,7 +30,7 @@ export const NEEDS: WheelNeed[] = [
   },
   {
     id: 'expression',
-    label: 'Выражение чувств',
+    label: NEED_NAMES.expression,
     question:
       'Было ли безопасно выражать злость, страх, грусть – без наказания или стыда?',
     low: 'Сильные чувства было опасно показывать. Пришлось научиться прятать или подавлять.',
@@ -38,7 +38,7 @@ export const NEEDS: WheelNeed[] = [
   },
   {
     id: 'play',
-    label: 'Спонтанность',
+    label: NEED_NAMES.play,
     question:
       'Было ли место для игры и лёгкости – без постоянного давления всё время быть при деле?',
     low: 'Давление выполнять, достигать, держаться серьёзно. Беззаботность вызывала вину.',
@@ -46,7 +46,7 @@ export const NEEDS: WheelNeed[] = [
   },
   {
     id: 'limits',
-    label: 'Самоконтроль',
+    label: NEED_NAMES.limits,
     question:
       'Были ли в семье рамки по возрасту: «нельзя», которое держится, обязанности, учёт других?',
     low: 'Рамок почти не было: всё разрешали, баловали или не следили. Ждать, доводить до конца и считаться с другими не учили.',

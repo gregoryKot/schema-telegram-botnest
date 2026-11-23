@@ -240,6 +240,8 @@
 .pl-item.is-quiet .pl-text { color: var(--text-faint); }
 .pl-item.is-dropped .pl-text { text-decoration: line-through; }
 .pl-menu-anchor { display: inline-flex; flex: none; }
+/* Меню статуса и «В фазу…» — по ширине самого длинного названия, но не шире экрана. */
+.ds-menu.pl-menu { width: max-content; min-width: 180px; max-width: min(360px, calc(100vw - 16px)); }
 .ds-menu-item.pl-menu-item { min-height: 44px; }
 .pl-menu-mark { flex: none; width: 16px; color: var(--accent); }
 .pl-item[draggable="true"] { cursor: grab; }
@@ -270,3 +272,4 @@
 .spb-acts { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 32px; }
 .ds-link.pl-work { color: var(--text-sub); font-weight: 400; font-size: 13px; text-decoration: none; }
 .spb-st { white-space: nowrap; }
+.spb-note { margin-top: 6px; color: var(--text-sub); }
