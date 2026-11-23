@@ -42,7 +42,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
     'body_grounding',
     'pros_cons',
   ],
-  moreTechniques: ['mindfulness', 'socratic_dialogue'],
+  moreTechniques: ['mindfulness', 'socratic_dialogue', 'safety_bubble'],
   betweenSessions: [
     {
       kind: 'task',
