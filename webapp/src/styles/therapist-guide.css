@@ -15,6 +15,19 @@
   .gd-hero-art > .scn-sign { width: 60px; }
 }
 
+/* Полоса-оглавление (GuideToc.tsx): чипы-якоря под героем, прилипает к верху листа. Фон — сплошной цвет листа. */
+.gd-toc {
+  position: sticky; top: calc(-1 * var(--space-20)); z-index: 1; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  margin: -12px 0 -8px; padding: 8px 0; background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.gd-toc-chip { flex: none; min-height: 44px; font-size: 14px; border-radius: 999px; }
+.gd-page > section { scroll-margin-top: 64px; }
+/* Метка книги в тексте: тише фразы, не рвёт чтение; расшифровка — в «Источниках». */
+.gd-cite { font-size: .78em; color: var(--text-faint); white-space: nowrap; }
+/* «ещё» у длинного пункта: тихая ссылка в строке, зона нажатия 44 — невидимым ::before. */
+.ds-link.gd-fold { position: relative; display: inline; min-height: 0; padding: 0; font-size: 15px; line-height: inherit; }
+.ds-link.gd-fold::before { content: ''; position: absolute; inset: -13px -10px; }
+
 /* Раздел листа: подпись и абзац справочника. */
 .gd-section { display: flex; flex-direction: column; gap: var(--space-6); }
 .gd-label { margin: 0; }
@@ -64,6 +77,7 @@
 .gd-more > .ds-fold { background: none; border: none; border-radius: 0; border-block: 1px solid var(--line); }
 .gd-more .ds-fold-btn { padding-inline: 0; }
 .gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; padding-inline: 0; }
+.gd-sources .ds-fold-body { gap: 8px; }
 .gd-sources p, .gd-books li { margin: 0; font-size: 12px; line-height: 1.5; }
 .gd-books { margin: 4px 0 0; padding: 0; list-style: none; }
 

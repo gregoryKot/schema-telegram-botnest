@@ -35,10 +35,11 @@ describe('NeedGuideSheet', () => {
     expect(within(dialog).getByText(NEED.guide!.essence)).toBeTruthy();
     expect(dialog.querySelector('.gd-hero svg.pp-art--hero')).not.toBeNull();
     expect(screen.getAllByRole('region').map((r) => r.getAttribute('aria-label')))
-      .toEqual(['Фрустрация в детстве', 'Схемы домена', 'Ограниченное родительство', 'Общее для домена', 'Источники']);
+      .toEqual(['Фрустрация в детстве', 'Схемы домена', 'Ограниченное родительство', 'Общее для домена']);
     expect(within(screen.getByRole('region', { name: 'Схемы домена' })).getByText(NEED.guide!.schemas)).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Общее для домена' })).getByText(NEED.domain.note)).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'Источники' })).getAllByText(/Янг/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /^Источники · \d+ книг/ }));
+    expect(screen.getAllByText(/Янг/).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
   });
 

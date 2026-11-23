@@ -42,15 +42,16 @@ describe('SchemaGuideSheet', () => {
     expect(within(dialog).getByText(FIXTURE_SCHEMA_GUIDE.essence)).toBeTruthy();
     expect(dialog.querySelector('svg.pp-art--hero')).toBeTruthy();
     expect(regions()).toEqual([
-      'Как это звучит', 'Потребность', 'В кабинете', 'Что делать', 'На сессии', 'Между сессиями', 'Источники',
+      'Как это звучит', 'Потребность', 'В кабинете', 'Что делать', 'На сессии', 'Между сессиями',
     ]);
     expect(screen.queryByText(FIXTURE_DOMAIN_NOTE)).toBeNull();
     openMore();
     expect(regions()).toEqual([
       'Как это звучит', 'Потребность', 'В кабинете', 'Что делать', 'На сессии', 'Между сессиями',
-      'Копинг', 'Типичные режимы', 'Общее для домена', 'Где застревают', 'Источники',
+      'Копинг', 'Типичные режимы', 'Общее для домена', 'Где застревают',
     ]);
     expect(region('Общее для домена').getByText(FIXTURE_DOMAIN_NOTE)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Источники/ }));
     expect(screen.getByText(FIXTURE_SCHEMA_GUIDE.sources)).toBeTruthy();
   });
 
@@ -104,7 +105,7 @@ describe('SchemaGuideSheet', () => {
       inSession: '',
     };
     renderSheet({ ...FIXTURE_SCHEMA_VIEW, guide, domainNote: '' });
-    expect(regions()).toEqual(['Потребность', 'На сессии', 'Между сессиями', 'Источники']);
+    expect(regions()).toEqual(['Потребность', 'На сессии', 'Между сессиями']);
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
     expect(screen.queryByText('«»')).toBeNull();
   });
