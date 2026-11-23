@@ -1,6 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { groupTherapyMore, groupTechniquesMore } from './practiceGroupMore';
-import { groupFrameMore, buildGroupOrientation } from './practiceGroupFrame';
+import { groupMore, groupTechMore, buildGroupLead } from './practiceGroupLead';
 
 /** «Для терапевта»: групповая схема-терапия — рамка и приёмы (собирает practiceSituations.ts). */
 export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
@@ -17,9 +16,9 @@ export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
       'Сочетать с индивидуальными сессиями. В программе Фаррелл к группе добавлены 12 индивидуальных [Фаррелл, гл. 3.3]. Индивидуальная схема-терапия вместе с групповой обошла и обычное лечение, и преимущественно групповую, а пациенты реже бросали терапию (Arntz et al., 2022).',
       'Регулярно меняться ролями. Ведущий и вспомогательный терапевт время от времени меняются местами. Пока один занят участником, второй словами и взглядом держит остальных и следит, чтобы ведущий не застрял на одном человеке. Тему встречи готовят заранее, но если в начале всплыло другое, идут за ним [Арнтц ПРЛ, гл. 10].',
     ],
-    more: [...groupTherapyMore, ...groupFrameMore],
+    more: groupMore,
     sources:
-      '[Фаррелл, гл. 2.3, 3–4], [Кембридж, гл. 17, бокс 17.1], [Арнтц ПРЛ, гл. 2, 10], Arntz et al., 2022',
+      '[Фаррелл, гл. 2.3, 3–4, 6.2], [Кембридж, гл. 17, бокс 17.1], [Арнтц ПРЛ, гл. 2, 10], Arntz et al., 2022',
   },
   {
     id: 'group_techniques',
@@ -40,8 +39,9 @@ export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
         'Сядьте на стул Защитника и скажите за него: чего он боится, если пустить нас ближе?',
       ),
     ],
-    more: groupTechniquesMore,
-    sources: '[Кембридж, гл. 17, боксы 17.2, 17.3], [Арнтц ПРЛ, гл. 10]',
+    more: groupTechMore,
+    sources:
+      '[Кембридж, гл. 17, боксы 17.2, 17.3], [Арнтц ПРЛ, гл. 10], [Фаррелл, гл. 2.3, 4.1, 4.4, 4.5]',
   },
-  ...buildGroupOrientation(tr),
+  ...buildGroupLead(tr),
 ];
