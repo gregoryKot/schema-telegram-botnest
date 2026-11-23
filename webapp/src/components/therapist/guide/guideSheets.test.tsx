@@ -42,7 +42,7 @@ describe('ModeGuideSheet', () => {
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Уязвимый Ребёнок' })).toBeTruthy();
     expect(within(dialog).getByText('Режим')).toBeTruthy();
     expect(screen.getByText(FIXTURE_GUIDE.what)).toBeTruthy();
-    expect(regions()).toEqual(['Цель', 'Как работать', 'На сессии', 'Между сессиями']);
+    expect(regions()).toEqual(['Цель', 'На сессии', 'Как работать', 'Между сессиями']);
     expect(within(screen.getByRole('region', { name: 'Цель' })).getByText(FIXTURE_GUIDE.goal)).toBeTruthy();
     const leads = within(screen.getByRole('region', { name: 'Как работать' })).getAllByRole('listitem')
       .map((li) => li.querySelector('.gd-lead')?.textContent);

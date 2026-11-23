@@ -4,9 +4,9 @@ import { COPING_STYLES, type CopingStyleId } from '../../../../../shared/src/sch
 import type { SchemaGuideView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import { GuideSection } from './GuideSection';
 import { GuidePoints } from './GuidePoints';
-import { guideLinksPart } from './guideLinksPart';
+import { GuideRelated } from './GuideRelated';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
-import { schemaGuideLook } from './guideLook';
+import { modeGuideLook, schemaGuideLook } from './guideLook';
 import { articleAddress } from './marks/guideMarkModel';
 
 /** «Про клиента» у стиля копинга (#1484): из карточки клиента — его имя у отмеченных стилей. */
@@ -19,14 +19,10 @@ export interface SchemaCopingMarks {
 type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; coping?: SchemaCopingMarks; onOpenMode?: (modeId: string) => void };
 
 /**
- * Лист схемы (#995): герой — суть схемы и знак её домена на бумаге домена (schemaGuideLook), «Как это
- * звучит» — фраза репарентинга (кавычки ставит лист, в данных их нет) и реплики
- * `voice`, потребность, как схема видна в кабинете, «Что делать» — интервенции
- * пунктами, затем общий хвост листа раздела (GuideSheet): техники «На сессии»,
- * задания «Между сессиями». Под «Подробнее» — копинг тремя стилями, типичные
- * режимы (названия из реестра; id без режима пропускается), общее для домена и
- * «Где застревают». Пустой раздел не рисуется. Открывается «Подробнее о схеме»
- * на плашке «Обычно в методе».
+ * Лист схемы (#995), вариант A: герой со знаком домена (schemaGuideLook), «Как это звучит» — фраза
+ * репарентинга (кавычки ставит лист) и реплики `voice`, потребность, техники «На сессии», «В кабинете»,
+ * «Что делать» пунктами, «Между сессиями», «Связано» — типичные режимы чипами (id без режима пропускается).
+ * Под «Подробнее» — копинг тремя стилями, общее для домена и «Где застревают». Пустой раздел не рисуется.
  */
 export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, ...actions }: Props) {
   const { guide, domainNote } = view;
@@ -64,11 +60,11 @@ export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, 
       look={schemaGuideLook(guide.schemaId)} at={at}
       moreParts={[
         { title: 'Копинг', children: copingList || undefined },
-        guideLinksPart('Типичные режимы', modes, at('modeIds'), onOpenMode),
         { title: 'Общее для домена', text: domainNote, address: at('domainNote') },
       ]}
+      lead={<GuideSection title="Потребность" text={guide.need} address={at('need')} />}
+      related={<GuideRelated groups={[{ title: 'Режимы', address: at('modeIds'), items: modes, look: modeGuideLook, onOpen: onOpenMode }]} />}
     >
-      <GuideSection title="Потребность" text={guide.need} address={at('need')} />
       <GuideSection title="В кабинете" text={guide.inSession} address={at('inSession')} />
       {interventions.length > 0 && (
         <GuideSection title="Что делать" address={at('interventions')}>

@@ -94,20 +94,18 @@ export interface GuideSheetActions {
 
 type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'> & {
   voice?: string[];
+  lead?: ReactNode; related?: ReactNode; // разделы до техник; блок «Связано» после «Между сессиями»
   /** Адрес раздела статьи по пути (articleAddress): «Про клиента» у общих разделов листа. */
   at: (path: string) => string;
   view: GuideHintView & { guide: { stuck?: string; sources: string; more?: string[] } };
 };
 
 /**
- * Лист раздела справочника (#995) — режима или схемы: каркас GuidePage, «Как это
- * звучит», свои разделы листа, затем общий хвост — «На сессии» (тап по технике →
- * лист техники поверх), свёрнутые «Ещё техники» (GuideTechniques.tsx), «Между сессиями» с «Дать заданием»; «Где застревают» —
- * последним разделом «Подробнее». У техники и задания — история серым (`notes`,
- * guideHistory.ts), за «делали …» — «журнал →» (`onOpenJournal`); `backRef` идёт
- * в каркас (GuidePage). Пустой раздел не рисуется.
+ * Лист раздела справочника (#995) — режима или схемы, вариант A: каркас GuidePage, «Как это звучит», `lead` (цель или
+ * потребность), «На сессии» и свёрнутые «Ещё техники» (GuideTechniques.tsx), свои разделы листа, «Между сессиями»
+ * с «Дать заданием», блок «Связано» (`related`); «Где застревают» — последним в «Подробнее». История серым — `notes`.
  */
-export function GuideSheet({ view, voice, at, moreParts = [], onOpenTechnique, onAssign, onPlan, onClose, notes, onOpenJournal, children, ...page }: Props) {
+export function GuideSheet({ view, voice, lead, related, at, moreParts = [], onOpenTechnique, onAssign, onPlan, onClose, notes, onOpenJournal, children, ...page }: Props) {
   const { guide, techniques, moreTechniques = [] } = view;
   return (
     <GuidePage
@@ -115,10 +113,12 @@ export function GuideSheet({ view, voice, at, moreParts = [], onOpenTechnique, o
       moreParts={[...moreParts, { title: 'Где застревают', text: guide.stuck, address: at('stuck') }]}
     >
       <GuideVoice lines={voice} address={at('voice')} />
-      {children}
+      {lead}
       <GuideTechniques techniques={techniques} address={at('techniques')} onOpen={onOpenTechnique} onPlan={onPlan} notes={notes} onOpenJournal={onOpenJournal} />
       <GuideMoreTechniques techniques={moreTechniques} address={at('moreTechniques')} onOpen={onOpenTechnique} notes={notes} onOpenJournal={onOpenJournal} />
+      {children}
       <GuideBetweenSessions items={guide.betweenSessions} address={at('betweenSessions')} onAssign={onAssign} onPlan={onPlan} notes={notes} />
+      {related}
     </GuidePage>
   );
 }

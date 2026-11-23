@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// Лист схемы (#995): герой — суть и знак домена, разделы справочника по порядку,
-// пустые не рисуются, фраза репарентинга — «Как это звучит» репликой в кавычках,
-// под «Подробнее» (закрыто) — копинг, типичные режимы (названиями из реестра, id
-// без режима пропускается), общее для домена и «Где застревают»; техника ведёт в
+// Лист схемы (#995): герой — суть и знак домена, разделы справочника по порядку (вариант A),
+// пустые не рисуются, фраза репарентинга — «Как это звучит» репликой в кавычках, «Связано» —
+// режимы (названиями из реестра, id без режима пропускается); под «Подробнее» (закрыто) —
+// копинг, общее для домена и «Где застревают»; техника ведёт в
 // лист техники, «Дать заданием» отдаёт пункт. Содержание — фикстура, не тексты
 // shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi } from 'vitest';
@@ -35,20 +35,20 @@ function renderSheet(view: SchemaGuideView = FIXTURE_SCHEMA_VIEW, onAssign?: (it
 }
 
 describe('SchemaGuideSheet', () => {
-  it('герой — суть и знак домена; разделы по порядку; копинг, режимы, домен и «Где застревают» — под «Подробнее»', () => {
+  it('герой — суть и знак домена; разделы по порядку; копинг, домен и «Где застревают» — под «Подробнее»', () => {
     renderSheet(FIXTURE_SCHEMA_VIEW, vi.fn());
     const dialog = screen.getByRole('dialog', { name: NAME });
     expect(within(dialog).getByRole('heading', { level: 2, name: NAME })).toBeTruthy();
     expect(within(dialog).getByText(FIXTURE_SCHEMA_GUIDE.essence)).toBeTruthy();
     expect(dialog.querySelector('svg.pp-art--hero')).toBeTruthy();
     expect(regions()).toEqual([
-      'Как это звучит', 'Потребность', 'В кабинете', 'Что делать', 'На сессии', 'Между сессиями',
+      'Как это звучит', 'Потребность', 'На сессии', 'В кабинете', 'Что делать', 'Между сессиями', 'Связано', 'Режимы',
     ]);
     expect(screen.queryByText(FIXTURE_DOMAIN_NOTE)).toBeNull();
     openMore();
     expect(regions()).toEqual([
-      'Как это звучит', 'Потребность', 'В кабинете', 'Что делать', 'На сессии', 'Между сессиями',
-      'Копинг', 'Типичные режимы', 'Общее для домена', 'Где застревают',
+      'Как это звучит', 'Потребность', 'На сессии', 'В кабинете', 'Что делать', 'Между сессиями', 'Связано', 'Режимы',
+      'Копинг', 'Общее для домена', 'Где застревают',
     ]);
     expect(region('Общее для домена').getByText(FIXTURE_DOMAIN_NOTE)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /^Источники/ }));
@@ -63,20 +63,18 @@ describe('SchemaGuideSheet', () => {
     expect(coping.getByText(FIXTURE_SCHEMA_GUIDE.coping.avoidance)).toBeTruthy();
   });
 
-  it('типичные режимы — названиями из реестра, неизвестный id пропущен', () => {
+  it('«Связано»: режимы — названиями из реестра, неизвестный id пропущен', () => {
     renderSheet();
-    openMore();
-    expect(region('Типичные режимы').getByText('Покинутый Ребёнок, Сердитый Ребёнок')).toBeTruthy();
+    expect(region('Режимы').getByText('Покинутый Ребёнок, Сердитый Ребёнок')).toBeTruthy();
     expect(screen.queryByText(/abandoned_child|нет_такого_режима/)).toBeNull();
   });
 
-  it('с onOpenMode режимы — строки-переходы: тап открывает лист режима', () => {
+  it('с onOpenMode режимы — чипы-переходы: тап открывает лист режима', () => {
     const onOpenMode = vi.fn();
     renderSheet(FIXTURE_SCHEMA_VIEW, undefined, onOpenMode);
-    openMore();
-    fireEvent.click(region('Типичные режимы').getByRole('button', { name: /Сердитый Ребёнок/ }));
+    fireEvent.click(region('Режимы').getByRole('button', { name: /Сердитый Ребёнок/ }));
     expect(onOpenMode).toHaveBeenCalledWith('angry_child');
-    expect(region('Типичные режимы').getAllByRole('button')).toHaveLength(2);
+    expect(region('Режимы').getAllByRole('button')).toHaveLength(2);
   });
 
   it('фраза репарентинга — «Как это звучит»: реплика, кавычки ставит лист; за ней реплики voice', () => {

@@ -3,24 +3,22 @@ import { GUIDE_CHANNELS as CHANNELS, channelLabel } from '../../../../../shared/
 import { GuideSection } from './GuideSection';
 import { channelSeed } from './guidePlan';
 import { PlanButton } from './PlanButton';
-import { modeGuideLook } from './guideLook';
+import { modeGuideLook, schemaGuideLook } from './guideLook';
 import { articleAddress } from './marks/guideMarkModel';
 import { GuidePoints } from './GuidePoints';
-import { guideLinksPart } from './guideLinksPart';
+import { GuideRelated } from './GuideRelated';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 
 type Props = GuideSheetActions & {
   modeName: string; view: ModeGuideView;
-  /** Тап по схеме «Типичен для схем» — её лист; нет — названия строкой. */
+  /** Тап по схеме в «Связано» — её лист; нет — названия строкой. */
   onOpenSchema?: (schemaId: string) => void;
 };
 
 /**
- * Лист режима (#995): герой — что это за режим и знак на бумаге его группы (modeGuideLook), «Как это
- * звучит», цель, «Как работать» — каналы пунктами, затем общий хвост листа
- * раздела (GuideSheet): техники «На сессии», задания «Между сессиями»,
- * «Подробнее» и источники. Под «Подробнее» — «Типичен для схем» (обратная сторона «Типичных режимов» схемы).
- * Открывается «Подробнее о режиме» на плашке «Обычно в методе».
+ * Лист режима (#995), вариант A: герой со знаком группы (modeGuideLook), «Как это звучит», цель, техники
+ * «На сессии», «Как работать» — каналы пунктами, «Между сессиями», «Связано» — схемы чипами (обратная сторона
+ * «Режимов» схемы), «Подробнее» и источники (GuideSheet). Открывается «Подробнее о режиме» на плашке «Обычно в методе».
  */
 export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Props) {
   const { guide } = view;
@@ -35,9 +33,9 @@ export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Pro
     <GuideSheet
       label="Режим" title={modeName} lede={guide.what} voice={guide.voice} view={view} {...actions}
       look={modeGuideLook(guide.modeId)} at={at}
-      moreParts={[guideLinksPart('Типичен для схем', view.schemas, at('schemas'), onOpenSchema)]}
+      lead={<GuideSection title="Цель" text={guide.goal} address={at('goal')} />}
+      related={<GuideRelated groups={[{ title: 'Схемы', address: at('schemas'), items: view.schemas, look: schemaGuideLook, onOpen: onOpenSchema }]} />}
     >
-      <GuideSection title="Цель" text={guide.goal} address={at('goal')} />
       {channels.length > 0 && (
         <GuideSection title="Как работать">
           <GuidePoints items={channels} />
