@@ -19,10 +19,10 @@ export interface SchemaCopingMarks {
 type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; coping?: SchemaCopingMarks; onOpenMode?: (modeId: string) => void };
 
 /**
- * Лист схемы (#995), вариант A: герой со знаком домена (schemaGuideLook), «Как это звучит» — фраза
- * репарентинга (кавычки ставит лист) и реплики `voice`, потребность, техники «На сессии», «В кабинете»,
- * «Что делать» пунктами, «Между сессиями», «Связано» — типичные режимы чипами (id без режима пропускается).
- * Под «Подробнее» — копинг тремя стилями, общее для домена и «Где застревают». Пустой раздел не рисуется.
+ * Лист схемы (#995) вкладками GuideSheet: герой со знаком домена (schemaGuideLook); «Кратко» — фраза репарентинга
+ * и реплики `voice` (кавычки ставит лист), потребность, типичные режимы строками (id без режима пропускается);
+ * «На сессии» — техники, «В кабинете», «Что делать»; «Между сессиями»; «Теория» — копинг тремя стилями, общее для
+ * домена, «Где застревают». Пустой раздел не рисуется.
  */
 export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, ...actions }: Props) {
   const { guide, domainNote } = view;
@@ -57,7 +57,7 @@ export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, 
   return (
     <GuideSheet
       label="Схема" title={schemaName} lede={guide.essence} voice={[guide.reparenting, ...(guide.voice ?? [])]} view={view} {...actions}
-      look={schemaGuideLook(guide.schemaId)} at={at}
+      look={schemaGuideLook(guide.schemaId)} at={at} article={{ kind: 'schema', id: guide.schemaId }}
       moreParts={[
         { title: 'Копинг', children: copingList || undefined },
         { title: 'Общее для домена', text: domainNote, address: at('domainNote') },
