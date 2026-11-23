@@ -15,18 +15,21 @@ export function FoldText({ text }: { text: string }) {
   const fold = foldFirstSentence(text);
   const [open, setOpen] = useState(false);
   const restRef = useRef<HTMLSpanElement>(null);
+  // hidden="until-found" ставится руками: типы React знают у hidden только boolean.
   useEffect(() => {
     const el = restRef.current;
     if (!el) return;
+    if (open) el.removeAttribute('hidden');
+    else el.setAttribute('hidden', 'until-found');
     const onMatch = () => setOpen(true);
     el.addEventListener('beforematch', onMatch);
     return () => el.removeEventListener('beforematch', onMatch);
-  }, [fold]);
+  }, [open, text]);
   if (!fold) return <Cited text={text} />;
   return (
     <>
       <Cited text={fold.head} />{' '}
-      <span ref={restRef} hidden={open ? undefined : 'until-found'}><Cited text={fold.rest} />{' '}</span>
+      <span ref={restRef}><Cited text={fold.rest} />{' '}</span>
       <button type="button" className="ds-link gd-fold" aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>
         {open ? 'свернуть' : 'ещё'}
       </button>
