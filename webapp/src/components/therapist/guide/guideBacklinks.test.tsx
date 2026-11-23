@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Обратная сторона связей на листах справочника: «Типичен для схем» у режима (тап — лист схемы) и
+// Обратная сторона связей на листах справочника: схемы в «Связано» у режима (тап — лист схемы) и
 // «Где применяется» у техники под «Подробнее»; без связей раздела нет. Содержание — фикстура.
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -11,27 +11,29 @@ import { FIXTURE_TECHNIQUES, FIXTURE_VIEW } from '../../../../../shared/src/ther
 
 const show = (node: ReactNode) => {
   render(<MemoryRouter>{node}</MemoryRouter>);
-  fireEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
+  const more = screen.queryByRole('button', { name: 'Подробнее' });
+  if (more) fireEvent.click(more);
 };
 const SCHEMAS = [{ id: 'abandonment', name: 'Покинутость' }, { id: 'defectiveness', name: 'Дефективность/Стыд' }];
 
-describe('ModeGuideSheet: «Типичен для схем»', () => {
-  it('схемы строками, тап открывает лист схемы', () => {
+describe('ModeGuideSheet: схемы в «Связано»', () => {
+  it('схемы чипами, тап открывает лист схемы', () => {
     const onOpenSchema = vi.fn();
     show(<ModeGuideSheet modeName="Уязвимый Ребёнок" view={{ ...FIXTURE_VIEW, schemas: SCHEMAS }} onOpenSchema={onOpenSchema} onOpenTechnique={() => {}} onClose={() => {}} />);
-    const part = screen.getByRole('region', { name: 'Типичен для схем' });
+    const part = screen.getByRole('region', { name: 'Схемы' });
     fireEvent.click(within(part).getByRole('button', { name: 'Дефективность/Стыд' }));
     expect(onOpenSchema).toHaveBeenCalledWith('defectiveness');
   });
 
   it('без перехода — названия строкой', () => {
     show(<ModeGuideSheet modeName="Уязвимый Ребёнок" view={{ ...FIXTURE_VIEW, schemas: SCHEMAS }} onOpenTechnique={() => {}} onClose={() => {}} />);
-    expect(within(screen.getByRole('region', { name: 'Типичен для схем' })).getByText('Покинутость, Дефективность/Стыд')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Схемы' })).getByText('Покинутость, Дефективность/Стыд')).toBeTruthy();
   });
 
-  it('схем нет — раздела нет', () => {
+  it('схем нет — блока «Связано» нет', () => {
     show(<ModeGuideSheet modeName="Уязвимый Ребёнок" view={FIXTURE_VIEW} onOpenSchema={() => {}} onOpenTechnique={() => {}} onClose={() => {}} />);
-    expect(screen.queryByRole('region', { name: 'Типичен для схем' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Схемы' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Связано' })).toBeNull();
   });
 });
 

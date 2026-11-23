@@ -134,3 +134,8 @@
   font-size: 22px; line-height: 1; color: var(--text-sub); cursor: pointer;
 }
 .gd-mark-x:hover { background: var(--paper-tint); color: var(--text); }
+
+/* «Связано» (GuideRelated): переходы чипами, точка — цвет группы или домена листа, куда ведёт чип. */
+.gd-rel { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.ds-chip.gd-rel-chip { min-height: 44px; font-size: 14px; color: var(--text); }
+.gd-rel-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; background: oklch(0.62 0.09 var(--h, 70)); }
