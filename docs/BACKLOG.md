@@ -92,7 +92,7 @@
 
 
 
-- ⬜ **Загрузка модулей внутри `it`: остаток в 10 спеках** — гейт `scripts/check-spec-load-in-test.mjs` нашёл, кроме четырёх исправленных, ещё 165 загрузок в тестах: `src/utils/crypto.spec.ts` (72), `crypto-record.spec.ts` (24), `encrypt-migration.spec.ts` (23), `crypto-keys.spec.ts` (9), `crypto-record.writable.spec.ts` (8), `src/account/data-export.service.spec.ts` (9), `src/infra/self-check/clinical-labels-status.spec.ts` (8), `src/booking/caldav-owner-event.spec.ts` (6), `therapy-notes.service.session-notes.spec.ts` (3), `therapy-relations.service.spec.ts` (3). Долг заморожен в `scripts/spec-load-in-test-baseline.json` (только вниз); перенос в `beforeAll` у крипто-спеков меняет статику волны А — делать с ночным прогоном Stryker и сверкой полов.
+- 🔧 **Загрузка модулей внутри `it`: остаток в 5 крипто-спеках** — гейт `scripts/check-spec-load-in-test.mjs`, долг 136: `src/utils/crypto.spec.ts` (72), `crypto-record.spec.ts` (24), `encrypt-migration.spec.ts` (23), `crypto-keys.spec.ts` (9), `crypto-record.writable.spec.ts` (8); пять не-крипто спеков (29 мест) перенесены в `beforeAll`. Осталось: поведение — в `beforeAll`, загрузку-предмет-теста (плохой ключ, production без ключа) — явным исключением гейта; затем волна А Stryker и сверка полов. Загрузка в `beforeEach` Stryker тоже засчитывает тесту (`test_start` идёт до хуков) — шапка гейта говорит обратное, поправить там же.
 
 
 

@@ -1,9 +1,4 @@
 {
-  "src/account/data-export.service.spec.ts": 9,
-  "src/booking/caldav-owner-event.spec.ts": 6,
-  "src/infra/self-check/clinical-labels-status.spec.ts": 8,
-  "src/therapy/therapy-notes.service.session-notes.spec.ts": 3,
-  "src/therapy/therapy-relations.service.spec.ts": 3,
   "src/utils/crypto-keys.spec.ts": 9,
   "src/utils/crypto-record.spec.ts": 24,
   "src/utils/crypto-record.writable.spec.ts": 8,
