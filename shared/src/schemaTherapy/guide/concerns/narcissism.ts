@@ -3,9 +3,10 @@ import {
   NARCISSISM_MODE_IDS,
   NARCISSISM_MODE_MODEL,
 } from './narcissismModes';
+import { NARCISSISM_SECTIONS } from './narcissismSections';
 import type { ConcernGuideBuilder } from './types';
 
-/** Нарциссическое расстройство личности: суть, признаки, истоки, схемы; режимы и дифференциальная — narcissismModes.ts. */
+/** Нарциссическое расстройство личности: суть, признаки, истоки, схемы; режимы — narcissismModes.ts, курс и кабинет — narcissismSections.ts. */
 export const buildNarcissismGuide: ConcernGuideBuilder = () => ({
   id: 'narcissism',
   name: 'Нарциссическое расстройство личности',
@@ -35,5 +36,6 @@ export const buildNarcissismGuide: ConcernGuideBuilder = () => ({
     'approval_seeking',
     'insufficient_self_control',
   ],
-  sources: '[Бехари, введение, гл. 1, 2, 6, 7, 8], [Янг, гл. 10]',
+  ...NARCISSISM_SECTIONS,
+  sources: '[Бехари, введение, гл. 1, 2, 4, 6, 7, 8], [Янг, гл. 10]',
 });
