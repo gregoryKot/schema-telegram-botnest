@@ -54,7 +54,6 @@ export const buildPunitiveCriticGuide = (tr: Tr): ModeGuide => ({
     'mindfulness',
     'behavioral_experiment',
     'limited_reparenting',
-    'safe_place_imagery',
     'play_and_joy',
     'cognitive_work',
   ],
