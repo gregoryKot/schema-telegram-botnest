@@ -55,9 +55,9 @@ export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
       ),
     ],
     cautions:
-      'Вопросы, ведущие к заранее готовому ответу, клиент слышит как экзамен — Падески называет это «менять мнение» вместо «вести к открытию». В разгар детского режима вопросы не работают: сначала забота, потом разбор.',
+      'Вопросы, ведущие к заранее готовому ответу, клиент слышит как экзамен — Падески называет это «менять мнение» вместо «вести к открытию». В разгар детского режима вопросы не работают: сначала забота, потом разбор. Чтобы придумывать другие толкования, нужен достаточно сильный Здоровый Взрослый, поэтому при ПРЛ на первой фазе терапии сократический диалог не получается; дома искать альтернативы клиент начинает, когда Здоровый Взрослый окреп [Арнтц ПРЛ, гл. 6].',
     sources:
-      'Padesky C. A. Socratic questioning: Changing minds or guiding discovery? Доклад на European Congress of Behavioural and Cognitive Therapies, Лондон, 1993.',
+      'Padesky C. A. Socratic questioning: Changing minds or guiding discovery? Доклад на European Congress of Behavioural and Cognitive Therapies, Лондон, 1993. [Арнтц ПРЛ, гл. 6].',
   },
   {
     id: 'exposure',
