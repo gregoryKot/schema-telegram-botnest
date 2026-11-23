@@ -97,10 +97,7 @@
 
 
 
-- ⬜ **Хвост входа через Яндекс ID и почты Postbox (#1100)** — найдено по ходу задачи и не починено:
-  - зелёный исход живых проб `postbox` (400 на подписанный запрос без письма) и `yandexOAuth` (ответ на
-    код-пустышку) — гипотезы по документации: сверить на проде и дозаписать ответы в
-    `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`.
+- ⬜ **Яндекс ID и Postbox: записать зелёный ответ проб в фикстуры (#1100)** — ждёт владельца: открыть в боте `/stats` и прислать блок «Самопроверка» (после выкладки в нём строка «Ответы новых площадок» с detail проб `postbox` и `yandexOAuth`). Из сессии не снять: нужен секрет приложения Яндекса и ключ Postbox, анонимные ответы уже записаны. По присланному — дозаписать `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`, сверить `judgePostbox`/`judgeYandexToken`, убрать id из `UNRECORDED_GREEN` (`src/infra/self-check/format.ts`).
 
 - ⬜ **Снять снос пары до CHIPS после 2026-12-16** — `setRefreshCookie` (`src/auth/auth-http.util.ts`) по метке `refresh_cross=1` стирает непартиционированную пару кросс-сайтовой сессии (иначе браузер держит две refresh-куки и шлёт старую). Кука старого образца живёт не дольше 30 дней после деплоя — дальше ветка мёртвая: убрать её и `LEGACY_CROSS_SITE_MARK` с тестами.
 
