@@ -1,21 +1,17 @@
 import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
-import type { BetweenSessionsItem, TechniqueGuide, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
+import type { BetweenSessionsItem, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { GuideHintView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
 import type { SheetLook } from '../../../../../shared/src/theme/entityLook';
-import { SignArt } from '../../art/SignArt';
-import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
 import { SignHero } from '../../paper/SignHero';
 import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclosure';
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
-import { PLAN_RUBRIC_LABEL } from '../../../../../shared/src/therapy/plan/planItem';
 import { GuideBetweenSessions } from './GuideBetweenSessions';
 import { GuideSection } from './GuideSection';
 import { GuideSources } from './GuideSources';
-import { sessionSeed, type PlanSeed } from './guidePlan';
-import { PlanButton } from './PlanButton';
+import type { PlanSeed } from './guidePlan';
 import { GuidePoints, GuideVoice } from './GuidePoints';
-import { TechniqueDoneNote } from './TechniqueMarkRow';
+import { GuideMoreTechniques, GuideTechniques } from './GuideTechniques';
 import '../../../styles/therapist-guide.css';
 
 /** Ширина колонки листа подсказок на планшете (на телефоне лист уже, на компьютере — панель справа): строка ~70 знаков,
@@ -106,13 +102,13 @@ type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'>
 /**
  * Лист раздела справочника (#995) — режима или схемы: каркас GuidePage, «Как это
  * звучит», свои разделы листа, затем общий хвост — «На сессии» (тап по технике →
- * лист техники поверх), «Между сессиями» с «Дать заданием»; «Где застревают» —
+ * лист техники поверх), свёрнутые «Ещё техники» (GuideTechniques.tsx), «Между сессиями» с «Дать заданием»; «Где застревают» —
  * последним разделом «Подробнее». У техники и задания — история серым (`notes`,
  * guideHistory.ts), за «делали …» — «журнал →» (`onOpenJournal`); `backRef` идёт
  * в каркас (GuidePage). Пустой раздел не рисуется.
  */
 export function GuideSheet({ view, voice, at, moreParts = [], onOpenTechnique, onAssign, onPlan, onClose, notes, onOpenJournal, children, ...page }: Props) {
-  const { guide, techniques } = view;
+  const { guide, techniques, moreTechniques = [] } = view;
   return (
     <GuidePage
       {...page} onClose={onClose} sources={guide.sources} more={guide.more}
@@ -121,30 +117,8 @@ export function GuideSheet({ view, voice, at, moreParts = [], onOpenTechnique, o
       <GuideVoice lines={voice} address={at('voice')} />
       {children}
       <GuideTechniques techniques={techniques} address={at('techniques')} onOpen={onOpenTechnique} onPlan={onPlan} notes={notes} onOpenJournal={onOpenJournal} />
+      <GuideMoreTechniques techniques={moreTechniques} address={at('moreTechniques')} onOpen={onOpenTechnique} notes={notes} onOpenJournal={onOpenJournal} />
       <GuideBetweenSessions items={guide.betweenSessions} address={at('betweenSessions')} onAssign={onAssign} onPlan={onPlan} notes={notes} />
     </GuidePage>
-  );
-}
-
-/** «На сессии» (у фазы — свой заголовок): знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
-export function GuideTechniques({ techniques, address, onOpen, onPlan, notes, onOpenJournal, title = PLAN_RUBRIC_LABEL.session }: {
-  techniques: TechniqueGuide[]; address: string; onOpen: (id: TechniqueId) => void; onPlan?: (seed: PlanSeed) => void; notes?: GuideNotes; onOpenJournal?: () => void; title?: string;
-}) {
-  if (techniques.length === 0) return null;
-  return (
-    <GuideSection title={title} address={address} action={onPlan && <PlanButton label={PLAN_RUBRIC_LABEL.session} onClick={() => onPlan(sessionSeed(techniques))} />}>
-      <ul className="tcp-guide-list">
-        {techniques.map((t) => (
-          <li key={t.id} className="gd-tech">
-            <span className="pp-row-art"><SignArt sign={TECHNIQUE_SIGN[t.id]} size="row" /></span>
-            <div className="gd-min">
-              <button type="button" className="tcp-guide-link" onClick={() => onOpen(t.id)}>{t.name}</button>
-              <div className="ds-sub">{t.summary}</div>
-              <TechniqueDoneNote text={notes?.technique(t.id)} onOpenJournal={onOpenJournal} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </GuideSection>
   );
 }

@@ -16,6 +16,9 @@ import { CONCERN_TITLES } from './addressTitlesConcern';
 import { PHASE_TITLES } from './addressTitlesPhase';
 import { NEED_TITLES } from './addressTitlesNeed';
 
+/** Заголовок свёрнутого блока дополнительных техник на листах режима и схемы. */
+export const MORE_TECHNIQUES_TITLE = 'Ещё техники';
+
 // Заголовки разделов — как на листах справочника (webapp/src/components/therapist/guide/*Sheet.tsx).
 // Тип требует заголовок у каждого поля статьи, кроме служебных: новое поле в types.ts без строки здесь — красный tsc.
 const META = [
@@ -44,6 +47,7 @@ const COMMON = {
   more: 'Подробнее',
   stuck: 'Где застревают',
   techniques: PLAN_RUBRIC_LABEL.session,
+  moreTechniques: MORE_TECHNIQUES_TITLE,
   betweenSessions: PLAN_RUBRIC_LABEL.between,
 };
 

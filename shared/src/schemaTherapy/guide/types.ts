@@ -60,8 +60,10 @@ export interface ModeGuide extends GuideVoiceFields {
   cognitive?: string;
   experiential?: string;
   behavioral?: string;
-  /** «На сессии»: 2–5 техник по важности. */
+  /** «На сессии»: 2–5 главных техник по важности — на виду. */
   techniques: TechniqueId[];
+  /** «Ещё техники»: подходят по тексту справочника, лист прячет их под раскрытием; без повторов с `techniques`. */
+  moreTechniques?: TechniqueId[];
   /** «Между сессиями»: 1–4 пункта. */
   betweenSessions: BetweenSessionsItem[];
   /** Где застревают. */
@@ -128,8 +130,10 @@ export interface SchemaGuide extends GuideVoiceFields {
   reparenting: string;
   /** Интервенции пунктами, 2–6. */
   interventions: string[];
-  /** «На сессии»: 2–5 техник по важности. */
+  /** «На сессии»: 2–5 главных техник по важности — на виду. */
   techniques: TechniqueId[];
+  /** «Ещё техники»: подходят по тексту справочника, лист прячет их под раскрытием; без повторов с `techniques`. */
+  moreTechniques?: TechniqueId[];
   /** «Между сессиями»: 1–4 пункта. */
   betweenSessions: BetweenSessionsItem[];
   /** Где застревают. */

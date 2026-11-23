@@ -47,6 +47,17 @@ export const buildPunitiveCriticGuide = (tr: Tr): ModeGuide => ({
     'positive_data_log',
     'self_compassion',
   ],
+  moreTechniques: [
+    'pros_cons',
+    'courtroom',
+    'responsibility_pie',
+    'mindfulness',
+    'behavioral_experiment',
+    'limited_reparenting',
+    'safe_place_imagery',
+    'play_and_joy',
+    'cognitive_work',
+  ],
   betweenSessions: [
     {
       kind: 'task',

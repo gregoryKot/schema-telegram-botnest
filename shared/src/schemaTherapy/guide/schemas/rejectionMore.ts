@@ -42,6 +42,12 @@ export const buildAbandonmentGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'transitional_objects',
   ],
+  moreTechniques: [
+    'empathic_confrontation',
+    'limit_setting',
+    'letters',
+    'cognitive_work',
+  ],
   betweenSessions: [
     {
       kind: 'task',
@@ -106,6 +112,7 @@ export const buildMistrustGuide = (tr: Tr): SchemaGuide => ({
     'limited_reparenting',
     'safe_place_imagery',
   ],
+  moreTechniques: ['cognitive_work', 'anger_expression', 'positive_data_log'],
   betweenSessions: [
     {
       kind: 'task',

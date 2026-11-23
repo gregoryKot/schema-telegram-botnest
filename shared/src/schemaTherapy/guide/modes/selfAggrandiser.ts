@@ -44,6 +44,7 @@ export const buildSelfAggrandiserGuide = (tr: Tr): ModeGuide => ({
     'mode_interview',
     'imagery_rescripting',
   ],
+  moreTechniques: ['limit_setting'],
   betweenSessions: [
     { kind: 'task', type: 'mode_intro', title: 'Карточка режима' },
     {

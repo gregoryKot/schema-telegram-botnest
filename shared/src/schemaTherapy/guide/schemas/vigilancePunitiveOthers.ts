@@ -25,6 +25,11 @@ export const buildPunitivenessOthersGuide = (tr: Tr): SchemaGuide => ({
     '«За и против» карающей позиции с подсчётом цены: разрывы, одиночество, накопленная злость.',
   ],
   techniques: ['chairwork', 'pros_cons', 'empathic_confrontation'],
+  moreTechniques: [
+    'imagery_rescripting',
+    'anger_expression',
+    'behavioral_experiment',
+  ],
   betweenSessions: [
     {
       kind: 'task',

@@ -39,6 +39,7 @@ export const buildAttackGuides: ModeGuideBuilder = (tr) => [
       'pros_cons',
       'flashcards',
     ],
+    moreTechniques: ['limit_setting'],
     betweenSessions: [
       {
         kind: 'task',

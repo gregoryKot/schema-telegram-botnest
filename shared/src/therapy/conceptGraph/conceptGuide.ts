@@ -49,6 +49,8 @@ export interface GuideHintView {
   guide: Pick<ModeGuide | SchemaGuide, 'goal' | 'betweenSessions'>;
   /** Техники «На сессии» в порядке раздела; id без статьи в библиотеке пропускается. */
   techniques: TechniqueGuide[];
+  /** «Ещё техники» в порядке раздела, тем же разрешением id. */
+  moreTechniques?: TechniqueGuide[];
 }
 
 export interface ModeGuideView extends GuideHintView {
@@ -85,6 +87,7 @@ export function resolveModeGuide(
   return {
     guide,
     techniques: pickTechniques(texts, tr, guide.techniques),
+    moreTechniques: pickTechniques(texts, tr, guide.moreTechniques ?? []),
     schemas: texts.modeSchemaLinks(modeId),
   };
 }
@@ -102,6 +105,7 @@ export function resolveSchemaGuide(
     guide,
     domainNote,
     techniques: pickTechniques(texts, tr, guide.techniques),
+    moreTechniques: pickTechniques(texts, tr, guide.moreTechniques ?? []),
   };
 }
 
