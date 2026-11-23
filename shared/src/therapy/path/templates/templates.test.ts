@@ -6,7 +6,6 @@ import {
   guideAddressArticles,
 } from '../../../schemaTherapy/guide';
 import type { Tr } from '../../../needs/types';
-import { PHASE_LOOK_KEYS } from '../../../theme/pathLook';
 import {
   buildPathTemplates,
   pathTemplate,
@@ -54,15 +53,31 @@ describe.each([
       }
   });
 
-  it('вид фаз: ключи стадий не повторяются и идут в порядке пути', () => {
+  it('вид фаз — по смыслу: ключ — стадия справочника из guidePhaseIds фазы, без повторов; «завершение» — после автономии', () => {
     for (const t of templates) {
-      const at = t.phases.map((p) => PHASE_LOOK_KEYS.indexOf(p.look));
-      expect(
-        at.every((i) => i >= 0),
-        t.id,
-      ).toBe(true);
-      expect(at, t.id).toEqual([...new Set(at)].sort((a, b) => a - b));
+      const keys = t.phases.map((p) => p.look);
+      expect(new Set(keys).size, t.id).toBe(keys.length);
+      for (const p of t.phases) {
+        if (p.look === 'ending') {
+          expect(p.guidePhaseIds, `${t.id}.${p.id}`).toEqual(['autonomy']);
+          expect(keys.indexOf('autonomy'), `${t.id}.${p.id}`).toBeLessThan(
+            keys.indexOf('ending'),
+          );
+          expect(
+            keys.indexOf('autonomy'),
+            `${t.id}.${p.id}`,
+          ).toBeGreaterThanOrEqual(0);
+        } else expect(p.guidePhaseIds, `${t.id}.${p.id}`).toContain(p.look);
+      }
     }
+  });
+
+  it('вид фазы «автономия» общего шаблона — знак автономии, а не соседней стадии', () => {
+    const general = templates.find((t) => t.id === 'general');
+    expect(general?.phases.find((p) => p.id === 'autonomy')?.look).toBe(
+      'autonomy',
+    );
+    expect(general?.phases.find((p) => p.id === 'ending')?.look).toBe('ending');
   });
 
   it('адреса и этапы справочника существуют', () => {
