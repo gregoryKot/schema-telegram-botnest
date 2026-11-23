@@ -110,19 +110,20 @@ describe('ModeGuideSheet', () => {
 });
 
 describe('TechniqueSheet', () => {
-  it('герой — название и суть; «Когда», шаги нумерованным списком; «Когда не делать» и доказательность — под «Подробнее»', () => {
+  it('герой — название и суть; «Когда не делать» плашкой сразу под ним; шаги нумерованным списком; доказательность — под «Подробнее»', () => {
     render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[0]} onClose={() => {}} /></MemoryRouter>);
     const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Рескриптинг образов' })).toBeTruthy();
     expect(within(dialog).getByText('Техника')).toBeTruthy();
     expect(screen.getByText(FIXTURE_TECHNIQUES[0].summary)).toBeTruthy();
-    expect(regions()).toEqual(['Когда', 'Как проводить']);
+    expect(regions()).toEqual(['Когда не делать', 'Когда', 'Как проводить']);
+    expect(screen.getByRole('region', { name: 'Когда не делать' }).parentElement?.className).toBe('gd-caution');
     const steps = within(screen.getByRole('region', { name: 'Как проводить' })).getByRole('list');
     expect(steps.tagName).toBe('OL');
     expect(within(steps).getAllByRole('listitem').map((li) => li.textContent)).toEqual(FIXTURE_TECHNIQUES[0].steps);
-    expect(screen.queryByText(FIXTURE_TECHNIQUES[0].cautions!)).toBeNull();
+    expect(screen.getByText(FIXTURE_TECHNIQUES[0].cautions!)).toBeTruthy();
     openMore();
-    expect(regions()).toEqual(['Когда', 'Как проводить', 'Когда не делать', 'Доказательность']);
+    expect(regions()).toEqual(['Когда не делать', 'Когда', 'Как проводить', 'Доказательность']);
   });
 
   it('у техники без «Когда», предостережений и доказательности этих разделов и «Подробнее» нет', () => {
@@ -137,14 +138,14 @@ describe('TechniqueSheet', () => {
     const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(dialog).getByText('Из другого подхода · ACT')).toBeTruthy();
     expect(within(dialog).queryByText('Техника')).toBeNull();
-    expect(regions()).toEqual(['Когда', 'В схема-терапии', 'Как проводить']);
+    expect(regions()).toEqual(['Когда не делать', 'Когда', 'В схема-терапии', 'Как проводить']);
     expect(within(screen.getByRole('region', { name: 'В схема-терапии' })).getByText(t.pairsWith)).toBeTruthy();
   });
 
   it('переписанная техника: «Как это звучит» до шагов, пункты `more` первыми под «Подробнее»', () => {
     const t = { ...FIXTURE_TECHNIQUES[0], voice: ['Что самое маленькое?'], more: ['Срыв — повод разобраться'] };
     render(<MemoryRouter><TechniqueSheet technique={t} onClose={() => {}} /></MemoryRouter>);
-    expect(regions()).toEqual(['Как это звучит', 'Когда', 'Как проводить']);
+    expect(regions()).toEqual(['Когда не делать', 'Как это звучит', 'Когда', 'Как проводить']);
     expect(screen.getByText('«Что самое маленькое?»')).toBeTruthy();
     openMore();
     expect(screen.getByText('Срыв — повод разобраться')).toBeTruthy();

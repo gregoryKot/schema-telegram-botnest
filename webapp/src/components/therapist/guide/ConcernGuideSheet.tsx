@@ -4,19 +4,17 @@ import { concernGuideLook } from '../../../sections/guide/guideReferenceConcerns
 import { GuideSection } from './GuideSection';
 import { GuidePoints, GuideVoice } from './GuidePoints';
 import { GuidePage } from './GuideSheet';
+import { FoldText } from './GuideText';
 import { articleAddress } from './marks/guideMarkModel';
 
-/** Разделы листа по порядку: строка — абзацем, список — пунктами; пустой раздел не рисуется. */
+/** Разделы по порядку: строка — абзацем, свёрнутым до первой фразы (кроме WHOLE), список — пунктами; пустой не рисуется. */
 const SECTIONS = [
   'goal', 'criteria', 'origins', 'comorbidity', 'differential', 'modeModel', 'inSession',
   'course', 'crisis', 'relationship', 'psychoeducation', 'formats', 'evidence', 'stuck',
 ] as const satisfies readonly (keyof ConcernGuide)[];
+const WHOLE = new Set<string>(['goal', 'inSession']);
 
-/**
- * Лист статьи вкладки «Запросы и расстройства»: каркас GuidePage, общий с листами режима, схемы и
- * «Для терапевта», — в шапке «Запрос», герой с сутью (`essence`) и знаком статьи на бирюзе вкладки,
- * разделы — через GuideSection с адресом («Про клиента»), «Как это звучит», под «Подробнее» — `more`.
- */
+/** Лист статьи «Запросы и расстройства» на каркасе GuidePage: разделы с адресом («Про клиента»), «Как это звучит», `more`. */
 export function ConcernGuideSheet({ concern, onClose }: { concern: ConcernGuide; onClose: () => void }) {
   const at = articleAddress('concern', concern.id);
   return (
@@ -27,10 +25,11 @@ export function ConcernGuideSheet({ concern, onClose }: { concern: ConcernGuide;
       {SECTIONS.map((key) => {
         const value = concern[key];
         const points = Array.isArray(value) ? value.filter((p) => p.trim()) : [];
-        if (Array.isArray(value) && points.length === 0) return null;
+        const text = typeof value === 'string' && value.trim() ? value : undefined;
+        if (points.length === 0 && !text) return null;
         return (
-          <GuideSection key={key} title={CONCERN_TITLES[key]} text={Array.isArray(value) ? undefined : value} address={at(key)}>
-            {points.length > 0 && <GuidePoints items={points} />}
+          <GuideSection key={key} title={CONCERN_TITLES[key]} text={WHOLE.has(key) ? text : undefined} address={at(key)}>
+            {points.length > 0 ? <GuidePoints items={points} /> : !WHOLE.has(key) && <p className="gd-text"><FoldText text={text!} /></p>}
           </GuideSection>
         );
       })}

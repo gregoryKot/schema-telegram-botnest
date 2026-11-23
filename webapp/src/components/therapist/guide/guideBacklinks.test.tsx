@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Обратная сторона связей на листах справочника: схемы в «Связано» у режима (тап — лист схемы) и
-// «Где применяется» у техники под «Подробнее»; без связей раздела нет. Содержание — фикстура.
+// «Где применяется» у техники (чипы режимов и схем, запросы строкой); без связей раздела нет. Содержание — фикстура.
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -40,13 +40,19 @@ describe('ModeGuideSheet: схемы в «Связано»', () => {
 describe('TechniqueSheet: «Где применяется»', () => {
   const technique = FIXTURE_TECHNIQUES[0];
 
-  it('группа на строку: подпись и названия', () => {
-    show(<TechniqueSheet technique={technique} onClose={() => {}} usages={[
+  it('режимы и схемы — чипы, тап открывает их лист; запросы — строкой', () => {
+    const [onOpenMode, onOpenSchema] = [vi.fn(), vi.fn()];
+    show(<TechniqueSheet technique={technique} onClose={() => {}} onOpenMode={onOpenMode} onOpenSchema={onOpenSchema} usages={[
       { kind: 'mode', lead: 'Режимы', items: [{ id: 'vulnerable_child', name: 'Уязвимый Ребёнок' }] },
+      { kind: 'schema', lead: 'Схемы', items: SCHEMAS },
       { kind: 'concern', lead: 'Запросы', items: [{ id: 'a', name: 'Тревога' }, { id: 'b', name: 'Выгорание' }] },
     ]} />);
-    const items = within(screen.getByRole('region', { name: 'Где применяется' })).getAllByRole('listitem').map((li) => li.textContent);
-    expect(items).toEqual(['РежимыУязвимый Ребёнок', 'ЗапросыТревога, Выгорание']);
+    const used = within(screen.getByRole('region', { name: 'Где применяется' }));
+    fireEvent.click(used.getByRole('button', { name: 'Уязвимый Ребёнок' }));
+    fireEvent.click(used.getByRole('button', { name: 'Покинутость' }));
+    expect(onOpenMode).toHaveBeenCalledWith('vulnerable_child');
+    expect(onOpenSchema).toHaveBeenCalledWith('abandonment');
+    expect(within(used.getByRole('region', { name: 'Запросы' })).getByText('Тревога, Выгорание')).toBeTruthy();
   });
 
   it('техника нигде не зовётся — раздела нет', () => {
