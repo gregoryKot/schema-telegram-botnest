@@ -113,7 +113,6 @@
     `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`.
 
 - ⬜ **Снять снос пары до CHIPS после 2026-12-16** — `setRefreshCookie` (`src/auth/auth-http.util.ts`) по метке `refresh_cross=1` стирает непартиционированную пару кросс-сайтовой сессии (иначе браузер держит две refresh-куки и шлёт старую). Кука старого образца живёт не дольше 30 дней после деплоя — дальше ветка мёртвая: убрать её и `LEGACY_CROSS_SITE_MARK` с тестами.
-- ⬜ **Конструктор «По фазам»: кадр карточек со знаком стадии не снят** — стенду нужны фикстуры `GET /api/therapy/path/<id>`; вид проверен только `webapp/src/components/therapist/plan/path/PathLayout.test.tsx`. Кадры вкладок справочника «до/после» с оттенками по группам тоже не сняты — снять тем же стендом и приложить артефактом.
 
 ## Идеи
 
