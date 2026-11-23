@@ -92,6 +92,7 @@ export const buildHealthyGuides: ModeGuideBuilder = (tr) => [
       'flashcards',
       'compassionate_self',
     ],
+    moreTechniques: ['pros_cons'],
     betweenSessions: [
       {
         kind: 'custom',

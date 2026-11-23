@@ -35,6 +35,7 @@ export const buildWorryingScoldingGuides: ModeGuideBuilder = (tr) => [
       'imagery_rescripting',
       'flashcards',
     ],
+    moreTechniques: ['defusion', 'play_and_joy'],
     betweenSessions: [
       {
         kind: 'custom',

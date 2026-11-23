@@ -32,6 +32,7 @@ export const buildAngryChildGuide = (tr: Tr): ModeGuide => ({
     'limit_setting',
     'imagery_rescripting',
   ],
+  moreTechniques: ['flashcards', 'distress_tolerance'],
   betweenSessions: [
     {
       kind: 'custom',

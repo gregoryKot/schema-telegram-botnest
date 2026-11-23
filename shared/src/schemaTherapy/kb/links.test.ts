@@ -5,6 +5,8 @@ import { danglingEdges, gapProblems, KB_KIND_LABEL } from './check';
 import { MODES_WITHOUT_SCHEMA, TECHNIQUES_WITHOUT_SECTION } from './gaps';
 import { KB_LINKS, schemasOfMode, usagesOfTechnique } from './links';
 import { kbIds } from './tables';
+import { buildModeGuides, buildSchemaGuides } from '../guide/index';
+import type { TechniqueId, Tr } from '../guide/types';
 
 describe('рёбра справочника (kb/links.ts)', () => {
   it.each(KB_LINKS.map((l) => [`${l.from}.${l.field} → ${l.to}`, l]))(
@@ -25,6 +27,45 @@ describe('рёбра справочника (kb/links.ts)', () => {
       (l) => l.from === 'mode' && l.to === 'technique',
     )!.pairs()[0];
     expect(usagesOfTechnique(tech)).toContainEqual({ kind: 'mode', id: src });
+  });
+});
+
+describe('два уровня техник: главные и «Ещё техники»', () => {
+  const tr: Tr = (t) => t;
+  const sections: [string, TechniqueId[], TechniqueId[]][] = [
+    ...buildModeGuides(tr).map(
+      (g) =>
+        [g.modeId, g.techniques, g.moreTechniques ?? []] as [
+          string,
+          TechniqueId[],
+          TechniqueId[],
+        ],
+    ),
+    ...buildSchemaGuides(tr).map(
+      (g) =>
+        [g.schemaId, g.techniques, g.moreTechniques ?? []] as [
+          string,
+          TechniqueId[],
+          TechniqueId[],
+        ],
+    ),
+  ];
+
+  it('«Ещё техники» без повторов внутри и с главными', () => {
+    const bad = sections.flatMap(([id, main, more]) =>
+      more
+        .filter((t, i) => main.includes(t) || more.indexOf(t) !== i)
+        .map((t) => `${id}: ${t}`),
+    );
+    expect(
+      bad,
+      'техника стоит в разделе дважды — оставь её на одном уровне',
+    ).toEqual([]);
+  });
+
+  it('техника из «Ещё техник» видна в «Где применяется»', () => {
+    const [id, , more] = sections.find(([, , m]) => m.length > 0)!;
+    expect(usagesOfTechnique(more[0]).map((u) => u.id)).toContain(id);
   });
 });
 

@@ -37,6 +37,7 @@ export const buildAbandonedChildGuide = (tr: Tr): ModeGuide => ({
     'pattern_breaking',
     'transitional_objects',
   ],
+  moreTechniques: ['letters', 'limited_reparenting'],
   betweenSessions: [
     {
       kind: 'task',

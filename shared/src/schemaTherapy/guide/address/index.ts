@@ -26,6 +26,7 @@ export type {
   GuideAddressTargetRule,
 } from './addressTargets';
 export { guideAddressArticles } from './addressArticles';
+export { MORE_TECHNIQUES_TITLE } from './addressTitles';
 export type { GuideAddressArticle } from './addressArticles';
 
 /** Форма «вы» — когда форма читателя не важна (адрес от неё не зависит). */

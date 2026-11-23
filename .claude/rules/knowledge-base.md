@@ -35,15 +35,21 @@ paths:
 | Вид | id и название | Раздел справочника (форма — `guide/types.ts`) | Обязательно |
 |---|---|---|---|
 | Домен | `content/schemaDomains.ts` | `SchemaDomainGuide` в `guide/schemas/domains.ts` | `note`; ровно одна потребность (`schemaNeed.ts`) |
-| Схема | `content/schemaDomains.ts`, внутри своего домена | `SchemaGuide` в `guide/schemas/*` | `goal`, `essence`, `need`, `coping` тремя стилями (`coping.ts`, `copingHeadlines.ts`), `modeIds` ≥1, `inSession`, `reparenting`, `interventions` 2–6, `techniques` 2–5, `betweenSessions` 1–4, `sources`; детство (`childhood.ts`), синонимы для поиска (`searchAliases.ts`), если есть; YSQ (`hooks/ysqSchemas*`) |
+| Схема | `content/schemaDomains.ts`, внутри своего домена | `SchemaGuide` в `guide/schemas/*` | `goal`, `essence`, `need`, `coping` тремя стилями (`coping.ts`, `copingHeadlines.ts`), `modeIds` ≥1, `inSession`, `reparenting`, `interventions` 2–6, `techniques` 2–5 (+ `moreTechniques` по желанию), `betweenSessions` 1–4, `sources`; детство (`childhood.ts`), синонимы для поиска (`searchAliases.ts`), если есть; YSQ (`hooks/ysqSchemas*`) |
 | Группа режимов | `content/modeGroups*.ts` | — | дорожка концептуализации (`therapy/conceptGraph/modeLanes.ts`) |
-| Режим | `content/modeGroups*.ts`, внутри своей группы | `ModeGuide` в `guide/modes/*` | `goal`, `what`, `techniques` 2–5, `betweenSessions` 1–4, `sources`; хотя бы одна схема, у которой он в `modeIds` (иначе — строка в `kb/gaps.ts` с причиной); карточка (`mode/modeCards`), пара «не путать с» (`mode/modeDoubts`), подпись выбора (`mode/modePickerDesc.ts`), лист теста режимов (`mode/modeTest.ts`), ворота «что чувствую» (`mode/modeFeelGates.ts`) |
+| Режим | `content/modeGroups*.ts`, внутри своей группы | `ModeGuide` в `guide/modes/*` | `goal`, `what`, `techniques` 2–5 (+ `moreTechniques` по желанию), `betweenSessions` 1–4, `sources`; хотя бы одна схема, у которой он в `modeIds` (иначе — строка в `kb/gaps.ts` с причиной); карточка (`mode/modeCards`), пара «не путать с» (`mode/modeDoubts`), подпись выбора (`mode/modePickerDesc.ts`), лист теста режимов (`mode/modeTest.ts`), ворота «что чувствую» (`mode/modeFeelGates.ts`) |
 | Потребность | `needs/types.ts` (`NEED_ORDER`), текст — `needs/content/*` | лист потребности | ровно один домен |
 | Техника | `guide/techniqueIds.ts` | `TechniqueGuide` в `guide/techniques/*` | `group` из закрытого списка (`guideGroups.ts`), `summary`, `steps`, `sources`; знак (`webapp/src/components/art/techniqueSigns.ts`), поля «Что делали» (`therapy/sessionWork/techniqueWork*.ts` + серверная копия `src/therapy/session-work-technique-keys.ts`); хотя бы один раздел режима, схемы или запроса, который её зовёт (иначе — строка в `kb/gaps.ts`) |
 | Запрос, расстройство | `guide/concerns/all.ts` | `ConcernGuide` в `guide/concerns/*` | `modeIds`, `schemaIds`, `techniques` — существующие id |
 | «Для терапевта» | `guide/practice*.ts` | `PracticeNote` | `group` из закрытого списка, суть, 3–5 пунктов, источники |
 | Задание из справочника | `betweenSessions` раздела | `BetweenSessionsItem` | `task` — тип из `GuideTaskType`; `custom` — попадает в каталог `tasks/catalog/taskCatalog.ts` |
 | Источник | `guide/sources.ts` (`GUIDE_SOURCES`) | — | каждая метка `[Метка, гл. N]` в тексте есть на полке |
+
+**Два уровня техник у режима и схемы.** `techniques` — 2–5 главных по важности: плашка «Обычно в
+методе» и «На сессии» на листе. `moreTechniques` — остальные, которые подтверждает текст справочника
+(текст раздела, `when`/`pairsWith`/`summary` техники, глава с полки); на листе — свёрнутый блок
+«Ещё техники» под «На сессии». Потолка нет, повтор с `techniques` — красный тест (`kb/links.test.ts`).
+Техника, общая для любого клиента (`theory` в `kb/gaps.ts`), к разделу не притягивается.
 
 Количество записей закреплено тестом `schemaTherapyData.test.ts`: сейчас 20 схем в 5
 доменах, 36 режимов в 6 группах. Новое число меняется в тесте и в комментариях, где
@@ -59,7 +65,7 @@ paths:
 | схема → домен → потребность | вложенность `schemaDomains.ts` + `schemaNeed.ts` | `needDomain()` |
 | режим → группа → дорожка | вложенность `modeGroups*.ts` + `modeLanes.ts` | `groupIdsOfLane()` |
 | схема → характерные режимы | `SchemaGuide.modeIds` | режим → схемы: `schemasOfMode()` |
-| режим, схема, запрос → техники | `ModeGuide.techniques`, `SchemaGuide.techniques`, `ConcernGuide.techniques` | техника → где применяется: `usagesOfTechnique()` |
+| режим, схема, запрос → техники | `ModeGuide.techniques`/`moreTechniques`, `SchemaGuide.techniques`/`moreTechniques`, `ConcernGuide.techniques` | техника → где применяется: `usagesOfTechnique()` |
 | запрос → режимы, схемы | `ConcernGuide.modeIds`, `schemaIds` | — |
 | раздел → задание | `betweenSessions` | каталог заданий |
 | раздел → источник | метка в тексте + `sources` | — |
@@ -68,7 +74,7 @@ paths:
 
 **Название в тексте — значит, и связь в поле.** Если в тексте схемы назван режим
 («уходит в Отстранённого Защитника»), этот режим стоит в её `modeIds`. Если в тексте
-режима названа техника, она стоит в `techniques`, или текст говорит о ней как о
+режима названа техника, она стоит в `techniques` или `moreTechniques`, или текст говорит о ней как о
 противопоказании. Тест `kb/mentions.test.ts` ищет названия режимов в текстах разделов
 схем (кроме здоровых режимов — цели работы); несовпадения, которые были до правила,
 перечислены в `kb/gaps.ts` (`TEXT_MENTIONS_WITHOUT_LINK`) и только убывают.
@@ -114,8 +120,8 @@ paths:
 
 ### Новый режим
 1. id и название — в группе `content/modeGroups*.ts`; число режимов — в `schemaTherapyData.test.ts`.
-2. Раздел `ModeGuide` в `guide/modes/*` (+ `modes/all.ts`): все обязательные поля, техники
-   по важности, задания между сессиями.
+2. Раздел `ModeGuide` в `guide/modes/*` (+ `modes/all.ts`): все обязательные поля, 2–5 главных
+   техник по важности, остальные подтверждённые — в `moreTechniques`, задания между сессиями.
 3. Связи: в каких схемах он характерен — добавь его id в `modeIds` этих схем (по книге);
    в каких запросах — в `ConcernGuide.modeIds`. Ни одной схемы — строка `theory` в `kb/gaps.ts`.
 4. Все таблицы реестра с `coverage: 'all'` по режимам: красный тест перечислит их сам.
@@ -126,7 +132,7 @@ paths:
 1. id и название — в домене `content/schemaDomains.ts`; число — в `schemaTherapyData.test.ts`.
 2. Раздел `SchemaGuide` в файле своего домена `guide/schemas/*`, копинг тремя стилями,
    выжимки копинга, детство.
-3. Связи: `modeIds` (характерные режимы), `techniques`, запросы, где она встречается.
+3. Связи: `modeIds` (характерные режимы), `techniques` (главные) и `moreTechniques`, запросы, где она встречается.
 4. YSQ: вопросы и ключ в `hooks/ysqSchemas*` и серверная копия `src/utils/ysq.ts`, если
    схема измеряется опросником.
 5. Таблицы реестра по схемам — по красному тесту.
@@ -136,8 +142,9 @@ paths:
    `group` из закрытого списка.
 2. Знак — `webapp/src/components/art/techniqueSigns.ts`; поля «Что делали» — в
    `therapy/sessionWork/techniqueWork*.ts` и `src/therapy/session-work-technique-keys.ts`.
-3. Связи: в `techniques` хотя бы одного режима, схемы или запроса, к которому она
-   относится по книге. Ни одного — строка `todo` в `kb/gaps.ts`.
+3. Связи: в `techniques` или `moreTechniques` хотя бы одного режима, схемы или в `techniques`
+   запроса, к которому она относится по книге. Главная — только если она важнее одной из 2–5
+   текущих; иначе — в `moreTechniques`. Ни одного раздела — строка `todo` в `kb/gaps.ts`.
 
 ### Новый запрос или расстройство
 Статья в `guide/concerns/*` + `concerns/all.ts`; `modeIds`, `schemaIds`, `techniques` —

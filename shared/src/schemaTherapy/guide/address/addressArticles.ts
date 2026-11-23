@@ -46,6 +46,7 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
           voice: [g.reparenting, ...(g.voice ?? [])],
           modeIds: g.modeIds.map(modeName),
           techniques: g.techniques.map(techniqueName),
+          moreTechniques: g.moreTechniques?.map(techniqueName),
           domainNote: d.note,
         }),
       })),
@@ -59,6 +60,7 @@ const SOURCES: Record<GuideArticleKind, ArticleSource> = {
       sections: sectionsOf({
         ...g,
         techniques: g.techniques.map(techniqueName),
+        moreTechniques: g.moreTechniques?.map(techniqueName),
         // Обратная сторона SchemaGuide.modeIds: «Типичен для схем».
         schemas: (schemas.get(g.modeId) ?? []).map((s) => s.name),
       }),

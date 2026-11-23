@@ -43,6 +43,7 @@ export const buildEnmeshmentGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'schema_dialogue',
   ],
+  moreTechniques: ['pros_cons', 'cognitive_work'],
   betweenSessions: [
     {
       kind: 'task',
@@ -114,6 +115,7 @@ export const buildFailureGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'flashcards',
   ],
+  moreTechniques: ['positive_data_log', 'future_imagery'],
   betweenSessions: [
     {
       kind: 'task',
