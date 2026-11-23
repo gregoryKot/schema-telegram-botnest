@@ -60,6 +60,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'stop_rewind_explore',
     'life_line',
     'healthy_adult_plan',
+    'safety_bubble',
   ].map(w),
   {
     id: 'grief_chairwork',
