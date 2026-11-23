@@ -8,6 +8,7 @@ import { SEARCH_ALIASES } from '../searchAliases';
 import { SCHEMA_NAME_TO_ID } from '../../hooks/ysqSchemas';
 import { TECHNIQUE_WORK } from '../../therapy/sessionWork/techniqueWork';
 import type { KbTable } from './check';
+import { TECHNIQUE_CATALOG } from './catalogTechniques';
 
 const tr: Tr = (t) => t;
 
@@ -72,6 +73,13 @@ export const SCHEMA_TECHNIQUE_TABLES: readonly KbTable[] = [
     kind: 'technique',
     coverage: 'all',
     keys: () => Object.keys(TECHNIQUE_WORK),
+  },
+  {
+    file: 'shared/src/schemaTherapy/kb/catalogTechniques.ts',
+    kind: 'technique',
+    coverage: 'all',
+    keys: () =>
+      TECHNIQUE_CATALOG.filter((t) => t.status === 'written').map((t) => t.id),
   },
   {
     file: 'webapp/src/components/art/techniqueSigns.ts',
