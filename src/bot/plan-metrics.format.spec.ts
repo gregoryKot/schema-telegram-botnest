@@ -1,4 +1,7 @@
-import { formatPlanMetrics } from './plan-metrics.format';
+import {
+  formatLegacyPlanSource,
+  formatPlanMetrics,
+} from './plan-metrics.format';
 import type { PlanMetrics } from './plan-metrics.types';
 
 const EMPTY: PlanMetrics = {
@@ -8,6 +11,20 @@ const EMPTY: PlanMetrics = {
   active30: 0,
   done30: 0,
 };
+
+describe('formatLegacyPlanSource', () => {
+  it('ноль (в том числе пустая БД) — колонки можно снимать', () => {
+    expect(formatLegacyPlanSource(0)).toBe(
+      'Пункты плана со старой записью источника: 0 — старые колонки можно снимать',
+    );
+  });
+
+  it('не ноль — просто число', () => {
+    expect(formatLegacyPlanSource(7)).toBe(
+      'Пункты плана со старой записью источника: 7',
+    );
+  });
+});
 
 describe('formatPlanMetrics', () => {
   it('пустая БД — человеческая строка, не 0/NaN/мусор', () => {

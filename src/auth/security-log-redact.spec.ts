@@ -19,12 +19,9 @@ type RedactModule = typeof import('./security-log-redact');
 let LOGGABLE_FIELDS: RedactModule['LOGGABLE_FIELDS'];
 let redactSecurityLogData: RedactModule['redactSecurityLogData'];
 
-// Модуль грузится ЗАНОВО на каждый тест, внутри теста: белый список —
-// код уровня модуля, и при статическом импорте Stryker считает его мутантов
-// «статическими» и не засчитывает спеку (ignoreStatic), а судит их чужой
-// спек, который грузит файл внутри теста (nightly golden-auth, issue #614:
-// security-log.service 95.74% → 65.71%). Образец — loadCrypto в crypto.spec.ts.
-beforeEach(() => {
+// Модуль грузится один раз в beforeAll: загрузка в it/beforeEach делает статику
+// зоны гибридной для Stryker (check-spec-load-in-test). Модуль без состояния.
+beforeAll(() => {
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('./security-log-redact') as RedactModule;
