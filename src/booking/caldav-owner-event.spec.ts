@@ -39,9 +39,7 @@ describe('bookingEventUid — HMAC номера брони', () => {
   });
 
   it('зависит от ключа сервера: по номеру без ключа UID не подобрать', () => {
-    expect(keyed.bookingEventUid(42)).not.toBe(
-      otherKeyed.bookingEventUid(42),
-    );
+    expect(keyed.bookingEventUid(42)).not.toBe(otherKeyed.bookingEventUid(42));
   });
 
   it('без ключа (dev) — тоже без номера и отличается от ключевого', () => {
