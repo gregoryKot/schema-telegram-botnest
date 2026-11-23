@@ -2891,7 +2891,7 @@
   "webapp/src/components/therapist/guide/GuideTabs.tsx": 96,
   "webapp/src/components/therapist/guide/guideTabsModel.ts": 62,
   "webapp/src/components/therapist/guide/GuideTechniques.tsx": 56,
-  "webapp/src/components/therapist/guide/GuideText.tsx": 41,
+  "webapp/src/components/therapist/guide/GuideText.tsx": 39,
   "webapp/src/components/therapist/guide/guideTextModel.ts": 36,
   "webapp/src/components/therapist/guide/marks/guideMarkModel.ts": 58,
   "webapp/src/components/therapist/guide/marks/GuideMarksBlock.tsx": 54,
