@@ -109,4 +109,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:two_axis_check': ['rule', 'picture', 'newView'],
     'technique:need_cycle': ['scene', 'mode', 'need', 'action'],
     'technique:guess_the_mode': ['modes', 'signs'],
+    'technique:healthy_adult_plan': ['scene', 'goodParent', 'plan', 'result'],
   };

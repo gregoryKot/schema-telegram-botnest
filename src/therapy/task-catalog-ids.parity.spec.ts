@@ -10,6 +10,8 @@ function sharedIds(): string[] {
   return [
     'taskWhyModes.ts',
     'taskWhyAbandoned.ts',
+    'taskWhyChildModes.ts',
+    'taskWhyHealthy.ts',
     'taskWhySchemas.ts',
   ].flatMap((file) =>
     [

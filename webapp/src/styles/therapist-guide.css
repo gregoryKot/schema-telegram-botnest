@@ -27,6 +27,8 @@
 /* «ещё» у длинного пункта: тихая ссылка в строке, зона нажатия 44 — невидимым ::before. */
 .ds-link.gd-fold { position: relative; display: inline; min-height: 0; padding: 0; font-size: 15px; line-height: inherit; }
 .ds-link.gd-fold::before { content: ''; position: absolute; inset: -13px -10px; }
+/* until-found прячет через content-visibility, а она не действует на строчный span: нужен атомарный бокс. */
+.gd-fold-rest[hidden="until-found"] { display: inline-block; }
 
 /* Раздел листа: подпись и абзац справочника. */
 .gd-section { display: flex; flex-direction: column; gap: var(--space-6); }

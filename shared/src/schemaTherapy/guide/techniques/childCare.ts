@@ -40,8 +40,8 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
     ],
     more: extra.playAndJoyMore,
     cautions:
-      'Игра не к месту, когда клиент в остром горе или в Уязвимом Ребёнке и ждёт, что его услышат: шутка тогда звучит как отказ слушать. Клиенту со стыдом игра поначалу кажется проверкой — тут терапевт дурачится первым.',
+      'Игра не к месту, когда клиент в остром горе или в Уязвимом Ребёнке и ждёт, что его услышат: шутка тогда звучит как отказ слушать. Клиенту со стыдом игра поначалу кажется проверкой — тут терапевт дурачится первым. Неуверенность терапевта клиент считывает сразу, поэтому упражнение вводят с энтузиазмом и приглашают в него, а не спрашивают, хочет ли клиент. Включились Критик или копинг — их называют и выгоняют: это часть работы, а не срыв упражнения [Фаррелл, 4.6.5].',
     sources:
-      'Lockwood G., Shaw I. Schema Therapy and the Role of Joy and Play. В: van Vreeswijk M., Broersen J., Nadort M. (eds.). The Wiley-Blackwell Handbook of Schema Therapy. Wiley-Blackwell, 2012, ч. III, гл. 5. Heath G., Startup H. (eds.). Creative Methods in Schema Therapy. Routledge, 2020, гл. 10 «Spontaneity and Play in Schema Therapy». [Арнтц ПРЛ, гл. 5, 10].',
+      'Lockwood G., Shaw I. Schema Therapy and the Role of Joy and Play. В: van Vreeswijk M., Broersen J., Nadort M. (eds.). The Wiley-Blackwell Handbook of Schema Therapy. Wiley-Blackwell, 2012, ч. III, гл. 5. Heath G., Startup H. (eds.). Creative Methods in Schema Therapy. Routledge, 2020, гл. 10 «Spontaneity and Play in Schema Therapy». [Арнтц ПРЛ, гл. 5, 10], [Фаррелл, 4.6.5].',
   },
 ];
