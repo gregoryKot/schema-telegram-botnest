@@ -7,16 +7,18 @@ import type { ReferenceGroup } from './guideReferenceModel';
 
 export const CONCERNS_HUE: PaperHue = PAPER_HUE.teal;
 
-/** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (быть видимым вместо связи). */
+/** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (видимость вместо связи), депрессия — Leaf. */
 export const CONCERN_SIGN: Record<string, GuideSign> = {
   bpd: 'ribbon',
   narcissism: 'spotlight',
+  depression: 'leaf',
 };
 
 /** Оттенок статьи; новая статья без строки здесь остаётся бирюзой — сверку держит guideReferenceHues.test.ts. */
 export const CONCERN_HUE: Record<string, PaperHue> = {
   bpd: PAPER_HUE.teal,
   narcissism: PAPER_HUE.lilac,
+  depression: PAPER_HUE.sky,
 };
 
 export const concernGuideLook = (id: string): SheetLook => ({

@@ -23,9 +23,6 @@ export const MODES_WITHOUT_SCHEMA: Readonly<Record<string, KbGap>> = {
 const PHASE =
   'её зовёт только фаза терапии, а фазы разделом не считаются (решение дирижёра)';
 
-const DEPRESSION =
-  'нужен запрос «Депрессия» во вкладке «Запросы»: техника для депрессии';
-
 /** Техники, которых нет ни в одном поле techniques раздела. */
 export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
   schema_attunement: {
@@ -65,14 +62,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
   defusion: {
     kind: 'todo',
     why: 'по [Кембридж, гл. 13] место — Беспокоящийся Гиперконтролёр, но у него уже пять техник (потолок плашки): нужно решение, какую заменить',
-  },
-  behavioral_activation: {
-    kind: 'todo',
-    why: DEPRESSION,
-  },
-  need_now_question: {
-    kind: 'todo',
-    why: DEPRESSION + ' [Кембридж, гл. 13]',
   },
   chain_analysis: {
     kind: 'todo',

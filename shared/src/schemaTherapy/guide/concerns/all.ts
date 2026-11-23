@@ -1,6 +1,7 @@
 // Вкладка «Запросы и расстройства» справочника: статьи о том, с чем приходят клиенты. Тип — ./types.ts.
 import type { Tr } from '../types';
 import { buildBpdGuide } from './bpd';
+import { buildDepressionGuide } from './depression';
 import { buildNarcissismGuide } from './narcissism';
 import type { ConcernGuide, ConcernGuideBuilder } from './types';
 
@@ -10,6 +11,7 @@ export type { ConcernGuide, ConcernGuideBuilder } from './types';
 export const CONCERN_BUILDERS: ConcernGuideBuilder[] = [
   buildBpdGuide,
   buildNarcissismGuide,
+  buildDepressionGuide,
 ];
 
 /** Все статьи вкладки «Запросы и расстройства». */
