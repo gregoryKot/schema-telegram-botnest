@@ -36,4 +36,11 @@ describe('SignGroup', () => {
     rerender(<SignGroup look={{ hue: 310, sign: 'looming' }} title="Критикующие режимы"><p>строка</p></SignGroup>);
     expect(container.querySelector('.sg-group')!.className).toBe('pp-paper sg-group');
   });
+
+  it('fold с plain — тихая свёртка без листа: строки-карточки не встают на бумагу группы («Техники», «Запросы»)', () => {
+    const { container } = render(<SignGroup fold plain look={{ hue: 45 }} title="Когнитивные" rowsClassName="gr-rows"><p>строка</p></SignGroup>);
+    const group = container.querySelector('.sg-group')!;
+    expect(group.className).toBe('sg-group sg-group--plain');
+    expect(group.querySelector(':scope > .sg-rows.gr-rows')!.textContent).toBe('строка');
+  });
 });
