@@ -1,19 +1,10 @@
-// Разбор текста листа справочника для показа: метки книг тише текста, длинный пункт — первой фразой, подписи оглавления.
+// Разбор текста листа справочника для показа: метки книг — в конец абзаца, длинный пункт — первой фразой.
 
-/** Кусок текста: обычный или метка книги «[Арнтц ПРЛ, гл. 9]» вместе с пробелом перед ней. */
-export interface TextPart { text: string; cite: boolean }
-
-/** Делит текст на обычные куски и метки в квадратных скобках (их же расшифровывает sources.ts). */
-export function splitCites(text: string): TextPart[] {
-  const parts: TextPart[] = [];
-  let at = 0;
-  for (const m of text.matchAll(/\s*\[[^[\]]+\]/g)) {
-    if (m.index > at) parts.push({ text: text.slice(at, m.index), cite: false });
-    parts.push({ text: m[0], cite: true });
-    at = m.index + m[0].length;
-  }
-  if (at < text.length) parts.push({ text: text.slice(at), cite: false });
-  return parts;
+/** Текст без меток книг и сами метки по порядку, без повторов: метка «[Арнтц ПРЛ, гл. 9]» уходит из фразы в тихую строку
+ *  в конце абзаца (Cited), расшифровка — на вкладке «Теория» (sources.ts). */
+export function liftCites(text: string): { text: string; cites: string[] } {
+  const cites = [...new Set([...text.matchAll(/\[([^[\]]+)\]/g)].map((m) => m[1].trim()))];
+  return { text: text.replace(/[ \t]*\[[^[\]]+\]/g, ''), cites };
 }
 
 /** Пункт короче — показывается целиком: свёртка ради одной строки только мешает. */
@@ -42,15 +33,4 @@ export function foldFirstSentence(text: string): { head: string; rest: string } 
     }
   }
   return null;
-}
-
-/** Короткие подписи чипов оглавления; остальные разделы — своей подписью. */
-const TOC_SHORT: Record<string, string> = {
-  'Как это звучит': 'Звучит',
-  'Как работать': 'Каналы',
-  'Между сессиями': 'Дома',
-};
-
-export function tocLabel(title: string): string {
-  return TOC_SHORT[title] ?? title;
 }
