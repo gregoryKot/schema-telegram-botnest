@@ -30,3 +30,10 @@ export function formatPlanMetrics(m: PlanMetrics): string {
   );
   return lines.join('\n');
 }
+
+/** Строка «Самопроверки»: сколько пунктов плана ещё держат источник по-старому. */
+export function formatLegacyPlanSource(count: number): string {
+  return count === 0
+    ? 'Пункты плана со старой записью источника: 0 — старые колонки можно снимать'
+    : `Пункты плана со старой записью источника: ${count}`;
+}

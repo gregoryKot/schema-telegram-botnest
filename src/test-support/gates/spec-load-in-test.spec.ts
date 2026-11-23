@@ -44,6 +44,14 @@ describe('check-spec-load-in-test.mjs', () => {
       'загрузчик через посредника',
       `${LOAD}const make = () => new (load('a').X)();\nit('t', () => { make(); });\n`,
     ],
+    [
+      'require в beforeEach',
+      "beforeEach(() => { const m = require('./x'); });\n",
+    ],
+    [
+      'вызов загрузчика в beforeEach',
+      `${LOAD}beforeEach(() => { load('a'); });\nit('t', () => {});\n`,
+    ],
     ['import() в it', "it('t', async () => { await import('./x'); });\n"],
   ])('красный: %s', (_name, spec) => {
     const res = run(spec);
