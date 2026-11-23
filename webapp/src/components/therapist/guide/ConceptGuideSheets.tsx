@@ -68,12 +68,12 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
     backRef: backRefs?.section,
   });
   const usages = texts && openTechnique ? texts.techniqueUsageGroups(tr, openTechnique.id) : [];
-  // Схема из листа режима встаёт на его место: лист раздела один, свой закрывается goBack(then).
-  const openSchema = (id: string) => {
+  // Схема из листа режима (и режим из листа схемы) встаёт на его место: лист раздела один, свой закрывается goBack(then).
+  const swapTo = (go: (id: string) => void) => (id: string) => {
     const back = backRefs?.section.current;
-    if (back) back(() => actions.onOpenSchema(id));
-    else actions.onOpenSchema(id);
+    if (back) back(() => go(id)); else go(id);
   };
+  const [openSchema, openMode] = [swapTo(actions.onOpenSchema), swapTo(actions.onOpenMode)];
   const markFrom = openTechnique?.from;
   // Строка журнала за сегодня — та же кнопка «сегодня», что из схемы случая.
   const day = journal && openTechnique?.day !== journal.today() ? openTechnique?.day : undefined;
@@ -90,7 +90,7 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
         <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} onOpenSchema={openSchema} {...sheetProps(sheet)} />
       )}
       {sheet?.kind === 'schema' && schemaView && (
-        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} {...sheetProps(sheet)} />
+        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} onOpenMode={openMode} {...sheetProps(sheet)} />
       )}
       {technique && (
         <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />

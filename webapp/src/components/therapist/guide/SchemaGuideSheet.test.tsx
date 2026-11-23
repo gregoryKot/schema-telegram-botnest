@@ -21,13 +21,13 @@ const regions = () => screen.getAllByRole('region').map((r) => r.getAttribute('a
 const region = (name: string) => within(screen.getByRole('region', { name }));
 const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
 
-function renderSheet(view: SchemaGuideView = FIXTURE_SCHEMA_VIEW, onAssign?: (item: unknown) => void) {
+function renderSheet(view: SchemaGuideView = FIXTURE_SCHEMA_VIEW, onAssign?: (item: unknown) => void, onOpenMode?: (id: string) => void) {
   const onOpenTechnique = vi.fn();
   render(
     <MemoryRouter>
       <SchemaGuideSheet
         schemaName={NAME} view={view}
-        onOpenTechnique={onOpenTechnique} onAssign={onAssign} onClose={() => {}}
+        onOpenTechnique={onOpenTechnique} onAssign={onAssign} onOpenMode={onOpenMode} onClose={() => {}}
       />
     </MemoryRouter>,
   );
@@ -67,6 +67,15 @@ describe('SchemaGuideSheet', () => {
     openMore();
     expect(region('Типичные режимы').getByText('Покинутый Ребёнок, Сердитый Ребёнок')).toBeTruthy();
     expect(screen.queryByText(/abandoned_child|нет_такого_режима/)).toBeNull();
+  });
+
+  it('с onOpenMode режимы — строки-переходы: тап открывает лист режима', () => {
+    const onOpenMode = vi.fn();
+    renderSheet(FIXTURE_SCHEMA_VIEW, undefined, onOpenMode);
+    openMore();
+    fireEvent.click(region('Типичные режимы').getByRole('button', { name: /Сердитый Ребёнок/ }));
+    expect(onOpenMode).toHaveBeenCalledWith('angry_child');
+    expect(region('Типичные режимы').getAllByRole('button')).toHaveLength(2);
   });
 
   it('фраза репарентинга — «Как это звучит»: реплика, кавычки ставит лист; за ней реплики voice', () => {
