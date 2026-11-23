@@ -6,6 +6,15 @@ export const FARRELL_TECHNIQUE_WORK: Record<
   FarrellTechniqueId,
   TechniqueWorkDef
 > = {
+  mode_management_plan: {
+    name: 'План управления режимами',
+    fields: [
+      ['mode', 'Режим'],
+      ['now', 'Приёмы на сейчас'],
+      ['later', 'Приёмы надолго'],
+      ['schema', 'Связанная схема'],
+    ],
+  },
   healthy_adult_plan: {
     name: 'План Здорового Взрослого',
     fields: [
