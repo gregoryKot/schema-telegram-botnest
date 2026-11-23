@@ -59,6 +59,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'window_of_tolerance',
     'stop_rewind_explore',
     'life_line',
+    'healthy_adult_plan',
   ].map(w),
   {
     id: 'grief_chairwork',
