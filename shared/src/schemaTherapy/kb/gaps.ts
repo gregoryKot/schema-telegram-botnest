@@ -64,7 +64,7 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
   },
   defusion: {
     kind: 'todo',
-    why: 'нужна глава книги, где дефузию ставят против Критика (Рёдигер и соавт., 2018), или упоминание в тексте раздела Критика',
+    why: 'по [Кембридж, гл. 13] место — Беспокоящийся Гиперконтролёр, но у него уже пять техник (потолок плашки): нужно решение, какую заменить',
   },
   behavioral_activation: {
     kind: 'todo',
@@ -81,10 +81,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
   stop_rewind_explore: {
     kind: 'todo',
     why: 'нужно упоминание ментализации в статье о ПРЛ или разделе Агрессора (Бейтман и Фонаги, 2016, гл. 6)',
-  },
-  current_role_play: {
-    kind: 'todo',
-    why: 'нужно упоминание разбора недавней ссоры в трёх фазах в статье о ПРЛ или разделе режима [Арнтц ПРЛ, гл. 5]',
   },
   two_axis_check: {
     kind: 'theory',
