@@ -2,7 +2,8 @@
 // размера файла). Скрипт сам вызывает `git ls-files`, поэтому песочница
 // должна быть настоящим git-репозиторием (runGate(..., { git: true })) —
 // иначе он видит пустой список файлов и молча зеленеет на чём угодно.
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
+import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { linesOfLength, runGate, cleanupTmp } from './gate-sandbox';
 import { loadRegexList } from './pattern-loader';
@@ -73,6 +74,55 @@ describe('check-file-size-ratchet.mjs', () => {
       ) as Record<string, number>;
       expect(written['src/a.ts']).toBe(10);
       expect(written['src/b.ts']).toBe(20);
+    } finally {
+      cleanupTmp(res.tmp);
+    }
+  });
+
+  it('--update при наличии origin/main точечный: нетронутые записи остаются, изменённые и новые обновляются', () => {
+    const git = (tmp: string, ...a: string[]) =>
+      spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], {
+        cwd: tmp,
+      });
+    const res = runGate(
+      'check-file-size-ratchet.mjs',
+      {
+        // Запись untouched в бейслайне старше факта (50): точечный --update её не трогает.
+        'scripts/file-size-baseline.json': JSON.stringify({
+          'src/untouched.ts': 50,
+          'src/changed.ts': 40,
+          'src/gone.ts': 9,
+        }),
+        'src/untouched.ts': linesOfLength(20),
+        'src/changed.ts': linesOfLength(40),
+      },
+      {
+        git: true,
+        args: ['--update'],
+        keepTmp: true,
+        setup: (tmp) => {
+          git(tmp, 'init', '-q');
+          git(tmp, 'add', '-A');
+          git(tmp, 'commit', '-q', '-m', 'base');
+          git(tmp, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+          writeFileSync(join(tmp, 'src/changed.ts'), linesOfLength(30));
+          writeFileSync(join(tmp, 'src/fresh.ts'), linesOfLength(5));
+        },
+      },
+    );
+    try {
+      expect(res.status).toBe(0);
+      const written = JSON.parse(
+        readFileSync(
+          join(res.tmp, 'scripts', 'file-size-baseline.json'),
+          'utf8',
+        ),
+      ) as Record<string, number>;
+      expect(written).toMatchObject({
+        'src/untouched.ts': 50,
+        'src/changed.ts': 30,
+        'src/fresh.ts': 5,
+      });
     } finally {
       cleanupTmp(res.tmp);
     }

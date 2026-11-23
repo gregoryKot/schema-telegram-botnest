@@ -98,7 +98,7 @@ export class StatsReportService {
   /** Полный отчёт (`/stats all`, perf, live-спек). */
   async render(): Promise<string> {
     const parts = await settleBlocks(
-      [...this.runs(), ...infraBlocks()],
+      [...this.runs(), ...infraBlocks(this.plan)],
       this.logger,
     );
     return parts.join('\n\n');
