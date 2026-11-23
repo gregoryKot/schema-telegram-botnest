@@ -57,6 +57,17 @@ export const KB_LINKS: readonly KbLink[] = [
       ),
   },
   {
+    from: 'schema',
+    field: 'moreTechniques',
+    to: 'technique',
+    pairs: () =>
+      each(
+        buildSchemaGuides(tr),
+        (g) => g.schemaId,
+        (g) => g.moreTechniques,
+      ),
+  },
+  {
     from: 'mode',
     field: 'techniques',
     to: 'technique',
@@ -65,6 +76,17 @@ export const KB_LINKS: readonly KbLink[] = [
         buildModeGuides(tr),
         (g) => g.modeId,
         (g) => g.techniques,
+      ),
+  },
+  {
+    from: 'mode',
+    field: 'moreTechniques',
+    to: 'technique',
+    pairs: () =>
+      each(
+        buildModeGuides(tr),
+        (g) => g.modeId,
+        (g) => g.moreTechniques,
       ),
   },
   {
@@ -116,7 +138,7 @@ export function schemasOfMode(modeId: string): string[] {
   return modeSchemaIndex().get(modeId) ?? [];
 }
 
-/** Техника → разделы режимов, схем и запросов, которые её зовут, одним проходом. */
+/** Техника → разделы режимов, схем и запросов, которые её зовут (главной или в «Ещё техниках»), одним проходом. */
 export function techniqueUsageIndex(): Map<
   string,
   { kind: KbUsageKind; id: string }[]
