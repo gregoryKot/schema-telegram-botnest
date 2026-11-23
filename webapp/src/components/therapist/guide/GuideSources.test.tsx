@@ -19,7 +19,7 @@ describe('GuideSources', () => {
     render(<GuideSources text="[Нет такой], [Линехан, 1993]" />);
     fireEvent.click(screen.getByRole('button', { name: 'Источники' }));
     expect(screen.queryByRole('listitem')).toBeNull();
-    expect(screen.getByText('Метки в квадратных скобках в тексте — эти книги.')).toBeTruthy();
+    expect(screen.getByText('Метки книг в тексте — эти книги.')).toBeTruthy();
   });
 
   it('пустые источники — блока нет', () => {

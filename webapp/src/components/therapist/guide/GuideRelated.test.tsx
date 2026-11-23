@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-// Блок «Связано» листа справочника: пустые группы не рисуются, без групп нет блока; чип несёт оттенок листа,
-// куда ведёт, а тап по чипу открывает лист и не подсвечивает раздел.
+// Блок «Связано» листа справочника: пустые группы не рисуются, без групп нет блока; строка несёт знак листа,
+// куда ведёт (знак строки), а тап по строке открывает лист и не подсвечивает раздел.
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { GuideRelated, type RelatedGroup } from './GuideRelated';
 
-const look = (id: string) => (id === 'a' ? { hue: 145 } : null) as ReturnType<RelatedGroup['look']>;
+const look = (id: string) => (id === 'a' ? { hue: 145, sign: 'strokes' } : null) as ReturnType<RelatedGroup['look']>;
 const group = (over: Partial<RelatedGroup>): RelatedGroup => ({
   title: 'Схемы', address: 'schema:x/modeIds', items: [{ id: 'a', name: 'Альфа' }, { id: 'b', name: 'Бета' }], look, ...over,
 });
@@ -16,16 +16,16 @@ describe('GuideRelated', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('группы — разделы внутри «Связано»; чип с оттенком листа, без оттенка — без стиля', () => {
+  it('группы — разделы внутри «Связано»; строка со знаком листа, без знака — без картинки', () => {
     render(<GuideRelated groups={[group({ onOpen: vi.fn() }), group({ title: 'Режимы', items: [] })]} />);
     const block = within(screen.getByRole('region', { name: 'Связано' }));
     expect(block.getAllByRole('region').map((r) => r.getAttribute('aria-label'))).toEqual(['Схемы']);
     const [alpha, beta] = block.getAllByRole('button');
-    expect(alpha.style.getPropertyValue('--h')).toBe('145');
-    expect(beta.getAttribute('style')).toBeNull();
+    expect(alpha.querySelector('.pp-row-art')).not.toBeNull();
+    expect(beta.querySelector('.pp-row-art')).toBeNull();
   });
 
-  it('тап по чипу открывает лист и не всплывает к разделу', () => {
+  it('тап по строке открывает лист и не всплывает к разделу', () => {
     const onOpen = vi.fn();
     const onSection = vi.fn();
     render(<GuideRelated groups={[group({ onOpen })]} />);

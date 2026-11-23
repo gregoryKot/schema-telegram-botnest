@@ -3,8 +3,8 @@
 // не рисует пустые (у режима бывают не все четыре канала), техники ведут в
 // лист техники, «Дать заданием» отдаёт пункт; лист техники — шаги нумерованным
 // списком. Пилот живого языка (2026-11): герой с заголовком и сутью, «Как это
-// звучит», а «Где застревают», «Когда не делать», доказательность и пункты
-// `more` — под «Подробнее», закрытым по умолчанию. Содержание — фикстура, не
+// звучит»; лист режима — вкладки («Кратко», «На сессии», «Задания», «Теория»,
+// там «Где застревают» и пункты `more`), лист техники — «Подробнее». Содержание — фикстура, не
 // тексты shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -20,6 +20,9 @@ import {
 } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 const regions = () => screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+// Разделы всех вкладок листа (неактивные скрыты hidden="until-found").
+const allRegions = () => screen.getAllByRole('region', { hidden: true }).map((r) => r.getAttribute('aria-label'));
+const tab = (name: string) => fireEvent.click(screen.getByRole('tab', { name }));
 const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
 
 function renderMode(onAssign?: (item: unknown) => void) {
@@ -36,40 +39,41 @@ function renderMode(onAssign?: (item: unknown) => void) {
 }
 
 describe('ModeGuideSheet', () => {
-  it('герой — название и суть; разделы по порядку; пустой канал («В жизни») не показывается', () => {
+  it('герой — название и суть; разделы по вкладкам; пустой канал («В жизни») не показывается', () => {
     renderMode(vi.fn());
     const dialog = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Уязвимый Ребёнок' })).toBeTruthy();
     expect(within(dialog).getByText('Режим')).toBeTruthy();
     expect(screen.getByText(FIXTURE_GUIDE.what)).toBeTruthy();
-    expect(regions()).toEqual(['Цель', 'На сессии', 'Как работать', 'Между сессиями']);
+    expect(allRegions()).toEqual(['Цель', 'На сессии', 'Как работать', 'Между сессиями', 'Где застревают', 'Источники']);
     expect(within(screen.getByRole('region', { name: 'Цель' })).getByText(FIXTURE_GUIDE.goal)).toBeTruthy();
+    tab('На сессии');
     const leads = within(screen.getByRole('region', { name: 'Как работать' })).getAllByRole('listitem')
-      .map((li) => li.querySelector('.gd-lead')?.textContent);
+      .map((li) => li.querySelector('.gd-card-title')?.textContent);
     expect(leads).toEqual(['Терапевтические отношения (в отношениях)', 'Когнитивные (через понимание)', 'Эмпирические (через чувства и образы)']);
-    fireEvent.click(screen.getByRole('button', { name: /^Источники/ }));
-    expect(screen.getByText(FIXTURE_GUIDE.sources)).toBeTruthy();
+    tab('Теория');
+    expect(within(screen.getByRole('region', { name: 'Источники' })).getByText(FIXTURE_GUIDE.sources)).toBeTruthy();
   });
 
-  it('«Где застревают» — под «Подробнее»: закрыто, по тапу открывается', () => {
+  it('«Где застревают» — на вкладке «Теория»: по тапу вкладки открывается', () => {
     renderMode();
-    expect(screen.queryByText(FIXTURE_GUIDE.stuck!)).toBeNull();
-    openMore();
+    expect(screen.queryByRole('region', { name: 'Где застревают' })).toBeNull();
+    tab('Теория');
     expect(within(screen.getByRole('region', { name: 'Где застревают' })).getByText(FIXTURE_GUIDE.stuck!)).toBeTruthy();
   });
 
-  it('у режима без «Где застревают» и без каналов этих разделов и «Подробнее» нет вовсе', () => {
+  it('у режима без «Где застревают» и без каналов этих разделов нет, на «Теории» остаются источники', () => {
     const bare = { ...FIXTURE_GUIDE, relationship: undefined, cognitive: '  ', experiential: undefined, stuck: undefined };
     render(
       <MemoryRouter>
         <ModeGuideSheet modeName="Уязвимый Ребёнок" view={{ ...FIXTURE_VIEW, guide: bare }} onOpenTechnique={() => {}} onClose={() => {}} />
       </MemoryRouter>,
     );
-    expect(regions()).toEqual(['Цель', 'На сессии', 'Между сессиями']);
+    expect(allRegions()).toEqual(['Цель', 'На сессии', 'Между сессиями', 'Источники']);
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
   });
 
-  it('переписанный раздел: «Как это звучит» репликами в кавычках, пункты `more` — под «Подробнее»', () => {
+  it('переписанный раздел: «Как это звучит» репликами в кавычках, пункты `more` — «Подробнее» на «Теории»', () => {
     const guide = { ...FIXTURE_GUIDE, voice: ['Я рядом', ' '], more: ['Оттенки режима'] };
     render(
       <MemoryRouter>
@@ -79,13 +83,14 @@ describe('ModeGuideSheet', () => {
     expect(regions()[0]).toBe('Как это звучит');
     const lines = within(screen.getByRole('region', { name: 'Как это звучит' })).getAllByText(/^«/);
     expect(lines.map((l) => [l.tagName, l.textContent])).toEqual([['BLOCKQUOTE', '«Я рядом»']]);
-    expect(screen.queryByText('Оттенки режима')).toBeNull();
-    openMore();
-    expect(screen.getByText('Оттенки режима')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Подробнее' })).toBeNull();
+    tab('Теория');
+    expect(within(screen.getByRole('region', { name: 'Подробнее' })).getByText('Оттенки режима')).toBeTruthy();
   });
 
   it('техника — кнопка с описанием; тап зовёт лист техники', () => {
     const { onOpenTechnique } = renderMode(vi.fn());
+    tab('На сессии');
     const session = within(screen.getByRole('region', { name: 'На сессии' }));
     expect(session.getByText(FIXTURE_TECHNIQUES[1].summary)).toBeTruthy();
     fireEvent.click(session.getByRole('button', { name: 'Работа со стульями' }));
@@ -95,6 +100,7 @@ describe('ModeGuideSheet', () => {
   it('«Между сессиями»: название, серым пояснение или инструкция, «Дать заданием» отдаёт пункт', () => {
     const onAssign = vi.fn();
     renderMode(onAssign);
+    tab('Задания');
     const between = within(screen.getByRole('region', { name: 'Между сессиями' }));
     expect(between.getByText('от Здорового Взрослого')).toBeTruthy();
     expect(between.getByText('Пять минут в день побыть рядом с детским образом')).toBeTruthy();
@@ -104,6 +110,7 @@ describe('ModeGuideSheet', () => {
 
   it('без onAssign (справочник без клиента) кнопок задания нет', () => {
     renderMode();
+    tab('Задания');
     expect(screen.queryByRole('button', { name: /Дать заданием/ })).toBeNull();
     expect(screen.getByText('Письмо себе')).toBeTruthy();
   });
@@ -165,9 +172,11 @@ describe('история в листах', () => {
         <ModeGuideSheet modeName="Уязвимый Ребёнок" view={FIXTURE_VIEW} notes={notes} onOpenTechnique={() => {}} onClose={() => {}} />
       </MemoryRouter>,
     );
+    tab('На сессии');
     const session = within(screen.getByRole('region', { name: 'На сессии' }));
     expect(session.getByText('делали 2 раза, последний 5 ноя')).toBeTruthy();
     expect(session.queryAllByText(/делали/)).toHaveLength(1);
+    tab('Задания');
     const between = within(screen.getByRole('region', { name: 'Между сессиями' }));
     expect(between.getByText('давали 12 окт · выполнено')).toBeTruthy();
     expect(between.queryAllByText(/давали/)).toHaveLength(1);
@@ -211,6 +220,7 @@ describe('журнал техник в листах', () => {
         <ModeGuideSheet modeName="Уязвимый Ребёнок" view={FIXTURE_VIEW} notes={notes} onOpenJournal={onOpenJournal} onOpenTechnique={() => {}} onClose={() => {}} />
       </MemoryRouter>,
     );
+    tab('На сессии');
     const session = within(screen.getByRole('region', { name: 'На сессии' }));
     fireEvent.click(session.getAllByRole('button', { name: JOURNAL_LINK_LABEL })[0]);
     expect(onOpenJournal).toHaveBeenCalledTimes(1);

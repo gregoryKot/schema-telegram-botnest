@@ -16,9 +16,9 @@ type Props = GuideSheetActions & {
 };
 
 /**
- * Лист режима (#995), вариант A: герой со знаком группы (modeGuideLook), «Как это звучит», цель, техники
- * «На сессии», «Как работать» — каналы пунктами, «Между сессиями», «Связано» — схемы чипами (обратная сторона
- * «Режимов» схемы), «Подробнее» и источники (GuideSheet). Открывается «Подробнее о режиме» на плашке «Обычно в методе».
+ * Лист режима (#995) вкладками GuideSheet: герой со знаком группы (modeGuideLook); «Кратко» — как звучит, цель, схемы
+ * строками (обратная сторона «Режимов» схемы); «На сессии» — техники и каналы карточками; «Между сессиями»; «Теория».
+ * Открывается «Подробнее о режиме» на плашке «Обычно в методе».
  */
 export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Props) {
   const { guide } = view;
@@ -32,7 +32,7 @@ export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Pro
   return (
     <GuideSheet
       label="Режим" title={modeName} lede={guide.what} voice={guide.voice} view={view} {...actions}
-      look={modeGuideLook(guide.modeId)} at={at}
+      look={modeGuideLook(guide.modeId)} at={at} article={{ kind: 'mode', id: guide.modeId }}
       lead={<GuideSection title="Цель" text={guide.goal} address={at('goal')} />}
       related={<GuideRelated groups={[{ title: 'Схемы', address: at('schemas'), items: view.schemas, look: schemaGuideLook, onOpen: onOpenSchema }]} />}
     >
