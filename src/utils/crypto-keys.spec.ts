@@ -9,6 +9,8 @@
 // по умолчанию нельзя было отличить от исходника, пока битые ключи просто
 // молча отбрасывались; счёт `badOld` делает их видимыми.
 
+import { loadAsSubject } from '../test-support/load-as-subject';
+
 type KeysModule = typeof import('./crypto-keys');
 
 const KEY_A = 'aa'.repeat(32);
@@ -36,40 +38,60 @@ afterEach(() => {
 
 describe('KEYS: разбор ENCRYPTION_KEY и ENCRYPTION_KEY_OLD', () => {
   it('переменных нет вовсе — ни текущего, ни старых, битых ноль', () => {
-    const { KEYS } = loadKeys({});
+    const { KEYS } = loadAsSubject(
+      'KEYS — разбор env при загрузке модуля',
+      () => loadKeys({}),
+    );
     expect(KEYS.current).toBeNull();
     expect(KEYS.all).toEqual([]);
     expect(KEYS.badOld).toBe(0);
   });
 
   it('текущий первым, затем старые в порядке списка', () => {
-    const { KEYS } = loadKeys({ key: KEY_A, old: KEY_B });
+    const { KEYS } = loadAsSubject(
+      'KEYS — разбор env при загрузке модуля',
+      () => loadKeys({ key: KEY_A, old: KEY_B }),
+    );
     expect(KEYS.current?.toString('hex')).toBe(KEY_A);
     expect(hex(KEYS.all)).toEqual([KEY_A, KEY_B]);
     expect(KEYS.badOld).toBe(0);
   });
 
   it('пробелы и пустые элементы списка (вставка из панели хостинга) — не битые ключи', () => {
-    const { KEYS } = loadKeys({ key: KEY_A, old: ` ${KEY_B} ,, ,` });
+    const { KEYS } = loadAsSubject(
+      'KEYS — разбор env при загрузке модуля',
+      () => loadKeys({ key: KEY_A, old: ` ${KEY_B} ,, ,` }),
+    );
     expect(hex(KEYS.all)).toEqual([KEY_A, KEY_B]);
     expect(KEYS.badOld).toBe(0);
   });
 
   it('пустая строка в ENCRYPTION_KEY_OLD — ноль битых', () => {
-    expect(loadKeys({ key: KEY_A, old: '' }).KEYS.badOld).toBe(0);
+    expect(
+      loadAsSubject('KEYS — разбор env при загрузке модуля', () =>
+        loadKeys({ key: KEY_A, old: '' }),
+      ).KEYS.badOld,
+    ).toBe(0);
   });
 
   it('битый старый ключ считается и в `all` не попадает', () => {
-    const { KEYS } = loadKeys({
-      key: KEY_A,
-      old: `zz${KEY_B.slice(2)},${KEY_B}`,
-    });
+    const { KEYS } = loadAsSubject(
+      'KEYS — разбор env при загрузке модуля',
+      () =>
+        loadKeys({
+          key: KEY_A,
+          old: `zz${KEY_B.slice(2)},${KEY_B}`,
+        }),
+    );
     expect(hex(KEYS.all)).toEqual([KEY_A, KEY_B]);
     expect(KEYS.badOld).toBe(1);
   });
 
   it('без текущего ключа null в `all` не попадает: только валидные старые', () => {
-    const { KEYS } = loadKeys({ key: 'не-ключ', old: `oops,${KEY_B}` });
+    const { KEYS } = loadAsSubject(
+      'KEYS — разбор env при загрузке модуля',
+      () => loadKeys({ key: 'не-ключ', old: `oops,${KEY_B}` }),
+    );
     expect(KEYS.current).toBeNull();
     expect(hex(KEYS.all)).toEqual([KEY_B]);
     expect(KEYS.badOld).toBe(1);

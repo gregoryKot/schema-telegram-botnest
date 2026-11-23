@@ -8,6 +8,8 @@
 // Ключи читаются модулем один раз при загрузке, поэтому каждый сценарий берёт
 // свежую копию через jest.isolateModules (как crypto.spec.ts).
 
+import { loadAsSubject } from '../test-support/load-as-subject';
+
 type CryptoModule = typeof import('./crypto');
 type NestLogger = typeof import('@nestjs/common').Logger;
 
@@ -117,7 +119,10 @@ describe('tryDecrypt: расшифровка без побочных эффек�
   });
 
   it('decrypt() по-прежнему возвращает value при провале и логирует (контракт для encrypt-if-plain и ротации)', () => {
-    const { stored, b, err } = foreign();
+    const { stored, b, err } = loadAsSubject(
+      'троттлинг лога — состояние модуля, сбросить нечем',
+      () => foreign(),
+    );
     expect(b.decrypt(stored.text)).toBe(stored.text);
     expect(err).toHaveBeenCalledTimes(1);
   });
@@ -255,7 +260,10 @@ describe('decryptRecord: один троттлированный error с таб
   const T0 = 1_700_000_000_000;
 
   it('в сообщении: таблица.поле, счёт, ни шифротекста, ни содержимого; ровно один error (без двойного DM от decrypt)', () => {
-    const { stored, b, err } = foreign();
+    const { stored, b, err } = loadAsSubject(
+      'троттлинг лога — состояние модуля, сбросить нечем',
+      () => foreign(),
+    );
     jest.spyOn(Date, 'now').mockReturnValue(T0);
     b.decryptRecord(stored, { ...SCHEMA, model: 'note' });
     expect(err).toHaveBeenCalledTimes(1);
@@ -272,14 +280,20 @@ describe('decryptRecord: один троттлированный error с таб
   });
 
   it('без model в сообщении только имя поля, без выдуманной таблицы', () => {
-    const { stored, b, err } = foreign();
+    const { stored, b, err } = loadAsSubject(
+      'троттлинг лога — состояние модуля, сбросить нечем',
+      () => foreign(),
+    );
     jest.spyOn(Date, 'now').mockReturnValue(T0);
     b.decryptRecord(stored, { strings: ['text'] });
     expect(String(err.mock.calls[0][0])).toContain('значений: 1 (text)');
   });
 
   it('за минуту — одно сообщение; следующее копит и называет счёт за окно', () => {
-    const { stored, b, err } = foreign();
+    const { stored, b, err } = loadAsSubject(
+      'троттлинг лога — состояние модуля, сбросить нечем',
+      () => foreign(),
+    );
     const now = jest.spyOn(Date, 'now').mockReturnValue(T0);
     const schema = { strings: ['text'], model: 'note' };
     b.decryptRecord(stored, schema);
@@ -310,7 +324,10 @@ describe('decryptRecord: один троттлированный error с таб
   });
 
   it('список колонок в сообщении ограничен десятью', () => {
-    const { stored, b, err } = foreign();
+    const { stored, b, err } = loadAsSubject(
+      'троттлинг лога — состояние модуля, сбросить нечем',
+      () => foreign(),
+    );
     jest.spyOn(Date, 'now').mockReturnValue(T0);
     const row: Record<string, unknown> = {};
     const fields = Array.from({ length: 12 }, (_, i) => `f${i}`);

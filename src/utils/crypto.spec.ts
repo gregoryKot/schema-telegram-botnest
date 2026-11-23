@@ -6,6 +6,8 @@
 // crypto.ts читает ключи один раз на уровне модуля, поэтому каждый сценарий
 // загружает свежую копию модуля через jest.isolateModules с нужным env.
 
+import { loadAsSubject } from '../test-support/load-as-subject';
+
 type CryptoModule = typeof import('./crypto');
 type NestLogger = typeof import('@nestjs/common').Logger;
 
@@ -124,7 +126,9 @@ describe('конфигурация ключей', () => {
   });
 
   it('ключ неверной длины игнорируется (эквивалент отсутствия)', () => {
-    const { encrypt } = loadCrypto({ key: 'deadbeef' });
+    const { encrypt } = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: 'deadbeef' }),
+    );
     expect(encrypt('текст')).toBe('текст');
   });
 
@@ -132,45 +136,60 @@ describe('конфигурация ключей', () => {
   // короткий буфер, раньше ключ проходил проверку длины.
   it('ключ из 64 НЕ-hex символов в production — падение на буте, а не на первой записи', () => {
     expect(() =>
-      loadCrypto({ key: 'zz'.repeat(32), nodeEnv: 'production' }),
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ key: 'zz'.repeat(32), nodeEnv: 'production' }),
+      ),
     ).toThrow(/ENCRYPTION_KEY missing or malformed/);
   });
 
   it('ключ из 64 НЕ-hex символов вне production — как «ключа нет» (passthrough), без короткого буфера', () => {
-    const { encrypt } = loadCrypto({ key: 'zz'.repeat(32) });
+    const { encrypt } = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: 'zz'.repeat(32) }),
+    );
     expect(encrypt('текст')).toBe('текст');
   });
 
   it('ENCRYPTION_KEY_OLD с битым ключом в production — падение на буте', () => {
     expect(() =>
-      loadCrypto({
-        key: KEY_A,
-        old: `${KEY_B},${'zz'.repeat(32)}`,
-        nodeEnv: 'production',
-      }),
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({
+          key: KEY_A,
+          old: `${KEY_B},${'zz'.repeat(32)}`,
+          nodeEnv: 'production',
+        }),
+      ),
     ).toThrow(/ENCRYPTION_KEY_OLD/);
   });
 
   it('валидные hex-ключи в любом регистре принимаются (контрольный случай)', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: 'AB'.repeat(32) });
+    const { encrypt, decrypt } = loadAsSubject(
+      'разбор ключа при загрузке модуля',
+      () => loadCrypto({ key: 'AB'.repeat(32) }),
+    );
     expect(decrypt(encrypt('x'))).toBe('x');
     expect(encrypt('x')).not.toBe('x');
   });
 
   it('в production без ключа модуль падает на загрузке (крash на буте, не тихий плейнтекст)', () => {
-    expect(() => loadCrypto({ nodeEnv: 'production' })).toThrow(
-      /ENCRYPTION_KEY missing/,
-    );
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ nodeEnv: 'production' }),
+      ),
+    ).toThrow(/ENCRYPTION_KEY missing/);
   });
 
   it('текст падения говорит, как сгенерировать ключ — читают его при упавшем проде', () => {
-    expect(() => loadCrypto({ nodeEnv: 'production' })).toThrow(
-      /randomBytes\(32\)\.toString\('hex'\)/,
-    );
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ nodeEnv: 'production' }),
+      ),
+    ).toThrow(/randomBytes\(32\)\.toString\('hex'\)/);
   });
 
   it('перевод строки или пробелы вокруг ключа (вставка в панель хостинга) — тот же ключ', () => {
-    const blob = loadCrypto({ key: `${KEY_A}\n` }).encrypt('текст')!;
+    const blob = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: `${KEY_A}\n` }),
+    ).encrypt('текст')!;
     // Ключ реально принят: без обрезки он считался бы «битым», модуль
     // переходил в passthrough, и blob оказывался бы открытым текстом — а
     // roundtrip ниже в passthrough тоже проходит, поэтому одного его мало.
@@ -179,7 +198,9 @@ describe('конфигурация ключей', () => {
       12 + 16 + 'текст'.length * 2,
     );
     expect(keyedA.decrypt(blob)).toBe('текст');
-    const padded = loadCrypto({ key: `  ${KEY_A} ` }).encrypt('текст')!;
+    const padded = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: `  ${KEY_A} ` }),
+    ).encrypt('текст')!;
     expect(padded).not.toBe('текст');
     expect(keyedA.decrypt(padded)).toBe('текст');
   });
@@ -199,7 +220,10 @@ describe('конфигурация ключей', () => {
   it.each(MALFORMED_KEYS)(
     'ключ: %s — отвергнут как «ключа нет» (passthrough), без обрезанного буфера',
     (_name, key) => {
-      const { encrypt } = loadCrypto({ key });
+      const { encrypt } = loadAsSubject(
+        'разбор ключа при загрузке модуля',
+        () => loadCrypto({ key }),
+      );
       expect(encrypt('текст')).toBe('текст');
     },
   );
@@ -207,9 +231,11 @@ describe('конфигурация ключей', () => {
   it.each(MALFORMED_KEYS)(
     'ключ: %s — в production падение на буте',
     (_name, key) => {
-      expect(() => loadCrypto({ key, nodeEnv: 'production' })).toThrow(
-        /ENCRYPTION_KEY missing or malformed/,
-      );
+      expect(() =>
+        loadAsSubject('бросок при загрузке модуля в production', () =>
+          loadCrypto({ key, nodeEnv: 'production' }),
+        ),
+      ).toThrow(/ENCRYPTION_KEY missing or malformed/);
     },
   );
 
@@ -217,7 +243,9 @@ describe('конфигурация ключей', () => {
     'старый ключ: %s — в production падение на буте, а не молча не читается',
     (_name, old) => {
       expect(() =>
-        loadCrypto({ key: KEY_B, old, nodeEnv: 'production' }),
+        loadAsSubject('бросок при загрузке модуля в production', () =>
+          loadCrypto({ key: KEY_B, old, nodeEnv: 'production' }),
+        ),
       ).toThrow(/ENCRYPTION_KEY_OLD.*1 шт/);
     },
   );
@@ -227,29 +255,37 @@ describe('конфигурация ключей', () => {
     // список в production не должен ронять бут, а ключи в нём — работать.
     const a = keyedA.encrypt('от ключа A')!;
     const b = keyedB.encrypt('от ключа B')!;
-    const rotated = loadCrypto({
-      key: 'cc'.repeat(32),
-      old: ` ${KEY_A} , ${KEY_B} ,,`,
-      nodeEnv: 'production',
-    });
+    const rotated = loadAsSubject(
+      'бросок при загрузке модуля в production',
+      () =>
+        loadCrypto({
+          key: 'cc'.repeat(32),
+          old: ` ${KEY_A} , ${KEY_B} ,,`,
+          nodeEnv: 'production',
+        }),
+    );
     expect(rotated.decrypt(a)).toBe('от ключа A');
     expect(rotated.decrypt(b)).toBe('от ключа B');
   });
 
   it('пустой ENCRYPTION_KEY_OLD в production — не ошибка', () => {
     expect(() =>
-      loadCrypto({ key: KEY_A, old: '', nodeEnv: 'production' }),
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ key: KEY_A, old: '', nodeEnv: 'production' }),
+      ),
     ).not.toThrow();
   });
 
   it('ENCRYPTION_KEY_OLD не задан вовсе в production — не ошибка, текущий ключ работает', () => {
     // Обычное состояние прода вне ротации: переменной нет. Проверка списка
     // старых ключей не должна принимать «нет переменной» за мусорный ключ.
-    const mod = loadCrypto({
-      key: KEY_A,
-      unsetOld: true,
-      nodeEnv: 'production',
-    });
+    const mod = loadAsSubject('бросок при загрузке модуля в production', () =>
+      loadCrypto({
+        key: KEY_A,
+        unsetOld: true,
+        nodeEnv: 'production',
+      }),
+    );
     expect(mod.decrypt(mod.encrypt('текст'))).toBe('текст');
   });
 
@@ -257,14 +293,18 @@ describe('конфигурация ключей', () => {
     // Падать на бут из-за мусора в OLD нужно только в проде; в dev/тестах
     // молчаливо игнорируем, чтобы не ломать локальный запуск.
     const fromA = keyedA.encrypt('от ключа A')!;
-    const mod = loadCrypto({ key: KEY_B, old: `zz${KEY_A},${KEY_A}` });
+    const mod = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: KEY_B, old: `zz${KEY_A},${KEY_A}` }),
+    );
     expect(mod.decrypt(fromA)).toBe('от ключа A');
     expect(mod.decrypt(mod.encrypt('свежее'))).toBe('свежее');
   });
 
   it('текст падения из-за битого старого ключа объясняет последствие — его читают при упавшем проде', () => {
     expect(() =>
-      loadCrypto({ key: KEY_B, old: 'zz', nodeEnv: 'production' }),
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ key: KEY_B, old: 'zz', nodeEnv: 'production' }),
+      ),
     ).toThrow(/молча не использовался бы для расшифровки/);
   });
 
@@ -334,10 +374,12 @@ describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
     const a = keyedA.encrypt('от ключа A');
     const b = keyedB.encrypt('от ключа B');
 
-    const third = loadCrypto({
-      key: 'cc'.repeat(32),
-      old: ` ${KEY_A} , ${KEY_B} `,
-    });
+    const third = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({
+        key: 'cc'.repeat(32),
+        old: ` ${KEY_A} , ${KEY_B} `,
+      }),
+    );
     expect(third.decrypt(a)).toBe('от ключа A');
     expect(third.decrypt(b)).toBe('от ключа B');
   });
@@ -349,7 +391,9 @@ describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
     const warn = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
-    const rotated = loadCrypto({ key: KEY_B, old: KEY_A });
+    const rotated = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: KEY_B, old: KEY_A }),
+    );
     expect(rotated.decrypt(blob)).toBe(
       'чувствительный текст под старым ключом',
     );
@@ -383,7 +427,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
   }
 
   it('подделанный блоб не расшифровывается и пишет error-лог (AlertLogger → DM владельцу)', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
     const warn = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
@@ -404,7 +451,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
   it('лог порчи идёт под контекстом Crypto', () => {
     // По контексту владелец находит строку порчи в логах Amvera и фильтрует
     // AlertLogger; потеря имени делает алерт неотличимым от шума.
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
     const err = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
@@ -414,7 +464,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
   });
 
   it('лог порчи — именно error и без содержимого поля', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
     const err = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
@@ -445,7 +498,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
 
   it('блоб от неизвестного ключа (неполная ротация) тоже даёт error-лог', () => {
     const foreign = keyedA.encrypt('чужой ключ')!;
-    const { decrypt } = loadCrypto({ key: KEY_B });
+    const { decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_B }),
+    );
     const warn = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
@@ -455,7 +511,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
   });
 
   it('error-лог троттлится: не чаще раза в минуту', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
     const warn = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
@@ -474,7 +533,10 @@ describe('GCM-аутентификация и алерт о порче (ауди
   });
 
   it('троттлинг: ровно 60000мс с прошлого лога — это уже НЕ "слишком рано", error-лог обязан сработать снова (граница < vs <=)', () => {
-    const { encrypt, decrypt } = loadCrypto({ key: KEY_A });
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
     const warn = jest
       .spyOn(isolatedLogger.prototype, 'error')
       .mockImplementation(() => {});
