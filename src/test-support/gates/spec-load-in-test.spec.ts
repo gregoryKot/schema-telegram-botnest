@@ -79,6 +79,39 @@ describe('check-spec-load-in-test.mjs', () => {
     expect(res.status).toBe(0);
   });
 
+  // Исключение №15: предмет теста — сама загрузка. Образец, который оно гасит,
+  // и контрольные: без причины и с обёрткой не в тесте — по-прежнему красные.
+  it('loadAsSubject с причиной в тесте — зелёный', () => {
+    const res = run(
+      `${LOAD}it('t', () => {\n  loadAsSubject(\n    'разбор env при загрузке',\n    () => load('a'),\n  );\n  loadAsSubject('бросок', () => require('./x'));\n});\n`,
+    );
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+
+  it.each([
+    ['пустая причина', "loadAsSubject('', () => load('a'))"],
+    ['причина из пробелов', "loadAsSubject('  ', () => load('a'))"],
+    ['причина не литералом', "loadAsSubject(WHY, () => load('a'))"],
+    ['причина шаблоном', "loadAsSubject(`${WHY}`, () => load('a'))"],
+    [
+      'загрузка рядом с обёрткой',
+      "loadAsSubject('причина', () => 1); load('a')",
+    ],
+  ])('контроль, красный: loadAsSubject — %s', (_name, body) => {
+    const res = run(`${LOAD}it('t', () => { ${body}; });\n`);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(`${SPEC}: загрузок в тестах 1`);
+  });
+
+  it('контроль, красный: обёртка внутри загрузчика не снимает его вызов из теста', () => {
+    const res = run(
+      `const sub = () => loadAsSubject('причина', () => require('./x'));\nit('t', () => { sub(); });\n`,
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('вызов загрузчика sub()');
+  });
+
   it('спек вне графа зоны не проверяется', () => {
     const res = runGate(GATE, {
       ...ZONE,
