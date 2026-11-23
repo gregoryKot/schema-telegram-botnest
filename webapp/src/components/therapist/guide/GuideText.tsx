@@ -6,29 +6,28 @@ export function Cited({ text }: { text: string }) {
   return <>{splitCites(text).map((p, i) => (p.cite ? <Fragment key={i}>{' '}<span className="gd-cite">{p.text.trim()}</span></Fragment> : p.text))}</>;
 }
 
-/** Длинный пункт — первая фраза и «ещё»; короткий — целиком. Остаток в DOM под hidden="until-found": Ctrl+F его находит. */
+/** Длинный пункт — первая фраза и «ещё», короткий — целиком; всё в одном span, иначе в шаге-grid куски разъезжаются по ячейкам. */
 export function FoldText({ text }: { text: string }) {
   const fold = foldFirstSentence(text);
   const [open, setOpen] = useState(false);
   const restRef = useRef<HTMLSpanElement>(null);
-  // hidden="until-found" ставится руками: типы React знают у hidden только boolean.
+  // Остаток — hidden="until-found" (Ctrl+F находит), где браузер знает beforematch; иначе булев hidden от React.
   useEffect(() => {
     const el = restRef.current;
-    if (!el) return;
-    if (open) el.removeAttribute('hidden');
-    else el.setAttribute('hidden', 'until-found');
+    if (!el || !('onbeforematch' in el)) return;
+    if (!open) el.setAttribute('hidden', 'until-found');
     const onMatch = () => setOpen(true);
     el.addEventListener('beforematch', onMatch);
     return () => el.removeEventListener('beforematch', onMatch);
   }, [open, text]);
-  if (!fold) return <Cited text={text} />;
+  if (!fold) return <span className="gd-fold-text"><Cited text={text} /></span>;
   return (
-    <>
+    <span className="gd-fold-text">
       <Cited text={fold.head} />{' '}
-      <span ref={restRef}><Cited text={fold.rest} />{' '}</span>
+      <span ref={restRef} className="gd-fold-rest" hidden={!open}><Cited text={fold.rest} />{' '}</span>
       <button type="button" className="ds-link gd-fold" aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>
         {open ? 'свернуть' : 'ещё'}
       </button>
-    </>
+    </span>
   );
 }
