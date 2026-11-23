@@ -40,6 +40,7 @@ export const buildBpdGuide: ConcernGuideBuilder = (tr) => ({
     'chairwork',
     'limit_setting',
     'downward_arrow',
+    'current_role_play',
   ],
   voice: [
     tr(
