@@ -87,6 +87,17 @@ describe('GuideTabs', () => {
     expect(screen.getByRole('tab', { name: 'На сессии' }).getAttribute('aria-selected')).toBe('true');
   });
 
+  it('стрелки ходят по вкладкам по кругу', () => {
+    tabs();
+    const brief = screen.getByRole('tab', { name: 'Кратко' });
+    fireEvent.keyDown(brief, { key: 'ArrowLeft' });
+    const session = screen.getByRole('tab', { name: 'На сессии' });
+    expect(session.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(session);
+    fireEvent.keyDown(session, { key: 'ArrowRight' });
+    expect(brief.getAttribute('aria-selected')).toBe('true');
+  });
+
   it('вкладка с отметкой клиента — с точкой', () => {
     const mark = { id: 1, address: 'mode:pc/cognitive', note: '', snapshot: '' } as never;
     tabs({ ...CTX, client: { name: 'Елена', marked: new Map([['mode:pc/cognitive', mark]]) } });

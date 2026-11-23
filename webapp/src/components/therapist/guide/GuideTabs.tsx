@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, type KeyboardEvent, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { scrollIntoViewSafe } from '../../../../../shared/src/utils/scrollIntoView';
 import { GuideMarkContext } from './marks/GuideSectionMark';
 import { GUIDE_TAB_LABEL, guideTabs, markedTabs, type GuideTabId, type TabbedKind } from './guideTabsModel';
@@ -55,6 +55,14 @@ export function GuideTabs({ kind, articleId, panels }: GuideTabsProps) {
     const stuck = bar.current && bar.current.getBoundingClientRect().top <= (bar.current.parentElement?.closest('.cfs-body')?.getBoundingClientRect().top ?? 0) + 1;
     if (stuck) requestAnimationFrame(() => scrollIntoViewSafe(wrap.current, { block: 'start' }));
   };
+  // Стрелки ←/→ ходят по вкладкам по кругу (шаблон tablist), фокус — за выбором.
+  const onKey = (e: KeyboardEvent) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    const next = shown[(shown.indexOf(current) + step + shown.length) % shown.length];
+    pick(next);
+    document.getElementById(`${uid}${next}`)?.focus();
+  };
 
   return (
     <>
@@ -63,8 +71,8 @@ export function GuideTabs({ kind, articleId, panels }: GuideTabsProps) {
           <div role="tablist" aria-label="Разделы листа" className="ds-seg ds-seg--full">
             {shown.map((id) => (
               <button
-                key={id} type="button" role="tab" aria-selected={id === current} id={`${uid}${id}`}
-                className={`ds-seg-btn${id === current ? ' is-active' : ''}`} onClick={() => pick(id)}
+                key={id} type="button" role="tab" aria-selected={id === current} tabIndex={id === current ? 0 : -1} id={`${uid}${id}`}
+                className={`ds-seg-btn${id === current ? ' is-active' : ''}`} onClick={() => pick(id)} onKeyDown={onKey}
               >
                 {GUIDE_TAB_LABEL[id]}
                 {dots.has(id) && <span className="gd-tab-dot" title="Есть отметки про клиента" />}
