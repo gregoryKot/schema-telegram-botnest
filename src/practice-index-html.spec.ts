@@ -172,6 +172,16 @@ describe('карточка ссылки: продукт в файле, визи�
     expect(page).toContain('<div id="root"></div>');
   });
 
+  it('картинки запуска iOS со знаком продукта есть в файле, у визитки вырезаны', () => {
+    expect(source).toContain('rel="apple-touch-startup-image"');
+    expect(practicePreviewHtml(source)).not.toContain(
+      'apple-touch-startup-image',
+    );
+    expect(practicePageHtml(source, 'kotlarewski.gr', '/')).not.toContain(
+      '/splash/',
+    );
+  });
+
   it('визитка подменяет каждый тег карточки (тег из файла не пропал)', () => {
     const swapped = metaIn(practicePreviewHtml(source));
     for (const [attr, key, field] of CARD) {
