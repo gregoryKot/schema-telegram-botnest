@@ -32,7 +32,7 @@ export function foldFirstSentence(text: string): { head: string; rest: string } 
     const ch = text[i];
     if (ch === '[' || ch === '(') depth++;
     else if ((ch === ']' || ch === ')') && depth > 0) depth--;
-    else if (depth === 0 && '.!?…'.includes(ch) && /^\s+[«"(\[A-ZА-ЯЁ]/.test(text.slice(i + 1, i + 4))) {
+    else if (depth === 0 && '.!?…'.includes(ch) && /^\s+[«"([A-ZА-ЯЁ]/.test(text.slice(i + 1, i + 4))) {
       // Метка книги сразу за точкой («…противоядие. [Арнтц, 8.1] Если…») остаётся с первой фразой.
       const tail = text.slice(i + 1).match(/^(\s*\[[^[\]]+\][.!?…]?)?/)![0];
       const end = i + 1 + tail.length;
