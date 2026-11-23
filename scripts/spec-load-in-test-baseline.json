@@ -1,7 +1,1 @@
-{
-  "src/utils/crypto-keys.spec.ts": 9,
-  "src/utils/crypto-record.spec.ts": 24,
-  "src/utils/crypto-record.writable.spec.ts": 8,
-  "src/utils/crypto.spec.ts": 72,
-  "src/utils/encrypt-migration.spec.ts": 23
-}
+{}
