@@ -16,9 +16,18 @@ function makeService(rows: Array<{ name: string; meta: object }>) {
     ),
   );
   const groupBy = jest.fn(() => Promise.resolve([{ userId: 1n }]));
-  const prisma = { analyticsEvent: { count, groupBy } };
+  const prisma = {
+    analyticsEvent: { count, groupBy },
+    therapyPlanItem: { count: jest.fn().mockResolvedValue(3) },
+  };
   return new PlanMetricsService(prisma as never);
 }
+
+describe('PlanMetricsService.legacySourceCount', () => {
+  it('считает пункты со старым источником без нового адреса', async () => {
+    await expect(makeService([]).legacySourceCount()).resolves.toBe(3);
+  });
+});
 
 describe('PlanMetricsService', () => {
   it('разрез по meta: из справочника и по статусам', async () => {

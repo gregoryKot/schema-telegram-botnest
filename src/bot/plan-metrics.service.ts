@@ -20,6 +20,13 @@ export class PlanMetricsService {
     return formatPlanMetrics(await this.getMetrics());
   }
 
+  /** Пункты плана со старой записью источника (sourceKind без sourceAddress). */
+  legacySourceCount(): Promise<number> {
+    return this.prisma.therapyPlanItem.count({
+      where: { sourceAddress: null, sourceKind: { not: null } },
+    });
+  }
+
   async getMetrics(): Promise<PlanMetrics> {
     const createdAt = { gte: new Date(Date.now() - 30 * 86_400_000) };
     const added = { name: ADDED_EVENT, createdAt };

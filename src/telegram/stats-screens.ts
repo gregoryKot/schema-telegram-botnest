@@ -49,7 +49,7 @@ export async function collectStatsSection(
         name: 'Поломки и напоминания',
         run: () => deps.statsReport.renderSection(id),
       },
-      ...infraBlocks(),
+      ...infraBlocks(deps.statsReport.plan),
       poolBlock(deps),
     ],
     logger,
