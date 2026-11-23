@@ -37,6 +37,11 @@ export const buildHealthyAdultGuide = (tr: Tr): ModeGuide => ({
     'chairwork',
     'future_imagery',
   ],
+  moreTechniques: [
+    'flashcards',
+    'behavioral_experiment',
+    'imagery_rescripting',
+  ],
   betweenSessions: [
     {
       kind: 'task',

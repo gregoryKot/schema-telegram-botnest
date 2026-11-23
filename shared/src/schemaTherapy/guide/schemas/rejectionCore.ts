@@ -44,6 +44,7 @@ export const buildEmotionalDeprivationGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'diagnostic_imagery',
   ],
+  moreTechniques: ['letters'],
   betweenSessions: [
     {
       kind: 'task',
@@ -111,6 +112,12 @@ export const buildDefectivenessGuide = (tr: Tr): SchemaGuide => ({
     'self_compassion',
     'cognitive_work',
     'pattern_breaking',
+  ],
+  moreTechniques: [
+    'flashcards',
+    'exposure',
+    'anger_expression',
+    'future_imagery',
   ],
   betweenSessions: [
     {

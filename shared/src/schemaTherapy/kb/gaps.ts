@@ -62,10 +62,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
     kind: 'theory',
     why: 'приём для любого копингового режима, который не готов уступать; конкретного режима полка не называет',
   },
-  defusion: {
-    kind: 'todo',
-    why: 'по [Кембридж, гл. 13] место — Беспокоящийся Гиперконтролёр, но у него уже пять техник (потолок плашки): нужно решение, какую заменить',
-  },
   behavioral_activation: {
     kind: 'todo',
     why: DEPRESSION,

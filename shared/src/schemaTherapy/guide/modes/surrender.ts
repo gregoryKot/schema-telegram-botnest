@@ -47,6 +47,7 @@ export const buildSurrenderGuides: ModeGuideBuilder = (tr) => [
       'future_imagery',
       'pattern_breaking',
     ],
+    moreTechniques: ['imagery_rescripting'],
     betweenSessions: [
       {
         kind: 'task',
@@ -109,6 +110,7 @@ export const buildSurrenderGuides: ModeGuideBuilder = (tr) => [
       'pattern_breaking',
       'imagery_rescripting',
     ],
+    moreTechniques: ['pros_cons'],
     betweenSessions: [
       {
         kind: 'task',

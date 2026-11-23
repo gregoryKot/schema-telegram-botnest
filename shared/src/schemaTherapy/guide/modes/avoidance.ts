@@ -43,6 +43,7 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
       'future_imagery',
       'schema_diary',
     ],
+    moreTechniques: ['exposure'],
     betweenSessions: [
       {
         kind: 'custom',

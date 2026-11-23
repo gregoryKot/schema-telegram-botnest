@@ -39,6 +39,7 @@ export const buildNegativityGuide = (tr: Tr): SchemaGuide => ({
     'mindfulness',
     'imagery_rescripting',
   ],
+  moreTechniques: ['behavioral_experiment', 'play_and_joy'],
   betweenSessions: [
     {
       kind: 'task',

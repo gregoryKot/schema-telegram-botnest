@@ -137,6 +137,7 @@ export const buildOvercontrolMistGuides: ModeGuideBuilder = (tr) => [
       'imagery_rescripting',
       'mindfulness',
     ],
+    moreTechniques: ['exposure'],
     betweenSessions: [
       {
         kind: 'custom',

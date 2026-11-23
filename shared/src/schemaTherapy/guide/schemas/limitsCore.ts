@@ -46,6 +46,7 @@ export const buildEntitlementGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'limit_setting',
   ],
+  moreTechniques: ['cognitive_work', 'downward_arrow', 'couple_mode_cycle'],
   betweenSessions: [
     {
       kind: 'task',

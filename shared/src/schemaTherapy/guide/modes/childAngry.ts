@@ -89,6 +89,7 @@ export const buildAngryChildGuides: ModeGuideBuilder = (tr) => [
       'imagery_rescripting',
       'distress_tolerance',
     ],
+    moreTechniques: ['safe_place_imagery'],
     betweenSessions: [
       {
         kind: 'custom',
@@ -147,6 +148,14 @@ export const buildAngryChildGuides: ModeGuideBuilder = (tr) => [
       'pattern_breaking',
       'flashcards',
       'limit_setting',
+    ],
+    moreTechniques: [
+      'imagery_rescripting',
+      'historical_role_play',
+      'letters',
+      'empathic_confrontation',
+      'anger_expression',
+      'distress_tolerance',
     ],
     betweenSessions: [
       {
