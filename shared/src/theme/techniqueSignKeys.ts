@@ -34,5 +34,6 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsFarrell.tsx — техники из книги Фаррелл, Рейсс и Шоу
   'mode_plan',
   'plan_ahead',
+  'bubble',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

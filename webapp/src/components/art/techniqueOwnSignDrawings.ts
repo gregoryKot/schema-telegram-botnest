@@ -12,7 +12,7 @@ import {
   TryStep, Values,
 } from './TechniqueSignsSteps';
 import { GuessMode, NeedCycle, Scatter } from './TechniqueSignsArntz';
-import { ModePlan, PlanAhead } from './TechniqueSignsFarrell';
+import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -22,5 +22,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   approach: Approach, values: Values, life_line: LifeLine, window: ToleranceWindow,
   levels_heart: LevelsHeart, defusion: Defusion, pie: Pie, rewind: Rewind,
   scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode,
-  mode_plan: ModePlan, plan_ahead: PlanAhead,
+  mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble,
 };

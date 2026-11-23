@@ -18,6 +18,19 @@ export function PlanAhead({ size }: ArtProps) {
   );
 }
 
+/** Пузырь безопасности: трое в общем круге, снаружи — пунктирный голос Критика, который не проходит. */
+export function SafetyBubble({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <circle cx="56" cy="32" r="27" fill="none" stroke={PAPER.sage} strokeWidth="5" />
+      <circle cx="44" cy="38" r="7" fill={PAPER.moss} />
+      <circle cx="58" cy="24" r="7" fill={PAPER.amber} />
+      <circle cx="70" cy="39" r="7" fill={PAPER.slate} />
+      <circle cx="104" cy="32" r="9" fill="none" stroke={PAPER.clay} strokeWidth="4" strokeDasharray="5 5" />
+    </Svg>
+  );
+}
+
 const LINES = 'M22 30 H34 M22 40 H30 M54 34 H66 M54 44 H62 M86 30 H98 M86 40 H94';
 
 /** План управления режимами: три карточки на одном шнурке, по одной на режим; на каждой две строки. */

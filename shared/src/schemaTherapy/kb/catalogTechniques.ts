@@ -61,6 +61,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'life_line',
     'healthy_adult_plan',
     'mode_management_plan',
+    'safety_bubble',
   ].map(w),
   {
     id: 'grief_chairwork',

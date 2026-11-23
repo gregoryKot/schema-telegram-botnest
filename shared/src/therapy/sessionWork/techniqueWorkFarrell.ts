@@ -24,4 +24,12 @@ export const FARRELL_TECHNIQUE_WORK: Record<
       ['result', 'Сработал ли план'],
     ],
   },
+  safety_bubble: {
+    name: 'Пузырь безопасности',
+    fields: [
+      ['image', 'Какой образ защиты'],
+      ['effect', 'Что изменилось в теле и чувствах'],
+      ['home', 'Как практиковать дома'],
+    ],
+  },
 };

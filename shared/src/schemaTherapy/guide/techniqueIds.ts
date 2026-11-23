@@ -66,7 +66,10 @@ export type ArntzTechniqueId =
   'current_role_play' | 'two_axis_check' | 'need_cycle' | 'guess_the_mode';
 
 /** Техники из книги Фаррелл, Рейсс и Шоу (карта «Фаррелл»). */
-export type FarrellTechniqueId = 'mode_management_plan' | 'healthy_adult_plan';
+export type FarrellTechniqueId =
+  | 'mode_management_plan'
+  | 'healthy_adult_plan'
+  | 'safety_bubble';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
