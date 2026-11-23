@@ -23,7 +23,7 @@
 .gd-toc-chip { flex: none; min-height: 44px; font-size: 14px; border-radius: 999px; }
 .gd-page > section { scroll-margin-top: 64px; }
 /* Метка книги в тексте: тише фразы, не рвёт чтение; расшифровка — в «Источниках». */
-.gd-cite { font-size: .78em; color: var(--text-faint); white-space: nowrap; }
+.gd-cite { font-size: .78em; color: var(--text-sub); }
 /* «ещё» у длинного пункта: тихая ссылка в строке, зона нажатия 44 — невидимым ::before. */
 .ds-link.gd-fold { position: relative; display: inline; min-height: 0; padding: 0; font-size: 15px; line-height: inherit; }
 .ds-link.gd-fold::before { content: ''; position: absolute; inset: -13px -10px; }
