@@ -10,6 +10,15 @@ const OTHER = 'cd'.repeat(32);
 const load = (key: string): Mod =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   loadWithKeys({ key }, () => require('./caldav-owner-event') as Mod);
+// Загрузка — вне тестов: код уровня модуля крипто-ядра не засчитывается тесту.
+let keyed: Mod;
+let otherKeyed: Mod;
+let keyless: Mod;
+beforeAll(() => {
+  keyed = load(KEY);
+  otherKeyed = load(OTHER);
+  keyless = load('');
+});
 const UID_FORMAT = /^[0-9a-f]{32}@schemehappens\.ru$/;
 
 const saved = { ...process.env };
@@ -21,7 +30,7 @@ afterAll(() => {
 
 describe('bookingEventUid — HMAC номера брони', () => {
   it('без номера брони, детерминирован, у разных броней разный', () => {
-    const { bookingEventUid } = load(KEY);
+    const { bookingEventUid } = keyed;
     const uid = bookingEventUid(42);
     expect(uid).toMatch(UID_FORMAT);
     expect(uid).not.toBe('booking-42@schemehappens.ru');
@@ -30,19 +39,17 @@ describe('bookingEventUid — HMAC номера брони', () => {
   });
 
   it('зависит от ключа сервера: по номеру без ключа UID не подобрать', () => {
-    expect(load(KEY).bookingEventUid(42)).not.toBe(
-      load(OTHER).bookingEventUid(42),
-    );
+    expect(keyed.bookingEventUid(42)).not.toBe(otherKeyed.bookingEventUid(42));
   });
 
   it('без ключа (dev) — тоже без номера и отличается от ключевого', () => {
-    const uid = load('').bookingEventUid(42);
+    const uid = keyless.bookingEventUid(42);
     expect(uid).toMatch(UID_FORMAT);
-    expect(uid).not.toBe(load(KEY).bookingEventUid(42));
+    expect(uid).not.toBe(keyed.bookingEventUid(42));
   });
 
   it('событие владельца несёт этот UID, а тело PUT — ни номера, ни лишних полей', () => {
-    const m = load(KEY);
+    const m = keyed;
     const ev = m.ownerEventFor({
       id: 42,
       startsAt: new Date('2026-12-01T17:00:00Z'),

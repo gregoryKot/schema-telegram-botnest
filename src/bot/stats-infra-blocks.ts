@@ -3,7 +3,7 @@ import { buildCapabilityReport } from '../infra/capability-report';
 import { formatEnvCheckReport } from './env-check.format';
 import { checkEnv } from '../infra/env-check';
 import { renderCalendarHealthBlock } from '../booking/caldav-health';
-import { formatSelfCheck } from '../infra/self-check/format';
+import { selfCheckBlock } from '../infra/self-check/unrecorded-green';
 import { selfCheckState } from '../infra/self-check/state';
 import type { SettleBlock } from './stats-settle';
 
@@ -18,6 +18,6 @@ export function infraBlocks(): SettleBlock[] {
       run: () => formatCapabilityReport(buildCapabilityReport()),
     },
     { name: 'Переменные', run: () => formatEnvCheckReport(checkEnv()) },
-    { name: 'Самопроверка', run: () => formatSelfCheck(selfCheckState.get()) },
+    { name: 'Самопроверка', run: () => selfCheckBlock(selfCheckState.get()) },
   ];
 }
