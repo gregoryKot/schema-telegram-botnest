@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { modeMapMore } from './modeMapMore';
+import { modeMapMore } from './modeMapMoreFarrell';
 import { schemaDiaryMore } from './schemaDiaryMore';
 
 /** Концептуализация вместе с клиентом: mode_map, schema_diary. */
@@ -40,7 +40,7 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Карта — рабочая гипотеза, а не диагноз: клиент может спорить и переименовывать. Режим, которого клиент в себе не узнаёт, ему не доказывают, и обидных имён от себя не предлагают: такое имя берут, только если его придумал сам клиент [Янг, гл. 8]. Клиент отвергает саму идею режимов — не настаивать и говорить о грустной, сердитой, самокритичной, молчаливой стороне: лишь бы у частей были хоть какие-то имена [Янг, гл. 9]. Пять-шесть режимов на листе достаточно; полный перечень превращает его в учебник.',
     sources:
-      'Arntz A., Jacob G. Schema Therapy in Practice: An Introductory Guide to the Schema Mode Approach. Wiley-Blackwell, 2013, гл. 2–3; [Кембридж, гл. 3, 4, 7, 14, 15]; [Янг, гл. 1, 8, 9]; [Арнтц ПРЛ, гл. 2–3].',
+      'Arntz A., Jacob G. Schema Therapy in Practice: An Introductory Guide to the Schema Mode Approach. Wiley-Blackwell, 2013, гл. 2–3; [Кембридж, гл. 3, 4, 7, 14, 15]; [Янг, гл. 1, 8, 9]; [Арнтц ПРЛ, гл. 2–3]; [Фаррелл, 4.3, 5.1, 5.2.1].',
   },
   {
     id: 'schema_diary',
@@ -64,8 +64,8 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
     ],
     more: schemaDiaryMore,
     cautions:
-      'Клиент с Жёсткими Стандартами превращает дневник в экзамен, клиент с Карающим Критиком — в список улик против себя. Пустой бланк — тоже материал: что помешало, какой режим не дал писать.',
+      'Клиент с Жёсткими Стандартами превращает дневник в экзамен, клиент с Карающим Критиком — в список улик против себя. Пустой бланк — тоже материал: что помешало, какой режим не дал писать. Неделю клиент отмечает режим трижды в день. Нет детского воспоминания — переходят к потребности: мост в детство бывает закрыт Отстранённым Защитником или опыт довербальный (тогда речь о потребности в безопасности). Пробел не заполняют догадками, чтобы не создать ложных воспоминаний [Фаррелл, 4.4].',
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, приложение B «Cognitive Logbook for Modes»; [Кембридж, гл. 7, 10, 12]; [Арнтц ПРЛ, гл. 6].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, приложение B «Cognitive Logbook for Modes»; [Кембридж, гл. 7, 10, 12]; [Арнтц ПРЛ, гл. 6]; [Фаррелл, 4.4].',
   },
 ];

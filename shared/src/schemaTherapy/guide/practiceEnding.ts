@@ -1,6 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { endingPhaseMore } from './practiceMoreArntz';
-
+import { endingPhaseMoreFull } from './practiceMoreFarrell';
 /** «Для терапевта»: завершение терапии (гл. 12) и сложная травма (гл. 14). Карта — docs/guide-sources/Кембридж.md. */
 export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
   {
@@ -26,8 +25,9 @@ export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
         'Я запомню, сколько упорства было в этой работе, — и то, как у вас получилось себя слышать.',
       ),
     ],
-    more: endingPhaseMore,
-    sources: '[Кембридж, гл. 12, бокс 12.5], [Арнтц ПРЛ, гл. 11]',
+    more: endingPhaseMoreFull,
+    sources:
+      '[Кембридж, гл. 12, бокс 12.5], [Арнтц ПРЛ, гл. 11], [Фаррелл, 4.6.6]',
   },
   {
     id: 'complex_trauma',
