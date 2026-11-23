@@ -1,16 +1,12 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { foldFirstSentence, splitCites } from './guideTextModel';
 
-/** Текст листа: метки книг «[Кембридж, гл. 8]» — тихим span (мельче, бледнее), не рвут фразу. */
+/** Текст листа: метки книг «[Кембридж, гл. 8]» — тихим span; пробел перед меткой снаружи span, слово не тянется за ней. */
 export function Cited({ text }: { text: string }) {
-  // Пробел перед меткой — снаружи span: метка неразрывна, но не тянет за собой слово перед ней.
   return <>{splitCites(text).map((p, i) => (p.cite ? <Fragment key={i}>{' '}<span className="gd-cite">{p.text.trim()}</span></Fragment> : p.text))}</>;
 }
 
-/**
- * Длинный пункт — первая фраза и «ещё»; короткий — целиком. Остаток лежит в DOM под hidden="until-found":
- * поиск по странице (Ctrl+F) его находит и раскрывает. Кнопка не всплывает до тапа «Про клиента» у пункта.
- */
+/** Длинный пункт — первая фраза и «ещё»; короткий — целиком. Остаток в DOM под hidden="until-found": Ctrl+F его находит. */
 export function FoldText({ text }: { text: string }) {
   const fold = foldFirstSentence(text);
   const [open, setOpen] = useState(false);
