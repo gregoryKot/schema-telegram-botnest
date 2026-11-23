@@ -23,7 +23,6 @@ const regions = () => screen.getAllByRole('region').map((r) => r.getAttribute('a
 // Разделы всех вкладок листа (неактивные скрыты hidden="until-found").
 const allRegions = () => screen.getAllByRole('region', { hidden: true }).map((r) => r.getAttribute('aria-label'));
 const tab = (name: string) => fireEvent.click(screen.getByRole('tab', { name }));
-const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
 
 function renderMode(onAssign?: (item: unknown) => void) {
   const onOpenTechnique = vi.fn();
@@ -117,26 +116,28 @@ describe('ModeGuideSheet', () => {
 });
 
 describe('TechniqueSheet', () => {
-  it('герой — название и суть; «Когда не делать» плашкой сразу под ним; шаги нумерованным списком; доказательность — под «Подробнее»', () => {
+  it('герой — название и суть; «Когда не делать» плашкой сразу под ним; шаги нумерованным списком; доказательность — на «Теории»', () => {
     render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[0]} onClose={() => {}} /></MemoryRouter>);
     const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Рескриптинг образов' })).toBeTruthy();
     expect(within(dialog).getByText('Техника')).toBeTruthy();
     expect(screen.getByText(FIXTURE_TECHNIQUES[0].summary)).toBeTruthy();
-    expect(regions()).toEqual(['Когда не делать', 'Когда', 'Как проводить']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Кратко', 'Как проводить', 'Теория']);
+    expect(regions()).toEqual(['Когда не делать', 'Когда']);
     expect(screen.getByRole('region', { name: 'Когда не делать' }).parentElement?.className).toBe('gd-caution');
+    expect(screen.getByText(FIXTURE_TECHNIQUES[0].cautions!)).toBeTruthy();
+    tab('Как проводить');
     const steps = within(screen.getByRole('region', { name: 'Как проводить' })).getByRole('list');
     expect(steps.tagName).toBe('OL');
     expect(within(steps).getAllByRole('listitem').map((li) => li.textContent)).toEqual(FIXTURE_TECHNIQUES[0].steps);
-    expect(screen.getByText(FIXTURE_TECHNIQUES[0].cautions!)).toBeTruthy();
-    openMore();
-    expect(regions()).toEqual(['Когда не делать', 'Когда', 'Как проводить', 'Доказательность']);
+    tab('Теория');
+    expect(regions()).toEqual(['Доказательность', 'Источники']);
   });
 
-  it('у техники без «Когда», предостережений и доказательности этих разделов и «Подробнее» нет', () => {
+  it('у техники без «Когда», предостережений и доказательности этих разделов нет, вкладка «Кратко» пропадает', () => {
     render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} onClose={() => {}} /></MemoryRouter>);
     expect(regions()).toEqual(['Как проводить']);
-    expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Как проводить', 'Теория']);
   });
 
   it('техника из другого подхода: подпись подхода вместо «Техника» и раздел «В схема-терапии» после «Когда»', () => {
@@ -145,16 +146,16 @@ describe('TechniqueSheet', () => {
     const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(dialog).getByText('Из другого подхода · ACT')).toBeTruthy();
     expect(within(dialog).queryByText('Техника')).toBeNull();
-    expect(regions()).toEqual(['Когда не делать', 'Когда', 'В схема-терапии', 'Как проводить']);
+    expect(regions()).toEqual(['Когда не делать', 'Когда', 'В схема-терапии']);
     expect(within(screen.getByRole('region', { name: 'В схема-терапии' })).getByText(t.pairsWith)).toBeTruthy();
   });
 
-  it('переписанная техника: «Как это звучит» до шагов, пункты `more` первыми под «Подробнее»', () => {
+  it('переписанная техника: «Как это звучит» на «Кратко», пункты `more` — на «Теории»', () => {
     const t = { ...FIXTURE_TECHNIQUES[0], voice: ['Что самое маленькое?'], more: ['Срыв — повод разобраться'] };
     render(<MemoryRouter><TechniqueSheet technique={t} onClose={() => {}} /></MemoryRouter>);
-    expect(regions()).toEqual(['Когда не делать', 'Как это звучит', 'Когда', 'Как проводить']);
+    expect(regions()).toEqual(['Когда не делать', 'Как это звучит', 'Когда']);
     expect(screen.getByText('«Что самое маленькое?»')).toBeTruthy();
-    openMore();
+    tab('Теория');
     expect(screen.getByText('Срыв — повод разобраться')).toBeTruthy();
   });
 });
