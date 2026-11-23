@@ -129,6 +129,7 @@
   - `src/infra/capability-report.ts` — реестр «фича молча выключена без env»
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
   - `src/infra/self-check/ci-workflows.ts` — какие воркфлоу GitHub смотрит проба `ciRuns` и с каким порогом возраста (nightly, смок, недельный `mutation-bot.yml`)
+  - `src/infra/self-check/unrecorded-green.ts` — блок «Самопроверка» для `/stats` (`selfCheckBlock`); `UNRECORDED_GREEN` — пробы, чей зелёный ответ ещё не записан фикстурой: их detail виден владельцу
   - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live|delivery.ts`)
   - `src/infra/postbox-mail.ts` — единственный транспорт писем: Yandex Cloud Postbox (API как у AWS SES v2, подпись SigV4 из `s3-sigv4.ts`); `sendPostboxEmail`, `postboxCredentials`, `emailFrom` (имя не-ASCII — словом RFC 2047, `email-from-name.ts`), разбор отказа `parsePostboxError`. Зовут `src/auth/email.service.ts` и `src/utils/admin-alert.ts`; пробы — `self-check/probe-postbox.ts` (ключ принят площадкой) и `self-check/probe-email.ts` (последнее реальное письмо, снимок `src/utils/alert-email-health.ts`); env — `env-registry.entries.postbox.ts`, кросс-проверки — `env-check.email.ts`
 - Остальные сервисы (по строке на группу):
