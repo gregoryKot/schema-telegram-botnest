@@ -38,6 +38,7 @@ export const buildPunitivenessGuides = (tr: Tr): SchemaGuide[] => [
       'pros_cons',
       'pattern_breaking',
     ],
+    moreTechniques: ['schema_dialogue', 'current_role_play'],
     betweenSessions: [
       {
         kind: 'custom',

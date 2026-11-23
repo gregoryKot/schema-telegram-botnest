@@ -44,6 +44,7 @@ export const buildInsufficientSelfControlGuide = (tr: Tr): SchemaGuide => ({
     'mindfulness',
     'distress_tolerance',
   ],
+  moreTechniques: ['current_role_play', 'future_imagery'],
   betweenSessions: [
     {
       kind: 'task',

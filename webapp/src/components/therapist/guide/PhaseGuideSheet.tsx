@@ -5,7 +5,8 @@ import { phaseLabel, type PhaseView } from '../../../sections/guide/guideReferen
 import { GuideLinkRows } from './GuideLinkRows';
 import { GuideSection } from './GuideSection';
 import { GuidePoints, GuideVoice } from './GuidePoints';
-import { GuidePage, GuideTechniques } from './GuideSheet';
+import { GuidePage } from './GuideSheet';
+import { GuideTechniques } from './GuideTechniques';
 import { articleAddress } from './marks/guideMarkModel';
 
 /** Переходы с листа фазы: открыть лист режима, техники, заметки «Для терапевта» или соседний лист пути. */

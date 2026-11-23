@@ -36,6 +36,7 @@ export const buildApprovalSeekingGuide = (tr: Tr): SchemaGuide => ({
     'Желание одобрения само по себе нормально: цель — умерить его и уравновесить своими чувствами и склонностями, а не искоренить [Янг, гл. 7].',
   ],
   techniques: ['pros_cons', 'pattern_breaking', 'chairwork', 'values_overview'],
+  moreTechniques: ['empathic_confrontation'],
   betweenSessions: [
     {
       kind: 'task',

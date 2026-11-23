@@ -36,6 +36,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'letters',
       'self_compassion',
     ],
+    moreTechniques: ['transitional_objects', 'safe_place_imagery', 'exposure'],
     betweenSessions: [
       {
         kind: 'task',

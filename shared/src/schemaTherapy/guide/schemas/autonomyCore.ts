@@ -45,6 +45,7 @@ export const buildDependenceGuide = (tr: Tr): SchemaGuide => ({
     'empathic_confrontation',
     'socratic_dialogue',
   ],
+  moreTechniques: ['current_role_play', 'flashcards', 'couple_mode_cycle'],
   betweenSessions: [
     {
       kind: 'task',
@@ -107,6 +108,7 @@ export const buildVulnerabilityGuide = (tr: Tr): SchemaGuide => ({
     'flashcards',
     'exposure',
   ],
+  moreTechniques: ['future_imagery'],
   betweenSessions: [
     {
       kind: 'task',

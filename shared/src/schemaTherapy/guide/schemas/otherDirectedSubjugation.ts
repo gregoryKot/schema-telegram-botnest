@@ -47,6 +47,13 @@ export const buildSubjugationGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'anger_expression',
   ],
+  moreTechniques: [
+    'current_role_play',
+    'cognitive_work',
+    'behavioral_experiment',
+    'mode_map',
+    'pros_cons',
+  ],
   betweenSessions: [
     {
       kind: 'task',

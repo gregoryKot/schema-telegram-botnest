@@ -43,6 +43,7 @@ export const buildCriticGuides: ModeGuideBuilder = (tr) => [
       'cognitive_work',
       'pattern_breaking',
     ],
+    moreTechniques: ['behavioral_experiment', 'flashcards', 'play_and_joy'],
     betweenSessions: [
       {
         kind: 'task',
@@ -98,6 +99,7 @@ export const buildCriticGuides: ModeGuideBuilder = (tr) => [
       'responsibility_pie',
       'pattern_breaking',
     ],
+    moreTechniques: ['pros_cons'],
     betweenSessions: [
       {
         kind: 'task',

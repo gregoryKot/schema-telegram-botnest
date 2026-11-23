@@ -35,6 +35,7 @@ export const buildDetachedSelfSootherGuide = (tr: Tr): ModeGuide => ({
     'mindfulness',
     'pattern_breaking',
   ],
+  moreTechniques: ['mode_interview'],
   betweenSessions: [
     {
       kind: 'task',

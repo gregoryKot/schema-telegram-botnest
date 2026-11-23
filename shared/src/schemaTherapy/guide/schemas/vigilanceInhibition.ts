@@ -35,6 +35,7 @@ export const buildInhibitionGuides = (tr: Tr): SchemaGuide[] => [
       'anger_expression',
       'behavioral_experiment',
     ],
+    moreTechniques: ['current_role_play', 'play_and_joy'],
     betweenSessions: [
       {
         kind: 'task',
@@ -83,6 +84,11 @@ export const buildInhibitionGuides = (tr: Tr): SchemaGuide[] => [
       'Вместе с Жёсткими стандартами даёт почти полную картину обсессивно-компульсивного расстройства личности. Партнёра часто выбирают эмоционального и импульсивного; со временем пара поляризуется, и раздражает то, что когда-то привлекало [Янг, гл. 7].',
     ],
     techniques: ['empathic_confrontation', 'chairwork', 'pattern_breaking'],
+    moreTechniques: [
+      'imagery_rescripting',
+      'play_and_joy',
+      'couple_mode_cycle',
+    ],
     betweenSessions: [
       {
         kind: 'custom',
