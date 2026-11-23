@@ -170,6 +170,7 @@ describe('TherapistGuideSection', () => {
     const sheet = screen.getByRole('dialog', { name: NOTE.title });
     expect(within(sheet).getByText('Для терапевта')).toBeTruthy();
     for (const p of NOTE.points) expect(within(sheet).getByText(p)).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Источники/ }));
     expect(within(sheet).getByText(NOTE.sources)).toBeTruthy();
     fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
     expect(screen.queryByRole('dialog')).toBeNull();

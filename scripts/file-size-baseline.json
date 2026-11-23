@@ -2882,7 +2882,7 @@
   "webapp/src/components/therapist/guide/GuideSheet.tsx": 124,
   "webapp/src/components/therapist/guide/GuideSources.tsx": 19,
   "webapp/src/components/therapist/guide/GuideTechniques.tsx": 56,
-  "webapp/src/components/therapist/guide/GuideText.tsx": 34,
+  "webapp/src/components/therapist/guide/GuideText.tsx": 35,
   "webapp/src/components/therapist/guide/guideTextModel.ts": 56,
   "webapp/src/components/therapist/guide/GuideToc.tsx": 40,
   "webapp/src/components/therapist/guide/marks/guideMarkModel.ts": 58,
