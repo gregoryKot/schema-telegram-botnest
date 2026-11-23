@@ -26,6 +26,7 @@ import { buildBorrowedCbtTechniques } from './borrowedCbt';
 import { buildBorrowedDbtTechniques } from './borrowedDbt';
 import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
 import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
+import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -46,6 +47,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildFormulationTechniques,
   buildEvidenceWorkTechniques,
   buildChildCareTechniques,
+  buildHealthyAdultPlanTechniques,
   buildBodyGroundingTechniques,
   buildBodyValuesTechniques,
   buildOnlineTechniques,
