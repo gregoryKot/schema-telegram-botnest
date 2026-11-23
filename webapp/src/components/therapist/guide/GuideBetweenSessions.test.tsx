@@ -9,7 +9,7 @@ const items = [{ kind: 'custom' as const, title: 'Письмо', text: 'Напи
 describe('GuideBetweenSessions: где стоит «В план»', () => {
   it('без «Дать заданием» — в строке названия', () => {
     render(<GuideBetweenSessions items={items} onPlan={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'В план: Письмо' }).closest('.gd-lead')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'В план: Письмо' }).closest('.gd-card-head')).not.toBeNull();
   });
 
   it('с «Дать заданием» — в ряду действий, вторым', () => {

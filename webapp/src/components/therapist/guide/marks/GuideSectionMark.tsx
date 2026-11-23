@@ -22,6 +22,8 @@ const OWN_CONTROLS = 'button, a, input, textarea, label, summary';
 export interface SectionMark {
   className: string;
   onTap: (e: MouseEvent) => void;
+  /** Раскрыл карточку — раздел подсвечен и готов к «Про клиента»; свернул — подсветка снята. */
+  pick: (on: boolean) => void;
   /** Подпись раздела кнопкой: путь подсветки с клавиатуры. */
   title: (text: string) => ReactNode;
   controls: ReactNode;
@@ -43,6 +45,7 @@ export function useSectionMark(address: string | undefined): SectionMark | null 
       if (e.target instanceof Element && e.target.closest(OWN_CONTROLS)) return;
       toggle();
     },
+    pick: (on) => { if (on) ctx.select(address); else if (picked) ctx.select(null); },
     title: (text) => (
       <button type="button" className="gd-mark-title" aria-pressed={picked} onClick={toggle}>{text}</button>
     ),

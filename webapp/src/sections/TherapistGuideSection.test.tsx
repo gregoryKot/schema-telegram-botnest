@@ -88,6 +88,7 @@ describe('TherapistGuideSection', () => {
     const sheet = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
     expect(within(sheet).getByText('Письмо себе')).toBeTruthy();
     expectNoClientControls();
+    fireEvent.click(within(sheet).getByRole('tab', { name: 'На сессии' }));
     fireEvent.click(within(sheet).getByRole('button', { name: 'Работа со стульями' }));
     expect(screen.getByRole('dialog', { name: 'Работа со стульями' })).toBeTruthy();
     expectNoClientControls();

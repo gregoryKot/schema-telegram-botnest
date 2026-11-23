@@ -5,9 +5,10 @@
    GUIDE_COLUMN в GuideSheet.tsx). Оттенок листа --h ставит GuidePage (guideLook.ts); без вида — персик. */
 .gd-page { --h: 45; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding-bottom: 32px; }
 /* Герой: заголовок и знак в строку, суть под ними во всю колонку — на телефоне не узкой полосой. */
-.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 16px; align-items: center; }
+.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 20px; align-items: center; padding-top: 4px; }
 .gd-hero > .pp-hero-text { grid-column: 1 / -1; }
-.gd-hero .pp-hero-title { font-size: clamp(24px, 6.2vw, 32px); }
+.gd-hero .pp-hero-title { font-size: clamp(28px, 7.4vw, 38px); line-height: 1.15; }
+.gd-hero .pp-hero-text { font-size: 17px; line-height: 1.6; }
 .gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 22px; }
 .gd-hero-art > .scn-sign { width: 72px; }
 @media (max-width: 480px) {
@@ -15,15 +16,14 @@
   .gd-hero-art > .scn-sign { width: 60px; }
 }
 
-/* Полоса-оглавление (GuideToc.tsx): чипы-якоря под героем, прилипает к верху листа. Фон — сплошной цвет листа. */
-.gd-toc {
-  position: sticky; top: calc(-1 * var(--space-20)); z-index: 1; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
-  margin: -12px 0 -8px; padding: 8px 0; background: var(--bg); border-bottom: 1px solid var(--line);
-}
-.gd-toc-chip { flex: none; min-height: 44px; font-size: 14px; border-radius: 999px; }
-.gd-page > section { scroll-margin-top: 64px; }
-/* Метка книги в тексте: тише фразы, не рвёт чтение; расшифровка — в «Источниках». */
-.gd-cite { font-size: .78em; color: var(--text-sub); }
+/* Вкладки листа (GuideTabs.tsx): ds-seg под героем прилипает к верху листа; фон — сплошной цвет листа. */
+.gd-tabs { position: sticky; top: calc(-1 * var(--space-20)); z-index: 2; margin: -8px 0 -4px; padding: 10px 0; background: var(--bg); }
+.gd-tabs .ds-seg-btn { min-height: 44px; position: relative; flex: 1 1 auto; padding-left: 6px; padding-right: 6px; }
+.gd-tab-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.gd-panels { scroll-margin-top: 72px; }
+.gd-panel { display: flex; flex-direction: column; gap: 32px; }
+/* Метка книги в конце абзаца: тише фразы, не рвёт чтение; расшифровка — на вкладке «Теория». */
+.gd-cite { font-size: 12px; color: var(--text-sub); }
 /* «ещё» у длинного пункта: тихая ссылка в строке, зона нажатия 44 — невидимым ::before. */
 .ds-link.gd-fold { position: relative; display: inline; min-height: 0; padding: 0; font-size: 15px; line-height: inherit; }
 .ds-link.gd-fold::before { content: ''; position: absolute; inset: -13px -10px; }
@@ -137,10 +137,24 @@
 }
 .gd-mark-x:hover { background: var(--paper-tint); color: var(--text); }
 
-/* «Связано» (GuideRelated): переходы чипами, точка — цвет группы или домена листа, куда ведёт чип. */
-.gd-rel { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-.ds-chip.gd-rel-chip { min-height: 44px; font-size: 14px; color: var(--text); text-align: start; }
-.gd-rel-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; background: oklch(0.62 0.09 var(--h, 70)); }
-/* «Когда не делать» техники — жёлтая плашка под героем (вариант A): видна до начала упражнения. */
-.gd-caution { padding: 12px 14px; border-radius: 12px; background: var(--warn-bg); }
-.gd-caution .gd-label, .gd-caution .gd-text { color: var(--warn-ink); }
+/* Группа внутри блока («Схемы» в «Связано»): подпись тише подписи блока. */
+.gd-section .gd-section > .gd-head > .gd-label { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--text-sub); }
+
+/* Переходы на другие листы (GuideLinkRows): строки списка «Справочника» со знаком, белой карточкой. */
+.gd-rows { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-1); overflow: hidden; }
+.gd-row.ds-list-row { padding: 10px 16px; min-height: 56px; }
+.gd-row .ds-list-title { font-size: 16px; font-weight: 500; }
+
+/* Каналы и задания (GuideCard): карточка — заголовок и первая фраза, длинное раскрывается тапом на месте. */
+.gd-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.gd-card { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
+.gd-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.gd-card-toggle {
+  flex: 1; min-width: 0; min-height: 44px; margin: -8px 0; padding: 0; border: 0; background: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font: inherit; color: inherit; text-align: left;
+}
+.gd-card-toggle > .ds-chev { margin-left: 0; }
+.gd-card-title { font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--text); }
+.gd-card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); white-space: pre-line; }
+.gd-card .gd-acts { margin-top: 6px; }
+.gd-card.gd-picked, .gd-card.gd-marked { box-shadow: 0 0 0 2px var(--accent); background: var(--surface); }
