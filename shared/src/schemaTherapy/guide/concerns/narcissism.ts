@@ -1,3 +1,4 @@
+import { NARCISSISM_PARTNER_FORMATS } from './narcissismPartner';
 import { NARCISSISM_SECTIONS } from './narcissismSections';
 import type { ConcernGuideBuilder } from './types';
 
@@ -29,5 +30,6 @@ export const buildNarcissismGuide: ConcernGuideBuilder = () => ({
     'insufficient_self_control',
   ],
   ...NARCISSISM_SECTIONS,
-  sources: '[Бехари, введение, гл. 1, 2, 4, 6, 7, 8], [Янг, гл. 10]',
+  formats: NARCISSISM_PARTNER_FORMATS,
+  sources: '[Бехари, введение, гл. 1–8], [Янг, гл. 10]',
 });
