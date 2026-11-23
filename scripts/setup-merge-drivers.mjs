@@ -20,29 +20,10 @@
 import { spawnSync } from 'child_process';
 import { existsSync, readFileSync, rmSync } from 'fs';
 import { join } from 'path';
-import { checkMergeDrivers } from './merge-drivers-check.mjs';
+import { DRIVERS, checkMergeDrivers } from './merge-drivers-check.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const CHECK = process.argv.includes('--check');
-
-// имя драйвера → человекочитаемое описание + команда (%O %A %B %P подставляет git)
-const DRIVERS = {
-  'ratchet-min': {
-    name: 'JSON-бейслайн храповика: меньше — лучше',
-    script: 'scripts/merge-json-ratchet.mjs',
-    args: 'min %O %A %B %P',
-  },
-  'ratchet-max': {
-    name: 'JSON-бейслайн храповика: больше — лучше',
-    script: 'scripts/merge-json-ratchet.mjs',
-    args: 'max %O %A %B %P',
-  },
-  'ratchet-sum': {
-    name: 'JSON-бейслайн храповика: счётчик, рост двух сторон складывается',
-    script: 'scripts/merge-json-ratchet.mjs',
-    args: 'sum %O %A %B %P',
-  },
-};
 
 if (CHECK) {
   const { problems, baselines } = checkMergeDrivers(ROOT, DRIVERS);

@@ -6,16 +6,16 @@
 // Не проверено на живом GitHub: что `git push` от GITHUB_TOKEN порождает
 // pull_request-прогон на одобрение, как update-branch (строка в docs/BACKLOG.md).
 import { execFileSync } from 'child_process';
-import { mkdtempSync, rmSync } from 'fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { driverConfig } from './merge-drivers-check.mjs';
 
 export const CONFLICT_LABEL = 'merge-conflict';
 const BOT_NAME = 'github-actions[bot]';
 const BOT_EMAIL = '41898282+github-actions[bot]@users.noreply.github.com';
-// Имена — как в scripts/setup-merge-drivers.mjs; скрипт берётся из чекаута
-// main (scriptsDir), а не из дерева PR: код ветки с правом записи не исполняется.
-export const MODES = ['min', 'max', 'sum'];
+// Драйверы и атрибуты берутся из чекаута main (scriptsDir), а не из дерева PR:
+// код ветки с правом записи не исполняется, а её старый `merge=` не решает.
 
 export function conflictComment(files) {
   const list = files.map((f) => `\`${f}\``).join(', ');
@@ -39,11 +39,11 @@ export function mergeMain({ repoDir, scriptsDir, branch, sha, pushClean, dryRun 
     git(repoDir, 'fetch', '--quiet', 'origin', '+refs/heads/main:refs/remotes/origin/main', `+refs/heads/${branch}:refs/remotes/origin/${branch}`);
     if (git(repoDir, 'rev-parse', `refs/remotes/origin/${branch}`) !== sha) return { status: 'stale' };
     git(repoDir, 'worktree', 'add', '--quiet', '--detach', tree, sha);
-    // Атрибуты main — запасные: ветка, отставшая от новой строки .gitattributes, сводится по ней же.
-    const drivers = MODES.flatMap((m) => [
-      '-c',
-      `merge.ratchet-${m}.driver=node ${join(scriptsDir, 'merge-json-ratchet.mjs')} ${m} %O %A %B %P`,
-    ]).concat('-c', `core.attributesFile=${join(scriptsDir, '..', '.gitattributes')}`);
+    // info/attributes старше .gitattributes ветки: отставшая ветка сводится по правилам main.
+    const info = join(git(repoDir, 'rev-parse', '--path-format=absolute', '--git-common-dir'), 'info');
+    mkdirSync(info, { recursive: true });
+    copyFileSync(join(scriptsDir, '..', '.gitattributes'), join(info, 'attributes'));
+    const drivers = driverConfig(scriptsDir);
     const who = ['-c', `user.name=${BOT_NAME}`, '-c', `user.email=${BOT_EMAIL}`];
     const merge = (cfg) =>
       git(tree, ...who, ...cfg, 'merge', '--no-ff', '--quiet', '-m', `Merge branch 'main' into ${branch}`, 'refs/remotes/origin/main');

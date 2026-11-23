@@ -25,7 +25,7 @@
 // `scripts/*.json -merge` пройдёт, бейслайны вне scripts/ и e2e-browser/ ей не
 // видны. Таких случаев нет; появятся — `git check-attr`.
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { basename, join } from 'path';
 
 const BASELINE_DIRS = ['scripts', 'e2e-browser'];
 const BASELINE_RE = /-baseline\.json$/;
@@ -115,4 +115,40 @@ export function checkMergeDrivers(root, drivers) {
     }
   }
   return { problems, used, baselines: baselines.length };
+}
+
+// Драйверы репозитория: имя из `.gitattributes` → описание, скрипт и аргументы
+// (%O %A %B %P подставляет git). Один список на оба места, где они включаются:
+// .git/config разработчика (setup-merge-drivers.mjs) и очередь мержа
+// (merge-queue-conflict.mjs). Живёт здесь, а не в своём файле: Dockerfile
+// копирует импорты setup поимённо.
+export const DRIVERS = {
+  'ratchet-min': {
+    name: 'JSON-бейслайн храповика: меньше — лучше',
+    script: 'scripts/merge-json-ratchet.mjs',
+    args: 'min %O %A %B %P',
+  },
+  'ratchet-max': {
+    name: 'JSON-бейслайн храповика: больше — лучше',
+    script: 'scripts/merge-json-ratchet.mjs',
+    args: 'max %O %A %B %P',
+  },
+  'ratchet-sum': {
+    name: 'JSON-бейслайн храповика: счётчик, рост двух сторон складывается',
+    script: 'scripts/merge-json-ratchet.mjs',
+    args: 'sum %O %A %B %P',
+  },
+  'lines-3way': {
+    name: 'Реестр строк: удаление любой стороны остаётся удалением',
+    script: 'scripts/merge-lines.mjs',
+    args: '%O %A %B %P',
+  },
+};
+
+/** Аргументы `-c merge.<имя>.driver=…` для git; скрипты берутся из `scriptsDir`. */
+export function driverConfig(scriptsDir) {
+  return Object.entries(DRIVERS).flatMap(([driver, { script, args }]) => [
+    '-c',
+    `merge.${driver}.driver=node ${join(scriptsDir, basename(script))} ${args}`,
+  ]);
 }
