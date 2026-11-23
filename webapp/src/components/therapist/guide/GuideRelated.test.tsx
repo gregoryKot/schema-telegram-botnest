@@ -28,8 +28,8 @@ describe('GuideRelated', () => {
   it('тап по чипу открывает лист и не всплывает к разделу', () => {
     const onOpen = vi.fn();
     const onSection = vi.fn();
-    const { container } = render(<GuideRelated groups={[group({ onOpen })]} />);
-    container.addEventListener('click', onSection);
+    render(<GuideRelated groups={[group({ onOpen })]} />);
+    document.body.addEventListener('click', onSection); // корень React — контейнер внутри body
     fireEvent.click(screen.getByRole('button', { name: 'Бета' }));
     expect(onOpen).toHaveBeenCalledWith('b');
     expect(onSection).not.toHaveBeenCalled();
