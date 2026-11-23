@@ -225,7 +225,10 @@ describe('decryptRecord: провал расшифровки — явный ис
   });
 
   it('ключ маркера — Symbol.for с фиксированным именем (контракт между копиями модуля)', () => {
-    const { stored, b } = foreignShared();
+    const { stored, b } = loadAsSubject(
+      'имя ключа маркера — константа уровня модуля',
+      () => foreign(),
+    );
     const row = b.decryptRecord(stored, SCHEMA);
     const key = Symbol.for('schema-botnest.unreadableFields');
     expect((row as Record<symbol, unknown>)[key]).toEqual(['text', 'items']);

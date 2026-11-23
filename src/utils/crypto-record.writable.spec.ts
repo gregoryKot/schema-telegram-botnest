@@ -11,6 +11,7 @@
 // crypto-record и Nest — из одного реестра, иначе спай на Logger и instanceof
 // смотрели бы на чужие классы.
 import { createCipheriv, randomBytes } from 'crypto';
+import { loadAsSubject } from '../test-support/load-as-subject';
 
 type CryptoModule = typeof import('./crypto');
 type RecordModule = typeof import('./crypto-record');
@@ -58,14 +59,13 @@ describe('assertWritable / guardOverwrite: запись поверх нечит�
     'запись стёрла бы их. Нужна помощь владельца проекта.';
 
   /** Строка, записанная ключом A, в процессе с ключом B, и спай на warn. */
-  function setup() {
+  function setup(b: Mods = modsB) {
     const { c: a } = modsA;
     const stored = {
       id: 5,
       text: a.encrypt('секретная заметка')!,
       items: a.encryptJson(['abandonment']),
     };
-    const b = modsB;
     jest
       .spyOn(b.nest.Logger.prototype, 'error')
       .mockImplementation(() => undefined);
@@ -85,7 +85,11 @@ describe('assertWritable / guardOverwrite: запись поверх нечит�
   }
 
   it('нечитаемое поле среди записываемых → 409 { message, reason }, warn с местом и полями', () => {
-    const { b, stored, warn } = setup();
+    const { b, stored, warn } = setup(
+      loadAsSubject('текст и код 409 — константы уровня модуля', () =>
+        load(KEY_B),
+      ),
+    );
     const row = b.r.decryptRecord({ ...stored }, SCHEMA);
     const e = caught(() =>
       b.r.assertWritable(row, ['text', 'items'], 'Note.update'),
