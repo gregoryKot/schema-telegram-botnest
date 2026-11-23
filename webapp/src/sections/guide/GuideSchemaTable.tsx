@@ -1,14 +1,14 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
 import { SignGroup } from '../../components/schemaSheets/SignGroup';
 import { SignArt } from '../../components/art/SignArt';
 import type { SchemaDomainGuide } from '../../../../shared/src/schemaTherapy/guide';
-import { COPING_ABOUT } from '../../../../shared/src/schemaTherapy/guide/schemas/copingAbout';
-import { COPING_STYLES, type CopingStyle, type CopingStyleId } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
+import type { CopingStyle, CopingStyleId } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
 import type { ReferenceGroup, ReferenceItem } from './guideReferenceModel';
 import {
-  buildSchemaTable, cellKey, showsFull, toggleCell, visibleStyles, type CopingFilter, type SchemaTableRow, type TableDepth,
+  buildSchemaTable, cellKey, showsFull, styleVars, toggleCell, visibleStyles, type CopingFilter, type SchemaTableRow, type TableDepth,
 } from './guideSchemaTableModel';
 import { GuideSchemaTableBar, GuideSeg } from './GuideSchemaTableBar';
+import { GuideSchemaIntro } from './GuideSchemaIntro';
 
 export type SchemaView = 'list' | 'table';
 const SCHEMA_VIEWS: { id: SchemaView; label: string }[] = [{ id: 'list', label: 'Списком' }, { id: 'table', label: 'Таблицей' }];
@@ -27,9 +27,6 @@ interface Props {
   onMark?: (cell: { schemaId: string; style: CopingStyleId }) => void;
 }
 
-/** Цвет стиля для клетки и заголовка колонки: --gst-c — заливка, --gst-ink — текст. */
-const styleVars = (s: CopingStyle) => ({ '--gst-c': s.color, '--gst-ink': s.ink }) as CSSProperties;
-
 function StyleLabel({ style, className }: { style: CopingStyle; className: string }) {
   return (
     <span className={className}>
@@ -39,7 +36,7 @@ function StyleLabel({ style, className }: { style: CopingStyle; className: strin
 }
 
 /**
- * «Схемы» → «Таблицей» в «Справочнике» терапевта: строка над таблицей отвечает, что такое три копинга,
+ * «Схемы» → «Таблицей» в «Справочнике» терапевта: шапка (GuideSchemaIntro) отвечает, что такое три копинга,
  * в липкой шапке — стиль копинга и глубина, дальше — лист домена (SignGroup) с таблицей его схем. В клетке
  * жирная выжимка, полный текст — в «Подробно» или по тапу (одна раскрытая клетка). На узком контейнере
  * строка — карточка схемы с подписанными клетками (guide-reference.css). Тап по схеме открывает её лист.
@@ -74,11 +71,7 @@ export function GuideSchemaTable({ groups, guides, onOpen, onMark }: Props) {
   return (
     <div className="gr-wrap">
       <div className="gst-list">
-        <p className="gst-lede">
-          Одна схема — три способа с ней жить.{' '}
-          {COPING_STYLES.map((s) => `${s.label}: человек ${s.gist}.`).join(' ')} {COPING_ABOUT} В строках — примеры: один человек переходит между стилями в разных ситуациях. В клетке —
-          суть одной строкой, тап по ней раскрывает полный пример и кнопку «Про клиента»: стиль ляжет в схему случая клиента.
-        </p>
+        <GuideSchemaIntro canMark={!!onMark} />
         <GuideSchemaTableBar filter={filter} depth={depth} onFilter={setFilter} onDepth={setDepth} />
         {table.map((g) => (
           <SignGroup key={g.key} look={g.look} title={g.title} label={g.title} headAs="h2" rowsClassName="gst-rows">
