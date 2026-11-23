@@ -23,6 +23,7 @@ function renderMode(moreTechniques = [extra]) {
 describe('«Ещё техники»', () => {
   it('стоит сразу под «На сессии», свёрнут; по тапу — список, техника открывает свой лист', () => {
     const { onOpenTechnique } = renderMode();
+    fireEvent.click(screen.getByRole('tab', { name: 'На сессии' }));
     const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
     expect(regions.indexOf(MORE_TECHNIQUES_TITLE)).toBe(regions.indexOf('На сессии') + 1);
     const block = screen.getByRole('region', { name: MORE_TECHNIQUES_TITLE });
@@ -34,6 +35,7 @@ describe('«Ещё техники»', () => {
 
   it('пустой список — блока нет', () => {
     renderMode([]);
+    fireEvent.click(screen.getByRole('tab', { name: 'На сессии' }));
     expect(screen.queryByRole('region', { name: MORE_TECHNIQUES_TITLE })).toBeNull();
   });
 });
