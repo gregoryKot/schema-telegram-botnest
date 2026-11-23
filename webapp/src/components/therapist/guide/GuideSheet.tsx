@@ -9,6 +9,8 @@ import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenShee
 import { GuideBetweenSessions } from './GuideBetweenSessions';
 import { GuideSection } from './GuideSection';
 import { GuideSources } from './GuideSources';
+import { Cited } from './GuideText';
+import { GuideToc } from './GuideToc';
 import type { PlanSeed } from './guidePlan';
 import { GuidePoints, GuideVoice } from './GuidePoints';
 import { GuideMoreTechniques, GuideTechniques } from './GuideTechniques';
@@ -42,13 +44,10 @@ interface PageProps {
 }
 
 /**
- * Каркас листа подсказок (#995, пилот живого языка 2026-11) — один на листы техники,
- * режима, схемы и «Для терапевта»: в шапке подпись и «Закрыть», герой бумажной аппликации
- * (заголовок Literata, суть, справа знак с тенью-вырезкой на квадратике бумаги группы или домена — SignHero), свои разделы листа,
- * «Подробнее» (закрыто по умолчанию, Disclosure) и мелко «Источники». Шапка и
- * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet `panel`
- * (useHistorySheet, «Назад» браузера закрывает лист): на компьютере — панель справа над
- * затемнённым «Справочником» или схемой случая, на телефоне — весь экран.
+ * Каркас листа подсказок (#995) — один на все листы: в шапке подпись и «Закрыть», герой (заголовок Literata, суть,
+ * знак на квадратике бумаги группы или домена — SignHero), полоса-оглавление (GuideToc), свои разделы листа,
+ * «Подробнее» (Disclosure) и свёрнутые «Источники». Оболочка — ConceptFullscreenSheet `panel` (useHistorySheet):
+ * на компьютере — панель справа над «Справочником» или схемой случая, на телефоне — весь экран.
  */
 export function GuidePage({ label, title, lede, look, onClose, more = [], moreParts = [], sources, backRef, children }: PageProps) {
   const items = more.filter((m) => m.trim());
@@ -59,8 +58,9 @@ export function GuidePage({ label, title, lede, look, onClose, more = [], morePa
         <div className="gd-hero">
           <h2 className="pp-hero-title">{title}</h2>
           {look?.sign && <span className="pp-paper gd-hero-art"><SignHero sign={look.sign} /></span>}
-          {lede.trim() && <p className="pp-hero-text">{lede}</p>}
+          {lede.trim() && <p className="pp-hero-text"><Cited text={lede} /></p>}
         </div>
+        <GuideToc />
         {children}
         {(items.length > 0 || parts.length > 0) && (
           <div className="gd-more">

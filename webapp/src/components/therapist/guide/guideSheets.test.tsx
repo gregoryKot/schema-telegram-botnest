@@ -42,11 +42,12 @@ describe('ModeGuideSheet', () => {
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Уязвимый Ребёнок' })).toBeTruthy();
     expect(within(dialog).getByText('Режим')).toBeTruthy();
     expect(screen.getByText(FIXTURE_GUIDE.what)).toBeTruthy();
-    expect(regions()).toEqual(['Цель', 'Как работать', 'На сессии', 'Между сессиями', 'Источники']);
+    expect(regions()).toEqual(['Цель', 'Как работать', 'На сессии', 'Между сессиями']);
     expect(within(screen.getByRole('region', { name: 'Цель' })).getByText(FIXTURE_GUIDE.goal)).toBeTruthy();
     const leads = within(screen.getByRole('region', { name: 'Как работать' })).getAllByRole('listitem')
       .map((li) => li.querySelector('.gd-lead')?.textContent);
     expect(leads).toEqual(['Терапевтические отношения (в отношениях)', 'Когнитивные (через понимание)', 'Эмпирические (через чувства и образы)']);
+    fireEvent.click(screen.getByRole('button', { name: /^Источники/ }));
     expect(screen.getByText(FIXTURE_GUIDE.sources)).toBeTruthy();
   });
 
@@ -64,7 +65,7 @@ describe('ModeGuideSheet', () => {
         <ModeGuideSheet modeName="Уязвимый Ребёнок" view={{ ...FIXTURE_VIEW, guide: bare }} onOpenTechnique={() => {}} onClose={() => {}} />
       </MemoryRouter>,
     );
-    expect(regions()).toEqual(['Цель', 'На сессии', 'Между сессиями', 'Источники']);
+    expect(regions()).toEqual(['Цель', 'На сессии', 'Между сессиями']);
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
   });
 
@@ -115,18 +116,18 @@ describe('TechniqueSheet', () => {
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Рескриптинг образов' })).toBeTruthy();
     expect(within(dialog).getByText('Техника')).toBeTruthy();
     expect(screen.getByText(FIXTURE_TECHNIQUES[0].summary)).toBeTruthy();
-    expect(regions()).toEqual(['Когда', 'Как проводить', 'Источники']);
+    expect(regions()).toEqual(['Когда', 'Как проводить']);
     const steps = within(screen.getByRole('region', { name: 'Как проводить' })).getByRole('list');
     expect(steps.tagName).toBe('OL');
     expect(within(steps).getAllByRole('listitem').map((li) => li.textContent)).toEqual(FIXTURE_TECHNIQUES[0].steps);
     expect(screen.queryByText(FIXTURE_TECHNIQUES[0].cautions!)).toBeNull();
     openMore();
-    expect(regions()).toEqual(['Когда', 'Как проводить', 'Когда не делать', 'Доказательность', 'Источники']);
+    expect(regions()).toEqual(['Когда', 'Как проводить', 'Когда не делать', 'Доказательность']);
   });
 
   it('у техники без «Когда», предостережений и доказательности этих разделов и «Подробнее» нет', () => {
     render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} onClose={() => {}} /></MemoryRouter>);
-    expect(regions()).toEqual(['Как проводить', 'Источники']);
+    expect(regions()).toEqual(['Как проводить']);
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
   });
 
@@ -136,14 +137,14 @@ describe('TechniqueSheet', () => {
     const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(dialog).getByText('Из другого подхода · ACT')).toBeTruthy();
     expect(within(dialog).queryByText('Техника')).toBeNull();
-    expect(regions()).toEqual(['Когда', 'В схема-терапии', 'Как проводить', 'Источники']);
+    expect(regions()).toEqual(['Когда', 'В схема-терапии', 'Как проводить']);
     expect(within(screen.getByRole('region', { name: 'В схема-терапии' })).getByText(t.pairsWith)).toBeTruthy();
   });
 
   it('переписанная техника: «Как это звучит» до шагов, пункты `more` первыми под «Подробнее»', () => {
     const t = { ...FIXTURE_TECHNIQUES[0], voice: ['Что самое маленькое?'], more: ['Срыв — повод разобраться'] };
     render(<MemoryRouter><TechniqueSheet technique={t} onClose={() => {}} /></MemoryRouter>);
-    expect(regions()).toEqual(['Как это звучит', 'Когда', 'Как проводить', 'Источники']);
+    expect(regions()).toEqual(['Как это звучит', 'Когда', 'Как проводить']);
     expect(screen.getByText('«Что самое маленькое?»')).toBeTruthy();
     openMore();
     expect(screen.getByText('Срыв — повод разобраться')).toBeTruthy();
