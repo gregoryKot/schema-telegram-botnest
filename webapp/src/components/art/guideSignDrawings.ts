@@ -6,7 +6,7 @@
 import type { ReactElement } from 'react';
 import type { ArtProps } from './paper';
 import type { GuideSign } from './guideSignsModel';
-import { Limits } from './NeedArt';
+import { Attachment, Limits } from './NeedArt';
 import { Breath, Cup, Layers, Pebbles, Ribbon, Sheets, Strokes } from './PaperArt';
 import { Beads, Check, Cluster, Heart, Leaf, Talk, Wheel } from './PaperArtSigns';
 import { ChildCare, Looming, Shelter, Shield, Together, Yield } from './GuideSignsModes';
@@ -52,7 +52,7 @@ export const GUIDE_SIGN_ART: Record<GuideSign, (p: ArtProps) => ReactElement> = 
   cup: Cup,
   join: Join,
   pause: Pause, haven: Haven, leaf: Leaf, roots: Roots, strokes: Strokes, grounded: Grounded, wheel: Wheel,
-  coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation,
+  coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation, need_attachment: Attachment,
   ...TECHNIQUE_OWN_SIGN_ART,
   ...PATH_SIGN_ART,
 };
