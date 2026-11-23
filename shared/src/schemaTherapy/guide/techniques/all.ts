@@ -5,6 +5,7 @@ import { buildChairworkTechniques } from './chairwork';
 import { buildChairTechniques } from './chairs';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
+import { buildFarrellPlanTechniques } from './farrellPlans';
 import { buildEmpathicConfrontationTechniques } from './empathicConfrontation';
 import { buildStanceTechniques } from './stance';
 import { buildHomeworkTechniques } from './homework';
@@ -35,6 +36,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildChairTechniques,
   buildRolePlayArntzTechniques,
   buildCognitiveArntzTechniques,
+  buildFarrellPlanTechniques,
   buildEmpathicConfrontationTechniques,
   buildStanceTechniques,
   buildHomeworkTechniques,

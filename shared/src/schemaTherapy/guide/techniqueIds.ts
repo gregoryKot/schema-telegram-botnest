@@ -65,6 +65,9 @@ export type YoungTechniqueId = 'schema_dialogue';
 export type ArntzTechniqueId =
   'current_role_play' | 'two_axis_check' | 'need_cycle' | 'guess_the_mode';
 
+/** Техники из книги Фаррелл, Рейсс и Шоу (карта «Фаррелл»). */
+export type FarrellTechniqueId = 'mode_management_plan';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -72,4 +75,5 @@ export type TechniqueId =
   | CambridgeTechniqueId
   | YoungTechniqueId
   | ArntzTechniqueId
+  | FarrellTechniqueId
   | BorrowedTechniqueId;

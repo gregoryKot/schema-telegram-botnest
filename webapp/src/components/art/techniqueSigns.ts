@@ -2,7 +2,7 @@
 // Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
-  YoungTechniqueId, ArntzTechniqueId,
+  YoungTechniqueId, ArntzTechniqueId, FarrellTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -77,11 +77,16 @@ const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
   guess_the_mode: 'guess_mode',
 };
 
+const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
+  mode_management_plan: 'mode_plan',
+};
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
   ...CAMBRIDGE_TECHNIQUE_SIGN,
   ...YOUNG_TECHNIQUE_SIGN,
   ...ARNTZ_TECHNIQUE_SIGN,
+  ...FARRELL_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };
