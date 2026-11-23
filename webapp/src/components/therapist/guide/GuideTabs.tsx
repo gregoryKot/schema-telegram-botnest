@@ -1,4 +1,4 @@
-import { useContext, type KeyboardEvent, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, type KeyboardEvent, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { scrollIntoViewSafe } from '../../../../../shared/src/utils/scrollIntoView';
 import { GuideMarkContext } from './marks/GuideSectionMark';
 import { GUIDE_TAB_LABEL, guideTabs, markedTabs, type GuideTabId, type TabbedKind } from './guideTabsModel';
@@ -18,7 +18,7 @@ const isEmpty = (el: HTMLElement | undefined) => !!el && el.childElementCount ==
  * адреса разделов и «Про клиента» живут как без вкладок. Точка на вкладке — там есть отметки клиента.
  */
 export function GuideTabs({ kind, articleId, panels }: GuideTabsProps) {
-  const order = guideTabs(kind).filter((id) => panels[id] != null && panels[id] !== false);
+  const order = useMemo(() => guideTabs(kind).filter((id) => panels[id] != null && panels[id] !== false), [kind, panels]);
   const [active, setActive] = useState<GuideTabId>(order[0]);
   const [empty, setEmpty] = useState<string>('');
   const refs = useRef<Partial<Record<GuideTabId, HTMLDivElement>>>({});
@@ -34,7 +34,7 @@ export function GuideTabs({ kind, articleId, panels }: GuideTabsProps) {
   useLayoutEffect(() => {
     const next = order.filter((id) => isEmpty(refs.current[id])).join(' ');
     if (next !== empty) setEmpty(next);
-  });
+  }, [order, empty]);
 
   useEffect(() => {
     const cleanups = order.map((id) => {
