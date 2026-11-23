@@ -45,7 +45,7 @@ interface Props {
   signs?: readonly SignKey[];
   title?: ReactNode; // без подписи и знака лист стоит без шапки (техники «Справочника» терапевта)
   aside?: ReactNode; label?: string; headAs?: 'h2' | 'h3'; // label — aria-label секции, headAs — уровень заголовка шапки
-  /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). plain — тихая группа без листа и белой карточки (пикеры терапевта, g11 r1). */
+  /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). plain — тихая группа без листа и белой карточки (пикеры терапевта, строки-карточки справочника; и в свёртке). */
   rowsClassName?: string; plain?: boolean;
   /** Под подписью — простыми словами (группы «Техник» справочника). */
   hint?: string;
@@ -55,12 +55,12 @@ interface Props {
 }
 
 export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, aside, label, headAs, rowsClassName, plain, hint, fold, children }: Props) {
-  const rows = rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows';
+  const rows = rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows', root = plain ? 'sg-group sg-group--plain' : 'pp-paper sg-group';
   if (fold) {
     return (
       <Disclosure
         defaultOpen style={{ '--h': look.hue } as CSSProperties}
-        classes={{ root: 'pp-paper sg-group', btn: 'sg-head sg-fold-head', label: 'sg-name sg-fold-name', chev: 'ds-fold-chev', body: rows }}
+        classes={{ root, btn: 'sg-head sg-fold-head', label: 'sg-name sg-fold-name', chev: 'ds-fold-chev', body: rows }}
         title={<><span className="ds-label">{glueIf(title)}</span>{hint && <span className="sg-hint">{hint}</span>}</>}
       >
         {children}
@@ -68,7 +68,7 @@ export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, a
     );
   }
   return (
-    <section className={plain ? 'sg-group sg-group--plain' : 'pp-paper sg-group'} aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
+    <section className={root} aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
       {(title !== undefined || signs.length > 0) && <SignGroupHead signs={signs} title={title} aside={aside} as={headAs} />}{hint && <p className="sg-hint sg-hint--line">{hint}</p>}
       <div className={rows}>{children}</div>
     </section>

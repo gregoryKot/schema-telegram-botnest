@@ -74,10 +74,11 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **Сборка:** сайт собирает Docker (dist в git нет); precheck её не гоняет: правил `@media` — `webapp/src/utils/phoneLayout.test.ts`, новый импорт — бандл-храповик после сборки.
 
 ### Фронтенды: очевидность и визуал → [.claude/rules/frontend-visual.md](.claude/rules/frontend-visual.md)
-- **Онбординг:** новая фича до первого действия отвечает «откуда это и зачем» на пути пользователя; одно главное действие на экран; тап-цели ≥44×44 (`hitboxStyle`, `check-tap-targets`); раскрытие не только по `:hover` (`check-hover-only-reveal`).
-- **Фон под панелью — сплошной цвет, свечение — градиентом:** размытие (`backdrop-filter`, `filter: blur`) режет `check-render-poison`.
-- **Вкладка справочника:** листы разных оттенков, со знаком (`guideReferenceHues.test.ts`).
-- **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный токен — `color-mix(in srgb, var(--x) N%, transparent)` (`check-var-alpha-suffix`); `--c-*` — оттенок для заливок, текст — `--accent-*`/`*-strong` (`accentTextContrast.test.ts`).
+- **Онбординг:** новая фича до первого действия отвечает «откуда это и зачем» на его пути; одно главное действие на экран; тап-цели ≥44×44 (`hitboxStyle`, `check-tap-targets`); раскрытие не только по `:hover` (`check-hover-only-reveal`).
+- **Фон панели — сплошной цвет, свечение — градиент** (`check-render-poison`).
+- **Вкладка справочника:** листы разного оттенка, со знаком (`guideReferenceHues.test.ts`).
+- **Текст для чтения:** абзац ≤300 знаков, ≤65ch, перечисление — списком (`guideReadableText.test.tsx`).
+- **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный — `color-mix(…, transparent)` (`check-var-alpha-suffix`); `--c-*` — заливка, текст — `--accent-*`/`*-strong` (`accentTextContrast.test.ts`).
 
 ### Тексты для пользователя → [.claude/rules/texts.md](.claude/rules/texts.md)
 - **ты/вы:** строка с обращением — в обеих формах: бэк `t(form, 'ты', 'вы')` (`src/notification/address-form.ts`), фронт `useTr()` → `tr('ты', 'вы')`, контент — `buildX(tr)` + хук; «вы»-строка целиком во мн. числе (`check-address-form`, `check-address-agreement`, `check-second-person`).
