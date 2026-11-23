@@ -67,9 +67,7 @@ export type ArntzTechniqueId =
 
 /** Техники из книги Фаррелл, Рейсс и Шоу (карта «Фаррелл»). */
 export type FarrellTechniqueId =
-  | 'mode_management_plan'
-  | 'healthy_adult_plan'
-  | 'safety_bubble';
+  'mode_management_plan' | 'healthy_adult_plan' | 'safety_bubble';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
