@@ -11,6 +11,7 @@ import {
   Activation, Approach, Defusion, DiarySheet, LevelsHeart, LifeLine, PebbleBowl, Pie, Rewind, ToleranceWindow,
   TryStep, Values,
 } from './TechniqueSignsSteps';
+import { GuessMode, NeedCycle, Scatter } from './TechniqueSignsArntz';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -19,4 +20,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   diary_sheet: DiarySheet, pebble_bowl: PebbleBowl, try_step: TryStep, activation: Activation,
   approach: Approach, values: Values, life_line: LifeLine, window: ToleranceWindow,
   levels_heart: LevelsHeart, defusion: Defusion, pie: Pie, rewind: Rewind,
+  scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode,
 };

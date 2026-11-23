@@ -72,6 +72,9 @@ const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = {
 
 const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
   current_role_play: 'talk_now',
+  two_axis_check: 'scatter',
+  need_cycle: 'need_ring',
+  guess_the_mode: 'guess_mode',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {

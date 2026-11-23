@@ -85,6 +85,10 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     why: PART('MODE_TEST_GROUPS (mode/modeTest.ts)'),
   },
   {
+    file: 'shared/src/therapy/sessionWork/techniqueWorkArntz.ts',
+    why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
+  },
+  {
     file: 'shared/src/therapy/sessionWork/techniqueWorkBorrowed.ts',
     why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
   },

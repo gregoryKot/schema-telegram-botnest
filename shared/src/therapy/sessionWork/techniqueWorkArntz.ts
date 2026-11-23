@@ -13,4 +13,28 @@ export const ARNTZ_TECHNIQUE_WORK: Record<ArntzTechniqueId, TechniqueWorkDef> =
         ['newStep', 'Новый ответ и шаг в жизни'],
       ],
     },
+    two_axis_check: {
+      name: 'Проверка связи на двух осях',
+      fields: [
+        ['rule', 'Правило «чем…, тем…»'],
+        ['picture', 'Что показал график'],
+        ['newView', 'Новый вывод'],
+      ],
+    },
+    need_cycle: {
+      name: 'Цикл самонаблюдения',
+      fields: [
+        ['scene', 'Ситуация'],
+        ['mode', 'Схема или режим'],
+        ['need', 'Потребность'],
+        ['action', 'Что сделано и чем кончилось'],
+      ],
+    },
+    guess_the_mode: {
+      name: 'Игра «угадай режим»',
+      fields: [
+        ['modes', 'Какие режимы угадывали'],
+        ['signs', 'По каким признакам узнать'],
+      ],
+    },
   };

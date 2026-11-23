@@ -62,7 +62,8 @@ export type CambridgeTechniqueId =
 export type YoungTechniqueId = 'schema_dialogue';
 
 /** Техники из книги Арнца и ван Гендерен о ПРЛ (карта «Арнц-ПРЛ»). */
-export type ArntzTechniqueId = 'current_role_play';
+export type ArntzTechniqueId =
+  'current_role_play' | 'two_axis_check' | 'need_cycle' | 'guess_the_mode';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
