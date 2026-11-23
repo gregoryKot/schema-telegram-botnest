@@ -1690,8 +1690,14 @@ function loadWithRealEncryption(): {
 }
 
 describe('расшифровка PII при реально настроенном ENCRYPTION_KEY', () => {
+  // Загрузка — вне тестов: код уровня модуля crypto.ts не засчитывается тесту.
+  let real: ReturnType<typeof loadWithRealEncryption>;
+  beforeAll(() => {
+    real = loadWithRealEncryption();
+  });
+
   it('createInvite(alias): имя в приглашении сохраняется ЗАШИФРОВАННЫМ', async () => {
-    const { Service, crypto } = loadWithRealEncryption();
+    const { Service, crypto } = real;
     const rels: FullRel[] = [];
     const service = new Service(makeFullPrisma(rels, [], []) as any, {} as any);
     await service.createInvite(T1, 'Мария К.');
@@ -1700,7 +1706,7 @@ describe('расшифровка PII при реально настроенно�
   });
 
   it('getClients: clientAlias — расшифрованное значение, а не сырой шифротекст', async () => {
-    const { Service, crypto } = loadWithRealEncryption();
+    const { Service, crypto } = real;
     const ciphertext = crypto.encrypt('Настоящий алиас');
     expect(ciphertext).not.toBe('Настоящий алиас'); // убеждаемся, что реально зашифровалось
     const rel: FullRel = {
@@ -1728,7 +1734,7 @@ describe('расшифровка PII при реально настроенно�
   });
 
   it('addVirtualClient: virtualClientName сохраняется ЗАШИФРОВАННЫМ, а не как есть', async () => {
-    const { Service, crypto } = loadWithRealEncryption();
+    const { Service, crypto } = real;
     const rels: FullRel[] = [];
     const prisma: any = makeFullPrisma(rels, [], []);
     const clientOverviewService: any = {
