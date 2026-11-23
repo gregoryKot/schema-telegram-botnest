@@ -6,6 +6,15 @@ export const FARRELL_TECHNIQUE_WORK: Record<
   FarrellTechniqueId,
   TechniqueWorkDef
 > = {
+  healthy_adult_plan: {
+    name: 'План Здорового Взрослого',
+    fields: [
+      ['scene', 'Режим и ситуация'],
+      ['goodParent', 'Взгляд Хорошего Родителя'],
+      ['plan', 'План и навыки'],
+      ['result', 'Сработал ли план'],
+    ],
+  },
   safety_bubble: {
     name: 'Пузырь безопасности',
     fields: [
