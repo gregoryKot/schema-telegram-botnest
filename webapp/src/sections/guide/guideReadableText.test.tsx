@@ -34,6 +34,14 @@ describe('справочник: текст для чтения не полотн
     expect(wallProblems(intro)).toEqual([]);
   });
 
+  it('подсказка как читать таблицу: «Про клиента» — только когда отметка доступна', () => {
+    const props = { groups: ref.schemas, guides: guide.buildSchemaDomainGuides(tr), onOpen: () => {} };
+    const { container, rerender } = render(<GuideSchemaTable {...props} />);
+    expect(container.querySelector('.gst-how')!.textContent).not.toContain('Про клиента');
+    rerender(<GuideSchemaTable {...props} onMark={() => {}} />);
+    expect(container.querySelector('.gst-how')!.textContent).toContain('Про клиента');
+  });
+
   it.each(REFERENCE_TABS.map((t) => t.id))('подписи групп вкладки %s', (tab) => {
     const { container } = render(<GuideReferenceList groups={ref[tab]} layout="tiles" onOpen={() => {}} />);
     expect(wallProblems(container)).toEqual([]);
