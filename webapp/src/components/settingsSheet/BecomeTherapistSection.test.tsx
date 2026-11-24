@@ -214,7 +214,7 @@ describe('BecomeTherapistSection — пределы длины (один ист�
       screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
     expect(max('ФИО')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
     expect(max('Квалификация: образование, направление, опыт, сертификаты')).toBe(LIM.THERAPIST_REQUEST_QUAL_MAX);
-    expect(max('Контакты: сайт, @telegram, b17 и т.д.')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Контакты: сайт, @telegram')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
     expect(max('Сообщение (необязательно)')).toBe(LIM.THERAPIST_REQUEST_MESSAGE_MAX);
   });
 });
