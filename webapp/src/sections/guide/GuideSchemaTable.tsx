@@ -7,16 +7,8 @@ import type { ReferenceGroup, ReferenceItem } from './guideReferenceModel';
 import {
   buildSchemaTable, cellKey, showsFull, styleVars, toggleCell, visibleStyles, type CopingFilter, type SchemaTableRow, type TableDepth,
 } from './guideSchemaTableModel';
-import { GuideSchemaTableBar, GuideSeg } from './GuideSchemaTableBar';
+import { GuideSchemaTableBar } from './GuideSchemaTableBar';
 import { GuideSchemaIntro } from './GuideSchemaIntro';
-
-export type SchemaView = 'list' | 'table';
-const SCHEMA_VIEWS: { id: SchemaView; label: string }[] = [{ id: 'list', label: 'Списком' }, { id: 'table', label: 'Таблицей' }];
-
-/** Вид раздела «Схемы» рядом с вкладками: список по доменам или общая таблица копингов. */
-export function SchemaViewSwitch({ view, onPick }: { view: SchemaView; onPick: (v: SchemaView) => void }) {
-  return <GuideSeg options={SCHEMA_VIEWS} value={view} onPick={onPick} label="Вид раздела «Схемы»" fit="full" />;
-}
 
 interface Props {
   /** Группы списка «Схем» (buildReference): домены, их вид и строки. */
