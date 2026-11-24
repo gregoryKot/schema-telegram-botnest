@@ -1,4 +1,4 @@
-// Кнопки дизайн-системы в CSS для check-tap-targets.mjs. `.ds-seg-btn` и `.ds-link`
+// Кнопки дизайн-системы в CSS для check-tap-targets.mjs. `.ds-link` и `.ds-tab`
 // в разметке идут классом без размера, высота у них из padding — гейт по TSX её не
 // видит. Поэтому сверяется сам CSS: цель — класс `ds-*` с `cursor: pointer` в правиле
 // `.класс` и его модификатор `ds-*--x` со своей высотой. Высота (height/min-height
