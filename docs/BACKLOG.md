@@ -103,6 +103,8 @@
 
 - ⬜ **Снять снос пары до CHIPS после 2026-12-16** — `setRefreshCookie` (`src/auth/auth-http.util.ts`) по метке `refresh_cross=1` стирает непартиционированную пару кросс-сайтовой сессии (иначе браузер держит две refresh-куки и шлёт старую). Кука старого образца живёт не дольше 30 дней после деплоя — дальше ветка мёртвая: убрать её и `LEGACY_CROSS_SITE_MARK` с тестами.
 
+- ⬜ **Свои кнопки в инлайне и в записи/оплате** — гейт `check-own-button` считает только CSS (`scripts/own-button-baseline.json`: `.sb-today-cta`, `.lk-cta`, `.ss-scale-btn`, `.tq-bar-btn`, сегменты); инлайн `style` у `<button>` с `background`+`borderRadius` (`components/booking/*`) не считается; `.sd-btn-ok` (`share-sheet.css`) остался модификатором `ds-btn` — свою заливку примитив требует с `:not(:disabled)`. Доказано: `node scripts/check-own-button.mjs --verbose`.
+
 ## Идеи
 
 - ⬜ **Путь клиента: печать для супервизии** (#1522) — путь с фазами, статусами и строками «работали…» одним листом.

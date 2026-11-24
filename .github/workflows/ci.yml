@@ -897,6 +897,8 @@ jobs:
       # новый код снова писал style={{ display: 'flex', gap: 8 }}. Пофайловый
       # храповик, fs-only.
       - run: node scripts/check-utility-inline.mjs
+      # Своя кнопка (фон + скругление в правиле btn|cta|submit вне .ds-btn): кнопка — ds-btn, класс страницы — раскладка.
+      - run: node scripts/check-own-button.mjs
       # Контрол без имени из одного глифа (аудит 2026-10, «Доступность»):
       # `<button>←</button>`, пустой `{...pressable(f)}`-тик, кнопка с одной
       # иконкой — скринридер читает «стрелка влево» или просто «кнопка».
