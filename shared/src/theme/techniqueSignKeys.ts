@@ -31,6 +31,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'scatter',
   'need_ring',
   'guess_mode',
+  'bypass',
   // TechniqueSignsFarrell.tsx — техники из книги Фаррелл, Рейсс и Шоу
   'mode_plan',
   'plan_ahead',

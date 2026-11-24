@@ -113,4 +113,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:healthy_adult_plan': ['scene', 'goodParent', 'plan', 'result'],
     'technique:safety_bubble': ['image', 'effect', 'home'],
     'technique:creative_mode_work': ['mode', 'form', 'dialogue', 'ending'],
+    'technique:coping_bypass': ['mode', 'trigger', 'feeling', 'next'],
   };

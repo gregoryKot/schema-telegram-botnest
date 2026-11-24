@@ -19,7 +19,7 @@ describe('каталог «Что делали»', () => {
     expect(Object.keys(TECHNIQUE_WORK).sort()).toEqual(
       [...techniqueIds].sort(),
     );
-    expect(techniqueIds).toHaveLength(57);
+    expect(techniqueIds).toHaveLength(58);
     const exerciseIds = EXERCISES.map((e) => e.id);
     expect(Object.keys(EXERCISE_WORK_FIELDS).sort()).toEqual(
       [...exerciseIds].sort(),
@@ -37,7 +37,7 @@ describe('каталог «Что делали»', () => {
     }
   });
 
-  it('список выбора: 57 техник, 8 упражнений, «Своё»; название пункта — из него', () => {
+  it('список выбора: 58 техник, 8 упражнений, «Своё»; название пункта — из него', () => {
     expect(WORK_OPTION_GROUPS.map((g) => g.options.length)).toEqual([57, 8, 1]);
     for (const option of WORK_OPTION_GROUPS.flatMap((g) => g.options)) {
       const item = newWorkItem(option);
