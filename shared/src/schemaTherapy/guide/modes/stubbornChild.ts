@@ -37,6 +37,7 @@ export const buildStubbornChildGuide = (tr: Tr): ModeGuide => ({
     'imagery_rescripting',
     'future_imagery',
   ],
+  moreTechniques: ['anger_expression', 'mode_map'],
   betweenSessions: [
     {
       kind: 'custom',
