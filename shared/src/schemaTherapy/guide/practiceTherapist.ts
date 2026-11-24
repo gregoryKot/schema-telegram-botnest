@@ -1,13 +1,12 @@
 import type { PracticeNotesBuilder } from './types';
 import { therapistWellbeingMore } from './practiceMoreArntz';
 import { buildPracticeTherapistSchemas } from './practiceTherapistSchemas';
+import { buildPracticeTherapistArntz } from './practiceTherapistArntz';
 
-/**
- * «Для терапевта»: схемы самого терапевта и его выгорание. Собирает practice.ts —
- * на месте раздела «Схемы терапевта», порядок на листе прежний.
- */
+/** «Для терапевта»: схемы терапевта, выгорание, заметки Арнтц и Якоб. Собирает practice.ts, порядок на листе прежний. */
 export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
   ...buildPracticeTherapistSchemas(tr),
+  ...buildPracticeTherapistArntz(tr),
   {
     id: 'therapist_wellbeing',
     group: 'therapist',
