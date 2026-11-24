@@ -66,6 +66,8 @@
 
 ## Следующее
 
+- **«Про клиента» для фрагмента: проверка выделения на живом iOS/Android** — в коде достижимо (`marks/GuideSelectionBar.tsx`, кнопка у нижнего края, `selectionchange`), на устройстве не проверено; доказано только vitest.
+
 - ⬜ **#1317 web-push 3.6.7 → 4.0.0: пакет стал ESM-only, jest падает** — `backend` красный (106 спеков «Must use import to load ES Module: node_modules/web-push/src/index.js»); API `src/push/*` не менялся. Починка: добавить `web-push` и его ESM-зависимости (`https-proxy-agent`, `agent-base`) в regex `jest.transform` в `package.json` и в `test/jest-e2e.json`, сверить `src/test-support/esm-to-cjs.transform.spec.ts`; проверить Node ≥ 22.12 в Dockerfile. PR остаётся открытым. Доказано: лог job 138235267642 (2026-11-24).
 - ⬜ **#631 Бэкапы Amvera: пересобрать PR после смены хранилища** — ветка `docs/amvera-backup-risk` в конфликте с `main` (CLAUDE.md перестроен, SECURITY.md правился), а факты устарели: скрипт теперь `scripts/backup-upload.sh`, хранилище Yandex Object Storage вместо B2, срок 30 дней вместо 90; спек `backup-risk-doc.spec.ts` ссылается на удалённые `scripts/backup-to-b2.sh` и на `CLAUDE.md`. Взять `docs/AMVERA_BACKUP_QUESTIONS.md`, спек и §13 SECURITY.md, исправить факты, ссылку с `CLAUDE.md` заменить на `docs/README.md`. Вопрос владельцу («отправите обращение?») — в «Ждёт владельца». Доказано: локальный `git merge origin/main`, jest 1 из 6 красный (2026-11-24).
 
