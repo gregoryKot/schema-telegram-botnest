@@ -64,9 +64,15 @@ describe('ConceptModePicker', () => {
       />,
     );
     const html = container.innerHTML;
-    expect(html).toContain(
-      `color-mix(in srgb, ${toneHex(MODE_GROUP_HUE.critic)}`,
-    );
+    // jsdom 31 сериализует цвет в inline-style как rgb(), не как hex.
+    const hex = toneHex(MODE_GROUP_HUE.critic);
+    const rgb = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16))
+      .join(', ');
+    expect(html).toContain(`color-mix(in srgb, `);
+    expect(
+      html.includes(`in srgb, ${hex}`) || html.includes(`in srgb, rgb(${rgb})`),
+    ).toBe(true);
     expect(html).not.toMatch(/var\(--[a-z-]+\)[0-9a-f]{2}\b/);
   });
 });
