@@ -9,7 +9,7 @@
 .tq-day {
   --h: 135; --bar-max: 112px;
   display: flex; flex-direction: column; align-items: center; gap: var(--space-8); box-sizing: border-box;
-  padding: var(--space-24) var(--space-20) var(--space-20); border-radius: 28px; text-align: center;
+  padding: var(--space-24) var(--space-20) var(--space-20); border-radius: var(--r-16); text-align: center;
 }
 .tq-day .tq-eyebrow { margin-top: var(--space-4); color: var(--text-sub); }
 .tq-index { font: 400 72px/1 var(--serif); letter-spacing: -0.03em; color: var(--text); margin-top: var(--space-4); }
@@ -40,7 +40,7 @@
 /* Куда дальше: две кнопки, строки-переходы со знаком слева, строка моста к терапевту. */
 .tq-fin .pa-spread-main { gap: var(--space-20); }
 .tq-fin .tq-acts { gap: var(--space-10); }
-.ds-btn.tq-fin-btn { width: 100%; height: auto; min-height: 52px; border-radius: 26px; font-size: 15px; }
+.ds-btn.tq-fin-btn { width: 100%; height: auto; min-height: 52px; border-radius: var(--r-12); font-size: 15px; }
 .tq-go { display: flex; flex-direction: column; border-top: 1px solid var(--paper-sunk); }
 .tq-go-row {
   display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; box-sizing: border-box;

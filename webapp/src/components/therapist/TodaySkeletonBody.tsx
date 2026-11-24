@@ -31,7 +31,7 @@ export function TodaySkeletonBody({ label }: { label?: string }) {
           <Skeleton width="56%" height={22} />
           <div className="sks-card">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="sks-row"><Skeleton width={36} height={36} radius={18} /><div className="sks-col"><Skeleton width={`${62 - i * 12}%`} height={14} /><Skeleton width="40%" height={11} /></div></div>
+              <div key={i} className="sks-row"><Skeleton width={36} height={36} radius="50%" /><div className="sks-col"><Skeleton width={`${62 - i * 12}%`} height={14} /><Skeleton width="40%" height={11} /></div></div>
             ))}
           </div>
         </div>

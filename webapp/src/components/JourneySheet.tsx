@@ -68,8 +68,8 @@ export function JourneySheet({ onClose, onOpenTracker }: { onClose: () => void; 
               skeleton={
                 // Форма — как у JourneyView: лист-герой, плитки 2×3, строки ленты 56px (journey.css).
                 <div className="jr-skel">
-                  <Skeleton height={232} radius={24} />
-                  <div className="jr-stats">{[0, 1, 2, 3, 4, 5].map((k) => <Skeleton key={k} height={92} radius={18} />)}</div>
+                  <Skeleton height={232} radius={16} />
+                  <div className="jr-stats">{[0, 1, 2, 3, 4, 5].map((k) => <Skeleton key={k} height={92} radius={16} />)}</div>
                   <SkeletonList rows={5} height={56} radius={16} />
                 </div>
               }

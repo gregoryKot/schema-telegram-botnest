@@ -52,7 +52,7 @@ export function PracticeDoneFooter({
           fontSize: 13,
           fontWeight: 700,
           padding: '9px 18px',
-          borderRadius: 999,
+          borderRadius: 'var(--r-12)',
           cursor: 'pointer',
           fontFamily: 'inherit',
         }}
