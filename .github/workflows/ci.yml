@@ -50,17 +50,27 @@ jobs:
       JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npx prisma generate
+        if: steps.scope.outputs.docs_only != 'true'
       # Кэш ts-jest между прогонами CI (CI-гигиена 4.2): ключ по
       # package-lock.json — если зависимости (в т.ч. ts-jest/typescript)
       # не менялись, кэш переиспользуется; иначе restore-keys подхватывают
       # ближайший старый кэш вместо холодного старта.
       - name: Кэш ts-jest
+        if: steps.scope.outputs.docs_only != 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.JEST_CACHE_DIR }}
@@ -68,10 +78,12 @@ jobs:
           restore-keys: |
             jest-ts-cache-${{ runner.os }}-
       - run: npx tsc --noEmit -p tsconfig.build.json
+        if: steps.scope.outputs.docs_only != 'true'
       # Спеки бэкапа гоняют scripts/s3-api.sh с curl раннера: его версия — в
       # лог. curl 8.14+ с `--aws-sigv4` подписывал `%2B` курсора как `%20`
       # (#1046), поэтому подпись считает deploy/s3-sign.cjs, а не curl.
       - name: версия curl (скрипты бэкапа)
+        if: steps.scope.outputs.docs_only != 'true'
         run: curl --version
       # coverage-храповик (TEST_COVERAGE_PLAN.md, этап 4, п.14): сам гоняет
       # jest --coverage, отдельный `npx jest` не нужен. Падает при просадке
@@ -79,11 +91,13 @@ jobs:
       # src/auth и src/utils). Читает JEST_CACHE_DIR из env и прокидывает
       # его spawn'нутому jest как --cacheDirectory.
       - run: node scripts/check-coverage-ratchet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
         timeout-minutes: 6
       # Пофайловый храповик нулей: файл src/** с 0% строк — красный, если не
       # записан с причиной в scripts/zero-coverage-baseline.json. Судит
       # coverage/coverage-summary.json из шага выше, jest сам не гоняет.
       - run: node scripts/check-zero-coverage.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20), второй
       # полный прогон после coverage-храповика выше. Раннер всегда UTC,
       # поэтому баги «время считается от зоны сервера» в CI невидимы:
@@ -101,6 +115,7 @@ jobs:
       # сторож не оборачивает: просадку покрытия при зелёных тестах он прочёл
       # бы как «код выхода выставил тест». Тест — nightly-jest-steps.spec.ts.
       - name: jest под не-UTC таймзоной — ловит зависимость от зоны сервера
+        if: steps.scope.outputs.docs_only != 'true'
         timeout-minutes: 7
         run: node scripts/jest-exit-guard.mjs --budget 300 --exit-grace 60 -- npx jest
         env:
@@ -115,6 +130,7 @@ jobs:
       # Через сторожа, как шаг выше: держатель, переживший app.close(), роняет шаг с причиной, а не
       # остаётся строкой «Jest did not exit» в зелёном логе (--cacheDirectory дописывает сторож).
       - name: e2e на фейковой Prisma
+        if: steps.scope.outputs.docs_only != 'true'
         timeout-minutes: 5
         run: >-
           node scripts/jest-exit-guard.mjs --budget 180 --exit-grace 60 --
@@ -140,7 +156,8 @@ jobs:
       # У КАЖДОГО package-lock.json свой шаг (аудит 2026-10: до этого гейт
       # смотрел только корень, фронт проверял лишь аудитор глазами). Сверка
       # «lock-файл ↔ шаг» — src/test-support/gates/lockfile-audit.spec.ts.
-      # npm audit читает lock-файл, node_modules пакету не нужны.
+      # npm audit читает lock-файл, node_modules пакету не нужны. Шаги audit не пропускаются
+      # на документном диффе: гейт lockfile-audit не засчитывает аудит с `if:`.
       # Через обёртку scripts/npm-audit.mjs (регресс #814: голый audit висел на
       # реестре до таймаута шага): попытка ≤45 с, до трёх попыток с паузой
       # 10 с — худший случай 2 мин 41 с (с 2 с на добивание группы), отсюда timeout-minutes: 4. Уязвимость
@@ -156,31 +173,37 @@ jobs:
       # Требует npx jscpd из node_modules — не fs-only, остаётся здесь
       # (в отличие от route-collisions/legacy-name, см. джобу checks).
       - run: node scripts/check-jscpd-ratchet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик размера файлов (правило №10): файл из бейслайна только
       # уменьшается, новый файл >300 строк не проходит. Долг тает, не растёт.
       - run: node scripts/check-file-size-ratchet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик слабых тестов (TEST_IMPROVEMENT_PLAN.md, этап 3.1): expect(),
       # состоящий только из голых .toHaveBeenCalled()/.toHaveBeenCalledTimes(n)
       # без проверки аргументов, зелёный даже если хендлер шлёт мусор — новых
       # таких тестов быть не должно, исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-weak-assert-ratchet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик роботных конструкций (свип 2026-07, docs/VOICE.md): правила
       # голоса касались только статей, а «это не X, это Y», канцелярит и
       # слова-филлеры расползлись по всему user-facing тексту. Счётчик
       # пофайловый и может только падать.
       - run: node scripts/check-robot-phrases.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик мужского рода (свип 2026-08): продукт говорит на «ты», а в
       # прошедшем времени и кратких прилагательных русский род не прячет —
       # «ты сделал», «ты не обязан», «позволь себе быть сильным». Для половины
       # читателей это звучало как написанное не им. Форма «вы» защищена сама
       # (множественное число рода не имеет), «ты» — нет, и она по умолчанию.
       - run: node scripts/check-gendered-forms.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик тихих catch (три волны ужесточения тестов, 2026-08): девять
       # проды-багов имели одну форму — `.catch(() => {})` (или `=> []` / `=>
       # null`) глушит ошибку сети, а код после него ведёт себя так, будто
       # запрос удался («✓ Сохранено» на упавшем запросе, список задач молча
       # схлопывается в пустой). tsc и coverage это не ловят — только гейт.
       - run: node scripts/check-silent-catch.mjs
+        if: steps.scope.outputs.docs_only != 'true'
 
   # Лёгкие fs-only проверки (CI-гигиена 4.2): читают исходники через
   # node:fs/node:path, без единой npm-зависимости — не нуждаются в npm ci
@@ -444,13 +467,21 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           # FROM node:22-slim тянется через зеркало: Docker Hub отдавал 429 (2026-10-09).
           buildkitd-config-inline: |
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           context: .
           push: false
@@ -484,11 +515,19 @@ jobs:
       DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.scope.outputs.docs_only != 'true'
       # Образ ubuntu-26.04 несёт PostgreSQL 18, а сервис джобы и прод — 17:
       # клиент нужен мажора сервера, иначе дамп и psql проверяются не на той
       # версии, что в проде (#789: дамп новее сервера не заливается). Ставит его тот же
@@ -497,12 +536,15 @@ jobs:
       # первым в PATH: обёртка pg_wrapper иначе взяла бы 18-й. Версию сверяет
       # src/test-support/gates/runner-pin.spec.ts.
       - name: клиент Postgres 17 из PGDG — первым в PATH
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           sudo env PATH="/usr/lib/postgresql/17/bin:$PATH" sh deploy/install-pg-client.sh
           echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
       - name: migrate deploy на пустой БД — ловит битые миграции до прода
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx prisma migrate deploy
       - name: повторный migrate deploy — все миграции зарегистрированы, состояние чистое
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx prisma migrate deploy
       # Джоба проверяла только что SQL исполняется, но не что миграции дают ту
       # же БД, что объявлена в schema.prisma. Из-за этого дрейф копился
@@ -510,56 +552,67 @@ jobs:
       # на проде их просто не было, запросы шли последовательным сканом.
       # --exit-code: 0 = дифф пуст, 2 = есть расхождение → джоба падает.
       - name: schema.prisma == миграции — дрейф роняет PR, а не копится годами
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
       - run: npx prisma generate
+        if: steps.scope.outputs.docs_only != 'true'
       # E2E read-after-write smoke на реальном Postgres (best-practice 2026-07):
       # сохранил карточку → читается обратно + попала в денормализованный
       # профиль. Только этот спек (app.e2e-spec поднимает весь AppModule и
       # требует полного env — здесь не нужен). --runInBand: одна БД, без гонок.
       - name: e2e read-after-write smoke
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/read-after-write.e2e-spec.ts
       # Leader-election кронов: вся защита от дублей на втором инстансе держится
       # на атомарности одного запроса, а атомарность — свойство Postgres, а не
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
       # Заглушка браузерного смока (e2e-browser/support/stubFixtures.ts) против
       # настоящих ответов: статус и тело каждой ручки (ci-alarm #903). Только тут:
       # ручки читают сырым SQL, фейковая Prisma его не знает.
       - name: e2e заглушка браузерного смока ↔ сервер на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/browser-stub-contract.e2e-spec.ts
       # Полуночный обход, оборванный рестартом (аудит 2026-10): хвост доделывает
       # старт нового процесса, дублей нет — день человека забирает один UPDATE с
       # условием, а это свойство Postgres, не нашего кода.
       - name: e2e доделка полуночного обхода после рестарта на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/midnight-planner-resume.e2e-spec.ts
       # Захват строки очереди уведомлений (аудит 2026-10, backend#15): два прогона
       # очереди по одной базе, каждое уведомление уходит один раз — строку забирает
       # один UPDATE с условием, а это свойство Postgres, не нашего кода.
       - name: e2e захват строки очереди уведомлений на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/notification-claim.e2e-spec.ts
       # Сообщение дня и вопрос о плане (хвост волны 9): «такое уже стоит» и
       # «план не отмечен» проверяются под advisory-локом человека — два обхода
       # разом ставят одно, отметка плана снимает вопрос обхода. Свойство Postgres.
       - name: e2e сообщение дня и отметка плана под локом на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/notify-stand-in-race.e2e-spec.ts
       # Ротация ENCRYPTION_KEY (аудит 2026-10-11, r2-0#0..#2; правило №18): по
       # строке на КАЖДУЮ запись списка ротации → rotateAll → читается новым ключом,
       # не читается старым; плюс отдельный процесс точки входа и его коды выхода.
       # Путь реагирования на утечку ключа обязан работать ДО того, как понадобится.
       - name: e2e ротация ENCRYPTION_KEY на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/key-rotation.e2e-spec.ts
       # Провал расшифровки (аудит 2026-10, D-8): Json-колонка с шифротекстом чужого
       # ключа читается как [] с маркером, а не base64-строкой — как драйвер Prisma 7
       # отдаёт такую колонку, знает только живая база; проба encryptionReadable
       # на тех же строках красная под чужим ключом и зелёная под своим.
       - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
       # Аренда прогона бэкапа (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql 17 ставит
       # шаг «клиент Postgres 17 из PGDG» в начале джобы.
       - name: e2e аренда бэкапа (psql) на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           npx jest --config ./test/jest-e2e.json --runInBand test/backup-lease.e2e-spec.ts
       # Инцидент 2026-09-13: запись на консультацию падала 500 на каждой попытке —
@@ -567,22 +620,26 @@ jobs:
       # Двенадцать юнит-спеков мокали $queryRaw и были зелёными. Свойство
       # драйвера доказывается только тут: сам лок + весь POST /api/booking/book.
       - name: e2e бронирование на реальном Postgres (advisory-lock + HTTP)
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-slot-lock.e2e-spec.ts
       # Аудит 2026-10-11 (r2-1#2): слоты последнего дня окна раздавались свободными
       # при занятом времени — брони читались по сырому toDate. Фильтр по startsAt
       # делает СУБД, поэтому проверка сквозь HTTP — только на живой базе.
       - name: e2e слоты последнего дня окна на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/slot-last-day.e2e-spec.ts
       # PR B (.ics для клиента): POST /api/booking/book той же advisory-lock
       # дорогой, что и booking-slot-lock.e2e-spec.ts выше — фейковая Prisma
       # не эмулирует $executeRaw, поэтому тоже только тут.
       - name: e2e .ics для клиента на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-ics.e2e-spec.ts
       # Аудит 2026-10-11, security#15: экран после оплаты не вправе говорить
       # «подтверждена» по SuccessURL без вебхука. Шов целиком: book →
       # /api/payment/success → by-token (HELD, paid=false) → вебхук → CONFIRMED.
       # book берёт advisory-lock через $executeRaw — фейковая Prisma не годится.
       - name: e2e экран после оплаты на реальном Postgres (success без вебхука)
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-paid-page.e2e-spec.ts
       # Аудит 2026-10-11: бронь хранит сумму счёта (Booking.amount), а платная
       # сессия не бывает за 0. Шов целиком: book пишет колонку → админ меняет цену
@@ -590,6 +647,7 @@ jobs:
       # мусор в BookingSetting не становится ценой. book берёт advisory-lock через
       # $executeRaw — фейковая Prisma не годится.
       - name: e2e сумма счёта брони и цена платной сессии на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-amount.e2e-spec.ts
       # L3 аудита 2026-07-20 (решение владельца 2026-10-08): крон стирает имя,
       # контакт и текст запроса у броней старше 12 месяцев. Запись plaintext ''
@@ -598,10 +656,12 @@ jobs:
       # плюс граница окна считается СУБД, а колонка anonymizedAt приезжает новой
       # миграцией (booking_pii_retention).
       - name: e2e обезличивание броней по сроку на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-pii-retention.e2e-spec.ts
       # /reissue_icloud: окно срока хранения, признаки события (OR) и CAS uid
       # считает СУБД — юнит-спек видит их только на where-матчере в памяти.
       - name: e2e перевыпуск старых событий iCloud на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-legacy-uid-reissue.e2e-spec.ts
       # Глобальный аудит 2026-10-11: заявка с простой формы знакомства
       # (POST /api/booking) раньше жила только в DM и письме. Строка пишется в БД
@@ -609,28 +669,33 @@ jobs:
       # недоставленного и ретенция ('' в шифрованной колонке) доказываются только
       # настоящей базой и настоящим хостом визитки (правила №14, №18, №19).
       - name: e2e заявка с формы знакомства сохраняется до уведомлений на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/intro-lead.e2e-spec.ts
       # security#19 (аудит 2026-10): POST /api/booking/book с returning=true
       # отвечает клиенту и не-клиенту одинаково — ClientMeeting ищется по clientKey
       # в настоящей БД, поэтому на шве, а не на моке.
       - name: e2e запись не выдаёт, клиент ли контакт, на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-returning-oracle.e2e-spec.ts
       # Аудит 2026-10: анонимная запись (INTRO_15, SESSION_50 вне рублей) отдавала
       # постоянную комнату клиента, найденную по контакту, — в ответе book, по
       # токену и в .ics. ClientMeeting ищется по clientKey в настоящей БД, бронь
       # берёт advisory-lock через $executeRaw — на шве, а не на моке (правило №18).
       - name: e2e анонимная запись не отдаёт ссылку на встречу на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-meeting-link-leak.e2e-spec.ts
       # Аудит 2026-10: ключ комнаты клиента (ClientMeeting.clientKey) склеивал
       # разные ящики (`ivan-petrov@` ≡ `ivanpetrov@`) и был sha256 без секрета.
       # Шов — нормализация ↔ поиск строки в настоящей БД, перевод старых строк
       # меняет первичный ключ: уникальность проверяет только Postgres.
       - name: e2e ключ комнаты клиента не склеивает разные ящики на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/booking-client-key.e2e-spec.ts
       # Аудит 2026-10-11: прод без ROBOKASSA_* не подтверждает платную бронь и
       # донат без денег (503 до записи в БД) + проба «приходят ли вебхуки» на
       # настоящих запросах. «В БД ничего не появилось» доказывает только живая база.
       - name: e2e прод без Robokassa отказывает платным путям на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/payment-unconfigured-prod.e2e-spec.ts
       # Правило №18: каждый файл с сырым SQL исполняется на живом Postgres —
       # весь отчёт /stats (20 сервисов), /health, зонд аварии БД, VACUUM после
@@ -638,6 +703,7 @@ jobs:
       # check-raw-sql-live.mjs (джоба checks). admin-stats — ядро /stats на
       # выборке больше 5000 пар «человек–день» (аудит 2026-10).
       - name: e2e сырой SQL на реальном Postgres (/stats и инфраструктура)
+        if: steps.scope.outputs.docs_only != 'true'
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
@@ -646,10 +712,12 @@ jobs:
       # сессии, база отвечает 57014, ожидание замка входит в лимит, SET LOCAL
       # исключения не протекает в пул. Свойства драйвера, мок их не видит.
       - name: e2e таймаут запроса к БД на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/statement-timeout.e2e-spec.ts
       # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
       # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
       - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx jest --config ./test/jest-e2e.json --runInBand test/throttle-storage.e2e-spec.ts
       # Ownership-спеки ВТОРЫМ прогоном на реальном Postgres (TEST_TRUST_PLAN.md,
       # п.1): в джобе `backend` те же файлы гоняются на самописном fake-prisma
@@ -662,6 +730,7 @@ jobs:
       # настоящий PrismaService (build-test-app.ts) вместо фейка.
       # --runInBand: одна БД, спеки чистят свои userId сами (cleanup-fixtures.ts).
       - name: e2e ownership smoke на реальном Postgres (фейк vs реальность)
+        if: steps.scope.outputs.docs_only != 'true'
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
@@ -704,12 +773,14 @@ jobs:
       # поднять приложение. Мок не проверяет, что Prisma оставляет огрызок и что
       # DELETE его запись снимает (правило №18).
       - name: e2e откат образа поверх упавшей миграции на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           npx jest --config ./test/jest-e2e.json --runInBand test/migrate-stuck-record.e2e-spec.ts
       # Восстановление из бэкапа: настоящая цепочка backup-upload.sh →
       # (поддельный) S3 → backup-fetch-latest.sh → restore-backup.sh на живом
       # Postgres: восстановленная база обязана совпасть с источником.
       - name: e2e восстановление из бэкапа (S3) на реальном Postgres
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           npx jest --config ./test/jest-e2e.json --runInBand test/restore-backup.e2e-spec.ts
       # Платёжный контур (TEST_TRUST_PLAN.md, п.1): идемпотентность вебхука —
@@ -722,6 +793,7 @@ jobs:
       # поэтому сам спек идемпотентен и локально гоняется на одной БД подряд
       # без ручной чистки между прогонами.
       - name: e2e payment webhook smoke на реальном Postgres (идемпотентность, хост визитки)
+        if: steps.scope.outputs.docs_only != 'true'
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/payment-webhooks.e2e-spec.ts
@@ -767,31 +839,45 @@ jobs:
       DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npx prisma migrate deploy
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npx prisma generate
+        if: steps.scope.outputs.docs_only != 'true'
       # Синтетика «горизонт роста» (не ×10 от сегодняшних десятков юзеров: на
       # двух тысячах строк Postgres законно выбирает Seq Scan, и гейт краснел бы
       # на ПРАВИЛЬНЫХ планах). Данные детерминированы — иначе планка по
       # страницам шумела бы от прогона к прогону.
       - name: синтетика горизонта роста + ANALYZE
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/seed.ts
       - name: EXPLAIN (ANALYZE, BUFFERS) по горячим путям
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/run-plans.ts
       - run: node scripts/check-query-plans.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # После замера: шаги удаляют данные. Ночная чистка событий и удаление
       # самого тяжёлого аккаунта (с VACUUM) на объёме роста под прод-порогом
       # statement_timeout — запрос сверх порога роняет джобу.
       - name: долгие пути под прод-порогом statement_timeout
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/long-paths.ts
       # Отчёт с планами — артефактом: по красной джобе должно быть видно, какой
       # именно запрос и какой план, не переспрашивая CI.
       - name: отчёт замера артефактом
-        if: always()
+        if: always() && steps.scope.outputs.docs_only != 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: query-plans
@@ -803,19 +889,29 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
       # Типы тестов (webapp/tsconfig.test.json): сборка их не видит, vitest типы не проверяет —
       # без шага фикстура, отставшая от пропсов компонента, остаётся зелёной.
       - run: npm run typecheck:test --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
       # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
       # requireBotUsername.ts); значение то же, что в Dockerfile — их равенство
       # держит bot-username-sources.spec.ts.
       - run: npm run build --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
       # Байт-храповик размера бандлов (аудит 2026-07, пункт №5): сборка выше
@@ -824,79 +920,95 @@ jobs:
       # после сборки: гейту нужен готовый webapp/dist, иначе он падает с
       # понятной подсказкой «сначала собери».
       - run: node scripts/check-bundle-size-ratchet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Порядок <link rel="stylesheet"> в собранном index.html (ревью волны 0, 2026-11-09): каскад
       # правил с равной специфичностью задаёт разбиение на чанки, а не исходник; переезд CSS в другой
       # чанк находили только снимки стенда. Тоже читает свежий webapp/dist — сразу после сборки.
       - run: node scripts/check-css-link-order.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по
       # образцу scripts/check-coverage-ratchet.mjs бэкенда): сам гоняет
       # `vitest run --coverage` и падает при просадке покрытия ниже
       # scripts/frontend-coverage-baseline.json. Раньше coverage тут вообще
       # не гейтился — джоба просто гоняла `npm test`.
       - run: node scripts/check-frontend-coverage-ratchet.mjs --package webapp
+        if: steps.scope.outputs.docs_only != 'true'
       # ты/вы-храповик (правило CLAUDE.md): новые жёсткие «ты»-строки без tr()
       # не проходят; исторический долг зафиксирован в бейслайне.
       - run: node scripts/check-address-form.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Согласование «вы» (свип голоса 2026-07): храповик выше ищет остаточные
       # «ты»-местоимения и слеп к паре «вы» + единственное число — «вы дал»,
       # «вы благодарен», «вы вырос». Сплошная вычитка нашла 11 таких мест;
       # проверка жёсткая, без бейслайна — новых быть не должно.
       - run: node scripts/check-address-agreement.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Обращение вне механики форм (свип 2026-08): храповик выше ловит только
       # захардкоженные «ты»-МЕСТОИМЕНИЯ во фронтендах — этот заодно ловит
       # императивы («Нажми») без местоимения рядом, зеркальные «вы»-формы и
       # бэкенд (`src/`, письма/уведомления). Пофайловый бейслайн.
       - run: node scripts/check-second-person.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик подпороговых fontSize (дизайн-аудит 2026-08, В1): inline
       # `fontSize: N` ниже 11px — нижний читаемый порог. fs-only, тот же
       # принцип, что у check-second-person.mjs выше.
       - run: node scripts/check-tiny-fonts.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Контракт дизайн-токенов (дизайн-аудит 2026-08, В11): оба index.css
       # обязаны импортировать shared/src/theme/tokens.css (акцент+шрифты) и
       # объявлять одни и те же имена для токенов, чьё значение намеренно
       # локально (статусные цвета, поверхности).
       - run: node scripts/check-token-contract.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик значений вне шкалы (дизайн-аудит 2026-08, В11, волна
       # «порядок»): без гейта шкала --r-*/--space-* в tokens.css — просто
       # комментарий, который следующий PR не обязан соблюдать. fs-only,
       # тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-scale-drift.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик размытия (расследование скорости 2026-08-26): backdrop-filter
       # и filter: blur считаются программно в установленном на телефон PWA —
       # ~1.4с на кадр, приложение вязнет. fs-only, тот же принцип, что у
       # check-tiny-fonts.mjs выше.
       - run: node scripts/check-render-poison.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик цветовых литералов (PR #516: ~40 хардкод-цветов переведены
       # на токены/color-mix, но без механизма следующий PR написал бы
       # rgba(239,68,68,0.08) заново). fs-only, тот же принцип, что у
       # check-tiny-fonts.mjs выше.
       - run: node scripts/check-color-drift.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Hex-суффикс альфы к var() (PR #520: `var(--c-rose)18` невалиден «на
       # этапе вычисления», браузер берёт НАЧАЛЬНОЕ значение свойства — без
       # ошибки в консоли). Абсолютный, без бейслайна: #520 вычистил класс
       # полностью, замораживать нечему. Смотрит и в .css.
       - run: node scripts/check-var-alpha-suffix.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Под-лист с z-index ниже родителя (инцидент 2026-11-05: «Дополнить» на
       # экране паттерна открывал опросник ПОД ним). Листы одного уровня
       # стыкуются порядком в DOM; число — только чтобы встать выше чужого
       # позднего сиблинга. Абсолютный, без бейслайна.
       - run: node scripts/check-overlay-stack.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Спрятанное через opacity: 0 и раскрываемое только по :hover (находка
       # аудита 2026-10: кнопка удаления доказательства на телефоне). Нужны
       # два пути без hover: для пальца @media (hover: none), для клавиатуры
       # :focus-within; класс состояния закрывает оба. Абсолютный, без бейслайна.
       - run: node scripts/check-hover-only-reveal.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Храповик мелких тап-целей (дизайн-аудит 2026-08, К3): правило «цель
       # ≥ 44×44» из CLAUDE.md чинили в #397 без гейта, и класс вернулся.
       # Считает квадратные интерактивные элементы с inline width И height
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Инлайновый набор, точно совпадающий с классом-утилитой
       # (shared/src/theme/utilities.css): утилиты завели, гейта не оставили, и
       # новый код снова писал style={{ display: 'flex', gap: 8 }}. Пофайловый
       # храповик, fs-only.
       - run: node scripts/check-utility-inline.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Контрол без имени из одного глифа (аудит 2026-10, «Доступность»):
       # `<button>←</button>`, пустой `{...pressable(f)}`-тик, кнопка с одной
       # иконкой — скринридер читает «стрелка влево» или просто «кнопка».
@@ -905,6 +1017,7 @@ jobs:
       # typescript из webapp/node_modules. Абсолютный, без бейслайна;
       # webapp/src и shared/src.
       - run: node scripts/check-glyph-controls.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Оверлей на весь экран обязан жить в истории браузера (находка аудита
       # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
       # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает
@@ -912,12 +1025,14 @@ jobs:
       # причиной. Классификация, флага --update нет; смотрит webapp/src и
       # shared/src.
       - run: node scripts/check-history-sheet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
       # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
       # ym-disable-keys. Текстовое поле на странице из personalRoutes без метки
       # красит CI. Абсолютный, без бейслайна. Секреты в DOM (ссылка встречи,
       # токен в href) держит webvisorSecrets.test.tsx в vitest этой же джобы.
       - run: node scripts/check-webvisor-fields.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Код webapp исполняется в браузере пользователя: high/critical в его
       # prod-зависимостях блокирует мерж (см. шаг audit в джобе backend).
       # Последним, чтобы красный audit не прятал сигнал тестов.
@@ -932,13 +1047,22 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: webapp/package-lock.json
       - run: npm ci --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
       - name: vitest под не-UTC таймзоной
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm test --prefix webapp
         env:
           TZ: Australia/Sydney
@@ -955,16 +1079,26 @@ jobs:
     timeout-minutes: 13
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: shared/package-lock.json
       - run: npm ci --prefix shared
+        if: steps.scope.outputs.docs_only != 'true'
       # Типы тестов тоже: vitest их не проверяет, и ошибки копились незаметно.
       - run: npx tsc --noEmit -p .
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: shared
       - run: node scripts/check-frontend-coverage-ratchet.mjs --package shared
+        if: steps.scope.outputs.docs_only != 'true'
       # Тот же пакет под НЕ-UTC зоной, по образцу второго прогона jest в
       # джобе backend (инцидент 2026-07-20). Инцидент 2026-09-17 показал, что
       # у фронтендов и shared такого прогона не было: календарный день
@@ -975,6 +1109,7 @@ jobs:
       # Sydney — та же зона, что у бэкенда: ненулевое смещение и DST в
       # противофазе к северному полушарию.
       - name: vitest под не-UTC таймзоной — ловит зависимость от зоны машины
+        if: steps.scope.outputs.docs_only != 'true'
         run: npm test --prefix shared
         env:
           TZ: Australia/Sydney
@@ -991,7 +1126,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
@@ -1001,11 +1143,16 @@ jobs:
             shared/package-lock.json
             game/package-lock.json
       - run: npm ci
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npx prisma generate
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npm ci --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npm ci --prefix game
+        if: steps.scope.outputs.docs_only != 'true'
       # vitest игры (node, модули без Phaser и DOM): зависимости игры здесь уже стоят — падает до долгого линта.
       - run: npm test --prefix game
+        if: steps.scope.outputs.docs_only != 'true'
       # shared тоже линтуется храповиком, а зависимости ему не ставили —
       # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
       # без node_modules разрешают TS иначе, чем локально. Итог: файл
@@ -1014,7 +1161,9 @@ jobs:
       # одного гейта хуже, чем строгий гейт: локальной проверке перестают
       # верить.
       - run: npm ci --prefix shared
+        if: steps.scope.outputs.docs_only != 'true'
       - run: node scripts/check-eslint-ratchet.mjs
+        if: steps.scope.outputs.docs_only != 'true'
 
   # Браузерный смок прод-сборки в PR (2026-11-05): три поломки недели (#878,
   # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
@@ -1026,7 +1175,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
@@ -1034,33 +1190,42 @@ jobs:
             package-lock.json
             webapp/package-lock.json
       - run: npm ci
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npm ci --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
       # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
       # requireBotUsername.ts); значение то же, что в Dockerfile.
       - run: npm run build --prefix webapp
+        if: steps.scope.outputs.docs_only != 'true'
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
       # Игра — проект game в playwright.config.ts (e2e-browser/game-smoke.spec.ts).
       - run: npm ci --prefix game
+        if: steps.scope.outputs.docs_only != 'true'
       - run: npm run build --prefix game
+        if: steps.scope.outputs.docs_only != 'true'
       - name: версия Playwright для ключа кэша браузера
+        if: steps.scope.outputs.docs_only != 'true'
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
       # С кэшем скачивание браузеров пропускается, системные зависимости
       # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
       - name: браузеры Playwright (потолок времени и одна повторная попытка)
+        if: steps.scope.outputs.docs_only != 'true'
         timeout-minutes: 7
         run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
+        if: steps.scope.outputs.docs_only != 'true'
         run: npx playwright test
       # Вид на компьютере в каждом PR: e2e-browser/desktop-layout.spec.ts снимает
       # ключевые страницы на 1280 (docs/open/frontend-ux.md, «Снимок 1280»).
       - name: снимки 1280 артефактом
-        if: always()
+        if: always() && steps.scope.outputs.docs_only != 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: desktop-1280
@@ -1070,7 +1235,7 @@ jobs:
       # Вид на айфоне в каждом PR: e2e-browser/phone-screens.spec.ts (WebKit,
       # iPhone 13) и кадр Telegram из telegram-dark.spec.ts.
       - name: снимки телефона артефактом
-        if: always()
+        if: always() && steps.scope.outputs.docs_only != 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phone-screens
@@ -1078,7 +1243,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
       - name: трейс упавшего смока артефактом
-        if: failure()
+        if: steps.scope.outputs.docs_only != 'true' && (failure())
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-trace
@@ -1102,7 +1267,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
+      - id: scope
+        name: дифф только из документов?
+        run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
@@ -1110,62 +1280,67 @@ jobs:
       # разбирает precheck (scripts/agent/precheck-lib.mjs, спек
       # agent-precheck.spec.ts), а селектор сам пишет в $GITHUB_OUTPUT.
       - run: git fetch origin main --quiet
+        if: steps.scope.outputs.docs_only != 'true'
       - name: изменённые файлы волны А (вход, шифрование)
+        if: steps.scope.outputs.docs_only != 'true'
         id: auth
         run: node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main --github-output=files
       - name: изменённые файлы волны Б (деньги, бронирования)
+        if: steps.scope.outputs.docs_only != 'true'
         id: payments
         run: node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main --github-output=files
       # Очередь оценок и кризисная детекция — shared/, тесты vitest (command-раннер).
       - name: изменённые файлы очереди оценок
+        if: steps.scope.outputs.docs_only != 'true'
         id: outbox
         run: node scripts/mutation-changed-files.mjs --config=stryker.outbox.config.json --base=origin/main --github-output=files
       - name: изменённые файлы кризисной детекции
+        if: steps.scope.outputs.docs_only != 'true'
         id: crisis
         run: node scripts/mutation-changed-files.mjs --config=stryker.crisis.config.json --base=origin/main --github-output=files
       - name: нечего мутировать
-        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == '' && steps.outbox.outputs.files == '' && steps.crisis.outputs.files == ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.auth.outputs.files == '' && steps.payments.outputs.files == '' && steps.outbox.outputs.files == '' && steps.crisis.outputs.files == '')
         run: echo "PR не трогает файлы из mutate в stryker.golden-*, outbox, crisis — мутации не нужны."
-      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != '' || steps.outbox.outputs.files != '' || steps.crisis.outputs.files != ''
+      - if: steps.scope.outputs.docs_only != 'true' && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '' || steps.outbox.outputs.files != '' || steps.crisis.outputs.files != '')
         run: npm ci
-      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+      - if: steps.scope.outputs.docs_only != 'true' && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
         run: npx prisma generate
-      - if: steps.outbox.outputs.files != '' || steps.crisis.outputs.files != ''
+      - if: steps.scope.outputs.docs_only != 'true' && (steps.outbox.outputs.files != '' || steps.crisis.outputs.files != '')
         run: npm ci --prefix shared
       - name: Stryker — волна А (${{ steps.auth.outputs.files }})
-        if: steps.auth.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.auth.outputs.files != '')
         env:
           FILES: ${{ steps.auth.outputs.files }}
         run: npx stryker run stryker.golden-auth.config.json --mutate "$FILES"
       - name: храповик мутаций — волна А, только файлы отчёта
-        if: steps.auth.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.auth.outputs.files != '')
         run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
       - name: Stryker — волна Б (${{ steps.payments.outputs.files }})
-        if: steps.payments.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.payments.outputs.files != '')
         env:
           FILES: ${{ steps.payments.outputs.files }}
         run: npx stryker run stryker.golden-payments.config.json --mutate "$FILES"
       - name: храповик мутаций — волна Б, только файлы отчёта
-        if: steps.payments.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.payments.outputs.files != '')
         run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
       - name: Stryker — очередь оценок (${{ steps.outbox.outputs.files }})
-        if: steps.outbox.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.outbox.outputs.files != '')
         env:
           FILES: ${{ steps.outbox.outputs.files }}
         run: npx stryker run stryker.outbox.config.json --mutate "$FILES"
       - name: храповик мутаций — очередь оценок, только файлы отчёта
-        if: steps.outbox.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.outbox.outputs.files != '')
         run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/outbox.json --baseline=scripts/mutation-outbox-baseline.json
       - name: Stryker — кризисная детекция (${{ steps.crisis.outputs.files }})
-        if: steps.crisis.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.crisis.outputs.files != '')
         env:
           FILES: ${{ steps.crisis.outputs.files }}
         run: npx stryker run stryker.crisis.config.json --mutate "$FILES"
       - name: храповик мутаций — кризисная детекция, только файлы отчёта
-        if: steps.crisis.outputs.files != ''
+        if: steps.scope.outputs.docs_only != 'true' && (steps.crisis.outputs.files != '')
         run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/crisis.json --baseline=scripts/mutation-crisis-baseline.json
       - name: отчёт артефактом
-        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '' || steps.outbox.outputs.files != '' || steps.crisis.outputs.files != '')
+        if: steps.scope.outputs.docs_only != 'true' && (always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '' || steps.outbox.outputs.files != '' || steps.crisis.outputs.files != ''))
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mutation-report-changed
