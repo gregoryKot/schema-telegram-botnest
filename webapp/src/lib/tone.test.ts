@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../../shared/src/schemaTherapy/schemaTherapyData';
 import { NEED_ORDER } from '../../../shared/src/needs/types';
-import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, clientHue, hueStyle, indexLevel } from './tone';
+import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, clientHue, hueStyle, indexLevel, skyChromaVar } from './tone';
 
 describe('tone: реестры оттенков сверены с данными', () => {
   it('у каждого домена схем есть оттенок, и все пять разные', () => {
@@ -37,5 +37,18 @@ describe('tone: clientHue / hueStyle', () => {
   it('hueStyle кладёт --h, без hue — нейтральный оттенок', () => {
     expect(hueStyle(28)).toEqual({ '--h': 28 });
     expect(hueStyle(undefined)).toEqual({ '--h': 70 });
+  });
+});
+
+describe('tone: приглушённое небо у аватара', () => {
+  it('голубой оттенок получает множитель насыщенности, остальные — нет', () => {
+    expect(skyChromaVar(240)).toBe('var(--sky-k)');
+    expect(skyChromaVar(215)).toBe('var(--sky-k)');
+    expect(skyChromaVar(265)).toBe('var(--sky-k)');
+    for (const h of [28, 70, 135, 145, 190, 310]) expect(skyChromaVar(h)).toBeUndefined();
+  });
+  it('hueStyle(240) кладёт --ck, hueStyle(28) — нет', () => {
+    expect(hueStyle(240)).toEqual({ '--h': 240, '--ck': 'var(--sky-k)' });
+    expect(hueStyle(28)).not.toHaveProperty('--ck');
   });
 });

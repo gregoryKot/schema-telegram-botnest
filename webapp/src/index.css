@@ -142,6 +142,9 @@
   --panel-2:         #e2dbcc;
   --panel-3:         #d9d0bf;
   --panel-line:      #d3c9b8;
+  /* Пыльное небо: множитель насыщенности бумаги оттенка 240 (сцены, лист-опора, аватар) — тот же оттенок, глуше. */
+  --sky-k:           0.55;
+  --ck:              1; /* множитель насыщенности аватара; hueStyle ставит var(--sky-k) на голубом */
   --on-panel:        #1f1b17;
   --on-panel-sub:    #4a433b;
   --on-panel-faint:  #5c544c;
@@ -258,6 +261,8 @@
 }
 
 html[data-theme="dark"] {
+  --sky-k:         0.55;
+  --panel-line:    rgba(255,255,255,0.12);
   --bg:            #14141a;
   --bg-rail:       #101015;
   --bg-elev:       #1d1d24;
@@ -508,7 +513,7 @@ a { color: inherit; text-decoration: none; }
 .sb-client-av {
   width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
   /* Кружок бумаги тона клиента с тенью-слоем — как .ds-avatar--paper в шапке карточки, списке и на «Сегодня» (r1). */
-  background: oklch(0.915 0.03 var(--h)); color: var(--text); box-shadow: 1px 2px 0 oklch(var(--pa-layer-lc) var(--h));
+  background: oklch(0.915 0.03 var(--h)); color: var(--text); box-shadow: 0 0 0 1px var(--panel-line);
   display: grid; place-items: center; font-size: 10px; font-weight: 700;
 }
 .sb-rail-item > .sb-client-av { width: 30px; height: 30px; font-size: 11px; }
@@ -563,11 +568,11 @@ a { color: inherit; text-decoration: none; }
   border: 0; color: var(--text);
   font-size: 13px; font-weight: 600; font-family: inherit;
   text-align: left; cursor: pointer;
-  box-shadow: 3px 3px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
   transition: box-shadow .1s;
 }
 /* Тихая кнопка: единственная залитая кнопка экрана «Сегодня» — в главной плитке (HomeTiles). */
-.sb-today-cta:hover { box-shadow: 4px 4px 0 oklch(0.82 0.05 var(--h)); }
+.sb-today-cta:hover { box-shadow: 0 0 0 1px var(--accent); }
 
 .sb-account {
   display: flex; align-items: center; gap: var(--space-10);
@@ -670,7 +675,7 @@ a { color: inherit; text-decoration: none; }
   position: relative; display: inline-flex; align-items: center; gap: 8px;
   height: 36px; padding: 0 16px 0 12px; border: none; border-radius: 18px; cursor: pointer;
   background: oklch(0.915 0.03 var(--h)); color: var(--text);
-  box-shadow: 3px 3px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
   font: 600 14px var(--sans); white-space: nowrap; flex-shrink: 0;
   transition: background .12s;
 }
@@ -684,11 +689,7 @@ a { color: inherit; text-decoration: none; }
 .topbar-sos::after, .search-pill::after { content: ''; position: absolute; inset: -4px 0; }
 .search-pill::after { inset: -5px -1px; }
 /* Лупа → общий поиск в шапке экрана (FindButton): только там, где строки .topbar нет (телефон). */
-.find-btn {
-  display: none; align-items: center; justify-content: center; flex: none;
-  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
-  background: var(--paper-sunk); color: var(--text); cursor: pointer;
-}
+.ds-btn.find-btn { display: none; flex: none; }
 .find-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Плашка «нет сети» (OfflineBanner) — полоса соломы со знаком Cup («подождём»): смысл текста —
    «всё сохранится», поэтому без красного. На компьютере — под верхней строкой (третья строка
@@ -847,8 +848,8 @@ a { color: inherit; text-decoration: none; }
 .cookie-title { font-family: var(--serif); font-size: 18px; line-height: 1.2; color: var(--text); }
 .cookie-text { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
 .cookie-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
-/* «Понятно» — 44 по высоте и на компьютере (на планшете это касание): --sm там 40 (ревью g1). */
-.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; height: 44px; border-radius: 22px; }
+/* «Понятно» — обычный ds-btn: 44 по высоте и на компьютере (на планшете это касание). */
+.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; }
 .cookie-banner--compact .ds-btn.cookie-btn { align-self: center; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cookie-banner-wrap { right: auto; width: 440px; padding-left: 24px; }
@@ -975,7 +976,7 @@ a { color: inherit; text-decoration: none; }
     flex: 1; overflow: visible;
   }
   .topbar { display: none; }
-  .find-btn { display: inline-flex; }
+  .ds-btn.find-btn { display: inline-flex; }
   .offline-banner { margin: 8px 16px 0; }
   .canvas {
     overflow: visible; display: block;
