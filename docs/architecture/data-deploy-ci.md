@@ -67,6 +67,8 @@
 
 `.github/workflows/ci.yml`: триггеры `push` на main, `pull_request`, `workflow_dispatch`. Токен только на чтение. PR-прогоны отменяются при новом пуше, прогоны main не отменяются. Рядом лежат `CODEOWNERS`, `dependabot.yml`, `pull_request_template.md` и `rulesets/main.json` — копия ruleset `main` (только через PR, все джобы `ci.yml` обязательны, `strict`; живой — в настройках GitHub, правка — владелец, порядок — правило №13), сверка с джобами — `src/test-support/gates/main-ruleset.spec.ts`.
 
+**Документный дифф.** PR, где все файлы — `docs/**` (кроме `docs/design/` и `docs/RUNBOOKS.md`, их читают тесты), `*.md` в корне и `.claude/rules/**`, проходит CI за минуты: первым шагом каждой тяжёлой джобы (кроме `checks`, где гейты над документами) `scripts/ci-docs-only.mjs` (дифф `HEAD^1..HEAD`, только `pull_request`; сбой или пустой дифф — полный круг) пишет `docs_only`, остальные шаги джобы пропускаются условием, а сама джоба зелёная. Шаги `npm audit` не пропускаются (гейт `lockfile-audit`). Условие на джобу и `paths-ignore` не используются: обязательная проверка без прогона висит. Новая джоба = шаг `scope` и охрана шагов (`ci-docs-only.spec.ts`).
+
 | джоба | что гоняет (≤15 слов) |
 |---|---|
 | backend | tsc, coverage-храповик, jest под TZ Sydney и e2e на фейках через `jest-exit-guard`, npm audit корня и game, 6 храповиков |
