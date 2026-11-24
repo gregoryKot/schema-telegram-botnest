@@ -11,7 +11,11 @@ import { jobBlocks } from './workflow-yaml';
 const SCRIPT = join(process.cwd(), 'scripts', 'ci-docs-only.mjs');
 
 /** Настоящий git: база и коммит PR с файлами `files`; результат — docs_only из $GITHUB_OUTPUT. */
-function docsOnly(files: string[], event = 'pull_request', args: string[] = []): string {
+function docsOnly(
+  files: string[],
+  event = 'pull_request',
+  args: string[] = [],
+): string {
   const dir = mkdtempSync(join(tmpdir(), 'docs-only-'));
   const git = (...a: string[]) => {
     const r = spawnSync(
@@ -78,7 +82,8 @@ describe('ci-docs-only.mjs', () => {
 });
 
 describe('ci-docs-only.mjs --skip-guide-content', () => {
-  const lane = (files: string[]) => docsOnly(files, 'pull_request', ['--skip-guide-content']);
+  const lane = (files: string[]) =>
+    docsOnly(files, 'pull_request', ['--skip-guide-content']);
   const CONTENT = [
     'shared/src/schemaTherapy/guide/modes/child.ts',
     'shared/src/schemaTherapy/kb/catalog.ts',
@@ -93,7 +98,10 @@ describe('ci-docs-only.mjs --skip-guide-content', () => {
     expect(docsOnly(CONTENT)).toBe('docs_only=false');
   });
   it.each([
-    ['компонент сайта рядом с контентом', [...CONTENT, 'webapp/src/components/art/guideSignsModel.ts']],
+    [
+      'компонент сайта рядом с контентом',
+      [...CONTENT, 'webapp/src/components/art/guideSignsModel.ts'],
+    ],
     ['иной код shared', ['shared/src/schemaTherapy/content/emotions.ts']],
     ['бэкенд', [...CONTENT, 'src/therapy/kb-ids.ts']],
     ['чужой бейслайн', ['scripts/raw-sql-live-baseline.json']],
@@ -137,9 +145,14 @@ describe('ci.yml: тяжёлые джобы пропускают шаги, не 
     }
   });
 
-  it.each(JOBS)('%s: контент справочника пропускают только Postgres и вторая зона', (job) => {
-    expect(blocks[job].includes('--skip-guide-content')).toBe(GUIDE_SKIP.includes(job));
-  });
+  it.each(JOBS)(
+    '%s: контент справочника пропускают только Postgres и вторая зона',
+    (job) => {
+      expect(blocks[job].includes('--skip-guide-content')).toBe(
+        GUIDE_SKIP.includes(job),
+      );
+    },
+  );
 
   it('джоба checks (гейты над документами) остаётся полной', () => {
     expect(blocks.checks).not.toContain('docs_only');
