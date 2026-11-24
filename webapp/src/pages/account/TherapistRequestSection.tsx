@@ -77,7 +77,7 @@ export function TherapistRequestSection() {
           <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
           <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
             placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
-          <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
+          <input value={contacts} onChange={e => setContacts(e.target.value)} placeholder="Контакты: сайт, @telegram" maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
           <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={message} onChange={e => setMessage(e.target.value)} rows={2}
             placeholder="Сообщение админу (необязательно)" className="ds-textarea" />
           <div className="aa-actions">

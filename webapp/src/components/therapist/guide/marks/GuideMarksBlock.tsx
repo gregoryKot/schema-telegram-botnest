@@ -32,17 +32,17 @@ export function GuideMarksBlock({ marks, conceptEmpty, onRemove }: {
   // Тексты справочника не загрузились — сохранённые тексты как есть.
   const entries: GuideMarkEntry[] = guide
     ? markEntries(marks, guide, tr)
-    : marks.map((mark) => ({ mark, title: 'Раздел справочника', text: mark.snapshot, changed: false }));
+    : marks.map((mark) => ({ mark, title: 'Раздел справочника', text: mark.snapshot, changed: false, fragment: !!mark.fragment }));
   return (
     <section aria-label="Из справочника" className="gd-marks">
       <h3 className="ds-label gd-label">{label}</h3>
       <ul className="gd-marks-list">
-        {entries.map(({ mark, title, text, changed }) => (
-          <li key={mark.address} className="gd-marks-item">
+        {entries.map(({ mark, title, text, changed, fragment }) => (
+          <li key={mark.id < 0 ? `${mark.address}#${mark.snapshot}` : mark.id} className="gd-marks-item">
             <div className="gd-min">
-              <div className="gd-lead">{title}</div>
+              <div className="gd-lead">{title}{fragment && <span className="ds-sub gd-marks-frag"> · фрагмент</span>}</div>
               {mark.note && <p className="gd-text">{mark.note}</p>}
-              <p className="ds-sub gd-marks-text">{text}</p>
+              {fragment ? <blockquote className="gd-sel-quote">{text}</blockquote> : <p className="ds-sub gd-marks-text">{text}</p>}
               {changed && <span className="ds-sub gd-marks-changed">раздел изменился</span>}
             </div>
             <button type="button" className="gd-mark-x" aria-label={`Снять отметку: ${title}`} onClick={() => onRemove(mark)}>×</button>

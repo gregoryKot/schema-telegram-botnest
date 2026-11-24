@@ -31,7 +31,7 @@ describe('InviteCodeBox', () => {
     render(<InviteCodeBox code="7F3A9C21B04E" />);
     fireEvent.click(screen.getByText('Скопировать код'));
     await waitFor(() =>
-      expect(screen.getByText('✓ Код скопирован')).toBeTruthy(),
+      expect(screen.getByText('Код скопирован')).toBeTruthy(),
     );
     expect(writeText).toHaveBeenCalledWith('7F3A9C21B04E');
   });

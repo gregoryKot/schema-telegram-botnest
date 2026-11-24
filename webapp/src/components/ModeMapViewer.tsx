@@ -1,4 +1,4 @@
-import { FadeSeg } from './FadeSeg';
+import { LineTabs } from './LineTabs';
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Panel, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEffect, useState } from 'react';
@@ -78,12 +78,8 @@ export function ModeMapViewer() {
     <div className="mm2-fill">
       {maps.length > 1 && (
         <div className="mm2-bar">
-          <FadeSeg role="group" label="Карты режимов" watch={`${active?.id}:${maps.length}`}>
-          {maps.map(m => (
-            <button key={m.id} type="button" onClick={() => select(m.id)} aria-pressed={active?.id === m.id}
-              className={`ds-seg-btn${active?.id === m.id ? ' is-active' : ''}`}>{m.title}</button>
-          ))}
-          </FadeSeg>
+          <LineTabs tabs={maps.map(m => ({ id: String(m.id), label: m.title }))} value={String(active?.id)}
+            onPick={id => void select(Number(id))} label="Карты режимов" look="scroll" />
         </div>
       )}
       {failed && (

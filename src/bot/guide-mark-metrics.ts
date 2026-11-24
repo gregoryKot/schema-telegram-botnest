@@ -13,6 +13,7 @@ import { withGuideAnswerLines } from './guide-answer-metrics';
 export interface GuideMarkMetrics {
   byKind: Record<GuideMarkKind, number>; // отметок за 7 дней по виду раздела
   clients7: number; // у скольких клиентов (пары терапевт — клиент)
+  fragments7?: number; // из отметок — выделенных фрагментов (meta.fragment)
 }
 
 const KIND_WORDS: Record<GuideMarkKind, string> = {
@@ -36,14 +37,15 @@ export function formatGuideMarkLine(m: GuideMarkMetrics): string {
   if (total === 0) return `${head}: пока ни одной`;
   const clients = m.clients7 > 0 ? `, клиентов — ${m.clients7}` : '';
   const top = kinds.map((k) => `${KIND_WORDS[k]} — ${m.byKind[k]}`).join(', ');
-  return `${head}: ${total}${clients}; чаще всего: ${top}`;
+  const frag = m.fragments7 ? `, из них фрагментов — ${m.fragments7}` : '';
+  return `${head}: ${total}${frag}${clients}; чаще всего: ${top}`;
 }
 
 export async function getGuideMarkMetrics(
   prisma: PrismaService,
 ): Promise<GuideMarkMetrics> {
   const createdAt = { gte: new Date(Date.now() - 7 * 86_400_000) };
-  const [counts, pairs, coping] = await Promise.all([
+  const [counts, pairs, coping, fragments7] = await Promise.all([
     Promise.all(
       GUIDE_MARK_KINDS.map((kind) =>
         prisma.analyticsEvent.count({
@@ -67,6 +69,13 @@ export async function getGuideMarkMetrics(
       },
       select: { userId: true, meta: true },
     }),
+    prisma.analyticsEvent.count({
+      where: {
+        name: 'guide_mark_added',
+        createdAt,
+        meta: { path: ['fragment'], equals: true },
+      },
+    }),
   ]);
   const clients = new Set(pairs.map((p) => `${p.therapistId}:${p.clientId}`));
   for (const e of coping) {
@@ -77,7 +86,7 @@ export async function getGuideMarkMetrics(
   const byKind = Object.fromEntries(
     GUIDE_MARK_KINDS.map((k, i) => [k, counts[i]]),
   ) as Record<GuideMarkKind, number>;
-  return { byKind, clients7: clients.size };
+  return { byKind, clients7: clients.size, fragments7 };
 }
 
 /** Блок «Справочник терапевта» с дописанными строками: готовый ответ и отметки. */

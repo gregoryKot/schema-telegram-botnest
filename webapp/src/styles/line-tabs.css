@@ -13,6 +13,8 @@
 .lt-strip--fill > .lt-tab { flex: 1 1 0; justify-content: center; min-width: 0; padding: 0 4px; }
 .lt-tab[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--text); }
 .lt-tab:hover { color: var(--text); }
+/* Число раздела — тихое, без плашки общего .ds-count. */
+.ds-count.lt-count { margin-left: 5px; padding: 0; background: none; font-size: 12px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 /* Кольцо фокуса — внутрь: лента прокручивается и режет всё за своим краем. */
 .lt-tab:focus-visible, .lt-q:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 6px; }
 .lt-aside { flex: none; display: flex; align-items: center; }
