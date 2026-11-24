@@ -29,10 +29,10 @@ export interface SegItem {
 
 export function SegRow({ items }: { items: SegItem[] }) {
   return (
-    <div className="ds-seg ds-seg--full mm2-seg">
+    <div className="mm2-chips" role="group">
       {items.map(it => (
-        <button key={it.key} onClick={it.onPick} style={it.style} title={it.hint} aria-label={it.hint}
-          className={`ds-seg-btn${it.lead ? ' is-icon' : ''}${it.active ? ' is-active' : ''}${it.className ? ` ${it.className}` : ''}`}>
+        <button key={it.key} type="button" onClick={it.onPick} style={it.style} title={it.hint} aria-label={it.hint} aria-pressed={it.active}
+          className={`ds-chip ds-chip--toggle${it.lead ? ' is-icon' : ''}${it.active ? ' is-on' : ''}${it.className ? ` ${it.className}` : ''}`}>
           {it.lead}{it.label}
         </button>
       ))}
