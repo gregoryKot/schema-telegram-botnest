@@ -2,7 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { filterWorkGroups } from './pickerFilter';
 
 const groups = [
-  { title: 'Техники', options: [{ kind: 'technique' as const, refId: 'a', name: 'Рескриптинг в воображении' }, { kind: 'technique' as const, refId: 'b', name: 'Стул' }] },
+  {
+    title: 'Техники',
+    options: [
+      {
+        kind: 'technique' as const,
+        refId: 'a',
+        name: 'Рескриптинг в воображении',
+      },
+      { kind: 'technique' as const, refId: 'b', name: 'Стул' },
+    ],
+  },
   { title: 'Своё', options: [{ kind: 'custom' as const, name: 'Своё' }] },
 ];
 

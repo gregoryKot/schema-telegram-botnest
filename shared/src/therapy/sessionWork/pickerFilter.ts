@@ -9,6 +9,9 @@ export function filterWorkGroups(groups: Group[], query: string): Group[] {
   const q = norm(query);
   if (!q) return groups;
   return groups
-    .map((g) => ({ ...g, options: g.options.filter((o) => norm(o.name).includes(q)) }))
+    .map((g) => ({
+      ...g,
+      options: g.options.filter((o) => norm(o.name).includes(q)),
+    }))
     .filter((g) => g.options.length > 0);
 }
