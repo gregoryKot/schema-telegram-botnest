@@ -40,7 +40,7 @@
 .tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 /* Аватар — .ds-avatar--paper (cabinet.css: кружок бумаги тона клиента с тенью-слоем); здесь — размер. */
-.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 3px 4px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 0 0 0 1px var(--panel-line); }
 .tk-ident { flex: 1; min-width: 260px; }
 /* Кегль имени — ds-h2; здесь только перенос: до двух строк по пробелам и дефису, целиком. Одной строкой с
    многоточием длинное имя («Константин Константинопольский-Задунайский») не было видно нигде (b30). */
@@ -199,7 +199,7 @@
 }
 /* «Приложение» офлайн-клиента (OfflineInviteCard) — белый лист с тенью-слоем неба (встречи терапевта), как
    заметка и записи, а не белая карточка с серой рамкой. */
-.tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) 240); }
+.tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 0 0 0 1px var(--panel-line); }
 /* Трекер — лист соломы: индекс Literata --text (без светофора), столбики одними чернилами, потребности — белым
    списком со знаком и цветом данных своей потребности (--need-ink, --need-text из inkVars). */
 .tk-track { display: flex; flex-direction: column; gap: 18px; padding: 18px 20px 20px; }
@@ -251,6 +251,6 @@
   .tk-goal { padding: 14px 16px; }
   .tk-text { font-size: 16px; }
   .tk-leaf { padding: 14px 16px; }
-  .tk-side > .ds-card { box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) 240); }
+  .tk-side > .ds-card { box-shadow: 0 0 0 1px var(--panel-line); }
   .pa-outcome.tk-outcome { padding: 16px 16px 24px; }
 }

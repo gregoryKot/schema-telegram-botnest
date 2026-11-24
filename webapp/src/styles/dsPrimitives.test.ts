@@ -200,8 +200,8 @@ describe('cabinet.css: поправки координатора волны 1 (#
   });
   it('.ds-avatar — tint по умолчанию: тёмные инициалы на светлой заливке, без #fff и без .tone-tint', () => {
     const av = decls(top, '.ds-avatar');
-    expect(av).toContain('background: oklch(0.94 0.035 var(--h))');
-    expect(av).toContain('color: oklch(0.38 0.1 var(--h))');
+    expect(av).toContain('background: oklch(0.94 calc(0.035 * var(--ck)) var(--h))');
+    expect(av).toContain('color: oklch(0.38 calc(0.1 * var(--ck)) var(--h))');
     expect(av).not.toMatch(/#fff/i);
     expect(css).not.toContain('.ds-avatar.tone-tint');
   });

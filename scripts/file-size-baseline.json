@@ -3120,7 +3120,7 @@
   "webapp/src/lib/metrika.ts": 159,
   "webapp/src/lib/metrikaGate.ts": 26,
   "webapp/src/lib/metrikaRoutes.ts": 34,
-  "webapp/src/lib/tone.ts": 40,
+  "webapp/src/lib/tone.ts": 47,
   "webapp/src/lib/webvisorRoutes.ts": 8,
   "webapp/src/main.tsx": 19,
   "webapp/src/modeChainVm.ts": 13,
