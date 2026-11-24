@@ -119,7 +119,7 @@ export function ProcessSection() {
   return (
       <section id="process" ref={ref} className="reveal-section" style={{ background: DARK_BG, padding: '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)', margin: '0 0 10px' }}>Как начать</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--on-dark) 50%, transparent)', margin: '0 0 10px' }}>Как начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(28px, 3.5vw, 44px)', fontWeight: 400, color: INK_ON_DARK, margin: '0 0 56px', letterSpacing: '-.01em' }}>Три шага до первой встречи</h2>
           <div className="process-grid">
             {[
@@ -130,7 +130,7 @@ export function ProcessSection() {
               <div key={i} style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,.08)' : 'none', padding: '0 40px 0 ' + (i > 0 ? '40px' : '0') }}>
                 <p style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(52px, 6vw, 80px)', fontWeight: 400, color: 'color-mix(in srgb, var(--accent-on-dark) 30%, transparent)', lineHeight: 1, margin: '0 0 16px', letterSpacing: '-.03em' }}>{s.n}</p>
                 <p style={{ fontSize: 18, fontWeight: 600, color: INK_ON_DARK, margin: '0 0 10px' }}>{s.title}</p>
-                <p style={{ fontSize: 14, color: 'rgba(236,234,229,.5)', lineHeight: 1.7, margin: 0 }}>{s.sub}</p>
+                <p style={{ fontSize: 14, color: 'color-mix(in srgb, var(--on-dark) 50%, transparent)', lineHeight: 1.7, margin: 0 }}>{s.sub}</p>
               </div>
             ))}
           </div>
@@ -143,7 +143,7 @@ export function BoundariesSection() {
   const ref = useReveal() as React.RefObject<HTMLElement>;
   return (
       <section ref={ref} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
-        <div style={{ border: '1px solid var(--line)', borderRadius: 24, padding: 'clamp(28px, 4vw, 48px)', background: 'var(--bg-elev)' }}>
+        <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-16)', padding: 'clamp(28px, 4vw, 48px)', background: 'var(--bg-elev)' }}>
           <div className="bound-grid">
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Границы помощи</p>
