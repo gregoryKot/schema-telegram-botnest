@@ -77,7 +77,7 @@ export function ProviderRow({
 // цвета сторонних сервисов, не токены продукта. Не заводить в контракт, не менять по теме.
 export function GoogleIcon() {
   return (
-  <div style={{ ...iconBox, background: 'rgba(var(--fg-rgb),0.04)' }}>
+  <div style={iconBox}>
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
       <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853" />
@@ -90,7 +90,7 @@ export function GoogleIcon() {
 
 export function TelegramIcon() {
   return (
-  <div style={{ ...iconBox, background: 'rgba(34,158,217,0.12)' }}>
+  <div style={iconBox}>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.89l-1.68 7.92c-.12.56-.45.7-.9.43l-2.5-1.84-1.2 1.16c-.13.13-.25.25-.5.25l.18-2.55 4.63-4.18c.2-.18-.04-.27-.31-.1l-5.72 3.6-2.46-.77c-.54-.17-.55-.54.11-.8l9.58-3.69c.45-.16.85.11.69.77z" fill="#2AABEE" />
     </svg>
@@ -116,7 +116,7 @@ export function YandexIcon() {
 
 export function MaxIcon() {
   return (
-  <div style={{ ...iconBox, background: 'rgba(var(--fg-rgb),0.06)', fontSize: 13, fontWeight: 700 }}>
+  <div style={{ ...iconBox, fontSize: 13, fontWeight: 700 }}>
     MAX
   </div>
   );
@@ -127,7 +127,6 @@ export function EmailIcon() {
     <div
       style={{
         ...iconBox,
-        background: 'rgba(var(--fg-rgb),0.06)',
         color: 'var(--text-sub)',
       }}
     >
