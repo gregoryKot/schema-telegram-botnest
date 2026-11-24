@@ -13,7 +13,7 @@ interface PathTransport {
 export interface PathPhasePatch {
   name?: string;
   goal?: string | null;
-  weeks?: number;
+  weeks?: number | null;
   note?: string | null;
   criteriaDone?: number[];
   startedAt?: string | null;
