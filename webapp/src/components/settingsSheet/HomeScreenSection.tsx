@@ -5,8 +5,8 @@ import { AddHomeScreenButton } from '../../../../shared/src/host/AddHomeScreenBu
 import { useTr } from '../../utils/addressForm';
 import { useInstallHandoff } from '../../hooks/useInstallHandoff';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
-import { detectInstallPlatform, subscribeAppInstalled } from '../../utils/pwaInstall';
-import { INSTALL_STEPS } from '../installGuide/installSteps';
+import { subscribeAppInstalled } from '../../utils/pwaInstall';
+import { visitorInstallGuide } from '../installGuide/installSteps';
 import { glue } from '../../../../shared/src/utils/typo';
 import { SSection } from './ui';
 import type { HomeIconMode } from './homeIconMode';
@@ -42,7 +42,7 @@ function BrowserBody() {
   const { canPrompt, install } = useInstallPrompt();
   const [installed, setInstalled] = useState(false);
   useEffect(() => subscribeAppInstalled(() => setInstalled(true)), []);
-  const guide = INSTALL_STEPS[detectInstallPlatform()];
+  const guide = visitorInstallGuide();
 
   if (installed) return <p className="st-text">{tr('Готово: значок появился. Открывай приложение с него.', 'Готово: значок появился. Открывайте приложение с него.')}</p>;
   return (
