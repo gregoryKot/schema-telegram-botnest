@@ -94,7 +94,7 @@
   "webapp/src/components/therapist/guide/CopingMarkSheet.tsx::setError": {
     "status": "reports"
   },
-  "webapp/src/components/therapist/plan/PlanAddSheet.tsx::setError": {
+  "webapp/src/components/therapist/plan/usePlanAdd.ts::setError": {
     "status": "reports"
   },
   "webapp/src/components/therapist/plan/path/PathDraftSheet.tsx::setError": {
