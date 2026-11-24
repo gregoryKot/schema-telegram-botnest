@@ -6,7 +6,7 @@
 import type { ReactElement } from 'react';
 import type { ArtProps } from './paper';
 import type { GuideSign } from './guideSignsModel';
-import { Attachment, Limits } from './NeedArt';
+import { Attachment, Expression, Limits } from './NeedArt';
 import { Breath, Cup, Layers, Pebbles, Ribbon, Sheets, Strokes } from './PaperArt';
 import { Beads, Check, Cluster, Heart, Leaf, Talk, Wheel } from './PaperArtSigns';
 import { ChildCare, Looming, Shelter, Shield, Together, Yield } from './GuideSignsModes';
@@ -15,7 +15,7 @@ import {
 } from './GuideSignsTechniques';
 import { Chatter, Flare } from './GuideSignsPractice';
 import { Grounded, Haven, Join, Pause } from './AppSigns';
-import { CopingAvoidance, CopingOvercompensation } from './CopingSigns';
+import { CopingAvoidance, CopingOvercompensation, CopingSurrender } from './CopingSigns';
 import { Roots } from './GuideSignsYoung';
 import { PATH_SIGN_ART } from './pathSignDrawings';
 import { TECHNIQUE_OWN_SIGN_ART } from './techniqueOwnSignDrawings';
@@ -52,7 +52,7 @@ export const GUIDE_SIGN_ART: Record<GuideSign, (p: ArtProps) => ReactElement> = 
   cup: Cup,
   join: Join,
   pause: Pause, haven: Haven, leaf: Leaf, roots: Roots, strokes: Strokes, grounded: Grounded, wheel: Wheel,
-  coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation, need_attachment: Attachment,
+  coping_avoidance: CopingAvoidance, coping_overcompensation: CopingOvercompensation, need_attachment: Attachment, coping_surrender: CopingSurrender, need_expression: Expression,
   ...TECHNIQUE_OWN_SIGN_ART,
   ...PATH_SIGN_ART,
 };
