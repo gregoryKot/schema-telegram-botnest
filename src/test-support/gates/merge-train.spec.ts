@@ -95,6 +95,7 @@ let files: Record<number, string[]> = {};
 let notes: Record<number, Json[]> = {};
 let writes: string[] = [];
 let createStatus = 201;
+let gqlFail = 0;
 let server: Server;
 let base = '';
 let tmp = '';
@@ -183,6 +184,7 @@ function setup(list: Pull[]): void {
   notes = {};
   writes = [];
   createStatus = 201;
+  gqlFail = 0;
 }
 
 const raw = (x: Pull) => ({
@@ -260,9 +262,10 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
         query: string;
         variables: { id: string };
       };
-      pr(q.variables.id.replace('node-', '')).auto = q.query.includes(
-        'enablePullRequestAutoMerge',
-      );
+      const target = pr(q.variables.id.replace('node-', ''));
+      if (target.n === gqlFail)
+        return send(200, { errors: [{ message: 'нельзя' }] });
+      target.auto = q.query.includes('enablePullRequestAutoMerge');
       return send(200, { data: {} });
     }
     if ((m = p.match(/^\/compare\/main\.\.\.(.+)$/)))
@@ -358,7 +361,7 @@ beforeEach(() => {
 afterEach(() => rmSync(tmp, { recursive: true, force: true }));
 
 describe('поезд: сборка', () => {
-  it('два зелёных отставших едут одной веткой: auto-merge снят до пуша, бейслайн сведён драйвером, правка workflow — мимо', async () => {
+  it('два зелёных отставших едут одной веткой: auto-merge снят, когда состав уже записан в PR, бейслайн сведён драйвером, правка workflow — мимо', async () => {
     repo({ 1: {}, 2: {}, 3: { '.github/workflows/w.yml': 'on: push\n' } });
     setup([car(1), car(2), car(3)]);
     const { code, out } = await queue();
@@ -369,7 +372,7 @@ describe('поезд: сборка', () => {
     const open = writes.findIndex((w) => w.startsWith('POST /pulls '));
     expect(
       writes.findIndex((w) => w.includes('disablePullRequestAutoMerge')),
-    ).toBeLessThan(open);
+    ).toBeGreaterThan(open);
     const made = pulls.find((p) => p.n === 77)!;
     expect(made.title).toBe('Поезд: #1, #2');
     expect(made.body).toContain(mark(pulls[0], pulls[1]));
@@ -420,18 +423,31 @@ describe('поезд: сборка', () => {
     }
   });
 
-  it('PR-поезд не открылся: ветка убрана, auto-merge возвращён, очередь идёт обычным путём', async () => {
+  it('PR-поезд не открылся: ветка убрана, auto-merge не тронут, очередь идёт обычным путём', async () => {
     repo({ 1: {}, 2: {} });
     setup([car(1), car(2)]);
     createStatus = 403;
     const { code, out } = await queue();
     expect(code).toBe(0);
     expect(out).toContain('PR-поезд не открылся: HTTP 403');
-    expect(autoMerge(true)).toEqual([1, 2]);
+    expect(autoMerge(false)).toEqual([]);
     expect(
       writes.some((w) => w.startsWith('DELETE /git/refs/heads/merge-train/')),
     ).toBe(true);
     expect(touched('PUT ', 'update-branch')[0]).toBe(1);
+  });
+
+  it('auto-merge пассажира не снялся: поезд закрыт, ветка убрана, снятое возвращено', async () => {
+    repo({ 1: {}, 2: {} });
+    setup([car(1), car(2)]);
+    gqlFail = 2;
+    const { out } = await queue();
+    expect(out).toContain(
+      'auto-merge #2 не снят — пассажиры идут обычным путём',
+    );
+    expect(touched('PATCH /pulls/')).toEqual([77]);
+    expect(autoMerge(true)).toEqual([1]);
+    expect(out).not.toContain('собран');
   });
 
   it('--dry-run поезд не собирает и ничего не пишет', async () => {
@@ -488,6 +504,19 @@ describe('поезд: в пути и на конечной', () => {
     expect(touched('POST /issues/', 'коммиты после неё не смержены')).toEqual([
       2,
     ]);
+    // Повторный прогон: auto-merge уже возвращён — второго комментария нет.
+    writes = [];
+    await queue({ MERGE_TRAIN: '' });
+    expect(touched('POST /issues/')).toEqual([]);
+  });
+
+  it('поезд закрыт руками или прогон оборвался: пассажирам без auto-merge он возвращён, с do-not-merge — нет', async () => {
+    const cars = [car(1), car(2), car(3, { labels: ['do-not-merge'] })];
+    setup([...cars, train(cars, { state: 'closed' })]);
+    await queue();
+    expect(autoMerge(true)).toEqual([1, 2]);
+    expect(touched('PATCH /pulls/')).toEqual([]);
+    expect(touched('POST /issues/', 'PR не вошёл')).toEqual([1, 2]);
   });
 
   it('красный, виновный назван аннотацией: он выходит с меткой и auto-merge, остальные едут новым поездом', async () => {
@@ -510,7 +539,7 @@ describe('поезд: в пути и на конечной', () => {
     expect(autoMerge(false)).toEqual([]);
   });
 
-  it('красный без названного виновного: состав делится, вторая половина без метки; красная пара распускается целиком', async () => {
+  it('красный без названного виновного: состав делится, красная пара распускается целиком — оба раза без метки', async () => {
     repo({ 1: {}, 2: {}, 3: {}, 4: {} });
     const cars = [car(1), car(2), car(3), car(4)];
     setup([...cars, train(cars, { checks: red() })]);
@@ -526,7 +555,7 @@ describe('поезд: в пути и на конечной', () => {
     await queue();
     expect(created()).toBe(0);
     expect(autoMerge(true)).toEqual([1, 2]);
-    expect(touched('POST /issues/', '"labels":["no-train"]')).toEqual([1, 2]);
+    expect(touched('POST /issues/', 'no-train')).toEqual([]);
   });
 
   it('main ушёл или пассажир изменился: поезд пересобран без выпавшего, тому вернули auto-merge', async () => {

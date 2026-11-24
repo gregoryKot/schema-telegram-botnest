@@ -74,14 +74,13 @@ export function trainVerdict(train, cars, prs, now, on) {
 
 /**
  * Красный поезд. Виновны пассажиры, чьи файлы названы в аннотациях упавших
- * проверок. Не названы (или названы все) — бисекция: вторая половина состава
- * выходит (`split`) и поедет следующим поездом; пара виновна целиком.
+ * проверок. Не названы (или названы все) — бисекция без метки: вторая половина
+ * состава выходит (`split`), пара выходит целиком и идёт по одному.
  */
 export function blame(cars, filesOf, paths) {
   const hit = cars.filter((c) => (filesOf[c.number] ?? []).some((f) => paths.includes(f)));
   if (hit.length && hit.length < cars.length) return { guilty: hit, split: [] };
-  if (cars.length <= 2) return { guilty: cars, split: [] };
-  return { guilty: [], split: cars.slice(Math.ceil(cars.length / 2)) };
+  return { guilty: [], split: cars.length <= 2 ? cars : cars.slice(Math.ceil(cars.length / 2)) };
 }
 
 /** Бейслайн после пересчёта — плоский JSON «ключ → целое ≥ 0»; иное в ветку не пишется. */
