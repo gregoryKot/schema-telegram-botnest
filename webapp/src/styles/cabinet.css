@@ -298,17 +298,20 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-switch--sm::before { inset: -12px -4px; } /* зона 44×44 внутри рамки: 20+24, 36+8 (check-tap-targets) */
 
 /* ── Поля ввода ──────────────────────────────────────────────────────────── */
+/* Строка на бумаге с линией снизу, а не белая коробка (как поле «Настроек»): многострочное — та же
+   линия под текстом и высота на две строки. В фокусе линия акцентная и с клавиатуры толще. */
 .ds-input, .ds-textarea {
-  border: 1px solid var(--line-input); border-radius: 12px; background: var(--surface);
-  padding: 12px 14px; font: 14px/1.5 var(--sans); color: var(--text); box-sizing: border-box; width: 100%;
+  border: none; border-bottom: 1px solid var(--panel-line); border-radius: 0; background: none;
+  padding: 12px 0; font: 14px/1.5 var(--sans); color: var(--text); box-sizing: border-box; width: 100%;
 }
-.ds-textarea { resize: none; }
-.ds-input--search { height: 40px; padding: 0 16px; border-radius: 20px; }
-.ds-input--sm { width: auto; height: 40px; padding: 0 12px; }
+.ds-textarea { resize: none; min-height: calc(3em + 25px); }
+.ds-input--search { height: 40px; padding: 0; }
+.ds-input--sm { width: auto; height: 40px; padding: 0; }
 .ds-input:focus, .ds-textarea:focus { outline: none; border-color: var(--accent); }
+.ds-input:focus-visible, .ds-textarea:focus-visible { box-shadow: 0 1px 0 var(--accent); }
 .ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-ghost); }
-/* Поле на тёмной панели (#906, волна 3): после .ds-input:focus, чтобы перекрыть рамку фокуса. */
-.ds-input--on-panel { background: var(--surface); border-color: var(--panel-line); color: var(--text); }
+/* Поле на песочной панели (#906, волна 3): та же линия, подсказка — чернилами панели. */
+.ds-input--on-panel { border-color: var(--panel-line); color: var(--text); }
 .ds-input--on-panel::placeholder { color: var(--on-panel-faint); }
 .ds-input--on-panel:focus { border-color: var(--accent); }
 
@@ -369,7 +372,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-btn--icon { width: 44px; height: 44px; }
   .ds-seg-btn { min-height: 44px; }
   .ds-btn--sm { height: 44px; }
-  .ds-input--search { height: 44px; border-radius: 22px; }
+  .ds-input--search { height: 44px; }
   .ds-input--sm { height: 44px; }
   .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari (и на iPad) увеличивает экран при фокусе на поле мельче 16px */
   .ds-chip--toggle { min-height: 44px; }

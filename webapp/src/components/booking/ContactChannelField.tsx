@@ -14,7 +14,6 @@ interface Props {
   /** Подсказка валидации (красная) — перекрывает подсказку про Telegram. */
   hint?: string | null;
   labelStyle: React.CSSProperties;
-  fieldStyle: React.CSSProperties;
 }
 
 /**
@@ -24,7 +23,7 @@ interface Props {
  * поэтому посетитель сам выбирает мессенджер.
  */
 export function ContactChannelField({
-  id, channel, onChannelChange, value, onChange, inputRef, onFocus, invalid, hint, labelStyle, fieldStyle,
+  id, channel, onChannelChange, value, onChange, inputRef, onFocus, invalid, hint, labelStyle,
 }: Props) {
   const tgHint = telegramNumberHint(channel, value);
   const note = hint || tgHint;
@@ -37,7 +36,7 @@ export function ContactChannelField({
         ))}
       </div>
       <input
-        id={id} ref={inputRef} className="ym-disable-keys" style={fieldStyle} placeholder={contactPlaceholder(channel)}
+        id={id} ref={inputRef} className="ym-disable-keys ds-input" placeholder={contactPlaceholder(channel)}
         value={value} onChange={(e) => onChange(e.target.value)} onFocus={onFocus} required maxLength={BOOKING_CONTACT_MAX}
         aria-invalid={invalid || undefined} aria-describedby={note ? `${id}-hint` : undefined}
       />

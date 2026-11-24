@@ -627,8 +627,8 @@ a { color: inherit; text-decoration: none; }
 .sb-skel-today { --h: 70; display: flex; flex-direction: column; gap: 10px; height: 96px; box-sizing: border-box; }
 .sb-skel-account { padding-top: 12px; border-top: 1px solid var(--panel-line); }
 .sb-search {
-  margin: 0 0 4px; width: 100%; padding: 6px 10px; border-radius: var(--r-8);
-  border: 1px solid var(--panel-line); background: var(--surface);
+  margin: 0 0 4px; width: 100%; padding: 6px 0; border-radius: 0;
+  border: none; border-bottom: 1px solid var(--panel-line); background: none;
   color: var(--text); font: 13px var(--sans); outline: none; box-sizing: border-box;
 }
 .sb-search::placeholder { color: var(--on-panel-faint); }
@@ -666,11 +666,11 @@ a { color: inherit; text-decoration: none; }
 .search-pill {
   position: relative;
   display: flex; align-items: center; gap: var(--space-8);
-  height: 36px; padding: 0 10px 0 14px;
-  /* Тише кризисного входа рядом: бумага страницы и линия, а не залитая плашка. */
+  height: 36px; padding: 0 2px 0 0;
+  /* Тише кризисного входа рядом: строка на бумаге страницы с линией снизу, как поля ввода (.ds-input). */
   background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  border: none; border-bottom: 1px solid var(--panel-line);
+  border-radius: 0;
   color: var(--text-sub);
   font-size: 13px;
   width: 260px;
@@ -778,19 +778,6 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-1);
 }
-
-/* ─── Input ──────────────────────────────────────────────────────────────── */
-.input, .textarea {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px 12px;
-  font-size: 13.5px; color: var(--text);
-  transition: border-color .15s;
-}
-.input:focus, .textarea:focus { border-color: var(--accent-line); outline: none; }
-.textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
 
 /* ─── Needs bars ──────────────────────────────────────────────────────────── */
 .bar { background: var(--surface-3); border-radius: 999px; position: relative; height: 4px; overflow: hidden; }

@@ -26,10 +26,6 @@ import { fieldLabel as labelSt } from './booking/fieldLabelStyle';
 import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
 import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
 
-const field: React.CSSProperties = {
-  width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-  borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-};
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 
 export type BookingType = 'INTRO_15' | 'SESSION_50';
@@ -206,7 +202,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
             <div>
               <label style={labelSt} htmlFor="bp-name">Имя *</label>
               <input
-                id="bp-name" ref={nameRef} className="ym-disable-keys" style={field} placeholder="Ваше имя"
+                id="bp-name" ref={nameRef} className="ym-disable-keys ds-input" placeholder="Ваше имя"
                 value={name} onChange={(e) => { setName(e.target.value); if (invalidField === 'name') setInvalidField(null); }}
                 onFocus={onFieldFocus} required maxLength={100}
                 aria-invalid={invalidField === 'name' || undefined}
@@ -218,7 +214,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
               id="bp-contact" channel={channel} onChannelChange={setChannel} inputRef={contactRef} onFocus={onFieldFocus}
               value={contact} onChange={(v) => { setContact(v); if (invalidField === 'contact') setInvalidField(null); }}
               invalid={invalidField === 'contact'} hint={invalidField === 'contact' ? FIELD_HINTS.contact : null}
-              labelStyle={labelSt} fieldStyle={field}
+              labelStyle={labelSt}
             />
           </div>
           {sessionType === 'INTRO_15' && (
@@ -233,7 +229,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
           {sessionType === 'SESSION_50' && !compact && (
             <ReturningVisitField returning={returning} onChange={setReturning} />
           )}
-          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} max={BOOKING_SLOT_MESSAGE_MAX} />}
+          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} max={BOOKING_SLOT_MESSAGE_MAX} />}
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
             <input
               type="checkbox" ref={consentRef} checked={consent}

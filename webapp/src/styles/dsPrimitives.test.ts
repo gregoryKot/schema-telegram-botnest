@@ -258,9 +258,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   });
   it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
-    expect(decls(top, '.ds-input--search')).toContain('border-radius: 20px');
     expect(decls(tap, '.ds-input--search')).toContain('height: 44px');
-    expect(decls(tap, '.ds-input--search')).toContain('border-radius: 22px');
     expect(decls(top, '.ds-input--sm')).toContain('width: auto');
     expect(decls(top, '.ds-input--sm')).toContain('height: 40px');
     expect(decls(tap, '.ds-input--sm')).toContain('height: 44px');
@@ -326,9 +324,9 @@ describe('cabinet.css: примитивы волны 3 (#906)', () => {
     expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--accent-red)');
     expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--accent-red)');
   });
-  it('поле на песочной панели: белая бумага с контуром --panel-line, объявлено после .ds-input:focus', () => {
+  it('поле на песочной панели: линия --panel-line, объявлено после .ds-input:focus', () => {
     const f = decls(top, '.ds-input--on-panel');
-    expect(f).toContain('background: var(--surface)');
+    expect(f).not.toMatch(/background/);
     expect(f).toContain('border-color: var(--panel-line)');
     expect(f).toContain('color: var(--text)');
     expect(top.indexOf('.ds-input--on-panel {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
@@ -376,3 +374,29 @@ function walkFiles(dir: string, ext: RegExp): string[] {
 const cssFiles = (dir: string) => walkFiles(dir, /\.css$/);
 const glyphContentIn = (src: string) => [...src.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/content:\s*(['"])[‹›]\1/g)];
 const hasFlush = (src: string) => src.includes('ds-card--flush');
+
+// Поле ввода — строка на бумаге с линией снизу, а не белая коробка или капсула (#1619, п.4).
+describe('поля ввода: линия снизу, без коробки', () => {
+  const dir = __dirname;
+  const sheets = [join(dir, '..', 'index.css'), ...readdirSync(dir).filter((f) => f.endsWith('.css')).map((f) => join(dir, f))]
+    .map((p) => readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
+  const rules = sheets.flatMap((src) => [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)])
+    .filter((m) => /\.ds-(input|textarea)\b/.test(m[1]));
+
+  it('у правил .ds-input/.ds-textarea нет скругления больше 4px и белой заливки', () => {
+    expect(rules.length).toBeGreaterThan(10);
+    const bad = rules.filter((m) => {
+      const r = m[2].match(/border-radius:\s*(\d+)px/);
+      return (r && Number(r[1]) > 4) || /background(-color)?:\s*(var\(--surface\)|#fff|white)/i.test(m[2]);
+    }).map((m) => m[1].trim());
+    expect(bad).toEqual([]);
+  });
+  it('база: прозрачная, линия --panel-line снизу, фокус — акцент, с клавиатуры видна', () => {
+    const base = decls(top, '.ds-input');
+    expect(base).toContain('background: none');
+    expect(base).toContain('border-bottom: 1px solid var(--panel-line)');
+    expect(decls(top, '.ds-input:focus')).toContain('border-color: var(--accent)');
+    expect(decls(top, '.ds-input:focus-visible')).toContain('var(--accent)');
+    expect(decls(top, '.ds-textarea')).toMatch(/min-height/);
+  });
+});

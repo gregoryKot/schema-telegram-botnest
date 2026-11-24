@@ -109,7 +109,7 @@
 .mm2-mine-del { width: 36px; height: 36px; flex-shrink: 0; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mm2-add-form { padding: 6px 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 .mm2-add-row { display: flex; gap: 6px; }
-.mm2-add-form .ds-input { padding: 7px 10px; font-size: 12.5px; border-radius: 10px; }
+.mm2-add-form .ds-input { padding: 7px 0; font-size: 12.5px; }
 .mm2-add-emoji { width: 44px; flex: none; text-align: center; font-size: 15px; padding: 7px 4px; }
 .mm2-add-form .ds-btn { height: 40px; padding: 0 14px; font-size: 12.5px; flex: 1; }
 .mm2-add-form .ds-btn--icon { flex: none; width: 40px; padding: 0; }
@@ -139,7 +139,7 @@
 .mm2-panel .ds-label.is-ok { color: var(--ok); }
 /* «Оформление»: стиль фигуры ниже её смысла, отделён чертой. */
 .mm2-panel .ds-label.mm2-panel-sec { margin: 4px 0 12px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); font: 400 15px/1.25 var(--serif); letter-spacing: 0; text-transform: none; color: var(--text); }
-.mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input { padding: 8px 10px; font-size: 13px; border-radius: 10px; margin-bottom: 14px; }
+.mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input { padding: 8px 0; font-size: 13px; margin-bottom: 14px; }
 .mm2-panel .ds-textarea.is-ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
 .mm2-panel select.ds-input { cursor: pointer; }
 .mm2-seg { margin-bottom: 14px; }

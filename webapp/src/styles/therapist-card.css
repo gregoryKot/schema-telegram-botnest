@@ -183,7 +183,6 @@
 .tk-meet-none { font-size: 15px; color: var(--text-sub); }
 .tk-meet-row > .tk-meet-none { margin-top: 8px; }
 .tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.tk-edit-form .ds-input { background: var(--surface); }
 .tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-start { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-top: 8px; }
 /* «Изменить →» / «Указать →» во «Встречах» — тихие (ревью r1): три акцентных ссылки подряд спорили с датой. */
