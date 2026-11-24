@@ -69,6 +69,8 @@
 
 **Документный дифф.** PR, где все файлы — `docs/**` (кроме `docs/design/` и `docs/RUNBOOKS.md`, их читают тесты), `*.md` в корне и `.claude/rules/**`, проходит CI за минуты: первым шагом каждой тяжёлой джобы (кроме `checks`, где гейты над документами) `scripts/ci-docs-only.mjs` (дифф `HEAD^1..HEAD`, только `pull_request`; сбой или пустой дифф — полный круг) пишет `docs_only`, остальные шаги джобы пропускаются условием, а сама джоба зелёная. Шаги `npm audit` не пропускаются (гейт `lockfile-audit`). Условие на джобу и `paths-ignore` не используются: обязательная проверка без прогона висит. Новая джоба = шаг `scope` и охрана шагов (`ci-docs-only.spec.ts`).
 
+**Контент справочника.** PR, где кроме документов только `shared/src/schemaTherapy/{guide,kb}/**` и бейслайны `bundle-size`, `file-size`, `guide-addresses`, пропускает шаги трёх джоб — `migrations`, `perf` (живой Postgres) и `webapp-tz` (второй прогон того же vitest под другой зоной): там скрипт зовётся с `--skip-guide-content`. Остальные джобы идут полностью. Тест — тот же `ci-docs-only.spec.ts`.
+
 | джоба | что гоняет (≤15 слов) |
 |---|---|
 | backend | tsc, coverage-храповик, jest под TZ Sydney и e2e на фейках через `jest-exit-guard`, npm audit корня и game, 6 храповиков |

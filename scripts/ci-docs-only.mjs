@@ -2,6 +2,7 @@
 // «Дифф PR только из документов» для ci.yml: тяжёлые джобы пропускают шаги, а сами
 // остаются зелёными (обязательные проверки ruleset отчитываются тем же именем).
 // Шаг пишет docs_only=true|false в $GITHUB_OUTPUT. Любая неясность — false (полный круг).
+// С флагом --skip-guide-content true даёт и дифф из контента справочника (джобы с живым Postgres и второй зоной).
 // База — первый родитель merge-коммита PR (нужен fetch-depth ≥ 2); вне pull_request — всегда false.
 import { appendFileSync } from 'fs';
 import { execFileSync } from 'child_process';
@@ -17,6 +18,17 @@ export const isDocPath = (p) =>
 /** Пустой дифф — не «только документы»: ничего не решаем, гоним всё. */
 export const isDocsOnly = (files) => files.length > 0 && files.every(isDocPath);
 
+// Контент справочника — данные без дат и без SQL: его держат tsc и vitest shared, vitest и
+// сборка сайта, сверки бэкенда. Джоба, которой он не касается, зовёт скрипт с --skip-guide-content.
+const GUIDE_CONTENT = [
+  /^shared\/src\/schemaTherapy\/(guide|kb)\//,
+  /^scripts\/(bundle-size|file-size|guide-addresses)-baseline\.json$/,
+];
+const isGuideContentPath = (p) => isDocPath(p) || GUIDE_CONTENT.some((re) => re.test(p));
+
+/** Документы и контент справочника, без иного кода. */
+export const isGuideContentOnly = (files) => files.length > 0 && files.every(isGuideContentPath);
+
 function changedFiles() {
   const out = execFileSync(
     'git',
@@ -30,7 +42,8 @@ function main() {
   let docsOnly = false;
   if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
     try {
-      docsOnly = isDocsOnly(changedFiles());
+      const files = changedFiles();
+      docsOnly = process.argv.includes('--skip-guide-content') ? isGuideContentOnly(files) : isDocsOnly(files);
     } catch {
       docsOnly = false;
     }

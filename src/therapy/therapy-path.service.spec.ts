@@ -148,6 +148,22 @@ describe('TherapyPathService', () => {
     });
   });
 
+  it('срок необязателен: фаза без срока читается с null, правка null стирает срок', async () => {
+    const { service } = setup();
+    const created = await service.create(T, C1, {
+      ...input,
+      phases: [{ name: 'Оценка' }, draft('Связь', 12)],
+    });
+    expect((await service.get(T, C1))?.phases.map((p) => p.weeks)).toEqual([
+      null,
+      12,
+    ]);
+    const path = await service.updatePhase(T, created.phases[1].id, {
+      weeks: null,
+    });
+    expect(path.phases.map((p) => p.weeks)).toEqual([null, null]);
+  });
+
   it('правка фазы меняет только присланное; null стирает значение', async () => {
     const { service } = setup();
     const { phases } = await service.create(T, C1, input);

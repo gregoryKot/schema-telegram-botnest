@@ -16,7 +16,7 @@ import { AddressInfo } from 'net';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { importExport } from './pattern-loader';
-import { stripComments, triggerBlocks } from './workflow-yaml';
+import { jobBlocks, triggerBlocks } from './workflow-yaml';
 
 const ROOT = process.cwd();
 const SCRIPT = join(ROOT, 'scripts', 'merge-queue.mjs');
@@ -643,9 +643,12 @@ describe('merge-queue.yml: запись есть, событий и чекаут
     const bad = ['pull_request', 'pull_request_target']
       .filter((e) => e in on)
       .map((e) => `слушает ${e}`);
-    const body = stripComments(text);
-    if (/^\s+ref:/m.test(body)) bad.push('чекаут с ref: — код не main');
-    if (!body.includes('node scripts/merge-queue.mjs'))
+    // Код не main (дерево поезда) исполняет только джоба без права записи.
+    const jobs = jobBlocks(text);
+    for (const [name, body] of Object.entries(jobs))
+      if (/^\s+ref:/m.test(body) && /: write\b/.test(body))
+        bad.push(`${name}: чекаут с ref: — код не main`);
+    if (!jobs.queue?.includes('node scripts/merge-queue.mjs'))
       bad.push('не тот скрипт');
     return bad;
   };
@@ -658,6 +661,8 @@ describe('merge-queue.yml: запись есть, событий и чекаут
       'workflow_dispatch',
     ]);
     expect(violations(real)).toEqual([]);
+    // Контроль: поезд собирает джоба с `ref:` — и у неё только чтение.
+    expect(jobBlocks(real)['train-baselines']).toMatch(/^\s+ref:/m);
   });
 
   it('красный: события PR и чекаут головы PR', () => {
@@ -673,7 +678,7 @@ describe('merge-queue.yml: запись есть, событий и чекаут
     expect(violations(loose)).toEqual([
       'слушает pull_request',
       'слушает pull_request_target',
-      'чекаут с ref: — код не main',
+      'queue: чекаут с ref: — код не main',
     ]);
   });
 });

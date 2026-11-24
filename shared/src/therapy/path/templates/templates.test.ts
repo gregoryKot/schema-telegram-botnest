@@ -48,9 +48,17 @@ describe.each([
   it('недели — целые и положительные', () => {
     for (const t of templates)
       for (const p of t.phases) {
+        if (p.weeks == null) continue;
         expect(Number.isInteger(p.weeks), `${t.id}.${p.id}`).toBe(true);
         expect(p.weeks, `${t.id}.${p.id}`).toBeGreaterThan(0);
+        expect(p.weeksFrom, `${t.id}.${p.id}`).toBeDefined();
       }
+  });
+
+  it('общий шаблон сроков фаз не задаёт, срока целиком нет', () => {
+    const general = templates.find((t) => t.id === 'general')!;
+    expect(general.phases.every((p) => p.weeks == null)).toBe(true);
+    expect(pathTemplateWeeks(general)).toBeNull();
   });
 
   it('вид фаз — по смыслу: ключ — стадия справочника из guidePhaseIds фазы, без повторов; «завершение» — после автономии', () => {
