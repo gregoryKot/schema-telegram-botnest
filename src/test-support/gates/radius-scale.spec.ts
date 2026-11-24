@@ -90,18 +90,10 @@ describe('check-radius-scale.mjs', () => {
     expect(hit('webapp/src/styles/paper.css')).toBe(false);
   });
 
-  it('EXEMPT_SELECTORS гасит только .ds-seg, не .ds-seg-btn', () => {
-    expect(
-      loadStringList('check-radius-scale-rules.mjs', 'EXEMPT_SELECTORS'),
-    ).toEqual(['.ds-seg']);
+  it('селектор без чипа в имени (бывший .ds-seg) не гасится — exit 1', () => {
     expect(
       runGate(GATE, {
         'webapp/src/a.css': '.ds-seg { border-radius: 20px; }\n',
-      }).status,
-    ).toBe(0);
-    expect(
-      runGate(GATE, {
-        'webapp/src/a.css': '.ds-seg-btn { border-radius: 20px; }\n',
       }).status,
     ).toBe(1);
   });

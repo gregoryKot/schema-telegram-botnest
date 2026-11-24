@@ -10,11 +10,6 @@ export const EXEMPT = [
   ['админка вне охвата редизайна (#1619, решение 6)', /^webapp\/src\/pages\/(AdminPage\.tsx$|admin\/)/],
 ];
 
-// Селекторы вне шкалы до своего PR.
-export const EXEMPT_SELECTORS = new Set([
-  '.ds-seg', // cabinet.css: серая капсула-сегмент удаляется целиком в Г1в (#1619)
-]);
-
 // Капсула — только у чипов: селектор правила называет чип, пилюлю или метку.
 export const CHIP_SELECTOR = /chip|(?<!search-)pill|[-.]tags?\b/i;
 // Чипы с другим именем класса.
