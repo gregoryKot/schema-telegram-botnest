@@ -9,7 +9,7 @@ import type { ClientData, TherapyClientSummary, UserTask } from '../../api';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PHONE_MEDIA } from '../../utils/phoneLayout';
-import type { ClientDetail } from './clientSheetTypes';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 afterEach(cleanup);
 
@@ -21,8 +21,7 @@ const client = (telegramId: number): TherapyClientSummary => ({
   telegramId, name: null, clientAlias: null, streak: 0, lastActiveDate: null, todayIndex: null, recentIndexHistory: [],
   relationCreatedAt: '2026-10-01T10:00:00Z', therapyStartDate: null, nextSession: null, meetingDays: [], schemaIds: [],
 });
-// Вкладке нужна малая часть useClientDetail: поля сверяет Partial, единственный каст — здесь.
-const detailOf = (d: Partial<ClientDetail>) => d as ClientDetail;
+const detailOf = makeClientDetail;
 const YSQ_RUN = { id: 1, completedAt: '2026-10-01T10:00:00Z', scores: [{ id: 'failure', pct5plus: 70 }] };
 const ysqData: ClientData = {
   name: null, mySchemaIds: [], myModeIds: [], ysqActiveSchemaIds: [], ysqHistory: [YSQ_RUN], ysqCompletedAt: YSQ_RUN.completedAt,
@@ -42,7 +41,7 @@ describe('ClientTasksTab', () => {
     const onAssign = vi.fn();
     render(<ClientTasksTab detail={detailOf({ clientTasks: [], selectedClient: client(7) })} onAssign={onAssign} />);
     fireEvent.click(screen.getByText('Письмо себе в детстве'));
-    expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self' });
+    expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self', origin: 'template' });
     fireEvent.click(screen.getByText('Дневник режима'));
     expect(onAssign).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'custom', text: expect.stringContaining('Дневник режима') }));
     fireEvent.click(screen.getByText('+ Назначить'));

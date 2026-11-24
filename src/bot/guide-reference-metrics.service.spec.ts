@@ -20,7 +20,11 @@ function makeService(opts: {
   );
   // count — счётчики карточки-ответа (guide-answer-metrics) в render().
   const count = jest.fn(() => Promise.resolve(0));
-  const prisma = { analyticsEvent: { count, groupBy } };
+  // guideMark.groupBy — клиенты отметок «Про клиента» (guide-mark-metrics) в render().
+  const guideMark = { groupBy: jest.fn(() => Promise.resolve([])) };
+  // findMany — клиенты копингов «Про клиента» (meta.clientId событий).
+  const findMany = jest.fn(() => Promise.resolve([]));
+  const prisma = { analyticsEvent: { count, groupBy, findMany }, guideMark };
   return {
     service: new GuideReferenceMetricsService(prisma as never),
     groupBy,
@@ -42,6 +46,8 @@ describe('GuideReferenceMetricsService', () => {
         cabinet_guide_technique_open: 4,
         cabinet_guide_note_open: 1,
         cabinet_guide_need_open: 5,
+        cabinet_guide_concern_open: 8,
+        cabinet_guide_phase_open: 9,
         cabinet_guide_table_open: 6,
         // те же листы из схемы случая сюда не попадают
         concept_guide_mode_open: 99,
@@ -56,6 +62,8 @@ describe('GuideReferenceMetricsService', () => {
       techniques30: 4,
       notes30: 1,
       needs30: 5,
+      concerns30: 8,
+      phases30: 9,
       tables30: 6,
     });
   });

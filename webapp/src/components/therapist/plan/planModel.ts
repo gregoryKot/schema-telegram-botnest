@@ -1,9 +1,9 @@
 import {
-  PLAN_RUBRICS, PLAN_RUBRIC_LABEL, PLAN_STATUSES,
+  PLAN_RUBRICS, PLAN_RUBRIC_LABEL,
   type PlanItem, type PlanRubric, type PlanStatus,
 } from '../../../../../shared/src/therapy/plan/planItem';
 
-// Чистая модель вкладки «План работы» (#1337): порядок рубрик, цикл статуса, что показывать.
+// Чистая модель вкладки «План работы» (#1337): порядок рубрик, статусы, что показывать.
 
 export interface PlanGroup { rubric: PlanRubric; label: string; items: PlanItem[] }
 
@@ -34,6 +34,8 @@ export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
   planned: 'намечено',
   active: 'в работе',
   done: 'сделано',
+  postponed: 'отложено',
+  dropped: 'не нужно',
 };
 
 /** Подпись статуса; неизвестный статус читается как «намечено». */
@@ -41,11 +43,11 @@ export function statusLabel(status: string): string {
   return PLAN_STATUS_LABEL[status as PlanStatus] ?? PLAN_STATUS_LABEL.planned;
 }
 
-/** Тап по статусу: намечено → в работе → сделано → намечено. */
-export function nextStatus(status: string): PlanStatus {
-  const i = (PLAN_STATUSES as readonly string[]).indexOf(status);
-  return PLAN_STATUSES[(i + 1) % PLAN_STATUSES.length];
-}
+/** «Отложено» и «не нужно» читаются тише остальных. */
+export const isQuietStatus = (status: string) => status === 'postponed' || status === 'dropped';
+
+/** Фаза в меню «В фазу…». */
+export interface PhaseOption { id: number; name: string }
 
 export function isEmptyPlan(items: readonly PlanItem[]): boolean {
   return items.length === 0;
@@ -64,7 +66,7 @@ export function cleanText(text: string): string | null {
 
 /** Сколько пунктов в каком статусе — строка под заголовком вкладки. */
 export function planCounts(items: readonly PlanItem[]): Record<PlanStatus, number> {
-  const counts: Record<PlanStatus, number> = { planned: 0, active: 0, done: 0 };
+  const counts: Record<PlanStatus, number> = { planned: 0, active: 0, done: 0, postponed: 0, dropped: 0 };
   for (const i of items) counts[i.status in counts ? i.status : 'planned'] += 1;
   return counts;
 }

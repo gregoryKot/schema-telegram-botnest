@@ -7,6 +7,7 @@ import {
   type UserSettingsPatch,
 } from './user-settings-write';
 import { assertDayNoteFits } from './day-note-limit';
+import { NEED_NAMES } from './need-names';
 
 export const NEED_IDS = [
   'attachment',
@@ -25,47 +26,46 @@ export interface Need {
   chartLabel: string; // для диаграммы (без эмодзи)
 }
 
-// Ядро: потребности (needs), их оценки (ratings/childhood ratings), дневная
-// заметка и настройки юзера. Остальные домены — в соседних сервисах
-// (account/ysq/pairs/practices/exercises/notes.service.ts), см. bot.module.ts.
+// Ядро: потребности, их оценки, дневная заметка и настройки юзера. Остальные домены —
+// в соседних сервисах (account/ysq/pairs/practices/exercises/notes.service.ts, bot.module.ts).
 @Injectable()
 export class BotService {
   private readonly needs: Need[] = [
     {
       id: 'attachment',
       emoji: '🤝',
-      title: '🤝 Привязанность',
+      title: `🤝 ${NEED_NAMES.attachment}`,
       fullTitle:
         'Безопасная привязанность\n(безопасность, стабильность, забота, принятие)',
-      chartLabel: 'Привязанность',
+      chartLabel: NEED_NAMES.attachment,
     },
     {
       id: 'autonomy',
       emoji: '🚀',
-      title: '🚀 Автономия',
+      title: `🚀 ${NEED_NAMES.autonomy}`,
       fullTitle: 'Автономия, компетентность и чувство идентичности',
-      chartLabel: 'Автономия',
+      chartLabel: NEED_NAMES.autonomy,
     },
     {
       id: 'expression',
       emoji: '💬',
-      title: '💬 Выражение чувств',
+      title: `💬 ${NEED_NAMES.expression}`,
       fullTitle: 'Свобода выражать потребности и эмоции',
-      chartLabel: 'Выражение чувств',
+      chartLabel: NEED_NAMES.expression,
     },
     {
       id: 'play',
       emoji: '🎉',
-      title: '🎉 Спонтанность',
+      title: `🎉 ${NEED_NAMES.play}`,
       fullTitle: 'Спонтанность и игра',
-      chartLabel: 'Спонтанность',
+      chartLabel: NEED_NAMES.play,
     },
     {
       id: 'limits',
       emoji: '⚖️',
-      title: '⚖️ Самоконтроль',
+      title: `⚖️ ${NEED_NAMES.limits}`,
       fullTitle: 'Реалистичные границы и самоконтроль',
-      chartLabel: 'Самоконтроль',
+      chartLabel: NEED_NAMES.limits,
     },
   ];
 

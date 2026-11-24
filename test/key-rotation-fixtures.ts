@@ -28,8 +28,20 @@ export const BASE_ROWS: Record<string, Row> = {
   diaryDraft: { userId: USER, type: 'schema', startedAt: T0 },
   userTask: { userId: USER, type: 'custom' },
   therapistNote: { therapistId: THERAPIST, clientId: USER, date: '2026-10-14' },
+  guideMark: { therapistId: THERAPIST, clientId: USER, address: 'rot-e2e' },
   clientConceptualization: { therapistId: THERAPIST, clientId: USER },
   therapyPlanItem: { therapistId: THERAPIST, clientId: USER, rubric: 'custom' },
+  // Фаза без пути не живёт (FK): родитель создаётся вложенным create.
+  therapyPathPhase: {
+    weeks: 4,
+    path: {
+      create: {
+        therapistId: THERAPIST,
+        clientId: USER,
+        startDate: '2026-10-14',
+      },
+    },
+  },
   booking: {
     startsAt: T0,
     durationMin: 50,

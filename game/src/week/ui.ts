@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { W } from '../constants';
 
-export const FONT = '"Handjet", "Press Start 2P", monospace';
+export const FONT = '"Handjet", "Avenir Next Condensed", "Arial Narrow", sans-serif'; // запас узкий: раскладка — под Handjet
 /** Кадр телефона — 640 в ширину; на большом холсте всё крупнее в то же число раз. */
 export const K = W / 640;
 export const px = (n: number) => Math.round(n * K);

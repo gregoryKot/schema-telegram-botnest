@@ -1,23 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { TherapyPlanItem } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
-import {
-  decryptRecord,
-  encryptRecord,
-  type EncryptSchema,
-} from '../utils/crypto-record';
 import type { PlanItemView, PlanSource } from './therapy-plan.types';
-
-const PLAN_SCHEMA: EncryptSchema = {
-  strings: ['text'],
-  model: 'TherapyPlanItem',
-};
+import { encryptPlan, toView } from './therapy-plan.view';
+import { parseGuideAddress } from './guide-mark-address';
+import { assertPhaseOfPair } from './therapy-plan.phase';
 
 export interface PlanItemInput {
   rubric: string;
   text: string;
+  /** Адрес раздела справочника, из которого взят пункт. */
+  sourceAddress?: string;
+  /** Старый клиент (до адресов) шлёт вид/id/поле — пишутся как раньше. */
   source?: PlanSource;
+  /** Фаза пути клиента; допустима только при одном клиенте. */
+  phaseId?: number;
 }
 
 export interface PlanItemPatch {
@@ -25,26 +27,7 @@ export interface PlanItemPatch {
   status?: string;
   rubric?: string;
   taskId?: number | null;
-}
-
-// Одна расшифровка на все ответы: список, создание и правка отдают одну форму.
-function toView(row: TherapyPlanItem): PlanItemView {
-  const r = decryptRecord(row, PLAN_SCHEMA);
-  return {
-    id: r.id,
-    clientId: String(r.clientId),
-    rubric: r.rubric,
-    text: r.text,
-    status: r.status,
-    position: r.position,
-    source:
-      r.sourceKind && r.sourceId && r.sourceField
-        ? { kind: r.sourceKind, id: r.sourceId, field: r.sourceField }
-        : null,
-    taskId: r.taskId,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-  };
+  phaseId?: number | null;
 }
 
 // План работы с клиентом: пункты терапевта, клиенту не показываются. Доступ —
@@ -72,8 +55,19 @@ export class TherapyPlanService {
     clientIds: bigint[],
     input: PlanItemInput,
   ): Promise<PlanItemView[]> {
+    if (input.sourceAddress && !parseGuideAddress(input.sourceAddress))
+      throw new BadRequestException('Bad guide address');
     for (const clientId of clientIds) {
       await this.relationsService.assertHasClient(therapistId, clientId);
+    }
+    if (input.phaseId != null) {
+      if (clientIds.length !== 1)
+        throw new BadRequestException('Phase needs a single client');
+      await assertPhaseOfPair(
+        this.prisma,
+        { therapistId, clientId: clientIds[0] },
+        input.phaseId,
+      );
     }
     const rows = await this.prisma.$transaction(async (tx) => {
       const created: TherapyPlanItem[] = [];
@@ -85,19 +79,18 @@ export class TherapyPlanService {
         });
         created.push(
           await tx.therapyPlanItem.create({
-            data: encryptRecord(
-              {
-                therapistId,
-                clientId,
-                rubric: input.rubric,
-                text: input.text,
-                position: (last?.position ?? -1) + 1,
-                sourceKind: input.source?.kind ?? null,
-                sourceId: input.source?.id ?? null,
-                sourceField: input.source?.field ?? null,
-              },
-              PLAN_SCHEMA,
-            ),
+            data: encryptPlan({
+              therapistId,
+              clientId,
+              rubric: input.rubric,
+              text: input.text,
+              position: (last?.position ?? -1) + 1,
+              sourceAddress: input.sourceAddress ?? null,
+              sourceKind: input.source?.kind ?? null,
+              sourceId: input.source?.id ?? null,
+              sourceField: input.source?.field ?? null,
+              phaseId: input.phaseId ?? null,
+            }),
           }),
         );
       }
@@ -124,15 +117,19 @@ export class TherapyPlanService {
       });
       if (!task) throw new NotFoundException('Task not found');
     }
-    const data = encryptRecord(
-      {
-        ...(patch.text !== undefined && { text: patch.text }),
-        ...(patch.status !== undefined && { status: patch.status }),
-        ...(patch.rubric !== undefined && { rubric: patch.rubric }),
-        ...(patch.taskId !== undefined && { taskId: patch.taskId }),
-      },
-      PLAN_SCHEMA,
-    );
+    if (patch.phaseId != null)
+      await assertPhaseOfPair(
+        this.prisma,
+        { therapistId, ...item },
+        patch.phaseId,
+      );
+    const data = encryptPlan({
+      ...(patch.text !== undefined && { text: patch.text }),
+      ...(patch.status !== undefined && { status: patch.status }),
+      ...(patch.rubric !== undefined && { rubric: patch.rubric }),
+      ...(patch.taskId !== undefined && { taskId: patch.taskId }),
+      ...(patch.phaseId !== undefined && { phaseId: patch.phaseId }),
+    });
     const row = await this.prisma.therapyPlanItem.update({
       where: { id: item.id },
       data,

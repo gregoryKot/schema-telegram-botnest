@@ -99,12 +99,10 @@
   `[]` в `joinGratitudeItems`), тексты исключений и логов. Добивать — только
   вместе с поведением, не ради процента.
 - **Модули, загруженные внутри `it` (`loadWithKeys`, `require`), Stryker
-  засчитывает тесту, и статика волны А становится «гибридной».** Причину в
-  `client-key-rekey.service.spec.ts` сняли: загрузка ушла в `beforeAll`
-  (код хуков вне теста — статика). Внутри `it` ещё грузят `client-key.spec.ts`,
-  `practice-ics.spec.ts`, `rotate-all.spec.ts`,
-  `therapy-notes.service.conceptualization.spec.ts` — полы сейчас держатся;
-  новый такой спек над графом импортов `mutate` повторит провал. Гейта нет.
+  засчитывает тесту, и статика волны А становится «гибридной».** Новый такой
+  спек краснит `scripts/check-spec-load-in-test.mjs`; долга нет. Тест, чей
+  предмет — сама загрузка (разбор ключа, бросок в production), помечает её
+  `loadAsSubject('причина', …)`; хуки `beforeEach` гейт пока не смотрит.
 - **Цена TOTP в волне А — ~3 мин CI, запас до потолка ≥15 мин.** Отчёт
   локального прогона 2026-11-15: 225 из 1926 мутантов TOTP-файлов, 8,3%
   `testsCompleted` (4518 из 54526) — ~4,6 из 56 мин, на CI вдвое быстрее ~2,5 мин.
@@ -125,18 +123,6 @@
   A/B не делали, а код загрузки исполняет любой импортирующий спек, и кто из них
   единственный судья, не известно. Сейчас они Ignored (`ignoreStatic: true`);
   включая статику (запись выше) — мерить заново.
-- **Мутатор `CallExpression` из Stryker 10 выключен в волне golden-auth**
-  (`mutator.excludedMutations` в `stryker.golden-auth.config.json`, с перехода
-  на Stryker 10). Он стирает вызов-оператор (`foo();` → `;`), `throw new X()` и
-  вызов внутри выражения (→ `void 0`), если в нём нет других мутантов. В
-  остальных волнах (bot, golden-payments, crisis, outbox, зонтичный
-  `stryker.config.json`) включён: выжили два `logger.warn` в
-  `payment.booking-webhook.ts` (помечены `// Stryker disable next-line
-  CallExpression` с причиной) и `removeLocal` в `ratingOutbox.ts` (закрыт
-  тестом). В golden-auth по подсчёту инструментером — +6 мутантов в
-  `crypto-record.ts` и по 1–2 в прочих файлах. Включение — отдельным PR
-  (строка в `docs/BACKLOG.md`): снять исключение, прогнать волну, выживших
-  закрыть тестом или пометкой с причиной, полы — `--update` по прогону.
 - **Таймаутов у шагов `ci.yml` нет, потолок только у джоб.** Гейт
   `src/test-support/gates/job-timeouts.spec.ts` требует `timeout-minutes`
   на уровне джобы; шаг (`vitest`, `migrate deploy`) может занять весь потолок

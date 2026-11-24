@@ -5,10 +5,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
 import type { TherapyClientSummary } from '../../../api';
-import type { ClientDetail } from '../clientSheetTypes';
 
 const h = vi.hoisted(() => ({
   getTherapyPlan: vi.fn(), createPlanItems: vi.fn(), updatePlanItem: vi.fn(), deletePlanItem: vi.fn(), reorderPlan: vi.fn(), trackEvent: vi.fn(),
+  getPlanWork: vi.fn(() => Promise.resolve({ entries: [] as unknown[] })),
+  getGuideMarks: () => Promise.resolve({ marks: [] }),
+  getTherapyPath: vi.fn(() => Promise.resolve({ path: null as unknown })),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 vi.mock('../../../../../shared/src/therapy/conceptGraph/guideLoader', () => ({ useGuide: () => null }));
@@ -20,18 +22,15 @@ vi.mock('../../TaskCreateSheet', () => ({
 }));
 
 import { ClientPlanTab } from './ClientPlanTab';
+import { makeClientDetail } from '../clientDetail.test-helpers';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
-  source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
+  sourceAddress: null, source: null, taskId: null, phaseId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
 });
 const client = { telegramId: 7, name: 'Анна' } as unknown as TherapyClientSummary;
 const patchConcept = vi.fn();
-const detail = {
-  localConcept: { goals: 'Меньше срывов' }, concept: null, conceptLoad: { failed: false, reloading: false },
-  patchConcept, setClientTab: vi.fn(), saveStatus: 'idle', savedAt: null, retrySave: vi.fn(), conceptError: '',
-  reloadConcept: vi.fn(), onTaskAssigned: vi.fn(),
-} as unknown as ClientDetail;
+const detail = makeClientDetail({ localConcept: { goals: 'Меньше срывов' }, patchConcept });
 const renderTab = () => render(<MemoryRouter><ClientPlanTab selectedClient={client} detail={detail} /></MemoryRouter>);
 
 beforeEach(() => { vi.clearAllMocks(); });
@@ -54,8 +53,10 @@ describe('ClientPlanTab', () => {
     expect(screen.queryByText('В плане пока пусто')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Статус: намечено/ }));
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /в работе/ }));
     await waitFor(() => expect(h.updatePlanItem).toHaveBeenCalledWith(1, { status: 'active' }));
-    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_status', { status: 'active' }));
+    await waitFor(() => expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_status', { status: 'active', inPhase: false }));
 
     fireEvent.change(screen.getByDisplayValue('Меньше срывов'), { target: { value: 'Меньше срывов и больше опоры' } });
     expect(patchConcept).toHaveBeenCalledWith({ goals: 'Меньше срывов и больше опоры' });
@@ -108,6 +109,7 @@ describe('ClientPlanTab', () => {
     h.updatePlanItem.mockRejectedValue(new Error('net'));
     renderTab();
     fireEvent.click(await screen.findByRole('button', { name: /Статус: намечено/ }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /отложено/ }));
     await screen.findByText('Не удалось сохранить пункт');
     expect(screen.getByRole('button', { name: /Статус: намечено/ })).toBeTruthy();
     expect(h.trackEvent).not.toHaveBeenCalled();
@@ -153,5 +155,40 @@ describe('ClientPlanTab', () => {
     await screen.findByText('Не удалось переставить пункт');
     expect(h.getTherapyPlan).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(Array.from(document.querySelectorAll('.pl-text')).map((n) => n.textContent)).toEqual(['Первый', 'Второй']));
+  });
+
+  it('раскладка: есть путь — «По фазам», пункт стоит в своей фазе; «По каналам» — рубрики, как раньше', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Карта режимов', phaseId: 11 }), item({ id: 2, rubric: 'between', text: 'Дневник', position: 1 })]);
+    h.getTherapyPath.mockResolvedValueOnce({ path: {
+      id: 1, clientId: '7', startDate: '2026-11-02', templateId: null, createdAt: '', updatedAt: '',
+      phases: [{ id: 11, position: 0, name: 'Оценка', goal: null, weeks: 6, templatePhaseId: null, startedAt: '2026-11-02', endedAt: null, criteriaDone: [], note: null }],
+    } });
+    renderTab();
+    await screen.findByText('Оценка');
+    expect(screen.getByRole('button', { name: 'По фазам' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('Без фазы')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Опустить ниже' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'По каналам' }));
+    expect(screen.getAllByRole('heading', { level: 3 }).map((n) => n.textContent)).toEqual(['Между сессиями', 'Своё']);
+  });
+
+  it('шов «итоги → план»: ответ plan-work даёт строку «работали …», тап открывает последнюю запись', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Диалог на стульях' }), item({ id: 2, text: 'Без записей', position: 1 })]);
+    h.getPlanWork.mockResolvedValue({ entries: [
+      { noteId: 31, date: '2026-11-12', planItemIds: [1] }, { noteId: 20, date: '2026-10-29', planItemIds: [1] },
+    ] });
+    const onOpenSession = vi.fn();
+    render(<MemoryRouter><ClientPlanTab selectedClient={client} detail={detail} onOpenSession={onOpenSession} /></MemoryRouter>);
+    const line = await screen.findByRole('button', { name: 'работали 2 раза, последний — 12 ноября' });
+    expect(screen.getAllByText(/работали/)).toHaveLength(1);
+    fireEvent.click(line);
+    expect(onOpenSession).toHaveBeenCalledWith(31);
+  });
+
+  it('пути нет — по умолчанию «По каналам»', async () => {
+    h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Свой пункт' })]);
+    renderTab();
+    await screen.findByText('Свой пункт');
+    expect(screen.getByRole('button', { name: 'По каналам' }).getAttribute('aria-pressed')).toBe('true');
   });
 });

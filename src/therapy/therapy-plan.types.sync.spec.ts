@@ -46,3 +46,37 @@ describe('план работы — бэкенд и фронт знают одн
     ]);
   });
 });
+
+// Старый источник → адрес: SQL миграции повторяет legacyPlanSourceAddress (planAddress.ts).
+describe('план работы — перевод старого источника в адрес: миграция = сайт', () => {
+  const root = join(__dirname, '..', '..');
+  const sql = readFileSync(
+    join(
+      root,
+      'prisma/migrations/20261120160000_plan_source_address/migration.sql',
+    ),
+    'utf8',
+  );
+  const site = readFileSync(
+    join(root, 'shared/src/therapy/plan/planAddress.ts'),
+    'utf8',
+  ).replace(/\s+/g, ' ');
+
+  it('адрес — `вид:id/поле`, как formatAddress', () => {
+    expect(sql).toContain(
+      `"sourceKind" || ':' || "sourceId" || '/' || "sourceField"`,
+    );
+    expect(site).toContain(
+      'formatAddress({ kind: source.kind, articleId: source.id, path: source.field, })',
+    );
+  });
+
+  it('переводятся те же виды статей', () => {
+    const inSql = quoted(/"sourceKind" IN \(([^)]+)\)/.exec(sql)?.[1]);
+    const inSite = quoted(
+      /OLD_KINDS[^=]*= new Set\(\[([^\]]+)\]/.exec(site)?.[1],
+    );
+    expect(inSql).toEqual(inSite);
+    expect(inSql).toEqual([...PLAN_SOURCE_KINDS]);
+  });
+});

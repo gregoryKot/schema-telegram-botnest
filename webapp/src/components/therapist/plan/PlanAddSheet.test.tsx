@@ -8,14 +8,15 @@ import { PlanAddSheet } from './PlanAddSheet';
 const h = vi.hoisted(() => ({
   createPlanItems: vi.fn(),
   getTherapyClients: vi.fn(),
+  getTherapyPath: vi.fn(),
   trackEvent: vi.fn(),
 }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
 const draft: PlanDraft = {
-  rubric: 'cognitive', field: 'cognitive', label: 'Через понимание',
+  rubric: 'cognitive', field: 'cognitive', label: 'Когнитивные (через понимание)',
   parts: ['Оценить риск [Арнтц, 5.1.1].', 'Потом — за и против.'],
-  source: { kind: 'mode', id: 'bully_attack', field: 'cognitive' },
+  sourceAddress: 'mode:bully_attack/cognitive',
 };
 const show = (clientId?: number, onAdded?: () => void) =>
   render(<MemoryRouter><PlanAddSheet draft={draft} clientId={clientId} onAdded={onAdded} onClose={() => {}} /></MemoryRouter>);
@@ -24,6 +25,7 @@ const add = () => fireEvent.click(screen.getByRole('button', { name: 'Добав
 beforeEach(() => {
   vi.clearAllMocks();
   h.createPlanItems.mockResolvedValue({ items: [] });
+  h.getTherapyPath.mockResolvedValue({ path: null });
   h.getTherapyClients.mockResolvedValue([
     { telegramId: 11, name: 'Анна', clientAlias: null },
     { telegramId: 12, name: 'Борис', clientAlias: null },
@@ -39,7 +41,7 @@ describe('PlanAddSheet — «В план» из справочника', () => {
     add();
     await waitFor(() => expect(screen.getByText('Добавлено в план')).toBeTruthy());
     expect(h.createPlanItems).toHaveBeenCalledWith({
-      clientIds: ['7'], rubric: 'cognitive', text: 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.', source: draft.source,
+      clientIds: ['7'], rubric: 'cognitive', text: 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.', sourceAddress: draft.sourceAddress,
     });
     expect(h.trackEvent).toHaveBeenCalledWith('therapy_plan_item_added', { rubric: 'cognitive', fromGuide: true });
     expect(onAdded).toHaveBeenCalled();
@@ -72,5 +74,42 @@ describe('PlanAddSheet — «В план» из справочника', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Не удалось добавить в план'));
     expect(h.trackEvent).not.toHaveBeenCalled();
     expect(screen.queryByText('Добавлено в план')).toBeNull();
+  });
+
+  describe('фаза пути', () => {
+    const phase = (id: number, position: number, name: string, over = {}) => ({
+      id, position, name, goal: null, weeks: 4, templatePhaseId: null, startedAt: null, endedAt: null, criteriaDone: [], note: null, ...over,
+    });
+    const withPath = () => h.getTherapyPath.mockResolvedValue({ path: {
+      id: 1, clientId: '7', startDate: '2026-11-02', templateId: null, createdAt: '', updatedAt: '',
+      phases: [phase(5, 0, 'Оценка', { startedAt: '2026-11-02', endedAt: '2026-11-30' }), phase(6, 1, 'Связь', { startedAt: '2026-11-30' })],
+    } });
+
+    it('есть путь: предвыбрана текущая фаза и пункт уходит с ней; «Без фазы» снимает её', async () => {
+      withPath();
+      show(7);
+      const select = (await screen.findByLabelText('Фаза пути')) as HTMLSelectElement;
+      expect(select.value).toBe('6');
+      add();
+      await waitFor(() => expect(h.createPlanItems).toHaveBeenCalledWith(expect.objectContaining({ phaseId: 6 })));
+    });
+
+    it('«Без фазы»: phaseId не уходит', async () => {
+      withPath();
+      show(7);
+      fireEvent.change(await screen.findByLabelText('Фаза пути'), { target: { value: '' } });
+      add();
+      await waitFor(() => expect(h.createPlanItems).toHaveBeenCalled());
+      expect(h.createPlanItems.mock.calls[0][0]).not.toHaveProperty('phaseId');
+    });
+
+    it('пути нет или он не загрузился: выбора нет, пункт уходит как раньше', async () => {
+      h.getTherapyPath.mockRejectedValue(new Error('boom'));
+      show(7);
+      add();
+      await waitFor(() => expect(h.createPlanItems).toHaveBeenCalled());
+      expect(screen.queryByLabelText('Фаза пути')).toBeNull();
+      expect(h.createPlanItems.mock.calls[0][0]).not.toHaveProperty('phaseId');
+    });
   });
 });

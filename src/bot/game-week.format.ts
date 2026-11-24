@@ -27,6 +27,10 @@ export function formatWeekLines(w: WeekMetrics): string[] {
   if (w.wedDone > 0) next.push(`прошли «Среду» ${w.wedDone}`);
   if (w.friStarted > 0) next.push(`пошли в «Пятницу» ${w.friStarted}`);
   if (w.friDone > 0) next.push(`прошли «Пятницу» ${w.friDone}`);
+  if (w.sunStarted > 0) next.push(`пошли в «Воскресенье» ${w.sunStarted}`);
+  if (w.sunDone > 0) next.push(`прошли «Воскресенье» ${w.sunDone}`);
+  if (w.firstStarted > 0)
+    next.push(`пошли в «Первую встречу» ${w.firstStarted}`);
   if (w.firstDone > 0) next.push(`дошли до конца ${w.firstDone}`);
   if (next.length > 0) lines.push(`Дальше по неделе: ${next.join(' · ')}`);
   const rate = weekCtaRate(w);

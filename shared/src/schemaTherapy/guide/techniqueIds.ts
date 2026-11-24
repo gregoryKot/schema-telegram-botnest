@@ -47,10 +47,34 @@ export type BorrowedTechniqueId =
   | 'motivational_interviewing'
   | 'window_of_tolerance'
   | 'stop_rewind_explore'
-  | 'life_line';
+  | 'life_line'
+  | 'downward_arrow';
+
+/** Техники схема-терапии из Кембриджского руководства (пачка 7 карты). */
+export type CambridgeTechniqueId =
+  | 'schema_attunement'
+  | 'responsibility_pie'
+  | 'courtroom'
+  | 'healthy_adult_three_chairs'
+  | 'need_now_question';
+
+/** Техники схема-терапии из книги Янга (пачка 8 карты). */
+export type YoungTechniqueId = 'schema_dialogue';
+
+/** Техники из книги Арнца и ван Гендерен о ПРЛ (карта «Арнц-ПРЛ»). */
+export type ArntzTechniqueId =
+  'current_role_play' | 'two_axis_check' | 'need_cycle' | 'guess_the_mode';
+
+/** Техники из книги Фаррелл, Рейсс и Шоу (карта «Фаррелл»). */
+export type FarrellTechniqueId =
+  'mode_management_plan' | 'healthy_adult_plan' | 'safety_bubble';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
   | SchemaTechniqueId
+  | CambridgeTechniqueId
+  | YoungTechniqueId
+  | ArntzTechniqueId
+  | FarrellTechniqueId
   | BorrowedTechniqueId;

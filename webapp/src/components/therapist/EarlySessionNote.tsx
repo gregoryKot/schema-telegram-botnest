@@ -11,7 +11,11 @@ import { hasCustomMode, useCustomModeNames } from './useCustomModeNames';
  * к ней пришли из журнала «На сессиях», поэтому она грузится по id и встаёт
  * под архивом, в конце — она раньше всех показанных.
  */
-export function EarlySessionNote({ clientId, noteId }: { clientId: UserId; noteId: number }) {
+export function EarlySessionNote({ clientId, noteId, onDelete }: {
+  clientId: UserId; noteId: number;
+  /** «Удалить» в строке: подтверждение и само удаление — у архива, общие с показанными записями. */
+  onDelete?: (found: TherapistNoteOne) => void;
+}) {
   // undefined — грузится, null — не загрузилась.
   const [found, setFound] = useState<TherapistNoteOne | null>();
   const [attempt, setAttempt] = useState(0);
@@ -27,7 +31,7 @@ export function EarlySessionNote({ clientId, noteId }: { clientId: UserId; noteI
   }, [clientId, noteId, attempt]);
   useEffect(() => { ref.current?.scrollIntoView?.({ block: 'center' }); }, [found]);
 
-  if (found) return <SessionNoteRow rowRef={ref} note={found.note} number={found.number} focus customModes={customModes} />;
+  if (found) return <SessionNoteRow rowRef={ref} note={found.note} number={found.number} focus customModes={customModes} onDelete={onDelete && (() => onDelete(found))} />;
   return (
     <div ref={ref}>
       <div className="ds-label">Более ранняя запись</div>

@@ -2,10 +2,9 @@
 // Иконки сайта из знака «Всё по схеме» (shared/src/share/kit/brandMark.ts): favicon.svg и
 // PNG в webapp/public. Результат коммитится — скрипт не гоняется в CI, только вручную при
 // смене знака: `node scripts/generate-pwa-icons.mjs` (Node ≥ 22.18 сам снимает типы с .ts).
-// Сверка favicon.svg с модулем знака и безопасной зоны maskable —
-// webapp/src/components/art/BrandMark.test.tsx; размеры и непрозрачность PNG —
-// webapp/src/pwaManifest.test.ts. Иконки визитки (*-personal*) этот скрипт не трогает.
-//
+// Сверка favicon.svg с модулем знака и безопасной зоны maskable — webapp/src/components/art/
+// BrandMark.test.tsx; размеры PNG — webapp/src/pwaManifest.test.ts. Иконки визитки (*-personal*)
+// скрипт не трогает.
 // Иконки живут в webapp/public/ — `webapp/dist/*` раздаётся с корня, путь
 // вида `/icon-192.png` из манифеста резолвится в корень.
 import sharp from 'sharp';
@@ -38,3 +37,4 @@ await png(TILE, 192, 'icon-192.png');
 await png(TILE, 512, 'icon-512.png');
 await png(BLEED, 512, 'icon-512-maskable.png', { opaque: true });
 await png(BLEED, 180, 'apple-touch-icon.png', { opaque: true });
+await import('./generate-ios-splash.mjs');

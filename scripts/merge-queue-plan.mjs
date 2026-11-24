@@ -5,8 +5,7 @@ export const BOT = 'github-actions[bot]';
 export const DEPENDABOT = 'dependabot[bot]';
 const GREEN = new Set(['success', 'skipped', 'neutral']);
 const RED = new Set(['failure', 'timed_out', 'startup_failure']);
-// Свежий зелёный PR GitHub мержит за секунды; дольше — его что-то держит,
-// и очередь идёт дальше, а не ждёт вечно.
+// Свежий зелёный PR GitHub мержит за секунды; дольше — что-то держит, очередь идёт дальше.
 export const GREEN_GRACE_MS = 10 * 60_000;
 
 /** Обязательные проверки main из ответа GET /rules/branches/main. */
@@ -55,36 +54,35 @@ export function checksState(required, runs) {
 }
 
 /**
- * Один PR за раз: свежий PR с идущими (или только что позеленевшими)
- * проверками — «в работе», его ждут. Иначе кандидаты — отставшие с зелёным
- * или идущим прогоном, по порядку; красный и без прогона чинит агент.
+ * Один PR «в полёте»: свежий с прогоном самой очереди (`byQueue`) или только
+ * что позеленевший — его ждут; чужие идущие проверки очередь не держат.
+ * Кандидаты — отставшие: зелёные по готовности, с идущим прогоном, без прогона
+ * (у конфликта CI не стартует — его сводит движок); красный чинит агент.
  */
 export function planQueue(prs, now) {
   const wait = prs.find(
     (p) =>
       p.behind === 0 &&
-      (p.checks.state === 'pending' ||
+      ((p.checks.state === 'pending' && p.byQueue) ||
         (p.checks.state === 'green' && now - p.checks.last < GREEN_GRACE_MS)),
   );
   if (wait) return { wait, candidates: [] };
-  const candidates = prs.filter(
-    (p) =>
-      p.behind > 0 &&
-      (p.checks.state === 'green' || p.checks.state === 'pending'),
-  );
+  const rank = { green: 0, pending: 1, missing: 2 };
+  const candidates = prs
+    .filter((p) => p.behind > 0 && p.checks.state in rank)
+    .sort((a, b) => rank[a.checks.state] - rank[b.checks.state] || a.checks.last - b.checks.last || a.number - b.number);
   return { wait: null, candidates };
 }
 
-/**
- * Прогоны, которые породил update-branch очереди: пуш от GITHUB_TOKEN политика
- * «first_time_contributors» ставит на одобрение. Форк и чужой автор — не трогаем.
- */
-export function runsToApprove(runs, repo) {
-  return runs.filter(
+/** Прогоны, которые породил пуш очереди (update-branch или сведённый конфликт). */
+export const queueRuns = (runs, repo) =>
+  runs.filter(
     (r) =>
       r.event === 'pull_request' &&
-      r.conclusion === 'action_required' &&
       r.head_repository?.full_name === repo &&
       r.triggering_actor?.login === BOT,
   );
-}
+
+/** Из них на одобрении: пуш от GITHUB_TOKEN политика «first_time_contributors» держит в action_required. */
+export const runsToApprove = (runs, repo) =>
+  queueRuns(runs, repo).filter((r) => r.conclusion === 'action_required');

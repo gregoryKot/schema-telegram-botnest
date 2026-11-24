@@ -16,7 +16,7 @@ import {
   useJourneyShare,
   type JourneyShareState,
 } from './journeyShare';
-import { JOURNEY_NEED_NAMES } from './journeyMeta';
+import { NEED_NAMES } from '../needs/needNames';
 import { EMPTY_JOURNEY_COUNTS } from './journeyCounts.fixture';
 import { journeyStatRows } from './journeyStats';
 import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
@@ -60,10 +60,8 @@ vi.mock('../share/cards/ysqProfileCard', async (importOriginal) => {
 describe('journeyDayRows', () => {
   it('пропущенная потребность → value null и «—», а не 0 (нет выдуманных данных)', () => {
     const rows = journeyDayRows({ attachment: 7 });
-    const attachment = rows.find(
-      (r) => r.label === JOURNEY_NEED_NAMES.attachment,
-    );
-    const autonomy = rows.find((r) => r.label === JOURNEY_NEED_NAMES.autonomy);
+    const attachment = rows.find((r) => r.label === NEED_NAMES.attachment);
+    const autonomy = rows.find((r) => r.label === NEED_NAMES.autonomy);
     expect(attachment).toMatchObject({ value: 7, valueText: '7' });
     expect(autonomy).toMatchObject({ value: null, valueText: '—' });
   });

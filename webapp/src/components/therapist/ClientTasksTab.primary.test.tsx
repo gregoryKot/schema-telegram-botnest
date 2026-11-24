@@ -6,15 +6,15 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ClientTasksTab } from './ClientTasksTab';
-import type { ClientDetail } from './clientSheetTypes';
+import { makeClient, makeClientDetail } from './clientDetail.test-helpers';
 
-vi.mock('../../api', () => ({ api: {} }));
+vi.mock('../../api', () => ({ api: { getGuideMarks: () => Promise.resolve({ marks: [] }) } }));
 const phone = vi.hoisted(() => ({ value: false }));
 vi.mock('../useIsMobile', () => ({ useIsMobile: () => phone.value }));
 
 afterEach(cleanup);
 
-const detail = { clientTasks: [], setClientTasks: vi.fn(), selectedClient: { telegramId: 7 } } as unknown as ClientDetail;
+const detail = makeClientDetail({ selectedClient: makeClient({ telegramId: 7 }) });
 const firstTask = () => {
   render(<MemoryRouter><ClientTasksTab detail={detail} onAssign={vi.fn()} /></MemoryRouter>);
   return screen.getByRole('button', { name: 'Назначить первое задание' }).className;

@@ -17,11 +17,17 @@ import { CORE_TECHNIQUE_SIGN } from './techniqueSigns';
 
 const tr = (ty: string) => ty;
 
-/** Одиннадцать разделов «Для терапевта» (#1013; онлайн-формат — из карты Кембриджа). */
+/** Все разделы «Для терапевта» (#1013; по картам Кембриджа, Янга и Арнца — ПРЛ). */
 const NOTE_IDS = [
   'impasses', 'chatting', 'method_errors', 'therapist_schemas', 'group_therapy',
   'deliberate_practice', 'frame_additions', 'angry_client', 'suicidal_thoughts', 'romance_and_partner',
-  'online_format',
+  'online_format', 'first_session', 'complaint_to_mode', 'story_as_mode_signal', 'stages_of_change',
+  'case_conceptualization', 'history_interview', 'therapy_aims', 'evidence_limits', 'session_structure',
+  'self_disclosure', 'experiential_avoidance', 'exact_scene', 'change_blocks', 'ending_phase', 'complex_trauma',
+  'therapist_wellbeing', 'group_techniques', 'suitability', 'imagery_avoidance', 'life_decisions',
+  'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps',
+  'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation', 'group_plan_vs_mode',
+  'group_mode_roleplay',
 ];
 
 describe('знаки листов подсказок', () => {
@@ -64,11 +70,12 @@ describe('знаки листов подсказок', () => {
     for (const g of buildModeGuides(tr)) expect(modeSign(g.modeId), g.modeId).not.toBe('cluster');
   });
 
-  it('у каждой техники библиотеки есть знак; у первых 14 он свой', () => {
+  it('у каждой техники библиотеки есть знак, и он свой: общих между техниками нет', () => {
     const ids = buildTechniqueGuides(tr).map((t) => t.id);
     expect(ids.sort()).toEqual(Object.keys(TECHNIQUE_SIGN).sort());
-    const signs = Object.values(CORE_TECHNIQUE_SIGN);
-    expect(new Set(signs).size).toBe(signs.length);
+    const owners = new Map<string, string[]>();
+    for (const [id, sign] of Object.entries(TECHNIQUE_SIGN)) owners.set(sign, [...(owners.get(sign) ?? []), id]);
+    expect([...owners.values()].filter((list) => list.length > 1)).toEqual([]);
   });
 
   it('готовый мотив там, где он точно подходит', () => {
@@ -99,7 +106,10 @@ describe('знаки листов подсказок', () => {
     expect(practiceNoteSign('group_therapy')).toBe('cluster');
     expect(practiceNoteSign('chatting')).not.toBe(TECHNIQUE_SIGN.chairwork);
     const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(CORE_TECHNIQUE_SIGN).includes(s));
-    expect(shared.sort()).toEqual(['heart', 'heart_frame']);
+    expect(shared.sort()).toEqual([
+      'breath', 'flashcard', 'grown', 'heart', 'heart_frame', 'horizon', 'pattern_steps', 'pebbles', 'rescript',
+      'scales', 'sheets', 'spotlight', 'talk', 'talk_past',
+    ]);
   });
 
   it('схема — номер своего домена; неизвестная — 0', () => {

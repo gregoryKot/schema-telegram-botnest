@@ -11,15 +11,31 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { TherapistGuideSection } from './TherapistGuideSection';
 import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS, CABINET_GUIDE_TABLE_EVENT } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
+import { CONCERNS_HINT } from './guide/guideReferenceConcerns';
+import { PHASES_HINT } from './guide/guideReferencePhases';
 import { FIXTURE_PRACTICE_NOTE as NOTE } from '../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
   return {
+    modeSchemaLinks: () => [],
+    techniqueUsageGroups: () => [],
     buildModeGuides: () => [f.FIXTURE_GUIDE],
     buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: f.FIXTURE_DOMAIN_NOTE, schemas: [f.FIXTURE_SCHEMA_GUIDE] }],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     practiceNotes: () => [f.FIXTURE_PRACTICE_NOTE],
+    buildConcernGuides: () => [{
+      id: 'bpd', name: 'Пограничное расстройство личности', goal: 'Вырастить Здорового Взрослого',
+      essence: 'Нестабильность почти во всём', criteria: ['Пять из девяти признаков'], sources: '[Арнтц ПРЛ, гл. 1]',
+    }],
+    needGuides: () => [],
+    buildPhaseGuides: () => [
+      { id: 'overview', name: 'Как устроен путь', goal: 'Карта, а не расписание', essence: 'Фазы условные', sources: '[Кембридж, гл. 1]' },
+      {
+        id: 'bonding', name: 'Установление связи', goal: 'Безопасность и доверие', essence: 'Первые месяцы работы', tasks: ['Собрать историю'],
+        modeIds: ['vulnerable_child', 'нет_такого'], techniques: ['imagery_rescripting'], noteIds: ['group_therapy'], sources: '[Кембридж, гл. 1]',
+      },
+    ],
     modeGuide: (_tr: unknown, id: string) => (id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null),
     schemaGuide: (_tr: unknown, id: string) =>
       id === 'abandonment' ? { guide: f.FIXTURE_SCHEMA_GUIDE, domainNote: f.FIXTURE_DOMAIN_NOTE } : null,
@@ -62,7 +78,7 @@ describe('TherapistGuideSection', () => {
     // оговорка об источниках и адрес для ошибок — сразу под шапкой (на сайте — Telegram автора)
     expect(screen.getByText(/могут содержать ошибки/).textContent).toMatch(/обязательно напиши: @kotlarewski$/);
     expect(screen.getByRole('link', { name: '@kotlarewski' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Для терапевта']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Режимы', 'Схемы', 'Потребности', 'Техники', 'Запросы', 'Путь терапии', 'Для терапевта']);
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT]);
   });
 
@@ -72,6 +88,7 @@ describe('TherapistGuideSection', () => {
     const sheet = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
     expect(within(sheet).getByText('Письмо себе')).toBeTruthy();
     expectNoClientControls();
+    fireEvent.click(within(sheet).getByRole('tab', { name: 'На сессии' }));
     fireEvent.click(within(sheet).getByRole('button', { name: 'Работа со стульями' }));
     expect(screen.getByRole('dialog', { name: 'Работа со стульями' })).toBeTruthy();
     expectNoClientControls();
@@ -97,8 +114,12 @@ describe('TherapistGuideSection', () => {
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_TABLE_EVENT]);
     const domain = screen.getByRole('region', { name: 'Нарушение связи и отвержение' });
     const row = within(domain).getByRole('row', { name: new RegExp(SCHEMA_NAME) });
-    expect(within(row).getByText('Выбирает недоступных партнёров')).toBeTruthy();
-    expect(within(row).getByText('Цепляется и контролирует')).toBeTruthy();
+    expect(within(row).getByText('Держится за ненадёжных')).toBeTruthy(); // в клетке — выжимка, не полный текст
+    expect(within(row).queryByText('Выбирает недоступных партнёров')).toBeNull();
+    fireEvent.click(within(row).getByRole('button', { name: /Держится за ненадёжных/ }));
+    expect(within(row).getByText('Выбирает недоступных партнёров')).toBeTruthy(); // тап раскрывает полный пример
+    expect(within(row).queryByText('Цепляется и контролирует')).toBeNull(); // раскрыта одна клетка
+    expect(within(row).getAllByRole('button', { name: /^Про клиента/ })).toHaveLength(1); // «Про клиента» — у раскрытой клетки
     expect(within(domain).getByRole('columnheader', { name: 'Гиперкомпенсация' })).toBeTruthy();
     fireEvent.click(within(row).getByRole('button', { name: new RegExp(SCHEMA_NAME) }));
     expect(screen.getByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();
@@ -112,6 +133,10 @@ describe('TherapistGuideSection', () => {
     await mount();
     fireEvent.click(screen.getByRole('tab', { name: 'Техники' }));
     expect(screen.getByText('Возвращаемся в детскую сцену и меняем её конец.')).toBeTruthy();
+    const head = screen.getByRole('button', { name: /^Эмпирические/ }); // группа по полю group, раскрыта
+    fireEvent.click(head);
+    expect(screen.queryByRole('button', { name: /^Рескриптинг образов/ })).toBeNull();
+    fireEvent.click(head);
     fireEvent.click(screen.getByRole('button', { name: /^Рескриптинг образов/ }));
     const sheet = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(within(sheet).getByText('Найти сцену')).toBeTruthy();
@@ -146,10 +171,66 @@ describe('TherapistGuideSection', () => {
     const sheet = screen.getByRole('dialog', { name: NOTE.title });
     expect(within(sheet).getByText('Для терапевта')).toBeTruthy();
     for (const p of NOTE.points) expect(within(sheet).getByText(p)).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Источники/ }));
     expect(within(sheet).getByText(NOTE.sources)).toBeTruthy();
     fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.note);
+  });
+
+  it('«Запросы»: подпись «что это и зачем», строка с целью, тап — лист с сутью и критериями; «Закрыть» — обратно', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('tab', { name: 'Запросы' }));
+    expect(screen.getByText(CONCERNS_HINT)).toBeTruthy();
+    const row = screen.getByRole('button', { name: /^Пограничное расстройство личности/ });
+    expect(within(row).getByText('Вырастить Здорового Взрослого')).toBeTruthy();
+    fireEvent.click(row);
+    const sheet = screen.getByRole('dialog', { name: 'Пограничное расстройство личности' });
+    expect(within(sheet).getByText('Нестабильность почти во всём')).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole('tab', { name: 'Диагностика' }));
+    expect(within(sheet).getByRole('region', { name: 'Критерии' })).toBeTruthy();
+    expect(within(sheet).getByText('Пять из девяти признаков')).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.concern);
+  });
+
+  it('«Путь терапии»: лента с номерами; лист фазы ведёт на режим, технику, заметку и соседний лист — «Закрыть» возвращает к фазе', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('tab', { name: 'Путь терапии' }));
+    expect(screen.getByText(PHASES_HINT)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Как устроен путь/ }).querySelector('.gr-step')).toBeNull();
+    const row = screen.getByRole('button', { name: /Установление связи/ });
+    expect(row.querySelector('.gr-step')?.textContent).toBe('1');
+    fireEvent.click(row);
+    const phase = () => screen.getByRole('dialog', { name: 'Установление связи' });
+    expect(within(phase()).getByText('Фаза 1')).toBeTruthy();
+    expect(within(phase()).getByText('Собрать историю')).toBeTruthy();
+    expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS.phase]);
+    // режим без листа в справочнике в переходы не попадает
+    const modes = within(phase()).getByRole('region', { name: 'Режимы в фокусе' });
+    expect([...modes.querySelectorAll('.ds-list-row .ds-list-title')].map((b) => b.textContent)).toEqual(['Уязвимый Ребёнок']);
+    const steps: [string, string, string, string][] = [
+      ['Режимы в фокусе', 'Уязвимый Ребёнок', 'Уязвимый Ребёнок', CABINET_GUIDE_SHEET_EVENTS.mode],
+      ['Типичные техники', 'Рескриптинг образов', 'Рескриптинг образов', CABINET_GUIDE_SHEET_EVENTS.technique],
+      ['Для терапевта', NOTE.title, NOTE.title, CABINET_GUIDE_SHEET_EVENTS.note],
+    ];
+    for (const [region, link, dialog, event] of steps) {
+      fireEvent.click(within(within(phase()).getByRole('region', { name: region })).getByRole('button', { name: new RegExp(`^${link}`) }));
+      const over = screen.getByRole('dialog', { name: dialog });
+      // под-лист стоит в DOM после листа фазы — при равном z-index он сверху
+      expect(phase().compareDocumentPosition(over) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(tracked()).toContain(event);
+      fireEvent.click(within(over).getByRole('button', { name: 'Закрыть' }));
+      expect(screen.queryByRole('dialog', { name: dialog })).toBeNull();
+      expect(phase()).toBeTruthy();
+    }
+    fireEvent.click(within(phase()).getByRole('button', { name: 'Раньше: Как устроен путь' }));
+    const overview = screen.getByRole('dialog', { name: 'Как устроен путь' });
+    expect(within(overview).getByText('Путь терапии')).toBeTruthy();
+    expect(within(overview).getByRole('button', { name: 'Дальше: Установление связи' })).toBeTruthy();
+    fireEvent.click(within(overview).getByRole('button', { name: 'Закрыть' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('лист — панель над затемнённым списком: тап по затемнению закрывает её', async () => {
@@ -168,7 +249,7 @@ describe('TherapistGuideSection', () => {
     const search = screen.getByRole('searchbox', { name: 'Найти в справочнике' });
     fireEvent.change(search, { target: { value: 'СТУЛ' } });
     expect(screen.queryByRole('tablist')).toBeNull();
-    const found = screen.getByRole('region', { name: 'Техники' });
+    const found = screen.getByRole('region', { name: 'Эмпирические' });
     expect(within(found).getByRole('button', { name: /^Работа со стульями/ })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Детские режимы' })).toBeNull(); // режим — только ссылкой в карточке-ответе
     fireEvent.change(search, { target: { value: 'щщщ' } });

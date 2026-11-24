@@ -91,7 +91,16 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); переключатель «показать клиенту»"
   },
+  "webapp/src/components/therapist/guide/CopingMarkSheet.tsx::setError": {
+    "status": "reports"
+  },
   "webapp/src/components/therapist/plan/PlanAddSheet.tsx::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/plan/path/PathDraftSheet.tsx::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/plan/path/usePath.ts::setError": {
     "status": "reports"
   },
   "webapp/src/components/therapist/plan/usePlanItems.ts::setError": {
@@ -117,6 +126,9 @@
   "webapp/src/components/therapist/useOpenConceptCanvas.ts::setFailed": {
     "status": "reports",
     "via": "createConceptMap"
+  },
+  "webapp/src/components/therapist/useSessionPlan.ts::setError": {
+    "status": "reports"
   },
   "webapp/src/components/therapist/useTasksBoard.ts::setFailed": {
     "status": "reports"
@@ -213,6 +225,10 @@
   "webapp/src/pages/admin/useSaveFeedback.tsx::setError": {
     "status": "exempt",
     "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/authCallback/EmailTokenConsume.tsx::setRetryReason": {
+    "status": "exempt",
+    "reason": "consumeEmailToken не отклоняется: сеть и ответ сервера он сам сводит к { kind: error } (тест consumeEmailToken.test.ts), экран «Нет связи» с «Повторить» рисуется из исхода"
   },
   "webapp/src/pages/landing/BookingForm.tsx::setStatus": {
     "status": "reports"

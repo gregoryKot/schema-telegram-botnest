@@ -48,6 +48,7 @@ describe('StatsReportService.render', () => {
       render: jest.fn().mockResolvedValue('справочник терапевта: 5'),
     };
     const plan = { render: jest.fn().mockResolvedValue('план работы: 3') };
+    const path = { render: jest.fn().mockResolvedValue('путь клиента: 2') };
     const search = { render: jest.fn().mockResolvedValue('поиск: 5') };
     const taskAssign = {
       render: jest.fn().mockResolvedValue('задания клиентам: 6'),
@@ -115,6 +116,7 @@ describe('StatsReportService.render', () => {
         screenShare,
         guideReference,
         plan,
+        path,
         taskAssign,
         search,
         authHealth,
@@ -151,6 +153,7 @@ describe('StatsReportService.render', () => {
         screenShare as never,
         guideReference as never,
         plan as never,
+        path as never,
         taskAssign as never,
         search as never,
         authHealth as never,
@@ -188,7 +191,7 @@ describe('StatsReportService.render', () => {
       'кнопка плюс: 4\n\nустановка с сайта: 8\n\nуведомления в приложении: 3\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
-      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nпоказ экрана: 2\n\nсправочник терапевта: 5\n\nплан работы: 3\n\nзадания клиентам: 6\n\nпоиск: 5\n\nвход в мессенджере: всё хорошо',
+      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nпоказ экрана: 2\n\nсправочник терапевта: 5\n\nплан работы: 3\n\nпуть клиента: 2\n\nзадания клиентам: 6\n\nпоиск: 5\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
       'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3\n\nмост к терапевту: пока ничего\n\nприглашения клиентов: пока ничего\n\nзапись из приложения: пока никто\n\nтерапевты уходят: 2\n\nроботы нейросетей: 4',

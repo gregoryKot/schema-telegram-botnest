@@ -30,8 +30,8 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: SCENES,
 };
 
-// Стартуем после загрузки пиксельного шрифта — иначе Phaser отрендерит
-// тексты системным. Страховка по таймауту: без шрифта, но не висим.
+// Стартуем после загрузки шрифтов: Phaser рисует текст один раз и не перерисует,
+// когда шрифт догрузится. Страховка по таймауту: без шрифта, но не висим.
 let started = false;
 function start() {
   if (started) return;
@@ -51,4 +51,4 @@ Promise.all([
   document.fonts.load('500 16px "Handjet"', 'Йо'),
   document.fonts.load('700 16px "Handjet"', 'Йо'),
 ]).then(start, start);
-setTimeout(start, 2000);
+setTimeout(start, 6000); // Handjet в preload — обычно приходит за доли секунды

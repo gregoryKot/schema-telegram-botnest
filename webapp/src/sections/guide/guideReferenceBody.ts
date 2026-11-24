@@ -8,7 +8,7 @@ export type ReferenceBody = Map<string, string[]>;
 
 export const bodyKey = (item: Pick<ReferenceItem, 'kind' | 'id'>) => `${item.kind}:${item.id}`;
 // Служебные поля раздела: идентификаторы и ссылки на другие листы — не текст для чтения.
-const SKIP = new Set(['id', 'modeId', 'schemaId', 'domainId', 'modeIds', 'techniques', 'kind', 'type', 'name', 'title']);
+const SKIP = new Set(['id', 'modeId', 'schemaId', 'domainId', 'modeIds', 'schemaIds', 'noteIds', 'techniques', 'kind', 'type', 'name', 'title']);
 
 /** Все строки раздела, включая вложенные списки и пункты «Между сессиями» (их заголовок — текст, не имя листа). */
 function strings(value: unknown, nested = false): string[] {
@@ -28,10 +28,11 @@ export function buildReferenceBody(texts: ReferenceTexts, tr: Tr): ReferenceBody
   texts.buildTechniqueGuides(tr).forEach((t) => body.set(bodyKey({ kind: 'technique', id: t.id }), strings(t)));
   buildNeedGuides(texts, tr).forEach((n) => body.set(bodyKey({ kind: 'need', id: n.id }), needBody(n)));
   texts.practiceNotes(tr).forEach((n) => body.set(bodyKey({ kind: 'note', id: n.id }), strings(n)));
+  texts.buildConcernGuides(tr).forEach((c) => body.set(bodyKey({ kind: 'concern', id: c.id }), strings(c)));
+  texts.buildPhaseGuides(tr).forEach((p) => body.set(bodyKey({ kind: 'phase', id: p.id }), strings(p)));
   return body;
 }
-
-const [BEFORE, AFTER] = [30, 90];
+const [BEFORE, AFTER] = [30, 90]; // символов до и после найденного слова в куске абзаца
 
 /** Кусок абзаца вокруг найденного слова: по границам слов, обрезанный край — с «…». */
 export function snippet(paragraph: string, word: string): string {

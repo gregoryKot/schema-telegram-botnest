@@ -13,7 +13,7 @@ import {
 } from './concept-history';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 
-function makeService(rels: Rel[], conceptRow: any = null) {
+function makeService(rels: Rel[], conceptRow: any = null, guideMarks?: any) {
   const concept = { row: conceptRow };
   const prisma: any = {
     ...makeRelationPrismaMock(rels),
@@ -29,7 +29,7 @@ function makeService(rels: Rel[], conceptRow: any = null) {
   };
   prisma.$transaction = jest.fn(async (fn: any) => fn(prisma));
   const relationsService = new TherapyRelationsService(prisma, {} as any);
-  const service = new TherapyNotesService(prisma, relationsService);
+  const service = new TherapyNotesService(prisma, relationsService, guideMarks);
   return { service, prisma, concept };
 }
 
@@ -243,5 +243,31 @@ describe('saveConceptualization — автосохранение не выжиг
       'правка 10:12',
       'v0',
     ]);
+  });
+});
+
+// «Про клиента» на копинге (#1484): событие — на каждый новый стиль, правка заметки и повтор — без события.
+describe('saveConceptualization — событие отметки копинга', () => {
+  it('новый стиль — trackAdded(coping, клиент); тот же стиль снова — тишина', async () => {
+    const trackAdded = jest.fn(async () => undefined);
+    const { service } = makeService([activeRel], null, { trackAdded });
+    const link = (coping: string[], note?: string) => ({
+      schemaId: 'subjugation',
+      coping,
+      ...(note ? { copingNotes: { surrender: note } } : {}),
+    });
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinksPatch: { upsert: [link(['surrender'])] },
+    });
+    expect(trackAdded).toHaveBeenCalledTimes(1);
+    expect(trackAdded).toHaveBeenCalledWith(T1, 'coping', CLIENT);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinksPatch: { upsert: [link(['surrender'], 'уступает')] },
+    });
+    expect(trackAdded).toHaveBeenCalledTimes(1);
+    await service.saveConceptualization(T1, CLIENT, {
+      schemaLinksPatch: { upsert: [link(['surrender', 'avoidance'])] },
+    });
+    expect(trackAdded).toHaveBeenCalledTimes(2);
   });
 });

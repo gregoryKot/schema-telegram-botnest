@@ -157,7 +157,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
               <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} onAssign={openAssign} onOpenJournal={openJournal} />
             )}
 
-            {clientTab === 'plan' && <ClientPlanTab key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} onTasksChanged={board.invalidate} />}
+            {clientTab === 'plan' && <ClientPlanTab key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} onTasksChanged={board.invalidate} onOpenSession={openSession} />}
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -213,7 +213,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           clientId={selectedClient.telegramId}
           clientName={selectedClient.name ?? undefined}
           defaultType={assignPreset?.type}
-          defaultText={assignPreset?.text} defaultCatalogId={assignPreset?.catalogId}
+          defaultText={assignPreset?.text} defaultCatalogId={assignPreset?.catalogId} assignOrigin={assignPreset?.origin}
           zIndex={clientTab === 'concept' ? CONCEPT_SHEET_Z : undefined}
           onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); board.invalidate(); }}
           onClose={() => { setShowAssign(false); setAssignPreset(undefined); }}

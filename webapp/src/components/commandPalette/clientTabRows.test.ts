@@ -24,6 +24,14 @@ describe('clientTabRows', () => {
     expect(path).toHaveBeenCalledWith('/cabinet/abcdefgh/tasks');
   });
 
+  it('«<имя> путь» — строка «Путь терапии», ведёт на план по фазам', () => {
+    const [hit] = clientTabRows(input('петров путь'));
+    expect(hit.row).toMatchObject({ key: 'client-tab:1:path', label: 'Иван Петров · Путь терапии' });
+    hit.row.action();
+    expect(path).toHaveBeenCalledWith('/cabinet/abcdefgh/plan?layout=phases');
+    expect(labels('путь')).toEqual([]);
+  });
+
   it('имя подходит двум клиентам — вкладка у каждого', () => {
     expect(labels('иван сессии')).toEqual(['Иван Петров · Сессии', 'Иван Сидоров · Сессии']);
   });
