@@ -160,7 +160,7 @@ describe('MoreSection', () => {
     localStorage.setItem('therapy_contact_name', 'терапевту');
     setup();
     expect(screen.queryByRole('button', { name: /^Поговорить с кем-то/ })).toBeNull();
-    const link = within(document.querySelector('.ds-card--flush') as HTMLElement).getByRole('link', { name: /^Написать терапевту/ });
+    const link = within(document.querySelector('.ds-rows') as HTMLElement).getByRole('link', { name: /^Написать терапевту/ });
     expect(link.getAttribute('href')).toBe('tg://user?id=42');
     expect(link.textContent).toContain('Связь с терапевтом');
     fireEvent.click(link);
@@ -274,7 +274,7 @@ describe('MoreSection — то, что переехало с главной', ()
     mockApi.history.mockResolvedValue(lowDays);
     setup();
     const eyebrow = await screen.findByText('Три последних заполненных дня: индекс не выше 4');
-    const list = document.querySelector('.ds-card--flush')!;
+    const list = document.querySelector('.ds-rows')!;
     expect(eyebrow.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Не сейчас' }));
     expect(screen.queryByText('Три последних заполненных дня: индекс не выше 4')).toBeNull();

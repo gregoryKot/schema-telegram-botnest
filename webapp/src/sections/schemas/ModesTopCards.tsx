@@ -31,7 +31,7 @@ interface Props {
  *  без знака: Cluster стоял у героя и у обеих строк — один знак четыре раза на вкладке (ревью g5 r1). */
 function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void })[]; art?: ReactNode }) {
   return (
-    <div className="ds-card ds-card--flush">
+    <div className="ds-rows">
       {rows.map((r) => (
         <button key={r.label} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={r.onClick}>
           {art && <span className="pp-row-art">{art}</span>}<span className="ds-list-body"><span className="ds-list-title">{glue(r.label)}</span><span className="ds-list-sub">{glue(r.sub)}</span></span>

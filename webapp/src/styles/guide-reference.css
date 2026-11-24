@@ -8,15 +8,6 @@
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
 /* Оговорка под шапкой (TherapistGuideSection): тексты из разных источников, куда писать об ошибке. */
 .gr-note { margin: 10px 0 0; line-height: 1.45; }
-/* Вкладки и, у «Схем», вид «Списком / Таблицей» — одной строкой; не влезли (телефон) — вид уходит под вкладки
-   во всю ширину (ds-seg--full). */
-.gr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
-.gr-bar > .gr-seg { min-width: 0; max-width: 100%; }
-/* Вкладки справочника на телефоне: пять вкладок целиком не входят — лента прокручивается, край с
-   остальными затухает (FadeSeg); поля кнопок уже, чтобы до края помещалось больше. */
-@media (max-width: 399px) {
-  .gr-seg > .ds-seg-btn { padding-inline: 10px; }
-}
 /* Строка со знаком: знак у названия, название с сутью, шеврон по центру. */
 .gr-row { grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; min-height: 56px; }
 .gr-row > .pp-row-art { padding-top: 1px; }
@@ -102,12 +93,8 @@
 .gst-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .gst-schema:hover .gst-name { color: var(--accent); }
 .gst-desc { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
-/* Липкая шапка: стиль копинга и глубина. Фон — сплошной цвет страницы: строки уходят под неё. */
-.gst-bar {
-  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
-  padding-block: 8px; background: var(--bg);
-}
-.gst-seg > .ds-seg-btn { white-space: nowrap; }
+/* Липкая шапка: стиль копинга и глубина (LineTabs). Фон — сплошной цвет страницы: строки уходят под неё. */
+.gst-bar { position: sticky; top: 0; z-index: 2; padding-top: 4px; background: var(--bg); }
 /* Знак стиля — сквозной: в переключателе, в шапке колонки, у подписи клетки; цвет стиля — --gst-c/--gst-ink
    (COPING_STYLES, токены --coping-*). */
 .gst-seg-sign, .gst-sign { display: inline-flex; vertical-align: middle; margin-right: 6px; }
