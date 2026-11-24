@@ -30,6 +30,8 @@ export interface ConceptGuideActions {
   onOpenMode: (modeId: string) => void;
   /** «Подробнее о схеме» — лист схемы. */
   onOpenSchema: (schemaId: string) => void;
+  /** Тап по запросу в «Связано» листа режима и схемы — статья запроса; нет — группы «Запросы» нет. */
+  onOpenConcern?: (concernId: string) => void;
   /** Техника «На сессии» — лист техники; без from — из списка техник «Справочника», вне раздела. */
   onOpenTechnique: (techniqueId: TechniqueId, from?: GuideFrom) => void;
   /** «Дать заданием» у пункта «Между сессиями». */
@@ -57,12 +59,16 @@ export interface ModeGuideView extends GuideHintView {
   guide: ModeGuide;
   /** «Типичен для схем» — обратная сторона SchemaGuide.modeIds (kb/links.ts). */
   schemas: GuideBacklink[];
+  /** «Запросы» — статьи, где режим назван (kb/links.ts, ConcernGuide.modeIds). */
+  concerns: GuideBacklink[];
 }
 
 export interface SchemaGuideView extends GuideHintView {
   guide: SchemaGuide;
   /** «Общее для домена» схемы. */
   domainNote: string;
+  /** «Запросы» — статьи, где схема названа (kb/links.ts, ConcernGuide.schemaIds). */
+  concerns: GuideBacklink[];
 }
 
 type TechniqueTexts = Pick<Guide, 'buildTechniqueGuides'>;
@@ -78,7 +84,8 @@ function pickTechniques(
 
 /** Раздел режима с техниками; null — своего раздела нет (свой режим терапевта). */
 export function resolveModeGuide(
-  texts: Pick<Guide, 'modeGuide' | 'modeSchemaLinks'> & TechniqueTexts,
+  texts: Pick<Guide, 'modeGuide' | 'modeSchemaLinks' | 'modeConcernLinks'> &
+    TechniqueTexts,
   tr: Tr,
   modeId: string,
 ): ModeGuideView | null {
@@ -89,12 +96,13 @@ export function resolveModeGuide(
     techniques: pickTechniques(texts, tr, guide.techniques),
     moreTechniques: pickTechniques(texts, tr, guide.moreTechniques ?? []),
     schemas: texts.modeSchemaLinks(modeId),
+    concerns: texts.modeConcernLinks(tr, modeId),
   };
 }
 
 /** Раздел схемы с «общим для домена» и техниками; null — раздела нет. */
 export function resolveSchemaGuide(
-  texts: Pick<Guide, 'schemaGuide'> & TechniqueTexts,
+  texts: Pick<Guide, 'schemaGuide' | 'schemaConcernLinks'> & TechniqueTexts,
   tr: Tr,
   schemaId: string,
 ): SchemaGuideView | null {
@@ -104,6 +112,7 @@ export function resolveSchemaGuide(
   return {
     guide,
     domainNote,
+    concerns: texts.schemaConcernLinks(tr, schemaId),
     techniques: pickTechniques(texts, tr, guide.techniques),
     moreTechniques: pickTechniques(texts, tr, guide.moreTechniques ?? []),
   };

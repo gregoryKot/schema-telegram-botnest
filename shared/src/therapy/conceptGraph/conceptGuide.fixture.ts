@@ -60,6 +60,7 @@ export const FIXTURE_VIEW: ModeGuideView = {
   guide: FIXTURE_GUIDE,
   techniques: FIXTURE_TECHNIQUES,
   schemas: [],
+  concerns: [],
 };
 
 export const FIXTURE_SCHEMA_GUIDE: SchemaGuide = {
@@ -99,6 +100,7 @@ export const FIXTURE_DOMAIN_NOTE = 'В основе нарушенная при�
 export const FIXTURE_SCHEMA_VIEW: SchemaGuideView = {
   guide: FIXTURE_SCHEMA_GUIDE,
   domainNote: FIXTURE_DOMAIN_NOTE,
+  concerns: [],
   techniques: [FIXTURE_TECHNIQUES[1], FIXTURE_TECHNIQUES[0]],
 };
 
