@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { parseAddress } from '../../../../shared/src/schemaTherapy/guide';
+import { parseAddress } from '../../../../shared/src/schemaTherapy/guide/address/addressFormat';
 import { findReferenceItem, type GuideSheetTarget } from './guideSheetRoute';
 import type { Reference, ReferenceItem } from './guideReferenceModel';
 
