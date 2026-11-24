@@ -2,7 +2,7 @@
 // Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
-  YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId,
+  YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -87,6 +87,8 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   safety_bubble: 'bubble',
 };
 
+const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = { probe_phrases: 'probe' };
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
@@ -95,5 +97,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...ARNTZ_TECHNIQUE_SIGN,
   ...ARNTZ_JACOB_TECHNIQUE_SIGN,
   ...FARRELL_TECHNIQUE_SIGN,
+  ...HEATH_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

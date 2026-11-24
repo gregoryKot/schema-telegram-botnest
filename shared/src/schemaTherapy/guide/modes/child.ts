@@ -41,6 +41,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'safe_place_imagery',
       'exposure',
       'limited_reparenting',
+      'probe_phrases',
     ],
     betweenSessions: [
       {
