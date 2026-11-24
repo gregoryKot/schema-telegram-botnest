@@ -4,8 +4,9 @@ import { pickForm, useAddressForm } from '../../utils/addressForm';
 import { useGuide, type Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
 import { PaperAlert } from '../../components/paper/PaperAlert';
 import { GuideReferenceList } from './GuideReferenceList';
-import { GuideSchemaTable, SchemaViewSwitch, type SchemaView } from './GuideSchemaTable';
-import { FadeSeg } from '../../components/FadeSeg';
+import { GuideSchemaTable } from './GuideSchemaTable';
+import { SchemaViewSwitch, type SchemaView } from './GuideSchemaTableBar';
+import { LineTabs } from '../../components/LineTabs';
 import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceTab } from './guideReferenceModel';
 import { searchReference } from './guideReferenceSearch';
 import { buildReferenceBody } from './guideReferenceBody';
@@ -29,8 +30,8 @@ export function GuideReference({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
- * Поиск по названиям и текстам листов, переключатель разделов (тот же ds-seg, что у списка
- * клиентов) и список. Пустой раздел в переключатель не попадает. Листы — useReferenceSheets.
+ * Поиск по названиям и текстам листов, вкладки разделов на линии (LineTabs; у «Схем» справа — вид)
+ * и список. Пустой раздел в переключатель не попадает. Листы — useReferenceSheets.
  */
 function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const form = useAddressForm();
@@ -60,19 +61,10 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
         placeholder="Найти по названию или тексту" aria-label="Найти в справочнике" className="ds-input ds-input--search"
       />
       {!searching && (
-        <div className="gr-bar">
-          <FadeSeg className="gr-seg" role="tablist" label="Разделы справочника" watch={tab}>
-            {tabs.map((t) => (
-              <button
-                key={t.id} type="button" role="tab" aria-selected={tab === t.id}
-                className={`ds-seg-btn${tab === t.id ? ' is-active' : ''}`} onClick={() => setTab(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </FadeSeg>
-          {tab === 'schemas' && <SchemaViewSwitch view={schemaView} onPick={pickSchemaView} />}
-        </div>
+        <LineTabs
+          tabs={tabs} value={tab} onPick={setTab} label="Разделы справочника" look="scroll"
+          aside={tab === 'schemas' ? <SchemaViewSwitch view={schemaView} onPick={pickSchemaView} /> : undefined}
+        />
       )}
       {answer && <GuideAnswerCard answer={answer} onOpen={open} />}
       {schemaTable && <GuideSchemaTable groups={ref.schemas} guides={schemaGuides} onOpen={open} onMark={markCoping} />}
