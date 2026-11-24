@@ -87,7 +87,10 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   safety_bubble: 'bubble',
 };
 
-const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = { probe_phrases: 'probe' };
+const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
+  creative_mode_work: 'mask',
+  probe_phrases: 'probe',
+};
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
