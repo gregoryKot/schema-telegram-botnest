@@ -5,18 +5,16 @@ import { ArticlesSection } from './admin/ArticlesSection';
 import { PhotoSection } from './admin/PhotoSection';
 import { MarqueeSection } from './admin/MarqueeSection';
 import { HealthyAdultSection } from './admin/HealthyAdultSection';
+import { AnalyticsSection } from './admin/analytics/AnalyticsSection';
 import { btn, input } from './admin/shared';
 
 // L7 (аудит 2026-08): ключ админа в sessionStorage, не localStorage — XSS не
 // утащит его из закрытой вкладки и он не переживает браузер (вводится раз в сессию).
 
-type Tab = 'booking' | 'articles' | 'photo' | 'marquee' | 'healthyAdult';
+type Tab = 'analytics' | 'booking' | 'articles' | 'photo' | 'marquee' | 'healthyAdult';
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'booking', label: 'Запись' },
-  { id: 'articles', label: 'Статьи' },
-  { id: 'photo', label: 'Фото' },
-  { id: 'marquee', label: 'Бегущая строка' },
-  { id: 'healthyAdult', label: 'Канал ЗВ' },
+  { id: 'analytics', label: 'Аналитика' }, { id: 'booking', label: 'Запись' }, { id: 'articles', label: 'Статьи' },
+  { id: 'photo', label: 'Фото' }, { id: 'marquee', label: 'Бегущая строка' }, { id: 'healthyAdult', label: 'Канал ЗВ' },
 ];
 
 /** Single admin panel for the whole site — one key, tabbed sections. */
@@ -71,6 +69,7 @@ export function AdminPage() {
         ))}
       </div>
 
+      {tab === 'analytics' && <AnalyticsSection adminKey={key} />}
       {tab === 'booking' && <BookingSection adminKey={key} />}
       {tab === 'articles' && <ArticlesSection adminKey={key} />}
       {tab === 'photo' && <PhotoSection adminKey={key} />}
