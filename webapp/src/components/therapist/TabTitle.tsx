@@ -13,7 +13,7 @@ export function TabArt({ motif }: { motif: TabMotif }) {
 }
 
 /** Знак строки задания по его типу (TaskSign). */
-export const TaskArt = ({ task }: { task: Pick<UserTask, 'type' | 'text'> }) => <span className="pp-row-art"><TaskSign task={task} /></span>;
+export const TaskArt = ({ task, pending }: { task: Pick<UserTask, 'type' | 'text'>; pending?: boolean }) => <span className="pp-row-art"><TaskSign task={task} pending={pending} /></span>;
 
 // Заголовок вкладки карточки клиента: h2 и подпись. Показывается на компьютере
 // (≥768, как до волн #906); на телефоне h2 прячет CSS (имя вкладки уже наверху).
