@@ -48,7 +48,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'therapist_schema_scenarios',
     'same_behavior_by_schema',
     'mode_work_when',
-    'mode_work_steps',
+    'mode_work_steps', 'emdr',
   ].map(w),
   {
     id: 'questionnaires',
