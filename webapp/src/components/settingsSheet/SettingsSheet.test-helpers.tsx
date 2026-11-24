@@ -74,7 +74,7 @@ export function fillTherapistRequestForm(overrides: {
     screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'),
     { target: { value: qualification } },
   );
-  fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), {
+  fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram'), {
     target: { value: contacts },
   });
 }

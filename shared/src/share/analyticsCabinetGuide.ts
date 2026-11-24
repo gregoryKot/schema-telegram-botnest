@@ -16,7 +16,7 @@ export const CABINET_GUIDE_ANSWER_EVENTS = {
   show: 'cabinet_guide_answer_show',
   link: 'cabinet_guide_answer_link',
 } as const;
-// Отметка «Про клиента» (#1484): пишет сервер при создании, meta { kind } — вид статьи или 'coping'. Фронт не шлёт.
+// Отметка «Про клиента» (#1484): пишет сервер при создании, meta { kind, fragment? } — вид статьи или 'coping'; fragment: true — выделенный текст. Фронт не шлёт.
 export const GUIDE_MARK_ADDED_EVENT = 'guide_mark_added';
 export type GuideMarkKind =
   | 'schema'

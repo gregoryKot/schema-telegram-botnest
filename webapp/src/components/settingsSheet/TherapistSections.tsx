@@ -90,7 +90,7 @@ export function CabinetSection({ rel, onOpenTherapistCabinet }: { rel: Relation;
       <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
       <div className="st-body-block">
         <div className="st-actions">
-          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={createInvite}>+ Создать приглашение клиенту</button>
+          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={createInvite}>Создать приглашение клиенту</button>
         </div>
         {/* Раньше «Скопировано ✓» показывалось всегда, даже если navigator.clipboard упал — теперь только при реальном успехе, иначе видна ссылка для ручного копирования. */}
         {invite && (inviteCopied

@@ -62,4 +62,5 @@ export function charCounterState(
 export const PLAN_ITEM_TEXT_MAX = 5000; // пункт плана работы с клиентом (рубрика справочника целиком помещается)
 export const GUIDE_MARK_NOTE_MAX = 1000; // «Про клиента» из справочника: строка «как это у него»
 export const GUIDE_MARK_SNAPSHOT_MAX = 20000; // «Про клиента»: текст раздела справочника на момент отметки
+export const GUIDE_MARK_FRAGMENT_MAX = 3000; // «Про клиента»: выделенный в справочнике фрагмент (лежит в snapshot)
 export const CONCEPT_COPING_NOTE_MAX = 300; // схема случая: «как это у клиента» к стилю копинга схемы (отметка «Про клиента» из «Справочника»)
