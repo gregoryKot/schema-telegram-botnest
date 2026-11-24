@@ -40,7 +40,7 @@
 .tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 /* Аватар — .ds-avatar--paper (cabinet.css: кружок бумаги тона клиента с тенью-слоем); здесь — размер. */
-.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 3px 4px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 0 0 0 1px var(--panel-line); }
 .tk-ident { flex: 1; min-width: 260px; }
 /* Кегль имени — ds-h2; здесь только перенос: до двух строк по пробелам и дефису, целиком. Одной строкой с
    многоточием длинное имя («Константин Константинопольский-Задунайский») не было видно нигде (b30). */
@@ -91,12 +91,10 @@
 /* Полоса вкладок (ClientTabs, useTabsBar): за краем, где остались вкладки, — маска-градиент (не размытие),
    классы ставит прокрутка. position — чтобы offsetLeft вкладки считался от полосы. Счётчик — тихий: цифра
    цветом подписи, без плашки. */
-.tk-tabs, .tk-fade-bar { position: relative; --tk-fade: 40px; }
-/* Тот же механизм у фильтров-полос .tk-fade-bar: «Записи клиента» (ClientNotesTab, r1) и статусы списка клиентов
-   (ClientListView, r2: на 320 «Офл…» обрезалось без маски). */
-.tk-tabs.is-fade-end, .tk-fade-bar.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start, .tk-fade-bar.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start.is-fade-end, .tk-fade-bar.is-fade-start.is-fade-end {
+.tk-tabs { position: relative; --tk-fade: 40px; }
+.tk-tabs.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start.is-fade-end {
   -webkit-mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
   mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
 }
@@ -183,7 +181,6 @@
 .tk-meet-none { font-size: 15px; color: var(--text-sub); }
 .tk-meet-row > .tk-meet-none { margin-top: 8px; }
 .tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.tk-edit-form .ds-input { background: var(--surface); }
 .tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-start { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-top: 8px; }
 /* «Изменить →» / «Указать →» во «Встречах» — тихие (ревью r1): три акцентных ссылки подряд спорили с датой. */
@@ -201,7 +198,7 @@
 }
 /* «Приложение» офлайн-клиента (OfflineInviteCard) — белый лист с тенью-слоем неба (встречи терапевта), как
    заметка и записи, а не белая карточка с серой рамкой. */
-.tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) 240); }
+.tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 0 0 0 1px var(--panel-line); }
 /* Трекер — лист соломы: индекс Literata --text (без светофора), столбики одними чернилами, потребности — белым
    списком со знаком и цветом данных своей потребности (--need-ink, --need-text из inkVars). */
 .tk-track { display: flex; flex-direction: column; gap: 18px; padding: 18px 20px 20px; }
@@ -253,6 +250,6 @@
   .tk-goal { padding: 14px 16px; }
   .tk-text { font-size: 16px; }
   .tk-leaf { padding: 14px 16px; }
-  .tk-side > .ds-card { box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) 240); }
+  .tk-side > .ds-card { box-shadow: 0 0 0 1px var(--panel-line); }
   .pa-outcome.tk-outcome { padding: 16px 16px 24px; }
 }

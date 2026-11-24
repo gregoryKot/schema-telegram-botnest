@@ -13,7 +13,7 @@
 .cd-empty-foot { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-sub); text-wrap: pretty; }
 
 .cd-explainers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
-.cd-explainer { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 22px; border-radius: 22px; }
+.cd-explainer { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 22px; border-radius: var(--r-16); }
 .cd-explainer-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cd-explainer-name { margin: 0; font: 400 24px/1.1 var(--serif); color: var(--text); }
 .cd-explainer-sign { display: flex; width: 84px; flex-shrink: 0; }

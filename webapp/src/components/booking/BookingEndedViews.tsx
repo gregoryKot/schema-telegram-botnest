@@ -18,7 +18,7 @@ export function BookingCancelledView({ paid }: { paid: boolean }) {
       ) : (
         <p style={sub}>Если оплата уже прошла – напишите мне, верну деньги.</p>
       )}
-      <Btn href="/#booking" full radius="btn" size="lg">Записаться снова</Btn>
+      <Btn href="/#booking" full size="lg">Записаться снова</Btn>
     </>
   );
 }
@@ -31,7 +31,7 @@ export function BookingCompletedView({ booking }: { booking: PublicBooking }) {
       <h1 style={h1}>Встреча прошла</h1>
       <p style={sub}>Спасибо, что пришли. Если захотите продолжить – запишитесь на новое время.</p>
       <BookingSessionCard type={booking.type} durationMin={booking.durationMin} startsAt={booking.startsAt} />
-      <Btn href="/#booking" full radius="btn" size="lg">Записаться снова</Btn>
+      <Btn href="/#booking" full size="lg">Записаться снова</Btn>
     </>
   );
 }

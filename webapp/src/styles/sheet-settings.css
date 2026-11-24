@@ -90,8 +90,8 @@
 .st-row-right > .ds-sub { color: var(--text-sub); text-align: right; white-space: nowrap; }
 .st-row-name { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 0; }
 .st-row-name .ds-input { flex: 1 1 200px; min-width: 0; }
-/* Поле листа — строка на бумаге с линией снизу, а не белая коробка: как строки списка вокруг. */
-.st-inner .ds-input { min-height: 48px; padding: 12px 0; border-width: 0 0 1px; border-radius: 0; background: none; }
+/* Поле листа — строка с линией снизу (.ds-input), по высоте как строки списка вокруг. */
+.st-inner .ds-input { min-height: 48px; }
 
 /* Подвиды выбора: часы — чипы-листы (SignChip: выбранный — бумага с галочкой), списки — плоские строки */
 .st-hours { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -154,8 +154,8 @@
 .st-invite-label { font-size: 14px; font-weight: 600; color: var(--text); }
 .st-invite > .st-actions { align-self: stretch; }
 .st-invite-field {
-  align-self: stretch; box-sizing: border-box; min-width: 0; padding: 12px 14px; border-radius: 12px;
-  background: var(--surface); border: 1px solid var(--panel-line);
+  align-self: stretch; box-sizing: border-box; min-width: 0; padding: 12px 0;
+  border-bottom: 1px solid var(--panel-line);
   font: 14px/1.5 var(--sans); color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;
 }
@@ -204,7 +204,7 @@
   box-sizing: border-box; width: 100%; max-width: 600px; padding: 24px 32px calc(48px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 20px;
 }
-.st-about-hero { display: grid; grid-template-columns: minmax(0, 1fr) 200px; align-items: center; gap: 16px; padding: 24px 24px 24px 32px; border-radius: 24px; }
+.st-about-hero { display: grid; grid-template-columns: minmax(0, 1fr) 200px; align-items: center; gap: 16px; padding: 24px 24px 24px 32px; border-radius: var(--r-16); }
 .st-about-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 1.08; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
 .st-about-why { display: flex; flex-direction: column; gap: 12px; }
 .st-about-p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text); text-wrap: pretty; }
@@ -233,7 +233,7 @@
 .st-done { width: 100%; margin-top: var(--space-8); } /* форма кнопки — ds-btn--lg; здесь ширина во всю колонку листа (и на компьютере) */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .st-about-inner { padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
-  .st-about-hero { grid-template-columns: minmax(0, 1fr) 132px; padding: 20px 16px 20px 20px; border-radius: 20px; }
+  .st-about-hero { grid-template-columns: minmax(0, 1fr) 132px; padding: 20px 16px 20px 20px; border-radius: var(--r-16); }
   .st-about-title { font-size: 30px; }
   .st-about-p { font-size: 15px; }
 }

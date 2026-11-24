@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 /** Классы вида концептуализации. Сайт кладёт их контекстом, а не пропом: чип лежит на глубине
  *  ConceptGraph → редактор → выбор → чип. Сайт ставит его всегда (ConceptPaperProvider); без него — только тесты. */
 export interface ConceptSkin {
-  seg: { group: string; btn: string };
+  tabs: { group: string; btn: string; sep: string };
   label: string;
   link: string;
   card: string;

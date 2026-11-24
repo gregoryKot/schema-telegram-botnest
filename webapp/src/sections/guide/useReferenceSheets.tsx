@@ -5,6 +5,7 @@ import type { Tr } from '../../../../shared/src/needs/types';
 import { useConceptGuide, type GuideOpenTrack } from '../../components/therapist/guide/useConceptGuide';
 import { GuideMarkContext } from '../../components/therapist/guide/marks/GuideSectionMark';
 import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNoteSheet';
+import type { GuideMarkClient } from '../../components/therapist/guide/marks/useClientGuideMarks';
 import type { ReferenceItem } from './guideReferenceModel';
 import { useListSheets } from './useListSheets';
 
@@ -20,13 +21,13 @@ const REFERENCE_TRACK: GuideOpenTrack = {
  * те же листы, что в схеме случая (useConceptGuide), без клиента: без «Дать заданием», отметок и истории;
  * «В план» — с выбором клиентов. Потребность, запрос, фаза (useListSheets) и раздел «Для терапевта» — свои листы.
  */
-export function useReferenceSheets(texts: Guide, tr: Tr) {
+export function useReferenceSheets(texts: Guide, tr: Tr, client?: GuideMarkClient) {
   const [noteId, setNoteId] = useState<string | null>(null);
   const note = noteId ? texts.practiceNotes(tr).find((n) => n.id === noteId) : undefined;
   const list = useListSheets(texts, tr);
   // plan и «Про клиента» без клиента: листы дают выбрать клиентов; лист «Для терапевта» — с тем же «Про клиента»
   const guide = useConceptGuide({
-    track: REFERENCE_TRACK, plan: {}, pickClient: true,
+    track: REFERENCE_TRACK, plan: { clientId: client?.id }, pickClient: !client, client,
     over: note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />,
   });
   const openNote = (id: string) => {

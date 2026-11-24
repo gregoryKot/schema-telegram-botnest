@@ -100,6 +100,38 @@ describe('e2e smoke: отметки «Про клиента» — ownership', ()
     );
   });
 
+  it('выделенный фрагмент: несколько на адрес, повтор текста — правка, шифруется, чужому — 403', async () => {
+    const put = (body: object) =>
+      agentAs(T1).put(`/api/therapy/guide-marks/${C1}`, body);
+    const frag = { address: ADDRESS, snapshot: 'кусок', fragment: true };
+    const a = await put(frag);
+    const again = await put({ ...frag, snapshot: ' кусок ', note: 'правка' });
+    await put({ ...frag, snapshot: 'другой кусок' });
+    expect(a.body.created).toBe(true);
+    expect(again.body).toMatchObject({
+      created: false,
+      mark: { id: a.body.mark.id, note: 'правка' },
+    });
+    const list = await agentAs(T1).get(`/api/therapy/guide-marks/${C1}`);
+    expect(
+      list.body.marks.map((m: { fragment: boolean }) => m.fragment),
+    ).toEqual([false, true, true]);
+    const row = await prisma.guideMark.findFirst({
+      where: { id: a.body.mark.id },
+    });
+    expect(row?.snapshot).not.toBe('кусок');
+    expect((await put({ ...frag, snapshot: 'я'.repeat(3001) })).status).toBe(
+      400,
+    );
+    expect(
+      (await agentAs(T2).put(`/api/therapy/guide-marks/${C1}`, frag)).status,
+    ).toBe(403);
+    // «уже отмечено» — про раздел целиком, фрагменты его не подменяют
+    await prisma.guideMark.deleteMany({
+      where: { therapistId: T1, fragmentKey: { not: '' } },
+    });
+  });
+
   it('чужой терапевт не читает, не пишет и не снимает; «уже отмечено» — только своё', async () => {
     const t2 = agentAs(T2);
     expect((await t2.get(`/api/therapy/guide-marks/${C1}`)).status).toBe(403);
@@ -142,12 +174,21 @@ describe('e2e smoke: отметки «Про клиента» — ownership', ()
     await prisma.guideMark.create({
       data: { therapistId: T3, clientId: C2, address: ADDRESS, snapshot: 's' },
     });
+    await prisma.guideMark.create({
+      data: {
+        therapistId: T3,
+        clientId: C2,
+        address: ADDRESS,
+        snapshot: 'f',
+        fragmentKey: 'k1',
+      },
+    });
     await app.get(MergeService).merge(T3, T1);
     expect(
       await prisma.guideMark.count({
         where: { therapistId: T1, clientId: C2 },
       }),
-    ).toBe(1);
+    ).toBe(2);
     expect(await prisma.guideMark.count({ where: { therapistId: T3 } })).toBe(
       0,
     );

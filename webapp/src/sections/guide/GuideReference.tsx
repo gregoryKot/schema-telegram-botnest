@@ -14,26 +14,34 @@ import { buildAnswerSources, referenceAnswer } from './guideReferenceAnswer';
 import { GuideAnswerCard } from './GuideAnswerCard';
 import { GuideReferenceSkeleton } from './GuideReferenceSkeleton';
 import { useRouteGuideSheet } from './guideSheetRoute';
+import { useAddressSheet } from './guideAddressSheet';
 import { useReferenceSheets } from './useReferenceSheets';
+import type { GuideMarkClient } from '../../components/therapist/guide/marks/useClientGuideMarks';
 
 /**
  * Тело «Справочника»: пока чанк текстов грузится — силуэт списка, не
  * загрузился — лист соломы (PaperAlert) и «Повторить» (родитель монтирует тело заново).
  */
-export function GuideReference({ onRetry }: { onRetry: () => void }) {
+export function GuideReference({ onRetry, client, openAddress }: {
+  onRetry: () => void;
+  /** Справочник из карточки клиента: «Про клиента» сразу ему, без выбора. */
+  client?: GuideMarkClient;
+  /** Адрес раздела (`kind:id/path`): лист открывается сразу, один раз. */
+  openAddress?: string;
+}) {
   const texts = useGuide();
   if (texts === undefined) return <GuideReferenceSkeleton />;
   if (texts === null) {
     return <PaperAlert sign="layers" title="Справочник не загрузился. Обычно помогает ещё одна попытка" onRetry={onRetry} />;
   }
-  return <GuideReferenceLoaded texts={texts} />;
+  return <GuideReferenceLoaded texts={texts} client={client} openAddress={openAddress} />;
 }
 
 /**
  * Поиск по названиям и текстам листов, вкладки разделов на линии (LineTabs; у «Схем» справа — вид)
  * и список. Пустой раздел в переключатель не попадает. Листы — useReferenceSheets.
  */
-function GuideReferenceLoaded({ texts }: { texts: Guide }) {
+function GuideReferenceLoaded({ texts, client, openAddress }: { texts: Guide; client?: GuideMarkClient; openAddress?: string }) {
   const form = useAddressForm();
   const tr = useMemo(() => (ty: string, vy: string) => pickForm(form, ty, vy), [form]);
   const ref = useMemo(() => buildReference(texts, tr), [texts, tr]);
@@ -41,7 +49,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
   const [tab, setTab] = useState<ReferenceTab>('modes');
   const [query, setQuery] = useState('');
   const [schemaView, setSchemaView] = useState<SchemaView>('list');
-  const { open, sheets, markCoping } = useReferenceSheets(texts, tr);
+  const { open, sheets, markCoping } = useReferenceSheets(texts, tr, client);
   const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
   const body = useMemo(() => buildReferenceBody(texts, tr), [texts, tr]);
   const found = useMemo(() => searchReference(ref, query, body), [ref, query, body]);
@@ -53,6 +61,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
     if (v === 'table' && schemaView !== 'table') api.trackEvent('cabinet_guide_table_open');
     setSchemaView(v);
   };
+  useAddressSheet(ref, open, openAddress);
   useRouteGuideSheet(ref, open); // лист из общего поиска (⌘K): состояние маршрута → open
   return (
     <div className="gr-column">
