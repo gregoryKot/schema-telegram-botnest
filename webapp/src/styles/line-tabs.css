@@ -1,0 +1,26 @@
+/* Вкладки текстом на линии (components/LineTabs.tsx). Линия — у обёртки (тень внутрь): лента под ней прокручивается,
+   а линия стоит на всю ширину колонки; черта выбранной вкладки ложится поверх линии. Без фона и рамок. */
+.lt { display: flex; align-items: stretch; gap: 16px; min-width: 0; box-shadow: inset 0 -1px 0 var(--line); }
+.lt-strip { display: flex; flex: 1 1 auto; min-width: 0; }
+.lt-strip--scroll { gap: 22px; overflow-x: auto; scrollbar-width: none; }
+/* Затухание края с остальными пунктами — общая маска .ds-seg--fade (cabinet.css), класс ставит LineTabs. */
+.lt-strip--scroll::-webkit-scrollbar { display: none; }
+.lt-tab {
+  display: inline-flex; align-items: center; flex: 0 0 auto; min-height: 44px; padding: 0 2px; cursor: pointer;
+  border: none; border-bottom: 2px solid transparent; background: none; white-space: nowrap;
+  font: 500 15px/1.2 var(--sans); color: var(--text-sub);
+}
+.lt-strip--fill > .lt-tab { flex: 1 1 0; justify-content: center; min-width: 0; padding: 0 4px; }
+.lt-tab[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--text); }
+.lt-tab:hover { color: var(--text); }
+/* Кольцо фокуса — внутрь: лента прокручивается и режет всё за своим краем. */
+.lt-tab:focus-visible, .lt-q:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 6px; }
+.lt-aside { flex: none; display: flex; align-items: center; }
+/* Тихая пара «Списком · Таблицей»: выбранное — основным цветом, второе — приглушённым. */
+.lt-quiet { display: inline-flex; align-items: center; }
+.lt-q {
+  min-height: 44px; padding: 0 4px; cursor: pointer; border: none; background: none; white-space: nowrap;
+  font: 400 14px/1.2 var(--sans); color: var(--text-muted);
+}
+.lt-q[aria-selected="true"] { color: var(--text); font-weight: 500; }
+.lt-sep { color: var(--text-ghost); font-size: 14px; }
