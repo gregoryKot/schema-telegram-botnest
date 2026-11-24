@@ -36,7 +36,7 @@ for (const phone of PHONES) {
 
     const sheet = page.locator('.u-sheet-grid');
     await expect(sheet.getByRole('heading', { name: /История/ })).toBeVisible();
-    await sheet.getByRole('button', { name: 'Неделя' }).click();
+    await sheet.getByRole('tab', { name: 'Неделя' }).click();
 
     const scroller = sheet.locator(':scope > .page');
     const { overflowY, scrollHeight, clientHeight } = await scroller.evaluate(
