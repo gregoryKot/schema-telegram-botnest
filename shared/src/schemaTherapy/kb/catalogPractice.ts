@@ -15,6 +15,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'angry_client',
     'suicidal_thoughts',
     'romance_and_partner',
+    'dangerous_partner',
     'group_therapy',
     'group_techniques',
     'group_orientation',
