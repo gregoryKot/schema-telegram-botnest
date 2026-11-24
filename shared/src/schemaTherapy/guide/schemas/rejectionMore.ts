@@ -42,7 +42,12 @@ export const buildAbandonmentGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'transitional_objects',
   ],
-  moreTechniques: ['empathic_confrontation', 'limit_setting', 'cognitive_work'],
+  moreTechniques: [
+    'empathic_confrontation',
+    'limit_setting',
+    'cognitive_work',
+    'limited_reparenting',
+  ],
   betweenSessions: [
     {
       kind: 'task',

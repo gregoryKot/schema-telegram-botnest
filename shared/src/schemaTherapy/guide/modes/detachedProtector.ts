@@ -47,6 +47,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
     'socratic_dialogue',
     'mode_management_plan',
     'safety_bubble',
+    'behavioral_activation',
   ],
   betweenSessions: [
     {
