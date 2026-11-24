@@ -70,7 +70,7 @@ export function phaseData(pathId: number, position: number, d: PathPhaseDraft) {
       position,
       name: d.name,
       goal: d.goal ?? null,
-      weeks: d.weeks,
+      weeks: d.weeks ?? null,
       templatePhaseId: d.templatePhaseId ?? null,
     },
     PATH_PHASE_SCHEMA,
