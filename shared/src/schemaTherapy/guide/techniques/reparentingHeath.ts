@@ -1,4 +1,4 @@
-import { limitedReparentingMore } from './limitedReparentingMore';
+import { limitedReparentingMore } from './relationshipArntzJacob';
 import { safePlaceMoreAll } from './imageryFarrell';
 
 /** «Подробнее» к limited_reparenting и safe_place_imagery с дополнениями Хис (гл. 19, 20): вынесено, чтобы файлы не росли. */

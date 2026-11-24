@@ -4,6 +4,7 @@ import { GuideSection } from './GuideSection';
 import { channelSeed } from './guidePlan';
 import { PlanButton } from './PlanButton';
 import { modeGuideLook, schemaGuideLook } from './guideLook';
+import { concernGuideLook } from '../../../sections/guide/guideReferenceConcerns';
 import { articleAddress } from './marks/guideMarkModel';
 import { GuidePoints } from './GuidePoints';
 import { GuideRelated } from './GuideRelated';
@@ -13,6 +14,8 @@ type Props = GuideSheetActions & {
   modeName: string; view: ModeGuideView;
   /** Тап по схеме в «Связано» — её лист; нет — названия строкой. */
   onOpenSchema?: (schemaId: string) => void;
+  /** Тап по запросу в «Связано» — статья запроса; нет — группы «Запросы» нет (без перехода это тупик). */
+  onOpenConcern?: (concernId: string) => void;
 };
 
 /**
@@ -20,7 +23,7 @@ type Props = GuideSheetActions & {
  * строками (обратная сторона «Режимов» схемы); «На сессии» — техники и каналы карточками; «Между сессиями»; «Теория».
  * Открывается «Подробнее о режиме» на плашке «Обычно в методе».
  */
-export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Props) {
+export function ModeGuideSheet({ modeName, view, onOpenSchema, onOpenConcern, ...actions }: Props) {
   const { guide } = view;
   const at = articleAddress('mode', guide.modeId);
   const channels = CHANNELS.flatMap(({ id: key, ...c }) => {
@@ -34,7 +37,10 @@ export function ModeGuideSheet({ modeName, view, onOpenSchema, ...actions }: Pro
       label="Режим" title={modeName} lede={guide.what} voice={guide.voice} view={view} {...actions}
       look={modeGuideLook(guide.modeId)} at={at} article={{ kind: 'mode', id: guide.modeId }}
       lead={<GuideSection title="Цель" text={guide.goal} address={at('goal')} />}
-      related={<GuideRelated groups={[{ title: 'Схемы', address: at('schemas'), items: view.schemas, look: schemaGuideLook, onOpen: onOpenSchema }]} />}
+      related={<GuideRelated groups={[
+        { title: 'Схемы', address: at('schemas'), items: view.schemas, look: schemaGuideLook, onOpen: onOpenSchema },
+        { title: 'Запросы', items: onOpenConcern ? view.concerns : [], look: concernGuideLook, onOpen: onOpenConcern },
+      ]} />}
     >
       {channels.length > 0 && (
         <GuideSection title="Как работать">

@@ -65,9 +65,15 @@ export type YoungTechniqueId = 'schema_dialogue';
 export type ArntzTechniqueId =
   'current_role_play' | 'two_axis_check' | 'need_cycle' | 'guess_the_mode';
 
+/** Техники из книги Арнтц и Якоб «Практическое руководство» (карта «Арнтц-Якоб»). */
+export type ArntzJacobTechniqueId = 'coping_bypass';
+
 /** Техники из книги Фаррелл, Рейсс и Шоу (карта «Фаррелл»). */
 export type FarrellTechniqueId =
   'mode_management_plan' | 'healthy_adult_plan' | 'safety_bubble';
+
+/** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
+export type HeathTechniqueId = 'creative_mode_work' | 'probe_phrases';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
@@ -76,5 +82,7 @@ export type TechniqueId =
   | CambridgeTechniqueId
   | YoungTechniqueId
   | ArntzTechniqueId
+  | ArntzJacobTechniqueId
   | FarrellTechniqueId
+  | HeathTechniqueId
   | BorrowedTechniqueId;

@@ -30,5 +30,5 @@ export const buildBpdGuide: ConcernGuideBuilder = (tr) => ({
   ],
   ...BPD_ALL_SECTIONS,
   ...buildBpdTail(tr),
-  sources: '[Арнтц ПРЛ, гл. 1–12, прил. А], [Хис, гл. 20]',
+  sources: '[Арнтц ПРЛ, гл. 1–12, прил. А], [Арнтц, 9.5.1], [Хис, гл. 20]',
 });

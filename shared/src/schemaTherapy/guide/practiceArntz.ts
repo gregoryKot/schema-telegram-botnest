@@ -1,5 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { homeworkNotDoneMoreAll } from './practiceEndingHeath';
+import { modeFlippingMore } from './practiceMoreArntzJacob';
 
 /** «Для терапевта» по Арнцу и ван Гендерен (ПРЛ, гл. 6, 8, 9). Карта — docs/guide-sources/Арнц-ПРЛ.md, пачка 12. */
 export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
@@ -70,10 +71,7 @@ export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
         'Кажется, сейчас со мной говорит уже другая часть вас. Та, испуганная, ещё здесь?',
       ),
     ],
-    more: [
-      'Типичный промах: испуганного Покинутого Ребёнка принимают за Здорового Взрослого и успокаивают доводами, что бояться нечего. Тема уходит под спуд, к концу сессии страх возвращается, включаются Отстранённый, а затем Сердитый Защитник [Арнтц ПРЛ, гл. 9].',
-      'Терапевту нужно не попасть в ловушки своих режимов. Подозрение, что это случилось, несут коллегам и продолжают с того места, где остановились; регулярная супервизия при ПРЛ обязательна [Арнтц ПРЛ, гл. 9].',
-    ],
-    sources: '[Арнтц ПРЛ, гл. 9]',
+    more: modeFlippingMore,
+    sources: '[Арнтц ПРЛ, гл. 9], [Арнтц, 1.4]',
   },
 ];

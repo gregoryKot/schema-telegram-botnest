@@ -3,6 +3,7 @@ import { buildImageryRescriptingTechniques } from './imageryRescripting';
 import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
 import { buildChairTechniques } from './chairs';
+import { buildCreativeModeWorkTechniques } from './creativeModeWork';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
 import { buildFarrellPlanTechniques } from './farrellPlans';
@@ -14,6 +15,8 @@ import { buildLimitedReparentingTechniques } from './limitedReparenting';
 import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
 import { buildSafetyBubbleTechniques } from './safetyBubble';
+import { buildProbePhrasesTechniques } from './probePhrases';
+import { buildCopingBypassTechniques } from './copingBypass';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
@@ -36,10 +39,12 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryTechniques,
   buildChairworkTechniques,
   buildChairTechniques,
+  buildCreativeModeWorkTechniques,
   buildRolePlayArntzTechniques,
   buildCognitiveArntzTechniques,
   buildFarrellPlanTechniques,
   buildEmpathicConfrontationTechniques,
+  buildCopingBypassTechniques,
   buildStanceTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
@@ -53,6 +58,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildChildCareTechniques,
   buildHealthyAdultPlanTechniques,
   buildBodyGroundingTechniques,
+  buildProbePhrasesTechniques,
   buildBodyValuesTechniques,
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
