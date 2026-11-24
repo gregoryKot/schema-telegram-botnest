@@ -35,7 +35,6 @@ describe('u-self-start вместо инлайн alignSelf', () => {
   });
 
   // ModesTab.tsx ушёл из списка с редизайном справочника (b16): чипа группы с alignSelf там больше нет.
-  // GuideReference.tsx — с видом «Таблицей»: вкладки стоят в строке .gr-bar, а не в колонке, тянуть их некуда.
   it.each([
     'components/therapist/ClientYSQTab.tsx',
     'components/therapist/concept/YsqCrossCheck.tsx',

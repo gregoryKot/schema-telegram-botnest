@@ -108,9 +108,9 @@ describe('TherapistGuideSection', () => {
 
   it('«Схемы» → «Таблицей»: описание и три копинга по домену, тап по схеме — её лист; обратно — список', async () => {
     await mount();
-    expect(screen.queryByRole('button', { name: 'Таблицей' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Таблицей' })).toBeNull();
     fireEvent.click(screen.getByRole('tab', { name: 'Схемы' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Таблицей' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Таблицей' }));
     expect(tracked()).toEqual([CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_TABLE_EVENT]);
     const domain = screen.getByRole('region', { name: 'Нарушение связи и отвержение' });
     const row = within(domain).getByRole('row', { name: new RegExp(SCHEMA_NAME) });
@@ -123,9 +123,9 @@ describe('TherapistGuideSection', () => {
     expect(within(domain).getByRole('columnheader', { name: 'Гиперкомпенсация' })).toBeTruthy();
     fireEvent.click(within(row).getByRole('button', { name: new RegExp(SCHEMA_NAME) }));
     expect(screen.getByRole('dialog', { name: SCHEMA_NAME })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Таблицей' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Таблицей' }));
     expect(tracked().filter((e) => e === CABINET_GUIDE_TABLE_EVENT)).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Списком' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Списком' }));
     expect(screen.queryByRole('table')).toBeNull();
   });
 
