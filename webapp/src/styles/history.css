@@ -121,13 +121,13 @@
 /* Строки недели — каждая на бумаге своей потребности и с зазором, на всех ширинах: на телефоне (основной
    вход из Telegram и MAX) белая карточка-список была самым бледным видом. Число — 24px, крупный текст
    (≥3:1 к своей бумаге, needInk.test); стрелка — --text-sub: зелёный и красный на бумаге ниже AA. */
-.ds-card.sd-week { display: flex; flex-direction: column; gap: 8px; background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+.sd-week { display: flex; flex-direction: column; gap: 8px; }
 .sd-week > .sd-spark-row { border: 0; border-radius: 16px; background: oklch(0.915 0.03 var(--h)); }
 .sd-week > .sd-spark-row:hover { background: oklch(0.895 0.035 var(--h)); }
 .sd-week .sd-spark-score { font-size: 24px; line-height: 1; }
 .sd-week .sd-trend { color: var(--text-sub); }
 /* «Карточка недели» — строка со сценой листков отмеченных дней. */
-.ds-card.sd-weekcard { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 64px; padding: 8px 18px 8px 12px; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.sd-weekcard { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 64px; padding: 8px 18px 8px 12px; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
 .sd-weekcard-scene { display: inline-flex; width: 64px; flex-shrink: 0; }
 .sd-weekcard-label { font-size: 15px; font-weight: 600; }
 .sd-head { padding: 40px clamp(16px, 4vw, 32px) 24px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box; }
@@ -144,7 +144,7 @@
   .sd-day-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
   .sd-day-side { position: sticky; top: 24px; }
   .sd-seg-slot { flex: 0 0 240px; }
-  .ds-card.sd-week { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+  .sd-week { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
   .sd-week > .sd-spark-row {
     grid-column: span 2; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name name' 'plot score'; gap: 14px 10px;
     padding: 16px 16px 20px; border-radius: 20px;
@@ -162,7 +162,7 @@
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .sd-day-grid { grid-template-columns: 380px minmax(0, 1fr); gap: 32px; }
   .sd-day, .sd-day-slot { flex-basis: 72px; }
-  .ds-card.sd-week { gap: 16px; }
+  .sd-week { gap: 16px; }
   .sd-week > .sd-spark-row { grid-template-areas: 'name score' 'plot plot'; padding: 18px 20px 22px; gap: 18px 14px; }
   .sd-week .sd-spark-score { align-self: start; font-size: 30px; }
 }
