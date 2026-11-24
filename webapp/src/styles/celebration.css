@@ -15,7 +15,7 @@
 .sk-celebr-num {
   position: relative; z-index: 1; min-width: 84px; box-sizing: border-box; margin-top: -30px;
   padding: 6px 20px 8px; border-radius: 16px; background: var(--surface); transform: rotate(-3deg);
-  box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); font-size: 64px; letter-spacing: -.02em; color: var(--text);
+  box-shadow: 0 0 0 1px var(--panel-line); font-size: 64px; letter-spacing: -.02em; color: var(--text);
 }
 .sk-celebr-insight { padding-top: 12px; border-top: 1px solid var(--paper-sunk); font-size: 13px; }
 .sk-celebr-canvas { position: absolute; inset: 0; pointer-events: none; }
