@@ -16,9 +16,9 @@ const Sheet = ({ h, cls, children }: { h: number; cls: string; children: ReactNo
 export function CardHeadSkeleton() {
   return (
     <div className="sks-card-top">
-      <div className="sks-card-back"><Skeleton width={110} height={13} /><Skeleton width={44} height={44} radius={22} /></div>
+      <div className="sks-card-back"><Skeleton width={110} height={13} /><Skeleton width={44} height={44} radius="50%" /></div>
       <div className="sks-card-head">
-        <Skeleton width={56} height={56} radius={28} />
+        <Skeleton width={56} height={56} radius="50%" />
         <div className="sks-col"><Skeleton width="44%" height={28} radius={8} /><Skeleton width="62%" height={12} /><Skeleton width="38%" height={12} /></div>
       </div>
       <div className="sks-tabs">{[64, 120, 112, 64, 72, 56].map((w, i) => <Skeleton key={i} width={w} height={14} />)}</div>
@@ -39,7 +39,7 @@ export function OverviewSkeleton({ tab = 'overview' }: { tab?: string }) {
   return (
     <div className="sks-ov">
       <div className="sks-col">
-        <div className="sks-ov-quick"><Skeleton width={104} height={44} radius={22} /><Skeleton width={104} height={44} radius={22} /></div>
+        <div className="sks-ov-quick"><Skeleton width={104} height={44} radius={12} /><Skeleton width={104} height={44} radius={12} /></div>
         <Sheet h={70} cls="sks-ov-goal"><Skeleton width="86%" height={20} /><Skeleton width="72%" height={20} /><Skeleton width="58%" height={20} /></Sheet>
         <Skeleton width={120} height={12} />
         <Sheet h={28} cls="sks-ov-group"><div className="sks-card"><div className="sks-rows">{[0, 1, 2].map((i) => <div key={i} className="sks-row sks-row--tight"><Skeleton width={`${70 - i * 12}%`} height={14} /></div>)}</div></div></Sheet>

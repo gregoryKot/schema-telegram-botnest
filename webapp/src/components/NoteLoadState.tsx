@@ -17,10 +17,10 @@ export function NoteLoadState({ status, onRetry }: { status: Exclude<DayNoteStat
   }
   return (
     <div role="status" aria-label="Загружается заметка" className="sd-note-form">
-      <Skeleton height={200} radius={20} />
+      <Skeleton height={200} radius={16} />
       <div className="sd-note-tags">
         <Skeleton width={90} height={12} />
-        <div className="sd-note-chips">{[96, 120, 104, 132, 80].map(w => <Skeleton key={w} width={w} height={40} radius={20} />)}</div>
+        <div className="sd-note-chips">{[96, 120, 104, 132, 80].map(w => <Skeleton key={w} width={w} height={40} radius={12} />)}</div>
       </div>
     </div>
   );

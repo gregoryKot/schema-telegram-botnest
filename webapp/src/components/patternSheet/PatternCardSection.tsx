@@ -29,7 +29,7 @@ export function PatternCardSection({ explainer, fields, loading, failed, sign, o
     return (
       <section className="ps-block" aria-busy="true">
         <div className="ds-label ps-label">Моя карточка</div>
-        <Skeleton height={120} radius={20} />
+        <Skeleton height={120} radius={16} />
       </section>
     );
   }
