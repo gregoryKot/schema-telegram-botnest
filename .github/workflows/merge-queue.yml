@@ -3,6 +3,8 @@
 # update-branch (конфликт в бейслайнах и бэклоге сводится merge-драйверами и
 # пушится в ветку PR), а его прогон CI — одобрение. Правила — шапка
 # scripts/merge-queue.mjs, тест — src/test-support/gates/merge-queue.spec.ts.
+# Отставших зелёных PR ≥2 — они едут поездом (scripts/merge-train.mjs): одна
+# ветка, один круг CI. Выключатель — переменная репозитория MERGE_TRAIN=off.
 name: Очередь мержа
 
 # Событий PR нет: у джобы запись. Дерево PR она берёт только как данные для
@@ -24,7 +26,8 @@ on:
         type: boolean
         default: false
 
-# Общая группа без отмены: два прогона подряд не подтянут два PR.
+# Общая группа без отмены: два прогона подряд не подтянут два PR и не соберут
+# два поезда — группа держится до конца всех джоб прогона.
 concurrency:
   group: merge-queue
   cancel-in-progress: false
@@ -41,6 +44,9 @@ jobs:
       pull-requests: write
       actions: write
       checks: read
+    outputs:
+      train_pr: ${{ steps.queue.outputs.train_pr }}
+      train_ref: ${{ steps.queue.outputs.train_ref }}
     steps:
       # Чекаут без `ref:` — код main (у workflow_run тоже), а не PR.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,8 +58,67 @@ jobs:
         with:
           node-version: 22
       - name: Подтянуть один отставший PR и одобрить его прогон CI
+        id: queue
         env:
+          MERGE_TRAIN: ${{ vars.MERGE_TRAIN || 'on' }}
           GITHUB_TOKEN: ${{ github.token }}
           MERGE_QUEUE_GIT_DIR: ${{ github.workspace }}
           DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
         run: node scripts/merge-queue.mjs $DRY_RUN
+
+  # Бейслайны поезда: драйвер сложил дельты пассажиров, а размер файла и бандла
+  # знает только пересборка. Здесь исполняется код PR — у джобы только чтение,
+  # наружу уходит один патч двух бейслайнов.
+  train-baselines:
+    needs: queue
+    if: needs.queue.outputs.train_pr != ''
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      patch: ${{ steps.patch.outputs.patch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.queue.outputs.train_ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+      - run: npm ci --prefix webapp
+      - run: npm run build --prefix webapp
+      - run: node scripts/check-bundle-size-ratchet.mjs --update
+      - run: node scripts/check-file-size-ratchet.mjs --update
+      - name: Патч бейслайнов
+        id: patch
+        run: echo "patch=$(git diff -- scripts/file-size-baseline.json scripts/bundle-size-baseline.json | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  # Отправление: патч бейслайнов — в ветку поезда, прогон CI — одобрение.
+  # Сборка выше упала — поезд уходит как есть, красное покажет CI.
+  train-depart:
+    needs: [queue, train-baselines]
+    if: ${{ !cancelled() && needs.queue.outputs.train_pr != '' }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Закоммитить бейслайны и одобрить прогон CI поезда
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MERGE_QUEUE_GIT_DIR: ${{ github.workspace }}
+          TRAIN_PR: ${{ needs.queue.outputs.train_pr }}
+          TRAIN_PATCH: ${{ needs.train-baselines.outputs.patch }}
+        run: node scripts/merge-train-depart.mjs

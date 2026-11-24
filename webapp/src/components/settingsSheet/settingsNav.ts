@@ -17,11 +17,11 @@ export function settingsNav({ therapist, modeSwitch, homeIcon }: {
     { id: 's-notifications', label: 'Уведомления', find: 'Напоминания, итоги дня, время, частота, тихие часы, часовой пояс' },
     { id: 's-appearance', label: 'Оформление', find: 'Меньше движения, анимация' },
     ...(homeIcon ? [{ id: 's-home', label: 'Значок на экране', find: 'Установить приложение' }] : []),
-    therapist ? { id: 's-cabinet', label: 'Кабинет', find: 'Открыть кабинет терапевта' }
+    therapist ? { id: 's-cabinet', label: 'Кабинет терапевта', find: 'Открыть кабинет терапевта' }
       : { id: 's-therapist', label: 'Мой терапевт', find: 'Код от терапевта, доступ к карточкам и профилю' },
     { id: 's-partner', label: 'Партнёр', find: 'Приглашение в пару, вход по коду' },
     { id: 's-share', label: 'Поделиться', find: 'Пригласить друга, сводка для терапевта' },
-    ...(therapist ? [] : [{ id: 's-specialist', label: 'Специалист', find: 'Стать специалистом, заявка' }]),
+    ...(therapist ? [] : [{ id: 's-specialist', label: 'Стать специалистом', find: 'Стать специалистом, заявка' }]),
     { id: 's-about', label: 'О приложении', find: 'Зачем это всё, пять потребностей, об авторе' },
     { id: 's-data', label: 'Данные', find: 'Конфиденциальность, скачать мои данные, удалить аккаунт' },
   ];

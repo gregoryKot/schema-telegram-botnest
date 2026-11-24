@@ -573,7 +573,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
   it('ошибка api.createTherapyInvite показывает сообщение', async () => {
     mockApi.createTherapyInvite.mockRejectedValue(new Error('network down'));
     await renderSheet('THERAPIST');
-    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
     await screen.findByText(/Не удалось создать приглашение/);
   });
 
@@ -583,7 +583,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
       value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true, writable: true,
     });
     await renderSheet('THERAPIST');
-    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
 
     await screen.findByText('https://t.me/bot?start=abc');
     expect(screen.queryByText('Скопировано ✓')).toBeNull();
@@ -593,7 +593,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
     mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
     mockClipboard();
     await renderSheet('THERAPIST');
-    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
     await screen.findByText('Ссылка скопирована');
     // Код — отдельной строкой, для клиента на сайте (инцидент 2026-10-26).
     expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
@@ -846,13 +846,13 @@ describe('SettingsSheet — режим терапевта (userRole=THERAPIST): 
     await screen.findByText('Настройки');
     return { onClose, onSet };
   }
-  const modeGroup = () => screen.getByRole('group', { name: 'Режим' });
+  const modeGroup = () => screen.getByRole('tablist', { name: 'Режим' });
 
   it('первым блоком главного вида — группа «Режим» с «Клиент»/«Терапевт», нажат текущий режим', async () => {
     await renderTherapist(true);
     const group = modeGroup();
-    expect(within(group).getByRole('button', { name: 'Клиент' }).getAttribute('aria-pressed')).toBe('false');
-    expect(within(group).getByRole('button', { name: 'Терапевт' }).getAttribute('aria-pressed')).toBe('true');
+    expect(within(group).getByRole('tab', { name: 'Клиент' }).getAttribute('aria-selected')).toBe('false');
+    expect(within(group).getByRole('tab', { name: 'Терапевт' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByText(/Кабинет терапевта — клиенты и концептуализации/)).toBeTruthy();
     const firstSection = document.querySelector('.st-inner .st-section')!;
     expect(firstSection.contains(group)).toBe(true);
@@ -861,7 +861,7 @@ describe('SettingsSheet — режим терапевта (userRole=THERAPIST): 
 
   it('«Клиент» зовёт обработчик с false и закрывает лист — сначала закрытие, затем переключение', async () => {
     const { onClose, onSet } = await renderTherapist(true);
-    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Клиент' }));
+    fireEvent.click(within(modeGroup()).getByRole('tab', { name: 'Клиент' }));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(onSet).toHaveBeenCalledTimes(1);
     expect(onSet).toHaveBeenCalledWith(false);
@@ -870,14 +870,14 @@ describe('SettingsSheet — режим терапевта (userRole=THERAPIST): 
 
   it('«Терапевт» из режима клиента зовёт обработчик с true и закрывает лист', async () => {
     const { onClose, onSet } = await renderTherapist(false);
-    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Терапевт' }));
+    fireEvent.click(within(modeGroup()).getByRole('tab', { name: 'Терапевт' }));
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(onSet).toHaveBeenCalledWith(true);
   });
 
   it('тап по текущему режиму ничего не делает: лист открыт, обработчик не зван', async () => {
     const { onClose, onSet } = await renderTherapist(true);
-    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Терапевт' }));
+    fireEvent.click(within(modeGroup()).getByRole('tab', { name: 'Терапевт' }));
     expect(onSet).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByText('Настройки')).toBeTruthy();
@@ -925,7 +925,7 @@ describe('SettingsSheet — режим терапевта (userRole=THERAPIST): 
 
   it('без обработчика режима блока нет (терапевт без переключения — как раньше)', async () => {
     await renderSheet('THERAPIST');
-    expect(screen.queryByRole('group', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByRole('tablist', { name: 'Режим' })).toBeNull();
     expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
   });
 
@@ -936,7 +936,7 @@ describe('SettingsSheet — режим терапевта (userRole=THERAPIST): 
       </MemoryRouter>,
     );
     await screen.findByText('Настройки');
-    expect(screen.queryByRole('group', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByRole('tablist', { name: 'Режим' })).toBeNull();
     expect(screen.queryByText('Режим специалиста')).toBeNull();
     // у клиента вход на /account уже есть в его разделе «Профиль» («Аккаунт и привязки»)
     expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();

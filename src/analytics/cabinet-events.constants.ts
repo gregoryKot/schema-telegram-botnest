@@ -8,6 +8,7 @@
 //   cabinet_guide_answer_show / _link — над выдачей поиска показана карточка-ответ / переход по её ссылке; без листа и запроса.
 //   cabinet_session_work    — сохранил итоги сессии с пунктами «Что делали» (#1330); meta { items, kinds }:
 //     число пунктов и их виды (technique / exercise / custom). Какая техника и текст полей — нет. Строка в /stats — блок src/bot/concept-graph-metrics.* (рядом с журналом техник).
+//   cabinet_client_memo_saved — сохранил заметку «О клиенте» в карточке; meta { length, cleared }: длина текста и очистил ли. Самого текста нет. Строка в /stats — блок src/bot/concept-graph-metrics.*.
 //   cabinet_guide_table_open — в «Справочнике» переключил «Схемы» на вид «Таблицей» (все схемы и три копинга).
 //   task_assign_source — терапевт назначил задание в листе «Новое задание»; meta { source } из
 //     TASK_ASSIGN_SOURCES: плитка-упражнение, «Взять» из справочника, свой текст, «Дать заданием» из листа справочника, шаблон вкладки «Задания». Блок — src/bot/task-assign-metrics.*.
@@ -16,6 +17,7 @@
 import { PLAN_PATH_EVENTS } from './path-events.constants';
 export const CABINET_EVENTS = [
   'cabinet_session_work',
+  'cabinet_client_memo_saved',
   'cabinet_screen_share_on',
   'cabinet_guide_open',
   'cabinet_guide_mode_open',

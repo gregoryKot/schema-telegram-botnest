@@ -28,7 +28,7 @@ export function QuestionSkeleton({ onClose }: { onClose: () => void }) {
             </div>
           }>
             <Skeleton width="90%" height={17} />
-            <SkeletonList rows={5} height={56} radius={18} gap={10} />
+            <SkeletonList rows={5} height={56} radius={16} gap={10} />
           </SpreadLayout>
         </div>
       </div>

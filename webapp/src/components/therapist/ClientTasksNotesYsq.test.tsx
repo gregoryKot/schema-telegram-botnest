@@ -170,7 +170,7 @@ describe('вкладки без заголовков, пустые состоя�
     const head = container.querySelector('.ds-page > .tb-notes-head')!;
     expect(head.children[0].querySelector('h2.tb-tab-h')?.textContent).toBe('Записи клиента');
     expect(head.children[0].classList.contains('tb-tab-title--desk')).toBe(true);
-    expect(head.children[1].getAttribute('role')).toBe('tablist');
+    expect(head.children[1].querySelector('[role="tablist"]')).not.toBeNull();
     fireEvent.click(screen.getByRole('tab', { name: /Схемы/ }));
     expect(screen.getByText('В этой категории записей нет').classList.contains('ds-empty')).toBe(true);
   });

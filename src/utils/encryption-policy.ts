@@ -159,6 +159,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     ),
     clientAlias: enc(`${TH}/therapy-relations.service.ts`),
     virtualClientName: enc(`${TH}/therapy-relations.service.ts`),
+    therapistMemo: enc(`${TH}/session-info-data.ts`),
     therapyStartDate: DATE,
     nextSession: DATE,
     meetingDays: plain('номера дней недели'),
@@ -204,6 +205,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     address: plain('адрес раздела справочника из кода, не свободный текст'),
     note: enc(`${TH}/guide-marks.service.ts`),
     snapshot: enc(`${TH}/guide-marks.service.ts`),
+    fragmentKey: plain('хэш выделенного текста, не сам текст'),
   },
   ClientConceptualization: {
     schemaIds: enc(`${TH}/concept-store.ts`),

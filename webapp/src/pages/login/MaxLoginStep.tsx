@@ -9,7 +9,7 @@ export function MaxLoginStep({ code, url }: { code: string; url: string }) {
     <div className="al-ticket al-max-step">
       <p className="al-note">В MAX откроется наше приложение — там нужно набрать код:</p>
       <div className="al-code">{formatUserCode(code)}</div>
-      <a className="al-btn-main al-btn-max" href={url} target="_blank" rel="noopener noreferrer">
+      <a className="ds-btn ds-btn--lg al-btn-main" href={url} target="_blank" rel="noopener noreferrer">
         Открыть MAX
       </a>
       <p className="al-note">Эта страница впустит сама, как только вход подтвердят.</p>

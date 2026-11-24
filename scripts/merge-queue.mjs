@@ -5,10 +5,12 @@
 //
 // За прогон — один PR. Очередь — открытые PR в main с auto-merge, не черновики,
 // без `do-not-merge`, старые первыми (правила — merge-queue-plan.mjs):
-//  - свежий PR с прогоном самой очереди «в полёте» — его ждут; чужие идущие проверки не держат;
+//  - свежий PR с идущим CI (чей пуш — не важно) «в полёте» — его ждут;
+//  - отменённые обязательные проверки — как отставание: update-branch перезапускает CI;
 //  - иначе первый отставший (зелёные по готовности, затем с идущим прогоном)
 //    получает update-branch; конфликт сводит merge-queue-conflict.mjs, не свёл —
-//    комментарий автору и метка, следующий по порядку; красный чинит агент.
+//    комментарий автору и метка, следующий по порядку; красный чинит агент;
+//  - отставших зелёных ≥2 и MERGE_TRAIN=on — они едут поездом (merge-train.mjs).
 // Пуш от GITHUB_TOKEN ставит pull_request-прогон CI на одобрение
 // (action_required), а прогон ci.yml через dispatch ruleset в зачёт auto-merge
 // не берёт (#1104: 20 подтягиваний за день, мержа нет) — очередь одобряет свой прогон.
@@ -20,10 +22,10 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { client } from './merge-queue-api.mjs';
 import { CONFLICT_LABEL, resolveConflict } from './merge-queue-conflict.mjs';
-import { BOT, DEPENDABOT, checksState, planQueue, queueRuns, queuedPulls, requiredChecks, runsToApprove } from './merge-queue-plan.mjs';
-
-const POLLS = 18;
-const CI = '.github/workflows/ci.yml';
+import { DEPENDABOT, checksState, planQueue, queuedPulls, requiredChecks } from './merge-queue-plan.mjs';
+import { queueSteps } from './merge-queue-steps.mjs';
+import { trainEngine } from './merge-train.mjs';
+import { NO_TRAIN, isTrain } from './merge-train-plan.mjs';
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
@@ -35,37 +37,15 @@ async function main() {
   if (!repo || !token) throw new Error('нужны GITHUB_REPOSITORY и GITHUB_TOKEN');
 
   const { call, get } = client(api, token);
-  const sleep = () => new Promise((done) => setTimeout(done, pollMs));
   const R = `/repos/${repo}`;
-
-  /** Одобряет прогоны очереди на голове; сколько одобрено. */
-  const approve = async (sha) => {
-    const { workflow_runs: runs } = await get(`${R}/actions/runs?head_sha=${sha}&event=pull_request`);
-    const todo = runsToApprove(runs, repo);
-    for (const r of todo) {
-      const res = await call('POST', `${R}/actions/runs/${r.id}/approve`);
-      if (!res.ok) throw new Error(`approve прогона ${r.id}: HTTP ${res.status}`);
-    }
-    return { ci: runs.some((r) => r.path === CI), approved: todo.length };
-  };
-
-  /** `@dependabot recreate`, не чаще раза на голову: true — попросили сейчас. */
-  const recreate = async (p) => {
-    const { commit } = await get(`${R}/commits/${p.sha}`);
-    const since = commit.committer.date;
-    const comments = await get(`${R}/issues/${p.number}/comments?since=${since}&per_page=100`);
-    const asked = comments.some(
-      (c) => c.user.login === BOT && c.body.startsWith('@dependabot recreate') && c.created_at > since,
-    );
-    if (asked) return false;
-    const res = await call('POST', `${R}/issues/${p.number}/comments`, { body: '@dependabot recreate' });
-    if (!res.ok) throw new Error(`комментарий в #${p.number}: HTTP ${res.status}`);
-    return true;
-  };
+  const scriptsDir = dirname(fileURLToPath(import.meta.url));
+  const { approve, recreate, settle, newHead } = queueSteps({ call, get, R, repo, pollMs });
+  const trains = trainEngine({ call, get, R, on: process.env.MERGE_TRAIN === 'on', dryRun, repoDir, scriptsDir });
 
   const required = requiredChecks(await get(`/repos/${repo}/rules/branches/main`));
   if (!required.length) throw new Error('у ruleset main нет обязательных проверок — нечем судить зелёный');
-  const pulls = queuedPulls(await get(`${R}/pulls?state=open&base=main&per_page=100`), repo);
+  const open = await get(`${R}/pulls?state=open&base=main&per_page=100`);
+  const pulls = queuedPulls(trains.riders(open), repo);
   const prs = [];
   for (const p of pulls) {
     const sha = p.head.sha;
@@ -73,42 +53,34 @@ async function main() {
     const { check_runs: runs } = await get(`${R}/commits/${sha}/check-runs?per_page=100`);
     const flagged = p.labels.some((l) => l.name === CONFLICT_LABEL);
     const pr = { number: p.number, sha, branch: p.head.ref, flagged, author: p.user.login, behind, checks: checksState(required, runs) };
+    // Поля поезда: состав читается из тела PR-поезда, виновного ищут по его прогонам.
+    Object.assign(pr, { node: p.node_id, title: p.title, auto: !p.kept, noTrain: p.labels.some((l) => l.name === NO_TRAIN) });
+    if (isTrain(p)) Object.assign(pr, { train: true, body: p.body, created: Date.parse(p.created_at), runs });
     // Автор свёл конфликт сам — метка больше не правда.
     if (flagged && behind === 0 && !dryRun) await call('DELETE', `${R}/issues/${p.number}/labels/${CONFLICT_LABEL}`);
-    if (behind === 0 && pr.checks.state === 'pending') {
-      const { workflow_runs: wf } = await get(`${R}/actions/runs?head_sha=${sha}&event=pull_request`);
-      pr.byQueue = queueRuns(wf, repo).length > 0;
-    }
     // Свежий PR без прогона: одобрение очереди могло не дойти в прошлый раз.
     if (behind === 0 && pr.checks.state === 'missing' && !dryRun && (await approve(sha)).approved) {
-      pr.checks = { state: 'pending', last: 0 };
-      pr.byQueue = true;
+      pr.checks = { state: 'pending', last: 0, since: Date.now() };
+    }
+    if (behind === 0 && pr.checks.state === 'cancelled') {
+      console.log(`::warning::#${p.number}: проверки отменены на свежей голове — перезапустить может только автор`);
     }
     console.log(`#${pr.number}: отстаёт на ${behind}, обязательные проверки — ${pr.checks.state}`);
     prs.push(pr);
   }
 
-  const settle = async (p, head, how) => {
-    let res = { ci: false, approved: 0 };
-    for (let i = 0; i < POLLS && !res.ci; i++) {
-      await sleep();
-      const step = await approve(head);
-      res = { ci: step.ci, approved: res.approved + step.approved };
-    }
-    if (!res.ci) console.log(`::warning::#${p.number}: прогон CI не появился — одобрит следующий прогон очереди`);
-    if (p.flagged) await call('DELETE', `${R}/issues/${p.number}/labels/${CONFLICT_LABEL}`);
-    console.log(`#${p.number}: отставал на ${p.behind}, ${how} (${p.sha} → ${head}), одобрено прогонов: ${res.approved}`);
-  };
-
-  const scriptsDir = dirname(fileURLToPath(import.meta.url));
   const resolve = (p, pushClean) => resolveConflict(p, { repoDir, scriptsDir, pushClean, dryRun, call, R, settle });
 
-  const { wait, candidates } = planQueue(prs, Date.now());
+  const ride = await trains.drive(prs, open);
+  if (ride === 'done') return;
+  const { wait, candidates } = planQueue(prs.filter((p) => !!p.train === (ride === 'ride')), Date.now());
   if (wait) return console.log(`#${wait.number} в полёте: ветка свежая, ждём его мержа`);
+  if (ride !== 'walk' && (await trains.board(candidates))) return;
   for (const p of candidates) {
     // Без прогона: у конфликта с main CI не стартует; иное «без прогона» чинит агент.
     if (p.checks.state === 'missing') {
       if (await resolve(p, false)) return;
+      console.log(`#${p.number}: без прогона и без конфликта — пропуск, чинит автор`);
       continue;
     }
     if (dryRun) return console.log(`dry-run: подтянул бы #${p.number}`);
@@ -126,11 +98,7 @@ async function main() {
       console.log(`::warning::#${p.number}: update-branch HTTP ${r.status} — следующий`);
       continue;
     }
-    let head = p.sha;
-    for (let i = 0; i < POLLS && head === p.sha; i++) {
-      await sleep();
-      head = (await get(`${R}/pulls/${p.number}`)).head.sha;
-    }
+    const head = await newHead(p);
     if (head === p.sha) throw new Error(`#${p.number}: голова не сменилась после update-branch`);
     return settle(p, head, 'подтянут');
   }

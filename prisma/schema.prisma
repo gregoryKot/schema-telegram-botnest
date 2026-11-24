@@ -542,6 +542,7 @@ model TherapyRelation {
   status      RelationStatus @default(pending)
   clientAlias       String?  // therapist's custom name for client
   virtualClientName String?  // if set: offline/virtual client (no Telegram account)
+  therapistMemo     String?  // свободная заметка терапевта о клиенте, шифротекст; клиенту не уходит
   therapyStartDate  String?  // YYYY-MM-DD, editable by therapist
   nextSession       String?  // YYYY-MM-DD, next scheduled session
   meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
@@ -656,7 +657,7 @@ model TherapyPathPhase {
   position        Int      @default(0)
   name            String   // шифруется
   goal            String?  // шифруется
-  weeks           Int
+  weeks           Int?     // null — срока нет (общий шаблон)
   templatePhaseId String?
   startedAt       String?  // YYYY-MM-DD, фактическое начало
   endedAt         String?  // YYYY-MM-DD, фактическое окончание
@@ -680,11 +681,12 @@ model GuideMark {
   clientId    BigInt
   address     String   // адрес раздела после реестра переименований
   note        String?  // шифруется: «как это у него»
-  snapshot    String   // шифруется: текст раздела на момент отметки
+  snapshot    String   // шифруется: текст раздела на момент отметки (у фрагмента — выделенный текст)
+  fragmentKey String   @default("") // '' — раздел целиком; иначе хэш выделенного фрагмента (несколько на адрес)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([therapistId, clientId, address])
+  @@unique([therapistId, clientId, address, fragmentKey])
 }
 
 model ClientConceptualization {

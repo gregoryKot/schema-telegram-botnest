@@ -7,7 +7,7 @@ export function ProfileSkeleton() {
   return (
     <div className="cpf-skeleton" aria-hidden="true">
       <div className="pp-squares cpf-shelf cpf-shelf--n3">
-        {[0, 1, 2].map((i) => <Skeleton key={i} height="var(--cpf-tile-h)" radius={20} />)}
+        {[0, 1, 2].map((i) => <Skeleton key={i} height="var(--cpf-tile-h)" radius={16} />)}
       </div>
       <div className="pp-block cpf-rhythm cpf-rhythm--two">
         <div className="cpf-rhythm-row">

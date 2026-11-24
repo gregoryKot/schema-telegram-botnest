@@ -9,10 +9,10 @@
 .gd-hero > .pp-hero-text { grid-column: 1 / -1; }
 .gd-hero .pp-hero-title { font-size: clamp(28px, 7.4vw, 38px); line-height: 1.15; }
 .gd-hero .pp-hero-text { font-size: 17px; line-height: 1.6; }
-.gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 22px; }
+.gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: var(--r-16); }
 .gd-hero-art > .scn-sign { width: 72px; }
 @media (max-width: 480px) {
-  .gd-hero-art { width: 80px; height: 80px; border-radius: 18px; }
+  .gd-hero-art { width: 80px; height: 80px; border-radius: var(--r-16); }
   .gd-hero-art > .scn-sign { width: 60px; }
 }
 
@@ -110,7 +110,7 @@
 .gd-coping-who { font-weight: 400; color: var(--text-sub); }
 .cm-client { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px; margin-top: var(--space-8); }
 .cm-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); }
-.gd-coping .ds-link.gd-plan { display: flex; width: fit-content; margin-top: 6px; }
+.gd-coping .ds-link.gd-plan, .gd-points .ds-link.gd-plan { display: flex; width: fit-content; margin-top: 6px; }
 
 /* «Про клиента» (#1484, marks/GuideSectionMark.tsx): тап по разделу подсвечивает его, рядом кнопка;
    отмеченный клиенту раздел (справочник из карточки) — с полосой акцента и именем. */
@@ -124,6 +124,10 @@
   padding: 10px 16px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 15px;
 }
 .gd-mark-hint { margin: 12px 0 0; }
+/* «Про клиента» для выделенного текста (marks/GuideSelectionBar.tsx): у нижнего края, не рядом с системным меню выделения. */
+.gd-sel-bar { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 395; }
+.gd-sel-btn { min-width: 44px; min-height: 48px; }
+.gd-sel-quote { margin: 8px 0; padding: 4px 0 4px 12px; border-left: 3px solid var(--accent-line); color: var(--text); font-size: 15px; white-space: pre-wrap; }
 /* Блок «Из справочника» под схемой случая (marks/GuideMarksBlock.tsx). */
 .gd-marks { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
 .gd-marks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -159,3 +163,4 @@
 .gd-card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); white-space: pre-line; }
 .gd-card .gd-acts { margin-top: 6px; }
 .gd-card.gd-picked, .gd-card.gd-marked { box-shadow: 0 0 0 2px var(--accent); background: var(--surface); }
+.gd-mark-open { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; }

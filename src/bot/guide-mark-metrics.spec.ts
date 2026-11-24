@@ -38,8 +38,20 @@ describe('formatGuideMarkLine', () => {
   });
 });
 
+describe('formatGuideMarkLine: фрагменты', () => {
+  it('выделенные фрагменты — «из них фрагментов», ноль — молчит', () => {
+    const byKind = { ...none, mode: 3 };
+    expect(formatGuideMarkLine({ byKind, clients7: 0, fragments7: 2 })).toBe(
+      'Отметки «Про клиента» за 7 дней: 3, из них фрагментов — 2; чаще всего: режимы — 3',
+    );
+    expect(formatGuideMarkLine({ byKind, clients7: 0, fragments7: 0 })).toBe(
+      'Отметки «Про клиента» за 7 дней: 3; чаще всего: режимы — 3',
+    );
+  });
+});
+
 describe('getGuideMarkMetrics / withGuideExtras', () => {
-  type Where = { name: string; meta?: { equals: string } };
+  type Where = { name: string; meta?: { equals: string | boolean } };
   type Ev = { userId: bigint | null; meta: unknown };
   const prisma = (
     kinds: Record<string, number>,
@@ -52,7 +64,7 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
         count: ({ where }: { where: Where }) =>
           Promise.resolve(
             where.name === 'guide_mark_added'
-              ? (kinds[where.meta?.equals ?? ''] ?? 0)
+              ? (kinds[String(where.meta?.equals ?? '')] ?? 0)
               : 0,
           ),
         // Счётчики «готового ответа» (guide-answer-metrics): событий нет.
@@ -75,6 +87,7 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
     ).resolves.toEqual({
       byKind: { ...none, mode: 4, note: 1 },
       clients7: 2,
+      fragments7: 0,
     });
   });
 
@@ -87,6 +100,11 @@ describe('getGuideMarkMetrics / withGuideExtras', () => {
     ];
     const m = await getGuideMarkMetrics(prisma({ coping: 4 }, 1, coping));
     expect(m.clients7).toBe(2);
+  });
+
+  it('фрагменты — события с meta.fragment', async () => {
+    const m = await getGuideMarkMetrics(prisma({ mode: 3, true: 2 }, 1));
+    expect(m.fragments7).toBe(2);
   });
 
   it('строка дописана к блоку справочника', async () => {

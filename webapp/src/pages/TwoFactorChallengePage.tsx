@@ -62,7 +62,7 @@ export function TwoFactorChallengePage() {
           <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
         )}
         {error && <FieldError>{error}</FieldError>}
-        <button type="submit" disabled={busy || !code.trim()} aria-busy={busy || undefined} className="al-submit">
+        <button type="submit" disabled={busy || !code.trim()} aria-busy={busy || undefined} className="ds-btn ds-btn--lg al-submit">
           {busy ? 'Проверяю…' : 'Подтвердить'}
         </button>
         <p className="al-foot al-foot--center">

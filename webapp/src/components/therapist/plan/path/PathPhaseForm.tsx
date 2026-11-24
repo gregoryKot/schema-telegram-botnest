@@ -4,7 +4,7 @@ import {
   PATH_PHASE_GOAL_MAX, PATH_PHASE_NAME_MAX, PATH_PHASE_WEEKS_MAX, type PathPhaseDraft,
 } from '../../../../../../shared/src/therapy/path/pathModel';
 import { cleanText } from '../planModel';
-import { parseWeeks } from './pathView';
+import { parseOptionalWeeks } from './pathTerm';
 
 interface Props {
   /** Правка фазы; без него — новая фаза. */
@@ -20,12 +20,12 @@ export function PathPhaseForm({ initial, busy, onSave, onClose }: Props) {
   const id = useId();
   const [name, setName] = useState(initial?.name ?? '');
   const [goal, setGoal] = useState(initial?.goal ?? '');
-  const [weeks, setWeeks] = useState(String(initial?.weeks ?? 4));
+  const [weeks, setWeeks] = useState(initial ? String(initial.weeks ?? '') : '4');
   const cleanName = cleanText(name);
-  const parsed = parseWeeks(weeks);
+  const parsed = parseOptionalWeeks(weeks);
   const save = () => {
-    if (!cleanName || parsed == null) return;
-    void onSave({ name: cleanName, goal: cleanText(goal), weeks: parsed }).then((ok) => { if (ok) onClose(); });
+    if (!cleanName || !parsed.valid) return;
+    void onSave({ name: cleanName, goal: cleanText(goal), weeks: parsed.weeks }).then((ok) => { if (ok) onClose(); });
   };
   return (
     <div className="ph-form">
@@ -38,11 +38,11 @@ export function PathPhaseForm({ initial, busy, onSave, onClose }: Props) {
         <LimitedTextarea id={`${id}-goal`} max={PATH_PHASE_GOAL_MAX} className="ds-textarea" rows={3} value={goal} onChange={(e) => setGoal(e.target.value)} />
       </div>
       <label className="ph-field ph-field--weeks">
-        <span className="ds-label">Срок, недель</span>
+        <span className="ds-label">Срок, недель (можно без срока)</span>
         <input type="number" inputMode="numeric" min={1} max={PATH_PHASE_WEEKS_MAX} className="ds-input" value={weeks} onChange={(e) => setWeeks(e.target.value)} />
       </label>
       <div className="tb-actions">
-        <button type="button" className="ds-btn ds-btn--sm" disabled={!cleanName || parsed == null || busy} aria-busy={busy || undefined} onClick={save}>Сохранить</button>
+        <button type="button" className="ds-btn ds-btn--sm" disabled={!cleanName || !parsed.valid || busy} aria-busy={busy || undefined} onClick={save}>Сохранить</button>
         <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onClose}>Отмена</button>
       </div>
     </div>

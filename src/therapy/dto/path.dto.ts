@@ -41,11 +41,11 @@ export class PathPhaseDraftDto {
   @MaxLength(PATH_PHASE_GOAL_MAX)
   goal?: string | null;
 
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(PATH_PHASE_WEEKS_MAX)
-  weeks!: number;
-
+  weeks?: number | null;
   @ValidateIf((o: PathPhaseDraftDto) => o.templatePhaseId != null)
   @IsString()
   @MaxLength(PATH_TEMPLATE_ID_MAX)
@@ -97,7 +97,7 @@ export class UpdatePathPhaseDto {
   @IsInt()
   @Min(1)
   @Max(PATH_PHASE_WEEKS_MAX)
-  weeks?: number;
+  weeks?: number | null;
 
   @ValidateIf((o: UpdatePathPhaseDto) => o.note != null)
   @IsString()

@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { PlanDraft } from '../guide/guidePlan';
 import { PlanAddSheet } from './PlanAddSheet';
 
 const h = vi.hoisted(() => ({
   createPlanItems: vi.fn(),
+  deletePlanItem: vi.fn(),
+  getTherapyPlan: vi.fn(),
   getTherapyClients: vi.fn(),
   getTherapyPath: vi.fn(),
   trackEvent: vi.fn(),
@@ -26,6 +28,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.createPlanItems.mockResolvedValue({ items: [] });
   h.getTherapyPath.mockResolvedValue({ path: null });
+  h.getTherapyPlan.mockResolvedValue([]);
+  h.deletePlanItem.mockResolvedValue(undefined);
   h.getTherapyClients.mockResolvedValue([
     { telegramId: 11, name: 'Анна', clientAlias: null },
     { telegramId: 12, name: 'Борис', clientAlias: null },
@@ -74,6 +78,66 @@ describe('PlanAddSheet — «В план» из справочника', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Не удалось добавить в план'));
     expect(h.trackEvent).not.toHaveBeenCalled();
     expect(screen.queryByText('Добавлено в план')).toBeNull();
+  });
+
+  it('рубрика подобрана по тексту: её видно и можно сменить; у готовой рубрики выбора нет', async () => {
+    show(7);
+    expect(screen.queryByLabelText('Рубрика плана')).toBeNull();
+    cleanup();
+    render(<MemoryRouter><PlanAddSheet draft={{ ...draft, pickRubric: true }} clientId={7} onClose={() => {}} /></MemoryRouter>);
+    const select = screen.getByLabelText('Рубрика плана') as HTMLSelectElement;
+    expect(select.value).toBe('cognitive');
+    fireEvent.change(select, { target: { value: 'behavioral' } });
+    add();
+    await waitFor(() => expect(h.createPlanItems).toHaveBeenCalledWith(expect.objectContaining({ rubric: 'behavioral' })));
+    expect(await screen.findByText(/в рубрике «Поведенческие \(в жизни\)»/)).toBeTruthy();
+  });
+
+  it('такой пункт уже в плане: второй раз не добавляется, изменённый текст — добавляется', async () => {
+    const text = 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.';
+    h.getTherapyPlan.mockResolvedValue([{ id: 3, text, sourceAddress: draft.sourceAddress, source: null }]);
+    show(7);
+    expect(await screen.findByText(/уже стоит в плане/)).toBeTruthy();
+    const button = screen.getByRole('button', { name: 'Добавить в план' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('Текст пункта'), { target: { value: 'Оценить риск вместе' } });
+    expect(button.disabled).toBe(false);
+  });
+
+  it('общий справочник: пункт уходит только тем, у кого его ещё нет', async () => {
+    const text = 'Оценить риск [Арнтц, 5.1.1]. Потом — за и против.';
+    h.getTherapyPlan.mockImplementation((id: string) => Promise.resolve(id === '11' ? [{ id: 3, text, sourceAddress: draft.sourceAddress, source: null }] : []));
+    show();
+    fireEvent.click(await screen.findByLabelText('Анна'));
+    fireEvent.click(screen.getByLabelText('Борис'));
+    expect(await screen.findByText(/у 1 из 2/)).toBeTruthy();
+    add();
+    await waitFor(() => expect(h.createPlanItems).toHaveBeenCalledWith(expect.objectContaining({ clientIds: ['12'] })));
+  });
+
+  it('«Отменить» на итоге убирает добавленное и возвращает лист', async () => {
+    h.createPlanItems.mockResolvedValue({ items: [{ id: 41 }, { id: 42 }] });
+    const onAdded = vi.fn();
+    show(7, onAdded);
+    add();
+    fireEvent.click(await screen.findByRole('button', { name: 'Отменить' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Добавить в план' })).toBeTruthy());
+    expect(h.deletePlanItem.mock.calls.map((c) => c[0])).toEqual([41, 42]);
+    expect(onAdded).toHaveBeenCalledTimes(2);
+  });
+
+  it('отмена убрала не всё: ошибка видна, повтор убирает только оставшееся', async () => {
+    h.createPlanItems.mockResolvedValue({ items: [{ id: 41 }, { id: 42 }] });
+    h.deletePlanItem.mockImplementation((id: number) => (id === 42 ? Promise.reject(new Error('boom')) : Promise.resolve()));
+    show(7);
+    add();
+    fireEvent.click(await screen.findByRole('button', { name: 'Отменить' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось отменить/);
+    h.deletePlanItem.mockResolvedValue(undefined);
+    h.deletePlanItem.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Добавить в план' })).toBeTruthy());
+    expect(h.deletePlanItem.mock.calls.map((c) => c[0])).toEqual([42]);
   });
 
   describe('фаза пути', () => {

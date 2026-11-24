@@ -72,8 +72,8 @@
   --host-safe-top: 0px; /* инлайн на <html> от useHostSafeTop сильнее этого объявления */
   --safe-top: max(env(safe-area-inset-top, 0px), var(--host-safe-top));
 }
-/* Чернила на всегда тёмных секциях визитки (DARK_BG, INK_ON_DARK в landing-kit-hooks.ts) — при любой теме. */
-:root { --on-dark: #eceae5; }
+/* Заливка и чернила всегда тёмных секций визитки (DARK_BG, INK_ON_DARK в landing-kit-hooks.ts) — при любой теме. */
+:root { --on-dark: #eceae5; --dark-bg: #1c1916; }
 
 :root, html[data-theme="light"], .light-lock {
   /* .light-lock — поддерево, которое держит светлую тему при любом
@@ -142,6 +142,9 @@
   --panel-2:         #e2dbcc;
   --panel-3:         #d9d0bf;
   --panel-line:      #d3c9b8;
+  /* Пыльное небо: множитель насыщенности бумаги оттенка 240 (сцены, лист-опора, аватар) — тот же оттенок, глуше. */
+  --sky-k:           0.55;
+  --ck:              1; /* множитель насыщенности аватара; hueStyle ставит var(--sky-k) на голубом */
   --on-panel:        #1f1b17;
   --on-panel-sub:    #4a433b;
   --on-panel-faint:  #5c544c;
@@ -228,26 +231,9 @@
   --sheet-bg:      var(--bg-elev);
   --sheet-bg-2:    var(--bg-rail);
   --sidebar-bg:    var(--bg-rail);
-  /* Непрозрачный, а не rgba(...,0.96): blur под .mobile-nav снят (см.
-     index.css/.mobile-nav — замеры 2026-08-26, PWA на iOS считает
-     backdrop-filter программно). Полупрозрачность без размытия давала бы
-     чёткое просвечивание контента под подписями вкладок. Значение — тот же
-     цвет, что был у полупрозрачного (rgba(239,235,225,0.96) = #efebe1 =
-     --bg-rail): сквозь 4% просвета читался практически он, и панель
-     осталась отдельной поверхностью, а не слилась с фоном страницы. */
+  /* Панель шапки лендинга: непрозрачная, без размытия (render-poison) — полупрозрачность дала бы просвечивание текста. */
   --nav-bg:        var(--bg-rail);
   --track-color:   var(--surface-3);
-  /* Стекло нижней капсулы (.mobile-nav) без размытия: непрозрачная заливка сверху вниз,
-     светлая кромка, «линза» активного пункта. Кабинет всегда светлый (.light-lock). */
-  --glass-top:     #fbf9f4;
-  --glass-bottom:  #ebe5d9;
-  --glass-lens:    #ffffff;
-  --glass-lens-2:  #f5f0e8;
-  --glass-rim:     rgba(255,255,255,0.9);
-  --glass-edge:    rgba(28,25,20,0.14);
-  --glass-shadow:  rgba(28,25,20,0.3);
-  --glass-fill:    linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
-  --glass-shade:   inset 0 1.5px 0 var(--glass-rim), 0 0 0 0.5px var(--glass-edge);
 
   /* ── Elevation / shadow ──────────────────────────────────────────────── */
   --shadow-1:      0 0.5px 0 rgba(28,25,22,0.04), 0 1px 2px rgba(28,25,22,0.03);
@@ -261,8 +247,8 @@
   /* ── Layout ──────────────────────────────────────────────────────────── */
   --sidebar-w: 240px;
   /* Сколько снизу занимает навигация телефона без safe-area: по ней встают панели над ней
-     (кнопки карточки клиента, «+»). Капсула 56 (пункт 44 + паддинги 6 + 6) и зазор 8 под ней. */
-  --mobile-nav-h: 64px;
+     (кнопки карточки клиента, «+»). Полоса: линия 1 + пункт 51. */
+  --mobile-nav-h: 52px;
 }
 
 /* .light-lock переопределяет токены, но не `color`: цвет, унаследованный от
@@ -275,6 +261,8 @@
 }
 
 html[data-theme="dark"] {
+  --sky-k:         0.55;
+  --panel-line:    rgba(255,255,255,0.12);
   --bg:            #14141a;
   --bg-rail:       #101015;
   --bg-elev:       #1d1d24;
@@ -473,20 +461,11 @@ a { color: inherit; text-decoration: none; }
 /* Клиенты кабинета под пунктами полоски — бледные кружки (.sb-client-av), отделены линией. */
 .sb-rail-rule { width: 28px; height: 1px; margin: 8px auto; background: var(--panel-line); }
 
-.sb-mode-switch {
-  display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--panel-2); border-radius: var(--r-10); padding: 3px;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-.sb-mode-btn {
-  padding: 7px 0; text-align: center;
-  color: var(--on-panel-faint);
-  font-weight: 500; border-radius: var(--r-8);
-  transition: color .12s, background .12s;
-}
-.sb-mode-btn:hover { color: var(--on-panel); }
-.sb-mode-btn.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
+/* «Клиент / Терапевт» на панели: LineTabs fill без подложки; линия и текст — токены панели. */
+.sb-mode-switch.lt { box-shadow: inset 0 -1px 0 var(--panel-line); flex-shrink: 0; }
+.sb-mode-switch .lt-tab { color: var(--on-panel-faint); font-size: 13px; }
+.sb-mode-switch .lt-tab:hover { color: var(--on-panel); }
+.sb-mode-switch .lt-tab[aria-selected="true"] { color: var(--on-panel); border-bottom-color: var(--accent); }
 
 .sb-section-label {
   padding: 0 10px 6px;
@@ -525,7 +504,7 @@ a { color: inherit; text-decoration: none; }
 .sb-client-av {
   width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
   /* Кружок бумаги тона клиента с тенью-слоем — как .ds-avatar--paper в шапке карточки, списке и на «Сегодня» (r1). */
-  background: oklch(0.915 0.03 var(--h)); color: var(--text); box-shadow: 1px 2px 0 oklch(var(--pa-layer-lc) var(--h));
+  background: oklch(0.915 0.03 var(--h)); color: var(--text); box-shadow: 0 0 0 1px var(--panel-line);
   display: grid; place-items: center; font-size: 10px; font-weight: 700;
 }
 .sb-rail-item > .sb-client-av { width: 30px; height: 30px; font-size: 11px; }
@@ -575,16 +554,16 @@ a { color: inherit; text-decoration: none; }
 .sb-today-sub { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
 .sb-today-cta {
   grid-column: 1 / -1;
-  width: 100%; min-height: 44px; padding: 8px 14px; border-radius: 22px;
+  width: 100%; min-height: 44px; padding: 8px 14px; border-radius: var(--r-12);
   background: var(--surface);
   border: 0; color: var(--text);
   font-size: 13px; font-weight: 600; font-family: inherit;
   text-align: left; cursor: pointer;
-  box-shadow: 3px 3px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
   transition: box-shadow .1s;
 }
 /* Тихая кнопка: единственная залитая кнопка экрана «Сегодня» — в главной плитке (HomeTiles). */
-.sb-today-cta:hover { box-shadow: 4px 4px 0 oklch(0.82 0.05 var(--h)); }
+.sb-today-cta:hover { box-shadow: 0 0 0 1px var(--accent); }
 
 .sb-account {
   display: flex; align-items: center; gap: var(--space-10);
@@ -613,7 +592,7 @@ a { color: inherit; text-decoration: none; }
 /* Тап-цели 44 в сайдбаре — только под палец (как блок в cabinet.css, #911): на компьютере с мышью
    пункты компактные, как до #912, но не меньше 24px по высоте. */
 @media (pointer: coarse), (max-width: 767px) {
-  .sb-nav > .sb-item, .sb-clients .sb-client-item, .sb-mode-btn { min-height: 44px; }
+  .sb-nav > .sb-item, .sb-clients .sb-client-item { min-height: 44px; }
   .sb-links { padding: 0 10px; }
   .sb-links .sb-item { min-width: 44px; min-height: 44px; }
   .sb-legal a { min-width: 44px; min-height: 44px; }
@@ -628,8 +607,8 @@ a { color: inherit; text-decoration: none; }
 .sb-skel-today { --h: 70; display: flex; flex-direction: column; gap: 10px; height: 96px; box-sizing: border-box; }
 .sb-skel-account { padding-top: 12px; border-top: 1px solid var(--panel-line); }
 .sb-search {
-  margin: 0 0 4px; width: 100%; padding: 6px 10px; border-radius: var(--r-8);
-  border: 1px solid var(--panel-line); background: var(--surface);
+  margin: 0 0 4px; width: 100%; padding: 6px 0; border-radius: 0;
+  border: none; border-bottom: 1px solid var(--panel-line); background: none;
   color: var(--text); font: 13px var(--sans); outline: none; box-sizing: border-box;
 }
 .sb-search::placeholder { color: var(--on-panel-faint); }
@@ -667,11 +646,11 @@ a { color: inherit; text-decoration: none; }
 .search-pill {
   position: relative;
   display: flex; align-items: center; gap: var(--space-8);
-  height: 36px; padding: 0 10px 0 14px;
-  /* Тише кризисного входа рядом: бумага страницы и линия, а не залитая плашка. */
+  height: 36px; padding: 0 2px 0 0;
+  /* Тише кризисного входа рядом: строка на бумаге страницы с линией снизу, как поля ввода (.ds-input). */
   background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  border: none; border-bottom: 1px solid var(--panel-line);
+  border-radius: 0;
   color: var(--text-sub);
   font-size: 13px;
   width: 260px;
@@ -685,9 +664,9 @@ a { color: inherit; text-decoration: none; }
 .topbar-sos {
   --h: 25;
   position: relative; display: inline-flex; align-items: center; gap: 8px;
-  height: 36px; padding: 0 16px 0 12px; border: none; border-radius: 18px; cursor: pointer;
+  height: 36px; padding: 0 16px 0 12px; border: none; border-radius: var(--r-12); cursor: pointer;
   background: oklch(0.915 0.03 var(--h)); color: var(--text);
-  box-shadow: 3px 3px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
   font: 600 14px var(--sans); white-space: nowrap; flex-shrink: 0;
   transition: background .12s;
 }
@@ -701,11 +680,7 @@ a { color: inherit; text-decoration: none; }
 .topbar-sos::after, .search-pill::after { content: ''; position: absolute; inset: -4px 0; }
 .search-pill::after { inset: -5px -1px; }
 /* Лупа → общий поиск в шапке экрана (FindButton): только там, где строки .topbar нет (телефон). */
-.find-btn {
-  display: none; align-items: center; justify-content: center; flex: none;
-  width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
-  background: var(--paper-sunk); color: var(--text); cursor: pointer;
-}
+.ds-btn.find-btn { display: none; flex: none; }
 .find-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Плашка «нет сети» (OfflineBanner) — полоса соломы со знаком Cup («подождём»): смысл текста —
    «всё сохранится», поэтому без красного. На компьютере — под верхней строкой (третья строка
@@ -773,22 +748,9 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--r-lg);
 }
 
-/* ─── Input ──────────────────────────────────────────────────────────────── */
-.input, .textarea {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px 12px;
-  font-size: 13.5px; color: var(--text);
-  transition: border-color .15s;
-}
-.input:focus, .textarea:focus { border-color: var(--accent-line); outline: none; }
-.textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
-
 /* ─── Needs bars ──────────────────────────────────────────────────────────── */
-.bar { background: var(--surface-3); border-radius: 999px; position: relative; height: 4px; overflow: hidden; }
-.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.bar { background: var(--surface-3); border-radius: var(--r-2); position: relative; height: 4px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: var(--r-2); }
 
 /* ─── Tags ───────────────────────────────────────────────────────────────── */
 .tag-mini {
@@ -850,7 +812,7 @@ a { color: inherit; text-decoration: none; }
   --h: 70;
   width: min(100%, 440px); margin: 0 auto; box-sizing: border-box; pointer-events: auto;
   display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px 18px;
-  border-radius: 18px; box-shadow: 6px 7px 0 oklch(0.85 0.045 var(--h));
+  border-radius: var(--r-16); box-shadow: 6px 7px 0 oklch(0.85 0.045 var(--h));
   animation: cookie-in .35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .cookie-banner--compact { flex-direction: row; align-items: center; padding: 12px 14px; }
@@ -864,8 +826,8 @@ a { color: inherit; text-decoration: none; }
 .cookie-title { font-family: var(--serif); font-size: 18px; line-height: 1.2; color: var(--text); }
 .cookie-text { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
 .cookie-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
-/* «Понятно» — 44 по высоте и на компьютере (на планшете это касание): --sm там 40 (ревью g1). */
-.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; height: 44px; border-radius: 22px; }
+/* «Понятно» — обычный ds-btn: 44 по высоте и на компьютере (на планшете это касание). */
+.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; }
 .cookie-banner--compact .ds-btn.cookie-btn { align-self: center; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cookie-banner-wrap { right: auto; width: 440px; padding-left: 24px; }
@@ -891,7 +853,7 @@ a { color: inherit; text-decoration: none; }
 .sks-sheet { display: flex; flex-direction: column; gap: 14px; padding: 22px 20px; }
 /* Лист общего силуэта (ScreenSkeleton) — без оттенка: у раздела без своего силуэта («Записи», «Профиль»)
    чужой цвет мигал до экрана (ревью владельца g1 r2); силуэт по форме ленты — партии раздела (b11, b21). */
-.sks-sheet--plain { border-radius: 20px; background: var(--paper-sunk); }
+.sks-sheet--plain { border-radius: var(--r-16); background: var(--paper-sunk); }
 /* Страница аккаунта, пока вход поднимается (AuthGateViews): колонка по центру, без меню кабинета. */
 .gate-page { flex: 1; display: flex; justify-content: center; min-height: 100vh; background: var(--bg); }
 .gate-page > .sks-screen { max-width: 720px; }
@@ -927,53 +889,46 @@ a { color: inherit; text-decoration: none; }
   .tabs::-webkit-scrollbar { display: none; }
 }
 
-/* ─── Mobile – нижняя навигация: плавающая капсула-«стекло» (вариант А, владелец 2026-11-18) ── */
+/* ─── Mobile – нижняя навигация: «Полоса» (вариант А, владелец 2026-11-24) ── */
+/* Во всю ширину на бумаге страницы, сверху волосяная линия; без тени, скругления и размытия
+   (render-poison). Высота над safe-area — --mobile-nav-h: на неё же опираются отступ контента и баннер cookie. */
 .mobile-nav {
-  position: fixed;
-  left: var(--space-10); right: var(--space-10);
-  /* На айфоне капсула садится в зону полоски «домой», как системная; без safe-area — 8px от края. */
-  bottom: max(var(--space-8), calc(var(--safe-bottom) - 12px));
-  /* Стекло без backdrop-filter: в установленном PWA iOS считает размытие программно и вешает
-     касания (render-poison). Блик и кромка — градиентом и inset-тенями, заливка непрозрачная. */
-  background: var(--glass-fill);
-  border-radius: 28px;
-  box-shadow: var(--glass-shade), 0 14px 28px -12px var(--glass-shadow);
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--panel-line);
   z-index: 49;
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-6);
-  min-height: 56px; box-sizing: border-box;
+  padding: 0 var(--space-4) var(--safe-bottom);
+  box-sizing: border-box;
 }
-/* 44px — порог тап-цели (check-tap-targets), ниже пункт не ужать. */
+/* 44px — порог тап-цели (check-tap-targets); пункт берёт всю высоту полосы. */
 .mobile-nav-item {
+  position: relative;
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: var(--space-2);
-  min-height: 44px; padding: 0;
-  border: none; border-radius: 22px;
+  min-height: max(44px, calc(var(--mobile-nav-h) - 1px)); padding: 0;
+  border: none;
   color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 500;
   letter-spacing: 0.01em; white-space: nowrap;
-  cursor: pointer; transition: color .15s, background-color .15s;
+  cursor: pointer; transition: color .15s;
   background: none; text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
-/* Активный пункт — терракота в «линзе»: светлая капля внутри капсулы (радиус 22 = 28 − паддинг 6).
-   Линза шире соседей: у пяти пунктов терапевта «Справочник» в равной доле упирался в скругление. */
-.mobile-nav-item.active {
-  flex-grow: 1.4;
-  color: var(--accent); font-weight: 600;
-  background: linear-gradient(180deg, var(--glass-lens), var(--glass-lens-2));
-  box-shadow: inset 0 1px 0 var(--glass-rim), 0 0 0 0.5px var(--glass-edge), 0 2px 6px -2px var(--glass-shadow);
+/* Активный — акцентная черта 2px поверх линии полосы (top: -1px) и подпись акцентом. */
+.mobile-nav-item.active { color: var(--accent); font-weight: 600; }
+.mobile-nav-item.active::before {
+  content: ''; position: absolute; top: -1px; left: var(--space-12); right: var(--space-12); height: 2px;
+  background: var(--accent);
 }
 /* Знак раздела (NavSign, navLook.ts) вместо контурной пиктограммы: те же знаки, что в меню
-   компьютера. Неактивный тише, активный — в полную силу; высота пункта прежняя (44). */
+   компьютера. Неактивный тише, активный — в полную силу. */
 .mobile-nav-item > .pp-art--nav { width: 30px; height: 18px; opacity: .58; transition: opacity .15s; }
 .mobile-nav-item.active > .pp-art--nav { opacity: 1; }
 /* Точка «есть новое» у «Ещё» (новые задания терапевта, U2): у знака справа, вне потока — пункт не растёт.
    Кольцо цвета страницы отделяет её от знака. */
-.mobile-nav-item { position: relative; }
 .mobile-nav-dot {
-  position: absolute; top: 1px; left: calc(50% + 10px); width: 8px; height: 8px; border-radius: 50%;
-  background: var(--accent); box-shadow: 0 0 0 2px var(--glass-top);
+  position: absolute; top: calc(50% - 20px); left: calc(50% + 10px); width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--bg);
 }
 /* Счётчик новых заданий терапевта (U2): строка «Задания» в «Ещё» и пункт «Ещё» сайдбара. */
 .new-badge {
@@ -999,7 +954,7 @@ a { color: inherit; text-decoration: none; }
     flex: 1; overflow: visible;
   }
   .topbar { display: none; }
-  .find-btn { display: inline-flex; }
+  .ds-btn.find-btn { display: inline-flex; }
   .offline-banner { margin: 8px 16px 0; }
   .canvas {
     overflow: visible; display: block;
@@ -1040,7 +995,7 @@ a { color: inherit; text-decoration: none; }
 }
 .sheet-modal-box {
   background: var(--bg);
-  border-radius: var(--r-16) var(--r-16) 0 0;
+  border-radius: var(--r-20) var(--r-20) 0 0;
   padding: 24px 24px calc(32px + var(--safe-bottom));
   width: 100%; max-width: 560px; margin: 0 auto;
   max-height: 90vh; overflow-y: auto;

@@ -65,8 +65,8 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
   it('аватар — бумага тона клиента (--h) с тенью сплошным слоем, без размытия; на телефоне 44×44', () => {
     expect(decls(css, '.tk-avatar.tone-tint')).toBe('');
     // Бумага и тень — общий .ds-avatar--paper (cabinet.css, ревью r1: тот же кружок в списке, на «Сегодня»).
-    expect(decls(cabinet, '.ds-avatar--paper')).toContain('oklch(0.915 0.03 var(--h))');
-    expect(decls(cabinet, '.ds-avatar--paper')).toMatch(/box-shadow: \d+px \d+px 0 /);
+    expect(decls(cabinet, '.ds-avatar--paper')).toContain('oklch(0.915 calc(0.03 * var(--ck)) var(--h))');
+    expect(decls(cabinet, '.ds-avatar--paper')).toMatch(/box-shadow: 0 0 0 1px var\(--panel-line\)/);
     expect(decls(phone, '.tk-avatar')).toContain('width: 44px');
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
@@ -130,9 +130,9 @@ describe('therapist-card.css: «Обзор» на бумаге (b30)', () => {
     expect(css).toMatch(/@container tk-groups \(min-width: 520px\) \{ \.tk-groups \{ grid-template-columns: repeat\(2/);
   });
 
-  it('белый лист — тень сплошным сдвинутым слоем тоном бумаги, не размытием', () => {
+  it('белый лист — тонкая линия, без тени (сдвинутая тень только у .pp-leaf--anchor)', () => {
     // Один лист на кабинет — .pp-leaf (paper.css, ревью r1); .tk-leaf задаёт только поля.
-    expect(decls(paper, '.pp-leaf')).toMatch(/box-shadow: 6px 7px 0 oklch\(var\(--pa-layer-lc\) var\(--h, 240\)\)/);
+    expect(decls(paper, '.pp-leaf')).toMatch(/box-shadow: 0 0 0 1px var\(--panel-line\)/);
     expect(decls(css, '.tk-leaf')).not.toContain('box-shadow');
   });
 

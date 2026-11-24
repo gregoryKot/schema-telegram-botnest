@@ -13,8 +13,8 @@ export interface PathPhase {
   position: number;
   name: string;
   goal: string | null;
-  /** Срок фазы, недель: даты считаются от старта пути (pathPlan.ts). */
-  weeks: number;
+  /** Срок фазы, недель: даты считаются от старта пути (pathPlan.ts). null — срока нет (общий шаблон). */
+  weeks: number | null;
   /** id фазы шаблона (критерии перехода, ошибки, рекомендуемое); null — своя фаза. */
   templatePhaseId: string | null;
   /** Календарные дни `YYYY-MM-DD`: когда фазу начали и закончили на деле. */

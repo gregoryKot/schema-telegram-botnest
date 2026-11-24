@@ -138,7 +138,7 @@ describe('TherapistCard — запись на сессию', () => {
     getClientBooking.mockResolvedValue({ eligible: true, upcoming: [booking] });
     renderCard({ ...active, nextSession: '2026-11-20T10:00' });
     await screen.findByText('Ближайшая сессия');
-    expect(when('Завтра, 16:00')).toBeTruthy();
+    expect(when('Завтра · 16:00')).toBeTruthy();
     expect(screen.getByText('Запись подтверждена')).toBeTruthy();
     expect(screen.queryByText('Следующая сессия')).toBeNull();
     expect(screen.getByRole('link', { name: 'Управлять записью' }).getAttribute('href')).toBe(booking.manageUrl);

@@ -130,6 +130,7 @@ export class TherapyRelationsService {
           urlCode: rel.urlCode,
           name: rel.client!.firstName,
           clientAlias: decryptName(rel.clientAlias),
+          memo: decryptName(rel.therapistMemo),
           streak,
           lastActiveDate: ov?.lastDate ?? null,
           daysSinceActive: ov && ov.daysSince >= 0 ? ov.daysSince : null,
@@ -151,6 +152,7 @@ export class TherapyRelationsService {
         urlCode: rel.urlCode,
         name: decryptName(rel.virtualClientName) as string,
         clientAlias: decryptName(rel.clientAlias),
+        memo: decryptName(rel.therapistMemo),
         streak: 0,
         lastActiveDate: null,
         daysSinceActive: null,
@@ -212,8 +214,7 @@ export class TherapyRelationsService {
       where: activeRelationWhere(therapistId, clientId),
       data: { clientAlias: encryptName(alias) },
     });
-    // 0 строк — связи нет (клиент удалён, чужой, выдуман): раньше это был
-    // тихий успех и «переименование» удалённого клиента (QA 2026-10-26).
+    // 0 строк — связи нет (удалён, чужой, выдуман): не тихий успех.
     if (count === 0) throw new Error('No active relation');
   }
 }

@@ -93,14 +93,14 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(decls(css, '.ds-back:hover')).toContain('color: var(--accent-hi)');
   });
 
-  it('.ds-btn--lg — полноширинное главное действие листа: h48 r24, 15px', () => {
+  it('.ds-btn--lg — полноширинное главное действие листа: h48 r12, 15px', () => {
     const d = decls(css, '.ds-btn--lg');
     expect(d).toContain('min-height: 48px');
     expect(d).toContain('height: auto'); // базовый .ds-btn задаёт height: 44px
     expect(d).toContain('width: 100%');
     expect(decls(phone, '.ds-btn--lg')).toContain('width: 100%'); // во всю колонку — только на телефоне
     expect(decls(top, '.ds-btn--lg')).not.toContain('width');
-    expect(d).toContain('border-radius: 24px');
+    expect(d).toContain('border-radius: var(--r-12)');
     expect(d).toContain('font-size: 15px');
   });
 
@@ -200,8 +200,8 @@ describe('cabinet.css: поправки координатора волны 1 (#
   });
   it('.ds-avatar — tint по умолчанию: тёмные инициалы на светлой заливке, без #fff и без .tone-tint', () => {
     const av = decls(top, '.ds-avatar');
-    expect(av).toContain('background: oklch(0.94 0.035 var(--h))');
-    expect(av).toContain('color: oklch(0.38 0.1 var(--h))');
+    expect(av).toContain('background: oklch(0.94 calc(0.035 * var(--ck)) var(--h))');
+    expect(av).toContain('color: oklch(0.38 calc(0.1 * var(--ck)) var(--h))');
     expect(av).not.toMatch(/#fff/i);
     expect(css).not.toContain('.ds-avatar.tone-tint');
   });
@@ -253,14 +253,20 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
         }
       }
     }
-    expect(seen).toBeGreaterThanOrEqual(10);
+    expect(seen).toBeGreaterThanOrEqual(1);
     expect(bare).toEqual([]);
+  });
+  // Серая капсула-сегмент (iOS) уходит из сайта: разделы — вкладки на линии (LineTabs), выбор значения — чипы
+  // (#1619). Число файлов с ds-seg только падает; дошло до нуля — правила .ds-seg из cabinet.css удаляются.
+  it('файлов с ds-seg не больше прежнего (храповик, #1619)', () => {
+    const roots = [join(__dirname, '..'), join(__dirname, '..', '..', '..', 'shared', 'src')];
+    const files = roots.flatMap((root) => (readdirSync(root, { recursive: true }) as string[])
+      .filter((f) => /\.tsx?$/.test(f) && !f.includes('.test.') && readFileSync(join(root, f), 'utf8').includes('ds-seg')));
+    expect(files.length).toBeLessThanOrEqual(10);
   });
   it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
-    expect(decls(top, '.ds-input--search')).toContain('border-radius: 20px');
     expect(decls(tap, '.ds-input--search')).toContain('height: 44px');
-    expect(decls(tap, '.ds-input--search')).toContain('border-radius: 22px');
     expect(decls(top, '.ds-input--sm')).toContain('width: auto');
     expect(decls(top, '.ds-input--sm')).toContain('height: 40px');
     expect(decls(tap, '.ds-input--sm')).toContain('height: 44px');
@@ -326,9 +332,9 @@ describe('cabinet.css: примитивы волны 3 (#906)', () => {
     expect(decls(top, '.ds-link--danger:hover')).toContain('color: var(--accent-red)');
     expect(decls(top, '.ds-list-row--danger .ds-list-title')).toContain('color: var(--accent-red)');
   });
-  it('поле на песочной панели: белая бумага с контуром --panel-line, объявлено после .ds-input:focus', () => {
+  it('поле на песочной панели: линия --panel-line, объявлено после .ds-input:focus', () => {
     const f = decls(top, '.ds-input--on-panel');
-    expect(f).toContain('background: var(--surface)');
+    expect(f).not.toMatch(/background/);
     expect(f).toContain('border-color: var(--panel-line)');
     expect(f).toContain('color: var(--text)');
     expect(top.indexOf('.ds-input--on-panel {')).toBeGreaterThan(top.indexOf('.ds-input:focus'));
@@ -376,3 +382,29 @@ function walkFiles(dir: string, ext: RegExp): string[] {
 const cssFiles = (dir: string) => walkFiles(dir, /\.css$/);
 const glyphContentIn = (src: string) => [...src.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/content:\s*(['"])[‹›]\1/g)];
 const hasFlush = (src: string) => src.includes('ds-card--flush');
+
+// Поле ввода — строка на бумаге с линией снизу, а не белая коробка или капсула (#1619, п.4).
+describe('поля ввода: линия снизу, без коробки', () => {
+  const dir = __dirname;
+  const sheets = [join(dir, '..', 'index.css'), ...readdirSync(dir).filter((f) => f.endsWith('.css')).map((f) => join(dir, f))]
+    .map((p) => readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
+  const rules = sheets.flatMap((src) => [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)])
+    .filter((m) => /\.ds-(input|textarea)\b/.test(m[1]));
+
+  it('у правил .ds-input/.ds-textarea нет скругления больше 4px и белой заливки', () => {
+    expect(rules.length).toBeGreaterThan(10);
+    const bad = rules.filter((m) => {
+      const r = m[2].match(/border-radius:\s*(\d+)px/);
+      return (r && Number(r[1]) > 4) || /background(-color)?:\s*(var\(--surface\)|#fff|white)/i.test(m[2]);
+    }).map((m) => m[1].trim());
+    expect(bad).toEqual([]);
+  });
+  it('база: прозрачная, линия --panel-line снизу, фокус — акцент, с клавиатуры видна', () => {
+    const base = decls(top, '.ds-input');
+    expect(base).toContain('background: none');
+    expect(base).toContain('border-bottom: 1px solid var(--panel-line)');
+    expect(decls(top, '.ds-input:focus')).toContain('border-color: var(--accent)');
+    expect(decls(top, '.ds-input:focus-visible')).toContain('var(--accent)');
+    expect(decls(top, '.ds-textarea')).toMatch(/min-height/);
+  });
+});

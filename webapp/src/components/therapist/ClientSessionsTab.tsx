@@ -24,7 +24,7 @@ export function ClientSessionsTab({ detail, takeFocus }: Props) {
   const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком
   return (
     <div className="ds-page tb-page--narrow">
-      <div className="pp-leaf tb-composer" style={{ '--h': ENTITY_LOOK.note.hue } as CSSProperties}>
+      <div className="pp-leaf pp-leaf--anchor tb-composer" style={{ '--h': ENTITY_LOOK.note.hue } as CSSProperties}>
         <div className="tb-composer-head">
           <SignHead kind="pebbles" as="div" className="ds-h3">Новая заметка</SignHead>
           <input type="date" lang="ru" className="ds-input ds-input--sm" aria-label="Дата заметки" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)} />

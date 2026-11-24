@@ -12,16 +12,16 @@
 .mm2-n--box > .mm2-n-face {
   display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden;
   background: var(--n-fill); border: var(--n-sw) solid var(--n-line);
-  box-shadow: 0 0 0 3px var(--n-ring), 3px 4px 0 var(--n-shade);
+  box-shadow: 0 0 0 3px var(--n-ring);
 }
 .mm2-n--rect { min-width: 110px; max-width: 260px; min-height: 40px; }
 .mm2-n--rect > .mm2-n-face { border-radius: 10px; padding: 10px 16px; }
 .mm2-n--circle { min-width: 118px; max-width: 200px; }
 .mm2-n--circle > .mm2-n-face { min-width: 118px; min-height: 118px; border-radius: 50%; padding: 20px 28px; }
 .mm2-n--pill { min-width: 130px; max-width: 220px; }
-.mm2-n--pill > .mm2-n-face { border-radius: 9999px; padding: 10px 22px; }
+.mm2-n--pill > .mm2-n-face { border-radius: var(--r-pill); padding: 10px 22px; }
 .mm2-n--need { min-width: 100px; max-width: 170px; }
-.mm2-n--need > .mm2-n-face { border-radius: 9999px; padding: 8px 12px; }
+.mm2-n--need > .mm2-n-face { border-radius: var(--r-pill); padding: 8px 12px; }
 .mm2-n--origin { min-width: 190px; max-width: 215px; }
 .mm2-n--origin > .mm2-n-face { border-radius: 46% 54% 50% 50% / 52% 46% 54% 48%; padding: 24px 30px; }
 /* Схема — слои: верхний лист уже нижнего и выглядывает над ним, как у знака схемы в палитре. */
@@ -54,7 +54,7 @@
 /* ── Таблетки схем в узле режима: тихая бумага домена, точка тона контура ── */
 .mm2-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 6px; }
 .mm2-pill {
-  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: 999px; line-height: 1.2;
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: var(--r-pill); line-height: 1.2;
   background: color-mix(in oklch, var(--surface) 62%, transparent); color: var(--text-sub);
 }
 .mm2-pill > i { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; background: oklch(0.66 0.09 var(--h)); }
@@ -62,10 +62,10 @@
 .mm2-pills.is-light > .mm2-pill { background: color-mix(in oklch, var(--surface) 18%, transparent); color: var(--surface); }
 
 /* ── Карта у клиента (MyModeMapSheet + ModeMapViewer): шапка и выбор карты — один лист неба режимов ── */
-.mmv > .ds-sheet-head { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 20px 20px; }
+.mmv > .ds-sheet-head { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 var(--r-16) var(--r-16); }
 .mmv:has(.mm2-bar) > .ds-sheet-head { border-radius: 0; }
-.mmv .mm2-bar { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 20px 20px; padding-bottom: 12px; }
-.mmv .mm2-bar > .ds-seg { background: oklch(0.87 0.045 var(--h)); }
+.mmv .mm2-bar { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 var(--r-16) var(--r-16); padding-bottom: 12px; }
+.mmv .mm2-bar > .lt { margin-bottom: 0; box-shadow: inset 0 -1px 0 var(--line); }
 .mm2-view-body { flex: 1; min-height: 0; position: relative; }
 .mm2-view-load { position: absolute; inset: 0; }
 /* Карту у клиента не редактируют: ручек связи нет (на касании они видны всегда, modemap-handles.css). */
@@ -84,10 +84,10 @@
 .mm2-lane-chips { display: flex; gap: 10px; align-items: center; pointer-events: all; }
 .mm2-lane-chip {
   display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 14px; border: 0; border-radius: 12px; cursor: text;
-  font: 600 12.5px var(--sans); color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 2px 3px 0 oklch(0.85 0.045 var(--h));
+  font: 600 12.5px var(--sans); color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .mm2-lane-chip i { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.66 0.09 var(--h)); }
-.mm2-lane-input { width: 140px; text-align: center; border-radius: 12px; padding: 6px 10px; font-size: 12.5px; font-weight: 600; border-color: oklch(0.72 0.07 var(--h)); }
+.mm2-lane-input { width: 140px; text-align: center; border-radius: 0; padding: 6px 4px; font-size: 12.5px; font-weight: 600; border-color: oklch(0.72 0.07 var(--h)); }
 .mm2-lane-sep { color: var(--text-faint); }
 @media (pointer: coarse), (max-width: 767px) { .mm2-lane-chip { min-height: 44px; } }
 

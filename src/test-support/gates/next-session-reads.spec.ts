@@ -238,7 +238,7 @@ describe('check-next-session-reads.mjs', () => {
         'src/therapy/therapy-relations.service.ts#getClients:2',
         'src/therapy/therapy-relation-info.ts#getRelationInfo:1',
         'src/therapy/therapy-invite-attach.ts#attachOfflineCard:2',
-        'src/therapy/therapy-client-data.service.ts#updateSessionInfo:2',
+        'src/therapy/session-info-data.ts#sessionInfoData:2',
       ]);
     });
   });

@@ -9,7 +9,7 @@
 .cs-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; min-width: 0; margin-left: auto; }
 /* Вкладки «Схемы / Режимы / Потребности» на 320–374: ширина по словам, а не поровну — «Потребности» целиком,
    без многоточия (ревью g5 r1; r3: на 341–345 порог 340 оставлял «Потребнос…»). */
-@media (max-width: 374px) { .cs-tabs.ds-seg--full > .ds-seg-btn { flex: 1 1 auto; padding-left: 4px; padding-right: 4px; } }
+@media (max-width: 374px) { .cs-tabs .lt-strip--fill > .lt-tab { flex: 1 1 auto; padding-inline: 2px; } }
 /* 320–374: три действия встают в строку плотнее, а не «Библиотека» одна второй строкой. */
 @media (max-width: 374px) {
   .cs-head-actions { gap: 8px 6px; }
@@ -52,14 +52,14 @@
 /* Плитка теста YSQ (компьютер): бумага теста, подпись Literata, знак слоёв крупно справа внизу. Контейнер — обёртка
    .cs-test-box: так узкая раскладка правит и саму сетку плитки (align-content), а лист тянется на высоту ряда. */
 .cs-test-box { container: cs-test / inline-size; display: grid; min-width: 0; }
-.cs-test { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: 24px; box-sizing: border-box; }
+.cs-test { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: var(--r-16); box-sizing: border-box; }
 .cs-test-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; align-self: stretch; }
 .ds-label.cs-test-label { color: var(--text-sub); }
 .cs-test-text { flex: 1; margin: 0; font-family: var(--serif); font-size: 24px; line-height: 1.25; text-wrap: balance; }
 .cs-test-btn { align-self: flex-start; justify-self: start; }
 /* Под героем той же глины (или оттенка ближе 40°) — белый лист с тенью-слоем глины, как строка теста на
    телефоне и вход в тест справочника (ysqEntryLook): два глиняных листа подряд читались одним. */
-.cs-test--white { background: var(--surface); box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.cs-test--white { background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line); }
 .cs-test-art { display: flex; width: 132px; }
 .cs-test-art .scn-sign { width: 100%; }
 /* Узкая плитка (поле уже ~480: рядом со знаком 132 текст 24px шёл колонкой ~250px, «внутри» — одно в строке): знак 88 —
@@ -81,7 +81,7 @@
 /* Баннер «Карта режимов с терапевтом»: лист неба, текст слева, знак режимов крупно справа. */
 .cs-banner {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; width: 100%;
-  min-height: 44px; box-sizing: border-box; padding: 22px 24px 22px 26px; border: 0; border-radius: 24px;
+  min-height: 44px; box-sizing: border-box; padding: 22px 24px 22px 26px; border: 0; border-radius: var(--r-16);
   font: inherit; text-align: left; color: var(--text); cursor: pointer;
 }
 .cs-banner:hover { background: oklch(0.895 0.04 var(--h)); }
@@ -154,7 +154,7 @@
 .cs-hint { margin: 0; font-size: 12px; color: var(--text-sub); line-height: 1.45; }
 
 /* «Паттерн недели» — лист-герой (EntitySheet) целиком тап-цель; фокус — кольцом листа. */
-.cs-week { display: block; border-radius: 24px; cursor: pointer; }
+.cs-week { display: block; border-radius: var(--r-16); cursor: pointer; }
 .cs-week:hover .pa-sheet { background: oklch(0.895 0.04 var(--h)); }
 .cs-week:hover .pa-sheet.pa-sheet--white { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .cs-week:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -181,7 +181,7 @@
 }
 
 /* Силуэт героя, пока профиль и записи грузятся: место под надпись, заголовок и знак. */
-.cs-hero-skel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; min-height: 180px; box-sizing: border-box; padding: 28px; border-radius: 24px; }
+.cs-hero-skel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; min-height: 180px; box-sizing: border-box; padding: 28px; border-radius: var(--r-16); }
 .cs-hero-skel-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 /* Верх вкладки «Режимы» (телефон): карточка и строки-входы под ней. */
