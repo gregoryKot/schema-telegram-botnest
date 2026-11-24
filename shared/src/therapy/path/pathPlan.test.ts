@@ -128,7 +128,7 @@ describe('расхождение с планом', () => {
     expect(
       currentPhaseOverdue('2026-01-05', caughtUp, '2026-03-20'),
     ).toBeNull();
-    expect(phaseDates('2026-01-05', caughtUp)[2].start).toBe('2026-03-23');
+    expect(phaseDates('2026-01-05', caughtUp)[2]?.start).toBe('2026-03-23');
   });
 
   it('текущей фазы нет — расхождения нет', () => {
