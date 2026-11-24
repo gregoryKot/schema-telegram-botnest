@@ -50,7 +50,7 @@
 .cbk-ticket {
   position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: stretch;
   box-sizing: border-box; width: 100%; border-radius: 14px; background: var(--surface); color: var(--text);
-  box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
 }
 .cbk-ticket--stub { grid-template-columns: minmax(0, 1fr); }
 .cbk-ticket-when {
