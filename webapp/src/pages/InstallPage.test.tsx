@@ -28,6 +28,7 @@ import { authedFetch } from '../apiClient';
 import { InstallPage } from './InstallPage';
 import { installTelegram, removeTelegram } from '../host/tgStub.test-helpers';
 import { _resetInstallPromptForTests } from '../utils/pwaInstall';
+import { INSTALL_STEPS } from '../components/installGuide/installSteps';
 
 const CODE = 'ab12'.repeat(16);
 const setAccessToken = vi.fn();
@@ -143,7 +144,8 @@ describe('InstallPage — экраны', () => {
     const { rerender } = renderPage();
     rerender(<MemoryRouter><InstallPage /></MemoryRouter>);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('на телефоне');
-    expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
+    expect(document.querySelectorAll('.ib-steps li').length).toBe(INSTALL_STEPS.ios.steps.length);
+    expect(document.querySelector('video')?.getAttribute('src')).toBe('/install/install-ios-safari.mp4');
     expect(screen.getByText(/Откройте её в Chrome \(iPhone — в Safari\)/)).toBeTruthy();
     expect(screen.getByText(/Входите через VK ID или Яндекс ID/)).toBeTruthy();
     expect(events().filter((a) => a === 'shown')).toHaveLength(1);
@@ -214,7 +216,7 @@ describe('InstallPage — хост определился после перво�
   it('SDK Telegram доехал позже → «Открыть в браузере» вместо шагов установки', () => {
     stubUa(IPHONE);
     renderPage();
-    expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
+    expect(document.querySelectorAll('.ib-steps li').length).toBe(INSTALL_STEPS.ios.steps.length);
     installTelegram({ platform: 'ios' });
     act(() => { vi.advanceTimersByTime(3000); });
     expect(screen.getByRole('link', { name: 'Открыть в браузере' })).toBeTruthy();
@@ -225,7 +227,7 @@ describe('InstallPage — хост определился после перво�
     stubUa(IPHONE);
     renderPage();
     act(() => { vi.advanceTimersByTime(3000); });
-    expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
+    expect(document.querySelectorAll('.ib-steps li').length).toBe(INSTALL_STEPS.ios.steps.length);
     expect(screen.queryByRole('link', { name: 'Открыть в браузере' })).toBeNull();
   });
 });
