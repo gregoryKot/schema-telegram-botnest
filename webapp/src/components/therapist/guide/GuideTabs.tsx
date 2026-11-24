@@ -1,4 +1,5 @@
-import { useContext, type KeyboardEvent, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { LineTabs } from '../../LineTabs';
 import { scrollIntoViewSafe } from '../../../../../shared/src/utils/scrollIntoView';
 import { GuideMarkContext } from './marks/GuideSectionMark';
 import { GUIDE_TAB_LABEL, guideTabs, markedTabs, type GuideTabId, type TabbedKind } from './guideTabsModel';
@@ -13,7 +14,7 @@ export interface GuideTabsProps {
 const isEmpty = (el: HTMLElement | undefined) => !!el && el.childElementCount === 0;
 
 /**
- * Вкладки листа справочника: липкий ds-seg под героем, содержимое меняется на месте — лист не прыгает к якорю.
+ * Вкладки листа справочника: липкая полоса LineTabs под героем, содержимое меняется на месте — лист не прыгает к якорю.
  * Скрытые панели остаются в DOM под hidden="until-found": поиск браузера находит текст и сам открывает его вкладку;
  * адреса разделов и «Про клиента» живут как без вкладок. Точка на вкладке — там есть отметки клиента.
  */
@@ -55,30 +56,14 @@ export function GuideTabs({ kind, articleId, panels }: GuideTabsProps) {
     const stuck = bar.current && bar.current.getBoundingClientRect().top <= (bar.current.parentElement?.closest('.cfs-body')?.getBoundingClientRect().top ?? 0) + 1;
     if (stuck) requestAnimationFrame(() => scrollIntoViewSafe(wrap.current, { block: 'start' }));
   };
-  // Стрелки ←/→ ходят по вкладкам по кругу (шаблон tablist), фокус — за выбором.
-  const onKey = (e: KeyboardEvent) => {
-    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    if (!step) return;
-    const next = shown[(shown.indexOf(current) + step + shown.length) % shown.length];
-    pick(next);
-    document.getElementById(`${uid}${next}`)?.focus();
-  };
-
   return (
     <>
       {shown.length > 1 && (
         <div ref={bar} className="gd-tabs">
-          <div role="tablist" aria-label="Разделы листа" className="ds-seg ds-seg--full">
-            {shown.map((id) => (
-              <button
-                key={id} type="button" role="tab" aria-selected={id === current} tabIndex={id === current ? 0 : -1} id={`${uid}${id}`}
-                className={`ds-seg-btn${id === current ? ' is-active' : ''}`} onClick={() => pick(id)} onKeyDown={onKey}
-              >
-                {GUIDE_TAB_LABEL[id]}
-                {dots.has(id) && <span className="gd-tab-dot" title="Есть отметки про клиента" />}
-              </button>
-            ))}
-          </div>
+          <LineTabs
+            tabs={shown.map((id) => ({ id, label: <>{GUIDE_TAB_LABEL[id]}{dots.has(id) && <span className="gd-tab-dot" title="Есть отметки про клиента" />}</> }))}
+            value={current} onPick={pick} label="Разделы листа" look="fill" tabId={(id) => `${uid}${id}`}
+          />
         </div>
       )}
       <div ref={wrap} className="gd-panels">
