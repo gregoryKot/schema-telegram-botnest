@@ -48,3 +48,15 @@ export function GuessMode({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Прямой обход копинга (Арнтц и Якоб): путь огибает стену копинга и ведёт к маленькому кругу — Ребёнку. */
+export function CopingBypass({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox={BOX}>
+      <rect x="54" y="18" width="14" height="40" rx="3" fill={PAPER.slate} />
+      <path d="M18 40 C30 4 92 4 98 34" {...ROUND} stroke={PAPER.clay} strokeWidth="5" strokeDasharray="7 7" />
+      <circle cx="18" cy="40" r="8" fill={PAPER.moss} />
+      <circle cx="100" cy="44" r="7" fill={PAPER.plum} />
+    </Svg>
+  );
+}
