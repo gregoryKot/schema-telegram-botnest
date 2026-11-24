@@ -24,6 +24,7 @@ export const OFFLINE_CLIENT = {
   therapyStartDate: null,
   nextSession: null,
   meetingDays: [],
+  memo: null,
   schemaIds: [],
 };
 const id = OFFLINE_CLIENT.telegramId;
