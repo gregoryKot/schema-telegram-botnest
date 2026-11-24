@@ -25,7 +25,7 @@ export function skyChromaVar(hue: number): string | undefined {
 export function hueStyle(hue: number | undefined): CSSProperties {
   const h = hue ?? NEUTRAL_HUE;
   const ck = skyChromaVar(h);
-  return (ck ? { '--h': h, '--ck': ck } : { '--h': h }) as CSSProperties;
+  return (ck ? { '--h': h, '--ck': ck } : { '--h': h }) as unknown as CSSProperties;
 }
 
 /** Стабильный оттенок аватара клиента по id: один клиент — всегда один цвет. */
