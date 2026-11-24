@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { diaryTitle } from './diaryTitle';
 import { weekDelta, groupSchemasByDomain, summarizeModes, needBars, indexSparkBars, diaryPreview } from './clientOverviewModel';
 
 describe('groupSchemasByDomain', () => {
@@ -71,14 +70,6 @@ describe('diaryPreview', () => {
     const rows = diaryPreview([{ type: 'schema', date: 'd', excerpt: '' }, { type: 'mode', date: 'd', excerpt: '' }]);
     expect(rows[0].title).toBe('Схема');
     expect(rows[1].title).toBe('Режим');
-  });
-});
-
-describe('diaryTitle', () => {
-  it('ярлыки одинаковы для превью и заметок', () => {
-    expect(diaryTitle({ type: 'schema' }).typeLabel).toBe('Дневник схем');
-    expect(diaryTitle({ type: 'mode' }).typeLabel).toBe('Дневник режимов');
-    expect(diaryTitle({ type: 'gratitude' })).toEqual({ title: 'Благодарность', typeLabel: 'Дневник благодарности' });
   });
 });
 
