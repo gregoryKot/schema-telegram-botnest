@@ -36,7 +36,11 @@ export function usePlanAdd({ added, setAdded, onAdded }: {
       return items.map((i) => i.id);
     }, 'therapy plan add from guide failed', 'Не удалось добавить в план')),
     undo: () => run(async () => {
-      await Promise.all((added ?? []).map((id) => api.deletePlanItem(id)));
+      const ids = added ?? [];
+      const done = await Promise.allSettled(ids.map((id) => api.deletePlanItem(id)));
+      const left = ids.filter((_, i) => done[i].status === 'rejected');
+      // убралось не всё — повтор отмены тронет только оставшееся
+      if (left.length > 0) { setAdded(left); throw new Error('undo incomplete'); }
       return null;
     }, 'therapy plan add undo failed', 'Не удалось отменить — пункт можно убрать во вкладке «План работы»'),
   };

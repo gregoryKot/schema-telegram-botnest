@@ -126,6 +126,20 @@ describe('PlanAddSheet — «В план» из справочника', () => {
     expect(onAdded).toHaveBeenCalledTimes(2);
   });
 
+  it('отмена убрала не всё: ошибка видна, повтор убирает только оставшееся', async () => {
+    h.createPlanItems.mockResolvedValue({ items: [{ id: 41 }, { id: 42 }] });
+    h.deletePlanItem.mockImplementation((id: number) => (id === 42 ? Promise.reject(new Error('boom')) : Promise.resolve()));
+    show(7);
+    add();
+    fireEvent.click(await screen.findByRole('button', { name: 'Отменить' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось отменить/);
+    h.deletePlanItem.mockResolvedValue(undefined);
+    h.deletePlanItem.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Добавить в план' })).toBeTruthy());
+    expect(h.deletePlanItem.mock.calls.map((c) => c[0])).toEqual([42]);
+  });
+
   describe('фаза пути', () => {
     const phase = (id: number, position: number, name: string, over = {}) => ({
       id, position, name, goal: null, weeks: 4, templatePhaseId: null, startedAt: null, endedAt: null, criteriaDone: [], note: null, ...over,

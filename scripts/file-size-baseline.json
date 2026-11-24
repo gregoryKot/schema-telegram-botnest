@@ -2999,7 +2999,7 @@
   "webapp/src/components/therapist/plan/planRows.tsx": 48,
   "webapp/src/components/therapist/plan/planSource.ts": 30,
   "webapp/src/components/therapist/plan/PlanWorkLine.tsx": 8,
-  "webapp/src/components/therapist/plan/usePlanAdd.ts": 43,
+  "webapp/src/components/therapist/plan/usePlanAdd.ts": 47,
   "webapp/src/components/therapist/plan/usePlanItems.ts": 115,
   "webapp/src/components/therapist/plan/usePlanTwins.ts": 31,
   "webapp/src/components/therapist/plan/usePlanWork.ts": 17,
