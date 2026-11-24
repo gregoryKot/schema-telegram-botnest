@@ -24,7 +24,7 @@ function CompactBody({ onDismiss }: { onDismiss: () => void }) {
         Публичные страницы обезличенно считают посещения в Яндекс.Метрике.{' '}
         <PrivacyLink />
       </p>
-      <button onClick={onDismiss} className="ds-btn ds-btn--sm cookie-btn">
+      <button onClick={onDismiss} className="ds-btn cookie-btn">
         Понятно
       </button>
     </>
@@ -41,7 +41,7 @@ function CardBody({ onDismiss }: { onDismiss: () => void }) {
           <PrivacyLink />
         </p>
       </div>
-      <button onClick={onDismiss} className="ds-btn ds-btn--sm cookie-btn">Понятно</button>
+      <button onClick={onDismiss} className="ds-btn cookie-btn">Понятно</button>
     </>
   );
 }
