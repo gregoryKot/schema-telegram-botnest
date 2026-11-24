@@ -5,6 +5,7 @@
 // Лимит один и стоит в DTO сервера: превышение там — 400 (раньше хвост резался
 // молча, backend#29). Поле ввода берёт `maxLength` отсюда, `CharCounter` — остаток.
 export const SESSION_NOTE_MAX = 10000; // заметка терапевта по сессии
+export const CLIENT_MEMO_MAX = 5000; // заметка терапевта «О клиенте» в карточке
 export const DAY_NOTE_MAX = 500; // заметка к дню в трекере (счётчик «N/500» в обоих фронтах)
 export const DIARY_FIELD_MAX = 10000; // поле записи дневника / пункт благодарности
 export const PRACTICE_TEXT_MAX = 200; // своя практика в плане

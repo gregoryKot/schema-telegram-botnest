@@ -17,6 +17,7 @@ export interface SessionInfoPatch {
   therapyStartDate?: string | null;
   nextSession?: string | null;
   meetingDays?: number[];
+  memo?: string | null; // заметка «О клиенте»; пустая — очистить
 }
 
 interface Params {

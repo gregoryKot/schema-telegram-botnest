@@ -70,7 +70,7 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJourn
         <div ref={flowRef} style={{ minWidth: 0 }}>{graph}</div>
       )}
       <GuideMarksBlock
-        marks={guideMarks} onRemove={guide.marking.remove}
+        marks={guideMarks} onRemove={guide.marking.remove} client={client} onReload={guide.marks?.reload}
         conceptEmpty={source.modeIds.length === 0 && source.schemaIds.length === 0}
       />
       {guide.sheets}

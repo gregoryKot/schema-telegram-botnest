@@ -542,6 +542,7 @@ model TherapyRelation {
   status      RelationStatus @default(pending)
   clientAlias       String?  // therapist's custom name for client
   virtualClientName String?  // if set: offline/virtual client (no Telegram account)
+  therapistMemo     String?  // свободная заметка терапевта о клиенте, шифротекст; клиенту не уходит
   therapyStartDate  String?  // YYYY-MM-DD, editable by therapist
   nextSession       String?  // YYYY-MM-DD, next scheduled session
   meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
