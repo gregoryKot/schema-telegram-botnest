@@ -62,6 +62,9 @@ type Pr = {
 const GRACE_MS = Number(
   importExport('merge-queue-plan.mjs', 'GREEN_GRACE_MS', '(v) => v'),
 );
+const PENDING_MS = Number(
+  importExport('merge-queue-plan.mjs', 'PENDING_GRACE_MS', '(v) => v'),
+);
 let seq = 1;
 const OLD = new Date(Date.now() - GRACE_MS - 60_000).toISOString();
 const checks = (conclusion: string, at = OLD): CheckRun[] =>
@@ -267,8 +270,11 @@ describe('merge-queue.mjs: один PR за раз', () => {
       expect(out).toContain('#3 в полёте');
     }
 
-    const stale = new Date(Date.now() - 3 * 3600_000).toISOString();
-    setup([{ ...prs[0], checks: pendingSince(stale) }, prs[1]]);
+    const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
+    setup([{ ...prs[0], checks: pendingSince(ago(PENDING_MS - 60_000)) }, prs[1]]);
+    await run();
+    expect(updated()).toEqual([]);
+    setup([{ ...prs[0], checks: pendingSince(ago(PENDING_MS + 60_000)) }, prs[1]]);
     await run();
     expect(updated()).toEqual([4]);
   });
