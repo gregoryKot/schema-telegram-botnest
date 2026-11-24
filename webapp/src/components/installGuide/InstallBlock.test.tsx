@@ -41,6 +41,17 @@ describe('InstallBlock', () => {
     expect(video.muted).toBe(true);
   });
 
+  it('«меньше движения»: ролик стоит и запускается своей кнопкой плеера', () => {
+    const still = (on: boolean) => {
+      window.matchMedia = ((q: string) => ({ matches: on && q.includes('reduce') })) as unknown as typeof window.matchMedia;
+      const v = render(<InstallBlock platforms={['ios']} look="page" browser="ios-safari" />).container.querySelector('video') as HTMLVideoElement;
+      cleanup();
+      return { autoplay: v.autoplay, controls: v.controls };
+    };
+    expect(still(true)).toEqual({ autoplay: false, controls: true });
+    expect(still(false)).toEqual({ autoplay: true, controls: false });
+  });
+
   it('ролика нет: у компьютера и на лендинге', () => {
     expect(render(<InstallBlock platforms={['desktop']} look="page" />).container.querySelector('video')).toBeNull();
     expect(render(<InstallBlock platforms={['ios', 'android']} look="landing" />).container.querySelector('video')).toBeNull();
