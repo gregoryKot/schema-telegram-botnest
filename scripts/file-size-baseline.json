@@ -991,7 +991,7 @@
   "shared/src/therapy/plan/planAddress.ts": 32,
   "shared/src/therapy/plan/planApi.ts": 41,
   "shared/src/therapy/plan/planItem.ts": 77,
-  "shared/src/therapy/plan/planRubricGuess.ts": 26,
+  "shared/src/therapy/plan/planRubricGuess.ts": 41,
   "shared/src/therapy/plan/planWork.ts": 77,
   "shared/src/therapy/plan/planWorkApi.ts": 11,
   "shared/src/therapy/reloadClientTasks.ts": 23,
