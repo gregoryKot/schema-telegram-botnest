@@ -6,6 +6,9 @@
   },
   "bashOutputMaxChars": 12000,
   "permissions": {
+    "allow": [
+      "mcp__claude-code-remote__create_trigger"
+    ],
     "deny": [
       "Read(./**/package-lock.json)"
     ]
