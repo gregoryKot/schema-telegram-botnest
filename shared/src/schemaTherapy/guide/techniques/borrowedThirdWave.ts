@@ -1,4 +1,8 @@
 import type { TechniqueGuideBuilder } from '../types';
+import {
+  compassionateSelfMore,
+  compassionateSelfVoice,
+} from './compassionHeath';
 
 /** Из ACT, CFT и мотивационного интервью: defusion, compassionate_self, motivational_interviewing. */
 export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
@@ -41,24 +45,20 @@ export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
     pairsWith:
       'Сочетается с образом Здорового Взрослого и самосостраданием: сострадательное «я» даёт Здоровому Взрослому голос и тело, из которых он отвечает Критику и заботится об Уязвимом Ребёнке.',
     steps: [
-      'Успокаивающий ритм. Сесть устойчиво, дышать чуть медленнее и глубже обычного, ровно. Минуту-две.',
+      'Успокаивающий ритм. Сесть устойчиво, как уверенный человек: стопы на полу, спина прямая, плечи развёрнуты. Дышать чуть медленнее и глубже обычного, ровно, около 5–6 вдохов в минуту. Минуту-две [Хис, гл. 17].',
       'Образ сострадательного «я»: мудрость, сила, желание помочь. Какая у него поза, лицо, голос?',
       'Побыть в этой роли, как актёр: не важно, верится ли, — важно попробовать.',
       'Из этой позиции посмотреть на себя в трудной ситуации. Что чувствует сострадательное «я»? Что хочет сказать?',
       'Сказать это вслух или записать. Дома — короткая практика каждый день.',
     ],
-    voice: [
-      tr(
-        'Вспомни свои лучшие минуты — когда у тебя есть и сила, и тепло. Каким голосом говорит эта часть тебя?',
-        'Вспомните свои лучшие минуты — когда у вас есть и сила, и тепло. Каким голосом говорит эта часть вас?',
-      ),
-    ],
+    voice: compassionateSelfVoice(tr),
+    more: compassionateSelfMore,
     cautions:
       'У клиентов, которым тепло в детстве было небезопасно, сострадание к себе поначалу поднимает тревогу, горе или злость. Это ожидаемо: идти малыми шагами и возвращаться к дыханию.',
     evidence:
       'Метаанализ Кирби и соавт. (2017): вмешательства, основанные на сострадании, дают умеренный эффект по сравнению с контрольными условиями.',
     sources:
-      'Gilbert P. Compassion Focused Therapy: Distinctive Features. Routledge, 2010. Kirby J. N., Tellegen C. L., Steindl S. R. A meta-analysis of compassion-based interventions: Current state of knowledge and future directions. Behavior Therapy, 2017.',
+      '[Хис, гл. 17]. Gilbert P. Compassion Focused Therapy: Distinctive Features. Routledge, 2010. Kirby J. N., Tellegen C. L., Steindl S. R. A meta-analysis of compassion-based interventions: Current state of knowledge and future directions. Behavior Therapy, 2017.',
   },
   {
     id: 'motivational_interviewing',
