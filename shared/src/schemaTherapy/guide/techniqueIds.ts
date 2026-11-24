@@ -69,6 +69,9 @@ export type ArntzTechniqueId =
 export type FarrellTechniqueId =
   'mode_management_plan' | 'healthy_adult_plan' | 'safety_bubble';
 
+/** Техники из книги Хис и Стартап (карта «Хис-Стартап»). */
+export type HeathTechniqueId = 'probe_phrases';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -77,4 +80,5 @@ export type TechniqueId =
   | YoungTechniqueId
   | ArntzTechniqueId
   | FarrellTechniqueId
+  | HeathTechniqueId
   | BorrowedTechniqueId;

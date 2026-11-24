@@ -52,6 +52,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'mode_work_when',
     'mode_work_steps',
     'emdr',
+    'body_cues_therapist',
   ].map(w),
   {
     id: 'questionnaires',

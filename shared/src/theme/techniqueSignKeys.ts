@@ -35,5 +35,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'mode_plan',
   'plan_ahead',
   'bubble',
+  // TechniqueSignsHeath.tsx — техники из книги Хис и Стартап
+  'probe',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];
