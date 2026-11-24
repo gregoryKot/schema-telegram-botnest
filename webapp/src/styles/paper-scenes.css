@@ -8,7 +8,7 @@
 .scn { display: block; width: 100%; height: auto; overflow: visible; }
 /* Небо фигур сцен (INK.sky: задняя карточка веера SceneQuiz) — токена неба у палитры нет,
    бумага неба та же, что у квадратиков и полос (oklch по оттенку 240). */
-.scn { --scn-sky: oklch(0.84 0.065 240); }
+.scn { --scn-sky: oklch(0.84 calc(0.065 * var(--sky-k)) 240); }
 .scn-sheet { fill: oklch(0.885 0.06 var(--h)); }
 .scn-sheet-under { fill: oklch(0.79 0.07 var(--h)); }
 .scn-patch { fill: oklch(0.85 0.08 var(--h2)); }
@@ -44,8 +44,8 @@
 
 /* Листы коллажа первого экрана (HeroCollage.tsx): персик под мокапом, клочки неба и шалфея. */
 .hc-peach { fill: oklch(0.885 0.06 45); }
-.hc-sky { fill: oklch(0.88 0.05 240); }
+.hc-sky { fill: oklch(0.88 calc(0.05 * var(--sky-k)) 240); }
 .hc-sage { fill: oklch(0.87 0.06 135); }
 .hc-peach.hc-under { fill: oklch(0.79 0.07 45); }
-.hc-sky.hc-under { fill: oklch(0.79 0.06 240); }
+.hc-sky.hc-under { fill: oklch(0.79 calc(0.06 * var(--sky-k)) 240); }
 .hc-sage.hc-under { fill: oklch(0.78 0.07 135); }

@@ -26,7 +26,7 @@
   background: var(--surface); color: var(--text); font-family: inherit; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px;
 }
-.sd-day.is-active { background: oklch(0.915 0.03 var(--h)); border-color: transparent; box-shadow: 3px 4px 0 oklch(0.83 0.05 var(--h)); }
+.sd-day.is-active { background: oklch(0.915 0.03 var(--h)); border-color: transparent; box-shadow: 0 0 0 1px var(--accent); }
 .sd-day-date { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .sd-day-dow { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-sub); }
 .sd-day-num { font-family: var(--serif); font-size: 18px; line-height: 1; }
