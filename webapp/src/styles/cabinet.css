@@ -225,30 +225,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-menu-item:disabled { opacity: .55; cursor: default; }
 .ds-menu-item.is-danger { color: var(--accent-red); }
 
-/* ── Сегмент-фильтр ──────────────────────────────────────────────────────── */
-.ds-seg { display: inline-flex; gap: 4px; background: var(--paper-sunk); border-radius: 20px; padding: 3px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-.ds-seg::-webkit-scrollbar { display: none; }
-.ds-seg-btn {
-  border: none; border-radius: 16px; padding: 6px 14px; white-space: nowrap;
-  font: 600 13px var(--sans); cursor: pointer;
-  background: transparent; color: var(--text-muted);
-}
-.ds-seg-btn.is-active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
-.ds-seg-btn .ds-count { margin-left: 4px; padding: 0; background: none; color: inherit; font-weight: 400; font-size: 12px; }
-.ds-seg--full { display: flex; box-sizing: border-box; } /* на компьютере — по содержимому (блок ≥768), на телефоне во всю колонку */
-.ds-seg--full > .ds-seg-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; }
-.ds-page > .ds-seg { align-self: flex-start; }
-/* Затухание края прокручиваемого сегмента (лента карт, вкладки справочника): край ставит потребитель
-   атрибутом data-fade-* (useStripEdges, как у полосы дат истории) — только когда за краем что-то есть. */
-/* Запас прокрутки: выбранный пункт, доведённый до видимого, встаёт вне зоны затухания, крайний — до упора. */
-.ds-seg--fade { scroll-padding-inline: 36px; }
-.ds-seg--fade[data-fade-end] { -webkit-mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent); mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent); }
-.ds-seg--fade[data-fade-start] { -webkit-mask-image: linear-gradient(to right, transparent, var(--text) 32px); mask-image: linear-gradient(to right, transparent, var(--text) 32px); }
-.ds-seg--fade[data-fade-start][data-fade-end] {
-  -webkit-mask-image: linear-gradient(to right, transparent, var(--text) 32px, var(--text) calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to right, transparent, var(--text) 32px, var(--text) calc(100% - 32px), transparent);
-}
-
 /* ── Чипы, бейджи, аватары ───────────────────────────────────────────────── */
 .ds-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; }
 .ds-chip--sm { font-size: 11px; font-weight: 700; padding: 4px 9px; }
@@ -338,7 +314,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ds-sheet-head { padding: 0 16px; }
   .ds-btn--lg { width: 100%; }
-  .ds-seg--full { width: 100%; }
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
   /* Страница в один экран («Сегодня», владелец 2026-11-06): без нижнего поля — зазор над панелью даёт
      .canvas; ритм сжимается по высоте за вычетом статус-бара и выреза. --fit-room — запас над 640px
@@ -350,9 +325,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   }
   .ds-h1 { font-size: 32px; }
   .ds-h2 { font-size: 22px; }
-  .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
-  .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
-  .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
 }
 /* Видимая высота: в Safari 100vh выше экрана с открытой адресной строкой. Без dvh остаётся 100vh. */
 @supports (height: 100dvh) { .ds-page--fit { --fit-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 640px); } }
@@ -364,7 +336,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
      и в ленте .ds-tabs вкладки сжимались до 44 и наезжали друг на друга (скриншот 390, 2026-11-06). */
   .ds-tab { min-height: 44px; min-width: 44px; flex-shrink: 0; justify-content: center; }
   .ds-btn--icon { width: 44px; height: 44px; }
-  .ds-seg-btn { min-height: 44px; }
   .ds-btn--sm { height: 44px; }
   .ds-input--search { height: 44px; }
   .ds-input--sm { height: 44px; }
@@ -380,11 +351,6 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 /* Компьютер (≥768): телефонные примитивы выше не растягиваются на колонку, шапка страницы — не полоса. */
 :root { --sheet-col: 640px; --sheet-pad: 32px; } /* колонка и боковой отступ шапки-страницы; страница задаёт свои на корне */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .ds-seg--full { display: inline-flex; }
-  /* По содержимому — значит, кнопка не уже своей подписи: с flex-basis 0 и min-width: 0 ширина
-     inline-flex делилась поровну, и длинная подпись резалась многоточием («Клиент…», «Нед…»).
-     Растянутый сегмент (донат, .ap-seg) по-прежнему делит место поровну. */
-  .ds-seg--full > .ds-seg-btn { min-width: max-content; }
   /* Страница (не оверлей): «← Назад» стоит над колонкой контента, без полосы, линии и фона (до #906). */
   .ds-sheet-head--page {
     box-sizing: border-box; width: 100%; max-width: var(--sheet-col); min-height: 0; margin: 0 auto;

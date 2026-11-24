@@ -25,7 +25,7 @@ describe('AddressSection — откат формы на отказе сохра�
   it('сервер не сохранил — форма возвращается к прежней', async () => {
     const patch = vi.fn().mockResolvedValue(false);
     const setForm = renderSection(patch);
-    fireEvent.click(screen.getByRole('button', { name: 'На «вы»' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'На «вы»' }));
     expect(patch).toHaveBeenCalledWith({ addressForm: 'vy' });
     await waitFor(() => expect(setForm).toHaveBeenLastCalledWith('ty'));
     expect(setForm.mock.calls.map((c) => c[0])).toEqual(['vy', 'ty']);
@@ -34,7 +34,7 @@ describe('AddressSection — откат формы на отказе сохра�
   it('контроль: сохранилось — форма остаётся новой', async () => {
     const patch = vi.fn().mockResolvedValue(true);
     const setForm = renderSection(patch);
-    fireEvent.click(screen.getByRole('button', { name: 'На «вы»' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'На «вы»' }));
     await waitFor(() => expect(patch).toHaveBeenCalled());
     await Promise.resolve();
     expect(setForm.mock.calls.map((c) => c[0])).toEqual(['vy']);

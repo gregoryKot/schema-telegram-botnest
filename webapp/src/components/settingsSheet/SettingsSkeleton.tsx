@@ -1,7 +1,7 @@
 import { Skeleton } from '../Skeleton';
 
-/** Группы силуэта по форме первых групп листа: «Имя» — поле, «Обращение» — сегмент, дальше строки с тумблером. */
-const GROUPS: ('field' | 'seg' | number)[] = ['field', 'seg', 4, 1];
+/** Группы силуэта по форме первых групп листа: «Имя» — поле, «Обращение» — пара чипов, дальше строки с тумблером. */
+const GROUPS: ('field' | 'chips' | number)[] = ['field', 'chips', 4, 1];
 
 function Row({ odd }: { odd: boolean }) {
   return (
@@ -14,7 +14,7 @@ function Row({ odd }: { odd: boolean }) {
 
 /**
  * Тело листа «Настройки», пока грузятся настройки: оглавление и группы — плашки по форме
- * (ярлык группы + поле, сегмент или строки через линию, без карточек); заголовок-текст появляется
+ * (ярлык группы + поле, чипы или строки через линию, без карточек); заголовок-текст появляется
  * вместе с содержимым — по нему тесты листа ждут конец загрузки. Корень листа и шапку с живой
  * «← Закрыть» рисует SettingsSheet — одни и те же узлы до и после загрузки (фокус не теряется).
  * navRows — сколько пунктов будет в оглавлении (settingsNav): плашки стоят в ячейках пунктов.
@@ -34,7 +34,7 @@ export function SettingsSkeleton({ navRows }: { navRows: number }) {
             <div key={i} className="st-section">
               <div className="st-sec-head"><div className="ds-label st-skel-line"><Skeleton width={110} height={12} /></div></div>
               {g === 'field' && <div className="st-row-name"><div className="st-skel-field"><Skeleton width="100%" height="100%" radius={12} /></div></div>}
-              {g === 'seg' && <div className="st-body-block"><div className="st-skel-seg"><Skeleton width="100%" height="100%" radius={16} /></div></div>}
+              {g === 'chips' && <div className="st-body-block"><div className="st-chips">{[0, 1].map((c) => <div key={c} className="st-skel-chip"><Skeleton width="100%" height="100%" radius={8} /></div>)}</div></div>}
               {typeof g === 'number' && Array.from({ length: g }, (_, r) => <Row key={r} odd={r % 2 === 1} />)}
             </div>
           ))}
