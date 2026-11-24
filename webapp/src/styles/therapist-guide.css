@@ -110,7 +110,7 @@
 .gd-coping-who { font-weight: 400; color: var(--text-sub); }
 .cm-client { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px; margin-top: var(--space-8); }
 .cm-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); }
-.gd-coping .ds-link.gd-plan { display: flex; width: fit-content; margin-top: 6px; }
+.gd-coping .ds-link.gd-plan, .gd-points .ds-link.gd-plan { display: flex; width: fit-content; margin-top: 6px; }
 
 /* «Про клиента» (#1484, marks/GuideSectionMark.tsx): тап по разделу подсвечивает его, рядом кнопка;
    отмеченный клиенту раздел (справочник из карточки) — с полосой акцента и именем. */
