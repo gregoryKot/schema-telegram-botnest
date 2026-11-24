@@ -2,13 +2,11 @@ import type { PracticeNotesBuilder } from './types';
 import { buildPracticeGroup } from './practiceGroup';
 import { buildPracticeAngry } from './practiceAngry';
 import { buildPracticeSuicidal } from './practiceSuicidal';
+import { buildPracticeDangerous } from './practiceDangerous';
 import { romancePartnerMore } from './practiceRelationshipMore';
 
-/**
- * «Для терапевта», вторая половина: трудные ситуации в сессии (злость —
- * practiceAngry.ts, суицидальные мысли — practiceSuicidal.ts, влюблённость и партнёр
- * за кадром), групповой формат (practiceGroup.ts), намеренная практика. Собирает их practice.ts — в конце своего списка.
- */
+/** «Для терапевта», вторая половина: трудные ситуации (злость, суицидальные мысли, влюблённость, опасный партнёр —
+ *  свои файлы practice*.ts), группа (practiceGroup.ts), намеренная практика; собирает practice.ts в конце списка. */
 export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
   ...buildPracticeAngry(tr),
   ...buildPracticeSuicidal(tr),
@@ -35,6 +33,7 @@ export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
     sources:
       '[Рёдигер, гл. 13–14], [Кембридж, бокс 6.7, гл. 18, бокс 18.2], [Янг, гл. 6, 10]',
   },
+  ...buildPracticeDangerous(tr),
   ...buildPracticeGroup(tr),
   {
     id: 'deliberate_practice',
