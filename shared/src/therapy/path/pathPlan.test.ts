@@ -26,9 +26,11 @@ describe('phaseDraftsFromTemplate', () => {
       expect(drafts.map((d) => d.templatePhaseId)).toEqual(
         template.phases.map((p) => p.id),
       );
-      expect(drafts.reduce((sum, d) => sum + d.weeks, 0)).toBe(
-        pathTemplateWeeks(template),
-      );
+      expect(
+        drafts.every((d) => d.weeks != null)
+          ? drafts.reduce((sum, d) => sum + (d.weeks ?? 0), 0)
+          : null,
+      ).toBe(pathTemplateWeeks(template));
       expect(drafts.every((d) => d.name && d.goal)).toBe(true);
     },
   );
@@ -131,7 +133,11 @@ describe('расхождение с планом', () => {
 
   it('текущей фазы нет — расхождения нет', () => {
     expect(
-      currentPhaseOverdue('2026-01-05', [{ weeks: 1, ...mark(null) }], '2027-01-01'),
+      currentPhaseOverdue(
+        '2026-01-05',
+        [{ weeks: 1, ...mark(null) }],
+        '2027-01-01',
+      ),
     ).toBeNull();
   });
 });
@@ -171,5 +177,30 @@ describe('прогресс фазы', () => {
     expect(byPhase.get(1)?.share).toBe(0.5);
     expect(byPhase.get(null)?.active).toBe(1);
     expect(byPhase.has(2)).toBe(false);
+  });
+});
+
+describe('фазы без срока', () => {
+  const general = buildPathTemplates(tr).find((t) => t.id === 'general')!;
+
+  it('черновики общего шаблона — со сроком null', () => {
+    expect(phaseDraftsFromTemplate(general).map((d) => d.weeks)).toEqual(
+      general.phases.map(() => null),
+    );
+  });
+
+  it('даты: без срока — null, и у всех после неё; до неё считаются', () => {
+    expect(
+      phaseDates('2026-01-05', [{ weeks: 2 }, { weeks: null }, { weeks: 3 }]),
+    ).toEqual([{ start: '2026-01-05', end: '2026-01-19' }, null, null]);
+    expect(
+      pathEndDate('2026-01-05', [{ weeks: 2 }, { weeks: null }]),
+    ).toBeNull();
+    expect(pathEndDate('2026-01-05', [])).toBe('2026-01-05');
+  });
+
+  it('текущая фаза без срока не отстаёт от плана', () => {
+    const phases = [{ weeks: null, startedAt: '2026-01-05', endedAt: null }];
+    expect(currentPhaseOverdue('2026-01-05', phases, '2027-01-01')).toBeNull();
   });
 });

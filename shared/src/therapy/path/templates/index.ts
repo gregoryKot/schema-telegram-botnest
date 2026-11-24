@@ -27,7 +27,4 @@ export function pathTemplate(tr: Tr, id: string): PathTemplate | null {
   return buildPathTemplates(tr).find((t) => t.id === id) ?? null;
 }
 
-/** Срок шаблона целиком, недель. */
-export function pathTemplateWeeks(template: PathTemplate): number {
-  return template.phases.reduce((sum, p) => sum + p.weeks, 0);
-}
+export { pathTemplateWeeks } from './templateWeeks';

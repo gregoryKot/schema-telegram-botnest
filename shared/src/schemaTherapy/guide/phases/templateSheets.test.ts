@@ -73,6 +73,23 @@ describe('templateSheet', () => {
     expect(sheet.noteIds).toEqual(['ending_phase']);
   });
 
+  it('фаза без срока: ни «0 недель», ни «Всего в шаблоне»', () => {
+    const bare = templateSheet(
+      {
+        ...template,
+        phases: template.phases.map(
+          ({ weeks: _w, weeksFrom: _f, ...rest }) => rest,
+        ),
+      },
+      path,
+    );
+    expect(bare.timing).toBe('Срок.');
+    expect(bare.stages?.[0]).toBe(
+      '1. Первая — сессии 1–2. Цель: цель. Терапевт: Делает. Позиция: Рядом. В ленте фаз: «Безопасность».',
+    );
+    expect(bare.stages?.join(' ')).not.toMatch(/недел|0 /);
+  });
+
   it('недели склоняются', () => {
     expect([1, 3, 5, 12].map(weeksLabel)).toEqual([
       '1 неделя',

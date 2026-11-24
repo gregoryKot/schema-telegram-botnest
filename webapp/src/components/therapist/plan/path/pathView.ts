@@ -16,7 +16,7 @@ export type PhaseAction = 'start' | 'advance' | 'finish' | null;
 export interface PhaseRow {
   phase: PathPhase;
   index: number;
-  dates: PhaseDates;
+  dates: PhaseDates | null;
   /** Пункты фазы по `position`; прогресс — null, если считать не из чего. */
   items: PlanItem[];
   progress: PhaseProgress | null;
@@ -69,7 +69,7 @@ export function buildPathView(path: TherapyPath, items: readonly PlanItem[], tem
       progress: own.length > 0 ? progress.get(phase.id) ?? null : null,
       tpl, current: index === current, done: phase.endedAt != null, action,
       criteriaDone: tpl ? phase.criteriaDone.filter((n) => n >= 0 && n < tpl.transition.length).length : 0,
-      overdue: overdue && overdue.index === index ? { weeks: overdue.weeks, shiftTo: shiftedWeeks(phase.weeks, overdue.catchUpWeeks) } : null,
+      overdue: overdue && overdue.index === index ? { weeks: overdue.weeks, shiftTo: phase.weeks == null ? null : shiftedWeeks(phase.weeks, overdue.catchUpWeeks) } : null,
     };
   });
   const firstOpen = rows.findIndex((r) => !r.done);
