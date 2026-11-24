@@ -22,7 +22,7 @@
 .ss-ysq-tile {
   display: flex; align-items: center; gap: 14px; width: 100%; box-sizing: border-box; margin-top: 8px;
   min-height: 72px; padding: 10px 16px 10px 10px; border: 0; border-radius: 16px; text-align: left; cursor: pointer;
-  font: inherit; background: var(--surface); color: var(--text); box-shadow: 5px 6px 0 oklch(var(--pa-layer-lc) var(--h));
+  font: inherit; background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--panel-line);
   transition: transform .12s;
 }
 .ss-ysq-tile:hover { transform: translate(-1px, -1px); }
@@ -118,7 +118,7 @@
 .ss-slide-l { animation: ss-in-l .22s cubic-bezier(.25, .46, .45, .94); }
 @keyframes ss-in-r { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
 @keyframes ss-in-l { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
-.ss-q { padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 14px; box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h)); }
+.ss-q { padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 0 0 1px var(--panel-line); }
 /* Вопрос в 1–4 строки — balance: pretty в Chromium оставлял одно слово в последней строке (ревью g5 r5, 768). */
 .ss-q-text { margin: 0; font-family: var(--serif); font-size: 26px; line-height: 1.35; letter-spacing: -.01em; color: var(--text); text-wrap: balance; }
 .ss-scale { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
@@ -231,7 +231,7 @@
 }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ss-test { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
-  .ss-q { padding: 22px 20px 24px; box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); }
+  .ss-q { padding: 22px 20px 24px; box-shadow: 0 0 0 1px var(--panel-line); }
   .ss-q-text { font-size: 22px; }
   .ss-scale { grid-template-columns: 1fr; }
   .ss-scale-btn { flex-direction: row; min-height: 52px; justify-content: flex-start; padding: 8px 16px; gap: 14px; }

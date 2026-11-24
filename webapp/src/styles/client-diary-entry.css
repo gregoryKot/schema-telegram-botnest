@@ -23,7 +23,7 @@
    залипал на карточке под пальцем, и она читалась выбранной. */
 @media (hover: hover) { .cd-entry:not(.is-open):hover { background: oklch(0.985 0.008 var(--h)); } }
 .cd-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cd-entry.is-open { box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.cd-entry.is-open { box-shadow: 0 0 0 1px var(--accent); }
 .cd-sign { justify-content: flex-start; padding-top: 1px; }
 .cd-entry-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .cd-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }

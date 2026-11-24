@@ -20,7 +20,7 @@
 .qs-step > .qs-step-body:only-child { grid-column: 1 / -1; }
 .qs-mark {
   display: grid; place-items: center; width: 64px; height: 64px; margin-top: 4px; border-radius: 16px;
-  background: var(--surface); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-4deg);
+  background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line); transform: rotate(-4deg);
   font: 400 40px/1 var(--serif); color: var(--text);
 }
 .qs-step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -37,7 +37,7 @@
 }
 /* Впереди — буква плоско, без рамки: обведённые квадраты читались кнопками-клавишами (ревью g4). */
 .qs-letters > li.is-done { background: oklch(0.84 0.06 var(--h)); color: var(--text); box-shadow: none; }
-.qs-letters > li.is-now { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 3px 4px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-3deg); }
+.qs-letters > li.is-now { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 0 0 1px var(--accent); transform: rotate(-3deg); }
 .qs-lines { gap: 4px; }
 .qs-lines > li { flex: 1; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--text) 14%, transparent); }
 .qs-lines > li.is-done, .qs-lines > li.is-now { background: var(--text); }

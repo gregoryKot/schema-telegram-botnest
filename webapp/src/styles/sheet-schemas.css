@@ -88,7 +88,7 @@ button.cs-tile:hover { background: oklch(0.97 0.012 var(--h)); }
 .cs-tile.is-mine { background: oklch(0.87 0.05 var(--h)); }
 .cs-tile.is-mine .cs-tile-name { font-weight: 700; }
 .cs-tile.is-mine .cs-tile-desc { color: var(--text); }
-.cs-tile.is-hl { transform: translate(-3px, -3px); box-shadow: 7px 8px 0 oklch(0.76 0.08 var(--h)); }
+.cs-tile.is-hl { transform: translate(-3px, -3px); box-shadow: 0 0 0 1px var(--accent); }
 .cs-tile.is-hl .cs-tile-name { font-weight: 700; }
 /* Узкий лист (телефон, аккордеон внутри «Все 20 схем»): знак 44 и плотнее шапка — название получает место
    (ревью g5 r1: на 320–375 «Сверхбдительность и подавление» выходило за колонку и наезжало на шеврон). */

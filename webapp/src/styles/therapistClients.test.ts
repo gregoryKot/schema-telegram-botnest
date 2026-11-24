@@ -27,7 +27,7 @@ describe('therapist-clients.css: имя в карточке клиента', () 
     expect(card).not.toContain('box-shadow');
     expect(card).not.toContain('border:');
     const paper = readFileSync(join(__dirname, 'paper.css'), 'utf8');
-    expect(paper).toMatch(/\.pp-leaf \{[^}]*background: var\(--surface\)[^}]*box-shadow: \d+px \d+px 0 oklch\(var\(--pa-layer-lc\) var\(--h, 240\)\)/);
+    expect(paper).toMatch(/\.pp-leaf \{[^}]*background: var\(--surface\)[^}]*box-shadow: 0 0 0 1px var\(--panel-line\)/);
     const markup = readFileSync(join(__dirname, '../components/therapist/ClientCard.tsx'), 'utf8');
     expect(markup).toContain('className="pp-leaf tc-card"');
   });

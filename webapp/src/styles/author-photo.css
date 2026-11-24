@@ -6,7 +6,7 @@
 .author-photo {
   position: relative; width: 100%; box-sizing: border-box;
   padding: 12px 12px 16px; border-radius: 8px; background: var(--surface); transform: rotate(-2.5deg);
-  box-shadow: 12px 13px 0 oklch(0.79 0.07 var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
 }
 /* Полоска скотча сверху — фото приклеено к листу. Сплошной тон, без прозрачности. */
 .author-photo::before {
@@ -21,7 +21,7 @@
   --h: 135; position: absolute; right: -30px; bottom: -26px;
   display: flex; align-items: center; justify-content: center;
   width: 96px; height: 96px; border-radius: 22px; transform: rotate(9deg);
-  background: oklch(0.9 0.06 var(--h)); box-shadow: 6px 7px 0 oklch(0.78 0.07 var(--h));
+  background: oklch(0.9 0.06 var(--h)); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .author-photo-sticker .scn-sign { width: 72px; }
 /* Узкий экран: наклейка меньше и ближе к рамке. На ≤360 фотокарточка во всю колонку — наклейка

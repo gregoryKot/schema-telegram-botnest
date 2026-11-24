@@ -8,7 +8,7 @@
 /* ── Реплика критика: белый лист с тенью-слоем сливы, Literata курсивом (PhraseSaid) ── */
 .ex2-said {
   box-sizing: border-box; margin: 0 7px 24px 0; padding: 18px 22px 20px; border-radius: 18px;
-  background: var(--surface); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
+  background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .ex2-said-text { margin: 0; font-family: var(--serif); font-style: italic; font-size: 22px; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; text-wrap: pretty; }
 .ex2-said--was { margin-bottom: 18px; padding: 14px 18px 16px; }
