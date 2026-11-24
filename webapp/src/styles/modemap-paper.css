@@ -12,7 +12,7 @@
 .mm2-n--box > .mm2-n-face {
   display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden;
   background: var(--n-fill); border: var(--n-sw) solid var(--n-line);
-  box-shadow: 0 0 0 3px var(--n-ring), 3px 4px 0 var(--n-shade);
+  box-shadow: 0 0 0 3px var(--n-ring);
 }
 .mm2-n--rect { min-width: 110px; max-width: 260px; min-height: 40px; }
 .mm2-n--rect > .mm2-n-face { border-radius: 10px; padding: 10px 16px; }
@@ -84,7 +84,7 @@
 .mm2-lane-chips { display: flex; gap: 10px; align-items: center; pointer-events: all; }
 .mm2-lane-chip {
   display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 14px; border: 0; border-radius: 12px; cursor: text;
-  font: 600 12.5px var(--sans); color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 2px 3px 0 oklch(0.85 0.045 var(--h));
+  font: 600 12.5px var(--sans); color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .mm2-lane-chip i { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.66 0.09 var(--h)); }
 .mm2-lane-input { width: 140px; text-align: center; border-radius: 12px; padding: 6px 10px; font-size: 12.5px; font-weight: 600; border-color: oklch(0.72 0.07 var(--h)); }

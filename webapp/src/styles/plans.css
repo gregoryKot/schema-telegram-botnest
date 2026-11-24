@@ -48,7 +48,7 @@
   color: var(--text); font-family: var(--sans); text-align: left; cursor: pointer; transition: background .12s;
 }
 .sk-need:hover { background: oklch(0.895 0.04 var(--h)); }
-.sk-need.is-on { background: oklch(0.87 0.05 var(--h)); box-shadow: 4px 5px 0 oklch(0.79 0.06 var(--h)); }
+.sk-need.is-on { background: oklch(0.87 0.05 var(--h)); box-shadow: 0 0 0 1px var(--accent); }
 .sk-need:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .sk-need-sign .pp-art--row { width: 56px; height: 30px; }
 .sk-need-name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: break-word; }
@@ -75,7 +75,7 @@
 /* Выбранный шаг — белый лист Literata с тенью-слоем бумаги потребности (была розовая плашка). */
 .sk-chosen {
   padding: 16px 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
-  box-shadow: 5px 6px 0 oklch(0.88 0.04 var(--h)); font: 400 19px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
+  box-shadow: 0 0 0 1px var(--panel-line); font: 400 19px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
 }
 .pp-paper.sk-hint { margin: 0; padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.55; color: var(--text); }
 /* Время — плитки в ряд (4 на компьютере, 2×2 на телефоне), выбранная — бумага потребности с галочкой. */
@@ -86,7 +86,7 @@
   background: var(--surface); color: var(--text); font-family: var(--sans); text-align: left; cursor: pointer;
 }
 .sk-slot:hover { border-color: var(--line-strong); }
-.sk-slot.is-on { background: oklch(0.885 0.045 var(--h)); border-color: transparent; box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); }
+.sk-slot.is-on { background: oklch(0.885 0.045 var(--h)); border-color: transparent; box-shadow: 0 0 0 1px var(--accent); }
 .sk-slot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sk-slot-label { font-size: 15px; font-weight: 600; line-height: 1.3; }
 .sk-slot-hour { font-size: 13px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
