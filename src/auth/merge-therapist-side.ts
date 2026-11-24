@@ -13,7 +13,7 @@ const TABLES: { table: Prisma.Sql; unique?: readonly string[] }[] = [
   { table: Prisma.raw('"TherapyPath"'), unique: ['therapistId', 'clientId'] },
   {
     table: Prisma.raw('"GuideMark"'),
-    unique: ['therapistId', 'clientId', 'address'],
+    unique: ['therapistId', 'clientId', 'address', 'fragmentKey'],
   },
 ];
 
