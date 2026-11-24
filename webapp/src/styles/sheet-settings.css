@@ -77,8 +77,11 @@
 .st-overlay .ds-list-row, .st-about .ds-list-row { min-height: 52px; padding-top: 12px; padding-bottom: 12px; border-bottom-color: var(--panel-line); }
 .st-overlay .ds-list-title, .st-about .ds-list-title { font-size: 15px; }
 .st-overlay .ds-list-sub { color: var(--text-sub); line-height: 1.45; text-wrap: pretty; }
-.st-overlay .ds-list-row--inset.ds-list-row--hover:hover, .st-about .ds-list-row--inset.ds-list-row--hover:hover {
-  background: var(--paper-tint); box-shadow: -12px 0 0 var(--paper-tint), 12px 0 0 var(--paper-tint);
+/* Только у мыши: на телефоне :hover залипал после тапа серой плашкой на строке. */
+@media (hover: hover) {
+  .st-overlay .ds-list-row--inset.ds-list-row--hover:hover, .st-about .ds-list-row--inset.ds-list-row--hover:hover {
+    background: var(--paper-tint); box-shadow: -12px 0 0 var(--paper-tint), 12px 0 0 var(--paper-tint);
+  }
 }
 .st-overlay .ds-list-row--inset.ds-list-row--hover:not(.ds-list-row--danger):hover .ds-list-title,
 .st-about .ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--text); }
@@ -87,6 +90,8 @@
 .st-row-right > .ds-sub { color: var(--text-sub); text-align: right; white-space: nowrap; }
 .st-row-name { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 0; }
 .st-row-name .ds-input { flex: 1 1 200px; min-width: 0; }
+/* Поле листа — строка на бумаге с линией снизу, а не белая коробка: как строки списка вокруг. */
+.st-inner .ds-input { min-height: 48px; padding: 12px 0; border-width: 0 0 1px; border-radius: 0; background: none; }
 
 /* Подвиды выбора: часы — чипы-листы (SignChip: выбранный — бумага с галочкой), списки — плоские строки */
 .st-hours { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
