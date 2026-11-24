@@ -44,7 +44,7 @@ export function LineTabs<T extends string>({ tabs, value, onPick, label, look, a
   }, [look, value, tabs.length, measure]);
 
   const onKey = (e: KeyboardEvent) => {
-    const next = stepTab(tabs.map((t) => t.id), value, e.key);
+    const next = stepTab(tabs.filter((t) => !t.field).map((t) => t.id), value, e.key);
     if (next == null) return;
     e.preventDefault();
     onPick(next);

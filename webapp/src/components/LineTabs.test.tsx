@@ -66,11 +66,14 @@ describe('LineTabs', () => {
       { id: 'b', label: 'Случаи', count: null },
       { id: 'c', label: 'Карта', field: <input aria-label="Название карты" /> },
     ];
-    render(<LineTabs tabs={tabs} value="a" onPick={() => {}} label="Записи" look="scroll" />);
+    const onPick = vi.fn();
+    render(<LineTabs tabs={tabs} value="b" onPick={onPick} label="Записи" look="scroll" />);
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Все4', 'Случаи']);
     expect(screen.getByRole('tab', { name: /Все/ }).querySelector('.ds-count.lt-count')?.textContent).toBe('4');
     expect(screen.getByRole('tab', { name: /Все/ }).title).toBe('Всего записей');
     expect(screen.getByRole('textbox', { name: 'Название карты' })).toBeTruthy();
+    fireEvent.keyDown(screen.getByRole('tab', { name: /Случаи/ }), { key: 'ArrowRight' });
+    expect(onPick).toHaveBeenLastCalledWith('a'); // поле стрелкой не выбирается
   });
 
   it('выбор ещё не пришёл — по Tab в ленту ведёт первый пункт', () => {
