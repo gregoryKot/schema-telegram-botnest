@@ -82,8 +82,9 @@ describe('ci.yml: тяжёлые джобы пропускают шаги, не 
     const scopeAt = steps.findIndex((s) => s.includes('ci-docs-only.mjs'));
     expect(scopeAt).toBeGreaterThanOrEqual(0);
     for (const s of steps.slice(scopeAt + 1)) {
+      if (s.includes('setup-node')) continue; // node 22 нужен шагам npm audit
       if (s.includes('npm-audit.mjs')) continue; // гейт lockfile-audit: аудит с `if:` не засчитывается
-      expect(s).toContain(GUARD);
+      expect(s).toMatch(/steps\.scope\.outputs\.docs_only (!|=)= 'true'/);
     }
   });
 

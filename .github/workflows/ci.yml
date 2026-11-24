@@ -57,10 +57,18 @@ jobs:
         name: дифф только из документов?
         run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
+      # Документный дифф: тесты, читающие живые docs/*.md и .claude/rules, не пропускаем
+      # (не у всех есть скрипт в джобе checks).
+      - name: спеки над документами (документный дифф)
+        if: steps.scope.outputs.docs_only == 'true'
+        timeout-minutes: 5
+        run: |
+          npm ci
+          npx prisma generate
+          npx jest --silent src/test-support/gates/agent-docs src/test-support/gates/doc-pr-pointers src/test-support/gates/doc-refs src/test-support/gates/incident-registry src/test-support/gates/owner-waiting src/test-support/gates/robot-phrases src/test-support/gates/schema-terms src/test-support/gates/self-title src/infra/env-registry.docs
       - run: npm ci
         if: steps.scope.outputs.docs_only != 'true'
       - run: npx prisma generate
@@ -896,7 +904,6 @@ jobs:
         name: дифф только из документов?
         run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
@@ -1086,7 +1093,6 @@ jobs:
         name: дифф только из документов?
         run: node scripts/ci-docs-only.mjs
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: 22
           cache: npm
