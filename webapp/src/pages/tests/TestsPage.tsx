@@ -41,7 +41,7 @@ export function TestsPage() {
 
       {!quizzes && !error && (
         <div className="pl2-quiz-list" aria-label="Тесты загружаются">
-          {[0, 1, 2].map((k) => <div key={k} className="pl2-quiz-skel"><SkeletonCard radius={24} style={{ height: '100%' }} /></div>)}
+          {[0, 1, 2].map((k) => <div key={k} className="pl2-quiz-skel"><SkeletonCard radius={16} style={{ height: '100%' }} /></div>)}
         </div>
       )}
 

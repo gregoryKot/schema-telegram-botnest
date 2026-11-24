@@ -54,7 +54,7 @@ export function ClientTodaySkeleton() {
             </div>
             <span className="sks-strokes"><Strokes size="hero" values={EMPTY_DAY} /></span>
           </div>
-          <Skeleton height={48} radius={24} />
+          <Skeleton height={48} radius={12} />
         </div>
         <div className="pp-squares">
           {[135, 45].map(h => (
@@ -78,7 +78,7 @@ export function MoreSkeleton() {
       <div className="pp-paper sks-paper sks-sheet" style={hueStyle(70)}>
         <Skeleton width={72} height={11} />
         <Skeleton width="86%" height={22} radius={8} />
-        <Skeleton width={180} height={44} radius={22} />
+        <Skeleton width={180} height={44} radius={12} />
       </div>
       <div className="sks-card"><Rows n={5} /></div>
     </div>
