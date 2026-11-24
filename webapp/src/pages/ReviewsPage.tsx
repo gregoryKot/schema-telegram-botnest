@@ -56,7 +56,7 @@ export function ReviewsPage() {
 
         <div style={{
           marginTop: 48, padding: '28px 32px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-20)',
+          background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-16)',
         }}>
           <p style={{ fontSize: 16, color: 'var(--text)', lineHeight: 1.75, margin: '0 0 8px', fontWeight: 600 }}>
             Как же тогда понять, подхожу ли я вам?

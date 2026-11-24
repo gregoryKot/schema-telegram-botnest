@@ -36,7 +36,7 @@ export function WarmWordsEx({ onBack, onOpenModeCard }: { onBack: () => void; on
       <div className="ex2-warm">
         {items === null && !failed && (
           <div className="ex2-notes" aria-hidden>
-            {SKELETON_HEIGHTS.map((h) => <Skeleton key={h} height={h} radius={20} />)}
+            {SKELETON_HEIGHTS.map((h) => <Skeleton key={h} height={h} radius={16} />)}
           </div>
         )}
 

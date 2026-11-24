@@ -39,7 +39,7 @@ export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterio
   const criteria = tpl?.transition ?? [];
   const look = tpl && phaseLook(tpl.look); // своя фаза терапевта без шаблона — без знака и бумаги
   return (
-    <article className={`pp-leaf ph-card${row.current ? ' is-current' : ''}${row.done ? ' is-done' : ''}${open ? ' is-open' : ''}${drop.over ? ' is-drop' : ''}`} {...drop.props}>
+    <article className={`pp-leaf ph-card${row.current ? ' pp-leaf--anchor is-current' : ''}${row.done ? ' is-done' : ''}${open ? ' is-open' : ''}${drop.over ? ' is-drop' : ''}`} {...drop.props}>
       <header className="ph-head">
         <span className="ph-num" aria-hidden>{row.index + 1}</span>
         {look && (
