@@ -32,6 +32,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'coping_style_in_session',
     'mode_family_by_feeling',
     'schema_vs_mode_vs_belief',
+    'dependence_in_reparenting',
+    'therapist_discomfort_rescripting',
     'stages_of_change',
     'therapy_aims',
     'evidence_limits',
