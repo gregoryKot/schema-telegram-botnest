@@ -16,9 +16,21 @@ export function articleAddress(kind: GuideArticleKind, articleId: string): (path
   return (path) => formatAddress({ kind, articleId, path });
 }
 
-/** Новая или поправленная отметка встаёт на место старой с тем же адресом, иначе — в конец. */
+/** Текст без разницы в пробелах: тот же фрагмент, выделенный дважды, — одна отметка (как fragmentKeyOf на сервере). */
+export const sameText = (a: string, b: string): boolean => a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim();
+
+/** Отметка того же места: раздел целиком по адресу или фрагмент по адресу и тексту. */
+export function sameMark(m: GuideMark, address: string, fragment?: string): boolean {
+  if (m.address !== address) return false;
+  return fragment === undefined ? !m.fragment : !!m.fragment && sameText(m.snapshot, fragment);
+}
+
+export const findMark = (list: readonly GuideMark[] | null | undefined, address: string, fragment?: string): GuideMark | undefined =>
+  list?.find((m) => sameMark(m, address, fragment));
+
+/** Новая или поправленная отметка встаёт на место старой того же места, иначе — в конец. */
 export function upsertMark(list: readonly GuideMark[], mark: GuideMark): GuideMark[] {
-  const i = list.findIndex((m) => m.address === mark.address);
+  const i = list.findIndex((m) => sameMark(m, mark.address, mark.fragment ? mark.snapshot : undefined));
   return i < 0 ? [...list, mark] : list.map((m, j) => (j === i ? mark : m));
 }
 
@@ -45,14 +57,17 @@ export interface GuideMarkEntry {
   /** Текст раздела сейчас или, если раздел переписан, сохранённый при отметке. */
   text: string;
   changed: boolean;
+  /** Выделенный фрагмент: text — он сам, раздел «изменился» не бывает. */
+  fragment: boolean;
 }
 
 /** Строки блока «Из справочника»: адрес не находит раздел — сохранённый текст с пометкой. */
 export function markEntries(marks: readonly GuideMark[], guide: Guide, tr: Tr): GuideMarkEntry[] {
   return marks.map((mark) => {
     const found = guide.resolveAddress(mark.address, tr);
-    if (found) return { mark, title: `${found.articleTitle} · ${found.sectionTitle}`, text: found.text, changed: false };
+    const fragment = !!mark.fragment;
+    if (found) return { mark, title: `${found.articleTitle} · ${found.sectionTitle}`, text: fragment ? mark.snapshot : found.text, changed: false, fragment };
     const p = parseAddress(mark.address);
-    return { mark, title: p ? guide.sectionTitle(p.kind, p.path) : mark.address, text: mark.snapshot, changed: true };
+    return { mark, title: p ? guide.sectionTitle(p.kind, p.path) : mark.address, text: mark.snapshot, changed: !fragment, fragment };
   });
 }

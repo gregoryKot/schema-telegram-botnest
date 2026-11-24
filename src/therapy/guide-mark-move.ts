@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 
 /**
  * Отметки справочника офлайн-карточки (-TherapyRelation.id) переезжают на
- * аккаунт клиента. Unique (therapistId, clientId, address): адрес, уже
+ * аккаунт клиента. Unique (therapistId, clientId, address, fragmentKey): адрес с фрагментом, уже
  * отмеченный на аккаунте, остаётся аккаунтным, карточная копия удаляется.
  */
 export async function moveGuideMarks(
@@ -13,13 +13,16 @@ export async function moveGuideMarks(
 ): Promise<void> {
   const taken = await tx.guideMark.findMany({
     where: { therapistId, clientId: to },
-    select: { address: true },
+    select: { address: true, fragmentKey: true },
   });
   await tx.guideMark.deleteMany({
     where: {
       therapistId,
       clientId: from,
-      address: { in: taken.map((m) => m.address) },
+      OR: taken.map((m) => ({
+        address: m.address,
+        fragmentKey: m.fragmentKey,
+      })),
     },
   });
   await tx.guideMark.updateMany({

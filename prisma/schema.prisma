@@ -680,11 +680,12 @@ model GuideMark {
   clientId    BigInt
   address     String   // адрес раздела после реестра переименований
   note        String?  // шифруется: «как это у него»
-  snapshot    String   // шифруется: текст раздела на момент отметки
+  snapshot    String   // шифруется: текст раздела на момент отметки (у фрагмента — выделенный текст)
+  fragmentKey String   @default("") // '' — раздел целиком; иначе хэш выделенного фрагмента (несколько на адрес)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([therapistId, clientId, address])
+  @@unique([therapistId, clientId, address, fragmentKey])
 }
 
 model ClientConceptualization {

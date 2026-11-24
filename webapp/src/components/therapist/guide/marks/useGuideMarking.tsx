@@ -7,7 +7,7 @@ import { sameId } from '../../../../../../shared/src/utils/sameId';
 import { useTr } from '../../../../utils/addressForm';
 import type { GuideMarkCtx } from './GuideSectionMark';
 import { GuideMarkSheet } from './GuideMarkSheet';
-import { dropMark, upsertMark } from './guideMarkModel';
+import { dropMark, findMark, upsertMark } from './guideMarkModel';
 import type { ClientGuideMarks, GuideMarkClient } from './useClientGuideMarks';
 
 /**
@@ -20,23 +20,26 @@ export function useGuideMarking(store?: ClientGuideMarks) {
   const tr = useTr();
   const guide = useGuide();
   const [selected, select] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<string | null>(null);
+  const [target, setTarget] = useState<{ address: string; fragment?: string } | null>(null);
+  const sheet = target?.address ?? null;
+  const fragment = target?.fragment;
   const [toast, setToast] = useState('');
   const [toastOn, flashToast] = useTimedFlag(2400);
   const say = (text: string) => { setToast(text); flashToast(); };
   const own = (client: GuideMarkClient) => !!store && sameId(client.id, store.client.id);
-  const marked = useMemo(() => new Map((store?.marks ?? []).map((m) => [m.address, m])), [store?.marks]);
+  const marked = useMemo(() => new Map((store?.marks ?? []).filter((m) => !m.fragment).map((m) => [m.address, m])), [store?.marks]);
 
-  const save = (client: GuideMarkClient, address: string, note: string) => {
-    const snapshot = guide?.resolveAddress(address, tr)?.text;
+  const save = (client: GuideMarkClient, address: string, note: string, picked?: string) => {
+    const snapshot = picked ?? guide?.resolveAddress(address, tr)?.text;
     if (!snapshot) return;
     const before = store?.marks;
     const now = new Date().toISOString();
-    const draft: GuideMark = marked.get(address) ?? { id: -1, clientId: String(client.id), address, note: null, snapshot, createdAt: now, updatedAt: now };
-    if (own(client)) store?.setMarks((l) => upsertMark(l ?? [], { ...draft, note: note.trim() || null, snapshot }));
+    const old = picked ? findMark(store?.marks, address, picked) : marked.get(address);
+    const draft: GuideMark = old ?? { id: -1, clientId: String(client.id), address, note: null, snapshot, createdAt: now, updatedAt: now };
+    if (own(client)) store?.setMarks((l) => upsertMark(l ?? [], { ...draft, note: note.trim() || null, snapshot, ...(picked ? { fragment: true } : {}) }));
     select(null);
     say(`Отмечено у ${client.name}`);
-    api.saveGuideMark(client.id, { address, snapshot, note: note.trim() }).then(
+    api.saveGuideMark(client.id, { address, snapshot, note: note.trim(), ...(picked ? { fragment: true } : {}) }).then(
       ({ mark }) => { if (own(client)) store?.setMarks((l) => upsertMark(l ?? [], mark)); },
       () => {
         if (own(client)) store?.setMarks(before);
@@ -63,7 +66,8 @@ export function useGuideMarking(store?: ClientGuideMarks) {
   const ctx: GuideMarkCtx = {
     selected, select,
     client: store && { name: store.client.name, marked },
-    onMark: setSheet,
+    onMark: (address) => setTarget({ address }),
+    onFragment: (f) => setTarget({ address: f.address, fragment: f.text }),
     onUnmark: (mark) => remove(mark),
   };
   const found = sheet ? guide?.resolveAddress(sheet, tr) : null;
@@ -72,8 +76,8 @@ export function useGuideMarking(store?: ClientGuideMarks) {
       {sheet && found && (
         <GuideMarkSheet
           address={sheet} title={`${found.articleTitle} · ${found.sectionTitle}`}
-          client={store?.client} existing={marked.get(sheet)}
-          onSave={(client, note) => save(client, sheet, note)} onRemove={remove} onClose={() => setSheet(null)}
+          fragment={fragment} client={store?.client} existing={fragment ? findMark(store?.marks, sheet, fragment) : marked.get(sheet)}
+          onSave={(client, note) => save(client, sheet, note, fragment)} onRemove={remove} onClose={() => setTarget(null)}
         />
       )}
       {toastOn && <div className="gd-mark-toast" role="status">{toast}</div>}

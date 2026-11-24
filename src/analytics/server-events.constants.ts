@@ -53,7 +53,8 @@
 //                   /stats («Удаление своих записей») считает строки с attempts.
 //   guide_mark_added — отметка «Про клиента» из «Справочника» (#1484): пишет
 //                   GuideMarksService.trackAdded при создании (не при правке),
-//                   meta.kind — GUIDE_MARK_KINDS (src/therapy/guide-mark-address.ts).
+//                   meta.kind — GUIDE_MARK_KINDS (src/therapy/guide-mark-address.ts),
+//                   meta.fragment: true — выделенный фрагмент, а не раздел.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'client_error',

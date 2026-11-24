@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import type { GuideMark } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -21,6 +22,7 @@ import {
 } from './guide-mark-address';
 import { decryptConceptFields } from './concept-store';
 import { CONCEPT_COPING_STYLES } from './dto/concept-links.dto';
+import { GUIDE_MARK_FRAGMENT_MAX } from '../utils/text-limits';
 
 const GUIDE_MARK_SCHEMA: EncryptSchema = {
   strings: ['note', 'snapshot'],
@@ -35,6 +37,8 @@ export interface GuideMarkView {
   note: string | null;
   /** Текст раздела на момент отметки. */
   snapshot: string;
+  /** Выделенный фрагмент (snapshot — его текст), а не раздел целиком. */
+  fragment: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +47,14 @@ export interface GuideMarkInput {
   address: string;
   snapshot: string;
   note?: string;
+  /** Snapshot — выделенный фрагмент: несколько на адрес, повтор того же текста — правка. */
+  fragment?: boolean;
+}
+
+/** Ключ фрагмента: хэш текста без разницы в пробелах; '' — раздел целиком. */
+export function fragmentKeyOf(text: string): string {
+  const norm = text.replace(/\s+/g, ' ').trim();
+  return createHash('sha256').update(norm).digest('hex').slice(0, 32);
 }
 
 function toView(row: GuideMark): GuideMarkView {
@@ -53,6 +65,7 @@ function toView(row: GuideMark): GuideMarkView {
     address: normalizeGuideAddress(r.address),
     note: r.note,
     snapshot: r.snapshot,
+    fragment: row.fragmentKey !== '',
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   };
@@ -112,7 +125,7 @@ export class GuideMarksService {
     if (coping) return this.clientsWithCoping(therapistId, coping);
     const { address } = guideMarkAddress(rawAddress);
     const rows = await this.prisma.guideMark.findMany({
-      where: { therapistId, address },
+      where: { therapistId, address, fragmentKey: '' },
       select: { clientId: true },
     });
     return rows.map((r) => String(r.clientId));
@@ -148,9 +161,13 @@ export class GuideMarksService {
   ): Promise<{ mark: GuideMarkView; created: boolean }> {
     const { address, kind } = guideMarkAddress(input.address);
     await this.relations.assertHasClient(therapistId, clientId);
-    const key = { therapistId, clientId, address };
+    if (input.fragment && input.snapshot.length > GUIDE_MARK_FRAGMENT_MAX)
+      throw new BadRequestException('Fragment too long');
+    const fragmentKey = input.fragment ? fragmentKeyOf(input.snapshot) : '';
+    const key = { therapistId, clientId, address, fragmentKey };
+    const where = { therapistId_clientId_address_fragmentKey: key };
     const before = await this.prisma.guideMark.findUnique({
-      where: { therapistId_clientId_address: key },
+      where,
       select: { id: true },
     });
     const fields = encryptRecord(
@@ -158,12 +175,13 @@ export class GuideMarksService {
       GUIDE_MARK_SCHEMA,
     );
     const row = await this.prisma.guideMark.upsert({
-      where: { therapistId_clientId_address: key },
+      where,
       create: { ...key, ...fields },
       update: fields,
     });
     const created = !before;
-    if (created) await this.trackAdded(therapistId, kind);
+    if (created)
+      await this.trackAdded(therapistId, kind, undefined, !!input.fragment);
     return { mark: toView(row), created };
   }
 
@@ -185,9 +203,13 @@ export class GuideMarksService {
     therapistId: bigint,
     kind: GuideMarkKind,
     clientId?: bigint,
+    fragment = false,
   ): Promise<void> {
-    const meta =
-      clientId === undefined ? { kind } : { kind, clientId: String(clientId) };
+    const meta = {
+      kind,
+      ...(clientId === undefined ? {} : { clientId: String(clientId) }),
+      ...(fragment ? { fragment: true } : {}),
+    };
     return this.analytics.track(therapistId, 'guide_mark_added', meta);
   }
 }

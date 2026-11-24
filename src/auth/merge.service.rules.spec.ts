@@ -431,7 +431,7 @@ describe('MergeService — реестры таблиц и SQL-инвариант
       },
       {
         label: 'GuideMark: drop source(therapistId) row, чей ключ уже у target',
-        sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."therapistId" = ? AND t."therapistId" = ? AND t."clientId" = s."clientId" AND t."address" = s."address"',
+        sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."therapistId" = ? AND t."therapistId" = ? AND t."clientId" = s."clientId" AND t."address" = s."address" AND t."fragmentKey" = s."fragmentKey"',
         values: [SRC, TGT],
       },
       {
@@ -441,7 +441,7 @@ describe('MergeService — реестры таблиц и SQL-инвариант
       },
       {
         label: 'GuideMark: drop source(clientId) row, чей ключ уже у target',
-        sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."clientId" = ? AND t."clientId" = ? AND t."therapistId" = s."therapistId" AND t."address" = s."address"',
+        sql: 'DELETE FROM "GuideMark" s USING "GuideMark" t WHERE s."clientId" = ? AND t."clientId" = ? AND t."therapistId" = s."therapistId" AND t."address" = s."address" AND t."fragmentKey" = s."fragmentKey"',
         values: [SRC, TGT],
       },
       {
