@@ -204,6 +204,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     address: plain('адрес раздела справочника из кода, не свободный текст'),
     note: enc(`${TH}/guide-marks.service.ts`),
     snapshot: enc(`${TH}/guide-marks.service.ts`),
+    fragmentKey: plain('хэш выделенного текста, не сам текст'),
   },
   ClientConceptualization: {
     schemaIds: enc(`${TH}/concept-store.ts`),

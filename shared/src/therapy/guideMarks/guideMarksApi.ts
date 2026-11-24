@@ -9,6 +9,8 @@ export interface GuideMark {
   note: string | null;
   /** Текст раздела на момент отметки: покажется, если раздел переписан. */
   snapshot: string;
+  /** true — выделенный фрагмент (snapshot — его текст), несколько на адрес; нет — раздел целиком. */
+  fragment?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +19,8 @@ export interface GuideMarkInput {
   address: string;
   snapshot: string;
   note?: string;
+  /** snapshot — выделенный фрагмент: повтор того же текста правит запись, другой — новая. */
+  fragment?: boolean;
 }
 
 interface GuideMarksTransport {

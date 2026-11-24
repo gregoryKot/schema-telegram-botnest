@@ -49,12 +49,14 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
   return (
     <div className="ds-page tb-tasks">
       <div className="tb-col">
-        <div className="tb-big">
-          <span className="ds-num tb-big-num">{activeCount}</span>
-          <span className="tb-big-cap">
-            {pluralRu(activeCount, 'активное домашнее задание', 'активных домашних задания', 'активных домашних заданий')}
-          </span>
-        </div>
+        {clientTasks.length > 0 && (
+          <div className="tb-big">
+            <span className="ds-num tb-big-num">{activeCount}</span>
+            <span className="tb-big-cap">
+              {pluralRu(activeCount, 'активное домашнее задание', 'активных домашних задания', 'активных домашних заданий')}
+            </span>
+          </div>
+        )}
 
         {clientTasks.length === 0 ? (
           <div>
@@ -69,7 +71,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
               // второй строкой, ClientTasksTab.layout.test.tsx); список — один лист .pp-leaf, строки через линию (r2).
               return (
                 <div key={t.id} className={`ds-card ds-card--row cp-task tb-task${status === 'done' ? ' cp-task--done' : ''}`}>
-                  <TaskArt task={t} />
+                  <TaskArt task={t} pending={status !== 'done'} />
                   <div className="cp-task-body">
                     <div className="cp-task-title tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>
                     <div className="tb-task-meta">
