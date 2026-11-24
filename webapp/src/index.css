@@ -149,6 +149,7 @@
 
   /* ── Плотные заливки редизайна (сегменты, шапка карточки клиента) ──── */
   --paper-sunk:     #ede7dd;
+  --scrim:          color-mix(in srgb, color-mix(in srgb, var(--accent) 24%, var(--text)) 38%, transparent); /* подложка окон: тёплый тон бумаги в тени */
   --paper-tint:     #f1ece3;
   --line-hover:     #c9bba7;
 
@@ -754,13 +755,6 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
-/* Elevated card – for overlays, modals, and standalone pages (login, account) */
-.card-elevated {
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-1);
-}
 
 /* ─── Input ──────────────────────────────────────────────────────────────── */
 .input, .textarea {
@@ -1014,10 +1008,10 @@ a { color: inherit; text-decoration: none; }
    Единственный набор правил для BottomSheetShell и InfoModal настроек.
    Раньше шторки сайта были прибиты к низу и на десктопе выглядели как
    мобильные вставки в editorial-дизайне. Размытие запрещено
-   (check-render-poison) — только сплошной фон и мягкая тень. */
+   (check-render-poison); глубина — сплошной сдвинутый слой бумаги. */
 .sheet-modal {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,0.5);
+  background: var(--scrim);
   display: flex; align-items: flex-end;
 }
 .sheet-modal-box {
@@ -1038,11 +1032,10 @@ a { color: inherit; text-decoration: none; }
     border: 1px solid var(--line-strong);
     padding: 36px 40px 40px;
     max-width: 520px;
-    box-shadow: 0 24px 64px -16px rgba(28,25,22,0.22);
+    box-shadow: 10px 11px 0 var(--paper-sunk); /* бумажная глубина, как у .sk-dialog-box */
     animation: modal-in 0.18s ease;
   }
 }
-html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6); }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {
