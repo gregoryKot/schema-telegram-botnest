@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import * as extra from './childCareMore';
-import * as to from './transitionalObjects';
+import * as to from './transitionalObjectsAll';
 
 /** Забота о детских режимах: transitional_objects, play_and_joy. */
 export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
@@ -22,7 +22,7 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Объект напоминает о связи, но не заменяет ни сессию, ни кризисный план. Что именно клиент получает, терапевт решает заранее — это часть границ ограниченного родительства. Если «сундук сокровищ» будит Карающего Критика, терапевт хранит коробку у себя, пока Критик не ослабнет [Фаррелл, гл. 4.6.5].',
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 12, бокс 12.5]; [Арнтц ПРЛ, гл. 10]; [Фаррелл, гл. 4.2, 4.6.2, 4.6.5, 4.6.6].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 12, бокс 12.5]; [Арнтц ПРЛ, гл. 10]; [Фаррелл, гл. 4.2, 4.6.2, 4.6.5, 4.6.6]; [Хис, гл. 19, 20].',
   },
   {
     id: 'play_and_joy',

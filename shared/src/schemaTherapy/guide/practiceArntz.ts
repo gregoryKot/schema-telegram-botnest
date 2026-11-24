@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { homeworkNotDoneMore } from './practiceMoreFarrell';
+import { homeworkNotDoneMoreAll } from './practiceEndingHeath';
 
 /** «Для терапевта» по Арнцу и ван Гендерен (ПРЛ, гл. 6, 8, 9). Карта — docs/guide-sources/Арнц-ПРЛ.md, пачка 12. */
 export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
@@ -22,8 +22,8 @@ export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
         'Не получилось — это тоже важно. Давайте посмотрим, какая часть вас остановила в тот момент, когда пора было взяться.',
       ),
     ],
-    more: homeworkNotDoneMore,
-    sources: '[Арнтц ПРЛ, гл. 6, 8], [Фаррелл, 4.1]',
+    more: homeworkNotDoneMoreAll,
+    sources: '[Арнтц ПРЛ, гл. 6, 8], [Фаррелл, 4.1], [Хис, гл. 19]',
   },
   {
     id: 'crisis_call',
