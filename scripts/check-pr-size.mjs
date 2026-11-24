@@ -69,16 +69,18 @@ export function countDiff(numstat, pure = new Set()) {
   return { files, lines };
 }
 
-/** Стоит ли на PR метка-обход. Нет события PR — метки нет. */
-function hasBypassLabel() {
-  const eventPath = process.env.GITHUB_EVENT_PATH;
-  if (!eventPath) return false;
+/**
+ * Обход: метка на PR или PR-поезд очереди мержа (ветка merge-train/* от бота) —
+ * сумма пассажиров, каждый прошёл гейт сам. Нет события PR — обхода нет.
+ */
+function bypass() {
   try {
-    const event = JSON.parse(readFileSync(eventPath, 'utf8'));
-    const labels = event?.pull_request?.labels;
-    return Array.isArray(labels) && labels.some((l) => l?.name === LABEL);
+    const pr = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))?.pull_request;
+    const train = pr?.user?.login === 'github-actions[bot]' && String(pr?.head?.ref).startsWith('merge-train/');
+    if (train) return 'как поезд очереди мержа';
+    return Array.isArray(pr?.labels) && pr.labels.some((l) => l?.name === LABEL) ? `меткой ${LABEL}` : '';
   } catch {
-    return false;
+    return '';
   }
 }
 
@@ -108,12 +110,8 @@ function main() {
     console.log(`✓ ${size} (лимит ${MAX_FILES} и ${MAX_LINES}).`);
     return;
   }
-  if (hasBypassLabel()) {
-    console.log(
-      `✓ ${size} — сверх лимита ${MAX_FILES} и ${MAX_LINES}, пропущено меткой ${LABEL}.`,
-    );
-    return;
-  }
+  const by = bypass();
+  if (by) return console.log(`✓ ${size} — сверх лимита ${MAX_FILES} и ${MAX_LINES}, пропущено ${by}.`);
   console.error(
     `✗ ${size} при лимите ${MAX_FILES} файлов и ${MAX_LINES} строк ` +
       '(не считаются *-baseline.json, package-lock.json, test/fixtures/**, чистые переименования).',
