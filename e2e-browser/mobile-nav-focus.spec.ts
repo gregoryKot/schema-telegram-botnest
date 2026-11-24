@@ -8,13 +8,15 @@ test('«Настройки»: ввели имя, закрыли лист — н�
   page,
 }) => {
   await page.goto('/today');
+  // На чистом аккаунте сам открывается лист «Зачем это всё» и закрывает меню — закрываем его.
+  await page.getByRole('button', { name: 'Понятно, начнём' }).click();
   const nav = page.locator('nav.mobile-nav');
   await expect(nav).toBeVisible();
   await nav.getByRole('link', { name: 'Ещё', exact: true }).click();
-  // Строка «Настройки» — внизу списка «Ещё», под капсулой меню: без центровки клик ждал до таймаута.
-  const settings = page.getByRole('button', { name: /^Настройки/ }).first();
-  await settings.evaluate((b) => b.scrollIntoView({ block: 'center' }));
-  await settings.click();
+  await page
+    .getByRole('button', { name: /^Настройки/ })
+    .first()
+    .click();
 
   const name = page.getByLabel('Имя', { exact: true });
   await name.click();
