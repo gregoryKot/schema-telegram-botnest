@@ -43,7 +43,7 @@
 .pa-field.ex2-place-input { font-size: 18px; padding: 14px 18px; }
 .ex2-senses {
   display: flex; flex-direction: column; margin: 0 7px 8px 0; padding: 4px 20px; border-radius: 20px;
-  border: 1px solid var(--line); background: var(--surface); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
+  border: 1px solid var(--line); background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .ex2-sense { display: flex; flex-direction: column; gap: 4px; padding: 14px 0 12px; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-sense:last-child { border-bottom: 0; }
