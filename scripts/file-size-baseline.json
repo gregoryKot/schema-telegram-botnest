@@ -167,7 +167,7 @@
   "scripts/check-webvisor-fields.mjs": 66,
   "scripts/check-zero-coverage.mjs": 81,
   "scripts/child-output.mjs": 24,
-  "scripts/ci-docs-only.mjs": 42,
+  "scripts/ci-docs-only.mjs": 55,
   "scripts/css-rules-parse.mjs": 98,
   "scripts/dead-end-report-blocks.mjs": 84,
   "scripts/dead-end-report-flow.mjs": 153,
