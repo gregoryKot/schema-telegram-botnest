@@ -111,7 +111,7 @@ describe('PathLayout', () => {
       h.updatePathPhase.mockResolvedValue({ path: two });
       renderLayout();
       fireEvent.click(await screen.findByRole('button', { name: 'Изменить фазу «Оценка и концептуализация»' }));
-      fireEvent.change(screen.getByLabelText('Срок, недель'), { target: { value: '9' } });
+      fireEvent.change(screen.getByLabelText('Срок, недель (можно без срока)'), { target: { value: '9' } });
       fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
       await waitFor(() => expect(h.updatePathPhase).toHaveBeenCalledWith(1, { name: 'Оценка и концептуализация', goal: 'Понять схемы', weeks: 9 }));
     });

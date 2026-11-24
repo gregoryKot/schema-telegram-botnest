@@ -15,7 +15,7 @@ export interface PathPhaseView {
   position: number;
   name: string;
   goal: string | null;
-  weeks: number;
+  weeks: number | null;
   templatePhaseId: string | null;
   startedAt: string | null;
   endedAt: string | null;
@@ -38,14 +38,14 @@ export interface TherapyPathView {
 export interface PathPhaseDraft {
   name: string;
   goal?: string | null;
-  weeks: number;
+  weeks?: number | null;
   templatePhaseId?: string | null;
 }
 
 export interface PathPhasePatch {
   name?: string;
   goal?: string | null;
-  weeks?: number;
+  weeks?: number | null;
   note?: string | null;
   criteriaDone?: number[];
   startedAt?: string | null;

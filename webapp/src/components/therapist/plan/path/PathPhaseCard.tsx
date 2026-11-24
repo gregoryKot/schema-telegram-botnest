@@ -7,7 +7,8 @@ import type { RenderPlanRow } from '../planRows';
 import { PathOverdueNote } from './PathOverdueNote';
 import { PhaseAddItem } from './PhaseAddItem';
 import { usePhaseDrop } from './phaseDrop';
-import { formatPhaseRange, type PhaseRow } from './pathView';
+import type { PhaseRow } from './pathView';
+import { phaseWhen } from './pathTerm';
 
 interface Props {
   row: PhaseRow;
@@ -35,7 +36,6 @@ const ACTION_LABEL = { start: 'Начать фазу', advance: 'Заверши�
 export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterion, onAction, onShift, tools, phases, onDropItem, onAddItem, addBusy }: Props) {
   const drop = usePhaseDrop(onDropItem);
   const { phase, tpl, progress } = row;
-  const when = [`${phase.weeks} нед.`, `примерно ${formatPhaseRange(row.dates)}`, tpl?.sessionsHint].filter(Boolean).join(' · ');
   const criteria = tpl?.transition ?? [];
   const look = tpl && phaseLook(tpl.look); // своя фаза терапевта без шаблона — без знака и бумаги
   return (
@@ -51,7 +51,7 @@ export function PathPhaseCard({ row, open, onToggle, busy, renderRow, onCriterio
           {row.current && <span className="ph-flag ph-flag--here">мы здесь</span>}
           {row.done && <span className="ph-flag ph-flag--done">пройдена</span>}
           <h3 className="ph-name">{phase.name}</h3>
-          <div className="ph-when">{when}</div>
+          <div className="ph-when">{phaseWhen(phase.weeks, row.dates, tpl?.sessionsHint)}</div>
         </div>
         <div className="ph-tools">
           <button
