@@ -11,7 +11,7 @@
 /* На компьютере вкладки по содержимому, не на всю строку; на телефоне — во всю ширину (правило ниже). */
 .tc-modes > .lt { flex: 0 0 auto; }
 .tc-modes > .lt .lt-tab { padding: 0 14px; }
-.tc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tc-filter { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Знак блока (приглашения, сверка, пустая доска) — строчный 44×24 у заголовка. */
 .tc-block-sign { display: flex; flex: none; }
 
