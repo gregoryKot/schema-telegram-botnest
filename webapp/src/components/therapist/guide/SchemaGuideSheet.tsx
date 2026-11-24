@@ -7,6 +7,7 @@ import { GuidePoints } from './GuidePoints';
 import { GuideRelated } from './GuideRelated';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 import { modeGuideLook, schemaGuideLook } from './guideLook';
+import { concernGuideLook } from '../../../sections/guide/guideReferenceConcerns';
 import { articleAddress } from './marks/guideMarkModel';
 import { interventionSeed, pointLabel } from './guidePlan';
 import { PlanButton } from './PlanButton';
@@ -18,7 +19,7 @@ export interface SchemaCopingMarks {
   marked?: (style: CopingStyleId) => boolean;
 }
 
-type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; coping?: SchemaCopingMarks; onOpenMode?: (modeId: string) => void };
+type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; coping?: SchemaCopingMarks; onOpenMode?: (modeId: string) => void; onOpenConcern?: (concernId: string) => void };
 
 /**
  * Лист схемы (#995) вкладками GuideSheet: герой со знаком домена (schemaGuideLook); «Кратко» — фраза репарентинга
@@ -26,7 +27,7 @@ type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; co
  * «На сессии» — техники, «В кабинете», «Что делать» (у пункта — «В план»); «Между сессиями»; «Теория» — копинг тремя стилями, общее для
  * домена, «Где застревают». Пустой раздел не рисуется.
  */
-export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, ...actions }: Props) {
+export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, onOpenConcern, ...actions }: Props) {
   const { guide, domainNote } = view;
   const at = articleAddress('schema', guide.schemaId);
   // Три стиля копинга — порядок справочника; пустая строка не показывается.
@@ -68,7 +69,10 @@ export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, 
         { title: 'Общее для домена', text: domainNote, address: at('domainNote') },
       ]}
       lead={<GuideSection title="Потребность" text={guide.need} address={at('need')} />}
-      related={<GuideRelated groups={[{ title: 'Режимы', address: at('modeIds'), items: modes, look: modeGuideLook, onOpen: onOpenMode }]} />}
+      related={<GuideRelated groups={[
+        { title: 'Режимы', address: at('modeIds'), items: modes, look: modeGuideLook, onOpen: onOpenMode },
+        { title: 'Запросы', items: onOpenConcern ? view.concerns : [], look: concernGuideLook, onOpen: onOpenConcern },
+      ]} />}
     >
       <GuideSection title="В кабинете" text={guide.inSession} address={at('inSession')} />
       {interventions.length > 0 && (

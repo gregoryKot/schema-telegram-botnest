@@ -21,13 +21,13 @@ const regions = () => screen.getAllByRole('region', { hidden: true }).map((r) =>
 const tab = (name: string) => fireEvent.click(screen.getByRole('tab', { name }));
 const region = (name: string) => within(screen.getByRole('region', { name }));
 
-function renderSheet(view: SchemaGuideView = FIXTURE_SCHEMA_VIEW, onAssign?: (item: unknown) => void, onOpenMode?: (id: string) => void) {
+function renderSheet(view: SchemaGuideView = FIXTURE_SCHEMA_VIEW, onAssign?: (item: unknown) => void, onOpenMode?: (id: string) => void, onOpenConcern?: (id: string) => void) {
   const onOpenTechnique = vi.fn();
   render(
     <MemoryRouter>
       <SchemaGuideSheet
         schemaName={NAME} view={view}
-        onOpenTechnique={onOpenTechnique} onAssign={onAssign} onOpenMode={onOpenMode} onClose={() => {}}
+        onOpenTechnique={onOpenTechnique} onAssign={onAssign} onOpenMode={onOpenMode} onOpenConcern={onOpenConcern} onClose={() => {}}
       />
     </MemoryRouter>,
   );
@@ -64,6 +64,17 @@ describe('SchemaGuideSheet', () => {
     renderSheet();
     expect(region('Режимы').getByText('Покинутый Ребёнок, Сердитый Ребёнок')).toBeTruthy();
     expect(screen.queryByText(/abandoned_child|нет_такого_режима/)).toBeNull();
+  });
+
+  it('«Запросы» в «Связано»: с onOpenConcern — переход, без него группы нет', () => {
+    const view = { ...FIXTURE_SCHEMA_VIEW, concerns: [{ id: 'bpd', name: 'ПРЛ' }] };
+    const onOpenConcern = vi.fn();
+    renderSheet(view, undefined, undefined, onOpenConcern);
+    fireEvent.click(region('Запросы').getByRole('button', { name: /ПРЛ/ }));
+    expect(onOpenConcern).toHaveBeenCalledWith('bpd');
+    cleanup();
+    renderSheet(view);
+    expect(regions()).not.toContain('Запросы');
   });
 
   it('с onOpenMode режимы — чипы-переходы: тап открывает лист режима', () => {

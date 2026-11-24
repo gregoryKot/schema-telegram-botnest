@@ -28,6 +28,7 @@ export function useReferenceSheets(texts: Guide, tr: Tr, client?: GuideMarkClien
   // plan и «Про клиента» без клиента: листы дают выбрать клиентов; лист «Для терапевта» — с тем же «Про клиента»
   const guide = useConceptGuide({
     track: REFERENCE_TRACK, plan: { clientId: client?.id }, pickClient: !client, client,
+    onOpenConcern: (id) => list.open({ kind: 'concern', id, name: '' }),
     over: note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />,
   });
   const openNote = (id: string) => {
