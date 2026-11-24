@@ -34,6 +34,9 @@ export const buildHealthyAdultGuide = (tr: Tr): ModeGuide => ({
     'behavioral_experiment',
     'imagery_rescripting',
     'healthy_adult_plan',
+    'values_overview',
+    'compassionate_self',
+    'socratic_dialogue',
   ],
   betweenSessions: extra.healthyAdultBetween,
   stuck:
