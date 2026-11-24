@@ -253,8 +253,16 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
         }
       }
     }
-    expect(seen).toBeGreaterThanOrEqual(10);
+    expect(seen).toBeGreaterThanOrEqual(1);
     expect(bare).toEqual([]);
+  });
+  // Серая капсула-сегмент (iOS) уходит из сайта: разделы — вкладки на линии (LineTabs), выбор значения — чипы
+  // (#1619). Число файлов с ds-seg только падает; дошло до нуля — правила .ds-seg из cabinet.css удаляются.
+  it('файлов с ds-seg не больше прежнего (храповик, #1619)', () => {
+    const roots = [join(__dirname, '..'), join(__dirname, '..', '..', '..', 'shared', 'src')];
+    const files = roots.flatMap((root) => (readdirSync(root, { recursive: true }) as string[])
+      .filter((f) => /\.tsx?$/.test(f) && !f.includes('.test.') && readFileSync(join(root, f), 'utf8').includes('ds-seg')));
+    expect(files.length).toBeLessThanOrEqual(10);
   });
   it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
