@@ -44,7 +44,7 @@ export const buildSelfAggrandiserGuide = (tr: Tr): ModeGuide => ({
     'mode_interview',
     'imagery_rescripting',
   ],
-  moreTechniques: ['limit_setting', 'current_role_play'],
+  moreTechniques: ['limit_setting', 'current_role_play', 'coping_bypass'],
   betweenSessions: [
     { kind: 'task', type: 'mode_intro', title: 'Карточка режима' },
     {
