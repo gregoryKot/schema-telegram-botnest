@@ -3,16 +3,23 @@
 // «Записаться». Время — момент (ISO с зоной), показывается в зоне смотрящего
 // (правило №25); подписи дня и времени — те же, что у слотов (clientTimeZone).
 import type { ClientBookingView } from '../../api';
-import { localDayLabel, localTimeLabel } from '../../../../shared/src/booking/clientTimeZone';
+import { fmtDate } from '../../../../shared/src/utils/format';
+import { localDayKey, localDayLabel, localTimeLabel } from '../../../../shared/src/booking/clientTimeZone';
 
 /** Ближайшая своя бронь: сервер отдаёт будущие по возрастанию; нет — null. */
 export function nextBooking(upcoming: readonly ClientBookingView[] | null | undefined): ClientBookingView | null {
   return upcoming && upcoming.length > 0 ? upcoming[0] : null;
 }
 
-/** «Завтра, 16:00» — когда сессия, в зоне смотрящего. */
+/** «Завтра · 16:00», дальше «Вс, 15 ноя · 18:00» — тот же вид, что у `nextSessionLabel` терапевта. */
 export function sessionWhen(iso: string, tz: string, now: Date = new Date()): string {
-  return `${localDayLabel(iso, tz, now)}, ${localTimeLabel(iso, tz)}`;
+  const rel = localDayLabel(iso, tz, now);
+  let day = rel;
+  if (rel !== 'Сегодня' && rel !== 'Завтра') {
+    const wd = new Intl.DateTimeFormat('ru-RU', { timeZone: tz, weekday: 'short' }).format(new Date(iso));
+    day = `${wd.charAt(0).toUpperCase()}${wd.slice(1)}, ${fmtDate(localDayKey(iso, tz))}`;
+  }
+  return `${day} · ${localTimeLabel(iso, tz)}`;
 }
 
 /** Статус брони одной безличной строкой: подтверждена или ждёт оплаты (и до какого времени). */
