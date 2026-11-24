@@ -1,4 +1,4 @@
-import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
+import { useRef, type CSSProperties, type MutableRefObject, type ReactNode } from 'react';
 import type { BetweenSessionsItem, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { GuideHintView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
@@ -8,6 +8,7 @@ import { Disclosure, DS_FOLD } from '../../../../../shared/src/components/Disclo
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
 import { GuideBetweenSessions } from './GuideBetweenSessions';
 import { GuideSection } from './GuideSection';
+import { GuideSelectionBar } from './marks/GuideSelectionBar';
 import { GuideSources } from './GuideSources';
 import { Cited } from './GuideText';
 import { GuideTabs, type GuideTabsProps } from './GuideTabs';
@@ -56,9 +57,11 @@ export function GuidePage({ label, title, lede, look, onClose, more = [], morePa
   const parts = moreParts.filter((p) => p.children || p.text?.trim());
   const extra = parts.map((p) => <GuideSection key={p.title} title={p.title} text={p.text} address={p.address}>{p.children}</GuideSection>);
   const points = items.length > 0 && <GuidePoints items={items} />;
+  const pageRef = useRef<HTMLDivElement>(null);
   return (
     <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose} backRef={backRef} panel>
-      <div className="gd-page" style={look ? { '--h': look.hue } as CSSProperties : undefined}>
+      <GuideSelectionBar pageRef={pageRef} />
+      <div className="gd-page" ref={pageRef} style={look ? { '--h': look.hue } as CSSProperties : undefined}>
         <div className="gd-hero">
           <h2 className="pp-hero-title">{title}</h2>
           {look?.sign && <span className="pp-paper gd-hero-art"><SignHero sign={look.sign} /></span>}
