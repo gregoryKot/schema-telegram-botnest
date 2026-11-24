@@ -16,9 +16,16 @@ export const DIARY_HUE: Record<'schema' | 'mode', number> = {
 
 const NEUTRAL_HUE = 70;
 
-/** Стиль с `--h` для элемента с классом .tone-* / .ds-avatar. */
+/** Насыщенное голубое (≈215–265°) глушится токеном `--sky-k` (index.css): аватар — «пыльное небо», не электрик. */
+export function skyChromaVar(hue: number): string | undefined {
+  return hue >= 215 && hue <= 265 ? 'var(--sky-k)' : undefined;
+}
+
+/** Стиль с `--h` для элемента с классом .tone-* / .ds-avatar; у голубого оттенка — ещё `--ck` (множитель насыщенности). */
 export function hueStyle(hue: number | undefined): CSSProperties {
-  return { '--h': hue ?? NEUTRAL_HUE } as CSSProperties;
+  const h = hue ?? NEUTRAL_HUE;
+  const ck = skyChromaVar(h);
+  return (ck ? { '--h': h, '--ck': ck } : { '--h': h }) as CSSProperties;
 }
 
 /** Стабильный оттенок аватара клиента по id: один клиент — всегда один цвет. */

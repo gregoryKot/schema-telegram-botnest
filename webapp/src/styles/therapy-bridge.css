@@ -65,10 +65,10 @@
    Без своего терапевта — фото автора с наклейкой Talk (AuthorPhoto) над текстом, с 768 — слева от него;
    со своим терапевтом — EntitySheet. Кнопки сразу под листом, в той же колонке. */
 .th-talk-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 34px; box-sizing: border-box; padding: 26px 20px 22px; border-radius: 20px; }
-.th-talk-photo.author-photo { width: 132px; flex: none; margin-left: 6px; padding: 7px 7px 10px; box-shadow: 7px 8px 0 oklch(0.79 0.07 var(--h)); }
+.th-talk-photo.author-photo { width: 132px; flex: none; margin-left: 6px; padding: 7px 7px 10px; box-shadow: 0 0 0 1px var(--panel-line); }
 .th-talk-photo .author-photo-img { height: auto; }
 .th-talk-photo.author-photo::before { top: -9px; width: 56px; height: 18px; margin-left: -28px; }
-.th-talk-photo .author-photo-sticker { right: -22px; bottom: -14px; width: 56px; height: 56px; border-radius: 14px; box-shadow: 4px 5px 0 oklch(0.78 0.07 var(--h)); }
+.th-talk-photo .author-photo-sticker { right: -22px; bottom: -14px; width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 0 0 1px var(--panel-line); }
 .th-talk-photo .author-photo-sticker .scn-sign { width: 42px; }
 .th-talk-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ds-eyebrow.th-talk-label { color: var(--text-sub); }
