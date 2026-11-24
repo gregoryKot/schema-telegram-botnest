@@ -22,8 +22,8 @@ export function GuideVoice({ lines = [], address }: { lines?: string[]; address?
 /** Пункт списка: строка или канал работы — карточка с подписью (GuideCard); с адресом канал отмечается «Про клиента». */
 export type GuidePoint = string | { lead: string; text: string; action?: ReactNode; address?: string };
 
-/** Шаги (`ordered`: номер Literata слева), пункты (тихая точка; длинный свёрнут до первой фразы) или карточки каналов. */
-export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?: boolean }) {
+/** Шаги (`ordered`: номер Literata слева), пункты (тихая точка; длинный свёрнут до первой фразы; `action` — кнопка под пунктом) или карточки каналов. */
+export function GuidePoints({ items, ordered, action }: { items: GuidePoint[]; ordered?: boolean; action?: (item: string) => ReactNode }) {
   if (items.some((i) => typeof i !== 'string')) {
     return (
       <ul className="gd-cards">
@@ -36,7 +36,7 @@ export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?:
   const List = ordered ? 'ol' : 'ul';
   return (
     <List className={ordered ? 'gd-steps' : 'gd-points'}>
-      {items.map((item, i) => <li key={i}><FoldText text={item as string} /></li>)}
+      {items.map((item, i) => <li key={i}><FoldText text={item as string} />{action?.(item as string)}</li>)}
     </List>
   );
 }
