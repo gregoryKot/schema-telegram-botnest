@@ -1,23 +1,21 @@
-import { R } from './landing-kit-hooks';
-
 // Shared component primitives for landing pages (LandingPage — терапевт,
 // ProductLandingPage — продукт). Tokens/hooks live in ./landing-kit-hooks.
 
 // ─── Button – single source for all CTAs ─────────────────────────────────────
 // Вид варианта и наведение — классы .lk-btn* в index.css: инлайн-цвет перебил бы :hover.
+// Радиус — ступень карточки шкалы --r-*: капсула только у чипов (#1619, п.3).
 type BtnVariant = 'primary' | 'ghost' | 'dark';
 type BtnSize = 'sm' | 'md' | 'lg';
 const BTN_PAD: Record<BtnSize, string> = { sm: '8px 18px', md: '13px 24px', lg: '15px 30px' };
 const BTN_FS:  Record<BtnSize, number> = { sm: 13, md: 14, lg: 15 };
 
 export function Btn({
-  children, variant = 'primary', size = 'md', radius = 'pill',
+  children, variant = 'primary', size = 'md',
   href, onClick, type = 'button', full = false, disabled = false, style, newTab,
 }: {
   children: React.ReactNode;
   variant?: BtnVariant;
   size?: BtnSize;
-  radius?: 'pill' | 'btn';
   href?: string;
   onClick?: () => void;
   type?: 'button' | 'submit';
@@ -30,7 +28,7 @@ export function Btn({
   const className = `lk-btn lk-btn--${variant}${disabled ? ' is-disabled' : ''}`;
   const css: React.CSSProperties = {
     padding: BTN_PAD[size], fontSize: BTN_FS[size],
-    borderRadius: radius === 'pill' ? R.pill : R.btn,
+    borderRadius: 'var(--r-12)',
     width: full ? '100%' : undefined,
     ...style,
   };
