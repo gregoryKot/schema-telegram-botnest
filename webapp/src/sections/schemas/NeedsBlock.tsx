@@ -27,7 +27,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
           <button type="button" className="ds-btn cs-intro-btn" onClick={() => onOpenChildhoodWheel?.()}>Пройти колесо детства →</button>
         </EntitySheet>
       )}
-      <div className="ds-card ds-card--flush">
+      <div className="ds-rows">
         {NEED_ORDER.filter(id => NEED_DATA[id]).map(id => {
           const d = NEED_DATA[id];
           const score = childhoodRatings[id];
@@ -42,7 +42,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
                 <span className="cs-need-score">
                   <b className={`ds-num ds-idx-${needLevel(score)}`}>{score}</b><small>детство</small>
                 </span>
-              ) : <span className="cs-need-arrow">›</span>}
+              ) : <span className="ds-chev" aria-hidden="true" />}
             </button>
           );
         })}

@@ -95,7 +95,6 @@
 .cs-need-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .cs-need-name { font-size: 14px; font-weight: 600; }
 .cs-need-hint { font-size: 12px; color: var(--text-sub); }
-.cs-need-arrow { color: var(--text-faint); font-size: 16px; }
 .cs-need-score { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .cs-need-score b { font-size: 22px; }
 .cs-need-score small { font-size: 10px; color: var(--text-faint); letter-spacing: .04em; }

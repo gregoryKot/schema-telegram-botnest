@@ -19,7 +19,7 @@ function RowBody({ row }: { row: Row }) {
 /** Список строк «Ещё»: ссылка наружу (href) или кнопка; картинка слева по таблице мотивов. */
 export function MoreRows({ rows }: { rows: Row[] }) {
   return (
-    <div className="ds-card ds-card--flush">
+    <div className="ds-rows">
       {rows.map(r => r.href ? (
         <ExternalLink key={r.id} className={rowClass(r)} href={r.href} onClick={r.onClick}>
           <RowBody row={r} />
