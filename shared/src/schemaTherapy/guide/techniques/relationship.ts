@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { buildAngerExpressionTechniques } from './angerExpression';
-import { limitSettingMore } from './relationshipArntz';
+import { limitSettingMore } from './relationshipArntzJacob';
 
 /** Техники отношений: limit_setting и anger_expression (angerExpression.ts). */
 export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
@@ -34,7 +34,7 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
       'Граница звучит без мести и без оправданий [Янг, гл. 10]. В разгар кризиса ссылаются на уже названные границы, а не придумывают новые [Янг, гл. 9].',
     more: limitSettingMore,
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. [Арнтц ПРЛ, гл. 4]; [Кембридж, гл. 6, бокс 6.9]; [Янг, гл. 9, 10].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. [Арнтц ПРЛ, гл. 4]; [Кембридж, гл. 6, бокс 6.9]; [Янг, гл. 9, 10]; [Арнтц, 4.3.6, 5.5, 6.1.6].',
   },
   ...buildAngerExpressionTechniques(tr),
 ];
