@@ -41,7 +41,11 @@ export function ConceptViewSwitch({
     >
       {OPTIONS.map((o, i) => (
         <Fragment key={o.view}>
-          {i > 0 && <span className={skin?.tabs.sep} aria-hidden="true">·</span>}
+          {i > 0 && (
+            <span className={skin?.tabs.sep} aria-hidden="true">
+              ·
+            </span>
+          )}
           <button
             type="button"
             aria-pressed={view === o.view}
