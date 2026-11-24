@@ -6,7 +6,11 @@ import { MODES_WITHOUT_SCHEMA, TECHNIQUES_WITHOUT_SECTION } from './gaps';
 import { concernsOfMode, concernsOfSchema } from './concernLinks';
 import { KB_LINKS, schemasOfMode, usagesOfTechnique } from './links';
 import { kbIds } from './tables';
-import { buildConcernGuides, buildModeGuides, buildSchemaGuides } from '../guide/index';
+import {
+  buildConcernGuides,
+  buildModeGuides,
+  buildSchemaGuides,
+} from '../guide/index';
 import type { TechniqueId, Tr } from '../guide/types';
 
 describe('запросы: двусторонняя связь режима и схемы со статьёй (№4)', () => {
@@ -14,8 +18,10 @@ describe('запросы: двусторонняя связь режима и с
 
   it('каждый режим и схема статьи видят её в своих «Запросах»', () => {
     for (const c of concerns) {
-      for (const m of c.modeIds ?? []) expect(concernsOfMode(m)).toContain(c.id);
-      for (const s of c.schemaIds ?? []) expect(concernsOfSchema(s)).toContain(c.id);
+      for (const m of c.modeIds ?? [])
+        expect(concernsOfMode(m)).toContain(c.id);
+      for (const s of c.schemaIds ?? [])
+        expect(concernsOfSchema(s)).toContain(c.id);
     }
   });
 
@@ -27,7 +33,9 @@ describe('запросы: двусторонняя связь режима и с
     }
     for (const s of buildSchemaGuides((t) => t)) {
       for (const id of concernsOfSchema(s.schemaId)) {
-        expect(concerns.find((c) => c.id === id)?.schemaIds).toContain(s.schemaId);
+        expect(concerns.find((c) => c.id === id)?.schemaIds).toContain(
+          s.schemaId,
+        );
       }
     }
   });

@@ -84,7 +84,8 @@ function pickTechniques(
 
 /** Раздел режима с техниками; null — своего раздела нет (свой режим терапевта). */
 export function resolveModeGuide(
-  texts: Pick<Guide, 'modeGuide' | 'modeSchemaLinks' | 'modeConcernLinks'> & TechniqueTexts,
+  texts: Pick<Guide, 'modeGuide' | 'modeSchemaLinks' | 'modeConcernLinks'> &
+    TechniqueTexts,
   tr: Tr,
   modeId: string,
 ): ModeGuideView | null {
