@@ -147,7 +147,7 @@
   .pa-spread-side .pa-sheet.ss-res-hero .pa-sheet-title { font-size: 27px; }
   .pa-sheet.pa-sheet--scene.ss-ysq-hero > .pa-sheet-art { grid-column: 1 / -1; grid-row: 1; justify-self: center; width: min(240px, 84%); margin-bottom: 2px; }
 }
-.ss-facts { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.ss-facts { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: var(--r-16); background: var(--surface); }
 .ss-fact { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; }
 .ss-fact + .ss-fact { border-top: 1px solid var(--paper-sunk); }
 .ss-fact b { font-family: var(--serif); font-weight: 400; font-size: 19px; line-height: 1.25; color: var(--text); }
@@ -163,7 +163,7 @@
 .ss-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); text-align: center; }
 
 /* Результат: группа — бумага потребности (--h, --need-ink, --need-text), схемы — белые листы. */
-.ss-res { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 20px; }
+.ss-res { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--r-16); }
 .ss-res--plain { padding: 0; border-radius: 0; }
 .ss-res-card { container: ss-res-card / inline-size; display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 4px; border-radius: 14px; background: var(--surface); }
 .ss-res-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 10px; }

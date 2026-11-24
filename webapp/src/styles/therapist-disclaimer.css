@@ -17,7 +17,7 @@
 .sk-priv-note { padding: 16px 18px; border-radius: 16px; background: var(--surface); font-size: 13.5px; line-height: 1.7; color: var(--text-sub); }
 .sk-priv-em { color: var(--accent); font-weight: 600; }
 .sk-priv-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.pp-paper.sk-priv-item { display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 18px; border-radius: 20px; min-width: 0; }
+.pp-paper.sk-priv-item { display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 18px; border-radius: var(--r-16); min-width: 0; }
 .sk-priv-item-sign { display: flex; min-height: 28px; align-items: center; margin-bottom: 4px; }
 .sk-priv-item-title { font-size: 14.5px; font-weight: 600; overflow-wrap: break-word; hyphens: auto; }
 .sk-priv-item-text { font-size: 13.5px; line-height: 1.6; color: var(--text-sub); overflow-wrap: break-word; }

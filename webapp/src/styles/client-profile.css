@@ -138,7 +138,7 @@
 
 /* Диалоги на бумаге: окно Dialog прозрачно, лист — обёртка (cpf-paper-dlg) со сдвинутым слоем. */
 .sk-dialog-box:has(> .cpf-paper-dlg) { padding: 0 12px 12px 0; background: transparent; border: 0; box-shadow: none; }
-.cpf-paper-dlg { padding: 28px 24px; border-radius: 20px; box-shadow: 10px 11px 0 oklch(0.8 0.06 var(--h)); }
+.cpf-paper-dlg { padding: 28px 24px; border-radius: var(--r-16); box-shadow: 10px 11px 0 oklch(0.8 0.06 var(--h)); }
 .cpf-paper-dlg--best { --h: 135; }
 .cpf-paper-dlg--list { background: var(--bg); color: var(--text); box-shadow: 10px 11px 0 var(--paper-sunk); }
 .cpf-dlg-head { margin-bottom: 20px; }
@@ -172,7 +172,7 @@
 
 /* Карточка «Терапевт» (b24): лист неба (ENTITY_LOOK.therapist), шапка — буква, имя, знак Talk один раз;
    ниже колонкой — билет сессии (SessionTicket, client-booking.css), кнопка записи, строка «Схема случая». */
-.cpf-therapist { --h: 240; --cbk-cut: oklch(0.915 0.03 var(--h)); display: flex; flex-direction: column; gap: 16px; align-items: stretch; border-radius: 20px; padding: 20px 22px; }
+.cpf-therapist { --h: 240; --cbk-cut: oklch(0.915 0.03 var(--h)); display: flex; flex-direction: column; gap: 16px; align-items: stretch; border-radius: var(--r-16); padding: 20px 22px; }
 .cpf-therapist-head { display: flex; align-items: center; gap: 14px; }
 .cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--text-sub); font-family: var(--serif); font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cpf-therapist-body { flex: 1; min-width: 0; }
@@ -183,7 +183,7 @@
 .cpf-therapist-concept { border-top: 1px solid var(--paper-sunk); border-bottom: none; margin-bottom: -8px; cursor: pointer; }
 .cpf-therapist-concept .ds-sub { text-wrap: pretty; }
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
-.cpf-former { padding: 22px 24px; border-radius: 20px; }
+.cpf-former { padding: 22px 24px; border-radius: var(--r-16); }
 
 /* Ссылки внизу профиля (телефон) и удаление аккаунта. */
 .cpf-links { border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line); }

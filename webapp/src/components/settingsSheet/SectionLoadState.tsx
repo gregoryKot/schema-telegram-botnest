@@ -16,7 +16,7 @@ export function SectionLoadState({ of, load }: { of: keyof typeof COPY; load: { 
   return (
     <div aria-busy="true" aria-label={copy.label} className="st-body-block">
       <SkeletonLines widths={['82%', '64%']} />
-      <Skeleton width={180} height={36} radius={18} />
+      <Skeleton width={180} height={36} radius={12} />
     </div>
   );
 }

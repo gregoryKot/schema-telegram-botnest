@@ -93,14 +93,14 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(decls(css, '.ds-back:hover')).toContain('color: var(--accent-hi)');
   });
 
-  it('.ds-btn--lg — полноширинное главное действие листа: h48 r24, 15px', () => {
+  it('.ds-btn--lg — полноширинное главное действие листа: h48 r12, 15px', () => {
     const d = decls(css, '.ds-btn--lg');
     expect(d).toContain('min-height: 48px');
     expect(d).toContain('height: auto'); // базовый .ds-btn задаёт height: 44px
     expect(d).toContain('width: 100%');
     expect(decls(phone, '.ds-btn--lg')).toContain('width: 100%'); // во всю колонку — только на телефоне
     expect(decls(top, '.ds-btn--lg')).not.toContain('width');
-    expect(d).toContain('border-radius: 24px');
+    expect(d).toContain('border-radius: var(--r-12)');
     expect(d).toContain('font-size: 15px');
   });
 
