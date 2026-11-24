@@ -74,6 +74,7 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
     if (back) back(() => go(id)); else go(id);
   };
   const [openSchema, openMode] = [swapTo(actions.onOpenSchema), swapTo(actions.onOpenMode)];
+  const openConcern = actions.onOpenConcern && swapTo(actions.onOpenConcern);
   const markFrom = openTechnique?.from;
   // Строка журнала за сегодня — та же кнопка «сегодня», что из схемы случая.
   const day = journal && openTechnique?.day !== journal.today() ? openTechnique?.day : undefined;
@@ -87,10 +88,10 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, c
   return (
     <>
       {sheet?.kind === 'mode' && modeView && (
-        <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} onOpenSchema={openSchema} {...sheetProps(sheet)} />
+        <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} onOpenSchema={openSchema} onOpenConcern={openConcern} {...sheetProps(sheet)} />
       )}
       {sheet?.kind === 'schema' && schemaView && (
-        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} onOpenMode={openMode} {...sheetProps(sheet)} />
+        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} onOpenMode={openMode} onOpenConcern={openConcern} {...sheetProps(sheet)} />
       )}
       {technique && (
         <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onOpenMode={openMode} onOpenSchema={openSchema} onClose={onCloseTechnique} backRef={backRefs?.technique} />

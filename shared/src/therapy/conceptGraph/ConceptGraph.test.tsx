@@ -19,6 +19,8 @@ import { STRATEGY_HINTS } from './modeLanes';
 // guideLoader грузит модуль динамическим import() — мок действует и на него.
 vi.mock('../../schemaTherapy/guide', () => ({
   modeSchemaLinks: () => [],
+  modeConcernLinks: () => [],
+  schemaConcernLinks: () => [],
   techniqueUsageGroups: () => [],
   modeGuide: () => null,
   buildTechniqueGuides: () => [],
