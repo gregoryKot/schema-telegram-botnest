@@ -93,6 +93,7 @@ export async function attachOfflineCard(
       data: {
         attachToId: null,
         clientAlias: target.clientAlias ?? card.virtualClientName ?? null,
+        therapistMemo: target.therapistMemo ?? card.therapistMemo,
         therapyStartDate: target.therapyStartDate ?? card.therapyStartDate,
         nextSession: target.nextSession ?? card.nextSession,
         meetingDays: ownDays.length ? ownDays : meetingDaysOf(card.meetingDays),

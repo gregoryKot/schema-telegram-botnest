@@ -100,6 +100,20 @@ describe('SessionInfoDto', () => {
 });
 
 // Аудит 2026-10, T6: форматы дат и границы дней недели.
+describe('SessionInfoDto — memo «О клиенте»', () => {
+  it('строка до 5000, null и отсутствие проходят', async () => {
+    for (const memo of ['x'.repeat(5000), '', null, undefined])
+      await expect(errorsFor(SessionInfoDto, { memo })).resolves.toEqual([]);
+  });
+
+  it('5001 знак и не-строка отклоняются', async () => {
+    for (const memo of ['x'.repeat(5001), 42])
+      await expect(errorsFor(SessionInfoDto, { memo })).resolves.toEqual([
+        'memo',
+      ]);
+  });
+});
+
 describe('SessionInfoDto — форматы (T6)', () => {
   it('therapyStartDate: только YYYY-MM-DD', async () => {
     await expect(

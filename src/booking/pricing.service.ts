@@ -5,14 +5,14 @@ import { SessionType } from '@prisma/client';
 import { validPrice } from './price-rules';
 import { Currency } from './price-region';
 import { priceKey, priceOrDefault, pricesByCurrency } from './price-currency';
-import { LandingPriceCache, landingPriceText } from './landing-price';
+import { LandingPriceCache } from './landing-price-cache';
 
 /** Session prices, editable in the admin panel (BookingSetting), with config defaults. */
 @Injectable()
 export class PricingService {
   private readonly logger = new Logger(PricingService.name);
   private readonly landing = new LandingPriceCache(
-    () => this.getPrice(SessionType.SESSION_50),
+    () => pricesByCurrency((c) => this.getPrice(SessionType.SESSION_50, c)),
     (err) => this.logger.warn(`Цена визитки не прочитана: ${String(err)}`),
   );
 
@@ -41,9 +41,9 @@ export class PricingService {
     this.landing.reset();
   }
 
-  /** Статика визитки (JSON-LD, llms.txt) с текущей рублёвой ценой сессии. */
+  /** Статика визитки (JSON-LD, llms.txt) с текущими ценами во всех валютах. */
   async landingText(text: string): Promise<string> {
-    return landingPriceText(text, await this.landing.get());
+    return this.landing.apply(text);
   }
 
   /** Public session catalogue with current prices in every currency, for the UI. */
