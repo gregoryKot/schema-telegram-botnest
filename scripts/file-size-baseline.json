@@ -3134,7 +3134,7 @@
   "webapp/src/pages/account/GroupSkeleton.tsx": 16,
   "webapp/src/pages/account/OkMark.tsx": 8,
   "webapp/src/pages/account/providerNames.ts": 24,
-  "webapp/src/pages/account/ProviderRows.tsx": 150,
+  "webapp/src/pages/account/ProviderRows.tsx": 149,
   "webapp/src/pages/account/RecoveryCodesCard.tsx": 36,
   "webapp/src/pages/account/SignInMethods.tsx": 75,
   "webapp/src/pages/account/SiteLoginHint.tsx": 19,
