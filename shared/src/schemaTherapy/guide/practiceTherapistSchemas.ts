@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { therapistSchemasMore } from './practiceRelationshipMore';
+import { therapistSchemasMore } from './practiceMoreArntzJacob';
 
 /** «Для терапевта»: схемы терапевта и супервизия. Собирает practiceTherapist.ts. */
 export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
@@ -24,6 +24,6 @@ export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
     ],
     more: therapistSchemasMore,
     sources:
-      '[Хис, гл. 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9]',
+      '[Хис, гл. 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5]',
   },
 ];
