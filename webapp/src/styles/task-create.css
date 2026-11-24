@@ -4,6 +4,7 @@
    после sheet-tasks.css (каркас .sk-sheet, .sk-page, .sk-field — plans.css). */
 .sk-create-head .pa-sheet-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.sk-days { display: flex; flex-wrap: wrap; gap: 8px; }
 .sk-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .pp-paper.sk-tpl {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; min-height: 136px;
