@@ -28,6 +28,7 @@ interface LdNode {
   '@type': string;
   name?: string;
   price?: string;
+  priceCurrency?: string;
   offers?: LdNode[];
   mainEntity?: { name: string; acceptedAnswer: { text: string } }[];
 }
@@ -77,6 +78,20 @@ describe('статические копии визитки ↔ источник�
     expect(offer?.price).toBe(String(sessionPriceDefault()));
   });
 
+  it('JSON-LD: офферы ILS/EUR/USD — дефолты code (price-currency.ts), как цена при записи', () => {
+    const src = read('src/booking/price-currency.ts');
+    const service = jsonLd().find((n) => n['@type'] === 'ProfessionalService');
+    for (const c of ['ILS', 'EUR', 'USD']) {
+      const m = new RegExp(
+        `${c}:\\s*\\{[^}]*SESSION_50\\]:\\s*(\\d+)`,
+      ).exec(src);
+      const offer = service?.offers?.find(
+        (o) => o.name === 'Онлайн-сессия' && o.priceCurrency === c,
+      );
+      expect(offer?.price).toBe(m?.[1]);
+    }
+  });
+
   it('JSON-LD: FAQPage — те же вопросы в том же порядке, что FAQ визитки', () => {
     const faq = jsonLd().find((n) => n['@type'] === 'FAQPage');
     expect(faq?.mainEntity?.map((q) => q.name)).toEqual(
@@ -94,7 +109,7 @@ describe('статические копии визитки ↔ источник�
 
   it('llms.txt: цена сессии — из источника', () => {
     expect(norm(read('webapp/public/llms.txt'))).toContain(
-      `(50 минут, ${norm(RUB())})`,
+      `(50 минут, ${norm(RUB())} / 200 ₪ / 65 € / 70 $)`,
     );
   });
 });

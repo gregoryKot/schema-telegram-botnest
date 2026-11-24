@@ -285,7 +285,7 @@ describe('PricingService — цены по валютам', () => {
 
 // Статика визитки (JSON-LD, llms.txt) — с ценой из админки (landing-price.ts).
 describe('PricingService.landingText', () => {
-  const LLMS = '(50 минут, 4 000 ₽) "price": "4000"';
+  const LLMS = '(50 минут, 4 000 ₽ / 200 ₪ / 65 € / 70 $) "price": "4000"';
 
   it('строки цены в БД нет — дефолт кода, текст как в файле', async () => {
     const { service } = makeService();
@@ -295,7 +295,19 @@ describe('PricingService.landingText', () => {
   it('цена из БД — в тексте «4 500 ₽» и числом в JSON-LD', async () => {
     const { service } = makeService({ 'price:SESSION_50': '4500' });
     expect(await service.landingText(LLMS)).toBe(
-      '(50 минут, 4 500 ₽) "price": "4500"',
+      '(50 минут, 4 500 ₽ / 200 ₪ / 65 € / 70 $) "price": "4500"',
+    );
+  });
+
+  it('цены ILS/EUR/USD из админки — во всех валютах', async () => {
+    const { service } = makeService({
+      'price:SESSION_50': '4500',
+      'price:SESSION_50:ILS': '250',
+      'price:SESSION_50:EUR': '80',
+      'price:SESSION_50:USD': '90',
+    });
+    expect(await service.landingText(LLMS)).toBe(
+      '(50 минут, 4 500 ₽ / 250 ₪ / 80 € / 90 $) "price": "4500"',
     );
   });
 
@@ -305,8 +317,8 @@ describe('PricingService.landingText', () => {
     await service.setPrice(SessionType.SESSION_50, 5200);
     expect(await service.landingText(LLMS)).toContain('5 200 ₽');
     expect(await service.landingText(LLMS)).toContain('5 200 ₽');
-    // Чтение — одно до правки и одно после, а не на каждую отдачу.
-    expect(prisma.bookingSetting.findUnique).toHaveBeenCalledTimes(2);
+    // Чтение (4 валюты) — одно до правки и одно после, а не на каждую отдачу.
+    expect(prisma.bookingSetting.findUnique).toHaveBeenCalledTimes(8);
   });
 
   it('база не ответила — дефолт кода и предупреждение в лог, а не ошибка страницы', async () => {
