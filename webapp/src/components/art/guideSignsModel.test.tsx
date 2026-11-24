@@ -28,7 +28,7 @@ const NOTE_IDS = [
   'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps',
   'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation', 'group_plan_vs_mode',
   'group_mode_roleplay', 'dangerous_partner', 'emdr', 'coping_style_in_session', 'mode_family_by_feeling',
-  'schema_vs_mode_vs_belief',
+  'schema_vs_mode_vs_belief', 'taboo_topics', 'sexuality_and_modes',
 ];
 
 describe('знаки листов подсказок', () => {
