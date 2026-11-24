@@ -60,10 +60,10 @@ describe('diaryPreview', () => {
       { type: 'gratitude', date: '2026-07-03', excerpt: 'c' },
     ], 2);
     expect(rows).toHaveLength(2);
-    expect(rows[0].typeLabel).toBe('Схема-дневник');
+    expect(rows[0].typeLabel).toBe('Дневник схем');
     expect(rows.map((r) => r.type)).toEqual(['schema', 'mode']);
     expect(rows[0].title).toMatch(/ \+1$/);
-    expect(rows[1].typeLabel).toBe('Режим-дневник');
+    expect(rows[1].typeLabel).toBe('Дневник режимов');
     expect(rows[1].title.length).toBeGreaterThan(0);
   });
   it('схема без id и режим без id не падают', () => {
