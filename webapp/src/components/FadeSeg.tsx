@@ -15,7 +15,7 @@ interface Props {
  * Прокручиваемый сегмент (.ds-seg--scroll), который не режет пункт по букве: край, за которым есть ещё
  * пункты, затухает (маска .ds-seg--fade в cabinet.css, механика полосы дат истории — useStripEdges),
  * а выбранный пункт (aria-pressed / aria-selected) доводится до видимого. Лента карт над холстом
- * (modeMap/MapTabs) и вкладки «Справочника» терапевта.
+ * (modeMap/MapTabs).
  */
 export function FadeSeg({ watch, role, label, className, children }: Props) {
   const { ref, edges, measure } = useStripEdges(0);

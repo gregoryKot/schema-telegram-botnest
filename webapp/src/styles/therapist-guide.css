@@ -16,9 +16,10 @@
   .gd-hero-art > .scn-sign { width: 60px; }
 }
 
-/* Вкладки листа (GuideTabs.tsx): ds-seg под героем прилипает к верху листа; фон — сплошной цвет листа. */
-.gd-tabs { position: sticky; top: calc(-1 * var(--space-20)); z-index: 2; margin: -8px 0 -4px; padding: 10px 0; background: var(--bg); }
-.gd-tabs .ds-seg-btn { min-height: 44px; position: relative; flex: 1 1 auto; padding-left: 6px; padding-right: 6px; }
+/* Вкладки листа (GuideTabs.tsx, LineTabs): полоса на всю колонку прилипает к верху листа; фон — сплошной цвет листа.
+   Шрифт — как у текста листа (16), пункт не ниже 48. */
+.gd-tabs { position: sticky; top: calc(-1 * var(--space-20)); z-index: 2; margin: -8px 0 -4px; padding-top: 6px; background: var(--bg); }
+.gd-tabs .lt-tab { min-height: 48px; font-size: 16px; }
 .gd-tab-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
 .gd-panels { scroll-margin-top: 72px; }
 .gd-panel { display: flex; flex-direction: column; gap: 32px; }
