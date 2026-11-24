@@ -245,7 +245,9 @@ describe('merge-queue.mjs: один PR за раз', () => {
     expect(writes[0]).toContain('"expected_head_sha":"sha-13"');
     expect(approved()).toEqual(idsOf('sha-13-up', 0, 1));
     expect(out).toContain('#9: отстаёт на 3, обязательные проверки — red');
-    expect(out).toContain('#11: отстаёт на 2, обязательные проверки — cancelled');
+    expect(out).toContain(
+      '#11: отстаёт на 2, обязательные проверки — cancelled',
+    );
     expect(out).toContain(
       'подтянут (sha-13 → sha-13-up), одобрено прогонов: 2',
     );
@@ -271,10 +273,16 @@ describe('merge-queue.mjs: один PR за раз', () => {
     }
 
     const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
-    setup([{ ...prs[0], checks: pendingSince(ago(PENDING_MS - 60_000)) }, prs[1]]);
+    setup([
+      { ...prs[0], checks: pendingSince(ago(PENDING_MS - 60_000)) },
+      prs[1],
+    ]);
     await run();
     expect(updated()).toEqual([]);
-    setup([{ ...prs[0], checks: pendingSince(ago(PENDING_MS + 60_000)) }, prs[1]]);
+    setup([
+      { ...prs[0], checks: pendingSince(ago(PENDING_MS + 60_000)) },
+      prs[1],
+    ]);
     await run();
     expect(updated()).toEqual([4]);
   });
