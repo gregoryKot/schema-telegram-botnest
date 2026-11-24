@@ -657,7 +657,7 @@ model TherapyPathPhase {
   position        Int      @default(0)
   name            String   // шифруется
   goal            String?  // шифруется
-  weeks           Int
+  weeks           Int?     // null — срока нет (общий шаблон)
   templatePhaseId String?
   startedAt       String?  // YYYY-MM-DD, фактическое начало
   endedAt         String?  // YYYY-MM-DD, фактическое окончание

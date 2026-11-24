@@ -24,6 +24,10 @@
   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
   background: oklch(0.915 0.03 var(--h)); color: var(--text-sub);
 }
+/* Ролик тех же шагов: кадр телефона 9:16 по центру листа, кнопка звука под ним во всю его ширину. */
+.ib-video { margin: 18px auto 0; width: 100%; max-width: 260px; display: grid; gap: 10px; }
+.ib-video video { display: block; width: 100%; aspect-ratio: 9 / 16; border-radius: var(--r-16); background: var(--panel-line); }
+.ds-btn.ib-sound { width: 100%; min-height: 44px; }
 
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .ip-root { padding: calc(24px + var(--safe-top)) 32px 48px; }

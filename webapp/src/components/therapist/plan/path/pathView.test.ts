@@ -26,7 +26,7 @@ describe('buildPathView', () => {
 
   it('даты идут подряд от старта; текущая — начатая и не законченная, у неё «Завершить и перейти»', () => {
     const v = buildPathView(path(phases), [], templates);
-    expect(v.rows.map((r) => r.dates.start)).toEqual(['2026-01-12', '2026-02-09', '2026-03-02']);
+    expect(v.rows.map((r) => r.dates?.start)).toEqual(['2026-01-12', '2026-02-09', '2026-03-02']);
     expect(v.rows.map((r) => [r.current, r.done, r.action])).toEqual([[false, true, null], [true, false, 'advance'], [false, false, null]]);
     expect(v.openIndex).toBe(1);
     // фаза шаблона: критерии за пределами списка не считаются

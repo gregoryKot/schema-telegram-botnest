@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { isCalendarDate } from '../../../../../../shared/src/utils/calendarDate';
 import { todayStr } from '../../../../../../shared/src/utils/format';
-import { pluralRu } from '../../../../../../shared/src/utils/pluralRu';
-import { pathTemplateWeeks, type PathTemplate } from '../../../../../../shared/src/therapy/path/templates';
+import type { PathTemplate } from '../../../../../../shared/src/therapy/path/templates';
+import { templateSize } from './pathTerm';
 import { ConceptFullscreenSheet, type SheetBack } from '../../ConceptFullscreenSheet';
 
 interface Props {
@@ -26,7 +26,7 @@ export function PathCreateSheet({ templates, busy, error, onCreate, onClose }: P
   const options = [
     ...templates.map((t) => ({
       id: t.id, name: t.name,
-      sub: [t.summary, t.timing, `${t.phases.length} ${pluralRu(t.phases.length, 'фаза', 'фазы', 'фаз')} · ${pathTemplateWeeks(t)} нед.`],
+      sub: [t.summary, t.timing, templateSize(t)],
     })),
     { id: EMPTY, name: 'Пустой путь', sub: ['Без фаз: каждую фазу добавляют вручную'] },
   ];
