@@ -266,14 +266,14 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-badge--line { background: var(--line); color: var(--text-sub); }
 .ds-count { font-size: 11px; background: var(--line-input); border-radius: 8px; padding: 1px 6px; margin-left: 6px; color: var(--text-sub); }
 .ds-avatar {
-  border-radius: 50%; flex-shrink: 0; color: oklch(0.38 0.1 var(--h));
-  background: oklch(0.94 0.035 var(--h));
+  border-radius: 50%; flex-shrink: 0; color: oklch(0.38 calc(0.1 * var(--ck)) var(--h));
+  background: oklch(0.94 calc(0.035 * var(--ck)) var(--h));
   display: flex; align-items: center; justify-content: center; font-weight: 700;
 }
 .ds-avatar--serif { font-family: var(--serif); font-weight: 400; }
 /* Аватар клиента кабинета — кружок бумаги тона клиента с тенью-слоем (шапка карточки, список, «Сегодня», ревью r1):
    один человек везде одной бумагой, без «конфетной» заливки; инициалы — --text. */
-.ds-avatar--paper { color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 1px 2px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.ds-avatar--paper { color: var(--text); background: oklch(0.915 calc(0.03 * var(--ck)) var(--h)); box-shadow: 0 0 0 1px var(--panel-line); }
 .ds-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
 /* ── Тумблер (role="switch") ─────────────────────────────────────────────── */
