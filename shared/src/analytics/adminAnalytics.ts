@@ -111,5 +111,13 @@ export const THERAPIST_ACTION_LABELS: Record<
 };
 
 export function sumTherapistActions(a: AdminTherapistActions): number {
-  return Object.values(a).reduce((s, n) => s + n, 0);
+  return (
+    a.notes +
+    a.tasks +
+    a.planItems +
+    a.guideMarks +
+    a.conceptualizations +
+    a.customModes +
+    a.invites
+  );
 }

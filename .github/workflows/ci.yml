@@ -127,7 +127,7 @@ jobs:
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/client-booking-ownership
-          test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
+          test/booking-admin-cancel test/analytics-admin test/exercise-delete-ownership test/max-auth
           test/diary-mode-from-case
           test/journey-entry-ownership
           test/therapy-task-delete
@@ -641,7 +641,7 @@ jobs:
         run: >-
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
-          test/raw-sql-live-admin-stats.e2e-spec.ts
+          test/raw-sql-live-admin-stats.e2e-spec.ts test/raw-sql-live-admin-analytics.e2e-spec.ts
       # Аудит 2026-10: statement_timeout пула — параметр доходит до каждой
       # сессии, база отвечает 57014, ожидание замка входит в лимит, SET LOCAL
       # исключения не протекает в пул. Свойства драйвера, мок их не видит.

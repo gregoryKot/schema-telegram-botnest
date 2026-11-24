@@ -18,6 +18,7 @@ import { BookingCalendarAdminController } from './booking-calendar-admin.control
 import { ArticlesAdminController } from '../articles/articles-admin.controller';
 import { SiteContentAdminController } from '../site-content/site-content-admin.controller';
 import { HealthyAdultAdminController } from '../telegram/healthy-adult-admin.controller';
+import { AnalyticsAdminController } from '../telegram/analytics-admin.controller';
 
 const KEY = 'admin-key-0123456789-abcdefghijklmnop';
 
@@ -157,6 +158,7 @@ describe('троттлинг админ-контроллеров', () => {
     ArticlesAdminController,
     SiteContentAdminController,
     HealthyAdultAdminController,
+    AnalyticsAdminController,
   ];
 
   it.each(controllers.map((c) => [c.name, c] as const))(

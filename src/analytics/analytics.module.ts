@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { CrawlerHitsService } from './crawler-hits.service';
+import { AdminAnalyticsModule } from './admin/admin-analytics.module';
 
-// Продуктовая аналитика. PrismaModule глобальный — PrismaService инжектится
-// напрямую, отдельно регистрировать не нужно (правило «не дублируй провайдеры»).
 @Module({
+  imports: [AdminAnalyticsModule],
   providers: [AnalyticsService, CrawlerHitsService],
-  exports: [AnalyticsService],
+  exports: [AnalyticsService, AdminAnalyticsModule],
 })
 export class AnalyticsModule {}
