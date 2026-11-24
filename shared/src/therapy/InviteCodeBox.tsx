@@ -43,7 +43,7 @@ export function InviteCodeBox({
           className="ds-btn ds-btn--sm ds-btn--secondary"
           onClick={() => void copy(code)}
         >
-          {copied ? '✓ Код скопирован' : 'Скопировать код'}
+          {copied ? 'Код скопирован' : 'Скопировать код'}
         </button>
       </div>
       <CopyFailedHint show={failed} />

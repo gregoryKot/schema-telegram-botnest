@@ -447,7 +447,7 @@ describe('TherapistClientSheet — вкладка «Задания»', () => {
   it('без заданий — пустое состояние с призывом назначить, не выдуманный список', async () => {
     await openAnnaTasks();
     await screen.findByText(/Нет назначенных заданий/);
-    expect(screen.getByText('активных домашних заданий')).toBeTruthy();
+    expect(screen.queryByText('активных домашних заданий')).toBeNull();
   });
 
   it('с заданиями — активные и выполненные разнесены по секциям с реальными данными', async () => {
