@@ -10,6 +10,8 @@ import { taskEntity } from './taskEntity';
  * Haven, «Мне плохо» Heart, своё — Check. До b20 знак выбирал местный switch и рисовал Check письму, безопасному
  * месту, убеждению и «Мне плохо» — четыре шалфейные галочки подряд на «Практиках» (ревью g4 r3).
  */
-export function TaskSign({ task, size = 'row' }: { task: Pick<UserTask, 'type' | 'text'>; size?: ArtProps['size'] }) {
-  return <SignArt sign={ENTITY_LOOK[taskEntity(task)].sign} size={size} />;
+export function TaskSign({ task, size = 'row', pending }: { task: Pick<UserTask, 'type' | 'text'>; size?: ArtProps['size']; pending?: boolean }) {
+  const sign = ENTITY_LOOK[taskEntity(task)].sign;
+  // Галочка читается как «выполнено»: у своего задания, которое ещё не сделано, — нейтральный знак (кабинет терапевта).
+  return <SignArt sign={pending && sign === 'check' ? 'sheets' : sign} size={size} />;
 }

@@ -94,7 +94,7 @@ describe('TherapistRequestSection — отправка заявки', () => {
 
     fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: '  Иван Иванов  ' } });
     fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог, 5 лет' } });
-    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), { target: { value: '@ivan' } });
+    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram'), { target: { value: '@ivan' } });
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText(/на рассмотрении/);
@@ -109,7 +109,7 @@ describe('TherapistRequestSection — отправка заявки', () => {
 
     fireEvent.change(screen.getByPlaceholderText('ФИО'), { target: { value: 'Иван' } });
     fireEvent.change(screen.getByPlaceholderText('Квалификация: образование, направление, опыт, сертификаты'), { target: { value: 'Психолог' } });
-    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram, b17 и т.д.'), { target: { value: '@ivan' } });
+    fireEvent.change(screen.getByPlaceholderText('Контакты: сайт, @telegram'), { target: { value: '@ivan' } });
     fireEvent.click(screen.getByText('Отправить заявку'));
 
     await screen.findByText(/Уже есть активная заявка/);
@@ -134,7 +134,7 @@ describe('TherapistRequestSection — пределы длины (один ист
       screen.getByPlaceholderText<HTMLInputElement>(placeholder).maxLength;
     expect(max('ФИО')).toBe(LIM.THERAPIST_REQUEST_NAME_MAX);
     expect(max('Квалификация: образование, направление, опыт, сертификаты')).toBe(LIM.THERAPIST_REQUEST_QUAL_MAX);
-    expect(max('Контакты: сайт, @telegram, b17 и т.д.')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
+    expect(max('Контакты: сайт, @telegram')).toBe(LIM.THERAPIST_REQUEST_CONTACTS_MAX);
     expect(max('Сообщение админу (необязательно)')).toBe(LIM.THERAPIST_REQUEST_MESSAGE_MAX);
 
     // Счётчик остатка появляется у границы: «осталось N», а не молчаливый отказ ввода.
