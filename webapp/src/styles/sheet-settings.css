@@ -37,7 +37,7 @@
 .st-skel-line { display: flex; align-items: center; min-height: 16px; }
 .ds-h2.st-skel-line { min-height: 1.2em; }
 .st-skel-field { flex: 1; height: 49px; }
-.st-skel-seg { height: 38px; }
+.st-skel-chip { width: 84px; height: 36px; } /* по чипу ds-chip--toggle */
 
 /* Группа: ярлык, пояснение, линия; строки — без рамок и теней */
 .st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
@@ -54,6 +54,7 @@
 .st-body-block { padding: 14px 0; display: flex; flex-direction: column; gap: 12px; }
 .st-body-block + .ds-list-row, .st-body-block + .st-body-block { border-top: 1px solid var(--panel-line); } /* после строки линия уже есть — её нижняя граница */
 .st-body-block .st-body-block { padding: 0; }
+.st-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .st-text { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0; text-wrap: pretty; }
 .st-text--faint { font-size: 13px; color: var(--text-sub); }
 .st-text--ok { color: var(--ok-ink); }
@@ -130,12 +131,12 @@
   .ds-input.st-code--center { font-size: 16px; } /* iOS не увеличивает экран при фокусе (#906) */
   .st-overlay { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .st-inner { padding: 20px 16px 80px; gap: 28px; }
-  .st-skel-field, .st-skel-seg { height: 52px; }
+  .st-skel-field { height: 52px; }
+  .st-skel-chip { height: 44px; }
   .st-inner--sub { gap: 16px; }
 }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .st-inner--sub { max-width: 560px; }
-  .st-body-block > .ds-seg--full { align-self: flex-start; }
 }
 @media (min-width: 1024px) {
   .st-inner { padding: 32px 40px 80px; }

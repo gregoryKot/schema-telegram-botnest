@@ -12,7 +12,6 @@ import { fileURLToPath } from 'url';
 import { stripComments } from './gate-strip-comments.mjs';
 import {
   EXEMPT,
-  EXEMPT_SELECTORS,
   CHIP_SELECTOR,
   CHIP_ALLOW,
   INLINE_PILL_ALLOW,
@@ -65,7 +64,6 @@ function scanCss(text) {
   const css = stripComments(text, true);
   for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const sel = m[1].trim().replace(/\s+/g, ' ');
-    if (EXEMPT_SELECTORS.has(sel)) continue;
     const isChip = CHIP_SELECTOR.test(sel) || sel.split(',').some((s) => CHIP_ALLOW.has(s.trim()));
     const bodyAt = m.index + m[1].length + 1;
     for (const d of m[2].matchAll(/(border(?:-[a-z]+)*-radius)\s*:\s*([^;]+)/g)) {
