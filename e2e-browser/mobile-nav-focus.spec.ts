@@ -11,10 +11,10 @@ test('«Настройки»: ввели имя, закрыли лист — н�
   const nav = page.locator('nav.mobile-nav');
   await expect(nav).toBeVisible();
   await nav.getByRole('link', { name: 'Ещё', exact: true }).click();
-  await page
-    .getByRole('button', { name: /^Настройки/ })
-    .first()
-    .click();
+  // Строка «Настройки» — внизу списка «Ещё», под капсулой меню: без центровки клик ждал до таймаута.
+  const settings = page.getByRole('button', { name: /^Настройки/ }).first();
+  await settings.evaluate((b) => b.scrollIntoView({ block: 'center' }));
+  await settings.click();
 
   const name = page.getByLabel('Имя', { exact: true });
   await name.click();
