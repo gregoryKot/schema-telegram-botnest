@@ -27,7 +27,7 @@
   "e2e-browser/support/stubSettings.ts": 57,
   "e2e-browser/support/stubTherapy.ts": 68,
   "e2e-browser/support/test.ts": 55,
-  "e2e-browser/support/therapistCabinet.ts": 117,
+  "e2e-browser/support/therapistCabinet.ts": 118,
   "eslint.a11y-labels.mjs": 29,
   "eslint.config.mjs": 144,
   "game/scripts/i18n-coverage.cjs": 61,
