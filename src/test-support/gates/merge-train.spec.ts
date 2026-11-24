@@ -655,6 +655,12 @@ describe('поезд: отправление (merge-train-depart.mjs)', () => {
 });
 
 describe('поезд: правила', () => {
+  const cars = [1, 2, 3, 4, 5].map((n) => ({
+    number: n,
+    sha: `s${n}`,
+    title: `Дело ${n}`,
+  }));
+
   it('движок очереди и отправление исполняют модули поезда, а не их копии', () => {
     const src = (f: string) => readFileSync(join(ROOT, 'scripts', f), 'utf8');
     for (const [file, dep] of [
