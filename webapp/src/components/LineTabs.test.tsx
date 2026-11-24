@@ -95,11 +95,11 @@ describe('LineTabs', () => {
     for (const key of ['scrollLeft', 'clientWidth', 'scrollWidth'] as const) delete (HTMLElement.prototype as never)[key];
   });
 
-  it('маска края — только по атрибуту края на модификаторе ленты .ds-seg--fade', () => {
-    const css = readFileSync(join(__dirname, '../styles/cabinet.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  it('маска края — только по атрибуту края на ленте с прокруткой', () => {
+    const css = readFileSync(join(__dirname, '../styles/line-tabs.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const masked = [...css.matchAll(/([^{}]+)\{[^{}]*mask-image[^{}]*\}/g)].map((m) => m[1].trim());
-    expect(masked.filter((s) => s.includes('ds-seg'))).toEqual([
-      '.ds-seg--fade[data-fade-end]', '.ds-seg--fade[data-fade-start]', '.ds-seg--fade[data-fade-start][data-fade-end]',
+    expect(masked).toEqual([
+      '.lt-strip--scroll[data-fade-end]', '.lt-strip--scroll[data-fade-start]', '.lt-strip--scroll[data-fade-start][data-fade-end]',
     ]);
   });
 });

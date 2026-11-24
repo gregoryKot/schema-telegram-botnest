@@ -737,13 +737,11 @@ describe('SettingsSheet — переключатель формы обращен
     );
   });
 
-  it('текущая форма подсвечена активной кнопкой', async () => {
+  it('текущая форма отмечена выбранным чипом', async () => {
     mockApi.getSettings.mockResolvedValue({ ...SETTINGS, addressForm: 'vy' });
     await renderSheetWithForm('vy');
-    const vyBtn = screen.getByText('На «вы»');
-    const tyBtn = screen.getByText('На «ты»');
-    expect(vyBtn.className).toContain('is-active');
-    expect(tyBtn.className).not.toContain('is-active');
+    expect(screen.getByRole('radio', { name: 'На «вы»' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'На «ты»' }).getAttribute('aria-checked')).toBe('false');
   });
 });
 
