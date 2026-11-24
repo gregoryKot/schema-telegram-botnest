@@ -8,7 +8,7 @@ export function BentoCard({ num, title, text, accent = false }: { num: string; t
       background: accent ? 'var(--accent)' : 'var(--bg-elev)',
       border: accent ? 'none' : '1px solid var(--line)',
       color: accent ? 'var(--on-accent)' : undefined,
-      borderRadius: 'var(--r-20)', padding: '32px',
+      borderRadius: 'var(--r-16)', padding: '32px',
       display: 'flex', flexDirection: 'column', gap: 12,
     }}>
       <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', opacity: accent ? .65 : 1, color: accent ? 'var(--on-accent)' : 'var(--text-faint)' }}>{num}</span>

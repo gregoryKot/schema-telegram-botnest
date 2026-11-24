@@ -253,7 +253,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
               {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}
             </p>
           )}
-          <Btn type="submit" disabled={status === 'loading'} radius="btn" size="lg"
+          <Btn type="submit" disabled={status === 'loading'} size="lg"
             style={{
               alignSelf: 'flex-start',
               opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent || (sessionType === 'INTRO_15' && !confirmNotice)) ? 0.7 : 1,
