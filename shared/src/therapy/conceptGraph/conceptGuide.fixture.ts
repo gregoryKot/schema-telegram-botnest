@@ -12,6 +12,7 @@ import type { ModeGuideView, SchemaGuideView } from './conceptGuide';
 export const FIXTURE_TECHNIQUES: TechniqueGuide[] = [
   {
     id: 'imagery_rescripting',
+    group: 'experiential',
     name: 'Рескриптинг образов',
     summary: 'Возвращаемся в детскую сцену и меняем её конец.',
     when: 'Когда Ребёнок отзывается на воспоминание',
@@ -22,6 +23,7 @@ export const FIXTURE_TECHNIQUES: TechniqueGuide[] = [
   },
   {
     id: 'chairwork',
+    group: 'experiential',
     name: 'Работа со стульями',
     summary: 'Режимы говорят друг с другом с разных стульев.',
     steps: ['Расставить стулья', 'Дать слово каждому'],
@@ -57,6 +59,7 @@ export const FIXTURE_GUIDE: ModeGuide = {
 export const FIXTURE_VIEW: ModeGuideView = {
   guide: FIXTURE_GUIDE,
   techniques: FIXTURE_TECHNIQUES,
+  schemas: [],
 };
 
 export const FIXTURE_SCHEMA_GUIDE: SchemaGuide = {
@@ -102,6 +105,7 @@ export const FIXTURE_SCHEMA_VIEW: SchemaGuideView = {
 /** Раздел «Для терапевта» новой формы: суть, пункты, реплика, «Подробнее». */
 export const FIXTURE_PRACTICE_NOTE: PracticeNote = {
   id: 'group_therapy',
+  group: 'therapist',
   title: 'Групповой формат',
   summary: 'В группе режимы видны в отношениях с другими участниками.',
   points: [

@@ -85,26 +85,17 @@ export async function cleanupOwnershipFixtures(
       OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
     },
   });
-  await prisma.therapistNote.deleteMany({
-    where: {
-      OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
-    },
-  });
-  await prisma.clientConceptualization.deleteMany({
-    where: {
-      OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
-    },
-  });
-  await prisma.therapyPlanItem.deleteMany({
-    where: {
-      OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
-    },
-  });
-  await prisma.modeMap.deleteMany({
-    where: {
-      OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
-    },
-  });
+  // Записи терапевта о клиенте: пара (therapistId, clientId) с любой стороны.
+  const pairSide = {
+    OR: [{ therapistId: { in: userIds } }, { clientId: { in: userIds } }],
+  };
+  await prisma.therapistNote.deleteMany({ where: pairSide });
+  await prisma.clientConceptualization.deleteMany({ where: pairSide });
+  await prisma.therapyPlanItem.deleteMany({ where: pairSide });
+  // Фазы пути уходят каскадом (в фейке остаются сиротами — их никто не читает).
+  await prisma.therapyPath.deleteMany({ where: pairSide });
+  await prisma.guideMark.deleteMany({ where: pairSide });
+  await prisma.modeMap.deleteMany({ where: pairSide });
   await prisma.therapistCustomMode.deleteMany({
     where: { therapistId: { in: userIds } },
   });

@@ -66,10 +66,13 @@ scripts/local-cache-baseline.json         merge=ratchet-min
 scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
 scripts/raw-sql-live-baseline.json        merge=ratchet-min
+scripts/spec-load-in-test-baseline.json   merge=ratchet-min
 scripts/recorded-fixtures-baseline.json   merge=ratchet-min
 scripts/repo-secrets-baseline.json        merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
 scripts/zero-coverage-baseline.json       merge=ratchet-min
+# Известные адреса справочника (адрес → заголовок): две ветки, дописавшие адреса, сводятся по ключам.
+scripts/guide-addresses-baseline.json      merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max
@@ -92,6 +95,14 @@ scripts/mutation-golden-payments-baseline.json merge=ratchet-max
 # бейслайнам union не подходит — им нужна семантика храповика. Оба условия
 # держит scripts/merge-drivers-check.mjs.
 docs/agent/NAV_LOG.md                     merge=union
+# ── Реестры строк ────────────────────────────────────────────────────────────
+# Бэклог: закрытая строка уходит в «Сделано», и два PR вставляют туда в одну
+# точку. union тут воскрешал строки, удалённые одной из сторон; lines-3way
+# (scripts/merge-lines.mjs) сводит по базе: удаление остаётся удалением,
+# добавления обеих сторон остаются, одна строка, переписанная по-разному, —
+# конфликт автору.
+docs/BACKLOG.md                           merge=lines-3way
+
 # Сам этот файл: каждый новый бейслайн приносит сюда строку, и два PR с новыми
 # гейтами вставляли их в соседние места — текстовый конфликт по построению.
 # Строки про разные точные пути друг от друга не зависят, union оставляет обе.

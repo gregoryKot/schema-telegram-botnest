@@ -18,6 +18,8 @@ import { STRATEGY_HINTS } from './modeLanes';
 // своего раздела нет, и плашка «Обычно в методе» — строка группы.
 // guideLoader грузит модуль динамическим import() — мок действует и на него.
 vi.mock('../../schemaTherapy/guide', () => ({
+  modeSchemaLinks: () => [],
+  techniqueUsageGroups: () => [],
   modeGuide: () => null,
   buildTechniqueGuides: () => [],
 }));

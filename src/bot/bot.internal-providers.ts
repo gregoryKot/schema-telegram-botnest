@@ -27,6 +27,7 @@ import { PushMetricsService } from './push-metrics.service';
 import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { PlanMetricsService } from './plan-metrics.service';
+import { PathMetricsService } from './path-metrics.service';
 import { TaskAssignMetricsService } from './task-assign-metrics.service';
 import { SearchMetricsService } from './search-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
@@ -67,6 +68,7 @@ export const INTERNAL_PROVIDERS = [
   TherapistExitMetricsService,
   PhraseCheckMetricsService,
   PlanMetricsService,
+  PathMetricsService,
   TaskAssignMetricsService,
   SearchMetricsService,
   PlusMetricsService,

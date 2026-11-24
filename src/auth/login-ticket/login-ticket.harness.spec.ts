@@ -10,6 +10,7 @@ import type { AuthService } from '../auth.service';
 import type { MergeService } from '../merge.service';
 import type { SecurityLogService } from '../security-log.service';
 import type { LoginTicketReport } from './login-ticket.report';
+import type { TotpService } from '../totp.service';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 export interface Row {
@@ -153,7 +154,12 @@ export function makeDeps() {
     expiresIn: 900,
   });
   const linkProviderToUser = jest.fn().mockResolvedValue({ ok: true });
-  const auth = { issueTokens, linkProviderToUser } as unknown as AuthService;
+  const buildTotpChallengeToken = jest.fn(() => 'challenge-for-target');
+  const auth = {
+    issueTokens,
+    linkProviderToUser,
+    buildTotpChallengeToken,
+  } as unknown as AuthService;
 
   const merge = {
     merge: jest.fn().mockResolvedValue(undefined),
@@ -166,7 +172,15 @@ export function makeDeps() {
   // Отчёт о пути входа — заглушка со счётчиком: спекам нужно проверять, какие
   // шаги воронки эмитятся, а настоящий LoginTicketReport ходит в аналитику.
   const report = { step: jest.fn() } as unknown as LoginTicketReport;
-  const tickets = new LoginTicketService(prisma, auth, report, securityLog);
+  // 2FA выключена по умолчанию; спек включает её через `totp.isEnabled`.
+  const totp = { isEnabled: jest.fn().mockResolvedValue(false) };
+  const tickets = new LoginTicketService(
+    prisma,
+    auth,
+    report,
+    totp as unknown as TotpService,
+    securityLog,
+  );
   const links = new TicketLinkService(
     prisma,
     auth,
@@ -183,6 +197,7 @@ export function makeDeps() {
     merge,
     securityLog,
     report,
+    totp,
     tickets,
     links,
   };

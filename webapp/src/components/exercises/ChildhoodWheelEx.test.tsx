@@ -168,7 +168,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
 
     await screen.findByText(/Среднее 5,0\/10/);
     expect(screen.getByText('Явных провалов нет ни в одной зоне')).toBeTruthy();
-    expect(screen.queryByText('Возможные активные схемы')).toBeNull();
+    expect(screen.queryByText('Схемы, которые могли сформироваться')).toBeNull();
     expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({
       attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5,
     });
@@ -265,7 +265,7 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
     rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/1 зона ниже 5/);
-    expect(screen.getByText('Возможные активные схемы')).toBeTruthy();
+    expect(screen.getByText('Схемы, которые могли сформироваться')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Покинутость / Нестабильность' })).toBeTruthy();
     expect(screen.queryByText('Явных провалов нет ни в одной зоне')).toBeNull();
   });
@@ -295,7 +295,7 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
     await openFill();
     rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
-    await screen.findByText('Возможные активные схемы');
+    await screen.findByText('Схемы, которые могли сформироваться');
     expect(screen.queryByText('Подробнее о схемах')).toBeNull();
   });
 });

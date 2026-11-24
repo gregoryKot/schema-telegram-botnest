@@ -1,8 +1,5 @@
-// Общие методы API (webapp, правило №3).
-// До 2026-08 эндпоинты жили копией в двух api.ts, и фиксы доезжали до одного;
-// теперь метод описан ОДИН раз здесь. Сайт добавляет только транспорт (webapp —
-// JWT Bearer) и платформенные методы своего api.ts (booking/
-// статьи/админка — сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
+// Общие методы API (webapp, правило №3): метод описан ОДИН раз здесь; сайт добавляет только транспорт (JWT Bearer)
+// и платформенные методы своего api.ts (booking, статьи, админка, exercises, saveRating с outbox-датой, conceptualization).
 import { THERAPY_RELATION_PATH } from '../therapy/freshRelation';
 import type {
   Need,
@@ -266,11 +263,13 @@ export const buildSharedApi = (t: ApiTransport) => ({
     date: string,
     text: string,
     work: SessionWorkItem[] = [],
+    planItemIds: number[] = [],
   ) =>
     t.postJson<TherapistNote>(`/api/therapy/notes/${clientId}`, {
       date,
       text,
       work,
+      planItemIds,
     }),
   deleteTherapistNote: (noteId: number) =>
     t.del(`/api/therapy/notes/${noteId}`),

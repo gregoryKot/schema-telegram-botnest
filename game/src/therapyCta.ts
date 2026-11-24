@@ -2,7 +2,7 @@
 // тише — бот и запись к терапевту. meta.to режет src/analytics/game-cta.constants.ts.
 import { trackEvent } from './analytics';
 
-export type CtaPlace = 'act1' | 'cabinet' | 'ending';
+export type CtaPlace = 'act1' | 'cabinet' | 'ending' | 'hook' | 'final' | 'menu';
 export type CtaTarget = 'app' | 'booking' | 'bot';
 
 // Лендинг ловит ?from=game и шлёт game_app_arrive (webapp/src/pages/landing/useGameArrival.ts).

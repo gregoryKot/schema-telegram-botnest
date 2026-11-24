@@ -5,15 +5,30 @@
    GUIDE_COLUMN в GuideSheet.tsx). Оттенок листа --h ставит GuidePage (guideLook.ts); без вида — персик. */
 .gd-page { --h: 45; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding-bottom: 32px; }
 /* Герой: заголовок и знак в строку, суть под ними во всю колонку — на телефоне не узкой полосой. */
-.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 16px; align-items: center; }
+.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 20px; align-items: center; padding-top: 4px; }
 .gd-hero > .pp-hero-text { grid-column: 1 / -1; }
-.gd-hero .pp-hero-title { font-size: clamp(24px, 6.2vw, 32px); }
+.gd-hero .pp-hero-title { font-size: clamp(28px, 7.4vw, 38px); line-height: 1.15; }
+.gd-hero .pp-hero-text { font-size: 17px; line-height: 1.6; }
 .gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 22px; }
 .gd-hero-art > .scn-sign { width: 72px; }
 @media (max-width: 480px) {
   .gd-hero-art { width: 80px; height: 80px; border-radius: 18px; }
   .gd-hero-art > .scn-sign { width: 60px; }
 }
+
+/* Вкладки листа (GuideTabs.tsx): ds-seg под героем прилипает к верху листа; фон — сплошной цвет листа. */
+.gd-tabs { position: sticky; top: calc(-1 * var(--space-20)); z-index: 2; margin: -8px 0 -4px; padding: 10px 0; background: var(--bg); }
+.gd-tabs .ds-seg-btn { min-height: 44px; position: relative; flex: 1 1 auto; padding-left: 6px; padding-right: 6px; }
+.gd-tab-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.gd-panels { scroll-margin-top: 72px; }
+.gd-panel { display: flex; flex-direction: column; gap: 32px; }
+/* Метка книги в конце абзаца: тише фразы, не рвёт чтение; расшифровка — на вкладке «Теория». */
+.gd-cite { font-size: 12px; color: var(--text-sub); }
+/* «ещё» у длинного пункта: тихая ссылка в строке, зона нажатия 44 — невидимым ::before. */
+.ds-link.gd-fold { position: relative; display: inline; min-height: 0; padding: 0; font-size: 15px; line-height: inherit; }
+.ds-link.gd-fold::before { content: ''; position: absolute; inset: -13px -10px; }
+/* until-found прячет через content-visibility, а она не действует на строчный span: нужен атомарный бокс. */
+.gd-fold-rest[hidden="until-found"] { display: inline-block; }
 
 /* Раздел листа: подпись и абзац справочника. */
 .gd-section { display: flex; flex-direction: column; gap: var(--space-6); }
@@ -64,7 +79,9 @@
 .gd-more > .ds-fold { background: none; border: none; border-radius: 0; border-block: 1px solid var(--line); }
 .gd-more .ds-fold-btn { padding-inline: 0; }
 .gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; padding-inline: 0; }
-.gd-sources p { margin: 0; font-size: 12px; line-height: 1.5; }
+.gd-sources .ds-fold-body { gap: 8px; }
+.gd-sources p, .gd-books li { margin: 0; font-size: 12px; line-height: 1.5; }
+.gd-books { margin: 4px 0 0; padding: 0; list-style: none; }
 
 /* «В план» (#1337): кнопка у рубрики и пункта листа, лист выбора частей (PlanAddSheet) */
 /* «+ В план» — тихая ссылка в строке заголовка: видимый размер строки текста, зона нажатия 44 — невидимым ::before. */
@@ -77,3 +94,67 @@
 .pa-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; font-size: 16px; line-height: 1.5; color: var(--text); cursor: pointer; }
 .pa-check + .pa-check { border-top: 1px solid var(--paper-sunk); }
 .pa-check > input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); }
+/* Черновик пути из концептуализации: строка «галочка — что и откуда — открыть в справочнике». */
+.pd-row { display: flex; align-items: flex-start; gap: 8px; }
+.pd-row + .pd-row { border-top: 1px solid var(--paper-sunk); }
+.pd-row > .pa-check { flex: 1; min-width: 0; }
+.pd-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.pd-why { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.pd-open { flex: none; min-width: 44px; min-height: 44px; padding: 0 4px; }
+/* Действие листа держится у нижнего края при прокрутке; фон сплошной — строки уходят под него. */
+.pd-bar { position: sticky; bottom: calc(-1 * var(--space-20)); z-index: 1; padding: 12px 0 calc(12px + var(--safe-bottom)); background: var(--bg); border-top: 1px solid var(--paper-sunk); }
+.pd-bar > .ds-btn { min-height: 44px; }
+/* «Про клиента» на стиле копинга (#1484): отмеченный у клиента стиль — полоска и плашка цвета стиля */
+.gd-coping-on { padding-left: var(--space-8); border-left: 3px solid var(--gst-c); background: color-mix(in srgb, var(--gst-c) 8%, transparent); }
+.gd-coping-who { font-weight: 400; color: var(--text-sub); }
+.cm-client { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px; margin-top: var(--space-8); }
+.cm-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); }
+.gd-coping .ds-link.gd-plan { display: flex; width: fit-content; margin-top: 6px; }
+
+/* «Про клиента» (#1484, marks/GuideSectionMark.tsx): тап по разделу подсвечивает его, рядом кнопка;
+   отмеченный клиенту раздел (справочник из карточки) — с полосой акцента и именем. */
+.gd-mark-title { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; text-align: left; cursor: pointer; }
+.gd-picked, .gd-marked { border-radius: 12px; box-shadow: 0 0 0 8px var(--paper-tint); background: var(--paper-tint); }
+.gd-marked { border-left: 3px solid var(--accent); padding-left: 10px; }
+.gd-mark-row { display: flex; flex-direction: column; gap: 8px; }
+.gd-mark-who { font-size: 14px; font-weight: 600; color: var(--accent); }
+.gd-mark-toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 400;
+  padding: 10px 16px; border-radius: 12px; background: var(--text); color: var(--bg); font-size: 15px;
+}
+.gd-mark-hint { margin: 12px 0 0; }
+/* Блок «Из справочника» под схемой случая (marks/GuideMarksBlock.tsx). */
+.gd-marks { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.gd-marks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.gd-marks-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; }
+.gd-marks-item + .gd-marks-item { border-top: 1px solid var(--paper-sunk); }
+.gd-marks-item > .gd-min { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.gd-marks-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.gd-marks-changed { font-style: italic; }
+.gd-mark-x {
+  flex: none; min-width: 44px; min-height: 44px; border: 0; border-radius: 50%; background: none;
+  font-size: 22px; line-height: 1; color: var(--text-sub); cursor: pointer;
+}
+.gd-mark-x:hover { background: var(--paper-tint); color: var(--text); }
+
+/* Группа внутри блока («Схемы» в «Связано»): подпись тише подписи блока. */
+.gd-section .gd-section > .gd-head > .gd-label { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--text-sub); }
+
+/* Переходы на другие листы (GuideLinkRows): строки списка «Справочника» со знаком, белой карточкой. */
+.gd-rows { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-1); overflow: hidden; }
+.gd-row.ds-list-row { padding: 10px 16px; min-height: 56px; }
+.gd-row .ds-list-title { font-size: 16px; font-weight: 500; }
+
+/* Каналы и задания (GuideCard): карточка — заголовок и первая фраза, длинное раскрывается тапом на месте. */
+.gd-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.gd-card { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
+.gd-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.gd-card-toggle {
+  flex: 1; min-width: 0; min-height: 44px; margin: -8px 0; padding: 0; border: 0; background: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font: inherit; color: inherit; text-align: left;
+}
+.gd-card-toggle > .ds-chev { margin-left: 0; }
+.gd-card-title { font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--text); }
+.gd-card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); white-space: pre-line; }
+.gd-card .gd-acts { margin-top: 6px; }
+.gd-card.gd-picked, .gd-card.gd-marked { box-shadow: 0 0 0 2px var(--accent); background: var(--surface); }

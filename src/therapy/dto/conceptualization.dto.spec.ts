@@ -2,6 +2,8 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { SCHEMA_IDS } from '../kb-ids';
+import { NEED_IDS } from '../../bot/bot.service';
 import { ConceptualizationDto } from './conceptualization.dto';
 import {
   CONCEPT_FIELD_TEXT_MAX,
@@ -99,7 +101,7 @@ describe('ConceptualizationDto', () => {
       modeId: 'punitive_critic',
       alias: 'Судья',
       schemaIds: ['defectiveness'],
-      needIds: ['safety'],
+      needIds: ['attachment'],
       origin: 'Голос отца',
       manifest: 'Откладывает дела',
       strategy: 'Ограничить влияние',
@@ -118,7 +120,7 @@ describe('ConceptualizationDto', () => {
 
     it('ровно 40 связей проходят, 41 — отказ', async () => {
       const many = (n: number) =>
-        Array.from({ length: n }, (_, i) => link({ modeId: `m${i}` }));
+        Array.from({ length: n }, (_, i) => link({ modeId: `cm_${i}` }));
       await expect(errorsFor({ modeLinks: many(40) })).resolves.toEqual([]);
       await expect(errorsFor({ modeLinks: many(41) })).resolves.toContain(
         'modeLinks',
@@ -161,12 +163,13 @@ describe('ConceptualizationDto', () => {
     });
 
     it('schemaIds/needIds: больше 20 id и id длиннее 64 — отказ', async () => {
-      const ids = (n: number) => Array.from({ length: n }, (_, i) => `s${i}`);
+      const ids = (n: number, list: readonly string[] = SCHEMA_IDS) =>
+        Array.from({ length: n }, (_, i) => list[i % list.length]);
       await expect(
         errorsFor({ modeLinks: [link({ schemaIds: ids(21) })] }),
       ).resolves.toContain('modeLinks');
       await expect(
-        errorsFor({ modeLinks: [link({ needIds: ids(21) })] }),
+        errorsFor({ modeLinks: [link({ needIds: ids(21, NEED_IDS) })] }),
       ).resolves.toContain('modeLinks');
       await expect(
         errorsFor({ modeLinks: [link({ needIds: ['x'.repeat(65)] })] }),
@@ -203,7 +206,7 @@ describe('ConceptualizationDto', () => {
       schemaId: 'defectiveness',
       belief: 'Со мной что-то не так',
       origin: 'Мать сравнивала с сестрой',
-      needIds: ['safety', 'autonomy'],
+      needIds: ['attachment', 'autonomy'],
       ...over,
     });
 
@@ -219,7 +222,9 @@ describe('ConceptualizationDto', () => {
 
     it('ровно 20 связей проходят, 21 — отказ', async () => {
       const many = (n: number) =>
-        Array.from({ length: n }, (_, i) => link({ schemaId: `s${i}` }));
+        Array.from({ length: n }, (_, i) =>
+          link({ schemaId: SCHEMA_IDS[i % SCHEMA_IDS.length] }),
+        );
       await expect(errorsFor({ schemaLinks: many(20) })).resolves.toEqual([]);
       await expect(errorsFor({ schemaLinks: many(21) })).resolves.toContain(
         'schemaLinks',
@@ -240,7 +245,8 @@ describe('ConceptualizationDto', () => {
     );
 
     it('needIds: ровно 5 проходят, 6 — отказ, id длиннее 64 — отказ', async () => {
-      const ids = (n: number) => Array.from({ length: n }, (_, i) => `n${i}`);
+      const ids = (n: number) =>
+        Array.from({ length: n }, (_, i) => NEED_IDS[i % NEED_IDS.length]);
       await expect(
         errorsFor({ schemaLinks: [link({ needIds: ids(5) })] }),
       ).resolves.toEqual([]);

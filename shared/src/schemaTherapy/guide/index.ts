@@ -1,57 +1,23 @@
-/**
- * Сборка подсказок терапевту (#995): режимы и библиотека техник. Тексты —
- * в guide/modes/* и guide/techniques/*, типы — guide/types.ts. Сверка
- * полноты — guide/guide.test.ts.
- */
+// Сборка подсказок терапевту (#995): тексты — guide/modes/*, guide/techniques/*, типы — guide/types.ts,
+// сверка полноты — guide/guide.test.ts. Адреса разделов (#1484) — ./address: цикл импорта безопасен, функции зовутся при обходе.
 import type {
   ModeGuide,
-  ModeGuideBuilder,
   PracticeNote,
   SchemaDomainGuide,
-  SchemaDomainGuideBuilder,
   SchemaGuide,
   TechniqueGuide,
   TechniqueId,
   Tr,
 } from './types';
-import { buildVulnerableChildGuides } from './modes/child';
-import { buildAngryChildGuides } from './modes/childAngry';
-import { buildCriticGuides } from './modes/critic';
-import { buildSurrenderGuides } from './modes/surrender';
-import { buildAvoidanceGuides } from './modes/avoidance';
-import { buildOvercontrolGuides } from './modes/overcontrol';
-import { buildAttackGuides } from './modes/attack';
-import { buildHealthyGuides } from './modes/healthy';
-import { buildRejectionGuides } from './schemas/rejection';
-import { buildAutonomyGuides } from './schemas/autonomy';
-import { buildLimitsGuides } from './schemas/limits';
-import { buildOtherDirectedGuides } from './schemas/otherDirected';
-import { buildVigilanceGuides } from './schemas/vigilance';
+import { MODE_BUILDERS } from './modes/all';
+import { withSessionSigns } from './modes/sessionSigns';
+import { SCHEMA_DOMAIN_BUILDERS } from './schemas/domains';
 import { TECHNIQUE_BUILDERS } from './techniques/all';
 import { buildPracticeNotes } from './practice';
 
-const MODE_BUILDERS: ModeGuideBuilder[] = [
-  buildVulnerableChildGuides,
-  buildAngryChildGuides,
-  buildCriticGuides,
-  buildSurrenderGuides,
-  buildAvoidanceGuides,
-  buildOvercontrolGuides,
-  buildAttackGuides,
-  buildHealthyGuides,
-];
-
-const DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
-  buildRejectionGuides,
-  buildAutonomyGuides,
-  buildLimitsGuides,
-  buildOtherDirectedGuides,
-  buildVigilanceGuides,
-];
-
 /** Все разделы режимов в порядке групп. */
 export function buildModeGuides(tr: Tr): ModeGuide[] {
-  return MODE_BUILDERS.flatMap((build) => build(tr));
+  return MODE_BUILDERS.flatMap((build) => build(tr)).map(withSessionSigns);
 }
 
 /** Вся библиотека техник. */
@@ -66,7 +32,7 @@ export function modeGuide(tr: Tr, modeId: string): ModeGuide | null {
 
 /** Домены схем в порядке справочника, со своими схемами. */
 export function buildSchemaDomainGuides(tr: Tr): SchemaDomainGuide[] {
-  return DOMAIN_BUILDERS.map((build) => build(tr));
+  return SCHEMA_DOMAIN_BUILDERS.map((build) => build(tr));
 }
 
 /** Все разделы схем. */
@@ -95,6 +61,11 @@ export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
   return buildTechniqueGuides(tr).find((t) => t.id === id) ?? null;
 }
 
+export { needGuides } from './needs';
+export type { NeedGuide } from './needTypes';
+export * from './address';
+export * from './backlinks';
+
 export type {
   BetweenSessionsItem,
   GuideTaskType,
@@ -105,4 +76,9 @@ export type {
   SchemaGuide,
   TechniqueGuide,
   TechniqueId,
+  TechniqueGroupId,
+  PracticeGroupId,
 } from './types';
+export * from './guideGroups';
+export * from './concerns/all';
+export * from './phases/all';

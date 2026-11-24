@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError, type UserId } from '../../../api';
 import type { PlanItemPatch } from '../../../../../shared/src/therapy/plan/planApi';
-import type { PlanItem, PlanRubric } from '../../../../../shared/src/therapy/plan/planItem';
+import type { PlanItem, PlanRubric, PlanStatus } from '../../../../../shared/src/therapy/plan/planItem';
 import { trackPlanItemAdded, trackPlanItemStatus } from '../../../../../shared/src/share/planAnalytics';
-import { movePlanItem, nextStatus } from './planModel';
+import { movePlanItem } from './planModel';
+import { phaseActions } from './planPhaseActions';
 
 /**
  * План работы открытого клиента (#1337): загрузка и правки. `items === null` — ещё грузится; `failed` — план
@@ -22,7 +23,6 @@ export function usePlanItems(clientId: UserId) {
   const inFlight = useRef(false);
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-
   const fetchPlan = () => {
     api.getTherapyPlan(clientId).then(
       (list) => { if (alive.current) setItems(list); },
@@ -68,12 +68,11 @@ export function usePlanItems(clientId: UserId) {
     if (alive.current) replace(saved);
   });
 
-  /** Тап по статусу: новый статус виден сразу, отказ возвращает прежний. */
-  const cycleStatus = async (item: PlanItem) => {
-    const status = nextStatus(item.status);
+  /** Выбор статуса в меню: новый статус виден сразу, отказ возвращает прежний. */
+  const setStatus = async (item: PlanItem, status: PlanStatus) => {
     replace({ ...item, status });
     const ok = await patch(item.id, { status });
-    if (ok) trackPlanItemStatus(api, status);
+    if (ok) trackPlanItemStatus(api, status, item.phaseId !== null);
     // Откат — только статуса и в актуальном пункте: остальные поля могли измениться.
     else if (alive.current) setItems((prev) => prev && prev.map((i) => (i.id === item.id ? { ...i, status: item.status } : i)));
   };
@@ -105,7 +104,8 @@ export function usePlanItems(clientId: UserId) {
   return {
     items, failed, busyId, error, reload, pendingLinks,
     clearError: () => setError(''),
-    add, cycleStatus, remove, linkTask, move,
+    ...phaseActions(() => ({ clientId, alive, run, patch, add, setItems, replace })),
+    add, setStatus, remove, linkTask, move,
     saveText: (id: number, text: string) => patch(id, { text }),
     /** Повтор отметки «выдано заданием» — только PATCH, без нового задания. */
     retryLink: (id: number) => (pendingLinks[id] != null ? linkTask(id, pendingLinks[id]) : Promise.resolve(false)),

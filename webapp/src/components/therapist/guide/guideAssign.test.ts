@@ -20,13 +20,13 @@ describe('guideAssignPreset', () => {
   it('упражнение из «Практик» — его тип, без текста', () => {
     expect(
       guideAssignPreset({ kind: 'task', type: 'safe_place', title: 'Безопасное место', note: 'перечитывать вечером' }),
-    ).toEqual({ type: 'safe_place' });
+    ).toEqual({ type: 'safe_place', origin: 'guide' });
   });
 
   it('упражнение без экрана — «Своё задание»: название, перевод строки, инструкция', () => {
     expect(
       guideAssignPreset({ kind: 'custom', title: 'Встреча со своим маленьким Я', text: 'Пять минут в день' }),
-    ).toEqual({ type: 'custom', text: 'Встреча со своим маленьким Я\nПять минут в день', catalogId: 'встреча-со-своим-маленьким-я' });
+    ).toEqual({ type: 'custom', text: 'Встреча со своим маленьким Я\nПять минут в день', catalogId: 'встреча-со-своим-маленьким-я', origin: 'guide' });
   });
 
   it('каждый тип подсказки есть в листе назначения — лист откроется с ним, а не с первым', () => {

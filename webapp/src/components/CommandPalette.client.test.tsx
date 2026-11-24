@@ -12,13 +12,14 @@ const trackEvent = vi.fn();
 const requestTasksOpen = vi.fn();
 vi.mock('../sections/tasks/tasksLaunch', () => ({ requestTasksOpen: (...a: unknown[]) => requestTasksOpen(...a) }));
 const reportClientError = vi.fn();
+const getPlanHistory = vi.fn();
 vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 vi.mock('../api', () => ({
   reportClientError: (...a: unknown[]) => reportClientError(...a),
   api: {
     trackEvent: (...a: unknown[]) => trackEvent(...a), listArticles: () => Promise.resolve([]),
     getTasks: () => Promise.resolve([{ id: 42, assignedBy: 7, type: 'custom', text: 'Записать три тёплых момента', dueDate: null, done: null }]),
-    getPlanHistory: () => Promise.reject(new Error('сеть')),
+    getPlanHistory: (...a: unknown[]) => { getPlanHistory(...a); return Promise.reject(new Error('сеть')); },
   },
 }));
 
@@ -66,6 +67,7 @@ describe('CommandPalette — режим клиента', () => {
     expect(onNavigate).toHaveBeenCalledWith('more');
     expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'own_task', typed: false, recent: false });
     expect(JSON.stringify(trackEvent.mock.calls)).not.toContain('тёплых');
+    expect(getPlanHistory).toHaveBeenCalledWith(365); // планы ищутся за год (потолок ручки), а не за 30 дней по умолчанию
     // планы не загрузились: группы нет, сбой ушёл отчётом
     expect(reportClientError).toHaveBeenCalledWith({ message: 'search: планы не загрузились', section: 'commandPalette' });
   });

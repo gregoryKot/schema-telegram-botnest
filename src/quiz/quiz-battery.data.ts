@@ -104,7 +104,7 @@ export function buildBatteryQuiz(form: AddressForm): Quiz {
             label: 'Когда получилось самостоятельно — от и до',
             resultId: 'autonomy',
           },
-          { label: 'Когда список закрыт до дедлайна', resultId: 'limits' },
+          { label: 'Когда начатое доведено до конца', resultId: 'limits' },
           { label: 'Когда можно придумывать и хулиганить', resultId: 'play' },
           {
             label: 'Когда мои идеи слышат и обсуждают',
@@ -122,8 +122,12 @@ export function buildBatteryQuiz(form: AddressForm): Quiz {
           },
           { label: '«Пойдём делать глупости!»', resultId: 'play' },
           {
-            label: '«Сначала доделаем, потом отдыхаем с чистой совестью»',
+            label: '«План простой: час на дело, потом гуляем»',
             resultId: 'limits',
+          },
+          {
+            label: '«Как решишь, так и будет: тебе виднее»',
+            resultId: 'autonomy',
           },
         ],
       },

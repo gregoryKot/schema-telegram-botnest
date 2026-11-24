@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { NEED_ORDER } from '../needs/types';
 import { ALL_SCHEMAS } from '../schemaTherapy/schemaTherapyData';
+import { needDomain } from '../schemaTherapy/schemaNeed';
 import {
   CHILDHOOD_SCHEMA_HINTS,
   childhoodAverage,
+  childhoodLevel,
   defaultChildhoodRatings,
-  exampleTone,
   hintSchemas,
   lowNeedIds,
   readSavedRatings,
@@ -77,16 +78,46 @@ describe('lowNeedIds / childhoodAverage', () => {
   });
 });
 
-describe('exampleTone', () => {
-  it('границы бейджей: 3 — дефицит, 4–7 — середина, 8 — насыщение', () => {
-    expect(exampleTone(3)).toBe('low');
-    expect(exampleTone(4)).toBe('mid');
-    expect(exampleTone(7)).toBe('mid');
-    expect(exampleTone(8)).toBe('high');
+describe('childhoodLevel', () => {
+  it('один порог на все экраны: ≤4 — дефицит, 5–6 — середина, ≥7 — «хватало»', () => {
+    expect(childhoodLevel(0)).toBe('low');
+    expect(childhoodLevel(4)).toBe('low');
+    expect(childhoodLevel(5)).toBe('mid');
+    expect(childhoodLevel(6)).toBe('mid');
+    expect(childhoodLevel(7)).toBe('high');
+    expect(childhoodLevel(10)).toBe('high');
+  });
+
+  it('дефицит колеса и зона «low» — одно и то же', () => {
+    for (let v = 0; v <= 10; v++) {
+      const r = { ...defaultChildhoodRatings(), play: v };
+      expect(lowNeedIds(r).includes('play')).toBe(childhoodLevel(v) === 'low');
+    }
   });
 });
 
 describe('сверка реестров (правило №4)', () => {
+  it('каждая из 20 схем — ровно в одной потребности, как в справочнике (домен → потребность)', () => {
+    const all = NEED_ORDER.flatMap(
+      (id) => CHILDHOOD_SCHEMA_HINTS[id].schemaIds,
+    );
+    expect(all).toHaveLength(ALL_SCHEMAS.length);
+    expect(new Set(all).size).toBe(ALL_SCHEMAS.length);
+    for (const id of NEED_ORDER) {
+      const d = needDomain(id)!;
+      expect(CHILDHOOD_SCHEMA_HINTS[id]).toEqual({
+        domain: d.domain,
+        schemaIds: d.schemas.map((s) => s.id),
+      });
+    }
+    expect(CHILDHOOD_SCHEMA_HINTS.play.schemaIds).toContain(
+      'emotional_inhibition',
+    );
+    expect(CHILDHOOD_SCHEMA_HINTS.expression.domain).toBe(
+      'Направленность на других',
+    );
+  });
+
   it('каждая схема из подсказок существует в справочнике схем', () => {
     for (const id of NEED_ORDER) {
       const { schemaIds } = CHILDHOOD_SCHEMA_HINTS[id];

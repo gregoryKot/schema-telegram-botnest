@@ -118,7 +118,8 @@
 }
 .tb-journal-row--static { cursor: default; }
 .tb-journal-row--static .tb-journal-tech { text-decoration: none; }
-.tb-tl-row--focus .tb-tl-body { background: color-mix(in srgb, var(--paper-sunk) 60%, transparent); border-radius: 8px; }
+/* Подсветка шире текста на 8px: тень того же цвета вместо отступа, строка не сдвигается. */
+.tb-tl-row--focus .tb-tl-body { --focus: color-mix(in srgb, var(--paper-sunk) 60%, transparent); background: var(--focus); box-shadow: 0 0 0 8px var(--focus); border-radius: 2px; padding-bottom: 8px; margin-bottom: 28px; }
 .tb-journal-tech { font-weight: 600; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
 .tb-journal-from { color: var(--text-sub); }
 .tb-journal-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -235,6 +236,15 @@
 }
 .pl-status--active { background: var(--paper-tint); color: var(--text); }
 .pl-status--done { background: var(--ok-bg); border-color: transparent; color: var(--ok-ink); }
+.pl-status--postponed, .pl-status--dropped { color: var(--text-faint); }
+.pl-item.is-quiet .pl-text { color: var(--text-faint); }
+.pl-item.is-dropped .pl-text { text-decoration: line-through; }
+.pl-menu-anchor { display: inline-flex; flex: none; }
+/* Меню статуса и «В фазу…» — по ширине самого длинного названия, но не шире экрана. */
+.ds-menu.pl-menu { width: max-content; min-width: 180px; max-width: min(360px, calc(100vw - 16px)); }
+.ds-menu-item.pl-menu-item { min-height: 44px; }
+.pl-menu-mark { flex: none; width: 16px; color: var(--accent); }
+.pl-item[draggable="true"] { cursor: grab; }
 .pl-status:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pl-status:disabled { cursor: default; }
 .pl-body { flex: 1; min-width: 0; padding-top: 10px; }
@@ -256,3 +266,10 @@
   .pl-acts { margin-left: auto; gap: 0; }
   .pl-body { order: 1; flex-basis: 100%; padding-top: 0; }
 }
+/* «Из плана» в форме итогов: строка пункта с быстрыми статусами под текстом. */
+.spb-group { display: flex; flex-direction: column; gap: 4px; }
+.spb-row { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--paper-sunk); }
+.spb-acts { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 32px; }
+.ds-link.pl-work { color: var(--text-sub); font-weight: 400; font-size: 13px; text-decoration: none; }
+.spb-st { white-space: nowrap; }
+.spb-note { margin-top: 6px; color: var(--text-sub); }

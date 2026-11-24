@@ -13,9 +13,8 @@
 // Остаток: строки под потерянным ключом считаются в unknownKey и в JSON-полях
 // (describe «остаток в JSON-полях» ниже), а не только в Note.tags/ModeDiaryEntry.
 //
-// Ключи читаются один раз при загрузке модуля — каждый сценарий грузит
-// свежую пару crypto.ts/encrypt-migration.ts через jest.isolateModules
-// (паттерн из src/utils/crypto.spec.ts).
+// Ключи читаются один раз при загрузке модуля — пара crypto.ts/encrypt-migration.ts
+// на каждый набор ключей грузится в beforeAll через jest.isolateModules.
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -47,6 +46,27 @@ function load(env: { key?: string; old?: string }): {
     crypto: crypto!,
     migrateClinicalLabels: migration!.migrateClinicalLabels,
   };
+}
+
+type Mods = ReturnType<typeof load>;
+const keyed: Record<string, Mods> = {};
+const envKey = (e: { key?: string; old?: string }) =>
+  `${e.key ?? ''}|${e.old ?? ''}`;
+const CONFIGS = [
+  {},
+  { key: KEY_A },
+  { key: KEY_B },
+  { key: KEY_B, old: KEY_A },
+];
+beforeAll(() => {
+  for (const c of CONFIGS) keyed[envKey(c)] = load(c);
+});
+
+/** Готовый экземпляр под набор ключей + env как при загрузке: bail out читает его при вызове. */
+function use(env: { key?: string; old?: string }): Mods {
+  process.env.ENCRYPTION_KEY = env.key ?? '';
+  process.env.ENCRYPTION_KEY_OLD = env.old ?? '';
+  return keyed[envKey(env)];
 }
 
 afterEach(() => {
@@ -102,7 +122,7 @@ function makeDb(tables: {
 
 describe('migrateClinicalLabels — плейнтекст → шифротекст', () => {
   it('без ENCRYPTION_KEY — миграция не трогает ничего (bail out)', async () => {
-    const { migrateClinicalLabels } = load({});
+    const { migrateClinicalLabels } = use({});
     // Logger внутри encrypt-migration.ts — своя изолированная копия
     // '@nestjs/common' (jest.isolateModules), пишет через process.stdout.write.
     const stdoutWrite = jest
@@ -127,7 +147,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
   });
 
   it('легаси-плейнтекст Note.tags шифруется текущим ключом и читается обратно', async () => {
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_A });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_A });
     const db = makeDb({ notes: [{ id: 1, tags: 'anxiety,anger' }] }) as any;
     await migrateClinicalLabels(db);
     expect(db.note.update).toHaveBeenCalledTimes(1);
@@ -137,7 +157,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
   });
 
   it('легаси-плейнтекст ModeDiaryEntry.modeId шифруется', async () => {
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_A });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_A });
     const db = makeDb({
       modeDiaryEntries: [{ id: 5, modeId: 'vulnerable_child' }],
     }) as any;
@@ -147,7 +167,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
   });
 
   it('легаси JSON-массивы (User/SchemaDiaryEntry/ClientConceptualization) шифруются в строку', async () => {
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_A });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_A });
     const db = makeDb({
       users: [{ id: 1, mySchemaIds: ['defect'], myModeIds: ['vuln'] }],
       schemaDiaryEntries: [{ id: 2, schemaIds: ['abandon'] }],
@@ -172,7 +192,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
   });
 
   it('history-снапшоты ClientConceptualization шифруются поэлементно, уже-строковые снапшоты не трогаются', async () => {
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_A });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_A });
     const already = crypto.encryptJson(['old_mode'])!;
     const db = makeDb({
       conceptualizations: [
@@ -199,7 +219,7 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
   });
 
   it('строка, уже зашифрованная текущим ключом, не переписывается повторно', async () => {
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_A });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_A });
     const enc = crypto.encrypt('anxiety,anger')!;
     const notesRows = [{ id: 1, tags: enc }];
     const db = makeDb({ notes: notesRows }) as any;
@@ -215,11 +235,11 @@ describe('migrateClinicalLabels — плейнтекст → шифротекс�
 
 describe('поведение при уже проведённой смене ENCRYPTION_KEY (это НЕ ротация)', () => {
   it('JSON-поле под старым ключом миграция не пишет (эвристика — только Array.isArray), но считает в остаток', async () => {
-    const oldMods = load({ key: KEY_A });
+    const oldMods = use({ key: KEY_A });
     const oldBlob = oldMods.crypto.encryptJson(['abandon'])!;
 
     // Ротация ключа уже произошла: текущий — KEY_B, ENCRYPTION_KEY_OLD не задан.
-    const { migrateClinicalLabels } = load({ key: KEY_B });
+    const { migrateClinicalLabels } = use({ key: KEY_B });
     const entryRows = [{ id: 1, schemaIds: oldBlob }];
     const db = makeDb({ schemaDiaryEntries: entryRows }) as any;
     jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
@@ -237,9 +257,9 @@ describe('поведение при уже проведённой смене ENC
   });
 
   it('строковое поле под старым ключом при активном ENCRYPTION_KEY_OLD пропускается (не перешифровывается новым ключом)', async () => {
-    const oldMods = load({ key: KEY_A });
+    const oldMods = use({ key: KEY_A });
     const oldBlob = oldMods.crypto.encrypt('anxiety,anger')!;
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_B, old: KEY_A });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_B, old: KEY_A });
     const db = makeDb({ notes: [{ id: 1, tags: oldBlob }] }) as any;
     await migrateClinicalLabels(db);
 
@@ -252,12 +272,12 @@ describe('поведение при уже проведённой смене ENC
   });
 
   it('ФИКС (был БАГ): если OLD-ключ уже убран, старый шифроблок распознаётся по формату и пропускается — не шифруется повторно', async () => {
-    const oldMods = load({ key: KEY_A });
+    const oldMods = use({ key: KEY_A });
     const oldBlob = oldMods.crypto.encrypt('anxiety,anger')!;
 
     // Сценарий инцидента: старый ключ убрали из env, не прогнав
     // src/cli/rotate-encryption/rotate-all.ts перед этим.
-    const { migrateClinicalLabels } = load({ key: KEY_B });
+    const { migrateClinicalLabels } = use({ key: KEY_B });
     const stdoutWrite = jest
       .spyOn(process.stdout, 'write')
       .mockImplementation(() => true);
@@ -301,7 +321,7 @@ describe('поведение при уже проведённой смене ENC
 
 describe('устойчивость к ошибкам при записи (изоляция по строке)', () => {
   it('ФИКС: ошибка prisma.update на одной строке НЕ обрывает миграцию — остальные строки и таблицы всё равно обрабатываются', async () => {
-    const { migrateClinicalLabels } = load({ key: KEY_A });
+    const { migrateClinicalLabels } = use({ key: KEY_A });
     // Logger внутри encrypt-migration.ts пишет через process.stdout.write
     // (дефолтный Nest ConsoleLogger), не через console.* — а модуль
     // encrypt-migration.ts подгружен через jest.isolateModules со своей
@@ -347,7 +367,7 @@ describe('устойчивость к ошибкам при записи (изо
   });
 
   it('чистый прогон не шлёт error-сводку', async () => {
-    const { migrateClinicalLabels } = load({ key: KEY_A });
+    const { migrateClinicalLabels } = use({ key: KEY_A });
     jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const stderrWrite = jest
       .spyOn(process.stderr, 'write')
@@ -367,7 +387,7 @@ describe('устойчивость к ошибкам при записи (изо
 // Note.tags. Раньше её молча считали «уже зашифрованной», и проба рапортовала
 // «все метки зашифрованы» при нечитаемых данных. Считаем, но не пишем.
 describe('остаток в JSON-полях (строка под потерянным ключом)', () => {
-  const lostBlob = () => load({ key: KEY_A }).crypto.encryptJson(['abandon'])!;
+  const lostBlob = () => use({ key: KEY_A }).crypto.encryptJson(['abandon'])!;
 
   const quietLogs = () => {
     jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -376,7 +396,7 @@ describe('остаток в JSON-полях (строка под потерян�
 
   it('User: обе колонки под потерянным ключом — одна строка таблицы, не пишется', async () => {
     const blob = lostBlob();
-    const { migrateClinicalLabels } = load({ key: KEY_B });
+    const { migrateClinicalLabels } = use({ key: KEY_B });
     quietLogs();
     const db = makeDb({
       users: [
@@ -395,7 +415,7 @@ describe('остаток в JSON-полях (строка под потерян�
 
   it('ClientConceptualization: верхний уровень и снапшот истории — одна строка таблицы', async () => {
     const blob = lostBlob();
-    const { migrateClinicalLabels } = load({ key: KEY_B });
+    const { migrateClinicalLabels } = use({ key: KEY_B });
     quietLogs();
     const db = makeDb({
       conceptualizations: [
@@ -414,7 +434,7 @@ describe('остаток в JSON-полях (строка под потерян�
   });
 
   it('строка под текущим ключом и пустое значение в остаток не идут; итог без error', async () => {
-    const { migrateClinicalLabels, crypto } = load({ key: KEY_B });
+    const { migrateClinicalLabels, crypto } = use({ key: KEY_B });
     jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const stderr = jest
       .spyOn(process.stderr, 'write')
@@ -435,7 +455,7 @@ describe('остаток в JSON-полях (строка под потерян�
 
   it('под ENCRYPTION_KEY_OLD строка читается — не остаток', async () => {
     const blob = lostBlob();
-    const { migrateClinicalLabels } = load({ key: KEY_B, old: KEY_A });
+    const { migrateClinicalLabels } = use({ key: KEY_B, old: KEY_A });
     quietLogs();
     const db = makeDb({ schemaDiaryEntries: [{ id: 1, schemaIds: blob }] });
     const result = await migrateClinicalLabels(db);
@@ -445,7 +465,7 @@ describe('остаток в JSON-полях (строка под потерян�
 
   it('остаток из JSON-поля попадает в error-сводку с именем таблицы, без шифроблока', async () => {
     const blob = lostBlob();
-    const { migrateClinicalLabels } = load({ key: KEY_B });
+    const { migrateClinicalLabels } = use({ key: KEY_B });
     jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const stderr = jest
       .spyOn(process.stderr, 'write')

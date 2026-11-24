@@ -70,8 +70,8 @@ export function CookieBanner() {
 
   return (
     <div className="cookie-banner-wrap">
-      {/* Лист соломы без контура, тень — сплошной сдвинутый слой (index.css, .cookie-banner). */}
-      <div className={`pp-paper cookie-banner${compact ? ' cookie-banner--compact' : ''}`} role="dialog" aria-label="Уведомление об использовании куки">
+      {/* Лист соломы, тень — сдвинутый слой (index.css). light-lock: бумага светлая в любой теме — и чернила светлой темы. */}
+      <div className={`light-lock pp-paper cookie-banner${compact ? ' cookie-banner--compact' : ''}`} role="dialog" aria-label="Уведомление об использовании куки">
         {compact ? <CompactBody onDismiss={dismiss} /> : <CardBody onDismiss={dismiss} />}
       </div>
     </div>

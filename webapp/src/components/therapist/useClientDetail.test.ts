@@ -204,7 +204,7 @@ describe('addNote / removeNote', () => {
     act(() => { result.current.setNewNoteText('  привет  '); });
     await act(async () => { await result.current.addNote(); });
 
-    expect(mockApi.createTherapistNote).toHaveBeenCalledWith(1, expect.any(String), 'привет', []);
+    expect(mockApi.createTherapistNote).toHaveBeenCalledWith(1, expect.any(String), 'привет', [], []);
     expect(result.current.notes[0]).toEqual(newNote);
     expect(result.current.newNoteText).toBe('');
   });
@@ -213,7 +213,7 @@ describe('addNote / removeNote', () => {
     const { result } = await openedHook();
     act(() => { result.current.setNewNoteText('x'); result.current.setNewNoteDate('2026-05-05'); });
     await act(async () => { await result.current.addNote(); });
-    expect(mockApi.createTherapistNote).toHaveBeenCalledWith(1, '2026-05-05', 'x', []);
+    expect(mockApi.createTherapistNote).toHaveBeenCalledWith(1, '2026-05-05', 'x', [], []);
   });
   it('addNote/removeNote выставляют noteError при ошибке api', async () => {
     mockApi.createTherapistNote.mockRejectedValue(new Error('fail'));
@@ -241,6 +241,21 @@ describe('addNote / removeNote', () => {
     const { result } = await openedHook();
     expect(result.current.notesPage.total).toBe(105);
     await act(async () => { await result.current.removeNote(1); });
+    expect(result.current.notesPage.total).toBe(104);
+  });
+  it('ранняя запись (нет среди показанных): та же ручка удаления, total − 1, показанные на месте; отказ — false', async () => {
+    mockApi.getTherapistNotes.mockResolvedValue({ notes: [{ id: 1, date: '2026-01-01' }], total: 105 });
+    mockApi.deleteTherapistNote.mockResolvedValue(undefined);
+    const { result } = await openedHook();
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.removeNote(900); });
+    expect(ok).toBe(true);
+    expect(mockApi.deleteTherapistNote).toHaveBeenCalledWith(900);
+    expect(result.current.notes.map(n => n.id)).toEqual([1]);
+    expect(result.current.notesPage.total).toBe(104);
+    mockApi.deleteTherapistNote.mockRejectedValue(new Error('network'));
+    await act(async () => { ok = await result.current.removeNote(901); });
+    expect(ok).toBe(false);
     expect(result.current.notesPage.total).toBe(104);
   });
 });

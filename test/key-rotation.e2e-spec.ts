@@ -75,6 +75,7 @@ describe('ротация ENCRYPTION_KEY на реальном Postgres', () => {
     await prisma.therapyRelation.deleteMany({
       where: { code: 'rot-e2e-code' },
     });
+    await prisma.therapyPath.deleteMany({ where: { therapistId: THERAPIST } });
     await prisma.user.deleteMany({ where: { id: { in: [USER, THERAPIST] } } });
   }
 

@@ -112,4 +112,12 @@ export const BORROWED_TECHNIQUE_WORK: Record<
       ['next', 'Что дальше'],
     ],
   },
+  downward_arrow: {
+    name: 'Нисходящая стрела',
+    fields: [
+      ['thought', 'Исходная мысль'],
+      ['bottom', 'Вывод на дне'],
+      ['schema', 'Какая схема'],
+    ],
+  },
 };

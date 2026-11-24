@@ -60,10 +60,14 @@ let SecurityLogService: ServiceModule['SecurityLogService'];
 let Logger: typeof LoggerType;
 let logSpy: jest.SpiedFunction<typeof LoggerType.prototype.log>;
 
+// Один раз: загрузка в beforeEach засчитывается Stryker тесту (check-spec-load-in-test).
+beforeAll(() => {
+  ({ SecurityLogService, Logger } = loadFresh());
+});
+
 beforeEach(() => {
   mockedNotify.mockReset();
   mockedNotify.mockResolvedValue(undefined);
-  ({ SecurityLogService, Logger } = loadFresh());
   logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
 });
 

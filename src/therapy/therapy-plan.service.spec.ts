@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   createFakeTable,
   createFakeTransaction,
@@ -21,6 +21,17 @@ function setup() {
         updatedAt: new Date(),
       }),
     }),
+    // фаза 1 — путь T и C1; фаза 2 — путь другого терапевта; фаза 3 — путь T и C2
+    therapyPath: createFakeTable([
+      { id: 1, therapistId: T, clientId: C1 },
+      { id: 2, therapistId: OTHER_T, clientId: C1 },
+      { id: 3, therapistId: T, clientId: C2 },
+    ]),
+    therapyPathPhase: createFakeTable([
+      { id: 1, pathId: 1 },
+      { id: 2, pathId: 2 },
+      { id: 3, pathId: 3 },
+    ]),
     userTask: createFakeTable([
       { id: 1, userId: C1, assignedBy: T },
       { id: 2, userId: C2, assignedBy: T },
@@ -45,10 +56,13 @@ function setup() {
 const item = { rubric: 'cognitive', text: 'проверка убеждений' };
 
 describe('TherapyPlanService', () => {
-  it('создал нескольким клиентам → каждый список отдаёт свой пункт открытым текстом', async () => {
+  it('создал нескольким клиентам → каждый список отдаёт свой пункт открытым текстом и адрес раздела', async () => {
     const { service } = setup();
-    const source = { kind: 'schema', id: 'abandonment', field: 'cognitive' };
-    const created = await service.create(T, [C1, C2], { ...item, source });
+    const sourceAddress = 'schema:abandonment/cognitive';
+    const created = await service.create(T, [C1, C2], {
+      ...item,
+      sourceAddress,
+    });
 
     expect(created.map((i) => i.clientId)).toEqual(['7', '8']);
     for (const cid of [C1, C2]) {
@@ -58,10 +72,29 @@ describe('TherapyPlanService', () => {
         ...item,
         status: 'planned',
         position: 0,
-        source,
+        sourceAddress,
+        source: null,
         taskId: null,
       });
     }
+  });
+
+  it('старый клиент шлёт вид/id/поле — источник сохраняется как был, адреса нет', async () => {
+    const { service } = setup();
+    const source = { kind: 'mode', id: 'vulnerable_child', field: 'cognitive' };
+    await service.create(T, [C1], { ...item, source });
+    expect((await service.list(T, C1))[0]).toMatchObject({
+      source,
+      sourceAddress: null,
+    });
+  });
+
+  it('не адрес справочника — 400, строк нет', async () => {
+    const { service } = setup();
+    await expect(
+      service.create(T, [C1], { ...item, sourceAddress: 'tab:safety/text' }),
+    ).rejects.toThrow('Bad guide address');
+    expect(await service.list(T, C1)).toEqual([]);
   });
 
   it('чужой клиент в списке — отказ всем, ни одной строки не создано', async () => {
@@ -129,6 +162,21 @@ describe('TherapyPlanService', () => {
     expect(
       (await service.update(T, created.id, { taskId: null })).taskId,
     ).toBeNull();
+  });
+
+  it('пункт создаётся сразу с фазой пути этого клиента; чужая фаза и несколько клиентов отвергаются', async () => {
+    const { service } = setup();
+    const [created] = await service.create(T, [C1], { ...item, phaseId: 1 });
+    expect(created.phaseId).toBe(1);
+    for (const phaseId of [2, 3, 404]) {
+      await expect(
+        service.create(T, [C1], { ...item, phaseId }),
+      ).rejects.toThrow(NotFoundException);
+    }
+    await expect(
+      service.create(T, [C1, C2], { ...item, phaseId: 1 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(await service.list(T, C1)).toHaveLength(1);
   });
 
   it('чужой терапевт не читает, не правит и не удаляет пункт, даже ведя того же клиента', async () => {

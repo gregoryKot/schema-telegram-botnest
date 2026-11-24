@@ -44,7 +44,8 @@ export function YsqResult(p: Props) {
     <>
       {p.resultSaveError && p.retrySaveResult && <YsqSyncNote variant="result-save" onRetry={p.retrySaveResult} />}
 
-      {activeCount === 0 && <p className="ss-body">Выраженных схем нет — отличный результат.</p>}
+      {/* Без оценки «хорошо/плохо»: при избегании баллы занижены (Young 2003, гл. 2), об этом — «Как понимать». */}
+      {activeCount === 0 && <p className="ss-body">По ответам ни одна схема не выражена. Баллы бывают ниже, когда на вопросы отвечает внутренний защитник: об этом в «Как понимать».</p>}
 
       {activeByDomain.map(domain => (
         <section key={domain.needId} className="pp-paper ss-res"

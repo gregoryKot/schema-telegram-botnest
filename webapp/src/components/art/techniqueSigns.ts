@@ -1,7 +1,8 @@
-// Знак листа техники. У первых 14 техник знак свой; техники, добавленные позже (#1366),
-// берут знак родственной техники или мотива — своих рисунков у них пока нет.
+// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx).
+// Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
-  BorrowedTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
+  YoungTechniqueId, ArntzTechniqueId, FarrellTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -25,38 +26,69 @@ export const CORE_TECHNIQUE_SIGN: Record<CoreTechniqueId, GuideSign> = {
 const SCHEMA_TECHNIQUE_SIGN: Record<SchemaTechniqueId, GuideSign> = {
   limited_reparenting: 'child_care',
   limit_setting: 'limits',
-  diagnostic_imagery: 'rescript',
-  safe_place_imagery: 'shelter',
-  mode_dialogue_imagery: 'talk',
+  diagnostic_imagery: 'scene_look',
+  safe_place_imagery: 'haven',
+  mode_dialogue_imagery: 'talk_inner',
   anger_expression: 'flare',
   mode_map: 'cluster',
-  schema_diary: 'sheets',
-  positive_data_log: 'pebbles',
-  behavioral_experiment: 'pattern_steps',
-  transitional_objects: 'flashcard',
+  schema_diary: 'diary_sheet',
+  positive_data_log: 'pebble_bowl',
+  behavioral_experiment: 'try_step',
+  transitional_objects: 'keepsake',
   play_and_joy: 'together',
-  body_grounding: 'breath',
-  values_overview: 'horizon',
+  body_grounding: 'grounded',
+  values_overview: 'values',
   couple_mode_cycle: 'ribbon',
+  online_chairwork: 'talk_screen',
 };
 
 const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
-  behavioral_activation: 'pattern_steps',
-  socratic_dialogue: 'spotlight',
-  exposure: 'horizon',
+  behavioral_activation: 'activation',
+  socratic_dialogue: 'socratic',
+  exposure: 'approach',
   chain_analysis: 'beads',
-  distress_tolerance: 'breath',
-  validation_levels: 'heart_frame',
-  defusion: 'pebbles',
-  compassionate_self: 'heart',
-  motivational_interviewing: 'scales',
-  window_of_tolerance: 'limits',
-  stop_rewind_explore: 'talk_past',
-  life_line: 'ribbon',
+  distress_tolerance: 'pause',
+  validation_levels: 'levels_heart',
+  defusion: 'defusion',
+  compassionate_self: 'warm_self',
+  motivational_interviewing: 'ambivalence',
+  window_of_tolerance: 'window',
+  stop_rewind_explore: 'rewind',
+  life_line: 'life_line',
+  downward_arrow: 'layers',
+};
+
+const CAMBRIDGE_TECHNIQUE_SIGN: Record<CambridgeTechniqueId, GuideSign> = {
+  schema_attunement: 'attune',
+  responsibility_pie: 'pie',
+  courtroom: 'courtroom',
+  healthy_adult_three_chairs: 'three_chairs',
+  need_now_question: 'cup',
+};
+
+const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = {
+  schema_dialogue: 'talk_schema',
+};
+
+const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
+  current_role_play: 'talk_now',
+  two_axis_check: 'scatter',
+  need_cycle: 'need_ring',
+  guess_the_mode: 'guess_mode',
+};
+
+const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
+  mode_management_plan: 'mode_plan',
+  healthy_adult_plan: 'plan_ahead',
+  safety_bubble: 'bubble',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
+  ...CAMBRIDGE_TECHNIQUE_SIGN,
+  ...YOUNG_TECHNIQUE_SIGN,
+  ...ARNTZ_TECHNIQUE_SIGN,
+  ...FARRELL_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

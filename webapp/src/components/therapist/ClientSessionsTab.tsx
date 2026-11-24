@@ -7,7 +7,7 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 import { SignHead } from './SignArt';
 import { SessionArchive } from './SessionArchive';
-import { SessionWorkBlock } from './SessionWorkBlock';
+import { SessionWorkBlock } from './SessionWorkBlock'; import { SessionPlanBlock } from './SessionPlanBlock';
 import { hasCustomMode, useCustomModeNames } from './useCustomModeNames';
 
 interface Props {
@@ -18,7 +18,7 @@ interface Props {
 
 export function ClientSessionsTab({ detail, takeFocus }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
-  const canSave = (!!newNoteText.trim() || detail.newNoteWork.length > 0) && !noteSaving; // с пунктами «Что делали» текст не обязателен
+  const canSave = (!!newNoteText.trim() || detail.newNoteWork.length > 0 || detail.newNotePlanIds.length > 0) && !noteSaving; // с пунктами «Что делали» или плана текст не обязателен
   // Свои режимы нужны выбору в открытом пункте и подписям записей, где они отмечены.
   const customModes = useCustomModeNames(detail.newNoteWork.length > 0 || notesPage.notes.some(n => hasCustomMode(n.work)));
   const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком
@@ -39,6 +39,7 @@ export function ClientSessionsTab({ detail, takeFocus }: Props) {
           placeholder="Наблюдения, гипотезы, динамика, план следующей встречи…"
         />
         <SessionWorkBlock detail={detail} customModes={customModes} />
+        {detail.selectedClient && <SessionPlanBlock clientId={detail.selectedClient.telegramId} selected={detail.newNotePlanIds} onChange={detail.setNewNotePlanIds} reloadKey={notesPage.notes[0]?.id} />}
         <div className="tb-composer-foot">
           <span className="tb-hint kbd-hint">⌘ + Enter — сохранить</span>
           <div className="tb-actions">
@@ -52,8 +53,7 @@ export function ClientSessionsTab({ detail, takeFocus }: Props) {
         </div>
         {noteError && <div className="tb-error">{noteError}</div>}
       </div>
-
-      <SessionArchive page={notesPage} removeNote={removeNote} takeFocus={takeFocus} customModes={customModes} />
+      <SessionArchive page={notesPage} removeNote={removeNote} takeFocus={takeFocus} customModes={customModes} clientId={detail.selectedClient?.telegramId} />
     </div>
   );
 }

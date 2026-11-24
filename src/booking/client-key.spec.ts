@@ -14,6 +14,12 @@ const load = (keys: { key: string; old?: string }): Mod =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   loadWithKeys(keys, () => require('./client-key') as Mod);
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+// Модуль под каждой парой ключей грузится при сборе файла, не внутри теста:
+// иначе Stryker засчитывает тесту код уровня модуля.
+const current = load({ key: KEY });
+const underOld = load({ key: OLD });
+const noKey = load({ key: '' });
+const rotated = load({ key: KEY, old: OLD });
 
 const saved = { ...process.env };
 afterAll(() => {
@@ -23,7 +29,7 @@ afterAll(() => {
 });
 
 describe('normalizeContact — форма контакта решает, что стирать', () => {
-  const { normalizeContact } = load({ key: KEY });
+  const { normalizeContact } = current;
 
   it('почта: регистр и пробелы по краям, `-`, `+` и точки остаются', () => {
     expect(normalizeContact(' Ivan-Petrov@X.ru ')).toBe('ivan-petrov@x.ru');
@@ -49,7 +55,7 @@ describe('normalizeContact — форма контакта решает, что 
 });
 
 describe('clientKey — HMAC с серверным ключом', () => {
-  const m = load({ key: KEY });
+  const m = current;
 
   it('разные ящики из брифа дают разные ключи', () => {
     for (const [a, b] of [
@@ -84,11 +90,10 @@ describe('clientKey — HMAC с серверным ключом', () => {
     expect(key.slice(3)).not.toBe(sha256('79991234567'));
     expect(key).not.toBe(m.legacyClientKey('79991234567'));
     // другой секрет — другой ключ того же контакта
-    expect(load({ key: OLD }).clientKey('79991234567')).not.toBe(key);
+    expect(underOld.clientKey('79991234567')).not.toBe(key);
   });
 
   it('без ENCRYPTION_KEY — запасной k0: от sha256 (dev, тесты)', () => {
-    const noKey = load({ key: '' });
     expect(noKey.clientKey('@ivan_p')).toBe(`k0:${sha256('ivan_p')}`);
     expect(noKey.clientKeyCandidates('@ivan_p')).toEqual([
       noKey.clientKey('@ivan_p'),
@@ -98,8 +103,7 @@ describe('clientKey — HMAC с серверным ключом', () => {
 
 describe('ротация ENCRYPTION_KEY: кандидаты и источники', () => {
   it('ключ под OLD входит в кандидаты вторым, текущий — первым', () => {
-    const before = load({ key: OLD }).clientKey('@ivan_p');
-    const rotated = load({ key: KEY, old: OLD });
+    const before = underOld.clientKey('@ivan_p');
     expect(rotated.clientKeyCandidates('@ivan_p')).toEqual([
       rotated.clientKey('@ivan_p'),
       before,
@@ -107,23 +111,21 @@ describe('ротация ENCRYPTION_KEY: кандидаты и источник�
   });
 
   it('источники для перевода: старая формула, ключ под OLD и k0, но не текущий ключ', () => {
-    const rotated = load({ key: KEY, old: OLD });
     const src = rotated.clientKeySources('@Ivan_P');
     expect(src).toEqual([
       rotated.legacyClientKey('@Ivan_P'),
-      load({ key: OLD }).clientKey('@Ivan_P'),
+      underOld.clientKey('@Ivan_P'),
       `k0:${sha256('ivan_p')}`,
     ]);
     expect(src).not.toContain(rotated.clientKey('@Ivan_P'));
   });
 
   it('источники телефона с `+`: ключи формы «только цифры» (до сохранения `+`)', () => {
-    const rotated = load({ key: KEY, old: OLD });
     const src = rotated.clientKeySources('+7 (999) 123-45-67');
     expect(src).toEqual(
       expect.arrayContaining([
         rotated.clientKey('79991234567'),
-        load({ key: OLD }).clientKey('79991234567'),
+        underOld.clientKey('79991234567'),
         `k0:${sha256('79991234567')}`,
       ]),
     );
@@ -133,7 +135,7 @@ describe('ротация ENCRYPTION_KEY: кандидаты и источник�
   });
 
   it('legacyClientKey — прежняя формула без изменений (склейка ящиков в ней сохранена)', () => {
-    const { legacyClientKey, isLegacyKey } = load({ key: KEY });
+    const { legacyClientKey, isLegacyKey } = current;
     expect(legacyClientKey('ivan-petrov@x.ru')).toBe(sha256('ivanpetrov@x.ru'));
     expect(isLegacyKey(legacyClientKey('@x'))).toBe(true);
     expect(isLegacyKey('rot-e2e-client')).toBe(false);

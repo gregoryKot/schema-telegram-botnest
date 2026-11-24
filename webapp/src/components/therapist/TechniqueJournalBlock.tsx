@@ -11,6 +11,7 @@ import { SkeletonList } from '../Skeleton';
 import type { ClientDetail } from './clientSheetTypes';
 import { clientConceptLinks } from './useClientConceptGraph';
 import { useConceptGuide } from './guide/useConceptGuide';
+import { guideMarkClient } from './guide/marks/useClientGuideMarks';
 import { useSessionWork } from './useSessionWork';
 import { hasCustomMode, useCustomModeNames, type NamedMode } from './useCustomModeNames';
 
@@ -39,7 +40,7 @@ export function TechniqueJournalBlock({ detail, onOpenConcept, takeFocus, onOpen
   const work = useSessionWork(detail);
   const customModes = useCustomModeNames(work.entries.some((e) => hasCustomMode(e.work)));
   const guide = useConceptGuide({
-    tasks: detail.clientTasks, plan: { clientId: detail.selectedClient?.telegramId },
+    tasks: detail.clientTasks, plan: { clientId: detail.selectedClient?.telegramId }, client: guideMarkClient(detail.selectedClient),
     graph: {
       source, onChangeLink: handlers.onChangeLink, onChangeSchemaLink: handlers.onChangeSchemaLink,
       workMarks: (from) => workMarks(work.entries, from),
@@ -51,8 +52,6 @@ export function TechniqueJournalBlock({ detail, onOpenConcept, takeFocus, onOpen
   const load = detail.conceptLoad; // в тестах вкладки заданий карточка бывает без концептуализации
   // Концептуализация не загрузилась — отметок нет, пункты итогов сессий остаются.
   const days = sessionJournal(load?.failed ? [] : techniqueJournal(source), work.entries);
-  // Запись сессии открывается, только если она среди показанных на вкладке «Сессии».
-  const shown = new Set((detail.notes ?? []).map((n) => n.id));
   const openSession = onOpenSession && ((noteId: number) => {
     api.trackEvent('concept_guide_journal_entry');
     onOpenSession(noteId);
@@ -72,7 +71,7 @@ export function TechniqueJournalBlock({ detail, onOpenConcept, takeFocus, onOpen
       )}
       {work.failed && <div className="tb-meta" role="status">Пункты из ранних записей сессий не загрузились — журнал неполный.</div>}
       {days.length > 0 ? (
-        <JournalDays days={days} modeLinks={source.modeLinks} customModes={customModes} onOpenMark={guide.openMark} onOpenSession={openSession} shown={shown} />
+        <JournalDays days={days} modeLinks={source.modeLinks} customModes={customModes} onOpenMark={guide.openMark} onOpenSession={openSession} />
       ) : !load?.failed && (
         <div className="tb-journal-empty">
           <div className="tb-meta">Пока пусто. Пункты появляются из «Что делали» в итогах сессии и из отметки «Делали сегодня» в листе техники в концептуализации.</div>
@@ -91,11 +90,10 @@ interface DaysProps {
   customModes: NamedMode[];
   onOpenMark: (e: TechniqueJournalEntry) => void;
   onOpenSession?: (noteId: number) => void;
-  shown: Set<number>;
 }
 
 /** Строки по дням: день слева один раз, справа «Что делали — режим, схема». Названия техник отметок — чанк текстов подсказок. */
-function JournalDays({ days, modeLinks, customModes, onOpenMark, onOpenSession, shown }: DaysProps) {
+function JournalDays({ days, modeLinks, customModes, onOpenMark, onOpenSession }: DaysProps) {
   const tr = useTr();
   const texts = useGuide();
   const count = days.reduce((n, d) => n + d.rows.length, 0);
@@ -119,7 +117,7 @@ function JournalDays({ days, modeLinks, customModes, onOpenMark, onOpenSession, 
                   if (!name) return null; // вида больше нет в каталоге
                   const from = workFromNames(row.item, modeLinks, customModes);
                   const key = `work:${row.noteId}:${row.item.id}`;
-                  if (!onOpenSession || !shown.has(row.noteId)) return <div key={key} className="tb-journal-row tb-journal-row--static">{line(name, from)}</div>;
+                  if (!onOpenSession) return <div key={key} className="tb-journal-row tb-journal-row--static">{line(name, from)}</div>;
                   return (
                     <button
                       key={key} type="button" className="tb-journal-row"

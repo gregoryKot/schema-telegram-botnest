@@ -158,7 +158,7 @@ export function AppSections({
             <PracticeSection
               onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
               onOpenPractices={() => ov.setShowPractices(true)}
-              onOpenPlans={() => ov.setShowPlans(true)}
+              onOpenPlans={(focus) => { ov.setPlansFocus(focus ?? null); ov.setShowPlans(true); }}
               onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
               onOpenDiaries={() => ov.setShowDiaries(true)}
               onOpenSchema={ov.openSchema}

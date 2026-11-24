@@ -15,6 +15,13 @@
 .sg-sign { display: flex; flex: none; width: 60px; }
 .sg-sign .pp-art--square { width: 60px; height: auto; }
 .ds-label.sg-name { flex: 1 1 auto; min-width: 0; color: var(--text-sub); overflow-wrap: anywhere; }
+/* Сворачиваемая группа (SignGroup fold): шапка — кнопка во всю ширину, подпись и «простыми словами» столбиком. */
+.sg-fold-head { width: calc(100% - 8px); min-height: 44px; padding: 0; border: none; background: none; color: inherit; text-align: left; cursor: pointer; }
+.sg-fold-name { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; color: var(--text-sub); }
+.sg-hint { font-size: 13px; line-height: 1.35; color: var(--text-muted); }
+/* Подсказка раскрытой группы без кнопки-шапки («Путь терапии»): строкой под подписью. */
+.sg-hint--line { margin: -6px 4px 10px; }
+.sg-fold-head[aria-expanded="false"] { margin-bottom: 2px; }
 .sg-aside { flex: none; font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 .sg-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
 /* Тихая группа (SignGroup plain, пикеры концептуализации терапевта): ни листа, ни белой карточки — шапка со знаком и
@@ -22,6 +29,8 @@
 .sg-group--plain { padding: 0; border-radius: 0; }
 .sg-group--plain > .sg-head { margin: 0 0 8px; }
 .sg-group--plain > .sg-rows { border-radius: 0; background: none; overflow: visible; }
+/* Тихая свёртка («Техники», «Запросы» справочника): шапка-кнопка во всю ширину, под ней — карточки строк своих оттенков. */
+.sg-group--plain > .sg-fold-head { width: 100%; }
 /* Несколько знаков (копинги справочника: Yield, Shelter, Shield) — 44 вплотную; на узком листе (320)
    подпись уходит под знаки, а не за край. */
 .sg-signs { display: flex; flex: none; gap: 2px; }

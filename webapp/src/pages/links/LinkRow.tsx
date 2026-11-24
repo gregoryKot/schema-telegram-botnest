@@ -1,9 +1,9 @@
-// Пункт страницы ссылок — бумага своего вида: кнопка записи с пометкой, карточка проекта,
-// записка, ярлык со значками или полоска-ссылка. Все ссылки — обычные <a href> в той же
-// вкладке; клик по каждой шлёт свою цель.
+// Пункт страницы ссылок: кнопка записи, кнопка «о себе», карточка проекта, записка или строка списка
+// (ссылка либо название со значками). Все ссылки — обычные <a href> в той же вкладке;
+// клик по каждой шлёт свою цель.
 import { HealthyAdultNote } from './HealthyAdultNote';
 import type { ReadyLink } from './linksModel';
-import { PenCurve, PenGo } from './linksPen';
+import { MoreInfo } from './MoreInfo';
 import { PlaceIcons } from './PlaceIcons';
 import { ProjectCard } from './ProjectCard';
 import { trackLinksClick } from './trackLinksClick';
@@ -11,19 +11,17 @@ import { trackLinksClick } from './trackLinksClick';
 export function LinkRow({ link }: { link: ReadyLink }) {
   const { main } = link;
   if (link.kind === 'feature') return <li className="lk-item"><ProjectCard link={link} /></li>;
-  if (link.quote) return <li className="lk-item"><HealthyAdultNote link={link} /></li>;
+  if (link.kind === 'note') return <li className="lk-item"><HealthyAdultNote link={link} /></li>;
   if (!main) {
     return (
-      <li className="lk-item">
-        <section className="lk-paper lk-label"><h2 className="lk-label-title">{link.title}</h2><PlaceIcons link={link} /></section>
+      <li className="lk-row">
+        <div className="lk-row-in lk-head"><h2>{link.title}</h2>{link.more && <MoreInfo more={link.more} />}<PlaceIcons link={link} /></div>
       </li>
     );
   }
   if (link.kind === 'primary') {
     return (
-      <li className="lk-item lk-ask">
-        <span className="lk-why lk-pen" aria-hidden>разбирать схемы не в одиночку</span>
-        <PenCurve className="lk-why-arrow" />
+      <li className="lk-item">
         <a className="lk-cta" href={main.href} onClick={() => trackLinksClick(main.id)}>
           <b>{link.title}</b>
           {link.note && <small>{link.note}</small>}
@@ -31,9 +29,16 @@ export function LinkRow({ link }: { link: ReadyLink }) {
       </li>
     );
   }
+  if (link.kind === 'secondary') {
+    return (
+      <li className="lk-item lk-item--sub">
+        <a className="lk-sub" href={main.href} onClick={() => trackLinksClick(main.id)}>{link.title} <span className="lk-go" aria-hidden>→</span></a>
+      </li>
+    );
+  }
   return (
-    <li className="lk-item lk-strip-item">
-      <a className="lk-strip" href={main.href} onClick={() => trackLinksClick(main.id)}>{link.title} <PenGo /></a>
+    <li className="lk-row">
+      <a className="lk-row-in" href={main.href} onClick={() => trackLinksClick(main.id)}>{link.title} <span className="lk-go" aria-hidden>→</span></a>
     </li>
   );
 }

@@ -10,7 +10,8 @@ import type {
   ModeDiaryEntry,
   GratitudeDiaryEntry,
 } from '../types';
-import type { PracticePlan, YsqHistoryEntry } from '../apiTypes';
+import type { PracticePlan, TherapistNote, YsqHistoryEntry } from '../apiTypes';
+import type { UserId } from '../userId';
 
 export type DiaryKind = 'schema' | 'mode' | 'gratitude';
 export interface DiaryEntryOf {
@@ -24,7 +25,16 @@ export interface DiaryPage<T> {
   hasMore: boolean;
 }
 
+/** Ответ GET /api/therapy/notes/:clientId/one/:noteId: запись и её «Сессия N». */
+export interface TherapistNoteOne {
+  note: TherapistNote;
+  number: number;
+}
+
 export const createEntryApi = (t: ApiTransport) => ({
+  /** Запись сессии по id: страница заметок отдаёт только последние 100. */
+  getTherapistNote: (clientId: UserId, noteId: number) =>
+    t.get<TherapistNoteOne>(`/api/therapy/notes/${clientId}/one/${noteId}`),
   /** Страница дневника; `before` — id записи, старше которой нужна страница. */
   getDiaryPage: <K extends DiaryKind>(kind: K, before?: number) =>
     t.get<DiaryPage<DiaryEntryOf[K]>>(

@@ -1,6 +1,6 @@
 # compiled output
 /dist
-/node_modules
+node_modules/
 /build
 
 # Logs
@@ -149,3 +149,6 @@ playwright.config.js.map
 # gregoryKot/schema-miniapp в корне — его node_modules иначе попадают в
 # неотслеживаемое и в чистое дерево precheck (ENOBUFS в check-unwatched-code).
 schema-miniapp/
+
+# превью арта «Недели» (генерируется game/art/build.py)
+game/art/out/

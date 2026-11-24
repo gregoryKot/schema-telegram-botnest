@@ -1,4 +1,4 @@
-// Реестр-сверка (правило №4 CLAUDE.md): 35 id продублированы здесь ЖЁСТКО
+// Реестр-сверка (правило №4 CLAUDE.md): 36 id продублированы здесь ЖЁСТКО
 // (не импортом из фронтенда — shared от них не зависит), чтобы
 // тест падал сам по себе при рассинхроне карточек. Кросс-проверку с
 // MODE_GROUPS делает отдельный фронтовый тест (не в этой задаче).
@@ -36,6 +36,7 @@ const EXPECTED_IDS = [
   'flagellating_oc',
   'compulsive_oc',
   'worrying_oc',
+  'scolding_oc',
   'bully_attack',
   'manipulative',
   'predator',
@@ -95,7 +96,7 @@ function hasSecondPersonVerb(value: string): boolean {
   return false;
 }
 
-describe('MODE_CARDS — реестр 35 id', () => {
+describe('MODE_CARDS — реестр 36 id', () => {
   const actualIds = Object.keys(MODE_CARDS).sort();
   const expectedSorted = [...EXPECTED_IDS].sort();
 
@@ -103,8 +104,8 @@ describe('MODE_CARDS — реестр 35 id', () => {
     expect(actualIds).toEqual(expectedSorted);
   });
 
-  it('ровно 35 карточек', () => {
-    expect(actualIds).toHaveLength(35);
+  it('ровно 36 карточек', () => {
+    expect(actualIds).toHaveLength(36);
   });
 
   it.each(EXPECTED_IDS)('getModeCard(%s) находит карточку', (id) => {

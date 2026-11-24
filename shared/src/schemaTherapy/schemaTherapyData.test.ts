@@ -1,6 +1,6 @@
 // Раньше это был контент двух побайтово идентичных копий (webapp,
 // аудит парности PR #349) — тест держит единственный источник целым: 20 схем
-// в 5 доменах, 35 режимов в 6 группах, и производные реестры/хелперы не
+// в 5 доменах, 36 режимов в 6 группах, и производные реестры/хелперы не
 // расходятся с исходными группами.
 import { describe, it, expect } from 'vitest';
 import { DOMAIN_HUE, MODE_GROUP_HUE, toneHex } from '../theme/entityHue';
@@ -21,9 +21,9 @@ describe('schemaTherapyData', () => {
     expect(ALL_SCHEMAS).toHaveLength(20);
   });
 
-  it('содержит 35 режимов в 6 группах', () => {
+  it('содержит 36 режимов в 6 группах', () => {
     expect(MODE_GROUPS).toHaveLength(6);
-    expect(ALL_MODES).toHaveLength(35);
+    expect(ALL_MODES).toHaveLength(36);
   });
 
   it('ALL_SCHEMAS и ALL_MODES без дублей id', () => {

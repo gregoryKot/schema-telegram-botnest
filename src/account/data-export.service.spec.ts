@@ -158,9 +158,15 @@ function makeFakePrisma(crypto: CryptoModule) {
   });
 }
 
+// Загрузка — вне тестов: код уровня модуля crypto.ts не засчитывается тесту.
+let mods: ReturnType<typeof load>;
+beforeAll(() => {
+  mods = load();
+});
+
 describe('DataExportService.buildExport', () => {
   it('расшифровывает строковые и JSON-поля перед выдачей', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
@@ -181,7 +187,7 @@ describe('DataExportService.buildExport', () => {
   });
 
   it('нечитаемое поле не прячется в пустой список: рядом имена не прочитавшихся полей (D-8)', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     // Ответы теста лежат под чужим ключом: шифротекст нашего формата, ключ неизвестен.
@@ -208,7 +214,7 @@ describe('DataExportService.buildExport', () => {
   });
 
   it('НИКОГДА не отдаёт секреты входа — второй фактор и withheld-таблицы не запрошены и не в ответе', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
@@ -237,7 +243,7 @@ describe('DataExportService.buildExport', () => {
   });
 
   it('withheld объясняет, чего нет в файле и почему — у каждой записи внятная причина', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
@@ -259,7 +265,7 @@ describe('DataExportService.buildExport', () => {
         // D2 (аудит 2026-10): данные О человеке на стороне терапевта и связи
         // с другими людьми — не в файле, и файл об этом говорит.
         // ModeMap и концептуализация выдаются видом клиента, остальное — в withheld.
-        'ModeMap, TherapistNote, TherapyPlanItem, ClientConceptualization',
+        'ModeMap, TherapistNote, TherapyPlanItem, TherapyPath, GuideMark, ClientConceptualization',
         'Pair',
       ]),
     );
@@ -278,7 +284,7 @@ describe('DataExportService.buildExport', () => {
   // человек обязан получить в файле читаемые значения (и от старых строк
   // с открытым текстом — тоже).
   it('расшифровывает email и имя способов входа (и терпит legacy-plaintext)', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const prisma = makeFakePrisma({ encrypt, encryptJson } as CryptoModule);
     const svc = new DataExportService(
       prisma as any,
@@ -295,7 +301,7 @@ describe('DataExportService.buildExport', () => {
   // A-10 (аудит 2026-10): данные обо мне на стороне терапевта, которые человек
   // и так видит в приложении, — в файле; личные пометки терапевта — нет.
   it('отдаёт карты режимов клиента расшифрованными и запрашивает их по clientId', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const prisma = makeFakePrisma({ encrypt, encryptJson } as CryptoModule);
     const svc = new DataExportService(
       prisma as any,
@@ -322,7 +328,7 @@ describe('DataExportService.buildExport', () => {
   });
 
   it('связь с терапевтом: кто/статус/ближайшая встреча — да; пометка терапевта и код приглашения — нет', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const prisma = makeFakePrisma({ encrypt, encryptJson } as CryptoModule);
     const svc = new DataExportService(
       prisma as any,
@@ -348,7 +354,7 @@ describe('DataExportService.buildExport', () => {
   });
 
   it('зовёт аналитику с числом таблиц и строк (правило №8), не бросает при её ошибке', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };
@@ -372,7 +378,7 @@ describe('DataExportService.buildExport', () => {
 
   // M7 (аудит 2026-10): выгрузка оставляет аудит-след в SecurityLogService.
   it('пишет аудит-событие data_exported только с userId, без содержимого (M7)', async () => {
-    const { DataExportService, encrypt, encryptJson } = load();
+    const { DataExportService, encrypt, encryptJson } = mods;
     const crypto = { encrypt, encryptJson } as CryptoModule;
     const prisma = makeFakePrisma(crypto);
     const analytics = { track: jest.fn(async () => undefined) };

@@ -31,6 +31,17 @@ interface AuthRequest extends Request {
 const parseId = (raw: string): number =>
   parseIdShared(raw, { allowNegative: true, int32: true });
 
+// «Нет активной связи» из сервиса — 403, а не 500.
+async function withRelation<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === 'No active relation')
+      throw new ForbiddenException('No active relation with this client');
+    throw e;
+  }
+}
+
 // Заметки сессий терапевта, карта концептуализации случая и служебная
 // информация о ходе терапии (даты сессий, дни встреч).
 @Controller('api/therapy')
@@ -49,13 +60,7 @@ export class TherapyNotesController {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const cid = parseClientId(clientId);
-    try {
-      return await this.notesService.getNotes(uid(req), cid);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    return withRelation(() => this.notesService.getNotes(uid(req), cid));
   }
 
   @Get('notes/:clientId/work')
@@ -66,13 +71,21 @@ export class TherapyNotesController {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const cid = parseClientId(clientId);
-    try {
-      return await this.notesService.getSessionWork(uid(req), cid);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    return withRelation(() => this.notesService.getSessionWork(uid(req), cid));
+  }
+
+  @Get('notes/:clientId/one/:noteId')
+  async getNote(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+    @Param('noteId') noteId: string,
+  ) {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+    const cid = parseClientId(clientId);
+    return withRelation(() =>
+      this.notesService.getNote(uid(req), cid, parseId(noteId)),
+    );
   }
 
   @Post('notes/:clientId')
@@ -84,19 +97,15 @@ export class TherapyNotesController {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const work = normalizeSessionWork(body.work);
-    if (!body.text?.trim() && work.length === 0)
+    if (!body.text?.trim() && !work.length && !body.planItemIds?.length)
       throw new BadRequestException('text required');
     if (!isCalendarDay(body.date))
       throw new BadRequestException('Invalid date');
-    const note = { date: body.date, text: body.text, work };
-    try {
+    const note = { ...body, work };
+    return withRelation(async () => {
       const cid = parseClientId(clientId);
-      return await this.notesService.createNote(uid(req), cid, note);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+      return this.notesService.createNote(uid(req), cid, note);
+    });
   }
 
   @Delete('notes/:noteId')
@@ -116,16 +125,12 @@ export class TherapyNotesController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.notesService.getConceptualization(
+    return withRelation(async () => {
+      return this.notesService.getConceptualization(
         uid(req),
         parseClientId(clientId),
       );
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    });
   }
 
   @Post('session-info/:clientId')
@@ -136,17 +141,13 @@ export class TherapyNotesController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
+    await withRelation(async () => {
       await this.clientDataService.updateSessionInfo(
         uid(req),
         parseClientId(clientId),
         body,
       );
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    });
     return { ok: true };
   }
 
@@ -158,16 +159,12 @@ export class TherapyNotesController {
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
-    try {
-      return await this.notesService.saveConceptualization(
+    return withRelation(async () => {
+      return this.notesService.saveConceptualization(
         uid(req),
         parseClientId(clientId),
         body,
       );
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message === 'No active relation')
-        throw new ForbiddenException('No active relation with this client');
-      throw e;
-    }
+    });
   }
 }

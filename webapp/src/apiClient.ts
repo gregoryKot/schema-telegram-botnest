@@ -114,6 +114,12 @@ export async function patchJson<T>(path: string, body: unknown, opts?: SendOptio
   return readJsonBody<T>(res);
 }
 
+export async function putJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await authedFetch(path, { method: 'PUT', body: JSON.stringify(body) });
+  if (!res.ok) throw await apiError(res);
+  return readJsonBody<T>(res);
+}
+
 export async function del(path: string, body?: unknown): Promise<void> {
   const res = await authedFetch(path, {
     method: 'DELETE',

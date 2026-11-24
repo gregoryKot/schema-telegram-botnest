@@ -9,7 +9,7 @@
 // Гейт не угадывает, «настоящий ли это тупик», — он требует классификации
 // (образец — check-cron-leader.mjs). Что считать исходом, — check-dead-end-report-rules.mjs:
 // catch с ошибкой, catch с пустым или нейтральным статусом без отчёта, `.then(…set…)`
-// без `.catch`; область — `webapp/src/pages/**` и `webapp/src/components/*/**`.
+// без `.catch` (и у получателя промиса), `await` вне `try…catch`; область — `webapp/src/pages/**` и `webapp/src/components/*/**`.
 // Ключ — `<файл>::<сеттер>`: одно состояние ошибки — одно решение, сколько бы
 // веток его ни ставили. Запись в `scripts/dead-end-report-baseline.json`:
 //   reports — каждая ветка с этим сеттером зовёт отчёт (`reportClientError(`,
@@ -30,14 +30,14 @@ const ROOT = resolve(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'dead-end-report-baseline.json');
 const STATUSES = ['reports', 'exempt', 'debt'];
 const REASON_RED_FLAGS = ['legacy', 'todo', 'потом', 'позже'];
-const WHAT = { neutral: 'сбой под пустым состоянием, без отчёта', unhandled: 'загрузка без обработки отказа (.then без .catch)' };
+const WHAT = { neutral: 'сбой под пустым состоянием, без отчёта', unhandled: 'загрузка без обработки отказа (.then без .catch)', unguarded: 'загрузка без обработки отказа (await вне try…catch)' };
 
 function walk(rel, acc = []) {
   const abs = join(ROOT, rel);
   if (!existsSync(abs)) return acc;
   for (const name of readdirSync(abs)) {
     const r = `${rel}/${name}`;
-    if (statSync(join(ROOT, r)).isDirectory()) walk(r, acc);
+    if (name.startsWith('.')) continue; else if (statSync(join(ROOT, r)).isDirectory()) walk(r, acc);
     else if (/\.tsx?$/.test(name) && !/\.(test|spec)\.tsx?$|\.d\.ts$|test-helpers/.test(name)) acc.push(r);
   }
   return acc;
@@ -66,7 +66,7 @@ function main() {
   const sources = new Map();
   for (const rel of scopeFiles()) {
     const raw = readFileSync(join(ROOT, rel), 'utf8');
-    if (!/catch|\.then\(/.test(raw)) continue;
+    if (!/catch|\.then\(|\bawait\b/.test(raw)) continue;
     sources.set(rel, stripComments(raw));
     for (const o of findOutcomes(raw)) {
       const key = `${rel}::${o.setter}`;
