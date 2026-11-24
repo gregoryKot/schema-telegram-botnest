@@ -48,7 +48,7 @@ export function ClientMemoCard({ client, detail }: Props) {
       />
       {detectCrisisAny(text) && <CrisisCard surface="note" compact />}
       <div className="gd-acts">
-        <button type="button" className="ds-btn" disabled={!dirty || busy} aria-busy={busy || undefined} onClick={() => void save()}>Сохранить</button>
+        <button type="button" className="ds-btn" disabled={!dirty || busy} aria-busy={busy || undefined} onClick={() => void save()}>Сохранить заметку</button>
         {done && !dirty && <span className="ds-sub" role="status">Сохранено</span>}
         {failed && <span className="tb-error" role="alert">{tr('Не удалось сохранить. Текст остался в поле, попробуй ещё раз.', 'Не удалось сохранить. Текст остался в поле, попробуйте ещё раз.')}</span>}
       </div>

@@ -66,7 +66,7 @@ describe('ClientOverviewTab', () => {
     expect(within(col).getAllByRole('heading').map(h => h.textContent)).toEqual(['О клиенте']);
     expect(col.querySelector('.tk-empty-scene svg.scn')).toBeTruthy();
     expect(col.querySelector('.tk-empty-text')!.textContent).toContain('концептуализацию');
-    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Сохранить', 'Открыть концептуализацию']);
+    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Сохранить заметку', 'Открыть концептуализацию']);
     within(col).getByRole('button', { name: 'Открыть концептуализацию' }).click();
     expect(setClientTab).toHaveBeenCalledWith('concept');
   });
