@@ -8,6 +8,8 @@ import { GuideRelated } from './GuideRelated';
 import { GuideSheet, type GuideSheetActions } from './GuideSheet';
 import { modeGuideLook, schemaGuideLook } from './guideLook';
 import { articleAddress } from './marks/guideMarkModel';
+import { interventionSeed, pointLabel } from './guidePlan';
+import { PlanButton } from './PlanButton';
 
 /** «Про клиента» у стиля копинга (#1484): из карточки клиента — его имя у отмеченных стилей. */
 export interface SchemaCopingMarks {
@@ -21,7 +23,7 @@ type Props = GuideSheetActions & { schemaName: string; view: SchemaGuideView; co
 /**
  * Лист схемы (#995) вкладками GuideSheet: герой со знаком домена (schemaGuideLook); «Кратко» — фраза репарентинга
  * и реплики `voice` (кавычки ставит лист), потребность, типичные режимы строками (id без режима пропускается);
- * «На сессии» — техники, «В кабинете», «Что делать»; «Между сессиями»; «Теория» — копинг тремя стилями, общее для
+ * «На сессии» — техники, «В кабинете», «Что делать» (у пункта — «В план»); «Между сессиями»; «Теория» — копинг тремя стилями, общее для
  * домена, «Где застревают». Пустой раздел не рисуется.
  */
 export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, ...actions }: Props) {
@@ -31,6 +33,9 @@ export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, 
   const coping = COPING_STYLES.filter((s) => guide.coping[s.id].trim());
   const modes = guide.modeIds.flatMap((id) => { const m = getModeById(id); return m ? [{ id, name: m.name }] : []; });
   const interventions = guide.interventions.filter((i) => i.trim());
+  const { onPlan } = actions;
+  // «В план» у каждого пункта: пункты — разные действия, в план идут по одному.
+  const planPoint = onPlan && ((text: string) => <PlanButton label={pointLabel(text)} onClick={() => onPlan(interventionSeed(text))} />);
   const copingList = coping.length > 0 && (
     <dl className="gd-coping">
       {coping.map((s) => {
@@ -68,7 +73,7 @@ export function SchemaGuideSheet({ schemaName, view, coping: marks, onOpenMode, 
       <GuideSection title="В кабинете" text={guide.inSession} address={at('inSession')} />
       {interventions.length > 0 && (
         <GuideSection title="Что делать" address={at('interventions')}>
-          <GuidePoints items={interventions} />
+          <GuidePoints items={interventions} action={planPoint} />
         </GuideSection>
       )}
     </GuideSheet>

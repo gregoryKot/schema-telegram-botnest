@@ -9,7 +9,7 @@ import { FIXTURE_VIEW } from '../../../../../shared/src/therapy/conceptGraph/con
 import type { UserId } from '../../../api';
 import { useConceptGuide } from './useConceptGuide';
 
-const h = vi.hoisted(() => ({ createPlanItems: vi.fn(), getTherapyClients: vi.fn(), getTherapyPath: vi.fn(), trackEvent: vi.fn() }));
+const h = vi.hoisted(() => ({ getTherapyPlan: vi.fn(() => Promise.resolve([])), createPlanItems: vi.fn(), getTherapyClients: vi.fn(), getTherapyPath: vi.fn(), trackEvent: vi.fn() }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
 const MODE = { kind: 'mode', id: 'vulnerable_child' } as const;

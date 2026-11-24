@@ -5,7 +5,7 @@
 // «Теория» (копинг, общее для домена, «Где застревают», источники); техника ведёт в лист техники, «Дать заданием» отдаёт пункт. Содержание — фикстура, не тексты
 // shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaGuideSheet } from './SchemaGuideSheet';
 import type { SchemaGuideView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
@@ -156,5 +156,18 @@ describe('SchemaGuideSheet — «Про клиента» на стиле коп�
     expect(coping.getAllByRole('term')[1].textContent).not.toContain('отмечено');
     fireEvent.click(coping.getByRole('button', { name: 'Про клиента: Гиперкомпенсация' }));
     expect(onMark).toHaveBeenCalledWith('overcompensation');
+  });
+
+  it('«Что делать»: у каждого пункта «В план» — отдаёт пункт с рубрикой по смыслу; без плана кнопок нет', () => {
+    renderSheet();
+    expect(screen.queryByRole('button', { name: /^В план:/ })).toBeNull();
+    cleanup();
+    const onPlan = vi.fn();
+    render(<MemoryRouter><SchemaGuideSheet schemaName={NAME} view={FIXTURE_SCHEMA_VIEW} onOpenTechnique={vi.fn()} onPlan={onPlan} onClose={() => {}} /></MemoryRouter>);
+    tab('На сессии');
+    const buttons = region('Что делать').getAllByRole('button', { name: /^В план:/ });
+    expect(buttons).toHaveLength(FIXTURE_SCHEMA_GUIDE.interventions.length);
+    fireEvent.click(buttons[0]);
+    expect(onPlan).toHaveBeenCalledWith(expect.objectContaining({ field: 'interventions', pickRubric: true, parts: expect.any(Array) }));
   });
 });
