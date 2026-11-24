@@ -71,7 +71,7 @@ export function NodeTools({ id, selected, data }: { id: string; selected?: boole
   return (
     <NodeToolbar isVisible={!!selected} position={Position.Top} offset={8}>
       <div style={{ display: 'flex', gap: 2, padding: 'var(--space-4)', borderRadius: 'var(--r-8)', alignItems: 'center',
-        background: 'var(--bg-elev)', border: '1px solid var(--line-strong)', boxShadow: 'var(--shadow-2)' }}>
+        background: 'var(--bg-elev)', border: '1px solid var(--line-strong)' }}>
         <button className="mm2-nt-btn" style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
         {!data?.wheel && <>{sep}
         <button className="mm2-nt-btn" style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}

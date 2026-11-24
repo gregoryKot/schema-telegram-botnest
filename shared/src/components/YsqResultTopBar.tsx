@@ -36,7 +36,7 @@ export function YsqResultTopBar({ tr, onShare, onHelpOpen }: Props) {
         <button
           onClick={toggleHelp}
           aria-expanded={open}
-          className="ss-topbar-btn"
+          className="ds-btn ds-btn--secondary ds-btn--sm ss-topbar-btn"
         >
           Как понимать
           <svg
@@ -52,7 +52,10 @@ export function YsqResultTopBar({ tr, onShare, onHelpOpen }: Props) {
             <path d="M2 4 L6 8 L10 4" />
           </svg>
         </button>
-        <button onClick={onShare} className="ss-topbar-btn">
+        <button
+          onClick={onShare}
+          className="ds-btn ds-btn--secondary ds-btn--sm ss-topbar-btn"
+        >
           <ShareIcon /> Поделиться
         </button>
       </div>

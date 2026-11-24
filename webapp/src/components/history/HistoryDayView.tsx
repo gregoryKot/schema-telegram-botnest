@@ -53,7 +53,7 @@ export function HistoryDayView(p: Props) {
             <span className="ds-chev" aria-hidden="true" />
           </div>
         )}
-        <div className="ds-card ds-card--flush">
+        <div className="ds-rows">
           {p.needs.map(n => {
             const val = p.ratings[n.id] ?? 0;
             const lvl = needLevel(val);

@@ -1,8 +1,7 @@
 // Какой знак у листа подсказок терапевту (docs/design/PAPER_2026-11.md, «Язык
 // знаков»): режим — знак его группы, техника — свой знак (пять техник берут
 // мотив языка, который им точно подходит: стулья — Talk, письма — Sheets,
-// осознанность — Breath, самосострадание — Heart, когнитивная работа — Pebbles),
-// схема — знак домена (DomainArt), раздел «Для терапевта» — свой знак (PRACTICE_NOTE_SIGN).
+// осознанность — Breath, самосострадание — Heart, когнитивная работа — Pebbles), схема — знак домена (DomainArt), раздел «Для терапевта» — свой знак (PRACTICE_NOTE_SIGN).
 // Чистые функции; рисунки — реестр SignArt.tsx (режимы — GuideSignsModes.tsx, техники — GuideSignsTechniques.tsx,
 // «Для терапевта» — GuideSignsPractice.tsx). Тип техники — только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import { MODE_GROUP_SIGN, modeGroupLook, modeLook } from '../../../../shared/src/theme/entityLook';
@@ -11,6 +10,7 @@ import { TECHNIQUE_OWN_SIGN_KEYS } from '../../../../shared/src/theme/techniqueS
 import { YOUNG_PRACTICE_NOTE_SIGN } from './practiceSignsYoung';
 import { ARNTZ_PRACTICE_NOTE_SIGN } from './practiceSignsArntz';
 import { FARRELL_PRACTICE_NOTE_SIGN } from './practiceSignsFarrell';
+import { BEHARY_PRACTICE_NOTE_SIGN } from './practiceSignsBehary';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
@@ -85,7 +85,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   therapist_schemas: 'layers',
   therapist_wellbeing: 'cup',
   therapy_aims: 'grown',
-  ...YOUNG_PRACTICE_NOTE_SIGN, ...ARNTZ_PRACTICE_NOTE_SIGN, ...FARRELL_PRACTICE_NOTE_SIGN,
+  ...YOUNG_PRACTICE_NOTE_SIGN, ...ARNTZ_PRACTICE_NOTE_SIGN, ...FARRELL_PRACTICE_NOTE_SIGN, ...BEHARY_PRACTICE_NOTE_SIGN,
 };
 
 /** Знак раздела «Для терапевта»; раздела нет в таблице — без знака (не выдумываем). */

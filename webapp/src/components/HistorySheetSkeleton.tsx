@@ -22,7 +22,7 @@ export function HistorySheetSkeleton() {
             <circle className="sd-wheel-skel-center" cx={CX} cy={CY} r={CENTER_R} />
           </svg>
         </div></div>
-        <div className="ds-card ds-card--flush">
+        <div className="ds-rows">
           {FIVE.map(i => (
             <div key={i} className="ds-list-row sd-need-row"><Skeleton width={44} height={24} /><Skeleton width="45%" height={12} /><span /><Skeleton width={22} height={22} /></div>
           ))}

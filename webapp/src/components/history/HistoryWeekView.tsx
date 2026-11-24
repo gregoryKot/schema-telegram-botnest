@@ -22,7 +22,7 @@ export function HistoryWeekView({ needs, history, selectedIdx, selectedRatings, 
   return (
     <div className="sd-col">
       <div className="ds-label">За {WEEK_DAYS} дней</div>
-      <div className="ds-card ds-card--flush sd-week">
+      <div className="sd-week">
         {needs.map(need => (
           <SparklineRow key={need.id} need={need} days={weekDays} selectedRatings={selectedRatings} onClick={() => onTapNeed(need)} />
         ))}

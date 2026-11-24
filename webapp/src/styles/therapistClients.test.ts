@@ -27,15 +27,15 @@ describe('therapist-clients.css: имя в карточке клиента', () 
     expect(card).not.toContain('box-shadow');
     expect(card).not.toContain('border:');
     const paper = readFileSync(join(__dirname, 'paper.css'), 'utf8');
-    expect(paper).toMatch(/\.pp-leaf \{[^}]*background: var\(--surface\)[^}]*box-shadow: \d+px \d+px 0 oklch\(var\(--pa-layer-lc\) var\(--h, 240\)\)/);
+    expect(paper).toMatch(/\.pp-leaf \{[^}]*background: var\(--surface\)[^}]*box-shadow: 0 0 0 1px var\(--panel-line\)/);
     const markup = readFileSync(join(__dirname, '../components/therapist/ClientCard.tsx'), 'utf8');
     expect(markup).toContain('className="pp-leaf tc-card"');
   });
   it('лупа палитры видна только там, где нет строки .topbar (телефон)', () => {
     // Общая кнопка FindButton (.find-btn, index.css) — у кабинета с классом-меткой .tc-find.
     const shell = readFileSync(join(__dirname, '../index.css'), 'utf8');
-    expect(shell).toMatch(/\.find-btn \{\s*display: none;/);
-    expect(shell).toMatch(/\.topbar \{ display: none; \}\s*\.find-btn \{ display: inline-flex; \}/);
+    expect(shell).toMatch(/\.ds-btn\.find-btn \{ display: none;/);
+    expect(shell).toMatch(/\.topbar \{ display: none; \}\s*\.ds-btn\.find-btn \{ display: inline-flex; \}/);
     expect(readFileSync(join(__dirname, '../components/therapist/ClientListHero.tsx'), 'utf8')).toContain('className="tc-find"');
   });
   it('колонка имени во flex-строке сжимается: .tc-who — min-width: 0', () => {

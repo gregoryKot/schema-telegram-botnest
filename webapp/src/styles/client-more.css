@@ -4,21 +4,18 @@
 /* Подпись строки: последняя строка — не из одного слова. Знак продукта у «Зачем это всё» — без плитки, в габарите
    колонки знаков 44×24 (рисунок 36 выступает в поля строки, высоту строки не меняет). Строка моста внизу —
    зазор даёт колонка страницы, своего отступа сверху нет. */
-.cm-page > .ds-card--flush .ds-list-sub { text-wrap: pretty; }
+.cm-page > .ds-rows .ds-list-sub { text-wrap: pretty; }
 .cm-why-sign { margin: -6px 0; }
 .cm-page > .th-line { margin-top: 0; }
 /* Строка с картинкой слева: картинка 44px, тело, шеврон (у строки без картинки остаётся «тело, шеврон»). */
 
-/* Компьютер: простой список с линиями и стрелкой «→», кризисный вход — контурная кнопка (вид до #907). */
+/* Компьютер: кризисный вход — контурная кнопка (вид до #907). */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cm-page > .ds-card--flush { background: none; border: none; border-top: 1px solid var(--paper-sunk); border-radius: 0; overflow: visible; }
-  .cm-page > .ds-card--flush .ds-chev:empty::before { content: '→'; }
-  .cm-page > .ds-card--flush .ds-list-row { padding-left: 4px; padding-right: 4px; }
-  .cm-page > .ds-card--flush .ds-list-title { font-size: 16px; }
+  .cm-page > .ds-rows .ds-list-title { font-size: 16px; }
   .cm-page > .ds-card--crisis { background: none; justify-content: center; min-height: 48px; border-radius: 24px; border-color: oklch(0.58 0.12 var(--h)); }
   .cm-page > .ds-card--crisis .ds-chev { display: none; }
   /* Список и кризисная кнопка — колонкой 720 у левого края рамки; на 1344 стрелка уезжала от текста (#925). */
-  .cm-page > .ds-card--flush, .cm-page > .ds-card--crisis, .cm-page > .th-line { max-width: 720px; width: 100%; box-sizing: border-box; }
+  .cm-page > .ds-rows, .cm-page > .ds-card--crisis, .cm-page > .th-line { max-width: 720px; width: 100%; box-sizing: border-box; }
   /* Мои паттерны, Практики, Профиль дублируют левое меню. */
   .cm-phone-only { display: none; }
 }

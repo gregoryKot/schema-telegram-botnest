@@ -34,7 +34,7 @@ export function SelfMapLane({
       {lane.locked || lane.items.length === 0 ? (
         <p className="sm-lane-empty">{fallback}</p>
       ) : (
-        <div className="ds-card ds-card--flush sm-list">
+        <div className="ds-rows sm-list">
           {lane.items.map((item) => (
             <div key={item.modeId} className={'ds-list-row ds-list-row--nav ds-list-row--hover' + (item.dormant ? ' is-dormant' : '')} {...pressable(() => onPickMode(item.modeId))}>
               <span className="pp-row-art" aria-hidden="true"><SignArt sign={modeSign(item.modeId)} size="row" /></span>

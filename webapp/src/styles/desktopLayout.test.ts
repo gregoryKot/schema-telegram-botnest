@@ -14,7 +14,7 @@ const WIDE = /(^|;|\s)width:\s*100%/;
 /** Телефонная раскладка примитивов: растяжение на колонку — только ≤767 (на компьютере по содержимому). */
 const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE], ['.ds-seg--full', WIDE]];
 /** Примитивы и раскладки, у которых на ≥768 обязано быть своё правило; ':файл' — искать только в нём, по точному селектору. */
-const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-thing', '.cm-page > .ds-card--flush', '.pa-spread.ap-main'];
+const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-thing', '.cm-page > .ds-rows', '.pa-spread.ap-main'];
 /** Скрытие телефонных элементов: display: none только под точным ≤767. */
 const PHONE_HIDDEN: [string, string][] = [['concept-graph.css', '.tcp-head-title'], ['concept-graph.css', '.tcp-more-txt']];
 /** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
@@ -38,6 +38,9 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   // b26: своя кнопка в листе исхода (children PaperOutcome) — то же правило во всю карточку
   'pages/AuthErrorPage.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'pages/NotFoundPage.tsx': ['own', '.ds-btn.pa-outcome-action'],
+  'pages/login/LoginProviderButtons.tsx': ['own', '.ds-btn.al-btn-main'], // вход: во всю колонку формы (auth-login.css)
+  'pages/login/MaxLoginStep.tsx': ['own', '.ds-btn.al-btn-main'],
+  'pages/TwoFactorChallengePage.tsx': ['own', '.ds-btn.al-submit'],
   'pages/login/TelegramRetry.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'pages/service/TicketNotFound.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'components/practice/BreathActions.tsx': ['stretch', '.qb-actions'], // лист дыхания: колонка, на широком листе — строкой
