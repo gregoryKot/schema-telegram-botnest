@@ -888,7 +888,7 @@
   "shared/src/therapy/conceptGraph/ConceptStrategy.tsx": 57,
   "shared/src/therapy/conceptGraph/ConceptTextField.tsx": 63,
   "shared/src/therapy/conceptGraph/ConceptToggleChip.tsx": 43,
-  "shared/src/therapy/conceptGraph/ConceptViewSwitch.tsx": 57,
+  "shared/src/therapy/conceptGraph/ConceptViewSwitch.tsx": 61,
   "shared/src/therapy/conceptGraph/diagram/ConceptDiagram.tsx": 147,
   "shared/src/therapy/conceptGraph/diagram/diagram.test-helpers.ts": 107,
   "shared/src/therapy/conceptGraph/diagram/diagramCircle.ts": 77,
