@@ -176,7 +176,7 @@ export function LandingPage() {
       <section id="about" ref={aboutRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 40px' }}>
         <div className="about-inner">
           <div style={{ position: 'relative' }}>
-            <div style={{ aspectRatio: '3/4', borderRadius: 24, overflow: 'hidden', background: 'var(--surface-2)', boxShadow: '0 24px 80px rgba(28,25,20,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ aspectRatio: '3/4', borderRadius: 'var(--r-16)', overflow: 'hidden', background: 'var(--surface-2)', border: '1px solid var(--line-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <img src={siteContent.heroPhoto ?? "/gregory.jpg"} alt="Григорий Котляревский" loading="lazy" decoding="async" width={600} height={800} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
                 onError={e => {
                   const img = e.currentTarget as HTMLImageElement;
@@ -191,7 +191,7 @@ export function LandingPage() {
                   }
                 }} />
             </div>
-            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-14)', padding: '12px 18px', boxShadow: '0 8px 32px rgba(28,25,20,.12)' }}>
+            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line-strong)', borderRadius: 'var(--r-14)', padding: '12px 18px' }}>
               <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>
               <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
             </div>
@@ -246,7 +246,7 @@ export function LandingPage() {
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как устроена работа</h2>
         <div className="price-grid">
           {/* Free intro – PRIMARY */}
-          <div style={{ background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 'var(--r-16)', padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
               <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: 'var(--accent)', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{formatPrice(0, sessionPrice.currency)}</p>
@@ -259,24 +259,24 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
-            <Btn radius="btn" full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
+            <Btn full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
           </div>
           {/* Session – always dark card so light text stays legible in any theme */}
-          <div style={{ background: DARK_BG, borderRadius: 24, padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ background: DARK_BG, borderRadius: 'var(--r-16)', padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
             <div>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)' }}>Сессия</span>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--on-dark) 50%, transparent)' }}>Сессия</span>
               <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{sessionPrice.text}</p>
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
                 <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <span style={{ color: 'color-mix(in srgb, var(--accent-on-dark) 90%, transparent)', fontSize: 15, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 15, color: 'rgba(236,234,229,.7)' }}>{f}</span>
+                  <span style={{ fontSize: 15, color: 'color-mix(in srgb, var(--on-dark) 70%, transparent)' }}>{f}</span>
                 </div>
               ))}
             </div>
-            <Btn variant="dark" radius="btn" full onClick={scrollToBooking}>Начать работу →</Btn>
+            <Btn variant="dark" full onClick={scrollToBooking}>Начать работу →</Btn>
           </div>
         </div>
       </section>
@@ -311,12 +311,12 @@ export function LandingPage() {
       {/* ── PRE-FOOTER CTA ──────────────────────────────────────────────── */}
       <section style={{ background: DARK_BG, padding: '96px 40px', textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(236,234,229,.5)', margin: '0 0 24px' }}>Начать</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--on-dark) 50%, transparent)', margin: '0 0 24px' }}>Начать</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 400, color: INK_ON_DARK, lineHeight: 1.05, margin: '0 0 36px', letterSpacing: '-.025em' }}>
             Первая встреча –<br /><span style={{ fontStyle: 'italic', color: 'color-mix(in srgb, var(--accent-on-dark) 85%, transparent)' }}>бесплатно</span>
           </h2>
           <Btn size="lg" onClick={scrollToBooking}>Записаться на знакомство →</Btn>
-          <p style={{ fontSize: 13, color: 'rgba(236,234,229,.5)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
+          <p style={{ fontSize: 13, color: 'color-mix(in srgb, var(--on-dark) 50%, transparent)', marginTop: 20 }}>15 минут · без обязательств · онлайн</p>
         </div>
       </section>
 
