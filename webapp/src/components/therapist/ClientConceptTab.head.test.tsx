@@ -249,13 +249,13 @@ describe('ширина под схему', () => {
     expect(root().classList.contains('tcp--graph')).toBe(true);
   });
 
-  it('провайдер сайта: сегмент ds-seg, активный вид ds-seg-btn is-active, сводка — лист бумаги', async () => {
+  it('провайдер сайта: тихая пара lt-quiet, вид — lt-q с aria-pressed, сводка — лист бумаги', async () => {
     await openTab();
     const group = screen.getByRole('group', { name: 'Вид концептуализации' });
-    expect(group.classList.contains('ds-seg')).toBe(true);
+    expect(group.classList.contains('lt-quiet')).toBe(true);
     const active = within(group).getByRole('button', { name: 'Схема' });
-    expect(active.classList.contains('ds-seg-btn')).toBe(true);
-    expect(active.classList.contains('is-active')).toBe(true);
+    expect(active.classList.contains('lt-q')).toBe(true);
+    expect(active.getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('region', { name: 'Коротко' }).className).toBe('pp-paper tcp-digest');
   });
 
@@ -294,7 +294,7 @@ describe('шапка: компьютер с заголовком, телефон
     expect(css.replace(phone.slice(0, phone.indexOf('\n}\n') + 3), '')).not.toMatch(/\.tcp-(head-title|more-txt)[^{]*\{[^}]*display: none/);
     expect(css).toMatch(new RegExp(`${DESK} \\{\\s*\\.tcp-save \\{ margin-left: 0; \\}[\\s\\S]*?\\.tcp-more \\.ds-btn--icon \\{[^}]*width: auto`));
     // на компьютере order не нужен: порядок в DOM = видимому (B1), order у статуса — только на телефоне
-    expect(css.slice(0, phoneAt)).not.toMatch(/\.tcp-(save|more)[^{]*\{[^}]*order:|\.tcp-head > \.ds-seg \{[^}]*order/);
+    expect(css.slice(0, phoneAt)).not.toMatch(/\.tcp-(save|more)[^{]*\{[^}]*order:|\.tcp-head > \.lt-quiet \{[^}]*order/);
     // группа действий: вне медиа растворена (телефон как раньше), на ≥768 неразрывная; принудительного переноса заголовка нет
     expect(css).toMatch(/\n\.tcp-head-actions \{ display: contents; \}/);
     expect(css).toMatch(new RegExp(`${DESK} \\{\\s*\\.tcp-head-actions \\{ display: inline-flex;[^}]*margin-left: auto`));
@@ -312,7 +312,7 @@ describe('шапка: компьютер с заголовком, телефон
     const idx = (sel: string) => kids.findIndex(k => k.matches(sel));
     expect(kids).toHaveLength(4);
     expect(idx('.tcp-save')).toBe(0);
-    expect(idx('.ds-seg')).toBe(1);
+    expect(idx('.lt-quiet')).toBe(1);
     expect(idx('.tcp-brief-btn')).toBe(2);
     expect(idx('.tcp-more')).toBe(3);
   });
