@@ -18,6 +18,7 @@ import { IsCalendarDay } from '../../utils/calendar-day';
 import { IsDayOrWallMoment } from '../../utils/wall-moment';
 import { NotFutureDay } from './not-future-day';
 import { PlanItemIds } from './plan-item-ids';
+import { ClientMemoDto } from './client-memo.dto';
 
 /**
  * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
@@ -50,13 +51,13 @@ export class CreateSessionNoteDto {
   @PlanItemIds() planItemIds?: number[];
 }
 
-// therapyStartDate/nextSession: строка, null (сброс) или undefined (не менять).
+// therapyStartDate/nextSession/memo: строка, null (сброс), undefined (не менять).
 // Формат (аудит 2026-10, T6) уходит в БД и карточки как есть: therapyStartDate —
 // настоящий день (IsCalendarDay) не в будущем; nextSession — день или настенное
 // время терапевта `YYYY-MM-DDTHH:mm[:ss]` (день без времени — встреча «в этот день»):
 // день настоящий, часы 00–23, минуты 00–59 (IsDayOrWallMoment).
 
-export class SessionInfoDto {
+export class SessionInfoDto extends ClientMemoDto {
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @IsString()
