@@ -28,12 +28,16 @@ describe('nextBooking', () => {
 });
 
 describe('sessionWhen', () => {
+  it('дальняя дата — «Вс, 15 ноя · 18:00», как у nextSessionLabel', () => {
+    expect(sessionWhen('2026-11-15T15:00:00.000Z', 'Europe/Moscow', new Date('2026-11-09T09:00:00Z'))).toBe('Вс, 15 ноя · 18:00');
+  });
+
   const NOW = new Date('2026-11-09T09:00:00Z'); // понедельник
 
   it('«Завтра, 16:00» по Москве и своё время в другой зоне — независимо от зоны машины', () => {
     forEachTimeZone((machine) => {
-      expect(sessionWhen('2026-11-10T13:00:00.000Z', 'Europe/Moscow', NOW), machine).toBe('Завтра, 16:00');
-      expect(sessionWhen('2026-11-10T13:00:00.000Z', 'Asia/Bangkok', NOW), machine).toBe('Завтра, 20:00');
+      expect(sessionWhen('2026-11-10T13:00:00.000Z', 'Europe/Moscow', NOW), machine).toBe('Завтра · 16:00');
+      expect(sessionWhen('2026-11-10T13:00:00.000Z', 'Asia/Bangkok', NOW), machine).toBe('Завтра · 20:00');
     });
   });
 });
