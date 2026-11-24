@@ -11,6 +11,7 @@ import { TherapyClientDataService } from './therapy-client-data.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
 import { decrypt, encrypt, encryptJson } from '../utils/crypto';
+import { decryptName } from './client-name';
 import { YsqService } from '../bot/ysq.service';
 
 const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
@@ -821,6 +822,21 @@ describe('TherapyClientDataService — updateSessionInfo: поля и вирту
     const { svc, rels } = makeService([relA]);
     await svc.updateSessionInfo(T1, CID_A, { meetingDays: [1, 3, 5] });
     expect((rels[0] as any).meetingDays).toEqual([1, 3, 5]);
+  });
+
+  it('memo пишется шифротекстом, пустая строка и null очищают', async () => {
+    const { svc, rels } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, { memo: '  боится опоздать  ' });
+    const stored = (rels[0] as any).therapistMemo as string;
+    expect(decryptName(stored)).toBe('боится опоздать');
+    await svc.updateSessionInfo(T1, CID_A, { memo: '   ' });
+    expect((rels[0] as any).therapistMemo).toBeNull();
+  });
+
+  it('memo офлайн-клиента пишется в его карточку (-id)', async () => {
+    const { svc, rels } = makeService([relVirtual]);
+    await svc.updateSessionInfo(T1, -3n, { memo: 'без телефона' });
+    expect(decryptName((rels[0] as any).therapistMemo)).toBe('без телефона');
   });
 
   it('пустое тело (все поля undefined) — не трогает БД', async () => {

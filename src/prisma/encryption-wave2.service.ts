@@ -116,7 +116,11 @@ export class EncryptionWave2Service implements OnApplicationBootstrap {
 
     for (const r of await this.prisma.therapyRelation.findMany()) {
       const update: Record<string, string | null> = {};
-      for (const f of ['clientAlias', 'virtualClientName'] as const) {
+      for (const f of [
+        'clientAlias',
+        'virtualClientName',
+        'therapistMemo',
+      ] as const) {
         const enc = encIf(r[f]);
         if (enc !== r[f]) update[f] = enc;
       }

@@ -135,7 +135,10 @@ export const TARGETS: RotationTarget[] = [
     name: 'therapistRequest',
     fields: ['fullName', 'qualification', 'contacts', 'message'],
   },
-  { name: 'therapyRelation', fields: ['virtualClientName', 'clientAlias'] },
+  {
+    name: 'therapyRelation',
+    fields: ['virtualClientName', 'clientAlias', 'therapistMemo'],
+  },
   // ScheduledNotification.payload — целиком зашифрованная JSON-строка
   // (notification-payload.crypto.ts, аудит 2026-10, T1). Без этой строки после
   // удаления ENCRYPTION_KEY_OLD неотправленные уведомления не расшифровались бы,

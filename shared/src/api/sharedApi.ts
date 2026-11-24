@@ -279,6 +279,7 @@ export const buildSharedApi = (t: ApiTransport) => ({
       therapyStartDate?: string | null;
       nextSession?: string | null;
       meetingDays?: number[];
+      memo?: string | null;
     },
   ) => t.post(`/api/therapy/session-info/${clientId}`, body),
   getTherapyClientData: (clientId: UserId) =>
