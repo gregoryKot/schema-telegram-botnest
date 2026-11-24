@@ -23,7 +23,7 @@ export function GuideSelectionBar({ pageRef }: { pageRef: RefObject<Element | nu
   return createPortal(
     <div className="gd-sel-bar" role="toolbar" aria-label="Выделенный текст">
       <button
-        type="button" className="gd-sel-btn" onMouseDown={keep} onPointerDown={keep}
+        type="button" className="ds-btn gd-sel-btn" onMouseDown={keep} onPointerDown={keep}
         onClick={() => { onFragment(picked); window.getSelection()?.removeAllRanges(); setPicked(null); }}
       >
         Про клиента
