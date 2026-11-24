@@ -14,6 +14,7 @@
 // спека).
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
+import { encryptName } from './client-name';
 import { randomBytes as mockableRandomBytes } from 'crypto';
 
 // Имя бота без дефолта (telegram.constants.ts): для ссылки-приглашения задаём его
@@ -194,6 +195,7 @@ interface FullRel {
   urlCode?: string;
   clientAlias?: string | null;
   virtualClientName?: string | null;
+  therapistMemo?: string | null;
   createdAt?: Date;
   therapyStartDate?: string | null;
   nextSession?: string | null;
@@ -409,6 +411,77 @@ describe('приглашение из «Новый клиент» — после
       name: 'Мария',
       clientAlias: 'Мария К.',
     });
+  });
+});
+
+describe('заметка «О клиенте»: терапевту в списке, клиенту — никогда', () => {
+  const memo = encryptName('любит рисовать')!;
+
+  it('getClients отдаёт расшифрованную заметку, у офлайн-клиента тоже', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          createdAt: new Date(),
+          code: 'A',
+          therapistMemo: memo,
+        },
+        {
+          id: 2,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          createdAt: new Date(),
+          code: 'B',
+          virtualClientName: encryptName('Олег'),
+          therapistMemo: memo,
+        },
+        {
+          id: 3,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          createdAt: new Date(),
+          code: 'C',
+          virtualClientName: encryptName('Ира'),
+        },
+      ],
+      [{ id: CLIENT, firstName: 'Мария', role: 'CLIENT' }],
+    );
+    const list = await service.getClients(T1);
+    expect(list.map((c) => c.memo)).toEqual([
+      'любит рисовать',
+      'любит рисовать',
+      null,
+    ]);
+  });
+
+  it('getRelation клиента не несёт заметку ни в каком виде', async () => {
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          createdAt: new Date(),
+          code: 'A',
+          therapistMemo: memo,
+        },
+      ],
+      [
+        { id: T1, firstName: 'Анна', role: 'THERAPIST' },
+        { id: CLIENT, firstName: 'Мария', role: 'CLIENT' },
+      ],
+    );
+    const info = await service.getRelation(CLIENT);
+    expect(info).not.toBeNull();
+    expect(
+      JSON.stringify(info, (_, v) => (typeof v === 'bigint' ? String(v) : v)),
+    ).not.toMatch(/memo|любит/i);
   });
 });
 
