@@ -15,22 +15,18 @@
 @media (min-width: 1024px) {
   .cfs-scrim {
     display: block; position: absolute; inset: 0; cursor: pointer;
-    background: rgba(28, 25, 22, 0.3); animation: fade-in .18s ease;
+    background: var(--scrim); animation: fade-in .18s ease;
   }
   /* Лист поверх листа (техника из листа режима): своя подложка легче — контекст под двумя слоями не уходит в черноту. */
-  .cfs-layer + .cfs-layer > .cfs-scrim { background: rgba(28, 25, 22, 0.12); }
+  .cfs-layer + .cfs-layer > .cfs-scrim { background: color-mix(in srgb, var(--scrim) 40%, transparent); }
   .cfs-panel .cfs-head, .cfs-panel .cfs-body { padding-left: var(--space-32); padding-right: var(--space-32); }
   .cfs-panel {
     flex: 0 0 auto; width: min(600px, 100%);
-    border-left: 1px solid var(--line);
-    box-shadow: -28px 0 56px -32px rgba(28, 25, 22, 0.35);
+    border-left: 1px solid var(--panel-line);
     animation: cfs-panel-in .2s ease; transition: transform .2s ease;
   }
   /* Под листом лежит другой лист той же ширины: его край выглядывает слева — видно, куда вернёт «Закрыть». */
   .cfs-layer:has(+ .cfs-layer) > .cfs-panel { transform: translateX(-20px); }
-  html[data-theme="dark"] .cfs-scrim { background: rgba(0, 0, 0, 0.5); }
-  html[data-theme="dark"] .cfs-layer + .cfs-layer > .cfs-scrim { background: rgba(0, 0, 0, 0.2); }
-  html[data-theme="dark"] .cfs-panel { box-shadow: -28px 0 56px -32px rgba(0, 0, 0, 0.7); }
 }
 
 @keyframes cfs-panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
