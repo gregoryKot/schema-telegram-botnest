@@ -92,16 +92,16 @@ export function LoginProviderButtons({
   return (
     <>
       {/* Знаки — цвета сервисов (VK #0077FF, Яндекс #FC3F1D, MAX — сине-фиолетовый), заданы в auth-login.css */}
-      <a className="al-btn-main" {...oauthLink('vk')}>
+      <a className="ds-btn ds-btn--lg al-btn-main" {...oauthLink('vk')}>
         <span className="al-ico al-vk" aria-hidden="true">VK</span>
         Войти через ВКонтакте
       </a>
-      <a className="al-btn-main" {...oauthLink('yandex')}>
+      <a className="ds-btn ds-btn--lg al-btn-main" {...oauthLink('yandex')}>
         <span className="al-ico al-ya" aria-hidden="true">Я</span>
         Войти через Яндекс
       </a>
       {maxBotUsername ? (
-        <button type="button" className="al-btn-main" onClick={startMax} disabled={state.kind === 'starting'}>
+        <button type="button" className="ds-btn ds-btn--lg al-btn-main" onClick={startMax} disabled={state.kind === 'starting'}>
           <span className="al-ico al-max" aria-hidden="true">M</span>
           {state.kind === 'starting' && chosen === 'max' ? 'Готовлю код…' : 'Войти через MAX'}
         </button>
