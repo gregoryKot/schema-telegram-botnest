@@ -72,9 +72,8 @@
   --host-safe-top: 0px; /* инлайн на <html> от useHostSafeTop сильнее этого объявления */
   --safe-top: max(env(safe-area-inset-top, 0px), var(--host-safe-top));
 }
-/* Чернила на всегда тёмных секциях визитки (DARK_BG, INK_ON_DARK в landing-kit-hooks.ts) — при любой теме. */
-:root { --on-dark: #eceae5; }
-:root { --dark-bg: #1c1916; }
+/* Заливка и чернила всегда тёмных секций визитки (DARK_BG, INK_ON_DARK в landing-kit-hooks.ts) — при любой теме. */
+:root { --on-dark: #eceae5; --dark-bg: #1c1916; }
 
 :root, html[data-theme="light"], .light-lock {
   /* .light-lock — поддерево, которое держит светлую тему при любом
