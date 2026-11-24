@@ -11,22 +11,25 @@ export interface ClientGuideMarks {
   /** undefined — грузится, null — не загрузилось. */
   marks: GuideMark[] | null | undefined;
   setMarks: Dispatch<SetStateAction<GuideMark[] | null | undefined>>;
+  /** Перечитать отметки (после листа справочника, где их добавляли). */
+  reload: () => void;
 }
 
 /** Отметки клиента (GET /api/therapy/guide-marks/:clientId); без клиента — ничего не грузит. */
 export function useClientGuideMarks(client?: GuideMarkClient): ClientGuideMarks | undefined {
   const [marks, setMarks] = useState<GuideMark[] | null | undefined>(undefined);
+  const [stamp, setStamp] = useState(0);
   const id = client?.id;
   useEffect(() => {
     if (id == null) return;
     let alive = true;
     api.getGuideMarks(id).then(
       (r) => { if (alive) setMarks(r.marks); },
-      () => { if (alive) setMarks(null); },
+      () => { if (alive) setMarks((m) => (stamp > 0 ? m : null)); },
     );
     return () => { alive = false; };
-  }, [id]);
-  return client && { client, marks, setMarks };
+  }, [id, stamp]);
+  return client && { client, marks, setMarks, reload: () => setStamp((n) => n + 1) };
 }
 
 /** Клиент карточки для отметок: id и подпись, как в списке клиентов. */
