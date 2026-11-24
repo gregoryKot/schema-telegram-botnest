@@ -13,7 +13,7 @@
   transition: background .12s, box-shadow .12s, transform .12s;
 }
 .sk-tpl:hover { background: oklch(0.895 0.04 var(--h)); }
-.sk-tpl.is-selected { background: oklch(0.87 0.05 var(--h)); box-shadow: 5px 6px 0 oklch(0.79 0.06 var(--h)); transform: translate(-2px, -2px); }
+.sk-tpl.is-selected { background: oklch(0.87 0.05 var(--h)); box-shadow: 0 0 0 1px var(--accent); transform: translate(-2px, -2px); }
 .sk-tpl:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .sk-tpl-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; align-self: stretch; margin-bottom: 6px; }
 .sk-tpl-sign .pp-art--row { width: 60px; height: 32px; }

@@ -59,7 +59,7 @@
 .cs-test-btn { align-self: flex-start; justify-self: start; }
 /* Под героем той же глины (или оттенка ближе 40°) — белый лист с тенью-слоем глины, как строка теста на
    телефоне и вход в тест справочника (ysqEntryLook): два глиняных листа подряд читались одним. */
-.cs-test--white { background: var(--surface); box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.cs-test--white { background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line); }
 .cs-test-art { display: flex; width: 132px; }
 .cs-test-art .scn-sign { width: 100%; }
 /* Узкая плитка (поле уже ~480: рядом со знаком 132 текст 24px шёл колонкой ~250px, «внутри» — одно в строке): знак 88 —
