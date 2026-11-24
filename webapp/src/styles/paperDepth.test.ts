@@ -24,7 +24,6 @@ const ALLOWED: Record<string, string> = {
   '.mobile-nav': 'стеклянная нижняя панель: --glass-shade и тень стекла',
   '.mobile-nav-item.active': 'активный пункт стеклянной панели: --glass-shadow',
   '.ct-link.ct-head-why': 'стеклянная пилюля шапки «Сегодня»: --glass-shadow',
-  '.ds-seg-btn.is-active': 'выбранный сегмент: тонкая тень — ждёт отдельного PR (кнопки)',
   '.cz-block.is-lifted': 'подъём блока при перетаскивании — обратная связь',
 };
 /** Файлы целиком. */

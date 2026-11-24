@@ -127,9 +127,8 @@
 
 /* ── Редакторы узла и связи ── */
 .ds-card.mm2-panel { width: 250px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; border-radius: 0; border-width: 0 0 0 1px; padding: 16px 14px; background: var(--surface); }
-/* Панель прокручивается сама, поэтому её строки не сжимаются: у .ds-seg свой
-   overflow-x: auto, и без этого min-height у него 0 — переключатели «Заливка»,
-   «Толщина», «Стиль линии» сплющивались до 6–9px, когда форма длиннее экрана. */
+/* Панель прокручивается сама, поэтому её строки не сжимаются: у строки с overflow-x
+   min-height 0, и переключатели сплющивались до 6–9px, когда форма длиннее экрана. */
 .ds-card.mm2-panel > * { flex-shrink: 0; }
 .mm2-panel-head { display: flex; align-items: center; margin-bottom: 14px; }
 .mm2-panel-title { flex: 1; margin: 0; font: 400 17px/1.25 var(--serif); }
