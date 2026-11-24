@@ -1,4 +1,5 @@
 import { ctaTargetMeta } from './game-cta.constants';
+import { WEEK_CHAPTER_SET, WEEK_CTA_PLACE_SET } from './game-week.constants';
 
 /**
  * События третьего фронтенда — игры (`game/`, Phaser). Игра никого не
@@ -7,10 +8,9 @@ import { ctaTargetMeta } from './game-cta.constants';
  * мини-тесты сайта (правило №5/№14: неверифицированная идентичность не
  * годится для персонального счёта, только для анонимного).
  *
- * Отправитель — `game/src/analytics.ts` (`trackEvent('game_…', meta)`);
- * сверка литералов с этим реестром — `src/security/analytics-sync.invariants.spec.ts`.
- * Отчёт — `src/bot/game-metrics.{service,format}.ts`, блок «Игра» в `/stats`
- * (правило №8).
+ * Отправитель — `game/src/analytics.ts`; сверка литералов —
+ * `src/security/analytics-sync.invariants.spec.ts`; отчёт — блок «Игра» в
+ * `/stats` (`src/bot/game-metrics.*`, правило №8).
  *
  * meta — маленький структурный non-PII объект (правило №7): свободного
  * текста в игре нет вовсе, только перечислимые поля ниже.
@@ -19,15 +19,11 @@ import { ctaTargetMeta } from './game-cta.constants';
 // Имена событий игры (спредятся в (PUBLIC_)ANALYTICS_EVENTS).
 export const GAME_EVENTS = [
   'game_open', // открыл страницу игры (meta.src)
-  'game_start', // нажал «начать» в меню (без meta)
-  'game_tutorial_done', // прошёл обучение (без meta)
-  'game_tutorial_skip', // пропустил обучение (без meta)
   'game_chapter_start', // начал главу (meta.chapter)
   'game_chapter_done', // дошёл до конца главы (meta.chapter)
   'game_cta_shown', // увидел приглашение к терапии (meta.from)
   'game_cta_click', // нажал приглашение (meta.from, meta.to)
   'game_share', // нажал «поделиться» (meta.from)
-  'game_over', // экран «сил не осталось» (meta.chapter)
   'game_app_arrive', // лендинг открыт кнопкой финала (?from=game), без meta
 ] as const;
 export type GameEventName = (typeof GAME_EVENTS)[number];
@@ -42,16 +38,12 @@ export const GAME_CHAPTERS = [
 export type GameChapter = (typeof GAME_CHAPTERS)[number];
 
 // Место приглашения к терапии (meta.from для game_cta_*/game_share):
-//   act1 — развилка после главы 2; cabinet — финал главы 4 (полный прогон);
-//   ending — запасной финал (не добрался до полного прогона).
+//   act1 — развилка после главы 2; cabinet — финал главы 4; ending — запасной.
 export const GAME_CTA_PLACES = ['act1', 'cabinet', 'ending'] as const;
 export type GameCtaPlace = (typeof GAME_CTA_PLACES)[number];
 
-// Откуда открыли игру (meta.src для game_open):
-//   site — переход с сайта; bot — переход из бота (команда /game);
-//   share  — по ссылке от друга (см. game_share);
-//   direct — открыл без метки в ссылке;
-//   other  — метка есть, но незнакомая (рассинхрон/будущее расширение).
+// Откуда открыли игру (meta.src для game_open): site — с сайта; bot — из бота
+// (/game); share — по ссылке друга; direct — без метки; other — незнакомая метка.
 export const GAME_ENTRY_SOURCES = [
   'site',
   'bot',
@@ -92,13 +84,10 @@ export function sanitizeGameMeta(
           : 'other',
     };
   }
-  if (
-    name === 'game_chapter_start' ||
-    name === 'game_chapter_done' ||
-    name === 'game_over'
-  ) {
+  if (name === 'game_chapter_start' || name === 'game_chapter_done') {
     const chapter = meta?.chapter;
-    return typeof chapter === 'string' && GAME_CHAPTER_SET.has(chapter)
+    return typeof chapter === 'string' &&
+      (GAME_CHAPTER_SET.has(chapter) || WEEK_CHAPTER_SET.has(chapter))
       ? { chapter }
       : null;
   }
@@ -108,7 +97,10 @@ export function sanitizeGameMeta(
     name === 'game_share'
   ) {
     const from = meta?.from;
-    if (typeof from !== 'string' || !GAME_CTA_PLACE_SET.has(from)) return null;
+    const known =
+      GAME_CTA_PLACE_SET.has(from as string) ||
+      WEEK_CTA_PLACE_SET.has(from as string);
+    if (typeof from !== 'string' || !known) return null;
     return name === 'game_cta_click'
       ? { from, ...ctaTargetMeta(meta) }
       : { from };

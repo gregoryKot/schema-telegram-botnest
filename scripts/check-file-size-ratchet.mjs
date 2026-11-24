@@ -76,6 +76,17 @@ function countLines(relPath) {
 }
 
 // CLI-логика — только при запуске как скрипт (не при импорте EXCLUDE).
+/** Файлы, изменённые относительно origin/main; null — сравнить не с чем. */
+function changedAgainstMain() {
+  const res = spawnSync('git', ['diff', '--name-only', 'origin/main'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (res.status !== 0) return null;
+  return new Set(res.stdout.split('\n').filter(Boolean));
+}
+
 function main() {
 const files = listFiles();
 const sizes = {};
@@ -85,16 +96,29 @@ for (const f of files) {
 }
 
 if (UPDATE) {
+  // Точечно: запись файла, не менявшегося против origin/main, остаётся как была —
+  // иначе --update переписывает сотни строк и параллельные PR конфликтуют.
+  // Нет origin/main или бейслайна — полная пересборка.
+  const changed = changedAgainstMain();
+  let prev = null;
+  try {
+    prev = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
+  } catch {}
+  const merged = {};
+  for (const [f, n] of Object.entries(sizes)) {
+    merged[f] = changed && prev && f in prev && !changed.has(f) ? prev[f] : n;
+  }
   // Сортировка по ПУТИ, а не по размеру: при сортировке по размеру ужавшийся
   // файл переезжал через полфайла, и диффы параллельных агентов перекрывались
   // почти всегда. По пути строка стоит на месте (см. .gitattributes).
   const sorted = Object.fromEntries(
-    Object.entries(sizes).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)),
   );
   writeFileSync(BASELINE_PATH, JSON.stringify(sorted, null, 2) + '\n');
   const over = Object.values(sizes).filter((n) => n > NEW_FILE_LIMIT).length;
   console.log(
-    `Бейслайн обновлён: ${Object.keys(sizes).length} файлов, ` +
+    `Бейслайн обновлён (${changed && prev ? 'точечно, по изменённым файлам' : 'целиком'}): ` +
+      `${Object.keys(sizes).length} файлов, ` +
       `${over} сверх потолка ${NEW_FILE_LIMIT} (зафиксированы как долг).`,
   );
   process.exit(0);

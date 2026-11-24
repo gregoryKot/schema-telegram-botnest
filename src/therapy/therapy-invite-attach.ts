@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { meetingDaysOf } from './therapy-relation-info';
+import { moveGuideMarks } from './guide-mark-move';
 
 // Перенос данных офлайн-карточки (-TherapyRelation.id: задания, заметки, карты
 // режимов, концептуализация) на аккаунт, когда терапевт подтвердил, что код
@@ -41,6 +42,22 @@ export async function attachOfflineCard(
       where: { therapistId, clientId: neg },
       data: { clientId },
     });
+    // Путь уникален по паре: если у аккаунта он уже есть, карточный удаляется
+    // (пункты плана остаются, phaseId обнуляет FK), иначе переезжает.
+    const hasPath = await tx.therapyPath.findFirst({
+      where: { therapistId, clientId },
+      select: { id: true },
+    });
+    if (hasPath)
+      await tx.therapyPath.deleteMany({
+        where: { therapistId, clientId: neg },
+      });
+    else
+      await tx.therapyPath.updateMany({
+        where: { therapistId, clientId: neg },
+        data: { clientId },
+      });
+    await moveGuideMarks(tx, therapistId, neg, clientId);
 
     // Концептуализация уникальна по паре therapistId+clientId. Две версии
     // одного документа слить нельзя: остаётся новее по updatedAt, при

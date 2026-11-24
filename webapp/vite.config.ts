@@ -44,7 +44,7 @@ export default defineConfig({
         codeSplitting: { groups: [
           { name: 'vendor-react', test: /[\\/]node_modules[\\/](react[\w-]*|scheduler)[\\/]/, priority: 3 },
           // Таблицы вида — стартовый чанк без зависимостей (почему — docs/architecture/frontends.md, «Подводные камни»).
-          { name: 'entity-look', test: /[\\/]shared[\\/]src[\\/]theme[\\/](entityLook|entityLookMaps|entityHue|signKeys)\.ts$/, priority: 2 },
+          { name: 'entity-look', test: /[\\/]shared[\\/]src[\\/]theme[\\/](entityLook|entityLookMaps|entityHue|signKeys|techniqueSignKeys|pathSignKeys)\.ts$/, priority: 2 },
           { name: 'schema-data', test: /schemaTherapyData|needData/, priority: 1 },
         ] },
       },

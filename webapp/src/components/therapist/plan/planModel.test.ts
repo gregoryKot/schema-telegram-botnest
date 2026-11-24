@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { PlanItem } from '../../../../../shared/src/therapy/plan/planItem';
-import { canAssign, cleanText, groupPlan, isEmptyPlan, movePlanItem, nextStatus, planCounts, statusLabel } from './planModel';
+import { canAssign, cleanText, groupPlan, isEmptyPlan, isQuietStatus, movePlanItem, planCounts, statusLabel } from './planModel';
 
 const item = (over: Partial<PlanItem>): PlanItem => ({
   id: 1, clientId: '7', rubric: 'custom', text: 'пункт', status: 'planned', position: 0,
-  source: null, taskId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
+  sourceAddress: null, source: null, taskId: null, phaseId: null, createdAt: '2026-11-17T00:00:00.000Z', updatedAt: '2026-11-17T00:00:00.000Z', ...over,
 });
 
 describe('groupPlan', () => {
@@ -16,7 +16,7 @@ describe('groupPlan', () => {
       item({ id: 4, rubric: 'between', position: 1 }),
     ]);
     expect(groups.map((g) => g.rubric)).toEqual(['relationship', 'between', 'custom']);
-    expect(groups.map((g) => g.label)).toEqual(['В отношениях', 'Между сессиями', 'Своё']);
+    expect(groups.map((g) => g.label)).toEqual(['Терапевтические отношения (в отношениях)', 'Между сессиями', 'Своё']);
     expect(groups[1].items.map((i) => i.id)).toEqual([4, 2]);
   });
 
@@ -35,11 +35,9 @@ describe('groupPlan', () => {
 });
 
 describe('статус', () => {
-  it('цикл: намечено → в работе → сделано → намечено', () => {
-    expect(nextStatus('planned')).toBe('active');
-    expect(nextStatus('active')).toBe('done');
-    expect(nextStatus('done')).toBe('planned');
-    expect(nextStatus('чужой')).toBe('planned');
+  it('«отложено» и «не нужно» — тихие статусы', () => {
+    expect(['postponed', 'dropped'].map(isQuietStatus)).toEqual([true, true]);
+    expect(['planned', 'active', 'done'].map(isQuietStatus)).toEqual([false, false, false]);
   });
 
   it('подписи; неизвестный статус читается как «намечено»', () => {
@@ -48,7 +46,7 @@ describe('статус', () => {
   });
 
   it('счёт по статусам', () => {
-    expect(planCounts([item({ status: 'done' }), item({ status: 'active' }), item({ status: 'done' })])).toEqual({ planned: 0, active: 1, done: 2 });
+    expect(planCounts([item({ status: 'done' }), item({ status: 'active' }), item({ status: 'done' })])).toEqual({ planned: 0, active: 1, done: 2, postponed: 0, dropped: 0 });
   });
 });
 

@@ -24,6 +24,8 @@ import { JOURNAL_LINK_LABEL } from '../../../shared/src/therapy/conceptGraph/Jou
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
   return {
+    modeSchemaLinks: () => [],
+    techniqueUsageGroups: () => [],
     modeGuide: (_tr: unknown, id: string) => (id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null),
     schemaGuide: (_tr: unknown, id: string) =>
       id === 'abandonment' ? { guide: f.FIXTURE_SCHEMA_GUIDE, domainNote: f.FIXTURE_DOMAIN_NOTE } : null,
@@ -37,7 +39,7 @@ vi.mock('../api', () => ({
   api: Object.fromEntries([
     'getTherapyClients', 'getTherapyInvites', 'getCardClaims', 'getTherapyTasksForClient', 'getTherapistNotes',
     'getConceptualization', 'getTherapyClientData', 'getClientSchemaNotes', 'getClientModeNotes',
-    'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent',
+    'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent', 'getGuideMarks',
   ].map((k) => [k, vi.fn()])),
   reportClientError: vi.fn(),
 }));
@@ -48,6 +50,7 @@ const mockApi = api as unknown as Record<string, Mock>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockApi.getGuideMarks.mockResolvedValue({ marks: [] });
   mockApi.getTherapyClients.mockResolvedValue([{
     telegramId: 7, name: 'Анна', clientAlias: null, streak: 0, lastActiveDate: null, todayIndex: null,
     recentIndexHistory: [], relationCreatedAt: '2026-01-01T00:00:00.000Z', therapyStartDate: null,
@@ -111,6 +114,7 @@ describe('TherapistClientSheet — подсказки терапевту', () =>
     fireEvent.click(screen.getByRole('button', { name: 'Подробнее о режиме' }));
     const mode = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
     expect(tracked(CONCEPT_GUIDE_MODE_OPEN_EVENT)).toBe(1);
+    fireEvent.click(within(mode).getByRole('tab', { name: 'На сессии' }));
     fireEvent.click(within(mode).getByRole('button', { name: 'Рескриптинг образов' }));
     const technique = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
     expect(tracked(CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT)).toBe(1);
@@ -126,6 +130,7 @@ describe('TherapistClientSheet — подсказки терапевту', () =>
     await openPlaque();
     fireEvent.click(screen.getByRole('button', { name: 'Подробнее о режиме' }));
     const mode = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
+    fireEvent.click(within(mode).getByRole('tab', { name: 'Задания' }));
     fireEvent.click(within(mode).getByRole('button', { name: 'Дать заданием: Письмо себе' }));
     await screen.findByText('Задание · Анна');
     // тип в «Новом задании» — имя из каталога упражнений (#984), а не пункт раздела режима
@@ -144,6 +149,7 @@ describe('TherapistClientSheet — подсказки терапевту', () =>
     const schema = screen.getByRole('dialog', { name: SCHEMA });
     expect(tracked(CONCEPT_GUIDE_SCHEMA_OPEN_EVENT)).toBe(1);
     expect(tracked(CONCEPT_GUIDE_MODE_OPEN_EVENT)).toBe(0);
+    fireEvent.click(within(schema).getByRole('tab', { name: 'На сессии' }));
     fireEvent.click(within(schema).getByRole('button', { name: 'Работа со стульями' }));
     const technique = screen.getByRole('dialog', { name: 'Работа со стульями' });
     expect(tracked(CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT)).toBe(1);
@@ -167,6 +173,7 @@ describe('TherapistClientSheet — подсказки терапевту', () =>
     await openSchemaPlaque();
     fireEvent.click(screen.getByRole('button', { name: 'Подробнее о схеме' }));
     const schema = screen.getByRole('dialog', { name: SCHEMA });
+    fireEvent.click(within(schema).getByRole('tab', { name: 'Задания' }));
     fireEvent.click(within(schema).getByRole('button', { name: 'Дать заданием: Карточка схемы' }));
     await screen.findByText('Задание · Анна');
     const card = screen.getAllByText('Карточка схемы').map((n) => n.closest('[aria-pressed]')).find(Boolean)!;
@@ -258,6 +265,7 @@ describe('TherapistClientSheet — журнал техник', () => {
     await openPlaque();
     fireEvent.click(screen.getByRole('button', { name: 'Подробнее о режиме' }));
     const mode = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
+    fireEvent.click(within(mode).getByRole('tab', { name: 'На сессии' }));
     fireEvent.click(within(mode).getByRole('button', { name: 'Работа со стульями' }));
     const technique = screen.getByRole('dialog', { name: 'Работа со стульями' });
     fireEvent.click(within(technique).getByRole('button', { name: JOURNAL_LINK_LABEL }));

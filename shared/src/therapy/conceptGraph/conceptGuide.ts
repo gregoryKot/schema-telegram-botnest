@@ -11,6 +11,7 @@ import type {
   TechniqueGuide,
   TechniqueId,
 } from '../../schemaTherapy/guide';
+import type { GuideBacklink } from '../../schemaTherapy/guide/backlinks';
 import type { Tr } from '../../needs/types';
 import { pickForm, useAddressForm } from '../../utils/addressForm';
 import { useGuide, type Guide } from './guideLoader';
@@ -48,10 +49,14 @@ export interface GuideHintView {
   guide: Pick<ModeGuide | SchemaGuide, 'goal' | 'betweenSessions'>;
   /** Техники «На сессии» в порядке раздела; id без статьи в библиотеке пропускается. */
   techniques: TechniqueGuide[];
+  /** «Ещё техники» в порядке раздела, тем же разрешением id. */
+  moreTechniques?: TechniqueGuide[];
 }
 
 export interface ModeGuideView extends GuideHintView {
   guide: ModeGuide;
+  /** «Типичен для схем» — обратная сторона SchemaGuide.modeIds (kb/links.ts). */
+  schemas: GuideBacklink[];
 }
 
 export interface SchemaGuideView extends GuideHintView {
@@ -73,13 +78,18 @@ function pickTechniques(
 
 /** Раздел режима с техниками; null — своего раздела нет (свой режим терапевта). */
 export function resolveModeGuide(
-  texts: Pick<Guide, 'modeGuide'> & TechniqueTexts,
+  texts: Pick<Guide, 'modeGuide' | 'modeSchemaLinks'> & TechniqueTexts,
   tr: Tr,
   modeId: string,
 ): ModeGuideView | null {
   const guide = texts.modeGuide(tr, modeId);
   if (!guide) return null;
-  return { guide, techniques: pickTechniques(texts, tr, guide.techniques) };
+  return {
+    guide,
+    techniques: pickTechniques(texts, tr, guide.techniques),
+    moreTechniques: pickTechniques(texts, tr, guide.moreTechniques ?? []),
+    schemas: texts.modeSchemaLinks(modeId),
+  };
 }
 
 /** Раздел схемы с «общим для домена» и техниками; null — раздела нет. */
@@ -95,6 +105,7 @@ export function resolveSchemaGuide(
     guide,
     domainNote,
     techniques: pickTechniques(texts, tr, guide.techniques),
+    moreTechniques: pickTechniques(texts, tr, guide.moreTechniques ?? []),
   };
 }
 

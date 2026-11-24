@@ -10,6 +10,7 @@
  */
 import type { Tr } from '../../needs/types';
 import type { TechniqueId } from './techniqueIds';
+import type { GuideChannel } from '../../therapy/plan/planItem';
 
 export type { TechniqueId } from './techniqueIds';
 
@@ -59,8 +60,10 @@ export interface ModeGuide extends GuideVoiceFields {
   cognitive?: string;
   experiential?: string;
   behavioral?: string;
-  /** «На сессии»: 2–5 техник по важности. */
+  /** «На сессии»: 2–5 главных техник по важности — на виду. */
   techniques: TechniqueId[];
+  /** «Ещё техники»: подходят по тексту справочника, лист прячет их под раскрытием; без повторов с `techniques`. */
+  moreTechniques?: TechniqueId[];
   /** «Между сессиями»: 1–4 пункта. */
   betweenSessions: BetweenSessionsItem[];
   /** Где застревают. */
@@ -69,8 +72,18 @@ export interface ModeGuide extends GuideVoiceFields {
   sources: string;
 }
 
+/** Группа «Техник» справочника (закрытый список, guideGroups.ts): четыре канала метода, концептуализация и
+ *  «Из других подходов». Новая группа — решение владельца. */
+export type TechniqueGroupId = GuideChannel | 'formulation' | 'borrowed';
+
+/** Группа «Для терапевта» по ситуации (закрытый список, guideGroups.ts). Новая группа — решение владельца. */
+export type PracticeGroupId =
+  'start' | 'stuck' | 'hard' | 'therapist' | 'method';
+
 export interface TechniqueGuide extends GuideVoiceFields {
   id: TechniqueId;
+  /** Ровно одна группа на вкладке «Техники». */
+  group: TechniqueGroupId;
   name: string;
   /** Одна строка: что это и зачем. */
   summary: string;
@@ -117,8 +130,10 @@ export interface SchemaGuide extends GuideVoiceFields {
   reparenting: string;
   /** Интервенции пунктами, 2–6. */
   interventions: string[];
-  /** «На сессии»: 2–5 техник по важности. */
+  /** «На сессии»: 2–5 главных техник по важности — на виду. */
   techniques: TechniqueId[];
+  /** «Ещё техники»: подходят по тексту справочника, лист прячет их под раскрытием; без повторов с `techniques`. */
+  moreTechniques?: TechniqueId[];
   /** «Между сессиями»: 1–4 пункта. */
   betweenSessions: BetweenSessionsItem[];
   /** Где застревают. */
@@ -142,6 +157,8 @@ export interface SchemaDomainGuide {
 export interface PracticeNote extends GuideVoiceFields {
   /** Латиница, уникален: ключ раздела в списке и знак (guideSignsModel). */
   id: string;
+  /** Группа на вкладке «Для терапевта». */
+  group: PracticeGroupId;
   title: string;
   /** Суть одной-двумя фразами — под заголовком листа. */
   summary: string;

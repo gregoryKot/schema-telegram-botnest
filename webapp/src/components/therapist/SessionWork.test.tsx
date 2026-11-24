@@ -8,7 +8,7 @@ import type { TherapistNote } from '../../../../shared/src/apiTypes';
 import type { UserId } from '../../../../shared/src/userId';
 import type { SessionWorkItem } from '../../../../shared/src/therapy/sessionWork/types';
 import { ClientSessionsTab } from './ClientSessionsTab';
-import type { ClientDetail } from './clientSheetTypes';
+import { makeClientDetail } from './clientDetail.test-helpers';
 
 const listCustomModes = vi.fn(async () => [{ id: 5, name: 'Тихий Наблюдатель' }]);
 vi.mock('../../api', async (orig) => {
@@ -23,8 +23,7 @@ const onWorkSaved = vi.fn();
 function Tab({ modeIds = ['vulnerable_child'] }: { modeIds?: string[] }) {
   const ref = useRef<UserId | null>(7);
   const notes = useNoteComposer(ref, { create, remove: vi.fn(), onWorkSaved });
-  const detail = { ...notes, activeModeIds: modeIds, activeSchemaIds: [], ysqSchemaIds: [], selfSchemaIds: [] };
-  return <ClientSessionsTab detail={detail as unknown as ClientDetail} />;
+  return <ClientSessionsTab detail={makeClientDetail({ ...notes, activeModeIds: modeIds })} />;
 }
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 
@@ -36,7 +35,7 @@ describe('«Что делали» в форме итогов', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Сохранить' }).disabled).toBe(true);
     click('Что делали на сессии — добавить');
     const picker = screen.getByRole('group', { name: 'Что делали: выбор' });
-    expect(within(within(picker).getByRole('group', { name: 'Техники' })).getAllByRole('button')).toHaveLength(41);
+    expect(within(within(picker).getByRole('group', { name: 'Техники' })).getAllByRole('button')).toHaveLength(56);
     expect(within(within(picker).getByRole('group', { name: 'Упражнения' })).getAllByRole('button')).toHaveLength(8);
     expect(within(within(picker).getByRole('group', { name: 'Своё' })).getAllByRole('button')).toHaveLength(1);
   });

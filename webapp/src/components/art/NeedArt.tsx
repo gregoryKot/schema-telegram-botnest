@@ -16,7 +16,7 @@ function Stroke({ x, h, deg = 0, fill, y }: { x: number; h: number; deg?: number
   return <rect x={x} y={top} width={STROKE.width} height={h} rx={STROKE.rx} fill={fill} transform={`rotate(${deg} ${x + 8} 60)`} />;
 }
 
-function Attachment({ size }: ArtProps) {
+export function Attachment({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <Stroke x={40} h={50} deg={14} fill={PAPER.sage} />

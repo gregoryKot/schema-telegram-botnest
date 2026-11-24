@@ -21,7 +21,7 @@
       "msCeiling": 500
     },
     "notify-queue-tick": {
-      "blocks": 123,
+      "blocks": 118,
       "msCeiling": 1500
     },
     "proactive-budget": {
@@ -29,11 +29,11 @@
       "msCeiling": 500
     },
     "stats-report": {
-      "blocks": 65995,
+      "blocks": 78249,
       "msCeiling": 10000
     },
     "therapist-client-data": {
-      "blocks": 45,
+      "blocks": 41,
       "msCeiling": 500
     },
     "therapist-clients": {
@@ -41,11 +41,15 @@
       "msCeiling": 1500
     },
     "therapist-clients-long-streaks": {
-      "blocks": 1562,
+      "blocks": 1560,
       "msCeiling": 1500
     },
     "therapist-notes": {
       "blocks": 174,
+      "msCeiling": 500
+    },
+    "therapist-path": {
+      "blocks": 27,
       "msCeiling": 500
     }
   },

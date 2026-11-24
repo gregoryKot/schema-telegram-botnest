@@ -92,6 +92,8 @@ export const TARGETS: RotationTarget[] = [
   { name: 'userTask', fields: ['text'] },
   { name: 'therapistNote', fields: ['text', 'work'] },
   { name: 'therapyPlanItem', fields: ['text'] },
+  { name: 'therapyPathPhase', fields: ['name', 'goal', 'note'] },
+  { name: 'guideMark', fields: ['note', 'snapshot'] },
   {
     name: 'clientConceptualization',
     // history — вложенные снапшоты: rotate-history.ts (общий цикл — только строки).

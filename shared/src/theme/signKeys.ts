@@ -2,6 +2,8 @@
 // бумаги и ключи знаков. Ключи — строки: shared не импортирует webapp; рисунок по ключу
 // отдаёт webapp/src/components/art/SignArt.tsx (сверка «у каждого ключа есть рисунок» —
 // его тест). Новый ключ — сначала строка в docs/design/PAPER_2026-11.md, потом рисунок.
+import { PATH_SIGN_KEYS } from './pathSignKeys';
+import { TECHNIQUE_OWN_SIGN_KEYS } from './techniqueSignKeys';
 
 /** Бумага: допустимые оттенки (oklch(0.915 0.03 h) у .pp-paper). Соседние — шаг ~45°. */
 export const PAPER_HUE = {
@@ -67,10 +69,17 @@ export const SIGN_KEYS = [
   'grown',
   'chatter',
   'flare',
+  'roots',
   // AppSigns.tsx — практики «здесь и сейчас», безопасное место, «тот же человек»
   'grounded',
   'pause',
   'haven',
   'join',
+  // CopingSigns.tsx — стили копинга (COPING_STYLES, shared/src/schemaTherapy/guide/copingStyles.ts)
+  'coping_surrender',
+  'coping_avoidance',
+  'coping_overcompensation',
+  ...TECHNIQUE_OWN_SIGN_KEYS,
+  ...PATH_SIGN_KEYS,
 ] as const;
 export type SignKey = (typeof SIGN_KEYS)[number];

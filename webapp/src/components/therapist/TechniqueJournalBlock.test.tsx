@@ -7,7 +7,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import type { ClientDetail } from './clientSheetTypes';
 import type { ConceptModeLink, ConceptSchemaLink } from '../../../../shared/src/apiTypes';
 import { TechniqueJournalBlock } from './TechniqueJournalBlock';
 import type { TherapistNote } from '../../../../shared/src/apiTypes';
@@ -20,14 +19,17 @@ import { CONCEPT_GUIDE_JOURNAL_ENTRY_EVENT } from '../../../../shared/src/share/
 vi.mock('../../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
   return {
+    modeSchemaLinks: () => [],
+    techniqueUsageGroups: () => [],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     techniqueGuide: (_tr: unknown, id: string) => f.FIXTURE_TECHNIQUES.find((t) => t.id === id) ?? null,
     modeGuide: () => null,
     schemaGuide: () => null,
   };
 });
-vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), getSessionWork: vi.fn(), listCustomModes: vi.fn() }, reportClientError: vi.fn() }));
+vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), getSessionWork: vi.fn(), listCustomModes: vi.fn(), getGuideMarks: () => Promise.resolve({ marks: [] }) }, reportClientError: vi.fn() }));
 import { api } from '../../api';
+import { makeClient, makeClientDetail, partialConcept } from './clientDetail.test-helpers';
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -45,19 +47,14 @@ const abandonment = { ...emptySchemaLink('abandonment'), done: [{ techniqueId: '
 function setup({ modeLinks = [critic] as ConceptModeLink[], schemaLinks = [abandonment] as ConceptSchemaLink[], failed = false, conceptLink = true, takeFocus = undefined as (() => boolean) | undefined, notesPage = undefined as TherapistNotesPage | undefined } = {}) {
   const onOpenConcept = vi.fn();
   const onOpenSession = vi.fn();
-  const detail = {
-    concept: { schemaIds: [], modeIds: [], modeLinks, schemaLinks },
-    localConcept: {},
-    activeSchemaIds: [],
-    patchConcept: vi.fn(),
-    clientTasks: [],
+  const detail = makeClientDetail({
+    concept: partialConcept({ schemaIds: [], modeIds: [], modeLinks, schemaLinks }),
     conceptLoad: { failed, reloading: false },
-    reloadConcept: vi.fn(),
-    ...(notesPage && { notesPage, notes: notesPage.notes, selectedClient: { telegramId: 42 } }),
-  };
+    ...(notesPage && { notesPage, notes: notesPage.notes, selectedClient: makeClient({ telegramId: 42 }) }),
+  });
   render(
     <MemoryRouter>
-      <TechniqueJournalBlock detail={detail as unknown as ClientDetail} onOpenConcept={conceptLink ? onOpenConcept : undefined} takeFocus={takeFocus} onOpenSession={onOpenSession} />
+      <TechniqueJournalBlock detail={detail} onOpenConcept={conceptLink ? onOpenConcept : undefined} takeFocus={takeFocus} onOpenSession={onOpenSession} />
     </MemoryRouter>,
   );
   return { detail, onOpenConcept, onOpenSession };
@@ -165,12 +162,14 @@ describe('TechniqueJournalBlock', () => {
     expect(api.trackEvent).toHaveBeenCalledWith(CONCEPT_GUIDE_JOURNAL_ENTRY_EVENT);
   });
 
-  it('у клиента есть ранние записи — их пункты приходят ручкой и стоят строкой без перехода', async () => {
+  it('у клиента есть ранние записи — их пункты приходят ручкой, тап открывает и раннюю запись', async () => {
     vi.mocked(api.getSessionWork).mockResolvedValue({ entries: [{ noteId: 1, date: '2026-01-09', work: [workItem({ modeIds: [] })] }] });
-    setup({ modeLinks: [], schemaLinks: [], notesPage: { notes: [note(2, '2026-11-05', [workItem()])], total: 2 } });
+    const { onOpenSession } = setup({ modeLinks: [], schemaLinks: [], notesPage: { notes: [note(2, '2026-11-05', [workItem()])], total: 2 } });
     expect(await screen.findByText('9 янв')).toBeTruthy();
     expect(api.getSessionWork).toHaveBeenCalledWith(42);
-    expect(screen.getAllByRole('button', { name: /Работа со стульями/ })).toHaveLength(1); // ранняя запись на «Сессиях» не показана
+    // Записи 1 нет среди показанных на «Сессиях» — её догрузит архив (SessionArchive).
+    fireEvent.click(screen.getByRole('button', { name: /^9 янв: Работа со стульями, запись сессии$/ }));
+    expect(onOpenSession).toHaveBeenCalledWith(1);
   });
 
   it('ранние записи не загрузились — журнал честно неполный', async () => {

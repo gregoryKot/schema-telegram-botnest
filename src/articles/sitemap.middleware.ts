@@ -7,6 +7,7 @@ import {
   lastModified,
   type SeoArticleListItem,
 } from './article-seo.render';
+import { quizSitemapPaths } from '../quiz/quiz-seo.render';
 
 /**
  * sitemap.xml из БД: статьи приезжают сами, lastmod честный (позднее из
@@ -28,6 +29,7 @@ export function buildSitemapXml(articles: SeoArticleListItem[]): string {
         lastModified(a).toISOString().slice(0, 10),
       ),
     ),
+    ...quizSitemapPaths().map((p) => url(`${SITE_URL}${p}`)),
     url(`${SITE_URL}/install`),
     url(`${SITE_URL}/privacy`),
     url(`${SITE_URL}/offer`),

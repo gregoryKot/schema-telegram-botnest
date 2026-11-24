@@ -1,13 +1,13 @@
 // Инварианты реестра «с чем путают режим» (правило №4 CLAUDE.md): a≠b, нет
-// дублей пары (в т.ч. перевёрнутых), каждый из 35 modeId покрыт хотя бы
+// дублей пары (в т.ч. перевёрнутых), каждый из 36 modeId покрыт хотя бы
 // одной парой, getDoubtsForMode разворачивает симметрию с обеих сторон.
 import { describe, it, expect } from 'vitest';
 import { MODE_DOUBT_PAIRS, getDoubtsForMode } from './index';
 import { ALL_TEST_MODE_IDS } from '../modeTest';
 
 describe('MODE_DOUBT_PAIRS — структурные инварианты', () => {
-  it('ровно 38 пар', () => {
-    expect(MODE_DOUBT_PAIRS).toHaveLength(38);
+  it('ровно 39 пар', () => {
+    expect(MODE_DOUBT_PAIRS).toHaveLength(39);
   });
 
   it('a никогда не равен b', () => {
@@ -32,7 +32,7 @@ describe('MODE_DOUBT_PAIRS — структурные инварианты', () 
     }
   });
 
-  it('каждый из 35 modeId теста встречается хотя бы в одной паре', () => {
+  it('каждый из 36 modeId теста встречается хотя бы в одной паре', () => {
     const covered = new Set<string>();
     for (const pair of MODE_DOUBT_PAIRS) {
       covered.add(pair.a);

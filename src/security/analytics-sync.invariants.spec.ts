@@ -11,7 +11,10 @@ import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
 import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
-import { SEARCH_RESULT_KINDS } from '../analytics/cabinet-events.constants';
+import {
+  SEARCH_RESULT_KINDS,
+  TASK_ASSIGN_SOURCES,
+} from '../analytics/cabinet-events.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -253,6 +256,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
     "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
     'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
+  guide_mark_added:
+    'серверное событие: пишет GuideMarksService.trackAdded при создании ' +
+    'отметки «Про клиента» (PUT /api/therapy/guide-marks/:clientId); meta с ' +
+    'клиента отбрасывается (SERVER_META_EVENTS), /stats считает строки с kind',
   ysq_data_deleted:
     'серверное событие: пишет YsqController после транзакции DELETE ' +
     '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
@@ -382,7 +389,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 51 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
     // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
     // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(53);
+    // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(54);
   });
 });
 
@@ -424,6 +432,23 @@ describe('трипваер: SEARCH_RESULT_KINDS фронта = бэка (пра�
 
   it('списки совпадают в обе стороны', () => {
     expect([...front].sort()).toEqual([...SEARCH_RESULT_KINDS].sort());
+  });
+});
+
+// Источник назначенного задания (meta.source события task_assign_source): та же пара списков.
+describe('трипваер: TASK_ASSIGN_SOURCES фронта = бэка (правило №4)', () => {
+  const src = readFileSync(
+    join(ROOT, 'shared/src/share/taskAssignAnalytics.ts'),
+    'utf8',
+  );
+  const m = src.match(/export const TASK_ASSIGN_SOURCES\s*=\s*\[([^\]]+)\]/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('списки непусты и совпадают в обе стороны', () => {
+    expect(front.length).toBeGreaterThan(0);
+    expect([...front].sort()).toEqual([...TASK_ASSIGN_SOURCES].sort());
   });
 });
 

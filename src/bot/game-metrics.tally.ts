@@ -10,24 +10,18 @@ import {
   GAME_CTA_TARGETS,
   type GameCtaTarget,
 } from '../analytics/game-cta.constants';
+import { emptyWeek, tallyWeekRow, type WeekMetrics } from './game-week.tally';
 
-// Раскладка строк запроса блока «Игра» по граням (src/chapter/place/to) —
-// чистая функция; запрос — game-metrics.service.ts, вывод — game-metrics.format.ts.
-
-/** Воронка одной главы: сколько начали, дошли до конца, умерло по дороге. */
+/** Воронка одной главы: сколько начали и дошли до конца. */
 export interface GameChapterFunnel {
   chapter: GameChapter;
   started: number;
   finished: number;
-  deaths: number;
 }
 
 export interface GameMetrics {
   opens: number;
   opensBySource: Record<GameEntrySource, number>;
-  starts: number;
-  tutorialDone: number;
-  tutorialSkipped: number;
   /** Фиксированный порядок GAME_CHAPTERS, всегда 4 записи. */
   chapters: GameChapterFunnel[];
   ctaShown: number;
@@ -38,6 +32,7 @@ export interface GameMetrics {
   /** Сайт открылся кнопкой финала (?from=game). */
   appArrivals: number;
   shares: number;
+  week: WeekMetrics;
 }
 
 export interface GameEventRow {
@@ -49,19 +44,10 @@ export interface GameEventRow {
   c: bigint;
 }
 
-type SimpleKey =
-  | 'starts'
-  | 'tutorialDone'
-  | 'tutorialSkipped'
-  | 'ctaShown'
-  | 'shares'
-  | 'appArrivals';
+type SimpleKey = 'ctaShown' | 'shares' | 'appArrivals';
 
 // Счётчики без своей грани — имя события → ключ.
 const SIMPLE_COUNTERS: Record<string, SimpleKey> = {
-  game_start: 'starts',
-  game_tutorial_done: 'tutorialDone',
-  game_tutorial_skip: 'tutorialSkipped',
   game_cta_shown: 'ctaShown',
   game_share: 'shares',
   game_app_arrive: 'appArrivals',
@@ -75,18 +61,14 @@ const pick = <T extends string>(
 ): T | null =>
   v !== null && (ids as readonly string[]).includes(v) ? (v as T) : null;
 
-/** Мусорный src → other; мусорная глава выпадает из воронки; мусорные
- * place/to не идут в разбивку, но считаются в ctaClicks. */
+/** Мусорный src → other; мусорная глава выпадает; мусорные place/to — только в ctaClicks. */
 export function tallyGameRows(rows: readonly GameEventRow[]): GameMetrics {
   const byChapter = new Map(
-    GAME_CHAPTERS.map((c) => [c, { started: 0, finished: 0, deaths: 0 }]),
+    GAME_CHAPTERS.map((c) => [c, { started: 0, finished: 0 }]),
   );
   const m: GameMetrics = {
     opens: 0,
     opensBySource: zeroRecord(GAME_ENTRY_SOURCES),
-    starts: 0,
-    tutorialDone: 0,
-    tutorialSkipped: 0,
     chapters: [],
     ctaShown: 0,
     ctaClicks: 0,
@@ -94,9 +76,11 @@ export function tallyGameRows(rows: readonly GameEventRow[]): GameMetrics {
     ctaClicksByTarget: zeroRecord(GAME_CTA_TARGETS),
     appArrivals: 0,
     shares: 0,
+    week: emptyWeek(),
   };
   for (const row of rows) {
     const c = Number(row.c);
+    if (tallyWeekRow(m.week, row, c)) continue;
     const simpleKey = SIMPLE_COUNTERS[row.name];
     if (simpleKey) {
       m[simpleKey] += c;
@@ -115,7 +99,6 @@ export function tallyGameRows(rows: readonly GameEventRow[]): GameMetrics {
       if (!bucket) continue;
       if (row.name === 'game_chapter_start') bucket.started += c;
       else if (row.name === 'game_chapter_done') bucket.finished += c;
-      else if (row.name === 'game_over') bucket.deaths += c;
     }
   }
   m.chapters = GAME_CHAPTERS.map((chapter) => ({

@@ -13,6 +13,7 @@ import {
 } from '../utils/calendarDate';
 import { exerciseCard } from '../exercises/exerciseCatalog';
 import { FLASHCARD_TITLE } from '../flashcard/flashcardNames';
+import { NEED_NAMES } from '../needs/needNames';
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
@@ -139,16 +140,6 @@ export function filterJourneyItems(
   return items.filter((i) => journeyTypeMeta(i.type).group === group);
 }
 
-// Имена потребностей для подписи строки ленты (источник — needData фронтендов;
-// это стабильные продуктовые названия, тут только отображение).
-export const JOURNEY_NEED_NAMES: Record<string, string> = {
-  attachment: 'Привязанность',
-  autonomy: 'Автономия',
-  expression: 'Выражение чувств',
-  play: 'Спонтанность',
-  limits: 'Самоконтроль',
-};
-
 export interface JourneySubtitleSources {
   getModeById(id: string): { name: string } | undefined;
   getSchemaById(id: string): { name: string } | undefined;
@@ -166,7 +157,7 @@ export function journeyItemSubtitle(
       .filter(Boolean);
     return names.length ? names.join(', ') : null;
   }
-  if (item.needId) return JOURNEY_NEED_NAMES[item.needId] ?? null;
+  if (item.needId) return NEED_NAMES[item.needId] ?? null;
   return null;
 }
 

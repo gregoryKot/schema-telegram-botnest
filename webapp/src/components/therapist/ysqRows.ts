@@ -2,8 +2,8 @@ import { ALL_SCHEMAS } from '../../../../shared/src/schemaTherapy/schemaTherapyD
 import type { YsqHistoryEntry } from '../../../../shared/src/apiTypes';
 import { avgBarPct } from '../../../../shared/src/hooks/ysqScoring';
 import { isServerScoreActive, sortByExpression, ysqAvgLabel } from '../../../../shared/src/therapy/ysqExpression';
-import { DOMAIN_HUE, NEED_HUE } from '../../../../shared/src/theme/entityHue';
-import { NEED_ORDER, type NeedId } from '../../../../shared/src/needs/types';
+import { domainNeedId } from '../../../../shared/src/schemaTherapy/schemaNeed';
+import type { NeedId } from '../../../../shared/src/needs/types';
 
 export interface YsqRow {
   id: string;
@@ -53,16 +53,6 @@ export function buildYsqRows(latest: YsqHistoryEntry, prev: YsqHistoryEntry | nu
       delta: hasPrev && avg > 0 ? Math.round((avg - prevAvg) * 10) / 10 : null,
     };
   });
-}
-
-/**
- * Потребность домена схем: домен 1 «Отчуждение» — привязанность 28, 2 — автономия 70, 3 — границы 135,
- * 4 — выражение 240, 5 — спонтанность 310 (DOMAIN_HUE и NEED_HUE — одна бумага). Полоса балла и линия динамики
- * терапевта красятся цветом данных этой потребности, как полоски результата YSQ у клиента (решение 7, b16).
- */
-export function domainNeedId(domainId: string | null): NeedId | null {
-  const hue = domainId ? DOMAIN_HUE[domainId] : undefined;
-  return hue == null ? null : NEED_ORDER.find(n => NEED_HUE[n] === hue) ?? null;
 }
 
 export function fmtDelta(delta: number | null): string {

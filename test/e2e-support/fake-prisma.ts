@@ -15,6 +15,7 @@
 import { makeFakeExecuteRaw } from './fake-cron-lease';
 import { makeFakeQueryRaw } from '../../src/test-support/fake-client-streaks';
 import { makeTable, withDefaults } from './fake-prisma-engine';
+import { makePathTables } from './fake-path-tables';
 import { withUserJoin } from './fake-user-join';
 import { withCreatedAt, withUpdatedAt } from './fake-updated-at';
 
@@ -112,12 +113,11 @@ export function makeFakePrisma() {
       })),
       userTable,
     ),
-    therapistNote: makeTable(),
-    therapyPlanItem: withUpdatedAt(
-      withDefaults(makeTable(), { status: 'planned', taskId: null }),
-    ),
+    therapistNote: withDefaults(makeTable(), { planItemIds: [] }), // @default([])
+    ...makePathTables(),
     clientConceptualization: withUpdatedAt(makeTable()),
     modeMap: makeTable(),
+    guideMark: withUpdatedAt(makeTable()),
     therapistCustomMode: makeTable(),
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
     // с clientId вызывает notificationService.schedule).

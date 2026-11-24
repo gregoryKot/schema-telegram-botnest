@@ -9,6 +9,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { IsKbId } from './kb-id.validator';
 import { Type } from 'class-transformer';
 import {
   ConceptAppendLinkDto,
@@ -28,6 +29,7 @@ export class ConceptAppendDto {
   @ArrayMaxSize(40)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('modeOrCustom', { each: true })
   modeIds?: string[];
 
   @IsOptional()
@@ -35,6 +37,7 @@ export class ConceptAppendDto {
   @ArrayMaxSize(40)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
+  @IsKbId('schema', { each: true })
   schemaIds?: string[];
 
   // Вложенный объект: без @ValidateNested + @Type whitelist не тронул бы

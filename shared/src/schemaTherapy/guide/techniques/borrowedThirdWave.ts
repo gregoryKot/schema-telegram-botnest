@@ -4,6 +4,7 @@ import type { TechniqueGuideBuilder } from '../types';
 export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'defusion',
+    group: 'borrowed',
     approach: 'Терапия принятия и ответственности',
     name: 'Когнитивная дефузия',
     summary:
@@ -31,6 +32,7 @@ export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'compassionate_self',
+    group: 'borrowed',
     approach: 'Терапия, сфокусированная на сострадании',
     name: 'Сострадательное «я» и успокаивающий ритм дыхания',
     summary:
@@ -60,6 +62,7 @@ export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'motivational_interviewing',
+    group: 'borrowed',
     approach: 'Мотивационное интервью',
     name: 'Мотивационное интервью',
     summary:

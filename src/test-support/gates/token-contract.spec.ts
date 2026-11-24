@@ -1,34 +1,14 @@
 // Тест гейта check-token-contract.mjs — контракт дизайн-токенов webapp +
-// shared (дизайн-аудит 2026-08, В11). Список имён "только имя"
-// зашит в самом скрипте (SHARED_NAME_ONLY_TOKENS), поэтому позитивный кейс
-// дублирует его здесь:
-// если список в скрипте изменится, список ниже придётся обновить вместе.
+// shared (дизайн-аудит 2026-08, В11). Список имён "только имя" —
+// SHARED_NAME_ONLY_TOKENS в scripts/token-contract-rules.mjs.
 import { runGate } from './gate-sandbox';
 import { loadStringList } from './pattern-loader';
 
-// Копия SHARED_NAME_ONLY_TOKENS из scripts/check-token-contract.mjs.
-const SHARED_NAME_ONLY_TOKENS = [
-  '--accent-red',
-  '--on-accent-red',
-  '--accent-orange',
-  '--accent-yellow',
-  '--accent-green',
-  '--accent-blue',
-  '--accent-pink',
-  '--bg',
-  '--surface',
-  '--surface-2',
-  '--text',
-  '--text-sub',
-  '--text-faint',
-  '--line',
-  '--border-color',
-  '--nav-bg',
-  '--sheet-bg',
-  '--sheet-bg-2',
-  '--track-color',
-  '--fg-rgb',
-];
+// Список берётся из модуля правил гейта, а не копией: позитивный кейс объявляет ровно его.
+const SHARED_NAME_ONLY_TOKENS = loadStringList(
+  'token-contract-rules.mjs',
+  'SHARED_NAME_ONLY_TOKENS',
+);
 
 const VALID_TOKENS_CSS = `:root, [data-theme='light'] {\n  --accent: #9a5b3e;\n}\n[data-theme='dark'] {\n  --accent: #c97d5a;\n}\n`;
 

@@ -584,6 +584,7 @@ describe('setup-merge-drivers --check: атрибут без драйвера н
   const REPO = join(REAL_SCRIPTS, '..');
   const STUBS = {
     'scripts/merge-json-ratchet.mjs': '// заглушка, проверяется наличие',
+    'scripts/merge-lines.mjs': '// заглушка, проверяется наличие',
   };
 
   /** Настоящие бейслайны репозитория как пустые заглушки: гейт смотрит на

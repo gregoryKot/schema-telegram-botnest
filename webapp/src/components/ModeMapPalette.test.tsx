@@ -64,7 +64,7 @@ describe('ModeMapPalette — по умолчанию только клиент �
     expect(screen.getByText('Уязвимый Ребёнок')).toBeTruthy();
     expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
     expect(catalogRow().getAttribute('aria-expanded')).toBe('false');
-    expect(catalogRow().textContent).toContain('55');
+    expect(catalogRow().textContent).toContain('56');
     expect(screen.queryByText('Детские')).toBeNull();
     expect(document.querySelector('[data-group]')).toBeNull();
   });

@@ -12,12 +12,10 @@
    во всю ширину (ds-seg--full). */
 .gr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .gr-bar > .gr-seg { min-width: 0; max-width: 100%; }
-/* Вкладки справочника на телефоне: на 390 четыре вкладки входят целиком (поля кнопок уже, без хвоста
-   прокрутки — до этого «Для терапевта» срезалась на 9px у края); на 320 лента прокручивается и край
-   затухает (FadeSeg). */
+/* Вкладки справочника на телефоне: пять вкладок целиком не входят — лента прокручивается, край с
+   остальными затухает (FadeSeg); поля кнопок уже, чтобы до края помещалось больше. */
 @media (max-width: 399px) {
   .gr-seg > .ds-seg-btn { padding-inline: 10px; }
-  .gr-seg.ds-seg--scroll::after { content: none; }
 }
 /* Строка со знаком: знак у названия, название с сутью, шеврон по центру. */
 .gr-row { grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; min-height: 56px; }
@@ -28,7 +26,8 @@
    (знак 44, как у трёх знаков копингов справочника клиента) и свой белый список. */
 .sg-rows.gr-parts { gap: 14px; border-radius: 0; background: none; overflow: visible; }
 .gr-part-head.sg-head { margin-bottom: 8px; }
-.gr-part-head .sg-sign, .gr-part-head .sg-sign .pp-art--square { width: 44px; }
+/* Знак у подписи листа — 44, как у подгрупп: шапки соседних листов одной высоты, белые списки начинаются на одной линии. */
+.gr-list .sg-head .sg-sign, .gr-list .sg-head .sg-sign .pp-art--square { width: 44px; }
 /* Силуэт загрузки: подпись и строки группы — в тех же колонках, что листы. */
 .gr-skel-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
@@ -36,6 +35,10 @@
   /* Режимы и схемы: листы сеткой по рядам — колонки (columns) WebKit делил неровно: последняя группа вставала
      на середине высоты, под ней — пустая колонка (как у .sg-cols--rows в sheet-schemas.css). */
   .gr-list--groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  /* Лист с подгруппами (копинги) выше соседей в разы: в ряду с ним под коротким листом оставалась пустота.
+     Он занимает вторую колонку на все ряды, остальные листы встают рядом; излишек высоты уходит в последний ряд (1fr). */
+  .gr-list--groups.has-tall { grid-template-rows: repeat(var(--gr-rows), auto) 1fr; }
+  .gr-list--groups > .sg-group:has(> .gr-parts) { grid-column: 2; grid-row: 1 / -1; }
 
   /* Техники и «Для терапевта»: белые карточки по две в ряд на листе — знак, название, суть. */
   .gr-list--tiles .gr-rows {
@@ -60,7 +63,30 @@
    контейнере строка таблицы — карточка: название с описанием, под ним три подписанные строки копингов;
    с 640 — колонки, подписи уходят в шапку таблицы. */
 .gst-list { display: flex; flex-direction: column; gap: 16px; }
-.gst-lede { margin: 0; max-width: 72ch; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+/* Шапка таблицы (GuideSchemaIntro): лид serif, три копинга — блоки с линией цвета стиля и знаком, свёрнутая
+   врезка с линией слева, тихая подсказка. Текст для чтения — не шире 65ch (правило frontend-visual.md). */
+.gst-intro { display: flex; flex-direction: column; gap: 14px; }
+.gst-lede { margin: 0; max-width: 65ch; font-family: var(--serif); font-size: 20px; line-height: 1.3; color: var(--text); }
+.gst-styles { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.gst-style {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: 'sign name' 'sign gist'; gap: 2px 12px;
+  padding: 4px 0 4px 12px; border-left: 3px solid var(--gst-c);
+}
+.gst-style-sign { grid-area: sign; padding-top: 2px; }
+.gst-style-name { grid-area: name; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gst-ink); }
+.gst-style-gist { grid-area: gist; font-size: 14px; line-height: 1.4; color: var(--text); }
+.gst-about { max-width: 65ch; border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk); }
+.gst-about-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 0;
+  border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.gst-about-btn > .ds-label { color: var(--text-sub); }
+.gst-about-body { padding: 0 0 14px 14px; border-left: 2px solid var(--line); font-size: 14px; line-height: 1.5; color: var(--text); }
+.gst-about-body p { margin: 0 0 8px; }
+.gst-about-body p:last-child { margin-bottom: 0; }
+.gst-levels { margin: 0 0 8px; padding-left: 18px; }
+.gst-levels li + li { margin-top: 2px; }
+.gst-how { margin: 0; max-width: 65ch; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
 .gst-table, .gst-table tbody, .gst-table tr, .gst-table th, .gst-table td { display: block; }
 .gst-table { width: 100%; border-collapse: collapse; }
 .gst-table thead { display: none; }
@@ -76,6 +102,25 @@
 .gst-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .gst-schema:hover .gst-name { color: var(--accent); }
 .gst-desc { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+/* Липкая шапка: стиль копинга и глубина. Фон — сплошной цвет страницы: строки уходят под неё. */
+.gst-bar {
+  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding-block: 8px; background: var(--bg);
+}
+.gst-seg > .ds-seg-btn { white-space: nowrap; }
+/* Знак стиля — сквозной: в переключателе, в шапке колонки, у подписи клетки; цвет стиля — --gst-c/--gst-ink
+   (COPING_STYLES, токены --coping-*). */
+.gst-seg-sign, .gst-sign { display: inline-flex; vertical-align: middle; margin-right: 6px; }
+.gst-label, .gst-col { display: flex; align-items: center; color: var(--gst-ink); }
+.gst-cell {
+  display: flex; flex-direction: column; gap: 4px; width: 100%; min-height: 44px; margin-top: 4px; padding: 8px 10px;
+  border: none; border-left: 3px solid var(--gst-c); border-radius: 0 8px 8px 0; background: none;
+  font: inherit; font-size: 14px; line-height: 1.45; color: var(--text); text-align: left; cursor: pointer;
+}
+.gst-cell:hover { background: color-mix(in srgb, var(--gst-c) 6%, transparent); }
+.gst-cell.is-open { background: color-mix(in srgb, var(--gst-c) 14%, transparent); }
+.gst-head { font-weight: 600; }
+.gst-full { color: var(--text); }
 
 @container (min-width: 640px) {
   .gst-table { display: table; table-layout: fixed; }
@@ -86,8 +131,10 @@
   .gst-table th, .gst-table td { display: table-cell; vertical-align: top; padding: 14px 16px; }
   .gst-table thead th { padding-block: 12px 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--paper-sunk); }
   .gst-table thead th:first-child { width: 28%; }
+  .gst-table td { padding: 10px 8px; }
   .gst-label { display: none; }
   .gst-schema { min-height: 0; padding: 0; }
+  .gst-styles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 }
 
 /* Карточка-ответ над выдачей поиска (GuideAnswerCard.tsx): название листа, текст из него и переходы. */
@@ -104,3 +151,20 @@
   font: inherit; font-size: 14px; line-height: 1.25; text-align: left; color: var(--text); cursor: pointer;
 }
 .gr-answer-link:hover { border-color: var(--line-hover); color: var(--accent); }
+
+/* «Про клиента» под раскрытой клеткой (#1484) */
+.ds-link.gst-mark { margin: 4px 12px 10px; }
+/* Номер фазы «Пути терапии» на месте знака строки: тихая цифра Literata, как номер шага на листе техники (.gd-steps). */
+.gr-step { font-family: var(--serif); font-size: 24px; line-height: 1.2; color: var(--text-sub); }
+/* Строки с оттенком («Путь терапии»): каждая — бумажная карточка своего оттенка (.pp-paper, --h), группа стоит без общей бумаги
+   (SignGroup plain). Знак крупнее обычного (64px), номер фазы — над ним. Селектор в 3 класса: button.ds-list-row (0,1,1) иначе
+   стирает бумагу. */
+.gr-rows:has(> .gr-row--paper) { gap: 10px; }
+.gr-list .gr-rows > .gr-row.gr-row--paper {
+  grid-template-columns: 64px minmax(0, 1fr) auto; gap: 4px 14px; padding: 14px 16px; border: none; border-radius: 16px;
+  background: oklch(0.915 0.03 var(--h));
+}
+.gr-list .gr-rows > .gr-row.gr-row--paper:hover { background: oklch(0.895 0.04 var(--h)); }
+.gr-mark { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.gr-mark .pp-art--row { width: 64px; height: auto; }
+.gr-row--paper .ds-list-sub { color: var(--text-sub); }

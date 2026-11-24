@@ -32,6 +32,23 @@ function load(key: string) {
   return { status, probe, crypto };
 }
 
+// Загрузка — вне тестов (код уровня модуля crypto.ts не засчитывается тесту);
+// холдер состояния общий на файл, поэтому перед каждым тестом сбрасывается.
+let A: ReturnType<typeof load>;
+let B: ReturnType<typeof load>;
+beforeAll(() => {
+  A = load(KEY_A);
+  B = load(KEY_B);
+  process.env = { ...ORIGINAL_ENV };
+});
+beforeEach(() => {
+  // migrateClinicalLabels смотрит на ключ в env при вызове, не при загрузке.
+  process.env.ENCRYPTION_KEY = KEY_A;
+  process.env.ENCRYPTION_KEY_OLD = '';
+  A.status.clinicalLabelsStatus.reset();
+  B.status.clinicalLabelsStatus.reset();
+});
+
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
   jest.restoreAllMocks();
@@ -62,8 +79,9 @@ const quiet = () => {
 describe('runClinicalLabelMigration → clinicalLabelsProbe', () => {
   it('строка под чужим ключом: миграция записала, проба красная с именем таблицы', async () => {
     quiet();
-    const oldBlob = load(KEY_A).crypto.encrypt('anxiety,anger')!;
-    const { status, probe } = load(KEY_B);
+    const oldBlob = A.crypto.encrypt('anxiety,anger')!;
+    process.env.ENCRYPTION_KEY = KEY_B;
+    const { status, probe } = B;
     const logger = { error: jest.fn() };
 
     await status.runClinicalLabelMigration(
@@ -81,7 +99,7 @@ describe('runClinicalLabelMigration → clinicalLabelsProbe', () => {
 
   it('плейнтекст дошифрован: проба зелёная', async () => {
     quiet();
-    const { status, probe } = load(KEY_A);
+    const { status, probe } = A;
     const db = dbWith([{ id: 1, tags: 'anxiety' }]);
 
     await status.runClinicalLabelMigration(db, { error: jest.fn() });
@@ -95,7 +113,7 @@ describe('runClinicalLabelMigration → clinicalLabelsProbe', () => {
 
   it('исключение миграции: logger.error, состояние failed, наружу не летит', async () => {
     quiet();
-    const { status, probe } = load(KEY_A);
+    const { status, probe } = A;
     const db = dbWith([]);
     (db.note.findMany as jest.Mock).mockRejectedValue(new Error('db down'));
     const logger = { error: jest.fn() };
@@ -120,7 +138,7 @@ describe('runClinicalLabelMigration → clinicalLabelsProbe', () => {
 
   it('во время прогона состояние running', async () => {
     quiet();
-    const { status } = load(KEY_A);
+    const { status } = A;
     const db = dbWith([]);
     let seen = '';
     (db.note.findMany as jest.Mock).mockImplementation(() => {
@@ -136,7 +154,7 @@ describe('runClinicalLabelMigration → clinicalLabelsProbe', () => {
 describe('зависшая миграция → красная проба (шов на настоящих модулях)', () => {
   it('findMany не возвращается: в пределах порога зелёная, за порогом красная', async () => {
     quiet();
-    const { status, probe } = load(KEY_A);
+    const { status, probe } = A;
     const db = dbWith([]);
     (db.note.findMany as jest.Mock).mockReturnValue(new Promise(() => {}));
     void status.runClinicalLabelMigration(db, { error: jest.fn() });
@@ -158,7 +176,7 @@ describe('since: момент последней смены состояния (
   const EMPTY = { encrypted: {}, failures: 0, unknownKey: {} };
 
   it('reset(now) → idle с since = now', () => {
-    const { status } = load(KEY_A);
+    const { status } = A;
     status.clinicalLabelsStatus.reset(1000);
     expect(status.clinicalLabelsStatus.get()).toMatchObject({
       state: 'idle',
@@ -167,7 +185,7 @@ describe('since: момент последней смены состояния (
   });
 
   it('start → running, finish → done, fail → failed: since берётся из момента смены', () => {
-    const { status } = load(KEY_A);
+    const { status } = A;
     const h = status.clinicalLabelsStatus;
     h.start(2000);
     expect(h.get()).toMatchObject({ state: 'running', since: 2000 });

@@ -7,6 +7,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { ConceptPickers as Pickers } from './concept/ConceptPickers';
 import { ConceptPaperProvider } from './concept/ConceptPaperProvider';
 import type { ClientDetail } from './clientSheetTypes';
+import { makeClientDetail, partialConcept } from './clientDetail.test-helpers';
 
 afterEach(() => cleanup());
 
@@ -23,15 +24,14 @@ const LINK = {
   strategy: '',
 };
 
-function detailWith(modeLinks: unknown, localLinks?: unknown): ClientDetail {
-  return {
+type Links = ClientDetail['localConcept']['modeLinks'];
+function detailWith(modeLinks: Links, localLinks?: Links): ClientDetail {
+  return makeClientDetail({
     activeSchemaIds: ['failure'],
-    toggleSchemaId: vi.fn(),
     activeModeIds: ['punitive_critic'],
-    toggleModeId: vi.fn(),
     localConcept: localLinks === undefined ? {} : { modeLinks: localLinks },
-    concept: { modeLinks },
-  } as unknown as ClientDetail;
+    concept: partialConcept({ modeLinks }),
+  });
 }
 
 // Имена схем есть и в чипах карточки «Актуальные схемы» — ищем внутри списка.
@@ -66,16 +66,13 @@ describe('ConceptPickers: схемы за режимами', () => {
 // «Поля»: в спокойном состоянии — только выбранное; «Изменить» раскрывает весь
 // перечень, «Готово» сворачивает обратно.
 function selection(schemas: string[], modes: string[]): ClientDetail {
-  return {
+  return makeClientDetail({
     activeSchemaIds: schemas,
-    toggleSchemaId: vi.fn(),
     activeModeIds: modes,
-    toggleModeId: vi.fn(),
-    localConcept: {},
     // Свои имена у режимов: тогда «Схемы за режимами» показывает их, и название
     // режима на экране может прийти только из чипа выбранного режима.
-    concept: { modeLinks: modes.map((modeId, i) => ({ modeId, alias: `Часть ${i + 1}`, schemaIds: [], needIds: [], origin: '', manifest: '', strategy: '' })) },
-  } as unknown as ClientDetail;
+    concept: partialConcept({ modeLinks: modes.map((modeId, i) => ({ modeId, alias: `Часть ${i + 1}`, schemaIds: [], needIds: [], origin: '', manifest: '', strategy: '' })) }),
+  });
 }
 const SCHEMAS = ['failure', 'mistrust', 'emotional_deprivation', 'self_sacrifice'];
 const MODES = ['punitive_critic', 'vulnerable_child', 'healthy_adult', 'detached_protector'];

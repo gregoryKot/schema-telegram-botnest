@@ -45,6 +45,16 @@ describe('LinksPage', () => {
     expect(shown).toEqual(readyLinks(LINKS).flatMap(itemLinks).map((l) => [l.href, null]));
   });
 
+  it('порядок: запись, «Обо мне» сразу под ней, проект, список, «Здоровый Взрослый» последним', () => {
+    render(<LinksPage />);
+    const heads = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
+    expect(heads.slice(0, 2)).toEqual(['/#booking', '/']);
+    const titles = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(titles).toEqual(['Всё по схеме', 'Канал о схема-терапии', 'Здоровый Взрослый']);
+    const items = [...document.querySelectorAll('.links-list > li')];
+    expect(items.at(-1)?.textContent).toContain('Здоровый Взрослый');
+  });
+
   it('значки площадок — соседи основной ссылки, ссылок внутри ссылок нет', () => {
     const { container } = render(<LinksPage />);
     expect(container.querySelector('a a')).toBeNull();
@@ -83,7 +93,7 @@ describe('LinksPage', () => {
   });
 
   it('клик шлёт событие с кнопкой и источником из utm_source', () => {
-    window.history.replaceState({}, '', '/links?utm_source=instagram');
+    window.history.replaceState({}, '', '/privet?utm_source=instagram');
     render(<LinksPage />);
     fireEvent.click(screen.getByText('Статьи'));
     expect(api.trackPublicEvent).toHaveBeenCalledWith('links_page_click', { target: 'articles', from: 'instagram' }, { keepalive: true });
