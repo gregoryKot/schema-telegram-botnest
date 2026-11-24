@@ -6,11 +6,7 @@ import { applyTheme, savedTheme } from '../utils/theme';
 // of landing-kit.tsx so that file exports only components (Fast Refresh).
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-// radius. btn/badge — ступени общей шкалы --r-* (shared/src/theme/tokens.css).
-// pill и card — числа: ступени нет в общей шкале (она посчитана по распределению,
-// лендинговые 24/100 туда не входят).
-export const R = { pill: 100, card: 24, btn: 'var(--r-12)', badge: 'var(--r-14)' } as const;
-export const DARK_BG = '#1c1916';     // intentional always-dark sections
+export const DARK_BG = 'var(--dark-bg)'; // всегда тёмные секции визитки (токен — index.css)
 export const INK_ON_DARK = 'var(--on-dark)'; // text on dark sections (токен — index.css)
 
 // ─── Scroll reveal – IntersectionObserver with deep-link / in-view failsafe ──
