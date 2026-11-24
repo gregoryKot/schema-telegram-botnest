@@ -32,7 +32,7 @@ function Autonomy({ size }: ArtProps) {
     </Svg>
   );
 }
-function Expression({ size }: ArtProps) {
+export function Expression({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <Stroke x={24} h={50} fill={PAPER.moss} />

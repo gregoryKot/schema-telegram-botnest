@@ -42,7 +42,7 @@ export function ShapePicker({ newType, newCopingSub, setNewType, setNewCopingSub
 
 function MiniShapePreview({ shape }: { shape: string }) {
   if (shape === 'circle')  return <div className="mm2-mini" style={{ borderRadius: '50%' }} />;
-  if (shape === 'pill')    return <div className="mm2-mini" style={{ borderRadius: 9999 }} />;
+  if (shape === 'pill')    return <div className="mm2-mini" style={{ borderRadius: 'var(--r-pill)' }} />;
   if (shape === 'rect')    return <div className="mm2-mini" style={{ borderRadius: 3 }} />;
   if (shape === 'rect2')   return <div className="mm2-mini" style={{ borderRadius: 5 }} />;
   if (shape === 'penta')   return (

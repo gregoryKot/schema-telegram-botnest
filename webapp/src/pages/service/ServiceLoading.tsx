@@ -14,7 +14,7 @@ export function ServiceLoading({ label }: { label?: string }) {
           <Skeleton height={30} width="70%" />
           <Skeleton height={14} />
           <Skeleton height={14} width="85%" />
-          <div className="u-mt10"><Skeleton height={52} radius={26} /></div>
+          <div className="u-mt10"><Skeleton height={52} radius={12} /></div>
         </div>
       </div>
     </div>

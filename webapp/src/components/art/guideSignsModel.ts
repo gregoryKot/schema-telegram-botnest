@@ -20,7 +20,7 @@ export const GUIDE_SIGNS = [
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
   'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
   'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare', 'cup', 'join',
-  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots', 'strokes', 'grounded', 'wheel', 'need_attachment',
+  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots', 'strokes', 'grounded', 'wheel', 'need_attachment', 'coping_surrender', 'need_expression',
   ...TECHNIQUE_OWN_SIGN_KEYS,
   ...PATH_SIGN_KEYS,
 ] as const;

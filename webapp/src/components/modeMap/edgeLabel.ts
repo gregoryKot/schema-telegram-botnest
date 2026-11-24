@@ -16,7 +16,7 @@ export function edgeLabelStyle(label: unknown, stroke: unknown, extra?: CSSPrope
   const plain = { ...PLAIN, ...extra };
   if (typeof label !== 'string' || !MARKS.has(label.trim()) || typeof stroke !== 'string') return plain;
   return {
-    ...plain, width: 22, height: 22, padding: 0, borderRadius: 999,
+    ...plain, width: 22, height: 22, padding: 0, borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: 14, fontWeight: 700, color: stroke,
     border: `1.5px solid color-mix(in srgb, ${stroke} 55%, transparent)`,
