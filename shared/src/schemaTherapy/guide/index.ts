@@ -65,6 +65,7 @@ export { needGuides } from './needs';
 export type { NeedGuide } from './needTypes';
 export * from './address';
 export * from './backlinks';
+export * from './concernBacklinks';
 
 export type {
   BetweenSessionsItem,

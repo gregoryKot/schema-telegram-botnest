@@ -48,7 +48,7 @@ const CONCEPT_TRACK: GuideOpenTrack = {
  * передаёт свои (`track`), чтобы открытия не смешивались. `plan` — кнопки «В план» у рубрик листа и плашки, лист
  * выбора частей поверх: с `clientId` — в план этого клиента, без — терапевт выбирает клиентов.
  */
-export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under, plan, pickClient, client, over }: {
+export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under, plan, pickClient, client, over, onOpenConcern }: {
   onAssign?: (preset: AssignPreset) => void;
   tasks?: readonly GuideTask[];
   graph?: GuideGraph;
@@ -62,6 +62,8 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
   client?: GuideMarkClient;
   /** Свои листы вызывающего (лист «Для терапевта»): поверх листов раздела, под листом отметки. */
   over?: ReactNode;
+  /** Статья запроса из «Связано» режима и схемы («Справочник»); нет — группы «Запросы» на листах нет. */
+  onOpenConcern?: (concernId: string) => void;
 } = {}) {
   const [open, setOpen] = useState<GuideOpen>(CLOSED);
   const [cell, setCell] = useState<CopingCell | null>(null);
@@ -90,6 +92,7 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK,
       track.schema();
       setOpen({ sheet: { kind: 'schema', id }, technique: null });
     },
+    onOpenConcern,
     onOpenTechnique: (id, from) => {
       track.technique();
       setOpen((o) => ({ ...o, technique: { id, from } }));
