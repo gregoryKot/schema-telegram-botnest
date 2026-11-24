@@ -38,6 +38,9 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   // b26: своя кнопка в листе исхода (children PaperOutcome) — то же правило во всю карточку
   'pages/AuthErrorPage.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'pages/NotFoundPage.tsx': ['own', '.ds-btn.pa-outcome-action'],
+  'pages/login/LoginProviderButtons.tsx': ['own', '.ds-btn.al-btn-main'], // вход: во всю колонку формы (auth-login.css)
+  'pages/login/MaxLoginStep.tsx': ['own', '.ds-btn.al-btn-main'],
+  'pages/TwoFactorChallengePage.tsx': ['own', '.ds-btn.al-submit'],
   'pages/login/TelegramRetry.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'pages/service/TicketNotFound.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'components/practice/BreathActions.tsx': ['stretch', '.qb-actions'], // лист дыхания: колонка, на широком листе — строкой
