@@ -41,6 +41,7 @@ interface Scenario {
   moves?: Array<[from: string, to: string]>; // `git mv` до записи файлов ветки
   branch: Record<string, string>;
   labels?: string[]; // метки PR в событии; не заданы — события нет
+  pr?: Record<string, unknown>; // прочие поля pull_request в событии
   noOriginMain?: boolean;
 }
 
@@ -60,10 +61,12 @@ function run(s: Scenario): GateResult {
     write(tmp, s.branch);
     git(tmp, 'add', '-A');
     git(tmp, ...COMMIT.split(' '), 'branch');
-    if (!s.labels) return;
+    if (!s.labels && !s.pr) return;
     // Событие пишется после коммита ветки: в дифф оно не попадает.
-    const labels = s.labels.map((name) => ({ name }));
-    write(tmp, { 'event.json': JSON.stringify({ pull_request: { labels } }) });
+    const labels = (s.labels ?? []).map((name) => ({ name }));
+    write(tmp, {
+      'event.json': JSON.stringify({ pull_request: { labels, ...s.pr } }),
+    });
     env.GITHUB_EVENT_PATH = join(tmp, 'event.json');
   };
   return runGate('check-pr-size.mjs', {}, { env, setup });
@@ -134,6 +137,24 @@ describe('check-pr-size.mjs', () => {
     expect(labelled.stdout).toContain('пропущено меткой big-pr');
     expect(labelled.status).toBe(0);
     expect(run({ branch: many(61), labels: ['bug'] }).status).toBe(1);
+  });
+
+  it('поезд очереди мержа (ветка merge-train/* от бота) проходит сверх лимита; та же ветка от человека и чужая ветка бота — нет', () => {
+    const pr = (login: string, ref: string) => ({
+      user: { login },
+      head: { ref },
+    });
+    const train = run({
+      branch: many(61),
+      pr: pr('github-actions[bot]', 'merge-train/abc'),
+    });
+    expect(train.stdout).toContain('пропущено как поезд очереди мержа');
+    expect(train.status).toBe(0);
+    for (const other of [
+      pr('gregoryKot', 'merge-train/abc'),
+      pr('github-actions[bot]', 'mutation/abc'),
+    ])
+      expect(run({ branch: many(61), pr: other }).status).toBe(1);
   });
 
   it('нет origin/main — красный с подсказкой, а не молчаливый зелёный', () => {
