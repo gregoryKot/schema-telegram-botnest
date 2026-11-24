@@ -63,7 +63,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   chatting: 'chatter',
   complaint_to_mode: 'spotlight',
   complex_trauma: 'shield',
-  deliberate_practice: 'beads',
+  deliberate_practice: 'beads', emdr: 'window',
   ending_phase: 'horizon',
   evidence_limits: 'scales',
   exact_scene: 'pebbles',
