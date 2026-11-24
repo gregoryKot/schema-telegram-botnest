@@ -33,7 +33,7 @@ function SheetProbe() {
     <div>
       <span data-testid="state">{typing ? 'typing' : 'idle'}</span>
       {open && <input aria-label="name" />}
-      <span onClick={() => setOpen(false)}>close</span>
+      <button onClick={() => setOpen(false)}>close</button>
     </div>
   );
 }
