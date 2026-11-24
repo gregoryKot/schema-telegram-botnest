@@ -91,6 +91,9 @@
 .ds-card--row { border-radius: 16px; padding: 16px 20px; }
 .ds-card--nav { display: flex; align-items: center; gap: 12px; min-height: 44px; box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; text-decoration: none; }
 .ds-card--flush { padding: 0; overflow: hidden; }
+/* Строки прямо на бумаге между тонкими линиями (как «Аккаунт»); вместо белой коробки ds-card--flush. */
+.ds-rows { min-width: 0; border-top: 1px solid var(--panel-line); }
+.ds-rows > .ds-list-row, .ds-rows > button.ds-list-row, .ds-rows > a.ds-list-row { padding-left: 4px; padding-right: 4px; border-bottom: 1px solid var(--panel-line); }
 .ds-card--hover { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
 .ds-card--panel { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); }
@@ -119,10 +122,15 @@
 .ds-list-row--inset.ds-list-row--hover:hover { background: none; }
 .ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
 button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; }
+/* SVG-шеврон вправо (путь 16×16) — один для всех строк-переходов. */
+:root { --chev-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3l5 5-5 5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 /* Правый слот строки-перехода: один глиф «›». Пустой <span class="ds-chev" aria-hidden>
    получает глиф из ::before; span с «›» внутри (старая разметка) рисуется так же. */
 .ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s; }
-.ds-chev:empty::before { content: '›'; }
+.ds-chev:empty::before, .ds-fold-chev::before {
+  content: ''; display: block; width: 16px; height: 16px; background: currentColor;
+  -webkit-mask: var(--chev-mask) center / contain no-repeat; mask: var(--chev-mask) center / contain no-repeat;
+}
 [aria-expanded='true'] > .ds-chev { transform: rotate(90deg); }
 
 /* ── Раскрывашка ─────────────────────────────────────────────────────────── */
@@ -142,7 +150,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   flex-shrink: 0; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
   font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s;
 }
-.ds-fold-chev::before { content: '›'; display: block; transform: rotate(90deg); }
+.ds-fold-chev::before { transform: rotate(90deg); }
 /* Шеврон в кнопке-ссылке (ds-link) переворачивается так же — по aria-expanded своей кнопки. */
 .ds-fold-btn[aria-expanded="true"] .ds-fold-chev, [aria-expanded="true"] > .ds-fold-chev { transform: rotate(180deg); }
 .ds-fold-body { padding: 0 16px 16px; }
