@@ -2986,7 +2986,7 @@
   "webapp/src/components/therapist/sessionNumbers.ts": 8,
   "webapp/src/components/therapist/SessionPlanBlock.tsx": 65,
   "webapp/src/components/therapist/sessionPlanNames.ts": 7,
-  "webapp/src/components/therapist/SessionWorkBlock.tsx": 49,
+  "webapp/src/components/therapist/SessionWorkBlock.tsx": 38,
   "webapp/src/components/therapist/SessionWorkItemCard.tsx": 106,
   "webapp/src/components/therapist/SessionWorkList.tsx": 41,
   "webapp/src/components/therapist/SignArt.tsx": 21,

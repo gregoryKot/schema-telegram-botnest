@@ -205,6 +205,13 @@
 .sw-opt { min-height: 44px; padding-inline: 14px; font-size: 14px; color: var(--text); }
 /* Вид строки-ссылки — общий с .tb-journal-link (правило выше). */
 .sw-add, .sw-pick-all { align-self: flex-start; }
+.sw-sheet, .sw-sheet-group { display: flex; flex-direction: column; gap: 8px; }
+.sw-sheet-head, .sw-sheet-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 8px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--paper-tint); color: var(--text);
+  font: 500 15px/1.35 var(--sans); text-align: left; cursor: pointer;
+}
+.sw-sheet-head { font-weight: 600; }
 .sw-pick { display: flex; flex-direction: column; gap: 8px; }
 .sw-pick-head {
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-height: 44px; padding: 0; border: none; background: none;
