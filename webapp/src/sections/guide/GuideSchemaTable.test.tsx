@@ -31,7 +31,7 @@ describe('GuideSchemaTable', () => {
 
   it('один стиль: 20 строк, в каждой одна клетка этого стиля', () => {
     renderTable();
-    fireEvent.click(screen.getByRole('button', { name: 'Избегание' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Избегание' }));
     expect(bodyRows()).toHaveLength(20);
     expect(document.querySelectorAll('tbody td')).toHaveLength(20);
     expect(screen.getByText(SCHEMA_COPING_HEADLINES.failure.avoidance)).toBeTruthy();
@@ -40,7 +40,7 @@ describe('GuideSchemaTable', () => {
 
   it('«Подробно» показывает полные тексты во всех клетках', () => {
     renderTable();
-    fireEvent.click(screen.getByRole('button', { name: 'Подробно' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Подробно' }));
     expect(fullTexts()).toHaveLength(60);
     expect(screen.getByText(SCHEMA_COPING.mistrust.overcompensation)).toBeTruthy();
   });
