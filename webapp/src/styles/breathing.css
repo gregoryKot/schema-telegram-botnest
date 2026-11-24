@@ -4,7 +4,7 @@
    index.css — правило, спорящее с ds-*, пишется на два класса. Мелкий текст на бумаге — --text-sub.
    Размеры — по ширине самого листа (container query): он стоит и в колонке раздела, и в листе 560. */
 .qb { container: qb / inline-size; box-sizing: border-box; width: 100%; padding: 18px 20px 16px; }
-.pp-paper.qb { border-radius: 24px; }
+.pp-paper.qb { border-radius: var(--r-16); }
 /* Сетка — во внутренней обёртке: запрос по ширине контейнера не меняет сам контейнер. */
 .qb-in { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
 .qb-scene { position: relative; justify-self: center; width: min(100%, 248px); }

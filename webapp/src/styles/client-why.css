@@ -50,7 +50,7 @@
 .cw-three { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
 .cw-thing {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 8px; align-items: center;
-  margin: 0; padding: 18px 18px 20px 20px; border-radius: 22px;
+  margin: 0; padding: 18px 18px 20px 20px; border-radius: var(--r-16);
 }
 .cw-thing-title { grid-column: 1; grid-row: 1; margin: 0; font-weight: 400; font-size: 24px; }
 /* Знак в шапке листа — бокс одной высоты (40) по центру строки названия, у края: полоски (поле 120×100)
@@ -68,10 +68,10 @@
 .cw-legend-row dd { margin: 0 0 0 56px; color: var(--text-sub); }
 
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cw-why-mark { grid-row: 1 / 4; align-self: start; width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 0 0 1px var(--panel-line); }
+  .cw-why-mark { grid-row: 1 / 4; align-self: start; width: 96px; height: 96px; border-radius: var(--r-16); box-shadow: 0 0 0 1px var(--panel-line); }
   .cw-why-mark > svg { width: 64px; height: 64px; }
   .cw-why-head > .ds-h1, .cw-why-head > .cw-lead { grid-column: 1; }
-  .cw-thing { grid-template-rows: auto 1fr; column-gap: 24px; padding: 24px 26px 26px 28px; border-radius: 24px; }
+  .cw-thing { grid-template-rows: auto 1fr; column-gap: 24px; padding: 24px 26px 26px 28px; border-radius: var(--r-16); }
   .cw-thing > .pp-art { grid-row: 1 / 3; width: auto; height: 64px; }
   .cw-thing-text { grid-column: 1; align-self: start; }
 }
@@ -81,7 +81,7 @@
   .cw-why .cw-inner { max-width: 1040px; padding: 32px 48px 56px; gap: 20px; }
   .cw-why-head { column-gap: 40px; margin-bottom: 8px; }
   .cw-why-head > .cw-lead { max-width: 64ch; font-size: 16px; }
-  .cw-why-mark { width: 128px; height: 128px; margin: 6px 8px 0 0; border-radius: 28px; box-shadow: 0 0 0 1px var(--panel-line); }
+  .cw-why-mark { width: 128px; height: 128px; margin: 6px 8px 0 0; border-radius: var(--r-16); box-shadow: 0 0 0 1px var(--panel-line); }
   .cw-why-mark > svg { width: 84px; height: 84px; }
   .cw-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   .cw-thing { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; row-gap: 10px; align-items: start; padding: 28px 28px 30px; }

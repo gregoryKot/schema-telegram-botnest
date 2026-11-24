@@ -31,7 +31,7 @@
    резался краем, в листе «Заметка» заходил в правый отступ страницы (16 слева, ≈7 справа). */
 .sd-aside {
   position: sticky; top: 40px; display: flex; flex-direction: column; gap: 8px;
-  margin: 0 8px 9px 0; padding: 20px 22px 22px; border-radius: 20px; background: var(--surface);
+  margin: 0 8px 9px 0; padding: 20px 22px 22px; border-radius: var(--r-16); background: var(--surface);
   box-shadow: 0 0 0 1px var(--panel-line);
 }
 .sd-aside-label { color: var(--text-sub); }
@@ -56,7 +56,7 @@
 .sd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .sd-chip {
   min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); background: var(--surface);
-  color: var(--text-sub); font-family: inherit; cursor: pointer; border-radius: 20px;
+  color: var(--text-sub); font-family: inherit; cursor: pointer; border-radius: var(--r-pill);
 }
 .sd-chip:hover { border-color: var(--text-faint); }
 .sd-chip.is-selected {
