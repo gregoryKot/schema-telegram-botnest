@@ -7,6 +7,7 @@ import { useIsMobile } from '../useIsMobile';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
 import { SignHead } from './SignArt';
 import { ClientQuickActions } from './ClientQuickActions';
+import { ClientMemoCard } from './ClientMemoCard';
 import { PaperGroups } from './ClientOverviewGroups';
 import { OverviewEmpty, OverviewEntries } from './ClientOverviewParts';
 import { ClientWorkSummary } from './ClientWorkSummary';
@@ -48,6 +49,8 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
             <button className="ds-link" onClick={() => setClientTab('concept')}>Открыть концептуализацию →</button>
           </section>
         )}
+
+        <ClientMemoCard key={String(selectedClient.telegramId)} client={selectedClient} detail={detail} />
 
         {domains.length > 0 && <PaperGroups label="Активные схемы" sub={`${activeSchemaIds.length} в работе`} groups={domains} />}
 

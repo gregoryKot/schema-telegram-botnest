@@ -32,7 +32,7 @@ export const ALLOWED_READS = [
   { file: 'src/therapy/therapy-relations.service.ts', fn: 'getClients', count: 2 },
   { file: 'src/therapy/therapy-relation-info.ts', fn: 'getRelationInfo', count: 1 },
   { file: 'src/therapy/therapy-invite-attach.ts', fn: 'attachOfflineCard', count: 2 },
-  { file: 'src/therapy/therapy-client-data.service.ts', fn: 'updateSessionInfo', count: 2 },
+  { file: 'src/therapy/session-info-data.ts', fn: 'sessionInfoData', count: 2 },
 ];
 
 function walk(rel, acc = []) {

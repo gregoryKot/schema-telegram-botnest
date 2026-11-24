@@ -92,7 +92,12 @@ describe('Реестр выгрузки для clientId-моделей ↔ schem
   it('личные пометки терапевта и код приглашения не уходят в файл', () => {
     const rel = CLIENT_EXPORT_POLICY.TherapyRelation;
     if (rel.status !== 'export') throw new Error('TherapyRelation: export');
-    for (const col of ['clientAlias', 'virtualClientName', 'code'])
+    for (const col of [
+      'clientAlias',
+      'virtualClientName',
+      'therapistMemo',
+      'code',
+    ])
       expect(rel.select).not.toHaveProperty(col);
   });
 

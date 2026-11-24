@@ -185,3 +185,76 @@ describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)'
     expect(res.status).toBe(403);
   });
 });
+
+// Заметка «О клиенте» (TherapyRelation.therapistMemo): пишет и видит только
+// терапевт этой связи.
+describe('e2e smoke: therapy ownership — заметка «О клиенте»', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const T4 = 4_000_000_000_000_020n;
+  const T5 = 4_000_000_000_000_021n;
+  const C3 = 4_000_000_000_000_022n;
+  const ALL_USER_IDS = [T4, T5, C3];
+
+  const as = (userId: bigint) => {
+    const token = signAccessToken(userId, process.env.JWT_SECRET as string);
+    const auth = (r: request.Test) => r.set('Authorization', `Bearer ${token}`);
+    return {
+      get: (url: string) => auth(request(app.getHttpServer()).get(url)),
+      post: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).post(url)).send(body),
+    };
+  };
+  const memoOf = async (therapist: bigint) =>
+    (await as(therapist).get('/api/therapy/clients')).body.find(
+      (c: { telegramId: number }) => c.telegramId === Number(C3),
+    )?.memo;
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await prisma.user.create({ data: { id: T4, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: T5, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: C3, role: 'CLIENT' } });
+    const invite = await as(T4).post('/api/therapy/invite');
+    await as(C3).post('/api/therapy/join', { code: invite.body.code });
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
+
+  it('свой терапевт: сохранил → список клиентов вернул заметку; null очищает', async () => {
+    const saved = await as(T4).post(`/api/therapy/session-info/${C3}`, {
+      memo: 'приходит с сестрой',
+    });
+    expect(saved.status).toBeLessThan(300);
+    expect(await memoOf(T4)).toBe('приходит с сестрой');
+    await as(T4).post(`/api/therapy/session-info/${C3}`, { memo: null });
+    expect(await memoOf(T4)).toBeNull();
+  });
+
+  it('чужой терапевт не пишет заметку чужому клиенту и не видит его в списке', async () => {
+    await as(T4).post(`/api/therapy/session-info/${C3}`, { memo: 'секрет' });
+    const res = await as(T5).post(`/api/therapy/session-info/${C3}`, {
+      memo: 'подмена',
+    });
+    expect(res.status).toBe(403);
+    expect(await memoOf(T4)).toBe('секрет');
+    expect(await memoOf(T5)).toBeUndefined();
+  });
+
+  it('клиент не видит заметку в GET /relation', async () => {
+    const res = await as(C3).get('/api/therapy/relation');
+    expect(JSON.stringify(res.body)).not.toMatch(/секрет|memo/i);
+  });
+
+  it('заметка длиннее 5000 знаков — 400', async () => {
+    const res = await as(T4).post(`/api/therapy/session-info/${C3}`, {
+      memo: 'x'.repeat(5001),
+    });
+    expect(res.status).toBe(400);
+  });
+});

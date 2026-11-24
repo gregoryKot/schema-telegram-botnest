@@ -16,6 +16,7 @@ const base: ConceptGraphMetrics = {
   syncFromMap30: 0,
   needsRated30: 0,
   sessionWork30: 0,
+  memoSaved30: 0,
   guideModes30: 0,
   guideSchemas30: 0,
   guideTechniques30: 0,
@@ -158,6 +159,15 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).not.toMatch(/NaN|undefined|null/);
     expect(formatConceptGraphMetrics({ ...base, opens30: 5 })).not.toContain(
       'В итогах сессии',
+    );
+  });
+
+  it('заметка «О клиенте»: строка стоит, только когда сохраняли', () => {
+    const text = formatConceptGraphMetrics({ ...base, memoSaved30: 2 });
+    expect(text).toContain('Заметку «О клиенте» сохраняли 2 раз');
+    expect(text).not.toMatch(/NaN|undefined|null/);
+    expect(formatConceptGraphMetrics({ ...base, opens30: 5 })).not.toContain(
+      'О клиенте',
     );
   });
 

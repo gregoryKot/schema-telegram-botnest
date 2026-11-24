@@ -36,6 +36,7 @@ async function dedupeTherapyRelations(
   await tx.$executeRaw(Prisma.sql`
     UPDATE "TherapyRelation" t SET
       "clientAlias" = COALESCE(t."clientAlias", s."clientAlias"),
+      "therapistMemo" = COALESCE(t."therapistMemo", s."therapistMemo"),
       "therapyStartDate" = COALESCE(t."therapyStartDate", s."therapyStartDate"),
       "nextSession" = COALESCE(t."nextSession", s."nextSession"),
       "meetingDays" = CASE WHEN t."meetingDays" = '[]'::jsonb

@@ -19,6 +19,7 @@ export interface TherapyClientSummary {
   urlCode: string;
   name: string | null;
   clientAlias: string | null;
+  memo: string | null; // заметка терапевта «О клиенте»; только в его списке
   streak: number;
   lastActiveDate: string | null; // дни здесь — по календарю клиента (notifyTimezone)
   daysSinceActive: number | null; // 0 — отмечался сегодня у себя; терапевт этого дня не знает

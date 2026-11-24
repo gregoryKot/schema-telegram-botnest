@@ -12,6 +12,14 @@ const TASK_SOURCE_SET = new Set<string>(TASK_ASSIGN_SOURCES);
 const SEARCH_KIND_SET = new Set<string>(SEARCH_RESULT_KINDS);
 const SESSION_WORK_KINDS = ['technique', 'exercise', 'custom'];
 
+// Заметка «О клиенте»: только длина и «очистил», сам текст в meta не едет.
+function sanitizeMemoSaved(meta: Meta): Meta | undefined {
+  const { length, cleared } = meta;
+  if (!Number.isInteger(length) || typeof cleared !== 'boolean')
+    return undefined;
+  return { length: Math.min(Math.max(length as number, 0), 5000), cleared };
+}
+
 // «Что делали» в итогах сессии: число пунктов и виды, без названий и текста.
 function sanitizeSessionWork(meta: Meta): Meta | undefined {
   const { items, kinds } = meta;
@@ -24,7 +32,7 @@ function sanitizeSessionWork(meta: Meta): Meta | undefined {
 
 /** События, чью meta разбирает sanitizeCabinetMeta. */
 export const hasCabinetMeta = (name: string): boolean =>
-  /^(cabinet_session_work|task_assign_source|search_result_open|therapy_plan_item_\w+|therapy_path_\w+|therapy_plan_session_marked)$/.test(
+  /^(cabinet_session_work|cabinet_client_memo_saved|task_assign_source|search_result_open|therapy_plan_item_\w+|therapy_path_\w+|therapy_plan_session_marked)$/.test(
     name,
   );
 
@@ -36,6 +44,7 @@ export function sanitizeCabinetMeta(
   meta: Meta,
 ): Meta | undefined {
   if (name === 'cabinet_session_work') return sanitizeSessionWork(meta);
+  if (name === 'cabinet_client_memo_saved') return sanitizeMemoSaved(meta);
   if (name === 'therapy_plan_item_added') {
     const { rubric, fromGuide } = meta;
     if (typeof rubric !== 'string' || !RUBRIC_SET.has(rubric)) return undefined;

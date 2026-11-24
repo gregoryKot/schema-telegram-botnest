@@ -90,6 +90,19 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('cabinet_session_work', { items: 2 })).toBeUndefined();
   });
 
+  it('cabinet_client_memo_saved: длина и «очистил», текст — мимо', () => {
+    expect(
+      sanitizeMeta('cabinet_client_memo_saved', {
+        length: 9000,
+        cleared: false,
+        text: 'ссора с матерью',
+      }),
+    ).toEqual({ length: 5000, cleared: false });
+    expect(
+      sanitizeMeta('cabinet_client_memo_saved', { length: '3', cleared: true }),
+    ).toBeUndefined();
+  });
+
   it('breath_start: meta игнорируется (событие без meta)', () => {
     expect(sanitizeMeta('breath_start', { junk: 'x' })).toBeUndefined();
   });

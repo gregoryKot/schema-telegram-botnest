@@ -32,6 +32,7 @@ function make(o: Opts) {
           id: 7,
           urlCode: 'kdbgqafs',
           virtualClientName: 'enc:card',
+          therapistMemo: 'enc:memo-card',
           therapyStartDate: '2026-02-02',
           nextSession: '2026-12-01',
           meetingDays: [1, 3],
@@ -42,6 +43,7 @@ function make(o: Opts) {
       ? {
           id: 100,
           clientAlias: null,
+          therapistMemo: null,
           therapyStartDate: null,
           nextSession: null,
           meetingDays: [],
@@ -198,6 +200,7 @@ describe('attachOfflineCard', () => {
       data: {
         attachToId: null,
         clientAlias: 'enc:card',
+        therapistMemo: 'enc:memo-card',
         therapyStartDate: '2026-02-02',
         nextSession: '2026-12-01',
         meetingDays: [1, 3],
@@ -207,6 +210,7 @@ describe('attachOfflineCard', () => {
       target: {
         id: 100,
         clientAlias: 'enc:own',
+        therapistMemo: 'enc:memo-own',
         therapyStartDate: '2025-05-05',
         nextSession: '2026-11-20',
         meetingDays: [5],
@@ -218,6 +222,7 @@ describe('attachOfflineCard', () => {
       data: {
         attachToId: null,
         clientAlias: 'enc:own',
+        therapistMemo: 'enc:memo-own',
         therapyStartDate: '2025-05-05',
         nextSession: '2026-11-20',
         meetingDays: [5],

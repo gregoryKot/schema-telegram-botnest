@@ -100,6 +100,7 @@ export interface TherapyClientSummary {
   urlCode?: string; // постоянный код адреса карточки /cabinet/<код> (utils/clientRef); нет у старого кэша и старого сервера
   name: string | null;
   clientAlias: string | null;
+  memo?: string | null; // заметка «О клиенте»; нет у старого сервера
   streak: number;
   lastActiveDate: string | null; // день по календарю клиента, не терапевта
   daysSinceActive?: number | null; // до сегодня клиента, считает сервер (isActiveToday); нет у старого кэша

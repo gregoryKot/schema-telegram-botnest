@@ -30,7 +30,7 @@ describe('ClientOverviewTab', () => {
       })} />,
     );
     const col = container.querySelector('.tk-col') as HTMLElement;
-    expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Что было сделано', 'Последние записи']);
+    expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'О клиенте', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Что было сделано', 'Последние записи']);
     // Белых карточек с рамкой и цветных точек больше нет.
     expect(col.querySelector('.ds-card, .ds-dot, .tone-tint, .tone-fill, .ds-chip')).toBeNull();
     // Цель — лист соломы.
@@ -62,10 +62,11 @@ describe('ClientOverviewTab', () => {
     const setClientTab = vi.fn();
     const { container } = render(<ClientOverviewTab selectedClient={client} detail={detailOf({ setClientTab })} />);
     const col = container.querySelector('.tk-col') as HTMLElement;
-    expect(within(col).queryAllByRole('heading')).toEqual([]);
+    // Лист «О клиенте» виден и у пустого клиента: заметку можно оставить до первой концептуализации.
+    expect(within(col).getAllByRole('heading').map(h => h.textContent)).toEqual(['О клиенте']);
     expect(col.querySelector('.tk-empty-scene svg.scn')).toBeTruthy();
     expect(col.querySelector('.tk-empty-text')!.textContent).toContain('концептуализацию');
-    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Открыть концептуализацию']);
+    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Сохранить', 'Открыть концептуализацию']);
     within(col).getByRole('button', { name: 'Открыть концептуализацию' }).click();
     expect(setClientTab).toHaveBeenCalledWith('concept');
   });

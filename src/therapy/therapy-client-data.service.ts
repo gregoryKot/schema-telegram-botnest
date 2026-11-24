@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { NotificationService } from '../notification/notification.service';
@@ -8,6 +7,7 @@ import { removeTherapistClient } from './remove-client';
 import { isOwnYsqRequestPending, requestYsq } from './ysq-request';
 import { activeRelationWhere } from './relation-where';
 import { decryptRecord } from '../utils/crypto';
+import { sessionInfoData, type SessionInfoBody } from './session-info-data';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 import { decodeYsqAnswers } from '../bot/ysq.service';
 import {
@@ -174,23 +174,14 @@ export class TherapyClientDataService {
   async updateSessionInfo(
     therapistId: bigint,
     clientId: bigint,
-    body: {
-      therapyStartDate?: string | null;
-      nextSession?: string | null;
-      meetingDays?: number[];
-    },
+    body: SessionInfoBody,
   ): Promise<void> {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const data: Record<string, unknown> = {};
-    if (body.therapyStartDate !== undefined)
-      data['therapyStartDate'] = body.therapyStartDate;
-    if (body.nextSession !== undefined) data['nextSession'] = body.nextSession;
-    if (body.meetingDays !== undefined) data['meetingDays'] = body.meetingDays;
+    const data = sessionInfoData(body);
     if (Object.keys(data).length === 0) return;
-    const mutation = data as Prisma.TherapyRelationUpdateManyMutationInput;
     await this.prisma.therapyRelation.updateMany({
       where: activeRelationWhere(therapistId, clientId),
-      data: mutation,
+      data,
     });
   }
 
