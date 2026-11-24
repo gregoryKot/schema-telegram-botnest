@@ -212,12 +212,7 @@
 .ds-btn.ss-deep-link:not(:disabled) { background: var(--surface); }
 .ss-topbar { display: flex; flex-direction: column; gap: 10px; }
 .ss-topbar-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.ss-topbar-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1 1 auto; min-height: 44px; padding: 0 18px;
-  border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); font: 600 14px var(--sans); cursor: pointer;
-}
-.ss-topbar-btn:hover { border-color: var(--line-hover); }
-.ss-topbar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ds-btn.ss-topbar-btn { flex: 1 1 auto; }
 .ss-topbar-chev { width: 12px; height: 12px; transition: transform .2s; }
 .ss-topbar-chev.is-open { transform: rotate(180deg); }
 .ss-help { padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
