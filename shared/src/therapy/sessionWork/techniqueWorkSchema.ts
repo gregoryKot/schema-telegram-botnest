@@ -138,4 +138,12 @@ export const SCHEMA_TECHNIQUE_WORK: Record<
       ['exit', 'Как выходим'],
     ],
   },
+  online_chairwork: {
+    name: 'Стулья онлайн',
+    fields: [
+      ['variant', 'Где стояли стулья'],
+      ['modes', 'Какие режимы говорили'],
+      ['result', 'Как изменилось состояние'],
+    ],
+  },
 };

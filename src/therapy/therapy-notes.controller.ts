@@ -97,11 +97,11 @@ export class TherapyNotesController {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     const work = normalizeSessionWork(body.work);
-    if (!body.text?.trim() && work.length === 0)
+    if (!body.text?.trim() && !work.length && !body.planItemIds?.length)
       throw new BadRequestException('text required');
     if (!isCalendarDay(body.date))
       throw new BadRequestException('Invalid date');
-    const note = { date: body.date, text: body.text, work };
+    const note = { ...body, work };
     return withRelation(async () => {
       const cid = parseClientId(clientId);
       return this.notesService.createNote(uid(req), cid, note);

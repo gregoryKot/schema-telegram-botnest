@@ -9,7 +9,7 @@ import { FIXTURE_VIEW } from '../../../../../shared/src/therapy/conceptGraph/con
 import type { UserId } from '../../../api';
 import { useConceptGuide } from './useConceptGuide';
 
-const h = vi.hoisted(() => ({ createPlanItems: vi.fn(), getTherapyClients: vi.fn(), trackEvent: vi.fn() }));
+const h = vi.hoisted(() => ({ createPlanItems: vi.fn(), getTherapyClients: vi.fn(), getTherapyPath: vi.fn(), trackEvent: vi.fn() }));
 vi.mock('../../../api', () => ({ api: h, reportClientError: vi.fn() }));
 
 const MODE = { kind: 'mode', id: 'vulnerable_child' } as const;
@@ -25,6 +25,7 @@ const show = (clientId?: UserId) => render(<MemoryRouter><Harness clientId={clie
 beforeEach(() => {
   vi.clearAllMocks();
   h.createPlanItems.mockResolvedValue({ items: [] });
+  h.getTherapyPath.mockResolvedValue({ path: null });
 });
 
 describe('useConceptGuide — «В план» с плашки', () => {
@@ -36,7 +37,7 @@ describe('useConceptGuide — «В план» с плашки', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Добавить в план' }));
     await waitFor(() => expect(h.createPlanItems).toHaveBeenCalledWith({
       clientIds: ['7'], rubric: 'between', text: 'Письмо себе. Встреча со своим маленьким Я',
-      source: { kind: 'mode', id: 'vulnerable_child', field: 'betweenSessions' },
+      sourceAddress: 'mode:vulnerable_child/betweenSessions',
     }));
   });
 

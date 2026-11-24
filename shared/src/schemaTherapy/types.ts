@@ -1,5 +1,5 @@
 /**
- * Типы контента схема-терапии (эмоции, 20 схем / 5 доменов, 35 режимов) —
+ * Типы контента схема-терапии (эмоции, 20 схем / 5 доменов, 36 режимов) —
  * общие для webapp (правило №3 CLAUDE.md). Сам текст — в
  * shared/src/schemaTherapy/content/*, сборка — в
  * shared/src/schemaTherapy/schemaTherapyData.ts.

@@ -11,6 +11,7 @@
 // crypto-record и Nest — из одного реестра, иначе спай на Logger и instanceof
 // смотрели бы на чужие классы.
 import { createCipheriv, randomBytes } from 'crypto';
+import { loadAsSubject } from '../test-support/load-as-subject';
 
 type CryptoModule = typeof import('./crypto');
 type RecordModule = typeof import('./crypto-record');
@@ -43,20 +44,28 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
+// Экземпляры грузятся один раз: тесты проверяют поведение, а не загрузку.
+type Mods = ReturnType<typeof load>;
+let modsA: Mods;
+let modsB: Mods;
+beforeAll(() => {
+  modsA = load(KEY_A);
+  modsB = load(KEY_B);
+});
+
 describe('assertWritable / guardOverwrite: запись поверх нечитаемого — 409 с точным текстом', () => {
   const MESSAGE =
     'Правка не сохранена: записанные данные сейчас не читаются, и новая ' +
     'запись стёрла бы их. Нужна помощь владельца проекта.';
 
   /** Строка, записанная ключом A, в процессе с ключом B, и спай на warn. */
-  function setup() {
-    const { c: a } = load(KEY_A);
+  function setup(b: Mods = modsB) {
+    const { c: a } = modsA;
     const stored = {
       id: 5,
       text: a.encrypt('секретная заметка')!,
       items: a.encryptJson(['abandonment']),
     };
-    const b = load(KEY_B);
     jest
       .spyOn(b.nest.Logger.prototype, 'error')
       .mockImplementation(() => undefined);
@@ -76,7 +85,11 @@ describe('assertWritable / guardOverwrite: запись поверх нечит�
   }
 
   it('нечитаемое поле среди записываемых → 409 { message, reason }, warn с местом и полями', () => {
-    const { b, stored, warn } = setup();
+    const { b, stored, warn } = setup(
+      loadAsSubject('текст и код 409 — константы уровня модуля', () =>
+        load(KEY_B),
+      ),
+    );
     const row = b.r.decryptRecord({ ...stored }, SCHEMA);
     const e = caught(() =>
       b.r.assertWritable(row, ['text', 'items'], 'Note.update'),
@@ -107,7 +120,7 @@ describe('assertWritable / guardOverwrite: запись поверх нечит�
   });
 
   it('всё читается своим ключом — запись проходит без warn', () => {
-    const b = load(KEY_A);
+    const b = modsA;
     const warn = jest
       .spyOn(b.nest.Logger.prototype, 'warn')
       .mockImplementation(() => undefined);
@@ -150,28 +163,28 @@ describe('tryDecrypt: граница формата iv(12) + тег(16) + ≥1 �
   }
 
   it('28 байт с верным тегом (пустой текст) — «не наш формат», а не ok с пустой строкой', () => {
-    const { c } = load(KEY_A);
+    const { c } = modsA;
     const blob = gcm('');
     expect(Buffer.from(blob, 'base64')).toHaveLength(28);
     expect(c.tryDecrypt(blob)).toEqual({ ok: false, looksCipher: false });
   });
 
   it('29 байт (один байт текста) — уже наш формат и расшифровывается', () => {
-    const { c } = load(KEY_A);
+    const { c } = modsA;
     expect(c.tryDecrypt(gcm('x'))).toEqual({ ok: true, text: 'x' });
   });
 
   // decrypt(): контракт «пусто на входе — пусто на выходе», undefined → null
   // (а не undefined: так его ждут `?? null` у вызывающих и JSON-ответы).
   it('decrypt(undefined) — строго null, пустая строка — как есть, без расшифровки', () => {
-    const { c } = load(KEY_A);
+    const { c } = modsA;
     expect(c.decrypt(undefined)).toBeNull();
     expect(c.decrypt(null)).toBeNull();
     expect(c.decrypt('')).toBe('');
   });
 
   it('не-строка (число из легаси-JSON) не роняет расшифровку', () => {
-    const { c } = load(KEY_A);
+    const { c } = modsA;
     expect(c.tryDecrypt(12345 as unknown as string)).toEqual({
       ok: false,
       looksCipher: false,

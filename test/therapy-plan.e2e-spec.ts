@@ -56,7 +56,7 @@ describe('e2e smoke: план работы с клиентом — ownership', (
     const created = await agentAs(T1).post('/api/therapy/plan', {
       ...item,
       clientIds: [String(C1)],
-      source: { kind: 'schema', id: 'abandonment', field: 'cognitive' },
+      sourceAddress: 'schema:abandonment/cognitive',
     });
     expect(created.status).toBe(201);
     itemId = created.body.items[0].id as number;
@@ -77,7 +77,8 @@ describe('e2e smoke: план работы с клиентом — ownership', (
         clientId: String(C1),
         status: 'planned',
         position: 0,
-        source: { kind: 'schema', id: 'abandonment', field: 'cognitive' },
+        sourceAddress: 'schema:abandonment/cognitive',
+        source: null,
         taskId: null,
       }),
     ]);
@@ -139,6 +140,49 @@ describe('e2e smoke: план работы с клиентом — ownership', (
       expect((await t1.post('/api/therapy/plan', body)).status).toBe(400);
     const empty = await t1.patch(`/api/therapy/plan/items/${itemId}`, {});
     expect(empty.status).toBe(400);
+  });
+
+  it('итоги сессии: отмеченный пункт попадает в plan-work, planned → active; чужой пункт не сохраняется', async () => {
+    const t1 = agentAs(T1);
+    const foreign = await agentAs(T2).post('/api/therapy/plan', {
+      ...item,
+      clientIds: [String(C2)],
+    });
+    const foreignId = foreign.body.items[0].id as number;
+
+    const saved = await t1.post(`/api/therapy/notes/${C1}`, {
+      date: '2026-01-05',
+      text: 'работали с пунктом',
+      planItemIds: [itemId, itemId, foreignId],
+    });
+    expect(saved.status).toBe(201);
+    expect(saved.body.planItemIds).toEqual([itemId]);
+
+    const found = await t1.get(`/api/therapy/notes/${C1}/plan-work`);
+    expect(found.status).toBe(200);
+    expect(found.body).toEqual({
+      entries: [
+        { noteId: saved.body.id, date: '2026-01-05', planItemIds: [itemId] },
+      ],
+    });
+    const plan = await t1.get(`/api/therapy/plan/${C1}`);
+    expect(plan.body[0].status).toBe('active');
+    const theirs = await agentAs(T2).get(`/api/therapy/plan/${C2}`);
+    expect(theirs.body[0].status).toBe('planned');
+
+    const t2 = agentAs(T2);
+    expect((await t2.get(`/api/therapy/notes/${C1}/plan-work`)).status).toBe(
+      403,
+    );
+    expect(
+      (
+        await t1.post(`/api/therapy/notes/${C1}`, {
+          date: '2026-01-06',
+          text: 'x',
+          planItemIds: [0],
+        })
+      ).status,
+    ).toBe(400);
   });
 
   it('правка, порядок и удаление у владельца; отвязка клиента стирает пункты', async () => {

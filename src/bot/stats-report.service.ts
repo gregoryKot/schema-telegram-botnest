@@ -15,6 +15,7 @@ import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { ScreenShareMetricsService } from './screen-share-metrics.service';
 import { GuideReferenceMetricsService } from './guide-reference-metrics.service';
 import { PlanMetricsService } from './plan-metrics.service';
+import { PathMetricsService } from './path-metrics.service';
 import { TaskAssignMetricsService } from './task-assign-metrics.service';
 import { SearchMetricsService } from './search-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
@@ -60,6 +61,7 @@ export class StatsReportService {
     readonly screenShare: ScreenShareMetricsService,
     readonly guideReference: GuideReferenceMetricsService,
     readonly plan: PlanMetricsService,
+    readonly path: PathMetricsService,
     readonly taskAssign: TaskAssignMetricsService,
     readonly search: SearchMetricsService,
     readonly authHealth: AuthHealthMetricsService,
@@ -96,7 +98,7 @@ export class StatsReportService {
   /** Полный отчёт (`/stats all`, perf, live-спек). */
   async render(): Promise<string> {
     const parts = await settleBlocks(
-      [...this.runs(), ...infraBlocks()],
+      [...this.runs(), ...infraBlocks(this.plan)],
       this.logger,
     );
     return parts.join('\n\n');

@@ -10,7 +10,11 @@ import { AddressInfo } from 'net';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
-import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
+import {
+  REFUSED_PORT,
+  listenWithRetry,
+  reservePort,
+} from '../test-support/ephemeral-port';
 
 const FRONT = join(process.cwd(), 'deploy', 'front-server.mjs');
 const FRONT_STATIC = join(process.cwd(), 'deploy', 'front-static.mjs');
@@ -68,7 +72,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
 
   it('приложение не поднято → страница техработ 200 на любом маршруте', async () => {
     // APP_PORT указывает в никуда (нет апстрима).
-    const { proc, port } = launchFront(59999);
+    const { proc, port } = launchFront(REFUSED_PORT);
     alive.push(proc);
     const frontPort = await port;
 
@@ -183,7 +187,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
     }
 
     it('kotlarewski.gr: страницы — index.html, файлы сборки — с диска', async () => {
-      const { proc, port } = launchFront(59998, dist);
+      const { proc, port } = launchFront(REFUSED_PORT, dist);
       alive.push(proc);
       const p = await port;
 
@@ -207,7 +211,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
     }, 10000);
 
     it('продукт, API, /app, /health, robots и запись — техработы даже на визитке', async () => {
-      const { proc, port } = launchFront(59997, dist);
+      const { proc, port } = launchFront(REFUSED_PORT, dist);
       alive.push(proc);
       const p = await port;
 
@@ -233,7 +237,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
     // получает файл или 404, не HTML техработ: с nosniff браузер молча
     // выбросил бы стиль, и страница открылась бы без стилей.
     it('продукт: файл сборки — с диска или 404, страницы и API — техработы', async () => {
-      const { proc, port } = launchFront(59995, dist);
+      const { proc, port } = launchFront(REFUSED_PORT, dist);
       alive.push(proc);
       const p = await port;
       const host = 'schemehappens.ru';
@@ -257,7 +261,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
     }, 10000);
 
     it('сборки визитки нет → и на её хосте техработы, а не пустой ответ', async () => {
-      const { proc, port } = launchFront(59996, join(root, 'missing'));
+      const { proc, port } = launchFront(REFUSED_PORT, join(root, 'missing'));
       alive.push(proc);
       const res = await hit(await port, '/', 'kotlarewski.gr');
       expect(res.body).toContain('технические работы');
@@ -268,7 +272,7 @@ describe('front-server (публичный порт: техработы ⇄ пр
     // супервизор (supervisor-status.mjs), front ставит её заголовком только на
     // страницу техработ; смок прода её печатает (prod-smoke.yml).
     it('причина техработ — заголовком X-Maintenance-Reason на странице техработ, не на файлах', async () => {
-      const { proc, port } = launchFront(59995, dist, 'migrate-failed');
+      const { proc, port } = launchFront(REFUSED_PORT, dist, 'migrate-failed');
       alive.push(proc);
       const p = await port;
       for (const path of ['/health', '/api/settings', '/today']) {

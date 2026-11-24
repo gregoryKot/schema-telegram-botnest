@@ -30,6 +30,7 @@ import {
   SCHEMA_IDS,
 } from './seed-profile';
 import { at1, pick, q, series, strs, tsBack } from './seed-sql';
+import { PATH_AFTER, withPathContour } from './seed-path';
 
 type Steps = Record<string, string | string[]>;
 
@@ -44,6 +45,7 @@ export const THERAPY_AFTER = [
   'TherapistNote',
   'UserTask',
   'YsqResultHistory',
+  ...PATH_AFTER,
 ];
 
 const NOTES_MAX = 156; // три года еженедельных сессий
@@ -158,5 +160,5 @@ SELECT cl.c, (SELECT jsonb_agg(1 + (cl.c + r.r + k) % 6) FROM generate_series(1,
 FROM cl CROSS JOIN LATERAL generate_series(0, ${byRank(RETAKES_MAX, 6, 'cl.rk')} - 1) r(r)
 ORDER BY r.r * 30 + cl.c % 30 DESC, cl.c`,
   );
-  return steps;
+  return withPathContour(a, steps);
 }

@@ -29,11 +29,14 @@ export class TaskAssignMetricsService {
           meta: { path: ['source'], equals: source },
         },
       });
-    const [tile30, catalog30, custom30] = await Promise.all([
-      sourceOf('tile'),
-      sourceOf('catalog'),
-      sourceOf('custom'),
-    ]);
-    return { tile30, catalog30, custom30 };
+    const [tile30, catalog30, custom30, guide30, template30] =
+      await Promise.all([
+        sourceOf('tile'),
+        sourceOf('catalog'),
+        sourceOf('custom'),
+        sourceOf('guide'),
+        sourceOf('template'),
+      ]);
+    return { tile30, catalog30, custom30, guide30, template30 };
   }
 }

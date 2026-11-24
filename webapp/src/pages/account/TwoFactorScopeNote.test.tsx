@@ -9,11 +9,11 @@ import { withAddressForm } from '../../components/settingsSheet/SettingsSheet.te
 
 afterEach(cleanup);
 
-const NOTE = /Вход из приложения в Telegram или MAX идёт по подписи мессенджера — там второй фактор не спрашивается\./;
+const NOTE = /Внутри приложения в Telegram или MAX вход идёт по подписи мессенджера — там второй фактор не спрашивается\./;
 
 describe('TwoFactorSection — область действия 2FA', () => {
   it('текст содержит полный перечень входов, где код спрашивается, и оговорку про вход из мессенджеров', () => {
-    expect(SCOPE_TEXT).toContain('при входе через сайт: VK ID и Яндекс ID.');
+    expect(SCOPE_TEXT).toContain('при входе на сайт: VK ID, Яндекс ID и вход через MAX.');
     expect(SCOPE_TEXT).not.toMatch(/виджет/);
     expect(SCOPE_TEXT).toMatch(NOTE);
   });

@@ -6,6 +6,7 @@ const DBT = 'Диалектическая поведенческая терап�
 export const buildBorrowedDbtTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'chain_analysis',
+    group: 'borrowed',
     approach: DBT,
     name: 'Цепочный анализ',
     summary:
@@ -33,6 +34,7 @@ export const buildBorrowedDbtTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'distress_tolerance',
+    group: 'borrowed',
     approach: DBT,
     name: 'Переносимость дистресса и «противоположное действие»',
     summary:
@@ -60,6 +62,7 @@ export const buildBorrowedDbtTechniques: TechniqueGuideBuilder = (tr) => [
   },
   {
     id: 'validation_levels',
+    group: 'borrowed',
     approach: DBT,
     name: 'Валидация по уровням',
     summary:

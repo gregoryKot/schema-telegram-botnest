@@ -4,6 +4,7 @@
 // в UTF-8, как пересчёт в src/infra/body-limit.ts; `EMOJI` — 4 байта, а
 // @MaxLength (validator.js) считает пару суррогатов одним знаком.
 import {
+  CONCEPT_COPING_NOTE_MAX,
   CONCEPT_FIELD_TEXT_MAX,
   CONCEPT_MODE_ALIAS_MAX,
   CONCEPT_MODE_TEXT_MAX,
@@ -12,6 +13,8 @@ import {
   CONCEPT_TECHNIQUE_MARKS_MAX,
 } from '../utils/text-limits';
 import { CONCEPT_PATCH_LINKS_MAX } from '../therapy/dto/concept-save.dto';
+import { SCHEMA_IDS } from '../therapy/kb-ids';
+import { NEED_IDS } from '../bot/bot.service';
 
 const CYR = 'ж';
 export const EMOJI = '😀';
@@ -20,6 +23,14 @@ const id = (prefix: string, i: number) => `${prefix}${i}`.padEnd(64, 'x');
 /** n разных id по 64 знака (предел DTO). */
 export const cyrIds = (prefix: string, n: number) =>
   Array.from({ length: n }, (_, i) => id(prefix, i));
+
+// id режима, схемы и потребности DTO сверяет со справочником (kb-ids.ts): самый длинный
+// допустимый режим — свой режим терапевта `cm_…` в 64 знака, схемы и потребности — из списка.
+const modeId = (i: number) => id(`cm_${i}`, 0);
+const pick = (list: readonly string[], n: number, from = 0) =>
+  Array.from({ length: n }, (_, i) => list[(from + i) % list.length]);
+const LONGEST_SCHEMAS = [...SCHEMA_IDS].sort((a, b) => b.length - a.length);
+const LONGEST_NEEDS = [...NEED_IDS].sort((a, b) => b.length - a.length);
 
 const marks = (n: number) =>
   Array.from({ length: n }, (_, i) => ({
@@ -48,10 +59,10 @@ export const worstModeLink = (
   done = CONCEPT_TECHNIQUE_MARKS_MAX,
   ch = CYR,
 ) => ({
-  modeId: id('m', i),
+  modeId: modeId(i),
   alias: ch.repeat(CONCEPT_MODE_ALIAS_MAX),
-  schemaIds: cyrIds('s', 20),
-  needIds: cyrIds('n', 20),
+  schemaIds: pick(LONGEST_SCHEMAS, 20),
+  needIds: pick(LONGEST_NEEDS, 20),
   origin: ch.repeat(CONCEPT_MODE_TEXT_MAX),
   manifest: ch.repeat(CONCEPT_MODE_TEXT_MAX),
   strategy: ch.repeat(CONCEPT_MODE_TEXT_MAX),
@@ -63,11 +74,17 @@ export const worstSchemaLink = (
   done = CONCEPT_TECHNIQUE_MARKS_MAX,
   ch = CYR,
 ) => ({
-  schemaId: id('s', i),
+  schemaId: SCHEMA_IDS[i % SCHEMA_IDS.length],
   belief: ch.repeat(CONCEPT_SCHEMA_TEXT_MAX),
   origin: ch.repeat(CONCEPT_SCHEMA_TEXT_MAX),
-  needIds: cyrIds('n', 5),
+  needIds: pick(LONGEST_NEEDS, 5),
   done: marks(done),
+  coping: ['surrender', 'avoidance', 'overcompensation'],
+  copingNotes: {
+    surrender: ch.repeat(CONCEPT_COPING_NOTE_MAX),
+    avoidance: ch.repeat(CONCEPT_COPING_NOTE_MAX),
+    overcompensation: ch.repeat(CONCEPT_COPING_NOTE_MAX),
+  },
 });
 
 /** Худший патч: всё до предела знаками `ch`, по `links` связей каждого вида. */
@@ -78,8 +95,8 @@ export function worstPatchBody(links = CONCEPT_PATCH_LINKS_MAX, ch = CYR) {
   return {
     baseVersion: '2026-11-08T10:00:00.000Z',
     ...conceptTextFields(ch),
-    schemaIds: cyrIds('s', CONCEPT_SCHEMA_IDS_MAX),
-    modeIds: cyrIds('m', 100),
+    schemaIds: pick(LONGEST_SCHEMAS, CONCEPT_SCHEMA_IDS_MAX),
+    modeIds: Array.from({ length: 100 }, (_, i) => modeId(i)),
     modeLinksPatch: { upsert: upsert(worstModeLink), remove: cyrIds('r', 40) },
     schemaLinksPatch: {
       upsert: upsert(worstSchemaLink),

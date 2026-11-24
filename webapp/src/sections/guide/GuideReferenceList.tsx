@@ -5,13 +5,21 @@ import type { ReferenceGroup, ReferenceItem, ReferenceLayout } from './guideRefe
 import '../../styles/guide-reference.css';
 
 type Open = (item: ReferenceItem) => void;
-/** Строки группы: со знаком листа — без знака у строки; у листа без знака знак у каждой строки свой, под названием — суть. */
+/** Строка с оттенком (лист «Пути терапии») — бумажная карточка своего оттенка: номер фазы над знаком. */
+const paperMark = (item: ReferenceItem) => (
+  <span className="gr-mark">
+    {item.step && <span className="gr-step">{item.step}</span>}
+    {item.sign && <SignArt sign={item.sign} size="row" />}
+  </span>
+);
+/** Строки группы: со знаком листа — без знака у строки; у листа без знака знак у строки свой (у фазы — её номер), под названием — суть. */
 const rows = (g: Pick<ReferenceGroup, 'look' | 'items'>, onOpen: Open) => g.items.map((item) => (
   <button
     key={`${item.kind}:${item.id}`} type="button"
-    className={`ds-list-row ds-list-row--hover ${g.look.sign ? 'ds-list-row--nav' : 'gr-row'}`} onClick={() => onOpen(item)}
+    className={`ds-list-row ds-list-row--hover ${g.look.sign ? 'ds-list-row--nav' : 'gr-row'}${item.hue === undefined ? '' : ' pp-paper gr-row--paper'}`}
+    style={item.hue === undefined ? undefined : ({ '--h': item.hue } as CSSProperties)} onClick={() => onOpen(item)}
   >
-    {!g.look.sign && <span className="pp-row-art">{item.sign && <SignArt sign={item.sign} size="row" />}</span>}
+    {item.hue !== undefined ? paperMark(item) : !g.look.sign && <span className={`pp-row-art${item.step ? ' gr-step' : ''}`}>{item.step ?? (item.sign && <SignArt sign={item.sign} size="row" />)}</span>}
     <span className="ds-list-body">
       <span className="ds-list-title">{item.name}</span>
       {item.sub && <span className="ds-list-sub">{item.sub}</span>}
@@ -36,7 +44,10 @@ export function GuideReferenceList({ groups, layout, onOpen }: { groups: Referen
             ))}
           </SignGroup>
         ) : (
-          <SignGroup key={g.key} look={g.look} title={g.title} label={g.title} headAs="h2" rowsClassName="gr-rows">{rows(g, onOpen)}</SignGroup>
+          <SignGroup
+            key={g.key} look={g.look} title={g.title} hint={g.hint} fold={g.fold} label={g.title} headAs="h2"
+            plain={g.items.some((i) => i.hue !== undefined)} rowsClassName="gr-rows"
+          >{rows(g, onOpen)}</SignGroup>
         ))}
       </div>
     </div>

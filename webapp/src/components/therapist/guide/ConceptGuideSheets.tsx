@@ -11,7 +11,7 @@ import type { SheetBack } from '../ConceptFullscreenSheet';
 import type { GuideJournal } from './guideJournal';
 import type { PlanSeed } from './guidePlan';
 import { ModeGuideSheet } from './ModeGuideSheet';
-import { SchemaGuideSheet } from './SchemaGuideSheet';
+import { SchemaGuideSheet, type SchemaCopingMarks } from './SchemaGuideSheet';
 import { TechniqueSheet } from './TechniqueSheet';
 
 /**
@@ -41,8 +41,10 @@ export interface GuideBackRefs {
  * по заданиям клиента (`actions.tasks`) и отметкам связи раздела (`journal`);
  * за «делали …» — «журнал →» (`actions.onOpenJournal`).
  */
-export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, onCloseSheet, onCloseTechnique }: {
+export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, copingFor, onCloseSheet, onCloseTechnique }: {
   open: GuideOpen; actions: ConceptGuideActions; journal?: GuideJournal; backRefs?: GuideBackRefs;
+  /** «Про клиента» у стилей копинга листа схемы; нет — без кнопок. */
+  copingFor?: (schemaId: string) => SchemaCopingMarks;
   /** «В план» у рубрик листа раздела; нет — без кнопок. */
   onPlan?: (seed: PlanSeed, from: GuideFrom) => void;
   onCloseSheet: () => void; onCloseTechnique: () => void;
@@ -65,6 +67,13 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, o
     onOpenJournal: actions.onOpenJournal,
     backRef: backRefs?.section,
   });
+  const usages = texts && openTechnique ? texts.techniqueUsageGroups(tr, openTechnique.id) : [];
+  // Схема из листа режима (режим из листа схемы, оба из техники) встаёт на место: goBack нижнего листа снимает и верхний.
+  const swapTo = (go: (id: string) => void) => (id: string) => {
+    const back = backRefs?.section.current ?? backRefs?.technique.current;
+    if (back) back(() => go(id)); else go(id);
+  };
+  const [openSchema, openMode] = [swapTo(actions.onOpenSchema), swapTo(actions.onOpenMode)];
   const markFrom = openTechnique?.from;
   // Строка журнала за сегодня — та же кнопка «сегодня», что из схемы случая.
   const day = journal && openTechnique?.day !== journal.today() ? openTechnique?.day : undefined;
@@ -78,13 +87,13 @@ export function ConceptGuideSheets({ open, actions, journal, backRefs, onPlan, o
   return (
     <>
       {sheet?.kind === 'mode' && modeView && (
-        <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} {...sheetProps(sheet)} />
+        <ModeGuideSheet modeName={getModeById(sheet.id)?.name ?? ''} view={modeView} onOpenSchema={openSchema} {...sheetProps(sheet)} />
       )}
       {sheet?.kind === 'schema' && schemaView && (
-        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} {...sheetProps(sheet)} />
+        <SchemaGuideSheet schemaName={getSchemaById(sheet.id)?.name ?? ''} view={schemaView} coping={copingFor?.(sheet.id)} onOpenMode={openMode} {...sheetProps(sheet)} />
       )}
       {technique && (
-        <TechniqueSheet technique={technique} mark={mark || undefined} onClose={onCloseTechnique} backRef={backRefs?.technique} />
+        <TechniqueSheet technique={technique} usages={usages} mark={mark || undefined} onOpenMode={openMode} onOpenSchema={openSchema} onClose={onCloseTechnique} backRef={backRefs?.technique} />
       )}
     </>
   );

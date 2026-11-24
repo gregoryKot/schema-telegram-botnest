@@ -3,6 +3,7 @@ import type { ConceptGraphModel } from '../conceptGraphTypes';
 import { DiagramEdges } from './DiagramEdges';
 import { DiagramNeedsCircle } from './DiagramNeedsCircle';
 import { DiagramNodeView } from './DiagramNodeView';
+import { DiagramMarkCount, nodeArticleKey } from './DiagramMarkCount';
 import { DiagramPeriodSwitch } from './DiagramPeriodSwitch';
 import { DiagramSectionHeader } from './DiagramSectionHeader';
 import { nodeOpacity, resolveFocus } from './diagramFocus';
@@ -42,6 +43,8 @@ export function ConceptDiagram({
     onOpenMode: (modeId: string) => void;
     onOpenSchema: (schemaId: string) => void;
     onAdd: (section: AddSection) => void;
+    /** Отметки «Про клиента» по статье — счётчик на узле режима и схемы (#1484). */
+    markCounts?: ReadonlyMap<string, number>;
   };
 }) {
   const openId = edit?.openId ?? null;
@@ -106,6 +109,14 @@ export function ConceptDiagram({
           readOnly={!edit}
         />
       ))}
+      {edit?.markCounts &&
+        layout.nodes.map((n) => {
+          const key = nodeArticleKey(n);
+          const count = key ? edit.markCounts?.get(key) : undefined;
+          return count ? (
+            <DiagramMarkCount key={`marks:${n.id}`} node={n} count={count} />
+          ) : null;
+        })}
       <DiagramPeriodSwitch
         layout={layout}
         links={graph.needLinks}

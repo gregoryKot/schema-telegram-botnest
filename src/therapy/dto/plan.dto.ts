@@ -17,33 +17,14 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PLAN_ITEM_TEXT_MAX } from '../../utils/text-limits';
-import {
-  PLAN_RUBRICS,
-  PLAN_SOURCE_KINDS,
-  PLAN_STATUSES,
-} from '../therapy-plan.types';
+import { PlanSourceDto } from './plan-source.dto';
+import { ADDRESS_SHAPE, GUIDE_ADDRESS_MAX } from '../guide-mark-address';
+import { PLAN_RUBRICS, PLAN_STATUSES } from '../therapy-plan.types';
 
 // Потолки тела запроса: клиентов за один «В план» и пунктов в одном плане.
 export const PLAN_CLIENTS_MAX = 50;
 export const PLAN_ITEMS_MAX = 200;
 const INT32_MAX = 2_147_483_647;
-
-/** Откуда пункт: статья справочника и её поле (id — из кода, не свободный текст). */
-export class PlanSourceDto {
-  @IsString()
-  @IsIn(PLAN_SOURCE_KINDS)
-  kind!: string;
-
-  @IsString()
-  @MaxLength(64)
-  @Matches(/^[a-z0-9_]+$/i)
-  id!: string;
-
-  @IsString()
-  @MaxLength(64)
-  @Matches(/^[a-z0-9_]+$/i)
-  field!: string;
-}
 
 export class CreatePlanItemsDto {
   // Строки цифр, как ClientIdField: минус — у офлайн-клиента.
@@ -64,10 +45,24 @@ export class CreatePlanItemsDto {
   @MaxLength(PLAN_ITEM_TEXT_MAX)
   text!: string;
 
+  // Адрес раздела справочника; вид статьи проверяет сервис (parseGuideAddress).
+  @IsOptional()
+  @IsString()
+  @MaxLength(GUIDE_ADDRESS_MAX)
+  @Matches(ADDRESS_SHAPE)
+  sourceAddress?: string;
+
   @IsOptional()
   @ValidateNested()
   @Type(() => PlanSourceDto)
   source?: PlanSourceDto;
+
+  // Фаза пути клиента; только при одном клиенте (сервис проверяет принадлежность).
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(INT32_MAX)
+  phaseId?: number;
 }
 
 export class UpdatePlanItemDto {
@@ -94,6 +89,13 @@ export class UpdatePlanItemDto {
   @Min(1)
   @Max(INT32_MAX)
   taskId?: number | null;
+
+  // null снимает пункт с фазы пути.
+  @ValidateIf((o: UpdatePlanItemDto) => o.phaseId != null)
+  @IsInt()
+  @Min(1)
+  @Max(INT32_MAX)
+  phaseId?: number | null;
 }
 
 export class ReorderPlanDto {

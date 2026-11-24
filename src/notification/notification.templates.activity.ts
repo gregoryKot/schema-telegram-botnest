@@ -13,16 +13,6 @@ import { openDiaryButton, bookingButton } from './notification.buttons';
 // терапевта, активность пары, запрос теста на схемы. Вынесено из
 // notification.templates.ts (правило №10) по образцу
 // notification.templates.soft.ts — renderTemplate делегирует сюда.
-const ON_WEEKDAY = [
-  'на воскресенье',
-  'на понедельник',
-  'на вторник',
-  'на среду',
-  'на четверг',
-  'на пятницу',
-  'на субботу',
-];
-
 export function renderActivityTemplate(
   type: NotificationType,
   payload?: Record<string, unknown>,
@@ -30,25 +20,18 @@ export function renderActivityTemplate(
 ): NotificationTemplate | null {
   switch (type) {
     // Текст плана, текст задания и название потребности в Telegram не уходят
-    // (РКН, #1135): payload не читается, кроме числовых taskId и weekday.
+    // (РКН, #1135): payload не читается, кроме числового taskId.
     case 'practice_reminder':
       return {
         text: '🎯 Время для плана практики. Он ждёт в приложении.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
 
-    case 'practice_missed': {
-      // День недели — индексом в таблице: строку из payload не берём.
-      const wd = payload?.weekday;
-      const day =
-        typeof wd === 'number' && Number.isInteger(wd)
-          ? ON_WEEKDAY[wd]
-          : undefined;
+    case 'practice_missed':
       return {
-        text: `🎯 ${day ? `План ${day}` : 'Вчера был план'}: как получилось? Отметить можно в приложении.`,
+        text: '🎯 Вчера был план: как получилось? Отметить можно в приложении.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
-    }
 
     case 'low_streak_insight':
       return {

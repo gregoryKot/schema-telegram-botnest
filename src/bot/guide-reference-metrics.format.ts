@@ -8,6 +8,8 @@ const SHEETS: [keyof GuideReferenceMetrics, string][] = [
   ['needs30', 'потребности'],
   ['techniques30', 'техники'],
   ['notes30', '«Для терапевта»'],
+  ['concerns30', 'запросы и расстройства'],
+  ['phases30', 'путь терапии'],
 ];
 
 /** Текстовый блок для /stats. Чистая функция. */

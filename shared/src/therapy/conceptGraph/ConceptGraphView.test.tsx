@@ -68,4 +68,29 @@ describe('ConceptGraphView — схема клиента только для ч�
     expect(screen.getByText('Маленькая Аня')).toBeTruthy();
     expect(screen.getByText('Меня бросят')).toBeTruthy();
   });
+
+  // «Про клиента» (#1484): клиент при «Показать клиенту» видит стили копинга знаками, заметок в ответе нет.
+  it('стили копинга схемы — знаки у фигуры и подпись для ридера', () => {
+    render(
+      <ConceptGraphView
+        fields={{
+          modeIds: [],
+          schemaIds: ['subjugation'],
+          schemaLinks: [
+            {
+              schemaId: 'subjugation',
+              belief: '',
+              needIds: [],
+              coping: ['surrender', 'overcompensation'],
+            },
+          ],
+        }}
+      />,
+    );
+    const node = nodeEl('schema:subjugation');
+    expect(
+      node.querySelector('[data-coping]')?.getAttribute('data-coping'),
+    ).toBe('surrender overcompensation');
+    expect(node.textContent).toContain('копинг: Капитуляция, Гиперкомпенсация');
+  });
 });

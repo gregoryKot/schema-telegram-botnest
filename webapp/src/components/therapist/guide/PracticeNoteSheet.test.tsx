@@ -28,10 +28,11 @@ describe('PracticeNoteSheet', () => {
     expect(within(dialog).getByRole('heading', { level: 2, name: NOTE.title })).toBeTruthy();
     expect(within(dialog).getByText(NOTE.summary)).toBeTruthy();
     expect(dialog.querySelector('.gd-hero svg.pp-art--hero')).not.toBeNull();
-    expect(regions()).toEqual(['Что делать', 'Как это звучит', 'Источники']);
+    expect(regions()).toEqual(['Что делать', 'Как это звучит']);
     const points = within(screen.getByRole('region', { name: 'Что делать' })).getAllByRole('listitem');
     expect(points.map((li) => li.textContent)).toEqual(NOTE.points);
     expect(screen.getByText(`«${NOTE.voice![0]}»`)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Источники/ }));
     expect(screen.getByText(NOTE.sources)).toBeTruthy();
   });
 
@@ -45,7 +46,7 @@ describe('PracticeNoteSheet', () => {
   it('раздел без реплик, `more` и своего знака — без этих блоков и без чужой картинки', () => {
     const { dialog } = renderNote({ ...NOTE, id: 'нет_знака', voice: undefined, more: undefined, points: ['Один пункт.', ' '] });
     expect(dialog.querySelector('.gd-hero svg')).toBeNull();
-    expect(regions()).toEqual(['Что делать', 'Источники']);
+    expect(regions()).toEqual(['Что делать']);
     expect(within(screen.getByRole('region', { name: 'Что делать' })).getAllByRole('listitem')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
   });

@@ -5,6 +5,7 @@
 import type { SessionWorkItem } from './therapy/sessionWork/types';
 import type { UserId } from './userId';
 import type { UiPrefsPatch } from './prefs/uiPrefsSync';
+import type { CopingStyleId } from './schemaTherapy/guide/copingStyles';
 export type { UserId };
 
 export interface UserSettings {
@@ -109,8 +110,8 @@ export interface TherapistNote {
   clientId: UserId;
   date: string;
   text: string;
-  /** «Что делали» (#1330); у старых записей и чужих клиентов поля нет. */
-  work?: SessionWorkItem[];
+  work?: SessionWorkItem[]; // «Что делали» (#1330); у старых записей и чужих клиентов поля нет
+  planItemIds?: number[]; // отмеченные в записи пункты плана; у старых записей пусто или нет
   createdAt: string;
 }
 
@@ -162,6 +163,10 @@ export interface ConceptSchemaLink {
   needIds: string[];
   /** «Делали сегодня» у техник (#995), как у ConceptModeLink. */
   done?: ConceptTechniqueMark[];
+  /** Стили копинга клиента со схемой — «Про клиента» из «Справочника» (#1484); клиент их видит. */
+  coping?: CopingStyleId[];
+  /** «Как это у него» по стилю — рабочая запись терапевта, клиенту не уходит. */
+  copingNotes?: Partial<Record<CopingStyleId, string>>;
 }
 
 export interface ConceptSnapshot {

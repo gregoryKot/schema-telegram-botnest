@@ -8,7 +8,7 @@ import { useConceptExport } from '../../../../shared/src/therapy/useConceptExpor
 import { reloadClientTasks } from '../../../../shared/src/therapy/reloadClientTasks';
 import { useConceptAutosave } from './useConceptAutosave';
 import type { ClientTab } from './clientSheetTypes';
-
+import { withPlanMarkTracking } from '../../../../shared/src/share/pathAnalytics';
 interface Params {
   onOpenClient?: (id: UserId) => void;
   switchView: (v: 'list' | 'client') => void;
@@ -36,7 +36,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
   }>>([]);
   const [clientTasks, setClientTasks] = useState<UserTask[]>([]);
   const notes = useNoteComposer(openClientIdRef, {
-    create: api.createTherapistNote, remove: api.deleteTherapistNote,
+    create: withPlanMarkTracking(api, api.createTherapistNote), remove: api.deleteTherapistNote,
     onWorkSaved: (work) => api.trackEvent('cabinet_session_work', { items: work.length, kinds: [...new Set(work.map((w) => w.kind))] }),
   });
   const conceptSave = useConceptAutosave(openClientIdRef);
@@ -164,7 +164,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     saveStatus: conceptSave.saveStatus, savedAt: conceptSave.savedAt, retrySave: conceptSave.retrySave,
     newNoteText: notes.newNoteText, setNewNoteText: notes.setNewNoteText,
     newNoteDate: notes.newNoteDate, setNewNoteDate: notes.setNewNoteDate,
-    newNoteWork: notes.newNoteWork, setNewNoteWork: notes.setNewNoteWork,
+    newNoteWork: notes.newNoteWork, setNewNoteWork: notes.setNewNoteWork, newNotePlanIds: notes.newNotePlanIds, setNewNotePlanIds: notes.setNewNotePlanIds,
     noteSaving: notes.noteSaving, showAssign, setShowAssign,
     editingStartDate: sa.editingStartDate, setEditingStartDate: sa.setEditingStartDate,
     localStartDate: sa.localStartDate, setLocalStartDate: sa.setLocalStartDate,

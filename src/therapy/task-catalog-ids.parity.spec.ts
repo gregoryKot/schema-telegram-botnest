@@ -7,7 +7,13 @@ import { TASK_CATALOG_ID_MAX, TASK_CATALOG_IDS } from './task-catalog-ids';
 const DIR = join(__dirname, '..', '..', 'shared', 'src', 'tasks', 'catalog');
 
 function sharedIds(): string[] {
-  return ['taskWhyModes.ts', 'taskWhySchemas.ts'].flatMap((file) =>
+  return [
+    'taskWhyModes.ts',
+    'taskWhyAbandoned.ts',
+    'taskWhyChildModes.ts',
+    'taskWhyHealthy.ts',
+    'taskWhySchemas.ts',
+  ].flatMap((file) =>
     [
       ...readFileSync(join(DIR, file), 'utf8').matchAll(
         /^ {2}'([a-zа-я0-9-]+)':/gm,

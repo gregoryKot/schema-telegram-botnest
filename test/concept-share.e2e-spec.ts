@@ -79,6 +79,7 @@ describe('e2e ownership: схема случая клиенту (concept share)'
             belief: 'Меня бросят',
             origin: 'ИСТОКИ схемы',
             needIds: ['attachment'],
+            coping: ['surrender'],
             done: DONE,
           },
         ],
@@ -177,6 +178,7 @@ describe('e2e ownership: схема случая клиенту (concept share)'
         schemaId: 'abandonment',
         belief: 'Меня бросят',
         needIds: ['attachment'],
+        coping: ['surrender'],
       },
     ]);
     expect(JSON.stringify(mine.body)).not.toMatch(

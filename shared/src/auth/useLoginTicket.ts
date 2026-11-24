@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LoginProvider, LoginTicketApi } from './loginTicketApi';
 import { describeFailure } from '../api/describeFailure';
+import { settlePoll } from './ticketOutcome';
 
 export interface LoginTicketDeps {
   api: LoginTicketApi;
@@ -19,6 +20,8 @@ export interface LoginTicketDeps {
   apiBase: string;
   /** Сессия получена — фронт кладёт её к себе (setAccessToken / adoptSession). */
   onSession: (accessToken: string, expiresIn: number) => void;
+  /** У аккаунта включена 2FA: сессии нет, есть вызов. По умолчанию — экран /auth/2fa. */
+  onTotpChallenge?: (challengeToken: string) => void;
   /**
    * 'login' (по умолчанию) — впустить в пустой контейнер. 'link' — объединить
    * с уже существующим аккаунтом: механика та же (выписали код, подтвердили
@@ -180,18 +183,13 @@ export function useLoginTicket(deps: LoginTicketDeps) {
         }
         if (!alive.current || gen.current !== myGen) return;
         errors = 0; // сервер ответил — сбрасываем отступ
-        if (res.status === 'linked' && res.accessToken) {
-          depsRef.current.onSession(res.accessToken, res.expiresIn ?? 900);
-          return;
-        }
-        if (res.status === 'denied') {
-          setState({ kind: 'denied' });
-          return;
-        }
-        if (res.status === 'expired') {
-          setState({ kind: 'expired' });
-          return;
-        }
+        const { onSession, onTotpChallenge } = depsRef.current;
+        const end = settlePoll(res, {
+          session: onSession,
+          totp: onTotpChallenge,
+        });
+        if (end === 'denied' || end === 'expired') setState({ kind: end });
+        if (end !== 'pending') return;
         schedule();
       };
 

@@ -1,15 +1,14 @@
 import { NeedArt } from '../../components/art/NeedArt';
+import { NEED_NAMES } from '../../../../shared/src/needs/needNames';
 
-// Мокап приложения на первом экране лендинга — вынесен из
-// ProductLandingPage.tsx (правило №10: файл сверх потолка растёт только
-// дроблением). Данные декоративные (aria-hidden), не пользовательские.
-// Вид — бумага кабинета (styles/product-landing.css, .pl2-phone): знаки
-// потребностей те же, что в трекере (NeedArt), заметки лежат неподвижно.
+// Мокап приложения на первом экране лендинга; данные декоративные (aria-hidden),
+// не пользовательские. Вид — бумага кабинета (styles/product-landing.css, .pl2-phone):
+// знаки потребностей те же, что в трекере (NeedArt), заметки лежат неподвижно.
 const MOCK_NEEDS = [
-  { id: 'attachment', name: 'Привязанность', v: 7, c: 'var(--c-teal)' },
-  { id: 'autonomy',   name: 'Автономия',     v: 8, c: 'var(--c-moss)' },
-  { id: 'limits',     name: 'Самоконтроль',       v: 4, c: 'var(--c-rose)' },
-  { id: 'play',       name: 'Спонтанность',  v: 6, c: 'var(--c-amber)' },
+  { id: 'attachment', name: NEED_NAMES.attachment, v: 7, c: 'var(--c-teal)' },
+  { id: 'autonomy',   name: NEED_NAMES.autonomy, v: 8, c: 'var(--c-moss)' },
+  { id: 'limits',     name: NEED_NAMES.limits, v: 4, c: 'var(--c-rose)' },
+  { id: 'play',       name: NEED_NAMES.play, v: 6, c: 'var(--c-amber)' },
 ];
 const MOCK_SPARK = [4, 5, 3, 6, 5, 7, 6, 8, 7, 8, 6, 9];
 

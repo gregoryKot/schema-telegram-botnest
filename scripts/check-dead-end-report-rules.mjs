@@ -2,9 +2,14 @@
 //   1. catch с исходом-ошибкой: сеттер с Error/Err/Fail в имени или с исходом-литералом.
 //   2. catch без отчёта, где хоть один сеттер ставит пустое (`false`, `null`, `[]`, `''`)
 //      или нейтральный статус из NEUTRAL_STATUSES — «пусто»/«ничего не было» вместо сбоя.
-//   3. `.then(…set…)` без `.catch` в цепочке внутри `useEffect` (загрузчик экрана) — отказ не обработан.
+//   3. `.then(…set…)` без `.catch` в цепочке внутри `useEffect` (загрузчик экрана) — отказ не обработан;
+//      промис, отданный дальше (аргумент, присваивание, `return`), прослеживается до получателя.
+//   4. `async`-загрузчик экрана с `await` вне `try…catch`, чей вызов никто не ловит.
+//   Правила 3–4 ведёт dead-end-report-flow.mjs.
 import { stripComments } from './gate-strip-comments.mjs';
-import { matchBrace, matchParen, lineAt, skipString } from './gate-balance.mjs';
+import { matchBrace, matchParen, lineAt } from './gate-balance.mjs';
+import { parseBlocks } from './dead-end-report-blocks.mjs';
+import { chainEnd, hasTopLevelComma, inRanges, unhandled, unguardedLoaders } from './dead-end-report-flow.mjs';
 
 const OUTCOME_RE =
   /\b(set\w*(?:Error|Err|Fail|Failed|Failure)\w*)\s*\(|\b(set\w*)\s*\(\s*(?:'(?:error|failed|fail)'|\{\s*kind:\s*'(?:error|failed)')/g;
@@ -34,60 +39,17 @@ function catchOutcomes(src, out) {
   }
 }
 
-/** Начало выражения, которому принадлежит `.then` на i, и символ-граница перед ним. */
-function statementStart(src, i) {
-  let depth = 0;
-  for (let j = i - 1; j >= 0; j -= 1) {
-    const c = src[j];
-    if (c === "'" || c === '"' || c === '`') continue;
-    if (')]}'.includes(c)) depth += 1;
-    else if ('([{'.includes(c)) {
-      if (depth === 0) return { at: j + 1, stop: c };
-      depth -= 1;
-    } else if (depth === 0 && (c === ';' || c === ',')) return { at: j + 1, stop: c };
-    else if (depth === 0 && c === '>' && src[j - 1] === '=') return { at: j + 1, stop: '=>' };
-  }
-  return { at: 0, stop: ';' };
-}
-
-/** Запятая верхнего уровня в аргументах (`.then(ok, fail)` — отказ обработан). */
-function hasTopLevelComma(src, open, close) {
-  let depth = 0;
-  for (let j = open + 1; j < close; j += 1) {
-    const c = src[j];
-    if (c === "'" || c === '"' || c === '`') { j = skipString(src, j); continue; }
-    if ('([{'.includes(c)) depth += 1;
-    else if (')]}'.includes(c)) depth -= 1;
-    else if (c === ',' && depth === 0) return true;
-  }
-  return false;
-}
-
-/** Конец цепочки после `)` на close; -1 — в цепочке есть `.catch(`. */
-function chainEnd(src, close) {
-  let k = close + 1;
-  for (;;) {
-    const next = /^\s*\.(then|finally|catch)\(/.exec(src.slice(k, k + 200));
-    if (!next) return k;
-    if (next[1] === 'catch') return -1;
-    const end = matchParen(src, k + next[0].length - 1);
-    if (end === -1) return k;
-    k = end + 1;
-  }
-}
-
 /** Диапазоны тел `useEffect(…)` — там живут загрузчики экрана. */
 function effectRanges(src) {
   return [...src.matchAll(/\buseEffect\(/g)].map((e) => [e.index, matchParen(src, e.index + e[0].length - 1)]);
 }
 
-function unhandledThens(src, out) {
-  const effects = effectRanges(src);
+function unhandledThens(src, ctx, out) {
   const re = /\.then\(/g;
   let seenUntil = -1;
   let m;
   while ((m = re.exec(src))) {
-    if (m.index < seenUntil || !effects.some(([a, b]) => m.index > a && m.index < b)) continue;
+    if (m.index < seenUntil || !inRanges(ctx.effects, m.index)) continue;
     const open = m.index + m[0].length - 1;
     const close = matchParen(src, open);
     if (close === -1) continue;
@@ -95,11 +57,8 @@ function unhandledThens(src, out) {
     if (!setter || hasTopLevelComma(src, open, close)) continue;
     const end = chainEnd(src, close);
     if (end === -1) continue;
-    const { at, stop } = statementStart(src, m.index);
-    const head = src.slice(at, m.index).trim();
-    // Промис ушёл дальше (аргумент, элемент, return, await, присваивание) — отказ ловит получатель.
-    if ('(,['.includes(stop) || /^(?:return|await|yield)\b|^(?:const|let|var)\s|^[\w$.]+\s*=(?![=>])/.test(head)) continue;
     seenUntil = end;
+    if (!unhandled(src, ctx, m.index)) continue;
     out.push({ setter: setter[1], reports: false, kind: 'unhandled', line: lineAt(src, m.index) });
   }
 }
@@ -108,7 +67,9 @@ function unhandledThens(src, out) {
 export function findOutcomes(rawSrc) {
   const src = stripComments(rawSrc);
   const out = [];
+  const ctx = { blocks: parseBlocks(src), effects: effectRanges(src) };
   catchOutcomes(src, out);
-  unhandledThens(src, out);
+  unhandledThens(src, ctx, out);
+  unguardedLoaders(src, ctx, out);
   return out;
 }

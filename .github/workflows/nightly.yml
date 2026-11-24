@@ -246,7 +246,9 @@ jobs:
       # На раннере GitHub предустановленных браузеров нет — ставим Chromium и
       # WebKit с системными зависимостями. Путь к Chromium конфиг выбирает сам по
       # факту наличия файла: предустановленного нет, берётся скачанный.
-      - run: npx playwright install --with-deps chromium webkit
+      - name: браузеры Playwright (потолок времени и одна повторная попытка)
+        timeout-minutes: 7
+        run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
       - name: трейс упавшего смока артефактом
@@ -336,7 +338,9 @@ jobs:
         run: npm run build --prefix webapp
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
-      - run: npx playwright install --with-deps chromium
+      - name: браузеры Playwright (потолок времени и одна повторная попытка)
+        timeout-minutes: 7
+        run: bash scripts/playwright-install-retry.sh chromium
       # Готовность — по факту ответа: /health отвечает после app.listen(3000),
       # вход :3001 поднимается следом (404 на чужой путь — сервер уже слушает).
       # Строку «STAND READY» jest буферизует до конца теста, на неё не опереться.

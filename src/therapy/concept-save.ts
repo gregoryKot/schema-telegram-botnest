@@ -83,7 +83,7 @@ function assertFresh(
 
 /** Поля тела + связи после патча поверх сохранённых (или присланных целиком). */
 function mergedFields(
-  existing: ClientConceptualization | null,
+  stored: Record<string, unknown>,
   body: ConceptSaveInput,
 ): Record<string, unknown> {
   const { modeLinksPatch, schemaLinksPatch } = body;
@@ -92,7 +92,6 @@ function mergedFields(
   delete fields.restore;
   delete fields.modeLinksPatch;
   delete fields.schemaLinksPatch;
-  const stored = existing ? decryptConceptFields(existing) : {};
   if (modeLinksPatch) {
     const from = fields.modeLinks ?? stored.modeLinks;
     fields.modeLinks = patchLinks(
@@ -114,11 +113,28 @@ function mergedFields(
   return fields;
 }
 
+/** Сколько стилей копинга (#1484) появилось у схем: событие guide_mark_added на каждый. */
+export function copingAdded(before: unknown, after: unknown): number {
+  const styles = (links: unknown) =>
+    new Set(
+      (Array.isArray(links) ? (links as Link[]) : []).flatMap((l) =>
+        Array.isArray(l?.coping)
+          ? (l.coping as unknown[]).map(
+              (c) => `${String(l.schemaId)}/${String(c)}`,
+            )
+          : [],
+      ),
+    );
+  const was = styles(before);
+  return [...styles(after)].filter((k) => !was.has(k)).length;
+}
+
 /**
  * Пишет концептуализацию пары (связь с клиентом проверяет вызывающий):
  * версия → слияние связей → шифрование → запись со снимком истории.
+ * `copingAdded` — новые стили копинга (восстановление версии не считается).
  */
-export async function saveConceptVersioned(
+export async function saveConceptCounted(
   prisma: PrismaService,
   key: { therapistId: bigint; clientId: bigint },
   body: ConceptSaveInput,
@@ -131,7 +147,15 @@ export async function saveConceptVersioned(
         where: { therapistId_clientId: key },
       });
       assertFresh(existing, body.baseVersion);
-      const enc = encryptConceptFields(mergedFields(existing, body));
+      const stored: Record<string, unknown> = existing
+        ? decryptConceptFields(existing)
+        : {};
+      const fields = mergedFields(stored, body);
+      const added =
+        fields.schemaLinks === undefined || body.restore === true
+          ? 0
+          : copingAdded(stored.schemaLinks, fields.schemaLinks);
+      const enc = encryptConceptFields(fields);
       const { row, history } = await writeConceptWithHistory(
         tx,
         key,
@@ -140,8 +164,17 @@ export async function saveConceptVersioned(
         nowMs,
         body.restore === true,
       );
-      return conceptView(row, history);
+      return { view: conceptView(row, history), copingAdded: added };
     },
     conceptStale,
   );
+}
+
+export async function saveConceptVersioned(
+  prisma: PrismaService,
+  key: { therapistId: bigint; clientId: bigint },
+  body: ConceptSaveInput,
+  nowMs = Date.now(),
+) {
+  return (await saveConceptCounted(prisma, key, body, nowMs)).view;
 }

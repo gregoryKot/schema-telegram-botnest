@@ -1,9 +1,12 @@
 // Полка книг: каждая метка в тексте справочника ведёт на книгу из GUIDE_SOURCES.
 import { describe, it, expect } from 'vitest';
 import {
+  buildConcernGuides,
   buildModeGuides,
+  buildPhaseGuides,
   buildSchemaDomainGuides,
   buildTechniqueGuides,
+  needGuides,
   practiceNotes,
 } from './index';
 import {
@@ -26,6 +29,9 @@ const allText = strings([
   buildSchemaDomainGuides(ty),
   buildTechniqueGuides(ty),
   practiceNotes(ty),
+  buildConcernGuides(ty),
+  buildPhaseGuides(ty),
+  needGuides(),
 ]).join('\n');
 
 describe('полка книг справочника', () => {
@@ -44,7 +50,7 @@ describe('полка книг справочника', () => {
   it('разбирает метки: несколько через «;», ссылка с годом пропускается, повтор — один раз', () => {
     expect(
       citationLabels(
-        '[Рёдигер, гл. 7; Кембридж, гл. 1], [Янг, 2003; Арнц и Якоб], [Хис, гл. 14, Бихэри], [Рёдигер, гл. 9]',
+        '[Рёдигер, гл. 7; Кембридж, гл. 1], [Янг, 2003; Арнц и Якоб], [Хис, гл. 14, Бехари], [Рёдигер, гл. 9]',
       ),
     ).toEqual(['Рёдигер', 'Кембридж', 'Арнц и Якоб', 'Хис']);
     expect(citationLabels('[Янг, Клоско, Вайсхаар, табл. 1.2]')).toEqual([
