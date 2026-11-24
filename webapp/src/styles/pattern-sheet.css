@@ -10,7 +10,7 @@
 /* «Моя карточка» — белый лист с тенью-слоем тона паттерна (сплошной сдвинутый слой, без blur). */
 .ps-card {
   display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 22px 24px;
-  border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line);
+  border-radius: var(--r-16); background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .ds-label.ps-field-label { display: block; margin-bottom: 4px; color: var(--text-sub); }
 .ps-field-text { font: 400 17px/1.5 var(--serif); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -25,7 +25,7 @@
 .ps-practices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .ps-practice {
   display: flex; flex-direction: column; gap: 6px; min-height: 132px; box-sizing: border-box; min-width: 0;
-  padding: 14px 14px 12px; border: 0; border-radius: 18px; font: inherit; text-align: left; color: var(--text); cursor: pointer;
+  padding: 14px 14px 12px; border: 0; border-radius: var(--r-16); font: inherit; text-align: left; color: var(--text); cursor: pointer;
 }
 .ps-practice:hover { background: oklch(0.895 0.04 var(--h)); }
 .ps-practice-title { font-size: 15px; font-weight: 700; line-height: 1.25; }
