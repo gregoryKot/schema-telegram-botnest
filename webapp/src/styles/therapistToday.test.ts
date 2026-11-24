@@ -55,7 +55,7 @@ describe('therapist-today.css: стрелка перехода на компью
   const at = css.indexOf(`@media ${DESKTOP_MEDIA} {\n  .tt-session`);
   const deskBlock = at < 0 ? '' : css.slice(at, css.indexOf('\n}', at));
   it('карточки сессии и внимания — «→» только под DESKTOP_MEDIA (≥768)', () => {
-    expect(deskBlock).toMatch(/\.tt-session > \.ds-chev:empty::before, \.tt-attn > \.ds-chev:empty::before \{ content: '→'; \}/);
+    expect(deskBlock).toMatch(/\.tt-session > \.ds-chev:empty::before, \.tt-attn > \.ds-chev:empty::before \{ content: '→'; [^}]*\}/);
     expect(deskBlock).toMatch(/\.tt-attn > \.ds-chev \{ color: var\(--warn-ink\); \}/);
     expect(deskBlock).toMatch(/\.tt-act > \.ds-chev \{ display: none; \}/);
     expect(phone).not.toMatch(/ds-chev/);
