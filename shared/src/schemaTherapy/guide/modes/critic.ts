@@ -44,7 +44,12 @@ export const buildCriticGuides: ModeGuideBuilder = (tr) => [
       'cognitive_work',
       'pattern_breaking',
     ],
-    moreTechniques: ['behavioral_experiment', 'flashcards', 'play_and_joy'],
+    moreTechniques: [
+      'behavioral_experiment',
+      'flashcards',
+      'play_and_joy',
+      'creative_mode_work',
+    ],
     betweenSessions: [
       {
         kind: 'task',

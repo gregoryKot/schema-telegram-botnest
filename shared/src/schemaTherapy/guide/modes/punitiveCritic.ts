@@ -49,6 +49,7 @@ export const buildPunitiveCriticGuide = (tr: Tr): ModeGuide => ({
     'play_and_joy',
     'cognitive_work',
     'empathic_confrontation',
+    'creative_mode_work',
   ],
   betweenSessions: [
     {

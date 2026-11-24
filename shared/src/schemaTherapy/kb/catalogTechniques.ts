@@ -62,6 +62,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'healthy_adult_plan',
     'mode_management_plan',
     'safety_bubble',
+    'creative_mode_work',
     'probe_phrases',
     'coping_bypass',
   ].map(w),
@@ -72,13 +73,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     source: 'Келлогг',
     chapters: [],
     note: 'карты книги нет',
-  },
-  {
-    id: 'creative_mode_work',
-    title: 'Креативная работа с режимами: фигурки, маски, рисунок',
-    status: 'planned',
-    source: 'Хис',
-    chapters: ['гл. 9', 'гл. 10', 'гл. 11'],
   },
   {
     id: 'body_mode_positions',

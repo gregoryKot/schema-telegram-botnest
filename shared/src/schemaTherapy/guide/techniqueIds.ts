@@ -72,8 +72,8 @@ export type ArntzJacobTechniqueId = 'coping_bypass';
 export type FarrellTechniqueId =
   'mode_management_plan' | 'healthy_adult_plan' | 'safety_bubble';
 
-/** Техники из книги Хис и Стартап (карта «Хис-Стартап»). */
-export type HeathTechniqueId = 'probe_phrases';
+/** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
+export type HeathTechniqueId = 'creative_mode_work' | 'probe_phrases';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =

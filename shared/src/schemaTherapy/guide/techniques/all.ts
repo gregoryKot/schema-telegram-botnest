@@ -3,6 +3,7 @@ import { buildImageryRescriptingTechniques } from './imageryRescripting';
 import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
 import { buildChairTechniques } from './chairs';
+import { buildCreativeModeWorkTechniques } from './creativeModeWork';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
 import { buildFarrellPlanTechniques } from './farrellPlans';
@@ -38,6 +39,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryTechniques,
   buildChairworkTechniques,
   buildChairTechniques,
+  buildCreativeModeWorkTechniques,
   buildRolePlayArntzTechniques,
   buildCognitiveArntzTechniques,
   buildFarrellPlanTechniques,
