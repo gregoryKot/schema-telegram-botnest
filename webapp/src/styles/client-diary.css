@@ -60,6 +60,7 @@
 /* Сегмент и мета под ним: серия дней подряд — строкой под фильтром, а не под длинной лентой; справа в той
    же строке — «Поделиться дневником» тихой ссылкой со знаком «Записей». */
 .cd-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.cd-bar > .lt { flex: 1 1 auto; }
 .cd-bar-meta { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; min-width: 0; }
 .cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 .ds-link.cd-share-link { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13.5px; }

@@ -1,6 +1,7 @@
 import { createContext, useContext, type MouseEvent, type ReactNode } from 'react';
 import type { GuideMark } from '../../../../../../shared/src/therapy/guideMarks/guideMarksApi';
 import { isMarkableAddress } from './guideMarkModel';
+import type { GuideSelection } from './guideSelection';
 
 /** Отметки на листах справочника (useGuideMarking): без провайдера разделы — просто текст. */
 export interface GuideMarkCtx {
@@ -12,6 +13,8 @@ export interface GuideMarkCtx {
   /** «Про клиента» или правка заметки — лист отметки. */
   onMark: (address: string) => void;
   onUnmark: (mark: GuideMark) => void;
+  /** «Про клиента» для выделенного текста (GuideSelectionBar): лист отметки с фрагментом. */
+  onFragment?: (sel: GuideSelection) => void;
 }
 
 export const GuideMarkContext = createContext<GuideMarkCtx | null>(null);

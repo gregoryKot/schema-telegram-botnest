@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -28,6 +29,11 @@ export class SaveGuideMarkDto {
   @IsString()
   @MaxLength(GUIDE_MARK_NOTE_MAX)
   note?: string;
+
+  // true — snapshot это выделенный фрагмент: он не заменяет отметку раздела целиком.
+  @IsOptional()
+  @IsBoolean()
+  fragment?: boolean;
 }
 
 /** Адрес в query: кому из клиентов терапевта раздел уже отмечен. */
