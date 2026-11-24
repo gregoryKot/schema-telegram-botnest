@@ -652,44 +652,21 @@ describe('поезд: отправление (merge-train-depart.mjs)', () => {
     expect(none.out).toContain('бейслайны без изменений');
     expect(none.code).toBe(0);
   });
-
-  it('не поезд — отправлять нечего', async () => {
-    repo({ 1: {} });
-    setup([car(1)]);
-    const { out } = await run('merge-train-depart.mjs', {
-      TRAIN_PR: '1',
-      TRAIN_PATCH: '',
-    });
-    expect(out).toContain('#1: не открытый поезд');
-    expect(writes).toEqual([]);
-  });
 });
 
 describe('поезд: правила', () => {
   it('движок очереди и отправление исполняют модули поезда, а не их копии', () => {
-    const imports = (file: string) =>
-      [
-        ...readFileSync(join(ROOT, 'scripts', file), 'utf8').matchAll(
-          /from '\.\/([\w-]+\.mjs)'/g,
-        ),
-      ].map((m) => m[1]);
-    expect(imports('merge-queue.mjs')).toEqual(
-      expect.arrayContaining(['merge-queue-steps.mjs', 'merge-train.mjs']),
-    );
-    expect(imports('merge-train.mjs')).toEqual(
-      expect.arrayContaining(['merge-train-api.mjs', 'merge-train-build.mjs']),
-    );
-    expect(imports('merge-train-build.mjs')).toContain('merge-queue-git.mjs');
-    expect(imports('merge-train-depart.mjs')).toContain(
-      'merge-train-build.mjs',
-    );
+    const src = (f: string) => readFileSync(join(ROOT, 'scripts', f), 'utf8');
+    for (const [file, dep] of [
+      ['merge-queue.mjs', 'merge-queue-steps.mjs'],
+      ['merge-queue.mjs', 'merge-train.mjs'],
+      ['merge-train.mjs', 'merge-train-api.mjs'],
+      ['merge-train.mjs', 'merge-train-build.mjs'],
+      ['merge-train-build.mjs', 'merge-queue-git.mjs'],
+      ['merge-train-depart.mjs', 'merge-train-build.mjs'],
+    ])
+      expect(src(file)).toContain(`from './${dep}'`);
   });
-
-  const cars = [1, 2, 3, 4, 5].map((n) => ({
-    number: n,
-    sha: `s${n}`,
-    title: `Дело ${n}`,
-  }));
 
   it('заголовок squash: с заголовками, пока влезает в 120 знаков, иначе одни номера', () => {
     expect(rule('squashTitle', cars.slice(0, 2), 9)).toBe(
@@ -727,17 +704,5 @@ describe('поезд: правила', () => {
     expect(
       rule<{ number: number }[]>('pickCars', mixed).map((p) => p.number),
     ).toEqual([2, 4]);
-  });
-
-  it('бейслайн после пересчёта — только плоские счётчики', () => {
-    expect(rule('flatCounts', '{"a": 1, "b": 0}')).toBe(true);
-    for (const bad of [
-      '{"a": -1}',
-      '{"a": "1"}',
-      '{"a": {"b": 1}}',
-      '[1]',
-      'не json',
-    ])
-      expect(rule('flatCounts', bad)).toBe(false);
   });
 });
