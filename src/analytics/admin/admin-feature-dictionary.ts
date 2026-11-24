@@ -164,6 +164,11 @@ export const FEATURES: readonly FeatureDef[] = [
     events: ['cabinet_session_work', 'cabinet_screen_share_on'],
   },
   {
+    id: 'client-memo',
+    title: 'Заметка о клиенте',
+    events: ['cabinet_client_memo_saved'],
+  },
+  {
     id: 'plan',
     title: 'План работы с клиентом',
     events: [
