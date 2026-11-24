@@ -54,7 +54,7 @@ export function LineTabs<T extends string>({ tabs, value, onPick, label, look, a
   const strip = (
     <div
       ref={quiet ? undefined : ref} role="tablist" aria-label={label} onScroll={quiet ? undefined : measure}
-      className={quiet ? `lt-quiet${className ? ` ${className}` : ''}` : `lt-strip lt-strip--${look}${look === 'scroll' ? ' ds-seg--fade' : ''}`}
+      className={quiet ? `lt-quiet${className ? ` ${className}` : ''}` : `lt-strip lt-strip--${look}`}
       data-fade-start={!quiet && edges.start ? '' : undefined} data-fade-end={!quiet && edges.end ? '' : undefined}
     >
       {tabs.map((t, i) => (
