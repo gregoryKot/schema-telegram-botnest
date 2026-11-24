@@ -5,7 +5,7 @@
    ds-*, — на два класса. Мелкий текст на цветной бумаге — --text-sub. Тень — сплошным слоем. */
 .qs { display: flex; flex-direction: column; gap: 14px; }
 .qs-sheet { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 20px 20px 18px 22px; }
-.pp-paper.qs-sheet { border-radius: 24px; }
+.pp-paper.qs-sheet { border-radius: var(--r-16); }
 .qs-head { display: flow-root; }
 /* Знак практики — в правом верхнем углу, «зачем» обтекает его и уходит под него во всю ширину. */
 .qs-sign { float: right; display: flex; width: 112px; margin: -6px -6px 6px 14px; }
@@ -53,7 +53,7 @@
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .qs-sheet { padding: 18px 16px 16px 18px; }
-  .pp-paper.qs-sheet { border-radius: 22px; }
+  .pp-paper.qs-sheet { border-radius: var(--r-16); }
   .qs-sign { width: 96px; margin: -4px -4px 4px 12px; }
   .qs-mark { width: 54px; height: 54px; font-size: 34px; border-radius: 14px; }
   .qs-title { font-size: 24px; }

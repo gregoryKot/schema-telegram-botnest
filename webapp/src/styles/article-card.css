@@ -16,7 +16,7 @@
 .ac-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
 
 /* Шапка статьи: та же обложка, шире и со скруглением, как блок страницы; у силуэта — та же рамка. */
-.ac-cover--hero, .ac-skel-hero { aspect-ratio: 5 / 2; border-radius: var(--r-20); margin: 0 0 44px; }
+.ac-cover--hero, .ac-skel-hero { aspect-ratio: 5 / 2; border-radius: var(--r-16); margin: 0 0 44px; }
 
 /* Телефон: обложка карточки ниже, сцена крупнее поля — лента обложек не тянется пустым
    цветом; шапка статьи остаётся 16:9 и показывает сцену целиком. */

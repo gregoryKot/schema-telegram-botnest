@@ -121,7 +121,7 @@
    как незагрузившийся знак (ревью владельца g1 r2). */
 .ef-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
 .ef-form.pp-paper {
-  display: flex; align-items: center; min-height: 64px; padding: 14px 16px; border: 0; border-radius: 18px;
+  display: flex; align-items: center; min-height: 64px; padding: 14px 16px; border: 0; border-radius: var(--r-16);
   font: 400 23px/1.1 var(--serif); color: var(--text); text-align: left; cursor: pointer;
   box-shadow: 0 0 0 1px var(--panel-line); transition: transform .12s ease, box-shadow .12s ease;
 }

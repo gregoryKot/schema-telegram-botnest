@@ -33,7 +33,7 @@
 
 /* ── Цветная бумага: квадраты-кнопки и спокойные блоки ─────────────────── */
 .pp-squares { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.pp-paper { background: oklch(0.915 0.03 var(--h)); color: var(--text); border-radius: 20px; }
+.pp-paper { background: oklch(0.915 0.03 var(--h)); color: var(--text); border-radius: var(--r-16); }
 .pp-square {
   display: flex; flex-direction: column; gap: 8px; min-height: 232px; box-sizing: border-box;
   padding: 22px 20px 18px; border: 0; text-align: left; cursor: pointer; font-family: var(--sans);
@@ -52,7 +52,7 @@
    (.pp-leaf--anchor: главная карточка); тон — --h листа, без него приглушённое небо 240 (--sky-k). Один класс
    на кабинет терапевта; без размытия. Поля — у потребителя. ───────────────────────────────── */
 .pp-leaf {
-  background: var(--surface); border-radius: 20px; box-sizing: border-box; min-width: 0;
+  background: var(--surface); border-radius: var(--r-16); box-sizing: border-box; min-width: 0;
   box-shadow: 0 0 0 1px var(--panel-line);
 }
 .pp-leaf--anchor { box-shadow: 6px 7px 0 oklch(0.86 calc(0.045 * var(--sky-k)) 240); }
@@ -109,7 +109,7 @@
 /* ── Ярлык на бумаге: тип записи, статус задания — тоном бумаги своей сущности (--h), без обводки
    и «конфетной» заливки. Ленты «Записей» клиента (EntryKindChip) и вкладки карточки у терапевта. */
 .pp-tag {
-  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px;
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: var(--r-pill);
   background: oklch(0.915 0.03 var(--h, 70)); font: 600 12px/1 var(--sans); color: var(--text); white-space: nowrap;
 }
 .pp-tag.is-strong { font-weight: 700; }

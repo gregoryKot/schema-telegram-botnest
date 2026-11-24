@@ -49,7 +49,7 @@ label.cz-row { cursor: pointer; }
 /* Группа без ручки в листе, где у соседней группы она есть: пустое место ручки — тумблеры на одной вертикали. */
 .cz-card--slot > .cz-block { padding-right: 44px; }
 
-.cz-done { width: 100%; height: 52px; margin-top: var(--space-20); border-radius: 26px; font-size: 16px; }
+.cz-done { width: 100%; height: 52px; margin-top: var(--space-20); border-radius: var(--r-12); font-size: 16px; }
 
 /* Знак блока слева (CustomizeRow sign, редизайн 2026-11): колонка 44px — та же .pp-row-art,
    что у строк «Ещё»; выключенный блок — знак бледный, подпись остаётся читаемой. */

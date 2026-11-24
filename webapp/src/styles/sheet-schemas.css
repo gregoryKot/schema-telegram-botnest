@@ -10,7 +10,7 @@
 .cs-mapfold-head:focus-visible, .cs-tile:focus-visible, .ss-pick:focus-visible, .ss-scale-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── Группа на бумаге (SignGroup): лист домена или группы, знак 60 у подписи, белый список ── */
-.sg-group { display: block; box-sizing: border-box; min-width: 0; padding: 12px; border-radius: 20px; break-inside: avoid; }
+.sg-group { display: block; box-sizing: border-box; min-width: 0; padding: 12px; border-radius: var(--r-16); break-inside: avoid; }
 .sg-head { display: flex; align-items: center; gap: 12px; min-width: 0; margin: 2px 4px 10px; font: inherit; }
 .sg-sign { display: flex; flex: none; width: 60px; }
 .sg-sign .pp-art--square { width: 60px; height: auto; }
@@ -60,7 +60,7 @@
    справочника. Лист бумаги домена/группы, шапка-кнопка со знаком, название Literata и подпись из данных;
    внутри — белые плитки, своя — бумагой с галочкой, схема из результата теста — приподнята слоем. ── */
 .cs-mapfolds { display: flex; flex-direction: column; gap: 10px; }
-.cs-mapfold { container: mapfold / inline-size; box-sizing: border-box; min-width: 0; padding: 4px; border-radius: 20px; }
+.cs-mapfold { container: mapfold / inline-size; box-sizing: border-box; min-width: 0; padding: 4px; border-radius: var(--r-16); }
 .cs-mapfold-head {
   display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; box-sizing: border-box;
   padding: 8px 14px 8px 10px; border: 0; border-radius: 16px; background: transparent; color: var(--text);

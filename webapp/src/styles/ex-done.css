@@ -21,7 +21,7 @@
 /* ── «Что дальше» (ExNext): плитка бумаги сущности, куда ведёт, — текст слева, справа стрелка и знак ── */
 .ex2-next {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; box-sizing: border-box; width: 100%;
-  padding: 20px 20px 18px 22px; border: 0; border-radius: 22px; font: inherit; text-align: left; color: var(--text);
+  padding: 20px 20px 18px 22px; border: 0; border-radius: var(--r-16); font: inherit; text-align: left; color: var(--text);
 }
 .ex2-next--link { cursor: pointer; transition: background .12s; }
 .ex2-next--link:hover { background: oklch(0.895 0.04 var(--h)); }

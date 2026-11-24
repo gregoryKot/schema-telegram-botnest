@@ -7,7 +7,7 @@
 .ns-words { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ns-word {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 56px; padding: 0 20px; border-radius: 18px; box-sizing: border-box;
+  min-height: 56px; padding: 0 20px; border-radius: var(--r-16); box-sizing: border-box;
   background: var(--surface); border: 1px solid var(--line); color: var(--text);
   font: 600 16px/1.2 var(--sans); text-align: left; cursor: pointer;
 }

@@ -28,7 +28,7 @@
 .ds-btn.ex2-evi-go.is-ready { color: var(--accent); border-color: var(--accent); }
 
 /* ── Сводка обеих чаш (BeliefRecap) — перед переформулировкой и на итоге ── */
-.ex2-recap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 28px; padding: 16px 18px 12px; border-radius: 18px; background: var(--surface); }
+.ex2-recap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 28px; padding: 16px 18px 12px; border-radius: var(--r-16); background: var(--surface); }
 .ex2-recap-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--text-sub); }
 .ex2-recap-row { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--paper-sunk); font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
 .ex2-recap-row > .ex2-pebble { width: 12px; height: 8px; }

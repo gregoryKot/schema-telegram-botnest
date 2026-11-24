@@ -11,7 +11,7 @@
    разворота — во всю колонку. :has — сцена своя у экрана, класс листа не задать. */
 .chw-scene { display: block; width: 100%; }
 .chw-scene > .scn { display: block; width: 100%; height: auto; }
-.chw-scene--skel { aspect-ratio: 320 / 260; border-radius: 22px; background: oklch(0.885 0.035 var(--h)); }
+.chw-scene--skel { aspect-ratio: 320 / 260; border-radius: var(--r-16); background: oklch(0.885 0.035 var(--h)); }
 @container pa-sheet (max-width: 560px) {
   .ex2-hero.pa-sheet:has(.chw-scene--hero) > .pa-sheet-art {
     grid-column: 1 / -1; grid-row: 1; justify-self: center; align-self: auto; width: min(100%, 280px); margin: -14px 0 2px;
@@ -46,12 +46,12 @@
 /* ── «Защитная идеализация» — лист соломы под листом-героем, до первой строки ──
    Плоский, как герой и PaperAlert (солома — «внимание, ничего страшного»): сдвинутый слой резала бы
    липкая колонка разворота (overflow) и он спорил бы с героем за громкость. */
-.chw-idealize { --h: 70; padding: 16px 20px 18px; border-radius: 20px; }
+.chw-idealize { --h: 70; padding: 16px 20px 18px; border-radius: var(--r-16); }
 .chw-idealize > .ds-label { color: var(--text-sub); }
 .chw-idealize-h { margin: 4px 0 6px; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.2; color: var(--text); }
 .chw-idealize-body { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 @media (max-width: 559px) {
-  .chw-idealize { padding: 14px 18px 16px; border-radius: 18px; }
+  .chw-idealize { padding: 14px 18px 16px; border-radius: var(--r-16); }
   .chw-idealize-h { font-size: 18px; }
   .chw-idealize-body { font-size: 13.5px; }
 }
@@ -86,7 +86,7 @@
 .chw-hints { margin-top: 36px; }
 .chw-hints > .ds-label { margin: 0 0 8px; }
 .chw-hints-lede { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
-.chw-hint { padding: 18px 20px 20px; margin-bottom: 14px; border-radius: 20px; }
+.chw-hint { padding: 18px 20px 20px; margin-bottom: 14px; border-radius: var(--r-16); }
 .chw-hint-head { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; row-gap: 2px; align-items: center; margin-bottom: 14px; }
 .chw-hint-sign { grid-row: 1 / span 2; align-self: start; margin-top: 2px; }
 /* Имя и оценка — одной строкой, пока влезают; не влезли (320) — оценка переносится под имя, а не наезжает на него. */
@@ -104,7 +104,7 @@
 .chw-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .chw-hints > .ds-card--nav { margin-top: 4px; }
 
-.chw-good { --h: 145; margin-top: 32px; padding: 20px 22px; border-radius: 20px; }
+.chw-good { --h: 145; margin-top: 32px; padding: 20px 22px; border-radius: var(--r-16); }
 .chw-good-title { margin-bottom: 6px; font-family: var(--serif); font-size: 20px; line-height: 1.2; color: var(--text); }
 .chw-good-body { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 

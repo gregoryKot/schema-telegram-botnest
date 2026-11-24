@@ -11,7 +11,7 @@
 .aa-avatar { width: 72px; height: 72px; font-size: 26px; flex-shrink: 0; }
 .aa-lead { margin: 8px 0 0; }
 /* Знак границы у заголовка — лист неба (2FA и доступ, 240), размер знака группы. */
-.aa-head-sign { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 112px; height: 76px; border-radius: 18px; }
+.aa-head-sign { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 112px; height: 76px; border-radius: var(--r-16); }
 .aa-alert { margin: -8px 0 0; }
 
 /* Плоские группы на бумаге страницы: линия --panel-line сверху, без белых карточек. */

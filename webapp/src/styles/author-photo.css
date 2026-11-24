@@ -20,14 +20,14 @@
 .author-photo-sticker {
   --h: 135; position: absolute; right: -30px; bottom: -26px;
   display: flex; align-items: center; justify-content: center;
-  width: 96px; height: 96px; border-radius: 22px; transform: rotate(9deg);
+  width: 96px; height: 96px; border-radius: var(--r-16); transform: rotate(9deg);
   background: oklch(0.9 0.06 var(--h)); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .author-photo-sticker .scn-sign { width: 72px; }
 /* Узкий экран: наклейка меньше и ближе к рамке. На ≤360 фотокарточка во всю колонку — наклейка
    (с поворотом и тенью) вылезала за край листа на 5–10px; ближе к углу рамки, тень внутри листа. */
 @media (max-width: 640px) {
-  .author-photo-sticker { right: -18px; bottom: -22px; width: 80px; height: 80px; border-radius: 18px; }
+  .author-photo-sticker { right: -18px; bottom: -22px; width: 80px; height: 80px; border-radius: var(--r-16); }
   .author-photo-sticker .scn-sign { width: 60px; }
 }
 @media (max-width: 360px) {

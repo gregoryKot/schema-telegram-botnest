@@ -7,7 +7,7 @@
 
 /* ── Реплика критика: белый лист с тенью-слоем сливы, Literata курсивом (PhraseSaid) ── */
 .ex2-said {
-  box-sizing: border-box; margin: 0 7px 24px 0; padding: 18px 22px 20px; border-radius: 18px;
+  box-sizing: border-box; margin: 0 7px 24px 0; padding: 18px 22px 20px; border-radius: var(--r-16);
   background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .ex2-said-text { margin: 0; font-family: var(--serif); font-style: italic; font-size: 22px; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; text-wrap: pretty; }
@@ -27,7 +27,7 @@
 .ex2-choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── Шаг «переписать»: вердикт листом со знаком, поле «стало» с тенью мха ── */
-.ex2-verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: start; box-sizing: border-box; margin-bottom: 18px; padding: 18px 20px 20px 22px; border-radius: 20px; }
+.ex2-verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: start; box-sizing: border-box; margin-bottom: 18px; padding: 18px 20px 20px 22px; border-radius: var(--r-16); }
 .ex2-verdict-signs { grid-column: 2; grid-row: 1; display: flex; gap: 4px; }
 .ex2-verdict-signs > .pp-art { width: 64px; height: 35px; }
 .ex2-verdict-body { grid-column: 1; grid-row: 1; min-width: 0; }

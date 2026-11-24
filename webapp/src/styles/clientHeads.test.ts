@@ -79,8 +79,8 @@ describe('экраны клиента: действия и кнопки — ds-*
     expect(phoneBlock(css)).not.toContain('.cd-write');
   });
 
-  it('плитки «Сегодня» — радиус по шкале (20)', () => {
-    expect(declsOf(read('client-today.css'), '.ct-tile')).toContain('border-radius: 20px');
+  it('плитки «Сегодня» — радиус по шкале (16)', () => {
+    expect(declsOf(read('client-today.css'), '.ct-tile')).toContain('border-radius: var(--r-16)');
   });
 });
 

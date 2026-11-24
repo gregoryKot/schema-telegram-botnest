@@ -19,9 +19,9 @@
 .mm2-n--circle { min-width: 118px; max-width: 200px; }
 .mm2-n--circle > .mm2-n-face { min-width: 118px; min-height: 118px; border-radius: 50%; padding: 20px 28px; }
 .mm2-n--pill { min-width: 130px; max-width: 220px; }
-.mm2-n--pill > .mm2-n-face { border-radius: 9999px; padding: 10px 22px; }
+.mm2-n--pill > .mm2-n-face { border-radius: var(--r-pill); padding: 10px 22px; }
 .mm2-n--need { min-width: 100px; max-width: 170px; }
-.mm2-n--need > .mm2-n-face { border-radius: 9999px; padding: 8px 12px; }
+.mm2-n--need > .mm2-n-face { border-radius: var(--r-pill); padding: 8px 12px; }
 .mm2-n--origin { min-width: 190px; max-width: 215px; }
 .mm2-n--origin > .mm2-n-face { border-radius: 46% 54% 50% 50% / 52% 46% 54% 48%; padding: 24px 30px; }
 /* Схема — слои: верхний лист уже нижнего и выглядывает над ним, как у знака схемы в палитре. */
@@ -54,7 +54,7 @@
 /* ── Таблетки схем в узле режима: тихая бумага домена, точка тона контура ── */
 .mm2-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 6px; }
 .mm2-pill {
-  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: 999px; line-height: 1.2;
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: var(--r-pill); line-height: 1.2;
   background: color-mix(in oklch, var(--surface) 62%, transparent); color: var(--text-sub);
 }
 .mm2-pill > i { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; background: oklch(0.66 0.09 var(--h)); }
@@ -62,9 +62,9 @@
 .mm2-pills.is-light > .mm2-pill { background: color-mix(in oklch, var(--surface) 18%, transparent); color: var(--surface); }
 
 /* ── Карта у клиента (MyModeMapSheet + ModeMapViewer): шапка и выбор карты — один лист неба режимов ── */
-.mmv > .ds-sheet-head { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 20px 20px; }
+.mmv > .ds-sheet-head { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 var(--r-16) var(--r-16); }
 .mmv:has(.mm2-bar) > .ds-sheet-head { border-radius: 0; }
-.mmv .mm2-bar { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 20px 20px; padding-bottom: 12px; }
+.mmv .mm2-bar { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 var(--r-16) var(--r-16); padding-bottom: 12px; }
 .mmv .mm2-bar > .ds-seg { background: oklch(0.87 0.045 var(--h)); }
 .mm2-view-body { flex: 1; min-height: 0; position: relative; }
 .mm2-view-load { position: absolute; inset: 0; }
