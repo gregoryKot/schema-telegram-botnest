@@ -12,7 +12,7 @@ describe('edgeLabelStyle', () => {
   it('✗ — круглый значок цвета линии', () => {
     const s = edgeLabelStyle('✗', 'var(--accent-red)', { fontSize: 11 });
     expect(s.color).toBe('var(--accent-red)');
-    expect(s.borderRadius).toBe(999);
+    expect(s.borderRadius).toBe('50%');
     expect(s.fontSize).toBe(14);
     expect(String(s.border)).toContain('var(--accent-red)');
   });

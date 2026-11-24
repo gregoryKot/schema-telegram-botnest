@@ -27,7 +27,7 @@
 .tc-add-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--text-sub); }
 .pa-alert.tc-add-err { grid-column: 1 / -1; } /* сбой «Создать» — тихий лист соломы на всю ширину формы */
 /* Итог — лист неба терапевта (pp-paper), без тени: он уже бумага, не лист на бумаге. */
-.pp-paper.tc-add--done { background: oklch(0.915 0.03 var(--h)); box-shadow: none; border-radius: 22px; }
+.pp-paper.tc-add--done { background: oklch(0.915 0.03 var(--h)); box-shadow: none; border-radius: var(--r-16); }
 .tc-add-done { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tc-add-done-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .tc-add-done-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -92,7 +92,7 @@
   grid-template-columns: repeat(auto-fit, minmax(clamp(calc(33.333% - 14px), (840px - 100%) * 999, 100%), 1fr));
 }
 /* Колонка — бумага своего статуса (солома / шалфей с Check / персик), карточки — светлые листы. */
-.tc-kcol { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 12px; border-radius: 20px; min-width: 0; }
+.tc-kcol { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 12px; border-radius: var(--r-16); min-width: 0; }
 .tc-kcol-head { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 6px 4px; }
 .tc-kcol-head .ds-label { color: var(--text); }
 .tc-kcol-count { font: 600 13px/1 var(--sans); color: var(--text-sub); }

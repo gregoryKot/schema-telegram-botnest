@@ -14,7 +14,7 @@ export function HistorySheetSkeleton() {
   return (
     <div className="sd-history" aria-hidden>
       <div className="sd-days">{[...FIVE, 5, 6].map(i => <span key={i} className="sd-day-slot"><Skeleton height={72} radius={14} /></span>)}</div>
-      <div className="sd-toolbar"><span className="sd-seg-slot"><Skeleton height={44} radius={20} /></span></div>
+      <div className="sd-toolbar"><span className="sd-seg-slot"><Skeleton height={44} radius={16} /></span></div>
       <div className="sd-day-grid">
         <div className="sd-day-side"><div className="pp-paper sd-wheel sd-wheel--skel" style={hueStyle(ENTITY_LOOK.tracker.hue)}>
           <svg viewBox={`0 0 ${W} ${H}`}>

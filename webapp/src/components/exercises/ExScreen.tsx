@@ -90,7 +90,7 @@ export function ExScreenSkeleton({ onBack, hue, spread }: { onBack: () => void; 
       {spread ? (
         <div className="ex2-body ex2-body--spread" aria-hidden>
           <SpreadLayout side={hero}>
-            <div className="ex2-skel"><SkeletonCard height={220} /><Skeleton width={180} height={44} radius={22} /></div>
+            <div className="ex2-skel"><SkeletonCard height={220} /><Skeleton width={180} height={44} radius={12} /></div>
           </SpreadLayout>
         </div>
       ) : (

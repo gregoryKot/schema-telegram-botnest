@@ -68,7 +68,7 @@
    высотой ~60 (слот 112, поле холста уходит в отступы — paper-app.css), Literata 30; описание короткое,
    примеры свёрнуты. Телефон ≤560 — полосой, правила ниже. */
 @media (max-width: 1023px) {
-  .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 16px; padding: 20px 20px 16px 22px; border-radius: 22px; }
+  .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 16px; padding: 20px 20px 16px 22px; border-radius: var(--r-16); }
   .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 30px; }
   .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 112px; }
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label) { margin-top: 10px; }

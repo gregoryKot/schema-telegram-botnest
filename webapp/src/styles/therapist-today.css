@@ -11,7 +11,7 @@
    ними — плитка ~112px, как в «до»; было знак сверху, 156px и полплитки пусто. Телефон — сверху вниз (ниже). */
 .tt-counter {
   display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "sign num" "label label";
-  align-items: center; column-gap: 14px; row-gap: 10px; padding: 18px 20px 16px; border-radius: 20px;
+  align-items: center; column-gap: 14px; row-gap: 10px; padding: 18px 20px 16px; border-radius: var(--r-16);
 }
 .tt-counter .ds-label { grid-area: label; color: var(--text-sub); }
 .tt-counter .ds-num { grid-area: num; font-size: 52px; line-height: 1; white-space: nowrap; }
@@ -29,7 +29,7 @@
 .tt-reset { font: inherit; color: inherit; text-align: left; width: 100%; appearance: none; border: 0; cursor: pointer; }
 
 /* ── «Сессии сегодня»: лист неба, белые строки. Знака у заголовка нет (r1): Talk уже у счётчика «Сессий сегодня». */
-.tt-sessions { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 18px; border-radius: 22px; }
+.tt-sessions { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 18px; border-radius: var(--r-16); }
 .tt-sessions-title { margin: 0; padding-inline: 2px; text-wrap: balance; }
 .tt-sessions > .ds-empty { padding-inline: 2px; }
 .tt-session-list { display: flex; flex-direction: column; gap: 8px; }
@@ -49,7 +49,7 @@
 .tt-row-sub { font-size: 13px; color: var(--text-sub); }
 
 /* ── Списки: светлая бумага без обводки ───────────────────────────────── */
-.tt-list { background: var(--surface); border-radius: 20px; overflow: hidden; container: tt-list / inline-size; }
+.tt-list { background: var(--surface); border-radius: var(--r-16); overflow: hidden; container: tt-list / inline-size; }
 .tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px auto; min-height: 44px; background: none; }
 /* Кольцо фокуса — внутрь строки: .tt-list режет всё, что снаружи (overflow: hidden ради скругления). */
 .tt-act:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
@@ -104,7 +104,7 @@
   .tt-counter-sign .pp-art { width: 44px; height: 24px; }
   .tt-denom { font-size: 14px; }
   .tt-cols, .tt-col { gap: 24px; }
-  .tt-sessions { padding: 14px 12px 12px; border-radius: 20px; }
+  .tt-sessions { padding: 14px 12px 12px; border-radius: var(--r-16); }
   .tt-session { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; padding: 10px 12px; }
   /* Спарклайн — на минимум 48: трек minmax(48px, 120px) добирал свои 120
      раньше, чем доля 1fr имени, и имени оставалось ~38px. */

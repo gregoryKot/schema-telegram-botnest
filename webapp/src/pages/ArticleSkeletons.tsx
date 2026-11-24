@@ -30,7 +30,7 @@ export function ArticleSkeleton() {
         <SkeletonLines widths={['94%', '62%']} height={36} gap={14} />
         <SkeletonLines widths={['96%', '58%']} height={14} gap={13} />
       </div>
-      <Skeleton className="ac-skel-hero" height="auto" radius={20} />
+      <Skeleton className="ac-skel-hero" height="auto" radius={16} />
       <SkeletonLines widths={['100%', '97%', '99%', '64%']} gap={16} />
     </div>
   );

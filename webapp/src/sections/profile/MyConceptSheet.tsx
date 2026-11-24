@@ -21,7 +21,7 @@ export function MyConceptSheet({ onClose }: { onClose: () => void }) {
     <ConceptFullscreenSheet title="Схема случая" closeLabel="Закрыть" onClose={onClose}>
       <ConceptPaperProvider>
       <div className="pp-paper cg-my-hero"><SignArt sign="layers" size="square" /><p className="cg-my-lede">{lede}</p></div>
-      {state.status === 'loading' && <Skeleton height={480} radius={20} />}
+      {state.status === 'loading' && <Skeleton height={480} radius={16} />}
       {state.status === 'ready' && (
         <>
           <p className="cg-my-dates">{myConceptDates(state.concept.sharedWithClientAt, state.concept.updatedAt)}</p>

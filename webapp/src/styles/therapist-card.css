@@ -130,7 +130,7 @@
    подписи, поля листа и строк меньше; строка схемы ≤56px. Вид SignGroup клиента не меняется (правило — здесь). */
 @container tk-groups (max-width: 519px) {
   .tk-groups { gap: 8px; }
-  .tk-groups .sg-group { padding: 8px 10px 10px; border-radius: 18px; }
+  .tk-groups .sg-group { padding: 8px 10px 10px; border-radius: var(--r-16); }
   .tk-groups .sg-head { margin: 2px 2px 6px; gap: 10px; }
   .tk-groups .sg-sign, .tk-groups .sg-sign .pp-art--square { width: 44px; }
   .tk-groups .tk-item { padding: 8px 12px; }
@@ -201,7 +201,7 @@
 }
 /* «Приложение» офлайн-клиента (OfflineInviteCard) — белый лист с тенью-слоем неба (встречи терапевта), как
    заметка и записи, а не белая карточка с серой рамкой. */
-.tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 0 0 0 1px var(--panel-line); }
+.tk-side > .ds-card { border-color: transparent; border-radius: var(--r-16); box-shadow: 0 0 0 1px var(--panel-line); }
 /* Трекер — лист соломы: индекс Literata --text (без светофора), столбики одними чернилами, потребности — белым
    списком со знаком и цветом данных своей потребности (--need-ink, --need-text из inkVars). */
 .tk-track { display: flex; flex-direction: column; gap: 18px; padding: 18px 20px 20px; }

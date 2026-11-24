@@ -9,10 +9,10 @@
 .gd-hero > .pp-hero-text { grid-column: 1 / -1; }
 .gd-hero .pp-hero-title { font-size: clamp(28px, 7.4vw, 38px); line-height: 1.15; }
 .gd-hero .pp-hero-text { font-size: 17px; line-height: 1.6; }
-.gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 22px; }
+.gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: var(--r-16); }
 .gd-hero-art > .scn-sign { width: 72px; }
 @media (max-width: 480px) {
-  .gd-hero-art { width: 80px; height: 80px; border-radius: 18px; }
+  .gd-hero-art { width: 80px; height: 80px; border-radius: var(--r-16); }
   .gd-hero-art > .scn-sign { width: 60px; }
 }
 

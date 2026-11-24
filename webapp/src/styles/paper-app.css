@@ -18,7 +18,7 @@
 .pa-sheet {
   container: pa-sheet / inline-size;
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 24px; row-gap: 0;
-  box-sizing: border-box; width: 100%; padding: 28px 28px 28px 32px; border-radius: 24px;
+  box-sizing: border-box; width: 100%; padding: 28px 28px 28px 32px; border-radius: var(--r-16);
 }
 .pa-sheet-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .pa-sheet-label { color: var(--text-sub); }
@@ -39,7 +39,7 @@
    Подпись — целиком, без обрезки: на первом шаге разворота это ответ «откуда и зачем»
    (frontend-visual.md), а со второго шага экран сам решает, передавать ли подпись. Разворот
    ≥1024 возвращает колонку своим блоком ниже. */
-.pa-sheet--compact, .pa-spread-side .pa-sheet { column-gap: 16px; padding: 14px 18px 14px 22px; border-radius: 20px; }
+.pa-sheet--compact, .pa-spread-side .pa-sheet { column-gap: 16px; padding: 14px 18px 14px 22px; border-radius: var(--r-16); }
 .pa-sheet--compact .pa-sheet-body, .pa-spread-side .pa-sheet-body { gap: 6px; }
 .pa-sheet--compact .pa-sheet-title, .pa-spread-side .pa-sheet-title { font-size: 24px; }
 .pa-sheet--compact .pa-sheet-sub, .pa-spread-side .pa-sheet-sub { font-size: 14px; line-height: 1.45; }
@@ -115,7 +115,7 @@
      Знак встаёт по левому краю текста: поле холста знака (~11% ширины слева) сдвигом назад, иначе
      знак стоял на 20–27px правее надписи и заголовка. Своя сцена — по краю своего листа, без сдвига. */
   .pa-spread-side .pa-sheet {
-    container-name: pa-spread-sheet; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 32px 32px 36px; border-radius: 24px;
+    container-name: pa-spread-sheet; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 32px 32px 36px; border-radius: var(--r-16);
   }
   .pa-spread-side .pa-sheet-body { gap: 10px; }
   .pa-spread-side .pa-sheet-sub { font-size: 15px; line-height: 1.5; }
@@ -130,7 +130,7 @@
 
 /* ── Лист «готово» (DoneSheet) ───────────────────────────────────────────── */
 .pa-done { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%; max-width: 540px; margin: 0 auto; }
-.pa-done-sheet { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; box-sizing: border-box; padding: 24px 32px 28px; border-radius: 28px; }
+.pa-done-sheet { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; box-sizing: border-box; padding: 24px 32px 28px; border-radius: var(--r-16); }
 .pa-done-scene { align-self: stretch; display: flex; justify-content: center; margin-bottom: 6px; }
 .pa-done-scene > .scn { width: min(100%, 300px); }
 .pa-done-label { color: var(--text-sub); }
@@ -174,7 +174,7 @@
 }
 @supports (min-height: 100dvh) { .pa-outcome { min-height: 100dvh; } }
 .pa-outcome-card {
-  margin-block: auto; width: 100%; max-width: 440px; overflow: hidden; border-radius: 28px; background: var(--surface);
+  margin-block: auto; width: 100%; max-width: 440px; overflow: hidden; border-radius: var(--r-16); background: var(--surface);
   box-shadow: 12px 13px 0 oklch(var(--pa-layer-lc) var(--h));
 }
 .pa-outcome-band {
@@ -186,7 +186,7 @@
    Плашку Check на шалфее держит сам мотив (SignHero → Check plate="surface"), не селектор отсюда. */
 .pa-outcome-band::before {
   content: ''; position: absolute; left: calc(50% - 6px); top: 26px; width: 88px; height: 88px;
-  border-radius: 18px; transform: rotate(-11deg); background: oklch(0.875 0.04 var(--h));
+  border-radius: var(--r-16); transform: rotate(-11deg); background: oklch(0.875 0.04 var(--h));
 }
 .pa-outcome-band .scn-sign { position: relative; width: 136px; }
 .pa-outcome-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 26px 30px 30px; }
@@ -221,13 +221,13 @@
 /* ── Поле-лист: свободный текст пользователя ─────────────────────────────── */
 /* Одно поле «написать, что было» на всё приложение: заметка к дню (NoteSheet), «Что случилось?» в разборе
    (CaseSceneStep), быстрая запись (QuickWriteStep) и тетрадь благодарности (GratitudeEntrySheet: лист — поле,
-   строки внутри без рамок). Белый лист Literata, тень сплошным слоем тоном бумаги сущности (--h у поля или родителя),
+   строки внутри без рамок). Белый лист Literata без тени (опора экрана — не поле),
    растёт с текстом (field-sizing) без системного уголка. Высота — у экрана. Вместо .ds-textarea, а не
    вместе с ним: системное поле (гротеск 16, кольцо фокуса) и лист спорили (ревью g2 r2). */
 .pa-field {
   box-sizing: border-box; display: block; width: 100%; resize: none; field-sizing: content; -webkit-appearance: none; appearance: none;
-  padding: 18px 20px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
-  font: 400 19px/1.5 var(--serif); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
+  padding: 18px 20px; border-radius: var(--r-16); border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  font: 400 19px/1.5 var(--serif);
 }
 .pa-field::placeholder { color: var(--text-faint); }
 /* Фокус — кромка --accent, как у полей ds-input, а не кольцо поверх листа: «Что случилось?» в фокусе с
@@ -238,9 +238,9 @@
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .pa-sheet { column-gap: 14px; padding: 20px 18px 20px 20px; border-radius: 20px; }
-  .pa-sheet--compact, .pa-spread-side .pa-sheet { padding: 12px 14px 12px 16px; border-radius: 18px; }
-  .pa-done-sheet { padding: 20px 20px 22px; border-radius: 24px; }
+  .pa-sheet { column-gap: 14px; padding: 20px 18px 20px 20px; border-radius: var(--r-16); }
+  .pa-sheet--compact, .pa-spread-side .pa-sheet { padding: 12px 14px 12px 16px; border-radius: var(--r-16); }
+  .pa-done-sheet { padding: 20px 20px 22px; border-radius: var(--r-16); }
   .pa-done-scene > .scn { width: min(100%, 250px); }
   .pa-done-title { font-size: 28px; }
   .ds-btn.pa-alert-retry { width: 100%; }
@@ -248,7 +248,7 @@
      с пустыми двумя третями ниже читался недогруженным экраном (ревью g1). У верха — только сбой
      раздела по месту (.sk-crash-outcome, error-screen.css). */
   .pa-outcome { padding: calc(16px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); }
-  .pa-outcome-card { box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h)); border-radius: 24px; }
+  .pa-outcome-card { box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h)); border-radius: var(--r-16); }
   .pa-outcome-band { height: 148px; }
   .pa-outcome-band .scn-sign { width: 112px; }
   .pa-outcome-body { padding: 22px 20px 24px; }

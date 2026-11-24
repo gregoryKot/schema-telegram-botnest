@@ -2,7 +2,7 @@
 // спиннер). Примитив для webapp; шиммер глушится глобальным reduced-motion блоком index.css.
 import type { CSSProperties } from 'react';
 
-type SkeletonProps = { width?: number | string; height?: number | string; radius?: number; style?: CSSProperties; className?: string };
+type SkeletonProps = { width?: number | string; height?: number | string; radius?: number | string; style?: CSSProperties; className?: string };
 
 /** Плашка. className — форма из CSS по точкам перелома: с height="auto" — пропорция, как у обложки статьи. */
 export function Skeleton({ width = '100%', height = 14, radius = 8, style, className }: SkeletonProps) {
@@ -36,7 +36,7 @@ export function ScreenSkeleton() {
 /** Карточка-силуэт: строка-заголовок + строки текста, размеры под контент. */
 export function SkeletonCard({
   height = 120,
-  radius = 22,
+  radius = 16,
   style,
 }: {
   height?: number;

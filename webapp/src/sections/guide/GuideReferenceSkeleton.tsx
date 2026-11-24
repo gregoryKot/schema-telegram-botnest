@@ -4,8 +4,8 @@ import { Skeleton, SkeletonList } from '../../components/Skeleton';
 export function GuideReferenceSkeleton() {
   return (
     <div aria-hidden className="gr-column">
-      <Skeleton height={44} radius={22} />
-      <Skeleton width={300} height={34} radius={20} style={{ maxWidth: '100%' }} />
+      <Skeleton height={44} radius={12} />
+      <Skeleton width={300} height={34} radius={16} style={{ maxWidth: '100%' }} />
       <div className="gr-wrap">
         <div className="gr-list gr-list--groups">
           {[4, 3].map((rows) => (

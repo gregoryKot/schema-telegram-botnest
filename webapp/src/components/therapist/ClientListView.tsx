@@ -101,7 +101,7 @@ export function ClientListView({
         {listTab === 'clients' && (
           loading ? (
             <div className="tc-grid" aria-hidden>
-              {[0, 1, 2, 3].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={20} />)}
+              {[0, 1, 2, 3].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={16} />)}
             </div>
           ) : loadFailed ? (
             // Сбой ≠ пусто: полный ростер не должен выглядеть как «клиентов нет».

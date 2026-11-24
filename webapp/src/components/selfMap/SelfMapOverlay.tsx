@@ -33,7 +33,7 @@ export function SelfMapOverlay({
         <div className="sm-skel" aria-hidden>
           <Skeleton width={150} height={11} />
           <SkeletonList rows={3} height={60} />
-          <Skeleton width="100%" height={88} radius={20} />
+          <Skeleton width="100%" height={88} radius={16} />
         </div>
       </ExScreen>
     );

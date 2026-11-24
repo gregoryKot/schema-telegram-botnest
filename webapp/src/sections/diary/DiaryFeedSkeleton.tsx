@@ -26,13 +26,13 @@ export function DiaryTimelineSkeleton() {
           <div key={d} className="cdk-day">
             <div className="cdk-head">
               <div className="cdk-col"><Skeleton width={110} height={22} radius={8} /><Skeleton width={130} height={11} /></div>
-              <Skeleton width={118} height={36} radius={18} />
+              <Skeleton width={118} height={36} radius={12} />
             </div>
             <div className="cdk-items">{Array.from({ length: cards }, (_, i) => <SkelCard key={i} lines={2 - i} />)}</div>
           </div>
         ))}
       </div>
-      <div className="cdk-week"><Skeleton width="100%" height={176} radius={20} /></div>
+      <div className="cdk-week"><Skeleton width="100%" height={176} radius={16} /></div>
     </div>
   );
 }
@@ -43,9 +43,9 @@ export function DiaryFeedSkeleton() {
     <div aria-hidden="true" className="ds-page cdk-page" data-testid="diary-skeleton">
       <div className="cdk-top">
         <div className="cdk-col"><Skeleton width={70} height={12} /><Skeleton width={190} height={38} radius={10} /></div>
-        <div className="cdk-write"><Skeleton width="100%" height={48} radius={24} /></div>
+        <div className="cdk-write"><Skeleton width="100%" height={48} radius={12} /></div>
       </div>
-      <div className="cdk-seg"><Skeleton width="100%" height={44} radius={22} /></div>
+      <div className="cdk-seg"><Skeleton width="100%" height={44} radius={12} /></div>
       <DiaryTimelineSkeleton />
     </div>
   );

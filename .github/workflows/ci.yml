@@ -991,6 +991,10 @@ jobs:
       # полностью, замораживать нечему. Смотрит и в .css.
       - run: node scripts/check-var-alpha-suffix.mjs
         if: steps.scope.outputs.docs_only != 'true'
+      # Шкала радиусов (#1619, решение 3): блоки ≤16, var(--r-20) — верх листа,
+      # капсула var(--r-pill) — только у чипов. Абсолютный, без бейслайна.
+      - run: node scripts/check-radius-scale.mjs
+        if: steps.scope.outputs.docs_only != 'true'
       # Под-лист с z-index ниже родителя (инцидент 2026-11-05: «Дополнить» на
       # экране паттерна открывал опросник ПОД ним). Листы одного уровня
       # стыкуются порядком в DOM; число — только чтобы встать выше чужого

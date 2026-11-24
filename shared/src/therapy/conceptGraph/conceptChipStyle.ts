@@ -17,7 +17,7 @@ export function conceptChipStyle(
     display: readOnly ? 'inline-block' : undefined,
     minHeight: readOnly ? undefined : 44,
     padding: '5px 12px',
-    borderRadius: 'var(--r-20)',
+    borderRadius: 'var(--r-pill)',
     border: 'none',
     cursor: readOnly ? 'default' : 'pointer',
     background: active ? colorMix(color, 22) : 'rgba(var(--fg-rgb),0.05)',

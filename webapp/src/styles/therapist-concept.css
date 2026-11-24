@@ -101,7 +101,7 @@
    briefColumns.ts (следующая — в самую короткую), поэтому под коротким листом нет пустоты во всю высоту соседа. */
 .tcp-brief-grid { display: flex; align-items: flex-start; gap: 16px; max-width: 1400px; }
 .tcp-brief-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-.tcp-brief-card { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; min-width: 0; padding: 18px 20px 20px; border-radius: 20px; }
+.tcp-brief-card { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; min-width: 0; padding: 18px 20px 20px; border-radius: var(--r-16); }
 .tcp-brief-card--plain { background: var(--surface); border: 1px solid var(--line); }
 .ds-label.tcp-brief-label { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--text-sub); }
 .tcp-brief-text { font-size: 17px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }

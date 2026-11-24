@@ -15,7 +15,6 @@ const ANCHORS = [
   'styles/client-profile.css|.cpf-paper-dlg', 'styles/client-profile.css|.cpf-paper-dlg--list',
   'styles/auth-service.css|.as-card', 'styles/auth-service.css|.as-card--skel', // главная карточка входа
   'styles/journey.css|.jr-hero', 'styles/paper-app.css|.pa-outcome-card', // главные карточки экрана
-  'styles/paper-app.css|.pa-field', // поле ввода: его меняет карточка про поля
   'styles/paper.css|.pp-leaf--anchor', 'styles/paper.css|.pp-leaf--anchor[style*="--h"]', // опорный лист
 ].sort();
 

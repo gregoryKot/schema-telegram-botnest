@@ -15,7 +15,7 @@ export function RowsSkeleton({ rows }: { rows: number }) {
         <div key={i} className="aa-row">
           <Skeleton width={36} height={36} radius={10} />
           <Skeleton width="40%" height={14} />
-          <Skeleton width={96} height={40} radius={20} style={{ marginLeft: 'auto' }} />
+          <Skeleton width={96} height={40} radius={12} style={{ marginLeft: 'auto' }} />
         </div>
       ))}
     </div>

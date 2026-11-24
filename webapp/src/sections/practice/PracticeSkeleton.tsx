@@ -37,12 +37,12 @@ export function PracticeSkeleton() {
         <SkeletonLines widths={['95%', '91%', '93%', '34%']} gap={9} />
         <div className="pp-paper sks-paper cpk-hero" style={hueStyle(ENTITY_LOOK.breathing.hue)}>
           <div className="cpk-hero-in">
-            <Skeleton className="cpk-scene" height="auto" radius={20} />
+            <Skeleton className="cpk-scene" height="auto" radius={16} />
             <div className="cpk-hero-body">
               <Skeleton className="cpk-hero-label" width={104} height={11} />
               <Skeleton className="cpk-hero-title" width="72%" height={34} radius={10} />
               <SkeletonLines widths={['92%', '84%', '46%']} height={13} gap={10} />
-              <Skeleton className="cpk-hero-btn" height={48} radius={24} />
+              <Skeleton className="cpk-hero-btn" height={48} radius={12} />
             </div>
           </div>
         </div>
