@@ -131,16 +131,16 @@ describe('ModeMapSelector — пустое состояние', () => {
 });
 
 describe('ModeMapSelector — список карт и переключение', () => {
-  it('вкладки карт — ds-seg-btn с aria-pressed у активной (#906)', async () => {
+  it('вкладки карт — вкладки на линии (tab) с aria-selected у активной (#906)', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getModeMap.mockResolvedValue(full(1, 'Карта А'));
     await act(async () => {
       render(<ModeMapSelector clientId={5} />);
     });
-    const a = screen.getByText('Карта А');
-    expect(a.classList.contains('ds-seg-btn')).toBe(true);
-    expect(a.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Карта Б').getAttribute('aria-pressed')).toBe('false');
+    const a = screen.getByRole('tab', { name: 'Карта А' });
+    expect(a.classList.contains('lt-tab')).toBe(true);
+    expect(a.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Карта Б' }).getAttribute('aria-selected')).toBe('false');
   });
 
   it('загружает карты клиента и автоматически открывает первую', async () => {
@@ -374,7 +374,7 @@ describe('ModeMapSelector — загрузка', () => {
 // редакторе оставалась другая; удаление и переименование молча не происходили.
 describe('ModeMapSelector — отказ сервера виден', () => {
   const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Действия с картой' }));
-  const pressed = () => screen.getAllByRole('button', { pressed: true }).map((b) => b.textContent);
+  const pressed = () => screen.getAllByRole('tab', { selected: true }).map((b) => b.textContent);
 
   it('карта не открылась — в редакторе прежняя, вкладка подсвечивает её же, на экране «Не получилось открыть»', async () => {
     listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
