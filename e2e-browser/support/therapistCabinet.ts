@@ -23,8 +23,7 @@ export const OFFLINE_CLIENT = {
   relationCreatedAt: '2026-08-01T09:00:00.000Z',
   therapyStartDate: null,
   nextSession: null,
-  meetingDays: [],
-  memo: null,
+  meetingDays: [], memo: null,
   schemaIds: [],
 };
 const id = OFFLINE_CLIENT.telegramId;
