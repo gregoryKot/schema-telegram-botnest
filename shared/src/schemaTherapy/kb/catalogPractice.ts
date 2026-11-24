@@ -1,5 +1,4 @@
-// Каталог-цель вкладки «Для терапевта» (kb/catalog.ts). Этапы, оценка и психообразование живут во
-// вкладке «Путь терапии» (guide/phases/) и сюда не входят.
+// Каталог-цель вкладки «Для терапевта» (kb/catalog.ts); этапы, оценка, психообразование — в guide/phases/.
 import type { CatalogTopic } from './catalog';
 
 const w = (id: string): CatalogTopic => ({ id, status: 'written' });
@@ -52,6 +51,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'same_behavior_by_schema',
     'mode_work_when',
     'mode_work_steps',
+    'emdr',
   ].map(w),
   {
     id: 'questionnaires',
