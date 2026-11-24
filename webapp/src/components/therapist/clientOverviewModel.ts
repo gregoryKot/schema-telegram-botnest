@@ -1,7 +1,8 @@
 // Чистые вычисления вкладки «Обзор» и шапки карточки клиента: группировка
 // схем по доменам, сводка режимов, бары потребностей, столбики индекса,
 // превью дневника. Цвета не здесь — только hue (lib/tone.ts), тип записи и уровни.
-import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
+import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { diaryTitle } from './diaryTitle';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { NEED_NAMES } from '../../../../shared/src/needs/needNames';
 import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, indexLevel, type IndexLevel } from '../../lib/tone';
@@ -95,22 +96,11 @@ export interface DiaryPreviewRow {
   date: string;
 }
 
-const flatSchemas = SCHEMA_DOMAINS.flatMap((d) => d.schemas);
-
-/** Последние записи клиента для строк превью: тип (знак и тихая подпись; у благодарности тип и есть заголовок — без подписи), заголовок, фрагмент. */
+/** Последние записи клиента для строк превью: у благодарности тип и есть заголовок — без подписи. */
 export function diaryPreview(entries: readonly DiaryEntryLike[], limit = 5): DiaryPreviewRow[] {
   return entries.slice(0, limit).map((e) => {
-    if (e.type === 'schema') {
-      const ids = e.schemaIds ?? [];
-      const first = flatSchemas.find((s) => s.id === ids[0]);
-      const extra = ids.length > 1 ? ` +${ids.length - 1}` : '';
-      return { type: 'schema', typeLabel: 'Схема-дневник', title: (first ? first.name : ids.join(', ') || 'Схема') + extra, excerpt: e.excerpt, date: e.date };
-    }
-    if (e.type === 'mode') {
-      const mode = getModeById(e.modeId ?? '');
-      return { type: 'mode', typeLabel: 'Режим-дневник', title: mode ? mode.name : (e.modeId ?? 'Режим'), excerpt: e.excerpt, date: e.date };
-    }
-    return { type: 'gratitude', typeLabel: null, title: 'Благодарность', excerpt: e.excerpt, date: e.date };
+    const { title, typeLabel } = diaryTitle(e);
+    return { type: e.type, typeLabel: e.type === 'gratitude' ? null : typeLabel, title, excerpt: e.excerpt, date: e.date };
   });
 }
 

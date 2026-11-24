@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { diaryTitle } from './diaryTitle';
 import { weekDelta, groupSchemasByDomain, summarizeModes, needBars, indexSparkBars, diaryPreview } from './clientOverviewModel';
 
 describe('groupSchemasByDomain', () => {
@@ -60,16 +61,24 @@ describe('diaryPreview', () => {
       { type: 'gratitude', date: '2026-07-03', excerpt: 'c' },
     ], 2);
     expect(rows).toHaveLength(2);
-    expect(rows[0].typeLabel).toBe('Схема-дневник');
+    expect(rows[0].typeLabel).toBe('Дневник схем');
     expect(rows.map((r) => r.type)).toEqual(['schema', 'mode']);
     expect(rows[0].title).toMatch(/ \+1$/);
-    expect(rows[1].typeLabel).toBe('Режим-дневник');
+    expect(rows[1].typeLabel).toBe('Дневник режимов');
     expect(rows[1].title.length).toBeGreaterThan(0);
   });
   it('схема без id и режим без id не падают', () => {
     const rows = diaryPreview([{ type: 'schema', date: 'd', excerpt: '' }, { type: 'mode', date: 'd', excerpt: '' }]);
     expect(rows[0].title).toBe('Схема');
     expect(rows[1].title).toBe('Режим');
+  });
+});
+
+describe('diaryTitle', () => {
+  it('ярлыки одинаковы для превью и заметок', () => {
+    expect(diaryTitle({ type: 'schema' }).typeLabel).toBe('Дневник схем');
+    expect(diaryTitle({ type: 'mode' }).typeLabel).toBe('Дневник режимов');
+    expect(diaryTitle({ type: 'gratitude' })).toEqual({ title: 'Благодарность', typeLabel: 'Дневник благодарности' });
   });
 });
 
