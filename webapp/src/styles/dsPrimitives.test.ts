@@ -104,7 +104,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('font-size: 15px');
   });
 
-  it('строка-переход: заголовок 14/600, подпись = ds-sub, шеврон — один глиф «›» из ::before', () => {
+  it('строка-переход: заголовок 14/600, подпись = ds-sub, шеврон — SVG-маска из ::before', () => {
     expect(decls(css, '.ds-list-title')).toContain('font-size: 14px');
     expect(decls(css, '.ds-list-title')).toContain('font-weight: 600');
     expect(decls(css, '.ds-list-sub')).toBe(decls(css, '.ds-sub'));
@@ -112,7 +112,11 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(chev).toContain('font-size: 18px');
     expect(chev).toContain('color: var(--text-faint)');
     expect(chev).toContain('margin-left: auto');
-    expect(decls(css, '.ds-chev:empty::before')).toContain("content: '›'");
+    const mark = decls(css, '.ds-chev:empty::before');
+    expect(mark).toContain('background: currentColor');
+    expect(mark).toContain('width: 16px');
+    expect(mark).toMatch(/mask: var\(--chev-mask\)/);
+    expect(mark).not.toMatch(/content: '[^']/);
   });
 
   it('.ds-empty — Manrope 14 цветом --text-muted, без курсива и отступов', () => {
@@ -344,4 +348,31 @@ describe('cabinet.css: компьютер ≥768 (регрессия 2026-11-04 
   it('на телефоне модификатор --page ничего не меняет: правила для него нет вне ≥768', () => {
     expect(top + phone).not.toContain('.ds-sheet-head--page');
   });
+
+  it('шеврон — не шрифтовой глиф: «›» и «‹» в content запрещены во всех .css', () => {
+    expect(glyphContentIn(css)).toEqual([]); // исход «чисто»
+    expect(glyphContentIn(".a::after { content: '›'; }")).toHaveLength(1); // исход «поймали»
+    expect(glyphContentIn('.a::after { content: "‹"; }')).toHaveLength(1);
+    const root = join(__dirname, '../../..');
+    const bad = [...cssFiles(join(root, 'shared/src')), ...cssFiles(join(root, 'webapp/src'))]
+      .filter((f) => glyphContentIn(readFileSync(f, 'utf8')).length > 0);
+    expect(bad).toEqual([]);
+  });
+
+  it('храповик: файлов с белой коробкой ds-card--flush только убывает (строки на бумаге — ds-rows)', () => {
+    const MAX_FLUSH_FILES = 4; // YsqTestRow, CommandPalette, ArticleCard, ArticleSkeletons; снизил — опусти число
+    const using = walkFiles(join(__dirname, '..'), /\.tsx$/)
+      .filter((f) => !/\.test\./.test(f) && hasFlush(readFileSync(f, 'utf8')));
+    expect(using.length).toBeLessThanOrEqual(MAX_FLUSH_FILES);
+    expect(hasFlush('<div className="ds-card ds-card--flush">')).toBe(true);
+    expect(hasFlush('<div className="ds-rows">')).toBe(false);
+  });
 });
+
+function walkFiles(dir: string, ext: RegExp): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? (e.name === 'node_modules' ? [] : walkFiles(join(dir, e.name), ext)) : ext.test(e.name) ? [join(dir, e.name)] : []);
+}
+const cssFiles = (dir: string) => walkFiles(dir, /\.css$/);
+const glyphContentIn = (src: string) => [...src.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/content:\s*(['"])[‹›]\1/g)];
+const hasFlush = (src: string) => src.includes('ds-card--flush');
