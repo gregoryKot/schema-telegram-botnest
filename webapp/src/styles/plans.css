@@ -44,7 +44,7 @@
 .sk-needs { display: flex; flex-wrap: wrap; gap: 10px; }
 .pp-paper.sk-need {
   flex: 1 1 120px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
-  min-height: 100px; box-sizing: border-box; padding: 14px 14px 12px; border: 0; border-radius: 18px;
+  min-height: 100px; box-sizing: border-box; padding: 14px 14px 12px; border: 0; border-radius: var(--r-16);
   color: var(--text); font-family: var(--sans); text-align: left; cursor: pointer; transition: background .12s;
 }
 .sk-need:hover { background: oklch(0.895 0.04 var(--h)); }

@@ -9,7 +9,7 @@
 .ex2-notes > * { break-inside: avoid; margin-bottom: 16px; }
 @media (min-width: 640px) { .ex2-notes { column-count: 2; } }
 @media (min-width: 1100px) { .ex2-notes { column-count: 3; } }
-.ex2-warm-note { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; padding: 20px 20px 16px 22px; border-radius: 20px; }
+.ex2-warm-note { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; padding: 20px 20px 16px 22px; border-radius: var(--r-16); }
 .ex2-warm-text { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 1.4; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty; }
 .ex2-warm-meta { display: flex; align-items: center; gap: 10px; }
 .ex2-warm-meta > .pp-art { flex: none; }
