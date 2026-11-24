@@ -33,7 +33,7 @@ export function NameSection({ value, onChange, displayName, onNameChanged, onSav
           </button>
         )}
       </div>
-      {error && <div role="alert" className="st-err">{tr('Не удалось сохранить имя', 'Не удалось сохранить имя')}</div>}
+      {error && <div role="alert" className="st-err">Не удалось сохранить имя</div>}
     </SSection>
   );
 }

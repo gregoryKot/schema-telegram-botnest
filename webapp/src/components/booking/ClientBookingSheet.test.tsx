@@ -110,7 +110,7 @@ describe('ClientBookingSheet', () => {
     renderSheet();
     fireEvent.click(await screen.findByRole('button', { name: '16:00' }));
     fireEvent.click(screen.getByRole('button', { name: 'Записаться на 16:00' }));
-    expect((await screen.findByRole('heading', { level: 2 })).textContent).toBe('Записано: Завтра, 16:00');
+    expect((await screen.findByRole('heading', { level: 2 })).textContent).toBe('Записано: Завтра · 16:00');
     expect(screen.queryByRole('link', { name: 'Перейти к оплате' })).toBeNull();
   });
 
