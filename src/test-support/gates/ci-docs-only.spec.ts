@@ -16,7 +16,15 @@ function docsOnly(files: string[], event = 'pull_request'): string {
   const git = (...a: string[]) => {
     const r = spawnSync(
       'git',
-      ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', '-c', 'commit.gpgsign=false', ...a],
+      [
+        '-c',
+        'user.name=t',
+        '-c',
+        'user.email=t@example.invalid',
+        '-c',
+        'commit.gpgsign=false',
+        ...a,
+      ],
       { cwd: dir, encoding: 'utf8' },
     );
     if (r.status !== 0) throw new Error(r.stderr);
@@ -45,7 +53,12 @@ function docsOnly(files: string[], event = 'pull_request'): string {
 describe('ci-docs-only.mjs', () => {
   it('только документы — лёгкий круг', () => {
     expect(
-      docsOnly(['docs/BACKLOG.md', 'README.md', '.claude/rules/docs.md', 'docs/open/x.md']),
+      docsOnly([
+        'docs/BACKLOG.md',
+        'README.md',
+        '.claude/rules/docs.md',
+        'docs/open/x.md',
+      ]),
     ).toBe('docs_only=true');
   });
   it.each([
@@ -65,13 +78,22 @@ describe('ci-docs-only.mjs', () => {
 });
 
 const JOBS = [
-  'backend', 'docker', 'migrations', 'perf', 'webapp', 'webapp-tz',
-  'shared', 'eslint', 'browser-smoke', 'mutation-changed',
+  'backend',
+  'docker',
+  'migrations',
+  'perf',
+  'webapp',
+  'webapp-tz',
+  'shared',
+  'eslint',
+  'browser-smoke',
+  'mutation-changed',
 ];
-const GUARD = "steps.scope.outputs.docs_only != 'true'";
 
 describe('ci.yml: тяжёлые джобы пропускают шаги, не джобу', () => {
-  const blocks = jobBlocks(readFileSync(join(process.cwd(), '.github/workflows/ci.yml'), 'utf8'));
+  const blocks = jobBlocks(
+    readFileSync(join(process.cwd(), '.github/workflows/ci.yml'), 'utf8'),
+  );
 
   it.each(JOBS)('%s: шаг scope и охрана каждого шага после него', (job) => {
     const body = blocks[job];
