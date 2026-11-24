@@ -25,6 +25,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'first_session',
     'complaint_to_mode',
     'story_as_mode_signal',
+    'taboo_topics',
+    'sexuality_and_modes',
     'history_interview',
     'case_conceptualization',
     'coping_style_in_session',
