@@ -27,6 +27,7 @@ const texts = {
     modeId === 'vulnerable_child'
       ? [{ id: 'abandonment', name: 'Покинутость' }]
       : [],
+  modeConcernLinks: () => [{ id: 'bpd', name: 'ПРЛ' }],
 };
 const ty = (t: string) => t;
 
@@ -63,12 +64,14 @@ describe('resolveSchemaGuide', () => {
           }
         : null,
     buildTechniqueGuides: () => FIXTURE_TECHNIQUES,
+    schemaConcernLinks: () => [{ id: 'bpd', name: 'ПРЛ' }],
   };
 
   it('раздел схемы с «общим для домена»; техники из библиотеки в порядке раздела', () => {
     const view = resolveSchemaGuide(schemaTexts, ty, 'abandonment');
     expect(view?.guide.goal).toBe(FIXTURE_SCHEMA_GUIDE.goal);
     expect(view?.domainNote).toBe(FIXTURE_DOMAIN_NOTE);
+    expect(view?.concerns).toEqual([{ id: 'bpd', name: 'ПРЛ' }]);
     expect(view?.techniques.map((t) => t.id)).toEqual([
       'imagery_rescripting',
       'chairwork',

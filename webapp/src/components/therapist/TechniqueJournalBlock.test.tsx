@@ -20,6 +20,8 @@ vi.mock('../../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
   return {
     modeSchemaLinks: () => [],
+    modeConcernLinks: () => [],
+    schemaConcernLinks: () => [],
     techniqueUsageGroups: () => [],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
     techniqueGuide: (_tr: unknown, id: string) => f.FIXTURE_TECHNIQUES.find((t) => t.id === id) ?? null,

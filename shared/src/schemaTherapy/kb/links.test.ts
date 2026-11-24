@@ -3,10 +3,35 @@
 import { describe, expect, it } from 'vitest';
 import { danglingEdges, gapProblems, KB_KIND_LABEL } from './check';
 import { MODES_WITHOUT_SCHEMA, TECHNIQUES_WITHOUT_SECTION } from './gaps';
+import { concernsOfMode, concernsOfSchema } from './concernLinks';
 import { KB_LINKS, schemasOfMode, usagesOfTechnique } from './links';
 import { kbIds } from './tables';
-import { buildModeGuides, buildSchemaGuides } from '../guide/index';
+import { buildConcernGuides, buildModeGuides, buildSchemaGuides } from '../guide/index';
 import type { TechniqueId, Tr } from '../guide/types';
+
+describe('запросы: двусторонняя связь режима и схемы со статьёй (№4)', () => {
+  const concerns = buildConcernGuides((t) => t);
+
+  it('каждый режим и схема статьи видят её в своих «Запросах»', () => {
+    for (const c of concerns) {
+      for (const m of c.modeIds ?? []) expect(concernsOfMode(m)).toContain(c.id);
+      for (const s of c.schemaIds ?? []) expect(concernsOfSchema(s)).toContain(c.id);
+    }
+  });
+
+  it('«Запросы» режима и схемы не содержат статьи, которая их не называет', () => {
+    for (const m of buildModeGuides((t) => t)) {
+      for (const id of concernsOfMode(m.modeId)) {
+        expect(concerns.find((c) => c.id === id)?.modeIds).toContain(m.modeId);
+      }
+    }
+    for (const s of buildSchemaGuides((t) => t)) {
+      for (const id of concernsOfSchema(s.schemaId)) {
+        expect(concerns.find((c) => c.id === id)?.schemaIds).toContain(s.schemaId);
+      }
+    }
+  });
+});
 
 describe('рёбра справочника (kb/links.ts)', () => {
   it.each(KB_LINKS.map((l) => [`${l.from}.${l.field} → ${l.to}`, l]))(

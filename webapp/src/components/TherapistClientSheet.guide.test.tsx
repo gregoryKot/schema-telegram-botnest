@@ -25,6 +25,8 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
   return {
     modeSchemaLinks: () => [],
+    modeConcernLinks: () => [],
+    schemaConcernLinks: () => [],
     techniqueUsageGroups: () => [],
     modeGuide: (_tr: unknown, id: string) => (id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null),
     schemaGuide: (_tr: unknown, id: string) =>
