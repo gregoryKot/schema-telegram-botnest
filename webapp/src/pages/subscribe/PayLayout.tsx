@@ -50,9 +50,9 @@ export function PaySkeleton({ shape }: { shape: 'form' | 'manage' }) {
     <div className="ap-skel" role="status" aria-label="Загружаем…" aria-busy="true">
       <PayLayout hero={hero} home={false}>
         {shape === 'form'
-          ? <><div className="ap-plans"><Skeleton height={104} radius={18} /><Skeleton height={104} radius={18} /></div><Skeleton height={48} radius={14} /></>
+          ? <><div className="ap-plans"><Skeleton height={104} radius={16} /><Skeleton height={104} radius={16} /></div><Skeleton height={48} radius={14} /></>
           : <Skeleton height={52} radius={14} />}
-        <Skeleton height={52} radius={26} />
+        <Skeleton height={52} radius={12} />
       </PayLayout>
     </div>
   );

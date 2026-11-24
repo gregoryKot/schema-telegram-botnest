@@ -16,7 +16,7 @@ export function WheelSkeleton() {
           <Skeleton width={40} height={26} />
         </div>
       ))}
-      <Skeleton width={180} height={44} radius={22} />
+      <Skeleton width={180} height={44} radius={12} />
     </div>
   );
 }

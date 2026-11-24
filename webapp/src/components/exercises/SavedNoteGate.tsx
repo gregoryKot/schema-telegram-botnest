@@ -17,7 +17,7 @@ function FlashcardSkeleton() {
       <Skeleton width={140} height={12} />
       <Skeleton width="78%" height={28} />
       <Skeleton height={132} radius={14} />
-      <Skeleton width={160} height={44} radius={22} style={{ marginLeft: 'auto' }} />
+      <Skeleton width={160} height={44} radius={12} style={{ marginLeft: 'auto' }} />
     </div>
   );
 }
