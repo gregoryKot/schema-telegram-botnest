@@ -91,12 +91,10 @@
 /* Полоса вкладок (ClientTabs, useTabsBar): за краем, где остались вкладки, — маска-градиент (не размытие),
    классы ставит прокрутка. position — чтобы offsetLeft вкладки считался от полосы. Счётчик — тихий: цифра
    цветом подписи, без плашки. */
-.tk-tabs, .tk-fade-bar { position: relative; --tk-fade: 40px; }
-/* Тот же механизм у фильтров-полос .tk-fade-bar: «Записи клиента» (ClientNotesTab, r1) и статусы списка клиентов
-   (ClientListView, r2: на 320 «Офл…» обрезалось без маски). */
-.tk-tabs.is-fade-end, .tk-fade-bar.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start, .tk-fade-bar.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start.is-fade-end, .tk-fade-bar.is-fade-start.is-fade-end {
+.tk-tabs { position: relative; --tk-fade: 40px; }
+.tk-tabs.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start.is-fade-end {
   -webkit-mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
   mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
 }
@@ -130,7 +128,7 @@
    подписи, поля листа и строк меньше; строка схемы ≤56px. Вид SignGroup клиента не меняется (правило — здесь). */
 @container tk-groups (max-width: 519px) {
   .tk-groups { gap: 8px; }
-  .tk-groups .sg-group { padding: 8px 10px 10px; border-radius: 18px; }
+  .tk-groups .sg-group { padding: 8px 10px 10px; border-radius: var(--r-16); }
   .tk-groups .sg-head { margin: 2px 2px 6px; gap: 10px; }
   .tk-groups .sg-sign, .tk-groups .sg-sign .pp-art--square { width: 44px; }
   .tk-groups .tk-item { padding: 8px 12px; }
@@ -200,7 +198,7 @@
 }
 /* «Приложение» офлайн-клиента (OfflineInviteCard) — белый лист с тенью-слоем неба (встречи терапевта), как
    заметка и записи, а не белая карточка с серой рамкой. */
-.tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 0 0 0 1px var(--panel-line); }
+.tk-side > .ds-card { border-color: transparent; border-radius: var(--r-16); box-shadow: 0 0 0 1px var(--panel-line); }
 /* Трекер — лист соломы: индекс Literata --text (без светофора), столбики одними чернилами, потребности — белым
    списком со знаком и цветом данных своей потребности (--need-ink, --need-text из inkVars). */
 .tk-track { display: flex; flex-direction: column; gap: 18px; padding: 18px 20px 20px; }

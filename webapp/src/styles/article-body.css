@@ -12,7 +12,7 @@
 .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--paper-sunk); line-height: 1.6; }
 .article-content a { color: var(--accent); }
 /* ── Inline diagrams ── */
-.article-content figure.dg { margin: 32px 0; padding: 24px 20px 18px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 20px; }
+.article-content figure.dg { margin: 32px 0; padding: 24px 20px 18px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: var(--r-16); }
 .article-content figure.dg svg { display: block; width: 100%; height: auto; }
 .article-content figure.dg figcaption { margin-top: 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); text-align: center; }
 .article-content figure.dg figcaption b { color: var(--text); font-weight: 600; }

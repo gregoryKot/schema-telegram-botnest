@@ -21,11 +21,10 @@ describe('формы терапевта и сопутствующие экран
     const src = css('therapist-tabs.css');
     for (const c of ['.tb-date-pill', '.tb-ysq-empty', '.tb-seg-n', '.tb-filter']) expect(src).not.toContain(c);
   });
-  it('sheet-modemap.css: нет вкладок-карточек, значка пустого состояния, resize и min-height: 32px у сегмента', () => {
+  it('sheet-modemap.css: нет вкладок-карточек, значка пустого состояния, resize и фиксированной высоты у ряда выбора вида', () => {
     const src = css('sheet-modemap.css');
     for (const c of ['.mm2-map-x', '.mm2-empty-ico', 'resize: vertical']) expect(src).not.toContain(c);
-    expect(rule(src, '.mm2-seg .ds-seg-btn')).toBe('');
-    expect(src).not.toMatch(/\.mm2-seg[^{]*\{[^}]*min-height: 32px/);
+    expect(src).not.toMatch(/\.mm2-(seg|chips)[^{]*\{[^}]*(min-height: (3[0-5]|[12]?\d)px|height: \d)/);
   });
   it('auth-pay.css: нет .ap-amount и .ap-input', () => {
     const src = css('auth-pay.css');
@@ -40,9 +39,9 @@ describe('формы терапевта и сопутствующие экран
   it('sheet-tasks.css: нет .sk-cmd-input', () => {
     expect(css('sheet-tasks.css')).not.toContain('.sk-cmd-input');
   });
-  it('command-palette.css: панель r28 и calc(100vw - 32px), строка r14, у подписи нет своего кегля', () => {
+  it('command-palette.css: панель r16 и calc(100vw - 32px), строка r14, у подписи нет своего кегля', () => {
     const src = css('command-palette.css');
-    expect(rule(src, '.cmd-panel')).toMatch(/border-radius:\s*28px/);
+    expect(rule(src, '.cmd-panel')).toMatch(/border-radius:\s*var\(--r-16\)/);
     expect(rule(src, '.cmd-panel')).toContain('max-width: calc(100vw - 32px)');
     expect(rule(src, '.cmd-row')).toMatch(/border-radius:\s*14px/);
     expect(rule(src, '.cmd-sub')).not.toContain('font-size');

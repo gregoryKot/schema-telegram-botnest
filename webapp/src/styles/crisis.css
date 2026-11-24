@@ -51,7 +51,7 @@
 }
 .cr-row + .cr-row::before { content: ''; position: absolute; top: 0; left: 0; right: 16px; border-top: 1px solid var(--panel-line); }
 .cr-row:hover { background: oklch(0.895 0.04 var(--h)); }
-.cr-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 20px; }
+.cr-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: var(--r-16); }
 .cr-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cr-row .ds-list-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .cr-row .ds-sub { color: var(--text-sub); }

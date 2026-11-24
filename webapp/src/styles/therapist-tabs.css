@@ -160,8 +160,6 @@
 .tb-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-sub); }
 
 /* ── Записи клиента ───────────────────────────────────────────────────── */
-/* Фильтр стоит первым в колонке ds-page: на ноутбуке — по ширине кнопок, на
-   телефоне — во всю ширину одной строкой с прокруткой и маской у края (useTabsBar, ревью r1). */
 /* Один лист на список (r2) тоном дневника, как «Последние записи» «Обзора»; запись — строка внутри через тонкую линию:
    знак типа · заголовок и тип тихой подписью · дата; текст и поля — под колонкой заголовка. */
 .tb-notes { display: flex; flex-direction: column; }
@@ -186,7 +184,7 @@
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tb-tab-h, .tb-tab-title--desk { display: none; }
   .tb-tab-title--art { align-items: flex-start; }
-  .tb-notes-head { display: contents; } /* фильтр — прямой ребёнок страницы, как без заголовка */
+  .tb-notes-head { display: contents; } /* вкладки типа — прямой ребёнок страницы, как без заголовка */
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
   .tb-tl-dot { width: 44px; height: 44px; font-size: 18px; }
   .tb-ysq-card { padding: 4px 16px; }

@@ -26,7 +26,7 @@
    два квадрата цветной бумаги, картинки — примитивы pp-* из styles/paper.css и
    components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
 .ct-home { display: flex; flex-direction: column; gap: 20px; }
-.ct-tile { border-radius: 20px; }
+.ct-tile { border-radius: var(--r-16); }
 /* Полоски дня (TrackerBlock: SignScene со Strokes values). Телефон и планшет — эталон владельца: знак
    плоско, без тени-вырезки, 112 (на телефоне 96). Пустое место (оценки нет) — бледный тон своей
    потребности с кромкой цветом бумаги, без тени: одно правило с карточкой дня в меню и силуэтом
@@ -86,7 +86,7 @@
   .ct-head-top { justify-content: flex-start; gap: 20px; }
   .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
   .ct-main.pp-block {
-    justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: 28px;
+    justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: var(--r-16);
     background: oklch(0.915 0.03 var(--h)); transition: background .12s; --strokes-edge: oklch(0.915 0.03 var(--h));
   }
   .ct-main.pp-block:hover { background: oklch(0.895 0.04 var(--h)); }
@@ -102,7 +102,7 @@
      названия, знак крупно в нижнем правом углу, мета — внизу слева (строка ног раскрыта в сетку). */
   .ct-home .pp-square {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
-    column-gap: 20px; row-gap: 8px; min-height: 0; padding: 28px 30px 26px 32px; border-radius: 28px;
+    column-gap: 20px; row-gap: 8px; min-height: 0; padding: 28px 30px 26px 32px; border-radius: var(--r-16);
   }
   .ct-home .pp-square > .pp-title { grid-column: 1 / -1; grid-row: 1; padding-right: 40px; }
   .ct-home .pp-square > .pp-text { grid-column: 1 / -1; grid-row: 2; }

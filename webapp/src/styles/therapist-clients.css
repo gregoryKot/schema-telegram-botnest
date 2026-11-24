@@ -7,7 +7,11 @@
 .tc-hero-btn { align-self: flex-start; }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .tc-search { width: 240px; max-width: 100%; }
-.tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.tc-modes { display: flex; gap: 12px 24px; flex-wrap: wrap; align-items: center; }
+/* На компьютере вкладки по содержимому, не на всю строку; на телефоне — во всю ширину (правило ниже). */
+.tc-modes > .lt { flex: 0 0 auto; }
+.tc-modes > .lt .lt-tab { padding: 0 14px; }
+.tc-filter { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Знак блока (приглашения, сверка, пустая доска) — строчный 44×24 у заголовка. */
 .tc-block-sign { display: flex; flex: none; }
 
@@ -27,7 +31,7 @@
 .tc-add-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--text-sub); }
 .pa-alert.tc-add-err { grid-column: 1 / -1; } /* сбой «Создать» — тихий лист соломы на всю ширину формы */
 /* Итог — лист неба терапевта (pp-paper), без тени: он уже бумага, не лист на бумаге. */
-.pp-paper.tc-add--done { background: oklch(0.915 0.03 var(--h)); box-shadow: none; border-radius: 22px; }
+.pp-paper.tc-add--done { background: oklch(0.915 0.03 var(--h)); box-shadow: none; border-radius: var(--r-16); }
 .tc-add-done { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .tc-add-done-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .tc-add-done-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -92,7 +96,7 @@
   grid-template-columns: repeat(auto-fit, minmax(clamp(calc(33.333% - 14px), (840px - 100%) * 999, 100%), 1fr));
 }
 /* Колонка — бумага своего статуса (солома / шалфей с Check / персик), карточки — светлые листы. */
-.tc-kcol { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 12px; border-radius: 20px; min-width: 0; }
+.tc-kcol { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 12px; border-radius: var(--r-16); min-width: 0; }
 .tc-kcol-head { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 6px 4px; }
 .tc-kcol-head .ds-label { color: var(--text); }
 .tc-kcol-count { font: 600 13px/1 var(--sans); color: var(--text-sub); }
@@ -112,10 +116,9 @@
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tc-count { font-size: 24px; }
-  /* «Клиенты/Задания» — равные доли на всю ширину и на доске: без колонки фильтров .tc-modes сжимался
-     до содержимого, и «Задания» обрезались («Клиент…» на 390, шире экрана на 320/360). */
+  /* «Клиенты/Задания» — равные доли на всю ширину и на доске. */
   .tc-modes { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
-  .tc-modes > .ds-seg--full > .ds-seg-btn { text-overflow: clip; }
+  .tc-modes > .lt { flex: 1 1 auto; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .tc-search { width: 100%; }
   /* Компактная карточка: было 2–3 клиента на экран и 8345px прокрутки у 30

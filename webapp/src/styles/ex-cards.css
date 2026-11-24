@@ -13,7 +13,7 @@
    Здорового Взрослого — вставкой мха (HealthyVoice) со сдвигом в другую сторону; хвостики реплик —
    ромб той же бумаги, без тени и размытия. ── */
 .ex2-dialog { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
-.ex2-voice { position: relative; margin: 0 40px 0 0; padding: 16px 64px 18px 20px; border-radius: 20px; }
+.ex2-voice { position: relative; margin: 0 40px 0 0; padding: 16px 64px 18px 20px; border-radius: var(--r-16); }
 .ex2-voice::after, .ex2-dialog-reply.pa-voice::before {
   content: ''; position: absolute; width: 16px; height: 16px; border-radius: 3px; background: inherit; transform: rotate(45deg);
 }
@@ -21,13 +21,13 @@
 .ex2-voice-label { display: block; margin-bottom: 8px; color: var(--text-sub); }
 .ex2-voice-text { margin: 0; font: italic 400 21px/1.35 var(--serif); color: var(--text); overflow-wrap: anywhere; text-wrap: pretty; }
 .ex2-voice-sign { position: absolute; top: 16px; right: 16px; display: flex; }
-.ex2-dialog-reply.pa-voice { position: relative; margin-left: 40px; padding: 16px 18px 18px 16px; border-radius: 20px; }
+.ex2-dialog-reply.pa-voice { position: relative; margin-left: 40px; padding: 16px 18px 18px 16px; border-radius: var(--r-16); }
 .ex2-dialog-reply.pa-voice::before { right: 30px; top: -6px; }
 .ex2-dialog-reply .pa-voice-text { font-size: 18px; line-height: 1.4; }
 
 /* ── Портрет режима (ModePortrait): диалог, затем шесть примет тихим списком на белом листе ── */
 .ex2-portrait { container: ex2-portrait / inline-size; }
-.ex2-portrait-facts { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-radius: 18px; background: var(--surface); overflow: hidden; }
+.ex2-portrait-facts { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-radius: var(--r-16); background: var(--surface); overflow: hidden; }
 .ex2-portrait-fact { padding: 14px 18px 16px; border-top: 1px solid var(--paper-sunk); }
 .ex2-portrait-fact:first-child { border-top: 0; }
 .ex2-portrait-fact > dt { margin-bottom: 6px; color: var(--text-sub); }
@@ -40,7 +40,7 @@
 .ds-btn.ex2-portrait-cta { margin-top: 22px; width: 100%; min-height: 48px; }
 
 /* ── Итог карточки (CardDone, рамка ExDonePage): справа (на телефоне — под листом) диалог и написанное тихим списком ── */
-.ex2-answers { display: flex; flex-direction: column; border-radius: 18px; background: var(--surface); overflow: hidden; }
+.ex2-answers { display: flex; flex-direction: column; border-radius: var(--r-16); background: var(--surface); overflow: hidden; }
 .ex2-answer { padding: 14px 18px 16px; }
 .ex2-answer + .ex2-answer { border-top: 1px solid var(--paper-sunk); }
 .ex2-answer-label { margin-bottom: 6px; color: var(--text-sub); }
