@@ -38,7 +38,7 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 14'],
-    note: 'заметка complex_trauma «Для терапевта» — только про расспрос',
+    note: 'заметка complex_trauma «Для терапевта» — только про расспрос; порядок воспоминаний и блок из 12 сессий — ещё [Хис, гл. 7]',
   },
   {
     id: 'eating_disorders',
