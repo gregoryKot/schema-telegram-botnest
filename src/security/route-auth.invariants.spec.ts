@@ -157,7 +157,9 @@ describe('трипваер: каждый контроллер защищён (gu
     expect(Object.keys(PUBLIC_BY_DESIGN).length).toBeLessThanOrEqual(13);
     // 4 → 5: +booking-calendar-admin.controller.ts — контракт «Календарь
     // слотов в админке», тот же x-admin-key, обоснование в ADMIN_KEY_GATED.
-    expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(5);
+    // 5 → 6: +analytics-admin.controller.ts — вкладка «Аналитика» админки,
+    // тот же x-admin-key на каждой ручке, только чтение счётчиков.
+    expect(ADMIN_KEY_GATED.size).toBeLessThanOrEqual(6);
     // 14 (2026-10): реестр только назвал уже существующие анонимные методы
     // guarded-контроллеров (вход, OAuth-колбэки, восстановление, refresh,
     // logout, poll тикета). Может только сокращаться.
