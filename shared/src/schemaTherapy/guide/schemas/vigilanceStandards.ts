@@ -36,7 +36,11 @@ export const buildUnrelentingStandardsGuide = (tr: Tr): SchemaGuide => ({
     'imagery_rescripting',
     'pattern_breaking',
   ],
-  moreTechniques: ['positive_data_log', 'behavioral_experiment'],
+  moreTechniques: [
+    'positive_data_log',
+    'behavioral_experiment',
+    'probe_phrases',
+  ],
   betweenSessions: [
     {
       kind: 'task',
