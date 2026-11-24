@@ -41,6 +41,11 @@ const tap = block(css, TAP_MEDIA);
 const desk = block(css, `@media ${DESKTOP_MEDIA}`);
 const top = css.replace(phone, '').replace(tap, '').replace(desk, '');
 
+/** Файлы, где остался сегмент-капсула (класс ds-seg* или компонент FadeSeg). */
+function segLeftovers(files: [string, string][]): string[] {
+  return files.filter(([, src]) => /\bds-seg|\bFadeSeg\b/.test(src)).map(([f]) => f);
+}
+
 /** Сколько правил вне медиа-блоков объявляют ровно селектор `sel`. */
 function declaredTimes(sel: string): number {
   return [...top.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
@@ -152,12 +157,11 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('font-weight: 600');
   });
 
-  it('на телефоне и под пальцем: иконочная кнопка 44×44, сегмент 44 высотой, малая кнопка 44 (вне блока 40); ds-h1 32 — только телефон', () => {
+  it('на телефоне и под пальцем: иконочная кнопка 44×44, малая кнопка 44 (вне блока 40); ds-h1 32 — только телефон', () => {
     expect(phone).not.toBe('');
     expect(tap).not.toBe('');
     expect(decls(tap, '.ds-btn--icon')).toContain('width: 44px');
     expect(decls(tap, '.ds-btn--icon')).toContain('height: 44px');
-    expect(decls(tap, '.ds-seg-btn')).toContain('min-height: 44px');
     expect(decls(phone, '.ds-h1')).toContain('font-size: 32px');
     expect(decls(tap, '.ds-btn--sm')).toContain('height: 44px');
     expect(decls(top, '.ds-btn--sm')).toContain('height: 40px');
@@ -171,7 +175,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(decls(tap, '.ds-tab')).toContain('min-width: 44px'); // короткая вкладка «Обзор» была 42 в ширину
     expect(decls(tap, '.ds-tab')).toContain('flex-shrink: 0'); // иначе min-width снимает min-width: auto и лента сжимает вкладки
     expect(decls(top, '.ds-tab')).not.toContain('min-height');
-    for (const sel of ['.ds-tab', '.ds-link', '.ds-seg-btn', '.ds-btn--sm']) {
+    for (const sel of ['.ds-tab', '.ds-link', '.ds-btn--sm']) {
       expect(decls(tap, sel), sel).toMatch(/(min-)?height: 44px/);
     }
   });
@@ -187,7 +191,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
   it('тап-цели живут в одном блоке: в блоке раскладки телефона их нет, второго блока pointer: coarse нет', () => {
     expect(css.split(TAP_MEDIA)).toHaveLength(2);
     expect(css.match(/@media \(pointer: coarse\)/g)).toHaveLength(1);
-    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-seg-btn', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link', '.ds-menu-item']) {
+    for (const sel of ['.ds-tab', '.ds-btn--icon', '.ds-btn--sm', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-link', '.ds-menu-item']) {
       expect(decls(phone, sel), sel).toBe('');
     }
   });
@@ -214,55 +218,26 @@ describe('cabinet.css: поправки координатора волны 1 (#
 
 describe('cabinet.css: примитивы волны 2 (#906)', () => {
   const WAVE2 = [
-    '.ds-seg--full', '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-list-body',
+    '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-list-body',
     '.ds-list-row--nav', '.ds-list-row--inset', '.ds-card--nav', '.ds-card--crisis',
   ];
   it.each(WAVE2)('%s объявлен один раз вне медиа и красится токенами', (cls) => {
     expect(declaredTimes(cls)).toBe(1);
     expect(decls(css, cls)).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
-  it('сегмент: --full равные кнопки, --scroll только на телефоне с маской, счётчик без пилюли', () => {
-    expect(decls(top, '.ds-seg--full')).toContain('display: flex');
-    expect(decls(phone, '.ds-seg--full')).toContain('width: 100%'); // растяжение — только телефон
-    expect(decls(desk, '.ds-seg--full')).toContain('display: inline-flex'); // на компьютере по содержимому
-    expect(decls(desk, '.ds-seg--full > .ds-seg-btn')).toContain('min-width: max-content'); // и не уже подписи: basis 0 резал её многоточием
-    expect(decls(top, '.ds-seg--full')).not.toContain('width');
-    expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
-    expect(top).not.toContain('.ds-seg--scroll');
-    expect(decls(phone, '.ds-seg--scroll')).not.toContain('mask-image');
-    expect(decls(top, '.ds-seg-btn .ds-count')).not.toContain('opacity');
-    expect(decls(phone, '.ds-seg--scroll > .ds-seg-btn')).toContain('flex: 0 0 auto');
-    const count = decls(top, '.ds-seg-btn .ds-count');
-    expect(count).toContain('background: none');
-    expect(count).toContain('color: inherit');
-    expect(decls(top, '.ds-page > .ds-seg')).toContain('align-self: flex-start');
-  });
-  // Голый ds-seg на телефоне стоит по ширине кнопок рядом с растянутыми соседями
-  // («Клиенты/Задания» над фильтром во всю ширину, «День/Неделя» в истории).
-  it('сегмент в разметке всегда с модификатором --full или --scroll', () => {
-    const roots = [join(__dirname, '..'), join(__dirname, '..', '..', '..', 'shared', 'src')];
-    const bare: string[] = [];
-    let seen = 0;
-    for (const root of roots) {
-      for (const f of readdirSync(root, { recursive: true }) as string[]) {
-        if (!f.endsWith('.tsx') || f.includes('.test.')) continue;
-        for (const [, cls] of readFileSync(join(root, f), 'utf8').matchAll(/['"`]([^'"`\n]*)['"`]/g)) {
-          if (!cls.split(/\s+/).includes('ds-seg')) continue;
-          seen++;
-          if (!/\bds-seg--(full|scroll)\b/.test(cls)) bare.push(`${f}: "${cls}"`);
-        }
-      }
-    }
-    expect(seen).toBeGreaterThanOrEqual(1);
-    expect(bare).toEqual([]);
-  });
-  // Серая капсула-сегмент (iOS) уходит из сайта: разделы — вкладки на линии (LineTabs), выбор значения — чипы
-  // (#1619). Число файлов с ds-seg только падает; дошло до нуля — правила .ds-seg из cabinet.css удаляются.
-  it('файлов с ds-seg не больше прежнего (храповик, #1619)', () => {
+  // Серая капсула-сегмент (iOS) ушла из сайта (#1619): разделы — вкладки на линии (LineTabs), выбор значения — чипы.
+  it('сегмента ds-seg и FadeSeg в исходниках сайта и shared нет', () => {
     const roots = [join(__dirname, '..'), join(__dirname, '..', '..', '..', 'shared', 'src')];
     const files = roots.flatMap((root) => (readdirSync(root, { recursive: true }) as string[])
-      .filter((f) => /\.tsx?$/.test(f) && !f.includes('.test.') && readFileSync(join(root, f), 'utf8').includes('ds-seg')));
-    expect(files.length).toBeLessThanOrEqual(10);
+      .filter((f) => /\.(tsx?|css)$/.test(f) && !f.includes('.test.'))
+      .map((f): [string, string] => [f, readFileSync(join(root, f), 'utf8')]));
+    expect(files.length).toBeGreaterThan(100);
+    expect(segLeftovers(files)).toEqual([]);
+  });
+  it('запрет сегмента ловит класс и компонент, соседние имена не задевает', () => {
+    expect(segLeftovers([['a.tsx', '<div className="ds-seg ds-seg--full">'], ['b.css', '.x .ds-seg-btn {}'], ['c.tsx', '<FadeSeg />']]))
+      .toEqual(['a.tsx', 'b.css', 'c.tsx']);
+    expect(segLeftovers([['d.tsx', '<div className="lt-strip mm2-seg kids-seg">'], ['e.tsx', 'FadeSegment']])).toEqual([]);
   });
   it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');

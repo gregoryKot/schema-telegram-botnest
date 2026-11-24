@@ -17,6 +17,7 @@ import { TelegramNotifyActionsService } from './telegram.notify-actions.service'
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
 import { TelegramQuizService } from './telegram.quiz.service';
 import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
+import { AnalyticsAdminController } from './analytics-admin.controller';
 
 describe('TelegramModule — метаданные @Module', () => {
   it('экспортирует TelegramService, TelegramScheduleService и бота (нужны другим модулям)', () => {
@@ -31,12 +32,15 @@ describe('TelegramModule — метаданные @Module', () => {
     ]);
   });
 
-  it('регистрирует HealthyAdultAdminController как единственный контроллер', () => {
+  it('регистрирует только админские контроллеры (фразы канала, аналитика)', () => {
     const controllers = Reflect.getMetadata(
       MODULE_METADATA.CONTROLLERS,
       TelegramModule,
     );
-    expect(controllers).toEqual([HealthyAdultAdminController]);
+    expect(controllers).toEqual([
+      HealthyAdultAdminController,
+      AnalyticsAdminController,
+    ]);
   });
 
   it('providers содержит все telegram-сервисы бота (не забыт ни один при регистрации)', () => {
