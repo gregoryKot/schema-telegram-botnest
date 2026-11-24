@@ -27,7 +27,7 @@ const NOTE_IDS = [
   'therapist_wellbeing', 'group_techniques', 'suitability', 'imagery_avoidance', 'life_decisions',
   'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps',
   'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation', 'group_plan_vs_mode',
-  'group_mode_roleplay',
+  'group_mode_roleplay', 'coping_style_in_session', 'mode_family_by_feeling', 'schema_vs_mode_vs_belief',
 ];
 
 describe('знаки листов подсказок', () => {
