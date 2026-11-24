@@ -55,5 +55,6 @@ describe('LineTabs', () => {
     expect(stepTab(['a', 'b'], 'b', 'ArrowRight')).toBe('a');
     expect(stepTab(['a', 'b'], 'a', 'ArrowLeft')).toBe('b');
     expect(stepTab(['a', 'b'], 'a', 'Tab')).toBeNull();
+    expect(stepTab([], 'a', 'ArrowRight')).toBeNull();
   });
 });

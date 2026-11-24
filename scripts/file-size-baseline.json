@@ -2534,7 +2534,7 @@
   "webapp/src/components/landing-kit-hooks.ts": 66,
   "webapp/src/components/landing-kit.tsx": 58,
   "webapp/src/components/LineTabs.tsx": 72,
-  "webapp/src/components/lineTabsModel.ts": 10,
+  "webapp/src/components/lineTabsModel.ts": 11,
   "webapp/src/components/MetrikaTracker.tsx": 28,
   "webapp/src/components/modeMap/autoLayout.ts": 52,
   "webapp/src/components/modeMap/CanvasEmpty.tsx": 17,
