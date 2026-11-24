@@ -9,7 +9,7 @@ afterEach(() => cleanup());
 function renderField(over: Partial<React.ComponentProps<typeof ContactChannelField>> = {}) {
   const props = {
     id: 'cf', channel: 'telegram' as ContactChannel, onChannelChange: vi.fn(), value: '', onChange: vi.fn(),
-    labelStyle: {}, fieldStyle: {}, ...over,
+    labelStyle: {}, ...over,
   };
   const view = render(<ContactChannelField {...props} />);
   return { ...view, props };
