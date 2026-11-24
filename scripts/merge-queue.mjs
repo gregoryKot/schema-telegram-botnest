@@ -5,7 +5,8 @@
 //
 // За прогон — один PR. Очередь — открытые PR в main с auto-merge, не черновики,
 // без `do-not-merge`, старые первыми (правила — merge-queue-plan.mjs):
-//  - свежий PR с прогоном самой очереди «в полёте» — его ждут; чужие идущие проверки не держат;
+//  - свежий PR с идущим CI (чей пуш — не важно) «в полёте» — его ждут;
+//  - отменённые обязательные проверки — как отставание: update-branch перезапускает CI;
 //  - иначе первый отставший (зелёные по готовности, затем с идущим прогоном)
 //    получает update-branch; конфликт сводит merge-queue-conflict.mjs, не свёл —
 //    комментарий автору и метка, следующий по порядку; красный чинит агент.
@@ -20,7 +21,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { client } from './merge-queue-api.mjs';
 import { CONFLICT_LABEL, resolveConflict } from './merge-queue-conflict.mjs';
-import { BOT, DEPENDABOT, checksState, planQueue, queueRuns, queuedPulls, requiredChecks, runsToApprove } from './merge-queue-plan.mjs';
+import { BOT, DEPENDABOT, checksState, planQueue, queuedPulls, requiredChecks, runsToApprove } from './merge-queue-plan.mjs';
 
 const POLLS = 18;
 const CI = '.github/workflows/ci.yml';
@@ -75,14 +76,12 @@ async function main() {
     const pr = { number: p.number, sha, branch: p.head.ref, flagged, author: p.user.login, behind, checks: checksState(required, runs) };
     // Автор свёл конфликт сам — метка больше не правда.
     if (flagged && behind === 0 && !dryRun) await call('DELETE', `${R}/issues/${p.number}/labels/${CONFLICT_LABEL}`);
-    if (behind === 0 && pr.checks.state === 'pending') {
-      const { workflow_runs: wf } = await get(`${R}/actions/runs?head_sha=${sha}&event=pull_request`);
-      pr.byQueue = queueRuns(wf, repo).length > 0;
-    }
     // Свежий PR без прогона: одобрение очереди могло не дойти в прошлый раз.
     if (behind === 0 && pr.checks.state === 'missing' && !dryRun && (await approve(sha)).approved) {
-      pr.checks = { state: 'pending', last: 0 };
-      pr.byQueue = true;
+      pr.checks = { state: 'pending', last: 0, since: Date.now() };
+    }
+    if (behind === 0 && pr.checks.state === 'cancelled') {
+      console.log(`::warning::#${p.number}: проверки отменены на свежей голове — перезапустить может только автор`);
     }
     console.log(`#${pr.number}: отстаёт на ${behind}, обязательные проверки — ${pr.checks.state}`);
     prs.push(pr);
@@ -109,6 +108,7 @@ async function main() {
     // Без прогона: у конфликта с main CI не стартует; иное «без прогона» чинит агент.
     if (p.checks.state === 'missing') {
       if (await resolve(p, false)) return;
+      console.log(`#${p.number}: без прогона и без конфликта — пропуск, чинит автор`);
       continue;
     }
     if (dryRun) return console.log(`dry-run: подтянул бы #${p.number}`);
