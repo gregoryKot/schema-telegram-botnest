@@ -90,7 +90,7 @@
 /* Компьютер (≥768): переход — акцентная стрелка «→» справа (как до волн), а не
    телефонный шеврон «›»; у строки активности стрелки не было. */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tt-session > .ds-chev:empty::before, .tt-attn > .ds-chev:empty::before { content: '→'; }
+  .tt-session > .ds-chev:empty::before, .tt-attn > .ds-chev:empty::before { content: '→'; width: auto; height: auto; background: none; -webkit-mask: none; mask: none; }
   .tt-session > .ds-chev, .tt-attn > .ds-chev { font-size: 18px; font-weight: 600; color: var(--accent); white-space: nowrap; }
   .tt-attn > .ds-chev { color: var(--warn-ink); }
   .tt-act > .ds-chev { display: none; }

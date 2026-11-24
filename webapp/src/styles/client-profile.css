@@ -220,7 +220,7 @@
 
 /* Компьютер: у секции достижений справа «→», как до волн; телефон — «›». */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cpf-sec > .ds-head-row .ds-chev:empty::before { content: '→'; }
+  .cpf-sec > .ds-head-row .ds-chev:empty::before { content: '→'; width: auto; height: auto; background: none; -webkit-mask: none; mask: none; }
 }
 
 /* «Активность» на компьютере (#925): клетка — квадрат 22px, сетка и подписи месяцев стоят у левого края в тех же
