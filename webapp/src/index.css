@@ -74,6 +74,7 @@
 }
 /* Чернила на всегда тёмных секциях визитки (DARK_BG, INK_ON_DARK в landing-kit-hooks.ts) — при любой теме. */
 :root { --on-dark: #eceae5; }
+:root { --dark-bg: #1c1916; }
 
 :root, html[data-theme="light"], .light-lock {
   /* .light-lock — поддерево, которое держит светлую тему при любом

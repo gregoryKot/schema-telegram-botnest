@@ -4,7 +4,6 @@ import type { CSSProperties } from 'react';
 // Non-component module — keeps LandingPage's component files Fast-Refresh clean.
 
 // ─── Design tokens (local to landing) ────────────────────────────────────────
-export const MOSS = '#4a6335';        // green status (passes WCAG AA on paper bg)
 export const TG_URL = 'https://t.me/kotlarewski';
 // Сайт практики: запись на консультации. schemehappens уводит сюда,
 // на самом kotlarewski кнопки скроллят к форме на странице.
@@ -13,7 +12,7 @@ export const PRACTICE_BOOKING_URL = 'https://kotlarewski.gr/#booking';
 // Hamburger button (mobile nav trigger) – shown only via .menu-btn CSS
 export const menuBtnStyle: CSSProperties = {
   display: 'none', flexDirection: 'column', justifyContent: 'center', gap: 4,
-  width: 38, height: 38, borderRadius: 9, border: '1px solid var(--line)',
+  width: 38, height: 38, borderRadius: 'var(--r-8)', border: '1px solid var(--line)',
   background: 'transparent', cursor: 'pointer', padding: 0, alignItems: 'center',
 };
 export const burgerLine: CSSProperties = { width: 16, height: 1.6, background: 'var(--text)', borderRadius: 'var(--r-2)', display: 'block' };

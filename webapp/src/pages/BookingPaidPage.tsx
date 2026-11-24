@@ -41,7 +41,7 @@ export function BookingPaidPage() {
         <div style={icon}>×</div>
         <h1 style={h1}>Оплата не прошла</h1>
         <p style={sub}>Деньги не списаны. Выберите время и попробуйте ещё раз – если оно уже занято, найдётся другое.</p>
-        <Btn href="/#booking" full radius="btn" size="lg">Вернуться к записи</Btn>
+        <Btn href="/#booking" full size="lg">Вернуться к записи</Btn>
       </>
     );
   } else if (!token && isManageLink()) {

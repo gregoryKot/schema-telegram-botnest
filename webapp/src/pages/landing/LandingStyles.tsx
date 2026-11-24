@@ -54,7 +54,7 @@ export function LandingStyles() {
            экране это аватар в навигации (решение владельца 2026-10-01). */
         .hero-below        { display:grid; grid-template-columns:minmax(0,460px) 200px; justify-content:space-between; gap:48px; align-items:start; }
         .hero-person       { display:flex; flex-direction:column; gap:14px; margin:0; }
-        .hero-person-photo { flex-shrink:0; width:200px; height:auto; aspect-ratio:4/5; border-radius:24px; box-shadow:0 24px 80px rgba(0,0,0,.1); }
+        .hero-person-photo { flex-shrink:0; width:200px; height:auto; aspect-ratio:4/5; border-radius:var(--r-16); border:1px solid var(--line-strong); }
 
         /* Grids */
         .about-inner  { display:grid; grid-template-columns:2fr 3fr; gap:48px; align-items:start; }

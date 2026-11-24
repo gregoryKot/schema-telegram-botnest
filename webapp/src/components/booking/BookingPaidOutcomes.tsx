@@ -17,7 +17,7 @@ export function BookingPaidAccepted() {
       <div style={icon}>✓</div>
       <h1 style={h1}>Оплата принята</h1>
       <p style={sub}>Спасибо! Я свяжусь с вами и пришлю ссылку на встречу.</p>
-      <Btn href="/" full radius="btn" size="lg">На главную</Btn>
+      <Btn href="/" full size="lg">На главную</Btn>
     </>
   );
 }
@@ -42,7 +42,7 @@ export function BookingManageLinkIncomplete() {
         Откройте ссылку ещё раз оттуда, куда сохраняли запись: из события в календаре или из сообщения в Telegram.
       </p>
       <p style={sub}>Найти не получается — напишите мне, подскажу время встречи и помогу с отменой.</p>
-      <Btn href={CANCEL_SUPPORT_LINK} full radius="btn" size="lg">Написать в Telegram</Btn>
+      <Btn href={CANCEL_SUPPORT_LINK} full size="lg">Написать в Telegram</Btn>
     </>
   );
 }

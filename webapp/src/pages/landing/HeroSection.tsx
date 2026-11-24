@@ -95,7 +95,7 @@ export function HeroSection({ photo, activeSection, theme, onToggleTheme, onBook
             Одни и те же сценарии повторяются – в отношениях, в самооценке, в тревоге. Схема-терапия помогает понять, почему так, – и найти выход.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-            <Btn size="lg" onClick={onBook}>Записаться на знакомство →</Btn>
+            <Btn size="lg" onClick={onBook} style={{ boxShadow: '3px 3px 0 var(--accent-line)' }}>Записаться на знакомство →</Btn>
             <TgLink label="Написать в Telegram" size="lg" />
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '18px 0 0' }}>

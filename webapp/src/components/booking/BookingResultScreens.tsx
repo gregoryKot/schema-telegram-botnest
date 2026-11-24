@@ -23,7 +23,7 @@ export function AwaitPaymentScreen({ resultRef, slot, tz, priceText, payUrl, mes
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>
         Для подтверждения нужна оплата{priceText ? ` ${priceText}` : ''}.
       </p>
-      <Btn href={payUrl ?? '#'} newTab={false} radius="btn" size="lg">Перейти к оплате →</Btn>
+      <Btn href={payUrl ?? '#'} newTab={false} size="lg">Перейти к оплате →</Btn>
       <BookingCrisisNote text={message} />
       <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6, margin: '20px auto 0', maxWidth: 420 }}>
         Если оплата не открылась или возникла ошибка — не волнуйтесь: я уже вижу вашу заявку и свяжусь с вами в Telegram. Можно также написать напрямую: <a href="https://t.me/kotlarewski" className="u-accent">@kotlarewski</a>.
@@ -37,7 +37,7 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
     <div ref={resultRef} style={{ textAlign: 'center', padding: '48px 0' }}>
       <h3 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)', margin: '0 0 12px' }}>Оплата не прошла</h3>
       <p style={{ color: 'var(--text-sub)', fontSize: 16, lineHeight: 1.7, margin: '0 0 20px' }}>Время снова свободно. Выберите другое или напишите напрямую.</p>
-      <Btn onClick={onRetry} radius="btn" size="lg">Выбрать другое время</Btn>
+      <Btn onClick={onRetry} size="lg">Выбрать другое время</Btn>
     </div>
   );
 }

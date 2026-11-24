@@ -1,6 +1,6 @@
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { Btn } from '../../components/landing-kit';
-import { MOSS, TG_URL, NAV_LINKS, MOBILE_LINKS } from './constants';
+import { TG_URL, NAV_LINKS, MOBILE_LINKS } from './constants';
 import { scrollIntoViewSafe } from '../../../../shared/src/utils/scrollIntoView';
 
 // ─── Telegram link – quiet editorial text link (matches nav "Написать ↗") ────
@@ -84,11 +84,11 @@ export function MobileMenu({ onClose, active, onBook }: { onClose: () => void; a
       </nav>
       <div style={{ animation: `menu-item-in .32s cubic-bezier(.16,1,.3,1) ${MOBILE_LINKS.length * 35}ms both` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0', marginBottom: 12, borderTop: '1px solid var(--line)' }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: MOSS, flexShrink: 0, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--c-moss)', flexShrink: 0, display: 'inline-block', animation: 'pulse-dot 2.5s ease-in-out infinite' }} />
           <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Принимаю клиентов · </span>
           <a href={TG_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>@kotlarewski</a>
         </div>
-        <Btn full size="lg" radius="btn" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
+        <Btn full size="lg" onClick={() => { goBack(); setTimeout(onBook, 60); }}>Записаться на знакомство →</Btn>
       </div>
     </div>
   );

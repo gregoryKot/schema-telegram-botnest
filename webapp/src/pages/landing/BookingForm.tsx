@@ -58,7 +58,7 @@ export function BookingForm() {
         </span>
       </label>
       {status === 'error' && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: 0 }}>Что-то не отправилось. Напишите мне напрямую в Telegram – отвечу лично: <a href={TG_URL} style={{ color: 'inherit' }}>@kotlarewski</a></p>}
-      <Btn type="submit" size="lg" radius="btn" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
+      <Btn type="submit" size="lg" disabled={status === 'loading' || !name.trim() || !contact.trim() || !consent} style={{ alignSelf: 'flex-start' }}>
         {status === 'loading' ? 'Отправляю…' : 'Написать →'}
       </Btn>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Первая встреча 15 минут – бесплатно. Никаких обязательств.</p>
