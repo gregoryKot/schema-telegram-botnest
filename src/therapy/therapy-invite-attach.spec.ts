@@ -73,7 +73,9 @@ function make(o: Opts) {
       updateMany: rec('path.updateMany'),
     },
     guideMark: {
-      findMany: jest.fn(async () => [{ address: 'mode:x/when' }]),
+      findMany: jest.fn(async () => [
+        { address: 'mode:x/when', fragmentKey: '' },
+      ]),
       deleteMany: rec('mark.deleteMany'),
       updateMany: rec('mark.updateMany'),
     },
@@ -112,7 +114,7 @@ describe('attachOfflineCard', () => {
       where: {
         therapistId: TH,
         clientId: -7n,
-        address: { in: ['mode:x/when'] },
+        OR: [{ address: 'mode:x/when', fragmentKey: '' }],
       },
     });
     expect(tx.guideMark.updateMany).toHaveBeenCalledWith({
