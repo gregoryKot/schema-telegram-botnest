@@ -159,6 +159,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     ),
     clientAlias: enc(`${TH}/therapy-relations.service.ts`),
     virtualClientName: enc(`${TH}/therapy-relations.service.ts`),
+    therapistMemo: enc(`${TH}/session-info-data.ts`),
     therapyStartDate: DATE,
     nextSession: DATE,
     meetingDays: plain('номера дней недели'),
