@@ -11,7 +11,7 @@ import { BOOKING_MESSAGE_MAX, BOOKING_SLOT_MESSAGE_MAX } from '../../../../share
 afterEach(cleanup);
 
 function field(max: number, value = '') {
-  render(<RequestField value={value} onChange={() => {}} labelStyle={{}} fieldStyle={{}} max={max} />);
+  render(<RequestField value={value} onChange={() => {}} labelStyle={{}} max={max} />);
   return screen.getByLabelText(/Запрос/) as HTMLTextAreaElement;
 }
 

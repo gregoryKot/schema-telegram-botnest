@@ -108,17 +108,16 @@ describe('ModeMapViewer — загрузка и отображение карт�
 });
 
 describe('ModeMapViewer — вкладки и загрузка (#906)', () => {
-  it('вкладки карт — ds-seg-btn с aria-pressed у активной', async () => {
+  it('вкладки карт — вкладки на линии (tab) с aria-selected у активной', async () => {
     listMyModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
     getMyModeMap.mockResolvedValue(full(1, 'Карта А'));
     await act(async () => {
       render(<ModeMapViewer />);
     });
-    const a = screen.getByText('Карта А');
-    const b = screen.getByText('Карта Б');
-    expect(a.classList.contains('ds-seg-btn')).toBe(true);
-    expect(a.getAttribute('aria-pressed')).toBe('true');
-    expect(b.getAttribute('aria-pressed')).toBe('false');
+    const a = screen.getByRole('tab', { name: 'Карта А' });
+    expect(a.classList.contains('lt-tab')).toBe(true);
+    expect(a.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Карта Б' }).getAttribute('aria-selected')).toBe('false');
   });
 
   it('на загрузке — силуэт, а не текст «Загрузка…»', async () => {
