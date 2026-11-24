@@ -32,7 +32,7 @@
 .sd-aside {
   position: sticky; top: 40px; display: flex; flex-direction: column; gap: 8px;
   margin: 0 8px 9px 0; padding: 20px 22px 22px; border-radius: 20px; background: var(--surface);
-  box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h));
+  box-shadow: 0 0 0 1px var(--panel-line);
 }
 .sd-aside-label { color: var(--text-sub); }
 .sd-aside-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1.25; color: var(--text); }

@@ -131,8 +131,10 @@ describe('глобальные правки примитивов (cabinet.css)',
 describe('диалоги (dialogs.css)', () => {
   it('подложка — тёплый тон из токенов (текст с долей акцента), без серо-оливкового --fg-rgb', () => {
     const bg = decls(dialogs, '.sk-dialog-backdrop');
-    expect(bg).toMatch(/color-mix\(in srgb, color-mix\(in srgb, var\(--accent\) \d+%, var\(--text\)\) \d+%, transparent\)/);
-    expect(bg).not.toContain('--fg-rgb');
+    expect(bg).toContain('var(--scrim)');
+    const scrim = /--scrim:\s*([^;]+);/.exec(read('../index.css'))?.[1] ?? '';
+    expect(scrim).toMatch(/color-mix\(in srgb, color-mix\(in srgb, var\(--accent\) \d+%, var\(--text\)\) \d+%, transparent\)/);
+    expect(scrim).not.toContain('--fg-rgb');
   });
 
   it('коробка — сплошной сдвинутый слой бумаги из токена, без мягкой тени с размытием', () => {

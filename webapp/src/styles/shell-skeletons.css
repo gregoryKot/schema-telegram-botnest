@@ -110,5 +110,5 @@
   .sks-row { padding: 10px 14px; }
 }
 
-/* Нижняя панель телефона в силуэте — те же место и высота, что у .mobile-nav. */
-.sks-mobile-nav-item { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 44px; }
+/* Нижняя панель телефона в силуэте — та же полоса .mobile-nav, место пункта той же высоты. */
+.sks-mobile-nav-item { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: max(44px, calc(var(--mobile-nav-h) - 1px)); }

@@ -14,7 +14,7 @@
 
 /* Шаги установки — белый лист с тенью-слоем тона героя (два листа одной бумаги подряд читались бы одним),
    номера — кружками небесной бумаги. */
-.pp-paper.ib-card { padding: 20px 22px 22px; border-radius: 20px; background: var(--surface); box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.pp-paper.ib-card { padding: 20px 22px 22px; border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line); }
 .ib-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
 .ib-meta { margin: 2px 0 0; font-size: 14px; color: var(--text-sub); }
 .ib-steps { list-style: none; counter-reset: ib; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; }

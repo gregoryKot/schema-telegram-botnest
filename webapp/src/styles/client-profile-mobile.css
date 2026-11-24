@@ -72,7 +72,7 @@
   .cpf-shelf .cpf-tile-title { font-size: 22px; }
   .cpf-shelf .cpf-tile-art .pp-art { width: 64px; height: 34px; }
   .cpf-ach { gap: 8px; }
-  .cpf-badge { width: 40px; height: 40px; border-radius: 10px; box-shadow: 3px 4px 0 oklch(0.8 0.06 var(--h)); }
+  .cpf-badge { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 0 0 1px var(--panel-line); }
   .cpf-badge .pp-art { width: 32px; height: 18px; }
 }
 /* 320: лист шапки не встаёт на строку «Настроить экран» — заголовку и действиям нужна вся ширина. */

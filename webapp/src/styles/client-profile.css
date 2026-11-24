@@ -130,7 +130,7 @@
 .cpf-ach--dlg.is-earned:hover { background: var(--paper-sunk); }
 /* Значок: бумага оттенка знака и сплошной сдвинутый слой под ней («бумага на бумаге»); не получено —
    силуэт: тихая бумага, знак одним тоном, без слоя. */
-.cpf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 14px; background: oklch(0.915 0.03 var(--h)); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); }
+.cpf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 14px; background: oklch(0.915 0.03 var(--h)); box-shadow: 0 0 0 1px var(--panel-line); }
 .cpf-badge .pp-art { width: 42px; height: 24px; }
 .cpf-badge.is-locked { background: var(--paper-sunk); box-shadow: none; }
 .cpf-badge.is-locked svg [fill]:not([fill="none"]) { fill: color-mix(in srgb, var(--text-faint) 80%, var(--paper-sunk)); fill-opacity: 1; }

@@ -101,7 +101,7 @@ describe('Яндекс', () => {
     expect(links.map((a) => a.textContent)).toEqual(['VKВойти через ВКонтакте', 'ЯВойти через Яндекс']);
     // Иначе читалка произнесла бы «Я войти через Яндекс».
     expect(screen.getByRole('link', { name: 'Войти через Яндекс' })).toBe(links[1]);
-    expect(links.map((a) => a.className)).toEqual(['al-btn-main', 'al-btn-main']);
+    expect(links.map((a) => a.className)).toEqual(['ds-btn ds-btn--lg al-btn-main', 'ds-btn ds-btn--lg al-btn-main']);
   });
 
   it('во вкладке браузера — прямой вход в той же вкладке, без билета', () => {
