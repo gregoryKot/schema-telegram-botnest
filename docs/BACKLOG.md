@@ -14,6 +14,7 @@
 убирается тем же PR (формат и порядок — `.claude/rules/process.md`, гейт
 `scripts/check-owner-waiting.mjs`). Раз в день раздел приходит владельцу сводкой.
 
+- **Очередь мержа: поднять лимит параллельных джоб и собрать «поезд»?** Рекомендация: да — сначала лимит (тариф GitHub или свой раннер), потом «поезд» из 3–5 зелёных PR на один круг CI. Откуда: замер 24.11 — круг CI 32 мин, из них 8–19 мин джобы ждут раннер; 41 мерж за сутки при 324 прогонах; штатная очередь GitHub доступна только репозиторию организации (#1637).
 - **Каталог-цель справочника: что убрать или добавить?** Рекомендация: оставить как есть; первыми купить книги о парах и о подростках (запросы частые, на полке их нет). Откуда: [черновик каталога](https://claude.ai/artifact/LcgFtEbxewgbKWqjdncT7E), код — `shared/src/schemaTherapy/kb/catalog*.ts`; ответ правит статусы, `out_of_scope` — только по нему. 2026-11-23.
 - **Удалите ветку `tmp/guide-sheet-shots` сами?** Рекомендация: да, на GitHub — Branches → корзина у ветки (минута); из облачной сессии удаление отвечает 403. Откуда: кадры до/после к листам Справочника (#1590–#1592), ветка больше не нужна. [чат](https://claude.ai/code/session_01DQJAbURtiiAWknU41JuiqN) · 2026-11-23
 - **Сроки фаз общего шаблона пути: оставить условные 12, 36, 16 и 26 недель?** Рекомендация: да, как стартовые: книги сроков этих фаз не называют, в пути клиента недели правятся, в шаблоне они помечены «условно» (`shared/src/therapy/path/templates/general.ts`, #1522). [чат](https://claude.ai/code/session_01DQJAbRyfan1v5QdT6NiorN) · 2026-11-22
@@ -66,6 +67,7 @@
 
 ## Следующее
 
+- **CI: раннеры заняты лишним.** Очередь не ждёт свежий PR, запушенный агентом, и подтягивает второй (`scripts/merge-queue-plan.mjs`, `planQueue`); vitest сайта идёт дважды — покрытие 476 с и вторая зона 455 с (`ci.yml`, джобы `webapp`, `webapp-tz`); `checks` (23 с) и `mutation-changed` (16 с) ждут слот по 15 мин. Доказано замером 7 зелёных прогонов 24.11 (#1637).
 - ⬜ **#1317 web-push 3.6.7 → 4.0.0: пакет стал ESM-only, jest падает** — `backend` красный (106 спеков «Must use import to load ES Module: node_modules/web-push/src/index.js»); API `src/push/*` не менялся. Починка: добавить `web-push` и его ESM-зависимости (`https-proxy-agent`, `agent-base`) в regex `jest.transform` в `package.json` и в `test/jest-e2e.json`, сверить `src/test-support/esm-to-cjs.transform.spec.ts`; проверить Node ≥ 22.12 в Dockerfile. PR остаётся открытым. Доказано: лог job 138235267642 (2026-11-24).
 - ⬜ **#631 Бэкапы Amvera: пересобрать PR после смены хранилища** — ветка `docs/amvera-backup-risk` в конфликте с `main` (CLAUDE.md перестроен, SECURITY.md правился), а факты устарели: скрипт теперь `scripts/backup-upload.sh`, хранилище Yandex Object Storage вместо B2, срок 30 дней вместо 90; спек `backup-risk-doc.spec.ts` ссылается на удалённые `scripts/backup-to-b2.sh` и на `CLAUDE.md`. Взять `docs/AMVERA_BACKUP_QUESTIONS.md`, спек и §13 SECURITY.md, исправить факты, ссылку с `CLAUDE.md` заменить на `docs/README.md`. Вопрос владельцу («отправите обращение?») — в «Ждёт владельца». Доказано: локальный `git merge origin/main`, jest 1 из 6 красный (2026-11-24).
 
