@@ -742,7 +742,7 @@
   "shared/src/settings/timezones.ts": 76,
   "shared/src/settings/useAddressFormChoice.ts": 62,
   "shared/src/settings/useNotifyReach.ts": 28,
-  "shared/src/share/analytics.ts": 190,
+  "shared/src/share/analytics.ts": 188,
   "shared/src/share/analyticsCabinetGuide.ts": 29,
   "shared/src/share/cardKit.ts": 110,
   "shared/src/share/cards/achievementCard.ts": 92,
