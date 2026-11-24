@@ -30,11 +30,6 @@ export function BookingForm() {
     } catch (err) { const st = (err as { status?: number } | null)?.status; reportClientError({ message: `lead submit failed: ${st ? `HTTP ${st}` : String(err)}`, section: 'booking' }); setStatus('error'); } // №14: тупик сообщает наверх
   };
 
-  const field: React.CSSProperties = {
-    width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
-    borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
-  };
-
   if (status === 'done') return (
     <div style={{ textAlign: 'center', padding: '56px 0' }}>
       <div style={{ fontSize: 56, marginBottom: 20 }}>✉️</div>
@@ -47,10 +42,10 @@ export function BookingForm() {
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="form-grid">
-        <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys" style={field} placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={BOOKING_NAME_MAX} /></div>
-        <ContactChannelField id="booking-contact" channel={channel} onChannelChange={setChannel} value={contact} onChange={setContact} labelStyle={labelSt} fieldStyle={field} />
+        <div><label htmlFor="booking-name" style={labelSt}>Имя *</label><input id="booking-name" className="ym-disable-keys ds-input" placeholder="Ваше имя" value={name} onChange={e => setName(e.target.value)} required maxLength={BOOKING_NAME_MAX} /></div>
+        <ContactChannelField id="booking-contact" channel={channel} onChannelChange={setChannel} value={contact} onChange={setContact} labelStyle={labelSt} />
       </div>
-      <RequestField value={message} onChange={setMessage} labelStyle={labelSt} fieldStyle={field} minHeight={96} max={BOOKING_MESSAGE_MAX} />
+      <RequestField value={message} onChange={setMessage} labelStyle={labelSt} minHeight={96} max={BOOKING_MESSAGE_MAX} />
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }} />
         <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
