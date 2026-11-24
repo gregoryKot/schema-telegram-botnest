@@ -62,6 +62,7 @@ export default defineConfig({
         'sheet-scroll.spec.ts',
         'page-rhythm.spec.ts',
         'phone-screens.spec.ts',
+        'mobile-nav-focus.spec.ts',
       ],
       use: {
         trace: 'retain-on-failure',

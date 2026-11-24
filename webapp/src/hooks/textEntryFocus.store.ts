@@ -27,14 +27,33 @@ export const getTyping = () => typing;
 
 function set(next: boolean) {
   cancelSettle();
+  if (next) watchField();
   if (next === typing) return;
   typing = next;
   listeners.forEach((l) => l());
+}
+
+// WebKit (iOS, Telegram и MAX на iOS) не шлёт focusout, когда поле с фокусом
+// удалено (закрыли лист) или стало disabled — без проверки DOM флаг залипал, и нижнее меню пропадало.
+let observer: MutationObserver | null = null;
+function watchField() {
+  if (observer || typeof MutationObserver !== 'function') return;
+  observer = new MutationObserver(() => {
+    if (!isTextEntry(document.activeElement)) { unwatchField(); update(false); }
+  });
+  observer.observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'readonly', 'contenteditable'],
+  });
+}
+function unwatchField() {
+  observer?.disconnect();
+  observer = null;
 }
 // «Не печатает» — только когда клавиатура убрана целиком, а не когда ушёл
 // фокус: панель, вернувшаяся раньше, застревает посреди экрана (keyboardSettled.ts).
 function update(next: boolean) {
   if (next) return set(true);
+  unwatchField();
   cancelSettle();
   cancelSettle = whenKeyboardSettled(() => set(false));
 }
@@ -54,6 +73,7 @@ export function subscribe(cb: () => void) {
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
       cancelSettle();
+      unwatchField();
       typing = false;
     }
   };

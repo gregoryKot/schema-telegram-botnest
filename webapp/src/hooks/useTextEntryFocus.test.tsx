@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
+import { useState } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { useTextEntryFocus } from './useTextEntryFocus';
 import { isTextEntry } from './textEntryFocus.store';
@@ -20,6 +21,19 @@ function Probe() {
       <input aria-label="second" type="text" />
       <input aria-label="check" type="checkbox" />
       <button>btn</button>
+    </div>
+  );
+}
+
+// Лист с полем, который закрывается кнопкой: поле уходит из DOM вместе с фокусом.
+function SheetProbe() {
+  const typing = useTextEntryFocus();
+  const [open, setOpen] = useState(true);
+  return (
+    <div>
+      <span data-testid="state">{typing ? 'typing' : 'idle'}</span>
+      {open && <input aria-label="name" />}
+      <span onClick={() => setOpen(false)}>close</span>
     </div>
   );
 }
@@ -119,6 +133,21 @@ describe('useTextEntryFocus', () => {
     setTouch(false);
     render(<Probe />);
     focus(screen.getByLabelText('area'));
+    expect(screen.getByTestId('state').textContent).toBe('idle');
+  });
+
+  // Инцидент 2026-11-24: WebKit не шлёт focusout, когда поле с фокусом удалено из DOM
+  // (закрыли «Настройки» после ввода имени), — флаг залипал, нижнее меню пропадало.
+  it('поле с фокусом удалено без focusout — не печатает', async () => {
+    setTouch(true);
+    render(<SheetProbe />);
+    focus(screen.getByLabelText('name'));
+    expect(screen.getByTestId('state').textContent).toBe('typing');
+    const onFocusOut = vi.fn();
+    document.addEventListener('focusout', onFocusOut);
+    await act(async () => { screen.getByText('close').click(); });
+    document.removeEventListener('focusout', onFocusOut);
+    expect(onFocusOut).not.toHaveBeenCalled(); // как в WebKit: события нет
     expect(screen.getByTestId('state').textContent).toBe('idle');
   });
 });
