@@ -1,39 +1,18 @@
-import type { InstallPlatform } from '../../utils/pwaInstall';
+import { detectInstallPlatform, type InstallPlatform } from '../../utils/pwaInstall';
+import { detectInstallBrowser, type InstallBrowser } from '../../utils/installBrowser';
+import { BROWSER_STEPS, type BrowserSteps } from './browserSteps';
 
-// Шаги «значок на экран» по платформам — единственный источник текста для
-// лендинга (AppInstallSection; баннер кабинета убран 2026-10): одна
-// механика — один источник, иначе формулировки разъедутся. Формулировки
-// безличные: инструкцию видят и «ты», и «вы», и анонимный гость лендинга.
-export interface InstallStepsBlock {
+// Шаги «значок на экран» — единственный источник текста для лендинга (AppInstallSection), /install и
+// настроек: одна механика — один источник. Платформа показывает шаги своего главного браузера.
+export interface InstallStepsBlock extends BrowserSteps {
   platform: InstallPlatform;
   /** Заголовок карточки на лендинге. */
   title: string;
-  /** Подводка: в каком браузере это работает. */
-  browser: string;
-  steps: string[];
 }
 
 export const INSTALL_STEPS: Record<InstallPlatform, InstallStepsBlock> = {
-  ios: {
-    platform: 'ios',
-    title: 'iPhone и iPad',
-    browser: 'В Safari:',
-    steps: [
-      'Кнопка «Поделиться» — квадрат со стрелкой вверх',
-      'В списке — «На экран „Домой“»',
-      '«Добавить» справа вверху — значок встанет рядом с приложениями',
-    ],
-  },
-  android: {
-    platform: 'android',
-    title: 'Android',
-    browser: 'В Chrome:',
-    steps: [
-      'Меню ⋮ справа вверху',
-      '«Добавить на главный экран» или «Установить приложение»',
-      'Подтвердить — значок появится на экране',
-    ],
-  },
+  ios: { platform: 'ios', title: 'iPhone и iPad', ...BROWSER_STEPS['ios-safari'] },
+  android: { platform: 'android', title: 'Android', ...BROWSER_STEPS['android-chrome'] },
   desktop: {
     platform: 'desktop',
     title: 'Компьютер',
@@ -44,3 +23,9 @@ export const INSTALL_STEPS: Record<InstallPlatform, InstallStepsBlock> = {
     ],
   },
 };
+
+/** Шаги для посетителя: заголовок — его системы, подводка, шаги и ролик — его браузера. */
+export function installGuide(platform: InstallPlatform, browser: InstallBrowser | null): InstallStepsBlock {
+  return browser ? { ...INSTALL_STEPS[platform], ...BROWSER_STEPS[browser] } : INSTALL_STEPS[platform];
+}
+export const visitorInstallGuide = (): InstallStepsBlock => installGuide(detectInstallPlatform(), detectInstallBrowser());

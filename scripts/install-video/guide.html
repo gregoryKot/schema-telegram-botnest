@@ -1,8 +1,8 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><title>install guide</title>
 <style>
-@font-face{font-family:Literata;font-weight:500;src:url(/home/user/schema-telegram-botnest/webapp/public/fonts/literata-500-normal.woff2)}
-@font-face{font-family:Manrope;font-weight:200 800;src:url(/home/user/schema-telegram-botnest/webapp/public/fonts/manrope-latin.woff2)}
-@font-face{font-family:Manrope;font-weight:200 800;src:url(/home/user/schema-telegram-botnest/webapp/public/fonts/manrope-cyrillic.woff2);unicode-range:U+0400-052F,U+2116}
+@font-face{font-family:Literata;font-weight:500;src:url(../../webapp/public/fonts/literata-500-normal.woff2)}
+@font-face{font-family:Manrope;font-weight:200 800;src:url(../../webapp/public/fonts/manrope-latin.woff2)}
+@font-face{font-family:Manrope;font-weight:200 800;src:url(../../webapp/public/fonts/manrope-cyrillic.woff2);unicode-range:U+0400-052F,U+2116}
 :root{--bg:#f6f2eb;--text:#1f1b17;--accent:#8a3a2b;--muted:#7d746a;--line:#e4dccf;--ios:#007aff}
 *{box-sizing:border-box;margin:0}
 html,body{width:720px;height:1280px;overflow:hidden}
@@ -109,7 +109,7 @@ body{position:relative;background:radial-gradient(900px 620px at 50% 64%,#fffaf1
 .menu.cr hr{border:0;border-top:1px solid #d6cfe2;margin:4px 16px}
 </style></head><body>
 <script>
-const ICON='/home/user/schema-telegram-botnest/webapp/public/icon-192.png';
+const ICON='../../webapp/public/icon-192.png';
 const q=new URLSearchParams(location.search), B=q.get('b')||'ios-safari', REC=q.has('rec');
 
 const sv=d=>`<svg viewBox="0 0 24 24">${d}</svg>`;
