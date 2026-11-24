@@ -50,7 +50,7 @@ describe('LoginFormerNote — прежний вход по почте или ч�
   it('«ты»: вход по почте отключён — привязать VK ID или Яндекс ID там, где сайт открыт, иначе написать', () => {
     const { email } = renderNote('ty');
     expect(email).toContain('Раньше вход был по почте или через Google?');
-    expect(email).toContain('Вход по почте отключён.');
+    expect(email).toContain('Вход по почте отключён: у автора проекта второе гражданство, а закон в России такой вход не допускает.');
     expect(email).toContain('Если сайт открыт на другом устройстве — привяжи там в «Аккаунте» VK ID или Яндекс ID.');
     expect(email).toContain(`Если нет — напиши на ${OPERATOR_EMAIL}`);
     expect(email).not.toMatch(/скоро|войди по email|привяжите|напишите|входил/);
