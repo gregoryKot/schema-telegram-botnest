@@ -90,8 +90,8 @@
 .st-row-right > .ds-sub { color: var(--text-sub); text-align: right; white-space: nowrap; }
 .st-row-name { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 0; }
 .st-row-name .ds-input { flex: 1 1 200px; min-width: 0; }
-/* Поле листа — строка на бумаге с линией снизу, а не белая коробка: как строки списка вокруг. */
-.st-inner .ds-input { min-height: 48px; padding: 12px 0; border-width: 0 0 1px; border-radius: 0; background: none; }
+/* Поле листа — строка с линией снизу (.ds-input), по высоте как строки списка вокруг. */
+.st-inner .ds-input { min-height: 48px; }
 
 /* Подвиды выбора: часы — чипы-листы (SignChip: выбранный — бумага с галочкой), списки — плоские строки */
 .st-hours { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -154,8 +154,8 @@
 .st-invite-label { font-size: 14px; font-weight: 600; color: var(--text); }
 .st-invite > .st-actions { align-self: stretch; }
 .st-invite-field {
-  align-self: stretch; box-sizing: border-box; min-width: 0; padding: 12px 14px; border-radius: 12px;
-  background: var(--surface); border: 1px solid var(--panel-line);
+  align-self: stretch; box-sizing: border-box; min-width: 0; padding: 12px 0;
+  border-bottom: 1px solid var(--panel-line);
   font: 14px/1.5 var(--sans); color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;
 }

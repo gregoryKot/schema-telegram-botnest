@@ -3,6 +3,7 @@ import { buildPracticeAssessment } from './practiceAssessment';
 import { buildPracticeConceptualization } from './practiceConceptualization';
 import { buildPracticeCourse } from './practiceCourse';
 import { buildPracticeChange } from './practiceChange';
+import { buildPracticeEmdr } from './practiceEmdr';
 import { buildPracticeEnding } from './practiceEnding';
 import { buildPracticeOnline } from './practiceOnline';
 import { buildPracticeSituations } from './practiceSituations';
@@ -16,11 +17,9 @@ import { buildPracticeYoungStart } from './practiceYoungStart';
  * тупиков, «болтовня» вместо терапии, ошибки в методе; схемы терапевта,
  * супервизия и выгорание — в practiceTherapist.ts. Трудные ситуации в сессии, групповой формат и намеренная
  * практика — в practiceSituations.ts, порядок разделов на листе — этот.
- * Источник — разделы «Что добавляют к рамке другие книги», «Частые ошибки
- * терапевта и тонкости», «Трудные ситуации в сессии», «Групповая
- * схема-терапия» и «Намеренная практика» справочника (версия на 65 страниц).
- * Форма листа (2026-11): суть, 3–5 пунктов «что делать», «Как это звучит»
- * и «Подробнее» — как у режимов, схем и техник.
+ * Источник — разделы справочника (версия на 65 страниц) «Что добавляют к рамке другие книги»,
+ * «Частые ошибки терапевта», «Трудные ситуации в сессии», «Групповая схема-терапия», «Намеренная практика».
+ * Форма листа: суть, 3–5 пунктов, «Как это звучит» и «Подробнее» — как у режимов и схем.
  */
 export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   {
@@ -54,6 +53,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeCourse(tr),
   ...buildPracticeChange(tr),
   ...buildPracticeEnding(tr),
+  ...buildPracticeEmdr(tr),
   ...buildPracticeYoungStart(tr),
   ...buildPracticeYoungSession(tr),
 ];
