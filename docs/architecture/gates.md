@@ -61,6 +61,7 @@
 | check-pr-size.mjs | PR больше 60 файлов или 1500 изменённых строк (дифф `origin/main...HEAD`; не считаются `*-baseline.json`, `package-lock.json`, `test/fixtures/**`, чистые переименования); обход — метка PR `big-pr`; только событие `pull_request`, в precheck пропускается | — | нет | checks |
 | check-public-scripts.mjs | `public/**/*.js` без теста, инлайн-`<script>` без хеша | `scripts/public-scripts-baseline.json` | да | checks |
 | check-query-plans.mjs | Seq Scan и рост страниц в EXPLAIN горячих запросов | `scripts/query-plan-baseline.json` | да | perf |
+| check-radius-scale.mjs | (правила и исключения — `check-radius-scale-rules.mjs`) радиус круглее 16px в `.css`, `borderRadius` и `radius={N}`; `var(--r-20)` не у верхних углов листа; капсула `var(--r-pill)` не у чипа (#1619, решение 3) | — | нет | webapp |
 | check-raw-sql-live.mjs | файл с `$queryRaw`/`$executeRaw` без спека на живом Postgres | `scripts/raw-sql-live-baseline.json` | нет | checks |
 | check-recorded-fixtures.mjs | парсер внешнего формата без записанной фикстуры | `scripts/recorded-fixtures-baseline.json` | нет | checks |
 | check-render-poison.mjs | `backdrop-filter` и `blur` во фронтендах (тормоза WebKit PWA) | `scripts/render-poison-baseline.json` | да | webapp |
