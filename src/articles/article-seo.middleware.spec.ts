@@ -7,7 +7,7 @@ import { PRACTICE_PREVIEW } from '../practice-preview';
 
 // Цена сессии в админке — 4 500 ₽ (так её отдаст PricingService.landingText).
 const PRICING = {
-  landingText: (text: string) => Promise.resolve(landingPriceText(text, 4500)),
+  landingText: (text: string) => Promise.resolve(landingPriceText(text, { RUB: 4500 })),
 } as unknown as PricingService;
 
 // existsSync/readFileSync экспортируются из 'fs' как non-configurable

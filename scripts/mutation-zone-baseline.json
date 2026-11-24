@@ -86,6 +86,9 @@
   "src/booking/booking.schema.ts": {
     "reason": "Константа схемы шифрования полей Booking без логики (список строковых полей): мутировать нечего, кроме литералов уровня модуля; шифрование каждого поля в БД держат meeting-url-encryption.spec.ts и booking-admin-view.spec.ts."
   },
+  "src/booking/landing-price-cache.ts": {
+    "reason": "Вынесен из landing-price.ts (правило №10); кэш с TTL покрыт landing-price.spec.ts, в `mutate` не включён — мутации не измеряются, долг волны, а не решение."
+  },
   "src/booking/payment-failed-alert.ts": {
     "reason": "Выделен из payment.controller.ts и payment.booking-webhook.ts (зона golden-payments) по правилу №10: текст карточки «оплата прошла, но … не подтвердилась» с типом ошибки вместо её текста (РКН, #1135). В `mutate` не включён, прогона Stryker по нему не было — мутации текста не измеряются, их держат payment-failed-alert.spec.ts и payment.controller.spec.ts; долг волны, а не решение."
   },

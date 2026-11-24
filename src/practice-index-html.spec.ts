@@ -198,7 +198,7 @@ describe('карточка ссылки: продукт в файле, визи�
 describe('practiceIndexMiddleware: страницы визитки', () => {
   // Цена сессии в админке — 4 500 ₽ (так её отдаст PricingService.landingText).
   const landingText = (text: string) =>
-    Promise.resolve(landingPriceText(text, 4500));
+    Promise.resolve(landingPriceText(text, { RUB: 4500 }));
   const run = async (
     hostname: string,
     path: string,
