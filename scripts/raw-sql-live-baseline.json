@@ -1,4 +1,7 @@
 {
+  "src/analytics/admin/admin-events-daily.ts": {
+    "spec": "test/raw-sql-live-admin-analytics.e2e-spec.ts"
+  },
   "src/api/health.controller.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   },
