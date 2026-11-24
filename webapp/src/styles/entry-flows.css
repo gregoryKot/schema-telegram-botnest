@@ -38,7 +38,7 @@
 .ef-sticker {
   position: absolute; top: 14px; left: calc(var(--ef-pad) - 4px); padding: 5px 10px; border-radius: 8px;
   font-size: 11px; font-weight: 700; letter-spacing: .1em; line-height: 1.2; color: var(--accent);
-  background: var(--surface); box-shadow: 3px 4px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-4deg);
+  background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line); transform: rotate(-4deg);
 }
 
 /* Шаги потока — бумажки их оттенков перед «Шаг 1 из 3». */
@@ -49,7 +49,7 @@
 
 /* Знак продукта плиткой — значок приложения на листе («Поддержать проект» — просьба о самом продукте,
    «Держи под рукой»). */
-.ef-brand { position: relative; display: inline-flex; border-radius: 15px; box-shadow: 5px 6px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-5deg); }
+.ef-brand { position: relative; display: inline-flex; border-radius: 15px; box-shadow: 0 0 0 1px var(--panel-line); transform: rotate(-5deg); }
 .ef-brand > svg { width: 100%; height: auto; max-width: 64px; }
 
 /* Картинка в углу листа лежит на втором листе тоном глубже, под углом — как знак исхода в полосе
@@ -123,10 +123,10 @@
 .ef-form.pp-paper {
   display: flex; align-items: center; min-height: 64px; padding: 14px 16px; border: 0; border-radius: 18px;
   font: 400 23px/1.1 var(--serif); color: var(--text); text-align: left; cursor: pointer;
-  box-shadow: 4px 5px 0 oklch(0.84 0.045 var(--h)); transition: transform .12s ease, box-shadow .12s ease;
+  box-shadow: 0 0 0 1px var(--panel-line); transition: transform .12s ease, box-shadow .12s ease;
 }
 .ef-form.pp-paper:hover { background: oklch(0.89 0.04 var(--h)); }
-.ef-form.pp-paper:active { transform: translate(2px, 3px); box-shadow: 2px 2px 0 oklch(0.84 0.045 var(--h)); }
+.ef-form.pp-paper:active { transform: translate(2px, 3px); box-shadow: 0 0 0 1px var(--accent); }
 @media (prefers-reduced-motion: reduce) { .ef-form.pp-paper { transition: none; } }
 @media (max-width: 359px) { .ef-form.pp-paper { min-height: 56px; padding: 12px 14px; font-size: 20px; } }
 .sk-dialog-text.ef-note { margin-bottom: 16px; }

@@ -10,7 +10,7 @@
 /* «Моя карточка» — белый лист с тенью-слоем тона паттерна (сплошной сдвинутый слой, без blur). */
 .ps-card {
   display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 22px 24px;
-  border-radius: 20px; background: var(--surface); box-shadow: 6px 6px 0 oklch(var(--pa-layer-lc) var(--h));
+  border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .ds-label.ps-field-label { display: block; margin-bottom: 4px; color: var(--text-sub); }
 .ps-field-text { font: 400 17px/1.5 var(--serif); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
