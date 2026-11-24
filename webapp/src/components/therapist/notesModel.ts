@@ -1,4 +1,5 @@
 import { SCHEMA_DOMAINS, getModeById } from '../../schemaTherapyData';
+import { diaryTitle } from './diaryTitle';
 
 export type NoteKind = 'schema' | 'mode' | 'gratitude';
 export type NoteFilter = 'all' | NoteKind;
@@ -47,19 +48,6 @@ const nonEmpty = (fields: { label: string; val?: string }[]): NoteField[] =>
   fields.filter((f): f is NoteField => !!f.val?.trim());
 
 const schemaName = (id: string) => SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.id === id)?.name;
-
-function diaryTitle(e: DiaryEntry): { title: string; typeLabel: string } {
-  if (e.type === 'schema') {
-    const ids = e.schemaIds ?? [];
-    let title = ids[0] ? (schemaName(ids[0]) ?? ids.join(', ')) : 'Схема';
-    if (ids.length > 1) title += ` +${ids.length - 1}`;
-    return { title, typeLabel: 'Схема-дневник' };
-  }
-  if (e.type === 'mode') {
-    return { title: getModeById(e.modeId ?? '')?.name ?? e.modeId ?? 'Режим', typeLabel: 'Режим-дневник' };
-  }
-  return { title: 'Благодарность', typeLabel: 'Дневник благодарности' };
-}
 
 /** Единый список записей: события дневника, затем схема-карточки, затем режим-карточки. */
 export function buildNoteItems(diary: DiaryEntry[], schemaNotes: SchemaNoteData[], modeNotes: ModeNoteData[]): NoteItem[] {
