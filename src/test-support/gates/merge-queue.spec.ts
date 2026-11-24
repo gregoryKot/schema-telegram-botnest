@@ -663,6 +663,8 @@ describe('merge-queue.yml: запись есть, событий и чекаут
     expect(violations(real)).toEqual([]);
     // Контроль: поезд собирает джоба с `ref:` — и у неё только чтение.
     expect(jobBlocks(real)['train-baselines']).toMatch(/^\s+ref:/m);
+    // Поезд включён, пока переменная репозитория не скажет иное.
+    expect(real).toContain("MERGE_TRAIN: ${{ vars.MERGE_TRAIN || 'on' }}");
   });
 
   it('красный: события PR и чекаут головы PR', () => {
