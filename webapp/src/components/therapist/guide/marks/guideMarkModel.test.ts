@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as guide from '../../../../../../shared/src/schemaTherapy/guide';
 import type { GuideMark } from '../../../../../../shared/src/therapy/guideMarks/guideMarksApi';
-import { articleAddress, dropMark, isMarkableAddress, markCounts, markEntries, upsertMark } from './guideMarkModel';
+import { articleAddress, dropMark, isMarkableAddress, markCounts, findMark, markEntries, sameMark, upsertMark } from './guideMarkModel';
 
 const tr = (_ty: string, vy: string) => vy;
 const mark = (id: number, address: string, extra: Partial<GuideMark> = {}): GuideMark => ({
@@ -41,5 +41,27 @@ describe('guideMarkModel', () => {
     expect(found.text).toBe(guide.resolveAddress(live, tr)!.text);
     expect(found.title).toContain('В кабинете');
     expect(gone).toMatchObject({ changed: true, text: 'старый текст' });
+  });
+
+  it('фрагменты одного адреса живут рядом с разделом; тот же текст (с другими пробелами) — правка', () => {
+    const addr = 'mode:vulnerable_child/goal';
+    const whole = mark(1, addr);
+    const frag = mark(2, addr, { fragment: true, snapshot: 'кусок  один' });
+    let list = upsertMark([whole], frag);
+    list = upsertMark(list, mark(3, addr, { fragment: true, snapshot: 'кусок два' }));
+    list = upsertMark(list, { ...frag, note: 'правка', snapshot: ' кусок один ' });
+    expect(list.map((m) => m.id)).toEqual([1, 2, 3]);
+    expect(list[1].note).toBe('правка');
+    expect(upsertMark(list, { ...whole, note: 'целиком' })[0].note).toBe('целиком');
+    expect(sameMark(whole, addr, 'кусок один')).toBe(false);
+    expect(findMark(list, addr)?.id).toBe(1);
+    expect(findMark(list, addr, 'кусок   два')?.id).toBe(3);
+  });
+
+  it('фрагмент в блоке — его текст, «раздел изменился» ему не ставится', () => {
+    const live = guide.listAddresses('schema').find((a) => a.endsWith('/inSession'))!;
+    const [a, b] = markEntries([mark(1, live, { fragment: true, snapshot: 'выделено' }), mark(2, 'schema:subjugation/noSuchField', { fragment: true })], guide, tr);
+    expect(a).toMatchObject({ text: 'выделено', fragment: true, changed: false });
+    expect(b).toMatchObject({ fragment: true, changed: false });
   });
 });
