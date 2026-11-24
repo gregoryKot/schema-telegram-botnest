@@ -527,8 +527,8 @@ jobs:
           fetch-depth: 2
       # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
       - id: scope
-        name: дифф только из документов?
-        run: node scripts/ci-docs-only.mjs
+        name: дифф только из документов или контента справочника?
+        run: node scripts/ci-docs-only.mjs --skip-guide-content
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.scope.outputs.docs_only != 'true'
         with:
@@ -851,8 +851,8 @@ jobs:
           fetch-depth: 2
       # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
       - id: scope
-        name: дифф только из документов?
-        run: node scripts/ci-docs-only.mjs
+        name: дифф только из документов или контента справочника?
+        run: node scripts/ci-docs-only.mjs --skip-guide-content
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.scope.outputs.docs_only != 'true'
         with:
@@ -1058,8 +1058,8 @@ jobs:
           fetch-depth: 2
       # Дифф PR только из документов: шаги ниже пропускаются, а джоба остаётся зелёной.
       - id: scope
-        name: дифф только из документов?
-        run: node scripts/ci-docs-only.mjs
+        name: дифф только из документов или контента справочника?
+        run: node scripts/ci-docs-only.mjs --skip-guide-content
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.scope.outputs.docs_only != 'true'
         with:

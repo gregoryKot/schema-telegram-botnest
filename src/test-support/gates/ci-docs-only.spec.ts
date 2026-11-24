@@ -11,7 +11,7 @@ import { jobBlocks } from './workflow-yaml';
 const SCRIPT = join(process.cwd(), 'scripts', 'ci-docs-only.mjs');
 
 /** Настоящий git: база и коммит PR с файлами `files`; результат — docs_only из $GITHUB_OUTPUT. */
-function docsOnly(files: string[], event = 'pull_request'): string {
+function docsOnly(files: string[], event = 'pull_request', args: string[] = []): string {
   const dir = mkdtempSync(join(tmpdir(), 'docs-only-'));
   const git = (...a: string[]) => {
     const r = spawnSync(
@@ -41,7 +41,7 @@ function docsOnly(files: string[], event = 'pull_request'): string {
   git('add', '.');
   git('commit', '-q', '--allow-empty', '-m', 'pr');
   const out = join(dir, 'out.txt');
-  const r = spawnSync('node', [SCRIPT], {
+  const r = spawnSync('node', [SCRIPT, ...args], {
     cwd: dir,
     encoding: 'utf8',
     env: { ...process.env, GITHUB_EVENT_NAME: event, GITHUB_OUTPUT: out },
@@ -77,6 +77,33 @@ describe('ci-docs-only.mjs', () => {
   });
 });
 
+describe('ci-docs-only.mjs --skip-guide-content', () => {
+  const lane = (files: string[]) => docsOnly(files, 'pull_request', ['--skip-guide-content']);
+  const CONTENT = [
+    'shared/src/schemaTherapy/guide/modes/child.ts',
+    'shared/src/schemaTherapy/kb/catalog.ts',
+    'scripts/file-size-baseline.json',
+    'docs/BACKLOG.md',
+  ];
+
+  it('контент справочника с бейслайнами и документом — джоба пропускает шаги', () => {
+    expect(lane(CONTENT)).toBe('docs_only=true');
+  });
+  it('тот же дифф без флага — полный круг: остальные джобы контент проверяют', () => {
+    expect(docsOnly(CONTENT)).toBe('docs_only=false');
+  });
+  it.each([
+    ['компонент сайта рядом с контентом', [...CONTENT, 'webapp/src/components/art/guideSignsModel.ts']],
+    ['иной код shared', ['shared/src/schemaTherapy/content/emotions.ts']],
+    ['бэкенд', [...CONTENT, 'src/therapy/kb-ids.ts']],
+    ['чужой бейслайн', ['scripts/raw-sql-live-baseline.json']],
+  ])('%s — полный круг', (_n, files) => {
+    expect(lane(files)).toBe('docs_only=false');
+  });
+});
+
+const GUIDE_SKIP = ['migrations', 'perf', 'webapp-tz'];
+
 const JOBS = [
   'backend',
   'docker',
@@ -108,6 +135,10 @@ describe('ci.yml: тяжёлые джобы пропускают шаги, не 
       if (s.includes('npm-audit.mjs')) continue; // гейт lockfile-audit: аудит с `if:` не засчитывается
       expect(s).toMatch(/steps\.scope\.outputs\.docs_only (!|=)= 'true'/);
     }
+  });
+
+  it.each(JOBS)('%s: контент справочника пропускают только Postgres и вторая зона', (job) => {
+    expect(blocks[job].includes('--skip-guide-content')).toBe(GUIDE_SKIP.includes(job));
   });
 
   it('джоба checks (гейты над документами) остаётся полной', () => {
