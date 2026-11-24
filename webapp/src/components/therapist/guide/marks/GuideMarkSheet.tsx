@@ -5,6 +5,7 @@ import { GUIDE_MARK_NOTE_MAX } from '../../../../../../shared/src/limits/textLim
 import { clientDisplayName } from '../../../../../../shared/src/therapy/clientInitials';
 import type { GuideMark } from '../../../../../../shared/src/therapy/guideMarks/guideMarksApi';
 import { detectCrisisAny } from '../../../../utils/crisisMarkers';
+import { findMark } from './guideMarkModel';
 import { todayStr } from '../../../../utils/format';
 import { CrisisCard } from '../../../CrisisCard';
 import { Skeleton, SkeletonList } from '../../../Skeleton';
@@ -19,6 +20,8 @@ interface Props {
   title: string;
   /** Справочник из карточки клиента: отметка сразу его, без выбора. */
   client?: GuideMarkClient;
+  /** Выделенный текст: в карточку ляжет он, а не раздел целиком. */
+  fragment?: string;
   /** Уже отмеченный этому клиенту раздел — правка его записи. */
   existing?: GuideMark;
   onSave: (client: GuideMarkClient, note: string) => void;
@@ -34,25 +37,25 @@ type Chosen = { client: GuideMarkClient; existing: GuideMark | null | undefined 
  * в «Все клиенты»), у кого раздел уже отмечен — пометка, тап открывает его запись; затем
  * необязательная строка «как это у клиента» (кризисная проверка, №7). Сохраняет и снимает вызывающий.
  */
-export function GuideMarkSheet({ address, title, client, existing, onSave, onRemove, onClose }: Props) {
+export function GuideMarkSheet({ address, title, fragment, client, existing, onSave, onRemove, onClose }: Props) {
   const back = useRef<SheetBack | null>(null);
   const [chosen, setChosen] = useState<Chosen | null>(client ? { client, existing: existing ?? null } : null);
   const clients = useTherapyClientList(!!client);
   const [marked, setMarked] = useState<ReadonlySet<string>>(new Set());
   const [query, setQuery] = useState('');
   useEffect(() => {
-    if (client) return;
+    if (client || fragment !== undefined) return;
     let alive = true;
     api.getGuideMarkClients(address).then((r) => { if (alive) setMarked(new Set(r.clientIds)); }, () => {});
     return () => { alive = false; };
-  }, [address, client]);
+  }, [address, client, fragment]);
 
   const choose = (c: TherapyClientSummary) => {
     const next: GuideMarkClient = { id: c.telegramId, name: clientDisplayName(c) };
-    if (!marked.has(String(c.telegramId))) return setChosen({ client: next, existing: null });
+    if (fragment === undefined && !marked.has(String(c.telegramId))) return setChosen({ client: next, existing: null });
     setChosen({ client: next, existing: undefined });
     api.getGuideMarks(c.telegramId).then(
-      (r) => setChosen({ client: next, existing: r.marks.find((m) => m.address === address) ?? null }),
+      (r) => setChosen({ client: next, existing: findMark(r.marks, address, fragment) ?? null }),
       () => setChosen({ client: next, existing: null }),
     );
   };
@@ -61,10 +64,11 @@ export function GuideMarkSheet({ address, title, client, existing, onSave, onRem
 
   return (
     <ConceptFullscreenSheet title="Про клиента" label="Про клиента" column={680} closeLabel="Закрыть" onClose={onClose} backRef={back} panel>
-      <div className="gd-page pa-page">
+      <div className="gd-page pa-page" data-no-guide-mark>
         <div className="pa-block">
           <h2 className="pp-hero-title">{title}</h2>
-          <p className="ds-sub">Раздел справочника ляжет в карточку клиента, в блок «Из справочника» под схемой случая. Клиент его не видит.</p>
+          {fragment !== undefined && <blockquote className="gd-sel-quote">{fragment}</blockquote>}
+          <p className="ds-sub">{fragment !== undefined ? 'Выделенный текст' : 'Раздел справочника'} ляжет в карточку клиента, в блок «Из справочника» под схемой случая. Клиент его не видит.</p>
         </div>
         {!chosen && (
           <div className="pa-block">

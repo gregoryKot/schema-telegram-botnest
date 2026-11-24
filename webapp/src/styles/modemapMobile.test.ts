@@ -89,11 +89,11 @@ describe('холст карты режимов на телефоне (sheet-mode
     expect(all).not.toMatch(/\.mm2-(item|drop|backdrop)(?![-\w])/);
   });
 
-  it('сегмент карт в полосе тянется (flex: 1 1 auto) только на ≤767; на ≥768 по содержимому', () => {
+  it('вкладки карт в полосе тянутся (flex: 1 1 auto) только на ≤767; на ≥768 по содержимому', () => {
     const src = readFileSync(join(__dirname, 'sheet-modemap.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    const stretch = `${PHONE} { .mm2-bar > .ds-seg { flex: 1 1 auto; } }`;
+    const stretch = `${PHONE} { .mm2-bar > .lt { flex: 1 1 auto; } }`;
     expect(src).toContain(stretch);
-    expect(src.replace(stretch, '')).not.toMatch(/\.mm2-bar > \.ds-seg \{[^}]*flex:/);
+    expect(src.replace(stretch, '')).not.toMatch(/\.mm2-bar > \.lt \{[^}]*flex:/);
   });
 
   it('полоса карт .mm2-bar — боковой отступ 16 (один отступ на телефоне)', () => {
