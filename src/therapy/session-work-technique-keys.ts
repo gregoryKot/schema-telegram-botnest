@@ -112,4 +112,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:mode_management_plan': ['mode', 'now', 'later', 'schema'],
     'technique:healthy_adult_plan': ['scene', 'goodParent', 'plan', 'result'],
     'technique:safety_bubble': ['image', 'effect', 'home'],
+    'technique:coping_bypass': ['mode', 'trigger', 'feeling', 'next'],
   };
