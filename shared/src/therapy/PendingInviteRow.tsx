@@ -84,14 +84,14 @@ export function PendingInviteRow({
               className={quiet}
               onClick={() => void code.copy(invite.code)}
             >
-              {code.copied ? '✓ Код скопирован' : 'Скопировать код'}
+              {code.copied ? 'Код скопирован' : 'Скопировать код'}
             </button>
             <button
               type="button"
               className={quiet}
               onClick={() => void link.copy(invite.url)}
             >
-              {link.copied ? '✓ Ссылка скопирована' : 'Скопировать ссылку'}
+              {link.copied ? 'Ссылка скопирована' : 'Скопировать ссылку'}
             </button>
             <button
               type="button"

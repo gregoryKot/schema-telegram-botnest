@@ -573,7 +573,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
   it('ошибка api.createTherapyInvite показывает сообщение', async () => {
     mockApi.createTherapyInvite.mockRejectedValue(new Error('network down'));
     await renderSheet('THERAPIST');
-    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
     await screen.findByText(/Не удалось создать приглашение/);
   });
 
@@ -583,7 +583,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
       value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true, writable: true,
     });
     await renderSheet('THERAPIST');
-    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
 
     await screen.findByText('https://t.me/bot?start=abc');
     expect(screen.queryByText('Скопировано ✓')).toBeNull();
@@ -593,7 +593,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
     mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
     mockClipboard();
     await renderSheet('THERAPIST');
-    fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
     await screen.findByText('Ссылка скопирована');
     // Код — отдельной строкой, для клиента на сайте (инцидент 2026-10-26).
     expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();

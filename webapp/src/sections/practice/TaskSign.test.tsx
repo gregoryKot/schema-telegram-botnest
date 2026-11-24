@@ -15,6 +15,20 @@ const html = (type: string, text = '') => {
 };
 
 describe('TaskSign', () => {
+  it('своё невыполненное задание — не галочка; упражнение и «сделано» не меняются', () => {
+    const task = { type: 'custom', text: '' } as never;
+    const draw = (pending?: boolean) => {
+      const { container, unmount } = render(<TaskSign task={task} pending={pending} />);
+      const s = container.innerHTML;
+      unmount();
+      return s;
+    };
+    expect(draw(true)).not.toBe(draw(false));
+    expect(draw(false)).toBe(html('custom'));
+    const ex = { type: 'tracker_streak', text: '' } as never;
+    const { container } = render(<TaskSign task={ex} pending />);
+    expect(container.innerHTML).toBe(html('tracker_streak'));
+  });
   it('рисует знак для каждого типа', () => {
     for (const t of ['tracker_streak', 'diary_streak', 'childhood_wheel', 'schema_intro', 'mode_intro', 'custom', 'flashcard']) {
       expect(html(t), t).toContain('pp-art--row');
