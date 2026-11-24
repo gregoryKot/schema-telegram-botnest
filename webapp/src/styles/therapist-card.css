@@ -91,12 +91,10 @@
 /* Полоса вкладок (ClientTabs, useTabsBar): за краем, где остались вкладки, — маска-градиент (не размытие),
    классы ставит прокрутка. position — чтобы offsetLeft вкладки считался от полосы. Счётчик — тихий: цифра
    цветом подписи, без плашки. */
-.tk-tabs, .tk-fade-bar { position: relative; --tk-fade: 40px; }
-/* Тот же механизм у фильтров-полос .tk-fade-bar: «Записи клиента» (ClientNotesTab, r1) и статусы списка клиентов
-   (ClientListView, r2: на 320 «Офл…» обрезалось без маски). */
-.tk-tabs.is-fade-end, .tk-fade-bar.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start, .tk-fade-bar.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start.is-fade-end, .tk-fade-bar.is-fade-start.is-fade-end {
+.tk-tabs { position: relative; --tk-fade: 40px; }
+.tk-tabs.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start.is-fade-end {
   -webkit-mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
   mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
 }

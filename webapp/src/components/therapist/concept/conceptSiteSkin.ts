@@ -2,7 +2,7 @@ import type { ConceptSkin } from '../../../../../shared/src/therapy/conceptGraph
 
 // Вид концептуализации на сайте: общие компоненты shared берут классы отсюда через ConceptSkinContext.
 export const CONCEPT_SITE_SKIN: ConceptSkin = {
-  seg: { group: 'ds-seg', btn: 'ds-seg-btn' },
+  tabs: { group: 'lt-quiet', btn: 'lt-q', sep: 'lt-sep' },
   label: 'ds-label',
   link: 'ds-link',
   card: 'pp-paper tcp-digest',

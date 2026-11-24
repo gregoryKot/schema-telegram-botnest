@@ -472,20 +472,11 @@ a { color: inherit; text-decoration: none; }
 /* Клиенты кабинета под пунктами полоски — бледные кружки (.sb-client-av), отделены линией. */
 .sb-rail-rule { width: 28px; height: 1px; margin: 8px auto; background: var(--panel-line); }
 
-.sb-mode-switch {
-  display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--panel-2); border-radius: var(--r-10); padding: 3px;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-.sb-mode-btn {
-  padding: 7px 0; text-align: center;
-  color: var(--on-panel-faint);
-  font-weight: 500; border-radius: var(--r-8);
-  transition: color .12s, background .12s;
-}
-.sb-mode-btn:hover { color: var(--on-panel); }
-.sb-mode-btn.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
+/* «Клиент / Терапевт» на панели: LineTabs fill без подложки; линия и текст — токены панели. */
+.sb-mode-switch.lt { box-shadow: inset 0 -1px 0 var(--panel-line); flex-shrink: 0; }
+.sb-mode-switch .lt-tab { color: var(--on-panel-faint); font-size: 13px; }
+.sb-mode-switch .lt-tab:hover { color: var(--on-panel); }
+.sb-mode-switch .lt-tab[aria-selected="true"] { color: var(--on-panel); border-bottom-color: var(--accent); }
 
 .sb-section-label {
   padding: 0 10px 6px;
@@ -612,7 +603,7 @@ a { color: inherit; text-decoration: none; }
 /* Тап-цели 44 в сайдбаре — только под палец (как блок в cabinet.css, #911): на компьютере с мышью
    пункты компактные, как до #912, но не меньше 24px по высоте. */
 @media (pointer: coarse), (max-width: 767px) {
-  .sb-nav > .sb-item, .sb-clients .sb-client-item, .sb-mode-btn { min-height: 44px; }
+  .sb-nav > .sb-item, .sb-clients .sb-client-item { min-height: 44px; }
   .sb-links { padding: 0 10px; }
   .sb-links .sb-item { min-width: 44px; min-height: 44px; }
   .sb-legal a { min-width: 44px; min-height: 44px; }

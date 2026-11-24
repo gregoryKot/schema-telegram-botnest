@@ -112,7 +112,7 @@ describe('AppShell — режим терапевта: переключение �
     localStorage.setItem(THERAPIST_MODE_KEY, '0'); // старт клиентом, чтобы проверить именно клик по переключателю
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Терапевт' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Терапевт' }));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
     expect(mockApi.setTherapistView).toHaveBeenCalledWith(true);
   });
@@ -431,7 +431,7 @@ describe('AppShell — режим терапевта: выключение ув�
     localStorage.setItem('last_client_path', '/practice');
     renderAppShell('/cabinet');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Клиент' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Клиент' }));
     await waitFor(() => expect(screen.getByTestId('practice-section')).toBeTruthy());
     expect(mockApi.setTherapistView).toHaveBeenCalledWith(false);
   });

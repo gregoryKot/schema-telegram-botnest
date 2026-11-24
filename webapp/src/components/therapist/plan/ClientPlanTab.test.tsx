@@ -165,10 +165,10 @@ describe('ClientPlanTab', () => {
     } });
     renderTab();
     await screen.findByText('Оценка');
-    expect(screen.getByRole('button', { name: 'По фазам' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'По фазам' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByText('Без фазы')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Опустить ниже' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'По каналам' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'По каналам' }));
     expect(screen.getAllByRole('heading', { level: 3 }).map((n) => n.textContent)).toEqual(['Между сессиями', 'Своё']);
   });
 
@@ -189,6 +189,6 @@ describe('ClientPlanTab', () => {
     h.getTherapyPlan.mockResolvedValue([item({ id: 1, text: 'Свой пункт' })]);
     renderTab();
     await screen.findByText('Свой пункт');
-    expect(screen.getByRole('button', { name: 'По каналам' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'По каналам' }).getAttribute('aria-selected')).toBe('true');
   });
 });

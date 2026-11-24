@@ -353,7 +353,7 @@ describe('ModeMapNodeEditor — круг потребностей, потреб�
   // Владелец 2026-11-12: «в боковой панели не нужно детство, юность и сейчас сразу — выбор и одно; сейчас по умолчанию».
   it('колесо: в панели один период — «Сейчас» по умолчанию: пять ползунков этого периода, без полей других', () => {
     renderWheel();
-    expect(screen.getByRole('button', { name: 'Сейчас' }).className).toContain('is-active');
+    expect(screen.getByRole('button', { name: 'Сейчас' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getAllByRole('slider')).toHaveLength(5);
     expect(screen.getByRole('slider', { name: 'Привязанность: Сейчас' }).getAttribute('aria-valuenow')).toBe('4');
     expect(screen.queryByRole('slider', { name: /Детство/ })).toBeNull();

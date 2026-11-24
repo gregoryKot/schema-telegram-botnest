@@ -7,7 +7,11 @@
 .tc-hero-btn { align-self: flex-start; }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .tc-search { width: 240px; max-width: 100%; }
-.tc-modes { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.tc-modes { display: flex; gap: 12px 24px; flex-wrap: wrap; align-items: center; }
+/* На компьютере вкладки по содержимому, не на всю строку; на телефоне — во всю ширину (правило ниже). */
+.tc-modes > .lt { flex: 0 0 auto; }
+.tc-modes > .lt .lt-tab { padding: 0 14px; }
+.tc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Знак блока (приглашения, сверка, пустая доска) — строчный 44×24 у заголовка. */
 .tc-block-sign { display: flex; flex: none; }
 
@@ -112,10 +116,9 @@
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tc-count { font-size: 24px; }
-  /* «Клиенты/Задания» — равные доли на всю ширину и на доске: без колонки фильтров .tc-modes сжимался
-     до содержимого, и «Задания» обрезались («Клиент…» на 390, шире экрана на 320/360). */
+  /* «Клиенты/Задания» — равные доли на всю ширину и на доске. */
   .tc-modes { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
-  .tc-modes > .ds-seg--full > .ds-seg-btn { text-overflow: clip; }
+  .tc-modes > .lt { flex: 1 1 auto; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .tc-search { width: 100%; }
   /* Компактная карточка: было 2–3 клиента на экран и 8345px прокрутки у 30

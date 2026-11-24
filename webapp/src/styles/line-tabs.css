@@ -15,6 +15,8 @@
 .lt-tab:hover { color: var(--text); }
 /* Кольцо фокуса — внутрь: лента прокручивается и режет всё за своим краем. */
 .lt-tab:focus-visible, .lt-q:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 6px; }
+/* Число у вкладки — тихо, без плашки (образец — .tk-count в карточке клиента). */
+.ds-count.lt-count { margin-left: 5px; padding: 0; background: none; font-size: 12px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .lt-aside { flex: none; display: flex; align-items: center; }
 /* Тихая пара «Списком · Таблицей»: выбранное — основным цветом, второе — приглушённым. */
 .lt-quiet { display: inline-flex; align-items: center; }
@@ -22,5 +24,5 @@
   min-height: 44px; padding: 0 4px; cursor: pointer; border: none; background: none; white-space: nowrap;
   font: 400 14px/1.2 var(--sans); color: var(--text-muted);
 }
-.lt-q[aria-selected="true"] { color: var(--text); font-weight: 500; }
+.lt-q[aria-selected="true"], .lt-q[aria-pressed="true"] { color: var(--text); font-weight: 500; }
 .lt-sep { color: var(--text-ghost); font-size: 14px; }

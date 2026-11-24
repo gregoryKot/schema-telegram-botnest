@@ -10,7 +10,7 @@ import { withPaper } from './conceptPaper.test-helpers';
 import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
 
 const SKIN: ConceptSkin = {
-  seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
+  tabs: { group: 'sk-tabs', btn: 'sk-tab', sep: 'sk-sep' },
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',

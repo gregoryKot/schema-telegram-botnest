@@ -15,7 +15,7 @@ import {
 import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
 
 const SKIN: ConceptSkin = {
-  seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
+  tabs: { group: 'sk-tabs', btn: 'sk-tab', sep: 'sk-sep' },
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',
@@ -50,19 +50,22 @@ describe('ConceptViewSwitch', () => {
 });
 
 describe('ConceptViewSwitch со skin', () => {
-  it('классы сегмента, is-active по виду, инлайн-стилей нет', () => {
+  it('классы skin.tabs, aria-pressed по виду, разделитель, инлайн-стилей нет', () => {
     render(
       <ConceptSkinContext.Provider value={SKIN}>
         <ConceptViewSwitch view="fields" onChange={() => {}} />
       </ConceptSkinContext.Provider>,
     );
     const group = screen.getByRole('group', { name: 'Вид концептуализации' });
-    expect(group.className).toBe('sk-seg');
+    expect(group.className).toBe('sk-tabs');
     expect(group.getAttribute('style')).toBeNull();
     const graph = screen.getByRole('button', { name: 'Схема' });
     const fields = screen.getByRole('button', { name: 'Поля' });
-    expect(graph.className).toBe('sk-seg-btn');
-    expect(fields.className).toBe('sk-seg-btn is-active');
+    expect(graph.className).toBe('sk-tab');
+    expect(fields.className).toBe('sk-tab');
+    expect(graph.getAttribute('aria-pressed')).toBe('false');
+    expect(fields.getAttribute('aria-pressed')).toBe('true');
+    expect(group.querySelector('.sk-sep')?.textContent).toBe('·');
     expect(fields.getAttribute('style')).toBeNull();
   });
 });

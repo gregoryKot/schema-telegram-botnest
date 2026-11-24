@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useConceptSkin } from './conceptSkin';
 
 export type ConceptView = 'graph' | 'fields';
@@ -24,7 +24,7 @@ const OPTIONS: { view: ConceptView; label: string }[] = [
   { view: 'fields', label: 'Поля' },
 ];
 
-/** Переключатель «Схема · Поля» над концептуализацией; вид — классы skin.seg (сайт: ds-seg). */
+/** Переключатель «Схема · Поля» над концептуализацией; вид — классы skin.tabs (сайт: тихая пара LineTabs). */
 export function ConceptViewSwitch({
   view,
   onChange,
@@ -37,24 +37,21 @@ export function ConceptViewSwitch({
     <div
       role="group"
       aria-label="Вид концептуализации"
-      className={skin?.seg.group}
+      className={skin?.tabs.group}
     >
-      {OPTIONS.map((o) => {
-        const active = view === o.view;
-        return (
+      {OPTIONS.map((o, i) => (
+        <Fragment key={o.view}>
+          {i > 0 && <span className={skin?.tabs.sep} aria-hidden="true">·</span>}
           <button
-            key={o.view}
             type="button"
-            aria-pressed={active}
+            aria-pressed={view === o.view}
             onClick={() => onChange(o.view)}
-            className={
-              skin ? skin.seg.btn + (active ? ' is-active' : '') : undefined
-            }
+            className={skin?.tabs.btn}
           >
             {o.label}
           </button>
-        );
-      })}
+        </Fragment>
+      ))}
     </div>
   );
 }

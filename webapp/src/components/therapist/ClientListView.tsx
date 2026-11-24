@@ -16,11 +16,14 @@ import { ClientListHero } from './ClientListHero';
 import { CabinetEmpty } from './CabinetEmpty';
 import { CLAIM_SIGN, INVITE_SIGN } from './cabinetLook';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
+import { LineTabs } from '../LineTabs';
 import { StatusFilter } from './StatusFilter';
 import type { useAddClient } from './useAddClient';
 import type { TasksBoard } from './useTasksBoard';
 import type { ClientTab } from './clientSheetTypes';
 import '../../styles/therapist-clients.css';
+
+const LIST_TABS = [{ id: 'clients', label: 'Клиенты' }, { id: 'kanban', label: 'Задания' }] as const;
 
 interface Props {
   animKey: number;
@@ -68,12 +71,8 @@ export function ClientListView({
 
         <div className="tc-toolbar">
           <div className="tc-modes">
-            <div className="ds-seg ds-seg--full" role="tablist">
-              <button role="tab" aria-selected={listTab === 'clients'} className={`ds-seg-btn ${listTab === 'clients' ? 'is-active' : ''}`}
-                      onClick={() => setListTab('clients')}>Клиенты</button>
-              <button role="tab" aria-selected={listTab === 'kanban'} className={`ds-seg-btn ${listTab === 'kanban' ? 'is-active' : ''}`}
-                      onClick={() => { setListTab('kanban'); board.open(); }}>Задания</button>
-            </div>
+            <LineTabs look="fill" label="Список" value={listTab} tabs={LIST_TABS}
+                      onPick={(id) => { setListTab(id); if (id === 'kanban') board.open(); }} />
             {listTab === 'clients' && !noClients && (
               <StatusFilter value={filterStatus} onChange={setFilterStatus} />
             )}

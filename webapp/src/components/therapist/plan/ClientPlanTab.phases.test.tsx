@@ -108,7 +108,7 @@ describe('ClientPlanTab: по фазам', () => {
   it('в «По каналам» строка не перетаскивается', async () => {
     await open();
     expect(document.querySelector('.pl-item')!.getAttribute('draggable')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: 'По каналам' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'По каналам' }));
     expect(document.querySelector('.pl-item')!.getAttribute('draggable')).not.toBe('true');
   });
 });

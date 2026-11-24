@@ -5,7 +5,7 @@ import { NoteCard } from './NoteCard';
 import { TabTitle } from './TabTitle';
 import { PaperEmpty } from '../art/PaperEmpty';
 import { Pebbles } from '../art/PaperArt';
-import { useTabsBar } from './useTabsBar';
+import { LineTabs } from '../LineTabs';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 interface Props { clientSchemaNotesData: SchemaNoteData[]; clientModeNotesData: ModeNoteData[]; clientDiary: DiaryEntry[] }
@@ -13,7 +13,6 @@ interface Props { clientSchemaNotesData: SchemaNoteData[]; clientModeNotesData: 
 export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, clientDiary }: Props) {
   const [filter, setFilter] = useState<NoteFilter>('all');
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const { ref: barRef, onScroll: onBarScroll, fadeClassName } = useTabsBar(filter);
   const all = buildNoteItems(clientDiary, clientSchemaNotesData, clientModeNotesData);
 
   if (all.length === 0) {
@@ -29,14 +28,9 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
     <div className="ds-page tb-page--narrow">
       <div className="ds-head-row tb-notes-head">
         <TabTitle title="Записи клиента" className="tb-tab-title--desk" />
-        {/* Фильтр — одна строка с прокруткой и маской у края, как вкладки карточки (useTabsBar, r1). */}
-        <div className={`ds-seg ds-seg--scroll tb-notes-filter tk-fade-bar${fadeClassName}`} role="tablist" ref={barRef} onScroll={onBarScroll}>
-          {FILTERS.map(f => (
-            <button key={f.id} role="tab" aria-selected={filter === f.id} className={`ds-seg-btn${filter === f.id ? ' is-active' : ''}`} onClick={() => setFilter(f.id)}>
-              {f.label}<span className="ds-count">{counts[f.id]}</span>
-            </button>
-          ))}
-        </div>
+        <LineTabs look="scroll" label="Тип записей" value={filter} onPick={setFilter} tabs={FILTERS.map(f => (
+          { id: f.id, label: <>{f.label}<span className="ds-count lt-count">{counts[f.id]}</span></> }
+        ))} />
       </div>
       {shown.length === 0 ? <PaperEmpty>В этой категории записей нет</PaperEmpty> : (
         <div className="pp-leaf tb-notes" style={{ '--h': ENTITY_LOOK.diary.hue } as CSSProperties}>{/* один лист, r2 */}

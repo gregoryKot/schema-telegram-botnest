@@ -253,7 +253,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
         }
       }
     }
-    expect(seen).toBeGreaterThanOrEqual(10);
+    expect(seen).toBeGreaterThanOrEqual(6); // экраны терапевта — на LineTabs и чипах (#1619)
     expect(bare).toEqual([]);
   });
   it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {

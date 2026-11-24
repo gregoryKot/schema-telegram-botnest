@@ -124,7 +124,7 @@
 /* 320: ряд «Схема · Поля», «Главное», «⋯» держится одной строкой — поля и зазоры теснее. */
 @media (max-width: 359px) {
   .tcp-head { gap: 6px; }
-  .tcp-head .ds-seg-btn { padding-inline: 10px; }
+  .tcp-head .lt-q { padding-inline: 2px; }
   .tcp-brief-btn { padding: 0 10px; }
 }
 
