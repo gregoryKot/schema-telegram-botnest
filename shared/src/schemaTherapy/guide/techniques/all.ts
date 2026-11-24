@@ -15,6 +15,7 @@ import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
 import { buildSafetyBubbleTechniques } from './safetyBubble';
 import { buildProbePhrasesTechniques } from './probePhrases';
+import { buildCopingBypassTechniques } from './copingBypass';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
@@ -41,6 +42,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildCognitiveArntzTechniques,
   buildFarrellPlanTechniques,
   buildEmpathicConfrontationTechniques,
+  buildCopingBypassTechniques,
   buildStanceTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,

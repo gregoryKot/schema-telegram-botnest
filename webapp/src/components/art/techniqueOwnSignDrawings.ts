@@ -11,7 +11,7 @@ import {
   Activation, Approach, Defusion, DiarySheet, LevelsHeart, LifeLine, PebbleBowl, Pie, Rewind, ToleranceWindow,
   TryStep, Values,
 } from './TechniqueSignsSteps';
-import { GuessMode, NeedCycle, Scatter } from './TechniqueSignsArntz';
+import { CopingBypass, GuessMode, NeedCycle, Scatter } from './TechniqueSignsArntz';
 import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
 import { ProbePhrase } from './TechniqueSignsHeath';
 
@@ -22,6 +22,6 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   diary_sheet: DiarySheet, pebble_bowl: PebbleBowl, try_step: TryStep, activation: Activation,
   approach: Approach, values: Values, life_line: LifeLine, window: ToleranceWindow,
   levels_heart: LevelsHeart, defusion: Defusion, pie: Pie, rewind: Rewind,
-  scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode,
+  scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode, bypass: CopingBypass,
   mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, probe: ProbePhrase,
 };
