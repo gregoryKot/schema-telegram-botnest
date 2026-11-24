@@ -42,7 +42,7 @@
    страницы на цветном листе, наклон и тень сплошным сдвинутым слоем, без размытия. */
 .cw-why-mark {
   --h: 240; grid-column: 2; grid-row: 1; display: grid; place-items: center; width: 60px; height: 60px;
-  border-radius: 16px; transform: rotate(-4deg); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h));
+  border-radius: 16px; transform: rotate(-4deg); box-shadow: 0 0 0 1px var(--panel-line);
 }
 .cw-why-mark > svg { width: 42px; height: 42px; }
 .cw-why-head > .ds-h1, .cw-why-head > .cw-lead { grid-column: 1 / -1; margin: 0; }
@@ -68,7 +68,7 @@
 .cw-legend-row dd { margin: 0 0 0 56px; color: var(--text-sub); }
 
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cw-why-mark { grid-row: 1 / 4; align-self: start; width: 96px; height: 96px; border-radius: 22px; box-shadow: 6px 8px 0 oklch(0.8 0.06 var(--h)); }
+  .cw-why-mark { grid-row: 1 / 4; align-self: start; width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 0 0 1px var(--panel-line); }
   .cw-why-mark > svg { width: 64px; height: 64px; }
   .cw-why-head > .ds-h1, .cw-why-head > .cw-lead { grid-column: 1; }
   .cw-thing { grid-template-rows: auto 1fr; column-gap: 24px; padding: 24px 26px 26px 28px; border-radius: 24px; }
@@ -81,7 +81,7 @@
   .cw-why .cw-inner { max-width: 1040px; padding: 32px 48px 56px; gap: 20px; }
   .cw-why-head { column-gap: 40px; margin-bottom: 8px; }
   .cw-why-head > .cw-lead { max-width: 64ch; font-size: 16px; }
-  .cw-why-mark { width: 128px; height: 128px; margin: 6px 8px 0 0; border-radius: 28px; box-shadow: 8px 10px 0 oklch(0.8 0.06 var(--h)); }
+  .cw-why-mark { width: 128px; height: 128px; margin: 6px 8px 0 0; border-radius: 28px; box-shadow: 0 0 0 1px var(--panel-line); }
   .cw-why-mark > svg { width: 84px; height: 84px; }
   .cw-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   .cw-thing { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; row-gap: 10px; align-items: start; padding: 28px 28px 30px; }

@@ -40,18 +40,14 @@
 .al-title { font-family: var(--serif); font-size: 28px; line-height: 1.1; font-weight: 400; margin: 0; }
 .al-sub { font-size: 15px; color: var(--text-sub); line-height: 1.5; margin: 0 0 6px; text-wrap: pretty; }
 
-.al-btn-main {
-  display: flex; align-items: center; gap: 14px; padding: 0 20px; border-radius: 28px; min-width: 0;
-  font: 600 15px var(--sans); text-decoration: none; cursor: pointer; box-sizing: border-box; width: 100%;
-}
-.al-btn-main { min-height: 54px; background: var(--accent); border: 0; color: var(--on-accent); font-weight: 700; }
-.al-btn-main:hover { background: var(--accent-hi); }
+/* Кнопка входа — ds-btn ds-btn--lg; здесь только раскладка: во всю колонку, знак слева. */
+.ds-btn.al-btn-main { display: flex; justify-content: flex-start; gap: 14px; padding: 0 20px; min-width: 0; box-sizing: border-box; width: 100%; text-decoration: none; }
 .al-ico { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
 .al-vk { background: #0077FF; color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
 .al-ya { background: #FC3F1D; color: #fff; border-radius: 50%; font-size: 15px; font-weight: 700; }
 .al-max { background: linear-gradient(135deg, #3D7BFF, #8A3FFC); color: #fff; border-radius: 9px; font-size: 14px; font-weight: 700; }
 .al-max-step { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
-.al-max-step .al-btn-main { justify-content: center; }
+.al-max-step .ds-btn.al-btn-main { justify-content: center; }
 .al-code { font: 700 28px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 2px; text-align: center; color: var(--text); }
 .al-ticket { background: oklch(0.95 0.015 var(--h)); border-radius: 16px; padding: 6px 14px; }
 .al-ticket:empty { display: none; }
@@ -66,11 +62,7 @@
 .al-foot { font-size: 13px; color: var(--text-sub); margin: 0; }
 .al-foot--center { text-align: center; }
 .al-foot--center .al-linkbtn { align-self: auto; }
-.al-submit {
-  min-height: 52px; border-radius: 26px; border: 0; background: var(--accent); color: var(--on-accent);
-  font: 700 15px var(--sans); cursor: pointer; width: 100%;
-}
-.al-submit:disabled { opacity: .5; cursor: default; }
+.ds-btn.al-submit { width: 100%; }
 
 /* Автовход в мессенджере не сработал (TelegramRetry): исход на PaperOutcome; помощь — под кнопкой. */
 .al-retry-help { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -95,7 +87,7 @@
 @media (max-width: 359px) {
   .al-hero-art { width: 104px; }
   .al-slogan { font-size: 21px; }
-  .al-btn-main { gap: 10px; padding: 0 14px; }
+  .ds-btn.al-btn-main { gap: 10px; padding: 0 14px; }
 }
 @media (min-width: 600px) and (max-width: 1023px) {
   .al-hero { padding-left: 32px; padding-right: 32px; }
