@@ -111,7 +111,8 @@ afterEach(() => {
 });
 
 /** Кнопка сегмента: у трекера дня в строке даты тоже имя «Трекер — …», поэтому ищем внутри сегмента. */
-const seg = (name: RegExp) => within(screen.getByRole('group', { name: 'Тип записей' })).getByRole('button', { name });
+const tabs = () => within(screen.getByRole('tablist', { name: 'Тип записей' }));
+const seg = (name: RegExp) => tabs().getByRole('tab', { name });
 
 const rated = (date: string, values: number[]) => ({
   date,
@@ -268,7 +269,7 @@ describe('DiarySection — реальные записи из api', () => {
   });
 });
 
-describe('DiarySection — сегмент «Все · Трекер · Случаи · Дневник»', () => {
+describe('DiarySection — вкладки «Все · Трекер · Случаи · Дневник»', () => {
   const setup = () => {
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись-схема' })]);
     mockApi.getModeDiary.mockResolvedValue([modeEntry({ situation: 'Запись-режим' })]);
@@ -279,7 +280,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     setup();
     renderSection();
     await screen.findByText('Запись-схема');
-    const counts = [...document.querySelectorAll('.ds-seg-btn')].map(b => b.textContent);
+    const counts = tabs().getAllByRole('tab').map(b => b.textContent);
     expect(counts).toEqual(['Все4', 'Трекер2', 'Случаи0', 'Дневник2']);
   });
 
@@ -310,7 +311,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     ]);
     renderSection();
     await screen.findByText('Тишина в ответ');
-    const counts = [...document.querySelectorAll('.ds-seg-btn')].map(b => b.textContent);
+    const counts = tabs().getAllByRole('tab').map(b => b.textContent);
     expect(counts).toEqual(['Все2', 'Трекер0', 'Случаи1', 'Дневник1']);
     fireEvent.click(seg(/^Случаи/));
     expect(screen.getByText('Тишина в ответ')).toBeTruthy();
@@ -478,7 +479,7 @@ describe('DiarySection — мастера по черновику («Продо�
   // Пустая обёртка в .ds-page — лишний gap: 48px между «Записать» и фильтрами (скрин владельца 2026-11-06).
   it('без черновиков обёртки .cd-drafts нет; с черновиком — есть', async () => {
     renderSection();
-    await screen.findByRole('group', { name: 'Тип записей' });
+    await screen.findByRole('tablist', { name: 'Тип записей' });
     expect(document.querySelector('.cd-drafts')).toBeNull();
     cleanup();
     saveDraft('mode', { situation: 'Черновик-ситуация' });

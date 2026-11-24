@@ -4,7 +4,7 @@
 // (тип custom — личная цель) без прогона через crisisMarkers — единственное
 // поле свободного текста в компоненте, оставшееся без кризисной карточки.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { AddressFormContext } from '../utils/addressForm';
@@ -157,7 +157,9 @@ describe('TaskCreateSheet — назначение терапевтом (QA 2026
   it('серия на 3 дня сохраняется с верным склонением', async () => {
     mockApi.createTask.mockResolvedValue({ id: 1 });
     renderFor({ clientId: 42, defaultType: 'tracker_streak' });
-    fireEvent.click(screen.getByText('3 дн'));
+    const days = within(screen.getByRole('radiogroup', { name: 'Цель в днях' }));
+    fireEvent.click(days.getByRole('radio', { name: '3 дн' }));
+    expect(days.getAllByRole('radio').filter(r => r.getAttribute('aria-checked') === 'true').map(r => r.textContent)).toEqual(['3 дн']);
     fireEvent.click(screen.getByText('Назначить задание'));
     await waitFor(() => expect(mockApi.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'tracker_streak', text: 'Отмечать потребности 3 дня подряд', targetDays: 3 }),

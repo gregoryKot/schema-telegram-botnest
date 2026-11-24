@@ -9,7 +9,7 @@
 .cs-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; min-width: 0; margin-left: auto; }
 /* Вкладки «Схемы / Режимы / Потребности» на 320–374: ширина по словам, а не поровну — «Потребности» целиком,
    без многоточия (ревью g5 r1; r3: на 341–345 порог 340 оставлял «Потребнос…»). */
-@media (max-width: 374px) { .cs-tabs.ds-seg--full > .ds-seg-btn { flex: 1 1 auto; padding-left: 4px; padding-right: 4px; } }
+@media (max-width: 374px) { .cs-tabs .lt-strip--fill > .lt-tab { flex: 1 1 auto; padding-inline: 2px; } }
 /* 320–374: три действия встают в строку плотнее, а не «Библиотека» одна второй строкой. */
 @media (max-width: 374px) {
   .cs-head-actions { gap: 8px 6px; }

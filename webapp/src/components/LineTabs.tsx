@@ -4,7 +4,14 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { stepTab } from './lineTabsModel';
 import '../styles/line-tabs.css';
 
-export interface LineTab<T extends string> { id: T; label: ReactNode }
+export interface LineTab<T extends string> {
+  id: T; label: ReactNode;
+  /** Тихое число после подписи (записей в разделе); null — не загружено, числа нет. */
+  count?: number | null;
+  title?: string;
+  /** Поле на месте пункта (переименование карты): рисуется вместо кнопки. */
+  field?: ReactNode;
+}
 
 interface Props<T extends string> {
   tabs: readonly LineTab<T>[];
@@ -28,6 +35,8 @@ export function LineTabs<T extends string>({ tabs, value, onPick, label, look, a
   const { ref, edges, measure } = useStripEdges(0);
   const buttons = useRef(new Map<T, HTMLButtonElement>());
   const quiet = look === 'quiet';
+  // Выбор ещё не пришёл (карта грузится) — в ленту по Tab ведёт первый пункт.
+  const focusId = tabs.some((t) => t.id === value) ? value : tabs[0]?.id;
   useEffect(() => {
     if (look !== 'scroll') return;
     scrollIntoViewSafe(buttons.current.get(value), { block: 'nearest', inline: 'nearest' });
@@ -51,13 +60,13 @@ export function LineTabs<T extends string>({ tabs, value, onPick, label, look, a
       {tabs.map((t, i) => (
         <Fragment key={t.id}>
           {quiet && i > 0 && <span className="lt-sep" aria-hidden="true">·</span>}
-          <button
+          {t.field ?? <button
             ref={(el) => { if (el) buttons.current.set(t.id, el); else buttons.current.delete(t.id); }}
-            type="button" role="tab" id={tabId?.(t.id)} aria-selected={t.id === value} tabIndex={t.id === value ? 0 : -1}
-            className={quiet ? 'lt-q' : 'lt-tab'} onClick={() => onPick(t.id)} onKeyDown={onKey}
+            type="button" role="tab" id={tabId?.(t.id)} aria-selected={t.id === value} tabIndex={t.id === focusId ? 0 : -1}
+            title={t.title} className={quiet ? 'lt-q' : 'lt-tab'} onClick={() => onPick(t.id)} onKeyDown={onKey}
           >
-            {t.label}
-          </button>
+            {t.label}{t.count != null && <span className="ds-count lt-count">{t.count}</span>}
+          </button>}
         </Fragment>
       ))}
     </div>

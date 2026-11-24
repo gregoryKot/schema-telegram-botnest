@@ -18,6 +18,7 @@ import { readLocal, writeLocal } from '../../../shared/src/utils/safeLocalStorag
 import { useDayNote } from '../hooks/useDayNote';
 import { isRated } from '../../../shared/src/needs/ratingRecord';
 import { todayStr } from '../../../shared/src/utils/format';
+import { LineTabs } from './LineTabs';
 
 interface Props {
   needs: Need[];
@@ -31,6 +32,7 @@ interface Props {
 }
 
 const HISTORY_HINT_KEY = 'history_hint_dismissed';
+const HISTORY_VIEWS = [{ id: 'day', label: 'День' }, { id: 'week', label: 'Неделя' }] as const;
 
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, onGoToToday, onBackfill }: Props) {
   const tr = useTr();
@@ -78,13 +80,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       <DateStrip history={history} selectedIdx={selectedIdx} onSelect={setSelectedIdx} btnRefs={dateBtnRefs} />
 
       <div className="sd-toolbar">
-        <div className="ds-seg ds-seg--full" role="group" aria-label="Вид">
-          {(['day', 'week'] as const).map(v => (
-            <button key={v} onClick={() => setSubView(v)} className={'ds-seg-btn' + (subView === v ? ' is-active' : '')}>
-              {v === 'day' ? 'День' : 'Неделя'}
-            </button>
-          ))}
-        </div>
+        <LineTabs tabs={HISTORY_VIEWS} value={subView} onPick={setSubView} label="Вид" look="scroll" />
         {showHint && <span className="sd-toolbar-hint">{trackerTapHint(tr)}</span>}
       </div>
 
