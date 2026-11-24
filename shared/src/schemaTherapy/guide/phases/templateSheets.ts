@@ -6,16 +6,15 @@ import {
   type PathTemplate,
   type PathTemplatePhase,
 } from '../../../therapy/path/templates';
-import { pluralRu } from '../../../utils/pluralRu';
 import { parseAddress } from '../address/addressFormat';
 import type { TechniqueId, Tr } from '../types';
 import type { PhaseGuide } from './types';
+import { phaseWeeks, templateTiming, weeksLabel } from './templateTerm';
 
 /** Приставка id листа шаблона: `template_<id шаблона>`. */
 export const TEMPLATE_SHEET_PREFIX = 'template_';
 
-export const weeksLabel = (n: number): string =>
-  `${n} ${pluralRu(n, 'неделя', 'недели', 'недель')}`;
+export { weeksLabel };
 
 const uniq = <T>(items: T[]): T[] => [...new Set(items)];
 
@@ -36,11 +35,7 @@ function stageLine(
   index: number,
   names: Map<string, string>,
 ): string {
-  const term = [
-    weeksLabel(phase.weeks) +
-      (phase.weeksFrom === 'estimate' ? ' условно' : ''),
-    phase.sessionsHint,
-  ]
+  const term = [phaseWeeks(phase), phase.sessionsHint]
     .filter(Boolean)
     .join(', ');
   const guide = phase.guidePhaseIds
@@ -76,7 +71,7 @@ export function templateSheet(
     name: template.name,
     goal: template.summary,
     essence: template.essence,
-    timing: `${template.timing} Всего в шаблоне ${weeksLabel(total)}.`,
+    timing: templateTiming(template.timing, total),
     stages: template.phases.map((p, i) => stageLine(p, i, names)),
     modeIds: recommendedIds(template, 'mode'),
     techniques: recommendedIds(template, 'technique') as TechniqueId[],
