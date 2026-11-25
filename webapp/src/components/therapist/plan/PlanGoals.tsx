@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine';
 import { useTr } from '../../../utils/addressForm';
 import { ConceptArea } from '../ClientConceptFields';
@@ -16,7 +15,7 @@ export function PlanGoals({ detail }: { detail: ClientDetail }) {
   const { localConcept, concept, conceptLoad, patchConcept, setClientTab } = detail;
   const goals = (localConcept.goals ?? concept?.goals ?? '') as string;
   return (
-    <section className="pp-paper tk-goal pl-goals" style={{ '--h': 70 } as CSSProperties}>
+    <section className="pp-block pp-block--note tk-goal pl-goals">
       <div className="ds-head-row">
         <SignHead kind="layers" className="ds-label">Цель терапии</SignHead>
         <SaveStatusLine status={detail.saveStatus} savedAt={detail.savedAt} onRetry={detail.retrySave} errorText={detail.conceptError || undefined} align="right" />
