@@ -19,15 +19,13 @@ import { findTestGroupByModeId } from '../mode/modeTest';
 import { modeDisplayName } from '../mode/modeDisplayName';
 import { dateStringMs } from '../utils/calendarDate';
 import { momentDayKey } from '../utils/momentDate';
+import { pluralRu } from '../utils/pluralRu';
 
-/** Полосы карты сверху вниз. */
-export type MapLaneId = 'healthy' | 'stage' | 'backstage' | 'origins';
+/** Полосы режимов сверху вниз; «Откуда тянется» (схемы) собирает mapOrigins.ts. */
+export type MapLaneId = 'healthy' | 'stage' | 'backstage';
 
 /** Дней без единой записи, после которых режим считается затихшим. */
 export const DORMANT_AFTER_DAYS = 30;
-
-/** Разборов, после которых открывается полоса «Откуда тянется». */
-export const ORIGINS_UNLOCK_CASES = 5;
 
 export interface MapCase {
   modeId: string;
@@ -68,7 +66,6 @@ export interface MapLane {
   items: MapModeItem[];
   /** Полоса рисуется на экране. */
   visible: boolean;
-  locked: boolean;
 }
 
 /** Семьи режимов -> полоса карты. Копинги, гиперкомпенсации и критик выходят
@@ -88,7 +85,6 @@ const LANE_TITLES: Record<MapLaneId, string> = {
   healthy: 'Сверху: кто держит',
   stage: 'На сцене: кто выходит',
   backstage: 'За кулисами: кто прячется',
-  origins: 'Откуда тянется',
 };
 
 /** Полоса режима; незнакомая семья уходит на сцену — там она хотя бы видна. */
@@ -151,8 +147,6 @@ export function collectModeItems(input: MapInput): MapModeItem[] {
  */
 export function buildMapLanes(input: MapInput): MapLane[] {
   const items = collectModeItems(input);
-  const originsUnlocked =
-    input.ysqDone || input.cases.length >= ORIGINS_UNLOCK_CASES;
 
   const lane = (id: MapLaneId): MapModeItem[] =>
     items.filter((i) => laneForMode(i.modeId) === id);
@@ -167,28 +161,32 @@ export function buildMapLanes(input: MapInput): MapLane[] {
       title: LANE_TITLES.healthy,
       items: healthyItems,
       visible: healthyItems.length > 0 || input.warmWords.length > 0,
-      locked: false,
     },
     {
       id: 'stage',
       title: LANE_TITLES.stage,
       items: stageItems,
       visible: stageItems.length > 0 || items.length === 0,
-      locked: false,
     },
     {
       id: 'backstage',
       title: LANE_TITLES.backstage,
       items: backstageItems,
       visible: backstageItems.length > 0 || stageItems.length > 0,
-      locked: false,
-    },
-    {
-      id: 'origins',
-      title: LANE_TITLES.origins,
-      items: [],
-      visible: originsUnlocked || input.cases.length > 0,
-      locked: !originsUnlocked,
     },
   ];
+}
+
+/** На карте нет ни разбора, ни карточки примет — экран ведёт к первому разбору. */
+export const mapIsEmpty = (input: MapInput): boolean =>
+  input.cases.length === 0 && input.notes.length === 0;
+
+/** Подпись строки режима: «приметы собраны» — только когда карточка правда заполнена. */
+export function modeItemSub(item: MapModeItem): string {
+  if (item.dormant) return `Не появлялся в записях ${item.daysSince} дней`;
+  if (item.count > 0)
+    return `${item.count} ${pluralRu(item.count, 'случай', 'случая', 'случаев')}`;
+  return item.hasCard
+    ? 'Приметы собраны, случаев пока нет'
+    : 'Случаев пока нет';
 }

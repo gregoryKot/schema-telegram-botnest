@@ -79,6 +79,7 @@
 //   push_*               — уведомления в приложении (веб-пуши): push-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
+//   self_map_link        — переход-мост «Карты себя» (meta.to): self-map-events.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
 //                         каждого — game-events.constants.ts.
 //   asset_recovered      — повтор файла сборки помог (анонимно): asset-recovery.constants.ts.
@@ -86,6 +87,7 @@
 //                         (meta.type — ENTRY_DELETE_TYPES, entry-delete.constants.ts):
 //                         текст там очень личный — видно, находят ли удаление вообще.
 import { CASE_EVENTS } from './case-steps.constants';
+import { SELF_MAP_EVENTS } from './self-map-events.constants';
 import { CABINET_EVENTS } from './cabinet-events.constants';
 import { BOOKING_EVENTS } from './booking-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
@@ -138,6 +140,7 @@ export const ANALYTICS_EVENTS = [
   'login_ticket_step',
   // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
   ...CASE_EVENTS,
+  ...SELF_MAP_EVENTS,
   // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
   ...GAME_EVENTS,
   // Удалил свою запись — meta.type из ENTRY_DELETE_TYPES.
