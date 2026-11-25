@@ -18,7 +18,7 @@ export const buildPracticeGroup: PracticeNotesBuilder = (tr) => [
     ],
     more: groupMore,
     sources:
-      '[Фаррелл, гл. 2.3, 3–4, 4.2, 6.2], [Кембридж, гл. 17, бокс 17.1], [Арнтц ПРЛ, гл. 2, 10], Arntz et al., 2022',
+      '[Фаррелл, гл. 2.3, 3–4, 3.4–3.7, 4.1–4.3, 6.2], [Кембридж, гл. 17, бокс 17.1], [Арнтц ПРЛ, гл. 2, 10], Arntz et al., 2022',
   },
   {
     id: 'group_techniques',
