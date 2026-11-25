@@ -64,7 +64,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Янг',
     chapters: ['гл. 2', 'гл. 5'],
-    note: 'ещё Кембридж гл. 3, 9, 10 и «Касьяник»',
+    note: 'ещё Кембридж гл. 3, 9, 10, «Касьяник» и ван Фресвайк прил. III-B, III-E',
   },
   {
     id: 'session_frequency',
@@ -93,6 +93,42 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 10'],
+  },
+  {
+    id: 'mbst_protocol',
+    title:
+      'Протокол «Осознанность и схема-терапия»: устройство, оценка, ведение',
+    status: 'planned',
+    source: 'ван Фресвайк',
+    chapters: ['гл. 1', 'гл. 4', 'гл. 6'],
+  },
+  {
+    id: 'mbst_sessions',
+    title: 'Протокол осознанности: сессии 1–8 и контрольные',
+    status: 'planned',
+    source: 'ван Фресвайк',
+    chapters: ['гл. 4', 'гл. 6', 'гл. 9'],
+  },
+  {
+    id: 'mbst_suitability',
+    title: 'Кому подходит тренинг осознанности',
+    status: 'planned',
+    source: 'ван Фресвайк',
+    chapters: ['гл. 1', 'гл. 5'],
+  },
+  {
+    id: 'mbst_group_difficulties',
+    title: 'Трудности в группе осознанности',
+    status: 'planned',
+    source: 'ван Фресвайк',
+    chapters: ['гл. 7'],
+  },
+  {
+    id: 'mindfulness_programs',
+    title: 'Программы осознанности: MBSR, MBCT, данные и механизмы',
+    status: 'planned',
+    source: 'ван Фресвайк',
+    chapters: ['гл. 3'],
   },
   {
     id: 'supervision',
