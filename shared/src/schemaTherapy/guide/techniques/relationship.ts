@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { uniqueItems } from '../uniqueItems';
 import { buildAngerExpressionTechniques } from './angerExpression';
 import { limitMore, limitVoice } from './arntzBpdRelationMore';
 import { limitSettingMore } from './relationshipHeath';
@@ -26,8 +27,7 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
       'Граница — последний шаг после мягких приёмов: это улица с односторонним движением, назад не повернуть. Мелкое — опоздания, личные вопросы, перебивания — решают эмпатической конфронтацией, сразу ограничивают только агрессию. Последствие соразмерно нарушению и звучит без кары: опоздавшему не продлевают сессию, нагрубившего просят извиниться, можно дать письменное задание, чтобы загладить ущерб [Кембридж, гл. 2, 6, бокс 6.9]. ' +
       'Граница звучит без мести и без оправданий [Янг, гл. 10]. В разгар кризиса ссылаются на уже названные границы, а не придумывают новые [Янг, гл. 9].',
     more: [
-      ...limitMore,
-      ...limitSettingMore,
+      ...uniqueItems(limitMore, limitSettingMore),
       ...camb.limitSettingCambridgeMore,
     ],
     sources:

@@ -1,5 +1,5 @@
 import { complaintToModeMore } from './practiceAssessMore';
-import { modeFlippingMore } from './practiceMoreArntzJacob';
+import { modeFlippingMore } from './practiceMoreArntzIntro';
 
 /** «Подробнее» к заметкам «Для терапевта» по гл. 2–3 Арнца и ван Гендерен о ПРЛ. */
 export const modeFlippingMoreBpd: string[] = [

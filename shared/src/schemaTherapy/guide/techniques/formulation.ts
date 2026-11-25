@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { uniqueItems } from '../uniqueItems';
 import { mapMore } from './arntzBpdRelationMore';
 import { modeMapMore } from './modeMapMoreLuz';
 import { schemaDiaryMore } from './schemaDiaryMore';
@@ -38,7 +39,7 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
       ),
       ...modeMapCambridgeVoice(tr),
     ],
-    more: [...modeMapMore, ...mapMore, ...modeMapCambridgeMore],
+    more: uniqueItems(modeMapMore, mapMore, modeMapCambridgeMore),
     cautions:
       'Карта — рабочая гипотеза, а не диагноз: клиент может спорить и переименовывать. Режим, которого клиент в себе не узнаёт, ему не доказывают, и обидных имён от себя не предлагают: такое имя берут, только если его придумал сам клиент [Янг, гл. 8]. Клиент отвергает саму идею режимов — не настаивать и говорить о грустной, сердитой, самокритичной, молчаливой стороне: лишь бы у частей были хоть какие-то имена [Янг, гл. 9]. Пять-шесть режимов на листе достаточно; полный перечень превращает его в учебник.',
     sources:

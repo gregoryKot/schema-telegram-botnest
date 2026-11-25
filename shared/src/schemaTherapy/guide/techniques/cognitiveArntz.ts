@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { uniqueItems } from '../uniqueItems';
 import { guessMore } from './arntzBpdRelationMore';
 import { guessModeFarrell } from './guessModeFarrell';
 
@@ -79,7 +80,7 @@ export const buildCognitiveArntzTechniques: TechniqueGuideBuilder = (tr) => [
         'Сейчас я покажу, как вы иногда говорите со мной в начале сессии. Угадаете, какая это часть?',
       ),
     ],
-    more: [...guessMore, ...guessModeFarrell],
+    more: uniqueItems(guessMore, guessModeFarrell),
     cautions:
       'Главный риск — клиенту покажется, что над ним смеются. Перед игрой проговорить её смысл, изображать бережно и остановиться, если клиент задет: обида — уже материал о режимах.',
     sources: '[Арнтц ПРЛ, гл. 3], [Фаррелл, гл. 4.3]',
