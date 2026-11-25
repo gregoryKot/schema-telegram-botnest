@@ -116,4 +116,5 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:probe_phrases': ['belief', 'phrase', 'body', 'home'],
     'technique:three_parts_check_in': ['vulnerable', 'happy', 'adult', 'after'],
     'technique:coping_bypass': ['mode', 'trigger', 'feeling', 'next'],
+    'technique:mode_figures': ['mode', 'feeling', 'next'],
   };

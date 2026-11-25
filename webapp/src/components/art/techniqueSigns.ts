@@ -79,6 +79,7 @@ const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
 
 const ARNTZ_JACOB_TECHNIQUE_SIGN: Record<ArntzJacobTechniqueId, GuideSign> = {
   coping_bypass: 'bypass',
+  mode_figures: 'figures',
 };
 
 const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {

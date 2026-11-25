@@ -66,6 +66,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'probe_phrases',
     'three_parts_check_in',
     'coping_bypass',
+    'mode_figures',
   ].map(w),
   {
     id: 'rupture_repair',

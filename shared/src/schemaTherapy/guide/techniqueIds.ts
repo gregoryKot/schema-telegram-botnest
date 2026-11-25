@@ -66,7 +66,7 @@ export type ArntzTechniqueId =
   'current_role_play' | 'two_axis_check' | 'need_cycle' | 'guess_the_mode';
 
 /** Техники из книги Арнтц и Якоб «Практическое руководство» (карта «Арнтц-Якоб»). */
-export type ArntzJacobTechniqueId = 'coping_bypass';
+export type ArntzJacobTechniqueId = 'coping_bypass' | 'mode_figures';
 
 /** Техники из книги Фаррелл, Рейсс и Шоу (карта «Фаррелл»). */
 export type FarrellTechniqueId =
