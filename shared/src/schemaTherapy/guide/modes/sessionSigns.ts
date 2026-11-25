@@ -1,5 +1,5 @@
 import type { ModeGuide } from '../types';
-
+import { ARNTZ_CASES } from './personalityCasesArntz';
 /** Как режим узнаётся на сессии по табл. 3.3 Кембриджа: тело, контрперенос, «задача» режима. Пункт встаёт
  *  последним в «Подробнее»; ловушки терапевта из той же таблицы — в `stuck` самих режимов. */
 const SESSION_SIGNS: Record<string, string> = {
@@ -42,6 +42,6 @@ export const SESSION_SIGN_MODE_IDS = Object.keys(SESSION_SIGNS);
 
 /** Добавляет к «Подробнее» режима пункт табл. 3.3, если он есть. */
 export function withSessionSigns(g: ModeGuide): ModeGuide {
-  const sign = SESSION_SIGNS[g.modeId];
-  return sign ? { ...g, more: [...(g.more ?? []), sign] } : g;
+  const extra = [...(ARNTZ_CASES[g.modeId] ?? []), SESSION_SIGNS[g.modeId]].filter(Boolean);
+  return extra.length ? { ...g, more: [...(g.more ?? []), ...extra] } : g;
 }
