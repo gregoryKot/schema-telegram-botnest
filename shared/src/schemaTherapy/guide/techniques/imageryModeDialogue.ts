@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { modeDialogueImageryMoreHeath } from './imageryHeathMore';
+import { modeDialogueYoung } from './imageryModeDialogueYoung';
 
 /** Воображение: mode_dialogue_imagery. */
 export const buildImageryModeDialogueTechniques: TechniqueGuideBuilder = (
@@ -29,7 +29,7 @@ export const buildImageryModeDialogueTechniques: TechniqueGuideBuilder = (
         'Что маленькому вам сейчас нужно услышать?',
       ),
     ],
-    more: modeDialogueImageryMoreHeath,
+    more: modeDialogueYoung,
     cautions:
       'С Карающим Критиком не договариваются — его останавливают и выводят из образа. С копинговым режимом наоборот: признать, от чего он берёг, и попросить отойти. Клиент пока не может говорить за Здорового Взрослого — терапевт говорит за него дольше, иногда месяцами, и не торопит [Янг, гл. 8].',
     sources:
