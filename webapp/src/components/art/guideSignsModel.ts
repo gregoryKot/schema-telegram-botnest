@@ -12,6 +12,7 @@ import { ARNTZ_PRACTICE_NOTE_SIGN } from './practiceSignsArntz';
 import { FARRELL_PRACTICE_NOTE_SIGN } from './practiceSignsFarrell';
 import { BEHARY_PRACTICE_NOTE_SIGN } from './practiceSignsBehary';
 import { HEATH_PRACTICE_NOTE_SIGN } from './practiceSignsHeathAll';
+import { FARRELL_SHAW_PRACTICE_NOTE_SIGN } from './practiceSignsFarrellShaw';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
@@ -86,7 +87,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   therapist_schemas: 'layers',
   therapist_wellbeing: 'cup',
   therapy_aims: 'grown',
-  ...YOUNG_PRACTICE_NOTE_SIGN, ...ARNTZ_PRACTICE_NOTE_SIGN, ...FARRELL_PRACTICE_NOTE_SIGN, ...BEHARY_PRACTICE_NOTE_SIGN, ...HEATH_PRACTICE_NOTE_SIGN,
+  ...YOUNG_PRACTICE_NOTE_SIGN, ...ARNTZ_PRACTICE_NOTE_SIGN, ...FARRELL_PRACTICE_NOTE_SIGN, ...BEHARY_PRACTICE_NOTE_SIGN, ...HEATH_PRACTICE_NOTE_SIGN, ...FARRELL_SHAW_PRACTICE_NOTE_SIGN,
 };
 
 /** Знак раздела «Для терапевта»; раздела нет в таблице — без знака (не выдумываем). */
