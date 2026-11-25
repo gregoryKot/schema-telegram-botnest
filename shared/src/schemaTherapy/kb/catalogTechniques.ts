@@ -141,8 +141,39 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   {
     id: 'couple_mode_clash',
     title: 'Столкновение режимов пары: карта и выход из цикла',
-    status: 'needs_source',
-    book: 'Simeone-DiFrancesco, Roediger, Stevens «Schema Therapy with Couples», 2015',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 8'],
+    note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
+  },
+  {
+    id: 'need_vs_wish',
+    title: 'Потребность и желание: диаграмма, «стрельба по мишени»',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 5', 'гл. 8', 'гл. 11'],
+  },
+  {
+    id: 'mutual_reparenting',
+    title: 'Взаимный репарентинг пары',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 11'],
+  },
+  {
+    id: 'couple_friendship',
+    title:
+      'Дружба пары: признание чувств, примирение, правила разговора, заботливое поведение',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 5', 'гл. 9', 'гл. 12'],
+  },
+  {
+    id: 'couple_chairwork',
+    title: 'Стулья в паре: режимы обоих при партнёре',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 9', 'гл. 10'],
   },
   {
     id: 'child_mode_play',
