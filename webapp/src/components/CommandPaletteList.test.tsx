@@ -28,7 +28,7 @@ describe('CmdList', () => {
   });
 
   it('строка — знак по ключу (svg) или кружок с инициалами; декор скрыт от скринридера', () => {
-    const { container } = render(<CmdList rows={[row({ mark: { sign: 'strokes' } }), row({ mark: { initials: 'ИП', hue: 240 } })]}
+    const { container } = render(<CmdList rows={[row({ mark: { sign: 'strokes' } }), row({ mark: { initials: 'ИП' } })]}
                                           sel={0} onSelect={vi.fn()} onRun={vi.fn()} />);
     const marks = container.querySelectorAll('.cmd-mark');
     expect(marks[0].querySelector('svg.pp-art--row')).toBeTruthy();

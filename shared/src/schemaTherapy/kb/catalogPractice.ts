@@ -66,6 +66,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'self_practice_formats',
     'self_practice_reflection',
     'self_practice_review',
+    'attachment_assertiveness_poles',
   ].map(w),
   {
     id: 'session_frequency',
@@ -130,13 +131,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Пары',
     chapters: ['прил. А'],
-  },
-  {
-    id: 'attachment_assertiveness_poles',
-    title: 'Два полюса потребностей и четыре реакции на фрустрацию',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 1', 'гл. 3'],
   },
   {
     id: 'session_balance_axes',

@@ -33,6 +33,7 @@ const NOTE_IDS = [
   'therapist_mode_reset',
   'therapist_culture_and_schemas',
   'self_practice_why', 'self_practice_safety', 'self_practice_formats', 'self_practice_reflection', 'self_practice_review',
+  'attachment_assertiveness_poles',
 ];
 
 describe('знаки листов подсказок', () => {
