@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { CompletionScreen } from './CompletionScreen';
 import type { Need } from '../../types';
 
-vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
+vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), history: vi.fn().mockResolvedValue([]) } }));
 vi.mock('../../share/DayShareButton', () => ({ DayShareButton: () => null }));
 
 afterEach(cleanup);
@@ -77,5 +77,22 @@ describe('CompletionScreen — мост к терапевту', () => {
     expect(status.replace(/\u00a0/g, ' ')).toContain('Оценки пока не дошли до сервера');
     expect(status).toContain('до\u00a0сервера');
     expect(status).toContain('на\u00a0этом');
+  });
+
+  it('все ответы равны: «Ниже всего» нет, есть «на одном уровне»', () => {
+    renderDone(6);
+    expect(screen.queryByText(/Ниже всего/)).toBeNull();
+    expect(screen.getByText(/Все пять сегодня на одном уровне/)).toBeTruthy();
+  });
+
+  it('одна потребность ниже остальных на ≥2: следующий шаг «Разобрать, что задело →»', () => {
+    const ratings = { attachment: 2, autonomy: 7, expression: 7, play: 7, limits: 7 };
+    render(
+      <MemoryRouter>
+        <CompletionScreen needs={NEEDS} effectiveRatings={ratings} isBackfill={false} goBack={vi.fn()} onReview={vi.fn()} onOpenCase={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/Ниже всего/)).toBeTruthy();
+    expect(screen.getByText('Разобрать, что задело →')).toBeTruthy();
   });
 });

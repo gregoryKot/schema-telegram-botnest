@@ -15,5 +15,9 @@ export function persistentLowNeeds<T extends { id: string }>(
 ): T[] {
   if (days.length < PERSISTENT_LOW_DAYS) return [];
   const recent = days.slice(0, PERSISTENT_LOW_DAYS);
-  return needs.filter((n) => recent.every((d) => isRated(d.ratings, n.id) && d.ratings[n.id] <= LOW_RATING));
+  return needs.filter((n) =>
+    recent.every(
+      (d) => isRated(d.ratings, n.id) && d.ratings[n.id] <= LOW_RATING,
+    ),
+  );
 }
