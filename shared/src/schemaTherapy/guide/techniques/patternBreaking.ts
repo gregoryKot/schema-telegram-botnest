@@ -1,5 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { patternBreakingMore, prosConsMore } from './patternBreakingBehary';
+import * as cambB from './patternBreakingCambridgeB';
 
 /** Техники: pattern_breaking, pros_cons. */
 export const buildPatternBreakingTechniques: TechniqueGuideBuilder = (tr) => [
@@ -23,17 +24,8 @@ export const buildPatternBreakingTechniques: TechniqueGuideBuilder = (tr) => [
         ) +
         '.',
     ],
-    voice: [
-      tr(
-        'Не будем менять всё сразу. Что из списка тебе по силам уже на этой неделе — самое маленькое?',
-        'Не будем менять всё сразу. Что из списка вам по силам уже на этой неделе — самое маленькое?',
-      ),
-      tr(
-        'Схемы борются за выживание и будут уговаривать вернуться к старому. Это не значит, что ты делаешь что-то не так.',
-        'Схемы борются за выживание и будут уговаривать вернуться к старому. Это не значит, что вы делаете что-то не так.',
-      ),
-    ],
-    more: patternBreakingMore,
+    voice: cambB.patternBreakingVoice(tr),
+    more: [...patternBreakingMore, ...cambB.patternBreakingCambridgeBMore],
     cautions:
       'Сначала малые шаги, а не развод или увольнение. Крупное решение проверяют «за и против» двух путей — действовать сейчас или подождать; уходить из отношений — после попыток решить конкретное внутри них, кроме ситуаций насилия. Внезапное необъяснимое улучшение бывает избегающим или гиперкомпенсаторным режимом, который выдаёт себя за Здорового Взрослого. Шаги режут тонко и ставят ради потребности клиента, а не ради привыкания, как в экспозиции [Кембридж, гл. 9].',
     sources:
