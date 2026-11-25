@@ -1,8 +1,6 @@
 // Каталог-цель вкладки «Техники» (kb/catalog.ts): написанные техники и те, что литература даёт сверх них.
 // Новая техника — строка здесь в том же PR (планировалась — статус planned → written с тем же id).
-import type { CatalogTopic } from './catalog';
-
-const w = (id: string): CatalogTopic => ({ id, status: 'written' });
+import { type CatalogTopic, w, VF_TECHNIQUES } from './catalogMindfulness';
 
 export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   ...[
@@ -139,6 +137,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     source: 'Рёдигер',
     chapters: ['гл. 9'],
   },
+  ...VF_TECHNIQUES,
   {
     id: 'couple_mode_clash',
     title: 'Столкновение режимов пары: карта и выход из цикла',

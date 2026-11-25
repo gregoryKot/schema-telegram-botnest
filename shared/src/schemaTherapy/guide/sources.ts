@@ -87,6 +87,12 @@ export const GUIDE_SOURCES: GuideSource[] = [
     title: 'Обезоружить нарцисса, 2-е изд., 2013 (рус. изд. 2019)',
   },
   {
+    key: 'ван Фресвайк',
+    author: 'М. ван Фресвайк, Дж. Брурсен, Г. Шуринк',
+    title:
+      'Осознанность и схема-терапия. Практическое руководство, 2021 (оригинал — 2014)',
+  },
+  {
     key: 'Статьи',
     title:
       'Research Articles on Schema Therapy in Major Scientific Journals, 1992–2018',
