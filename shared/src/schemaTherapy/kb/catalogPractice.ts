@@ -1,6 +1,5 @@
 // Каталог-цель вкладки «Для терапевта» (kb/catalog.ts); этапы, оценка, психообразование — в guide/phases/.
-import type { CatalogTopic } from './catalog';
-const w = (id: string): CatalogTopic => ({ id, status: 'written' });
+import { type CatalogTopic, w, VF_PRACTICE } from './catalogMindfulness';
 export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   ...[
     'frame_additions',
@@ -82,6 +81,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     source: 'Кембридж',
     chapters: ['гл. 10'],
   },
+  ...VF_PRACTICE,
   {
     id: 'couple_therapy_stages',
     title: 'Этапы схема-терапии пары',

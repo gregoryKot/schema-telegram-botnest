@@ -1,0 +1,71 @@
+// Темы каталога-цели из книги ван Фресвайк (карта docs/guide-sources/ван-Фресвайк.md).
+// Отдельный файл: catalogTechniques.ts и catalogPractice.ts под храповиком размера.
+import type { CatalogTopic } from './catalog';
+
+export type { CatalogTopic };
+
+/** Строка «written»: запись в справочнике есть, id темы = id записи. */
+export const w = (id: string): CatalogTopic => ({ id, status: 'written' });
+
+const vf = (id: string, title: string, chapters: string[]): CatalogTopic => ({
+  id,
+  title,
+  status: 'planned',
+  source: 'ван Фресвайк',
+  chapters,
+});
+
+export const VF_TECHNIQUES: readonly CatalogTopic[] = [
+  vf('three_minute_breathing_space', 'Трёхминутная дыхательная пауза', [
+    'гл. 3',
+    'гл. 9',
+  ]),
+  vf(
+    'mindfulness_practices',
+    'Практики осознанности: изюм, скан тела, дыхание, ходьба',
+    ['гл. 3', 'гл. 9'],
+  ),
+  vf(
+    'schema_awareness_practice',
+    'Осознанность к схеме: узнать, принять, увидеть как мысль',
+    ['гл. 9'],
+  ),
+  vf(
+    'healthy_modes_mindfulness',
+    'Осознанность к Здоровому Взрослому и Счастливому Ребёнку',
+    ['гл. 9'],
+  ),
+  vf(
+    'mindful_juggling',
+    'Осознанное жонглирование: копинг и схемы в действии',
+    ['гл. 6', 'гл. 9'],
+  ),
+  vf(
+    'mindful_talk_with_close_ones',
+    'Осознанное общение с близкими: пауза в споре и разговор о схемах',
+    ['гл. 9'],
+  ),
+];
+
+export const VF_PRACTICE: readonly CatalogTopic[] = [
+  vf(
+    'mbst_protocol',
+    'Протокол «Осознанность и схема-терапия»: устройство, оценка, ведение',
+    ['гл. 1', 'гл. 4', 'гл. 6'],
+  ),
+  vf('mbst_sessions', 'Протокол осознанности: сессии 1–8 и контрольные', [
+    'гл. 4',
+    'гл. 6',
+    'гл. 9',
+  ]),
+  vf('mbst_suitability', 'Кому подходит тренинг осознанности', [
+    'гл. 1',
+    'гл. 5',
+  ]),
+  vf('mbst_group_difficulties', 'Трудности в группе осознанности', ['гл. 7']),
+  vf(
+    'mindfulness_programs',
+    'Программы осознанности: MBSR, MBCT, данные и механизмы',
+    ['гл. 3'],
+  ),
+];
