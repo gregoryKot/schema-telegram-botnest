@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import * as extra from './childCareMore';
+import * as extra from './reparentingPatterns';
 import * as to from './transitionalObjectsAll';
 
 /** Забота о детских режимах: transitional_objects, play_and_joy. */
