@@ -2,7 +2,7 @@
 // Чистый форматтер, покрыт тестом (включая пустую БД). Язык — простой:
 // «открывали», «скрывают», без терминов и внутренних id.
 import { formatHomeLines } from './home-tiles.format';
-import type { DiaryQuickCounts } from './home-tiles.count';
+import type { DiaryQuickCounts, NextStepCount } from './home-tiles.count';
 
 export interface ScreenMetrics {
   /** За месяц: сколько раз открыли «Настроить экран», по экранам. */
@@ -23,6 +23,8 @@ export interface ScreenMetrics {
   trackerSkips: number;
   /** За месяц: сохранения «Дневника одной страницей», по тегам и «подробно». */
   diaryQuick: DiaryQuickCounts;
+  /** За месяц: переходы «Что дальше» по парам откуда→куда. */
+  nextSteps: NextStepCount[];
 }
 
 // Человеческие подписи экранов и блоков — в отчёте не должно быть id.

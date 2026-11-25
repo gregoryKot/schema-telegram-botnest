@@ -26,7 +26,12 @@ export const FEATURES: readonly FeatureDef[] = [
   {
     id: 'diary',
     title: 'Дневник и трекер',
-    events: ['today_streak_toggle', 'tracker_skip', 'diary_quick_save'],
+    events: [
+      'today_streak_toggle',
+      'tracker_skip',
+      'diary_quick_save',
+      'done_next_step',
+    ],
   },
   {
     id: 'calm',
@@ -194,7 +199,13 @@ export const FEATURES: readonly FeatureDef[] = [
   {
     id: 'case',
     title: 'Разбор случая',
-    events: ['case_started', 'case_scene', 'case_recognized', 'case_finished'],
+    events: [
+      'case_started',
+      'case_scene',
+      'case_recognized',
+      'case_finished',
+      'case_map_opened',
+    ],
   },
   {
     id: 'self_map',

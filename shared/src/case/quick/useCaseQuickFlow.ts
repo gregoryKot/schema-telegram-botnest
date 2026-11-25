@@ -246,6 +246,7 @@ export function useCaseQuickFlow(
         ? buildQuickResult(fields, bodyChips, CASE_IMPULSES)
         : null,
     doneName: quickModeName(savedModeId),
+    savedModeId,
     ...support,
     sceneNext,
     pickGate,

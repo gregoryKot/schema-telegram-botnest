@@ -24,6 +24,8 @@ export const CASE_EVENTS = [
   'case_recognized',
   // Разбор доведён до конца.
   'case_finished',
+  // С экрана «Записано» открыли карту себя; repeat — экран сказал о повторе режима.
+  'case_map_opened',
 ] as const;
 
 export type CaseEventName = (typeof CASE_EVENTS)[number];

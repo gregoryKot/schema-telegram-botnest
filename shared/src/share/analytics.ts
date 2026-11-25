@@ -189,6 +189,11 @@ export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
 // Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
 // остаются на клиенте и в зашифрованных полях карточки (правило №7).
 
+/** С «Записано» открыли карту себя: meta.repeat — экран сказал о повторе режима. */
+export interface CaseMapOpenedMeta {
+  repeat: boolean;
+}
+
 /** Переход-мост «Карты себя»: meta.to. Шлётся литералом api.trackEvent('self_map_link', { to }). */
 export const SELF_MAP_LINK_EVENT = 'self_map_link';
 export type SelfMapLinkTarget =

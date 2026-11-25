@@ -16,6 +16,7 @@ import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
 import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
+import { Genogram } from './TechniqueSignsRoediger';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -27,5 +28,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode, bypass: CopingBypass, figures: ModeFigures,
   mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, mask: CriticMask,
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
-  trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen,
+  trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
 };
