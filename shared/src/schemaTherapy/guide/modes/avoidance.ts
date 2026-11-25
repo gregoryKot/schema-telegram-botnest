@@ -45,6 +45,7 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
     ],
     moreTechniques: [
       'exposure',
+      'creative_mode_work',
       'behavioral_experiment',
       'mode_management_plan',
     ],
