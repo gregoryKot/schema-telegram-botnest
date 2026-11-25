@@ -70,7 +70,10 @@ describe('WhySheet', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Три вещи, которые здесь можно делать');
     const rows = screen.getAllByRole('heading', { level: 2 });
     expect(rows.map(r => r.textContent)).toEqual(['Трекер', 'Что случилось', 'Дневник']);
-    expect(screen.getByText('Не нужно делать всё. Одно действие в день — уже работа.')).toBeTruthy();
+    // Первый шаг новичка — трекер: строка «с чего начать» стоит до трёх листов, «что складывается» — после.
+    const tips = [...document.querySelectorAll('.cw-tip')].map((p) => p.textContent!.replace(/[\u00a0\u2011]/g, ' '));
+    expect(tips[0]).toMatch(/^Начни с трекера/);
+    expect(tips[1]).toMatch(/^Из трёх действий складывается карта себя/);
     const lead = document.querySelector('.cw-lead')!.textContent!;
     // Слова те же; glue держит «схема‑терапии» и короткие слова неразрывными (ревью g1, висячие предлоги).
     expect(lead).toContain('схема\u2011терапии');
