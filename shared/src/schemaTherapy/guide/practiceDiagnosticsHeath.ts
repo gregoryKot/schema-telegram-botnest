@@ -1,5 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { positivePatternsNote } from './practicePatternsHeath';
+import { ysqHeathDosbor } from './heathDosborMore';
+import { questionnairesMoreRoediger } from './practiceConceptRoediger';
 
 /** «Для терапевта»: опросники, темперамент, семь паттернов заботы [Хис, гл. 1, 4]. Собирает practiceAssessAll.ts. */
 export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
@@ -34,8 +36,9 @@ export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
       'Когда давать — два взгляда. У Хис YSQ — в конце первой сессии, YPI — после второй, чтобы не грузить длинными анкетами с порога [Хис, гл. 1]. У Янга YPI дают на 5–6-й сессии, когда расспрос о детстве уже идёт [Янг, гл. 2].',
       'При пограничном расстройстве YSQ у Хис не дают: баллы почти наверняка высокие по многим схемам, а сам опросник вызывает тревогу и разочарование [Хис, гл. 1].',
       'Схему, которую терапевт подозревает при низком балле, можно проверить иначе: дать книгу Янга и Клоско для клиентов и спросить, узнаётся ли что-то в описаниях [Хис, гл. 1].',
-    ],
-    sources: '[Хис, гл. 1], [Янг, гл. 2]',
+      ...questionnairesMoreRoediger,
+    ].concat(ysqHeathDosbor),
+    sources: '[Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]',
   },
   {
     id: 'temperament',

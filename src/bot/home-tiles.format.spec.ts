@@ -4,6 +4,7 @@ import {
 } from '../analytics/home-events.constants';
 import {
   formatDiaryQuickSaves,
+  formatDoneNextSteps,
   formatHomeTiles,
   formatTrackerSkips,
   HOME_TILE_LABELS,
@@ -69,5 +70,33 @@ describe('formatDiaryQuickSaves — «Дневник одной странице
     expect(
       formatDiaryQuickSaves({ byTag: tags({ schema: 4 }), detailed: 0 }),
     ).toBe('Дневник одной страницей: схем 4');
+  });
+});
+
+describe('formatDoneNextSteps — «Что дальше»', () => {
+  it('пустая БД: строки нет', () => {
+    expect(formatDoneNextSteps([])).toBeNull();
+    expect(
+      formatDoneNextSteps([{ from: 'tracker', to: 'case', count: 0 }]),
+    ).toBeNull();
+  });
+
+  it('частичные данные: группы по источнику, нули и id не печатаются', () => {
+    const line = formatDoneNextSteps([
+      { from: 'diary', to: 'schema', count: 1 },
+      { from: 'diary', to: 'mode', count: 2 },
+      { from: 'tracker', to: 'practice', count: 1 },
+      { from: 'tracker', to: 'case', count: 3 },
+    ]);
+    expect(line).toBe(
+      'Что дальше: после трекера — разобрать случай 3, практика 1; после дневника — к режиму 2, к схеме 1',
+    );
+    expect(line).not.toMatch(/tracker|diary|NaN|undefined/);
+  });
+
+  it('одна группа без второй', () => {
+    expect(formatDoneNextSteps([{ from: 'diary', to: 'mode', count: 4 }])).toBe(
+      'Что дальше: после дневника — к режиму 4',
+    );
   });
 });

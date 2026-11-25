@@ -21,12 +21,12 @@ const SWAPPED: Need[] = [
 const v = (el: HTMLElement) => Number(el.style.getPropertyValue('--v'));
 
 describe('DayBars', () => {
-  it('высота столбика растёт с оценкой, подпись — short потребности', () => {
+  it('высота столбика растёт с оценкой, подпись — полное название с мягкими переносами', () => {
     const { container } = render(<DayBars needs={NEEDS} ratings={{ attachment: 10, autonomy: 4 }} />);
     const [a, b] = Array.from(container.querySelectorAll<HTMLElement>('.tq-bar-col'));
     expect(v(a)).toBe(1);
     expect(v(b)).toBe(0.4);
-    expect(screen.getByText('Привяз.')).toBeTruthy();
+    expect(container.querySelectorAll('.tq-bar-cap')[0].textContent!.replace(/\u00ad/g, '')).toBe('Привязанность');
     expect(screen.getByLabelText('Автономия: Мало')).toBeTruthy();
   });
 
@@ -45,6 +45,13 @@ describe('DayBars', () => {
     expect(empty.style.getPropertyValue('--bar')).toBe('');
     expect(empty.parentElement!.classList.contains('tq-bar-slot')).toBe(true);
     expect(screen.getByLabelText('Автономия: нет оценки')).toBeTruthy();
+  });
+
+  it('CSS: подпись переносится, а не режется многоточием', () => {
+    const css = readFileSync(resolve(__dirname, '../../styles/tracker-done.css'), 'utf8');
+    const cap = css.match(/\.tq-bar-cap\s*\{[^}]*\}/)![0];
+    expect(cap).not.toMatch(/ellipsis|nowrap/);
+    expect(cap).toMatch(/hyphens:\s*manual/);
   });
 
   it('CSS: оценённый красится --bar, высота — доля от --bar-max; паз — тон глубже бумаги, не серый', () => {

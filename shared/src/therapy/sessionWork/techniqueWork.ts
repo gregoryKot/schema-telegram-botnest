@@ -11,6 +11,7 @@ import { ARNTZ_TECHNIQUE_WORK } from './techniqueWorkArntz';
 import { FARRELL_TECHNIQUE_WORK } from './techniqueWorkFarrell';
 import { HEATH_TECHNIQUE_WORK } from './techniqueWorkHeath';
 import { ARNTZ_JACOB_TECHNIQUE_WORK } from './techniqueWorkArntzJacob';
+import { ROEDIGER_TECHNIQUE_WORK } from './techniqueWorkRoediger';
 
 export type TechniqueWorkDef = { name: string; fields: readonly WorkField[] };
 
@@ -151,5 +152,6 @@ export const TECHNIQUE_WORK: Record<TechniqueId, TechniqueWorkDef> = {
   ...FARRELL_TECHNIQUE_WORK,
   ...HEATH_TECHNIQUE_WORK,
   ...ARNTZ_JACOB_TECHNIQUE_WORK,
+  ...ROEDIGER_TECHNIQUE_WORK,
   ...BORROWED_TECHNIQUE_WORK,
 };

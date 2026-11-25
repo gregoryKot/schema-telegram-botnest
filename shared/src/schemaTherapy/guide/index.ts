@@ -10,10 +10,10 @@ import type {
   Tr,
 } from './types';
 import { MODE_BUILDERS } from './modes/all';
-import { withSessionSigns } from './modes/sessionSigns';
+import { withSessionSigns } from './modes/arntzModeMore';
 import { SCHEMA_DOMAIN_BUILDERS } from './schemas/domains';
-import { TECHNIQUE_BUILDERS } from './techniques/all';
-import { buildPracticeNotes } from './practice';
+import { TECHNIQUE_BUILDERS } from './techniques/allArntz';
+import { buildPracticeNotes } from './practiceArntzAll';
 
 /** Все разделы режимов в порядке групп. */
 export function buildModeGuides(tr: Tr): ModeGuide[] {
