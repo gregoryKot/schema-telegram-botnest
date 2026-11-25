@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { confrontMore, confrontVoice } from './arntzBpdRelationMore';
-import * as camb from './empathicConfrontationCambridge';
+import * as camb from './empathicConfrontationCambridgeB';
 import { empathicConfrontationMore as arntzIntroMore } from './empathicConfrontationArntzIntro';
 import { empathicConfrontationMore as beharyMore } from './empathicConfrontationBehary';
 
@@ -24,7 +24,7 @@ export const buildEmpathicConfrontationTechniques: TechniqueGuideBuilder = (
       'Повторять. Одной конфронтации обычно мало: схема борется за выживание, и без постоянного возврата к здоровой альтернативе клиент сползает обратно [Янг, гл. 1]. После конфронтации — сначала чувства клиента, потом объяснение и связь с режимом [Арнтц ПРЛ, гл. 4]; подавленному чувству дать голос — например, на стульях [Арнтц, 5.1.1].',
     ],
     voice: confrontVoice(tr, camb.empathicConfrontationVoice(tr)),
-    more: [...confrontMore, ...arntzIntroMore, ...beharyMore],
+    more: [...confrontMore, ...arntzIntroMore, ...beharyMore, ...camb.more],
     cautions:
       'Перекос дорог в обе стороны: мало сочувствия — клиент оскорблён и не слушает, мало конфронтации — слышит молчаливое разрешение [Янг, гл. 10]. ' +
       'Сначала граница тому, что угрожает безопасности и работе, потом конфронтация. Что выбрать, зависит от тяжести режима и от того, насколько он мешает терапии и задевает границы терапевта [Хис, гл. 12]. ' +

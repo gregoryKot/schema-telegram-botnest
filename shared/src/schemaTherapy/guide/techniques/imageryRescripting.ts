@@ -1,7 +1,7 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { rescriptMore, rescriptVoice } from './arntzBpdImageryMore';
 import { rescriptingMoreBodyHeath } from './bodyHeath';
-import * as camb from './imageryRescriptingCambridge';
+import * as camb from './imageryRescriptingCambridgeB';
 
 /** Техника: imagery_rescripting. */
 export const buildImageryRescriptingTechniques: TechniqueGuideBuilder = (
