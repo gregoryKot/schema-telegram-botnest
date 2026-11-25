@@ -11,7 +11,7 @@ import { buildPracticeTherapist } from './practiceTherapist';
 import { buildPracticeStuck } from './practiceStuck';
 import { buildPracticeYoungSession } from './practiceYoungSession';
 import { buildPracticeYoungStart } from './practiceYoungStart';
-import { buildPracticeBodyCues } from './practiceBodyCues';
+import { buildPracticeTherapistHeath } from './practiceModeReset';
 
 /**
  * «Для терапевта»: что добавляют к рамке другие книги, три источника
@@ -47,7 +47,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   },
   ...buildPracticeStuck(tr),
   ...buildPracticeTherapist(tr),
-  ...buildPracticeBodyCues(tr),
+  ...buildPracticeTherapistHeath(tr),
   ...buildPracticeSituations(tr),
   ...buildPracticeOnline(tr),
   ...buildPracticeAssessment(tr),
