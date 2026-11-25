@@ -7,6 +7,7 @@ import { WhyLegend } from './why/WhyLegend';
 import { glue } from '../../../shared/src/utils/typo';
 import { TherapyLine } from './therapy/TherapyLine';
 import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
+import { useTr } from '../utils/addressForm';
 import '../styles/client-why.css';
 
 // auto: true — лист открылся сам при первом входе; false — по кнопке «Зачем это?» или из «Ещё»
@@ -17,6 +18,7 @@ interface Props { auto?: boolean; onClose: () => void }
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const bridge = useTherapyBridgeTexts();
+  const tr = useTr();
   const dialogA11y = useDialogA11y(); // фокус на «← Закрыть», Tab внутри, возврат к вызвавшей строке
   const quietFocus = useQuietFocus(); // открылся сам или касанием — без кольца до первой клавиши перехода
   return (
@@ -31,9 +33,10 @@ export function WhySheet({ auto = false, onClose }: Props) {
             + 'автономия, выражение чувств, спонтанность, границы. Когда их долго не хватает, включаются старые паттерны. '
             + 'Приложение помогает это замечать.')}</p>
         </header>
+        <p className="cw-tip">{glue(tr('Начни с трекера: минута в день. Остальное — когда понадобится.', 'Начните с трекера: минута в день. Остальное — когда понадобится.'))}</p>
         <WhyThree />
+        <p className="cw-tip">{glue('Из трёх действий складывается карта себя: через 3–5 дней проступают паттерны — какие потребности проседают и какие режимы включаются чаще.')}</p>
         <WhyLegend />
-        <p className="cw-tip">Не нужно делать всё. Одно действие в день — уже работа.</p>
         <div className="cw-sticky"><button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button></div>
         <TherapyLine place="why" text={bridge.lineHome} className="cw-foot" />
       </div>
