@@ -177,13 +177,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 9', 'гл. 10'],
   },
   {
-    id: 'genogram',
-    title: 'Генограмма и автобиография отношений',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 3'],
-  },
-  {
     id: 'child_mode_play',
     title: 'Режимы в игре с ребёнком: куклы, песочница',
     status: 'needs_source',
