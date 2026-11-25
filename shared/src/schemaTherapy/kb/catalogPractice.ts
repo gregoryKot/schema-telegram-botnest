@@ -53,6 +53,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'same_behavior_by_schema',
     'mode_work_when',
     'mode_work_steps',
+    'schema_channel_map',
     'emdr',
     'premature_ending',
     'cbt_with_schemas',
