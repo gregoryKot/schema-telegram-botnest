@@ -11,7 +11,7 @@ import { YOUNG_PRACTICE_NOTE_SIGN } from './practiceSignsYoung';
 import { ARNTZ_PRACTICE_NOTE_SIGN } from './practiceSignsArntz';
 import { FARRELL_PRACTICE_NOTE_SIGN } from './practiceSignsFarrell';
 import { BEHARY_PRACTICE_NOTE_SIGN } from './practiceSignsBehary';
-import { HEATH_PRACTICE_NOTE_SIGN } from './practiceSignsHeath';
+import { HEATH_PRACTICE_NOTE_SIGN } from './practiceSignsHeathAll';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
