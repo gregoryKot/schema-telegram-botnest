@@ -6,6 +6,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { SchemaEntry, ModeEntry, GratitudeEntry } from './EntryCards';
 import { schemaEntryRows } from './entryRows';
+import { ALL_MODES } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
 import type {
   SchemaDiaryEntry,
   ModeDiaryEntry,
@@ -135,5 +136,18 @@ describe('EntryCards — «Что было нужно» в свёрнутой з
   it('предлог держится со следующим словом', () => {
     const { container } = render(<ModeEntry entry={{ ...MODE_ENTRY, actualNeed: 'Ошибиться без наказания' }} onDelete={() => {}} />);
     expect(container.querySelector('.cd-entry-meta')!.textContent).toBe('Что было нужно: Ошибиться без\u00a0наказания');
+  });
+});
+
+// К8: раскрытая запись режима ведёт к карточке режима — тот же лист, что в «Моих паттернах».
+describe('EntryCards — переход к карточке паттерна', () => {
+  it('ссылка видна в раскрытой записи и отдаёт цель', () => {
+    const opened: unknown[] = [];
+    const modeId = ALL_MODES[0].id;
+    render(<ModeEntry entry={{ ...MODE_ENTRY, modeId }} onDelete={() => {}} onOpenPattern={(t) => opened.push(t)} />);
+    expect(screen.queryByText(/Карточка режима/)).toBeNull();
+    fireEvent.click(screen.getByText('Позвонил папа').closest('[role="button"]')!);
+    fireEvent.click(screen.getByText(/Карточка режима/));
+    expect(opened).toEqual([{ kind: 'mode', id: modeId }]);
   });
 });

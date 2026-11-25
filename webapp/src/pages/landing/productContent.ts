@@ -38,12 +38,12 @@ export const STEPS = HOME_STEPS.map((s) => ({ ...s, ...STEP_LOOK[s.id] }));
 
 // Возможности: бенто в 4 колонки, ряды 2+1+1 и 1+1+2 (`wide` — плитка на две колонки).
 // Соседи на 4 и 2 колонках и на телефоне, нижний ряд и полоса «Приложения» под ним — разной
-// бумаги (сверка — productContent.test.tsx); персика нет: «Режимы» (25) соседи всем.
+// бумаги (сверка — productContent.test.tsx); персика нет: «Что случилось» (25) соседи всем.
 const FEATURE_LOOK: Record<HomeFeatureId, { Art: Art; hue: number; Scene?: Scene; wide?: boolean }> = {
   diary:     { Art: Strokes, hue: 135, Scene: SceneCheckIn, wide: true }, // чек-ин пяти потребностей = трекер
-  schemas:   { Art: Layers, hue: 240 },
-  modes:     { Art: Cluster, hue: 25 },  // Cluster крупно: кто сейчас у руля; сланец на розовой бумаге контрастнее, чем на небе
-  practices: { Art: Breath, hue: 290 },
+  case:      { Art: Cluster, hue: 25 },  // Cluster крупно: какой режим у руля; сланец на розовой бумаге контрастнее, чем на небе
+  journal:   { Art: Breath, hue: 240 },
+  schemas:   { Art: Layers, hue: 290 },
   dynamics:  { Art: Sheets, hue: 195 }, // то, что уже собрано
   therapist: { Art: Talk, hue: 70, wide: true }, // солома, а не небо: под плиткой полоса «Приложения»
 };

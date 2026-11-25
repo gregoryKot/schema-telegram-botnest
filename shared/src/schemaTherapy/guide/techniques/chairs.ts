@@ -5,7 +5,7 @@ import {
   modeInterviewWhenArntzJacob as ijWhen,
 } from './modeInterviewArntzJacob';
 import { historicalRoleFarrell } from './historicalRoleFarrell';
-
+import { interviewHeathDosbor } from '../heathDosborMore';
 /** Техники: historical_role_play, mode_interview. */
 export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
   {
@@ -63,7 +63,7 @@ export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
       'Режим мешает самому интервью [Хис, гл. 2]. Послушный Капитулянт говорит то, что терапевт хочет услышать; Избегающий Защитник отказывается из страха беззащитности; Самовозвеличиватель высмеивает упражнение. Напомнить, что участие добровольное, и вслух заметить реакцию режима.',
       'Функцию режима понимают целиком, не сводя к вреду: Гневный Защитник уместен при настоящей угрозе и манипуляции. Мотив режима называют вслух — защитить, получить заботу. О цене спрашивают мягко и у самого режима: с какими трудностями клиент сталкивается, когда он появляется [Хис, гл. 2].',
       ...ijMore,
-    ],
+    ].concat(interviewHeathDosbor),
     cautions:
       'С Карающим Критиком так не разговаривают: с ним не договариваются, ему ставят границу [Келлогг, гл. 6].',
     sources:

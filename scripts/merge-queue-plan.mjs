@@ -77,12 +77,12 @@ export function planQueue(prs, now) {
       ((p.checks.state === 'pending' && now - p.checks.since < PENDING_GRACE_MS) ||
         (p.checks.state === 'green' && now - p.checks.last < GREEN_GRACE_MS)),
   );
-  if (wait) return { wait, candidates: [] };
   const rank = { green: 0, pending: 1, cancelled: 2, missing: 3 };
   const candidates = prs
     .filter((p) => p.behind > 0 && p.checks.state in rank)
     .sort((a, b) => rank[a.checks.state] - rank[b.checks.state] || a.checks.last - b.checks.last || a.number - b.number);
-  return { wait: null, candidates };
+  // При wait одиночного подтягивания нет (candidates пуст), но отставшие нужны поезду: он садится и в полёте.
+  return { wait: wait ?? null, candidates: wait ? [] : candidates, boarders: candidates };
 }
 
 /** Прогоны, которые породил пуш очереди (update-branch или сведённый конфликт). */

@@ -1,14 +1,19 @@
 // Вкладка «Запросы»: статьи о том, с чем приходят клиенты (shared/…/guide/concerns/). Одна сворачиваемая группа, её подпись
 // и подсказка отвечают «что это и зачем» до первого тапа; бумага и знак — свои у статьи (CONCERN_HUE, CONCERN_SIGN).
 import type { ConcernGuide } from '../../../../shared/src/schemaTherapy/guide';
-import { PAPER_HUE, type PaperHue, type SheetLook } from '../../../../shared/src/theme/entityLook';
+import {
+  PAPER_HUE,
+  type PaperHue,
+  type SheetLook,
+} from '../../../../shared/src/theme/entityLook';
 import type { GuideSign } from '../../components/art/guideSignsModel';
 import type { ReferenceGroup } from './guideReferenceModel';
 
 export const CONCERNS_HUE: PaperHue = PAPER_HUE.teal;
 
 /** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (видимость вместо связи), депрессия — Leaf,
- *  кластер C — знак капитуляции (чужое впереди своего), истерическое и параноидное — знак гиперкомпенсации (копинг заслоняет уязвимость), дети и подростки — Grown (рост к Здоровому Взрослому). */
+ *  кластер C — знак капитуляции (чужое впереди своего), истерическое и параноидное — знак гиперкомпенсации (копинг заслоняет уязвимость), дети и подростки — Grown (рост к Здоровому Взрослому),
+ *  пары — Together (двое рядом). */
 export const CONCERN_SIGN: Record<string, GuideSign> = {
   bpd: 'ribbon',
   narcissism: 'spotlight',
@@ -16,6 +21,7 @@ export const CONCERN_SIGN: Record<string, GuideSign> = {
   cluster_c: 'coping_surrender',
   other_personality_disorders: 'coping_overcompensation',
   adolescents: 'grown',
+  couples: 'together',
 };
 
 /** Оттенок статьи; новая статья без строки здесь остаётся бирюзой — сверку держит guideReferenceHues.test.ts. */
@@ -26,6 +32,7 @@ export const CONCERN_HUE: Record<string, PaperHue> = {
   cluster_c: PAPER_HUE.sage,
   other_personality_disorders: PAPER_HUE.plum,
   adolescents: PAPER_HUE.straw,
+  couples: PAPER_HUE.peach,
 };
 
 export const concernGuideLook = (id: string): SheetLook => ({
@@ -34,12 +41,25 @@ export const concernGuideLook = (id: string): SheetLook => ({
 });
 
 export const CONCERNS_TITLE = 'С чем приходят клиенты';
-export const CONCERNS_HINT = 'Как запрос выглядит в жизни, откуда берётся, с чем его путают и что о нём знают исследования';
+export const CONCERNS_HINT =
+  'Как запрос выглядит в жизни, откуда берётся, с чем его путают и что о нём знают исследования';
 
 /** Статьи вкладки одной группой; пустую отсеет buildReference. */
 export function concernGroups(guides: ConcernGuide[]): ReferenceGroup[] {
-  return [{
-    key: 'concerns', title: CONCERNS_TITLE, hint: CONCERNS_HINT, fold: true, look: { hue: CONCERNS_HUE },
-    items: guides.map((c) => ({ kind: 'concern', id: c.id, name: c.name, sub: c.goal, ...concernGuideLook(c.id) })),
-  }];
+  return [
+    {
+      key: 'concerns',
+      title: CONCERNS_TITLE,
+      hint: CONCERNS_HINT,
+      fold: true,
+      look: { hue: CONCERNS_HUE },
+      items: guides.map((c) => ({
+        kind: 'concern',
+        id: c.id,
+        name: c.name,
+        sub: c.goal,
+        ...concernGuideLook(c.id),
+      })),
+    },
+  ];
 }

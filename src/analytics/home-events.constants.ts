@@ -11,6 +11,9 @@
 //               boolean } — detailed=true, если запись ушла через «Заполнить
 //               подробно» (старый мастер). Строка в /stats — «Дневник одной
 //               страницей: …».
+//   done_next_step — тап по предложенному «Что дальше» после трекера или быстрой
+//               записи дневника, meta { from: NEXT_STEP_FROM, to: NEXT_STEP_TO }.
+//               Строка в /stats — «Что дальше: …».
 //   therapy_nudge — «Мост к терапевту»; реестр, meta и блок в /stats —
 //               therapy-nudge.constants.ts.
 import { THERAPY_NUDGE_EVENT } from './therapy-nudge.constants';
@@ -19,6 +22,7 @@ export const HOME_EVENTS = [
   'home_tile',
   'tracker_skip',
   'diary_quick_save',
+  'done_next_step',
   THERAPY_NUDGE_EVENT,
 ] as const;
 
@@ -37,5 +41,11 @@ export const HOME_TILES = [
   'calm', // с 2026-11-05 не шлётся: «Подышим» ушёл с главной; оставлен ради старых записей
   'why',
   'feed_all', // с 2026-11-05 не шлётся: ленты дня на главной нет; оставлен ради старых записей
+  'selfmap', // знак «Карты себя» в шапке
 ] as const;
 export type HomeTile = (typeof HOME_TILES)[number];
+
+export const NEXT_STEP_FROM = ['tracker', 'diary'] as const;
+export const NEXT_STEP_TO = ['case', 'practice', 'mode', 'schema'] as const;
+export type NextStepFrom = (typeof NEXT_STEP_FROM)[number];
+export type NextStepTo = (typeof NEXT_STEP_TO)[number];
