@@ -20,7 +20,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { parseSourceSlug } from './start-source';
 import { readStartPayload } from './start-payload';
 import { sendStartWelcome } from './telegram.start-welcome';
-import { ADDRESS_PROMPT } from './telegram.consent-text';
+import { ADDRESS_PROMPT, WELCOME_TEXT } from './telegram.consent-text';
 import {
   handlePairStart,
   PAIR_PREFIX,
@@ -47,16 +47,7 @@ import {
 } from './telegram.reply-helpers';
 import { resumePendingPair } from './telegram.pair-resume';
 
-export const WELCOME_TEXT = `Привет!
-
-Бывает, что день прошёл нормально — а внутри что-то не так. Дело почти всегда в потребностях, и «Всё по схеме» помогает это увидеть.
-
-С чего начать:
-1. Трекер — минута в день: пять потребностей по шкале. Через 3–5 дней виден паттерн — что питает, что истощает.
-2. «Что случилось» — когда что-то задело: разбор момента в три шага.
-3. Дневник — мысль, схема, режим или благодарность короткой записью.
-
-Из этого со временем складывается карта себя: какие потребности проседают, какие режимы включаются чаще.`;
+export { WELCOME_TEXT } from './telegram.consent-text';
 
 // Запасные ответы команд на сбой: без кнопки и без формы обращения из БД.
 const DONATE_FALLBACK = `💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`;
