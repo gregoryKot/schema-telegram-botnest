@@ -1,5 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { positivePatternsNote } from './practicePatternsHeath';
+import { ysqHeathDosbor } from './heathDosborMore';
 import { questionnairesMoreRoediger } from './practiceConceptRoediger';
 
 /** «Для терапевта»: опросники, темперамент, семь паттернов заботы [Хис, гл. 1, 4]. Собирает practiceAssessAll.ts. */
@@ -36,7 +37,7 @@ export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
       'При пограничном расстройстве YSQ у Хис не дают: баллы почти наверняка высокие по многим схемам, а сам опросник вызывает тревогу и разочарование [Хис, гл. 1].',
       'Схему, которую терапевт подозревает при низком балле, можно проверить иначе: дать книгу Янга и Клоско для клиентов и спросить, узнаётся ли что-то в описаниях [Хис, гл. 1].',
       ...questionnairesMoreRoediger,
-    ],
+    ].concat(ysqHeathDosbor),
     sources: '[Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]',
   },
   {

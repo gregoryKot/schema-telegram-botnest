@@ -28,7 +28,6 @@ const ALLOWED: Record<string, string> = {
 };
 /** Файлы целиком. */
 const ALLOWED_FILES: Record<string, string> = {
-  'therapist-guide.css': 'Справочник: ждёт отдельного PR',
   'modemap-handles.css': 'ручки холста карты режимов — обратная связь',
 };
 

@@ -12,6 +12,9 @@ import { oldestId } from './diary/useDiaryLists';
 vi.mock('../api', () => ({
   api: { getDiaryPage: vi.fn(), getProfile: vi.fn(), history: vi.fn(), trackEvent: vi.fn(), createSchemaDiary: vi.fn() },
 }));
+vi.mock('./schemas/usePatternLayer', () => ({
+  usePatternLayer: () => ({ layer: null, openPattern: vi.fn() }),
+}));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 

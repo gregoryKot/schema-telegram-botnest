@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { homeworkNotDoneMoreAll } from './practiceEndingHeath';
-import { modeFlippingMore } from './practiceMoreArntzJacob';
+import { modeFlippingMore } from './practiceMoreArntzIntro';
 
 /** «Для терапевта» по Арнцу и ван Гендерен (ПРЛ, гл. 6, 8, 9). Карта — docs/guide-sources/Арнц-ПРЛ.md, пачка 12. */
 export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
