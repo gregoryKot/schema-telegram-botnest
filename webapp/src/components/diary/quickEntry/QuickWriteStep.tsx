@@ -62,6 +62,13 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
             <div className="qe-foot-main">
               <QuickTagChips tag={tag} onTag={onTag} />
               <p className="tq-hint qe-hint">{glue('Тег необязателен. Схему или режим можно уточнить на следующем шаге.')}</p>
+              {(tag === 'schema' || tag === 'mode') && (
+                <p className="tq-hint qe-hint">
+                  {glue(tag === 'schema'
+                    ? 'После записи можно открыть карточку схемы: что это и что с ней делать.'
+                    : 'После записи можно открыть карточку режима: что это и что с ним делать.')}
+                </p>
+              )}
               {error === 'failed' && (
                 <PaperAlert sign="pebbles" title="Не удалось сохранить." text="Текст остался на месте — можно повторить." />
               )}

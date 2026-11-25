@@ -11,6 +11,7 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('cluster_c'),
   w('other_personality_disorders'),
   w('adolescents'),
+  w('couples'),
   {
     id: 'anxiety',
     title:
@@ -57,14 +58,6 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
     source: 'Пары',
     chapters: ['гл. 4'],
     note: 'пачка 15 карты; «химия схем» при выборе партнёра — ещё Young, Klosko «Reinventing Your Life» (на полке нет)',
-  },
-  {
-    id: 'couples',
-    title: 'Работа с парами',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 1', 'гл. 2', 'гл. 4', 'гл. 5', 'гл. 10', 'гл. 11'],
-    note: 'пачки 1–4 карты: основа, сессия, курс, кризис и спутники',
   },
   {
     id: 'infant_regulation',

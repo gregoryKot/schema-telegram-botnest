@@ -21,13 +21,20 @@ import { fetchFirstDiaryPages, useDiaryLists } from './diary/useDiaryLists';
 import { diaryWeek, segCounts } from './diary/dayModel';
 import { buildEntries, filterCounts, filterEntries, groupByDay, streakLine, type DiaryFilter } from './diary/diaryModel';
 import { glue } from '../../../shared/src/utils/typo';
+import { DIARY_JUMP_EVENT, type DiaryJumpTarget } from '../../../shared/src/share/analytics';
+import { DiaryPatternJump } from './diary/DiaryPatternJump';
+import type { PatternTarget } from './schemas/patternRoute';
 
 // Год — потолок GET /api/history (HISTORY_MAX_DAYS, src/api/dto/history-query.dto.ts).
 const TRACKER_DAYS = 365;
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
 // «Записи» клиента — раздел и лист «Дневники» (DiariesOverlay рисует свою шапку с «Назад»).
-export function DiarySection({ onOpenTrackerHistory }: { onOpenTrackerHistory?: () => void } = {}) {
+export function DiarySection({ onOpenTrackerHistory, onStart }: {
+  onOpenTrackerHistory?: () => void;
+  /** Пустые «Трекер» и «Случаи»: открыть отметку трекера или разбор (быстрые действия оболочки). */
+  onStart?: (what: 'tracker' | 'case') => void;
+} = {}) {
   const bridge = useTherapyBridgeTexts();
   // Три дневника постранично: «Показать ещё» догружает старые (R6).
   const lists = useDiaryLists();
@@ -44,6 +51,8 @@ export function DiarySection({ onOpenTrackerHistory }: { onOpenTrackerHistory?: 
   const [draftKey,         setDraftKey]         = useState(0);
   // Сбой ≠ пусто (пара к miniapp): строка-лист на месте ленты, а не тихое [].
   const [loadFailed,       setLoadFailed]       = useState(false);
+  const [jump,             setJump]             = useState<PatternTarget | null>(null);
+  const track = (to: DiaryJumpTarget) => { void api.trackEvent(DIARY_JUMP_EVENT, { to }); };
 
   const load = useCallback(() =>
     Promise.all([
@@ -143,7 +152,11 @@ export function DiarySection({ onOpenTrackerHistory }: { onOpenTrackerHistory?: 
         loading={loading} loadFailed={loadFailed} trackerFailed={trackerFailed} filter={filter} groups={groups} week={week}
         more={{ has: lists.hasMore, state: lists.moreState, load: () => { void lists.loadMore(); } }}
         onRetry={() => { void load(); }} onDelete={handleDelete} onOpenTrackerHistory={onOpenTrackerHistory}
+        onOpenPattern={(t) => { track('pattern'); setJump(t); }}
+        onStart={onStart && ((what) => { track(what); onStart(what); })}
       />
+
+      {jump && <DiaryPatternJump target={jump} onClose={() => setJump(null)} />}
 
       {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={() => { void load(); }} />}
 

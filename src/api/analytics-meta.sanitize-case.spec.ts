@@ -98,6 +98,15 @@ describe('sanitizeCaseMeta', () => {
     });
   });
 
+  describe('case_map_opened', () => {
+    it('пропускает только булев repeat', () => {
+      expect(call('case_map_opened', { repeat: true, modeId: 'x' })).toEqual({
+        repeat: true,
+      });
+      expect(call('case_map_opened', { repeat: 'да' })).toBeUndefined();
+    });
+  });
+
   it('case_started меты не имеет — всё присланное отбрасывается', () => {
     expect(call('case_started', { scene: 'что-то личное' })).toBeUndefined();
   });

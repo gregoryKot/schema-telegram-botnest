@@ -315,6 +315,14 @@ describe('sanitizeMeta', () => {
     ).toEqual({ from: 'vulnerable_child', to: 'helpless_surrenderer' });
   });
 
+  it('diary_jump: to pattern/tracker/case проходит, лишнее срезается', () => {
+    expect(sanitizeMeta('diary_jump', { to: 'case', text: 'x' })).toEqual({
+      to: 'case',
+    });
+    expect(sanitizeMeta('diary_jump', { to: 'home' })).toBeUndefined();
+    expect(sanitizeMeta('diary_jump', {})).toBeUndefined();
+  });
+
   it('profile_pattern_open: kind schema/mode проходит', () => {
     expect(sanitizeMeta('profile_pattern_open', { kind: 'schema' })).toEqual({
       kind: 'schema',

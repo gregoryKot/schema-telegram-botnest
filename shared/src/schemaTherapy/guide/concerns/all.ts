@@ -3,6 +3,7 @@ import type { Tr } from '../types';
 import { buildAdolescentsGuide } from './adolescents';
 import { buildBpdGuide } from './bpd';
 import { buildClusterCGuide } from './cluster_c';
+import { buildCouplesGuide } from './couples';
 import { buildDepressionGuide } from './depression';
 import { buildNarcissismGuide } from './narcissism';
 import { buildOtherPersonalityDisordersGuide } from './other_personality_disorders';
@@ -18,6 +19,7 @@ export const CONCERN_BUILDERS: ConcernGuideBuilder[] = [
   buildClusterCGuide,
   buildOtherPersonalityDisordersGuide,
   buildAdolescentsGuide,
+  buildCouplesGuide,
 ];
 
 /** Все статьи вкладки «Запросы и расстройства». */

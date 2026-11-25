@@ -69,6 +69,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'three_parts_check_in',
     'coping_bypass',
     'mode_figures',
+    'genogram',
   ].map(w),
   {
     id: 'rupture_repair',
@@ -99,13 +100,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 5', 'гл. 6', 'гл. 8', 'гл. 9', 'гл. 10', 'гл. 13'],
-  },
-  {
-    id: 'genogram',
-    title: 'Генограмма: семья в трёх поколениях',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 4'],
   },
   {
     id: 'perspective_change',
@@ -185,7 +179,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     title: 'Режимы в игре с ребёнком: куклы, истории, рисунки',
     status: 'planned',
     source: 'Луз',
-    chapters: ['гл. 5', 'гл. 9', 'гл. 11', 'гл. 12'],
+    chapters: ['гл. 5', 'гл. 9', 'гл. 10', 'гл. 11', 'гл. 12'],
   },
   {
     id: 'inner_house',

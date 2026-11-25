@@ -1,8 +1,8 @@
 // @vitest-environment node
 // Глобальные правки примитивов и стили заготовок редизайна 2026-11 (b03, docs/archive/APP_2026-11.md).
 // CSS в jsdom не исполняется — сверяем исходники (приём dsPrimitives.test.ts):
-//  • тумблер — мох палитры, не ярко-зелёный --ok; неактивная кнопка — утопленная бумага, а не
-//    терракота на 50% («розовая и будто активная»); контурная простаивающая лежит в странице, занятая
+//  • тумблер — мох палитры, не ярко-зелёный --ok; неактивная залитая — контур без заливки, а не
+//    терракота на 50% («розовая и будто активная»); текстовая простаивающая бледнее активной, занятая
 //    (aria-busy) читается статусом; выбранный чип — бумага --h с кромкой тона;
 //  • строка-переход со знаком слева — три колонки везде (одно правило в paper.css, paperRow.test.ts);
 //  • подложка диалога — тёплый тон из токенов; «тихое» окно гасит кольцо автофокуса;
@@ -31,52 +31,46 @@ describe('глобальные правки примитивов (cabinet.css)',
     expect(on).not.toContain('--ok');
   });
 
-  it('неактивная кнопка — утопленная бумага и бледный текст, без прозрачности; наведение её не красит', () => {
+  it('неактивная залитая — контур без заливки и бледный текст, без прозрачности; наведение её не красит', () => {
     const off = decls(cabinet, '.ds-btn:disabled');
-    expect(off).toContain('background: var(--paper-sunk)');
+    expect(off).toContain('background: transparent');
+    expect(off).toContain('box-shadow: inset 0 0 0 1px var(--line-strong)');
     expect(off).toContain('color: var(--text-faint)');
-    expect(off).not.toMatch(/opacity/);
+    expect(off).not.toMatch(/opacity|--paper-sunk/);
     expect(decls(cabinet, '.ds-btn:disabled:hover')).toBe(off);
   });
 
-  it('неактивная контурная (--secondary, --icon) хранит силуэт: без утопленной заливки, рамка --line', () => {
+  it('неактивные текстовая и знак (--secondary, --icon) не наследуют контур залитой', () => {
     for (const v of ['secondary', 'icon']) {
       const off = decls(cabinet, `.ds-btn.ds-btn--${v}:disabled`);
       expect(off, v).not.toContain('--paper-sunk');
       expect(off, v).toContain('background: transparent');
-      expect(off, v).toContain('border-color: var(--line)');
+      expect(off, v).toContain('box-shadow: none');
       expect(decls(cabinet, `.ds-btn.ds-btn--${v}:disabled:hover`), v).toBe(off);
     }
   });
 
-  // Ревью волны 0, круг 3: с белой плашкой и --text-faint простаивающая «Экспорт концепта» и «← Назад»
-  // на первом вопросе читались нажимаемыми — у активной та же плашка и форма, разница в одном тоне.
   const prop = (d: string, p: string) => d.match(new RegExp(`(?:^|;)\\s*${p}:\\s*([^;]+)`))?.[1].trim();
   const active = decls(cabinet, '.ds-btn--secondary');
   const idle = decls(cabinet, '.ds-btn.ds-btn--secondary:disabled');
   const busy = decls(cabinet, ".ds-btn.ds-btn--secondary:disabled[aria-busy='true']");
 
-  it('простаивающая неактивная контурная не похожа на активную: ни плашки, ни рамки, ни цвета подписи активной', () => {
-    expect(prop(active, 'background')).toBe('var(--surface)');
-    expect(prop(idle, 'background')).toBe('transparent');
-    expect(prop(idle, 'border-color')).not.toBe(prop(active, 'border')?.split(' ').pop());
+  it('простаивающая неактивная текстовая не похожа на активную: бледнее и подпись, и линия', () => {
     expect(prop(idle, 'color')).not.toBe(prop(active, 'color'));
-    // и не --text-faint: это обычный цвет вторичного текста, а не неактивный тон
     expect(prop(idle, 'color')).toMatch(/^color-mix\(in srgb, var\(--text-faint\) \d+%, transparent\)$/);
+    expect(prop(idle, 'text-decoration-color')).toBe('var(--line)');
     expect(idle).not.toMatch(/opacity/);
   });
 
-  it('на терракотовой карточке простаивающая контурная читается: плашка и --text-sub, не прозрачная', () => {
-    // Регресс волны 0: «Сохранить» следующей сессии на ds-card--accent — подпись сливалась с заливкой.
+  it('на терракотовой карточке текстовая светлая (--on-accent), не --text', () => {
+    expect(prop(decls(cabinet, '.ds-card--accent .ds-btn.ds-btn--secondary'), 'color')).toBe('var(--on-accent)');
     const onAccent = decls(cabinet, '.ds-card--accent .ds-btn.ds-btn--secondary:disabled');
-    expect(prop(onAccent, 'background')).toMatch(/^color-mix\(in srgb, var\(--surface\) \d+%, var\(--accent\)\)$/);
-    expect(prop(onAccent, 'color')).toBe('var(--text-sub)');
+    expect(prop(onAccent, 'color')).toMatch(/^color-mix\(in srgb, var\(--on-accent\) \d+%, transparent\)$/);
     expect(decls(cabinet, '.ds-card--accent .ds-btn.ds-btn--secondary:disabled:hover')).toBe(onAccent);
   });
 
-  it('занятая контурная (aria-busy) — статус «Загружаю…»: плашка и --text-faint (≥4.5:1), не призрачная', () => {
+  it('занятая текстовая (aria-busy) — статус «Загружаю…»: --text-faint (≥4.5:1), не призрачная', () => {
     // --text-ghost в index.css — «только плейсхолдеры/декор, не текст»; ревью волны 0, круг 2
-    expect(prop(busy, 'background')).toBe('var(--surface)');
     expect(prop(busy, 'color')).toBe('var(--text-faint)');
     expect(busy).not.toContain('--text-ghost');
     expect(decls(cabinet, ".ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover")).toBe(busy);
@@ -260,5 +254,60 @@ describe('paper-app.css — стили заготовок', () => {
     expect(src).toMatch(/\.pa-sheet\s*\{[^}]*container:\s*pa-sheet \/ inline-size/);
     expect(src).toContain('@container pa-sheet (max-width: 400px)');
     expect(src).toContain('@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine)');
+  });
+});
+
+// #1674, К2а: баннеры и служебные плашки — заметка между линиями (.pp-block--note), а не лист цветной бумаги.
+describe('заметка между линиями (.pp-block--note)', () => {
+  const paper = rules('paper.css');
+  const cssAll = [...readdirSync(__dirname).filter((n) => n.endsWith('.css')), '../index.css'].flatMap((n) => rules(n));
+  const NOTES = ['sb-today', 'th-card', 'tk-goal', 'tk-meet', 'cd-explainer', 'cpf-tile', 'aa-head-sign'];
+  const FILES = [
+    'components/therapy/TherapyCardFrame.tsx', 'components/appShell/SidebarFoot.tsx', 'components/therapist/plan/PlanGoals.tsx',
+    'components/therapist/ClientOverviewTab.tsx', 'components/therapist/ClientOverviewSidebar.tsx',
+    'components/diary/ExplainerPaperCard.tsx', 'pages/AccountPage.tsx', 'sections/profile/ShelfTile.tsx',
+  ];
+  /** Плашка из списка нарисована цветной бумагой: в одном className с её классом стоит pp-paper. */
+  const paperPlate = (tsx: string) => NOTES.some((c) => new RegExp(`className="[^"]*\\bpp-paper\\b[^"]*\\b${c}\\b`).test(tsx));
+
+  it('примитив: линии сверху и снизу (от .pp-block), без заливки и скругления', () => {
+    const block = decls(paper, '.pp-block');
+    expect(block).toContain('border-top: 1px solid var(--panel-line)');
+    expect(block).toContain('border-bottom: 1px solid var(--panel-line)');
+    const note = decls(paper, '.pp-block--note');
+    expect(note).toContain('background: none');
+    expect(note).toContain('border-radius: 0');
+    expect(decls(paper, '.pp-block-title')).toContain('var(--serif)');
+  });
+
+  it('сверка ловит лист бумаги и пропускает заметку (образец и контрольный образец)', () => {
+    expect(paperPlate('<div className="pp-paper sb-today" />')).toBe(true);
+    expect(paperPlate('<div className="pp-block pp-block--note sb-today" />')).toBe(false);
+  });
+
+  it.each(FILES)('%s — плашка заметкой, не цветной бумагой', (f) => {
+    const tsx = read(`../${f}`);
+    expect(paperPlate(tsx)).toBe(false);
+    expect(tsx).toMatch(/pp-block(--note|-sign)/);
+  });
+
+  it('CSS не красит плашки заливкой и скруглением, старых классов шапки баннера нет', () => {
+    for (const r of cssAll) {
+      for (const sel of r.selectors) {
+        if (!NOTES.some((c) => new RegExp(`\\.${c}(?![-\\w])`).test(sel))) continue;
+        if (/:hover|--skel|\.skel/.test(sel)) continue;
+        expect(r.body, sel).not.toMatch(/(^|;)\s*background(-color)?:\s*(?!none|transparent)/);
+        expect(r.body, sel).not.toMatch(/border-radius:\s*(?!0)/);
+      }
+    }
+    const old = /\.(th-card-(head|sign|title|sub)|cd-explainer-top|sb-today-label)(?![-\w])/;
+    for (const r of cssAll) for (const sel of r.selectors) expect(sel).not.toMatch(old);
+  });
+
+  it('витрина профиля и «Встречи»: на стыке заметки с соседним блоком линия одна', () => {
+    const profile = rules('client-profile.css');
+    expect(decls(profile, '.cpf-blk:has(> .cpf-start) + .cpf-shelf .pp-block.cpf-tile')).toContain('border-top: 0');
+    expect(decls(profile, '.cpf-shelf + .pp-block.cpf-rhythm')).toContain('border-top: 0');
+    expect(decls(rules('therapist-card.css'), '.pp-block.tk-meet + .pp-block')).toContain('border-top: 0');
   });
 });
