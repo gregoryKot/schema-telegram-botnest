@@ -90,8 +90,30 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   },
   {
     id: 'child_mode_play',
-    title: 'Режимы в игре с ребёнком: куклы, песочница',
-    status: 'needs_source',
-    book: 'Loose, Graaf, Zarbock, Holt «Schema Therapy for Children and Adolescents», 2020',
+    title: 'Режимы в игре с ребёнком: куклы, истории, рисунки',
+    status: 'planned',
+    source: 'Луз',
+    chapters: ['гл. 5', 'гл. 9', 'гл. 11', 'гл. 12'],
+  },
+  {
+    id: 'inner_house',
+    title: '«Внутренний дом»: режимы, схемы и опыт на трёх этажах',
+    status: 'planned',
+    source: 'Луз',
+    chapters: ['гл. 13'],
+  },
+  {
+    id: 'family_mapping',
+    title: 'Семейная доска, круги, скульптура, генограмма посланий',
+    status: 'planned',
+    source: 'Луз',
+    chapters: ['гл. 16'],
+  },
+  {
+    id: 'parental_presence',
+    title: 'Родительское присутствие и ритуалы (извинение, радость)',
+    status: 'planned',
+    source: 'Луз',
+    chapters: ['гл. 17'],
   },
 ];

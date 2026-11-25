@@ -87,6 +87,12 @@ export const GUIDE_SOURCES: GuideSource[] = [
     title: 'Обезоружить нарцисса, 2-е изд., 2013 (рус. изд. 2019)',
   },
   {
+    key: 'Луз',
+    author: 'К. Луз, П. Грааф, Г. Зарбок, Р. А. Холт',
+    title:
+      'Схема-терапия для детей и подростков. Практическое руководство, 2021 (оригинал — 2020)',
+  },
+  {
     key: 'Статьи',
     title:
       'Research Articles on Schema Therapy in Major Scientific Journals, 1992–2018',

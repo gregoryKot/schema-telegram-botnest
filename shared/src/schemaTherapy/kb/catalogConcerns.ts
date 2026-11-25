@@ -80,9 +80,17 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   },
   {
     id: 'adolescents',
-    title: 'Подростки и дети',
-    status: 'needs_source',
-    book: 'Loose, Graaf, Zarbock, Holt «Schema Therapy for Children and Adolescents», 2020',
+    title: 'Дети и подростки',
+    status: 'planned',
+    source: 'Луз',
+    chapters: ['гл. 1', 'гл. 2', 'гл. 3', 'гл. 5', 'гл. 6', 'гл. 7', 'гл. 8'],
+  },
+  {
+    id: 'infant_regulation',
+    title: 'Родитель и младенец: плач, сон, кормление',
+    status: 'planned',
+    source: 'Луз',
+    chapters: ['гл. 4'],
   },
   {
     id: 'addictions',
