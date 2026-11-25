@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { modeDialogueImageryMore } from './imageryFutureMore';
+import { modeDialogueImageryMoreHeath } from './imageryHeathMore';
 
 /** Воображение: mode_dialogue_imagery. */
 export const buildImageryModeDialogueTechniques: TechniqueGuideBuilder = (
@@ -29,10 +29,10 @@ export const buildImageryModeDialogueTechniques: TechniqueGuideBuilder = (
         'Что маленькому вам сейчас нужно услышать?',
       ),
     ],
-    more: modeDialogueImageryMore,
+    more: modeDialogueImageryMoreHeath,
     cautions:
       'С Карающим Критиком не договариваются — его останавливают и выводят из образа. С копинговым режимом наоборот: признать, от чего он берёг, и попросить отойти. Клиент пока не может говорить за Здорового Взрослого — терапевт говорит за него дольше, иногда месяцами, и не торопит [Янг, гл. 8].',
     sources:
-      '[Янг, гл. 4, 8, 10]. Arntz A., Jacob G. Schema Therapy in Practice: An Introductory Guide to the Schema Mode Approach. Wiley-Blackwell, 2013. [Кембридж, гл. 8, 11, 15, бокс 8.3]',
+      '[Янг, гл. 4, 8, 10]. Arntz A., Jacob G. Schema Therapy in Practice: An Introductory Guide to the Schema Mode Approach. Wiley-Blackwell, 2013. [Кембридж, гл. 8, 11, 15, бокс 8.3], [Хис, гл. 8]',
   },
 ];
