@@ -56,15 +56,10 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'premature_ending',
     'cbt_with_schemas',
     'body_cues_therapist',
+    'questionnaires',
+    'temperament',
+    'positive_patterns_in_session',
   ].map(w),
-  {
-    id: 'questionnaires',
-    title: 'Опросники: YSQ, SMI, YPI, YRAI, YCI, YPSQ — что ловит каждый',
-    status: 'planned',
-    source: 'Янг',
-    chapters: ['гл. 2', 'гл. 5'],
-    note: 'ещё Кембридж гл. 3, 9, 10, «Касьяник», Рафаэли гл. 16, 25, ван Фресвайк прил. III',
-  },
   {
     id: 'session_frequency',
     title: 'Частота и регулярность сессий',
@@ -78,13 +73,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 1'],
-  },
-  {
-    id: 'temperament',
-    title: 'Темперамент клиента в концептуализации',
-    status: 'planned',
-    source: 'Янг',
-    chapters: ['гл. 1', 'гл. 2'],
   },
   {
     id: 'positive_schemas',
