@@ -49,7 +49,12 @@ export const buildSurrenderGuides: ModeGuideBuilder = (tr) => [
       'future_imagery',
       'pattern_breaking',
     ],
-    moreTechniques: ['imagery_rescripting', 'mode_management_plan'],
+    moreTechniques: [
+      'imagery_rescripting',
+      'mode_management_plan',
+      'mode_interview',
+      'creative_mode_work',
+    ],
     betweenSessions: [
       {
         kind: 'task',
