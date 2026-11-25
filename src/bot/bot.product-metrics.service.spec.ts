@@ -227,6 +227,13 @@ describe('ProductMetricsService.getMetrics', () => {
       })),
     } as never;
     const caseMetrics = {
+      getSelfMapLinks: jest.fn(async () => ({
+        mode: 0,
+        schema: 0,
+        patterns: 0,
+        ysq_test: 0,
+        map: 0,
+      })),
       getMetrics: jest.fn(async () => ({
         started: 0,
         finished: 0,

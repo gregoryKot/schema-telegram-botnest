@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { SelfMapScreen } from './SelfMapScreen';
+import { getSchemaById } from '../../schemaTherapyData';
 import type { MapInput } from '../../../../shared/src/map/mapVm';
 import type { NextStepInput } from '../../../../shared/src/case/caseNextStep';
 
@@ -29,8 +30,12 @@ function renderMap(map: MapInput, next: NextStepInput, over = {}) {
   const props = {
     map,
     next,
+    origins: { ysqSchemaIds: [], manualSchemaIds: [], ysqDone: false },
     onBack: vi.fn(),
     onPickMode: vi.fn(),
+    onPickSchema: vi.fn(),
+    onOpenPatterns: vi.fn(),
+    onStartTest: vi.fn(),
     onNextStep: vi.fn(),
     ...over,
   };
@@ -119,11 +124,41 @@ describe('SelfMapScreen', () => {
     expect(screen.getByText('Приметы собраны, случаев пока нет')).toBeTruthy();
   });
 
-  it('полоса «откуда тянется» заперта до пяти разборов и объясняет почему', () => {
-    renderMap(
+  it('на пустой карте «Разобрать случай» стоит в DOM раньше любой полосы', () => {
+    renderMap({ ...emptyMap, warmWords: ['Побудь, я рядом'] }, emptyNext, {
+      origins: { ysqSchemaIds: ['abandonment'], manualSchemaIds: [], ysqDone: true },
+    });
+    const btn = screen.getByRole('button', { name: /Разобрать случай/ });
+    const lane = document.querySelector('.sm-lane')!;
+    expect(btn.compareDocumentPosition(lane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('на пустой карте подсказка про первую метку одна', () => {
+    renderMap(emptyMap, emptyNext);
+    expect(screen.getAllByText(/Первый разбор поставит первую метку/)).toHaveLength(1);
+    expect(document.querySelector('.sm-where')).toBeNull();
+  });
+
+  it('схема в «Откуда тянется» открывается тапом', () => {
+    const props = renderMap(emptyMap, emptyNext, {
+      origins: { ysqSchemaIds: ['abandonment'], manualSchemaIds: [], ysqDone: true },
+    });
+    fireEvent.click(screen.getByText(getSchemaById('abandonment')!.name));
+    expect(props.onPickSchema).toHaveBeenCalledWith('abandonment');
+  });
+
+  it('без схем и без теста строка ведёт в тест', () => {
+    const props = renderMap(
       { ...emptyMap, cases: [{ modeId: 'detached_protector', at: daysAgo(1) }] },
       { ...emptyNext, caseCount: 1 },
     );
-    expect(screen.getByText(/Откроется после пяти разборов/)).toBeTruthy();
+    fireEvent.click(screen.getByText('Пройти тест на схемы'));
+    expect(props.onStartTest).toHaveBeenCalledTimes(1);
+  });
+
+  it('«Все режимы и схемы» ведёт в «Мои паттерны»', () => {
+    const props = renderMap(emptyMap, emptyNext);
+    fireEvent.click(screen.getByText(/Все режимы и схемы/));
+    expect(props.onOpenPatterns).toHaveBeenCalledTimes(1);
   });
 });
