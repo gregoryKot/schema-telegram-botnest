@@ -1,6 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { methodErrorsMore } from './practiceMoreHeath';
 import { impassesMore } from './practiceMoreArntzJacob';
+import { chattingMore } from './practiceStuckCambridge';
 
 /** «Для терапевта»: тупики, «болтовня» и ошибки в методе. Собирает practice.ts. */
 export const buildPracticeStuck: PracticeNotesBuilder = (tr) => [
@@ -46,10 +47,7 @@ export const buildPracticeStuck: PracticeNotesBuilder = (tr) => [
         'Мы уже двадцать минут разбираем подробности, и я перестаю понимать, что происходит с вами. Что вы чувствуете прямо сейчас?',
       ),
     ],
-    more: [
-      'Чаще так бывает при тревожных и зависимых расстройствах личности (кластер C) и при нарциссическом. Режим заполняет сессию пересказом, общими разговорами, рассуждениями или самовозвеличением [Кембридж, гл. 3, 11].',
-      'Как обойти конкретный копинговый режим — в подсказках к копинговым режимам.',
-    ],
+    more: chattingMore,
     sources: '[Кембридж, гл. 3, 5, 11]',
   },
   {
