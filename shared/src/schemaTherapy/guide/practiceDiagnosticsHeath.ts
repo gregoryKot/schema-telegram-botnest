@@ -1,5 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { positivePatternsNote } from './practicePatternsHeath';
+import { ysqHeathDosbor } from './heathDosborMore';
+import { questionnairesMoreRoediger } from './practiceConceptRoediger';
 
 /** «Для терапевта»: опросники, темперамент, семь паттернов заботы [Хис, гл. 1, 4]. Собирает practiceAssessAll.ts. */
 export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
@@ -35,8 +37,9 @@ export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
       'При пограничном расстройстве YSQ у Хис не дают: баллы почти наверняка высокие по многим схемам, а сам опросник вызывает тревогу и разочарование [Хис, гл. 1].',
       'Схему, которую терапевт подозревает при низком балле, можно проверить иначе: дать книгу Янга и Клоско для клиентов и спросить, узнаётся ли что-то в описаниях [Хис, гл. 1].',
       'С 17–23-летними опросники подбирают под случай: полный набор утомляет и отбивает охоту [Луз, гл. 8]. YSQ молодые обычно заполняют сами; YCI добавляют при склонности к гиперкомпенсации, YRAI — при сильном избегании. Перед YPI предупреждают о конфликте лояльности к родителям. Заранее прикидывают, как копинг исказит самоотчёт.',
-    ],
-    sources: '[Хис, гл. 1], [Янг, гл. 2]; [Луз, гл. 8]',
+      ...questionnairesMoreRoediger,
+    ].concat(ysqHeathDosbor),
+    sources: '[Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]; [Луз, гл. 8]',
   },
   {
     id: 'temperament',

@@ -1,6 +1,8 @@
 import {
   DIARY_QUICK_TAGS,
   HOME_TILES,
+  NEXT_STEP_FROM,
+  NEXT_STEP_TO,
 } from '../analytics/home-events.constants';
 import type { PrismaService } from '../prisma/prisma.service';
 
@@ -62,12 +64,45 @@ export async function countDiaryQuickSaves(
   return { byTag, detailed };
 }
 
+export interface NextStepCount {
+  from: string;
+  to: string;
+  count: number;
+}
+
+/** Переходы «Что дальше» за период, по парам from→to. JSON-фильтр Prisma, без сырого SQL. */
+export async function countDoneNextSteps(
+  prisma: PrismaService,
+  since: Date,
+): Promise<NextStepCount[]> {
+  const pairs = NEXT_STEP_FROM.flatMap((from) =>
+    NEXT_STEP_TO.map((to) => ({ from, to })),
+  );
+  return Promise.all(
+    pairs.map(async ({ from, to }) => ({
+      from,
+      to,
+      count: await prisma.analyticsEvent.count({
+        where: {
+          name: 'done_next_step',
+          createdAt: { gte: since },
+          AND: [
+            { meta: { path: ['from'], equals: from } },
+            { meta: { path: ['to'], equals: to } },
+          ],
+        },
+      }),
+    })),
+  );
+}
+
 /** Все счётчики главной простого клиента для /stats за период. */
 export async function countHomeMetrics(prisma: PrismaService, since: Date) {
-  const [homeTiles, trackerSkips, diaryQuick] = await Promise.all([
+  const [homeTiles, trackerSkips, diaryQuick, nextSteps] = await Promise.all([
     countHomeTiles(prisma, since),
     countTrackerSkips(prisma, since),
     countDiaryQuickSaves(prisma, since),
+    countDoneNextSteps(prisma, since),
   ]);
-  return { homeTiles, trackerSkips, diaryQuick };
+  return { homeTiles, trackerSkips, diaryQuick, nextSteps };
 }
