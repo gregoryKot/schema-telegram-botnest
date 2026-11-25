@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
-import { buildAssessArntz } from './practiceAssessArntz';
-import { complaintToModeMore, storySignalMore } from './practiceAssessMore';
+import { buildAssessAll, storySignalMoreAll } from './practiceAssessHeath';
+import { complaintToModeMore } from './practiceAssessMore';
 
 /** «Для терапевта»: первая сессия и первые гипотезы о режимах (гл. 3). Карта — docs/guide-sources/Кембридж.md. */
 export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
@@ -76,8 +76,8 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
         'Вы рассказываете о тяжёлом, а голос совсем спокойный. Как будто какая-то часть держит чувства на расстоянии. Похоже на правду?',
       ),
     ],
-    more: storySignalMore,
-    sources: '[Кембридж, гл. 3, бокс 3.6], [Арнтц, 2.2.3]',
+    more: storySignalMoreAll,
+    sources: '[Кембридж, гл. 3, бокс 3.6], [Арнтц, 2.2.3], [Хис, гл. 1]',
   },
-  ...buildAssessArntz(tr),
+  ...buildAssessAll(tr),
 ];
