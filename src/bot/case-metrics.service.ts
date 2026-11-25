@@ -53,6 +53,7 @@ export class CaseMetricsService {
       peopleRows,
       returnedRows,
       saved,
+      mapOpened,
     ] = await Promise.all([
       count('case_started'),
       count('case_finished'),
@@ -70,6 +71,7 @@ export class CaseMetricsService {
       this.prisma.modeDiaryEntry.count({
         where: { fromCase: true, createdAt: { gte: since30 } },
       }),
+      byMetaKey('case_map_opened', 'repeat'),
     ]);
 
     return {
@@ -83,6 +85,8 @@ export class CaseMetricsService {
       recognizedDoubted: recognized('false'),
       people: Number(peopleRows[0]?.c ?? 0),
       peopleReturned: Number(returnedRows[0]?.c ?? 0),
+      mapOpenedRepeat: mapOpened('true'),
+      mapOpenedFirst: mapOpened('false'),
     };
   }
 

@@ -1,10 +1,10 @@
 import { SelfHelpEntry } from './SelfHelpEntry';
 import { glue } from '../../../../shared/src/utils/typo';
 // Вводный текст блока «Здесь и сейчас» (онбординг: что это и зачем, до первого действия). На
-// десктопе — заголовок и полный абзац; на телефоне (compact) заголовок несёт шапка страницы, абзац
+// десктопе — заголовок (если не headless: на «Практиках» его несёт h1 шапки) и полный абзац; на телефоне (compact) заголовок несёт шапка страницы, абзац
 // в две строки, под ним — тихая ссылка «Важное о самопомощи» (рамка метода рядом с практиками).
 // Оба абзаца — через glue: «для / того момента» и «/ — на одну-три» не рвутся (ревью g4 r3).
-export function HereAndNowIntro({ compact }: { compact: boolean }) {
+export function HereAndNowIntro({ compact, headless = false }: { compact: boolean; headless?: boolean }) {
   if (compact) {
     return (
       <div className="cp-here-intro">
@@ -15,7 +15,7 @@ export function HereAndNowIntro({ compact }: { compact: boolean }) {
   }
   return (
     <>
-      <div className="ds-head-row"><h3 className="ds-h2">Здесь и сейчас</h3></div>
+      {!headless && <div className="ds-head-row"><h3 className="ds-h2">Здесь и сейчас</h3></div>}
       <p className="ds-sub cp-here-text">
         {glue('Три коротких практики самопомощи из КПТ и ДБТ — на одну-три минуты, для того момента, когда накрыло. '
           + 'Дыхание 4-4-6 успокаивает тело, заземление по пяти чувствам возвращает в комнату, «Стоп» ставит '

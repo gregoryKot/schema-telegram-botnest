@@ -11,6 +11,9 @@ import { CaseSupportProvider } from './CaseSupportFoot';
 import { CaseResumeGate } from './CaseResumeGate';
 import { CaseCollectedProvider } from './CaseStepScreen';
 import { collectedRows } from './caseSummary';
+import { useCaseModeHistory } from './useCaseModeHistory';
+import { todayStr } from '../../utils/format';
+import { modeRepeatCount } from '../../../../shared/src/case/quick/caseRepeat';
 import { useCaseQuickFlow } from '../../../../shared/src/case/quick/useCaseQuickFlow';
 import { STEADY_GATE_ID, type CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
@@ -32,6 +35,7 @@ export function CaseFlowScreen(props: CaseQuickProps) {
 
 function CaseFlowSteps(props: CaseQuickProps) {
   const f = useCaseQuickFlow(props, DEPS);
+  const history = useCaseModeHistory();
   const common = { crisis: f.crisis, onHardNow: f.handleHardNow, onBack: f.back };
   const collected = collectedRows(f.step, f.fields, f.bodyChips);
   return (
@@ -94,12 +98,19 @@ function CaseFlowSteps(props: CaseQuickProps) {
             failed={f.saveFailed}
             onSave={f.save}
             onDoubt={f.openModes}
+            firstMode={history !== null && history.length === 0}
           />
         ) : null;
       case 'modes':
         return <CaseModeScreen {...common} onPick={f.pickMode} />;
       case 'done':
-        return <CaseDoneScreen name={f.doneName} steady={f.fields.gateId === STEADY_GATE_ID} onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow} />;
+        return (
+          <CaseDoneScreen
+            name={f.doneName} steady={f.fields.gateId === STEADY_GATE_ID}
+            repeat={history ? modeRepeatCount(history, f.savedModeId, todayStr()) : 1}
+            onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow}
+          />
+        );
       default:
         return null;
     }

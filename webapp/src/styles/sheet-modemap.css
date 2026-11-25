@@ -12,7 +12,7 @@
 .ds-btn.mm2-tb-btn.is-active:not(:disabled) { background: var(--paper-sunk); color: var(--accent); }
 /* Неактивная (undo/redo) — без рамки и подложки: правила .ds-btn:disabled и .ds-btn--icon:disabled
    (cabinet.css) той же или меньшей специфичности, поэтому здесь — на 0,4,0, а не порядком файлов. */
-.ds-btn.ds-btn--icon.mm2-tb-btn:disabled { color: var(--text-ghost); background: transparent; border-color: transparent; cursor: default; }
+.ds-btn.ds-btn--icon.mm2-tb-btn:disabled { color: var(--text-ghost); background: transparent; cursor: default; }
 .mm2-tb-caret { opacity: .65; margin-left: 1px; }
 .mm2-tb-sep { width: 1px; align-self: stretch; background: var(--line); margin: 4px 2px; }
 .mm2-tip {
