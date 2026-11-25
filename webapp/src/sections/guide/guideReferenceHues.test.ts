@@ -17,9 +17,9 @@ const tabSheets = (groups: ReferenceGroup[]): SheetView[] =>
   groups.flatMap((g) => (g.parts ?? [g]).flatMap((p) =>
     p.items.map((i) => ({ id: i.id, hue: i.hue ?? p.look.hue, sign: i.sign ?? p.look.sign }))));
 
-/** Сколько разных оттенков вкладке нужно: по числу смысловых групп, но не меньше трёх (на короткой вкладке — по числу листов). */
+/** Сколько разных оттенков вкладке нужно: по числу смысловых групп, но не меньше трёх (на короткой вкладке — по числу листов, не больше палитры). */
 const huesNeeded = (sheets: number, semanticGroups: number): number =>
-  Math.min(sheets, Math.max(3, semanticGroups));
+  Math.min(sheets, Math.max(3, semanticGroups), Object.keys(PAPER_HUE).length);
 
 /** Нарушения правила на вкладке: пустой список — вкладка в порядке. */
 function tabLookProblems(groups: ReferenceGroup[], semanticGroups: number): string[] {
@@ -52,8 +52,8 @@ describe('справочник: на вкладке листы разного о
     expect(tabLookProblems(ref[tab], SEMANTIC_GROUPS[tab])).toEqual([]);
   });
 
-  it('оттенков нужно по числу смысловых групп, не меньше трёх; на короткой вкладке — по числу листов', () => {
-    expect([huesNeeded(20, 6), huesNeeded(8, 1), huesNeeded(2, 2), huesNeeded(1, 5)]).toEqual([6, 3, 2, 1]);
+  it('оттенков нужно по числу смысловых групп, не меньше трёх; на короткой вкладке — по числу листов, не больше палитры', () => {
+    expect([huesNeeded(20, 6), huesNeeded(8, 1), huesNeeded(2, 2), huesNeeded(1, 5), huesNeeded(12, 12)]).toEqual([6, 3, 2, 1, 10]);
   });
 
   const sheet = (id: string, hue: number, sign?: string) =>
