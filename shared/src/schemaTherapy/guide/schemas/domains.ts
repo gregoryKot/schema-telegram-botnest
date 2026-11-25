@@ -4,7 +4,7 @@ import { buildAutonomyGuides } from './autonomy';
 import { buildLimitsGuides } from './limits';
 import { buildOtherDirectedGuides } from './otherDirected';
 import { buildVigilanceGuides } from './vigilance';
-import { withChildhood } from './childhood';
+import { withChildhoodAndArntzIntro } from './arntzIntroMore';
 
 /** Домены схем в порядке справочника; к каждой схеме подмешаны вопросы о детстве. */
 export const SCHEMA_DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
@@ -13,4 +13,4 @@ export const SCHEMA_DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
   buildLimitsGuides,
   buildOtherDirectedGuides,
   buildVigilanceGuides,
-].map((build) => (tr) => withChildhood(build(tr)));
+].map((build) => (tr) => withChildhoodAndArntzIntro(build(tr)));
