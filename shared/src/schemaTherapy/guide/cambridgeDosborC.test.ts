@@ -7,6 +7,16 @@ import {
   schemaGuide,
 } from './index';
 import type { Tr } from './types';
+import * as group from './practiceGroupCambridgeC';
+import * as online from './practiceOnlineCambridgeC';
+import * as therapist from './practiceTherapistCambridgeC';
+import * as concept from './practiceConceptCambridgeC';
+import * as modes from './modes/modesCambridgeC';
+import * as otherDirected from './schemas/otherDirectedCambridgeC';
+import * as childhood from './schemas/childhoodCambridgeC';
+import * as imagery from './techniques/imageryRescriptingCambridgeC';
+import * as onlineTech from './techniques/onlineCambridgeC';
+import * as tech from './techniques/techniquesCambridgeC';
 
 const ty: Tr = (t) => t;
 const vy: Tr = (_t, v) => v;
@@ -73,6 +83,29 @@ describe.each([
     expect(once(dep, 'взаимозависимости')).toBe(1);
     const ss = schemaGuide(tr, 'self_sacrifice')!.guide.more ?? [];
     expect(once(ss, 'отдельной идентичности')).toBe(1);
-    expect(once(ss, 'родитель-нарцисс')).toBe(1);
+    expect(once(ss, 'нарциссическими чертами')).toBe(1);
+  });
+});
+
+describe('досбор Кембриджа: длина новых пунктов', () => {
+  const lists: Record<string, string[]> = {
+    ...group,
+    ...online,
+    ...therapist,
+    ...concept,
+    ...modes,
+    ...otherDirected,
+    ...imagery,
+    ...onlineTech,
+    ...tech,
+    ...Object.fromEntries(
+      Object.entries(childhood.SCHEMA_CHILDHOOD_C).map(([k, v]) => [k, v]),
+    ),
+  } as never;
+  it('каждый пункт не длиннее 300 знаков', () => {
+    for (const [name, v] of Object.entries(lists)) {
+      if (!Array.isArray(v)) continue;
+      for (const item of v) expect(item.length, name).toBeLessThanOrEqual(300);
+    }
   });
 });
