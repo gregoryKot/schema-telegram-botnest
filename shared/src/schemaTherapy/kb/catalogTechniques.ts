@@ -1,6 +1,7 @@
 // Каталог-цель вкладки «Техники» (kb/catalog.ts): написанные техники и те, что литература даёт сверх них.
 // Новая техника — строка здесь в том же PR (планировалась — статус planned → written с тем же id).
 import { type CatalogTopic, w, VF_TECHNIQUES } from './catalogMindfulness';
+import { WRITTEN_TECHNIQUES_MORE } from './catalogTechniquesMore';
 
 export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   ...[
@@ -67,10 +68,8 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'recent_event_imagery',
     'mental_contrasting_imagery',
     'three_parts_check_in',
-    'coping_bypass',
-    'mode_figures',
-    'genogram',
   ].map(w),
+  ...WRITTEN_TECHNIQUES_MORE,
   {
     id: 'rupture_repair',
     title:
