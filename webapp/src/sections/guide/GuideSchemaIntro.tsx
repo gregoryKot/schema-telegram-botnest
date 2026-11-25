@@ -1,7 +1,7 @@
 import { SignArt } from '../../components/art/SignArt';
 import { Cited } from '../../components/therapist/guide/GuideText';
 import { Disclosure } from '../../../../shared/src/components/Disclosure';
-import { COPING_ABOUT } from '../../../../shared/src/schemaTherapy/guide/schemas/copingAbout';
+import { COPING_ABOUT } from '../../../../shared/src/schemaTherapy/guide/schemas/copingAboutYoung';
 import { COPING_STYLES } from '../../../../shared/src/schemaTherapy/guide/copingStyles';
 import { styleVars } from './guideSchemaTableModel';
 
@@ -30,7 +30,7 @@ export function GuideSchemaIntro({ canMark }: { canMark: boolean }) {
         <p><Cited text={COPING_ABOUT.levelsLead} /></p>
         <ul className="gst-levels">{COPING_ABOUT.levels.map((l) => <li key={l}>{l}</li>)}</ul>
         <p><Cited text={COPING_ABOUT.mode} /></p>
-        <p><Cited text={COPING_ABOUT.research} /></p>
+        {[COPING_ABOUT.research, ...COPING_ABOUT.more].map((t) => <p key={t}><Cited text={t} /></p>)}
       </Disclosure>
       <p className="gst-how">
         В клетке — суть одной строкой; тап раскрывает полный пример

@@ -1,7 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildAssessArntz } from './practiceAssessArntz';
 import { storySignalMore } from './practiceAssessMore';
-import { buildPracticeDiagnosticsHeath } from './practiceDiagnosticsHeath';
+import { buildPracticeDiagnosticsHeath } from './practiceDiagnosticsYoung';
 
 /** Оценка по Арнтц и Хис (гл. 1, 4) в одном списке: practiceAssessment.ts не растёт. */
 export const buildAssessAll: PracticeNotesBuilder = (tr) => [

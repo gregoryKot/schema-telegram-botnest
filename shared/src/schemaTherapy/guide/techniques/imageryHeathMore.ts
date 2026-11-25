@@ -1,4 +1,4 @@
-import { diagnosticImageryMore } from './imageryDiagnosticMore';
+import { diagnosticImageryMore } from './imageryDiagnosticYoung';
 import { modeDialogueImageryMore } from './imageryFutureMore';
 import { futureMoreAll } from './imageryArntz';
 import { safePlaceMoreFull } from './reparentingHeath';

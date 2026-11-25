@@ -3,8 +3,8 @@ import { SCHEMA_COPING } from './coping';
 import {
   buildDefectivenessGuide,
   buildEmotionalDeprivationGuide,
-} from './rejectionCore';
-import { buildAbandonmentGuide, buildMistrustGuide } from './rejectionMore';
+} from './rejectionYoung';
+import { buildAbandonmentGuide, buildMistrustGuide } from './rejectionYoung';
 
 /** Домен rejection: emotional_deprivation, abandonment, mistrust, defectiveness, social_isolation. */
 export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({

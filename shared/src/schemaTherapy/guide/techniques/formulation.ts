@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { modeMapMore } from './modeMapMoreArntzJacob';
-import { schemaDiaryMore } from './schemaDiaryMore';
+import { modeMapMore } from './modeMapMoreYoung';
+import { schemaDiaryMore } from './schemaDiaryMoreYoung';
 
 /** Концептуализация вместе с клиентом: mode_map, schema_diary. */
 export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [

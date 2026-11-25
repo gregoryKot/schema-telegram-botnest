@@ -1,11 +1,11 @@
 // Вкладка «Запросы и расстройства» справочника: статьи о том, с чем приходят клиенты. Тип — ./types.ts.
 import type { Tr } from '../types';
 import { buildAdolescentsGuide } from './adolescents';
-import { buildBpdGuide } from './bpd';
-import { buildClusterCGuide } from './cluster_c';
+import { buildBpdGuide } from './bpdYoung';
+import { buildClusterCGuide } from './clusterCYoung';
 import { buildDepressionGuide } from './depression';
 import { buildNarcissismGuide } from './narcissism';
-import { buildOtherPersonalityDisordersGuide } from './other_personality_disorders';
+import { buildOtherPersonalityDisordersGuide } from './otherPersonalityDisordersYoung';
 import type { ConcernGuide, ConcernGuideBuilder } from './types';
 
 export type { ConcernGuide, ConcernGuideBuilder } from './types';
