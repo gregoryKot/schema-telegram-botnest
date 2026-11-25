@@ -45,7 +45,7 @@ function renderSection(props: Partial<{ onOpenChildhoodWheel: () => void; childh
   return render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
       <MemoryRouter>
-        <SchemasSection onOpenSchema={vi.fn()} onOpenChildhoodWheel={vi.fn()} {...props} />
+        <SchemasSection onOpenSchema={vi.fn()} onOpenTracker={vi.fn()} onOpenChildhoodWheel={vi.fn()} {...props} />
       </MemoryRouter>
     </AddressFormContext.Provider>,
   );

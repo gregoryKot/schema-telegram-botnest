@@ -34,7 +34,7 @@ async function modesHero(myModeIds: string[]): Promise<Element> {
   mockApi.getProfile.mockResolvedValue(profile(myModeIds));
   render(
     <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-      <MemoryRouter initialEntries={['/schemas']}><SchemasSection onOpenSchema={vi.fn()} /></MemoryRouter>
+      <MemoryRouter initialEntries={['/schemas']}><SchemasSection onOpenSchema={vi.fn()} onOpenTracker={vi.fn()} /></MemoryRouter>
     </AddressFormContext.Provider>,
   );
   fireEvent.click(screen.getByRole('tab', { name: 'Режимы' }));

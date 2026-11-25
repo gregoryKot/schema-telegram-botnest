@@ -45,7 +45,7 @@ const row = () => document.querySelector('.cs-testrow');
 const before = (a: Element | null, b: Element | null) => !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 function renderPatterns() {
-  return render(<MemoryRouter><SchemasSection onOpenSchema={vi.fn()} /></MemoryRouter>);
+  return render(<MemoryRouter><SchemasSection onOpenSchema={vi.fn()} onOpenTracker={vi.fn()} /></MemoryRouter>);
 }
 
 beforeEach(() => { cleanup(); localStorage.clear(); vi.clearAllMocks(); mobile.value = true; });

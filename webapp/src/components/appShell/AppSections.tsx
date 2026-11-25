@@ -139,6 +139,7 @@ export function AppSections({
           <ErrorBoundary section="Паттерны" key="schemas-boundary">
             <SchemasSection
               onOpenSchema={ov.openSchema}
+              onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
               childhoodRatings={childhoodRatings} onOpenSettings={() => ov.setShowSettings(true)}
               onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
             />
