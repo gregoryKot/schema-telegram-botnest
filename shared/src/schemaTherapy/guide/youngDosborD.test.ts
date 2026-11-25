@@ -12,6 +12,25 @@ import { selfDisclosureYoung3 } from './practiceSelfDisclosureYoung3';
 import { imageryRescriptingYoung2 } from './techniques/imageryRescriptingYoung2';
 import { lrYoung3 } from './techniques/limitedReparentingYoung3';
 import { lsYoung3 } from './techniques/limitSettingYoung3';
+import { flashcardsYoung3 } from './techniques/flashcardsYoung3';
+import { modeDialogueYoung3 } from './techniques/modeDialogueYoung3';
+import { detachedSelfSootherYoung3 } from './modes/detachedSelfSootherYoung3';
+import {
+  bpdCourseYoung9,
+  bpdCritY,
+  bpdCrisisYoung,
+  bpdDiffY,
+} from './concerns/bpdYoung2';
+import {
+  narcDiffY3,
+  narcPsyY3,
+  narcissismCourseYoung,
+} from './concerns/narcissismYoung';
+
+// Перенесённые старые пункты (не наши, длинные): исключены из проверки длины явно.
+const OLD_MOVED = ['Цель по Янгу —', 'Порядок работы у Янга:'];
+const isMine = (t: string) =>
+  /Янг, гл\. (9|10)/.test(t) && !OLD_MOVED.some((p) => t.startsWith(p));
 
 const ty: Tr = (t) => t;
 const modes = buildModeGuides(ty);
@@ -33,6 +52,24 @@ const SHELVES: [string, string[] | undefined, string[]][] = [
   ],
   ['self_aggrandiser', mode('self_aggrandiser').more, aggrYoung3],
   ['lonely_child', mode('lonely_child').more, lonelyChildYoung3],
+  [
+    'detached_self_soother',
+    mode('detached_self_soother').more,
+    detachedSelfSootherYoung3,
+  ],
+  ['flashcards', tech('flashcards').more, flashcardsYoung3],
+  [
+    'mode_dialogue_imagery',
+    tech('mode_dialogue_imagery').more,
+    modeDialogueYoung3,
+  ],
+  ['bpd.criteria', bpd.criteria, bpdCritY],
+  ['bpd.differential', bpd.differential, bpdDiffY],
+  ['bpd.course', bpd.course, bpdCourseYoung9],
+  ['bpd.crisis', bpd.crisis, bpdCrisisYoung],
+  ['narcissism.course', narc.course, narcissismCourseYoung],
+  ['narcissism.psychoeducation', narc.psychoeducation, narcPsyY3],
+  ['narcissism.differential', narc.differential, narcDiffY3],
   ['self_disclosure', note('self_disclosure').more, selfDisclosureYoung3],
   [
     'imagery_rescripting',
@@ -47,7 +84,7 @@ describe('досбор Янга гл. 9–10: подключение', () => {
   it.each(SHELVES)(
     '%s: пункты досбора есть в записи ровно один раз',
     (_n, assembled, mine) => {
-      for (const item of mine.filter((t) => /Янг, гл\. (9|10)/.test(t))) {
+      for (const item of mine.filter(isMine)) {
         expect(assembled!.filter((t) => t === item)).toHaveLength(1);
       }
     },
@@ -56,7 +93,7 @@ describe('досбор Янга гл. 9–10: подключение', () => {
   it.each(SHELVES)(
     '%s: нового пункта не длиннее 300 знаков',
     (_n, _a, mine) => {
-      for (const item of mine.filter((t) => /Янг, гл\. (9|10)/.test(t))) {
+      for (const item of mine.filter(isMine)) {
         expect(item.length).toBeLessThanOrEqual(300);
       }
     },
