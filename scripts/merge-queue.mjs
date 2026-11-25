@@ -5,7 +5,7 @@
 //
 // За прогон — один PR. Очередь — открытые PR в main с auto-merge, не черновики,
 // без `do-not-merge`, старые первыми (правила — merge-queue-plan.mjs):
-//  - свежий PR с идущим CI (чей пуш — не важно) «в полёте» — его ждут;
+//  - свежий PR с идущим CI (чей пуш — не важно) «в полёте»: его ждут, одиночно не подтягивают, поезд садится и так;
 //  - отменённые обязательные проверки — как отставание: update-branch перезапускает CI;
 //  - иначе первый отставший (зелёные по готовности, затем с идущим прогоном)
 //    получает update-branch; конфликт сводит merge-queue-conflict.mjs, не свёл —
@@ -73,9 +73,9 @@ async function main() {
 
   const ride = await trains.drive(prs, open);
   if (ride === 'done') return;
-  const { wait, candidates } = planQueue(prs.filter((p) => !!p.train === (ride === 'ride')), Date.now());
+  const { wait, candidates, boarders } = planQueue(prs.filter((p) => !!p.train === (ride === 'ride')), Date.now());
+  if (ride !== 'walk' && (await trains.board(boarders))) return;
   if (wait) return console.log(`#${wait.number} в полёте: ветка свежая, ждём его мержа`);
-  if (ride !== 'walk' && (await trains.board(candidates))) return;
   for (const p of candidates) {
     // Без прогона: у конфликта с main CI не стартует; иное «без прогона» чинит агент.
     if (p.checks.state === 'missing') {
