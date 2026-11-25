@@ -199,7 +199,13 @@ export const FEATURES: readonly FeatureDef[] = [
   {
     id: 'case',
     title: 'Разбор случая',
-    events: ['case_started', 'case_scene', 'case_recognized', 'case_finished'],
+    events: [
+      'case_started',
+      'case_scene',
+      'case_recognized',
+      'case_finished',
+      'case_map_opened',
+    ],
   },
   {
     id: 'self_map',

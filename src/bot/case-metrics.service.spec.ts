@@ -26,6 +26,7 @@ describe('CaseMetricsService.getMetrics', () => {
     people: bigint;
     returned: bigint;
     saved?: number;
+    mapOpened?: MetaRow[];
   }) => {
     const count = jest
       .fn()
@@ -36,7 +37,8 @@ describe('CaseMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(opts.scene)
       .mockResolvedValueOnce(opts.recognized)
       .mockResolvedValueOnce([{ c: opts.people }])
-      .mockResolvedValueOnce([{ c: opts.returned }]);
+      .mockResolvedValueOnce([{ c: opts.returned }])
+      .mockResolvedValueOnce(opts.mapOpened ?? []);
     const savedCount = jest.fn().mockResolvedValue(opts.saved ?? 0);
     const prisma = {
       analyticsEvent: { count },
@@ -127,6 +129,7 @@ describe('CaseMetricsService.getMetrics', () => {
       .mockResolvedValueOnce(FULL.scene)
       .mockResolvedValueOnce(FULL.recognized)
       .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     const m = await service.getMetrics();
     expect(m.people).toBe(0);
@@ -145,6 +148,19 @@ describe('CaseMetricsService.getMetrics', () => {
     const m = await service.getMetrics();
     expect(m.sceneOwn).toBe(5);
     expect(m.sceneFrame).toBe(0);
+  });
+
+  it('делит переходы на карту по флагу повтора из JSON-строки', async () => {
+    const { service } = build({
+      ...FULL,
+      mapOpened: [
+        { value: 'true', c: 4n },
+        { value: 'false', c: 7n },
+      ],
+    });
+    const m = await service.getMetrics();
+    expect(m.mapOpenedRepeat).toBe(4);
+    expect(m.mapOpenedFirst).toBe(7);
   });
 
   it('считает события только двух нужных имён', async () => {

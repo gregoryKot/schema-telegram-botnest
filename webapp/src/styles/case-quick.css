@@ -136,3 +136,6 @@
   .cq-help-art .pp-art--square { width: 80px; }
   .pa-field.cq-field { min-height: 128px; }
 }
+.cq-mode-intro { margin: 0 0 8px; font-size: 15px; line-height: 1.5; color: var(--text-muted); text-wrap: pretty; }
+.cq-agree-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); text-wrap: pretty; }
+.cq-doubt { width: 100%; margin-top: 8px; }

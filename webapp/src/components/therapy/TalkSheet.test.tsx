@@ -9,6 +9,8 @@ const track = vi.hoisted(() => vi.fn());
 vi.mock('./trackTherapyNudge', () => ({ trackTherapyNudge: track }));
 
 const goBack = vi.hoisted(() => vi.fn());
+const api = vi.hoisted(() => ({ joinTherapy: vi.fn(), getTherapyRelation: vi.fn() }));
+vi.mock('../../api', () => ({ api }));
 vi.mock('../../hooks/useHistorySheet', () => ({ useHistorySheet: () => goBack }));
 
 const renderSheet = (trigger?: 'crisis') =>
@@ -51,7 +53,7 @@ describe('TalkSheet', () => {
     const { unmount } = renderSheet();
     const back = screen.getByRole('button', { name: 'Назад' });
     expect(document.activeElement).toBe(back);
-    screen.getAllByRole('link').at(-1)!.focus();
+    screen.getByRole('textbox', { name: 'Код от терапевта' }).focus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(document.activeElement).toBe(back);
     unmount();
@@ -95,5 +97,18 @@ describe('TalkSheet', () => {
     const then = goBack.mock.calls.at(-1)?.[0] as () => void;
     act(() => then());
     expect(screen.getByTestId('where').textContent).toBe('/profile');
+  });
+
+  it('без терапевта: код от терапевта вводится прямо здесь, после подключения лист — «Терапевт рядом»', async () => {
+    api.joinTherapy.mockResolvedValue({});
+    api.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerId: 42, partnerName: 'Анна' });
+    renderSheet();
+    expect(screen.getByRole('heading', { name: 'Уже есть терапевт?' })).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Код от терапевта' }), { target: { value: 'abc123' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Подключиться' })); });
+    expect(api.joinTherapy).toHaveBeenCalledWith('ABC123');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Терапевт рядом');
+    expect(screen.getByRole('status').textContent).toMatch(/видит твой трекер/);
+    expect(screen.queryByRole('textbox', { name: 'Код от терапевта' })).toBeNull();
   });
 });
