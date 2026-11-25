@@ -46,6 +46,11 @@ export function sanitizeCaseMeta(
     }
     return undefined;
   }
+  if (name === 'case_map_opened') {
+    return typeof meta.repeat === 'boolean'
+      ? { repeat: meta.repeat }
+      : undefined;
+  }
   // case_started — без меты, поля отбрасываются.
   return undefined;
 }
