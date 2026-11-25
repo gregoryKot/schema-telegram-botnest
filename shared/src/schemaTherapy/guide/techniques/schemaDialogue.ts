@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { schemaDialogueMore } from './schemaDialogueMore';
 
 /** Техники из книги Янга: schema_dialogue. Карта — docs/guide-sources/Янг.md. */
 export const buildSchemaDialogueTechniques: TechniqueGuideBuilder = (tr) => [
@@ -22,9 +23,7 @@ export const buildSchemaDialogueTechniques: TechniqueGuideBuilder = (tr) => [
         'Давайте устроим спор. Я говорю за вашу здоровую сторону, а вы изо всех сил доказывайте, что схема права.',
       ),
     ],
-    more: [
-      'Цель — чтобы клиент говорил от здоровой стороны сам, естественно и без подсказок. Обычно на это уходят месяцы повторов [Янг, гл. 3]. Режиму или голосу схемы помогает дать своё прозвище: с именем он слабеет, и спорить с ним легче [Хис, гл. 19].',
-    ],
+    more: schemaDialogueMore,
     cautions:
       '«Умом понимаю, но не верю» — норма этого этапа, а не провал. Терапевт так и говорит: сейчас достаточно говорить логически верно, а чувство подтянется позже. Тем, у кого здоровая сторона почти не звучала, нужно много подсказок и времени [Янг, гл. 3].',
     sources: '[Янг, гл. 3], [Хис, гл. 19]',
