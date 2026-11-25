@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { bodyGroundingMoreHeath } from './bodyHeath';
+import { bodyMore } from './arntzBpdImageryMore';
 
 /** Тело: body_grounding. */
 export const buildBodyGroundingTechniques: TechniqueGuideBuilder = (tr) => [
@@ -28,7 +28,7 @@ export const buildBodyGroundingTechniques: TechniqueGuideBuilder = (tr) => [
         'Почувствуйте стопы на полу. Назовите три предмета, которые видите.',
       ),
     ],
-    more: bodyGroundingMoreHeath,
+    more: bodyMore,
     cautions:
       'У клиентов с травмой внимание к телу само бывает триггером: начинают с коротких отрезков и нейтральных ощущений. Заземление возвращает контакт, но не заменяет работу с тем, от чего клиент ушёл.',
     sources:

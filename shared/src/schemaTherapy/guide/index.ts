@@ -10,19 +10,19 @@ import type {
   Tr,
 } from './types';
 import { MODE_BUILDERS } from './modes/all';
-import { arntzMode, arntzNote, arntzTech } from './arntzBpdDosbor';
+import { withSessionSigns } from './modes/sessionSigns';
 import { SCHEMA_DOMAIN_BUILDERS } from './schemas/domains';
 import { TECHNIQUE_BUILDERS } from './techniques/all';
 import { buildPracticeNotes } from './practice';
 
 /** Все разделы режимов в порядке групп. */
 export function buildModeGuides(tr: Tr): ModeGuide[] {
-  return MODE_BUILDERS.flatMap((build) => build(tr)).map(arntzMode(tr));
+  return MODE_BUILDERS.flatMap((build) => build(tr)).map(withSessionSigns);
 }
 
 /** Вся библиотека техник. */
 export function buildTechniqueGuides(tr: Tr): TechniqueGuide[] {
-  return TECHNIQUE_BUILDERS.flatMap((b) => b(tr)).map(arntzTech(tr));
+  return TECHNIQUE_BUILDERS.flatMap((build) => build(tr));
 }
 
 /** Раздел режима; null — у режима нет своего раздела (свой режим терапевта). */
@@ -54,7 +54,7 @@ export function schemaGuide(
 
 /** Раздел «Для терапевта» «Справочника». */
 export function practiceNotes(tr: Tr): PracticeNote[] {
-  return buildPracticeNotes(tr).map(arntzNote(tr));
+  return buildPracticeNotes(tr);
 }
 
 export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {

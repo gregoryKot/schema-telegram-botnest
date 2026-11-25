@@ -1,5 +1,5 @@
 import type { ModeGuide, Tr } from '../types';
-import { angryChildMoreAll, angryChildMoreTechniques } from './angryChildArntz';
+import { angryChildMoreBpd, angryChildMoreTechniques } from './angryChildBpd';
 
 /** Сердитые детские режимы: Сердитый Ребёнок. */
 export const buildAngryChildGuide = (tr: Tr): ModeGuide => ({
@@ -24,7 +24,7 @@ export const buildAngryChildGuide = (tr: Tr): ModeGuide => ({
       'Злиться можно. Злость говорит, что вам чего-то очень не хватает.',
     ),
   ],
-  more: angryChildMoreAll,
+  more: angryChildMoreBpd,
   techniques: [
     'chairwork',
     'anger_expression',

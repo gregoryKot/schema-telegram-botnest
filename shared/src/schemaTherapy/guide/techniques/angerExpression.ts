@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { angerExpressionMore } from './angerExpressionMore';
+import { angerMore } from './arntzBpdRelationMore';
 
 /** Техника anger_expression; собирает relationship.ts после limit_setting. */
 export const buildAngerExpressionTechniques: TechniqueGuideBuilder = (tr) => [
@@ -26,8 +26,8 @@ export const buildAngerExpressionTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Угрозы, оскорбления и сломанные вещи — это уже не выражение гнева: сначала граница. Порядок шагов не меняют: проверка реальностью до сочувствия звучит как запрет злиться. Пока опасности нет, гнев не останавливают; при опасном — мягкий предмет вместо стены, на крик — сказать, что крик мешает услышать [Фаррелл, 5.5.3]. ' +
       'На шаге «выговориться» тон ровный: сочувствие раньше времени гасит злость, пока она не прозвучала. Клиенту, который сам применял насилие, образы расправы не предлагают. Признак недоработки — клиент уходит с сессии уверенным, что его агрессия была целиком оправдана [Янг, гл. 9].',
-    more: angerExpressionMore,
+    more: angerMore,
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5 и 9. Arntz A., Jacob G. Schema Therapy in Practice. Wiley-Blackwell, 2013, гл. 7; [Янг, гл. 4, 9]; [Фаррелл, 4.5, 5.5.3].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5 и 9. Arntz A., Jacob G. Schema Therapy in Practice. Wiley-Blackwell, 2013, гл. 7; [Янг, гл. 4, 9]; [Фаррелл, 4.5, 5.5.3]; [Арнтц ПРЛ, гл. 5].',
   },
 ];
