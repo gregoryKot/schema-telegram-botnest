@@ -44,7 +44,7 @@ export function OfflineInviteCard({ selectedClient }: Props) {
     });
 
   return (
-    <div className="ds-card ds-card--row">
+    <div className="pp-block tk-leaf">
       <h2 className="ds-label">Приложение</h2>
       {pending.invites !== undefined && !invite && (
         <>
