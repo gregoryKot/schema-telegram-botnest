@@ -77,7 +77,7 @@ Jacob; Farrell & Shaw), сводка терминов [docs/TERMINOLOGY.md](../.
    владельце: «работает в подходе схема-терапия», без титула.
 8. **Техника и заметка «Для терапевта» — в одной группе из закрытого списка:**
    поле `group` (`shared/src/schemaTherapy/guide/types.ts`, порядок и подписи —
-   `guideGroups.ts`); новая группа — решение владельца. Гейт —
+   `guideGroups.ts`); новая группа — когда три записи не ложатся в существующие (`knowledge-base.md`, раздел 7). Гейт —
    `shared/src/schemaTherapy/guide/guideGroups.test.ts`.
 
 ## Как править
