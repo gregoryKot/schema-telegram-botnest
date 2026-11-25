@@ -21,6 +21,7 @@ import { AccountLinkMetricsService } from '../../src/bot/account-link-metrics.se
 import { PlusMetricsService } from '../../src/bot/plus-metrics.service';
 import { SiteInstallMetricsService } from '../../src/bot/site-install-metrics.service';
 import { ScreenMetricsService } from '../../src/bot/screen-metrics.service';
+import { DiaryJumpMetricsService } from '../../src/bot/diary-jump-metrics.service';
 import { ProfilePatternMetricsService } from '../../src/bot/profile-pattern-metrics.service';
 import { ConceptGraphMetricsService } from '../../src/bot/concept-graph-metrics.service';
 import { ScreenShareMetricsService } from '../../src/bot/screen-share-metrics.service';
@@ -93,5 +94,6 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new TherapistExitMetricsService(prisma),
     new CrawlerMetricsService(prisma),
     new PushMetricsService(prisma),
+    new DiaryJumpMetricsService(prisma),
   );
 }
