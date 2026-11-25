@@ -18,7 +18,7 @@ describe('SRow — без onClick', () => {
     const { container } = render(<SRow title="Просто строка" />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByText('Просто строка')).toBeTruthy();
-    expect(container.querySelector('.ds-chev')).toBeNull();
+    expect(container.querySelector('.st-arrow')).toBeNull();
   });
 
   it('без sub — подписи нет', () => {
@@ -51,9 +51,9 @@ describe('SRow — с onClick', () => {
     expect(onClick).toHaveBeenCalledTimes(2);
   });
 
-  it('без явного right — рисует стрелку-плейсхолдер ›', () => {
+  it('без явного right — рисует тонкую стрелку → (не шеврон)', () => {
     const { container } = render(<SRow title="Со стрелкой" onClick={() => {}} />);
-    expect(container.querySelector('.ds-chev[aria-hidden="true"]')).toBeTruthy();
+    expect(container.querySelector('.st-arrow[aria-hidden="true"]')).toBeTruthy();
   });
 });
 
@@ -63,7 +63,7 @@ describe('SRow — right', () => {
       <SRow title="С кастомным right" onClick={() => {}} right={<span>кастом</span>} />,
     );
     expect(screen.getByText('кастом')).toBeTruthy();
-    expect(container.querySelector('.ds-chev')).toBeNull();
+    expect(container.querySelector('.st-arrow')).toBeNull();
   });
 });
 
@@ -113,7 +113,7 @@ describe('ChevronVal', () => {
   it('текст и стрелка рендерятся', () => {
     const { container } = render(<ChevronVal text="Значение" />);
     expect(screen.getByText('Значение')).toBeTruthy();
-    expect(container.querySelector('.ds-chev')).toBeTruthy();
+    expect(container.querySelector('.st-arrow')).toBeTruthy();
   });
 });
 

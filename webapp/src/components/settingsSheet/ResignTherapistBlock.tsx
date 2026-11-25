@@ -21,7 +21,7 @@ export function ResignTherapistBlock({ onResign }: { onResign: () => Promise<voi
         )}
       </div>
       <div className="st-actions">
-        <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={busy} onClick={() => setConfirm(false)}>
+        <button type="button" className="ds-link st-act" disabled={busy} onClick={() => setConfirm(false)}>
           Отмена
         </button>
         <button className="ds-btn ds-btn--sm st-btn-danger is-solid" disabled={busy}

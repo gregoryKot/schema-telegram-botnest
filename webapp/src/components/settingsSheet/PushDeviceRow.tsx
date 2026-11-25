@@ -33,12 +33,12 @@ export function PushDeviceRow({ device, telegramLinked, onInstall }: Props) {
   const { state, busy, notice, toggle } = device;
   if (state === 'unsupported') return null;
   // Ключ сервера и подписка ещё едут — плашка по форме тумблера.
-  if (state === null) return <SRow title={TITLE} right={<Skeleton width={44} height={26} radius={13} />} />;
+  if (state === null) return <SRow title={TITLE} right={<Skeleton width={22} height={22} radius={4} />} />;
   if (state === 'ios-install') {
     return (
       <div className="st-body-block">
         <p className="st-text">На iPhone и iPad уведомления приходят только в приложение с экрана «Домой».</p>
-        <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onInstall}>Установить приложение</button>
+        <button type="button" className="ds-link st-act st-go" onClick={onInstall}>Установить приложение</button>
       </div>
     );
   }

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { api, type UserSettings } from '../../api';
 import { useSetAddressForm, useTr } from '../../utils/addressForm';
-import { SignChip } from '../paper/SignChip';
 import { SSection } from './ui';
 
 interface NameProps {
@@ -44,22 +43,20 @@ export function AddressSection({ settings, patch }: { settings: UserSettings; pa
   const setAddressForm = useSetAddressForm();
   return (
     <SSection id="s-address" label="Обращение">
-      <div className="st-body-block">
-        {/* Выбор значения, а не раздел — чипы-радио, как цель в днях у задачи. */}
-        <div className="st-chips" role="radiogroup" aria-label="Обращение">
-          {(['ty', 'vy'] as const).map(form => (
-            <SignChip key={form} radio label={form === 'ty' ? 'На «ты»' : 'На «вы»'}
-              on={(settings.addressForm ?? 'ty') === form}
-              onToggle={() => {
-                // Форма ставится сразу (интерфейс говорит по-новому без ожидания), а на
-                // отказе откатывается вместе с переключателем: patch возвращает исход.
-                const prev = settings.addressForm ?? 'ty';
-                setAddressForm(form);
-                void patch({ addressForm: form }).then((ok) => { if (!ok) setAddressForm(prev); });
-              }}
-            />
-          ))}
-        </div>
+      {/* Выбор значения, а не раздел: варианты текстом на линии, у выбранного — черта акцента (как вкладки), без коробок и галки. */}
+      <div className="st-pick" role="radiogroup" aria-label="Обращение">
+        {(['ty', 'vy'] as const).map(form => (
+          <button key={form} type="button" role="radio" className="st-pick-opt"
+            aria-checked={(settings.addressForm ?? 'ty') === form}
+            onClick={() => {
+              // Форма ставится сразу (интерфейс говорит по-новому без ожидания), а на
+              // отказе откатывается вместе с переключателем: patch возвращает исход.
+              const prev = settings.addressForm ?? 'ty';
+              setAddressForm(form);
+              void patch({ addressForm: form }).then((ok) => { if (!ok) setAddressForm(prev); });
+            }}
+          >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
+        ))}
       </div>
     </SSection>
   );
