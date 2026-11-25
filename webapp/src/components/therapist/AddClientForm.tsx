@@ -65,7 +65,7 @@ export function AddClientForm({ addClient }: Props) {
   }
 
   return (
-    <div className="pp-leaf tc-add">
+    <div className="pp-block tc-add">
       <input
         className="tc-add-name"
         id="add-client-name" ref={addInputRef}

@@ -135,8 +135,11 @@
 }
 .tk-item { padding: 11px 14px; font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; }
 .tk-item + .tk-item { border-top: 1px solid var(--paper-sunk); }
-/* Белый лист .pp-leaf (paper.css) тоном сущности: заметка сессии, последние записи; здесь — поля. */
-.tk-leaf { padding: 18px 20px; }
+/* Блоки «Обзора» между линиями (.pp-block, #1674): заметка сессии, записи, «О клиенте», «Приложение». Свойства .pp-block —
+   на два класса; у соседнего блока верхней линии нет — две подряд читались рамкой. */
+.pp-block.tk-leaf { gap: 10px; padding: 18px 0 20px; }
+.pp-block.tk-leaf + .pp-block.tk-leaf { border-top: 0; }
+.pp-block.tk-leaf > .ds-btn { align-self: flex-start; } /* колонка блока тянет детей; кнопка — по тексту */
 .tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tk-note-date { margin-top: 6px; }
 /* «Что было сделано»: строка — название слева, «сколько раз · когда» справа; ниже — с чем работали. */
@@ -249,7 +252,7 @@
   .tk-alias-input { font-size: 22px; width: 100%; }
   .tk-goal { padding: 14px 16px; }
   .tk-text { font-size: 16px; }
-  .tk-leaf { padding: 14px 16px; }
+  .pp-block.tk-leaf { padding: 14px 0 16px; }
   .tk-side > .ds-card { box-shadow: 0 0 0 1px var(--panel-line); }
   .pa-outcome.tk-outcome { padding: 16px 16px 24px; }
 }
