@@ -1,4 +1,4 @@
-import type { SchemaDomainGuide } from '../types';
+import type { SchemaDomainGuide, TechniqueId } from '../types';
 import { withChildhood } from './childhood';
 
 /** «Подробнее» к схемам из клинических случаев и разбора домена: Арнтц и Якоб, гл. 1.1. */
@@ -40,11 +40,25 @@ const SCHEMA_ARNTZ_INTRO: Record<string, string[]> = {
   ],
 };
 
+/** Связи схем с техниками из разбора Арнтц и Якоб, гл. 1.1. */
+const SCHEMA_ARNTZ_TECHNIQUES: Record<string, TechniqueId[]> = {
+  subjugation: ['empathic_confrontation'],
+};
+
 /** Добавляет схемам домена случаи и пояснения из гл. 1.1, затем вопросы о детстве: они остаются последним пунктом. */
-export function withChildhoodAndArntzIntro(domain: SchemaDomainGuide): SchemaDomainGuide {
+export function withChildhoodAndArntzIntro(
+  domain: SchemaDomainGuide,
+): SchemaDomainGuide {
   const schemas = domain.schemas.map((s) => {
     const extra = SCHEMA_ARNTZ_INTRO[s.schemaId];
-    return extra ? { ...s, more: [...(s.more ?? []), ...extra] } : s;
+    const link = SCHEMA_ARNTZ_TECHNIQUES[s.schemaId];
+    const withMore = extra ? { ...s, more: [...(s.more ?? []), ...extra] } : s;
+    return link
+      ? {
+          ...withMore,
+          moreTechniques: [...(withMore.moreTechniques ?? []), ...link],
+        }
+      : withMore;
   });
   return withChildhood({ ...domain, schemas });
 }

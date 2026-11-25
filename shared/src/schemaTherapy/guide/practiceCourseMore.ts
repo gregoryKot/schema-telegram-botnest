@@ -1,6 +1,6 @@
 import { sessionStructureMore } from './practiceMoreArntz';
 import { therapyAimsMore } from './practiceMoreFarrell';
-import { sessionStructureArntz4 } from './techniques/arntzGeneralMore';
+
 /** «Подробнее» к ходу терапии с дополнениями Арнтц и Якоб (пачка 3): вынесено, чтобы practiceCourse.ts не рос. */
 
 export const therapyAimsFull: string[] = [
@@ -10,6 +10,6 @@ export const therapyAimsFull: string[] = [
 ];
 
 export const sessionStructureFull: string[] = [
-  ...sessionStructureMore, ...sessionStructureArntz4,
+  ...sessionStructureMore,
   'В схема-терапии с клиентом говорят открыто: вместе обсуждают и план, и эмоциональные приёмы, и сами отношения в терапии [Арнтц, 4.4].',
 ];
