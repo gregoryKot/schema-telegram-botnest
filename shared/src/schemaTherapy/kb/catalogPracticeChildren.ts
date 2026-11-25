@@ -15,7 +15,7 @@ export const PRACTICE_CATALOG_CHILDREN: readonly CatalogTopic[] = [
     title: 'Коллюзия схем родителя и ребёнка, функция симптома',
     status: 'planned',
     source: 'Луз',
-    chapters: ['гл. 5', 'гл. 15'],
+    chapters: ['гл. 2', 'гл. 5', 'гл. 15', 'гл. 17'],
   },
   {
     id: 'school_work',
