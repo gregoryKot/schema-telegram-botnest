@@ -74,11 +74,14 @@
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
+//   diary_jump           — переход из вкладки «Записи»: к карточке схемы/режима,
+//                         трекеру или разбору (meta.to — DIARY_JUMP_TARGETS).
 //   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
 //   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
 //   push_*               — уведомления в приложении (веб-пуши): push-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
+//   self_map_link        — переход-мост «Карты себя» (meta.to): self-map-events.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
 //                         каждого — game-events.constants.ts.
 //   asset_recovered      — повтор файла сборки помог (анонимно): asset-recovery.constants.ts.
@@ -86,6 +89,7 @@
 //                         (meta.type — ENTRY_DELETE_TYPES, entry-delete.constants.ts):
 //                         текст там очень личный — видно, находят ли удаление вообще.
 import { CASE_EVENTS } from './case-steps.constants';
+import { SELF_MAP_EVENTS } from './self-map-events.constants';
 import { CABINET_EVENTS } from './cabinet-events.constants';
 import { BOOKING_EVENTS } from './booking-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
@@ -132,12 +136,14 @@ export const ANALYTICS_EVENTS = [
   // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
   ...SERVER_EVENTS,
   'profile_pattern_open',
+  'diary_jump',
   ...CONCEPT_EVENTS, // кабинет терапевта: реестры рядом с фичей (правило №10)
   ...CABINET_EVENTS,
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
   'login_ticket_step',
   // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
   ...CASE_EVENTS,
+  ...SELF_MAP_EVENTS,
   // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
   ...GAME_EVENTS,
   // Удалил свою запись — meta.type из ENTRY_DELETE_TYPES.
@@ -271,6 +277,11 @@ export {
 // shared/src/share/analytics.ts (синхронно).
 export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
 export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
+
+// Куда перешли из вкладки «Записи» (meta.to для diary_jump). Парная
+// константа на фронте — shared/src/share/analytics.ts (синхронно).
+export const DIARY_JUMP_TARGETS = ['pattern', 'tracker', 'case'] as const;
+export type DiaryJumpTarget = (typeof DIARY_JUMP_TARGETS)[number];
 
 // CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts (правило №10).
 export {

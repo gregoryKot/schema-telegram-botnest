@@ -34,6 +34,7 @@ import { PlusMetricsService } from './plus-metrics.service';
 import { PracticeLinkMetricsService } from './practice-link-metrics.service';
 import { LinksPageMetricsService } from './links-page-metrics.service';
 import { PracticeMetricsService } from './practice-metrics.service';
+import { DiaryJumpMetricsService } from './diary-jump-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { QuizMetricsService } from './quiz-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
@@ -76,6 +77,7 @@ export const INTERNAL_PROVIDERS = [
   LinksPageMetricsService,
   PracticeMetricsService,
   ProfilePatternMetricsService,
+  DiaryJumpMetricsService,
   QuizMetricsService,
   ScreenMetricsService,
   ScreenShareMetricsService,

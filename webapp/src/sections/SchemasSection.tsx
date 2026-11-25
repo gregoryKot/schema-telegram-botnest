@@ -8,6 +8,7 @@ import '../styles/client-schemas.css';
 import { useSchemasData } from './schemas/useSchemasData';
 import { SelectionSaveNote } from './schemas/SelectionSaveNote';
 import { PatternsModesPane } from './schemas/PatternsModesPane';
+import { SelfMapLink } from './schemas/SelfMapLink';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
 import { useRoutedPatternLayer } from './schemas/patternRoute';
@@ -30,9 +31,11 @@ interface Props {
   childhoodRatings?: Record<string, number>;
   onOpenChildhoodWheel?: () => void;
   onOpenSettings?: () => void;
+  /** «Что дальше» карты себя может вести в трекер (мост «Где это на карте себя»). */
+  onOpenTracker: () => void;
 }
 
-export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel, onOpenSettings }: Props) {
+export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel, onOpenSettings, onOpenTracker }: Props) {
   const d = useSchemasData();
   const blocks = useScreenBlocks('patterns');
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
@@ -84,6 +87,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
           onPickManually={() => setShowModePicker(true)} onOpenMode={(id) => pat.openPattern('mode', id)}
         />
       )}
+      {show.modes && <SelfMapLink onOpenTracker={onOpenTracker} onOpenSchema={onOpenSchema} />}
       {show.modes && (
         <PatternsModesPane
           mobile={mobile} d={d} pat={pat} onAdd={() => setShowModePicker(true)} note={noteFor('modes')}

@@ -132,6 +132,11 @@ export const PUSH_DENIED_EVENT = 'push_denied';
 export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
 export type ProfilePatternKind = 'schema' | 'mode';
 
+// Переход из вкладки «Записи» (webapp/src/sections/diary/): к карточке схемы/режима,
+// к трекеру или к разбору «Что случилось». meta { to }; allow-list — DIARY_JUMP_TARGETS.
+export const DIARY_JUMP_EVENT = 'diary_jump';
+export type DiaryJumpTarget = 'pattern' | 'tracker' | 'case';
+
 // Графическая концептуализация в кабинете терапевта. Без меты (правило №7); имя в api.trackEvent — строковым литералом,
 // так их видит трипваер analytics-sync. Смысл и место каждого — allow-list src/analytics/concept-events.constants.ts.
 // Первые три (схема случая, связи режима, тексты схемы) шлёт useConceptGraphTracking, константы сверяет тест хука.
@@ -183,6 +188,11 @@ export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
 //
 // Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
 // остаются на клиенте и в зашифрованных полях карточки (правило №7).
+
+/** Переход-мост «Карты себя»: meta.to. Шлётся литералом api.trackEvent('self_map_link', { to }). */
+export const SELF_MAP_LINK_EVENT = 'self_map_link';
+export type SelfMapLinkTarget =
+  'mode' | 'schema' | 'patterns' | 'ysq_test' | 'map';
 
 /** Откуда взялась сцена: meta.source у case_scene. */
 export type CaseSceneSource = 'own' | 'frame';

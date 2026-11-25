@@ -1,5 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { confrontMore, confrontVoice } from './arntzBpdRelationMore';
+import { empathicConfrontationMore } from './empathicConfrontationBehary';
 
 /** Техника: empathic_confrontation. */
 export const buildEmpathicConfrontationTechniques: TechniqueGuideBuilder = (
@@ -34,7 +35,7 @@ export const buildEmpathicConfrontationTechniques: TechniqueGuideBuilder = (
         'Часть меня хочет промолчать и отступить. Но здоровая моя сторона считает, что этот шаг вам стоит сделать на этой неделе.',
       ),
     ]),
-    more: confrontMore,
+    more: [...confrontMore, ...empathicConfrontationMore],
     cautions:
       'Перекос дорог в обе стороны: мало сочувствия — клиент оскорблён и не слушает, мало конфронтации — слышит молчаливое разрешение [Янг, гл. 10]. ' +
       'Сначала граница тому, что угрожает безопасности и работе, потом конфронтация. Что выбрать, зависит от тяжести режима и от того, насколько он мешает терапии и задевает границы терапевта [Хис, гл. 12]. ' +

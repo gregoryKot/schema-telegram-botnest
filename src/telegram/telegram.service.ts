@@ -20,7 +20,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { parseSourceSlug } from './start-source';
 import { readStartPayload } from './start-payload';
 import { sendStartWelcome } from './telegram.start-welcome';
-import { ADDRESS_PROMPT } from './telegram.consent-text';
+import { ADDRESS_PROMPT, WELCOME_TEXT } from './telegram.consent-text';
 import {
   handlePairStart,
   PAIR_PREFIX,
@@ -47,11 +47,7 @@ import {
 } from './telegram.reply-helpers';
 import { resumePendingPair } from './telegram.pair-resume';
 
-export const WELCOME_TEXT = `Привет!
-
-Бывает, что день прошёл нормально — а внутри что-то не так. Или наоборот, всё объективно сложно, но ощущение живое и устойчивое.
-
-Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и тест на схемы в одном месте.`;
+export { WELCOME_TEXT } from './telegram.consent-text';
 
 // Запасные ответы команд на сбой: без кнопки и без формы обращения из БД.
 const DONATE_FALLBACK = `💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`;

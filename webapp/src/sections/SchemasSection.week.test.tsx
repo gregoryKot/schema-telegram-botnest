@@ -36,7 +36,7 @@ function renderSection(onOpenSchema = vi.fn(), form: 'ty' | 'vy' = 'ty') {
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
       <MemoryRouter initialEntries={['/schemas']}>
         <Routes>
-          <Route path="/schemas" element={<SchemasSection onOpenSchema={onOpenSchema} />} />
+          <Route path="/schemas" element={<SchemasSection onOpenSchema={onOpenSchema} onOpenTracker={() => {}} />} />
           <Route path="/diary" element={<div>экран дневника</div>} />
         </Routes>
       </MemoryRouter>
