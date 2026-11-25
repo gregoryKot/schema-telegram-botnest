@@ -33,10 +33,11 @@ describe('ClientOverviewTab', () => {
     expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'О клиенте', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Что было сделано', 'Последние записи']);
     // Белых карточек с рамкой и цветных точек больше нет.
     expect(col.querySelector('.ds-card, .ds-dot, .tone-tint, .tone-fill, .ds-chip')).toBeNull();
-    // Цель — лист соломы.
+    // Цель — заметка между линиями, без листа бумаги.
     const goal = screen.getByText('Меньше самокритики');
     expect(goal.className).toBe('tk-text');
-    expect((goal.closest('.pp-paper') as HTMLElement).style.getPropertyValue('--h')).toBe('70');
+    expect(goal.closest('.pp-block--note')).not.toBeNull();
+    expect(goal.closest('.pp-paper')).toBeNull();
     // Схемы: один домен — лист его бумаги со знаком, две строки; счётчик — в шапке секции.
     expect(screen.getByText('2 в работе').className).toBe('ds-sub');
     const domain = screen.getByText('Нарушение связи и отвержение').closest('.sg-group') as HTMLElement;

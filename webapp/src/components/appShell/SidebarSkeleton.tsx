@@ -53,7 +53,7 @@ export function SidebarSkeleton({ therapist = false, today = false }: { therapis
         )}
       </div>
       <div className="sb-foot-wrap">
-        {!therapist && !today && <div className="pp-paper sb-today sb-skel-today"><Skeleton width={72} height={11} /><Skeleton width={88} height={30} /></div>}
+        {!therapist && !today && <div className="pp-block pp-block--note sb-today sb-skel-today"><Skeleton width={72} height={11} /><Skeleton width={88} height={30} /></div>}
         <div className="sb-skel-item sb-skel-account">
           <span className="skel sb-skel sb-skel-avatar" />
           <span className="skel sb-skel" style={{ width: 96, height: 12, borderRadius: 6 }} />
