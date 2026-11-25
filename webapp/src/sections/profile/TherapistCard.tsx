@@ -11,6 +11,7 @@ import { useClientBooking } from '../../components/booking/useClientBooking';
 import { nextBooking } from '../../components/booking/clientBookingModel';
 import { avatarInitial } from './profileModel';
 import { MyConceptRow } from './MyConceptRow';
+import { Avatar } from '../../components/Avatar';
 
 // Карточка «Терапевт» профиля. Связи нет, а терапевт отказался от роли — вместо
 // пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22). Терапевт
@@ -31,7 +32,7 @@ function ClientTherapistCard({ relation, partnerName }: { relation: TherapyRelat
   return (
     <section className="pp-paper cpf-therapist">
       <div className="cpf-therapist-head">
-        <div className="cpf-therapist-ava" aria-hidden="true">{avatarInitial(partnerName)}</div>
+        <Avatar initials={avatarInitial(partnerName)} className="cpf-therapist-ava" />
         <div className="cpf-therapist-body">
           <div className="ds-label cpf-therapist-label">Терапевт</div>
           <div className="cpf-therapist-name">{partnerName}</div>

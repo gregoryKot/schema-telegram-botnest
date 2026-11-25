@@ -100,10 +100,10 @@ export function achievementProgress(id: string, earned: boolean, currentStreak: 
   return v > 0 ? `${v}/${t.goal}` : null;
 }
 
-/** Инициалы для аватара: первая буква имени (пусто → '•'). */
+/** Инициалы для аватара: первая буква имени; нет имени — пусто, кружок не рисуется. */
 export function avatarInitial(name: string | null | undefined): string {
   const c = (name ?? '').trim().charAt(0);
-  return c ? c.toUpperCase() : '•';
+  return c.toUpperCase();
 }
 
 export type TrendKind = 'up' | 'down' | 'flat';
