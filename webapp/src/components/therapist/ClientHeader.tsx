@@ -10,9 +10,9 @@ import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { useClientHead } from './useClientHead';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
-import { clientHue, hueStyle } from '../../lib/tone';
 import { clientNameClass } from './clientNameFit';
 import '../../styles/therapist-card.css';
+import { Avatar } from '../Avatar';
 
 interface Props { selectedClient: TherapyClientSummary; detail: ClientDetail; switchView: (v: 'list' | 'client') => void }
 
@@ -36,9 +36,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
     <div className={headClass}>
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
-        <div className="ds-avatar ds-avatar--serif ds-avatar--paper tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
-          {clientAvatarInitials(selectedClient)}
-        </div>
+        <Avatar initials={clientAvatarInitials(selectedClient)} className="tk-avatar" />
         <div className="tk-ident">
           {renamingAlias ? (
             <div className="tk-alias-form">
