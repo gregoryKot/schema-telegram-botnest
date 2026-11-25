@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { modeMapMore } from './modeMapMoreRoediger';
+import { modeMapMore } from './modeMapMoreLuz';
 import { schemaDiaryMore } from './schemaDiaryMore';
 
 /** Концептуализация вместе с клиентом: mode_map, schema_diary. */
@@ -44,7 +44,7 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Карта — рабочая гипотеза, а не диагноз: клиент может спорить и переименовывать. Режим, которого клиент в себе не узнаёт, ему не доказывают, и обидных имён от себя не предлагают: такое имя берут, только если его придумал сам клиент [Янг, гл. 8]. Клиент отвергает саму идею режимов — не настаивать и говорить о грустной, сердитой, самокритичной, молчаливой стороне: лишь бы у частей были хоть какие-то имена [Янг, гл. 9]. Пять-шесть режимов на листе достаточно; полный перечень превращает его в учебник.',
     sources:
-      'Arntz A., Jacob G. Schema Therapy in Practice: An Introductory Guide to the Schema Mode Approach. Wiley-Blackwell, 2013, гл. 2–3; [Кембридж, гл. 3, 4, 7, 14, 15]; [Янг, гл. 1, 8, 9]; [Арнтц ПРЛ, гл. 2–3]; [Фаррелл, 4.3, 5.1, 5.2.1]; [Хис, гл. 1, 11, 18]; [Арнтц, 2.2.1, 2.3, 2.4, 3, 3.2, 4.4, 5.2.1, 5.2.2]; [Рёдигер, гл. 2–4].',
+      'Arntz A., Jacob G. Schema Therapy in Practice: An Introductory Guide to the Schema Mode Approach. Wiley-Blackwell, 2013, гл. 2–3; [Кембридж, гл. 3, 4, 7, 14, 15]; [Янг, гл. 1, 8, 9]; [Арнтц ПРЛ, гл. 2–3]; [Фаррелл, 4.3, 5.1, 5.2.1]; [Хис, гл. 1, 11, 18]; [Арнтц, 2.2.1, 2.3, 2.4, 3, 3.2, 4.4, 5.2.1, 5.2.2]; [Рёдигер, гл. 2–4]; [Луз, гл. 7].',
   },
   {
     id: 'schema_diary',
