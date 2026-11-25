@@ -103,7 +103,7 @@
 /* Неактивная прозрачная («← Назад» на первом шаге): без подложки, но бледная. Фон пишется и здесь:
    .ds-btn:disabled той же специфичности (0,2,0), что .ds-btn.ex2-ghost, и без пары исход решал бы
    порядок файлов в сборке (0,3,0 — всегда). */
-.ds-btn.ex2-ghost:disabled { background: transparent; color: var(--text-ghost); }
+.ds-btn.ex2-ghost:disabled { background: transparent; box-shadow: none; color: var(--text-ghost); }
 .ex2-gap { margin-top: 16px; }
 .ex2-fine { margin: 0 0 20px; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
 

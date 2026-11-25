@@ -423,6 +423,20 @@ describe('поезд: сборка', () => {
     }
   });
 
+  it('в полёте чужой PR: два отставших зелёных всё равно едут поездом, один — ждёт без подтягивания', async () => {
+    repo({ 1: {}, 2: {}, 9: {} });
+    const flying = () => car(9, { behind: 0, checks: pending() });
+    setup([flying(), car(1), car(2)]);
+    const boarded = await queue();
+    expect(boarded.out).toContain('Поезд #77 собран: #1, #2');
+    expect(autoMerge(false)).toEqual([1, 2]);
+    setup([flying(), car(1)]);
+    const waited = await queue();
+    expect(waited.out).toContain('#9 в полёте');
+    expect(created()).toBe(0);
+    expect(touched('PUT ', 'update-branch')).toEqual([]);
+  });
+
   it('PR-поезд не открылся: ветка убрана, auto-merge не тронут, очередь идёт обычным путём', async () => {
     repo({ 1: {}, 2: {} });
     setup([car(1), car(2)]);

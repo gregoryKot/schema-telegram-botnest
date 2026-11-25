@@ -26,6 +26,8 @@
 /* Силуэт загрузки (TherapyCardSkeleton): заголовок и строка мерцают по своей форме, остальное невидимо. */
 .th-card--skel > :not(.skel) { visibility: hidden; }
 .th-card--skel > .skel { color: transparent; border-radius: var(--r-6); }
+/* Текстовая кнопка карточки: линия под подписью — тоном её оттенка (--h). */
+.th-card .ds-btn--secondary.th-btn { text-decoration-color: oklch(0.7 0.05 var(--h)); }
 @media (max-width: 1023px) { :root { --th-card-h: 198px; } }
 @media (max-width: 420px) { .th-card .pp-block-title { font-size: 19px; } }
 @media (max-width: 360px) { :root { --th-card-h: 187px; } .th-card .pp-block-title { font-size: 17px; } }
@@ -75,3 +77,5 @@
   .th-talk-photo.author-photo { width: 144px; margin: 0; }
   .th-talk-title { font-size: 25px; }
 }
+/* Ввод кода от терапевта под действиями листа «Поговорить с кем-то». */
+.th-talk-code { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--panel-line); }
