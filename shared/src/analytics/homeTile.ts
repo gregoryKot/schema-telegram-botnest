@@ -1,10 +1,10 @@
-// Нажатия на главной «Сегодня» (правило №8): плитки и «Зачем это?»; событие home_tile,
+// Нажатия на главной «Сегодня» (правило №8): плитки, «Зачем это?» и знак «Карты себя»; событие home_tile,
 // meta { tile }. 'calm' и 'feed_all' с 2026-11-05 не шлются (ссылок на главной нет),
 // оставлены ради старых записей и /stats. Парный allow-list — HOME_TILES (src/analytics).
 export const HOME_TILE_EVENT = 'home_tile';
 
 export type HomeTile =
-  'tracker' | 'case' | 'diary' | 'calm' | 'why' | 'feed_all';
+  'tracker' | 'case' | 'diary' | 'calm' | 'why' | 'feed_all' | 'selfmap';
 
 // «Пропустить» на вопросе трекера (простой клиент, этап 2). Без meta.
 // Парный реестр — HOME_EVENTS в src/analytics/home-events.constants.ts.

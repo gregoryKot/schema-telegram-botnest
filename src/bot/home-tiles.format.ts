@@ -10,6 +10,7 @@ export const HOME_TILE_LABELS: Record<string, string> = {
   calm: 'Подышать',
   why: 'Зачем это',
   feed_all: 'Все записи',
+  selfmap: 'Карта себя',
 };
 
 /** Строка «Главная: плитки — …» или null, пока на плитки не нажимали. */

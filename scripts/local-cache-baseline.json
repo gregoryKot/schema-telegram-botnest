@@ -274,6 +274,10 @@
       "owner": "shared/src/prefs/uiPrefsSync.ts",
       "kind": "local"
     },
+    "selfmap_seen_v1": {
+      "owner": "webapp/src/sections/today/mapSeen.ts",
+      "kind": "local"
+    },
     "ui_prefs_migrated": {
       "owner": "shared/src/prefs/uiPrefsSync.ts",
       "kind": "local"
