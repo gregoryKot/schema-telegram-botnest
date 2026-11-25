@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { limitedReparentingMoreFull } from './reparentingPlayfulImage';
-import * as camb from './limitedReparentingCambridge';
+import * as camb from './limitedReparentingCambridgeB';
 
 /** Техника отношений: limited_reparenting. */
 export const buildLimitedReparentingTechniques: TechniqueGuideBuilder = (

@@ -1,6 +1,6 @@
 import type { SchemaDomainGuideBuilder } from '../types';
 import { SCHEMA_COPING } from './coping';
-import * as cam from './rejectionCambridge';
+import * as cam from './rejectionCambridgeB';
 import {
   buildDefectivenessGuide,
   buildEmotionalDeprivationGuide,

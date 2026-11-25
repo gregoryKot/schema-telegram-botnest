@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { buildChairworkMoreHeath } from './bodyHeath';
-import * as camb from './chairworkCambridge';
+import * as camb from './chairworkCambridgeB';
 
 /** Техника: chairwork. */
 export const buildChairworkTechniques: TechniqueGuideBuilder = (tr) => [

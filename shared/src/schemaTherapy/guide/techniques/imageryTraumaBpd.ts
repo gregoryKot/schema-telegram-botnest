@@ -1,5 +1,5 @@
 import { rescriptVoice } from './arntzBpdImageryMore';
-import * as camb from './imageryRescriptingCambridge';
+import * as camb from './imageryRescriptingCambridgeB';
 import type { Tr } from '../types';
 
 export const imageryVoice = (tr: Tr): string[] =>
