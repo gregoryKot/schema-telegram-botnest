@@ -39,8 +39,8 @@
 }
 .tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-/* Аватар — .ds-avatar--paper (cabinet.css: кружок бумаги тона клиента с тенью-слоем); здесь — размер. */
-.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 0 0 0 1px var(--panel-line); }
+/* Аватар — общий .ds-avatar (cabinet.css); здесь — размер. */
+.tk-avatar { width: 56px; height: 56px; font-size: 21px; }
 .tk-ident { flex: 1; min-width: 260px; }
 /* Кегль имени — ds-h2; здесь только перенос: до двух строк по пробелам и дефису, целиком. Одной строкой с
    многоточием длинное имя («Константин Константинопольский-Задунайский») не было видно нигде (b30). */
@@ -116,8 +116,8 @@
 .tk-quick { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-card-head { margin-bottom: 12px; }
 .tk-sec-label { margin: 0; }
-/* Цель терапии — лист соломы («Коротко» схемы случая), текст Literata. */
-.tk-goal { padding: 20px 22px 18px; }
+/* Цель терапии — заметка между линиями (pp-block--note), текст Literata; отступы — у строк. */
+.pp-block.tk-goal { gap: 0; }
 .tk-text { margin: 10px 0 0; font: 400 17px/1.5 var(--serif); color: var(--text); overflow-wrap: anywhere; }
 .tk-goal .ds-link { display: inline-block; margin-top: 12px; }
 /* Группы схем и режимов (PaperGroups → SignGroup): в колонку на узком, в две — с 520px самой колонки. */
@@ -173,12 +173,13 @@
 
 /* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
 .tk-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-/* «Встречи» — один лист неба, три строки через тонкую линию; Talk — у первой строки. */
-.tk-meet { padding: 6px 20px; }
-/* Подписи на цветной бумаге — --text-sub (L6): --text-faint .ds-label на небе 4.33:1, на соломе 4.29:1. */
+/* «Встречи» — заметка между линиями (pp-block--note), три строки через тонкую линию; Talk — у первой строки. */
+.pp-block.tk-meet { gap: 0; padding: 0; }
+.pp-block.tk-meet + .pp-block { border-top: 0; }
+/* Подписи — --text-sub (L6): --text-faint .ds-label на цветной бумаге «Трекера» 4.29:1. */
 .tk-meet .ds-label, .tk-goal .ds-label, .tk-track .ds-label { color: var(--text-sub); }
 .tk-meet-row { padding: 14px 0; }
-.tk-meet-row + .tk-meet-row { border-top: 1px solid var(--paper-sunk); }
+.tk-meet-row + .tk-meet-row { border-top: 1px solid var(--panel-line); }
 .tk-meet-row > .ds-label { margin: 0; }
 .tk-next { margin-top: 8px; font: 400 22px/1.25 var(--serif); color: var(--text); overflow-wrap: anywhere; }
 .tk-meet-none { font-size: 15px; color: var(--text-sub); }
@@ -190,10 +191,8 @@
 .tk-meet .ds-link { color: var(--text-sub); text-underline-offset: 3px; }
 .tk-meet .ds-link:hover, .tk-meet .ds-link:focus-visible { color: var(--text); text-decoration: underline; }
 .tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
-/* Чип дня — тап-цель ≥44 и в ширину (L8): «Пн» был 36–38×44. Невыбранный — белая бумага листа «Встреч», выбранный —
-   общая бумага .ds-chip--toggle.is-on (кромка, жирность), как выбранный чип у клиента (r2: бежевые чипы на небе). */
+/* Чип дня — тап-цель ≥44 и в ширину (L8): «Пн» был 36–38×44. Вид — общий .ds-chip--toggle, как у клиента. */
 .tk-days > .ds-chip--toggle { min-width: 44px; justify-content: center; }
-.tk-days > .ds-chip--toggle:not(.is-on) { background: var(--surface); border-color: transparent; }
 /* Мышь (1280: колонка ~240px): семь дней в ряд, без переноса 4+3; под пальцем — 44 в ширину и перенос. */
 @media (hover: hover) and (pointer: fine) {
   .tk-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
@@ -250,7 +249,6 @@
   .ds-spark.tk-spark { height: 32px; margin-top: 10px; }
   .tk-entry { padding: 9px 0; }
   .tk-alias-input { font-size: 22px; width: 100%; }
-  .tk-goal { padding: 14px 16px; }
   .tk-text { font-size: 16px; }
   .pp-block.tk-leaf { padding: 14px 0 16px; }
   .tk-side > .ds-card { box-shadow: 0 0 0 1px var(--panel-line); }

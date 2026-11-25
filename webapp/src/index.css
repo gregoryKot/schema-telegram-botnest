@@ -142,9 +142,8 @@
   --panel-2:         #e2dbcc;
   --panel-3:         #d9d0bf;
   --panel-line:      #d3c9b8;
-  /* Пыльное небо: множитель насыщенности бумаги оттенка 240 (сцены, лист-опора, аватар) — тот же оттенок, глуше. */
+  /* Пыльное небо: множитель насыщенности бумаги оттенка 240 (сцены, лист-опора) — тот же оттенок, глуше. */
   --sky-k:           0.55;
-  --ck:              1; /* множитель насыщенности аватара; hueStyle ставит var(--sky-k) на голубом */
   --on-panel:        #1f1b17;
   --on-panel-sub:    #4a433b;
   --on-panel-faint:  #5c544c;
@@ -458,7 +457,7 @@ a { color: inherit; text-decoration: none; }
 .sb-item.sb-rail-item, .sb-account.sb-rail-account { width: 44px; min-height: 44px; padding: 0; justify-content: center; }
 /* Знак в полоске крупнее, чем в строке с подписью: он один несёт пункт. */
 .sb-rail-item > .pp-art--nav { width: 30px; height: 18px; }
-/* Клиенты кабинета под пунктами полоски — бледные кружки (.sb-client-av), отделены линией. */
+/* Клиенты кабинета под пунктами полоски — буквы в кольце (.ds-avatar.sb-client-av), отделены линией. */
 .sb-rail-rule { width: 28px; height: 1px; margin: 8px auto; background: var(--panel-line); }
 
 /* «Клиент / Терапевт» на панели: LineTabs fill без подложки; линия и текст — токены панели. */
@@ -501,13 +500,8 @@ a { color: inherit; text-decoration: none; }
 
 .sb-clients { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; }
 .sb-client-item { padding: 7px 10px; font-size: 13px; }
-.sb-client-av {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-  /* Кружок бумаги тона клиента с тенью-слоем — как .ds-avatar--paper в шапке карточки, списке и на «Сегодня» (r1). */
-  background: oklch(0.915 0.03 var(--h)); color: var(--text); box-shadow: 0 0 0 1px var(--panel-line);
-  display: grid; place-items: center; font-size: 10px; font-weight: 700;
-}
-.sb-rail-item > .sb-client-av { width: 30px; height: 30px; font-size: 11px; }
+.sb-client-av { width: 24px; height: 24px; font-size: 11px; }
+.sb-rail-item > .sb-client-av { width: 30px; height: 30px; font-size: 13px; }
 .sb-active-dot {
   width: 6px; height: 6px; border-radius: 50%;
   /* «Активен сегодня» — тихая точка чернил, не сигнальный зелёный (ревью r1): смысл держит само её наличие. */
@@ -531,20 +525,17 @@ a { color: inherit; text-decoration: none; }
   padding-top: 12px;
   border-top: 1px solid var(--panel-line);
 }
-/* Карточка дня над подвалом (SidebarFoot) — лист бумаги трекера: шалфей, когда день оценён,
-   солома — когда нет; справа знак трекера по оценкам дня. Мелкий текст на цветной бумаге —
-   --text / --text-sub (AA), не --text-faint. */
-.sb-today {
+/* Карточка дня над подвалом (SidebarFoot) — заметка между линиями (pp-block--note): справа знак трекера по
+   оценкам дня. Нижняя линия — у подвала (.sb-foot), своя дала бы две черты подряд. Два класса — правило не
+   спорит с paper.css порядком в сборке. */
+.pp-block.sb-today {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px;
-  border-radius: 16px; padding: 14px 14px 14px 16px;
+  padding: 14px 0 0; border-bottom: 0;
 }
 .sb-today-body { min-width: 0; }
 .sb-today-art { display: flex; padding-bottom: 4px; }
 .sb-today-art .pp-art--row { width: 52px; height: 44px; }
-.sb-today-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text-sub); margin-bottom: var(--space-6);
-}
+.sb-today-body > .ds-eyebrow { margin-bottom: var(--space-6); color: var(--text-sub); }
 .sb-today-index { display: flex; align-items: baseline; gap: 3px; }
 .sb-today-num {
   font-family: var(--serif); font-size: 38px; font-weight: 400;
@@ -572,13 +563,7 @@ a { color: inherit; text-decoration: none; }
   transition: background .1s;
 }
 .sb-account:hover, .sb-account.is-active { background: var(--panel-2); }
-.sb-avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: var(--accent-soft);
-  display: grid; place-items: center;
-  font-size: 13px; font-weight: 700; color: var(--accent-hi);
-  flex-shrink: 0;
-}
+.sb-avatar { width: 32px; height: 32px; font-size: 14px; }
 .sb-acc-name { font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--on-panel); }
 .sb-acc-role { font-size: 12px; color: var(--on-panel-faint); margin-top: var(--space-2); }
 /* Ряд мелких ссылок подвала: Настройки · Аккаунт · Выйти. Текст мелкий, подложки у ссылок нет.
@@ -604,7 +589,7 @@ a { color: inherit; text-decoration: none; }
 .sb-skel-avatar { width: 32px; height: 32px; border-radius: 50%; }
 .sb-skel-clients { display: flex; flex-direction: column; gap: 2px; padding: 14px 0 0 10px; }
 .sb-skel-clients .sb-skel-item { padding-left: 0; min-height: 36px; }
-.sb-skel-today { --h: 70; display: flex; flex-direction: column; gap: 10px; height: 96px; box-sizing: border-box; }
+.pp-block.sb-skel-today { display: flex; flex-direction: column; gap: 10px; height: 96px; }
 .sb-skel-account { padding-top: 12px; border-top: 1px solid var(--panel-line); }
 .sb-search {
   margin: 0 0 4px; width: 100%; padding: 6px 0; border-radius: 0;

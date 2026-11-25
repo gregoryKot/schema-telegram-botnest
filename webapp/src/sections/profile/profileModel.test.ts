@@ -92,7 +92,8 @@ describe('мелкие функции', () => {
   });
   it('avatarInitial / trendKind', () => {
     expect(avatarInitial(' анна')).toBe('А');
-    expect(avatarInitial(null)).toBe('•');
+    expect(avatarInitial(null)).toBe('');
+    expect(avatarInitial('  ')).toBe('');
     expect(trendKind('↑')).toBe('up');
     expect(trendKind('↓')).toBe('down');
     expect(trendKind('→')).toBe('flat');

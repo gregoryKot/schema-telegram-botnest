@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
-import { hueStyle, clientHue } from '../lib/tone';
+import { hueStyle } from '../lib/tone';
 import { Limits } from '../components/art/NeedArt';
 import { HistoryConfirmDialog } from '../components/HistoryConfirmDialog';
 import { PaperAlert } from '../components/paper/PaperAlert';
@@ -22,6 +22,7 @@ import { PROVIDER_NAMES } from './account/providerNames';
 import { accountBackPathFromStorage } from './account/accountBackPath';
 import '../styles/auth-account.css';
 import { BackLabel } from '../components/NavGlyphs';
+import { Avatar } from '../components/Avatar';
 
 // Форма без картинок (docs/archive/APP_2026-11.md, b27): плоские группы, одна залитая кнопка — «Данные из Telegram» (если бот не подключён).
 export function AccountPage() {
@@ -46,7 +47,7 @@ export function AccountPage() {
       <div className="aa-page">
         <div className="aa-head">
           {initials
-            ? <div className="ds-avatar ds-avatar--serif aa-avatar" style={hueStyle(clientHue(initials))} aria-hidden>{initials}</div>
+            ? <Avatar initials={initials} className="aa-avatar" />
             : loading && <div className="skel aa-avatar aa-avatar--skel" aria-hidden />}
           <div className="aa-head-text">
             <div className="ds-eyebrow">Аккаунт</div>
@@ -55,7 +56,7 @@ export function AccountPage() {
               {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
             </p>
           </div>
-          <span className="pp-paper aa-head-sign" style={hueStyle(240)} aria-hidden="true"><Limits size="square" /></span>
+          <span className="pp-block-sign aa-head-sign" style={hueStyle(240)} aria-hidden="true"><Limits size="square" /></span>
         </div>
 
         {error && <PaperAlert title={error} sign="limits" className="aa-alert" />}

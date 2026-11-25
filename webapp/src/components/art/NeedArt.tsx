@@ -24,7 +24,7 @@ export function Attachment({ size }: ArtProps) {
     </Svg>
   );
 }
-function Autonomy({ size }: ArtProps) {
+export function Autonomy({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <path d="M16 60 H104" stroke={PAPER.sage} strokeWidth="4" strokeLinecap="round" />

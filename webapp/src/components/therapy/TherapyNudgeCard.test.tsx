@@ -169,7 +169,7 @@ describe('TherapyNudgeCard', () => {
     history.mockReturnValue(new Promise<DayHistory[]>(() => {}));
     renderCard();
     const skel = screen.getByTestId('therapy-card-skeleton');
-    expect(skel.querySelector('.th-card-sub')?.textContent).toMatch(/повод написать/);
+    expect(skel.querySelector('.pp-block-text')?.textContent).toMatch(/повод написать/);
     expect(screen.queryByRole('link')).toBeNull();
   });
 

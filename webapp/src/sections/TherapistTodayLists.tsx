@@ -1,9 +1,9 @@
 import type { TherapyClientSummary, UserId } from '../api';
-import { clientHue, hueStyle } from '../lib/tone';
 import { clientAvatarInitials, clientDisplayName } from '../../../shared/src/therapy/clientInitials';
 import { activityStatus, latestIndex, sparkPoints } from './therapistTodayModel';
 import { fmtIndex } from '../../../shared/src/needs/dayIndex';
 import { glueSpaces } from '../../../shared/src/utils/typo';
+import { Avatar } from '../components/Avatar';
 
 interface RowProps { client: TherapyClientSummary; onOpen: (id: UserId) => void }
 
@@ -15,7 +15,7 @@ export function ActivityRow({ client, onOpen }: RowProps) {
   return (
     <button type="button" className="ds-list-row ds-list-row--hover tt-act tt-reset"
       onClick={() => onOpen(client.telegramId)}>
-      <span className="ds-avatar ds-avatar--paper" style={hueStyle(clientHue(client.telegramId))}>{clientAvatarInitials(client)}</span>
+      <Avatar initials={clientAvatarInitials(client)} />
       <span className="tt-who">
         <span className="tt-name tt-act-name">{name}</span>
         <span className="tt-act-status">{glueSpaces(activityStatus(client).text)}</span>
@@ -36,7 +36,7 @@ export function AttentionRow({ client, onOpen }: RowProps) {
   const name = clientDisplayName(client);
   return (
     <button type="button" className="tt-attn tt-reset" onClick={() => onOpen(client.telegramId)}>
-      <span className="ds-avatar ds-avatar--paper" style={hueStyle(clientHue(client.telegramId))}>{clientAvatarInitials(client)}</span>
+      <Avatar initials={clientAvatarInitials(client)} />
       <span className="tt-who">
         <span className="tt-name">{name}</span>
         <span className="tt-row-sub">{glueSpaces(activityStatus(client).text)}</span>
