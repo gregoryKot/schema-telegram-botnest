@@ -31,6 +31,7 @@ const NOTE_IDS = [
   'schema_vs_mode_vs_belief', 'dependence_in_reparenting', 'therapist_discomfort_rescripting',
   'taboo_topics', 'sexuality_and_modes', 'body_cues_therapist', 'premature_ending', 'cbt_with_schemas', 'questionnaires', 'temperament', 'positive_patterns_in_session',
   'therapist_mode_reset',
+  'therapist_culture_and_schemas',
 ];
 
 describe('знаки листов подсказок', () => {

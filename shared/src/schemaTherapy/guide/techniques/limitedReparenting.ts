@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { limitedReparentingMoreFull } from './reparentingPatterns';
+import { limitedReparentingMoreFull } from './reparentingPlayfulImage';
 
 /** Техника отношений: limited_reparenting. */
 export const buildLimitedReparentingTechniques: TechniqueGuideBuilder = (
@@ -39,6 +39,6 @@ export const buildLimitedReparentingTechniques: TechniqueGuideBuilder = (
     evidence:
       'Отдельно от метода эту позицию не проверяли. Проверяли схема-терапию целиком, где она — основа отношений: при пограничном расстройстве метод оказался лучше терапии, сфокусированной на переносе (Гизен-Блоо и соавт., 2006), и лучше обычного лечения (Арнц и соавт., 2022, 495 пациентов).',
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003, гл. 6, 9 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 5, 6, 12, боксы 5.2, 6.6, 12.1, рис. 6.1, табл. 6.1–6.2]; [Арнтц, 4.3.2, 5.4.3, 6.1.4–6.1.6]; [Арнтц ПРЛ, гл. 9]; [Фаррелл, гл. 2.3, 4.1, 4.6.2]; [Хис, гл. 19, 20].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003, гл. 6, 9 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 5, 6, 12, боксы 5.2, 6.6, 12.1, рис. 6.1, табл. 6.1–6.2]; [Арнтц, 4.3.2, 5.4.3, 6.1.4–6.1.6]; [Арнтц ПРЛ, гл. 9]; [Фаррелл, гл. 2.3, 4.1, 4.6.2]; [Хис, гл. 1, 19, 20].',
   },
 ];
