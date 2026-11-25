@@ -1,6 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { selfDisclosureMoreAll } from './practiceSelfDisclosureMore';
-
+import { selfDisclosureMoreFull } from './practiceEndingHeath';
 /** «Для терапевта»: самораскрытие терапевта. Собирает practiceCourse.ts. */
 export const buildPracticeSelfDisclosure: PracticeNotesBuilder = (tr) => [
   {
@@ -26,7 +25,8 @@ export const buildPracticeSelfDisclosure: PracticeNotesBuilder = (tr) => [
         'Я вижу, как тревожно, когда решать приходится в одиночку. Вместо готового ответа я помогу вам найти свой.',
       ),
     ],
-    more: selfDisclosureMoreAll,
-    sources: '[Кембридж, гл. 6, бокс 6.10], [Янг, гл. 6, 10], [Фаррелл, 4.6.3]',
+    more: selfDisclosureMoreFull,
+    sources:
+      '[Кембридж, гл. 6, бокс 6.10], [Янг, гл. 6, 10], [Фаррелл, 4.6.3], [Хис, гл. 20]',
   },
 ];

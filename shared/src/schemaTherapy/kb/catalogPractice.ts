@@ -1,8 +1,6 @@
 // Каталог-цель вкладки «Для терапевта» (kb/catalog.ts); этапы, оценка, психообразование — в guide/phases/.
 import type { CatalogTopic } from './catalog';
-
 const w = (id: string): CatalogTopic => ({ id, status: 'written' });
-
 export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   ...[
     'frame_additions',
@@ -56,6 +54,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'mode_work_when',
     'mode_work_steps',
     'emdr',
+    'premature_ending',
+    'cbt_with_schemas',
     'body_cues_therapist',
   ].map(w),
   {
