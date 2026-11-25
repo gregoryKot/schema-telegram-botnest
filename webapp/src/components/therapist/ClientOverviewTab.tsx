@@ -43,7 +43,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         {phone && <ClientQuickActions detail={detail} />}
 
         {goals && (
-          <section className="pp-paper tk-goal" style={paper(70)}>
+          <section className="pp-block pp-block--note tk-goal">
             <SignHead kind="layers" className="ds-label">Цель терапии</SignHead>
             <p className="tk-text">{goals}</p>
             <button className="ds-link" onClick={() => setClientTab('concept')}>Открыть концептуализацию →</button>

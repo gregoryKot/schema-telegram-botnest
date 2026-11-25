@@ -55,7 +55,7 @@ export function AccountPage() {
               {tr('Привязывай несколько способов входа – заходи откуда удобно', 'Привязывайте несколько способов входа – заходите откуда удобно')}
             </p>
           </div>
-          <span className="pp-paper aa-head-sign" style={hueStyle(240)} aria-hidden="true"><Limits size="square" /></span>
+          <span className="pp-block-sign aa-head-sign" style={hueStyle(240)} aria-hidden="true"><Limits size="square" /></span>
         </div>
 
         {error && <PaperAlert title={error} sign="limits" className="aa-alert" />}
