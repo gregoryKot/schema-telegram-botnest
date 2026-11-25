@@ -16,25 +16,9 @@ export const DIARY_HUE: Record<'schema' | 'mode', number> = {
 
 const NEUTRAL_HUE = 70;
 
-/** Насыщенное голубое (≈215–265°) глушится токеном `--sky-k` (index.css): аватар — «пыльное небо», не электрик. */
-export function skyChromaVar(hue: number): string | undefined {
-  return hue >= 215 && hue <= 265 ? 'var(--sky-k)' : undefined;
-}
-
-/** Стиль с `--h` для элемента с классом .tone-* / .ds-avatar; у голубого оттенка — ещё `--ck` (множитель насыщенности). */
+/** Стиль с `--h` для элемента с классом .tone-*; без оттенка — нейтральный. */
 export function hueStyle(hue: number | undefined): CSSProperties {
-  const h = hue ?? NEUTRAL_HUE;
-  const ck = skyChromaVar(h);
-  return (ck ? { '--h': h, '--ck': ck } : { '--h': h }) as unknown as CSSProperties;
-}
-
-/** Стабильный оттенок аватара клиента по id: один клиент — всегда один цвет. */
-export function clientHue(id: number | string): number {
-  const s = String(id);
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  const palette = [240, 28, 145, 310, 70, 190];
-  return palette[h % palette.length];
+  return { '--h': hue ?? NEUTRAL_HUE } as unknown as CSSProperties;
 }
 
 /** Уровень индекса дня: ≥7 — ok, ≥5 — warn, ниже — err, нет данных — none. */
