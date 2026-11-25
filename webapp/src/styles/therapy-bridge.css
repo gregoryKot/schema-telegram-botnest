@@ -31,8 +31,8 @@
 .th-card-acts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: auto; padding-top: 6px; }
 /* Силуэт загрузки (TherapyCardSkeleton): разметка карточки, текст невидим — высота та же при любой строке. */
 .th-card--skel > * { visibility: hidden; }
-/* Белая капсула на цветной бумаге («Практики»): фон примитива --surface, кромка тоном листа. */
-.th-card .ds-btn--secondary.th-btn { border-color: oklch(0.78 0.04 var(--h)); }
+/* Текстовая кнопка на цветной бумаге («Практики»): линия под подписью — тоном листа. */
+.th-card .ds-btn--secondary.th-btn { text-decoration-color: oklch(0.7 0.05 var(--h)); }
 @media (max-width: 1023px) { :root { --th-card-h: 198px; } }
 @media (max-width: 420px) { .th-card-title { font-size: 19px; } }
 @media (max-width: 360px) { :root { --th-card-h: 187px; } .th-card { padding: 14px 16px 8px 16px; } .th-card-title { font-size: 17px; } }

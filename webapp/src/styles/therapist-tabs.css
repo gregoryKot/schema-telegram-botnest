@@ -33,12 +33,12 @@
 .tb-tl-row:last-child .tb-tl-line { visibility: hidden; }
 .tb-tl-body { padding-bottom: 36px; min-width: 0; }
 .tb-tl-head { display: flex; gap: 12px; align-items: center; }
-/* Корзина — круг 44 без обводки, иконка --text-muted (r1): на каждой заметке она тише самой заметки. */
-.ds-btn--icon.tb-del { border-color: transparent; background: transparent; color: var(--text-muted); }
+/* Корзина — знак 44, иконка --text-muted (r1): на каждой заметке она тише самой заметки. */
+.ds-btn--icon.tb-del { color: var(--text-muted); }
 @media (hover: hover) { .ds-btn--icon.tb-del:hover { background: var(--paper-sunk); color: var(--text); } }
 .tb-tl-date { font-size: 16px; font-weight: 700; }
 .tb-tl-text { font-size: 15px; line-height: 1.7; color: var(--text-sub); margin-top: 8px; max-width: 640px; white-space: pre-wrap; overflow-wrap: anywhere; }
-/* «Удалить заметку» — ds-btn--icon + .tb-del (круг 44 на любой ширине, виден всегда). Отрицательные
+/* «Удалить заметку» — ds-btn--icon + .tb-del (знак 44 на любой ширине, виден всегда). Отрицательные
    поля по вертикали не дают кругу растянуть строку даты — та же идея, что у
    hitboxStyle: зона нажатия ≥44 без роста разметки. */
 .tb-tl-del { margin-left: auto; margin-block: -8px; }
@@ -78,7 +78,7 @@
 @container cp-task-list (max-width: 340px) {
   .tb-task-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
-/* Корзина — круг 44 и на компьютере (ds-btn--icon там 40): тап-цель ≥44. */
+/* Корзина — 44 и на компьютере (ds-btn--icon там 40): тап-цель ≥44. */
 .ds-btn--icon.tb-del { width: 44px; height: 44px; }
 /* Шаблоны — плитки бумаги сущности со знаком (AssignTemplateTiles). Раскладка — по ширине плитки, а не экрана (r2):
    2×2, только когда плитка шире ~170px (контейнер ≥350px), в ряд — от 600px; уже (правая колонка ~283px на 1280,
@@ -259,7 +259,7 @@
 .ds-link.pl-source { min-height: 44px; text-align: left; }
 .pl-acts { display: flex; align-items: center; gap: 4px; flex: none; }
 /* Стрелка без соседа — бледная иконка, без кольца простаивающей кнопки. */
-.pl-acts .ds-btn--icon.tb-del:disabled { background: transparent; border-color: transparent; opacity: .35; }
+.pl-acts .ds-btn--icon.tb-del:disabled { background: transparent; opacity: .35; }
 .pl-form { display: flex; flex-direction: column; gap: 10px; }
 .pl-form-rubric { display: flex; align-items: center; gap: 10px; }
 .pl-add { padding: 16px 20px; }

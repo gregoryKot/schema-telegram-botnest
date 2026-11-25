@@ -383,3 +383,39 @@ describe('поля ввода: линия снизу, без коробки', ()
     expect(decls(top, '.ds-textarea')).toMatch(/min-height/);
   });
 });
+
+// Кнопки без коробки (#1674, К1/К3): текстовая — подпись над линией, иконочная — знак без кольца.
+describe('кнопки --secondary и --icon: без рамки и фона', () => {
+  const dir = __dirname;
+  const sheets = [join(dir, '..', 'index.css'), ...readdirSync(dir).filter((f) => f.endsWith('.css')).map((f) => join(dir, f))]
+    .map((p) => readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
+  /** Коробка: рамка с толщиной, круг, белая или залитая подложка. */
+  const boxy = (body: string) =>
+    /(^|;)\s*border(-(top|right|bottom|left))?:\s*(?!none|0\b)[^;]*\d+px\s+(solid|dashed)/.test(body) ||
+    /border-radius:\s*50%/.test(body) ||
+    /(^|;)\s*background(-color)?:\s*(var\(--(surface|paper-sunk)\)|#fff|white)/i.test(body);
+  const rules = sheets.flatMap((src) => [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)])
+    // наведение — тихий квадрат бумаги под знаком (замысел К3), не коробка в покое
+    .filter((m) => /\.ds-btn--(secondary|icon)\b/.test(m[1]) && !/:hover/.test(m[1]));
+
+  it('признак коробки ловит рамку, круг и белую подложку, а линию текста и прозрачный фон — нет', () => {
+    expect(boxy('border: 1px solid var(--line-strong)')).toBe(true);
+    expect(boxy('border-bottom: 1px solid var(--line)')).toBe(true);
+    expect(boxy('border-radius: 50%')).toBe(true);
+    expect(boxy('background: var(--surface)')).toBe(true);
+    expect(boxy('background: transparent; text-decoration: underline 1px var(--line-strong)')).toBe(false);
+    expect(boxy('border: none; border-radius: var(--r-8)')).toBe(false);
+  });
+  it('база: фон прозрачный, своей рамки нет; у текстовой — линия под подписью', () => {
+    for (const sel of ['.ds-btn--secondary', '.ds-btn--icon']) {
+      const d = decls(top, sel);
+      expect(d, sel).toContain('background: transparent');
+      expect(d, sel).not.toMatch(/(^|;)\s*border(-(top|right|bottom|left|width|style))?:/);
+    }
+    expect(decls(top, '.ds-btn--secondary')).toMatch(/text-decoration: underline 1px var\(--line-strong\)/);
+  });
+  it('ни одно правило сайта не возвращает им коробку', () => {
+    expect(rules.length).toBeGreaterThan(5);
+    expect(rules.filter((m) => boxy(m[2])).map((m) => m[1].trim())).toEqual([]);
+  });
+});
