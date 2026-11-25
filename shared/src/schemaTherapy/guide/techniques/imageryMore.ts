@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { diagnosticMoreHeath, safePlaceMoreHeath } from './imageryHeathMore';
+import { diagnosticMoreHeath, safePlaceMoreHeath } from './imageryBehary';
 
 /** Воображение: diagnostic_imagery, safe_place_imagery. */
 export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
@@ -30,7 +30,7 @@ export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
     evidence:
       'Как отдельный приём не изучалось. «Аффективный мост» описал Джон Уоткинс в 1971 году как гипноаналитическую технику; схема-терапия взяла ход от чувства к воспоминанию без гипноза.',
     sources:
-      '[Янг, гл. 1, 2, 4, 5, 10]. Watkins J. G. The affect bridge: a hypnoanalytic technique. International Journal of Clinical and Experimental Hypnosis, 1971, 19(1), 21–27. [Кембридж, гл. 3, 8, боксы 3.5, 8.4], [Арнтц ПРЛ, гл. 3, 5], [Арнтц, 6.3.2, 6.5], [Хис, гл. 2, 5]',
+      '[Янг, гл. 1, 2, 4, 5, 10]. Watkins J. G. The affect bridge: a hypnoanalytic technique. International Journal of Clinical and Experimental Hypnosis, 1971, 19(1), 21–27. [Кембридж, гл. 3, 8, боксы 3.5, 8.4], [Арнтц ПРЛ, гл. 3, 5], [Арнтц, 6.3.2, 6.5], [Хис, гл. 2, 5], [Бехари, гл. 4]',
   },
   {
     id: 'safe_place_imagery',

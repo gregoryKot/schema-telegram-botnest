@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { cognitiveWorkMore, flashcardsMore, lettersMore } from './homeworkMore';
+import { cognitiveWorkMore, flashcardsMore, lettersMore } from './hwBehary';
 
 /** Техники: flashcards, cognitive_work, letters. */
 export const buildHomeworkTechniques: TechniqueGuideBuilder = (tr) => [
