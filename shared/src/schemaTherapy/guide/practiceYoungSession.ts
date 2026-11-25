@@ -2,6 +2,8 @@ import type { PracticeNotesBuilder } from './types';
 import { modeWorkStepsMore } from './practiceMoreHeath';
 import { modeWorkWhenMore } from './practiceMoreArntzJacob';
 import { therapistSchemaScenariosMore } from './practiceTherapistHeath';
+import { sameMoreYoung, sameVoiceYoung } from './practiceSameBehaviorYoung';
+import { buildPracticeChannelsYoung } from './practiceChannelsYoung';
 
 /**
  * «Для терапевта» по гл. 6 и 8 Янга: схемы клиента и терапевта на сессии, одно поведение
@@ -72,14 +74,9 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
         'Жаль, что сегодня у нас так мало времени. Давай потратим то, что осталось, на то, каково тебе от этого.',
         'Жаль, что сегодня у нас так мало времени. Давайте потратим то, что осталось, на то, каково вам от этого.',
       ),
-      tr(
-        'Я не сержусь на опоздание. Наша связь от этого не рвётся.',
-        'Я не сержусь на опоздание. Наша связь от этого не рвётся.',
-      ),
+      ...sameVoiceYoung(tr),
     ],
-    more: [
-      'Тот же принцип у Янга — своя линия ограниченного родительства для каждой схемы: при Самопожертвовании клиента зовут опираться на терапевта, а не заботиться о нём; при Подавлении эмоций терапевт зовёт к живому выражению чувств и сам его показывает; при Жёстких стандартах хвалит игру и неидеальность [Янг, гл. 6].',
-    ],
+    more: sameMoreYoung(tr),
     sources: '[Янг, гл. 6]',
   },
   {
@@ -120,4 +117,5 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
     more: modeWorkStepsMore,
     sources: '[Янг, гл. 8], [Хис, гл. 11]',
   },
+  ...buildPracticeChannelsYoung(tr),
 ];
