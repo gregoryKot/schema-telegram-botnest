@@ -1,5 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
-import { therapistWellbeingMore } from './practiceMoreArntz';
+import { therapistWellbeingMoreFull } from './practiceTherapistHeath';
+import { buildPracticeTherapistCulture } from './practiceTherapistCulture';
 import { buildPracticeTherapistSchemas } from './practiceTherapistSchemas';
 import { buildPracticeTherapistArntz } from './practiceTherapistArntz';
 
@@ -26,8 +27,9 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
         'Давайте начнём с минуты на себя: почувствуйте стопы на полу, дыхание, опору спиной.',
       ),
     ],
-    more: therapistWellbeingMore,
+    more: therapistWellbeingMoreFull,
     sources:
-      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 16], [Арнтц ПРЛ, гл. 12]',
+      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12]',
   },
+  ...buildPracticeTherapistCulture(tr),
 ];

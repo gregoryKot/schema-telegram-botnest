@@ -1,6 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { groupTherapyMore, groupTechniquesMore } from './practiceGroupMore';
 import { groupFrameMore, buildGroupOrientation } from './practiceGroupFrame';
+import { groupPlanVsModeMore } from './practiceTherapistHeath';
 
 /** «Подробнее» о ведении группы по Фарреллу (гл. 4–4.5, 6.2): ведущий, ко-терапевт, конфликты, время. */
 const groupLeadMore: string[] = [
@@ -61,10 +62,7 @@ export const buildGroupLead: PracticeNotesBuilder = (tr) => [
         'Я вижу, что многим сейчас тревожно. Прежде чем идти дальше, скажите: что вам сейчас нужно?',
       ),
     ],
-    more: [
-      'Такая гибкость требует от ведущих больше квалификации, чем группы тренинга навыков, но именно она, по Фаррелл, делает групповую схема-терапию действенной. Начинающим ведущим лучше держаться рекомендованного порядка встреч, опытные подбирают материал под режим, который сейчас в работе [Фаррелл, гл. 4].',
-      'В индивидуальной работе то же правило звучит как обход копинга перед работой с ребёнком: сначала режим, который у руля, потом намеченное.',
-    ],
-    sources: '[Фаррелл, гл. 4, 4.1]',
+    more: groupPlanVsModeMore,
+    sources: '[Фаррелл, гл. 4, 4.1], [Хис, гл. 15]',
   },
 ];

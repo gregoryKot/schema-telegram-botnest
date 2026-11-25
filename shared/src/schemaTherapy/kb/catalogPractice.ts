@@ -60,6 +60,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'questionnaires',
     'temperament',
     'positive_patterns_in_session',
+    'therapist_culture_and_schemas',
   ].map(w),
   {
     id: 'session_frequency',
