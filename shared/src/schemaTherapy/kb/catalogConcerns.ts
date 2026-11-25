@@ -8,6 +8,7 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('bpd'),
   w('narcissism'),
   w('depression'),
+  w('adolescents'),
   {
     id: 'anxiety',
     title:
@@ -79,13 +80,6 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
     source: 'Пары',
     chapters: ['гл. 1', 'гл. 2', 'гл. 4', 'гл. 5', 'гл. 10', 'гл. 11'],
     note: 'пачки 1–4 карты: основа, сессия, курс, кризис и спутники',
-  },
-  {
-    id: 'adolescents',
-    title: 'Дети и подростки',
-    status: 'planned',
-    source: 'Луз',
-    chapters: ['гл. 1', 'гл. 2', 'гл. 3', 'гл. 5', 'гл. 6', 'гл. 7', 'гл. 8'],
   },
   {
     id: 'infant_regulation',
