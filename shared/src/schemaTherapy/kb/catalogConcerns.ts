@@ -12,30 +12,9 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('other_personality_disorders'),
   w('adolescents'),
   w('couples'),
-  {
-    id: 'anxiety',
-    title:
-      'Тревожные расстройства (генерализованная, социальная тревога, паника)',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 13'],
-    note: 'жалоба → режим — Кембридж гл. 3, табл. 3.2',
-  },
-  {
-    id: 'ocd',
-    title: 'ОКР',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 13'],
-    note: 'бокс 13.3: стул Здорового Взрослого и Предупреждающий режим',
-  },
-  {
-    id: 'adjustment_disorder',
-    title: 'Расстройство адаптации',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 13'],
-  },
+  w('anxiety'),
+  w('ocd'),
+  w('adjustment_disorder'),
   {
     id: 'ptsd',
     title: 'ПТСР и комплексная травма',
