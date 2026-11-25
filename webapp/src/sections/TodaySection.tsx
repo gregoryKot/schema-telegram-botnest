@@ -10,6 +10,7 @@ import { trackHomeTile } from './today/trackHomeTile';
 import { TodayHead } from './today/TodayHead';
 import { trackerSummary, trackerTileMeta, caseTileMeta, diaryTileMeta, diaryEntriesToday } from './today/todayFeedModel';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
+import { hasNewOnMap, markMapSeen, readMapSeen } from './today/mapSeen';
 
 interface Props {
   needs: Need[];
@@ -25,8 +26,10 @@ interface Props {
 // сигнальная карточка, «Подышим» и строка про терапию переехали на «Ещё».
 export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refreshKey, onSearch }: Props) {
   const data = useTodayData(refreshKey);
-  const { profile, feed, casesToday, lastAt, diariesLoaded, reloadDiaries } = data;
-  const [caseOpen, setCaseOpen] = useState(false);
+  const { profile, feed, casesToday, lastAt, diariesLoaded, reloadDiaries, modeEntries } = data;
+  const [caseOpen, setCaseOpen] = useState<false | 'flow' | 'map'>(false);
+  const [mapSeen, setMapSeen] = useState(readMapSeen);
+  const seeMap = () => { markMapSeen(); setMapSeen(readMapSeen()); };
   const [quickOpen, setQuickOpen] = useState(false);
 
   const tracker = trackerSummary(needs.map(n => n.id), ratings);
@@ -38,7 +41,9 @@ export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refr
 
   return (
     <div className="ds-page ds-page--fit ct-page">
-      <TodayHead firstName={firstName} onWhy={why.open} onSearch={onSearch} />
+      <TodayHead firstName={firstName} onWhy={why.open} onSearch={onSearch}
+        mapNew={hasNewOnMap(modeEntries, mapSeen)}
+        onMap={() => { trackHomeTile('selfmap'); seeMap(); setCaseOpen('map'); }} />
 
       <HomeTiles
         ratings={ratings}
@@ -47,7 +52,7 @@ export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refr
         caseMeta={caseTileMeta(casesToday)}
         diaryMeta={diaryTileMeta(diariesLoaded, diaryEntriesToday(feed), lastAt)}
         onTracker={() => { trackHomeTile('tracker'); onOpenTracker(); }}
-        onCase={() => { trackHomeTile('case'); setCaseOpen(true); }}
+        onCase={() => { trackHomeTile('case'); setCaseOpen('flow'); }}
         onDiary={() => { trackHomeTile('diary'); setQuickOpen(true); }}
       />
 
@@ -55,8 +60,8 @@ export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refr
       {why.mode && <WhySheet auto={why.mode === 'auto'} onClose={why.close} />}
       {caseOpen && (
         <CaseFlowHost
-          start="flow"
-          onClose={() => { setCaseOpen(false); reloadDiaries(); }}
+          start={caseOpen}
+          onClose={() => { if (caseOpen === 'map') seeMap(); setCaseOpen(false); reloadDiaries(); }}
           onOpenTracker={onOpenTracker}
           onOpenSchema={onOpenSchema}
         />

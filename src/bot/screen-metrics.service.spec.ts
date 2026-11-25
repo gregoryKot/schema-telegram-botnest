@@ -57,6 +57,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
       trackerSkips: 0,
       diaryQuick: EMPTY_QUICK,
+      nextSteps: expect.any(Array),
     });
   });
 
@@ -70,6 +71,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
       trackerSkips: 0,
       diaryQuick: EMPTY_QUICK,
+      nextSteps: expect.any(Array),
     });
   });
 
@@ -89,6 +91,7 @@ describe('ScreenMetricsService.getMetrics', () => {
       homeTiles: HOME_TILES.map((tile) => ({ tile, count: 0 })),
       trackerSkips: 0,
       diaryQuick: EMPTY_QUICK,
+      nextSteps: expect.any(Array),
     });
   });
 

@@ -158,7 +158,7 @@ describe('TodaySection — пустой аккаунт: ничего выдум�
     expect(screen.getByText('Ещё не заполнен · ≈1 мин')).toBeTruthy();
     expect(screen.getByText('≈3 мин')).toBeTruthy();
     await screen.findByText('Пока записей нет');
-    expect(screen.getAllByRole('button')).toHaveLength(4); // три плитки и «Зачем это?»
+    expect(screen.getAllByRole('button')).toHaveLength(5); // три плитки, «Зачем это?» и знак «Карты себя»
     expect(screen.queryByText(/Пока ничего/)).toBeNull();
     expect(screen.queryByText('Задание терапевта')).toBeNull();
     expect(screen.queryByText(/Подышим/)).toBeNull();
@@ -320,8 +320,14 @@ describe('TodaySection — «Зачем это?» и первый вход', () 
   });
 });
 
-
-
-
-
-
+describe('TodaySection — знак «Карта себя» в шапке', () => {
+  it('новая запись режимов — точка; тап открывает карту, считается и гасит точку', async () => {
+    mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
+    renderSection();
+    fireEvent.click(await screen.findByRole('button', { name: 'Карта себя: есть новое' }));
+    expect(screen.getByTestId('case-flow-start').textContent).toBe('map');
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'selfmap' });
+    fireEvent.click(screen.getByText('Закрыть разбор'));
+    expect(await screen.findByRole('button', { name: 'Карта себя' })).toBeTruthy();
+  });
+});

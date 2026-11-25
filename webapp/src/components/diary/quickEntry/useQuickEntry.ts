@@ -74,7 +74,7 @@ export function useQuickEntry(onSaved?: () => void) {
   };
 
   const saveSchema = (ids: string[]) =>
-    run(async () => { await api.createSchemaDiary(schemaEntryInput(text, ids)); }, quickSaveTag(tag, ids));
+    run(async () => { await api.createSchemaDiary(schemaEntryInput(text, ids)); return { schemaIds: ids }; }, quickSaveTag(tag, ids));
   const saveMode = (modeId: string) =>
     run(async () => { await api.createModeDiary(modeEntryInput(text, modeId)); return { modeId }; });
 

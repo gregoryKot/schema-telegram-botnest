@@ -116,4 +116,8 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     file: 'webapp/src/pages/landing/AppPreview.tsx',
     why: 'картинка-образец экрана на лендинге: несколько потребностей для вида, не таблица',
   },
+  {
+    file: 'webapp/src/components/trackerOverlay/DayBars.tsx',
+    why: 'подписи столбиков с мягкими переносами для длинных названий, остальные — NEED_NAMES; не таблица знаний',
+  },
 ];
