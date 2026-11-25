@@ -3,9 +3,11 @@ import {
   ADOLESCENTS_MODE_MODEL,
   ADOLESCENTS_SCHEMA_IDS,
 } from './adolescentsModes';
+import { ADOLESCENTS_PSYCHOEDUCATION } from './adolescentsEducation';
+import { ADOLESCENTS_SESSIONS } from './adolescentsSessions';
 import type { ConcernGuideBuilder } from './types';
 
-/** Дети и подростки (0–23 года): ядро статьи по карте docs/guide-sources/Дети.md, пачка 1 (Луз, гл. 1–3, 5–8). */
+/** Дети и подростки (0–23 года): ядро статьи по карте docs/guide-sources/Дети.md, пачки 1–2 (Луз, гл. 0–3, 5–10, 12, 14). */
 export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
   id: 'adolescents',
   name: 'Дети и подростки',
@@ -17,6 +19,7 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
   modeIds: ADOLESCENTS_MODE_IDS,
   modeModel: ADOLESCENTS_MODE_MODEL,
   schemaIds: ADOLESCENTS_SCHEMA_IDS,
+  ...ADOLESCENTS_SESSIONS,
   differential: [
     '«Крутость» подростка — сдержанность, нежелание показывать чувства — социально желаема и бывает просто возрастной уверенностью. За Отстранённого Защитника её принимают, глядя на функцию и частоту: от чего она бережёт и как часто держится [Луз, гл. 7]. Уход в игры и экраны закрывает потребности на время, но оставляет дефицит навыков и неготовность к взрослой жизни [Луз, гл. 7].',
     'Вспышки раздражения у 17–23-летних — нередко вариант нормы; кризис не оценивают поспешно [Луз, гл. 8]. Нестабильность этого возраста отчасти совпадает с картиной ПРЛ, и к ней подходят приёмы из работы с ПРЛ [Луз, гл. 3].',
@@ -27,6 +30,7 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
   psychoeducation: [
     'Подростку его копинг показывают как когда-то разумное решение, без самообвинения, и обращаются к нему как к ответственному и способному [Луз, гл. 7].',
     'С 17–23-летними связывают симптомы со схемами и режимами, объясняют главные схемы и модель фрустрации потребностей, вводят общий язык режимов, рассказывают о ходе терапии и правах клиента; опросник схем целиком заполнять не обязательно [Луз, гл. 8].',
+    ...ADOLESCENTS_PSYCHOEDUCATION,
   ],
   evidence: [
     'Связь схем со стилями воспитания эмпирически не проверена, кризис «трудолюбие против неполноценности» тоже не доказан [Луз, гл. 5, 6].',
@@ -45,5 +49,5 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
       'Давайте посмотрим, кто сейчас в вашей команде у руля: Стена или та часть, которой страшно?',
     ),
   ],
-  sources: '[Луз, гл. 1, 2, 3, 5, 6, 7, 8]',
+  sources: '[Луз, гл. 0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 14]',
 });
