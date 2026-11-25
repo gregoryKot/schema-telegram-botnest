@@ -1,5 +1,5 @@
 // Каталог-цель вкладки «Запросы и расстройства» (kb/catalog.ts): что должно быть по литературе.
-// Черновик состава — решение владельца (docs/BACKLOG.md, «Ждёт владельца»); out_of_scope — только по нему.
+// planned пишет агент пачкой «запрос: <id>» (knowledge-base.md, раздел 7); out_of_scope — только решение владельца.
 import type { CatalogTopic } from './catalog';
 
 const w = (id: string): CatalogTopic => ({ id, status: 'written' });
@@ -8,6 +8,8 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('bpd'),
   w('narcissism'),
   w('depression'),
+  w('cluster_c'),
+  w('other_personality_disorders'),
   w('adolescents'),
   {
     id: 'anxiety',
@@ -47,23 +49,6 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 15'],
-  },
-  {
-    id: 'cluster_c',
-    title: 'Кластер C: избегающее, зависимое, обсессивно-компульсивное РЛ',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 2', 'гл. 11'],
-    note: 'профили режимов есть, программы лечения нет — её даёт Arntz, Jacob 2013 (полка «Арнтц», карты нет)',
-  },
-  {
-    id: 'other_personality_disorders',
-    title:
-      'Другие расстройства личности: истерическое, параноидное, антисоциальное',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 2'],
-    note: 'только профили режимов',
   },
   {
     id: 'relationship_patterns',

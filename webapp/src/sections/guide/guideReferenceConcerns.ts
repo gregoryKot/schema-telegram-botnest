@@ -7,11 +7,14 @@ import type { ReferenceGroup } from './guideReferenceModel';
 
 export const CONCERNS_HUE: PaperHue = PAPER_HUE.teal;
 
-/** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (видимость вместо связи), депрессия — Leaf, дети и подростки — Grown (рост к Здоровому Взрослому). */
+/** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (видимость вместо связи), депрессия — Leaf,
+ *  кластер C — знак капитуляции (чужое впереди своего), истерическое и параноидное — знак гиперкомпенсации (копинг заслоняет уязвимость), дети и подростки — Grown (рост к Здоровому Взрослому). */
 export const CONCERN_SIGN: Record<string, GuideSign> = {
   bpd: 'ribbon',
   narcissism: 'spotlight',
   depression: 'leaf',
+  cluster_c: 'coping_surrender',
+  other_personality_disorders: 'coping_overcompensation',
   adolescents: 'grown',
 };
 
@@ -20,6 +23,8 @@ export const CONCERN_HUE: Record<string, PaperHue> = {
   bpd: PAPER_HUE.teal,
   narcissism: PAPER_HUE.lilac,
   depression: PAPER_HUE.sky,
+  cluster_c: PAPER_HUE.sage,
+  other_personality_disorders: PAPER_HUE.plum,
   adolescents: PAPER_HUE.straw,
 };
 
