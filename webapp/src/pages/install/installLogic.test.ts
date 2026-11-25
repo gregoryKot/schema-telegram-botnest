@@ -33,8 +33,8 @@ describe('loginNote', () => {
     for (const auth of [true, false]) {
       const n = loginNote('ios', auth);
       expect(n.ty).toContain('войти ещё раз');
-      expect(n.ty).toContain('Входи через VK ID, Яндекс ID или MAX — тот способ, что добавлен');
-      expect(n.vy).toContain('Входите через VK ID, Яндекс ID или MAX — тот способ, что добавлен');
+      expect(n.ty).toContain('Входи через VK ID, Яндекс ID или MAX — тот, что уже привязан');
+      expect(n.vy).toContain('Входите через VK ID, Яндекс ID или MAX — тот, что уже привязан');
       // Входа через Telegram на сайте нет (2026-11) — обещать его нельзя.
       expect(`${n.ty}${n.vy}`).not.toMatch(/через Telegram|в бота/);
     }
@@ -45,7 +45,7 @@ describe('loginNote', () => {
     const anon = loginNote('android', false);
     expect(anon.ty).toContain('Вход — после установки, в самом приложении: через VK ID, Яндекс ID или MAX.');
     expect(anon.vy).toContain('в самом приложении: через VK ID, Яндекс ID или MAX.');
-    expect(anon.ty).toContain('Сначала добавь там в «Аккаунте» один из этих способов.');
-    expect(anon.vy).toContain('Сначала добавьте там в «Аккаунте» один из этих способов.');
+    expect(anon.ty).toContain('Сначала добавь там в «Аккаунте» VK ID или Яндекс ID.');
+    expect(anon.vy).toContain('Сначала добавьте там в «Аккаунте» VK ID или Яндекс ID.');
   });
 });
