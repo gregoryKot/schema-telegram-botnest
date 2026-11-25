@@ -56,7 +56,7 @@ afterEach(cleanup);
 describe('ClientListView — сверка кода офлайн-карточки', () => {
   it('плашка видна над списком; «Да» → список перечитан, карточка ушла', async () => {
     const { container } = render(<Host />);
-    const cards = () => container.querySelectorAll('.tc-card').length;
+    const cards = () => container.querySelectorAll('.tc-row').length;
     expect(await screen.findByText(/использовал аккаунт «Борис»/)).toBeTruthy();
     expect(cards()).toBe(2);
 
