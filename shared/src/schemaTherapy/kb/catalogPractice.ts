@@ -65,7 +65,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Янг',
     chapters: ['гл. 2', 'гл. 5'],
-    note: 'ещё Кембридж гл. 3, 9, 10 и «Касьяник»',
+    note: 'ещё Кембридж гл. 3, 9, 10, «Касьяник» и Рафаэли гл. 16, 25',
   },
   {
     id: 'session_frequency',
@@ -94,6 +94,21 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 10'],
+  },
+  {
+    id: 'childhood_experience_types',
+    title:
+      'Четыре пути к схеме: нехватка, травма, избыток, усвоение взгляда родителя',
+    status: 'planned',
+    source: 'Рафаэли',
+    chapters: ['гл. 2'],
+  },
+  {
+    id: 'mode_states',
+    title: 'Режим — состояние, схема — черта; здоровое переключение режимов',
+    status: 'planned',
+    source: 'Рафаэли',
+    chapters: ['гл. 8'],
   },
   {
     id: 'supervision',
