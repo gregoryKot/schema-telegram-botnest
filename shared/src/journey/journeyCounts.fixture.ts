@@ -9,6 +9,7 @@ export const EMPTY_JOURNEY_COUNTS: JourneyCounts = {
   notes: 0,
   schemaDiary: 0,
   modeDiary: 0,
+  cases: 0,
   gratitudeDays: 0,
   practices: 0,
   plansDone: 0,

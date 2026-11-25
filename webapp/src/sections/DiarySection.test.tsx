@@ -120,12 +120,11 @@ const rated = (date: string, values: number[]) => ({
 });
 
 describe('DiarySection — шапка и вход «Записать»', () => {
-  it('eyebrow «Записи», заголовок «Что было», без счётчика «N/31», трёх карточек входа и строки «Архив»', async () => {
+  it('заголовок «Записи» (имя вкладки), без счётчика «N/31», трёх карточек входа и строки «Архив»', async () => {
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
     renderSection();
     await screen.findByText('Коллега не ответил на сообщение');
-    expect(screen.getByText('Записи', { selector: '.ds-eyebrow' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Что было' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Записи' })).toBeTruthy();
     expect(document.querySelector('.cd-stats')).toBeNull();
     expect(document.querySelector('.cd-quick')).toBeNull();
     expect(screen.queryByText(/Архив ·/)).toBeNull();
@@ -269,7 +268,7 @@ describe('DiarySection — реальные записи из api', () => {
   });
 });
 
-describe('DiarySection — вкладки «Все · Трекер · Случаи · Дневник»', () => {
+describe('DiarySection — вкладки «Все · Трекер · Разборы · Дневник»', () => {
   const setup = () => {
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись-схема' })]);
     mockApi.getModeDiary.mockResolvedValue([modeEntry({ situation: 'Запись-режим' })]);
@@ -281,7 +280,7 @@ describe('DiarySection — вкладки «Все · Трекер · Случа
     renderSection();
     await screen.findByText('Запись-схема');
     const counts = tabs().getAllByRole('tab').map(b => b.textContent);
-    expect(counts).toEqual(['Все4', 'Трекер2', 'Случаи0', 'Дневник2']);
+    expect(counts).toEqual(['Все4', 'Трекер2', 'Разборы0', 'Дневник2']);
   });
 
   it('в ленте за день — строка трекера: «Трекер — индекс 7,2» при всех пяти оценках, «Трекер: 3 из 5» при неполных', async () => {
@@ -304,7 +303,7 @@ describe('DiarySection — вкладки «Все · Трекер · Случа
     expect(screen.queryByLabelText('Трекер — индекс 7,2')).toBeNull();
   });
 
-  it('«Случаи» показывает только разборы (fromCase), «Дневник» их не показывает', async () => {
+  it('«Разборы» показывает только разборы (fromCase), «Дневник» их не показывает', async () => {
     mockApi.getModeDiary.mockResolvedValue([
       modeEntry({ id: 1, situation: 'Обычная запись режима' }),
       { ...modeEntry({ id: 2, situation: 'Тишина в ответ' }), fromCase: true },
@@ -312,8 +311,8 @@ describe('DiarySection — вкладки «Все · Трекер · Случа
     renderSection();
     await screen.findByText('Тишина в ответ');
     const counts = tabs().getAllByRole('tab').map(b => b.textContent);
-    expect(counts).toEqual(['Все2', 'Трекер0', 'Случаи1', 'Дневник1']);
-    fireEvent.click(seg(/^Случаи/));
+    expect(counts).toEqual(['Все2', 'Трекер0', 'Разборы1', 'Дневник1']);
+    fireEvent.click(seg(/^Разборы/));
     expect(screen.getByText('Тишина в ответ')).toBeTruthy();
     expect(screen.queryByText('Обычная запись режима')).toBeNull();
     fireEvent.click(seg(/^Дневник/));
@@ -321,11 +320,11 @@ describe('DiarySection — вкладки «Все · Трекер · Случа
     expect(screen.queryByText('Тишина в ответ')).toBeNull();
   });
 
-  it('пустые «Случаи» — объяснение, что такое разбор и откуда его начать', async () => {
+  it('пустые «Разборы» — объяснение, что такое разбор и откуда его начать', async () => {
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    fireEvent.click(seg(/^Случаи/));
+    fireEvent.click(seg(/^Разборы/));
     await screen.findByText('Разборов пока нет');
     expect(screen.getByText(/плитка «Что случилось» на главной/)).toBeTruthy();
   });
