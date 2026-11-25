@@ -8,13 +8,14 @@ import type { ReferenceGroup } from './guideReferenceModel';
 export const CONCERNS_HUE: PaperHue = PAPER_HUE.teal;
 
 /** Знак статьи: ПРЛ — Ribbon (из крайности в крайность), нарциссизм — Spotlight (видимость вместо связи), депрессия — Leaf,
- *  кластер C — знак капитуляции (чужое впереди своего), истерическое и параноидное — знак гиперкомпенсации (копинг заслоняет уязвимость). */
+ *  кластер C — знак капитуляции (чужое впереди своего), истерическое и параноидное — знак гиперкомпенсации (копинг заслоняет уязвимость), дети и подростки — Grown (рост к Здоровому Взрослому). */
 export const CONCERN_SIGN: Record<string, GuideSign> = {
   bpd: 'ribbon',
   narcissism: 'spotlight',
   depression: 'leaf',
   cluster_c: 'coping_surrender',
   other_personality_disorders: 'coping_overcompensation',
+  adolescents: 'grown',
 };
 
 /** Оттенок статьи; новая статья без строки здесь остаётся бирюзой — сверку держит guideReferenceHues.test.ts. */
@@ -24,6 +25,7 @@ export const CONCERN_HUE: Record<string, PaperHue> = {
   depression: PAPER_HUE.sky,
   cluster_c: PAPER_HUE.sage,
   other_personality_disorders: PAPER_HUE.plum,
+  adolescents: PAPER_HUE.straw,
 };
 
 export const concernGuideLook = (id: string): SheetLook => ({
