@@ -9,12 +9,12 @@ interface Props {
   hideTitle?: boolean;
 }
 
-/** «Карта режимов»: все режимы по группам — аккордеоны на бумаге группы со знаком группы (как у
+/** «Все режимы»: все режимы по группам — аккордеоны на бумаге группы со знаком группы (как у
  *  терапевта); отмеченные пользователем — с галочкой. */
 export function ModeMap({ myModeIds, onOpenMode, hideTitle }: Props) {
   return (
     <section className="cs-block">
-      {!hideTitle && <h3 className="ds-h3">Карта режимов</h3>}
+      {!hideTitle && <h3 className="ds-h3">Все режимы</h3>}
       <div className="cs-mapfolds">
         {MODE_GROUPS.map(group => (
           <MapFold

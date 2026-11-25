@@ -49,7 +49,7 @@ describe('SelfMapScreen', () => {
   it('на чистой карте зовёт сделать первый разбор и не показывает нулей', () => {
     renderMap(emptyMap, emptyNext);
     expect(screen.getByText(/Разобрать случай/)).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/0 случаев|0%|NaN/);
+    expect(document.body.textContent).not.toMatch(/0 разборов|0 случаев|0%|NaN/);
   });
 
   it('карта помечена черновиком', () => {
@@ -113,7 +113,7 @@ describe('SelfMapScreen', () => {
     expect(screen.getByText(/Не появлялся в записях 45/)).toBeTruthy();
   });
 
-  it('карточка примет без единого случая показывает «Приметы собраны, случаев пока нет»', () => {
+  it('карточка примет без единого разбора показывает «Приметы собраны, разборов пока нет»', () => {
     // Карточка режима могла быть собрана раньше, чем поймался случай
     // (collectModeItems, shared/src/map/mapVm.ts) — count===0 не должен
     // читаться как «0 случаев», это другой текст с другим смыслом.
@@ -121,7 +121,7 @@ describe('SelfMapScreen', () => {
       { ...emptyMap, notes: [{ modeId: 'detached_protector', alias: 'Стена', hasCard: true }] },
       emptyNext,
     );
-    expect(screen.getByText('Приметы собраны, случаев пока нет')).toBeTruthy();
+    expect(screen.getByText('Приметы собраны, разборов пока нет')).toBeTruthy();
   });
 
   it('на пустой карте «Разобрать случай» стоит в DOM раньше любой полосы', () => {

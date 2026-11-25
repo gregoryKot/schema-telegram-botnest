@@ -64,6 +64,7 @@ type ById = (api: JourneyContentApi, id: number) => Promise<unknown>;
 const BY_ID: Partial<Record<string, ById>> = {
   schema_diary: (a, id) => a.getSchemaDiaryEntry(id),
   mode_diary: (a, id) => a.getModeDiaryEntry(id),
+  case: (a, id) => a.getModeDiaryEntry(id),
   gratitude: (a, id) => a.getGratitudeDiaryEntry(id),
   belief_check: (a, id) => a.getBeliefCheck(id),
   letter: (a, id) => a.getLetter(id),

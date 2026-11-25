@@ -58,3 +58,4 @@ export const DETAIL_FIELDS: Record<string, DetailField[]> = {
   practice: [['text', 'Что меня питает']],
   plan_done: [['practiceText', 'Действие']],
 };
+DETAIL_FIELDS.case = DETAIL_FIELDS.mode_diary;

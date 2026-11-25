@@ -17,7 +17,7 @@ describe('MyModeMapSheet', () => {
     const back = screen.getByRole('button', { name: /Назад/ });
     expect(back.classList.contains('ds-back')).toBe(true);
     expect(back.parentElement?.classList.contains('ds-sheet-head')).toBe(true);
-    const h = screen.getByRole('heading', { level: 2, name: 'Карта режимов' });
+    const h = screen.getByRole('heading', { level: 2, name: /Карта режимов\sс\sтерапевтом/ });
     expect(h.classList.contains('ds-h2')).toBe(true);
     back.click();
     expect(onClose).toHaveBeenCalledTimes(1);
