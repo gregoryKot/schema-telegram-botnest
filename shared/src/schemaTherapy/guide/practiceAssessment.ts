@@ -2,7 +2,6 @@ import type { PracticeNotesBuilder } from './types';
 import { buildAssessAll, storySignalMoreAll } from './practiceAssessHeath';
 import { complaintToModeMoreBpd } from './practiceMoreArntzBpd';
 
-import { complaintToModeMore } from './practiceAssessMore';
 import * as cam from './practiceAssessCambridge';
 import { firstSessionHeathDosbor } from './heathDosborMore';
 /** «Для терапевта»: первая сессия и первые гипотезы о режимах (гл. 3). Карта — docs/guide-sources/Кембридж.md. */
@@ -50,11 +49,7 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
         'Давайте посмотрим, кто внутри требует ещё и ещё, даже когда сил уже нет.',
       ),
     ],
-    more: [
-      ...complaintToModeMore,
-      ...complaintToModeMoreBpd,
-      ...cam.complaintToModeCambridgeMore,
-    ],
+    more: [...complaintToModeMoreBpd, ...cam.complaintToModeCambridgeMore],
     sources: '[Кембридж, гл. 3, табл. 3.2], [Арнтц ПРЛ, гл. 3], [Арнтц, 2.2.1]',
   },
   {
