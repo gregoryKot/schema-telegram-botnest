@@ -82,6 +82,9 @@ export type HeathTechniqueId =
   | 'recent_event_imagery'
   | 'mental_contrasting_imagery';
 
+/** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
+export type RoedigerTechniqueId = 'genogram';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -92,4 +95,5 @@ export type TechniqueId =
   | ArntzJacobTechniqueId
   | FarrellTechniqueId
   | HeathTechniqueId
+  | RoedigerTechniqueId
   | BorrowedTechniqueId;

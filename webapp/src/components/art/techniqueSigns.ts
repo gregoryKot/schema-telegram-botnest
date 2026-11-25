@@ -3,6 +3,7 @@
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
   YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId,
+  RoedigerTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -98,6 +99,8 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
   three_parts_check_in: 'three_parts',
 };
 
+const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = { genogram: 'family_tree' };
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
@@ -107,5 +110,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...ARNTZ_JACOB_TECHNIQUE_SIGN,
   ...FARRELL_TECHNIQUE_SIGN,
   ...HEATH_TECHNIQUE_SIGN,
+  ...ROEDIGER_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };
