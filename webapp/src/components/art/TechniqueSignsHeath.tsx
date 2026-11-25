@@ -52,3 +52,38 @@ export function ThreeParts({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Карта травмы: три круга-события на листе, связанные линиями по сходству. */
+export function TraumaMap({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d="M26 20 L60 44 L96 22 M26 20 L96 22" {...ROUND} stroke={PAPER.amber} strokeWidth="3" strokeDasharray="4 5" />
+      <circle cx="26" cy="20" r="10" fill={PAPER.clay} />
+      <circle cx="60" cy="44" r="10" fill={PAPER.plum} />
+      <circle cx="96" cy="22" r="10" fill={PAPER.clay} />
+    </Svg>
+  );
+}
+
+/** Рескриптинг недавнего события: дверь-рамка сцены, внутри два режима и над ними взрослый, видящий всё. */
+export function RecentScene({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <rect x="20" y="6" width="80" height="52" rx="6" {...ROUND} stroke={PAPER.sage} strokeWidth="4" />
+      <circle cx="42" cy="44" r="7" fill={PAPER.clay} />
+      <circle cx="78" cy="44" r="7" fill={PAPER.amber} />
+      <circle cx="60" cy="22" r="9" fill={PAPER.moss} />
+    </Svg>
+  );
+}
+
+/** Ментальный контраст: путь к цели упирается в препятствие и огибает его развилкой «если — тогда». */
+export function IfThen({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d="M10 40 L44 40 Q56 40 60 26 Q64 12 82 14" {...ROUND} stroke={PAPER.moss} strokeWidth="4" />
+      <rect x="52" y="34" width="14" height="14" rx="3" fill={PAPER.clay} />
+      <circle cx="98" cy="14" r="9" fill={PAPER.amber} />
+    </Svg>
+  );
+}

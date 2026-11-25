@@ -31,6 +31,33 @@ export const HEATH_TECHNIQUE_WORK: Record<HeathTechniqueId, TechniqueWorkDef> =
         ['home', 'Что пробовать дома'],
       ],
     },
+    trauma_map: {
+      name: 'Карта травмы',
+      fields: [
+        ['events', 'События на карте'],
+        ['meaning', 'Реакции и смыслы, что их связывает'],
+        ['schemas', 'Схемы, копинг и цели Здорового Взрослого'],
+        ['first', 'С чего начнём рескриптинг'],
+      ],
+    },
+    recent_event_imagery: {
+      name: 'Рескриптинг недавнего события',
+      fields: [
+        ['scene', 'Сцена'],
+        ['modes', 'Какие режимы и где стоят в образе'],
+        ['adult', 'Что сказал Здоровый Взрослый'],
+        ['after', 'Что изменилось'],
+      ],
+    },
+    mental_contrasting_imagery: {
+      name: 'Ментальный контраст и «если — тогда»',
+      fields: [
+        ['goal', 'Желанный шаг'],
+        ['obstacle', 'Препятствия и режим за ними'],
+        ['plan', 'Фразы «если — тогда»'],
+        ['step', 'Шаг на неделю'],
+      ],
+    },
     three_parts_check_in: {
       name: 'Медитация на три части',
       fields: [
