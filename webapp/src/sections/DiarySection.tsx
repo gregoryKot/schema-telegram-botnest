@@ -32,7 +32,7 @@ const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 // «Записи» клиента — раздел и лист «Дневники» (DiariesOverlay рисует свою шапку с «Назад»).
 export function DiarySection({ onOpenTrackerHistory, onStart }: {
   onOpenTrackerHistory?: () => void;
-  /** Пустые «Трекер» и «Случаи»: открыть отметку трекера или разбор (быстрые действия оболочки). */
+  /** Пустые «Трекер» и «Разборы»: открыть отметку трекера или разбор (быстрые действия оболочки). */
   onStart?: (what: 'tracker' | 'case') => void;
 } = {}) {
   const bridge = useTherapyBridgeTexts();

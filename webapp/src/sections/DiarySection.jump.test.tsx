@@ -38,7 +38,7 @@ describe('DiarySection — переходы (К8)', () => {
     expect(mockApi.trackEvent).toHaveBeenCalledWith('diary_jump', { to: 'pattern' });
   });
 
-  it.each([[/Трекер/, 'Отметить сегодня', 'tracker'], [/Случаи/, 'Разобрать случай', 'case']] as const)(
+  it.each([[/Трекер/, 'Отметить сегодня', 'tracker'], [/Разборы/, 'Разобрать случай', 'case']] as const)(
     'пустой сегмент %s: кнопка открывает действие и шлёт событие', async (tab, label, what) => {
       const onStart = vi.fn();
       renderSection(onStart);

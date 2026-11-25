@@ -248,7 +248,7 @@ describe('SchemasSection — карта режимов от терапевта',
     await screen.findByText('2 карты · как режимы развиваются на триггер');
     fireEvent.click(screen.getByText('Карта режимов с терапевтом'));
     // ModeMapViewer лениво грузится внутри листа — лист открылся (заголовок листа).
-    await waitFor(() => expect(screen.getAllByText('Карта режимов').length).toBeGreaterThanOrEqual(1));
+    await waitFor(() => expect(screen.getAllByText('Карта режимов с терапевтом').length).toBeGreaterThanOrEqual(1));
   });
 
   // РЕГРЕССИЯ (check-silent-catch): .catch(() => {}) глотал отказ molча —

@@ -17,7 +17,7 @@ interface Props {
   banner?: ReactNode;
 }
 
-/** Компьютер: «Мои режимы» группами на бумаге группы (как на телефоне) и «Карта режимов» — все режимы
+/** Компьютер: «Мои режимы» группами на бумаге группы (как на телефоне) и «Все режимы» —
  *  по группам; пусто — что такое режим. */
 export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern, modeFreq, statusFor, note, banner }: Props) {
   const tr = useTr();
