@@ -1,6 +1,8 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { problemSolving } from './problemSolving';
+import { socraticBpd, socraticVoice } from './socraticBpd';
 
-/** Из КПТ и поведенческой терапии: behavioral_activation, socratic_dialogue, exposure. */
+/** Из КПТ и поведенческой терапии: behavioral_activation, socratic_dialogue, exposure, problem_solving. */
 export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'behavioral_activation',
@@ -48,12 +50,8 @@ export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
       'Резюмировать. Собрать услышанное коротко и словами клиента — лучше записать.',
       'Синтезирующий вопрос: как это сходится с мыслью, с которой начали? Вывод клиент делает сам.',
     ],
-    voice: [
-      tr(
-        'Ты говоришь, что никому не интересно тебя слушать. А кто за последний месяц о чём-то тебя спрашивал?',
-        'Вы говорите, что никому не интересно вас слушать. А кто за последний месяц о чём-то вас спрашивал?',
-      ),
-    ],
+    voice: socraticVoice(tr),
+    more: socraticBpd,
     cautions:
       'Вопросы, ведущие к заранее готовому ответу, клиент слышит как экзамен — Падески называет это «менять мнение» вместо «вести к открытию». В разгар детского режима вопросы не работают: сначала забота, потом разбор. Чтобы придумывать другие толкования, нужен достаточно сильный Здоровый Взрослый, поэтому при ПРЛ на первой фазе терапии сократический диалог не получается; дома искать альтернативы клиент начинает, когда Здоровый Взрослый окреп [Арнтц ПРЛ, гл. 6].',
     sources:
@@ -87,4 +85,5 @@ export const buildBorrowedCbtTechniques: TechniqueGuideBuilder = (tr) => [
     sources:
       'Foa E. B., Kozak M. J. Emotional processing of fear: Exposure to corrective information. Psychological Bulletin, 1986, 99(1), 20–35. Craske M. G., Treanor M., Conway C. C., Zbozinek T., Vervliet B. Maximizing exposure therapy: An inhibitory learning approach. Behaviour Research and Therapy, 2014, 58, 10–23.',
   },
+  problemSolving(tr),
 ];

@@ -2,6 +2,7 @@ import type { PracticeNotesBuilder } from './types';
 import { homeworkNotDoneMoreAll } from './practiceEndingHeath';
 import { modeFlippingMoreBpd } from './practiceMoreArntzBpd';
 import { modeFlippingMore } from './practiceMoreArntzIntro';
+import { crisisCallBpd } from './practiceBpdCh8';
 
 /** «Для терапевта» по Арнцу и ван Гендерен (ПРЛ, гл. 6, 8, 9). Карта — docs/guide-sources/Арнц-ПРЛ.md, пачка 12. */
 export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
@@ -48,8 +49,7 @@ export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
     ],
     more: [
       'План на кризис договаривают заранее: когда можно писать терапевту, как быстро он отвечает и к кому обращаться, если он недоступен. Среди запасных контактов — телефон доверия 8-800-100-49-94, для детей и подростков — 8-800-2000-122 [Арнтц ПРЛ, гл. 3].',
-      'Кризисы чаще в начале лечения. С ростом Здорового Взрослого и ослаблением Критика они реже и короче [Арнтц ПРЛ, гл. 8].',
-      'Суицидальный риск и самоповреждение — в разделе «Суицидальные мысли».',
+      ...crisisCallBpd,
     ],
     sources: '[Арнтц ПРЛ, гл. 3, 8]',
   },

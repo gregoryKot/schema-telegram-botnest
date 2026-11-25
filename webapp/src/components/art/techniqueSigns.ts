@@ -57,6 +57,7 @@ const BORROWED_TECHNIQUE_SIGN: Record<BorrowedTechniqueId, GuideSign> = {
   stop_rewind_explore: 'rewind',
   life_line: 'life_line',
   downward_arrow: 'layers',
+  problem_solving: 'check',
 };
 
 const CAMBRIDGE_TECHNIQUE_SIGN: Record<CambridgeTechniqueId, GuideSign> = {
@@ -67,9 +68,7 @@ const CAMBRIDGE_TECHNIQUE_SIGN: Record<CambridgeTechniqueId, GuideSign> = {
   need_now_question: 'cup',
 };
 
-const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = {
-  schema_dialogue: 'talk_schema',
-};
+const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = { schema_dialogue: 'talk_schema' };
 
 const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
   current_role_play: 'talk_now',

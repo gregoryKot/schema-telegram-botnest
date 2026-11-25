@@ -3,6 +3,7 @@ import {
   homeworkNotDoneMore,
 } from './practiceMoreFarrell';
 import { selfDisclosureMoreAll } from './practiceSelfDisclosureMore';
+import { homeworkBpd } from './practiceBpdCh8';
 
 /** «Подробнее» к ending_phase, homework_not_done, self_disclosure с дополнениями Хис (гл. 19, 20): вынесено, чтобы файлы не росли. */
 export const endingPhaseMoreFull: string[] = [
@@ -20,8 +21,7 @@ export const endingPhaseMoreFull: string[] = [
 
 export const homeworkNotDoneMoreAll: string[] = [
   ...homeworkNotDoneMore,
-  'Отказ как режим [Хис, гл. 19]. Не сделанное задание или отказ от поведенческого эксперимента часто означает Отстранённого Защитника, который бережёт Уязвимого Ребёнка от неудачи. На стуле клиент говорит за часть, которой перемены кажутся слишком рискованными.',
-  'Как вести такой диалог [Хис, гл. 19]. Терапевт признаёт добрые намерения Защитника и спрашивает, чего боится Ребёнок. Вместе взвешивают цену и выгоду перемен; Уязвимый Ребёнок при этом «слушает», и терапевт встаёт на его сторону против страха. Режиму помогает дать прозвище: голос с именем слабеет.',
+  ...homeworkBpd,
 ];
 
 export const selfDisclosureMoreFull: string[] = [
