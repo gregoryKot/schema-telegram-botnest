@@ -36,3 +36,8 @@
 }
 .lt-q[aria-selected="true"], .lt-q[aria-pressed="true"] { color: var(--text); font-weight: 500; }
 .lt-sep { color: var(--text-ghost); font-size: 14px; }
+/* Отбор с линией под выбранным («Все · Активны · …» на «Клиентах»): та же тихая подпись, без коробок и капсул. */
+.lt-quiet--mark { flex-wrap: wrap; }
+.lt-quiet--mark .lt-q[aria-selected="true"] {
+  text-decoration: underline; text-decoration-color: var(--text); text-decoration-thickness: 1.5px; text-underline-offset: 8px;
+}

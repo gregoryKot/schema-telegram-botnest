@@ -7,15 +7,9 @@ import { cardClaimKey, type CardClaim, type CardClaims } from './cardClaims';
 // тот момент, когда надо ответить, и до ответа обязан понять, что будет по
 // каждой кнопке. Пока грузится или сверок нет — ничего: у большинства
 // терапевтов блок пуст, скелетон мигал бы на месте, где ничего не появится.
-// Вид (b29): светлый лист без контура (тень слоем и знак «тот же человек» —
-// `art`, `rowClassName` — даёт сайт), сбой — `failure` (PaperAlert сайта). Залитая на экране одна —
+// Вид (#1674): блок на бумаге между линиями — поля, линии и знак «тот же человек» (`art`,
+// `rowClassName`) даёт сайт, сбой — `failure` (PaperAlert сайта). Залитая на экране одна —
 // «Новый клиент», поэтому «Да» обводочная, «Нет» — тихая ссылка с зоной 44.
-const box = {
-  padding: 14,
-  borderRadius: 14,
-  background: 'var(--surface)',
-  marginBottom: 10,
-} as const;
 const muted = { fontSize: 12, lineHeight: 1.5, color: 'var(--text-sub)' };
 
 /** Вопрос плашки: имена в кавычках, пропавшее имя — словами, без «null». */
@@ -42,7 +36,7 @@ function ClaimRow({
   const key = cardClaimKey(claim);
   const busy = claims.busy === key;
   return (
-    <li className={rowClassName} style={{ ...box, listStyle: 'none' }}>
+    <li className={rowClassName} style={{ listStyle: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div
           style={{
