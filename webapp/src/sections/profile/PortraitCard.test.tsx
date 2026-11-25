@@ -43,10 +43,11 @@ describe('PortraitCard — пусто', () => {
     expect(screen.queryByText(/твой|твоих/)).toBeNull();
   });
 
-  it('плитка — бумага и знак ENTITY_LOOK.portrait, заголовок h2', () => {
+  it('плитка — заметка между линиями, знак ENTITY_LOOK.portrait, заголовок h2', () => {
     renderCard();
     const tile = screen.getByLabelText('Мой портрет');
-    expect(tile.classList.contains('pp-paper')).toBe(true);
+    expect(tile.classList.contains('pp-block--note')).toBe(true);
+    expect(tile.classList.contains('pp-paper')).toBe(false);
     expect(tile.getAttribute('style')).toContain('--h: 135');
     expect(screen.getByRole('heading', { level: 2, name: 'Мой портрет' })).toBeTruthy();
     expect(tile.querySelector('.cpf-tile-art svg.pp-art')).not.toBeNull();

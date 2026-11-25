@@ -1,5 +1,5 @@
-// Витрина профиля (b21): «Мой путь», «Мой портрет», «Мои тёплые слова» — плитки цветной бумаги
-// (pp-squares) вместо трёх белых карточек. Каждая плитка — свой блок «Настроить экран» (ScreenBlock):
+// Витрина профиля (b21): «Мой путь», «Мой портрет», «Мои тёплые слова» — заметки между линиями
+// (ShelfTile, pp-block--note) в сетке cpf-shelf. Каждая плитка — свой блок «Настроить экран» (ScreenBlock):
 // скрытая не рисуется, порядок плиток — из листа, место всей витрины на телефоне — место её первой
 // видимой плитки (--blk-o группы). Раскладка по числу видимых плиток — cpf-shelf--nN (client-profile.css).
 // Данные портрета и слов — общий хук useAboutMe (держит ProfileSection: дневники — один запрос).
@@ -46,7 +46,7 @@ export function ProfileShelf({ aboutMe, blocks, onOpenJourney, onTakeTest, allow
   return (
     <>
       {ids.length > 0 && (
-        <div className={`pp-squares cpf-shelf cpf-shelf--n${ids.length} cpf-blk`} style={{ '--blk-o': groupOrder(ids, blocks) } as CSSProperties}>
+        <div className={`cpf-shelf cpf-shelf--n${ids.length} cpf-blk`} style={{ '--blk-o': groupOrder(ids, blocks) } as CSSProperties}>
           {ids.map((id) => (
             <ScreenBlock key={id} id={id} blocks={blocks} className={`cpf-shelf-item cpf-shelf-item--${id}`}>{tile(id)}</ScreenBlock>
           ))}
