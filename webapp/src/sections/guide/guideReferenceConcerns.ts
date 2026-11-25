@@ -18,6 +18,9 @@ export const CONCERN_SIGN: Record<string, GuideSign> = {
   bpd: 'ribbon',
   narcissism: 'spotlight',
   depression: 'leaf',
+  anxiety: 'looming',
+  ocd: 'check',
+  adjustment_disorder: 'pause',
   cluster_c: 'coping_surrender',
   other_personality_disorders: 'coping_overcompensation',
   adolescents: 'grown',
@@ -31,12 +34,15 @@ export const CONCERN_HUE: Record<string, PaperHue> = {
   bpd: PAPER_HUE.teal,
   narcissism: PAPER_HUE.lilac,
   depression: PAPER_HUE.sky,
+  anxiety: PAPER_HUE.rose,
+  ocd: PAPER_HUE.clay,
+  adjustment_disorder: PAPER_HUE.moss,
   cluster_c: PAPER_HUE.sage,
   other_personality_disorders: PAPER_HUE.plum,
   adolescents: PAPER_HUE.straw,
   couples: PAPER_HUE.peach,
-  ptsd: PAPER_HUE.clay,
-  eating_disorders: PAPER_HUE.moss,
+  ptsd: PAPER_HUE.sage,
+  eating_disorders: PAPER_HUE.sky,
 };
 
 export const concernGuideLook = (id: string): SheetLook => ({
