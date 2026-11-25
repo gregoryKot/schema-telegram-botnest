@@ -1,6 +1,5 @@
 import { workTitle } from '../../../../shared/src/therapy/sessionWork/names';
 import { normalizeSessionWork } from '../../../../shared/src/therapy/sessionWork/normalize';
-import type { CSSProperties } from 'react';
 import type { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { useIsMobile } from '../useIsMobile';
@@ -21,9 +20,7 @@ interface Props {
   detail: ClientDetail;
 }
 
-const paper = (h: number) => ({ '--h': h }) as CSSProperties;
-
-// «Обзор» карточки клиента (#906; живая бумага — b30, docs/archive/APP_2026-11.md). Цель терапии — лист соломы («Коротко»
+// «Обзор» карточки клиента (#906; живая бумага — b30, docs/archive/APP_2026-11.md). Цель терапии — заметка между линиями («Коротко»
 // схемы случая); схемы и режимы — группы на бумаге домена и группы со своим знаком (PaperGroups → SignGroup,
 // как у клиента в «Моих паттернах»); заметка сессии и последние записи — белые листы с тенью-слоем
 // (OverviewEntries). Пустой «Обзор» — одна сцена (OverviewEmpty). На телефоне первой строкой —

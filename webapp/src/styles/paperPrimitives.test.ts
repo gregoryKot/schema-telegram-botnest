@@ -309,4 +309,11 @@ describe('заметка между линиями (.pp-block--note)', () => {
     const old = /\.(th-card-(head|sign|title|sub)|cd-explainer-top|sb-today-label)(?![-\w])/;
     for (const r of cssAll) for (const sel of r.selectors) expect(sel).not.toMatch(old);
   });
+
+  it('витрина профиля и «Встречи»: на стыке заметки с соседним блоком линия одна', () => {
+    const profile = rules('client-profile.css');
+    expect(decls(profile, '.cpf-blk:has(> .cpf-start) + .cpf-shelf .pp-block.cpf-tile')).toContain('border-top: 0');
+    expect(decls(profile, '.cpf-shelf + .pp-block.cpf-rhythm')).toContain('border-top: 0');
+    expect(decls(rules('therapist-card.css'), '.pp-block.tk-meet + .pp-block')).toContain('border-top: 0');
+  });
 });

@@ -36,6 +36,8 @@
 .cpf-shelf--n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cpf-shelf--n1 { grid-template-columns: minmax(0, 1fr); }
 .cpf-shelf-item { display: flex; min-width: 0; }
+/* Заметки витрины стоят встык с блоками между линиями (старт «Мой портрет», «Ритм»): линия на стыке одна. */
+.cpf-blk:has(> .cpf-start) + .cpf-shelf .pp-block.cpf-tile, .cpf-shelf + .pp-block.cpf-rhythm { border-top: 0; }
 .pp-block.cpf-tile { flex: 1; min-width: 0; min-height: var(--cpf-tile-h); margin: 0; padding-top: 20px; cursor: pointer; }
 .pp-block-title.cpf-tile-title { font-size: 26px; line-height: 1.05; }
 .cpf-tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }

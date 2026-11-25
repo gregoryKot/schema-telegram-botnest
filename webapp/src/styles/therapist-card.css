@@ -175,6 +175,7 @@
 .tk-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 /* «Встречи» — заметка между линиями (pp-block--note), три строки через тонкую линию; Talk — у первой строки. */
 .pp-block.tk-meet { gap: 0; padding: 0; }
+.pp-block.tk-meet + .pp-block { border-top: 0; }
 /* Подписи — --text-sub (L6): --text-faint .ds-label на цветной бумаге «Трекера» 4.29:1. */
 .tk-meet .ds-label, .tk-goal .ds-label, .tk-track .ds-label { color: var(--text-sub); }
 .tk-meet-row { padding: 14px 0; }
