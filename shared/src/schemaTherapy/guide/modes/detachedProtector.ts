@@ -1,5 +1,5 @@
 import type { ModeGuide, Tr } from '../types';
-import { detachedProtectorMoreYoung } from './detachedProtectorMoreYoung';
+import { detachedProtectorMore } from './detachedProtectorMore';
 
 /** Избегающие режимы: Отстранённый Защитник. */
 export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
@@ -24,7 +24,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
       'Что вы замечаете в теле прямо сейчас?',
     ),
   ],
-  more: detachedProtectorMoreYoung,
+  more: detachedProtectorMore,
   techniques: [
     'empathic_confrontation',
     'mode_interview',

@@ -1,7 +1,7 @@
 // Вкладка «Путь терапии» справочника: условные фазы по порядку. Тип — ./types.ts.
 import type { Tr } from '../types';
 import { buildPathOverview } from './overview';
-import { EARLY_PHASES } from './earlyYoung';
+import { EARLY_PHASES } from './early';
 import { LATE_PHASES } from './late';
 import { buildTemplateSheets } from './templateSheets';
 import { WORK_TOPICS } from './topics';

@@ -1,7 +1,7 @@
 import type { SchemaDomainGuideBuilder } from '../types';
 import { buildApprovalSeekingGuide } from './otherDirectedApproval';
 import { buildSelfSacrificeGuide } from './otherDirectedSacrifice';
-import { buildSubjugationGuide } from './otherDirectedYoung';
+import { buildSubjugationGuide } from './otherDirectedSubjugation';
 
 // Домен «Направленность на других» — справочник, разделы 12–14. Режимы
 // справочника сопоставлены с modeGroups.ts: Запуганный, Парентифицированный

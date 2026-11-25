@@ -1,7 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildPracticeAssessment } from './practiceAssessment';
-import { buildPracticeConceptualization } from './practiceConceptualizationYoung';
-import { buildPracticeCourse } from './practiceCourseYoung';
+import { buildPracticeConceptualization } from './practiceConceptualization';
+import { buildPracticeCourse } from './practiceCourse';
 import { buildPracticeChange } from './practiceChange';
 import { buildPracticeEmdr } from './practiceEmdr';
 import { buildPracticeEndingAll } from './practiceEndingAll';
@@ -10,7 +10,7 @@ import { buildPracticeSituations } from './practiceSituations';
 import { buildPracticeTherapist } from './practiceTherapist';
 import { buildPracticeStuck } from './practiceStuck';
 import { buildPracticeYoungSession } from './practiceYoungSession';
-import { buildPracticeYoungStart } from './practiceYoungAvoidance';
+import { buildPracticeYoungStart } from './practiceYoungStart';
 import { buildPracticeTherapistHeath } from './practiceModeReset';
 
 /**
