@@ -43,7 +43,7 @@ export const buildPracticeYoungStart: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: imageryAvoidanceMore,
-    sources: '[Янг, гл. 4], [Хис, гл. 2, 14]',
+    sources: '[Янг, гл. 2, 4], [Хис, гл. 2, 14]',
   },
   {
     id: 'life_decisions',

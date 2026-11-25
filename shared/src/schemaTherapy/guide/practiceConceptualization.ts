@@ -26,7 +26,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: historyInterviewMore,
-    sources: '[Кембридж, прил.], [Хис, гл. 1]',
+    sources: '[Кембридж, прил.], [Хис, гл. 1], [Янг, гл. 2]',
   },
   {
     id: 'case_conceptualization',
@@ -49,7 +49,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
     ],
     more: conceptMoreRoediger,
     sources:
-      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Рёдигер, гл. 4]',
+      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]',
   },
   ...buildPracticeChildhoodExperience(tr),
   ...buildConceptArntz(tr),
