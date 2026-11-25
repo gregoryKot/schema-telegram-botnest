@@ -1,19 +1,17 @@
 // Части «Обзора» карточки клиента (b30), вынесенные из ClientOverviewTab: «Последние записи» и пустой «Обзор».
-import type { CSSProperties } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { fmtDate } from '../../utils/format';
 import { SceneConceptStart } from '../art/AppScenesMore';
 import { SignArt } from '../art/SignArt';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { noteLook } from './noteLook';
 import type { DiaryPreviewRow } from './clientOverviewModel';
 
-/** «Последние записи» — белый лист с тенью-слоем; у строки знак типа (noteLook: как в ленте «Записи» клиента),
+/** «Последние записи» — блок между линиями; у строки знак типа (noteLook: как в ленте «Записи» клиента),
  *  тип — тихой подписью перед фрагментом (у благодарности его называет заголовок), без цветной плашки-«таблетки».
  *  Камешков благодарности в превью не знаем — знак целиком (все камешки легли). */
 export function OverviewEntries({ entries, onAll }: { entries: DiaryPreviewRow[]; onAll: () => void }) {
   return (
-    <section className="pp-leaf tk-leaf" style={{ '--h': ENTITY_LOOK.diary.hue } as CSSProperties}>
+    <section className="pp-block tk-leaf">
       <div className="ds-head-row tk-card-head">
         <h2 className="ds-label tk-sec-label">Последние записи</h2>
         <button className="ds-link" onClick={onAll}>Все записи →</button>

@@ -92,6 +92,9 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
   creative_mode_work: 'mask',
   probe_phrases: 'probe',
   intimacy_dialogue: 'intimacy',
+  trauma_map: 'trauma_lines',
+  recent_event_imagery: 'recent_scene',
+  mental_contrasting_imagery: 'if_then',
   three_parts_check_in: 'three_parts',
 };
 

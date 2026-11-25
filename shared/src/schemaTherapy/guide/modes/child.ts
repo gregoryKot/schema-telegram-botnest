@@ -45,6 +45,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'limited_reparenting',
       'probe_phrases',
       'intimacy_dialogue',
+      'trauma_map',
     ],
     betweenSessions: [
       {
