@@ -40,3 +40,18 @@ describe('AddressSection — откат формы на отказе сохра�
     expect(setForm.mock.calls.map((c) => c[0])).toEqual(['vy']);
   });
 });
+
+describe('AddressSection — радиогруппа с клавиатуры', () => {
+  it('в Tab-порядке только выбранный вариант; → выбирает «вы» и переводит на него фокус', async () => {
+    const patch = vi.fn().mockResolvedValue(true);
+    const setForm = renderSection(patch);
+    const ty = screen.getByRole('radio', { name: 'На «ты»' });
+    const vy = screen.getByRole('radio', { name: 'На «вы»' });
+    expect([ty.tabIndex, vy.tabIndex]).toEqual([0, -1]);
+    ty.focus();
+    fireEvent.keyDown(ty, { key: 'ArrowRight' });
+    expect(setForm).toHaveBeenCalledWith('vy');
+    expect(document.activeElement).toBe(vy);
+    await waitFor(() => expect(patch).toHaveBeenCalledWith({ addressForm: 'vy' }));
+  });
+});

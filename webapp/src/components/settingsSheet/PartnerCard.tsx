@@ -45,7 +45,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
             : <div className="st-text">{PARTNER_EMPTY_TEXT}</div>}
         </div>
         {chatUrl && (
-          <a className="ds-btn ds-btn--sm ds-btn--secondary" href={chatUrl}>Написать</a>
+          <a className="ds-link st-act st-go" href={chatUrl}>Написать</a>
         )}
       </div>
 
@@ -68,7 +68,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
 
       {confirmLeaveCode === partner.code ? (
         <div className="st-pc-confirm">
-          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setConfirmLeaveCode(null)}>Отмена</button>
+          <button type="button" className="ds-link st-act" onClick={() => setConfirmLeaveCode(null)}>Отмена</button>
           <button className="ds-btn ds-btn--sm ds-btn--secondary st-btn-danger is-solid" onClick={() => onLeave(partner.code)}>Выйти</button>
         </div>
       ) : (

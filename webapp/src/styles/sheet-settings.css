@@ -3,8 +3,9 @@
    группы, под ним строки через линию --panel-line ( --paper-sunk на бумаге пропадает),
    между группами воздух. Позиционирование на десктопе (отступ под сайдбар) и боковое оглавление
    живут в settings-nav.css под классами settings-overlay / settings-sidenav — здесь только вид.
-   Тумблер — общий .ds-switch, шапка листа («← Закрыть/Назад», статус справа) — общие
-   .ds-sheet-head/.ds-back из cabinet.css (#906); заголовок вида — в теле (.st-h). */
+   Журнальный вид, не iOS: переход — стрелка «→», второстепенное действие — текст акцента (.st-act),
+   выбор — варианты на линии (.st-pick), отметка — общий .ds-switch (квадрат с галкой, cabinet.css).
+   Шапка листа — общие .ds-sheet-head/.ds-back (#906); заголовок вида — в теле (.st-h). */
 .st-overlay {
   position: fixed; inset: 0; z-index: 80; background: var(--bg);
   display: flex; flex-direction: column; overflow: hidden;
@@ -22,14 +23,6 @@
 .st-inner--sub { gap: 20px; }
 .st-h { text-wrap: balance; }
 
-/* Боковое оглавление */
-.settings-sidenav { padding: 24px 12px; }
-.settings-sidenav-item.st-navitem {
-  padding: 8px 12px; min-height: 36px; border-radius: 10px; font-weight: 500;
-  color: var(--text-muted); transition: background .12s, color .12s;
-}
-.settings-sidenav-item.st-navitem:hover { background: var(--paper-tint); color: var(--text); }
-@media (pointer: coarse) { .settings-sidenav-item.st-navitem { min-height: 44px; } }
 /* Силуэт загрузки (SettingsSkeleton): плашки в ячейках будущих пунктов, строк и полей */
 .st-skel-nav { display: flex; align-items: center; box-sizing: border-box; }
 .st-skel-nav:hover { background: none; }
@@ -37,7 +30,7 @@
 .st-skel-line { display: flex; align-items: center; min-height: 16px; }
 .ds-h2.st-skel-line { min-height: 1.2em; }
 .st-skel-field { flex: 1; height: 49px; }
-.st-skel-chip { width: 84px; height: 36px; } /* по чипу ds-chip--toggle */
+.st-skel-pick { display: flex; align-items: center; }
 
 /* Группа: ярлык, пояснение, линия; строки — без рамок и теней */
 .st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
@@ -45,23 +38,39 @@
 .st-sec-head:empty { padding: 0; }
 .st-sec-title { display: flex; align-items: center; gap: 6px; }
 .st-sec-title > .ds-label { color: var(--text-sub); }
-.st-help-in {
-  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
-  border: 1px solid var(--panel-line); color: var(--text-sub); font-size: 11px; font-weight: 700; box-sizing: border-box;
+/* «что это?» — тихая ссылка у ярлыка, без кружка-рамки; зона 44 по высоте, в строке ярлыка не растёт. */
+.st-help {
+  min-height: 44px; margin: -14px 0; padding: 0 4px; border: none; background: none; cursor: pointer;
+  font: 400 12px/1 var(--sans); color: var(--text-sub);
+  text-decoration: underline; text-decoration-color: var(--panel-line); text-underline-offset: 3px;
 }
+.st-help:hover { color: var(--accent); text-decoration-color: currentColor; }
 .st-hint { font-size: 13px; color: var(--text-sub); margin-top: 4px; line-height: 1.5; text-wrap: pretty; }
 .st-rows { display: flex; flex-direction: column; }
 .st-body-block { padding: 14px 0; display: flex; flex-direction: column; gap: 12px; }
 .st-body-block + .ds-list-row, .st-body-block + .st-body-block { border-top: 1px solid var(--panel-line); } /* после строки линия уже есть — её нижняя граница */
 .st-body-block .st-body-block { padding: 0; }
-.st-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Выбор значения («На «ты»/«вы»): варианты текстом на линии, у выбранного — черта акцента, как .lt-tab. */
+.st-pick { display: flex; gap: 28px; border-bottom: 1px solid var(--panel-line); }
+.st-pick-opt {
+  min-height: 48px; margin-bottom: -1px; padding: 0 2px; border: none; border-bottom: 2px solid transparent;
+  background: none; cursor: pointer; font: 500 15px/1.2 var(--sans); color: var(--text-sub);
+}
+.st-pick-opt[aria-checked='true'] { border-bottom-color: var(--accent); color: var(--text); }
+.st-pick-opt:hover { color: var(--text); }
+.st-pick-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: var(--r-6); }
+/* Второстепенное действие — текст акцента без рамки и плашки; .st-go — со стрелкой (переход, отправка). */
+.st-act { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.st-act:disabled { color: var(--text-faint); cursor: default; }
+.st-go::after { content: '→'; content: '→' / ''; font-weight: 400; transition: transform .15s; }
+.st-go:not(:disabled):hover::after { transform: translateX(2px); }
 .st-text { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0; text-wrap: pretty; }
 .st-text--faint { font-size: 13px; color: var(--text-sub); }
 .st-text--ok { color: var(--ok-ink); }
 .st-text--warn { font-size: 13px; color: var(--warn-ink); line-height: 1.5; padding: 8px 0; }
 .st-err { font-size: 13px; color: var(--accent-red); line-height: 1.5; }
 .st-copied { display: flex; align-items: center; gap: 6px; }
-.st-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.st-actions { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
 .st-actions > .st-grow { flex: 1 1 180px; min-width: 0; }
 .st-code { font-family: monospace; letter-spacing: 3px; }
 .st-code--center { text-align: center; letter-spacing: 4px; font-size: 15px; }
@@ -73,17 +82,14 @@
 .st-fine { font-size: 12px; color: var(--text-sub); line-height: 1.5; }
 
 /* Строка: заголовок/подпись | контрол — общий ds-list-row (cabinet.css); здесь — мера листа:
-   высота ≥52, заголовок 15, линия --panel-line. Наведение — фон во всю строку, а не цвет заголовка
+   высота ≥52, заголовок 15, линия --panel-line. Строки без фона и при наведении: отвечает стрелка
    (акцент у заголовка читался как ошибка: «Время» красным). */
 .st-overlay .ds-list-row, .st-about .ds-list-row { min-height: 52px; padding-top: 12px; padding-bottom: 12px; border-bottom-color: var(--panel-line); }
 .st-overlay .ds-list-title, .st-about .ds-list-title { font-size: 15px; }
 .st-overlay .ds-list-sub { color: var(--text-sub); line-height: 1.45; text-wrap: pretty; }
-/* Только у мыши: на телефоне :hover залипал после тапа серой плашкой на строке. */
-@media (hover: hover) {
-  .st-overlay .ds-list-row--inset.ds-list-row--hover:hover, .st-about .ds-list-row--inset.ds-list-row--hover:hover {
-    background: var(--paper-tint); box-shadow: -12px 0 0 var(--paper-tint), 12px 0 0 var(--paper-tint);
-  }
-}
+.st-arrow { flex-shrink: 0; font-size: 16px; line-height: 1; color: var(--text-sub); transition: transform .15s, color .15s; }
+/* Только у мыши: на телефоне :hover залипал после тапа. */
+@media (hover: hover) { .ds-list-row--hover:hover .st-arrow { color: var(--accent); transform: translateX(2px); } }
 .st-overlay .ds-list-row--inset.ds-list-row--hover:not(.ds-list-row--danger):hover .ds-list-title,
 .st-about .ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--text); }
 .st-rows--ruled > .ds-list-row:first-child { border-top: 1px solid var(--panel-line); }
@@ -132,22 +138,14 @@
   .st-overlay { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .st-inner { padding: 20px 16px 80px; gap: 28px; }
   .st-skel-field { height: 52px; }
-  .st-skel-chip { height: 44px; }
   .st-inner--sub { gap: 16px; }
 }
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .st-inner--sub { max-width: 560px; }
-}
-@media (min-width: 1024px) {
-  .st-inner { padding: 32px 40px 80px; }
-  /* Пункт оглавления докручивает и последние группы заголовком к верху: запас снизу — высота окна без шапки и группы. */
-  .st-inner:not(.st-inner--sub) { padding-bottom: clamp(80px, calc(100vh - 300px), 900px); }
-} /* с оглавлением слева; на планшете (768–1023) оглавления нет — поля уже */
+/* Раскладка на компьютере (разворот секций, оглавление, ширина колонки) — settings-nav.css. */
 .st-block { width: 100%; }
 .st-modal-close { margin-top: 10px; }
 .st-center { text-align: center; }
 .st-mb10 { margin-bottom: 10px; }
-.st-body-block > .ds-link, .st-body-block > .ds-btn--sm { align-self: flex-start; }
+.st-body-block > .ds-link, .st-body-block > .ds-btn--sm, .st-invite > .st-act { align-self: flex-start; }
 
 /* Приглашение в пару: подпись, ссылка в поле-листе, копирование кнопкой (PartnerInviteLink) */
 .st-invite, .st-pending { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }

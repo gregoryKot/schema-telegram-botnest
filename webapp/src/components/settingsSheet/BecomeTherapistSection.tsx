@@ -61,7 +61,7 @@ export function BecomeTherapistSection() {
             <p className="st-text">
               {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}
             </p>
-            <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setShowReqForm(true)}>
+            <button type="button" className="ds-link st-act st-go" onClick={() => setShowReqForm(true)}>
               Я психолог — подать заявку
             </button>
           </div>
@@ -73,7 +73,7 @@ export function BecomeTherapistSection() {
             <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2} placeholder="Сообщение (необязательно)" aria-label="Сообщение (необязательно)" className="ds-textarea" />
             {reqError && <div className="st-err">{reqError}</div>}
             <div className="st-modal-actions">
-              <button className="ds-btn ds-btn--secondary" onClick={() => { setShowReqForm(false); setReqError(''); }}>
+              <button type="button" className="ds-link st-act" onClick={() => { setShowReqForm(false); setReqError(''); }}>
                 Отмена
               </button>
               <button className="ds-btn ds-btn--accent" style={{ flex: 2 }} disabled={reqBusy} onClick={submitTherapistRequest}>

@@ -1,22 +1,18 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { hitboxStyle } from '../../utils/hitbox';
 import { InfoParts } from '../../../../shared/src/settings/InfoParts';
 import { settingsInfoTexts, type SettingsInfoKey } from '../../../../shared/src/settings/infoTexts';
 import { InfoModal } from './ui';
 
-// Кнопка «?» у заголовка раздела настроек и лист «Зачем это» — как в
-// мини-аппе (settingsSheet/InfoOverlays.tsx). Тексты общие: shared/src/settings/infoTexts.ts.
+// Тихая ссылка «что это?» у заголовка раздела настроек (не кружок «?») и лист «Зачем это».
+// Тексты общие: shared/src/settings/infoTexts.ts.
 export function SettingsInfoHelp({ infoKey }: { infoKey: SettingsInfoKey }) {
   const tr = useTr();
   const [open, setOpen] = useState(false);
   const { title, paragraphs } = settingsInfoTexts(tr)[infoKey];
-  const hit = hitboxStyle(18, 18, 44);
   return (
     <>
-      <button onClick={() => setOpen(true)} aria-label="Пояснение" style={hit.outer}>
-        <span className="st-help-in" style={hit.inner}>?</span>
-      </button>
+      <button type="button" className="st-help" onClick={() => setOpen(true)}>что это?</button>
       {open && (
         <InfoModal title={title} onClose={() => setOpen(false)}>
           {paragraphs.map((p, i) => (

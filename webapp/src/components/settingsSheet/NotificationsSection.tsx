@@ -46,7 +46,7 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
       </>) : (
         <div className="st-body-block" role="note">
           <p className="st-text">{unreachable.text}</p>
-          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => leaveTo('/account')}>{unreachable.linkButton}</button>
+          <button type="button" className="ds-link st-act st-go" onClick={() => leaveTo('/account')}>{unreachable.linkButton}</button>
         </div>
       )}
       {channel && (reminders || summary) && (

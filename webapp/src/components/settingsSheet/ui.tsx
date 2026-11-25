@@ -22,8 +22,8 @@ export function Tick() {
   );
 }
 
-/** Раздел листа — плоская группа на бумаге страницы: ярлык, под ним строки через линию (b25);
- *  id нужен боковому оглавлению. Без label — группа из одной строки («О приложении»). */
+/** Раздел листа — плоская группа на бумаге страницы: ярлык, под ним строки через линию (b25); на ≥1024 —
+ *  разворот: ярлык и пояснение слева, строки справа. id нужен оглавлению; без label — одна строка («О приложении»). */
 export function SSection({ id, label, hint, help, children }: {
   id: string; label?: string; hint?: string; help?: React.ReactNode; children: React.ReactNode;
 }) {
@@ -43,6 +43,9 @@ export function SSection({ id, label, hint, help, children }: {
   );
 }
 
+/** Знак перехода строки — тонкая стрелка вторичного цвета, не шеврон «›» (журнальный вид, не iOS). */
+const Arrow = () => <span className="st-arrow" aria-hidden="true">→</span>;
+
 export function SRow({ title, sub, right, onClick, danger, opens }: {
   title: string; sub?: React.ReactNode; right?: React.ReactNode;
   onClick?: () => void; danger?: boolean;
@@ -57,7 +60,7 @@ export function SRow({ title, sub, right, onClick, danger, opens }: {
         <div className="ds-list-title">{title}</div>
         {sub && <div className="ds-list-sub">{sub}</div>}
       </div>
-      {right ?? (onClick && <span className="ds-chev" aria-hidden="true" />)}
+      {right ?? (onClick && <Arrow />)}
     </div>
   );
 }
@@ -73,14 +76,7 @@ export function Toggle({ on, onClick, label, describedBy, busy }: { on: boolean;
   );
 }
 
-export function ChevronVal({ text }: { text: string }) {
-  return (
-    <div className="st-row-right">
-      <span className="ds-sub">{text}</span>
-      <span className="ds-chev" aria-hidden="true" />
-    </div>
-  );
-}
+export const ChevronVal = ({ text }: { text: string }) => <div className="st-row-right"><span className="ds-sub">{text}</span><Arrow /></div>;
 
 export function InfoModal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   // Вложенный уровень над листом настроек: «Назад» закрывает только окно (QA 2026-11, C-З2).
