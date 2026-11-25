@@ -1,6 +1,7 @@
 import type { ModeGuideBuilder } from '../types';
 import { buildDetachedProtectorGuide } from './detachedProtector';
 import { buildDetachedSelfSootherGuide } from './detachedSelfSoother';
+import { copingFarrellAvoid } from './copingFarrell';
 
 // Избегающие копинговые режимы. Избегание защищает от угрозы, которую
 // предсказывает схема, — с ним работают через скрытые страхи [Хис, гл. 11]; оно
@@ -33,8 +34,7 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
       ),
     ],
     more: [
-      'Режим может обходить даже острую еду и волнующие фильмы — всё, что раскачивает чувства.',
-      'Избегание подкрепляет само себя: каждый обход приносит облегчение. Поэтому одно понимание его не снимает [Рафаэли, гл. 6].',
+      ...copingFarrellAvoid,
     ],
     techniques: [
       'pattern_breaking',
