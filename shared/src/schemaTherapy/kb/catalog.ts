@@ -1,7 +1,7 @@
 // Каталог-цель справочника (.claude/rules/knowledge-base.md, раздел 7): какие темы справочник
 // схема-терапии должен покрывать по литературе, и чем закрыта каждая. Сверка — kb/catalog.test.ts.
 import { CONCERN_CATALOG } from './catalogConcerns';
-import { PRACTICE_CATALOG } from './catalogPractice';
+import { PRACTICE_CATALOG_ALL as PRACTICE_CATALOG } from './catalogPracticeChildren';
 import { TECHNIQUE_CATALOG } from './catalogTechniques';
 
 /** Открытые виды справочника: их полноту держит каталог, а не закрытый список. */
