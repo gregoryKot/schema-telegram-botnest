@@ -1,5 +1,6 @@
 import type { SchemaGuide, Tr } from '../types';
 import { SCHEMA_COPING } from './coping';
+import { defectivenessBetweenSessions } from './rejectionDefectiveness';
 
 /** Домен rejection: Эмоциональная депривированность. */
 export const buildEmotionalDeprivationGuide = (tr: Tr): SchemaGuide => ({
@@ -44,7 +45,12 @@ export const buildEmotionalDeprivationGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'diagnostic_imagery',
   ],
-  moreTechniques: ['letters', 'limited_reparenting', 'intimacy_dialogue'],
+  moreTechniques: [
+    'letters',
+    'limited_reparenting',
+    'intimacy_dialogue',
+    'transitional_objects',
+  ],
   betweenSessions: [
     {
       kind: 'task',
@@ -119,20 +125,9 @@ export const buildDefectivenessGuide = (tr: Tr): SchemaGuide => ({
     'anger_expression',
     'future_imagery',
     'limited_reparenting',
+    'play_and_joy',
   ],
-  betweenSessions: [
-    {
-      kind: 'task',
-      type: 'belief_check',
-      title: 'Проверка убеждения',
-      note: 'Мысль «со мной что-то не так» — перед судом фактов',
-    },
-    {
-      kind: 'custom',
-      title: 'Список положительных посланий',
-      text: 'Собрать тёплые слова, которые когда-либо говорили близкие, друзья, учителя, терапевт. Добавлять по одному пункту в день. Перечитывать вслух, когда Критик звучит громче обычного.',
-    },
-  ],
+  betweenSessions: defectivenessBetweenSessions,
   stuck: `Эмпатическая конфронтация звучит для клиента как доказательство дефективности, поэтому мотив называют вслух: ${tr(
     '«говорю об этом, потому что хочу помочь, а не потому что с тобой что-то не так»',
     '«говорю об этом, потому что хочу помочь, а не потому что с вами что-то не так»',
