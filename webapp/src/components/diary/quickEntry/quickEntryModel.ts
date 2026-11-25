@@ -29,6 +29,8 @@ export const QUICK_TAG_ENTITY = {
 export interface QuickSaved {
   tag: QuickTag;
   modeId?: string;
+  /** Схемы, отмеченные на втором шаге, — «Записано» ведёт к карточке первой. */
+  schemaIds?: string[];
   /** Пунктов благодарности за день после сохранения — сколько камешков легло. */
   gratitudeCount?: number;
 }

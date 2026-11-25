@@ -43,6 +43,7 @@ export interface StatsBlockDeps {
   therapistExit: Renderable;
   crawlers: Renderable;
   push: Renderable;
+  diaryJump: Renderable;
 }
 
 export interface StatsBlock {
@@ -87,5 +88,6 @@ export function statsBlocks(d: StatsBlockDeps): StatsBlock[] {
     { name: 'Запись из приложения', svc: d.clientBooking },
     { name: 'Терапевты уходят', svc: d.therapistExit },
     { name: 'Роботы нейросетей', svc: d.crawlers },
+    { name: 'Переходы из Записей', svc: d.diaryJump },
   ];
 }

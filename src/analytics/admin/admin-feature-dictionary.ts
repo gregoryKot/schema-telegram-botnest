@@ -26,7 +26,12 @@ export const FEATURES: readonly FeatureDef[] = [
   {
     id: 'diary',
     title: 'Дневник и трекер',
-    events: ['today_streak_toggle', 'tracker_skip', 'diary_quick_save'],
+    events: [
+      'today_streak_toggle',
+      'tracker_skip',
+      'diary_quick_save',
+      'done_next_step',
+    ],
   },
   {
     id: 'calm',
@@ -99,6 +104,7 @@ export const FEATURES: readonly FeatureDef[] = [
     title: 'Паттерны со вкладки Я',
     events: ['profile_pattern_open'],
   },
+  { id: 'diary-jump', title: 'Переходы из Записей', events: ['diary_jump'] },
   {
     id: 'notify',
     title: 'Уведомления',
@@ -194,6 +200,11 @@ export const FEATURES: readonly FeatureDef[] = [
     id: 'case',
     title: 'Разбор случая',
     events: ['case_started', 'case_scene', 'case_recognized', 'case_finished'],
+  },
+  {
+    id: 'self_map',
+    title: 'Карта себя',
+    events: ['self_map_link'],
   },
   {
     id: 'game',

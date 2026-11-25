@@ -28,7 +28,7 @@ const rows = (g: Pick<ReferenceGroup, 'look' | 'items'>, onOpen: Open) => g.item
   </button>
 ));
 /** Список «Справочника» (guide-reference.css): лист группы — SignGroup; лист с подгруппами (`parts`, три копинга) — без общей
- *  шапки, у подгруппы своя. `groups` — листы колонками, `tiles` — белые карточки, `rows` — поиск столбиком. */
+ *  шапки, у подгруппы своя. `groups` — листы колонками, `tiles` — плитки на линиях листа, `rows` — поиск столбиком. */
 export function GuideReferenceList({ groups, layout, onOpen }: { groups: ReferenceGroup[]; layout: ReferenceLayout; onOpen: Open }) {
   const short = groups.filter((g) => !g.parts).length; // листы без подгрупп: столько рядов рядом с высоким листом
   return (

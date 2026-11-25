@@ -145,14 +145,17 @@
 /* Группа внутри блока («Схемы» в «Связано»): подпись тише подписи блока. */
 .gd-section .gd-section > .gd-head > .gd-label { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--text-sub); }
 
-/* Переходы на другие листы (GuideLinkRows): строки списка «Справочника» со знаком, белой карточкой. */
-.gd-rows { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-1); overflow: hidden; }
-.gd-row.ds-list-row { padding: 10px 16px; min-height: 56px; }
+/* Переходы на другие листы (GuideLinkRows): строки со знаком прямо на листе между линиями, без коробки и тени. */
+.gd-rows { border-top: 1px solid var(--paper-sunk); }
+.gd-row.ds-list-row { padding: 10px 0; min-height: 56px; border-bottom-color: var(--paper-sunk); }
+.gd-rows > .gd-row:last-child { border-bottom: 1px solid var(--paper-sunk); }
+.gd-rows > .gd-row:hover { background: none; }
+.gd-rows > .gd-row:hover .ds-list-title { color: var(--accent); }
 .gd-row .ds-list-title { font-size: 16px; font-weight: 500; }
 
 /* Каналы и задания (GuideCard): карточка — заголовок и первая фраза, длинное раскрывается тапом на месте. */
-.gd-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.gd-card { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-1); }
+.gd-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--paper-sunk); }
+.gd-card { display: flex; flex-direction: column; gap: 6px; padding: 14px 0; border-bottom: 1px solid var(--paper-sunk); }
 .gd-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
 .gd-card-toggle {
   flex: 1; min-width: 0; min-height: 44px; margin: -8px 0; padding: 0; border: 0; background: none; cursor: pointer;
@@ -162,5 +165,4 @@
 .gd-card-title { font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--text); }
 .gd-card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); white-space: pre-line; }
 .gd-card .gd-acts { margin-top: 6px; }
-.gd-card.gd-picked, .gd-card.gd-marked { box-shadow: 0 0 0 2px var(--accent); background: var(--surface); }
 .gd-mark-open { align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; }

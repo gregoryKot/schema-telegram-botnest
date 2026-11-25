@@ -16,6 +16,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'group_techniques',
     'group_orientation',
     'group_plan_vs_mode',
+    'self_practice_group_day',
     'group_mode_roleplay',
     'deliberate_practice',
     'online_format',
@@ -61,6 +62,12 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'temperament',
     'positive_patterns_in_session',
     'therapist_culture_and_schemas',
+    'childhood_experience_types',
+    'self_practice_why',
+    'self_practice_safety',
+    'self_practice_formats',
+    'self_practice_reflection',
+    'self_practice_review',
     'attachment_assertiveness_poles',
   ].map(w),
   {
@@ -161,14 +168,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 15'],
-  },
-  {
-    id: 'childhood_experience_types',
-    title:
-      'Четыре пути к схеме: нехватка, травма, избыток, усвоение взгляда родителя',
-    status: 'planned',
-    source: 'Рафаэли',
-    chapters: ['гл. 2'],
   },
   {
     id: 'mode_states',
