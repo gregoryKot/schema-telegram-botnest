@@ -32,6 +32,7 @@ const NOTE_IDS = [
   'taboo_topics', 'sexuality_and_modes', 'body_cues_therapist', 'premature_ending', 'cbt_with_schemas', 'questionnaires', 'temperament', 'positive_patterns_in_session',
   'therapist_mode_reset',
   'therapist_culture_and_schemas',
+  'childhood_experience_types',
 ];
 
 describe('знаки листов подсказок', () => {
