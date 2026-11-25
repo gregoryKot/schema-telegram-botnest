@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { sessionStructureFull, therapyAimsFull } from './practiceMoreArntzIntro';
+import { sessionStructureFull, therapyAimsFull } from './practiceCourseMore';
 import { buildPracticeSelfDisclosure } from './practiceSelfDisclosure';
 
 /** «Для терапевта»: ход терапии (гл. 1, 2, 5, 6). Карты — docs/guide-sources/Кембридж.md, Арнц-ПРЛ.md (вариант сессии при ПРЛ). */
