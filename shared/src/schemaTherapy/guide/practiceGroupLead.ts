@@ -2,6 +2,10 @@ import type { PracticeNotesBuilder } from './types';
 import { groupTherapyMore, groupTechniquesMore } from './practiceGroupMore';
 import { groupFrameMore, buildGroupOrientation } from './practiceGroupFrame';
 import { groupPlanVsModeMore } from './practiceTherapistHeath';
+import {
+  buildPracticeSelfPracticeGroup,
+  groupPlanVsModeFarrellShaw,
+} from './practiceSelfPracticeGroup';
 
 /** «Подробнее» о ведении группы по Фарреллу (гл. 4–4.5, 6.2): ведущий, ко-терапевт, конфликты, время. */
 const groupLeadMore: string[] = [
@@ -62,7 +66,8 @@ export const buildGroupLead: PracticeNotesBuilder = (tr) => [
         'Я вижу, что многим сейчас тревожно. Прежде чем идти дальше, скажите: что вам сейчас нужно?',
       ),
     ],
-    more: groupPlanVsModeMore,
-    sources: '[Фаррелл, гл. 4, 4.1], [Хис, гл. 15]',
+    more: [...groupPlanVsModeMore, ...groupPlanVsModeFarrellShaw],
+    sources: '[Фаррелл, гл. 4, 4.1], [Хис, гл. 15], [Фаррелл-Шоу, гл. 2, 4]',
   },
+  ...buildPracticeSelfPracticeGroup(tr),
 ];
