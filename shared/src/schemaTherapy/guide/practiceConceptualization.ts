@@ -5,6 +5,7 @@ import { conceptMoreRoediger } from './practiceConceptRoediger';
 import { buildConceptArntz } from './practiceConceptArntz';
 import * as cam from './practiceConceptCambridge';
 import { buildPracticeChildhoodExperience } from './practiceChildhoodExperience';
+import * as cc from './practiceConceptCambridgeC';
 
 /** «Для терапевта»: расспрос об истории, концептуализация и стадии изменений (гл. 3–4, приложение). Карты — docs/guide-sources/Кембридж.md, Арнтц-Якоб.md. */
 export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
@@ -21,7 +22,11 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
       'Держать сочувствие к родителям. Чаще всего намерения у них были добрые, а неумение быть рядом передалось через поколения: эмоциональная настроенность выпала из семейного «рецепта» задолго до клиента [Кембридж, прил.].',
     ],
     voice: cam.historyInterviewVoice(tr),
-    more: [...historyInterviewMore, ...cam.historyInterviewCambridgeMore],
+    more: [
+      ...historyInterviewMore,
+      ...cam.historyInterviewCambridgeMore,
+      ...cc.historyInterviewCambridgeCMore,
+    ],
     sources: '[Кембридж, гл. 1, 3, прил.], [Хис, гл. 1], [Янг, гл. 2]',
   },
   {
@@ -37,12 +42,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
       'Ставить цель к каждому режиму: какая в нём трудность и что изменить. Нереалистичные цели урезают до достижимых в рамках программы и делят на шаги, а большее оставляют на потом: оно держит мотивацию [Фаррелл, 5.1].',
       'Решить, какой копинг брать первым: самый частый и самый опасный. Послушный Капитулянт делает жизнь несчастной, а Агрессор может довести до тюрьмы, поэтому первым берут Агрессора [Фаррелл, 5.2].',
     ],
-    voice: [
-      tr(
-        'Вот как это видится мне сейчас. Что здесь про тебя, а что мимо?',
-        'Вот как это видится мне сейчас. Что здесь про вас, а что мимо?',
-      ),
-    ],
+    voice: cc.caseConceptualizationVoice(tr),
     more: [...conceptMoreRoediger, ...cam.caseConceptualizationCambridgeMore],
     sources:
       '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]',
@@ -60,12 +60,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
       'Когда клиент колеблется, давать безопасность и мягко конфронтировать. Дальше, в действии, — обходить копинг образами и стульями и растить Здорового Взрослого; на поддержании и после срывов — закреплять новое поведение и искать, где застряло [Кембридж, рис. 3.1].',
       'Проверять мотивацию вопросами. Сам ли клиент пришёл или под давлением, за быстрым облегчением или за долгими переменами, готов ли терпеть трудные чувства ради дальних целей, какой видит жизнь через пять и десять лет, что может помешать [Кембридж, гл. 3].',
     ],
-    voice: [
-      tr(
-        'Представь свою жизнь лет через пять, если то, ради чего ты здесь, получится. Что в ней будет иначе?',
-        'Представьте свою жизнь лет через пять, если то, ради чего вы здесь, получится. Что в ней будет иначе?',
-      ),
-    ],
+    voice: cc.stagesVoice(tr),
     more: stagesMore,
     sources: '[Кембридж, гл. 3, рис. 3.1]',
   },
