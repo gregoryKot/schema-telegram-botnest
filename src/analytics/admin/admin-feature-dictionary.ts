@@ -196,6 +196,11 @@ export const FEATURES: readonly FeatureDef[] = [
     events: ['case_started', 'case_scene', 'case_recognized', 'case_finished'],
   },
   {
+    id: 'self_map',
+    title: 'Карта себя',
+    events: ['self_map_link'],
+  },
+  {
     id: 'game',
     title: 'Игра',
     events: [
