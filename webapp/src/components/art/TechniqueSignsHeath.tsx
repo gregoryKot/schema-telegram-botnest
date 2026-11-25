@@ -28,3 +28,15 @@ export function ProbePhrase({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Медитация на три части: пунктирный контур тела, внутри три круга — Уязвимый Ребёнок, Счастливый Ребёнок, Здоровый Взрослый. */
+export function ThreeParts({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <rect x="28" y="4" width="64" height="56" rx="28" fill="none" stroke={PAPER.sage} strokeWidth="3" strokeDasharray="4 5" />
+      <circle cx="46" cy="40" r="9" fill={PAPER.clay} />
+      <circle cx="74" cy="40" r="9" fill={PAPER.amber} />
+      <circle cx="60" cy="20" r="10" fill={PAPER.moss} />
+    </Svg>
+  );
+}

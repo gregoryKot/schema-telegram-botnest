@@ -39,5 +39,6 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsHeath.tsx — техники из книги Хис и Стартап
   'mask',
   'probe',
+  'three_parts',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

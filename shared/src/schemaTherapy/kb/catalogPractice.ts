@@ -57,6 +57,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'premature_ending',
     'cbt_with_schemas',
     'body_cues_therapist',
+    'therapist_culture_and_schemas',
   ].map(w),
   {
     id: 'questionnaires',

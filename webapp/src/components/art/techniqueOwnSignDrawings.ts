@@ -13,7 +13,7 @@ import {
 } from './TechniqueSignsSteps';
 import { CopingBypass, GuessMode, NeedCycle, Scatter } from './TechniqueSignsArntz';
 import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
-import { CriticMask, ProbePhrase } from './TechniqueSignsHeath';
+import { CriticMask, ProbePhrase, ThreeParts } from './TechniqueSignsHeath';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -24,5 +24,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   levels_heart: LevelsHeart, defusion: Defusion, pie: Pie, rewind: Rewind,
   scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode, bypass: CopingBypass,
   mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, mask: CriticMask,
-  probe: ProbePhrase,
+  probe: ProbePhrase, three_parts: ThreeParts,
 };
