@@ -6,6 +6,8 @@ import {
   buildNextStepInput,
 } from '../../../shared/src/map/mapInputs';
 import type { MapInput } from '../../../shared/src/map/mapVm';
+import type { OriginsInput } from '../../../shared/src/map/mapOrigins';
+import { MY_SCHEMA_IDS_KEY, cachedMyIds, trustedProfileLists } from '../utils/storageKeys';
 import type { NextStepInput } from '../../../shared/src/case/caseNextStep';
 import { collectWarmWords } from '../../../shared/src/warmWords/collectWarmWords';
 
@@ -17,9 +19,11 @@ import { collectWarmWords } from '../../../shared/src/warmWords/collectWarmWords
 export function useSelfMapData(refreshKey = 0): {
   map: MapInput | null;
   next: NextStepInput | null;
+  origins: OriginsInput | null;
 } {
   const [map, setMap] = useState<MapInput | null>(null);
   const [next, setNext] = useState<NextStepInput | null>(null);
+  const [origins, setOrigins] = useState<OriginsInput | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -40,6 +44,12 @@ export function useSelfMapData(refreshKey = 0): {
           ),
         );
         setNext(buildNextStepInput(cases, notes, ysqDone, today));
+        // Схемы — тот же источник, что у «Моих паттернов» (useSchemasData): тест + ручной выбор.
+        setOrigins({
+          ysqSchemaIds: Array.isArray(profile.ysq?.activeSchemaIds) ? profile.ysq.activeSchemaIds : [],
+          manualSchemaIds: trustedProfileLists(profile).mySchemaIds ?? cachedMyIds(MY_SCHEMA_IDS_KEY),
+          ysqDone,
+        });
       })
       .catch((e) => console.error('self map load failed', e));
     return () => {
@@ -47,5 +57,5 @@ export function useSelfMapData(refreshKey = 0): {
     };
   }, [refreshKey]);
 
-  return { map, next };
+  return { map, next, origins };
 }

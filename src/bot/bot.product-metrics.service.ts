@@ -13,6 +13,7 @@ import { LinksPageMetricsService } from './links-page-metrics.service';
 import { formatPracticeMetrics } from './practice-metrics.format';
 import { PracticeMetricsService } from './practice-metrics.service';
 import { formatCaseMetrics } from './case-metrics.format';
+import { formatSelfMapMetrics } from './self-map-metrics.format';
 import { CaseMetricsService } from './case-metrics.service';
 import {
   ONBOARDING_STEPS,
@@ -40,16 +41,17 @@ export class ProductMetricsService {
 
   /** Готовый текстовый блок для /stats (+ мини-тесты, переходы к автору, практики). */
   async render(): Promise<string> {
-    const [metrics, quiz, practice, practiceSessions, cases, links] =
+    const [metrics, quiz, practice, practiceSessions, cases, selfMap, links] =
       await Promise.all([
         this.getMetrics(),
         this.quizMetrics.getMetrics(),
         this.practiceLink.getMetrics(),
         this.practiceMetrics.getMetrics(),
         this.caseMetrics.getMetrics(),
+        this.caseMetrics.getSelfMapLinks(),
         this.linksPage.getMetrics(),
       ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatLinksPageMetrics(links)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}`;
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatLinksPageMetrics(links)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}\n\n${formatSelfMapMetrics(selfMap)}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {
