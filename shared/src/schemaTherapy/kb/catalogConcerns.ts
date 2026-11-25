@@ -15,21 +15,8 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('anxiety'),
   w('ocd'),
   w('adjustment_disorder'),
-  {
-    id: 'ptsd',
-    title: 'ПТСР и комплексная травма',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 14'],
-    note: 'заметка complex_trauma «Для терапевта» — только про расспрос; порядок воспоминаний и блок из 12 сессий — ещё [Хис, гл. 7]',
-  },
-  {
-    id: 'eating_disorders',
-    title: 'Расстройства пищевого поведения',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 15'],
-  },
+  w('ptsd'),
+  w('eating_disorders'),
   {
     id: 'relationship_patterns',
     title: 'Повторяющиеся паттерны в отношениях, выбор партнёра',

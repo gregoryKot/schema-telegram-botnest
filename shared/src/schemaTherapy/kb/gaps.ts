@@ -41,10 +41,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
     kind: 'theory',
     why: 'сбор истории в начале терапии у любого клиента; ' + PHASE,
   },
-  window_of_tolerance: {
-    kind: 'theory',
-    why: 'модель дозирования любой эмоциональной техники, а не работа с конкретным режимом или схемой',
-  },
   validation_levels: {
     kind: 'theory',
     why: 'позиция терапевта на любой сессии, как и ограниченное родительство: конкретного режима у неё нет',
