@@ -1,8 +1,8 @@
 /* Список «Справочника» терапевта (sections/guide/GuideReferenceList.tsx). Группа — лист бумаги своего
    оттенка (SignGroup, sheet-schemas.css — тот же, что у справочника клиента): знак у подписи, под ним
-   белые строки. На широком контейнере (контейнерный запрос: у кабинета бывает свёрнутое и развёрнутое
-   меню) листы режимов и доменов встают в две колонки, а техники и «Для терапевта» — белыми карточками
-   по две в ряд на своём листе. Знаки строк — pp-art--row (paper.css). */
+   строки прямо на листе между линиями. На широком контейнере (контейнерный запрос: у кабинета бывает свёрнутое
+   и развёрнутое меню) листы режимов и доменов встают в две колонки, а остальные вкладки — плитками по две
+   в ряд на своём листе. Знаки строк — pp-art--row (paper.css). */
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
@@ -13,12 +13,18 @@
 .gr-row > .pp-row-art { padding-top: 1px; }
 .gr-row > .ds-chev { align-self: center; }
 .gr-row .ds-list-sub { line-height: 1.45; }
-/* Лист с подгруппами (три копинга на одном листе неба): общий белый список снят, у подгруппы своя шапка
-   (знак 44, как у трёх знаков копингов справочника клиента) и свой белый список. */
+/* Лист с подгруппами (три копинга на одном листе неба): общий список снят, у подгруппы своя шапка
+   (знак 44, как у трёх знаков копингов справочника клиента) и свои строки. */
 .sg-rows.gr-parts { gap: 14px; border-radius: 0; background: none; overflow: visible; }
 .gr-part-head.sg-head { margin-bottom: 8px; }
-/* Знак у подписи листа — 44, как у подгрупп: шапки соседних листов одной высоты, белые списки начинаются на одной линии. */
+/* Знак у подписи листа — 44, как у подгрупп: шапки соседних листов одной высоты, строки начинаются на одной линии. */
 .gr-list .sg-head .sg-sign, .gr-list .sg-head .sg-sign .pp-art--square { width: 44px; }
+/* Строки лежат прямо на листе группы между линиями его оттенка: белый список SignGroup снят, наведение красит
+   название, а не фон (решение В1 #1674; гейт guideLeafRows.test.ts). */
+.gr-list .pp-paper .sg-rows.gr-rows { border-top: 1px solid oklch(var(--pa-layer-lc) var(--h)); border-radius: 0; background: none; overflow: visible; }
+.gr-list .pp-paper .gr-rows > .ds-list-row { padding-left: 4px; padding-right: 4px; border-bottom-color: oklch(var(--pa-layer-lc) var(--h)); }
+.gr-list .pp-paper .gr-rows > .ds-list-row--hover:hover { background: none; }
+.gr-list .pp-paper .gr-rows > .ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
 /* Силуэт загрузки: подпись и строки группы — в тех же колонках, что листы. */
 .gr-skel-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
@@ -31,16 +37,16 @@
   .gr-list--groups.has-tall { grid-template-rows: repeat(var(--gr-rows), auto) 1fr; }
   .gr-list--groups > .sg-group:has(> .gr-parts) { grid-column: 2; grid-row: 1 / -1; }
 
-  /* Техники и «Для терапевта»: белые карточки по две в ряд на листе — знак, название, суть. */
+  /* Плитки по две в ряд на листе — знак, название, суть; каждая под линией оттенка листа, без белой заливки. */
   .gr-list--tiles .gr-rows {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px;
     background: none; border-radius: 0; overflow: visible;
   }
+  .gr-list--tiles .pp-paper .sg-rows.gr-rows { border-top: none; }
   .gr-list--tiles .gr-rows > .gr-row {
     grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px 14px;
-    padding: 18px 20px; border: none; border-radius: 14px; background: var(--surface);
+    padding: 16px 4px; border: none; border-top: 1px solid oklch(var(--pa-layer-lc) var(--h)); border-radius: 0; background: none;
   }
-  .gr-list--tiles .gr-rows > .gr-row:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
   .gr-list--tiles .gr-row .ds-list-title { font-size: 15px; }
   .gr-list--tiles .gr-row > .ds-chev { display: none; }
 }
