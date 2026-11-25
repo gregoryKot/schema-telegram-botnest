@@ -74,7 +74,13 @@ export type FarrellTechniqueId =
 
 /** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
 export type HeathTechniqueId =
-  'creative_mode_work' | 'probe_phrases' | 'intimacy_dialogue' | 'three_parts_check_in';
+  | 'creative_mode_work'
+  | 'probe_phrases'
+  | 'intimacy_dialogue'
+  | 'three_parts_check_in'
+  | 'trauma_map'
+  | 'recent_event_imagery'
+  | 'mental_contrasting_imagery';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =

@@ -38,6 +38,8 @@ export const buildHealthyAdultGuide = (tr: Tr): ModeGuide => ({
     'compassionate_self',
     'socratic_dialogue',
     'three_parts_check_in',
+    'recent_event_imagery',
+    'mental_contrasting_imagery',
   ],
   betweenSessions: extra.healthyAdultBetween,
   stuck:
