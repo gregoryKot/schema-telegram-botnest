@@ -20,7 +20,7 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
     ],
     more: [...therapyAimsFull, ...cam.therapyAimsCambridgeMore],
     sources:
-      '[Кембридж, гл. 1, 5, бокс 5.8], [Янг, гл. 1], [Фаррелл, 2.2], [Арнтц, гл. 1, 9.5.1]',
+      '[Кембридж, гл. 1, 5, бокс 5.8], [Янг, гл. 1], [Фаррелл, 2.2], [Арнтц, гл. 1, 9.5.1], [Рафаэли, гл. 1]',
   },
   {
     id: 'evidence_limits',

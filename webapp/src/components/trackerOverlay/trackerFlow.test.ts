@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextUnrated, summarizeDay, lowestObservation, completionHeadline } from './trackerFlow';
+import { nextUnrated, summarizeDay, lowestObservation, completionHeadline, lowestPicture, completionNextStep, persistentLowNote } from './trackerFlow';
 
 const IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
 
@@ -50,10 +50,58 @@ describe('summarizeDay', () => {
 });
 
 describe('lowestObservation', () => {
-  it('название в нижнем регистре, остальное дословно', () => {
-    expect(lowestObservation('Привязанность')).toBe(
-      'Ниже всего — привязанность. Не вывод, а точка: посмотрим, повторится ли.',
+  it('одна самая низкая — название в нижнем регистре', () => {
+    expect(lowestObservation(['Привязанность'])).toBe('Ниже всего — привязанность. Не вывод, а точка: посмотрим, повторится ли.');
+  });
+
+  it('несколько равных низких — перечислены все, без «одной»', () => {
+    expect(lowestObservation(['Игра', 'Границы', 'Автономия'])).toBe(
+      'Ниже всего — игра, границы и автономия. Не вывод, а точка: посмотрим, повторится ли.',
     );
+  });
+
+  it('все на одном уровне — без «ниже всего»', () => {
+    expect(lowestObservation(['Игра'], true)).not.toMatch(/Ниже всего/);
+  });
+});
+
+describe('lowestPicture', () => {
+  it('оценены не все — null', () => {
+    expect(lowestPicture(IDS, { attachment: 3 })).toBeNull();
+  });
+
+  it('все равны — allEqual, не standsOut', () => {
+    const all = Object.fromEntries(IDS.map((id) => [id, 5]));
+    expect(lowestPicture(IDS, all)).toEqual({ lowIds: IDS, allEqual: true, standsOut: false });
+  });
+
+  it('одна ниже следующей на 2 и больше — standsOut', () => {
+    const p = lowestPicture(IDS, { attachment: 8, autonomy: 6, expression: 3, play: 9, limits: 5 });
+    expect(p).toEqual({ lowIds: ['expression'], allEqual: false, standsOut: true });
+  });
+
+  it('разрыв 1 или две равные низкие — не standsOut', () => {
+    expect(lowestPicture(IDS, { attachment: 8, autonomy: 6, expression: 5, play: 9, limits: 6 })?.standsOut).toBe(false);
+    const two = lowestPicture(IDS, { attachment: 2, autonomy: 2, expression: 8, play: 9, limits: 6 });
+    expect(two).toEqual({ lowIds: ['attachment', 'autonomy'], allEqual: false, standsOut: false });
+  });
+});
+
+describe('completionNextStep', () => {
+  it('никто не выделяется — шага нет', () => {
+    expect(completionNextStep(false, true, true)).toBeNull();
+  });
+
+  it('низко не первый день и практика есть — практика; иначе — разобрать', () => {
+    expect(completionNextStep(true, true, true)).toBe('practice');
+    expect(completionNextStep(true, true, false)).toBe('case');
+    expect(completionNextStep(true, false, true)).toBe('case');
+  });
+});
+
+describe('persistentLowNote', () => {
+  it('название как есть', () => {
+    expect(persistentLowNote('Игра')).toBe('Игра низко уже не первый день.');
   });
 });
 

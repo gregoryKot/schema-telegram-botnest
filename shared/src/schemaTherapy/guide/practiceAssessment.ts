@@ -2,7 +2,7 @@ import type { PracticeNotesBuilder } from './types';
 import { buildAssessAll, storySignalMoreAll } from './practiceAssessHeath';
 import { complaintToModeMore } from './practiceAssessMore';
 import * as cam from './practiceAssessCambridge';
-
+import { firstSessionHeathDosbor } from './heathDosborMore';
 /** «Для терапевта»: первая сессия и первые гипотезы о режимах (гл. 3). Карта — docs/guide-sources/Кембридж.md. */
 export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
   {
@@ -27,8 +27,8 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
       'Время, оплату, правила отмены и согласие на терапию обсуждают сразу. Длительность, этапы и формат — к концу оценки, когда готова концептуализация [Кембридж, гл. 3].',
       ...cam.firstSessionCambridgeMore,
       ...cam.firstSessionVoiceMore,
-    ],
-    sources: '[Кембридж, гл. 3, боксы 3.1–3.4]',
+    ].concat(firstSessionHeathDosbor),
+    sources: '[Кембридж, гл. 3, боксы 3.1–3.4], [Хис, гл. 1]',
   },
   {
     id: 'complaint_to_mode',

@@ -1,8 +1,10 @@
 import type { PracticeNotesBuilder } from './types';
 import { stagesMore } from './practiceConceptMore';
-import { conceptMoreAll, historyInterviewMore } from './practiceConceptHeath';
+import { historyInterviewMore } from './practiceConceptHeath';
+import { conceptMoreRoediger } from './practiceConceptRoediger';
 import { buildConceptArntz } from './practiceConceptArntz';
 import * as cam from './practiceConceptCambridge';
+import { buildPracticeChildhoodExperience } from './practiceChildhoodExperience';
 
 /** «Для терапевта»: расспрос об истории, концептуализация и стадии изменений (гл. 3–4, приложение). Карты — docs/guide-sources/Кембридж.md, Арнтц-Якоб.md. */
 export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
@@ -20,7 +22,7 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
     ],
     voice: cam.historyInterviewVoice(tr),
     more: [...historyInterviewMore, ...cam.historyInterviewCambridgeMore],
-    sources: '[Кембридж, гл. 1, 3, прил.], [Хис, гл. 1]',
+    sources: '[Кембридж, гл. 1, 3, прил.], [Хис, гл. 1], [Янг, гл. 2]',
   },
   {
     id: 'case_conceptualization',
@@ -41,10 +43,11 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
         'Вот как это видится мне сейчас. Что здесь про вас, а что мимо?',
       ),
     ],
-    more: [...conceptMoreAll, ...cam.caseConceptualizationCambridgeMore],
+    more: [...conceptMoreRoediger, ...cam.caseConceptualizationCambridgeMore],
     sources:
-      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1]',
+      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]',
   },
+  ...buildPracticeChildhoodExperience(tr),
   ...buildConceptArntz(tr),
   {
     id: 'stages_of_change',

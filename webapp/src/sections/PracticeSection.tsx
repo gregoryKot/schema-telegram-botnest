@@ -1,9 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { PaperEmpty } from '../components/art/PaperEmpty';
 import { api, type TherapyRelationInfo } from '../api';
-import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
-import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
 import { useTaskLauncher } from './today/useTaskLauncher';
@@ -12,20 +9,18 @@ import { sessionMoment } from './today/model';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeHeader } from './practice/PracticeHeader';
+import { tasksLinkSub } from './practice/tasksLink';
+import { TasksHub } from './tasks/TasksHub';
 import { PhoneHelpRows } from './practice/PhoneHelpRows';
 import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
-import { TaskRow } from './practice/TaskRow';
-import { AllTasksOverlay } from './today/AllTasksOverlay';
-import { TaskSaveError } from './today/TaskSaveError';
 import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
 import { CatalogsBlock } from './practice/CatalogsBlock';
 import { useRoutePractice } from './practice/practiceRoute';
 import type { ExId } from '../../../shared/src/exercises/exerciseCatalog';
-import { pluralRu as plural } from '../../../shared/src/utils/pluralRu';
 import { isSessionToday, upcomingSession } from '../../../shared/src/therapy/upcomingSession';
 import type { PlanFocus } from '../components/plans/planFocus';
 import '../styles/client-practice.css';
@@ -51,9 +46,8 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
   const stats = useExerciseStats();
   const catalog = useCatalogCounts();
-  const [showTaskCreate, setShowTaskCreate] = useState(false);
-  const [showAllGoals,   setShowAllGoals]   = useState(false);
-  const { tasks, taskHistory, taskError, completeTask, afterCreate } = useTaskActions(refreshKey, 'practice.tasks');
+  const [showTasks, setShowTasks] = useState(false);
+  const { tasks, completeTask } = useTaskActions(refreshKey, 'practice.tasks');
   // Задание открывает своё упражнение — маршрут общий с «Сегодня» (useTaskLauncher).
   const launcher = useTaskLauncher({ onOpenDiaries, onOpenTracker, onOpenChildhoodWheel, onTaskDone: id => completeTask(id, onTasksChanged) });
   const openFlashcard = () => launcher.openExercise({ ex: 'flashcard' });
@@ -90,7 +84,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   }
 
   const therapistTasks = tasks.filter(t => t.assignedBy !== null && !t.doneToday);
-  // Серия, сделанная сегодня, остаётся в списке серой (как в мини-аппе), а не пропадает до завтра.
   const myGoals        = tasks.filter(t => t.assignedBy === null);
 
   return (
@@ -100,24 +93,20 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           листе кризисных строк под квадратами), затем «Помощь рядом» одной полосой (на телефоне —
           раскрытием той же строки; под квадратом с сердцем — без второго). Кризисный путь — до «Инструментов» и заданий. */}
       <div className="cp-block cp-here">
-        <HereAndNowBlock compact={phone} onSos={phone ? undefined : onSos} extraRows={phone ? <PhoneHelpRows onSteps={onSos} /> : undefined} />
+        <HereAndNowBlock compact={phone} headless onSos={phone ? undefined : onSos} extraRows={phone ? <PhoneHelpRows onSteps={onSos} /> : undefined} />
       </div>
       {!phone && <div className="cp-block"><CrisisBlock heading signless={!!onSos} /></div>}
 
       {/* Мост к терапевту — после быстрых практик и кризисного входа, перед «Инструментами»: кризисный путь остаётся первым. */}
       <TherapyBridgeCard place="practice" />
 
-      {(therapistTasks.length > 0 || taskError) && (
+      {(tools.isShown('tasks') || therapistTasks.length > 0) && (
         <section className="cp-block">
-          <div className="ds-head-row">
-            <h3 className="ds-h2">От терапевта</h3>
-            {therapistTasks.length > 0 && <span className="ds-sub">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
-          </div>
-          {taskError && <TaskSaveError />}
-          <div className="cp-tasks">
-            {therapistTasks.map(task => (
-              <TaskRow key={task.id} task={task} compact={phone} cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
-            ))}
+          <div className="ds-rows">
+            <button type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={() => setShowTasks(true)}>
+              <span className="ds-list-body"><span className="ds-list-title">Задания и цели</span><span className="ds-list-sub">{tasksLinkSub(therapistTasks.length, myGoals.length)}</span></span>
+              <span className="ds-chev" aria-hidden="true" />
+            </button>
           </div>
         </section>
       )}
@@ -129,48 +118,18 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         onOpen={openLibrary}
       />
 
-      {tools.isShown('tasks') && <section className="cp-block">
-        <div className="ds-head-row">
-          <h3 className="ds-h2">Мои цели</h3>
-          <span className="ds-sub">{myGoals.length === 0 ? 'нет активных' : `${myGoals.length} ${plural(myGoals.length, 'активная', 'активные', 'активных')}`}</span>
-        </div>
-        {myGoals.length === 0 ? (
-          <PaperEmpty>{tr('Поставь цель и иди к ней маленькими шагами.', 'Поставьте цель и идите к ней маленькими шагами.')}</PaperEmpty>
-        ) : (
-          <div className="cp-tasks">
-            {myGoals.slice(0, 4).map(task => (
-              <TaskRow key={task.id} task={task} compact={phone} cta="открыть →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
-            ))}
-          </div>
-        )}
-        <div className="cp-actions">
-          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setShowTaskCreate(true)}>+ Поставить цель</button>
-          {(myGoals.length > 4 || taskHistory.length > 0) && (
-            <span className="ds-link" {...pressable(() => setShowAllGoals(true))}>все цели →</span>
-          )}
-        </div>
-      </section>}
-
       <CatalogsBlock rows={catalogRows} compact={phone} />
 
       {/* Overlays */}
       {showCustomize && <Suspense fallback={null}><ToolsCustomizeSheet tools={tools} onClose={() => setShowCustomize(false)} /></Suspense>}
-      {showTaskCreate && (
-        <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); void afterCreate(onTasksChanged); /* сбой ловит сам: taskError */ }}
-          onClose={() => setShowTaskCreate(false)}
-        />
-      )}
-      {showAllGoals && (
-        <AllTasksOverlay
-          title="Все цели"
-          tasks={tasks}
-          taskHistory={taskHistory}
-          onClose={() => setShowAllGoals(false)}
-          onOpen={launcher.openTask}
-          onComplete={t => completeTask(t.id, onTasksChanged)}
-          onAdd={() => setShowTaskCreate(true)}
-          error={taskError}
+      {showTasks && (
+        <TasksHub
+          onClose={() => setShowTasks(false)}
+          onOpenTracker={onOpenTracker}
+          onOpenDiaries={onOpenDiaries}
+          onOpenChildhoodWheel={onOpenChildhoodWheel}
+          refreshKey={refreshKey}
+          onTasksChanged={onTasksChanged}
         />
       )}
     </div>

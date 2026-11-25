@@ -17,6 +17,8 @@ const EMPTY: CaseMetrics = {
   recognizedDoubted: 0,
   people: 0,
   peopleReturned: 0,
+  mapOpenedRepeat: 0,
+  mapOpenedFirst: 0,
 };
 
 const filled = (over: Partial<CaseMetrics> = {}): CaseMetrics => ({
@@ -30,10 +32,28 @@ const filled = (over: Partial<CaseMetrics> = {}): CaseMetrics => ({
   recognizedDoubted: 11,
   people: 27,
   peopleReturned: 9,
+  mapOpenedRepeat: 6,
+  mapOpenedFirst: 10,
   ...over,
 });
 
 describe('formatCaseMetrics', () => {
+  it('показывает, сколько после записи открыли карту и сколько — при повторе', () => {
+    const out = formatCaseMetrics(filled());
+    expect(out).toContain(
+      'После записи открыли карту себя 16 из 31 (52%) · из них когда режим повторился 6',
+    );
+  });
+
+  it('без дошедших до конца не показывает процент перехода на карту', () => {
+    const out = formatCaseMetrics(
+      filled({ finished: 0, mapOpenedRepeat: 0, mapOpenedFirst: 0 }),
+    );
+    expect(out).toContain(
+      'После записи открыли карту себя 0 из 0 · из них когда режим повторился 0',
+    );
+  });
+
   it('на пустой БД говорит «пока никто не начинал» и не показывает нулей', () => {
     const out = formatCaseMetrics(EMPTY);
     expect(out).toContain('Пока никто не начинал');

@@ -9,10 +9,12 @@ import {
   ACCOUNT_LINK_FAIL_REASON_SET,
   SIGNUP_SOURCE_SET,
   PROFILE_PATTERN_KIND_SET,
+  DIARY_JUMP_TARGET_SET,
   ENTRY_DELETE_TYPE_SET,
 } from './dto/analytics.dto';
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
+import { sanitizeSelfMapMeta } from './analytics-meta.sanitize-self-map';
 import * as cabinet from './analytics-meta.sanitize-cabinet';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginMeta } from './analytics-meta.sanitize-login';
@@ -224,6 +226,13 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'diary_jump') {
+    const to = meta.to;
+    if (typeof to === 'string' && DIARY_JUMP_TARGET_SET.has(to)) {
+      return { to };
+    }
+    return undefined;
+  }
   if (name === 'entry_deleted') {
     const type = meta.type;
     if (typeof type === 'string' && ENTRY_DELETE_TYPE_SET.has(type)) {
@@ -231,6 +240,7 @@ export function sanitizeMeta(
     }
     return undefined;
   }
+  if (name === 'self_map_link') return sanitizeSelfMapMeta(meta);
   if (name.startsWith('case_')) {
     return sanitizeCaseMeta(name, meta);
   }

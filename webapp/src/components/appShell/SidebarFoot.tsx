@@ -1,8 +1,8 @@
 // Низ развёрнутого меню (вынесен из Sidebar.tsx, правило №10): карточка дня клиента, «Показ экрана»
 // терапевта, строка аккаунта и мелкие ссылки.
-// Карточка дня — лист бумаги трекера с его знаком по оценкам дня (Strokes values): высота полоски —
-// оценка, без оценки — пустой тон бумаги, ничего выдуманного. День оценён целиком — лист шалфея с
-// индексом (как лист «Готово» трекера, ENTITY_LOOK), иначе солома трекера и вход в него.
+// Карточка дня — заметка между линиями (pp-block--note) со знаком трекера по оценкам дня (Strokes values):
+// высота полоски — оценка, без оценки — пустой тон, ничего выдуманного. День оценён целиком — знак шалфея
+// с индексом (как лист «Готово» трекера, ENTITY_LOOK), иначе солома трекера и вход в него.
 // На открытой «Сегодня» карточки нет: там тот же трекер листом с полосками, индексом в мете и входом
 // (b05) — второй индекс и вторые полоски рядом были бы дублем.
 import { NavLink, useLocation } from 'react-router-dom';
@@ -32,10 +32,10 @@ interface Props {
 function SidebarToday({ needs, ratings, onOpenTracker }: Pick<Props, 'needs' | 'ratings' | 'onOpenTracker'>) {
   const day = sidebarDay(needs.map(n => n.id), ratings);
   return (
-    <div className="pp-paper sb-today" style={hueStyle(day.hue)} data-day={day.index ? 'done' : 'open'}>
+    <div className="pp-block pp-block--note sb-today" style={hueStyle(day.hue)} data-day={day.index ? 'done' : 'open'}>
       <div className="sb-today-body">
         {/* Подпись называет то, что открывается (QA 2026-11, A-З9): кнопка ведёт в трекер. */}
-        <div className="sb-today-label">Сегодня</div>
+        <div className="ds-eyebrow">Сегодня</div>
         {day.index && (
           <>
             <div className="sb-today-index">
@@ -47,7 +47,7 @@ function SidebarToday({ needs, ratings, onOpenTracker }: Pick<Props, 'needs' | '
         )}
       </div>
       <span className="sb-today-art"><Strokes size="row" values={day.values} /></span>
-      {!day.index && <button type="button" className="sb-today-cta" onClick={onOpenTracker}>Заполнить трекер →</button>}
+      {!day.index && <button type="button" className="ds-btn ds-btn--secondary sb-today-cta" onClick={onOpenTracker}>Заполнить трекер →</button>}
     </div>
   );
 }

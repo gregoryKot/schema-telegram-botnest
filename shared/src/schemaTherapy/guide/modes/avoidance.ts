@@ -1,7 +1,8 @@
 import type { ModeGuideBuilder } from '../types';
 import { buildDetachedProtectorGuide } from './detachedProtector';
 import { buildDetachedSelfSootherGuide } from './detachedSelfSoother';
-
+import { copingFarrellAvoid } from './copingFarrell';
+import { avoidanceHeathDosbor } from '../heathDosborMore';
 // Избегающие копинговые режимы. Избегание защищает от угрозы, которую
 // предсказывает схема, — с ним работают через скрытые страхи [Хис, гл. 11]; оно
 // подкрепляет само себя, поэтому без поведенческой части не уходит [Рафаэли,
@@ -33,9 +34,10 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
       ),
     ],
     more: [
-      'Режим может обходить даже острую еду и волнующие фильмы — всё, что раскачивает чувства.',
-      'Избегание подкрепляет само себя: каждый обход приносит облегчение. Поэтому одно понимание его не снимает [Рафаэли, гл. 6].',
-    ],
+      ...copingFarrellAvoid,
+      'Режим может охватить всю жизнь: любовь, работу, простые радости. Жизнь в тесных рамках кажется человеку жалкой, но лучше риска снова испытать боль [Рафаэли, гл. 6].',
+      'Избегают и в мыслях: отгоняют воспоминания, заполняют время удовольствиями, обрывают отношения при первом намёке на обязательства. Отвлечение работает недолго, одиночество и пустота остаются [Рафаэли, гл. 6].',
+    ].concat(avoidanceHeathDosbor),
     techniques: [
       'pattern_breaking',
       'mode_interview',

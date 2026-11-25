@@ -277,7 +277,7 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
     'контакт для связи (телефон, @ник)',
   'webapp/src/components/settingsSheet/PartnerSection.tsx':
     'код приглашения пары',
-  'webapp/src/components/settingsSheet/TherapistSections.tsx':
+  'webapp/src/components/settingsSheet/TherapistCodeForm.tsx':
     'код приглашения терапевта',
   // Поиск по готовому списку (клиенты, режимы, команды) — текст никуда не сохраняется.
   'webapp/src/components/appShell/SidebarClients.tsx':

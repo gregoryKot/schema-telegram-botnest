@@ -1,5 +1,6 @@
 import type { PhaseGuideBuilder } from './types';
 import * as cam from './earlyCambridge';
+import { assessmentTransition, assessmentYoungMore } from './earlyYoung';
 
 const buildAssessment: PhaseGuideBuilder = () => ({
   id: 'assessment',
@@ -31,10 +32,8 @@ const buildAssessment: PhaseGuideBuilder = () => ({
     'case_conceptualization',
     'suitability',
   ],
-  transition: [
-    'Есть концептуализация, в которой клиент узнаёт себя, и согласие работать по ней [Кембридж, гл. 1].',
-    'Жалоба, с которой клиент пришёл, связана со схемами и режимами так, что эту связь видит и он [Янг, гл. 2].',
-  ],
+  transition: assessmentTransition,
+  more: assessmentYoungMore,
   mistakes: [
     'Затягивать оценку дольше 5–8 сессий.',
     'Строить концептуализацию по одним опросникам.',

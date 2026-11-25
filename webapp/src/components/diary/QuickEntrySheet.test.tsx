@@ -9,6 +9,10 @@ import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { todayStr } from '../../utils/format';
 
+// Слой карточек паттернов ходит за записями в api — здесь он не предмет проверки.
+vi.mock('../../sections/schemas/usePatternLayer', () => ({
+  usePatternLayer: () => ({ layer: null, openPattern: vi.fn() }),
+}));
 vi.mock('../../api', () => ({
   api: {
     trackEvent: vi.fn(),
