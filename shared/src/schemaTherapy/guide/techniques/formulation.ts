@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { uniqueItems } from '../uniqueItems';
 import { mapMore } from './arntzBpdRelationMore';
 import { modeMapMore } from './modeMapMoreLuz';
 import { schemaDiaryMore } from './schemaDiaryMore';
@@ -25,12 +26,12 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
       'Связать карту с первыми целями — так появляется ответ на «и что теперь?». Копию отдать клиенту: можно сфотографировать, хоть на заставку телефона, и между сессиями отмечать, какой режим у руля. Лист дополнять по ходу работы [Кембридж, гл. 4, бокс 4.2].',
     ],
     voice: [...cambB.modeMapVoiceBase(tr), ...modeMapCambridgeVoice(tr)],
-    more: [
-      ...modeMapMore,
-      ...mapMore,
-      ...modeMapCambridgeMore,
-      ...cambB.modeMapCambridgeBMore,
-    ],
+    more: uniqueItems(
+      modeMapMore,
+      mapMore,
+      modeMapCambridgeMore,
+      cambB.modeMapCambridgeBMore,
+    ),
     cautions:
       'Карта — рабочая гипотеза, а не диагноз: клиент может спорить и переименовывать. Режим, которого клиент в себе не узнаёт, ему не доказывают, и обидных имён от себя не предлагают: такое имя берут, только если его придумал сам клиент [Янг, гл. 8]. Клиент отвергает саму идею режимов — не настаивать и говорить о грустной, сердитой, самокритичной, молчаливой стороне: лишь бы у частей были хоть какие-то имена [Янг, гл. 9]. Пять-шесть режимов на листе достаточно; полный перечень превращает его в учебник.',
     sources:

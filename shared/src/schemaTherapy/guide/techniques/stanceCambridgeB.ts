@@ -1,3 +1,4 @@
+// Прежние пункты и реплики вынесены сюда ради размера файла записи.
 import type { Tr } from '../types';
 
 /** Реплики self_compassion и mindfulness, вынесенные из stance.ts и mindfulness.ts ради храповика размера (порядок прежний). */
