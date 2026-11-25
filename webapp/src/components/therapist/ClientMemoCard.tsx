@@ -1,11 +1,10 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { api, type TherapyClientSummary } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { CLIENT_MEMO_MAX } from '../../../../shared/src/limits/textLimits';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { SignHead } from './SignArt';
 import type { ClientDetail } from './clientSheetTypes';
 
@@ -39,7 +38,7 @@ export function ClientMemoCard({ client, detail }: Props) {
   }
 
   return (
-    <section className="pp-leaf tk-leaf" style={{ '--h': ENTITY_LOOK.note.hue } as CSSProperties}>
+    <section className="pp-block tk-leaf">
       <SignHead kind="pebbles" className="ds-label">О клиенте</SignHead>
       <p className="ds-sub">{tr('Любой текст о клиенте. Видишь только ты.', 'Любой текст о клиенте. Видите только вы.')}</p>
       <LimitedTextarea

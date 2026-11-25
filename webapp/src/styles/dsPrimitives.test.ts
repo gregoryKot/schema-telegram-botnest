@@ -350,6 +350,15 @@ describe('cabinet.css: компьютер ≥768 (регрессия 2026-11-04 
     expect(hasFlush('<div className="ds-card ds-card--flush">')).toBe(true);
     expect(hasFlush('<div className="ds-rows">')).toBe(false);
   });
+
+  it('храповик: файлов с белым листом pp-leaf только убывает (на бумаге — строки .ds-rows и блоки .pp-block)', () => {
+    const MAX_LEAF_FILES = 10; // вкладки карточки клиента: задания, сессии, YSQ, записи, план; снизил — опусти число
+    const using = walkFiles(join(__dirname, '..'), /\.tsx$/)
+      .filter((f) => !/\.test\./.test(f) && hasLeaf(readFileSync(f, 'utf8')));
+    expect(using.length).toBeLessThanOrEqual(MAX_LEAF_FILES);
+    expect(hasLeaf('<section className="pp-leaf tk-leaf">')).toBe(true);
+    expect(hasLeaf('<section className="pp-block tk-leaf">')).toBe(false);
+  });
 });
 
 function walkFiles(dir: string, ext: RegExp): string[] {
@@ -359,6 +368,7 @@ function walkFiles(dir: string, ext: RegExp): string[] {
 const cssFiles = (dir: string) => walkFiles(dir, /\.css$/);
 const glyphContentIn = (src: string) => [...src.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/content:\s*(['"])[‹›]\1/g)];
 const hasFlush = (src: string) => src.includes('ds-card--flush');
+const hasLeaf = (src: string) => /\bpp-leaf\b/.test(src);
 
 // Поле ввода — строка на бумаге с линией снизу, а не белая коробка или капсула (#1619, п.4).
 describe('поля ввода: линия снизу, без коробки', () => {
