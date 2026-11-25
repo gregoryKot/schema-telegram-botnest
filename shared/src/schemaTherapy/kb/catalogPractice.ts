@@ -83,6 +83,21 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 10'],
   },
   {
+    id: 'childhood_experience_types',
+    title:
+      'Четыре пути к схеме: нехватка, травма, избыток, усвоение взгляда родителя',
+    status: 'planned',
+    source: 'Рафаэли',
+    chapters: ['гл. 2'],
+  },
+  {
+    id: 'mode_states',
+    title: 'Режим — состояние, схема — черта; здоровое переключение режимов',
+    status: 'planned',
+    source: 'Рафаэли',
+    chapters: ['гл. 8'],
+  },
+  {
     id: 'supervision',
     title: 'Супервизия',
     status: 'out_of_scope',
