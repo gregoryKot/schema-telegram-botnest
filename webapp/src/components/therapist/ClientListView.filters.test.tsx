@@ -48,8 +48,8 @@ afterEach(cleanup);
 describe('ClientListView — фильтр «Не сегодня»', () => {
   it('показывает подключённых без активности сегодня; слова «Ждут» в фильтрах нет', () => {
     render(<Host />);
-    expect(screen.queryByRole('button', { name: 'Ждут' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Не сегодня' }));
+    expect(screen.queryByRole('tab', { name: 'Ждут' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Не сегодня' }));
     expect(screen.getByText('Вчерашний')).toBeTruthy();
     expect(screen.queryByText('Отмечалась')).toBeNull();
     expect(screen.queryByText('Без бота')).toBeNull();
