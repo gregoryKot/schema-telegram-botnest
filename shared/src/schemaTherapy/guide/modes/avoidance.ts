@@ -50,6 +50,7 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
       'creative_mode_work',
       'behavioral_experiment',
       'mode_management_plan',
+      'mental_contrasting_imagery',
     ],
     betweenSessions: [
       {
