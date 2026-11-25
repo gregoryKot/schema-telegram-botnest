@@ -1,5 +1,6 @@
 import type { SchemaGuide, Tr } from '../types';
 import { SCHEMA_COPING } from './coping';
+import { approvalSeekingYoungMore } from './approvalYoung';
 
 /** Домен other_directed: Поиск одобрения. */
 export const buildApprovalSeekingGuide = (tr: Tr): SchemaGuide => ({
@@ -32,8 +33,7 @@ export const buildApprovalSeekingGuide = (tr: Tr): SchemaGuide => ({
   ],
   more: [
     'Отличить от соседних схем помогает вопрос о мотиве: внутренняя планка — Жёсткие стандарты, страх наказания — Покорность, нежелание ранить слабого — Самопожертвование, власть и превосходство — Привилегированность, одобрение само по себе — эта схема [Янг, гл. 7].',
-    'Признак схемы — крупные решения (профессия, партнёр) приняты под чужой взгляд, а не по своим желаниям; статус, деньги и внешность нужны ради одобрения, а не ради власти [Янг, гл. 1].',
-    'Желание одобрения само по себе нормально: цель — умерить его и уравновесить своими чувствами и склонностями, а не искоренить [Янг, гл. 7].',
+    ...approvalSeekingYoungMore,
   ],
   techniques: ['pros_cons', 'pattern_breaking', 'chairwork', 'values_overview'],
   moreTechniques: ['empathic_confrontation'],

@@ -6,6 +6,7 @@ import {
   buildEmotionalDeprivationGuide,
 } from './rejectionCore';
 import { buildAbandonmentGuide, buildMistrustGuide } from './rejectionMore';
+import { socialIsolationYoungMore } from './socialIsolationYoung';
 
 /** Домен rejection: emotional_deprivation, abandonment, mistrust, defectiveness, social_isolation. */
 export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
@@ -43,11 +44,10 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
         'Проверять «мне нигде нет места» на конкретных случаях, искать сходства наравне с различиями и оспаривать автоматические мысли на входе в компанию [Янг, гл. 7].',
       ],
       more: [
-        'Типичные истории: дома говорили на другом языке или диалекте; не было ни садика, ни кружков; первый в семье диплом о высшем образовании, после которого чужими кажутся и семья, и коллеги [Арнтц, 1.1.1].',
-        'После хорошего опыта в группе Социальная отчуждённость ослабевает (Cruwys et al., 2014) [Статьи].',
         'Схема обычно складывается позже остальных схем домена — в позднем детстве и подростковом возрасте, часто вне семьи: сверстники, школа. Семейный вариант — семья, отгороженная от мира. Поэтому расспрашивают о школе и подростковых годах, а не только о родителях [Янг, гл. 1].',
         'Часть клиентов в детстве никто не отвергал: одиночество было их собственным выбором по интересам [Янг, гл. 7].',
         ...cam.socialIsolationMore,
+        ...socialIsolationYoungMore,
       ],
       techniques: ['imagery_rescripting', 'pattern_breaking', 'exposure'],
       moreTechniques: ['cognitive_work'],

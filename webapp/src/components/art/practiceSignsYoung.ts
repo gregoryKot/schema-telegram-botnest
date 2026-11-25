@@ -3,8 +3,7 @@
 // отложить метод — Pause («Стоп»), «ничего не вижу» — CopingAvoidance (лента огибает схему),
 // резкое решение — CopingOvercompensation (рывок «назло схеме»), сценарии схем терапевта — Yield
 // (терапевт прижался к чужому кругу), схема на сессии — Haven (о схеме говорят в безопасной рамке),
-// когда к режимам — Looming (Критик навис, его называют «не мной»), шаги с режимами — Leaf (рост).
-// Одно поведение — разные схемы — свой знак Roots (GuideSignsYoung.tsx).
+// когда к режимам — Looming (Критик навис, его называют «не мной»), шаги с режимами — Leaf (рост). Одно поведение — разные схемы — свой знак Roots (GuideSignsYoung.tsx). Сводка каналов по схемам — LevelsHeart.
 import type { GuideSign } from './guideSignsModel';
 
 export const YOUNG_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
@@ -16,4 +15,5 @@ export const YOUNG_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   mode_work_when: 'looming',
   mode_work_steps: 'leaf',
   same_behavior_by_schema: 'roots',
+  schema_channel_map: 'levels_heart',
 };
