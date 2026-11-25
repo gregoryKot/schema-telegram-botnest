@@ -80,6 +80,7 @@ export const buildDefectivenessGuide = (tr: Tr): SchemaGuide => ({
   coping: SCHEMA_COPING.defectiveness,
   modeIds: [
     'humiliated_child',
+    'angry_child',
     'punitive_critic',
     'demanding_critic',
     'self_aggrandiser',
