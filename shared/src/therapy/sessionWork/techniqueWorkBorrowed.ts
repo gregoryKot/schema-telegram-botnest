@@ -1,5 +1,6 @@
 import type { BorrowedTechniqueId } from '../../schemaTherapy/guide/techniqueIds';
 import type { TechniqueWorkDef } from './techniqueWork';
+import { BORROWED_TECHNIQUE_WORK_MORE } from './techniqueWorkBorrowedMore';
 
 /** «Что делали»: техники из других подходов (#1366). */
 export const BORROWED_TECHNIQUE_WORK: Record<
@@ -103,21 +104,5 @@ export const BORROWED_TECHNIQUE_WORK: Record<
       ['result', 'Итог'],
     ],
   },
-  life_line: {
-    name: 'Линия жизни',
-    fields: [
-      ['stones', 'Камни'],
-      ['flowers', 'Цветы'],
-      ['noticed', 'Что клиент увидел'],
-      ['next', 'Что дальше'],
-    ],
-  },
-  downward_arrow: {
-    name: 'Нисходящая стрела',
-    fields: [
-      ['thought', 'Исходная мысль'],
-      ['bottom', 'Вывод на дне'],
-      ['schema', 'Какая схема'],
-    ],
-  },
+  ...BORROWED_TECHNIQUE_WORK_MORE,
 };

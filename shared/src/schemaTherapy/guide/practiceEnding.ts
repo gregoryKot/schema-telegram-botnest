@@ -19,7 +19,7 @@ export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
     voice: cambB.endingPhaseVoice(tr),
     more: [...endingPhaseMoreFull, ...cambB.endingPhaseCambridgeBMore],
     sources:
-      '[Кембридж, гл. 12, бокс 12.5], [Арнтц ПРЛ, гл. 11], [Фаррелл, 4.6.6], [Арнтц, 9.5.1], [Хис, гл. 18, 20]',
+      '[Кембридж, гл. 12, бокс 12.5], [Арнтц ПРЛ, гл. 11–12], [Фаррелл, 4.6.6], [Арнтц, 9.5.1], [Хис, гл. 18, 20]',
   },
   {
     id: 'complex_trauma',
