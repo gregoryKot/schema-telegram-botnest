@@ -58,6 +58,14 @@ const PART = (table: string) =>
 /** Файлы, где обнаружитель видит ≥4 id, но своей таблицы по id нет. */
 export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
   { file: 'shared/src/schemaTherapy/guide/modes/', why: LINKS_CHECKED },
+  {
+    file: 'shared/src/schemaTherapy/guide/arntzBpdDosborModes.ts',
+    why: 'добавки досбора Арнца к существующим записям: сами записи — в своих таблицах',
+  },
+  {
+    file: 'shared/src/schemaTherapy/guide/arntzBpdDosborTech.ts',
+    why: 'добавки досбора Арнца к существующим записям: сами записи — в своих таблицах',
+  },
   { file: 'shared/src/schemaTherapy/guide/schemas/', why: LINKS_CHECKED },
   { file: 'shared/src/schemaTherapy/guide/concerns/', why: LINKS_CHECKED },
   {

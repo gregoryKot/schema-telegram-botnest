@@ -1,6 +1,5 @@
 import { BPD_COMORBIDITY } from './bpdComorbidity';
-import { buildBpdTail } from './bpdEducation';
-import { BPD_ALL_SECTIONS } from './bpdRelationship';
+import { BPD_ALL_SECTIONS, buildBpdTail } from './bpdDosbor';
 import type { ConcernGuideBuilder } from './types';
 
 /** Пограничное расстройство личности: суть, критерии, истоки, спутники, дифференциальная; остальные разделы — bpdSections.ts, bpdEducation.ts. */
