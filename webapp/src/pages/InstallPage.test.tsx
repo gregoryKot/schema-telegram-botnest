@@ -147,7 +147,7 @@ describe('InstallPage — экраны', () => {
     expect(document.querySelectorAll('.ib-steps li').length).toBe(INSTALL_STEPS.ios.steps.length);
     expect(document.querySelector('video')?.getAttribute('src')).toBe('/install/install-ios-safari.mp4');
     expect(screen.getByText(/Откройте её в Chrome \(iPhone — в Safari\)/)).toBeTruthy();
-    expect(screen.getByText(/Входите через VK ID или Яндекс ID/)).toBeTruthy();
+    expect(screen.getByText(/Входите через VK ID, Яндекс ID или MAX/)).toBeTruthy();
     expect(events().filter((a) => a === 'shown')).toHaveLength(1);
     expect(document.title).toBe('Установить приложение — Всё по схеме');
   });
