@@ -72,6 +72,10 @@
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"
   },
+  "src/bot/diary-jump-metrics.service.ts": {
+    "spec": "test/raw-sql-live-stats.e2e-spec.ts",
+    "via": "test/e2e-support/stats-report.factory.ts"
+  },
   "src/bot/entry-delete-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"
