@@ -12,6 +12,8 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('other_personality_disorders'),
   w('adolescents'),
   w('couples'),
+  w('ptsd'),
+  w('eating_disorders'),
   {
     id: 'anxiety',
     title:
@@ -35,21 +37,6 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 13'],
-  },
-  {
-    id: 'ptsd',
-    title: 'ПТСР и комплексная травма',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 14'],
-    note: 'заметка complex_trauma «Для терапевта» — только про расспрос; порядок воспоминаний и блок из 12 сессий — ещё [Хис, гл. 7]',
-  },
-  {
-    id: 'eating_disorders',
-    title: 'Расстройства пищевого поведения',
-    status: 'planned',
-    source: 'Кембридж',
-    chapters: ['гл. 15'],
   },
   {
     id: 'relationship_patterns',
