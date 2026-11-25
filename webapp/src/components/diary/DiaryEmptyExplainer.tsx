@@ -13,7 +13,7 @@ import { glue } from '../../../../shared/src/utils/typo';
 // одна картинка, ревью g3) и ответ «что это и зачем», пустой «Дневник» — та же
 // сцена; пустые «Трекер» и «Случаи» — лист своей сущности со знаком (Strokes, Ribbon). «Схема» и «Режим» — плитки.
 const TITLE: Record<DiaryFilter, string> = { all: 'Пока ни одной записи', diary: 'Записей дневника пока нет', case: 'Разборов пока нет', tracker: 'Отметок трекера пока нет' };
-const CASE_INTRO = 'Разбор — три коротких вопроса про момент, когда что-то зацепило. Через 2–3 разбора видно, что повторяется.';
+const CASE_INTRO = 'Разбор — три коротких вопроса про момент, когда что-то зацепило. Со второго разбора режима видно, что повторяется.';
 const TRACKER_INTRO = 'Трекер — пять коротких вопросов про базовые потребности, минута в день. Через 3–5 дней видно, что питает, а чего не хватает.';
 const INTRO: Record<Exclude<DiaryFilter, 'diary'>, string> = { all: DIARY_HUB_INTRO, tracker: TRACKER_INTRO, case: CASE_INTRO };
 const FOOT: Record<DiaryFilter, string> = {

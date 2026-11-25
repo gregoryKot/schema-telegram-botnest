@@ -184,5 +184,10 @@ export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
 // Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
 // остаются на клиенте и в зашифрованных полях карточки (правило №7).
 
+/** С «Записано» открыли карту себя: meta.repeat — экран сказал о повторе режима. */
+export interface CaseMapOpenedMeta {
+  repeat: boolean;
+}
+
 /** Откуда взялась сцена: meta.source у case_scene. */
 export type CaseSceneSource = 'own' | 'frame';

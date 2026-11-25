@@ -34,6 +34,9 @@ export interface CaseMetrics {
   /** Разных людей начали разбор и сколько из них вернулись за вторым. */
   people: number;
   peopleReturned: number;
+  /** С «Записано» открыли карту: экран сказал о повторе режима / не сказал. */
+  mapOpenedRepeat: number;
+  mapOpenedFirst: number;
 }
 
 const share = (part: number, whole: number): string =>
@@ -65,6 +68,10 @@ export function formatCaseMetrics(m: CaseMetrics): string {
 
   lines.push(
     `Разных людей ${m.people} · вернулись за вторым разбором ${m.peopleReturned}${share(m.peopleReturned, m.people)}`,
+  );
+  const opened = m.mapOpenedRepeat + m.mapOpenedFirst;
+  lines.push(
+    `После записи открыли карту себя ${opened} из ${m.finished}${share(opened, m.finished)} · из них когда режим повторился ${m.mapOpenedRepeat}`,
   );
   return lines.join('\n');
 }

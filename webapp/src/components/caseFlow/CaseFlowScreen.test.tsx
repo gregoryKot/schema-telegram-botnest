@@ -12,8 +12,12 @@ import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick
 import { byPlainText } from '../../test-support/plainText';
 
 const trackEvent = vi.fn();
+const getModeDiary = vi.fn();
 vi.mock('../../api', () => ({
-  api: { trackEvent: (...args: unknown[]) => trackEvent(...args) },
+  api: {
+    trackEvent: (...args: unknown[]) => trackEvent(...args),
+    getModeDiary: () => getModeDiary(),
+  },
 }));
 vi.mock('../practice/QuickPracticeSheet', () => ({
   QuickPracticeSheet: (p: { id: string; onClose: () => void }) => (
@@ -24,6 +28,7 @@ vi.mock('../practice/QuickPracticeSheet', () => ({
 beforeEach(() => {
   localStorage.clear();
   trackEvent.mockClear();
+  getModeDiary.mockReset().mockResolvedValue([]);
 });
 afterEach(() => cleanup());
 
@@ -138,23 +143,46 @@ describe('CaseFlowScreen — три шага и итог', () => {
       modeId: 'avoidant_protector',
     });
     expect(
-      // подпись DoneSheet склеена glue (диапазон «2–3» держится связкой) — фраза без знаков склейки
       screen.getByText(
-        byPlainText('Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.'),
+        byPlainText('Теперь это есть в записях и на карте себя. Встретится второй раз — станет видно, что повторяется.'),
       ),
     ).toBeTruthy();
     // Трудный случай — сцена сущности (лента с петлёй и росток), не полоски ровного дня.
     expect(document.querySelector('.pa-done-scene svg.scn')).not.toBeNull();
     expect(document.querySelector('.pa-done-scene .cq-steady-done')).toBeNull();
 
-    click('Карта себя');
+    click('Посмотреть на карте себя');
     expect(p.onOpenMap).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith('case_map_opened', { repeat: false });
   });
 
-  it('«Не похоже — другие режимы»: выбранный режим возвращается на итог и уходит в запись', async () => {
+  it('режим уже встречался за две недели — «Записано» говорит, какой это раз', async () => {
+    const today = new Date();
+    getModeDiary.mockResolvedValue([
+      { id: 1, modeId: 'avoidant_protector', createdAt: today.toISOString(), situation: '—' },
+      { id: 2, modeId: 'angry_child', createdAt: today.toISOString(), situation: '—' },
+    ]);
+    renderFlow();
+    driveToResult();
+    // Записи режимов уже есть — объяснения «что такое режим» нет.
+    expect(screen.queryByText(/Режим — состояние/)).toBeNull();
+    click('Сохранить');
+    await screen.findByText('Записано');
+    expect(screen.getByText(byPlainText('Избегающий Защитник — уже 2-й раз за две недели. На карте видно, что ещё повторяется рядом.'))).toBeTruthy();
+    click('Посмотреть на карте себя');
+    expect(trackEvent).toHaveBeenCalledWith('case_map_opened', { repeat: true });
+  });
+
+  it('первая встреча с режимами: на итоге строка, что такое режим', async () => {
+    renderFlow();
+    driveToResult();
+    expect(await screen.findByText(/^Режим — состояние, в которое переключаешься в трудный момент/)).toBeTruthy();
+  });
+
+  it('«Не похоже — выбрать другой режим»: выбранный режим возвращается на итог и уходит в запись', async () => {
     const p = renderFlow();
     driveToResult();
-    click('Не похоже — другие режимы');
+    click('Не похоже — выбрать другой режим');
     click('Страшно, тревожно');
     click('Одиноко, страшно, грустно');
     expect(
