@@ -13,7 +13,12 @@ vi.mock('../../api', () => ({
     getModeDiary: vi.fn().mockReturnValue(new Promise(() => {})),
     getModeNotes: vi.fn().mockResolvedValue([]),
     getProfile: vi.fn().mockResolvedValue({ ysq: { completedAt: null } }),
+    trackEvent: vi.fn().mockResolvedValue(undefined),
   },
+}));
+const openPattern = vi.fn();
+vi.mock('../../sections/schemas/usePatternLayer', () => ({
+  usePatternLayer: () => ({ openPattern, layer: null }),
 }));
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -100,9 +105,23 @@ describe('SelfMapOverlay — маршрутизация «что дальше»'
     ]);
     const onOpenSchema = vi.fn();
     renderOverlay({ onOpenSchema });
-    await waitFor(() => expect(screen.getByText(/Пройти тест на схемы/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: /Пройти тест на схемы/ })).toBeTruthy());
 
-    fireEvent.click(screen.getByText(/Пройти тест на схемы/));
+    fireEvent.click(screen.getByRole('button', { name: /Пройти тест на схемы/ }));
     expect(onOpenSchema).toHaveBeenCalledWith({ startTest: true });
+  });
+});
+
+describe('SelfMapOverlay — режим и схема открывают паттерн поверх карты', () => {
+  it('тап по режиму открывает слой паттерна, а карту не закрывает', async () => {
+    mockApi.getModeDiary.mockResolvedValue([{ modeId: 'detached_protector', createdAt: isoDaysAgo(1), healthyResponse: null }]);
+    mockApi.getModeNotes.mockResolvedValue([{ modeId: 'detached_protector', alias: 'Стена', triggers: '' }]);
+    const props = renderOverlay();
+    await waitFor(() => expect(screen.getByText('Стена')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('Стена'));
+    expect(openPattern).toHaveBeenCalledWith('mode', 'detached_protector');
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('self_map_link', { to: 'mode' });
+    expect(props.onClose).not.toHaveBeenCalled();
   });
 });

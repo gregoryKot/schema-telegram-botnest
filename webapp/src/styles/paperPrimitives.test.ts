@@ -262,3 +262,58 @@ describe('paper-app.css — стили заготовок', () => {
     expect(src).toContain('@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine)');
   });
 });
+
+// #1674, К2а: баннеры и служебные плашки — заметка между линиями (.pp-block--note), а не лист цветной бумаги.
+describe('заметка между линиями (.pp-block--note)', () => {
+  const paper = rules('paper.css');
+  const cssAll = [...readdirSync(__dirname).filter((n) => n.endsWith('.css')), '../index.css'].flatMap((n) => rules(n));
+  const NOTES = ['sb-today', 'th-card', 'tk-goal', 'tk-meet', 'cd-explainer', 'cpf-tile', 'aa-head-sign'];
+  const FILES = [
+    'components/therapy/TherapyCardFrame.tsx', 'components/appShell/SidebarFoot.tsx', 'components/therapist/plan/PlanGoals.tsx',
+    'components/therapist/ClientOverviewTab.tsx', 'components/therapist/ClientOverviewSidebar.tsx',
+    'components/diary/ExplainerPaperCard.tsx', 'pages/AccountPage.tsx', 'sections/profile/ShelfTile.tsx',
+  ];
+  /** Плашка из списка нарисована цветной бумагой: в одном className с её классом стоит pp-paper. */
+  const paperPlate = (tsx: string) => NOTES.some((c) => new RegExp(`className="[^"]*\\bpp-paper\\b[^"]*\\b${c}\\b`).test(tsx));
+
+  it('примитив: линии сверху и снизу (от .pp-block), без заливки и скругления', () => {
+    const block = decls(paper, '.pp-block');
+    expect(block).toContain('border-top: 1px solid var(--panel-line)');
+    expect(block).toContain('border-bottom: 1px solid var(--panel-line)');
+    const note = decls(paper, '.pp-block--note');
+    expect(note).toContain('background: none');
+    expect(note).toContain('border-radius: 0');
+    expect(decls(paper, '.pp-block-title')).toContain('var(--serif)');
+  });
+
+  it('сверка ловит лист бумаги и пропускает заметку (образец и контрольный образец)', () => {
+    expect(paperPlate('<div className="pp-paper sb-today" />')).toBe(true);
+    expect(paperPlate('<div className="pp-block pp-block--note sb-today" />')).toBe(false);
+  });
+
+  it.each(FILES)('%s — плашка заметкой, не цветной бумагой', (f) => {
+    const tsx = read(`../${f}`);
+    expect(paperPlate(tsx)).toBe(false);
+    expect(tsx).toMatch(/pp-block(--note|-sign)/);
+  });
+
+  it('CSS не красит плашки заливкой и скруглением, старых классов шапки баннера нет', () => {
+    for (const r of cssAll) {
+      for (const sel of r.selectors) {
+        if (!NOTES.some((c) => new RegExp(`\\.${c}(?![-\\w])`).test(sel))) continue;
+        if (/:hover|--skel|\.skel/.test(sel)) continue;
+        expect(r.body, sel).not.toMatch(/(^|;)\s*background(-color)?:\s*(?!none|transparent)/);
+        expect(r.body, sel).not.toMatch(/border-radius:\s*(?!0)/);
+      }
+    }
+    const old = /\.(th-card-(head|sign|title|sub)|cd-explainer-top|sb-today-label)(?![-\w])/;
+    for (const r of cssAll) for (const sel of r.selectors) expect(sel).not.toMatch(old);
+  });
+
+  it('витрина профиля и «Встречи»: на стыке заметки с соседним блоком линия одна', () => {
+    const profile = rules('client-profile.css');
+    expect(decls(profile, '.cpf-blk:has(> .cpf-start) + .cpf-shelf .pp-block.cpf-tile')).toContain('border-top: 0');
+    expect(decls(profile, '.cpf-shelf + .pp-block.cpf-rhythm')).toContain('border-top: 0');
+    expect(decls(rules('therapist-card.css'), '.pp-block.tk-meet + .pp-block')).toContain('border-top: 0');
+  });
+});
