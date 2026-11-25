@@ -1,13 +1,14 @@
 import type { CSSProperties } from 'react';
 import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
-import { DOMAIN_HUE, clientHue, hueStyle } from '../../lib/tone';
+import { DOMAIN_HUE } from '../../lib/tone';
 import { NextSessionLine } from './NextSessionLine';
 import { clientCaption, clientStatus, meetingLabel, schemaChips } from './rosterModel';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import { clientSign } from './cabinetLook';
 import { DomainMark } from '../DomainMark';
 import { BrandMark } from '../art/BrandMark';
+import { Avatar } from '../Avatar';
 
 interface Props {
   client: TherapyClientSummary;
@@ -16,7 +17,7 @@ interface Props {
 }
 
 // Строка в «Все клиенты» (#1674, К5): на бумаге между линиями списка .ds-rows, без белого листа. Аватар
-// .ds-avatar--paper; знак — DomainArt ведущего домена или BrandMark офлайн-клиента — в строке имени; «в приложении» /
+// — общий Avatar (буква в кольце); знак — DomainArt ведущего домена или BrandMark офлайн-клиента — в строке имени; «в приложении» /
 // «офлайн» — тихий текст. Встреча и чипы схем — вторая колонка на компьютере, под именем на телефоне; справа «→».
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = clientDisplayName(client);
@@ -26,9 +27,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
   const sign = clientSign(client);
   return (
     <div className="ds-list-row ds-list-row--hover tc-row" {...pressable(() => onOpen(client))}>
-      <div className="ds-avatar ds-avatar--serif ds-avatar--paper tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
-        {clientAvatarInitials(client)}
-      </div>
+      <Avatar initials={clientAvatarInitials(client)} className="tc-avatar" />
       <div className="tc-who">
         <div className="tc-name-row">
           <div className="tc-name">{name}</div>
