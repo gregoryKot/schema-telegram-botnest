@@ -143,6 +143,7 @@ export const JOURNEY_SHARE_EMOJI: Readonly<Record<JourneyItemType, string>> = {
   note: '📝',
   schema_diary: '📔',
   mode_diary: '🎭',
+  case: '🎭',
   gratitude: '🌱',
   practice: '🌿',
   plan_done: '✅',

@@ -163,6 +163,28 @@ describe('JourneyService', () => {
     expect(counts.practices).toBe(1);
   });
 
+  it('запись дневника режимов из разбора → тип case и счётчик cases', async () => {
+    const prisma = makePrisma({
+      modeDiaryEntry: {
+        findMany: jest.fn(async () => [
+          {
+            id: 9,
+            createdAt: D('2026-07-02T10:00:00Z'),
+            modeId: 'angry_child',
+            fromCase: true,
+          },
+        ]),
+        count: jest.fn(async ({ where }: any) => (where.fromCase ? 1 : 0)),
+      },
+    });
+    const { counts, items } = await new JourneyService(prisma).getJourney(uid);
+
+    expect(items.map((i) => i.type)).toEqual(['case']);
+    expect(items[0].id).toBe(9);
+    expect(counts.cases).toBe(1);
+    expect(counts.modeDiary).toBe(0);
+  });
+
   it('YSQ: история есть → считаем по истории', async () => {
     const prisma = makePrisma({
       ysqResultHistory: {

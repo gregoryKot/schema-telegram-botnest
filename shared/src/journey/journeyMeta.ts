@@ -32,6 +32,7 @@ export const JOURNEY_TYPE_META = {
   note: { label: 'Заметка дня', group: 'tracker' },
   schema_diary: { label: 'Дневник схем', group: 'diary' },
   mode_diary: { label: 'Дневник режимов', group: 'diary' },
+  case: { label: 'Разбор', group: 'diary' },
   gratitude: { label: 'Благодарность', group: 'diary' },
   practice: { label: 'Что меня питает', group: 'practice' },
   plan_done: { label: 'Шаг по плану', group: 'practice' },
@@ -55,6 +56,7 @@ export interface JourneyCounts {
   notes: number;
   schemaDiary: number;
   modeDiary: number;
+  cases: number;
   gratitudeDays: number;
   practices: number;
   plansDone: number;

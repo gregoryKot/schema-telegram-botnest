@@ -29,7 +29,7 @@ export interface DiaryFeedProps {
   onDelete: (type: DiaryType, id: number) => Promise<void>;
   onOpenTrackerHistory?: () => void;
   onOpenPattern?: (t: PatternTarget) => void;
-  /** Пустые «Трекер» и «Случаи»: кнопка сразу открывает отметку или разбор. */
+  /** Пустые «Трекер» и «Разборы»: кнопка сразу открывает отметку или разбор. */
   onStart?: (what: 'tracker' | 'case') => void;
 }
 

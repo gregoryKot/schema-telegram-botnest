@@ -86,6 +86,7 @@ export function buildJourneyResultParts(
         ...healthy(str('healthyView'), 'Здоровый взгляд'),
       ];
     case 'mode_diary':
+    case 'case':
       return [
         ...part(str('situation'), 'Ситуация'),
         ...part(str('actualNeed'), 'Что было нужно'),

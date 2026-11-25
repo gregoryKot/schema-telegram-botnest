@@ -17,6 +17,7 @@ export const JOURNEY_ENTITY: Record<JourneyItemType, EntityId> = {
   note: 'note',
   schema_diary: 'diary_schema',
   mode_diary: 'diary_mode',
+  case: 'diary_mode',
   gratitude: 'gratitude',
   practice: 'nourish',
   plan_done: 'plan',

@@ -20,6 +20,7 @@
 import type { Tr } from './caseTypes';
 import { modeDisplayName } from '../mode/modeDisplayName';
 import { findTestGroupByModeId } from '../mode/modeTest';
+import { pluralRu } from '../utils/pluralRu';
 
 export type NextStepId =
   | 'first_case'
@@ -188,10 +189,10 @@ export function buildWhereIAm(input: NextStepInput, tr: Tr): string {
   const top = caseCount === 0 ? undefined : pickTop(modeStats);
   if (!top) return '';
   const name = modeName(top);
-  const word = caseWord(caseCount);
+  const word = pluralRu(caseCount, 'разбор', 'разбора', 'разборов');
 
   if (caseCount === 1) {
-    return `Один случай. ${name} — первая метка на карте.`;
+    return `Один разбор. ${name} — первая метка на карте.`;
   }
 
   if (top.count >= 2) {
@@ -201,15 +202,5 @@ export function buildWhereIAm(input: NextStepInput, tr: Tr): string {
     );
   }
 
-  return `${caseCount} ${word}. Пока без повторов — каждый случай на своей метке.`;
-}
-
-/** Русское согласование «случай/случая/случаев» с числительным. */
-function caseWord(n: number): string {
-  const mod100 = n % 100;
-  const mod10 = n % 10;
-  if (mod100 >= 11 && mod100 <= 14) return 'случаев';
-  if (mod10 === 1) return 'случай';
-  if (mod10 >= 2 && mod10 <= 4) return 'случая';
-  return 'случаев';
+  return `${caseCount} ${word}. Пока без повторов — каждый разбор на своей метке.`;
 }

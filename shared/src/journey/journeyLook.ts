@@ -25,7 +25,7 @@ const STEP_N: Partial<Record<JourneyItemType, number>> = { gratitude: 1 };
 export const CHILDHOOD_STAT = 'childhood_wheel';
 
 const NEED_STEP = new Set(['practice', 'plan_done']);
-const MODE_STEP = new Set(['mode_diary', 'mode_note']);
+const MODE_STEP = new Set(['mode_diary', 'case', 'mode_note']);
 const NEED_IDS: readonly string[] = NEED_ORDER;
 
 /** Бумага и знак строки ENTITY_LOOK, без сцены «готово». */
