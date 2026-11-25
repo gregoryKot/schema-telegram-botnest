@@ -15,3 +15,11 @@ export const chairworkEatingArntz: string[] = [
 export const modeMapArntzConcept: string[] = [
   'Образец первой карты [Арнтц, 2.2]. Тревога, незащищённость и стыд от школьной травли — Уязвимый Ребёнок; ненависть к людям и страх общения — Сердитый Ребёнок; травля и стыд сложились в Карающего Критика; властность на сессии — нарциссическая гиперкомпенсация; отказ от встреч из страха критики и отвержения — Избегающий Защитник. Избегание ведёт к изоляции и по кругу усиливает социофобию и депрессию.',
 ];
+
+/** Образцы гл. 2 по id техники; подключаются в allArntz.ts. */
+export const ARNTZ_CONCEPT_BY_TECHNIQUE: Record<string, string[]> = {
+  diagnostic_imagery: [
+    ...diagnosticImageryArntzConcept,
+    ...diagnosticImageryEatingArntz,
+  ],
+};

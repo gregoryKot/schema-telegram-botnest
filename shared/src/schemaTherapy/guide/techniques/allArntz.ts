@@ -1,5 +1,6 @@
 import type { TechniqueGuide, TechniqueGuideBuilder } from '../types';
 import { TECHNIQUE_BUILDERS as BASE } from './all';
+import { ARNTZ_CONCEPT_BY_TECHNIQUE } from './arntzConceptMore';
 import {
   confrontationArntz4,
   limitSettingArntz4,
@@ -11,6 +12,7 @@ const TECHNIQUE_MORE: Record<string, string[]> = {
   empathic_confrontation: confrontationArntz4,
   limited_reparenting: reparentingArntz4,
   limit_setting: limitSettingArntz4,
+  ...ARNTZ_CONCEPT_BY_TECHNIQUE,
 };
 
 const withArntz = (t: TechniqueGuide): TechniqueGuide => {
