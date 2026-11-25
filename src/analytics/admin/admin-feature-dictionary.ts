@@ -99,6 +99,7 @@ export const FEATURES: readonly FeatureDef[] = [
     title: 'Паттерны со вкладки Я',
     events: ['profile_pattern_open'],
   },
+  { id: 'diary-jump', title: 'Переходы из Записей', events: ['diary_jump'] },
   {
     id: 'notify',
     title: 'Уведомления',

@@ -74,6 +74,8 @@
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
+//   diary_jump           — переход из вкладки «Записи»: к карточке схемы/режима,
+//                         трекеру или разбору (meta.to — DIARY_JUMP_TARGETS).
 //   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
 //   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
 //   push_*               — уведомления в приложении (веб-пуши): push-events.constants.ts.
@@ -134,6 +136,7 @@ export const ANALYTICS_EVENTS = [
   // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
   ...SERVER_EVENTS,
   'profile_pattern_open',
+  'diary_jump',
   ...CONCEPT_EVENTS, // кабинет терапевта: реестры рядом с фичей (правило №10)
   ...CABINET_EVENTS,
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
@@ -274,6 +277,11 @@ export {
 // shared/src/share/analytics.ts (синхронно).
 export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
 export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
+
+// Куда перешли из вкладки «Записи» (meta.to для diary_jump). Парная
+// константа на фронте — shared/src/share/analytics.ts (синхронно).
+export const DIARY_JUMP_TARGETS = ['pattern', 'tracker', 'case'] as const;
+export type DiaryJumpTarget = (typeof DIARY_JUMP_TARGETS)[number];
 
 // CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts (правило №10).
 export {

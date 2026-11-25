@@ -142,6 +142,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
     'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
     'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
+  diary_jump:
+    'шлётся через импортируемую константу DIARY_JUMP_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом: ' +
+    'api.trackEvent(DIARY_JUMP_EVENT, { to }) из webapp/src/sections/diary/',
   login_ticket_step:
     'серверное событие: пишет единственный шов LoginTicketReport ' +
     '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
@@ -390,7 +394,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
     // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
     // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(54);
+    // 55 — diary_jump: константа DIARY_JUMP_EVENT, шлёт вкладка «Записи».
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(55);
   });
 });
 
