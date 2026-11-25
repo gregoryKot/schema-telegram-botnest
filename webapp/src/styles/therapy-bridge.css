@@ -82,3 +82,5 @@
   .th-talk-photo.author-photo { width: 144px; margin: 0; }
   .th-talk-title { font-size: 25px; }
 }
+/* Ввод кода от терапевта под действиями листа «Поговорить с кем-то». */
+.th-talk-code { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--panel-line); }

@@ -111,11 +111,10 @@ describe('MoreSection', () => {
   // docs/open/frontend-ux.md: «Карту себя» было видно только с экрана «Записано» после
   // разбора — постоянного входа не было. Строка стоит рядом с «Мои паттерны» и говорит,
   // откуда карта и что на ней (правило онбординга).
-  it('«Карта себя» стоит после «Мои паттерны», объясняет себя и открывает карту, а не новый разбор', () => {
+  it('«Карта себя» открывает группу «Что складывается», объясняет себя и открывает карту, а не новый разбор', () => {
     const h = setup();
-    const titles = screen.getAllByRole('button').map(b => b.textContent ?? '');
-    const at = titles.findIndex(t => t.startsWith('Мои паттерны'));
-    expect(titles[at + 1]).toMatch(/^Карта себя/);
+    const group = screen.getByRole('region', { name: 'Что складывается' });
+    expect(within(group).getAllByRole('button')[0].textContent).toMatch(/^Карта себя/);
     expect(row('Карта себя').textContent).toContain('Из разборов: какие части включаются в трудные моменты');
     expect(screen.queryByTestId('case-flow')).toBeNull();
     fireEvent.click(row('Карта себя'));
@@ -143,15 +142,15 @@ describe('MoreSection', () => {
     expect(h.onOpenTherapistCabinet).toHaveBeenCalledTimes(1);
   });
 
-  it('«Поговорить с кем-то» стоит сразу после «Мой путь» и открывает лист', () => {
+  it('«Поговорить с кем-то» — в группе «Терапевт» и открывает лист с вводом кода', () => {
     setup();
-    const titles = screen.getAllByRole('button').map(b => b.textContent ?? '');
-    const at = titles.findIndex(t => t.startsWith('Мой путь'));
-    expect(titles[at + 1]).toMatch(/^Поговорить с кем-то/);
+    const group = screen.getByRole('region', { name: 'Терапевт' });
+    expect(within(group).getAllByRole('button')[0].textContent).toMatch(/^Поговорить с кем-то/);
     expect(row('Поговорить с кем-то').textContent).toContain('Если хочется в терапию');
     fireEvent.click(row('Поговорить с кем-то'));
     expect(trackNudge).toHaveBeenCalledWith('more', 'open', undefined);
     expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Код от терапевта' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
   });
 
@@ -160,7 +159,7 @@ describe('MoreSection', () => {
     localStorage.setItem('therapy_contact_name', 'терапевту');
     setup();
     expect(screen.queryByRole('button', { name: /^Поговорить с кем-то/ })).toBeNull();
-    const link = within(document.querySelector('.ds-rows') as HTMLElement).getByRole('link', { name: /^Написать терапевту/ });
+    const link = within(screen.getByRole('region', { name: 'Терапевт' })).getByRole('link', { name: /^Написать терапевту/ });
     expect(link.getAttribute('href')).toBe('tg://user?id=42');
     expect(link.textContent).toContain('Связь с терапевтом');
     fireEvent.click(link);

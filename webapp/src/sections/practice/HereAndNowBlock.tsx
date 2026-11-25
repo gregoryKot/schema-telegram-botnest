@@ -16,16 +16,16 @@ import { QuickSquares } from './QuickSquares';
 import { useQuickCounts } from './useQuickCounts';
 import '../../styles/client-practice.css';
 
-/** compact — телефон (вводная короче, заголовок несёт шапка страницы); onSos — квадрат «Мне плохо»;
+/** compact — телефон (вводная короче, заголовок несёт шапка страницы); headless — то же без сокращения вводной (десктоп «Практик»); onSos — квадрат «Мне плохо»;
  *  extraRows — кризисные строки телефона под квадратами (PhoneHelpRows). */
-export function HereAndNowBlock({ compact = false, onSos, extraRows }: { compact?: boolean; onSos?: () => void; extraRows?: ReactNode }) {
+export function HereAndNowBlock({ compact = false, headless = false, onSos, extraRows }: { compact?: boolean; headless?: boolean; onSos?: () => void; extraRows?: ReactNode }) {
   const counts = useQuickCounts(!!onSos);
   const [active, setActive] = useState<QuickPracticeId | null>(null);
   return (
     <>
-      <HereAndNowIntro compact={compact} />
-      {/* Заголовок героя — уровнем ниже заголовка блока: на телефоне блок называет h1 шапки, на компьютере — h3. */}
-      <div className="cp-open-card"><BreathingCard titleAs={compact ? 'h2' : 'h4'} /></div>
+      <HereAndNowIntro compact={compact} headless={headless} />
+      {/* Заголовок героя — уровнем ниже заголовка блока: h1 шапки называет блок (compact/headless), иначе блок — h3. */}
+      <div className="cp-open-card"><BreathingCard titleAs={compact || headless ? 'h2' : 'h4'} /></div>
       <QuickSquares counts={counts} onOpen={setActive} onSos={onSos} />
       {extraRows}
       {active && <QuickPracticeSheet id={active} onClose={() => setActive(null)} />}
