@@ -1,5 +1,9 @@
 import { sanitizeMeta } from './analytics-meta.sanitize';
-import { sanitizeHomeTileMeta } from './analytics-meta.sanitize-home';
+import {
+  sanitizeDoneNextStepMeta,
+  sanitizeHomeMeta,
+  sanitizeHomeTileMeta,
+} from './analytics-meta.sanitize-home';
 import {
   DIARY_QUICK_TAGS,
   HOME_TILES,
@@ -68,5 +72,31 @@ describe('diary_quick_save: санитизация meta', () => {
     expect(sanitizeMeta('diary_quick_save', { tag: 1 })).toBeUndefined();
     expect(sanitizeMeta('diary_quick_save', {})).toBeUndefined();
     expect(sanitizeMeta('diary_quick_save', undefined)).toBeUndefined();
+  });
+});
+
+describe('sanitizeDoneNextStepMeta', () => {
+  it('пропускает известную пару и режет лишние поля', () => {
+    expect(
+      sanitizeDoneNextStepMeta({ from: 'tracker', to: 'case', text: 'x' }),
+    ).toEqual({ from: 'tracker', to: 'case' });
+  });
+
+  it('отвергает неизвестные значения, пустое и не строки', () => {
+    expect(
+      sanitizeDoneNextStepMeta({ from: 'home', to: 'case' }),
+    ).toBeUndefined();
+    expect(
+      sanitizeDoneNextStepMeta({ from: 'diary', to: 'zzz' }),
+    ).toBeUndefined();
+    expect(sanitizeDoneNextStepMeta({ from: 'diary' })).toBeUndefined();
+    expect(sanitizeDoneNextStepMeta({})).toBeUndefined();
+    expect(sanitizeDoneNextStepMeta({ from: 1, to: 2 })).toBeUndefined();
+  });
+
+  it('sanitizeHomeMeta маршрутизирует событие', () => {
+    expect(
+      sanitizeHomeMeta('done_next_step', { from: 'diary', to: 'mode' }),
+    ).toEqual({ from: 'diary', to: 'mode' });
   });
 });

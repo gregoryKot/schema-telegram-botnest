@@ -26,7 +26,7 @@ export const FEATURES: readonly FeatureDef[] = [
   {
     id: 'diary',
     title: 'Дневник и трекер',
-    events: ['today_streak_toggle', 'tracker_skip', 'diary_quick_save'],
+    events: ['today_streak_toggle', 'tracker_skip', 'diary_quick_save', 'done_next_step'],
   },
   {
     id: 'calm',

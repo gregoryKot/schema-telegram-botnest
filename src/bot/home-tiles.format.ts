@@ -1,6 +1,6 @@
 // Строка «Главная: плитки» для /stats (правило №8): нажатия плиток и ссылок
 // главной сайта за месяц. Чистый форматтер; язык — словами, без id.
-import type { DiaryQuickCounts } from './home-tiles.count';
+import type { DiaryQuickCounts, NextStepCount } from './home-tiles.count';
 
 // Подписи плиток главной — словами, без id. Порядок — как на экране.
 export const HOME_TILE_LABELS: Record<string, string> = {
@@ -49,15 +49,44 @@ export function formatDiaryQuickSaves(c: DiaryQuickCounts): string | null {
   return `Дневник одной страницей: ${parts.join(', ')}${detailed}`;
 }
 
+const NEXT_FROM_LABELS: Record<string, string> = {
+  tracker: 'после трекера',
+  diary: 'после дневника',
+};
+const NEXT_TO_LABELS: Record<string, string> = {
+  case: 'разобрать случай',
+  practice: 'практика',
+  mode: 'к режиму',
+  schema: 'к схеме',
+};
+
+/** Строка «Что дальше: после трекера — …; после дневника — …» или null, пока никто не переходил. */
+export function formatDoneNextSteps(rows: NextStepCount[]): string | null {
+  const groups = Object.keys(NEXT_FROM_LABELS).flatMap((from) => {
+    const parts = Object.keys(NEXT_TO_LABELS)
+      .map((to) => {
+        const n = rows.find((r) => r.from === from && r.to === to)?.count ?? 0;
+        return n > 0 ? `${NEXT_TO_LABELS[to]} ${n}` : null;
+      })
+      .filter((p): p is string => p !== null);
+    return parts.length > 0
+      ? [`${NEXT_FROM_LABELS[from]} — ${parts.join(', ')}`]
+      : [];
+  });
+  return groups.length > 0 ? `Что дальше: ${groups.join('; ')}` : null;
+}
+
 /** Все строки главной простого клиента для /stats; пустая БД — пустой список. */
 export function formatHomeLines(m: {
   homeTiles: Array<{ tile: string; count: number }>;
   trackerSkips: number;
   diaryQuick: DiaryQuickCounts;
+  nextSteps: NextStepCount[];
 }): string[] {
   return [
     formatHomeTiles(m.homeTiles),
     formatTrackerSkips(m.trackerSkips),
     formatDiaryQuickSaves(m.diaryQuick),
+    formatDoneNextSteps(m.nextSteps),
   ].filter((line): line is string => line !== null);
 }

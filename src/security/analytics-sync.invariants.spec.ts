@@ -174,6 +174,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'api.trackEvent(DIARY_QUICK_SAVE_EVENT, { tag, detailed }) после ' +
     'сохранения записи «Дневника одной страницей» (простой клиент, ' +
     'этап 3); тот же приём, что у home_tile',
+  done_next_step:
+    'шлётся через импортируемую константу DONE_NEXT_STEP_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(DONE_NEXT_STEP_EVENT, { from, to }) по тапу на «Что ' +
+    'дальше» после трекера или дневника; тот же приём, что у home_tile',
   therapy_nudge:
     'шлётся через импортируемую константу THERAPY_NUDGE_EVENT (shared/), ' +
     'не строковым литералом — строки «это самопомощь, не замена терапии» ' +
@@ -390,7 +396,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
     // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
     // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(54);
+    // 55 — done_next_step: константа DONE_NEXT_STEP_EVENT, как home_tile.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(55);
   });
 });
 

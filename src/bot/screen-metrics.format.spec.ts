@@ -27,6 +27,7 @@ const FULL: ScreenMetrics = {
   homeTiles: [],
   trackerSkips: 0,
   diaryQuick: { byTag: [], detailed: 0 },
+  nextSteps: [],
 };
 
 const EMPTY: ScreenMetrics = {
@@ -37,6 +38,7 @@ const EMPTY: ScreenMetrics = {
   homeTiles: [],
   trackerSkips: 0,
   diaryQuick: { byTag: [], detailed: 0 },
+  nextSteps: [],
 };
 
 describe('formatScreenMetrics', () => {
