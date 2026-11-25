@@ -60,3 +60,15 @@ export function CopingBypass({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Режимы фигурками (Арнтц и Якоб): маленькая фигурка за большой, напротив — третья. */
+export function ModeFigures({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox={BOX}>
+      <circle cx="24" cy="44" r="7" fill={PAPER.plum} />
+      <rect x="44" y="16" width="18" height="40" rx="8" fill={PAPER.slate} />
+      <rect x="84" y="28" width="12" height="28" rx="6" fill={PAPER.moss} />
+      <path d="M14 60 L106 60" {...ROUND} stroke={PAPER.clay} strokeWidth="4" />
+    </Svg>
+  );
+}

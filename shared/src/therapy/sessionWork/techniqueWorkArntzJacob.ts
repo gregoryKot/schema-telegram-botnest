@@ -15,4 +15,12 @@ export const ARNTZ_JACOB_TECHNIQUE_WORK: Record<
       ['next', 'С чем работали дальше'],
     ],
   },
+  mode_figures: {
+    name: 'Режимы фигурками',
+    fields: [
+      ['mode', 'Какой режим заслонял Ребёнка'],
+      ['feeling', 'Что клиент узнал в расстановке'],
+      ['next', 'С чем работали дальше'],
+    ],
+  },
 };

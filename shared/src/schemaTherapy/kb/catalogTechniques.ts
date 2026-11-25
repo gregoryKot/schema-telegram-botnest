@@ -65,7 +65,23 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'creative_mode_work',
     'probe_phrases',
     'coping_bypass',
+    'mode_figures',
   ].map(w),
+  {
+    id: 'rupture_repair',
+    title:
+      'Разрыв в отношениях с терапевтом: назвать, признать свою долю, связать со схемой',
+    status: 'planned',
+    source: 'Рафаэли',
+    chapters: ['гл. 20'],
+  },
+  {
+    id: 'historical_life_review',
+    title: 'Исторический обзор жизни: за и против схемы по этапам',
+    status: 'planned',
+    source: 'Рафаэли',
+    chapters: ['гл. 21'],
+  },
   {
     id: 'grief_chairwork',
     title: 'Стулья для горя и прощания',
