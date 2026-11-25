@@ -53,6 +53,7 @@
 
 ## Следующее
 
+- ⬜ **Хвост белых листов `pp-leaf` у терапевта (#1674, К5, вторая волна)** — «Клиенты» и «Обзор» карточки переведены на строки `.ds-rows` и блоки `.pp-block`; осталось 10 `.tsx` (вкладки «Задания», «Сессии», YSQ, «Записи клиента», «План работы»: `webapp/src/components/therapist/Client*Tab.tsx`, `YSQ*.tsx`, `plan/**`). Храповик `MAX_LEAF_FILES` в `webapp/src/styles/dsPrimitives.test.ts` — опускать с каждым файлом.
 - ⬜ **Техника: «Запросы» в «Где применяется» — чипами-переходами** — группа `concern` в `techniqueUsageGroups` рисуется строкой; открыть статью можно тем же `onOpenConcern` (`useConceptGuide`), как из листов режима и схемы (`webapp/src/components/therapist/guide/TechniqueSheet.tsx`).
 - 🔧 **Визитка: цены в ILS/EUR/USD в статике** — решение владельца 2026-11-24: «у меня цена меняется постоянно. мне нужные. дописывай»; дописать валюты в JSON-LD `webapp/index.html` и `webapp/public/llms.txt` с подстановкой из админки (`src/booking/landing-price.ts`, `DEFAULT_PRICE`, `src/booking/price-currency.ts`); в работе отдельной сессией.
 - ⬜ **Справочник: каталог-цель — статусы решает агент** — владелец 2026-11-24: «сам». Сверить [черновик каталога](https://claude.ai/artifact/LcgFtEbxewgbKWqjdncT7E) с полкой, выставить статусы в `shared/src/schemaTherapy/kb/catalog*.ts` (`out_of_scope` — только осознанно, причина строкой); по умолчанию оставить как есть, книги о парах и подростках — первыми к покупке. Справочник.
