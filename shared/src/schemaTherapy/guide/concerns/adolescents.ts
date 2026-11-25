@@ -42,6 +42,8 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
     'creative_mode_work',
     'limited_reparenting',
     'play_and_joy',
+    'chairwork',
+    'imagery_rescripting',
   ],
   voice: [
     tr(
