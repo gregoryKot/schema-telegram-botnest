@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import type { TherapyClientSummary } from '../../api';
 import { BrandMark } from '../art/BrandMark';
-import { clientHue, hueStyle } from '../../lib/tone';
 import { todayStr } from '../../utils/format';
 import { sortRoster } from '../therapist/rosterOrder';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
@@ -12,6 +11,8 @@ import { SECTION_LOOK, THERAPIST_NAV } from './navLook';
 import type { Section } from './navigation';
 import { useScreenShare } from './screenShareMode';
 import { setSidebarCollapsed } from './sidebarCollapse';
+import { Avatar } from '../Avatar';
+import { avatarInitial } from '../../sections/profile/profileModel';
 
 // Части бокового меню, которые зависят от того, свёрнуто ли оно (sidebarCollapse.ts):
 // шапка с кнопкой «свернуть» и свёрнутая полоска со знаками; силуэт меню на загрузке — SidebarSkeleton.tsx.
@@ -91,7 +92,7 @@ export function SidebarRail({ items, therapistMode, displayName, clients = [] }:
           const name = clientDisplayName(c);
           return (
             <NavLink key={c.telegramId} to={`/cabinet/${clientRef(c)}`} className={railClass} aria-label={name} title={name}>
-              <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{clientAvatarInitials(c)}</span>
+              <Avatar initials={clientAvatarInitials(c)} className="sb-client-av" />
             </NavLink>
           );
         })}
@@ -99,7 +100,7 @@ export function SidebarRail({ items, therapistMode, displayName, clients = [] }:
       <div className="sb-foot-wrap">
         <NavLink to="/profile" className={({ isActive }) => `sb-account sb-rail-account${isActive ? ' is-active' : ''}`}
                  aria-label={account} title={account}>
-          <div className="sb-avatar">{account[0].toUpperCase()}</div>
+          <Avatar initials={avatarInitial(account)} className="sb-avatar" />
         </NavLink>
       </div>
     </aside>
