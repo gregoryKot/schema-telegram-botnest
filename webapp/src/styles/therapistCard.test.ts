@@ -10,7 +10,6 @@ import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
 const strip = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 const css = strip('therapist-card.css');
-const cabinet = strip('cabinet.css');
 const paper = strip('paper.css');
 
 /** Тело первого блока, начинающегося с `head` (по балансу скобок). */
@@ -62,11 +61,8 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     }
   });
 
-  it('аватар — бумага тона клиента (--h) с тенью сплошным слоем, без размытия; на телефоне 44×44', () => {
-    expect(decls(css, '.tk-avatar.tone-tint')).toBe('');
-    // Бумага и тень — общий .ds-avatar--paper (cabinet.css, ревью r1: тот же кружок в списке, на «Сегодня»).
-    expect(decls(cabinet, '.ds-avatar--paper')).toContain('oklch(0.915 calc(0.03 * var(--ck)) var(--h))');
-    expect(decls(cabinet, '.ds-avatar--paper')).toMatch(/box-shadow: 0 0 0 1px var\(--panel-line\)/);
+  it('аватар — общий .ds-avatar: у .tk-avatar только размер, без своей заливки и тени; на телефоне 44×44', () => {
+    expect(decls(css, '.tk-avatar')).not.toMatch(/background|box-shadow/);
     expect(decls(phone, '.tk-avatar')).toContain('width: 44px');
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
