@@ -1,5 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { buildAngerExpressionTechniques } from './angerExpression';
+import { limitMore, limitVoice } from './arntzBpdRelationMore';
 import { limitSettingMore } from './relationshipHeath';
 import * as camb from './limitSettingCambridge';
 
@@ -19,12 +20,16 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
       'Повторилось — сказать твёрже, назвать своё чувство и объявить последствие. Исполнять его только после предупреждения.',
       'Последствия растут понемногу и остаются естественными. Когда накал спал — разобрать, как на границу отозвался каждый режим, какой режим стоял за поведением и что ему было нужно [Арнтц ПРЛ, гл. 4].',
     ],
-    voice: camb.limitSettingVoice(tr),
+    voice: limitVoice(tr, camb.limitSettingVoice(tr)),
     cautions:
       'Граница без тепла звучит голосом Карающего Критика, тепло без границы оставляет Импульсивного Ребёнка без взрослого. Угроза жизни и безопасности — сначала кризисный план, а не лестница последствий. ' +
       'Граница — последний шаг после мягких приёмов: это улица с односторонним движением, назад не повернуть. Мелкое — опоздания, личные вопросы, перебивания — решают эмпатической конфронтацией, сразу ограничивают только агрессию. Последствие соразмерно нарушению и звучит без кары: опоздавшему не продлевают сессию, нагрубившего просят извиниться, можно дать письменное задание, чтобы загладить ущерб [Кембридж, гл. 2, 6, бокс 6.9]. ' +
       'Граница звучит без мести и без оправданий [Янг, гл. 10]. В разгар кризиса ссылаются на уже названные границы, а не придумывают новые [Янг, гл. 9].',
-    more: [...limitSettingMore, ...camb.limitSettingCambridgeMore],
+    more: [
+      ...limitMore,
+      ...limitSettingMore,
+      ...camb.limitSettingCambridgeMore,
+    ],
     sources:
       'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. [Арнтц ПРЛ, гл. 4]; [Кембридж, гл. 6, бокс 6.9]; [Янг, гл. 9, 10]; [Арнтц, 4.3.6, 5.5, 6.1.6]; [Хис, гл. 12, 14].',
   },

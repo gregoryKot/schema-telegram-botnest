@@ -1,5 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildAssessAll, storySignalMoreAll } from './practiceAssessHeath';
+import { complaintToModeMoreBpd } from './practiceMoreArntzBpd';
+
 import { complaintToModeMore } from './practiceAssessMore';
 import * as cam from './practiceAssessCambridge';
 import { firstSessionHeathDosbor } from './heathDosborMore';
@@ -48,7 +50,11 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
         'Давайте посмотрим, кто внутри требует ещё и ещё, даже когда сил уже нет.',
       ),
     ],
-    more: [...complaintToModeMore, ...cam.complaintToModeCambridgeMore],
+    more: [
+      ...complaintToModeMore,
+      ...complaintToModeMoreBpd,
+      ...cam.complaintToModeCambridgeMore,
+    ],
     sources: '[Кембридж, гл. 3, табл. 3.2], [Арнтц ПРЛ, гл. 3], [Арнтц, 2.2.1]',
   },
   {

@@ -1,4 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
+import { guessMore } from './arntzBpdRelationMore';
 import { guessModeFarrell } from './guessModeFarrell';
 
 /** Техники из гл. 3 и 6 книги Арнца и ван Гендерен о ПРЛ: two_axis_check, need_cycle, guess_the_mode. */
@@ -78,7 +79,7 @@ export const buildCognitiveArntzTechniques: TechniqueGuideBuilder = (tr) => [
         'Сейчас я покажу, как вы иногда говорите со мной в начале сессии. Угадаете, какая это часть?',
       ),
     ],
-    more: [...guessModeFarrell],
+    more: [...guessMore, ...guessModeFarrell],
     cautions:
       'Главный риск — клиенту покажется, что над ним смеются. Перед игрой проговорить её смысл, изображать бережно и остановиться, если клиент задет: обида — уже материал о режимах.',
     sources: '[Арнтц ПРЛ, гл. 3], [Фаррелл, гл. 4.3]',
