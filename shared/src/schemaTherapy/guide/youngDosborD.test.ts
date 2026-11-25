@@ -5,7 +5,7 @@ import { buildConcernGuides } from './concerns/all';
 import type { Tr } from './types';
 import { bpdPsychoeducationYoung } from './concerns/bpdYoung2';
 import { punitiveCriticYoung3 } from './modes/punitiveCriticYoung3';
-import { detachedProtectorYoung3 } from './modes/detachedProtectorYoung3';
+import { dpY3 } from './modes/detachedProtectorYoung3';
 import { aggrYoung3 } from './modes/selfAggrandiserYoung3';
 import { lonelyChildYoung3 } from './modes/lonelyChildYoung3';
 import { selfDisclosureYoung3 } from './practiceSelfDisclosureYoung3';
@@ -45,11 +45,7 @@ const note = (id: string) => notes.find((n) => n.id === id)!;
 const SHELVES: [string, string[] | undefined, string[]][] = [
   ['bpd.psychoeducation', bpd.psychoeducation, bpdPsychoeducationYoung],
   ['punitive_critic', mode('punitive_critic').more, punitiveCriticYoung3],
-  [
-    'detached_protector',
-    mode('detached_protector').more,
-    detachedProtectorYoung3,
-  ],
+  ['detached_protector', mode('detached_protector').more, dpY3],
   ['self_aggrandiser', mode('self_aggrandiser').more, aggrYoung3],
   ['lonely_child', mode('lonely_child').more, lonelyChildYoung3],
   [
