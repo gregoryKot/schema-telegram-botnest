@@ -92,6 +92,7 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
   creative_mode_work: 'mask',
   probe_phrases: 'probe',
   intimacy_dialogue: 'intimacy',
+  three_parts_check_in: 'three_parts',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {

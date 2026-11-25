@@ -31,4 +31,13 @@ export const HEATH_TECHNIQUE_WORK: Record<HeathTechniqueId, TechniqueWorkDef> =
         ['home', 'Что пробовать дома'],
       ],
     },
+    three_parts_check_in: {
+      name: 'Медитация на три части',
+      fields: [
+        ['vulnerable', 'Что нужно Уязвимому Ребёнку'],
+        ['happy', 'Чему радуется Счастливый Ребёнок'],
+        ['adult', 'Что ценно Здоровому Взрослому'],
+        ['after', 'Что осталось после'],
+      ],
+    },
   };

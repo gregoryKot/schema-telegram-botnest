@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { therapistSchemasMore } from './practiceMoreArntzJacob';
+import { therapistSchemasMoreFull } from './practiceTherapistHeath';
 
 /** «Для терапевта»: схемы терапевта и супервизия. Собирает practiceTherapist.ts. */
 export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
@@ -22,8 +22,8 @@ export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
         'Я здесь, с вами. Скажите, как вы сейчас, и только потом пойдём дальше.',
       ),
     ],
-    more: therapistSchemasMore,
+    more: therapistSchemasMoreFull,
     sources:
-      '[Хис, гл. 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5]',
+      '[Хис, гл. 1, 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5]',
   },
 ];

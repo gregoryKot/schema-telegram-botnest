@@ -41,5 +41,6 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'mask',
   'probe',
   'intimacy',
+  'three_parts',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

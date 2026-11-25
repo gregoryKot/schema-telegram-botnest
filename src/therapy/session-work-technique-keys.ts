@@ -115,6 +115,7 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> =
     'technique:creative_mode_work': ['mode', 'form', 'dialogue', 'ending'],
     'technique:probe_phrases': ['belief', 'phrase', 'body', 'home'],
     'technique:intimacy_dialogue': ['need', 'coping', 'response', 'home'],
+    'technique:three_parts_check_in': ['vulnerable', 'happy', 'adult', 'after'],
     'technique:coping_bypass': ['mode', 'trigger', 'feeling', 'next'],
     'technique:mode_figures': ['mode', 'feeling', 'next'],
   };
