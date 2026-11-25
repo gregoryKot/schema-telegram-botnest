@@ -1,9 +1,9 @@
 import { useTr } from '../../utils/addressForm';
 import { Leaf } from '../../components/art/PaperArtSigns';
 import { SettingsGear, CustomizeLink } from '../../components/customize/CustomizeGear';
-import { clientHue, hueStyle } from '../../lib/tone';
 import { glue } from '../../../../shared/src/utils/typo';
 import { avatarInitial, daysWord } from './profileModel';
+import { Avatar } from '../../components/Avatar';
 
 interface Props { displayName: string | null | undefined; totalDays: number; onCustomize: () => void; onOpenSettings?: () => void }
 
@@ -13,9 +13,7 @@ export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSetti
   const name = displayName?.trim() ?? '';
   return (
     <div className="pp-block pp-block--head cpf-block"><div className="cpf-head">
-      <div className="ds-avatar ds-avatar--serif cpf-avatar" style={hueStyle(clientHue(name || 'me'))} aria-hidden="true">
-        {avatarInitial(name)}
-      </div>
+      <Avatar initials={avatarInitial(name)} className="cpf-avatar" />
       <div className="cpf-head-text">
         <div className="ds-eyebrow">Профиль</div>
         <h1 className="ds-h1">Мой <i>путь</i></h1>
