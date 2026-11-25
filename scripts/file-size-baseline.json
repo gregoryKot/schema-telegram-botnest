@@ -791,7 +791,7 @@
   "shared/src/schemaTherapy/kb/kbFs.test-helpers.ts": 37,
   "shared/src/schemaTherapy/kb/links.ts": 160,
   "shared/src/schemaTherapy/kb/mentions.ts": 59,
-  "shared/src/schemaTherapy/kb/tables.ts": 119,
+  "shared/src/schemaTherapy/kb/tables.ts": 123,
   "shared/src/schemaTherapy/kb/tablesModes.ts": 142,
   "shared/src/schemaTherapy/kb/tablesNeeds.ts": 67,
   "shared/src/schemaTherapy/kb/tablesSchemas.ts": 96,
