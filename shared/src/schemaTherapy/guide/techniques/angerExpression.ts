@@ -23,6 +23,6 @@ export const buildAngerExpressionTechniques: TechniqueGuideBuilder = (tr) => [
       'На шаге «выговориться» тон ровный: сочувствие раньше времени гасит злость, пока она не прозвучала. Клиенту, который сам применял насилие, образы расправы не предлагают. Признак недоработки — клиент уходит с сессии уверенным, что его агрессия была целиком оправдана [Янг, гл. 9].',
     more: [...angerMore, ...camb.angerExpressionCambridgeMore],
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5 и 9. Arntz A., Jacob G. Schema Therapy in Practice. Wiley-Blackwell, 2013, гл. 7; [Янг, гл. 4, 9]; [Фаррелл, 4.5, 5.5.3]; [Арнтц ПРЛ, гл. 5]; [Кембридж, гл. 6].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5 и 9. Arntz A., Jacob G. Schema Therapy in Practice. Wiley-Blackwell, 2013, гл. 7; [Янг, гл. 4, 9]; [Фаррелл, 4.5, 5.5.3]; [Арнтц ПРЛ, гл. 5]; [Кембридж, гл. 6]; [Хис, гл. 17].',
   },
 ];

@@ -1,5 +1,6 @@
 import { playAndJoyMore as playBase } from './childCareMore';
 import { limitedReparentingMoreAll } from './reparentingHeath';
+import { limitedReparentingHeathMore } from './reparentingPatternsHeath';
 
 export * from './childCareMore';
 
@@ -7,8 +8,7 @@ export * from './childCareMore';
 export const limitedReparentingMoreFull: string[] = [
   ...limitedReparentingMoreAll,
   'Доступность по договорённости [Хис, гл. 4]. В трудный период терапевт заранее оговаривает, как с ним связаться: несколько звонков, письма, переходный объект, песня или картинка между сессиями. Это «круглосуточная доступность» родителя, но в рамках, о которых договорились; при самоповреждении такая связь помогает отказаться от разрушительного копинга.',
-  'Время и паузы [Хис, гл. 4]. Чувствительному клиенту, которому трудно найти слова, дают больше времени: молчание бывает страхом и глубокой работой, а спешка будит самокритику.',
-  'Мерка заботы — семь позитивных родительских паттернов Локвуд и Сэмсон, от тепла и игры до поддержки автономии и надёжности; подробнее — «Для терапевта», «Семь паттернов заботы на сессии» [Хис, гл. 4].',
+  ...limitedReparentingHeathMore,
 ];
 
 export const playAndJoyMore: string[] = [
