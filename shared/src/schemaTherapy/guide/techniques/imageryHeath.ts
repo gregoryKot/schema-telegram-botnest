@@ -1,4 +1,4 @@
-import { rescriptingMoreArntzJacob } from './imageryArntzJacob';
+import { rescriptingMoreArntzJacobAll as rescriptingMoreArntzJacob } from './imageryArntzJacobMore';
 
 /** «Подробнее» к рескриптингу с дополнениями по Хис и Стартап: вынесено, чтобы файлы не росли. */
 export const rescriptingMoreHeath: string[] = [
