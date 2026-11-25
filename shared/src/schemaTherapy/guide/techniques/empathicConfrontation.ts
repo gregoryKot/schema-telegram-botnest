@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { empathicConfrontationMore } from './relationshipHeath';
+import { empathicConfrontationMore } from './empathicConfrontationBehary';
 
 /** Техника: empathic_confrontation. */
 export const buildEmpathicConfrontationTechniques: TechniqueGuideBuilder = (
