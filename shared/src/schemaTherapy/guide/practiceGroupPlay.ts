@@ -1,6 +1,9 @@
 import type { PracticeNotesBuilder } from './types';
 import { groupMore, groupTechMore, buildGroupLead } from './practiceGroupLead';
-import { groupPlayFarrell, groupRoleplayFarrell } from './practiceGroupPlayFarrell';
+import {
+  groupPlayFarrell,
+  groupRoleplayFarrell,
+} from './practiceGroupPlayFarrell';
 
 /** Групповые упражнения по режимам у Фаррелл (гл. 4.2, 4.5, 4.6.1–4.6.3, 4.6.6) — «Подробнее» к приёмам группы. */
 const groupPlayMore: string[] = [

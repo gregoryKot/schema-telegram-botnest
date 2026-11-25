@@ -1,7 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import {
-  historicalRolePlaySteps,
-} from './rolePlayArntz';
+import { historicalRolePlaySteps } from './rolePlayArntz';
 import {
   modeInterviewMoreArntzJacob as ijMore,
   modeInterviewWhenArntzJacob as ijWhen,

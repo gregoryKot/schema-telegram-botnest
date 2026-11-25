@@ -1,6 +1,9 @@
 import { safePlaceImageryMore } from './imageryDiagnosticMore';
 import { rescriptingMoreAll } from './imageryArntz';
-import { imageryFarrellSafe, imageryFarrellRescript } from './imageryFarrellMore';
+import {
+  imageryFarrellSafe,
+  imageryFarrellRescript,
+} from './imageryFarrellMore';
 
 /** «Подробнее» к safe_place_imagery с дополнениями Фаррелл: вынесено, чтобы файлы не росли. */
 export const safePlaceMoreAll: string[] = [

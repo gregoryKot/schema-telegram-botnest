@@ -4,11 +4,21 @@ import { buildModeGuides, buildTechniqueGuides, practiceNotes } from './index';
 import type { Tr } from './types';
 import { vulnerableChildFarrell } from './modes/vulnerableChildFarrell';
 import { happyChildFarrell, healthyAdultFarrell } from './modes/healthyFarrell';
-import { punitiveCriticFarrell, demandingCriticFarrell } from './modes/criticFarrell';
-import { copingFarrellAvoid, copingFarrellSurrender, copingFarrellAggr } from './modes/copingFarrell';
+import {
+  punitiveCriticFarrell,
+  demandingCriticFarrell,
+} from './modes/criticFarrell';
+import {
+  copingFarrellAvoid,
+  copingFarrellSurrender,
+  copingFarrellAggr,
+} from './modes/copingFarrell';
 import { angerFarrell } from './modes/angryFarrell';
 import { transitionalFarrell } from './techniques/transitionalObjectsFarrell';
-import { imageryFarrellSafe, imageryFarrellRescript } from './techniques/imageryFarrellMore';
+import {
+  imageryFarrellSafe,
+  imageryFarrellRescript,
+} from './techniques/imageryFarrellMore';
 import { bubbleFarrell } from './techniques/safetyBubbleFarrell';
 import { planFarrell } from './techniques/farrellPlansMore';
 import { modeMapFarrell } from './techniques/modeMapFarrellMore';
@@ -18,8 +28,15 @@ import { empathicFarrell } from './techniques/empathicFarrell';
 import { historicalRoleFarrell } from './techniques/historicalRoleFarrell';
 import { futureFarrell } from './techniques/futureFarrell';
 import { angerExpressionFarrell } from './techniques/angerExpressionFarrell';
-import { groupFrameFarrell, groupLeadFarrell, groupPlanFarrell } from './practiceGroupFarrell';
-import { groupPlayFarrell, groupRoleplayFarrell } from './practiceGroupPlayFarrell';
+import {
+  groupFrameFarrell,
+  groupLeadFarrell,
+  groupPlanFarrell,
+} from './practiceGroupFarrell';
+import {
+  groupPlayFarrell,
+  groupRoleplayFarrell,
+} from './practiceGroupPlayFarrell';
 
 const ty: Tr = (t) => t;
 const vy: Tr = (_t, v) => v;
@@ -76,7 +93,9 @@ describe.each([
   });
 
   it('первые пункты historical_role_play стоят на прежних местах', () => {
-    const more = buildTechniqueGuides(tr).find((t) => t.id === 'historical_role_play')?.more ?? [];
+    const more =
+      buildTechniqueGuides(tr).find((t) => t.id === 'historical_role_play')
+        ?.more ?? [];
     expect(more[0]).toMatch(/^В начале терапии, когда корни паттерна/);
     expect(more[1]).toMatch(/^Разбор после каждого этапа \[Кембридж/);
   });

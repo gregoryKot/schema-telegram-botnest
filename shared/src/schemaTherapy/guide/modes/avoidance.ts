@@ -33,9 +33,7 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
         'Мы опять ушли от трудной темы, уже третий раз. Как думаете, от чего эта часть вас сейчас бережёт?',
       ),
     ],
-    more: [
-      ...copingFarrellAvoid,
-    ],
+    more: [...copingFarrellAvoid],
     techniques: [
       'pattern_breaking',
       'mode_interview',
