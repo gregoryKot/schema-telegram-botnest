@@ -25,11 +25,12 @@ import { nextUnrated } from './trackerOverlay/trackerFlow';
 import { useAutoAdvance } from './trackerOverlay/useAutoAdvance';
 import { useBackfillRatings } from './trackerOverlay/useBackfillRatings';
 import { SaveErrorNote } from './SaveErrorNote';
+import { PlanSheet } from './PlanSheet';
 import type { Need } from '../types';
 
 export function TrackerOverlay({
   needs, ratings, onChange, onSaved, onClose, initialNeedId,
-  onOpenNote, onOpenHistory, yesterdayRatings = {}, date, onDone,
+  onOpenNote, onOpenHistory, onOpenCase, yesterdayRatings = {}, date, onDone,
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const isBackfill = !!date;
@@ -50,6 +51,7 @@ export function TrackerOverlay({
     () => !isBackfill && !initialNeedId && nextUnrated(ids, ratings, -1, false) === null,
   );
   const [detailNeed, setDetailNeed] = useState<Need | null>(null);
+  const [planNeed, setPlanNeed] = useState<Need | null>(null); // «Выбрать шаг на завтра» с «Готово»
   // Строка «откуда это» — только на первом вопросе и пока нет ни одной оценки (решается при открытии).
   const [firstTime] = useState(() => !isBackfill && !ids.some((id) => isRated(ratings, id)));
   const [startIdx] = useState(idx);
@@ -109,6 +111,7 @@ export function TrackerOverlay({
 
   if (showCompletion) {
     return (
+      <>
       <CompletionScreen
         needs={needs}
         effectiveRatings={effectiveRatings}
@@ -119,7 +122,13 @@ export function TrackerOverlay({
         onReview={goTo}
         onOpenNote={onOpenNote}
         onOpenHistory={onOpenHistory}
+        onOpenCase={onOpenCase}
+        onOpenPractice={(id) => setPlanNeed(needs.find((n) => n.id === id) ?? null)}
       />
+      {planNeed && (
+        <PlanSheet needId={planNeed.id} needLabel={planNeed.chartLabel} onClose={() => setPlanNeed(null)} onSaved={() => setPlanNeed(null)} />
+      )}
+      </>
     );
   }
 

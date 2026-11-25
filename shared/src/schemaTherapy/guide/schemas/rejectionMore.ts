@@ -77,6 +77,7 @@ export const buildMistrustGuide = (tr: Tr): SchemaGuide => ({
   coping: SCHEMA_COPING.mistrust,
   modeIds: [
     'abandoned_child',
+    'angry_child',
     'punitive_critic',
     'detached_protector',
     'angry_protector',

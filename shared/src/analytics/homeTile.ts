@@ -1,10 +1,10 @@
-// Нажатия на главной «Сегодня» (правило №8): плитки и «Зачем это?»; событие home_tile,
+// Нажатия на главной «Сегодня» (правило №8): плитки, «Зачем это?» и знак «Карты себя»; событие home_tile,
 // meta { tile }. 'calm' и 'feed_all' с 2026-11-05 не шлются (ссылок на главной нет),
 // оставлены ради старых записей и /stats. Парный allow-list — HOME_TILES (src/analytics).
 export const HOME_TILE_EVENT = 'home_tile';
 
 export type HomeTile =
-  'tracker' | 'case' | 'diary' | 'calm' | 'why' | 'feed_all';
+  'tracker' | 'case' | 'diary' | 'calm' | 'why' | 'feed_all' | 'selfmap';
 
 // «Пропустить» на вопросе трекера (простой клиент, этап 2). Без meta.
 // Парный реестр — HOME_EVENTS в src/analytics/home-events.constants.ts.
@@ -21,4 +21,16 @@ export interface DiaryQuickSaveMeta {
   tag: DiaryQuickTag;
   /** true — запись ушла через «Заполнить подробно» (старый мастер). */
   detailed: boolean;
+}
+
+// «Что дальше» после трекера и быстрой записи дневника: переход по предложенному шагу.
+// meta { from, to }. Парный реестр — NEXT_STEP_* в src/analytics/home-events.constants.ts.
+export const DONE_NEXT_STEP_EVENT = 'done_next_step';
+
+export type DoneNextStepFrom = 'tracker' | 'diary';
+export type DoneNextStepTo = 'case' | 'practice' | 'mode' | 'schema';
+
+export interface DoneNextStepMeta {
+  from: DoneNextStepFrom;
+  to: DoneNextStepTo;
 }

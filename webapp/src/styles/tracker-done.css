@@ -30,7 +30,7 @@
 .tq-bar-col { display: block; width: 100%; border-radius: 14px; }
 .tq-bar-col.is-rated { background: var(--bar); height: calc(var(--v) * var(--bar-max)); min-height: 28px; }
 .tq-bar-col:not(.is-rated) { height: 6px; margin: 0 4px 4px; border-radius: 3px; background: color-mix(in srgb, var(--text) 22%, transparent); }
-.tq-bar-cap { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--text-sub); }
+.tq-bar-cap { max-width: 100%; font-size: 11.5px; line-height: 1.2; text-align: center; hyphens: manual; overflow-wrap: normal; color: var(--text-sub); }
 /* Уже 360 колонка столбика — 40px, а «Привяз.» в 11,5px — 42: подпись резалась многоточием (ревью g2 r6).
    Зазор 8 вместо 12 даёт колонке 43px; паз 28 и кегль остаются. */
 @media (max-width: 359px) {
