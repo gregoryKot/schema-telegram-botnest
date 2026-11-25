@@ -3,15 +3,18 @@ import { EntryRow } from './EntryRow';
 import { DayHead } from './DayHead';
 import { entryKey, type AnyEntry } from './diaryModel';
 import { splitDay } from './dayModel';
+import type { PatternTarget } from '../schemas/patternRoute';
 
 // Лента, сгруппированная по дням: строка даты (DayHead — дата и трекер дня полосками), под ней
 // карточки записей; на компьютере дата — колонкой слева (client-diary.css). День только с трекером —
 // одна строка даты без карточек.
-export function DiaryTimeline({ groups, onDelete, onOpenTrackerHistory }: {
+export function DiaryTimeline({ groups, onDelete, onOpenTrackerHistory, onOpenPattern }: {
   groups: { dateKey: string; items: AnyEntry[] }[];
   onDelete: (type: DiaryType, id: number) => Promise<void>;
   /** Тап по трекеру дня; без него строка не нажимается (лист «Дневники» из практик). */
   onOpenTrackerHistory?: () => void;
+  /** Переход из раскрытой записи к карточке схемы или режима. */
+  onOpenPattern?: (t: PatternTarget) => void;
 }) {
   return (
     <div className="cd-timeline">
@@ -21,7 +24,7 @@ export function DiaryTimeline({ groups, onDelete, onOpenTrackerHistory }: {
           <section key={dateKey} className={entries.length ? 'cd-day' : 'cd-day cd-day--bare'}>
             <DayHead dateKey={dateKey} tracker={tracker} onOpenTracker={onOpenTrackerHistory} />
             {entries.length > 0 && <div className="cd-day-items">
-              {entries.map(item => <EntryRow key={entryKey(item)} item={item} onDelete={onDelete} />)}
+              {entries.map(item => <EntryRow key={entryKey(item)} item={item} onDelete={onDelete} onOpenPattern={onOpenPattern} />)}
             </div>}
           </section>
         );
