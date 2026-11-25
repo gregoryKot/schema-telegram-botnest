@@ -16,7 +16,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'group_techniques',
     'group_orientation',
     'group_plan_vs_mode',
-    'self_practice_group_day',
     'group_mode_roleplay',
     'deliberate_practice',
     'online_format',
