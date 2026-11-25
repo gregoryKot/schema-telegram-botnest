@@ -39,11 +39,12 @@ export function EntryShell({ look, kind, title, time, text, preview, children }:
 
 const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
-/** Раскрытая часть: поля записи, под ними действия одной строкой — «Поделиться» слева, «Удалить» тихо справа. */
-export function EntryMore({ fields, share, remove }: { fields?: ReactNode; share?: ReactNode; remove: ReactNode }) {
+/** Раскрытая часть: поля записи, переходы к карточкам паттернов, под ними действия одной строкой — «Поделиться» слева, «Удалить» тихо справа. */
+export function EntryMore({ fields, links, share, remove }: { fields?: ReactNode; links?: ReactNode; share?: ReactNode; remove: ReactNode }) {
   return (
     <div className="cd-entry-more" role="presentation" onClick={stop}>
       {fields}
+      {links}
       <div className="cd-entry-actions">{share && <div className="cd-entry-share">{share}</div>}{remove}</div>
     </div>
   );

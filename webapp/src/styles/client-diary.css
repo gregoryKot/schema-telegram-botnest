@@ -66,20 +66,26 @@
 .ds-link.cd-share-link { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13.5px; }
 .cd-share-sign { display: inline-flex; }
 
-/* Лента и «Эта неделя»: на широкой странице сводка — липкой колонкой справа, иначе её нет. */
-.cd-feed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+/* Лента и «Эта неделя»: на широкой странице сводка — липкой колонкой справа; на узкой — полосой над лентой:
+   строки в ряд, знак мельче, без линеек. */
+.cd-feed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
 .cd-feed-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.cd-week { display: none; }
-@container cd-page (min-width: 880px) {
-  .cd-feed--week { grid-template-columns: minmax(0, 1fr) 224px; }
-  .cd-week { display: flex; position: sticky; top: 24px; }
-}
-.cd-week { flex-direction: column; gap: 10px; box-sizing: border-box; padding: 18px 18px 12px; border-radius: var(--r-16); }
+.cd-week { order: -1; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; padding: 12px 14px; border-radius: var(--r-16); }
 .cd-week .ds-label { color: var(--text-sub); }
-.cd-week-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.cd-week-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; column-gap: 10px; min-height: 40px; font-size: 14px; color: var(--text); }
-.cd-week-row + .cd-week-row { border-top: 1px solid var(--paper-sunk); }
-.cd-week-n { font: 400 22px/1 var(--serif); font-variant-numeric: tabular-nums; }
+.cd-week-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.cd-week-row { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13.5px; color: var(--text); }
+.cd-week-row > :first-child { transform: scale(0.75); margin: 0 -4px; }
+@container cd-page (min-width: 880px) {
+  .cd-feed { gap: 32px; }
+  .cd-feed--week { grid-template-columns: minmax(0, 1fr) 224px; }
+  .cd-week { order: 0; position: sticky; top: 24px; gap: 10px; padding: 18px 18px 12px; }
+  .cd-week-rows { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+  .cd-week-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 10px; min-height: 40px; font-size: 14px; }
+  .cd-week-row > :first-child { transform: none; margin: 0; }
+  .cd-week-row + .cd-week-row { border-top: 1px solid var(--paper-sunk); }
+}
+.cd-week-n { font: 400 17px/1 var(--serif); font-variant-numeric: tabular-nums; }
+@container cd-page (min-width: 880px) { .cd-week-n { font-size: 22px; } }
 
 /* Дни: строка даты (DayHead) — дата Literata, «сегодня · понедельник», справа трекер дня полосками. */
 .cd-timeline { display: flex; flex-direction: column; gap: 28px; }
