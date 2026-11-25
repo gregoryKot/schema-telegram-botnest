@@ -29,3 +29,4 @@
   .cd-explainer { padding: 22px 24px 26px; }
   .cd-explainer-sign { width: 104px; }
 }
+.ds-btn.cd-empty-start { align-self: flex-start; margin-top: 16px; }
