@@ -21,7 +21,7 @@ describe.each([
     expect(tech('imagery_rescripting').more?.join(' ')).toContain('пульса');
     expect(tech('chairwork').more?.join(' ')).toContain('поучать');
     expect(tech('limit_setting').more?.join(' ')).toContain('Вопрос-фильтр');
-    expect(tech('mode_map').voice?.join(' ')).toContain('бабушки');
+    expect(tech('mode_map').voice?.join(' ')).toContain('потерей человека');
     expect(modeGuide(tr, 'angry_child')!.more?.join(' ')).toContain('комиков');
   });
 
