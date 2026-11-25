@@ -1,8 +1,6 @@
 // Каталог-цель вкладки «Техники» (kb/catalog.ts): написанные техники и те, что литература даёт сверх них.
 // Новая техника — строка здесь в том же PR (планировалась — статус planned → written с тем же id).
-import type { CatalogTopic } from './catalog';
-
-const w = (id: string): CatalogTopic => ({ id, status: 'written' });
+import { type CatalogTopic, w, VF_TECHNIQUES } from './catalogMindfulness';
 
 export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   ...[
@@ -66,6 +64,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'probe_phrases',
     'intimacy_dialogue',
     'coping_bypass',
+    'mode_figures',
   ].map(w),
   {
     id: 'rupture_repair',
@@ -88,21 +87,94 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Келлогг',
     chapters: [],
-    note: 'карты книги нет',
+    note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (тема farewell_imagery)',
   },
   {
     id: 'body_mode_positions',
     title: 'Положение тела для режима (контекстуальная схема-терапия)',
     status: 'planned',
     source: 'Рёдигер',
-    chapters: [],
-    note: 'карты книги нет',
+    chapters: ['гл. 5', 'гл. 6', 'гл. 8', 'гл. 9', 'гл. 10', 'гл. 13'],
   },
+  {
+    id: 'genogram',
+    title: 'Генограмма: семья в трёх поколениях',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 4'],
+  },
+  {
+    id: 'perspective_change',
+    title: 'Смена точки зрения: наблюдатель, расширение, замещение',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 5', 'гл. 8'],
+  },
+  {
+    id: 'emotional_resonance_sphere',
+    title: 'Сфера эмоционального резонанса',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 10'],
+  },
+  {
+    id: 'self_regulation_toolkit',
+    title: 'Навыки эмоциональной регуляции: набор и иерархия',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 11'],
+  },
+  {
+    id: 'mode_diary_tools',
+    title: 'Дневники режимов: от смайлика до дневниковой карточки',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 4', 'гл. 7', 'гл. 11'],
+  },
+  {
+    id: 'farewell_imagery',
+    title: 'Образ прощания с умершим и режимы горя',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 9'],
+  },
+  ...VF_TECHNIQUES,
   {
     id: 'couple_mode_clash',
     title: 'Столкновение режимов пары: карта и выход из цикла',
-    status: 'needs_source',
-    book: 'Simeone-DiFrancesco, Roediger, Stevens «Schema Therapy with Couples», 2015',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 8'],
+    note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
+  },
+  {
+    id: 'need_vs_wish',
+    title: 'Потребность и желание: диаграмма, «стрельба по мишени»',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 5', 'гл. 8', 'гл. 11'],
+  },
+  {
+    id: 'mutual_reparenting',
+    title: 'Взаимный репарентинг пары',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 11'],
+  },
+  {
+    id: 'couple_friendship',
+    title:
+      'Дружба пары: признание чувств, примирение, правила разговора, заботливое поведение',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 5', 'гл. 9', 'гл. 12'],
+  },
+  {
+    id: 'couple_chairwork',
+    title: 'Стулья в паре: режимы обоих при партнёре',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 9', 'гл. 10'],
   },
   {
     id: 'child_mode_play',

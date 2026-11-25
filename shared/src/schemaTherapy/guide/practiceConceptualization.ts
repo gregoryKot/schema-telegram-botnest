@@ -1,5 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
-import { conceptMore, stagesMore } from './practiceConceptMore';
+import { stagesMore } from './practiceConceptMore';
+import { conceptMoreAll, historyInterviewMore } from './practiceConceptHeath';
 import { buildConceptArntz } from './practiceConceptArntz';
 
 /** «Для терапевта»: расспрос об истории, концептуализация и стадии изменений (гл. 3–4, приложение). Карты — docs/guide-sources/Кембридж.md, Арнтц-Якоб.md. */
@@ -22,11 +23,8 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
         'Назовите несколько слов про маму, какие первыми придут: и тёплые, и трудные.',
       ),
     ],
-    more: [
-      'По ходу оценки смотреть, видит ли клиент связь между своими отношениями сейчас и отношениями с родителями в детстве, может ли назвать, чего в них не хватало, и что сделал бы иначе со своими детьми [Кембридж, прил.].',
-      'Отдельно спросить о разрывах привязанности: развод, смерть, болезнь или зависимость родителя, долгие отъезды, смена нянь, приёмная семья. Часто клиент умом знает, что не виноват, а другая часть всё равно несёт вину; об этом спрашивают прямо [Кембридж, прил.].',
-    ],
-    sources: '[Кембридж, прил.]',
+    more: historyInterviewMore,
+    sources: '[Кембридж, прил.], [Хис, гл. 1]',
   },
   {
     id: 'case_conceptualization',
@@ -47,9 +45,9 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
         'Вот как это видится мне сейчас. Что здесь про вас, а что мимо?',
       ),
     ],
-    more: conceptMore,
+    more: conceptMoreAll,
     sources:
-      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4]',
+      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1]',
   },
   ...buildConceptArntz(tr),
   {

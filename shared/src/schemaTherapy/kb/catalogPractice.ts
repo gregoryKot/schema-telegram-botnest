@@ -1,6 +1,5 @@
 // Каталог-цель вкладки «Для терапевта» (kb/catalog.ts); этапы, оценка, психообразование — в guide/phases/.
-import type { CatalogTopic } from './catalog';
-const w = (id: string): CatalogTopic => ({ id, status: 'written' });
+import { type CatalogTopic, w, VF_PRACTICE } from './catalogMindfulness';
 export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   ...[
     'frame_additions',
@@ -57,15 +56,11 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'premature_ending',
     'cbt_with_schemas',
     'body_cues_therapist',
+    'therapist_mode_reset',
+    'questionnaires',
+    'temperament',
+    'positive_patterns_in_session',
   ].map(w),
-  {
-    id: 'questionnaires',
-    title: 'Опросники: YSQ, SMI, YPI, YRAI, YCI, YPSQ — что ловит каждый',
-    status: 'planned',
-    source: 'Янг',
-    chapters: ['гл. 2', 'гл. 5'],
-    note: 'ещё Кембридж гл. 3, 9, 10, «Касьяник» и Рафаэли гл. 16, 25',
-  },
   {
     id: 'session_frequency',
     title: 'Частота и регулярность сессий',
@@ -81,18 +76,96 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 1'],
   },
   {
-    id: 'temperament',
-    title: 'Темперамент клиента в концептуализации',
-    status: 'planned',
-    source: 'Янг',
-    chapters: ['гл. 1', 'гл. 2'],
-  },
-  {
     id: 'positive_schemas',
     title: 'Позитивные схемы и опора на них',
     status: 'planned',
     source: 'Кембридж',
     chapters: ['гл. 10'],
+  },
+  ...VF_PRACTICE,
+  {
+    id: 'couple_therapy_stages',
+    title: 'Этапы схема-терапии пары',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 1'],
+  },
+  {
+    id: 'couple_session_setup',
+    title: 'Парная сессия: расстановка, баланс внимания, тон, накал',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 7'],
+  },
+  {
+    id: 'infant_modes',
+    title: 'Младенческие режимы',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 6'],
+  },
+  {
+    id: 'forgiveness_after_betrayal',
+    title: 'Прощение после измены, тайна и восстановление доверия',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 10', 'гл. 12'],
+  },
+  {
+    id: 'couple_separation_decision',
+    title: 'Решение о расставании в терапии пары',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['гл. 10'],
+  },
+  {
+    id: 'couples_therapist_safety',
+    title: 'Безопасность терапевта пары: втягивание, психопатические черты',
+    status: 'planned',
+    source: 'Пары',
+    chapters: ['прил. А'],
+  },
+  {
+    id: 'attachment_assertiveness_poles',
+    title: 'Два полюса потребностей и четыре реакции на фрустрацию',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 1', 'гл. 3'],
+  },
+  {
+    id: 'session_balance_axes',
+    title: 'Баланс сессии: активация и рефлексия, забота и конфронтация',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 5'],
+  },
+  {
+    id: 'healthy_adult_six_processes',
+    title: 'Здоровый Взрослый по шести процессам ACT',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 4', 'гл. 7'],
+  },
+  {
+    id: 'stabilization_first',
+    title: 'Стабилизация до глубокой работы',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 12'],
+  },
+  {
+    id: 'partner_in_individual_therapy',
+    title: 'Партнёр клиента в индивидуальной терапии',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 14'],
+  },
+  {
+    id: 'therapist_attraction_to_client',
+    title: 'Влечение терапевта к клиенту',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 15'],
   },
   {
     id: 'childhood_experience_types',
