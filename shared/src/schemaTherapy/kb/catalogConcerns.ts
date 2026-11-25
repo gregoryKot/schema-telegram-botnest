@@ -1,5 +1,5 @@
 // Каталог-цель вкладки «Запросы и расстройства» (kb/catalog.ts): что должно быть по литературе.
-// Черновик состава — решение владельца (docs/BACKLOG.md, «Ждёт владельца»); out_of_scope — только по нему.
+// planned пишет агент пачкой «запрос: <id>» (knowledge-base.md, раздел 7); out_of_scope — только решение владельца.
 import type { CatalogTopic } from './catalog';
 
 const w = (id: string): CatalogTopic => ({ id, status: 'written' });
