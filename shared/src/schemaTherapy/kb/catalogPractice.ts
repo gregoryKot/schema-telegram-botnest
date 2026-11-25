@@ -84,6 +84,48 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 10'],
   },
   {
+    id: 'attachment_assertiveness_poles',
+    title: 'Два полюса потребностей и четыре реакции на фрустрацию',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 1', 'гл. 3'],
+  },
+  {
+    id: 'session_balance_axes',
+    title: 'Баланс сессии: активация и рефлексия, забота и конфронтация',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 5'],
+  },
+  {
+    id: 'healthy_adult_six_processes',
+    title: 'Здоровый Взрослый по шести процессам ACT',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 4', 'гл. 7'],
+  },
+  {
+    id: 'stabilization_first',
+    title: 'Стабилизация до глубокой работы',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 12'],
+  },
+  {
+    id: 'partner_in_individual_therapy',
+    title: 'Партнёр клиента в индивидуальной терапии',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 14'],
+  },
+  {
+    id: 'therapist_attraction_to_client',
+    title: 'Влечение терапевта к клиенту',
+    status: 'planned',
+    source: 'Рёдигер',
+    chapters: ['гл. 15'],
+  },
+  {
     id: 'childhood_experience_types',
     title:
       'Четыре пути к схеме: нехватка, травма, избыток, усвоение взгляда родителя',
