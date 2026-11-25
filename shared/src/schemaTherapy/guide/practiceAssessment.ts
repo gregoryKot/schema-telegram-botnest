@@ -2,6 +2,8 @@ import type { PracticeNotesBuilder } from './types';
 import { buildAssessAll, storySignalMoreAll } from './practiceAssessHeath';
 import { complaintToModeMoreBpd } from './practiceMoreArntzBpd';
 
+import { complaintToModeMore } from './practiceAssessMore';
+import { firstSessionHeathDosbor } from './heathDosborMore';
 /** «Для терапевта»: первая сессия и первые гипотезы о режимах (гл. 3). Карта — docs/guide-sources/Кембридж.md. */
 export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
   {
@@ -33,8 +35,8 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
       'Опросники обычно дают в конце первой встречи. При сильной гиперкомпенсации их лучше отложить или повторить через 8–10 недель, когда под копингом станет видна уязвимость [Кембридж, гл. 3].',
       'Пригодность к терапии: может ли клиент ходить регулярно и как он справляется с риском самоповреждения и суицида. Острые состояния — тяжёлая депрессия, зависимость, психоз, расстройство пищевого поведения — иногда требуют сначала стабилизации или стационара. Полезный вопрос для оценки риска — какой режим толкает к самоповреждению [Кембридж, гл. 3].',
       'Время, оплату, правила отмены и согласие на терапию обсуждают сразу. Длительность, этапы и формат — к концу оценки, когда готова концептуализация [Кембридж, гл. 3].',
-    ],
-    sources: '[Кембридж, гл. 3, боксы 3.1–3.4]',
+    ].concat(firstSessionHeathDosbor),
+    sources: '[Кембридж, гл. 3, боксы 3.1–3.4], [Хис, гл. 1]',
   },
   {
     id: 'complaint_to_mode',
@@ -54,7 +56,7 @@ export const buildPracticeAssessment: PracticeNotesBuilder = (tr) => [
         'Давайте посмотрим, кто внутри требует ещё и ещё, даже когда сил уже нет.',
       ),
     ],
-    more: complaintToModeMoreBpd,
+    more: [...complaintToModeMore, ...complaintToModeMoreBpd],
     sources: '[Кембридж, гл. 3, табл. 3.2], [Арнтц ПРЛ, гл. 3], [Арнтц, 2.2.1]',
   },
   {

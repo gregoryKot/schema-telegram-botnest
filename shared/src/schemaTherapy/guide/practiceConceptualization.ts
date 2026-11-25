@@ -1,6 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { stagesMore } from './practiceConceptMore';
-import { conceptMoreAll, historyInterviewMore } from './practiceConceptHeath';
+import { historyInterviewMore } from './practiceConceptHeath';
+import { conceptMoreRoediger } from './practiceConceptRoediger';
 import { buildConceptArntz } from './practiceConceptArntz';
 import { buildPracticeChildhoodExperience } from './practiceChildhoodExperience';
 
@@ -46,9 +47,9 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
         'Вот как это видится мне сейчас. Что здесь про вас, а что мимо?',
       ),
     ],
-    more: conceptMoreAll,
+    more: conceptMoreRoediger,
     sources:
-      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1]',
+      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Рёдигер, гл. 4]',
   },
   ...buildPracticeChildhoodExperience(tr),
   ...buildConceptArntz(tr),

@@ -15,7 +15,12 @@
   cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
 }
 .ct-link:hover { text-decoration: underline; text-underline-offset: 3px; }
-.ct-head-why { flex-shrink: 0; }
+.ct-head-why { flex-shrink: 0; margin-left: auto; }
+/* Знак «Карты себя» рядом с «Зачем это?»; точка — на карте новое с последнего открытия (mapSeen.ts). */
+.ct-head-map { flex-shrink: 0; }
+.ct-head-map-art { position: relative; display: flex; align-items: center; justify-content: center; }
+.ct-head-map-art > .pp-art { width: 30px; height: auto; }
+.ct-head-map-dot { position: absolute; top: -3px; right: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-clay); box-shadow: 0 0 0 2px var(--bg); }
 /* «Зачем это?» — журнальная ссылка: подпись акцентом над волосяной линией, без плашки и тени. */
 .ct-link.ct-head-why {
   text-decoration: underline; text-decoration-color: var(--panel-line);
@@ -53,8 +58,6 @@
    отступы — от --fit-room, кегли и картинки — от --fit-size, они уменьшаются последними.
    От 840px высоты — исходные размеры. Сверка — e2e-browser/today-fit.spec.ts. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  /* «Зачем это?» и лупа поиска — вместе у правого края. */
-  .ct-head-why { margin-left: auto; }
   .ct-page .ct-head { margin-bottom: calc(var(--fit-room) * .04); }
   .ct-page .ct-home { gap: calc(12px + var(--fit-room) * .04); }
   .ct-main.pp-block { padding: calc(12px + var(--fit-room) * .06) 0 calc(14px + var(--fit-room) * .07); gap: calc(12px + var(--fit-room) * .05); }

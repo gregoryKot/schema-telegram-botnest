@@ -253,6 +253,7 @@ export function AppShell() {
               initialNeedId={ov.trackerNeedId}
               onOpenNote={() => ov.setShowTodayNote(true)}
               onOpenHistory={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setTrackerTab('history'); ov.setShowTracker(true); }}
+              onOpenCase={() => { ov.setShowTrackerOverlay(false); ov.setTrackerNeedId(null); ov.setQuickAction('case'); }}
               yesterdayRatings={yesterdayRatings}
             />
           </Suspense>

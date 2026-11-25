@@ -1,6 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { homeworkNotDoneMoreAll } from './practiceEndingHeath';
 import { modeFlippingMoreBpd } from './practiceMoreArntzBpd';
+import { modeFlippingMore } from './practiceMoreArntzIntro';
 
 /** «Для терапевта» по Арнцу и ван Гендерен (ПРЛ, гл. 6, 8, 9). Карта — docs/guide-sources/Арнц-ПРЛ.md, пачка 12. */
 export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
@@ -71,7 +72,7 @@ export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
         'Кажется, сейчас со мной говорит уже другая часть вас. Та, испуганная, ещё здесь?',
       ),
     ],
-    more: modeFlippingMoreBpd,
+    more: [...modeFlippingMore, ...modeFlippingMoreBpd],
     sources: '[Арнтц ПРЛ, гл. 2, 9], [Арнтц, 1.4]',
   },
 ];

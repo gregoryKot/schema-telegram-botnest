@@ -36,4 +36,14 @@ describe('TodayHead', () => {
     rerender(<TodayHead firstName="" onWhy={() => {}} />);
     expect(screen.queryByRole('button', { name: 'Поиск' })).toBeNull();
   });
+  it('знак «Карта себя» зовёт onMap; точка и подпись «есть новое» — только с mapNew', () => {
+    const onMap = vi.fn();
+    const { container, rerender } = render(<TodayHead firstName="" onWhy={() => {}} onMap={onMap} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Карта себя' }));
+    expect(onMap).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.ct-head-map-dot')).toBeNull();
+    rerender(<TodayHead firstName="" onWhy={() => {}} onMap={onMap} mapNew />);
+    expect(screen.getByRole('button', { name: 'Карта себя: есть новое' })).toBeTruthy();
+    expect(container.querySelector('.ct-head-map-dot')).not.toBeNull();
+  });
 });
