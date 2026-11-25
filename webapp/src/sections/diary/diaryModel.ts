@@ -5,7 +5,7 @@ import type { TrackerDay } from './trackerEntries';
 import { modeEntryKind } from './entryKind';
 
 // Чистая модель экрана «Записи»: единый список (дневники + строки трекера),
-// группировка по дням, счётчики сегмента «Все · Трекер · Случаи · Дневник».
+// группировка по дням, счётчики сегмента «Все · Трекер · Разборы · Дневник».
 
 export type AnyEntry =
   | { _type: 'schema'; sortKey: string; dateKey: string; entry: SchemaDiaryEntry }

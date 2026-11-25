@@ -391,7 +391,7 @@ describe('buildWhereIAm', () => {
       }),
       tyTr,
     );
-    expect(text).toContain('Один случай');
+    expect(text).toContain('Один разбор');
     expect(text).not.toContain('punitive_critic');
   });
 
@@ -440,7 +440,7 @@ describe('buildWhereIAm', () => {
   it('без повторов (top.count < 2) — «пока без повторов», без частого гостя', () => {
     // top.count===1 — единственный случай, когда «частый гость» был бы
     // враньём (правило CLAUDE.md про хардкод/заглушки): здесь и заодно
-    // caseWord(2) — согласование «случая» (mod10 2-4).
+    // pluralRu(2) — согласование «разбора» (mod10 2-4).
     const text = buildWhereIAm(
       input({
         caseCount: 2,
@@ -452,15 +452,15 @@ describe('buildWhereIAm', () => {
       tyTr,
     );
     expect(text).toBe(
-      '2 случая. Пока без повторов — каждый случай на своей метке.',
+      '2 разбора. Пока без повторов — каждый разбор на своей метке.',
     );
   });
 
-  it('caseWord: 11 разборов — «случаев» (11-14 — особый диапазон согласования)', () => {
+  it('согласование: 11 разборов — «разборов» (11-14 — особый диапазон согласования)', () => {
     const text = buildWhereIAm(
       input({ caseCount: 11, modeStats: [mode({ count: 1 })] }),
       tyTr,
     );
-    expect(text).toContain('11 случаев.');
+    expect(text).toContain('11 разборов.');
   });
 });

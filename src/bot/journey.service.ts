@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { loadPracticeJourney } from './journey-practice-sessions.util';
-import { modeDiaryLabel, schemaDiaryLabels } from './journey-diary-labels';
+import { modeDiaryItem, schemaDiaryLabels } from './journey-mode-item';
 type PracticeJourney = Awaited<ReturnType<typeof loadPracticeJourney>>;
 
 // «Мой путь» — сводный архив всей активности пользователя: сколько раз и когда
@@ -15,6 +15,7 @@ export type JourneyItemType =
   | 'note'
   | 'schema_diary'
   | 'mode_diary'
+  | 'case'
   | 'gratitude'
   | 'practice'
   | 'plan_done'
@@ -43,6 +44,7 @@ export interface JourneyCounts {
   notes: number;
   schemaDiary: number;
   modeDiary: number;
+  cases: number;
   gratitudeDays: number;
   practices: number;
   plansDone: number;
@@ -83,6 +85,7 @@ export class JourneyService {
       schemaDiaryCount,
       schemaDiary,
       modeDiaryCount,
+      casesCount,
       modeDiary,
       gratitudeCount,
       gratitude,
@@ -118,12 +121,13 @@ export class JourneyService {
         orderBy: { createdAt: 'desc' },
         select: { id: true, createdAt: true, schemaIds: true },
       }),
-      p.modeDiaryEntry.count({ where: by }),
+      p.modeDiaryEntry.count({ where: { ...by, fromCase: false } }),
+      p.modeDiaryEntry.count({ where: { ...by, fromCase: true } }),
       p.modeDiaryEntry.findMany({
         where: by,
         take: FEED_LIMIT,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, createdAt: true, modeId: true },
+        select: { id: true, createdAt: true, modeId: true, fromCase: true },
       }),
       p.gratitudeDiaryEntry.count({ where: by }),
       p.gratitudeDiaryEntry.findMany({
@@ -214,12 +218,7 @@ export class JourneyService {
         at: iso(e.createdAt),
         schemaIds: schemaDiaryLabels(e),
       })),
-      ...modeDiary.map((e) => ({
-        type: 'mode_diary' as const,
-        id: e.id,
-        at: iso(e.createdAt),
-        modeId: modeDiaryLabel(e),
-      })),
+      ...modeDiary.map(modeDiaryItem),
       ...gratitude.map((e) => ({
         type: 'gratitude' as const,
         id: e.id,
@@ -278,6 +277,7 @@ export class JourneyService {
         notes: notesCount,
         schemaDiary: schemaDiaryCount,
         modeDiary: modeDiaryCount,
+        cases: casesCount,
         gratitudeDays: gratitudeCount,
         practices: practicesCount,
         plansDone: plansDone.length,

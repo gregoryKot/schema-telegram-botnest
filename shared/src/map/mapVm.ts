@@ -185,8 +185,8 @@ export const mapIsEmpty = (input: MapInput): boolean =>
 export function modeItemSub(item: MapModeItem): string {
   if (item.dormant) return `Не появлялся в записях ${item.daysSince} дней`;
   if (item.count > 0)
-    return `${item.count} ${pluralRu(item.count, 'случай', 'случая', 'случаев')}`;
+    return `${item.count} ${pluralRu(item.count, 'разбор', 'разбора', 'разборов')}`;
   return item.hasCard
-    ? 'Приметы собраны, случаев пока нет'
-    : 'Случаев пока нет';
+    ? 'Приметы собраны, разборов пока нет'
+    : 'Разборов пока нет';
 }

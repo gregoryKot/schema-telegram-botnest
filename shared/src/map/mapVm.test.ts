@@ -215,15 +215,15 @@ describe('modeItemSub', () => {
 
   it('«приметы собраны» — только когда карточка заполнена', () => {
     expect(modeItemSub(item({ count: 0, hasCard: true }))).toBe(
-      'Приметы собраны, случаев пока нет',
+      'Приметы собраны, разборов пока нет',
     );
     expect(modeItemSub(item({ count: 0, hasCard: false }))).toBe(
-      'Случаев пока нет',
+      'Разборов пока нет',
     );
   });
 
-  it('есть случаи — считает со склонением', () => {
-    expect(modeItemSub(item({ count: 3, dormant: false }))).toBe('3 случая');
+  it('есть разборы — считает со склонением', () => {
+    expect(modeItemSub(item({ count: 3, dormant: false }))).toBe('3 разбора');
   });
 
   it('затихший — с давностью', () => {
