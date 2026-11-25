@@ -101,6 +101,9 @@ describe('StatsReportService.render', () => {
     const crawlers = {
       render: jest.fn().mockResolvedValue('роботы нейросетей: 4'),
     };
+    const diaryJump = {
+      render: jest.fn().mockResolvedValue('переходы из записей: 2'),
+    };
     const push = {
       render: jest.fn().mockResolvedValue('уведомления в приложении: 3'),
     };
@@ -136,6 +139,7 @@ describe('StatsReportService.render', () => {
         therapistExit,
         crawlers,
         push,
+        diaryJump,
       },
       service: new StatsReportService(
         product as never,
@@ -173,6 +177,7 @@ describe('StatsReportService.render', () => {
         therapistExit as never,
         crawlers as never,
         push as never,
+        diaryJump as never,
       ),
     };
   };

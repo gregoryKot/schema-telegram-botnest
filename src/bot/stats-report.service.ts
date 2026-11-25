@@ -10,6 +10,7 @@ import { SignupSourceMetricsService } from './signup-source-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
 import { SiteInstallMetricsService } from './site-install-metrics.service';
 import { ScreenMetricsService } from './screen-metrics.service';
+import { DiaryJumpMetricsService } from './diary-jump-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { ScreenShareMetricsService } from './screen-share-metrics.service';
@@ -81,6 +82,7 @@ export class StatsReportService {
     readonly therapistExit: TherapistExitMetricsService,
     readonly crawlers: CrawlerMetricsService,
     readonly push: PushMetricsService,
+    readonly diaryJump: DiaryJumpMetricsService,
   ) {}
 
   /** Имена блоков — для сверки с разделами (stats-sections.spec). */
