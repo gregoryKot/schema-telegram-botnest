@@ -10,8 +10,8 @@
 .aa-head-text { flex: 1; min-width: 0; }
 .aa-avatar { width: 72px; height: 72px; font-size: 26px; flex-shrink: 0; }
 .aa-lead { margin: 8px 0 0; }
-/* Знак границы у заголовка — лист неба (2FA и доступ, 240), размер знака группы. */
-.aa-head-sign { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 112px; height: 76px; border-radius: var(--r-16); }
+/* Знак границы у заголовка — знак без подложки (pp-block-sign; небо 240 — у самого знака), размер знака группы. */
+.aa-head-sign { justify-content: center; width: 112px; height: 76px; }
 .aa-alert { margin: -8px 0 0; }
 
 /* Плоские группы на бумаге страницы: линия --panel-line сверху, без белых карточек. */
@@ -96,7 +96,7 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
   .aa-page { padding: 20px 16px 40px; gap: 22px; }
   .aa-avatar { width: 56px; height: 56px; font-size: 20px; }
   .aa-head { gap: 14px; }
-  .aa-head-sign { width: 72px; height: 56px; border-radius: 14px; }
+  .aa-head-sign { width: 72px; height: 56px; }
   .aa-head-sign .pp-art { width: 64px; height: auto; }
   .aa-row { gap: 12px; }
   .aa-row .ds-btn { min-height: 44px; }
@@ -130,7 +130,7 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
   .aa-head .ds-eyebrow { grid-area: eyebrow; }
   .aa-head .ds-h1 { grid-area: title; margin: 0; }
   .aa-head .aa-lead { grid-area: lead; margin: 0; }
-  .aa-head-sign { grid-area: sign; width: 56px; height: 36px; border-radius: 10px; }
+  .aa-head-sign { grid-area: sign; width: 56px; height: 36px; }
   .aa-head-sign .pp-art { width: 52px; height: auto; }
 }
 
