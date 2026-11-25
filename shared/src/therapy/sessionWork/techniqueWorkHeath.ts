@@ -8,7 +8,7 @@ export const HEATH_TECHNIQUE_WORK: Record<HeathTechniqueId, TechniqueWorkDef> =
       name: 'Креативная работа с режимами',
       fields: [
         ['mode', 'Какой режим'],
-        ['form', 'Форма: рисунок, маска, запись, кукла'],
+        ['form', 'Форма: рисунок, маска, запись, кукла, игрушки, игра'],
         ['dialogue', 'Что сказали режиму и кто'],
         ['ending', 'Что сделали с режимом в конце'],
       ],
