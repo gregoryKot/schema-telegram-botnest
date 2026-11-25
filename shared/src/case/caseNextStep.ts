@@ -180,14 +180,13 @@ export function caseNextStep(input: NextStepInput, tr: Tr): NextStepView {
 /**
  * «Где я сейчас» — фраза о том, что УЖЕ видно на карте, никогда голый
  * счётчик. Данные не придумываются: если самый частый режим виден меньше
- * двух раз, про «частого гостя» не говорим.
+ * двух раз, про «частого гостя» не говорим. Пустая карта — пустая строка:
+ * про первый разбор уже говорит подсказка у кнопки, второй раз не нужно.
  */
 export function buildWhereIAm(input: NextStepInput, tr: Tr): string {
   const { caseCount, modeStats } = input;
-  if (caseCount === 0 || modeStats.length === 0) return FIRST_CASE_VIEW.hint!;
-
-  const top = pickTop(modeStats);
-  if (!top) return FIRST_CASE_VIEW.hint!;
+  const top = caseCount === 0 ? undefined : pickTop(modeStats);
+  if (!top) return '';
   const name = modeName(top);
   const word = caseWord(caseCount);
 
