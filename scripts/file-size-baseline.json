@@ -1185,7 +1185,7 @@
   "src/analytics/admin/admin-analytics.service.ts": 90,
   "src/analytics/admin/admin-analytics.types.ts": 110,
   "src/analytics/admin/admin-events-daily.ts": 17,
-  "src/analytics/admin/admin-feature-dictionary.ts": 248,
+  "src/analytics/admin/admin-feature-dictionary.ts": 253,
   "src/analytics/admin/admin-overview.builders.ts": 84,
   "src/analytics/admin/admin-people.builders.ts": 84,
   "src/analytics/admin/admin-therapist.builders.ts": 112,
