@@ -1,5 +1,7 @@
 // Серверная копия ключей полей техник «Что делали» (session-work.ts): сверка — session-work.sync.spec.ts.
-export const TECHNIQUE_WORK_KEYS: Record<string, readonly string[]> = {
+type KeyMap = Readonly<Record<string, readonly string[]>>;
+
+export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:imagery_rescripting': ['trigger', 'image', 'rewrite', 'ending'],
   'technique:future_imagery': ['situation', 'rehearsal', 'obstacle', 'result'],
   'technique:chairwork': ['theme', 'modeVoice', 'adultVoice', 'ending'],

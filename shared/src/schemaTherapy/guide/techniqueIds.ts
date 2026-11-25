@@ -1,4 +1,3 @@
-import type { FarrellTechniqueId } from './techniqueIdsFarrell';
 /** Первые 14 техник библиотеки (guide/techniques/{imagery,chairs,stance,homework}.ts). */
 export type CoreTechniqueId =
   | 'imagery_rescripting'
@@ -16,6 +15,7 @@ export type CoreTechniqueId =
   | 'self_compassion'
   | 'healthy_adult_imagery';
 
+import type { FarrellTechniqueId } from './techniqueIdsFarrell';
 /** Техники схема-терапии, добавленные позже (#1366). */
 export type SchemaTechniqueId =
   | 'limited_reparenting'

@@ -2,8 +2,7 @@
 // Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
-  YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId,
-  RoedigerTechniqueId,
+  YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId, RoedigerTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -68,7 +67,9 @@ const CAMBRIDGE_TECHNIQUE_SIGN: Record<CambridgeTechniqueId, GuideSign> = {
   need_now_question: 'cup',
 };
 
-const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = { schema_dialogue: 'talk_schema' };
+const YOUNG_TECHNIQUE_SIGN: Record<YoungTechniqueId, GuideSign> = {
+  schema_dialogue: 'talk_schema',
+};
 
 const ARNTZ_TECHNIQUE_SIGN: Record<ArntzTechniqueId, GuideSign> = {
   current_role_play: 'talk_now',

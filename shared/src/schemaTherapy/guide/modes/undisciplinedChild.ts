@@ -1,5 +1,5 @@
 import type { ModeGuide, Tr } from '../types';
-import { undisciplinedCh9 } from './undisciplinedChildCh9';
+import { undisciplinedMore } from './undisciplinedChildMore';
 
 /** Импульсивные детские режимы: Недисциплинированный Ребёнок. */
 export const buildUndisciplinedChildGuide = (tr: Tr): ModeGuide => ({
@@ -24,12 +24,7 @@ export const buildUndisciplinedChildGuide = (tr: Tr): ModeGuide => ({
       'Расскажите, как хорошо живётся, когда скучное можно не делать. А теперь пересядьте: что ответит Здоровый Взрослый?',
     ),
   ],
-  more: [
-    'Порядок в кейсе Тоби: клиент со стула ребёнка рассказывает, как ему хорошо живётся, и отвечает себе со стула Здорового Взрослого. Потом стул ребёнка занимает терапевт [Арнтц, 7.3].',
-    'Протестное неделание — уже Упрямый Ребёнок. С ним сначала обсуждают, зачем задание самому клиенту [Арнтц, 7.4].',
-    'Арнтц и Якоб допускают договорённость «следующая сессия — после выполнения»: так выглядит взаимная ответственность [Арнтц, 7.3].',
-    ...undisciplinedCh9,
-  ],
+  more: undisciplinedMore,
   techniques: ['chairwork', 'pattern_breaking', 'flashcards', 'pros_cons'],
   moreTechniques: ['problem_solving'],
   betweenSessions: [
