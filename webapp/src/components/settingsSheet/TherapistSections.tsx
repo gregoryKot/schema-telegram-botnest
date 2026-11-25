@@ -3,7 +3,6 @@ import { api } from '../../api';
 import type { UserSettings } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
-import { THERAPY_INVITE_CODE_PLACEHOLDER, THERAPY_INVITE_INPUT_MAX } from '../../../../shared/src/therapy/inviteCode';
 import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROFILE_TOGGLE as PROFILE, therapistConnectedTitle, therapistSectionHint } from '../../../../shared/src/therapy/therapistLinkCopy';
 import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../ConfirmDialog';
@@ -11,6 +10,7 @@ import { SSection, SRow, Toggle, Tick } from './ui';
 import { SectionLoadState } from './SectionLoadState';
 import type { useTherapyRelationSettings } from './useTherapyRelationSettings';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
+import { TherapistCodeForm } from './TherapistCodeForm';
 
 type Relation = ReturnType<typeof useTherapyRelationSettings>;
 
@@ -56,26 +56,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
       ) : (
         <div className="st-body-block">
           <FormerTherapistNote load={api.getFormerTherapist} enabled={therapyRelation === null} />
-          <p className="st-text">
-            {tr('Код или ссылку от терапевта вставь в поле ниже.', 'Код или ссылку от терапевта вставьте в поле ниже.')}
-          </p>
-          <p className="st-text st-text--faint">
-            Ввод кода — это согласие открыть терапевту доступ к своим записям:
-            дневникам, заметкам и результатам опросников (объём настраивается после
-            подключения, отключить терапевта можно в любой момент).
-          </p>
-          <div className="st-actions">
-            <input className={`ds-input st-grow st-code${join.error ? ' st-input-err' : ''}`}
-              aria-label="Код от терапевта"
-              value={join.code} onChange={e => join.setCode(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && void join.submit()}
-              placeholder={THERAPY_INVITE_CODE_PLACEHOLDER} maxLength={THERAPY_INVITE_INPUT_MAX}
-              autoComplete="off" autoCapitalize="characters" spellCheck={false} />
-            <button type="button" className="ds-link st-act st-go" onClick={() => void join.submit()} disabled={!join.canSubmit}>
-              {join.busy ? 'Подключаю…' : 'Подключиться'}
-            </button>
-          </div>
-          {join.error && <div className="st-err">{join.error}</div>}
+          <TherapistCodeForm join={join} />
         </div>
       )}
     </SSection>

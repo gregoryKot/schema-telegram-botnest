@@ -34,6 +34,12 @@ describe('HereAndNowBlock compact', () => {
     expect(screen.getByRole('button', { name: 'Важное о самопомощи' })).toBeTruthy();
   });
 
+  it('headless (десктоп «Практик»): без своего заголовка, полный абзац', () => {
+    renderBlock({ headless: true });
+    expect(screen.queryByRole('heading', { name: 'Здесь и сейчас' })).toBeNull();
+    expect(screen.getByText(/счётчик покажет/)).toBeTruthy();
+  });
+
   it('extraRows идут после квадратов заземления и «Стопа»; «начать →» нет', () => {
     renderBlock({ compact: true, extraRows: <div data-testid="extra">строка</div> });
     const stop = screen.getByText('Техника «Стоп»');
