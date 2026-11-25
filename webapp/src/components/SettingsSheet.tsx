@@ -28,6 +28,7 @@ import { ShareSection, AboutSection } from './settingsSheet/ShareAboutSections';
 import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
 import { homeIconMode } from './settingsSheet/homeIconMode';
 import { settingsNav } from './settingsSheet/settingsNav';
+import { SettingsSideNav } from './settingsSheet/SettingsSideNav';
 
 // Дефолты на случай, если api.getSettings() отказал — экран не должен
 // зависнуть на Loader, показываем безопасные значения.
@@ -106,13 +107,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
           </div>
           {!settings ? <SettingsSkeleton navRows={navItems.length} /> : (
             <div className="st-body">
-              <div className="settings-sidenav">
-                {navItems.map(n => (
-                  <button key={n.id} data-target={n.id} onClick={() => scrollTo(n.id)} className="settings-sidenav-item st-navitem">
-                    {n.label}
-                  </button>
-                ))}
-              </div>
+              <SettingsSideNav items={navItems} onPick={scrollTo} scrollRef={scrollRef} />
               <div className="st-scroll" ref={scrollRef}>
                 <div className="settings-content-inner st-inner">
                   <h2 className="ds-h2 st-h">{SUB_TITLES.main}</h2>

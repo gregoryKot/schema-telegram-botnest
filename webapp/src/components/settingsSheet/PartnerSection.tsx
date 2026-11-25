@@ -29,11 +29,11 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
   const actions = data && (
     <>
       {canCreateInvite(data) && (
-        <button className={`ds-btn ds-btn--sm${quietInvite ? ' ds-btn--secondary' : ''}`} onClick={handleCreateInvite} disabled={loading}>
+        <button className={quietInvite ? 'ds-link st-act st-go' : 'ds-btn ds-btn--sm'} onClick={handleCreateInvite} disabled={loading}>
           {inviteButtonLabel({ loading, createError, hasPartners: data.partners.length > 0, hasPending: !!data.pendingCode })}
         </button>
       )}
-      <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setJoinView('join')}>Ввести код</button>
+      <button type="button" className="ds-link st-act st-go" onClick={() => setJoinView('join')}>Ввести код</button>
     </>
   );
 
@@ -56,7 +56,7 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
             <div className="st-actions">
               <input className={`ds-input st-grow st-code st-code--center${joinError ? ' st-input-err' : ''}`}
                 value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код" />
-              <button className="ds-btn" onClick={() => void handleJoin()} disabled={!joinCode.trim() || loading}>Присоединиться</button>
+              <button type="button" className="ds-link st-act st-go" onClick={() => void handleJoin()} disabled={!joinCode.trim() || loading}>Присоединиться</button>
             </div>
             {joinError && <div className="st-err">Код не найден или уже использован</div>}
           </div>

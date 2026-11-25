@@ -71,7 +71,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
               onKeyDown={e => e.key === 'Enter' && void join.submit()}
               placeholder={THERAPY_INVITE_CODE_PLACEHOLDER} maxLength={THERAPY_INVITE_INPUT_MAX}
               autoComplete="off" autoCapitalize="characters" spellCheck={false} />
-            <button className="ds-btn" onClick={() => void join.submit()} disabled={!join.canSubmit}>
+            <button type="button" className="ds-link st-act st-go" onClick={() => void join.submit()} disabled={!join.canSubmit}>
               {join.busy ? 'Подключаю…' : 'Подключиться'}
             </button>
           </div>
@@ -90,7 +90,7 @@ export function CabinetSection({ rel, onOpenTherapistCabinet }: { rel: Relation;
       <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
       <div className="st-body-block">
         <div className="st-actions">
-          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={createInvite}>Создать приглашение клиенту</button>
+          <button type="button" className="ds-link st-act st-go" onClick={createInvite}>Создать приглашение клиенту</button>
         </div>
         {/* Раньше «Скопировано ✓» показывалось всегда, даже если navigator.clipboard упал — теперь только при реальном успехе, иначе видна ссылка для ручного копирования. */}
         {invite && (inviteCopied

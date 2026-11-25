@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import { api, type UserSettings } from '../../api';
 import { useSetAddressForm, useTr } from '../../utils/addressForm';
-import { SignChip } from '../paper/SignChip';
 import { SSection } from './ui';
+import { stepTab } from '../lineTabsModel';
 
 interface NameProps {
-  value: string;
-  onChange: (v: string) => void;
-  displayName?: string | null;
-  onNameChanged?: (name: string) => void;
-  onSaved: () => void;
+  value: string; onChange: (v: string) => void; displayName?: string | null; onNameChanged?: (name: string) => void; onSaved: () => void;
 }
 
 // Раздел «Имя».
@@ -29,9 +25,7 @@ export function NameSection({ value, onChange, displayName, onNameChanged, onSav
         <input className="ds-input" aria-label="Имя" value={value} onChange={e => onChange(e.target.value)}
           placeholder={tr('Твоё имя', 'Ваше имя')} maxLength={50} />
         {value !== (displayName ?? '') && (
-          <button className="ds-btn ds-btn--sm" disabled={saving || !value.trim()} onClick={save}>
-            {saving ? '...' : 'Сохранить'}
-          </button>
+          <button className="ds-btn ds-btn--sm" disabled={saving || !value.trim()} onClick={save}>{saving ? '...' : 'Сохранить'}</button>
         )}
       </div>
       {error && <div role="alert" className="st-err">Не удалось сохранить имя</div>}
@@ -40,26 +34,29 @@ export function NameSection({ value, onChange, displayName, onNameChanged, onSav
 }
 
 // Раздел «Обращение» (ты/вы).
+const FORMS = ['ty', 'vy'] as const;
 export function AddressSection({ settings, patch }: { settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<boolean> }) {
   const setAddressForm = useSetAddressForm();
+  const cur = settings.addressForm ?? 'ty';
+  // Форма ставится сразу (интерфейс говорит по-новому без ожидания), а на отказе откатывается: patch возвращает исход.
+  const pick = (form: typeof FORMS[number]) => {
+    setAddressForm(form);
+    void patch({ addressForm: form }).then((ok) => { if (!ok) setAddressForm(cur); });
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLElement>) => { // радиогруппа: ←/→ выбирают соседний вариант, фокус идёт за выбором
+    const next = stepTab(FORMS, cur, e.key);
+    if (!next) return;
+    e.preventDefault(); pick(next);
+    e.currentTarget.parentElement?.querySelector<HTMLElement>(`[data-form="${next}"]`)?.focus();
+  };
   return (
     <SSection id="s-address" label="Обращение">
-      <div className="st-body-block">
-        {/* Выбор значения, а не раздел — чипы-радио, как цель в днях у задачи. */}
-        <div className="st-chips" role="radiogroup" aria-label="Обращение">
-          {(['ty', 'vy'] as const).map(form => (
-            <SignChip key={form} radio label={form === 'ty' ? 'На «ты»' : 'На «вы»'}
-              on={(settings.addressForm ?? 'ty') === form}
-              onToggle={() => {
-                // Форма ставится сразу (интерфейс говорит по-новому без ожидания), а на
-                // отказе откатывается вместе с переключателем: patch возвращает исход.
-                const prev = settings.addressForm ?? 'ty';
-                setAddressForm(form);
-                void patch({ addressForm: form }).then((ok) => { if (!ok) setAddressForm(prev); });
-              }}
-            />
-          ))}
-        </div>
+      {/* Выбор значения, а не раздел: варианты текстом на линии, у выбранного — черта акцента (как вкладки), без коробок и галки. */}
+      <div className="st-pick" role="radiogroup" aria-label="Обращение">
+        {FORMS.map(form => (
+          <button key={form} type="button" role="radio" className="st-pick-opt" data-form={form} aria-checked={cur === form}
+            tabIndex={cur === form ? 0 : -1} onClick={() => pick(form)} onKeyDown={onKey}>{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
+        ))}
       </div>
     </SSection>
   );

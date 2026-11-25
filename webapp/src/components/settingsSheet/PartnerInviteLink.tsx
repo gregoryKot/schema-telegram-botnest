@@ -14,7 +14,7 @@ export function PartnerInviteLink({ label, url, actions }: { label: string; url:
       <div className="st-invite-label">{label}</div>
       <div className="st-invite-field" title={url}>{url}</div>
       <div className="st-actions">
-        <button type="button" className={`ds-btn ds-btn--sm ds-btn--secondary st-invite-copy${copy.failed ? ' st-btn-danger' : ''}`} onClick={() => void copy.copy(url)}>
+        <button type="button" className={`ds-link st-act st-invite-copy${copy.failed ? ' ds-link--danger' : ''}`} onClick={() => void copy.copy(url)}>
           {copy.copied ? <><Tick />Скопировано</> : copy.failed ? 'Не скопировалось — ссылка выше' : 'Скопировать ссылку'}
         </button>
         {actions}
