@@ -9,11 +9,16 @@ import { modeEntryKind, schemaEntryKind } from './entryKind';
 import { entryLook } from './feedLook';
 import { EntryFields } from './EntryFields';
 import { EntryMore, EntryShell } from './EntryShell';
+import { PatternLinks } from './PatternLinks';
+import { entryPatternLinks } from './patternLinksModel';
+import type { PatternTarget } from '../schemas/patternRoute';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 import '../../styles/client-diary.css';
 // Карточки записей трёх дневников в ленте «Записей»: вид — по типу записи (feedLook), каркас — EntryShell.
 
-export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void> }) {
+type OpenPattern = (t: PatternTarget) => void;
+
+export function SchemaEntry({ entry, onDelete, onOpenPattern }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void>; onOpenPattern?: OpenPattern }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
   const kind = schemaEntryKind(entry);
@@ -26,12 +31,12 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
       text={entry.trigger}
       preview={emotions.length > 0 && <div className="cd-entry-meta">{emotions.slice(0, 4).map(e => e.label).join(' · ')}</div>}
     >
-      {open => open && <EntryMore fields={<EntryFields rows={schemaEntryRows(entry)} />} remove={<DeleteBtn onClick={onDelete} />} />}
+      {open => open && <EntryMore fields={<EntryFields rows={schemaEntryRows(entry)} />} links={<PatternLinks links={entryPatternLinks({ _type: 'schema', entry })} onOpen={onOpenPattern} />} remove={<DeleteBtn onClick={onDelete} />} />}
     </EntryShell>
   );
 }
 
-export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete: () => void | Promise<void> }) {
+export function ModeEntry({ entry, onDelete, onOpenPattern }: { entry: ModeDiaryEntry; onDelete: () => void | Promise<void>; onOpenPattern?: OpenPattern }) {
   const mode = getModeById(entry.modeId);
   return (
     <EntryShell
@@ -44,6 +49,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
       {open => open ? (
         <EntryMore
           fields={<EntryFields rows={modeEntryRows(entry)} />}
+          links={<PatternLinks links={entryPatternLinks({ _type: 'mode', entry })} onOpen={onOpenPattern} />}
           share={<ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} entry={entry} dateLabel={fmtDayMonth(fmtDateKey(entry.createdAt))} />}
           remove={<DeleteBtn onClick={onDelete} />}
         />

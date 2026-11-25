@@ -30,3 +30,4 @@
   .pp-block.cd-explainer + .cd-explainer { border-top: 1px solid var(--panel-line); }
   .cd-explainer-sign { width: 104px; }
 }
+.ds-btn.cd-empty-start { align-self: flex-start; margin-top: 16px; }
