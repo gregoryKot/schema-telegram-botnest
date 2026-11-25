@@ -25,7 +25,7 @@ const NOTE_IDS = [
   'case_conceptualization', 'history_interview', 'therapy_aims', 'evidence_limits', 'session_structure',
   'self_disclosure', 'experiential_avoidance', 'exact_scene', 'change_blocks', 'ending_phase', 'complex_trauma',
   'therapist_wellbeing', 'group_techniques', 'suitability', 'imagery_avoidance', 'life_decisions',
-  'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps',
+  'schemas_in_session', 'therapist_schema_scenarios', 'same_behavior_by_schema', 'mode_work_when', 'mode_work_steps', 'schema_channel_map',
   'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation', 'group_plan_vs_mode',
   'group_mode_roleplay', 'dangerous_partner', 'emdr', 'coping_style_in_session', 'mode_family_by_feeling',
   'schema_vs_mode_vs_belief', 'dependence_in_reparenting', 'therapist_discomfort_rescripting',

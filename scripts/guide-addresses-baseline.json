@@ -730,6 +730,8 @@
   "note:same_behavior_by_schema/points": "Что делать",
   "note:same_behavior_by_schema/summary": "Суть",
   "note:same_behavior_by_schema/voice": "Как это звучит",
+  "note:schema_channel_map/points": "Что делать",
+  "note:schema_channel_map/summary": "Суть",
   "note:schema_vs_mode_vs_belief/more": "Подробнее",
   "note:schema_vs_mode_vs_belief/points": "Что делать",
   "note:schema_vs_mode_vs_belief/summary": "Суть",
