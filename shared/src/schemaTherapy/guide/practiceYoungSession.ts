@@ -1,4 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
+import { modeWorkStepsMore } from './practiceMoreHeath';
 import { modeWorkWhenMore } from './practiceMoreArntzJacob';
 import { therapistSchemaScenariosMore } from './practiceTherapistHeath';
 
@@ -116,10 +117,7 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
         'Похоже, сейчас говорит та часть вас, которая держит людей на расстоянии. Как её можно назвать?',
       ),
     ],
-    more: [
-      'Шаги — каркас, а не строгая очередь: дальше в книге их подстраивают под режимы при ПРЛ и нарциссизме [Янг, гл. 8].',
-      'Цель — Здоровый Взрослый клиента, который заботится об Уязвимом Ребёнке, ставит границы избалованной части и обходит суровую. Неловкость от близости — этап, который проходят, а не повод остановиться [Янг, гл. 8].',
-    ],
-    sources: '[Янг, гл. 8]',
+    more: modeWorkStepsMore,
+    sources: '[Янг, гл. 8], [Хис, гл. 11]',
   },
 ];

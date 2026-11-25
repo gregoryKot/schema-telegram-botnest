@@ -56,6 +56,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'premature_ending',
     'cbt_with_schemas',
     'body_cues_therapist',
+    'therapist_mode_reset',
     'questionnaires',
     'temperament',
     'positive_patterns_in_session',
