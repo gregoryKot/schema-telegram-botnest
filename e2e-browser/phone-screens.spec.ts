@@ -27,7 +27,7 @@ test('«Сегодня»', async ({ page }, testInfo) => {
 
 test('«Записи»', async ({ page }, testInfo) => {
   await page.goto('/diary');
-  await expect(page.getByRole('heading', { name: 'Что было' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Записи', level: 1 })).toBeVisible();
   await shoot(page, testInfo, 'diary');
 });
 
