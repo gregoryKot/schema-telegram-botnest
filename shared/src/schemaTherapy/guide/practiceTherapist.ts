@@ -3,8 +3,9 @@ import { therapistWellbeingMoreFull } from './practiceTherapistHeath';
 import { buildPracticeTherapistCulture } from './practiceTherapistCulture';
 import { buildPracticeTherapistSchemas } from './practiceTherapistSchemas';
 import { buildPracticeTherapistArntz } from './practiceTherapistArntz';
+import { buildPracticeSelfPractice } from './practiceSelfPractice';
 
-/** «Для терапевта»: схемы терапевта, выгорание, заметки Арнтц и Якоб. Собирает practice.ts, порядок на листе прежний. */
+/** «Для терапевта»: схемы терапевта, выгорание, самопрактика, заметки Арнтц и Якоб. Собирает practice.ts, порядок на листе прежний. */
 export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
   ...buildPracticeTherapistSchemas(tr),
   ...buildPracticeTherapistArntz(tr),
@@ -29,7 +30,8 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
     ],
     more: therapistWellbeingMoreFull,
     sources:
-      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12]',
+      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12], [Фаррелл-Шоу, гл. 3]',
   },
+  ...buildPracticeSelfPractice(tr),
   ...buildPracticeTherapistCulture(tr),
 ];
