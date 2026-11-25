@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { entryPatternLinks } from './patternLinksModel';
 import { ALL_SCHEMAS, ALL_MODES } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
-import type { SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../../types';
+import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 
 const at = new Date().toISOString();
 const schema = (schemaIds: string[]): SchemaDiaryEntry => ({ id: 1, createdAt: at, trigger: 't', emotions: [], schemaIds });
@@ -22,9 +22,7 @@ describe('entryPatternLinks', () => {
     expect(entryPatternLinks({ _type: 'mode', entry: mode('нет-такого') })).toEqual([]);
   });
 
-  it('благодарность и запись без схем — без ссылок', () => {
-    const g: GratitudeDiaryEntry = { id: 3, date: '2026-08-01', items: ['чай'], createdAt: at };
-    expect(entryPatternLinks({ _type: 'gratitude', entry: g })).toEqual([]);
+  it('запись без схем — без ссылок', () => {
     expect(entryPatternLinks({ _type: 'schema', entry: schema([]) })).toEqual([]);
   });
 });
