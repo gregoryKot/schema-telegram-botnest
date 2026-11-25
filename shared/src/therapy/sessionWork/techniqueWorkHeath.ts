@@ -22,6 +22,15 @@ export const HEATH_TECHNIQUE_WORK: Record<HeathTechniqueId, TechniqueWorkDef> =
         ['home', 'Что взять домой'],
       ],
     },
+    intimacy_dialogue: {
+      name: 'Диалог близости',
+      fields: [
+        ['need', 'Уязвимость и просьба'],
+        ['coping', 'Копинг слушающего и что он охранял'],
+        ['response', 'Ответ партнёра на потребность'],
+        ['home', 'Что пробовать дома'],
+      ],
+    },
     three_parts_check_in: {
       name: 'Медитация на три части',
       fields: [

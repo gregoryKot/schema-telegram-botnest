@@ -16,6 +16,7 @@ import { buildRelationshipTechniques } from './relationship';
 import { buildImageryMoreTechniques } from './imageryMore';
 import { buildSafetyBubbleTechniques } from './safetyBubble';
 import { buildProbePhrasesTechniques } from './probePhrases';
+import { buildIntimacyDialogueTechniques } from './intimacyDialogue';
 import { buildThreePartsCheckInTechniques } from './threePartsCheckIn';
 import { buildCopingBypassTechniques } from './copingBypass';
 import { buildModeFiguresTechniques } from './modeFigures';
@@ -64,6 +65,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildProbePhrasesTechniques,
   buildThreePartsCheckInTechniques,
   buildBodyValuesTechniques,
+  buildIntimacyDialogueTechniques,
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
   buildMeaningGuiltTechniques,

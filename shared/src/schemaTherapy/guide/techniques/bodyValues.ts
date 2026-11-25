@@ -49,6 +49,6 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Насилие в паре — не «цикл режимов»: сначала безопасность. Круг рисуют про обоих поровну; если на листе виноват кто-то один, пара получила ещё один довод в ссоре. В индивидуальной работе режимы партнёра остаются гипотезой — его в кабинете нет. Если партнёр отвечает на Уязвимого Ребёнка другого Критиком, терапевт останавливает это прямо и объясняет, что так повторяется детская рана. Когда ПРЛ у одного, легко решить, что у второго проблем нет, — тогда партнёр и терапевт вместе подкармливают Карающего Критика клиента. Мешают и соматические жалобы, зависимости, секреты, а ещё схемы самого терапевта, которые запускают сразу двое [Арнтц ПРЛ, гл. 10].',
     sources:
-      'Simeone-DiFrancesco C., Roediger E., Stevens B. A. Schema Therapy with Couples: A Practitioner’s Guide to Healing Relationships. Wiley-Blackwell, 2015, гл. 8 «Mode Mapping and Mode Cycle Clash-cards»; [Янг, гл. 7]; [Арнтц ПРЛ, гл. 10].',
+      'Simeone-DiFrancesco C., Roediger E., Stevens B. A. Schema Therapy with Couples: A Practitioner’s Guide to Healing Relationships. Wiley-Blackwell, 2015, гл. 8 «Mode Mapping and Mode Cycle Clash-cards»; [Янг, гл. 7]; [Арнтц ПРЛ, гл. 10]; [Хис, гл. 13].',
   },
 ];
