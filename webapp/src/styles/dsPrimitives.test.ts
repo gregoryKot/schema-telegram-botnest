@@ -202,12 +202,14 @@ describe('cabinet.css: поправки координатора волны 1 (#
     expect(decls(top, '.ds-sheet-head > .ds-back:first-child')).toContain('margin-left: 0');
     expect(decls(top, '.ds-sheet-head > :last-child')).toContain('margin-left: auto');
   });
-  it('.ds-avatar — tint по умолчанию: тёмные инициалы на светлой заливке, без #fff и без .tone-tint', () => {
+  it('.ds-avatar — буква serif в тонком кольце --line-strong, без заливки (#1674, В5)', () => {
     const av = decls(top, '.ds-avatar');
-    expect(av).toContain('background: oklch(0.94 calc(0.035 * var(--ck)) var(--h))');
-    expect(av).toContain('color: oklch(0.38 calc(0.1 * var(--ck)) var(--h))');
-    expect(av).not.toMatch(/#fff/i);
-    expect(css).not.toContain('.ds-avatar.tone-tint');
+    expect(av).toContain('background: transparent');
+    expect(av).toContain('box-shadow: inset 0 0 0 1px var(--line-strong)');
+    expect(av).toContain('font-family: var(--serif)');
+    expect(av).not.toMatch(/oklch|--h\b|#fff/i);
+    // Модификаторы заливки и тона ушли: один вид у всех аватаров.
+    expect(css).not.toMatch(/\.ds-avatar(--|\.tone-)/);
   });
   it('на акцентной карточке подпись, подпись-строка и ссылка — светлые токеном --on-accent', () => {
     for (const sel of ['.ds-card--accent .ds-label', '.ds-card--accent .ds-sub', '.ds-card--accent .ds-link']) {

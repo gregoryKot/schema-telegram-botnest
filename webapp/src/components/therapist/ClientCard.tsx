@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
-import { DOMAIN_HUE, clientHue, hueStyle } from '../../lib/tone';
+import { DOMAIN_HUE } from '../../lib/tone';
 import { NextSessionLine } from './NextSessionLine';
 import { clientCaption, clientStatus, meetingLabel, schemaChips } from './rosterModel';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
@@ -9,6 +9,7 @@ import { clientSign } from './cabinetLook';
 import { DomainMark } from '../DomainMark';
 import { BrandMark } from '../art/BrandMark';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { Avatar } from '../Avatar';
 
 interface Props {
   client: TherapyClientSummary;
@@ -17,7 +18,7 @@ interface Props {
 }
 
 // Карточка в «Все клиенты» (b29, r1): лист .pp-leaf с тенью бумаги ведущего домена (без домена — небо), аватар
-// .ds-avatar--paper; знак — DomainArt ведущего домена или BrandMark офлайн-клиента — в строке имени; «в приложении» /
+// — общий Avatar (буква в кольце); знак — DomainArt ведущего домена или BrandMark офлайн-клиента — в строке имени; «в приложении» /
 // «офлайн» — тихий текст без плашки. Схемы — чипы бумаги домена, встреча — NextSessionLine, как в шапке карточки.
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = clientDisplayName(client);
@@ -29,9 +30,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
   return (
     <div className="pp-leaf tc-card" style={{ '--h': layer } as CSSProperties} {...pressable(() => onOpen(client))}>
       <div className="tc-top">
-        <div className="ds-avatar ds-avatar--serif ds-avatar--paper tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
-          {clientAvatarInitials(client)}
-        </div>
+        <Avatar initials={clientAvatarInitials(client)} className="tc-avatar" />
         <div className="tc-who">
           <div className="tc-name-row">
             <div className="tc-name">{name}</div>
