@@ -4,7 +4,6 @@ import { isActiveToday } from '../../../../shared/src/therapy/clientSheetHelpers
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
 import type { TherapyClientSummary } from '../../api';
-import { clientHue } from '../../lib/tone';
 import { clientStatus } from '../therapist/rosterOrder';
 import type { CmdMark, CmdRow } from './cmdRow';
 import type { PaletteInput } from './paletteRows';
@@ -16,7 +15,7 @@ export const CLIENTS_SHOWN = 5;
 
 /** Кружок с инициалами — как в меню кабинета. */
 export function clientMark(c: TherapyClientSummary): CmdMark {
-  return { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) };
+  return { initials: clientAvatarInitials(c) };
 }
 
 export function clientRows({ clients, run }: PaletteInput): CmdRow[] {
