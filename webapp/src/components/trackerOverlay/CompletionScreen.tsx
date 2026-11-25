@@ -60,7 +60,7 @@ export function CompletionScreen({
       <div className="tq-index" aria-label={headline.aria}>{headline.big}</div>
       <p className="tq-index-cap">{headline.caption}</p>
       <p className="tq-obs">
-        {glue(complete && lowest ? lowestObservation(nameOf(lowest)) : 'Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.')}
+        {glue(complete && lowest ? lowestObservation([nameOf(lowest)]) : 'Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.')}
       </p>
       {queued && <p className="tq-index-cap" role="status">{QUEUED_TEXT}</p>}
       <DayBars needs={needs} ratings={effectiveRatings} />

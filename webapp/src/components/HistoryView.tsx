@@ -1,3 +1,4 @@
+import { persistentLowNeeds } from '../../../shared/src/needs/persistentLow';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTr } from '../utils/addressForm';
 import type { Need, DayHistory } from '../types';
@@ -72,8 +73,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const selectedRatings = isToday ? currentRatings : selected.ratings;
   const prevRatings = history[selectedIdx + 1]?.ratings ?? {};
   const ratedCount = Object.keys(selectedRatings).filter(k => isRated(selectedRatings, k)).length;
-  const needsLow = history.length >= 3
-    ? needs.filter(n => history.slice(0, 3).every(d => isRated(d.ratings, n.id) && d.ratings[n.id] <= 4)) : [];
+  const needsLow = persistentLowNeeds(needs, history);
 
   return (
     <div className="sd-history">
