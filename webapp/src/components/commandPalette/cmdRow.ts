@@ -3,7 +3,7 @@
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import type { SearchResultKind } from '../../../../shared/src/share/searchAnalytics';
 
-export type CmdMark = { sign: SignKey } | { initials: string; hue: number };
+export type CmdMark = { sign: SignKey } | { initials: string };
 export interface CmdRow {
   /** Стабильный ключ строки (тип + id, без имён): по нему строка попадает в «Недавнее». */
   key: string;
