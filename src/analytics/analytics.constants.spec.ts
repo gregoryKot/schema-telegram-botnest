@@ -19,6 +19,7 @@ import {
   CRISIS_SURFACES,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
+  DIARY_JUMP_TARGETS,
 } from './analytics.constants';
 import { CABINET_EVENTS } from './cabinet-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
@@ -49,6 +50,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   CRISIS_SURFACES,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
+  DIARY_JUMP_TARGETS,
   GAME_EVENTS,
   GAME_CHAPTERS,
   GAME_CTA_PLACES,
