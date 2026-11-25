@@ -29,13 +29,14 @@ const ty: Tr = (t) => t;
 describe('адреса разделов справочника', () => {
   const all = listAddresses();
 
+  // Справочник вырос: обход всех адресов в двух формах не укладывается в 5 с по умолчанию.
   it('адреса уникальны, каждый находит непустой текст в обеих формах обращения', () => {
     expect(new Set(all).size).toBe(all.length);
     for (const a of all) {
       expect(resolveAddress(a)?.text.trim(), a).toBeTruthy();
       expect(resolveAddress(a, ty)?.text.trim(), a).toBeTruthy();
     }
-  });
+  }, 20_000);
 
   it.each(GUIDE_ARTICLE_KINDS)(
     'вид «%s» перечисляет адреса, у каждого раздела есть заголовок',
