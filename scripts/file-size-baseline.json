@@ -791,7 +791,7 @@
   "shared/src/schemaTherapy/kb/catalog.ts": 127,
   "shared/src/schemaTherapy/kb/catalogConcerns.ts": 94,
   "shared/src/schemaTherapy/kb/catalogMindfulness.ts": 71,
-  "shared/src/schemaTherapy/kb/catalogPractice.ts": 185,
+  "shared/src/schemaTherapy/kb/catalogPractice.ts": 190,
   "shared/src/schemaTherapy/kb/catalogPracticeChildren.ts": 54,
   "shared/src/schemaTherapy/kb/catalogTechniques.ts": 211,
   "shared/src/schemaTherapy/kb/check.ts": 138,
