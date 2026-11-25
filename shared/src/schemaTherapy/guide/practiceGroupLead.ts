@@ -2,7 +2,7 @@ import type { PracticeNotesBuilder } from './types';
 import { groupTherapyMore, groupTechniquesMore } from './practiceGroupMore';
 import { groupFrameMore, buildGroupOrientation } from './practiceGroupFrame';
 import { groupPlanVsModeMore } from './practiceTherapistHeath';
-import { groupLeadFarrell } from './practiceGroupFarrell';
+import { groupTherapyBpd } from './practiceGroupBpd';
 import {
   buildPracticeSelfPracticeGroup,
   groupPlanVsModeFarrellShaw,
@@ -18,7 +18,6 @@ const groupLeadMore: string[] = [
   'Намерение не равно последствию. Ведущие дают отклик и от себя: «Мы вас любим, но нам обидно от этих нападок». Разбирают разницу между тем, что человек хотел, и тем, как это подействовало: ответственность за действия остаётся. Учат мягкому гневу на мелочи. Крайняя мера — один ведущий работает с участником, второй с остальной группой, пока все не смогут вернуться друг к другу [Фаррелл, гл. 4.1].',
   'Новичков предупреждают: первые неприятные реакции на группу — скорее защитные режимы, чем правда о ней, поэтому не стоит судить о группе по первому впечатлению. Роли ведущих тоже называют заранее: дирижёр и рефери, Уязвимого Ребёнка утешают, Сердитого выслушивают и помогают отделить чувство от действия [Фаррелл, гл. 4.2].',
   'Время делят заранее: «Успеем по одному примеру от каждого», а того, кто говорит много, просят подождать, пока выскажутся все. До кого не дошли, к тому возвращаются в конце, говорят, что жаль, и переносят на следующую неделю. Обиду из-за нехватки времени всё равно считают включением режима: если это по теме встречи, режим называют и сверяют реакцию с детским опытом [Фаррелл, гл. 4.4].',
-  ...groupLeadFarrell,
 ];
 
 /** «Подробнее» к приёмам групповой работы по Фарреллу (гл. 2.3, 4.1, 4.4, 4.5). */
@@ -38,6 +37,7 @@ export const groupMore = [
   ...groupTherapyMore,
   ...groupFrameMore,
   ...groupLeadMore,
+  ...groupTherapyBpd,
 ];
 export const groupTechMore = [
   ...groupTechniquesMore,
