@@ -39,8 +39,8 @@
 }
 .tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-/* Аватар — .ds-avatar--paper (cabinet.css: кружок бумаги тона клиента с тенью-слоем); здесь — размер. */
-.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 0 0 0 1px var(--panel-line); }
+/* Аватар — общий .ds-avatar (cabinet.css); здесь — размер. */
+.tk-avatar { width: 56px; height: 56px; font-size: 21px; }
 .tk-ident { flex: 1; min-width: 260px; }
 /* Кегль имени — ds-h2; здесь только перенос: до двух строк по пробелам и дефису, целиком. Одной строкой с
    многоточием длинное имя («Константин Константинопольский-Задунайский») не было видно нигде (b30). */
