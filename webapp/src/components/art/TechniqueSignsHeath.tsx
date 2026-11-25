@@ -28,3 +28,15 @@ export function ProbePhrase({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Диалог близости: два человека лицом друг к другу, между ними — просьба и ответ двумя встречными дугами. */
+export function IntimacyDialogue({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <circle cx="18" cy="34" r="11" fill={PAPER.clay} />
+      <circle cx="102" cy="34" r="11" fill={PAPER.moss} />
+      <path d="M34 28 Q60 12 86 28" {...ROUND} stroke={PAPER.amber} strokeWidth="4" />
+      <path d="M86 40 Q60 56 34 40" {...ROUND} stroke={PAPER.sage} strokeWidth="4" strokeDasharray="4 5" />
+    </Svg>
+  );
+}

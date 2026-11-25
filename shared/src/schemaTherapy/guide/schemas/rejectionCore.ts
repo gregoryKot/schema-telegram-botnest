@@ -44,7 +44,7 @@ export const buildEmotionalDeprivationGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'diagnostic_imagery',
   ],
-  moreTechniques: ['letters', 'limited_reparenting'],
+  moreTechniques: ['letters', 'limited_reparenting', 'intimacy_dialogue'],
   betweenSessions: [
     {
       kind: 'task',
