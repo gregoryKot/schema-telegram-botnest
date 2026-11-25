@@ -51,7 +51,6 @@ vi.mock('./practice/HereAndNowBlock', () => ({
 vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 import { api } from '../api';
-import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const noopProps = {
@@ -110,16 +109,12 @@ afterEach(() => {
 });
 
 describe('PracticeSection — ты/вы вилка', () => {
-  it('подзаголовок звучит на «ты» по умолчанию', () => {
+  it('подзаголовок шапки звучит на «ты» и на «вы»', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/Восемь упражнений схема-терапии плюс твои личные цели/)).toBeTruthy();
-    expect(screen.queryByText(/ваши личные цели/)).toBeNull();
-  });
-
-  it('подзаголовок звучит на «вы», когда выбрана форма vy — «ваши», а не «твои»', () => {
+    expect(screen.getByText('Тяжёлый момент? Начни с одного вдоха')).toBeTruthy();
+    cleanup();
     renderSection({}, 'vy');
-    expect(screen.getByText(/Восемь упражнений схема-терапии плюс ваши личные цели/)).toBeTruthy();
-    expect(screen.queryByText(/твои личные цели/)).toBeNull();
+    expect(screen.getByText('Тяжёлый момент? Начните с одного вдоха')).toBeTruthy();
   });
 
   it('подпись «Карты режимов» в «Каталогах» звучит на «ты»', () => {
@@ -139,21 +134,6 @@ describe('PracticeSection — пустой аккаунт (без хардкод
     await waitFor(() => expect(mockApi.getBeliefChecks).toHaveBeenCalled());
     expect(screen.getAllByText('не начато').length).toBe(8);
   });
-
-  it('без активных целей показывает пустое состояние, а не "0 активных" молча', async () => {
-    renderSection();
-    await screen.findByText('нет активных');
-    expect(screen.getByText('Поставь цель и иди к ней маленькими шагами.')).toBeTruthy();
-  });
-
-  it('ошибка getTasks/getTaskHistory не роняет экран — секция "От терапевта" просто не показывается', async () => {
-    mockApi.getTasks.mockRejectedValue(new Error('network down'));
-    mockApi.getTaskHistory.mockRejectedValue(new Error('network down'));
-    renderSection();
-
-    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    expect(screen.queryByText('От терапевта')).toBeNull();
-  });
 });
 
 describe('PracticeSection — статистика упражнений из реальных данных', () => {
@@ -163,171 +143,6 @@ describe('PracticeSection — статистика упражнений из р�
 
     const stat = (await screen.findByText(/1 запись/)).closest('.cp-ex-state')!;
     expect(stat.textContent).toContain('сегодня');
-  });
-});
-
-describe('PracticeSection — задания от терапевта', () => {
-  it('показывает задания от терапевта отдельным блоком со счётчиком', async () => {
-    mockApi.getTasks.mockResolvedValue([
-      task({ id: 1, assignedBy: 99, type: 'diary_streak', text: 'дневник' }),
-    ]);
-    renderSection();
-
-    await screen.findByText('От терапевта');
-    expect(screen.getByText('1 задание')).toBeTruthy();
-  });
-
-  it('клик на задание "diary_streak" от терапевта открывает дневники (onOpenDiaries)', async () => {
-    const onOpenDiaries = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 99, type: 'diary_streak' })]);
-    renderSection({ onOpenDiaries });
-
-    // "начать →" встречается и у блока терапевта, и у карточек «В трудный
-    // момент» — блок терапевта рендерится первым в DOM.
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    expect(onOpenDiaries).toHaveBeenCalled();
-  });
-
-  // QA 2026-10-26 (docs/INCIDENTS.md): «Своё задание» от терапевта стояло в
-  // блоке без «Готово», а тап по нему не делал ничего — закрыть было нечем.
-  it('«Своё задание» от терапевта закрывается кнопкой «Готово»', async () => {
-    const onTasksChanged = vi.fn();
-    mockApi.getTasks
-      .mockResolvedValueOnce([task({ id: 12, assignedBy: 99, type: 'custom', text: 'Позвонить маме' })])
-      .mockResolvedValue([]);
-    mockApi.completeTask.mockResolvedValue(undefined);
-    renderSection({ onTasksChanged });
-
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getByText('Готово'));
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(12, true));
-    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
-  });
-
-  it('клик на задание "tracker_streak" открывает трекер (onOpenTracker)', async () => {
-    const onOpenTracker = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 99, type: 'tracker_streak' })]);
-    renderSection({ onOpenTracker });
-
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    expect(onOpenTracker).toHaveBeenCalled();
-  });
-});
-
-describe('PracticeSection — регрессия: та же механика завершения задания, что в TodaySection (общий хук useTaskActions)', () => {
-  // Раньше handleTaskComplete в PracticeSection дублировал механику
-  // useTaskActions инлайн и глотал сбой (`.catch(() => {})`): лист
-  // упражнения закрывался как будто задание засчиталось, хотя на сервере
-  // ничего не менялось. Теперь секция берёт общий хук — сбой видим.
-  it('completeTask отклоняется → на экране видима ошибка, onTasksChanged не вызван', async () => {
-    const onTasksChanged = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ id: 30, assignedBy: 9, type: 'letter_to_self' })]);
-    mockApi.completeTask.mockRejectedValue(new Error('network down'));
-    renderSection({ onTasksChanged });
-
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    const textarea = await screen.findByPlaceholderText('…');
-    fireEvent.change(textarea, { target: { value: 'Здравствуй, малыш.' } });
-
-    await act(async () => { fireEvent.click(screen.getByText(/Запечатать письмо/)); });
-    await act(async () => { fireEvent.click(screen.getByText('Закрыть')); });
-
-    expect(plainText(screen.getByRole('alert'))).toContain('Не удалось сохранить изменение задания');
-    expect(onTasksChanged).not.toHaveBeenCalled();
-  });
-
-  it('completeTask резолвится → ошибки нет, onTasksChanged вызван, список перезапрошен', async () => {
-    const onTasksChanged = vi.fn();
-    mockApi.getTasks
-      .mockResolvedValueOnce([task({ id: 31, assignedBy: 9, type: 'letter_to_self' })])
-      .mockResolvedValue([]);
-    mockApi.completeTask.mockResolvedValue(undefined);
-    renderSection({ onTasksChanged });
-
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    const textarea = await screen.findByPlaceholderText('…');
-    fireEvent.change(textarea, { target: { value: 'Здравствуй, малыш.' } });
-
-    await act(async () => { fireEvent.click(screen.getByText(/Запечатать письмо/)); });
-    await act(async () => { fireEvent.click(screen.getByText('Закрыть')); });
-
-    expect(screen.queryByRole('alert')).toBeNull();
-    expect(onTasksChanged).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('От терапевта')).toBeNull();
-  });
-});
-
-describe('PracticeSection — мои цели', () => {
-  it('показывает свои цели (assignedBy=null) отдельно от "нет активных"', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 2, assignedBy: null, type: 'custom', text: 'Моя цель' })]);
-    renderSection();
-
-    await screen.findByText('Моя цель');
-    expect(screen.getByText('1 активная')).toBeTruthy();
-  });
-
-  it.each([
-    [2, '2 активные'],
-    [5, '5 активных'],
-  ])('счётчик своих целей: %i → «%s» (форма слова по числу)', async (n, text) => {
-    mockApi.getTasks.mockResolvedValue(Array.from({ length: n }, (_, i) => task({ id: i + 1, assignedBy: null, text: `Цель ${i + 1}` })));
-    renderSection();
-    await screen.findByText(text);
-  });
-
-  it('клик "+ Поставить цель" открывает TaskCreateSheet', async () => {
-    renderSection();
-    await screen.findByText('нет активных');
-
-    fireEvent.click(screen.getByText('+ Поставить цель'));
-    await screen.findByText('Новая цель');
-  });
-
-  it('"все цели →" открывает общий список заданий (AllTasksOverlay) с целями и историей', async () => {
-    mockApi.getTasks.mockResolvedValue([
-      task({ id: 1, text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
-      task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
-    ]);
-    mockApi.getTaskHistory.mockResolvedValue([task({ id: 6, text: 'Готовая цель', done: true })]);
-    renderSection();
-
-    const link = await screen.findByText('все цели →');
-    fireEvent.click(link);
-
-    await screen.findByText('Все цели');
-    expect(screen.getByText('Цель 5')).toBeTruthy();
-    expect(screen.getByText('Готовая цель')).toBeTruthy();
-    // Статус — тот же бейдж, что у «Все задания» на «Сегодня» (QA 2026-11, A-З8).
-    expect(screen.getByText('Выполнено', { selector: '.ds-badge' })).toBeTruthy();
-  });
-});
-
-describe('PracticeSection — своя цель: «Готово» и серия за сегодня (паритет с мини-аппом)', () => {
-  it('у своей цели есть «Готово»: закрывает цель на сервере и обновляет список', async () => {
-    const onTasksChanged = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ id: 7, text: 'Позвонить другу' })]);
-    renderSection({ onTasksChanged });
-    await screen.findByText('Позвонить другу');
-
-    mockApi.getTasks.mockResolvedValue([]);
-    fireEvent.click(screen.getByText('Готово'));
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(7, true));
-    await waitFor(() => expect(screen.queryByText('Позвонить другу')).toBeNull());
-    expect(onTasksChanged).toHaveBeenCalled();
-  });
-
-  it('серия, сделанная сегодня, остаётся в списке серой с подписью, без «Готово»', async () => {
-    mockApi.getTasks.mockResolvedValue([
-      task({ id: 8, type: 'diary_streak', text: '', doneToday: true }),
-    ]);
-    renderSection();
-    await screen.findByText('Сделано сегодня — завтра снова');
-    expect(screen.queryByText('Готово')).toBeNull();
-    expect(screen.getByText('1 активная')).toBeTruthy();
   });
 });
 
@@ -439,11 +254,11 @@ describe('PracticeSection — «Инструменты»: скрытие и по
   const setWidth = (w: number) => Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: w });
   afterEach(() => setWidth(1024));
 
-  it('без настроек: все восемь карточек, «Мои цели» и оба каталога', () => {
+  it('без настроек: все восемь карточек, строка заданий и оба каталога', () => {
     renderSection();
     expect(cardTitles()).toHaveLength(8);
     expect(screen.getByText('8 упражнений')).toBeTruthy();
-    expect(screen.getByText('Мои цели')).toBeTruthy();
+    expect(screen.getByText('Задания и цели')).toBeTruthy();
     expect(screen.getByText('Что питает')).toBeTruthy();
     expect(screen.getByText('Планы')).toBeTruthy();
   });
@@ -463,11 +278,11 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(cardTitles()).toEqual(['Карточка схемы', 'Карточка режима']);
   });
 
-  it('скрытые «Мои цели» убирают раздел целиком', () => {
+  it('скрытые «Мои цели» убирают строку заданий, если от терапевта ничего нет', async () => {
     hide('tasks');
     renderSection();
-    expect(screen.queryByText('Мои цели')).toBeNull();
-    expect(screen.queryByText('+ Поставить цель')).toBeNull();
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
+    expect(screen.queryByText('Задания и цели')).toBeNull();
   });
 
   it('скрытая «Что питает» убирает свою строку, «Планы» остаются', () => {
@@ -612,25 +427,6 @@ describe('PracticeSection — «давность» и число записей 
   });
 });
 
-describe('PracticeSection — согласование числительных «задание/задания/заданий»', () => {
-  it('2 задания от терапевта — форма "2 задания"', async () => {
-    mockApi.getTasks.mockResolvedValue([
-      task({ id: 1, assignedBy: 9, type: 'diary_streak', text: 'A' }),
-      task({ id: 2, assignedBy: 9, type: 'tracker_streak', text: 'B' }),
-    ]);
-    renderSection();
-    await screen.findByText('2 задания');
-  });
-
-  it('11 заданий от терапевта — форма "11 заданий" (исключение 11-19)', async () => {
-    mockApi.getTasks.mockResolvedValue(
-      Array.from({ length: 11 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i}` })),
-    );
-    renderSection();
-    await screen.findByText('11 заданий');
-  });
-});
-
 describe('PracticeSection — открытие карточки схемы по навигационному state (переход извне)', () => {
   it('location.state.openSchemaEx открывает карточку схемы сразу, минуя список упражнений', async () => {
     render(
@@ -641,84 +437,6 @@ describe('PracticeSection — открытие карточки схемы по 
       </AddressFormContext.Provider>,
     );
     // Экран сразу в режиме упражнения — библиотека (заголовок раздела) не видна.
-    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
-  });
-});
-
-describe('PracticeSection — задания терапевта: остальные типы открывают правильное упражнение', () => {
-  it('belief_check → открывает «Проверка убеждения», завершение обновляет список и вызывает onTasksChanged', async () => {
-    const onTasksChanged = vi.fn();
-    mockApi.getTasks
-      .mockResolvedValueOnce([task({ id: 7, assignedBy: 9, type: 'belief_check' })])
-      .mockResolvedValue([]);
-    mockApi.completeTask.mockResolvedValue(undefined);
-    renderSection({ onTasksChanged });
-
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    await screen.findByPlaceholderText('Например: я всегда всё порчу, меня никто не любит…');
-
-    // Завершение убеждения вызывает onComplete → handleTaskComplete → completeTask.
-    const saveBtn = screen.getByText(/Продолжить|Сохранить|Дальше/);
-    expect(saveBtn).toBeTruthy();
-  });
-
-  it('safe_place → открывает «Безопасное место»', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 8, assignedBy: 9, type: 'safe_place' })]);
-    renderSection();
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
-  });
-
-  it('letter_to_self → открывает «Письмо уязвимому ребёнку»', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 9, assignedBy: 9, type: 'letter_to_self' })]);
-    renderSection();
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
-  });
-
-  it('childhood_wheel → onOpenChildhoodWheel', async () => {
-    const onOpenChildhoodWheel = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ id: 10, assignedBy: 9, type: 'childhood_wheel' })]);
-    renderSection({ onOpenChildhoodWheel });
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
-  });
-
-  it('flashcard → открывает SchemaFlashcard («Мне плохо»)', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 11, assignedBy: 9, type: 'flashcard' })]);
-    renderSection();
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    // SchemaFlashcard рендерится overlay'ем поверх страницы (не заменяет её
-    // return), поэтому проверяем появление самого экрана, а не исчезновение библиотеки.
-    await screen.findByText('Стало чуть лучше – разобраться →');
-  });
-
-  it('schema_intro с текстом-id схемы → открывает карточку схемы с этим id', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 12, assignedBy: 9, type: 'schema_intro', text: 'abandonment' })]);
-    renderSection();
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
-  });
-
-  it('mode_intro с текстом-id режима → открывает карточку режима с этим id', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 13, assignedBy: 9, type: 'mode_intro', text: 'vulnerable_child' })]);
-    renderSection();
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
-    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
-  });
-
-  it('неизвестный тип задания с текстом = id известной схемы — фолбэк на карточку схемы', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 14, assignedBy: 9, type: 'custom', text: 'abandonment' })]);
-    renderSection();
-    await screen.findByText('От терапевта');
-    fireEvent.click(screen.getAllByText('начать →')[0]);
     await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 });
@@ -802,50 +520,23 @@ describe('PracticeSection — баннер ближайшей сессии: пр
   });
 });
 
-describe('PracticeSection — создание цели обновляет список read-after-write, «все цели» открывает выбранную', () => {
-  it('после успешного создания цели список задач перезапрашивается', async () => {
-    const onTasksChanged = vi.fn();
-    mockApi.getTasks.mockResolvedValueOnce([]).mockResolvedValue([task({ id: 20, text: 'Гулять по вечерам' })]);
-    mockApi.createTask.mockResolvedValue(undefined);
-    renderSection({ onTasksChanged });
-    await screen.findByText('нет активных');
 
-    fireEvent.click(screen.getByText('+ Поставить цель'));
-    await screen.findByText('Новая цель');
-    fireEvent.click(screen.getByText('Поставить цель'));
-
-    await waitFor(() => expect(screen.queryByText('Новая цель')).toBeNull());
-    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
-    await screen.findByText('Гулять по вечерам');
-  });
-
-  it('открытие цели из «Все цели» закрывает оверлей и открывает нужное упражнение', async () => {
+describe('PracticeSection — строка «Задания и цели» ведёт в узел заданий', () => {
+  it('подпись считает задания терапевта и свои цели; тап открывает узел «Задания»', async () => {
     mockApi.getTasks.mockResolvedValue([
-      task({ id: 1, type: 'belief_check', text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
-      task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
+      task({ id: 1, assignedBy: 9, type: 'diary_streak', text: 'A' }),
+      task({ id: 2, assignedBy: null, text: 'Моя цель' }),
     ]);
     renderSection();
-    fireEvent.click(await screen.findByText('все цели →'));
-    const overlayTitle = await screen.findByText('Все цели');
-    const overlay = overlayTitle.closest('.sk-overlay') as HTMLElement; // заголовок — в листе-шапке (b20), список — рядом
-
-    fireEvent.click(within(overlay).getByText('Цель 1'));
-    await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
+    await screen.findByText('1 от терапевта · 1 цель');
+    fireEvent.click(screen.getByText('Задания и цели'));
+    await screen.findByText('Моя цель');
   });
 
-  it('«+ Поставить цель» внутри «Все цели» открывает TaskCreateSheet поверх', async () => {
-    mockApi.getTasks.mockResolvedValue([
-      task({ id: 1, text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
-      task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
-    ]);
+  it('скрытые «Мои цели», но есть задание терапевта — строка остаётся', async () => {
+    localStorage.setItem('quick_actions_hidden_tools', JSON.stringify(['tasks']));
+    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, type: 'diary_streak', text: 'A' })]);
     renderSection();
-    fireEvent.click(await screen.findByText('все цели →'));
-    const overlayTitle = await screen.findByText('Все цели');
-    const overlay = overlayTitle.closest('.sk-overlay') as HTMLElement; // заголовок — в листе-шапке (b20), список — рядом
-
-    fireEvent.click(within(overlay).getByText('+ Поставить цель'));
-    await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await screen.findByText('Новая цель');
+    await screen.findByText('1 от терапевта');
   });
 });

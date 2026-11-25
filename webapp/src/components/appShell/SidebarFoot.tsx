@@ -47,7 +47,7 @@ function SidebarToday({ needs, ratings, onOpenTracker }: Pick<Props, 'needs' | '
         )}
       </div>
       <span className="sb-today-art"><Strokes size="row" values={day.values} /></span>
-      {!day.index && <button type="button" className="sb-today-cta" onClick={onOpenTracker}>Заполнить трекер →</button>}
+      {!day.index && <button type="button" className="ds-btn ds-btn--secondary sb-today-cta" onClick={onOpenTracker}>Заполнить трекер →</button>}
     </div>
   );
 }
