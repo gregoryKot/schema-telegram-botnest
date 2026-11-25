@@ -5,6 +5,7 @@ import { copingFarrellAvoid } from './copingFarrell';
 import { avoidanceHeathDosbor } from '../heathDosborMore';
 import { angryProtectorMore } from './angryProtectorMore';
 import * as cambB from './avoidanceCambridgeB';
+import * as cc from './modesCambridgeC';
 // Избегающие копинговые режимы. Избегание защищает от угрозы, которую
 // предсказывает схема, — с ним работают через скрытые страхи [Хис, гл. 11]; оно
 // подкрепляет само себя, поэтому без поведенческой части не уходит [Рафаэли,
@@ -87,13 +88,8 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
       'Интервью режима на стуле: зачем он нужен, когда появился, чего боится. В конце поблагодарить его за работу [Арнтц, 5.3.1].',
     behavioral:
       'Замечать момент, когда поднимается стена, и пробовать сказать о задетом чувстве прямо.',
-    voice: [
-      tr(
-        'Я вижу стену и не буду её ломать. Мне интересно, от чего она тебя защищает.',
-        'Я вижу стену и не буду её ломать. Мне интересно, от чего она вас защищает.',
-      ),
-    ],
-    more: [...angryProtectorMore],
+    voice: cc.angryProtectorVoice(tr),
+    more: [...angryProtectorMore, ...cc.angryProtectorCambridgeCMore],
     moreTechniques: ['flashcards'],
     techniques: [
       'empathic_confrontation',
@@ -123,6 +119,6 @@ export const buildAvoidanceGuides: ModeGuideBuilder = (tr) => [
     stuck:
       'Терапевт втягивается в перестрелку или отступает — стена выигрывает в обоих случаях. Спешка тоже не помогает: до уязвимости добираются медленно [Хис, гл. 12]. Чаще всего терапевт отступает и держится «безопасных» тем, и до уязвимости дело не доходит [Кембридж, табл. 3.3].',
     sources:
-      '[Кембридж, табл. 1.2, гл. 11, табл. 3.3], [Хис, гл. 12, 19], [Арнтц, 5.2, 5.3.1], [Арнтц ПРЛ, гл. 2, 9]',
+      '[Кембридж, табл. 1.2, гл. 11, 14, 17, табл. 3.3], [Хис, гл. 12, 19], [Арнтц, 5.2, 5.3.1], [Арнтц ПРЛ, гл. 2, 9]',
   },
 ];
