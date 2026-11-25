@@ -68,6 +68,7 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'quick_action_move', meta: { action: 'breath' } },
   { name: 'screen_block_toggle', meta: { screen: 'today', block: 'needs' } },
   { name: 'profile_pattern_open', meta: { pattern: 'abandonment' } },
+  { name: 'diary_jump', meta: { to: 'pattern' } },
   // Графическая концептуализация: блок считает count/groupBy через Prisma
   // (не сырой SQL), но исполняется драйвером тем же прогоном.
   { name: 'concept_graph_open' },

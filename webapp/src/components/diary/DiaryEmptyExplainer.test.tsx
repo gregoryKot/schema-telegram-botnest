@@ -99,3 +99,14 @@ describe('DiaryEmptyExplainer — вид (b11)', () => {
     expect(view('diary').querySelector('.cd-empty-sub')).toBeNull();
   });
 });
+
+// К8: пустые «Трекер» и «Случаи» — кнопка сразу открывает действие, а не отсылка «на главную».
+describe('DiaryEmptyExplainer — кнопка действия', () => {
+  it.each([['tracker', 'Отметить сегодня'], ['case', 'Разобрать случай']] as const)('%s: кнопка зовёт onStart, отсылки на главную нет', (f, label) => {
+    let calls = 0;
+    const { container, getByText } = render(<DiaryEmptyExplainer filter={f} onStart={() => { calls++; }} />);
+    getByText(label).click();
+    expect(calls).toBe(1);
+    expect(container.textContent).not.toContain('на главной');
+  });
+});
