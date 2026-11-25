@@ -14,6 +14,8 @@ import { ScreenShareSwitch } from './ScreenShareSwitch';
 import { useScreenShare } from './screenShareMode';
 import { sidebarDay } from './sidebarDay';
 import { sectionFromPath } from './navigation';
+import { Avatar } from '../Avatar';
+import { avatarInitial } from '../../sections/profile/profileModel';
 
 interface Props {
   therapistMode: boolean;
@@ -61,7 +63,7 @@ export function SidebarFoot({ therapistMode, userRole, needs, ratings, displayNa
       {therapistMode && hasClients && <ScreenShareSwitch on={screenShare} />}
       <div className="sb-foot">
         <NavLink to="/profile" className={({ isActive }) => `sb-account${isActive ? ' is-active' : ''}`}>
-          <div className="sb-avatar">{(displayName ?? '?')[0].toUpperCase()}</div>
+          <Avatar initials={avatarInitial(displayName)} className="sb-avatar" />
           <div className="u-fill">
             <div className="sb-acc-name">{displayName || 'Профиль'}</div>
             <div className="sb-acc-role">{userRole === 'THERAPIST' ? 'Терапевт' : 'Клиент'}</div>

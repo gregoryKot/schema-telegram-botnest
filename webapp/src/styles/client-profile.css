@@ -180,7 +180,7 @@
    ниже колонкой — билет сессии (SessionTicket, client-booking.css), кнопка записи, строка «Схема случая». */
 .cpf-therapist { --h: 240; --cbk-cut: oklch(0.915 0.03 var(--h)); display: flex; flex-direction: column; gap: 16px; align-items: stretch; border-radius: var(--r-16); padding: 20px 22px; }
 .cpf-therapist-head { display: flex; align-items: center; gap: 14px; }
-.cpf-therapist-ava { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--text-sub); font-family: var(--serif); font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cpf-therapist-ava { width: 48px; height: 48px; font-size: 20px; }
 .cpf-therapist-body { flex: 1; min-width: 0; }
 .cpf-therapist-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-sub); }
 .cpf-therapist-name { font-family: var(--serif); font-size: 22px; line-height: 1.2; margin-top: 2px; overflow-wrap: anywhere; }

@@ -7,12 +7,12 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { TherapyClientSummary } from '../../api';
-import { clientHue, hueStyle } from '../../lib/tone';
 import { todayStr } from '../../utils/format';
 import { matchesRosterSearch, sortRoster } from '../therapist/rosterOrder';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import { clientRef } from '../../../../shared/src/utils/clientRef';
 import { useScreenShare } from './screenShareMode';
+import { Avatar } from '../Avatar';
 
 /** С какого числа клиентов в сайдбаре появляется поиск. */
 const SEARCH_FROM = 5;
@@ -36,7 +36,7 @@ export function SidebarClients({ clients }: { clients: TherapyClientSummary[] })
         return (
           <NavLink key={c.telegramId} to={`/cabinet/${clientRef(c)}`}
                    className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
-            <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{clientAvatarInitials(c)}</span>
+            <Avatar initials={clientAvatarInitials(c)} className="sb-client-av" />
             <span className="sb-client-name">{name}</span>
             {c.todayIndex != null && <span className="sb-active-dot" />}
           </NavLink>
