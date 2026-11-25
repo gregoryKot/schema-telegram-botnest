@@ -65,6 +65,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'creative_mode_work',
     'probe_phrases',
     'coping_bypass',
+    'mode_figures',
   ].map(w),
   {
     id: 'grief_chairwork',
