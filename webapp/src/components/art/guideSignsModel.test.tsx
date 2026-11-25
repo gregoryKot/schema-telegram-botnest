@@ -33,6 +33,7 @@ const NOTE_IDS = [
   'therapist_mode_reset',
   'therapist_culture_and_schemas',
   'childhood_experience_types',
+  'attachment_assertiveness_poles',
 ];
 
 describe('знаки листов подсказок', () => {

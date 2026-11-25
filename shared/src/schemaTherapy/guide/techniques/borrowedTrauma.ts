@@ -24,12 +24,16 @@ export const buildBorrowedTraumaTechniques: TechniqueGuideBuilder = (tr) => [
         'Где вы сейчас относительно окна — внутри, выше или ниже?',
       ),
     ],
+    more: [
+      'Зачем активировать схему [Рёдигер, гл. 1]. Учиться можно только внутри окна: при слишком слабом возбуждении ничего не меняется, при слишком сильном включается тревога и новое не усваивается. Схему, чтобы её перезаписать, надо включить — одними разговорами этого почти не добиться, поэтому нужны образы и поведенческие эксперименты.',
+      'За накал отвечает терапевт [Рёдигер, гл. 1]: держать его достаточно высоким, чтобы главная схема проснулась, и достаточно низким, чтобы клиент не закрылся.',
+    ],
     cautions:
       'Окно — не цель «всегда быть в покое»: работа идёт у его краёв. Это рабочая модель, а не измеренная величина.',
     evidence:
       'Понятие предложил Дэниел Сигел (1999), в работу с травмой его перенесли Огден и соавторы (2006). Рандомизированных исследований самой модели нет.',
     sources:
-      'Siegel D. J. The Developing Mind: Toward a Neurobiology of Interpersonal Experience. Guilford Press, 1999. Ogden P., Minton K., Pain C. Trauma and the Body: A Sensorimotor Approach to Psychotherapy. W. W. Norton, 2006.',
+      'Siegel D. J. The Developing Mind: Toward a Neurobiology of Interpersonal Experience. Guilford Press, 1999. Ogden P., Minton K., Pain C. Trauma and the Body: A Sensorimotor Approach to Psychotherapy. W. W. Norton, 2006. [Рёдигер, гл. 1]',
   },
   {
     id: 'stop_rewind_explore',

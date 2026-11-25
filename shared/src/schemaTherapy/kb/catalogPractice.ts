@@ -62,6 +62,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'positive_patterns_in_session',
     'therapist_culture_and_schemas',
     'childhood_experience_types',
+    'attachment_assertiveness_poles',
   ].map(w),
   {
     id: 'session_frequency',
@@ -126,13 +127,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Пары',
     chapters: ['прил. А'],
-  },
-  {
-    id: 'attachment_assertiveness_poles',
-    title: 'Два полюса потребностей и четыре реакции на фрустрацию',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 1', 'гл. 3'],
   },
   {
     id: 'session_balance_axes',

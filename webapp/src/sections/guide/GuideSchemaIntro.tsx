@@ -28,10 +28,12 @@ export function GuideSchemaIntro({ canMark }: { canMark: boolean }) {
       <Disclosure classes={ABOUT_CLASSES} title="Почему копинг держит схему">
         <p><Cited text={COPING_ABOUT.relief} /></p>
         <p><Cited text={COPING_ABOUT.origin} /></p>
+        <p><Cited text={COPING_ABOUT.fourReactions} /></p>
         <p><Cited text={COPING_ABOUT.levelsLead} /></p>
         <ul className="gst-levels">{COPING_ABOUT.levels.map((l) => <li key={l}>{l}</li>)}</ul>
         {COPING_ABOUT.styles.map((p) => <p key={p}><Cited text={p} /></p>)}
         <p><Cited text={COPING_ABOUT.mode} /></p>
+        <p><Cited text={COPING_ABOUT.terms} /></p>
         <p><Cited text={COPING_ABOUT.research} /></p>
       </Disclosure>
       <p className="gst-how">
