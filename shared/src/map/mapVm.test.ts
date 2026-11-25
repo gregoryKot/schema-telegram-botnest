@@ -12,7 +12,8 @@ import {
   collectModeItems,
   laneForMode,
   DORMANT_AFTER_DAYS,
-  ORIGINS_UNLOCK_CASES,
+  mapIsEmpty,
+  modeItemSub,
   type MapInput,
 } from './mapVm';
 import { todayStr } from '../utils/format';
@@ -159,33 +160,12 @@ describe('buildMapLanes', () => {
     expect(lanes.find((l) => l.id === 'backstage')!.items).toHaveLength(0);
   });
 
-  it('«откуда тянется» заперта до пяти разборов', () => {
-    const four = Array.from({ length: ORIGINS_UNLOCK_CASES - 1 }, (_, i) => ({
-      modeId: 'detached_protector',
-      at: daysAgo(i + 1),
-    }));
-    expect(
-      buildMapLanes(input({ cases: four })).find((l) => l.id === 'origins')!
-        .locked,
-    ).toBe(true);
-  });
-
-  it('пятый разбор открывает «откуда тянется»', () => {
-    const five = Array.from({ length: ORIGINS_UNLOCK_CASES }, (_, i) => ({
-      modeId: 'detached_protector',
-      at: daysAgo(i + 1),
-    }));
-    expect(
-      buildMapLanes(input({ cases: five })).find((l) => l.id === 'origins')!
-        .locked,
-    ).toBe(false);
-  });
-
-  it('пройденный тест открывает «откуда тянется» без пяти разборов', () => {
-    expect(
-      buildMapLanes(input({ ysqDone: true })).find((l) => l.id === 'origins')!
-        .locked,
-    ).toBe(false);
+  it('схемы в полосах режимов не живут — «откуда тянется» собирает mapOrigins', () => {
+    expect(buildMapLanes(input()).map((l) => l.id)).toEqual([
+      'healthy',
+      'stage',
+      'backstage',
+    ]);
   });
 
   it('режимы расходятся по своим полосам', () => {
@@ -213,6 +193,46 @@ describe('buildMapLanes', () => {
 // UTC считался вчерашним: «сколько режим не появлялся» врало на сутки, а
 // затихание наступало на день раньше. Проверка сама обходит зоны и
 // замораживает «сейчас», поэтому краснеет в любой час прогона.
+describe('mapIsEmpty', () => {
+  it('нет ни разбора, ни карточки — карта пустая', () => {
+    expect(mapIsEmpty(input())).toBe(true);
+  });
+
+  it('одна карточка примет без разборов — уже не пустая', () => {
+    expect(
+      mapIsEmpty(input({ notes: [{ modeId: 'angry_child', hasCard: true }] })),
+    ).toBe(false);
+  });
+});
+
+describe('modeItemSub', () => {
+  const item = (over = {}) => ({
+    ...collectModeItems(
+      input({ cases: [{ modeId: 'detached_protector', at: daysAgo(1) }] }),
+    )[0],
+    ...over,
+  });
+
+  it('«приметы собраны» — только когда карточка заполнена', () => {
+    expect(modeItemSub(item({ count: 0, hasCard: true }))).toBe(
+      'Приметы собраны, случаев пока нет',
+    );
+    expect(modeItemSub(item({ count: 0, hasCard: false }))).toBe(
+      'Случаев пока нет',
+    );
+  });
+
+  it('есть случаи — считает со склонением', () => {
+    expect(modeItemSub(item({ count: 3, dormant: false }))).toBe('3 случая');
+  });
+
+  it('затихший — с давностью', () => {
+    expect(modeItemSub(item({ dormant: true, daysSince: 45 }))).toBe(
+      'Не появлялся в записях 45 дней',
+    );
+  });
+});
+
 describe('daysSince — момент и «сегодня» в одних координатах', () => {
   const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
 

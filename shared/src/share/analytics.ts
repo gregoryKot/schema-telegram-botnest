@@ -189,5 +189,10 @@ export interface CaseMapOpenedMeta {
   repeat: boolean;
 }
 
+/** Переход-мост «Карты себя»: meta.to. Шлётся литералом api.trackEvent('self_map_link', { to }). */
+export const SELF_MAP_LINK_EVENT = 'self_map_link';
+export type SelfMapLinkTarget =
+  'mode' | 'schema' | 'patterns' | 'ysq_test' | 'map';
+
 /** Откуда взялась сцена: meta.source у case_scene. */
 export type CaseSceneSource = 'own' | 'frame';

@@ -192,3 +192,6 @@
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cs-head-text { flex: 1 1 auto; }
 }
+
+/* Мост на «Карту себя» во вкладке «Режимы» — тихая ссылка, зона нажатия ≥44. */
+.ds-link.cs-selfmap-link { align-self: flex-start; min-height: 44px; margin: 4px 0 12px; }

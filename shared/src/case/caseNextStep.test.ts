@@ -379,10 +379,8 @@ describe('caseNextStep — ysq_test хинт: форма обращения', ()
 });
 
 describe('buildWhereIAm', () => {
-  it('пустое состояние — фраза про пустую карту, не голый счётчик', () => {
-    const text = buildWhereIAm(input({ caseCount: 0 }), tyTr);
-    expect(text).toBe('Карта пустая. Первый разбор поставит первую метку.');
-    expect(text).not.toMatch(/^\d/);
+  it('пустое состояние — пусто: про первый разбор говорит подсказка у кнопки', () => {
+    expect(buildWhereIAm(input({ caseCount: 0 }), tyTr)).toBe('');
   });
 
   it('один случай — имя режима, без голого числа в начале', () => {

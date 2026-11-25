@@ -37,3 +37,6 @@
   .ds-btn.sm-next-btn { width: 100%; }
   .sm-where { padding: 16px 18px 18px; }
 }
+
+/* Мост в «Мои паттерны» — тихая ссылка под «Что дальше», не второе главное действие. */
+.ds-link.sm-patterns-link { align-self: flex-start; min-height: 44px; margin-top: 16px; }
