@@ -3,11 +3,12 @@ import { describe, it, expect } from 'vitest';
 import { buildConcernGuides } from './index';
 import {
   couplesCourse,
+  couplesCrisis,
   couplesEvidence,
   couplesFormats,
   couplesPsychoeducation,
   couplesRelationship,
-} from './concerns/couplesHeath';
+} from './concerns/couplesDosbor';
 import type { Tr } from './types';
 
 const ty: Tr = (t) => t;
@@ -37,10 +38,18 @@ describe.each([
     );
   });
 
+  it('безопасность: насилие в паре ведёт к заметке об опасном партнёре', () => {
+    const hits = [...(g?.crisis ?? []), ...(g?.formats ?? [])].filter(
+      (s) => s.includes('насили') && s.includes('Опасный партнёр клиента'),
+    );
+    expect(hits.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('новые пункты до 300 знаков, метки глав названы в sources', () => {
     const fresh = [
       ...couplesRelationship,
       ...couplesCourse,
+      ...couplesCrisis,
       ...couplesPsychoeducation,
       ...couplesFormats,
       couplesEvidence[couplesEvidence.length - 1],
