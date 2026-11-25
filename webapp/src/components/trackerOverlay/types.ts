@@ -13,6 +13,8 @@ export interface Props {
   onOpenNote?: () => void;
   /** Открыть историю (экран «Готово», «История →»). */
   onOpenHistory?: () => void;
+  /** «Разобрать, что задело» с «Готово»: открыть «Что случилось». */
+  onOpenCase?: () => void;
   yesterdayRatings?: Record<string, number>;
   /** День бэкфилла (YYYY-MM-DD) из HistorySheet; нет — трекер за сегодня. */
   date?: string;

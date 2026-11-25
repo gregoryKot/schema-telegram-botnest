@@ -22,3 +22,15 @@ export interface DiaryQuickSaveMeta {
   /** true — запись ушла через «Заполнить подробно» (старый мастер). */
   detailed: boolean;
 }
+
+// «Что дальше» после трекера и быстрой записи дневника: переход по предложенному шагу.
+// meta { from, to }. Парный реестр — NEXT_STEP_* в src/analytics/home-events.constants.ts.
+export const DONE_NEXT_STEP_EVENT = 'done_next_step';
+
+export type DoneNextStepFrom = 'tracker' | 'diary';
+export type DoneNextStepTo = 'case' | 'practice' | 'mode' | 'schema';
+
+export interface DoneNextStepMeta {
+  from: DoneNextStepFrom;
+  to: DoneNextStepTo;
+}
