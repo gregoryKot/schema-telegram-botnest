@@ -5,6 +5,7 @@ import {
   empathicConfrontationMore,
   limitSettingMore,
 } from './relationshipHeath';
+import { lsYoung3Voice } from './limitSettingYoung3';
 
 /** Досбор гл. 3–5 Арнца и ван Гендерен о ПРЛ к техникам отношений, гнева и концептуализации: пересказ. */
 export const confrontMore: string[] = [
@@ -40,10 +41,7 @@ export const limitVoice = (tr: Tr, base: string[]): string[] => [
     'Я не сержусь, но не знаю, что буду делать, если это повторится.',
     'Я не сержусь, но не знаю, что буду делать, если это повторится.',
   ),
-  tr(
-    'Прошу малого: не пей хотя бы с вечера накануне сессии. Мне важно, чтобы сессия проходила без алкоголя.',
-    'Прошу малого: не пейте хотя бы с вечера накануне сессии. Мне важно, чтобы сессия проходила без алкоголя.',
-  ),
+  ...lsYoung3Voice(tr),
 ];
 
 export const angerMore: string[] = [

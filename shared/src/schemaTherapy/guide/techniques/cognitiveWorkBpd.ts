@@ -1,6 +1,7 @@
 import { schemaDiaryFarrell } from './schemaDiaryFarrell';
 import { schemaDiaryYoungMore } from './schemaDiaryMoreYoung';
 import { cognitiveWorkArntz4 } from './arntzGeneralMore';
+import { flashcardsYoung3 } from './flashcardsYoung3';
 
 /** Дополнения к когнитивным техникам по гл. 6 и прил. Г Арнца и ван Гендерен о ПРЛ: вынесено, чтобы записи не росли. */
 export const cognitiveWorkBpd: string[] = [
@@ -18,8 +19,7 @@ export const cognitiveWorkBpd: string[] = [
 export const flashcardsBpd: string[] = [
   'Шаг два: обратить к себе доброе внимание — незаметно потянуться, пара вдохов [Бехари, гл. 5].',
   'Шаг три: услышать защитника («со мной всё в порядке, это старый мусор памяти, у меня есть права и мнение») и спокойно ограничить такие встречи [Бехари, гл. 5].',
-  'Образец карточки против вины от Карающего Критика [Арнтц ПРЛ, гл. 6]. Сторона 1: «Чувствую вину — значит, виноват, что всё пошло не так».',
-  'Сторона 2: чувство вины ещё не значит вины; исход мог зависеть от невезения и от чужих действий или бездействия; даже при ошибке виноват не во всём; Критик преувеличивает вину, и его комментарии сейчас не нужны [Арнтц ПРЛ, гл. 6].',
+  ...flashcardsYoung3,
 ];
 
 export const schemaDiaryBpd: string[] = [
