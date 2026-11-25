@@ -10,7 +10,7 @@ import { usePatternStatus } from '../../../../shared/src/pattern/usePatternStatu
 import { schemaEntryCounts, modeEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { weekSchemaFrequency, weekModeFrequency, weekModeSummary, weekPatternTop } from '../../../../shared/src/pattern/patternsSummary';
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
-export function usePatternLayer(source?: PatternEntriesSource) {
+export function usePatternLayer(source?: PatternEntriesSource, onClosed?: () => void) {
   const [pattern, setPattern] = useState<{ kind: MyCardsKind; id: string } | null>(null);
   const [exModeId, setExModeId] = useState<string | null>(null);
   const entries = usePatternEntries(source);
@@ -43,7 +43,7 @@ export function usePatternLayer(source?: PatternEntriesSource) {
           failed={open.failed}
           reload={open.reload}
           entries={entries}
-          onClose={() => setPattern(null)}
+          onClose={() => { setPattern(null); onClosed?.(); }}
         />
       )}
       {exModeId && <ModeExOverlay modeId={exModeId} onBack={() => setExModeId(null)} />}
