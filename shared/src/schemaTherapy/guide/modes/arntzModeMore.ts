@@ -3,7 +3,7 @@ import {
   avoidanceArntzConcept,
   surrenderArntzConcept,
 } from './arntzConceptMore';
-import { ARNTZ_CASES } from './personalityCasesArntz';
+import { ARNTZ_CASES_ALL } from './arntzCasesAll';
 import { withSessionSigns as withSigns } from './sessionSigns';
 
 /** Образцы гл. 2.1.3 «Подробнее» к режимам избегания и капитуляции; id — режимы с этими образцами. */
@@ -18,7 +18,7 @@ const CONCEPT: Record<string, string[]> = {
 export const withSessionSigns = (g: ModeGuide): ModeGuide => {
   const extra = [
     ...(CONCEPT[g.modeId] ?? []),
-    ...(ARNTZ_CASES[g.modeId] ?? []),
+    ...(ARNTZ_CASES_ALL[g.modeId] ?? []),
   ];
   return withSigns(
     extra.length ? { ...g, more: [...(g.more ?? []), ...extra] } : g,
