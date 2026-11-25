@@ -124,4 +124,23 @@ describe('досбор Арнца о ПРЛ, гл. 6–12: пункты дохо
       bpd.course!.some((x) => x.startsWith('Три искажения мышления')),
     ).toBe(true);
   });
+  it('новые пункты стоят в записи ровно один раз и после старых', () => {
+    const once: [string, string][] = [
+      ['imagery_rescripting', 'Почему к травме идут с уже знакомым методом'],
+      ['imagery_rescripting', 'Клиенту, который не хочет ворошить прошлое'],
+      ['mode_flipping', 'Разбор случая «пинбол»'],
+      ['cognitive_work', 'Связь с детским эпизодом на примере'],
+      ['pattern_breaking', 'Зачем отдельная фаза'],
+      ['group_techniques', 'Рескрипция в группе по Арнтцу'],
+    ];
+    for (const [id, start] of once) {
+      const more = records.find((g) => g.id === id)!.more!;
+      const hits = more.filter((x) => x.startsWith(start));
+      expect(hits, `${id}: ${start}`).toHaveLength(1);
+    }
+    const cw = records.find((g) => g.id === 'cognitive_work')!.more!;
+    expect(cw.findIndex((x) => x.startsWith('Памятка ABCDE'))).toBeLessThan(
+      cw.findIndex((x) => x.startsWith('Связь с детским эпизодом')),
+    );
+  });
 });
