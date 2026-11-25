@@ -53,4 +53,15 @@ describe('досбор по Янгу (гл. 4–8) доходит до спра�
       expect.arrayContaining(['defectiveness', 'unrelenting_standards']),
     );
   });
+
+  it('новые пункты входят в собранную запись ровно один раз', () => {
+    const once = (list: string[] | undefined, part: string) =>
+      (list ?? []).filter((x) => x.includes(part)).length;
+    const rescript = techniqueGuide(tr, 'imagery_rescripting')?.more;
+    expect(once(rescript, 'У работы с травмой в образе две цели')).toBe(1);
+    expect(once(rescript, 'Кому образ замещающего родительства')).toBe(1);
+    const diag = techniqueGuide(tr, 'diagnostic_imagery')?.more;
+    expect(once(diag, 'Три задачи диагностического образа')).toBe(1);
+    expect(once(diag, 'Почему образ действует иначе')).toBe(1);
+  });
 });
