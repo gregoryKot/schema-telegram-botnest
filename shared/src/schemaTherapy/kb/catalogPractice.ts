@@ -16,6 +16,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'group_techniques',
     'group_orientation',
     'group_plan_vs_mode',
+    'self_practice_group_day',
     'group_mode_roleplay',
     'deliberate_practice',
     'online_format',
@@ -61,6 +62,13 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'temperament',
     'positive_patterns_in_session',
     'therapist_culture_and_schemas',
+    'childhood_experience_types',
+    'self_practice_why',
+    'self_practice_safety',
+    'self_practice_formats',
+    'self_practice_reflection',
+    'self_practice_review',
+    'attachment_assertiveness_poles',
   ].map(w),
   {
     id: 'session_frequency',
@@ -127,13 +135,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['прил. А'],
   },
   {
-    id: 'attachment_assertiveness_poles',
-    title: 'Два полюса потребностей и четыре реакции на фрустрацию',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 1', 'гл. 3'],
-  },
-  {
     id: 'session_balance_axes',
     title: 'Баланс сессии: активация и рефлексия, забота и конфронтация',
     status: 'planned',
@@ -167,14 +168,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 15'],
-  },
-  {
-    id: 'childhood_experience_types',
-    title:
-      'Четыре пути к схеме: нехватка, травма, избыток, усвоение взгляда родителя',
-    status: 'planned',
-    source: 'Рафаэли',
-    chapters: ['гл. 2'],
   },
   {
     id: 'mode_states',

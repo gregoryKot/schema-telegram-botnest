@@ -17,6 +17,14 @@
 /* Блок-кнопка (весь блок — тап-цель; «кнопка» внутри — span.pp-cta). */
 .pp-block--btn { background: none; border-left: 0; border-right: 0; color: var(--text); text-align: left; cursor: pointer; font-family: var(--sans); }
 .pp-cta { pointer-events: none; }
+/* Заметка между линиями: баннер, виджет, служебный блок (#1674, К2а). Бумага страницы без заливки и коробки,
+   eyebrow капсом, serif-заголовок; оттенок сущности (--h) — только у знака справа. */
+.pp-block--note { gap: 8px; padding: 16px 0 18px; background: none; border-radius: 0; }
+.pp-block-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; min-height: 24px; }
+.pp-block-head > :not(.pp-block-sign) { align-self: center; min-width: 0; margin: 0; }
+.pp-block-sign { display: inline-flex; flex: none; align-items: center; }
+.pp-block-title { margin: 0; font: 400 20px/1.3 var(--serif); color: var(--text); text-wrap: balance; }
+.pp-block-text { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
 
 /* ── Герой: текст слева, картинка справа ────────────────────────────────── */
 .pp-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }

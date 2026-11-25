@@ -12,6 +12,9 @@ import { ARNTZ_PRACTICE_NOTE_SIGN } from './practiceSignsArntz';
 import { FARRELL_PRACTICE_NOTE_SIGN } from './practiceSignsFarrell';
 import { BEHARY_PRACTICE_NOTE_SIGN } from './practiceSignsBehary';
 import { HEATH_PRACTICE_NOTE_SIGN } from './practiceSignsHeathAll';
+import { RAFAELI_PRACTICE_NOTE_SIGN } from './practiceSignsRafaeli';
+import { FARRELL_SHAW_PRACTICE_NOTE_SIGN } from './practiceSignsFarrellShaw';
+import { ROEDIGER_PRACTICE_NOTE_SIGN } from './practiceSignsRoediger';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
@@ -21,7 +24,7 @@ export const GUIDE_SIGNS = [
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
   'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
   'ribbon', 'chatter', 'check', 'layers', 'beads', 'limits', 'flare', 'cup', 'join',
-  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots', 'strokes', 'grounded', 'wheel', 'need_attachment', 'coping_surrender', 'need_expression',
+  'pause', 'haven', 'leaf', 'coping_avoidance', 'coping_overcompensation', 'roots', 'strokes', 'grounded', 'wheel', 'need_attachment', 'coping_surrender', 'need_expression', 'need_autonomy',
   ...TECHNIQUE_OWN_SIGN_KEYS,
   ...PATH_SIGN_KEYS,
 ] as const;
@@ -87,6 +90,8 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   therapist_wellbeing: 'cup',
   therapy_aims: 'grown',
   ...YOUNG_PRACTICE_NOTE_SIGN, ...ARNTZ_PRACTICE_NOTE_SIGN, ...FARRELL_PRACTICE_NOTE_SIGN, ...BEHARY_PRACTICE_NOTE_SIGN, ...HEATH_PRACTICE_NOTE_SIGN,
+  ...RAFAELI_PRACTICE_NOTE_SIGN,
+  ...ROEDIGER_PRACTICE_NOTE_SIGN, ...FARRELL_SHAW_PRACTICE_NOTE_SIGN,
 };
 
 /** Знак раздела «Для терапевта»; раздела нет в таблице — без знака (не выдумываем). */

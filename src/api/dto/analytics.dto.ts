@@ -16,6 +16,7 @@ import {
   CUSTOMIZABLE_SCREENS,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
+  DIARY_JUMP_TARGETS,
   ENTRY_DELETE_TYPES,
 } from '../../analytics/analytics.constants';
 
@@ -73,6 +74,9 @@ export const CUSTOMIZABLE_SCREEN_SET: ReadonlySet<string> = new Set(
 export const SIGNUP_SOURCE_SET: ReadonlySet<string> = new Set(SIGNUP_SOURCES);
 export const PROFILE_PATTERN_KIND_SET: ReadonlySet<string> = new Set(
   PROFILE_PATTERN_KINDS,
+);
+export const DIARY_JUMP_TARGET_SET: ReadonlySet<string> = new Set(
+  DIARY_JUMP_TARGETS,
 );
 export const ENTRY_DELETE_TYPE_SET: ReadonlySet<string> = new Set(
   ENTRY_DELETE_TYPES,

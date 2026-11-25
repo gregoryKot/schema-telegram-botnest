@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CaseMetrics } from './case-metrics.format';
+import {
+  EMPTY_SELF_MAP_METRICS,
+  SelfMapMetrics,
+} from './self-map-metrics.format';
+import { SELF_MAP_LINK_TARGET_SET } from '../analytics/self-map-events.constants';
 
 // Счётчики разбора случая для /stats. Свой домен — свой файл (правило №10,
 // образец: practice-metrics.service.ts).
@@ -48,6 +53,7 @@ export class CaseMetricsService {
       peopleRows,
       returnedRows,
       saved,
+      mapOpened,
     ] = await Promise.all([
       count('case_started'),
       count('case_finished'),
@@ -65,6 +71,7 @@ export class CaseMetricsService {
       this.prisma.modeDiaryEntry.count({
         where: { fromCase: true, createdAt: { gte: since30 } },
       }),
+      byMetaKey('case_map_opened', 'repeat'),
     ]);
 
     return {
@@ -78,6 +85,27 @@ export class CaseMetricsService {
       recognizedDoubted: recognized('false'),
       people: Number(peopleRows[0]?.c ?? 0),
       peopleReturned: Number(returnedRows[0]?.c ?? 0),
+      mapOpenedRepeat: mapOpened('true'),
+      mapOpenedFirst: mapOpened('false'),
     };
+  }
+
+  /** Переходы «Карты себя» за 30 дней по полю meta.to. */
+  async getSelfMapLinks(): Promise<SelfMapMetrics> {
+    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const rows = await this.prisma.$queryRaw<
+      Array<{ value: string | null; c: bigint }>
+    >`
+      SELECT "meta"->>'to' AS value, count(*)::bigint AS c
+      FROM "AnalyticsEvent"
+      WHERE "name" = 'self_map_link' AND "createdAt" >= ${since30}
+      GROUP BY 1`;
+    const out: SelfMapMetrics = { ...EMPTY_SELF_MAP_METRICS };
+    for (const r of rows) {
+      if (r.value && SELF_MAP_LINK_TARGET_SET.has(r.value)) {
+        out[r.value as keyof SelfMapMetrics] = Number(r.c);
+      }
+    }
+    return out;
   }
 }

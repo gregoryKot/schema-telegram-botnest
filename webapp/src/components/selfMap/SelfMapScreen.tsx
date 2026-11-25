@@ -3,11 +3,13 @@ import { useMemo } from 'react';
 import { haptic } from '../../haptic';
 import { ExScreen } from '../exercises/ExScreen';
 import { SelfMapLane } from './SelfMapLane';
+import { SelfMapOrigins } from './SelfMapOrigins';
 import { buildStage } from './selfMapStage';
 import { SceneStage } from '../art/SceneStage';
 import { getModeById } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
-import { buildMapLanes, type MapInput, type MapLaneId } from '../../../../shared/src/map/mapVm';
+import { buildMapLanes, mapIsEmpty, type MapInput, type MapLaneId } from '../../../../shared/src/map/mapVm';
+import { buildOrigins, type OriginsInput } from '../../../../shared/src/map/mapOrigins';
 import { caseNextStep, buildWhereIAm, type NextStepInput, type NextStepId } from '../../../../shared/src/case/caseNextStep';
 import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/case-quick.css';
@@ -22,28 +24,44 @@ const groupOf = (modeId: string) => getModeById(modeId)?.groupId;
  * разворот, сцена слева, полосы справа. Надпись над заголовком не дублирует его.
  *
  * Внизу ровно одна кнопка «что дальше» (caseNextStep) — не список опций
- * (правило онбординга «одно очевидное действие на экран»).
+ * (правило онбординга «одно очевидное действие на экран»); на пустой карте она
+ * сразу под героем — иначе на телефоне уходит за сгиб.
  */
-export function SelfMapScreen({ map, next, onBack, onPickMode, onNextStep }: {
+export function SelfMapScreen({ map, next, origins, onBack, onPickMode, onPickSchema, onOpenPatterns, onStartTest, onNextStep }: {
   map: MapInput;
   next: NextStepInput;
+  origins: OriginsInput;
   onBack: () => void;
   onPickMode: (modeId: string) => void;
+  onPickSchema: (schemaId: string) => void;
+  onOpenPatterns: () => void;
+  onStartTest: () => void;
   onNextStep: (id: NextStepId) => void;
 }) {
   const tr = useTr();
   const lanes = useMemo(() => buildMapLanes(map), [map]);
   const stage = useMemo(() => buildStage(lanes, groupOf), [lanes]);
+  const originsView = useMemo(() => buildOrigins(origins), [origins]);
   const step = useMemo(() => caseNextStep(next, tr), [next, tr]);
   const whereIAm = useMemo(() => glue(buildWhereIAm(next, tr)), [next, tr]);
+  const empty = mapIsEmpty(map);
 
   const emptyHints: Record<MapLaneId, string> = {
     healthy: 'Появится, когда в разборе прозвучат свои слова поддержки.',
-    stage: 'Первый разбор поставит первую метку.',
+    stage: '',
     backstage:
       'Откроется из случая, где за тем, кто вышел на сцену, окажется кто-то ещё.',
-    origins: '',
   };
+
+  const nextBlock = (
+    <div className="sm-next">
+      <div className="ds-label">Что дальше</div>
+      <button type="button" className="ds-btn sm-next-btn" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
+        {glue(step.time ? `${step.label} · ${step.time}` : step.label)}
+      </button>
+      {step.hint && <p className="sm-hint">{step.hint}</p>}
+    </div>
+  );
 
   return (
     <ExScreen
@@ -51,24 +69,28 @@ export function SelfMapScreen({ map, next, onBack, onPickMode, onNextStep }: {
       look="modes" heroArt={<SceneStage model={stage} className="cq-scene" />}
       eyebrow={null} title="Карта себя" lede={buildSelfMapIntro(tr)}
     >
+      {empty && nextBlock}
+
       {lanes.map((lane) => (
         <SelfMapLane key={lane.id} lane={lane} emptyHint={emptyHints[lane.id]} onPickMode={onPickMode} />
       ))}
 
-      <p className="sm-note">{tr('Это части, а не ты целиком.', 'Это части, а не вы целиком.')}</p>
+      {(!empty || originsView.items.length > 0) && (
+        <SelfMapOrigins view={originsView} onPickSchema={onPickSchema} onStartTest={onStartTest} onOpenPatterns={onOpenPatterns} />
+      )}
 
-      <div className="pp-paper sm-where">
-        <div className="ds-label">Где я сейчас</div>
-        <p className="sm-where-text">{whereIAm}</p>
-      </div>
+      {!empty && <p className="sm-note">{tr('Это части, а не ты целиком.', 'Это части, а не вы целиком.')}</p>}
 
-      <div className="sm-next">
-        <div className="ds-label">Что дальше</div>
-        <button type="button" className="ds-btn sm-next-btn" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
-          {glue(step.time ? `${step.label} · ${step.time}` : step.label)}
-        </button>
-        {step.hint && <p className="sm-hint">{step.hint}</p>}
-      </div>
+      {whereIAm && (
+        <div className="pp-paper sm-where">
+          <div className="ds-label">Где я сейчас</div>
+          <p className="sm-where-text">{whereIAm}</p>
+        </div>
+      )}
+
+      {!empty && nextBlock}
+
+      <button type="button" className="ds-link sm-patterns-link" onClick={onOpenPatterns}>Все режимы и схемы →</button>
     </ExScreen>
   );
 }
