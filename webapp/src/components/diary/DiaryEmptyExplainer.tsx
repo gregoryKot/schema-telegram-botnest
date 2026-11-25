@@ -23,8 +23,10 @@ const FOOT: Record<DiaryFilter, string> = {
   case: 'Первый разбор — плитка «Что случилось» на главной.',
 };
 const LOOK: Record<'case' | 'tracker', EntityId> = { case: 'case', tracker: 'tracker' };
+// Кнопка вместо отсылки «на главную»: сразу открывает отметку трекера или разбор (onStart от раздела).
+const START: Record<'case' | 'tracker', string> = { tracker: 'Отметить сегодня', case: 'Разобрать случай' };
 
-export function DiaryEmptyExplainer({ filter }: { filter: DiaryFilter }) {
+export function DiaryEmptyExplainer({ filter, onStart }: { filter: DiaryFilter; onStart?: () => void }) {
   const explainers = buildDiaryExplainers(useTr());
   return (
     <div className="cd-empty-stack">
@@ -33,7 +35,11 @@ export function DiaryEmptyExplainer({ filter }: { filter: DiaryFilter }) {
           <div className="cd-empty-scene" aria-hidden="true"><ScenePebbleLaid hue={ENTITY_LOOK.diary.hue} filled={0} /></div>
           <div className="cd-empty-body"><h2 className="cd-empty-title">{glue(TITLE[filter])}</h2>{filter === 'all' && <p className="cd-empty-sub">{glue(INTRO.all)}</p>}<p className="cd-empty-foot">{glue(FOOT[filter])}</p></div>
         </div>
-      ) : <EntitySheet look={LOOK[filter]} title={TITLE[filter]} sub={INTRO[filter]} meta={glue(FOOT[filter])} />}
+      ) : (
+        <EntitySheet look={LOOK[filter]} title={TITLE[filter]} sub={INTRO[filter]} meta={onStart ? undefined : glue(FOOT[filter])}>
+          {onStart && <button type="button" className="ds-btn cd-empty-start" onClick={onStart}>{START[filter]}</button>}
+        </EntitySheet>
+      )}
       {(filter === 'all' || filter === 'diary') && <div className="cd-explainers">
         {(['schema', 'mode'] as const).map((type) => <ExplainerPaperCard key={type} type={type} what={explainers[type].what} why={explainers[type].why} />)}
       </div>}
