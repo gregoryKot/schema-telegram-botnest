@@ -61,6 +61,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'temperament',
     'positive_patterns_in_session',
     'therapist_culture_and_schemas',
+    'childhood_experience_types',
     'attachment_assertiveness_poles',
   ].map(w),
   {
@@ -161,14 +162,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 15'],
-  },
-  {
-    id: 'childhood_experience_types',
-    title:
-      'Четыре пути к схеме: нехватка, травма, избыток, усвоение взгляда родителя',
-    status: 'planned',
-    source: 'Рафаэли',
-    chapters: ['гл. 2'],
   },
   {
     id: 'mode_states',
