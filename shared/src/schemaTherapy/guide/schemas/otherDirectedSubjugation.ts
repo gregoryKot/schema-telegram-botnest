@@ -52,7 +52,7 @@ export const buildSubjugationGuide = (tr: Tr): SchemaGuide => ({
     'cognitive_work',
     'behavioral_experiment',
     'mode_map',
-    'pros_cons',
+    'pros_cons', 'empathic_confrontation',
   ],
   betweenSessions: [
     {
