@@ -13,7 +13,7 @@ import type { CmdMark, CmdRow } from './commandPalette/cmdRow';
 import { Hit } from './commandPalette/Hit';
 import { CMD_LIST_ID, cmdOptionId } from './commandPalette/listIds';
 import { pressable } from '../utils/a11y';
-import { hueStyle } from '../lib/tone';
+import { Avatar } from './Avatar';
 
 export type { CmdMark, CmdRow };
 
@@ -21,7 +21,7 @@ function Mark({ mark }: { mark: CmdMark }) {
   if ('sign' in mark) return <span className="cmd-mark" aria-hidden="true"><SignArt sign={mark.sign} size="row" /></span>;
   return (
     <span className="cmd-mark" aria-hidden="true">
-      <span className="ds-avatar ds-avatar--paper cmd-avatar" style={hueStyle(mark.hue)}>{mark.initials}</span>
+      <Avatar initials={mark.initials} className="cmd-avatar" />
     </span>
   );
 }
