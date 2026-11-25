@@ -27,6 +27,6 @@ export const buildPracticeSelfDisclosure: PracticeNotesBuilder = (tr) => [
     ],
     more: selfDisclosureMoreAuth,
     sources:
-      '[Кембридж, гл. 6, бокс 6.10], [Янг, гл. 6, 10], [Фаррелл, 4.6.3], [Хис, гл. 15, 20]',
+      '[Кембридж, гл. 6, бокс 6.10], [Янг, гл. 6, 9, 10], [Фаррелл, 4.6.3], [Хис, гл. 15, 20]',
   },
 ];
