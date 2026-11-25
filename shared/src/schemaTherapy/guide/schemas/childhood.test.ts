@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { buildSchemaGuides } from '../index';
 import { SCHEMA_CHILDHOOD } from './childhood';
+import { SCHEMA_CHILDHOOD_C } from './childhoodCambridgeC';
 
 const guides = buildSchemaGuides((t) => t);
 
@@ -13,9 +14,15 @@ describe('вопросы о детстве по схемам', () => {
     expect(Object.keys(SCHEMA_CHILDHOOD).sort()).toEqual(ids);
   });
 
-  it('лист схемы получает их последним пунктом «Подробнее»', () => {
-    for (const g of guides)
-      expect(g.more?.at(-1), g.schemaId).toBe(SCHEMA_CHILDHOOD[g.schemaId]);
+  it('лист схемы получает их пунктом «Подробнее», досбор идёт следом', () => {
+    for (const g of guides) {
+      const extra = SCHEMA_CHILDHOOD_C[g.schemaId]?.length ?? 0;
+      expect(g.more?.at(-1 - extra), g.schemaId).toBe(
+        SCHEMA_CHILDHOOD[g.schemaId],
+      );
+      if (extra)
+        expect(g.more?.at(-1)).toBe(SCHEMA_CHILDHOOD_C[g.schemaId].at(-1));
+    }
   });
 
   it('ссылка на приложение попадает в источники только при «прил.» в тексте', () => {

@@ -2,6 +2,7 @@ import type { PracticeNotesBuilder } from './types';
 import { methodErrorsMore } from './practiceMoreHeath';
 import { impassesMore } from './practiceMoreArntzJacob';
 import { chattingMore } from './practiceStuckCambridge';
+import * as cc from './practiceTherapistCambridgeC';
 
 /** «Для терапевта»: тупики, «болтовня» и ошибки в методе. Собирает practice.ts. */
 export const buildPracticeStuck: PracticeNotesBuilder = (tr) => [
@@ -63,13 +64,8 @@ export const buildPracticeStuck: PracticeNotesBuilder = (tr) => [
       'Вернуться к потребности. В рескриптинге легко спасти ребёнка по своему сценарию и не спросить, как ему теперь. А проверка чувства и возврат к потребности входят в протокол [Кембридж, бокс 8.5]. Так и в любой сессии: держаться за концептуализацию и за то, что с клиентом сейчас, а не за запланированную технику. Пришёл уязвимым — перейти к ограниченному родительству [Кембридж, гл. 5].',
       'Не откладывать шаги в жизни надолго. При тяжёлых расстройствах за них обычно берутся во второй половине терапии, с клиентами попроще — раньше, ради первых побед [Кембридж, гл. 9].',
     ],
-    voice: [
-      tr(
-        'Посмотри на ребёнка в этой сцене. Как ему сейчас? Чего ему ещё не хватает?',
-        'Посмотрите на ребёнка в этой сцене. Как ему сейчас? Чего ему ещё не хватает?',
-      ),
-    ],
-    more: methodErrorsMore,
+    voice: cc.methodErrorsVoice(tr),
+    more: [...methodErrorsMore, ...cc.methodErrorsCambridgeCMore],
     sources:
       '[Арнтц, гл. 9, 9.1.2], [Кембридж, гл. 1, 5, бокс 8.5, гл. 9, 19], [Янг, гл. 2, 9], [Хис, гл. 12], Arntz et al., 2021',
   },
