@@ -1,11 +1,9 @@
-import type { CSSProperties } from 'react';
 import { getModeById, getSchemaById } from '../../../../shared/src/schemaTherapy/schemaTherapyData';
 import { useNeedData } from '../../../../shared/src/needs/needData';
 import { modeName } from '../../../../shared/src/therapy/conceptGraph/conceptDigestModel';
 import { techniqueJournal } from '../../../../shared/src/therapy/conceptGraph/techniqueJournal';
 import { sessionJournal } from '../../../../shared/src/therapy/sessionWork/sessionJournal';
 import { isEmptySummary, workSummary, type WorkSummaryTarget } from '../../../../shared/src/therapy/sessionWork/workSummary';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { fmtDate } from '../../utils/format';
 import type { ClientDetail } from './clientSheetTypes';
@@ -43,7 +41,7 @@ export function ClientWorkSummary({ detail }: { detail: ClientDetail }) {
   ] satisfies [string, string][]).filter(([, text]) => text);
 
   return (
-    <section className="pp-leaf tk-leaf" style={{ '--h': ENTITY_LOOK.case.hue } as CSSProperties}>
+    <section className="pp-block tk-leaf">
       <div className="ds-head-row tk-card-head">
         <h2 className="ds-label tk-sec-label">Что было сделано</h2>
         {!isEmptySummary(summary) && <button className="ds-link" onClick={() => detail.setClientTab('tasks')}>Журнал →</button>}

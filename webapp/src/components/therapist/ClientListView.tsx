@@ -3,7 +3,7 @@ import type { TherapyClientSummary } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
 // Местный день — для nextSession; активность клиента — по его календарю.
 import { todayStr } from '../../utils/format';
-import { Skeleton } from '../Skeleton';
+import { Skeleton, SkeletonLines } from '../Skeleton';
 import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
 import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
@@ -65,9 +65,9 @@ export function ClientListView({
       <div className="ds-page">
         <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} onSearch={onSearch} />
 
-        <CardClaimBanner claims={addClient.claims} rowClassName="pp-leaf tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
+        <CardClaimBanner claims={addClient.claims} rowClassName="pp-block tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
         {formVisible && <AddClientForm addClient={addClient} />}
-        <PendingInvitesList pending={addClient.pending} className="pp-leaf tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
+        <PendingInvitesList pending={addClient.pending} className="pp-block tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
 
         <div className="tc-toolbar">
           <div className="tc-modes">
@@ -99,8 +99,8 @@ export function ClientListView({
 
         {listTab === 'clients' && (
           loading ? (
-            <div className="tc-grid" aria-hidden>
-              {[0, 1, 2, 3].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={16} />)}
+            <div className="ds-rows" aria-hidden>
+              {[0, 1, 2, 3].map(i => <div key={i} className="tc-row-skel"><Skeleton width={44} height={44} radius="50%" /><SkeletonLines widths={['45%', '25%']} /></div>)}
             </div>
           ) : loadFailed ? (
             // Сбой ≠ пусто: полный ростер не должен выглядеть как «клиентов нет».
@@ -112,7 +112,7 @@ export function ClientListView({
           ) : filtered.length === 0 ? (
             <PaperEmpty>Ничего не найдено</PaperEmpty>
           ) : (
-            <div className="tc-grid">
+            <div className="ds-rows">
               {filtered.map(client => (
                 <ClientCard key={client.telegramId} client={client} today={today} onOpen={openClient} />
               ))}
