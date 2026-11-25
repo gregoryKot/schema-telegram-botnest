@@ -1,5 +1,6 @@
 import { useEffect, useState, type RefObject } from 'react';
-import { activeSectionId, type SettingsNavItem } from './settingsNav';
+import type { SettingsNavItem } from './settingsNav';
+import { activeSectionId } from './activeSection';
 
 /** Линия чтения от верха прокрутки: пункт оглавления кладёт заголовок раздела на 16px (scroll-margin-top). */
 const READ_LINE = 48;
@@ -17,7 +18,8 @@ function useActiveSection(ids: readonly string[], scrollRef: RefObject<HTMLEleme
     };
     measure();
     box.addEventListener('scroll', measure, { passive: true });
-    return () => box.removeEventListener('scroll', measure);
+    window.addEventListener('resize', measure); // окно сузили — заголовки разделов съехали
+    return () => { box.removeEventListener('scroll', measure); window.removeEventListener('resize', measure); };
   }, [key, scrollRef]);
   return active;
 }

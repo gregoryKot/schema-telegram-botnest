@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { createRef } from 'react';
 import { SettingsSideNav } from './SettingsSideNav';
-import { activeSectionId } from './settingsNav';
+import { activeSectionId } from './activeSection';
 
 afterEach(cleanup);
 
