@@ -220,8 +220,9 @@ z-index` из CSS сайта и `shared/src/theme/`, у `.u-sheet` — 80; ко�
 `webapp/dist/` **не хранится в git** — Amvera сама собирает webapp из исходников через
 `RUN npm run build --prefix webapp` в `Dockerfile`.
 
-**Деплой = push в GitHub (`origin/main`). Amvera сама тянет из GitHub и пересобирает** —
-отдельный `git push amvera` НЕ нужен. Просто `git push origin main`.
+**Прод собирается из ветки `production`**: её раз в сутки доводит до зелёного
+`main` воркфлоу `release.yml` (№1а), Amvera тянет ветку из GitHub и пересобирает
+сама — отдельный `git push amvera` НЕ нужен.
 
 Внутри Telegram и MAX открывается этот же сайт (кнопки бота — web_app с
 адресом кабинета). Старый адрес мини-аппа `/app/*` навсегда ведёт в кабинет

@@ -40,6 +40,7 @@
 
 /* Задания и цели */
 .cp-tasks { display: flex; flex-direction: column; gap: 10px; }
+.cp-tasks.ds-rows { gap: 0; }
 .cp-task { display: flex; align-items: center; gap: 16px; min-height: 44px; }
 .cp-task-body { flex: 1; min-width: 0; }
 /* Название — текст терапевта или клиента: склейка пробелов в TaskRow (glueSpaces), pretty — без одинокого слова в последней строке. */
