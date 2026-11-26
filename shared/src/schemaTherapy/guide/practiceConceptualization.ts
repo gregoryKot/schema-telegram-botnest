@@ -1,7 +1,9 @@
 import type { PracticeNotesBuilder } from './types';
 import { stagesMore } from './practiceConceptMore';
-import { historyInterviewMore } from './practiceConceptHeath';
-import { conceptMoreRoediger } from './practiceConceptRoediger';
+import {
+  historyInterviewMoreAll,
+  caseConceptMoreAll,
+} from './practiceRafaeliAssess';
 import { buildConceptArntz } from './practiceConceptArntz';
 import * as cam from './practiceConceptCambridge';
 import { buildPracticeChildhoodExperience } from './practiceChildhoodExperience';
@@ -22,12 +24,9 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
       'Держать сочувствие к родителям. Чаще всего намерения у них были добрые, а неумение быть рядом передалось через поколения: эмоциональная настроенность выпала из семейного «рецепта» задолго до клиента [Кембридж, прил.].',
     ],
     voice: cam.historyInterviewVoice(tr),
-    more: [
-      ...historyInterviewMore,
-      ...cam.historyInterviewCambridgeMore,
-      ...cc.historyInterviewCambridgeCMore,
-    ],
-    sources: '[Кембридж, гл. 1, 3, прил.], [Хис, гл. 1], [Янг, гл. 2]',
+    more: historyInterviewMoreAll,
+    sources:
+      '[Кембридж, гл. 1, 3, прил.], [Хис, гл. 1], [Янг, гл. 2], [Рафаэли, гл. 2, 16]',
   },
   {
     id: 'case_conceptualization',
@@ -43,9 +42,9 @@ export const buildPracticeConceptualization: PracticeNotesBuilder = (tr) => [
       'Решить, какой копинг брать первым: самый частый и самый опасный. Послушный Капитулянт делает жизнь несчастной, а Агрессор может довести до тюрьмы, поэтому первым берут Агрессора [Фаррелл, 5.2].',
     ],
     voice: cc.caseConceptualizationVoice(tr),
-    more: [...conceptMoreRoediger, ...cam.caseConceptualizationCambridgeMore],
+    more: caseConceptMoreAll,
     sources:
-      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4], [Фаррелл-Шоу, модуль 7]',
+      '[Кембридж, гл. 3–4, табл. 4.1], [Фаррелл, 5.1, 5.2], [Арнтц, 1.2, 2.2.2, 2.4, гл. 3, 4.4], [Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4], [Фаррелл-Шоу, модуль 7], [Рафаэли, гл. 2, 4, 5, 18, 19]',
   },
   ...buildPracticeChildhoodExperience(tr),
   ...buildConceptArntz(tr),
