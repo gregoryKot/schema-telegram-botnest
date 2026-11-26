@@ -24,9 +24,9 @@ export function CurrencyChoice({ tz, labelStyle, tr = VY }: { tz: string; labelS
   return (
     <div>
       <div id="bp-currency" style={labelStyle}>Я не в России — показать цену</div>
-      <div className="u-wrap8" role="group" aria-labelledby="bp-currency">
+      <div className="pa-chips-line" role="group" aria-labelledby="bp-currency">
         {FOREIGN.map((c) => (
-          <Chip key={c} active={chosen === c} onClick={() => pick(c)} style={{ minHeight: 44 }}>
+          <Chip key={c} active={chosen === c} onClick={() => pick(c)}>
             {IN_CURRENCY[c]} {CURRENCY_SYMBOL[c]}
           </Chip>
         ))}

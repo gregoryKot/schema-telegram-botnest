@@ -43,8 +43,8 @@ export function BookingSlotsSection({ slots, tz, onTzChange, day, onDayChange, s
     <>
       <div>
         <div style={labelSt}>{tr('Выбери день', 'Выберите день')}</div>
-        <div ref={strip} onScroll={paper ? undefined : measure} className={paper ? 'cbk-days' : undefined}
-          style={paper ? undefined : { display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', maskImage: fade, WebkitMaskImage: fade }}>
+        <div ref={strip} onScroll={paper ? undefined : measure} className={paper ? 'cbk-days' : 'pa-chips-line'}
+          style={paper ? undefined : { flexWrap: 'nowrap', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', maskImage: fade, WebkitMaskImage: fade }}>
           {dayList.map((k) => (
             <Pick key={k} active={k === day} onClick={() => {
               trackGoalOnce('booking_start');
@@ -62,7 +62,7 @@ export function BookingSlotsSection({ slots, tz, onTzChange, day, onDayChange, s
         <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 8px' }}>
           {timeZoneCaption(tz, undefined, tr('твоему', 'вашему'))} <TimeZonePicker tz={tz} onChange={onTzChange} tr={tr} />
         </p>
-        <div className={paper ? 'u-wrap8 cbk-times' : 'u-wrap8'}>
+        <div className={paper ? 'u-wrap8 cbk-times' : 'pa-chips-line'}>
           {daySlots.map((s) => (
             <Pick key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => {
               trackGoalOnce('booking_start');
