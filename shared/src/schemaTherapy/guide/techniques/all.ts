@@ -39,6 +39,7 @@ import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
 import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 import { buildGenogramTechniques } from './genogram';
 import { buildChildModePlayTechniques } from './childModePlay';
+import { buildPerspectiveChangeTechniques } from './perspectiveChange';
 import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
 
@@ -67,6 +68,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildFormulationTechniques,
   buildGenogramTechniques,
   buildChildModePlayTechniques,
+  buildPerspectiveChangeTechniques,
   buildBodyModePositionsTechniques,
   buildEvidenceWorkTechniques,
   buildChildCareTechniques,

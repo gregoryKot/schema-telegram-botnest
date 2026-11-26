@@ -40,6 +40,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'probe_phrases',
       'intimacy_dialogue',
       'trauma_map',
+      'perspective_change',
     ],
     betweenSessions: [
       {
