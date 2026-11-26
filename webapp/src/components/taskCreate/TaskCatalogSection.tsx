@@ -18,7 +18,7 @@ function CatalogRow({ task, open, onToggle, onTake }: { task: CatalogTask; open:
         className={'ds-list-row ds-list-row--nav ds-list-row--hover ds-list-row--inset sk-cat-row' + (open ? ' is-open' : '')}
       >
         <span className="ds-list-title">{task.title}</span>
-        <span className="ds-chev" aria-hidden="true" />
+        <span className="ds-fold-chev" aria-hidden="true" />
       </button>
       {open && (
         <div className="sk-cat-body">
