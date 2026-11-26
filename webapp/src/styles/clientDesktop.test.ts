@@ -93,7 +93,7 @@ describe('«Ещё» и «Активность» на компьютере', () 
     for (const r of hide) expect(isDesktop(r.media)).toBe(true);
     expect(phoneSees('client-more.css', '.cm-phone-only', /display:\s*none/)).toEqual([]);
     expect(at('client-more.css', '.cm-page > .cm-group', 768)).toMatch(/max-width:\s*720px/);
-    expect(at('client-more.css', '.cm-page > .ds-card--crisis', 768)).toMatch(/max-width:\s*720px/);
+    expect(at('client-more.css', '.cm-page > .cm-crisis', 768)).toMatch(/max-width:\s*720px/);
   });
   it('тепловая карта: клетка фиксированного размера ≤24px только под ≥768', () => {
     const grid = at('client-profile.css', '.cpf-heat-grid', 768);
