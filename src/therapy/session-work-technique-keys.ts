@@ -74,6 +74,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:stop_rewind_explore': ['moment', 'rewind', 'explored', 'result'],
   'technique:life_line': ['stones', 'flowers', 'noticed', 'next'],
   'technique:genogram': ['patterns', 'roles', 'schemas', 'next'],
+  'technique:body_mode_positions': ['position', 'body', 'mode', 'next'],
   'technique:online_chairwork': ['variant', 'modes', 'result'],
   'technique:schema_attunement': ['moment', 'feeling', 'schema', 'bridge'],
   'technique:responsibility_pie': ['belief', 'causes', 'share'],

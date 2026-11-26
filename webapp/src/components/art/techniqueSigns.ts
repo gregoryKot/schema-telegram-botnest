@@ -99,7 +99,10 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
   three_parts_check_in: 'three_parts',
 };
 
-const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = { genogram: 'family_tree' };
+const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
+  genogram: 'family_tree',
+  body_mode_positions: 'side_seat',
+};
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
