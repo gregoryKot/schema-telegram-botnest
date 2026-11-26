@@ -27,6 +27,15 @@ describe('LoginConsentNote', () => {
     expect(note.textContent).toMatch(/не ставят клинический диагноз/);
   });
 
+  it('все три пункта видны без «Подробнее»: свёрнут только полный текст', () => {
+    const note = renderFor('ty');
+    const visible = note.querySelector(':scope > p')?.textContent ?? '';
+    expect(visible).toMatch(/18 лет/);
+    expect(visible).toMatch(/Политикой конфиденциальности/);
+    expect(visible).toMatch(/не ставит диагноз/);
+    expect(note.querySelector('details summary')?.textContent).toBe('Подробнее');
+  });
+
   it('ведёт на политику конфиденциальности', () => {
     renderFor('ty');
     expect(screen.getByRole('link', { name: 'Политикой конфиденциальности' }).getAttribute('href')).toBe('/privacy');
