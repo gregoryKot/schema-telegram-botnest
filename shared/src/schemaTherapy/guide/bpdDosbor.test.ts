@@ -81,6 +81,8 @@ describe('досбор Арнца о ПРЛ: статья bpd', () => {
     expect(
       bpd.psychoeducation!.some((t) => t.startsWith('К рационалу рескрипции')),
     ).toBe(true);
-    expect(bpd.relationship!.at(-1)).toMatch(/образец уважительного/);
+    expect(bpd.relationship!.some((t) => /образец уважительного/.test(t))).toBe(
+      true,
+    );
   });
 });

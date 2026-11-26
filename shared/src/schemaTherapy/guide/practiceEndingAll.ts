@@ -4,6 +4,7 @@ import {
   cbtWithSchemasHeathMore,
   prematureEndingHeathMore,
 } from './practiceEndingHeathMore';
+import { cbtWithSchemasRafaeli } from './practiceEndingRafaeli';
 
 /** «Для терапевта» по Хис (гл. 19, 20): трудное завершение и схема-приёмы в краткой КПТ. Карта — docs/guide-sources/Хис-Стартап.md, пачка 9. */
 export const buildPracticeEndingAll: PracticeNotesBuilder = (tr) => [
@@ -58,8 +59,9 @@ export const buildPracticeEndingAll: PracticeNotesBuilder = (tr) => [
     ],
     more: [
       ...cbtWithSchemasHeathMore,
+      ...cbtWithSchemasRafaeli,
       'Пробные варианты короткой схема-терапии, около 20 сессий, при смешанных расстройствах личности уже описаны, но это пилотные работы, а не доказательная база [Хис, гл. 19].',
     ],
-    sources: '[Хис, гл. 19, Мурей, Бирн и Руте]',
+    sources: '[Хис, гл. 19, Мурей, Бирн и Руте], [Рафаэли, гл. 28]',
   },
 ];

@@ -1,3 +1,4 @@
+import { bpdRelationshipRafaeli } from './bpdRafaeli';
 import { BPD_RELATIONSHIP } from './bpdRelationshipItems';
 import { BPD_SECTIONS } from './bpdSections';
 import type { ConcernGuide } from './types';
@@ -12,4 +13,7 @@ export const BPD_ALL_SECTIONS: Pick<
   | 'stuck'
   | 'evidence'
   | 'relationship'
-> = { ...BPD_SECTIONS, relationship: BPD_RELATIONSHIP };
+> = {
+  ...BPD_SECTIONS,
+  relationship: [...BPD_RELATIONSHIP, ...bpdRelationshipRafaeli],
+};
