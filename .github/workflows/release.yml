@@ -48,7 +48,9 @@ jobs:
           FORCED_SHA: ${{ inputs.sha }}
         run: |
           set -o pipefail
-          node scripts/release-pick.mjs --sha="$FORCED_SHA" | tee -a "$GITHUB_OUTPUT"
+          manual=''
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then manual=--manual; fi
+          node scripts/release-pick.mjs --sha="$FORCED_SHA" $manual | tee -a "$GITHUB_OUTPUT"
       # Коммит production = дерево выбранного коммита main без .github/workflows:
       # токен раннера не вправе пушить правки воркфлоу, а сборке образа они не
       # нужны. История ветки своя (родитель — прошлая выкатка), пуш без force.
@@ -56,6 +58,7 @@ jobs:
         if: steps.pick.outputs.action == 'release'
         env:
           SHA: ${{ steps.pick.outputs.sha }}
+          HOLD: ${{ steps.pick.outputs.hold }}
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -63,11 +66,15 @@ jobs:
           parent=''
           if git fetch --depth=1 origin production; then parent=$(git rev-parse FETCH_HEAD); fi
           export GIT_INDEX_FILE="$RUNNER_TEMP/release-index"
+          git fetch --depth=1 origin "$SHA"
           git read-tree "$SHA"
           git rm -r -q --cached --ignore-unmatch .github/workflows
           tree=$(git write-tree)
+          trailers="Main-Commit: $SHA"
+          # Откат ставит замок: расписание молчит до ручного запуска без sha.
+          if [ "$HOLD" = true ]; then trailers="$trailers"$'\n'"Release-Hold: true"; fi
           commit=$(git commit-tree "$tree" ${parent:+-p "$parent"} \
-            -m "Выкатка main ${SHA:0:7}" -m "Main-Commit: $SHA")
+            -m "Выкатка main ${SHA:0:7}" -m "$trailers")
           git push origin "$commit:refs/heads/production"
           echo "На прод уходит main $SHA" >> "$GITHUB_STEP_SUMMARY"
       - name: выкатывать нечего

@@ -107,9 +107,24 @@ describe('release-pick.mjs', () => {
       action: 'release',
       sha: B,
     });
+    expect(pick(input, [`--sha=${B}`]).hold).toBe('true');
     expect(pick(input, [`--sha=${D}`])).toMatchObject({
       status: 1,
       action: 'error',
+    });
+  });
+
+  it('после отката расписание молчит, ручной запуск без sha снимает замок', () => {
+    const input = {
+      commits: [A, B, C],
+      runs: [done(A, 'success')],
+      deployed: C,
+      hold: true,
+    };
+    expect(pick(input)).toMatchObject({ action: 'none', mainRed: 'false' });
+    expect(pick(input, ['--manual'])).toMatchObject({
+      action: 'release',
+      sha: A,
     });
   });
 });

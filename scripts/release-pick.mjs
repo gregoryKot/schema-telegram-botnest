@@ -25,15 +25,21 @@ export function deployedFromMessage(message) {
  * новые первыми ({sha, status, conclusion}); deployed — sha main на проде или null.
  * Берётся самый новый зелёный коммит новее выкаченного. `mainRed` — последний
  * ЗАВЕРШЁННЫЙ прогон красный: идущий прогон свежего мержа сигналом не считается.
+ * Коммит без прогона в окне (100 последних) считается идущим и не выкатывается.
  */
-export function pickRelease({ commits, runs, deployed, forced }) {
+export function pickRelease({ commits, runs, deployed, forced, hold, manual }) {
+  // Откат (--sha) ставит замок: расписание не вернёт на прод то, с чего ушли.
+  // Снимает замок ручной запуск без sha — после починки main.
+  if (!forced && hold && !manual) {
+    return { action: 'none', reason: 'прод держит откат — снимет ручной запуск без sha', mainRed: false };
+  }
   if (forced) {
     if (!commits.includes(forced)) {
       return { action: 'error', reason: `коммита ${forced} нет среди последних ${commits.length} коммитов main` };
     }
     return forced === deployed
       ? { action: 'none', reason: 'этот коммит уже на проде', mainRed: false }
-      : { action: 'release', sha: forced, mainRed: false };
+      : { action: 'release', sha: forced, hold: true, mainRed: false };
   }
 
   const verdict = new Map();
@@ -84,6 +90,7 @@ async function loadLive() {
     commits: commits.map((c) => c.sha),
     runs: runs.workflow_runs.map((r) => ({ sha: r.head_sha, status: r.status, conclusion: r.conclusion })),
     deployed: deployedFromMessage(tip?.commit?.message),
+    hold: /^Release-Hold: true$/m.test(tip?.commit?.message ?? ''),
   };
 }
 
@@ -92,7 +99,11 @@ async function main() {
     process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3) || undefined;
   const input = arg('input');
   const data = input ? JSON.parse(readFileSync(input, 'utf8')) : await loadLive();
-  const decision = pickRelease({ ...data, forced: arg('sha') });
+  const decision = pickRelease({
+    ...data,
+    forced: arg('sha'),
+    manual: process.argv.includes('--manual'),
+  });
   for (const [key, value] of Object.entries(decision)) console.log(`${key}=${value}`);
   if (decision.action === 'error') process.exit(1);
 }
