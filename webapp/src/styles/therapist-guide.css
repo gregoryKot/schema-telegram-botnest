@@ -77,8 +77,6 @@
 .gd-tech > .pp-row-art { padding-top: 10px; }
 
 /* «Подробнее» и «Источники» — вторичное, тихо: раскрывашка строкой между двумя линиями, без белой карточки. */
-.gd-more > .ds-fold { background: none; border: none; border-radius: 0; border-block: 1px solid var(--line); }
-.gd-more .ds-fold-btn { padding-inline: 0; }
 .gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; padding-inline: 0; }
 .gd-sources .ds-fold-body { gap: 8px; }
 .gd-sources p, .gd-books li { margin: 0; font-size: 12px; line-height: 1.5; }
@@ -161,7 +159,7 @@
   flex: 1; min-width: 0; min-height: 44px; margin: -8px 0; padding: 0; border: 0; background: none; cursor: pointer;
   display: flex; align-items: center; gap: 8px; font: inherit; color: inherit; text-align: left;
 }
-.gd-card-toggle > .ds-chev { margin-left: 0; }
+.gd-card-toggle > .ds-fold-chev { margin-left: 0; }
 .gd-card-title { font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--text); }
 .gd-card-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); white-space: pre-line; }
 .gd-card .gd-acts { margin-top: 6px; }
