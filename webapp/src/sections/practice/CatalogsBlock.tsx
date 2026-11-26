@@ -11,9 +11,9 @@ export function CatalogsBlock({ rows, compact = false }: { rows: CatalogRow[]; c
   return (
     <section className="cp-block">
       <div className="ds-head-row"><h3 className="ds-h2">Каталоги</h3></div>
-      <div className="cp-tasks">
+      <div className="cp-tasks ds-rows">
         {rows.map(item => (
-          <div key={item.id} className="ds-card ds-card--row ds-card--nav ds-card--hover cp-task" {...pressable(item.onClick)}>
+          <div key={item.id} className="ds-card ds-card--row ds-card--nav ds-card--hover ds-card--line cp-task" {...pressable(item.onClick)}>
             <span className="pp-row-art"><SignArt sign={ENTITY_LOOK[item.look].sign} size="row" /></span>
             <div className="cp-task-body"><div className="cp-task-title">{glue(item.label)}</div><div className="ds-sub">{glue(item.sub)}</div></div>
             {compact ? <span className="ds-chev" aria-hidden="true" /> : <span className="ds-link">открыть →</span>}
