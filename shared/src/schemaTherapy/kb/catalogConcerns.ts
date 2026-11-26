@@ -17,6 +17,7 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('adjustment_disorder'),
   w('ptsd'),
   w('eating_disorders'),
+  w('neurodivergence'),
   {
     id: 'relationship_patterns',
     title: 'Повторяющиеся паттерны в отношениях, выбор партнёра',
