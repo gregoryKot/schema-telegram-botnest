@@ -94,6 +94,9 @@
 /* Строки прямо на бумаге между тонкими линиями (как «Аккаунт»); вместо белой коробки ds-card--flush. */
 .ds-rows { min-width: 0; border-top: 1px solid var(--panel-line); }
 .ds-rows > .ds-list-row, .ds-rows > button.ds-list-row, .ds-rows > a.ds-list-row { padding-left: 4px; padding-right: 4px; border-bottom: 1px solid var(--panel-line); }
+/* Строка-карточка на бумаге: без заливки, рамки и скругления, снизу тонкая линия (контейнер — .ds-rows; #1674, К14). */
+.ds-card.ds-card--line { background: none; border: 0; border-bottom: 1px solid var(--panel-line); border-radius: 0; padding: 14px 4px; }
+.ds-card.ds-card--line.ds-card--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, transparent); }
 .ds-card--hover { cursor: pointer; transition: border-color .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); }
 .ds-card--panel { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); }

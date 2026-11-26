@@ -36,7 +36,7 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
         ))}
       </div>
 
-      <div className="ds-card ss-card-stack ss-legend-card">
+      <div className="ss-card-stack ss-legend-card">
         <div className="ds-label">Шкала ответов</div>
         <div className="ss-legend">
           {[1, 2, 3, 4, 5, 6].map(n => <div key={n} className={`ss-legend-n${n >= 4 ? ' is-high' : ''}`}>{n}</div>)}

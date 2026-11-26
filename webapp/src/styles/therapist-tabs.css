@@ -15,7 +15,7 @@
 .tb-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ── Сессии ───────────────────────────────────────────────────────────── */
-.tb-composer { display: flex; flex-direction: column; gap: 14px; padding: 22px 24px; }
+.tb-composer { display: flex; flex-direction: column; gap: 14px; padding: 18px 0 0; border-top: 1px solid var(--panel-line); }
 .tb-composer-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tb-composer-area { line-height: 1.65; min-height: 120px; }
 .tb-composer-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }

@@ -147,15 +147,15 @@
   .pa-spread-side .pa-sheet.ss-res-hero .pa-sheet-title { font-size: 27px; }
   .pa-sheet.pa-sheet--scene.ss-ysq-hero > .pa-sheet-art { grid-column: 1 / -1; grid-row: 1; justify-self: center; width: min(240px, 84%); margin-bottom: 2px; }
 }
-.ss-facts { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: var(--r-16); background: var(--surface); }
-.ss-fact { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; }
-.ss-fact + .ss-fact { border-top: 1px solid var(--paper-sunk); }
+.ss-facts { display: grid; grid-template-columns: minmax(0, 1fr); border-block: 1px solid var(--panel-line); }
+.ss-fact { display: flex; flex-direction: column; gap: 2px; padding: 12px 4px; }
+.ss-fact + .ss-fact { border-top: 1px solid var(--panel-line); }
 .ss-fact b { font-family: var(--serif); font-weight: 400; font-size: 19px; line-height: 1.25; color: var(--text); }
 .ss-fact span { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
-.ss-legend-card { padding: 18px 20px; }
+.ss-legend-card { padding: 18px 0 0; }
 .ss-legend { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; text-align: center; }
-.ss-legend-n { height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font: 400 19px var(--serif); background: var(--paper-tint); color: var(--text-sub); }
-.ss-legend-n.is-high { background: color-mix(in srgb, var(--c-clay) 16%, var(--surface)); color: var(--c-clay-strong); }
+.ss-legend-n { height: 40px; display: flex; align-items: center; justify-content: center; font: 400 19px var(--serif); border-bottom: 1px solid var(--panel-line); color: var(--text-sub); }
+.ss-legend-n.is-high { border-bottom-color: var(--c-clay); color: var(--c-clay-strong); }
 /* Подписи краёв шкалы — под краями ряда во всю его ширину (слева — по левому краю, справа — по правому), а не
    в ширину клетки: на 320–375 «Полностью / про / меня» шло в три строки и упиралось в рамку (ревью g5 r1). */
 .ss-legend-t { grid-column: 1 / 4; margin-top: 2px; font-size: 12px; line-height: 1.3; text-align: left; color: var(--text-sub); }
@@ -227,7 +227,7 @@
   .ss-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ss-checkin-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .ss-fact { padding: 16px 20px 18px; }
-  .ss-fact + .ss-fact { border-top: 0; border-left: 1px solid var(--paper-sunk); }
+  .ss-fact + .ss-fact { border-top: 0; border-left: 1px solid var(--panel-line); }
 }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ss-test { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */

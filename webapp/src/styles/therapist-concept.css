@@ -9,15 +9,14 @@
 .tcp-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .tcp-fill { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
 .tcp-anchors { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-/* Тихий чип-якорь; заполненный раздел — бумага соломы с галочкой (принцип 5), не заливка. */
+/* Якорь раздела — подпись над тонкой линией, без коробки; заполненный — плотнее текстом и линией цвета акцента. */
 .tcp-anchor {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 6px 10px;
-  background: none; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 6px 8px;
+  background: none; border: 0; border-bottom: 1px solid var(--panel-line); border-radius: 0; cursor: pointer;
   font: 13px var(--sans); color: var(--text-sub); white-space: nowrap;
 }
-.tcp-anchor:hover { background: var(--paper-sunk); }
-.tcp-anchor.is-filled { background: oklch(0.915 0.03 70); border-color: transparent; color: var(--text); font-weight: 600; }
-.tcp-anchor.is-filled:hover { background: oklch(0.895 0.04 70); }
+.tcp-anchor:hover { border-bottom-color: var(--text-sub); }
+.tcp-anchor.is-filled { border-bottom-color: var(--accent); color: var(--text); font-weight: 600; }
 
 /* ── Раздел ── */
 .tcp-sec { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; min-width: 0; }
@@ -31,6 +30,8 @@
 .tcp-pickers { display: flex; flex-direction: column; gap: 28px; }
 .tcp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Шапка карточки выбора: заголовок слева, «Изменить / Готово» справа. */
+/* Блок выбора на бумаге: тонкая линия сверху, без белой коробки (К14). */
+.tcp-pick { min-width: 0; border-top: 1px solid var(--panel-line); padding-top: 16px; }
 .tcp-pick-head { align-items: center; flex-wrap: nowrap; }
 /* Свёрнутая пустая карточка — только шапка; выбранное или выбор встают под ней с отступом. */
 .tcp-pick > .tcp-pick-head ~ * { margin-top: 16px; }
