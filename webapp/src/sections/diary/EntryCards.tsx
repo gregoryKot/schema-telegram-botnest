@@ -13,11 +13,11 @@ import { PatternLinks } from './PatternLinks';
 import { entryPatternLinks } from './patternLinksModel';
 import type { PatternTarget } from '../schemas/patternRoute';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
+import { modeClinicalName } from '../../../../shared/src/mode/modeDisplayName';
 import '../../styles/client-diary.css';
 // Карточки записей трёх дневников в ленте «Записей»: вид — по типу записи (feedLook), каркас — EntryShell.
 
 type OpenPattern = (t: PatternTarget) => void;
-
 export function SchemaEntry({ entry, onDelete, onOpenPattern }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void>; onOpenPattern?: OpenPattern }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
   const emotions = EMOTIONS.filter(e => entry.emotions.some((em: EmotionEntry) => em.id === e.id));
@@ -42,7 +42,7 @@ export function ModeEntry({ entry, onDelete, onOpenPattern }: { entry: ModeDiary
     <EntryShell
       look={entryLook({ _type: 'mode', entry })}
       kind={modeEntryKind(entry)}
-      title={mode ? mode.name : 'Дневник режимов'}
+      title={mode ? modeClinicalName(mode.id) : 'Дневник режимов'}
       time={fmtTime(entry.createdAt)}
       text={entry.situation}
     >

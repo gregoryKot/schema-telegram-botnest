@@ -8,7 +8,7 @@ import type { ConsentState } from '../../hooks/useConsentGate';
 // ссылка-приглашение → конец очереди, после которого открываются автопоказы.
 
 /** Что показывать сейчас; `wait` — ждём ответа сервера, на экране ничего. */
-export type EntryStep = 'address' | 'consent' | 'join' | 'wait' | 'done';
+export type EntryStep = 'address' | 'consent' | 'join' | 'reminder' | 'wait' | 'done';
 
 export function entryStep(s: {
   /** Вопрос о форме обращения решён: задан, отложен «Позже» или не нужен. */
@@ -18,12 +18,16 @@ export function entryStep(s: {
   linkHandled: boolean;
   /** Открыто согласие на присоединение по ссылке. */
   join: boolean;
+  /** Подсказка про вечернее напоминание: флаг стоит или настройки не загрузились — skip. */
+  reminderHint: 'checking' | 'show' | 'skip';
 }): EntryStep {
   if (!s.addressDone) return 'address';
   if (s.consent === 'checking') return 'wait';
   if (s.consent === 'needed') return 'consent';
   if (!s.linkHandled) return 'wait';
-  return s.join ? 'join' : 'done';
+  if (s.join) return 'join';
+  if (s.reminderHint === 'checking') return 'wait';
+  return s.reminderHint === 'show' ? 'reminder' : 'done';
 }
 
 /**
