@@ -47,5 +47,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'three_parts',
   // TechniqueSignsRoediger.tsx — техники из книги Рёдигера, Стивенс и Брокмана
   'family_tree',
+  'stand_above',
+  'balance_axes',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

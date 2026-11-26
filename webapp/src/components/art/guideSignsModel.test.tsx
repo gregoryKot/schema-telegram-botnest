@@ -36,6 +36,7 @@ const NOTE_IDS = [
   'self_practice_why', 'self_practice_safety', 'self_practice_formats', 'self_practice_reflection', 'self_practice_review',
   'self_practice_group_day',
   'attachment_assertiveness_poles',
+  'session_balance_axes',
 ];
 
 describe('знаки листов подсказок', () => {

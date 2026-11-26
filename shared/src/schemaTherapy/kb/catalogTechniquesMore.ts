@@ -5,5 +5,6 @@ export const WRITTEN_TECHNIQUES_MORE = [
   'coping_bypass',
   'mode_figures',
   'genogram',
+  'perspective_change',
   'problem_solving',
 ].map(w);

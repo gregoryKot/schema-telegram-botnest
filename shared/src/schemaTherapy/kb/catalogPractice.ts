@@ -70,6 +70,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'self_practice_reflection',
     'self_practice_review',
     'attachment_assertiveness_poles',
+    'session_balance_axes',
   ].map(w),
   {
     id: 'session_frequency',
@@ -134,13 +135,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Пары',
     chapters: ['прил. А'],
-  },
-  {
-    id: 'session_balance_axes',
-    title: 'Баланс сессии: активация и рефлексия, забота и конфронтация',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 5'],
   },
   {
     id: 'healthy_adult_six_processes',

@@ -83,7 +83,7 @@ export type HeathTechniqueId =
   | 'mental_contrasting_imagery';
 
 /** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
-export type RoedigerTechniqueId = 'genogram';
+export type RoedigerTechniqueId = 'genogram' | 'perspective_change';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =

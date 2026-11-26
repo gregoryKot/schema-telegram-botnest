@@ -15,4 +15,13 @@ export const ROEDIGER_TECHNIQUE_WORK: Record<
       ['next', 'Что дальше'],
     ],
   },
+  perspective_change: {
+    name: 'Смена точки зрения',
+    fields: [
+      ['view', 'Что увидели со стороны'],
+      ['resource', 'Совет друга или забота о ребёнке'],
+      ['self', 'Что клиент сказал себе'],
+      ['next', 'Что дальше'],
+    ],
+  },
 };
