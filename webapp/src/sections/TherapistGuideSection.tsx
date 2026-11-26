@@ -14,7 +14,7 @@ import { supportContact } from '../../../shared/src/utils/supportContact';
  * (guideLoader): не доехал — «Повторить» монтирует список заново, и загрузка
  * начинается сначала. Событие открытия — cabinet_guide_open
  * (src/analytics/cabinet-events.constants.ts), без меты. Оговорка об источниках и куда писать об ошибке
- * (supportContact: в MAX — почта, иначе Telegram) — под шапкой, на телефоне под списком (guide-reference.css).
+ * (supportContact: в MAX — почта, иначе Telegram) — под списком (guide-reference.css).
  */
 export function TherapistGuideSection() {
   const [attempt, setAttempt] = useState(0);

@@ -30,10 +30,10 @@ const rows = (g: Pick<ReferenceGroup, 'look' | 'items'>, onOpen: Open) => g.item
 /** Список «Справочника» (guide-reference.css): лист группы — SignGroup; лист с подгруппами (`parts`, три копинга) — без общей
  *  шапки, у подгруппы своя. `groups` — листы колонками, `tiles` — плитки на линиях листа, `rows` — поиск столбиком. */
 export function GuideReferenceList({ groups, layout, onOpen }: { groups: ReferenceGroup[]; layout: ReferenceLayout; onOpen: Open }) {
-  const short = groups.filter((g) => !g.parts).length; // листы без подгрупп: столько рядов рядом с высоким листом
+  const short = groups.filter((g) => !g.parts).length; // листы без подгрупп рядом с высоким: последний — в ряду 1fr
   return (
     <div className="gr-wrap">{/* контейнер для @container: колонки зависят от ширины списка, а не окна */}
-      <div className={`gr-list gr-list--${layout}${short < groups.length ? ' has-tall' : ''}`} style={{ '--gr-rows': Math.max(1, short) } as CSSProperties}>
+      <div className={`gr-list gr-list--${layout}${short < groups.length ? ' has-tall' : ''}`} style={{ '--gr-rows': Math.max(1, short - 1) } as CSSProperties}>
         {groups.map((g) => g.parts ? (
           <SignGroup key={g.key} look={g.look} rowsClassName="gr-parts">
             {g.parts.map((p) => (
