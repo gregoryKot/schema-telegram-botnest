@@ -1,9 +1,10 @@
 import * as d from './couplesDosbor';
 import { COUPLES_COURSE } from './couplesCourse';
+import { COUPLES_CRISIS } from './couplesCrisis';
 import { COUPLES_SESSION } from './couplesSession';
 import type { ConcernGuideBuilder } from './types';
 
-/** Работа с парами: основа статьи по карте docs/guide-sources/Пары.md, пачка 1 (введение, гл. 1, 4, 5, 6); сессия — couplesSession.ts, курс — couplesCourse.ts. */
+/** Работа с парами: основа статьи по карте docs/guide-sources/Пары.md, пачка 1 (введение, гл. 1, 4, 5, 6); сессия — couplesSession.ts, курс — couplesCourse.ts, кризис и спутники — couplesCrisis.ts. */
 export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
   id: 'couples',
   name: 'Работа с парами',
@@ -21,6 +22,14 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'compliant_surrenderer',
     'healthy_adult',
     'happy_child',
+    'compliant_surrenderer',
+    'detached_self_soother',
+    'self_aggrandiser',
+    'bully_attack',
+    'enraged_child',
+    'angry_protector',
+    'suspicious_oc',
+    'manipulative',
   ],
   modeModel:
     'За ссорой стоит цикл: режим одного партнёра запускает режим другого. Детские потребности, которые не закрыли в детстве, Уязвимый Ребёнок теперь ждёт от партнёра; Сердитый Ребёнок требует их угрозами и упрёками; отстраняющаяся пара глушит конфликт Отстранённым Защитником. Внутренние Критики — Карающий и Требовательный — отделяются от личности партнёра так же, как детские и копинговые режимы: партнёр учится видеть в резкой фразе режим, а не весь характер другого. Цель — дать каждому опору в своём Здоровом Взрослом, чтобы распознавать режимы, отходить от триггеров и видеть конфликт как общий цикл, а не вину одного [Пары, гл. 5, 6].',
@@ -32,12 +41,24 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'mistrust',
     'emotional_inhibition',
     'subjugation',
+    'insufficient_self_control',
+    'defectiveness',
+    'dependence',
+    'enmeshment',
+    'failure',
+    'punitiveness_others',
+    'self_sacrifice',
   ],
   evidence: d.couplesEvidence,
-  techniques: [...d.couplesTechniques, 'mode_map', 'empathic_confrontation'],
+  techniques: [
+    ...d.couplesTechniques,
+    'mode_map',
+    'empathic_confrontation',
+    'motivational_interviewing',
+  ],
   voice: d.couplesVoice(tr),
   ...COUPLES_SESSION,
-  crisis: d.couplesCrisis,
+  ...COUPLES_CRISIS,
   ...COUPLES_COURSE,
   sources:
     '[Пары, введение, гл. 1–11] [Хис, гл. 13] [Бехари, гл. 2, 4, 6–7] [Арнтц ПРЛ, гл. 10] [Янг, гл. 2–3, 5, 7, 10] [Кембридж, гл. 9]',

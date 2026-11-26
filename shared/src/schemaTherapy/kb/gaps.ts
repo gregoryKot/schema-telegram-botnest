@@ -51,10 +51,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
       'шаг средней фазы, где клиент сам отвечает любому своему режиму; ' +
       PHASE,
   },
-  motivational_interviewing: {
-    kind: 'theory',
-    why: 'приём для любого копингового режима, который не готов уступать; конкретного режима полка не называет',
-  },
   chain_analysis: {
     kind: 'todo',
     why: 'нужно упоминание разбора поступка по звеньям в статье о ПРЛ или разделе режима (Линехан, 1993, гл. 9)',
