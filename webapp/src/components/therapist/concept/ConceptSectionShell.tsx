@@ -4,7 +4,7 @@ import { SignArt } from '../../art/SignArt';
 import { sectionAnchor } from './conceptSections';
 
 // Оболочка нумерованного раздела: номер капителью, знак раздела строчного размера (у «Стилей
-// совладания» — три знака копингов вплотную), заголовок ds-h3 и подсказка.
+// совладания» — три знака копингов вплотную), заголовок ds-h3 и подсказка. Разворот ds-spread: шапка слева, поле справа.
 export function ConceptSectionShell({ id, n, title, hint, signs, children }: {
   id: string; n: string; title: string;
   hint?: string;
@@ -12,8 +12,8 @@ export function ConceptSectionShell({ id, n, title, hint, signs, children }: {
   children: ReactNode;
 }) {
   return (
-    <section id={sectionAnchor(id)} className="tcp-sec">
-      <div className="tcp-sec-head">
+    <section id={sectionAnchor(id)} className="tcp-sec ds-spread">
+      <div className="tcp-sec-head ds-spread__aside">
         <span className="ds-label">{n}</span>
         {signs && <span className="tcp-sec-signs" aria-hidden="true">{signs.map((s) => <SignArt key={s} sign={s} size="row" />)}</span>}
         <div className="tcp-sec-text">
@@ -21,7 +21,7 @@ export function ConceptSectionShell({ id, n, title, hint, signs, children }: {
           {hint && <div className="tcp-sec-hint">{hint}</div>}
         </div>
       </div>
-      {children}
+      <div className="tcp-sec-body ds-spread__body">{children}</div>
     </section>
   );
 }
