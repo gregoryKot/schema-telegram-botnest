@@ -15,4 +15,13 @@ export const ROEDIGER_TECHNIQUE_WORK: Record<
       ['next', 'Что дальше'],
     ],
   },
+  body_mode_positions: {
+    name: 'Тело и место терапевта',
+    fields: [
+      ['position', 'Где сидели или стояли'],
+      ['body', 'Что заметили в теле'],
+      ['mode', 'Какой режим открылся'],
+      ['next', 'Что дальше'],
+    ],
+  },
 };
