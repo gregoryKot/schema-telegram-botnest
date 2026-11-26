@@ -46,7 +46,6 @@ export function JourneyView({
   onStart,
 }: JourneyViewProps) {
   const {
-    failed,
     stats,
     total,
     items,
@@ -57,8 +56,8 @@ export function JourneyView({
     sortDir,
     setSortDir,
   } = j;
-  const loading = !j.data && !failed;
-  const { Hero, EmptyHero, Stat, Chip } = kit;
+  const loading = !j.data && !j.failed;
+  const { Hero, EmptyHero, Stat, Chip, Alert } = kit;
 
   // Откуда это и зачем — до первого действия (правило онбординга).
   const explainer = tr(
@@ -67,14 +66,15 @@ export function JourneyView({
   );
 
   if (loading) return <div className="u-mt12">{skeleton}</div>;
-  if (failed)
+  if (j.failed)
     return (
-      <p className="jr-note">
-        {tr(
-          'Не получилось загрузить. Проверь интернет и открой ещё раз.',
-          'Не получилось загрузить. Проверьте интернет и откройте ещё раз.',
+      <Alert
+        text={tr(
+          'Не получилось загрузить путь. Проверь интернет.',
+          'Не получилось загрузить путь. Проверьте интернет.',
         )}
-      </p>
+        onRetry={j.reload}
+      />
     );
   if (total === 0)
     return <EmptyHero tr={tr} explainer={explainer} onStart={onStart} />;

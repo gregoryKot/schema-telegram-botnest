@@ -89,10 +89,13 @@
   .cw-thing > .pp-art { grid-column: 1; grid-row: 1; justify-self: start; width: auto; height: 76px; margin: 0 0 14px -6px; }
   .cw-thing-title { grid-row: 2; font-size: 28px; }
   .cw-thing-text { grid-row: 3; }
-  /* Кнопка сразу за листами (аудит 2026-11: «Понятно, начнём» была далеко внизу), легенда — справкой
-     ниже. Порядок фокуса не меняется: в легенде и в фразе фокусируемого нет. */
-  .cw-why .cw-inner > .cw-legend { order: 1; margin-top: 20px; }
-  .cw-why .cw-inner > .cw-foot { order: 2; }
+  /* Кнопка — сразу под шапкой и фразой «Начни с трекера», в первом экране 1280×800 (К26: за листами она
+     стояла на краю кадра); листы и легенда — ниже. Порядок фокуса не меняется: в листах, легенде и
+     фразах фокусируемого нет, кроме самой кнопки. */
+  .cw-why .cw-inner > .cw-sticky { order: 1; }
+  .cw-why .cw-inner > .cw-three, .cw-why .cw-inner > .cw-tip:nth-child(4) { order: 2; }
+  .cw-why .cw-inner > .cw-legend { order: 3; margin-top: 20px; }
+  .cw-why .cw-inner > .cw-foot { order: 4; }
   .cw-why .cw-sticky .ds-btn--lg { width: auto; min-width: 320px; }
   .cw-legend-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; row-gap: 18px; }
 }

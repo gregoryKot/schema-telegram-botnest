@@ -103,8 +103,8 @@ function Wrapper() {
 }
 
 // Router: подтверждение удаления клиента пишет запись в историю (HistoryConfirmDialog).
-function renderSheet() {
-  return render(<MemoryRouter><Wrapper /></MemoryRouter>);
+function renderSheet(path = '/cabinet') {
+  return render(<MemoryRouter initialEntries={[path]}><Wrapper /></MemoryRouter>);
 }
 
 // Инцидент 2026-10-26: приглашение из «Новый клиент» больше не создаёт
@@ -827,14 +827,11 @@ describe('TherapistClientSheet — встречи в списке клиенто
   });
 });
 
-describe('TherapistClientSheet — вкладка «Задания» списка (канбан по всем клиентам)', () => {
+describe('TherapistClientSheet — доска «Задания» /cabinet/tasks (канбан по всем клиентам)', () => {
   it('без заданий у всех клиентов — "Назначенных заданий пока нет"', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
     mockApi.getAllTherapyTasks.mockResolvedValue([{ clientId: 1, clientName: 'Анна', tasks: [] }]);
-    renderSheet();
-    await screen.findByText('Анна');
-
-    fireEvent.click(screen.getByText('Задания'));
+    renderSheet('/cabinet/tasks');
 
     await screen.findByText('Назначенных заданий пока нет');
   });
@@ -848,10 +845,7 @@ describe('TherapistClientSheet — вкладка «Задания» списк�
         { id: 2, userId: 1, assignedBy: 9, type: 'note', text: 'Задание выполнено', targetDays: null, needId: null, dueDate: null, done: true, completedAt: '2026-07-02', createdAt: '2026-07-01' },
       ],
     }]);
-    renderSheet();
-    await screen.findByText('Анна');
-
-    fireEvent.click(screen.getByText('Задания'));
+    renderSheet('/cabinet/tasks');
 
     await screen.findByText('Задание в работе');
     expect(screen.getByText('Задание выполнено')).toBeTruthy();
@@ -865,10 +859,7 @@ describe('TherapistClientSheet — вкладка «Задания» списк�
   it('провал getAllTherapyTasks показывает явную ошибку, а не пустую доску', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
     mockApi.getAllTherapyTasks.mockRejectedValue(new Error('network'));
-    renderSheet();
-    await screen.findByText('Анна');
-
-    fireEvent.click(screen.getByText('Задания'));
+    renderSheet('/cabinet/tasks');
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent!.replace(/\u00a0/g, ' ')).toMatch(/Не удалось загрузить задания/);
@@ -878,9 +869,7 @@ describe('TherapistClientSheet — вкладка «Задания» списк�
   it('«Попробовать ещё раз» в канбане перезапрашивает задания и убирает ошибку при успехе', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
     mockApi.getAllTherapyTasks.mockRejectedValueOnce(new Error('network'));
-    renderSheet();
-    await screen.findByText('Анна');
-    fireEvent.click(screen.getByText('Задания'));
+    renderSheet('/cabinet/tasks');
     await screen.findByRole('alert');
 
     mockApi.getAllTherapyTasks.mockResolvedValueOnce([{

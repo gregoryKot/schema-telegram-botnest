@@ -114,11 +114,12 @@ describe('адрес карточки клиента: код и вкладка',
   });
 });
 
-describe('вкладки списка: «Задания» — /cabinet/tasks', () => {
-  it('прямой вход на /cabinet/tasks открывает доску и грузит её один раз', async () => {
+describe('доска «Задания» — /cabinet/tasks, вход только из меню (К30)', () => {
+  it('прямой вход на /cabinet/tasks открывает доску со своей шапкой и грузит её один раз', async () => {
     renderAt('/cabinet/tasks');
     await act(async () => {});
-    expect(screen.getByRole('tab', { name: 'Задания' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { level: 1, name: 'Задания' })).toBeTruthy();
+    expect(screen.queryByRole('tab')).toBeNull();
     expect(mockApi.getAllTherapyTasks).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('heading', { level: 1, name: 'Анна' })).toBeNull();
   });
@@ -136,14 +137,11 @@ describe('вкладки списка: «Задания» — /cabinet/tasks', (
     expect(screen.getByTestId('state').textContent).toBe('{"fromList":true}');
   });
 
-  it('кнопки вкладок меняют адрес, «Назад» возвращает прежнюю вкладку', async () => {
+  it('на «Клиентах» переключателя «Клиенты | Задания» нет, доска не грузится', async () => {
     renderAt('/cabinet');
     await screen.findByText('Анна');
-    await act(async () => { fireEvent.click(screen.getByRole('tab', { name: 'Задания' })); });
-    expect(path()).toBe('/cabinet/tasks');
-    expect(mockApi.getAllTherapyTasks).toHaveBeenCalledTimes(1);
-    await act(async () => { fireEvent.click(screen.getByText('браузер: назад')); });
-    expect(path()).toBe('/cabinet');
-    expect(screen.getByRole('tab', { name: 'Клиенты' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tablist', { name: 'Список' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Задания' })).toBeNull();
+    expect(mockApi.getAllTherapyTasks).not.toHaveBeenCalled();
   });
 });

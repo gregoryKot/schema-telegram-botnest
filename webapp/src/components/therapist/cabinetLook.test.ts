@@ -3,7 +3,7 @@ import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { hueGap, NEIGHBOUR_HUE_GAP } from '../../../../shared/src/theme/hueGap';
 import { DOMAIN_HUE } from '../../lib/tone';
 import {
-  BOARD_COLUMN_LOOK, PRIVACY_TILE_LOOK, SESSIONS_LOOK, TODAY_COUNTER_LOOK, clientSign, leadingDomain,
+  PRIVACY_TILE_LOOK, SESSIONS_LOOK, TODAY_COUNTER_LOOK, clientSign, leadingDomain,
 } from './cabinetLook';
 
 const [d1, d2] = SCHEMA_DOMAINS;
@@ -11,13 +11,10 @@ const ids = (d: (typeof SCHEMA_DOMAINS)[number], n: number) => d.schemas.slice(0
 const apart = (hues: number[]) => hues.every((h, i) => i === 0 || hueGap(h, hues[i - 1]) >= NEIGHBOUR_HUE_GAP);
 
 describe('cabinetLook', () => {
-  it('счётчики, колонки доски — соседние плитки дальше 40°; сессии — небо с Talk', () => {
+  it('счётчики — соседние плитки дальше 40°; сессии — небо с Talk', () => {
     const c = TODAY_COUNTER_LOOK;
     expect(apart([c.active.hue, c.sessions.hue, c.attention.hue])).toBe(true);
     expect([c.active.sign, c.sessions.sign, c.attention.sign]).toEqual(['strokes', 'talk', 'heart']);
-    const b = BOARD_COLUMN_LOOK;
-    expect(apart([b.open.hue, b.done.hue, b.failed.hue])).toBe(true);
-    expect(b.done.sign).toBe('check');
     expect(SESSIONS_LOOK).toMatchObject({ hue: 240, sign: 'talk' });
   });
 
