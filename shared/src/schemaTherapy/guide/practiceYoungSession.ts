@@ -1,7 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { modeWorkStepsMore } from './practiceMoreHeath';
 import { modeWorkWhenMore } from './practiceMoreArntzJacob';
-import { therapistSchemaScenariosMore } from './practiceTherapistHeath';
+import { therapistScenariosAll } from './practiceTherapistCare';
 import { sameMoreYoung, sameVoiceYoung } from './practiceSameBehaviorYoung';
 import { buildPracticeChannelsYoung } from './practiceChannelsYoung';
 
@@ -53,8 +53,8 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
       'Держать удар без бегства и без ответного удара. Сильные чувства клиента толкают в избегание: сменить тему, отстраниться. Терапевт с гиперкомпенсацией вместо этого злится и обвиняет или становится Карающим или Требовательным Критиком. В кризисе и при суицидальности клиенту почти всегда хватает ясного знака заботы, а отстранение будит Покинутость и раскручивает кризис [Янг, гл. 6].',
       'Следить за своей выгодой и реакцией на застой. Клиент может обслуживать потребности терапевта, а терапевт — завидовать его красоте, успеху или любящей семье. Когда прогресса нет, схемы Дефективность, Неуспешность и Зависимость толкают тревожиться, предлагать сменить специалиста или винить клиента [Янг, гл. 6].',
     ],
-    more: therapistSchemaScenariosMore,
-    sources: '[Янг, гл. 6], [Хис, гл. 16]',
+    more: therapistScenariosAll,
+    sources: '[Янг, гл. 6], [Хис, гл. 16], [Фаррелл-Шоу, гл. 3]',
   },
   {
     id: 'same_behavior_by_schema',
