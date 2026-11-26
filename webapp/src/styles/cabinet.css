@@ -124,26 +124,28 @@
 button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; }
 /* SVG-шеврон вправо (путь 16×16) — один для всех строк-переходов. */
 :root { --chev-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3l5 5-5 5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-/* Правый слот строки-перехода: один глиф «›». Пустой <span class="ds-chev" aria-hidden>
-   получает глиф из ::before; span с «›» внутри (старая разметка) рисуется так же. */
-.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s; }
-.ds-chev:empty::before, .ds-fold-chev::before {
+/* Правый слот строки-перехода: тонкая стрелка «→» (журнальный вид, как в «Настройках»), не шеврон «›».
+   Пустой <span class="ds-chev" aria-hidden> получает её из ::before. Раскрывашки — .ds-fold-chev (шеврон остаётся). */
+.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 16px; line-height: 1; color: var(--text-sub); transition: transform .15s, color .15s; }
+.ds-chev:empty::before { content: '→'; content: '→' / ''; }
+@media (hover: hover) { .ds-list-row--hover:hover > .ds-chev { color: var(--accent); } }
+.ds-fold-chev::before {
   content: ''; display: block; width: 16px; height: 16px; background: currentColor;
   -webkit-mask: var(--chev-mask) center / contain no-repeat; mask: var(--chev-mask) center / contain no-repeat;
 }
-[aria-expanded='true'] > .ds-chev { transform: rotate(90deg); }
 
 /* ── Раскрывашка ─────────────────────────────────────────────────────────── */
 /* <div class="ds-fold"><button class="ds-fold-btn" aria-expanded="…"><span class="ds-label">…</span>
    <span class="ds-fold-chev" aria-hidden></span></button><div class="ds-fold-body">…</div></div>
-   Контейнер = ds-card--row без отступов; шеврон — тот же глиф «›», повёрнутый вниз,
-   при aria-expanded="true" переворачивается вверх. Span шеврона пустой.
+   Без коробки: заголовок на линии --line сверху и снизу, тело под ним между тонкими линиями;
+   шеврон «›» (повёрнут вниз) показывает «раскрыть», при aria-expanded="true" — вверх. Span шеврона пустой.
    Без overflow: hidden — кольцо фокуса кнопки во всю ширину (outline-offset
    3px, index.css) рисуется снаружи её рамки и обрезалось бы. */
-.ds-fold { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-sizing: border-box; min-width: 0; }
+.ds-fold { background: none; border: 0; border-block: 1px solid var(--line); border-radius: 0; box-sizing: border-box; min-width: 0; }
+.ds-fold + .ds-fold { border-top: 0; }
 .ds-fold-btn {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  width: 100%; min-height: 48px; padding: 0 16px; box-sizing: border-box;
+  width: 100%; min-height: 48px; padding: 0; box-sizing: border-box;
   border: none; background: transparent; color: inherit; font-family: inherit; text-align: left; cursor: pointer;
 }
 .ds-fold-chev {
@@ -153,7 +155,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-fold-chev::before { transform: rotate(90deg); }
 /* Шеврон в кнопке-ссылке (ds-link) переворачивается так же — по aria-expanded своей кнопки. */
 .ds-fold-btn[aria-expanded="true"] .ds-fold-chev, [aria-expanded="true"] > .ds-fold-chev { transform: rotate(180deg); }
-.ds-fold-body { padding: 0 16px 16px; }
+.ds-fold-body { padding: 12px 0 16px; border-top: 1px solid var(--paper-sunk); }
 
 /* ── Кнопки ──────────────────────────────────────────────────────────────── */
 .ds-btn {

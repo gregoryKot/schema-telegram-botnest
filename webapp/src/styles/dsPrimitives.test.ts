@@ -109,19 +109,18 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('font-size: 15px');
   });
 
-  it('строка-переход: заголовок 14/600, подпись = ds-sub, шеврон — SVG-маска из ::before', () => {
+  it('строка-переход: заголовок 14/600, подпись = ds-sub, знак перехода — «→», не шеврон «›»', () => {
     expect(decls(css, '.ds-list-title')).toContain('font-size: 14px');
     expect(decls(css, '.ds-list-title')).toContain('font-weight: 600');
     expect(decls(css, '.ds-list-sub')).toBe(decls(css, '.ds-sub'));
     const chev = decls(css, '.ds-chev');
-    expect(chev).toContain('font-size: 18px');
-    expect(chev).toContain('color: var(--text-faint)');
+    expect(chev).toContain('color: var(--text-sub)');
     expect(chev).toContain('margin-left: auto');
     const mark = decls(css, '.ds-chev:empty::before');
-    expect(mark).toContain('background: currentColor');
-    expect(mark).toContain('width: 16px');
-    expect(mark).toMatch(/mask: var\(--chev-mask\)/);
-    expect(mark).not.toMatch(/content: '[^']/);
+    expect(mark).toContain("content: '→'");
+    expect(mark).not.toMatch(/mask/);
+    // шеврон остаётся только у раскрывашки
+    expect(decls(css, '.ds-fold-chev::before')).toMatch(/mask: var\(--chev-mask\)/);
   });
 
   it('.ds-empty — Manrope 14 цветом --text-muted, без курсива и отступов', () => {
@@ -134,9 +133,12 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(d).toContain('text-align: left');
   });
 
-  it('.ds-fold — кнопка во всю ширину h48 без рамки, шеврон переворачивается по aria-expanded', () => {
+  it('.ds-fold — без коробки: линии сверху и снизу, кнопка во всю ширину h48, шеврон переворачивается по aria-expanded', () => {
     const fold = decls(css, '.ds-fold');
-    expect(fold).toContain('border-radius: 16px');
+    expect(fold).toContain('border-block: 1px solid var(--line)');
+    expect(fold).toContain('background: none');
+    expect(fold).toContain('border-radius: 0');
+    expect(fold).not.toMatch(/border-radius: [1-9]/);
     // Кольцо фокуса кнопки (outline-offset 3px в index.css) рисуется снаружи —
     // overflow: hidden на контейнере прятал бы его от клавиатуры (WCAG 2.4.7).
     expect(fold).not.toContain('overflow: hidden');
@@ -148,7 +150,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
     expect(btn).toContain('border: none');
     expect(decls(css, '.ds-fold-chev')).toContain('color: var(--text-faint)');
     expect(decls(css, '.ds-fold-btn[aria-expanded="true"] .ds-fold-chev')).toContain('transform: rotate(180deg)');
-    expect(decls(css, '.ds-fold-body')).toContain('padding: 0 16px 16px');
+    expect(decls(css, '.ds-fold-body')).toContain('border-top: 1px solid var(--paper-sunk)');
   });
 
   it('.ds-label — капитель весом 600 (eyebrow 600–700 по REDESIGN_2026-10)', () => {
@@ -261,7 +263,15 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
   it('строка-переход и шеврон', () => {
     expect(decls(top, '.ds-list-row--nav')).toContain('grid-template-columns: minmax(0, 1fr) auto');
     expect(decls(top, '.ds-chev')).toContain('transition');
-    expect(decls(top, "[aria-expanded='true'] > .ds-chev")).toContain('rotate(90deg)');
+  });
+  it('раскрывашка без коробки, строка-переход без «›» (образец и контрольный)', () => {
+    const boxed = (d: string) => /border: 1px|border-radius: [1-9]|background: var\(--surface\)/.test(d);
+    expect(boxed('background: var(--surface); border: 1px solid var(--line); border-radius: 16px')).toBe(true);
+    expect(boxed(decls(css, '.ds-fold'))).toBe(false);
+    const chevRule = decls(css, '.ds-chev:empty::before');
+    expect(/mask/.test('-webkit-mask: var(--chev-mask)')).toBe(true);
+    expect(/mask/.test(chevRule)).toBe(false);
+    expect(chevRule).toContain('→');
   });
   it('карточки: --nav раньше цветных модификаторов, --crisis без --err', () => {
     const nav = top.indexOf('.ds-card--nav {');
