@@ -682,6 +682,7 @@ describe('поезд: правила', () => {
       ['merge-queue.mjs', 'merge-train.mjs'],
       ['merge-train.mjs', 'merge-train-api.mjs'],
       ['merge-train.mjs', 'merge-train-build.mjs'],
+      ['merge-train.mjs', 'merge-train-proof.mjs'],
       ['merge-train-build.mjs', 'merge-queue-git.mjs'],
       ['merge-train-depart.mjs', 'merge-train-build.mjs'],
     ])

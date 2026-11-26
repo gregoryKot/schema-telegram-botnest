@@ -1,15 +1,15 @@
-// Поезд очереди мержа: ≥2 отставших зелёных PR едут одной веткой — один круг CI
-// и один мерж вместо N. Зовётся из merge-queue.mjs; выключатель — MERGE_TRAIN=on.
-// Состояние — сам PR-поезд (ветка merge-train/*, автор — бот, состав в теле):
-//   собран   — ветка и PR есть, auto-merge пассажиров снят; бейслайны пересчитывает
-//              вторая джоба, отправляет третья (merge-train-depart.mjs);
+// Поезд очереди мержа: ≥2 отставших зелёных (на голове или по предку) PR едут одной
+// веткой. Состояние — сам PR-поезд (ветка merge-train/*, автор — бот, состав в теле):
+//   собран   — auto-merge пассажиров снят; бейслайны пересчитывает вторая джоба, отправляет третья;
 //   в пути   — очередь ждёт только его; main ушёл, пассажир изменился или CI
 //              красный — поезд распускается и собирается заново без выпавших;
 //   приехал  — зелёный и свежий: squash, пассажиры закрыты комментарием.
-// Правила — merge-train-plan.mjs, сборка ветки — merge-train-build.mjs.
+// Зовётся из merge-queue.mjs (MERGE_TRAIN=on); правила — merge-train-plan.mjs,
+// сборка ветки — merge-train-build.mjs, зелёный по предку — merge-train-proof.mjs.
 import { appendFileSync } from 'fs';
 import { trainApi } from './merge-train-api.mjs';
 import { buildTrain, pushTrain } from './merge-train-build.mjs';
+import { markProven } from './merge-train-proof.mjs';
 import { NO_TRAIN, TRAIN_PREFIX, blame, carsOf, isTrain, pickCars, squashTitle, trainBody, trainTitle, trainVerdict } from './merge-train-plan.mjs';
 
 const RED = new Set(['failure', 'timed_out']);
@@ -151,9 +151,9 @@ export function trainEngine({ call, get, R, on, dryRun, repoDir, scriptsDir }) {
       return open.map((p) => (keep.has(p.number) && !p.auto_merge ? { ...p, auto_merge: {}, kept: true } : p));
     },
     drive,
-    /** Отставших зелёных ≥2 — поезд вместо одиночного update-branch; true — прогон занят. */
+    /** Отставших зелёных (и по предку) ≥2 — поезд вместо одиночного update-branch; true — прогон занят. */
     board: async (candidates) => {
-      const picked = on ? pickCars(candidates) : [];
+      const picked = on ? pickCars(await markProven({ get, R }, candidates)) : [];
       return picked.length >= 2 && (await assemble(picked)).length > 0;
     },
   };

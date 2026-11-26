@@ -9,7 +9,7 @@ interface Props {
   backLabel?: string;
   zIndex?: number;
   barRight?: ReactNode;
-  narrow?: boolean;
+  narrow?: boolean; wide?: boolean; // колонка шире 720 на ≥1024: содержимое само раскладывается разворотом ds-spread
   /** Герой листа (SsHead с look — лист сущности) над содержимым; со spread — колонкой слева. */
   hero?: ReactNode;
   /** Разворот на ≥1024: герой слева, содержимое справа (SpreadLayout); уже — герой сверху. */
@@ -21,8 +21,8 @@ interface Props {
 
 /** Оболочка листа схем/режимов: верхняя полоса с «Назад» + прокручиваемое тело.
  *  Без hero и spread разметка прежняя: экраны переходят на героя по одному (редизайн 2026-11). */
-export function SsSheet({ onBack, backLabel = 'Назад', zIndex, barRight, narrow, hero, spread, dialog, children }: Props) {
-  const inner = `ss-inner${narrow ? ' ss-inner--narrow' : ''}${spread ? ' ss-inner--spread' : ''}`;
+export function SsSheet({ onBack, backLabel = 'Назад', zIndex, barRight, narrow, wide, hero, spread, dialog, children }: Props) {
+  const inner = `ss-inner${narrow ? ' ss-inner--narrow' : ''}${spread || wide ? ' ss-inner--spread' : ''}`;
   return (
     <div {...dialog} className="ss-sheet" style={zIndex ? { zIndex } : undefined}>
       <div className="ds-sheet-head">
