@@ -21,10 +21,16 @@
 /* Под листом: теги и подсказка, справа (на телефоне — ниже) «Сохранить» и тихая ссылка. */
 .qe-foot { display: flex; flex-direction: column; gap: var(--space-16); }
 .qe-foot-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.qe-tags { display: flex; flex-wrap: wrap; gap: var(--space-8); }
-.ds-chip.qe-tag { min-height: 44px; padding-right: 14px; font-size: 14px; }
+.qe-tags { display: flex; flex-wrap: wrap; gap: 0 var(--space-12); border-bottom: 1px solid var(--panel-line); }
+/* Теги — выбор на линии, без белых капсул: у чипа нет ни заливки, ни рамки; выбранный — акцентный текст,
+   галочка вместо знака и подчёркивание 2px по линии. Три класса — чтобы не спорить с ds-chip/pa-chip. */
+.ds-chip.pa-chip.qe-tag {
+  min-height: 44px; padding: 0 4px 0 0; margin-bottom: -1px; font-size: 14px; border-radius: 0;
+  background: none; border: 0; border-bottom: 2px solid transparent; color: var(--text);
+}
+.ds-chip.pa-chip.qe-tag.is-on { background: none; border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
 /* Знак тега — на плашке бумаги своей сущности и у невыбранного чипа: «Просто мысль» и «Благодарность» несут
-   один мотив (Pebbles), и на белом чипе различались только числом залитых камешков (ревью g3 r2). Плашка
+   один мотив (Pebbles), и без плашки различались только числом залитых камешков (ревью g3 r2). Плашка
    различает их цветом (персик против бирюзы); слот один у обоих состояний — чип при выборе не прыгает. */
 .ds-chip.qe-tag .pa-chip-sign { width: 30px; height: 30px; border-radius: 9px; }
 .ds-chip.qe-tag:not(.is-on) .pa-chip-sign { background: oklch(0.915 0.03 var(--h)); }

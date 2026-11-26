@@ -16,14 +16,12 @@ import { ClientListHero } from './ClientListHero';
 import { CabinetEmpty } from './CabinetEmpty';
 import { CLAIM_SIGN, INVITE_SIGN } from './cabinetLook';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
-import { LineTabs } from '../LineTabs';
 import { StatusFilter } from './StatusFilter';
 import type { useAddClient } from './useAddClient';
 import type { TasksBoard } from './useTasksBoard';
 import type { ClientTab } from './clientSheetTypes';
+import type { ListTab } from './clientTabRoute';
 import '../../styles/therapist-clients.css';
-
-const LIST_TABS = [{ id: 'clients', label: 'Клиенты' }, { id: 'kanban', label: 'Задания' }] as const;
 
 interface Props {
   animKey: number;
@@ -31,8 +29,8 @@ interface Props {
   loading: boolean;
   loadFailed: boolean;
   onRetry: () => void;
-  listTab: 'clients' | 'kanban';
-  setListTab: (t: 'clients' | 'kanban') => void;
+  /** Что на экране — по адресу: /cabinet — клиенты, /cabinet/tasks — доска (вход только из меню, К30). */
+  listTab: ListTab;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   filterStatus: RosterStatus;
@@ -49,7 +47,7 @@ const signOf = (sign: typeof INVITE_SIGN) => <span className="tc-block-sign" ari
 const blockAlert = (sign: typeof INVITE_SIGN) => (text: string) => <PaperAlert sign={sign} title={text} />;
 
 export function ClientListView({
-  animKey, clients, loading, loadFailed, onRetry, listTab, setListTab, searchQuery, setSearchQuery,
+  animKey, clients, loading, loadFailed, onRetry, listTab, searchQuery, setSearchQuery,
   filterStatus, setFilterStatus, board, openClient, addClient, onSearch,
 }: Props) {
   const tr = useTr();
@@ -63,38 +61,40 @@ export function ClientListView({
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
       <div className="ds-page">
-        <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} onSearch={onSearch} />
-
-        <CardClaimBanner claims={addClient.claims} rowClassName="pp-block tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
-        {formVisible && <AddClientForm addClient={addClient} />}
-        <PendingInvitesList pending={addClient.pending} className="pp-block tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
-
-        <div className="tc-toolbar">
-          <div className="tc-modes">
-            <LineTabs look="fill" label="Список" value={listTab} tabs={LIST_TABS}
-                      onPick={(id) => { setListTab(id); if (id === 'kanban') board.open(); }} />
-            {listTab === 'clients' && !noClients && (
-              <StatusFilter value={filterStatus} onChange={setFilterStatus} />
+        {listTab === 'kanban' ? (
+          <>
+            <div className="pp-block pp-block--head tc-hero">
+              <div className="pp-hero"><div className="pp-hero-body">
+                <div className="ds-label">Практика</div>
+                <h1 className="pp-hero-title">Задания</h1>
+              </div></div>
+            </div>
+            <KanbanView
+              allTasks={board.tasks}
+              loading={board.loading}
+              loadFailed={board.failed}
+              onRetry={board.load}
+              // Клик по заданию ведёт к заданиям клиента, а не на «Обзор».
+              onOpenClient={(clientId) => {
+                const client = clients.find(c => sameId(c.telegramId, clientId));
+                if (client) openClient(client, 'tasks');
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} onSearch={onSearch} />
+            <CardClaimBanner claims={addClient.claims} rowClassName="pp-block tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
+            {formVisible && <AddClientForm addClient={addClient} />}
+            <PendingInvitesList pending={addClient.pending} className="pp-block tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
+            {!noClients && (
+              <div className="tc-toolbar">
+                <StatusFilter value={filterStatus} onChange={setFilterStatus} />
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                       placeholder="Найти клиента" aria-label="Найти клиента" className="ds-input ds-input--search tc-search" />
+              </div>
             )}
-          </div>
-          {listTab === 'clients' && !noClients && (
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                   placeholder="Найти клиента" aria-label="Найти клиента" className="ds-input ds-input--search tc-search" />
-          )}
-        </div>
-
-        {listTab === 'kanban' && (
-          <KanbanView
-            allTasks={board.tasks}
-            loading={board.loading}
-            loadFailed={board.failed}
-            onRetry={board.load}
-            // Клик по заданию ведёт к заданиям клиента, а не на «Обзор».
-            onOpenClient={(clientId) => {
-              const client = clients.find(c => sameId(c.telegramId, clientId));
-              if (client) openClient(client, 'tasks');
-            }}
-          />
+          </>
         )}
 
         {listTab === 'clients' && (

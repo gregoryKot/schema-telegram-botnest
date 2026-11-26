@@ -6,10 +6,6 @@
 .tc-hero-btn { align-self: flex-start; }
 .tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .tc-search { width: 240px; max-width: 100%; }
-.tc-modes { display: flex; gap: 12px 24px; flex-wrap: wrap; align-items: center; }
-/* На компьютере вкладки по содержимому, не на всю строку; на телефоне — во всю ширину (правило ниже). */
-.tc-modes > .lt { flex: 0 0 auto; }
-.tc-modes > .lt .lt-tab { padding: 0 14px; }
 /* Знак блока (приглашения, сверка, пустая доска) — строчный 44×24 у заголовка. */
 .tc-block-sign { display: flex; flex: none; }
 
@@ -77,12 +73,8 @@
 }
 .tc-meeting-val { font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--text); }
 .tc-meeting-val--none { color: var(--text-sub); font-weight: 500; }
-.tc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-/* Чип схемы — бумага её домена (как у клиента в «Моих паттернах»), без конфетной заливки. */
-.tc-chip {
-  display: inline-flex; align-items: center; border-radius: 8px; padding: 4px 10px;
-  font-size: 12.5px; font-weight: 500; color: var(--text); background: oklch(0.915 0.03 var(--h));
-}
+/* Схемы — тихий текст через «·» (К30), без пилюль. */
+.tc-schemas { font-size: 13px; line-height: 1.45; color: var(--text-sub); overflow-wrap: break-word; }
 /* Строка-переход: «→» справа (#1674, В3), без шеврона. */
 .tc-go { font-size: 18px; line-height: 1; color: var(--text-faint); }
 .tc-row-skel { display: flex; align-items: center; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--panel-line); }
@@ -96,30 +88,26 @@
   display: grid; gap: 20px; align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(clamp(calc(33.333% - 14px), (840px - 100%) * 999, 100%), 1fr));
 }
-/* Колонка — бумага своего статуса (солома / шалфей с Check / персик), карточки — светлые листы. */
-.tc-kcol { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 12px; border-radius: var(--r-16); min-width: 0; }
-.tc-kcol-head { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 6px 4px; }
-.tc-kcol-head .ds-label { color: var(--text); }
+/* Группа — eyebrow с линией (верхняя линия .ds-rows), задания — строки на бумаге между линиями (К30). */
+.tc-kcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tc-kcol-head { display: flex; align-items: center; gap: 8px; min-height: 32px; }
 .tc-kcol-count { font: 600 13px/1 var(--sans); color: var(--text-sub); }
 .tc-kcol-sign { display: flex; margin-left: auto; }
-.tc-task { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--surface); cursor: pointer; }
-@media (hover: hover) { .tc-task:hover { background: oklch(0.985 0.008 var(--h)); } }
-.tc-task:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* Знак типа задания — в строке имени клиента (r1), текст задания — во всю ширину карточки. */
+.ds-list-row.tc-task { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding-top: 14px; padding-bottom: 14px; cursor: pointer; }
+.tc-task:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* Знак типа задания — в строке имени клиента (r1), текст задания — во всю ширину строки. */
 .tc-task-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .tc-task-sign { display: flex; flex: none; }
 .tc-task-client { min-width: 0; font-size: 12px; font-weight: 600; color: var(--text-sub); overflow-wrap: break-word; }
-.tc-task-text { font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: break-word; }
+.tc-task-text { font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: break-word; }
 .tc-task-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
 .tc-task-due { font-size: 12px; color: var(--text-sub); }
-.tc-dash { padding: 14px 0; text-align: center; color: var(--text-sub); font-size: 13px; }
+.tc-task-skel { padding: 14px 4px; border-bottom: 1px solid var(--panel-line); }
+.tc-dash { padding: 14px 4px; color: var(--text-sub); font-size: 13px; border-bottom: 1px solid var(--panel-line); }
 .tc-board-empty { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tc-count { font-size: 24px; }
-  /* «Клиенты/Задания» — равные доли на всю ширину и на доске. */
-  .tc-modes { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
-  .tc-modes > .lt { flex: 1 1 auto; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .pp-block.tc-add { padding: 16px 0 20px; }
   .tc-add-name { font-size: 20px; } /* подсказка «Имя клиента, например Анна К.» целиком в 343px */

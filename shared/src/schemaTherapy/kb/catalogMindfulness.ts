@@ -18,16 +18,8 @@ const vf = (id: string, title: string, chapters: string[]): CatalogTopic => ({
 export const VF_TECHNIQUES: readonly CatalogTopic[] = [
   w('three_minute_breathing_space'),
   w('mindfulness_practices'),
-  vf(
-    'schema_awareness_practice',
-    'Осознанность к схеме: узнать, принять, увидеть как мысль',
-    ['гл. 9'],
-  ),
-  vf(
-    'healthy_modes_mindfulness',
-    'Осознанность к Здоровому Взрослому и Счастливому Ребёнку',
-    ['гл. 9'],
-  ),
+  w('schema_awareness_practice'),
+  w('healthy_modes_mindfulness'),
   vf(
     'mindful_juggling',
     'Осознанное жонглирование: копинг и схемы в действии',

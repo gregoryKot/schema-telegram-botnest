@@ -43,6 +43,12 @@ const STUB_KIT: JourneyKit = {
       {label}
     </button>
   ),
+  Alert: ({ text, onRetry }) => (
+    <div role="alert">
+      {text}
+      <button onClick={onRetry}>Попробовать снова</button>
+    </div>
+  ),
 };
 
 const View = (
@@ -82,11 +88,12 @@ describe('JourneyView — состояния загрузки', () => {
     expect(screen.getByTestId('skeleton')).toBeTruthy();
   });
 
-  it('failed=true — сообщение об ошибке, обе формы обращения через tr()', () => {
+  it('failed=true — сообщение об ошибке, обе формы обращения через tr(), повтор зовёт reload', () => {
+    const reload = vi.fn();
     render(
       <View
         tr={tr}
-        j={baseState({ failed: true })}
+        j={baseState({ failed: true, reload })}
         subtitle={() => null}
         onOpenItem={vi.fn()}
         onShareFeed={vi.fn()}
@@ -94,6 +101,8 @@ describe('JourneyView — состояния загрузки', () => {
       />,
     );
     expect(screen.getByText((c) => c.includes('|'))).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });
 
