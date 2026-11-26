@@ -24,7 +24,7 @@ const subject = (sel: string) => sel.split(/[\s>+~]+/).pop() ?? '';
 describe('поле-лист .pa-field — один вид на все поля свободного текста', () => {
   it.each(Object.entries(USERS))('%s: в className рядом с pa-field и правила только .pa-field.%s', (cls, file) => {
     const src = readFileSync(join(__dirname, '..', file), 'utf8');
-    expect(src, file).toMatch(new RegExp(`className="pa-field ${cls}"`));
+    expect(src, file).toMatch(new RegExp(`className="pa-field(?: pa-field--line)? ${cls}"`));
     expect(rules.some((r) => r.selectors.some((s) => subject(s) === `.pa-field.${cls}`)), `.pa-field.${cls}`).toBe(true);
   });
 

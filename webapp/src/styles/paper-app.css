@@ -257,6 +257,13 @@
    у тетради благодарности (лист — div, поля строк внутри) фокус показывает строка — акцентной линейкой
    (.sd-grat-row:focus-within, diary-gratitude.css): с кромкой листа знаков фокуса было два (ревью g3 r6). */
 .pa-field:focus { outline: none; border-color: var(--accent); }
+/* Линия ввода: то же поле без белой коробки — текст прямо на цветном листе героя, снизу линия чернилами
+   (быстрая запись дневника). Фокус — та же кромка --accent, только снизу. */
+.pa-field.pa-field--line {
+  padding: 6px 0 10px; border: 0; border-bottom: 1.5px solid color-mix(in srgb, var(--text) 35%, transparent);
+  border-radius: 0; background: transparent;
+}
+.pa-field.pa-field--line:focus { border-color: var(--accent); }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
