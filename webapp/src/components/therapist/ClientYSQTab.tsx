@@ -36,8 +36,8 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   if (!clientData?.ysqHistory || clientData.ysqHistory.length === 0) {
     return (
       <div className="ds-page tb-page--ysq">
-        {/* Пустой YSQ — бумага схем 28 со знаком Layers (ENTITY_LOOK «Схемы вообще»). */}
-        <div className="u-col8 pp-paper tb-ysq-paper" style={{ '--h': ENTITY_LOOK.ysq.hue } as CSSProperties}>
+        {/* Пустой YSQ — между линиями на бумаге страницы; знак Layers — тоном схем (ENTITY_LOOK «Схемы вообще»). */}
+        <div className="u-col8 pp-block tb-ysq-paper" style={{ '--h': ENTITY_LOOK.ysq.hue } as CSSProperties}>
           <PaperEmpty art={Layers} title="Тест на схемы ещё не пройден">
             {virtual
               ? 'У офлайн-клиента нет аккаунта – тест пройти негде'

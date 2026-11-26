@@ -130,8 +130,7 @@
 }
 
 /* ── YSQ ──────────────────────────────────────────────────────────────── */
-.tb-ysq-paper { padding: 20px; max-width: 640px; box-sizing: border-box; }
-.tb-ysq-paper .ds-empty { color: var(--text-sub); }
+.tb-ysq-paper { max-width: 640px; align-items: flex-start; }
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
   display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 48px 48px; gap: 16px;
