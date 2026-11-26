@@ -25,6 +25,10 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'self_monitoring_cycle',
     'problem_analysis_modes',
     'self_mode_management_plan',
+    'limited_reparenting_style',
+    'two_levels_of_experience',
+    'schema_therapy_fit',
+    'culture_and_needs',
     'group_mode_roleplay',
     'deliberate_practice',
     'online_format',
@@ -80,6 +84,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'attachment_assertiveness_poles',
     'session_balance_axes',
     'mode_states',
+    'reparenting_forms',
   ].map(w),
   {
     id: 'session_frequency',

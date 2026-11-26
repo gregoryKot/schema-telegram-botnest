@@ -27,6 +27,13 @@ export function remindersPatch(on: boolean): Partial<UserSettings> {
 }
 
 /** Старый ответ сервера без поля — итоги включены, как было до тумблера. */
+/** «Повторы недели»: нужен общий notifyEnabled; нет поля — включены. */
+export function weeklyRepeatOn(
+  s: Pick<UserSettings, 'notifyEnabled' | 'notifyWeeklyRepeatEnabled'>,
+): boolean {
+  return s.notifyEnabled && s.notifyWeeklyRepeatEnabled !== false;
+}
+
 export function summaryOn(s: Flags): boolean {
   return s.notifySummaryEnabled !== false;
 }

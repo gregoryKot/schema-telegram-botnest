@@ -19,6 +19,7 @@ const EMPTY: CaseMetrics = {
   peopleReturned: 0,
   mapOpenedRepeat: 0,
   mapOpenedFirst: 0,
+  needTracker: 0,
 };
 
 const filled = (over: Partial<CaseMetrics> = {}): CaseMetrics => ({
@@ -34,6 +35,7 @@ const filled = (over: Partial<CaseMetrics> = {}): CaseMetrics => ({
   peopleReturned: 9,
   mapOpenedRepeat: 6,
   mapOpenedFirst: 10,
+  needTracker: 4,
   ...over,
 });
 
@@ -42,6 +44,12 @@ describe('formatCaseMetrics', () => {
     const out = formatCaseMetrics(filled());
     expect(out).toContain(
       'После записи открыли карту себя 16 из 31 (52%) · из них когда режим повторился 6',
+    );
+  });
+
+  it('показывает, сколько открыли трекер на потребности', () => {
+    expect(formatCaseMetrics(filled())).toContain(
+      'открыли трекер на выбранной потребности 4',
     );
   });
 

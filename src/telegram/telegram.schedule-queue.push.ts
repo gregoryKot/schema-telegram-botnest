@@ -35,7 +35,7 @@ export async function sendRowByPush(
   const { push, notificationService, logger } = deps;
   if (!push) return 'telegram';
   if (!tick.hasTime(left)) return 'stop';
-  const msg = await renderForQueue(deps, notif, s.form);
+  const msg = await renderForQueue(deps, notif, s.form, 'push');
   if (!msg) return 'done';
   const payload = toPushPayload(notif.type, msg.text, msg.extra?.reply_markup);
   const outcome = await push.sendToUser(notif.userId, payload);

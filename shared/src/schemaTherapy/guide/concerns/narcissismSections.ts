@@ -4,6 +4,10 @@ import {
   NARCISSISM_MODE_MODEL,
 } from './narcissismModes';
 import * as more from './narcissismSectionsMore';
+import {
+  narcissismInSessionRafaeli,
+  narcissismRelationshipRafaeli,
+} from './narcissismRafaeli';
 import type { ConcernGuide } from './types';
 import { narcissismCourseYoung } from './narcissismYoung';
 // Нарциссизм: режимы (narcissismModes.ts), курс, кабинет, отношения, психообразование, ошибки (карта Бехари, пачка 3).
@@ -51,8 +55,12 @@ export const NARCISSISM_SECTIONS: Pick<
   modeIds: NARCISSISM_MODE_IDS,
   modeModel: NARCISSISM_MODE_MODEL,
   course: NARCISSISM_COURSE,
-  inSession: `${NARCISSISM_IN_SESSION} ${more.IN_SESSION}`,
-  relationship: [...NARCISSISM_RELATIONSHIP, ...more.RELATIONSHIP],
+  inSession: `${NARCISSISM_IN_SESSION} ${more.IN_SESSION} ${narcissismInSessionRafaeli}`,
+  relationship: [
+    ...NARCISSISM_RELATIONSHIP,
+    ...more.RELATIONSHIP,
+    ...narcissismRelationshipRafaeli,
+  ],
   psychoeducation: [...NARCISSISM_PSYCHOEDUCATION, ...more.PSYCHOEDUCATION],
   stuck: NARCISSISM_STUCK,
   techniques: [

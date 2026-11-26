@@ -115,7 +115,11 @@ export const buildFailureGuide = (tr: Tr): SchemaGuide => ({
     'pattern_breaking',
     'flashcards',
   ],
-  moreTechniques: ['positive_data_log', 'future_imagery'],
+  moreTechniques: [
+    'positive_data_log',
+    'future_imagery',
+    'historical_life_review',
+  ],
   betweenSessions: [
     {
       kind: 'task',

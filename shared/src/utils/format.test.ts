@@ -2,7 +2,7 @@
 // границы месяцев (январь/декабрь) и отсутствие сдвига часового пояса
 // (парсинг строки руками, а не через new Date, который мог бы съехать).
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { fmtDate, fmtDateLong, todayStr } from './format';
+import { fmtDate, fmtDateFull, fmtDateLong, todayStr } from './format';
 import { forEachTimeZone, withTimeZone } from './timeZone.test-helpers';
 
 afterEach(() => {
@@ -15,6 +15,14 @@ const pin2026 = () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-06-15T12:00:00Z'));
 };
+
+describe('fmtDateFull', () => {
+  beforeEach(pin2026);
+  it('месяц словом целиком; год — только чужой', () => {
+    expect(fmtDateFull('2026-11-20')).toBe('20 ноября');
+    expect(fmtDateFull('2099-01-10')).toBe('10 января 2099');
+  });
+});
 
 describe('fmtDate', () => {
   beforeEach(pin2026);

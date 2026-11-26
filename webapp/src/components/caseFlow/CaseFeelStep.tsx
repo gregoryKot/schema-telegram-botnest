@@ -8,7 +8,7 @@ import type { CaseChip } from '../../../../shared/src/case/caseBodyChips';
 import type { CaseGateId } from '../../../../shared/src/case/caseTypes';
 
 /**
- * Шаг 2 из 3 — «Что внутри?»: ряд ворот чувств, после выбора ворот под ними
+ * Шаг 2 из 4 — «Что внутри?»: ряд ворот чувств, после выбора ворот под ними
  * появляются телесные приметы (необязательно). Ворота «спокойно, хорошо»
  * уводят на «Ровный день» — это решает хук (pickGate), не экран. Чипы — SignChip:
  * белые на бумаге страницы, выбранный — бумага шалфея с галочкой.
@@ -39,7 +39,7 @@ export function CaseFeelStep({
   onHardNow: () => void;
 }) {
   return (
-    <CaseStepScreen onBack={onBack} compact eyebrow="Что случилось · 2 из 3" title="Что внутри?" lede="Тело замечает раньше головы.">
+    <CaseStepScreen onBack={onBack} compact eyebrow="Что случилось · 2 из 4" title="Что внутри?" lede="Тело замечает раньше головы.">
       <div className="ex2-chips cq-chips" role="group" aria-label="Что внутри">
         {FEEL_GATES.map((g) => (
           <SignChip key={g.id} label={g.title} on={gateId === g.id} hue={ENTITY_LOOK.case.hue} onToggle={() => onGate(g.id as CaseGateId)} />

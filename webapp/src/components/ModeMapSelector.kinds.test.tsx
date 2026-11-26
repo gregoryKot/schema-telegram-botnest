@@ -63,7 +63,7 @@ describe('ModeMapSelector — типы графических карт', () => {
     // Знака у заголовка нет: Cluster стоит один раз — в плитке «Карта режимов» (ревью вкуса r1: знак был дважды).
     expect(document.querySelector('.mm2-kinds-head svg, .mm2-center .pp-empty')).toBeNull();
     expect([...document.querySelectorAll('.mm2-center svg')].filter((svg) => paperSignName(svg) === 'Cluster')).toHaveLength(1);
-    const names = Array.from(document.querySelectorAll('.mm2-kind-card .mm2-kind-name')).map(n => n.textContent);
+    const names = Array.from(document.querySelectorAll('.mm2-kind-row .mm2-kind-name')).map(n => n.textContent);
     expect(names).toEqual(['Концептуализация', 'Карта режимов', 'Карта ситуации', 'Карта пары', 'Свободный холст']);
   });
 

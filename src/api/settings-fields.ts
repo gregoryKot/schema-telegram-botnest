@@ -7,6 +7,7 @@ export const BOOLEAN_SETTINGS = [
   'notifyEnabled',
   'notifyReminderEnabled',
   'notifySummaryEnabled',
+  'notifyWeeklyRepeatEnabled',
   'notifyGamified',
   'pairCardDismissed',
   'therapistShareCards',

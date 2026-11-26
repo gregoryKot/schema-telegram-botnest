@@ -15,7 +15,7 @@ const GratitudeEntrySheet = lazy(() => import('../diary/GratitudeEntrySheet').th
 interface Props {
   active: OverlayQuickActionId | null;
   onClose: () => void;
-  onOpenTracker: () => void;
+  onOpenTracker: (needId?: string) => void;
   onOpenSchema: React.ComponentProps<typeof CaseFlowHost>['onOpenSchema'];
 }
 

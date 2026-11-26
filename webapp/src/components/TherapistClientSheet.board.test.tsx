@@ -52,9 +52,8 @@ function Wrapper() {
 }
 
 async function openBoardTask(text: string) {
-  render(<MemoryRouter><Wrapper /></MemoryRouter>);
-  await screen.findByText('Анна');
-  fireEvent.click(screen.getByRole('tab', { name: 'Задания' }));
+  // Доска — свой адрес /cabinet/tasks (пункт меню «Задания»), со списка клиентов вкладки нет (К30).
+  render(<MemoryRouter initialEntries={['/cabinet/tasks']}><Wrapper /></MemoryRouter>);
   fireEvent.click(await screen.findByText(text));
 }
 
@@ -88,7 +87,7 @@ describe('доска «Задания» ↔ карточка клиента', ()
     mockApi.getTherapyTasksForClient.mockResolvedValue([task(1, 'Дневник схем')]);
     mockApi.createTask.mockResolvedValue({});
     await openBoardTask('Дневник схем');
-    fireEvent.click(await screen.findByText('+ Назначить'));
+    fireEvent.click(await screen.findByText('+ Задание')); // на компьютере назначение — из шапки карточки
     fireEvent.change(screen.getByPlaceholderText(/позвонить другу/), { target: { value: 'Прогулка' } });
     await act(async () => { fireEvent.click(screen.getByText('Назначить задание')); });
     expect(mockApi.createTask).toHaveBeenCalledTimes(1);

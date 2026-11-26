@@ -22,7 +22,7 @@ export function WorkSection() {
           <div className="work-grid">
             {/* Якоря карточек — для объявлений Директа, ведущих сразу на конкретную карточку; 72 = высота липкой шапки (58) плюс воздух, иначе карточка прячется под шапкой. */}
             {WORK_THEMES.map(t => (
-              <div key={t.title} id={t.id} style={{ background: 'var(--bg-elev)', border: '1px solid var(--line)', borderRadius: 'var(--r-16)', padding: '24px 22px', scrollMarginTop: 72 }}>
+              <div key={t.title} id={t.id} style={{ borderTop: '1px solid var(--line)', paddingTop: 20, scrollMarginTop: 72 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>{t.title}</h3>
                 <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.65, margin: 0 }}>{t.text}</p>
               </div>
@@ -104,8 +104,8 @@ export function ApproachSection() {
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Подход</p>
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 48px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как я работаю</h2>
           <div className="bento-grid">
-            <div className="bento-tall"><BentoCard num="01" title={'Схема-\nтерапия'} text="Работаем со схемами и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." accent /></div>
-            <div className="bento-wide"><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. В сессии я живой человек и использую этот контакт как часть терапии." /></div>
+            <div><BentoCard num="01" title="Схема-терапия" text="Работаем со схемами и режимами, которые сформировались ещё в детстве – и тихо управляют сегодняшними выборами." /></div>
+            <div><BentoCard num="02" title="Тёплый контакт" text="Наши отношения – не нейтральный экран, а инструмент изменений. В сессии я живой человек и использую этот контакт как часть терапии." /></div>
             <div><BentoCard num="03" title="Доказательная база" text="У схема-терапии есть рандомизированные исследования при расстройствах личности и депрессии. Где данных меньше – скажу прямо." /></div>
             <div><BentoCard num="04" title="Работа вглубь" text="Работаем не с одним симптомом, а с тем, как вы воспринимаете себя. Медленнее, зато с прицелом на устойчивые перемены." /></div>
           </div>
@@ -143,7 +143,7 @@ export function BoundariesSection() {
   const ref = useReveal() as React.RefObject<HTMLElement>;
   return (
       <section ref={ref} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
-        <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-16)', padding: 'clamp(28px, 4vw, 48px)', background: 'var(--bg-elev)' }}>
+        <div style={{ borderTop: '1px solid var(--line-strong)', paddingTop: 'clamp(28px, 4vw, 40px)' }}>
           <div className="bound-grid">
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Границы помощи</p>

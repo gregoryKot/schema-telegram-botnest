@@ -16,7 +16,7 @@ interface Props {
   needs: Need[];
   ratings: Record<string, number>;
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
-  onOpenTracker: () => void;
+  onOpenTracker: (needId?: string) => void;
   refreshKey?: number; onSearch?: () => void;
 }
 

@@ -70,28 +70,12 @@
    встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
    выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
-/* Компактная шапка — только «Графические карты» на компьютере и планшете (useClientHead.ts, b34).
-   Компактность — ТОЛЬКО по вертикали (решение владельца 2026-11-06 «шапка не прыгает вбок»): раскладка
-   та же, что у обычной шапки, — «← Все клиенты» над строкой «аватар · имя · действия», тот же перенос
-   действий на узком окне, то же поле. Убраны статус и «Встреча» (плашка «офлайн» остаётся в строке
-   имени: без неё не видно, что клиент без приложения), сжаты отступы и аватар. Аватар меньше, но
-   занимает ту же ширину (48 + 8 = 56): имя стоит на той же вертикали, что на остальных вкладках. */
-.tk-head--compact { padding-top: 6px; gap: 6px; }
-.tk-head--compact > .ds-back { margin-block: -8px -12px; }
-.tk-head--compact .tk-avatar { width: 48px; height: 48px; font-size: 18px; margin-right: 8px; }
-/* Отступ — у самой плашки, а не gap строки: пустая строка плашек не отнимает ширину у имени. */
-.tk-head--compact .tk-ident { display: flex; align-items: center; }
-.tk-head--compact .tk-badges { margin-top: 0; flex: none; flex-wrap: nowrap; gap: 0; }
-.tk-head--compact .tk-badges > * { margin-left: 10px; }
-.tk-head--compact .tk-badges > .tk-meta, .tk-head--compact .tk-badges > .tc-meeting { display: none; }
-.tk-head--compact .tk-actions .ds-btn { min-height: 36px; height: 36px; }
-
 /* Кольцо фокуса вкладки — внутрь (L2): полоса прокручивается (overflow-x: auto) и режет всё за своим краем. */
 .tk-tabs .ds-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 8px; }
 /* Полоса вкладок (ClientTabs, useTabsBar): за краем, где остались вкладки, — маска-градиент (не размытие),
    классы ставит прокрутка. position — чтобы offsetLeft вкладки считался от полосы. Счётчик — тихий: цифра
    цветом подписи, без плашки. */
-.tk-tabs { position: relative; --tk-fade: 40px; }
+.tk-tabs { position: relative; --tk-fade: 56px; }
 .tk-tabs.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
 .tk-tabs.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
 .tk-tabs.is-fade-start.is-fade-end {
@@ -254,3 +238,5 @@
   .tk-side > .ds-card { box-shadow: 0 0 0 1px var(--panel-line); }
   .pa-outcome.tk-outcome { padding: 16px 16px 24px; }
 }
+/* Пустая «О клиенте» — одна строка-ссылка вместо поля (ClientMemoCard, К31). */
+.ds-link.tk-memo-add { align-self: flex-start; min-height: 44px; }

@@ -36,8 +36,8 @@ export function DonatePage() {
   return (
     <PayLayout hero={<PayHero label="Разовая поддержка" title={<>Поддержать <i>проект</i></>} lead="«Всё по схеме» бесплатно. Если приложение полезно, его развитие можно поддержать любой суммой." />}>
       {ret === 'fail' && <PaperAlert title="Оплата не прошла. Можно попробовать снова." />}
-      <div className="ap-sums" role="group" aria-label="Сумма">
-        {PRESETS.map((p) => <SignChip key={p} label={`${p} ₽`} on={amount === p} onToggle={() => setAmount(p)} hue={70} />)}
+      <div className="pa-chips-line ap-sums" role="group" aria-label="Сумма">
+        {PRESETS.map((p) => <SignChip key={p} label={`${p} ₽`} on={amount === p} onToggle={() => setAmount(p)} className="pa-chip--line" />)}
       </div>
       <input type="number" className="ym-disable-keys ds-input" min={10} max={100000} value={amount} onChange={(e) => setAmount(Math.max(0, Math.round(Number(e.target.value))))} placeholder="Своя сумма, ₽" />
       <input type="email" className="ym-disable-keys ds-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email для чека (необязательно)" />

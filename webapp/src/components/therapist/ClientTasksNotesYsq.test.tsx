@@ -44,8 +44,6 @@ describe('ClientTasksTab', () => {
     expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self', origin: 'template' });
     fireEvent.click(screen.getByText('Дневник режима'));
     expect(onAssign).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'custom', text: expect.stringContaining('Дневник режима') }));
-    fireEvent.click(screen.getByText('+ Назначить'));
-    expect(onAssign).toHaveBeenLastCalledWith();
     expect(screen.queryByText('Imagery rescripting')).toBeNull();
   });
 
@@ -99,7 +97,7 @@ describe('ClientTasksTab — «не вышло» и прогресс серии'
     render(<ClientTasksTab detail={detail} onAssign={vi.fn()} />);
     expect(screen.getByText('активное домашнее задание')).toBeTruthy();
     expect(screen.getByText('Не вышло')).toBeTruthy();
-    expect(screen.getByText('закрыто 5 окт · 1 из 3 дней')).toBeTruthy();
+    expect(screen.getByText('закрыто 5 октября · 1 из 3 дней')).toBeTruthy();
     const rows = screen.getAllByText(/открытое|Отмечать потребности/).map(n => n.textContent);
     expect(rows).toEqual(['открытое', 'Отмечать потребности 3 дня подряд']);
   });
@@ -122,9 +120,9 @@ describe('KanbanView — та же модель статусов', () => {
       task(3, { text: 'просрочено', dueDate: '2020-01-01' }),
     ] }];
     render(<KanbanView allTasks={allTasks} loading={false} loadFailed={false} onRetry={vi.fn()} onOpenClient={vi.fn()} />);
-    expect(screen.getByText('выполнено 5 окт')).toBeTruthy();
+    expect(screen.getByText('выполнено 5 октября')).toBeTruthy();
     expect(screen.queryByText('до 20 окт')).toBeNull();
-    expect(screen.getByText('закрыто 6 окт')).toBeTruthy();
+    expect(screen.getByText('закрыто 6 октября')).toBeTruthy();
     expect(screen.getByText('Просрочено')).toBeTruthy();
   });
 });

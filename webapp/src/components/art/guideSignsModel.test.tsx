@@ -29,7 +29,7 @@ const NOTE_IDS = [
   'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation', 'group_plan_vs_mode',
   'group_mode_roleplay', 'dangerous_partner', 'emdr', 'coping_style_in_session', 'mode_family_by_feeling',
   'schema_vs_mode_vs_belief', 'dependence_in_reparenting', 'therapist_discomfort_rescripting',
-  'taboo_topics', 'sexuality_and_modes', 'body_cues_therapist', 'premature_ending', 'cbt_with_schemas', 'questionnaires', 'temperament', 'positive_patterns_in_session',
+  'taboo_topics', 'sexuality_and_modes', 'body_cues_therapist', 'premature_ending', 'cbt_with_schemas', 'questionnaires', 'reparenting_forms', 'temperament', 'positive_patterns_in_session',
   'therapist_mode_reset',
   'therapist_culture_and_schemas',
   'childhood_experience_types',
@@ -37,10 +37,11 @@ const NOTE_IDS = [
   'self_practice_group_day', 'therapist_critic', 'difficult_client_my_coping',
   'know_your_healthy_adult', 'therapist_happy_child', 'therapist_modes_walk',
   'self_monitoring_cycle', 'problem_analysis_modes', 'self_mode_management_plan',
+  'limited_reparenting_style', 'two_levels_of_experience', 'schema_therapy_fit', 'culture_and_needs',
   'attachment_assertiveness_poles',
   'session_balance_axes',
   'mode_states',
-  'teen_parent_triangle',
+  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs',
 ];
 
 describe('знаки листов подсказок', () => {

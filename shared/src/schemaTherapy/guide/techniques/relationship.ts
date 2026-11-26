@@ -31,7 +31,7 @@ export const buildRelationshipTechniques: TechniqueGuideBuilder = (tr) => [
       ...camb.limitSettingCambridgeMore,
     ],
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. [Арнтц ПРЛ, гл. 4]; [Кембридж, гл. 6, бокс 6.9]; [Янг, гл. 9, 10]; [Арнтц, 4.3.6, 5.5, 6.1.6]; [Хис, гл. 12, 14].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. [Арнтц ПРЛ, гл. 4]; [Кембридж, гл. 6, бокс 6.9]; [Янг, гл. 9, 10]; [Арнтц, 4.3.6, 5.5, 6.1.6]; [Хис, гл. 12, 14], [Рафаэли, гл. 14].',
   },
   ...buildAngerExpressionTechniques(tr),
 ];

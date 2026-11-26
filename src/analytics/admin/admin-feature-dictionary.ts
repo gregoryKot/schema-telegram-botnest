@@ -205,12 +205,13 @@ export const FEATURES: readonly FeatureDef[] = [
       'case_recognized',
       'case_finished',
       'case_map_opened',
+      'case_need_tracker',
     ],
   },
   {
     id: 'self_map',
     title: 'Карта себя',
-    events: ['self_map_link'],
+    events: ['self_map_link', 'weekly_repeat_queued'],
   },
   {
     id: 'game',

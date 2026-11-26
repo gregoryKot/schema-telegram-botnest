@@ -10,6 +10,8 @@ export type StartAction =
   | { kind: 'tracker' }
   /** «Задания»; с taskId — сразу это задание (кнопка уведомления о новом задании). */
   | { kind: 'tasks'; taskId?: number }
+  /** «Карта себя» (кнопка еженедельного уведомления «Повторы недели»). */
+  | { kind: 'selfmap' }
   /** Тест на схемы (уведомление «терапевт просит пройти тест»). */
   | { kind: 'ysq' }
   /** Вход на сайт через MAX: сверка кода билета на /auth/confirm. */
@@ -42,6 +44,7 @@ export function parseStartParam(
   if (raw === 'tracker') return { kind: 'tracker' };
   if (raw === 'ysq') return { kind: 'ysq' };
   if (raw === 'tasks') return { kind: 'tasks' };
+  if (raw === 'selfmap') return { kind: 'selfmap' };
   if (raw.startsWith(LOGIN_PREFIX)) {
     // Алфавит и длина — как у кода билета (src/auth/login-ticket/ticket-user-code.ts).
     const code = raw.slice(LOGIN_PREFIX.length);

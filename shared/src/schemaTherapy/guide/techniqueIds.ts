@@ -90,7 +90,13 @@ export type RoedigerTechniqueId =
 export type LuzTechniqueId = 'child_mode_play';
 /** Техники из книги ван Фресвайк, Брурсен и Шуринк (карта «ван Фресвайк»). */
 export type VreeswijkTechniqueId =
-  'three_minute_breathing_space' | 'mindfulness_practices';
+  | 'three_minute_breathing_space'
+  | 'mindfulness_practices'
+  | 'schema_awareness_practice'
+  | 'healthy_modes_mindfulness';
+
+/** Техники из книги Рафаэли, Бернштейн и Янга (карта «Рафаэли»). */
+export type RafaeliTechniqueId = 'rupture_repair' | 'historical_life_review';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
@@ -105,4 +111,5 @@ export type TechniqueId =
   | RoedigerTechniqueId
   | LuzTechniqueId
   | VreeswijkTechniqueId
+  | RafaeliTechniqueId
   | BorrowedTechniqueId;

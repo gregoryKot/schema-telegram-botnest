@@ -15,7 +15,7 @@ export type CaseFlowStart = 'flow' | 'map';
 interface Props {
   start: CaseFlowStart;
   onClose: () => void;
-  onOpenTracker: () => void;
+  onOpenTracker: (needId?: string) => void;
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs' | 'schemas' | 'modes'; highlight?: string }) => void;
 }
 
@@ -28,6 +28,7 @@ export function CaseFlowHost({ start, onClose, onOpenTracker, onOpenSchema }: Pr
           onSave={async (data) => { await api.createModeDiary(data); }}
           onSaveCard={async (body) => { await api.saveModeNote(body); }}
           onOpenMap={() => setView('map')}
+          onOpenTracker={(id) => { onClose(); onOpenTracker(id); }}
           onClose={onClose}
         />
       ) : (

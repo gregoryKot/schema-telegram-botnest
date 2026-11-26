@@ -14,20 +14,32 @@ vi.mock('../useIsMobile', () => ({ useIsMobile: () => phone.value }));
 
 afterEach(cleanup);
 
-const detail = makeClientDetail({ selectedClient: makeClient({ telegramId: 7 }) });
-const firstTask = () => {
-  render(<MemoryRouter><ClientTasksTab detail={detail} onAssign={vi.fn()} /></MemoryRouter>);
-  return screen.getByRole('button', { name: 'Назначить первое задание' }).className;
-};
+// Одна кнопка назначения (К25, К31): на компьютере — только «+ Задание» шапки карточки, на вкладке своей нет;
+// на телефоне шапка её не несёт — пустой список «Назначить первое задание» (залитая), есть задания — «+ Назначить».
+describe('ClientTasksTab — одна кнопка назначения', () => {
+  const task = { id: 1, userId: '7', assignedBy: '2', type: 'custom', text: 'Прогулка', targetDays: null, needId: null, dueDate: '2099-01-10', done: null, completedAt: null, createdAt: '2026-11-01T09:00:00.000Z' };
+  const assignButtons = (clientTasks: unknown[]) => {
+    const d = makeClientDetail({ selectedClient: makeClient({ telegramId: 7 }), clientTasks: clientTasks as never });
+    render(<MemoryRouter><ClientTasksTab detail={d} onAssign={vi.fn()} /></MemoryRouter>);
+    return screen.queryAllByRole('button', { name: /Назначить/ });
+  };
 
-describe('ClientTasksTab — «Назначить первое задание»', () => {
-  it('на компьютере вторичная: главное — «+ Задание» в шапке', () => {
+  it('на компьютере на вкладке кнопки назначения нет ни пустой, ни с заданиями', () => {
     phone.value = false;
-    expect(firstTask()).toContain('ds-btn--secondary');
+    expect(assignButtons([])).toHaveLength(0);
+    cleanup();
+    expect(assignButtons([task])).toHaveLength(0);
   });
 
-  it('на телефоне залитая: шапка «+ Задание» не несёт', () => {
+  it('телефон, пусто — одна залитая «Назначить первое задание»', () => {
     phone.value = true;
-    expect(firstTask()).not.toContain('ds-btn--secondary');
+    const b = assignButtons([]);
+    expect(b.map((x) => x.textContent)).toEqual(['Назначить первое задание']);
+    expect(b[0].className).not.toContain('ds-btn--secondary');
+  });
+
+  it('телефон, есть задания — только «+ Назначить»', () => {
+    phone.value = true;
+    expect(assignButtons([task]).map((x) => x.textContent)).toEqual(['+ Назначить']);
   });
 });

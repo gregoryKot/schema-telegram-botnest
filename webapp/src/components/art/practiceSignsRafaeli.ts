@@ -5,4 +5,5 @@ import type { GuideSign } from './guideSignsModel';
 export const RAFAELI_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   childhood_experience_types: 'need_ring',
   mode_states: 'three_parts',
+  reparenting_forms: 'healthy_light',
 };

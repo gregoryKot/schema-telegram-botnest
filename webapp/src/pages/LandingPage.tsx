@@ -18,7 +18,7 @@ import { trackGoalOnce } from '../lib/metrika';
 import { useLandingGoals } from './landing/useLandingGoals';
 import { useHashJump } from './landing/useHashJump';
 import { useSessionPrice } from './landing/useSessionPrice';
-import { formatPrice } from '../../../shared/src/booking/priceRegion';
+import { PriceRows } from './landing/PriceRows';
 import {
   WorkSection,
   EducationSection,
@@ -191,10 +191,7 @@ export function LandingPage() {
                   }
                 }} />
             </div>
-            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line-strong)', borderRadius: 'var(--r-14)', padding: '12px 18px' }}>
-              <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>
-              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
-            </div>
+            <p style={{ margin: '14px 0 0', fontSize: 13, color: 'var(--text-sub)' }}><b className="u-fg">50 мин</b> · онлайн-сессия</p>
           </div>
           <div style={{ paddingTop: 16 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 18px' }}>Обо мне</p>
@@ -210,11 +207,7 @@ export function LandingPage() {
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
               Веду частную практику с 2025 года и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
             </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
-                <span key={tag} style={{ padding: '8px 16px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{tag}</span>
-              ))}
-            </div>
+            <p style={{ margin: 0, paddingTop: 16, borderTop: '1px solid var(--line)', fontSize: 13, fontWeight: 600, letterSpacing: '.02em', color: 'var(--accent)' }}>Схема-терапия · КПТ · Онлайн</p>
           </div>
         </div>
       </section>
@@ -244,41 +237,7 @@ export function LandingPage() {
       <section id="prices" ref={priceRef as React.RefObject<HTMLElement>} className="reveal-section" style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 10px' }}>Формат и цены</p>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 44px', letterSpacing: '-.01em' }}>Как устроена работа</h2>
-        <div className="price-grid">
-          {/* Free intro – PRIMARY */}
-          <div style={{ background: 'var(--accent-soft)', border: '1.5px solid var(--accent-line)', borderRadius: 'var(--r-16)', padding: '40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--accent)' }}>Знакомство</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: 'var(--accent)', margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{formatPrice(0, sessionPrice.currency)}</p>
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {['15 минут онлайн', 'Рассказываете о запросе', 'Я рассказываю о подходе', 'Никаких обязательств'].map(f => (
-                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ color: 'var(--accent)', fontSize: 15, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 15, color: 'var(--text-sub)' }}>{f}</span>
-                </div>
-              ))}
-            </div>
-            <Btn full onClick={scrollToBooking}>Записаться бесплатно →</Btn>
-          </div>
-          {/* Session – always dark card so light text stays legible in any theme */}
-          <div style={{ background: DARK_BG, borderRadius: 'var(--r-16)', padding: '40px', display: 'flex', flexDirection: 'column', gap: 24, position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,.12)', padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)' }}>Основной</div>
-            <div>
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'color-mix(in srgb, var(--on-dark) 50%, transparent)' }}>Сессия</span>
-              <p style={{ fontFamily: 'var(--serif)', fontSize: 56, fontWeight: 400, color: INK_ON_DARK, margin: '6px 0 0', letterSpacing: '-.03em', lineHeight: 1 }}>{sessionPrice.text}</p>
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {['50 минут онлайн (видео)', 'Индивидуальная работа', 'Схема-терапия и КПТ', 'Регулярные встречи'].map(f => (
-                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ color: 'color-mix(in srgb, var(--accent-on-dark) 90%, transparent)', fontSize: 15, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 15, color: 'color-mix(in srgb, var(--on-dark) 70%, transparent)' }}>{f}</span>
-                </div>
-              ))}
-            </div>
-            <Btn variant="dark" full onClick={scrollToBooking}>Начать работу →</Btn>
-          </div>
-        </div>
+        <PriceRows sessionPrice={sessionPrice} onBook={scrollToBooking} />
       </section>
 
       {/* ── BOUNDARIES ──────────────────────────────────────────────────── */}

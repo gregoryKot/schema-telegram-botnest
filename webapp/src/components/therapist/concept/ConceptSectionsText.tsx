@@ -47,7 +47,7 @@ export function ConceptNeeds({ value, onChange, placeholder }: FieldProps) {
       <div className="tcp-needs">
         {NEED_ORDER.map((id) => {
           const look = needLook(id);
-          return <SignChip key={id} label={needs[id].name} on={hasTag(value, needs[id].name)} sign={look.sign} hue={look.hue} onToggle={() => onChange(appendTag(value, needs[id].name))} />;
+          return <SignChip key={id} className="tcp-chip" label={needs[id].name} on={hasTag(value, needs[id].name)} sign={look.sign} hue={look.hue} onToggle={() => onChange(appendTag(value, needs[id].name))} />;
         })}
       </div>
       <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={4} />
@@ -59,7 +59,7 @@ export function ConceptTriggers({ value, onChange, placeholder }: FieldProps) {
   return (
     <div className="tcp-stack">
       <div className="tcp-tags" style={hueStyle(undefined)}>
-        {TRIGGER_TAGS.map((t) => <SignChip key={t} label={t} on={hasTag(value, t)} onToggle={() => onChange(appendTag(value, t))} />)}
+        {TRIGGER_TAGS.map((t) => <SignChip key={t} className="tcp-chip" label={t} on={hasTag(value, t)} onToggle={() => onChange(appendTag(value, t))} />)}
       </div>
       <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={3} />
     </div>
@@ -71,10 +71,9 @@ export function ConceptCoping({ value, onChange, placeholder }: FieldProps) {
     <div className="tcp-stack">
       <div className="tcp-coping">
         {COPING.map((c) => (
-          <div key={c.label} className="pp-paper tcp-cop">
-            <b className="ds-list-title">{c.label}</b>
-            <span className="ds-sub">{c.sub}</span>
-          </div>
+          <button key={c.label} type="button" className="tcp-cop" aria-pressed={hasTag(value, c.label)} onClick={() => onChange(appendTag(value, c.label))}>
+            <i className="tcp-ring" aria-hidden="true" /><b className="ds-list-title">{c.label}</b><span className="ds-sub">{c.sub}</span>
+          </button>
         ))}
       </div>
       <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={4} />

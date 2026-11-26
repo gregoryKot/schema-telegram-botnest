@@ -58,14 +58,12 @@ export function LandingStyles() {
 
         /* Grids */
         .about-inner  { display:grid; grid-template-columns:2fr 3fr; gap:48px; align-items:start; }
-        .bento-grid   { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:auto auto; gap:16px; }
-        .bento-tall   { grid-row:1/3; }
-        .bento-wide   { grid-column:2/4; }
+        .bento-grid   { display:grid; grid-template-columns:repeat(2,1fr); gap:36px 56px; }
         .process-grid { display:grid; grid-template-columns:repeat(3,1fr); }
-        .price-grid   { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+        .price-grid   { display:grid; grid-template-columns:1fr 1fr; gap:40px 56px; }
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .edu-grid     { display:grid; grid-template-columns:1fr 2fr; gap:60px; align-items:start; }
-        .work-grid    { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+        .work-grid    { display:grid; grid-template-columns:repeat(3,1fr); gap:32px 40px; }
         .trust-grid   { display:grid; grid-template-columns:repeat(3,1fr); gap:40px; }
         .bound-grid   { display:grid; grid-template-columns:1fr 1.2fr; gap:48px; align-items:start; }
 
@@ -79,14 +77,12 @@ export function LandingStyles() {
           .hero-below        { grid-template-columns:1fr; gap:0; }
           .hero-person       { display:none; }
           .about-inner  { grid-template-columns:1fr; }
-          .bento-grid   { grid-template-columns:1fr; }
-          .bento-tall   { grid-row:auto; }
-          .bento-wide   { grid-column:auto; }
+          .bento-grid   { grid-template-columns:1fr; gap:28px; }
           .process-grid { grid-template-columns:1fr; gap:32px; }
           .process-grid > div { border-left:none !important; padding:0 !important; }
           .price-grid   { grid-template-columns:1fr; }
           .edu-grid     { grid-template-columns:1fr; gap:28px; }
-          .work-grid    { grid-template-columns:1fr; }
+          .work-grid    { grid-template-columns:1fr; gap:24px; }
           .trust-grid   { grid-template-columns:1fr; gap:32px; }
           .bound-grid   { grid-template-columns:1fr; gap:28px; }
         }

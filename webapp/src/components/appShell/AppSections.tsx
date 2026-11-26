@@ -109,7 +109,7 @@ export function AppSections({
             needs={needs}
             ratings={ratings}
             onOpenSchema={ov.openSchema}
-            onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+            onOpenTracker={ov.openTracker}
             refreshKey={todayRefreshKey} onSearch={() => ov.setCmdOpen(true)}
           />
           </ErrorBoundary>

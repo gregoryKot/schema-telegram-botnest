@@ -87,6 +87,7 @@ const SETTINGS = {
   notifyTimezone: 'Europe/Moscow',
   notifyReminderEnabled: true,
   notifySummaryEnabled: true,
+  notifyWeeklyRepeatEnabled: true,
   notifyFrequency: 0,
   notifyQuietStart: 22,
   notifyQuietEnd: 8,

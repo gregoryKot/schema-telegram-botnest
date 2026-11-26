@@ -219,6 +219,17 @@
    (.sd-feel, diary-mode.css, ревью владельца g3 r3). */
 .ds-chip.pa-chip:not(.is-on) { background: var(--surface); color: var(--text); }
 
+/* Чип на линии — выбор строкой без капсулы: ряд стоит на тонкой линии, у чипа нет ни заливки, ни рамки;
+   выбранный — акцентный текст и подчёркивание 2px по линии. Теги дневника, суммы доната, выбор на визитке. */
+.pa-chips-line { display: flex; flex-wrap: wrap; gap: 0 var(--space-16); border-bottom: 1px solid var(--line); }
+.ds-chip.pa-chip.pa-chip--line {
+  min-height: 44px; padding: 0 2px; margin-bottom: -1px; font-size: 15px; font-weight: 500; border-radius: 0;
+  background: none; border: 0; border-bottom: 2px solid transparent; color: var(--text); cursor: pointer; white-space: nowrap;
+}
+.ds-chip.pa-chip.pa-chip--line.is-on { background: none; border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
+.ds-chip.pa-chip.pa-chip--line.pa-chip--mark { padding-left: 0; }
+.pa-chip--line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ── Голос Здорового Взрослого (HealthyVoice) ────────────────────────────── */
 /* Вставка мха со знаком группы «здоровые» колонкой слева: ответ в раскрытой записи ленты и пример на
    последнем шаге дневника режимов — одно правило. Пример — курсивом (pa-voice--example). */
@@ -246,6 +257,13 @@
    у тетради благодарности (лист — div, поля строк внутри) фокус показывает строка — акцентной линейкой
    (.sd-grat-row:focus-within, diary-gratitude.css): с кромкой листа знаков фокуса было два (ревью g3 r6). */
 .pa-field:focus { outline: none; border-color: var(--accent); }
+/* Линия ввода: то же поле без белой коробки — текст прямо на цветном листе героя, снизу линия чернилами
+   (быстрая запись дневника). Фокус — та же кромка --accent, только снизу. */
+.pa-field.pa-field--line {
+  padding: 6px 0 10px; border: 0; border-bottom: 1.5px solid color-mix(in srgb, var(--text) 35%, transparent);
+  border-radius: 0; background: transparent;
+}
+.pa-field.pa-field--line:focus { border-color: var(--accent); }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {

@@ -20,6 +20,8 @@
    Шрифт — как у текста листа (16), пункт не ниже 48. */
 .gd-tabs { position: sticky; top: calc(-1 * var(--space-20)); z-index: 2; margin: -8px 0 -4px; padding-top: 6px; background: var(--bg); }
 .gd-tabs .lt-tab { min-height: 48px; font-size: 16px; }
+/* Ширина вкладки — по подписи плюс равная доля остатка: зазоры между словами одинаковые («На сессии» не липнет к «Заданиям»). */
+.gd-tabs .lt-strip--fill > .lt-tab { flex: 1 1 auto; padding-inline: 6px; }
 .gd-tab-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
 .gd-panels { scroll-margin-top: 72px; }
 .gd-panel { display: flex; flex-direction: column; gap: 32px; }

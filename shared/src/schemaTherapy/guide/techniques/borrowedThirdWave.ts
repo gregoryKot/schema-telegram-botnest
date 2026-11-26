@@ -4,6 +4,7 @@ import {
   compassionateSelfVoice,
 } from './compassionHeath';
 import { motivationalFramesMore } from './motivationalFrames';
+import { defusionMore, defusionVoice } from './defusionMore';
 
 /** Из ACT, CFT и мотивационного интервью: defusion, compassionate_self, motivational_interviewing. */
 export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
@@ -24,16 +25,12 @@ export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
       'Спросить не «правда ли это», а «куда я приду, если буду её слушаться».',
       'Выбрать действие по ценностям — с мыслью рядом, не дожидаясь, пока она уйдёт.',
     ],
-    voice: [
-      tr(
-        'Попробуй сказать так: «У меня есть мысль, что я всё испорчу». Что меняется, когда она звучит так?',
-        'Попробуйте сказать так: «У меня есть мысль, что я всё испорчу». Что меняется, когда она звучит так?',
-      ),
-    ],
+    voice: defusionVoice(tr),
+    more: defusionMore,
     cautions:
       'Дефузия — не способ отмахнуться от чувства: Уязвимому Ребёнку нужна забота, а не дистанция. Игра с формой мысли о травме или вине звучит как насмешка — тут техника не к месту.',
     sources:
-      'Hayes S. C., Strosahl K. D., Wilson K. G. Acceptance and Commitment Therapy: The Process and Practice of Mindful Change. 2nd ed. Guilford Press, 2012, гл. 9 «Defusion». Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy. Context Press / New Harbinger, 2018.',
+      'Hayes S. C., Strosahl K. D., Wilson K. G. Acceptance and Commitment Therapy: The Process and Practice of Mindful Change. 2nd ed. Guilford Press, 2012, гл. 9 «Defusion». Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy. Context Press / New Harbinger, 2018. [ван Фресвайк, гл. 3].',
   },
   {
     id: 'compassionate_self',

@@ -25,7 +25,7 @@ export function Tick() {
 /** Раздел листа — плоская группа на бумаге страницы: ярлык, под ним строки через линию (b25); на ≥1024 —
  *  разворот: ярлык и пояснение слева, строки справа. id нужен оглавлению; без label — одна строка («О приложении»). */
 export function SSection({ id, label, hint, help, children }: {
-  id: string; label?: string; hint?: string; help?: React.ReactNode; children: React.ReactNode;
+  id: string; label?: string; hint?: React.ReactNode; help?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
     <section className="st-section ds-spread">

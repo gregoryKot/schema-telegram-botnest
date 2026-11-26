@@ -49,7 +49,7 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
               <LimitedTextarea
                 max={DIARY_FIELD_MAX}
                 ref={areaRef}
-                className="pa-field qe-area"
+                className="pa-field pa-field--line qe-area"
                 value={text}
                 onChange={(e) => onText(e.target.value)}
                 placeholder="Можно одним предложением. Можно без точки."

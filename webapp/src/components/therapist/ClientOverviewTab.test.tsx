@@ -63,11 +63,11 @@ describe('ClientOverviewTab', () => {
     const setClientTab = vi.fn();
     const { container } = render(<ClientOverviewTab selectedClient={client} detail={detailOf({ setClientTab })} />);
     const col = container.querySelector('.tk-col') as HTMLElement;
-    // Лист «О клиенте» виден и у пустого клиента: заметку можно оставить до первой концептуализации.
+    // Лист «О клиенте» виден и у пустого клиента строкой «Добавить о клиенте»: заметку можно оставить до первой концептуализации.
     expect(within(col).getAllByRole('heading').map(h => h.textContent)).toEqual(['О клиенте']);
     expect(col.querySelector('.tk-empty-scene svg.scn')).toBeTruthy();
     expect(col.querySelector('.tk-empty-text')!.textContent).toContain('концептуализацию');
-    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Сохранить заметку', 'Открыть концептуализацию']);
+    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['+ Добавить о клиенте', 'Открыть концептуализацию']);
     within(col).getByRole('button', { name: 'Открыть концептуализацию' }).click();
     expect(setClientTab).toHaveBeenCalledWith('concept');
   });

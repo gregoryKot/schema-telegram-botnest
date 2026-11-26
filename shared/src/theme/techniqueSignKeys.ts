@@ -55,5 +55,10 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
   'breathing_space',
   'body_scan',
+  'schema_lens',
+  'healthy_light',
+  // TechniqueSignsRafaeli.tsx — техники из книги Рафаэли, Бернштейн и Янга
+  'rupture_mend',
+  'life_columns',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

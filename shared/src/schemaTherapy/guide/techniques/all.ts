@@ -25,6 +25,8 @@ import { buildModeFiguresTechniques } from './modeFigures';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
+import { buildEvidenceLifeReviewTechniques } from './evidenceLifeReview';
+import { buildRuptureRepairTechniques } from './ruptureRepair';
 import { buildChildCareTechniques } from './childCare';
 import { buildBodyGroundingTechniques } from './bodyGrounding';
 import { buildBodyValuesTechniques } from './bodyValues';
@@ -42,6 +44,8 @@ import { buildChildModePlayTechniques } from './childModePlay';
 import { buildPerspectiveChangeTechniques } from './perspectiveChange';
 import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
+import { buildSchemaAwarenessTechniques } from './schemaAwareness';
+import { buildHealthyModesMindfulnessTechniques } from './healthyModesMindfulness';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -58,6 +62,8 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildModeFiguresTechniques,
   buildStanceTechniques,
   buildMindfulnessPracticesTechniques,
+  buildSchemaAwarenessTechniques,
+  buildHealthyModesMindfulnessTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
   buildLimitedReparentingTechniques,
@@ -71,6 +77,8 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildPerspectiveChangeTechniques,
   buildBodyModePositionsTechniques,
   buildEvidenceWorkTechniques,
+  buildEvidenceLifeReviewTechniques,
+  buildRuptureRepairTechniques,
   buildChildCareTechniques,
   buildHealthyAdultPlanTechniques,
   buildBodyGroundingTechniques,

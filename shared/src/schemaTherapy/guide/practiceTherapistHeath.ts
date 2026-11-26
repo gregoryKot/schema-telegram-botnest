@@ -1,6 +1,6 @@
 import { selfDisclosureMoreFull } from './practiceEndingHeath';
 import { therapistSchemasMore } from './practiceMoreArntzJacob';
-import { therapistWellbeingMore } from './practiceMoreArntz';
+import { therapistWellbeingMore } from './practiceMindfulnessMore';
 import { groupPlanFarrell } from './practiceGroupFarrell';
 import { therapistHeathDosbor } from './heathDosborMore';
 import { therapistScenariosYoung } from './practiceTherapistYoung';

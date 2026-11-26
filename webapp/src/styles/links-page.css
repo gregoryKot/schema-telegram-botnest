@@ -1,7 +1,7 @@
 /* Страница ссылок визитки (/links): ровный тёплый фон, шапка с фотокарточкой, кнопка записи и «о себе»,
-   карточка проекта, общий список строк и жёлтая записка; у трёх пунктов — «?» с раскрытием. Одна сетка, наклон — только у фото.
+   карточка проекта, общий список строк и «Здоровый Взрослый» последней строкой; у трёх пунктов — «?» с раскрытием. Одна сетка, наклон — только у фото.
    Цвета — токены бумаги; терракота — --accent-on-light (акцент визитки здесь индиго).
-   Тень-подложка без размытия — только у кнопки записи и записки, остальное — тонкие рамки. */
+   Без теней и коробок: запись — заливка, остальное — строки на бумаге под тонкими линиями, значки площадок — знак без круга. */
 .links-page {
   --lk-paper: var(--surface);
   --lk-line: var(--line);
@@ -10,8 +10,6 @@
   --lk-cta: var(--accent-on-light);
   --lk-on-cta: var(--surface);
   --lk-tape: color-mix(in srgb, var(--c-ochre) 30%, var(--surface));
-  --lk-note: color-mix(in srgb, var(--c-amber) 28%, var(--surface));
-  --lk-note-shade: color-mix(in srgb, var(--c-ochre) 45%, var(--lk-note));
   --lk-serif: 'Literata', Georgia, serif;
   width: 100%; min-height: 100dvh; align-self: flex-start; overflow-x: clip;
   padding: clamp(36px, calc((100vw - 440px) * 0.12), 64px) 16px 32px;
@@ -22,17 +20,11 @@ html[data-theme="dark"] .links-page {
   --lk-cta: var(--c-clay);
   --lk-on-cta: var(--bg-rail);
   --lk-tape: color-mix(in srgb, var(--c-ochre) 22%, var(--surface-3));
-  --lk-note: color-mix(in srgb, var(--c-amber) 21%, var(--surface));
-  --lk-note-shade: color-mix(in srgb, var(--bg-rail) 35%, black);
   background: var(--bg-rail);
-}
-/* Чистый жёлтый тем же тоном, что --c-amber: смесью с бумагой он выходит бежевым. */
-@supports (color: oklch(from red l c h)) {
-  html:not([data-theme="dark"]) .links-page { --lk-note: oklch(from var(--c-amber) .928 .066 calc(h + 18)); }
 }
 /* Пока открыт баннер куки (position: fixed внизу), страница длиннее на его высоту: нижние кнопки докручиваются выше него. */
 body:has(.cookie-banner-wrap) .links-page { padding-bottom: calc(160px + var(--safe-bottom)); }
-.links-col { position: relative; max-width: clamp(440px, 34vw, 480px); margin: 0 auto; }
+.links-col { position: relative; max-width: clamp(440px, 46vw, 600px); margin: 0 auto; }
 .links-page a { color: inherit; text-decoration: none; }
 .links-page h2 { margin: 0; font-family: var(--lk-serif); font-weight: 500; font-size: 18px; line-height: 1.2; letter-spacing: -.01em; }
 
@@ -53,23 +45,21 @@ body:has(.cookie-banner-wrap) .links-page { padding-bottom: calc(160px + var(--s
 
 /* Кнопка записи. */
 .lk-cta {
-  display: block; padding: 14px 18px 15px; border-radius: 14px; background: var(--lk-cta);
-  box-shadow: 0 4px 0 color-mix(in srgb, var(--lk-cta) 70%, black); transition: transform .15s ease, box-shadow .15s ease;
+  display: block; padding: 14px 18px 15px; border-radius: 14px; background: var(--lk-cta); transition: transform .15s ease;
 }
 .links-page .lk-cta { color: var(--lk-on-cta); }
 .lk-cta b { display: block; font-size: clamp(17px, 5.2vw, 19px); font-weight: 800; letter-spacing: -.01em; }
 .lk-cta small { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--lk-on-cta) 86%, var(--lk-cta)); }
 
-/* «Обо мне» — вторичная кнопка сразу под записью: контур, а не заливка. */
-.lk-item--sub { margin-top: 10px; }
+/* «Обо мне» — вторичное действие сразу под записью: строка со стрелкой, без контура. */
+.lk-item--sub { margin-top: 6px; }
 .lk-sub {
-  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 16px;
-  border: 1.5px solid color-mix(in srgb, var(--lk-ink) 70%, transparent); border-radius: 14px; background: var(--lk-paper);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 4px 0 2px;
   font-family: var(--lk-serif); font-weight: 500; font-size: 17px; line-height: 1.2;
 }
 
-/* Карточка проекта и записка — одна рамка-коробка. */
-.lk-box { padding: 16px; border: 1px solid var(--lk-line); border-radius: 14px; background: var(--lk-paper); }
+/* Проект и «Здоровый Взрослый» — блоки на бумаге под линией. */
+.lk-box { padding: 16px 2px; border-top: 1px solid var(--panel-line); }
 .lk-card-top { display: flex; align-items: center; gap: 10px; }
 .links-page .lk-card-title { font-size: 21px; }
 .lk-card-note { margin: 8px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
@@ -82,29 +72,30 @@ body:has(.cookie-banner-wrap) .links-page { padding-bottom: calc(160px + var(--s
   .lk-or { display: block; }
 }
 .lk-open {
-  flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 8px;
-  border: 1.5px solid var(--lk-ink); border-radius: 12px; font-size: 15px; font-weight: 700; white-space: nowrap;
-  transition: background-color .15s ease, color .15s ease;
+  flex: 1 1 auto; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0;
+  font-size: 15px; font-weight: 700; white-space: nowrap; color: var(--lk-pen);
 }
+.links-page .lk-open { color: var(--lk-pen); }
 
-/* Записка «Здоровый Взрослый»: жёлтый листок — одно цветное пятно страницы. */
-.lk-note { border-color: transparent; background: var(--lk-note); box-shadow: 0 4px 0 var(--lk-note-shade); }
-.lk-note-text { margin: 8px 0 0; font-size: 14px; line-height: 1.4; }
+/* «Здоровый Взрослый» — последняя строка списка на линии, без цветного листа. */
+.lk-note { border-bottom: 1px solid var(--panel-line); }
+.lk-item:has(> .lk-note) { margin-top: 0; }
+.lk-row:has(+ .lk-item > .lk-note) { border-bottom: 0; }
+.lk-note-text { margin: 8px 0 0; font-size: 14px; line-height: 1.4; color: var(--text-sub); }
 
-/* Общий список: строки одной высоты в одной рамке, между ними тонкие разделители. */
-.lk-row { border: 1px solid var(--lk-line); border-bottom-width: 0; background: var(--lk-paper); }
-.lk-item + .lk-row { margin-top: 16px; border-radius: 14px 14px 0 0; }
-.lk-row + .lk-row { border-top-color: var(--paper-sunk); }
-.lk-row:last-child, .lk-row:has(+ .lk-item) { border-bottom-width: 1px; border-radius: 0 0 14px 14px; }
+/* Общий список: строки одной высоты на бумаге, между ними тонкие линии. */
+.lk-row { border-top: 1px solid var(--panel-line); }
+.lk-item + .lk-row { margin-top: 0; }
+.lk-row:last-child, .lk-row:has(+ .lk-item) { border-bottom: 1px solid var(--panel-line); }
 .lk-row-in {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 12px 0 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 4px 0 2px;
   font-family: var(--lk-serif); font-weight: 500; font-size: 17px; line-height: 1.2; border-radius: inherit;
 }
 .links-page .lk-row-in h2 { font-size: 17px; letter-spacing: 0; }
 @media (min-width: 360px) { .lk-row-in h2 { white-space: nowrap; } }
 .lk-row-in .lk-places { gap: 6px; }
 /* Строка с «?» в 360px с значками в одну линию не встаёт: значки — под названием, как у записки. */
-.lk-row-in.lk-head { justify-content: flex-start; padding: 12px 12px 14px 16px; }
+.lk-row-in.lk-head { justify-content: flex-start; padding: 12px 4px 14px 2px; }
 .lk-row-in.lk-head .lk-places { order: 2; flex-basis: 100%; margin-top: 10px; }
 
 /* «?» у названия: круг 22px, зона нажатия 44 (::before). Корень Disclosure — display: contents,
@@ -129,21 +120,19 @@ body:has(.cookie-banner-wrap) .links-page { padding-bottom: calc(160px + var(--s
   margin-top: 6px; padding-left: 10px; border-left: 2px solid color-mix(in srgb, var(--lk-pen) 45%, transparent);
   font-family: var(--lk-serif); font-style: italic; font-size: 14px; line-height: 1.4;
 }
-.lk-note .lk-q { border-color: color-mix(in srgb, var(--lk-ink) 40%, transparent); color: color-mix(in srgb, var(--lk-ink) 75%, transparent); }
-.lk-note .lk-q[aria-expanded="true"] { border-color: var(--lk-ink); color: var(--lk-ink); }
-.lk-note > .lk-places { margin-top: 12px; }
-.lk-note .lk-more-in p { color: color-mix(in srgb, var(--lk-ink) 78%, transparent); }
+.lk-note > .lk-places { margin-top: 10px; }
+/* Знак без круга стоит в зоне 44: ряд с начала строки сдвинут к краю текста. */
+.lk-note > .lk-places, .lk-row-in.lk-head .lk-places { margin-left: -12px; }
 .lk-go { margin-right: 4px; font-family: var(--font-sans); color: var(--text-sub); transition: transform .15s ease; }
 
-/* Значки площадок: спокойный круг 40px с мягкой заливкой. */
+/* Значки площадок: знак на бумаге без круга-подложки, зона нажатия 44. */
 .lk-places { display: flex; align-items: center; gap: 8px; flex: none; }
 .lk-place { border-radius: 50%; }
 .lk-place-dot {
-  display: flex; align-items: center; justify-content: center; border-radius: 50%;
-  background: color-mix(in srgb, var(--lk-ink) 8%, transparent); color: var(--lk-ink);
-  transition: transform .15s ease, background-color .15s ease, color .15s ease;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--lk-ink);
+  transition: transform .15s ease, color .15s ease;
 }
-.lk-place-max { font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+.lk-place-max { font-size: 11px; font-weight: 800; letter-spacing: .04em; }
 
 .links-theme {
   position: absolute; right: -10px; top: -36px; z-index: 1; width: 44px; height: 44px;
@@ -156,11 +145,11 @@ a.lk-row-in:focus-visible { outline: 2px solid var(--lk-pen); outline-offset: -3
 .lk-place:focus-visible { outline: none; }
 .lk-place:focus-visible .lk-place-dot { outline: 2px solid var(--lk-pen); outline-offset: 2px; }
 .lk-place:active .lk-place-dot { transform: scale(.94); }
-.lk-cta:active { transform: translateY(3px); box-shadow: 0 1px 0 color-mix(in srgb, var(--lk-cta) 70%, black); }
+.lk-cta:active { transform: translateY(1px); }
 @media (hover: hover) {
   .lk-cta:hover { transform: translateY(-1px); }
-  .lk-open:hover, .lk-place:hover .lk-place-dot { background: var(--lk-ink); color: var(--lk-paper); }
-  a.lk-row-in:hover .lk-go, .lk-sub:hover .lk-go { transform: translateX(3px); }
+  .lk-place:hover .lk-place-dot { color: var(--lk-pen); }
+  a.lk-row-in:hover .lk-go, .lk-sub:hover .lk-go, .lk-open:hover .lk-go { transform: translateX(3px); }
   .lk-q:hover { border-color: var(--lk-ink); color: var(--lk-ink); }
   .links-theme:hover { color: var(--lk-ink); }
 }

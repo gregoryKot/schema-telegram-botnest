@@ -57,6 +57,10 @@ const PART = (table: string) =>
 
 /** Файлы, где обнаружитель видит ≥4 id, но своей таблицы по id нет. */
 export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
+  {
+    file: 'src/notification/mode-names.ts',
+    why: 'копия канонических имён режимов для бэкенда (rootDir src): сверка с modeClinicalName — mode/modeNamesSync.test.ts',
+  },
   { file: 'shared/src/schemaTherapy/guide/modes/', why: LINKS_CHECKED },
   { file: 'shared/src/schemaTherapy/guide/schemas/', why: LINKS_CHECKED },
   { file: 'shared/src/schemaTherapy/guide/concerns/', why: LINKS_CHECKED },
@@ -109,6 +113,10 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
   },
   {
+    file: 'shared/src/therapy/sessionWork/techniqueWorkVreeswijk.ts',
+    why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
+  },
+  {
     file: 'webapp/src/components/art/SignArt.tsx',
     why: 'ключи — знаки SignKey (need_*), полноту держит тип Record<SignKey, Art> (tsc)',
   },
@@ -119,5 +127,9 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
   {
     file: 'webapp/src/components/trackerOverlay/DayBars.tsx',
     why: 'подписи столбиков с мягкими переносами для длинных названий, остальные — NEED_NAMES; не таблица знаний',
+  },
+  {
+    file: 'src/analytics/case-steps.constants.ts',
+    why: 'допустимые meta.needId у case_need_tracker (= NEED_ORDER сайта): белый список аналитики, не таблица знаний',
   },
 ];
