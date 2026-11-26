@@ -110,6 +110,7 @@
   .tc-count { font-size: 24px; }
   .tc-add { grid-template-columns: 1fr; padding: 20px; }
   .pp-block.tc-add { padding: 16px 0 20px; }
+  .tc-add-name { font-size: 20px; } /* подсказка «Имя клиента, например Анна К.» целиком в 343px */
   .tc-search { width: 100%; }
   /* Телефон: встреча и схемы — под именем, «→» — у правого края на высоте имени. */
   .ds-list-row.tc-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 12px; align-items: start; }

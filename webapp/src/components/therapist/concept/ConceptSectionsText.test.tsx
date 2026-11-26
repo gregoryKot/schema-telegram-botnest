@@ -2,7 +2,7 @@
 // Теги триггеров в «Полях» концептуализации: выбранный тег получает --h,
 // иначе .ds-chip--toggle.is-on красится запасным нейтральным оттенком, а не тоном раздела.
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ConceptTriggers, ConceptNeeds, ConceptCoping, ConceptModes, ConceptProblems } from './ConceptSectionsText';
 import { ConceptSectionShell } from './ConceptSectionShell';
 import { ConceptModeIdsContext } from './modeChain';
@@ -37,10 +37,21 @@ describe('«Поля» без цветных плиток', () => {
     cleanup();
   });
 
-  it('совладание — карточки без tone-soft и tone-fill', () => {
+  it('совладание — строки без tone-soft и tone-fill', () => {
     const { container } = render(<ConceptCoping {...props} />);
     expect(container.querySelectorAll('.tcp-cop').length).toBe(3);
-    expect(container.querySelector('.tone-soft, .tone-fill')).toBeNull();
+    expect(container.querySelector('.tone-soft, .tone-fill, .pp-paper')).toBeNull();
+    cleanup();
+  });
+
+  // К25: стиль совладания — строка с маркером выбора, тап дописывает его в поле, как тег триггера.
+  it('совладание — выбранный стиль отмечен, тап дописывает стиль в текст', () => {
+    const onChange = vi.fn();
+    render(<ConceptCoping value="Избегание" onChange={onChange} placeholder="…" />);
+    expect(screen.getByRole('button', { name: /Избегание/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: /Капитуляция/ }).getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: /Капитуляция/ }));
+    expect(onChange).toHaveBeenCalledWith('Избегание, Капитуляция');
     cleanup();
   });
 
