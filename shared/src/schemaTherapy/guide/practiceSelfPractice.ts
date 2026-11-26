@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { buildPracticeSelfPracticeReview } from './practiceSelfPracticeReview';
+import { buildPracticeSelfPracticeTail } from './practiceSelfWork';
 
 /** «Для терапевта»: самопрактика и саморефлексия — зачем, безопасность, форматы [Фаррелл-Шоу, гл. 1, 3, 4]. */
 export const buildPracticeSelfPractice: PracticeNotesBuilder = (tr) => [
@@ -72,5 +72,5 @@ export const buildPracticeSelfPractice: PracticeNotesBuilder = (tr) => [
     ],
     sources: '[Фаррелл-Шоу, гл. 3, 4]',
   },
-  ...buildPracticeSelfPracticeReview(tr),
+  ...buildPracticeSelfPracticeTail(tr),
 ];

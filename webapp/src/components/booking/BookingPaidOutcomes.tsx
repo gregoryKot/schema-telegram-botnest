@@ -1,9 +1,7 @@
 import { useEffect } from 'react';
 import { reportClientError } from '../../api';
 import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from './cancelPolicy';
-import { h1, sub } from './bookingPageStyles';
-import { icon, ghostBtn } from './bookingPaidStyles';
-import { Btn } from '../landing-kit';
+import { OutcomeBody } from '../paper/OutcomeBody';
 import type { BookingLoadError } from './bookingLoadError';
 import { isManageLink } from './paidPageModel';
 /**
@@ -13,12 +11,8 @@ import { isManageLink } from './paidPageModel';
  */
 export function BookingPaidAccepted() {
   return (
-    <>
-      <div style={icon}>✓</div>
-      <h1 style={h1}>Оплата принята</h1>
-      <p style={sub}>Спасибо! Я свяжусь с вами и пришлю ссылку на встречу.</p>
-      <Btn href="/" full size="lg">На главную</Btn>
-    </>
+    <OutcomeBody title="Оплата принята" lead="Спасибо! Я свяжусь с вами и пришлю ссылку на встречу."
+      action={{ label: 'На главную', href: '/' }} />
   );
 }
 
@@ -34,16 +28,13 @@ export function BookingManageLinkIncomplete() {
     reportClientError({ message: 'booking manage page: ссылка управления открыта без токена', section: 'booking' });
   }, []);
   return (
-    <>
-      <div style={icon}>?</div>
-      <h1 style={h1}>Ссылка неполная</h1>
-      <p style={sub}>
-        В адресе не хватает кода записи — так бывает, если мессенджер обрезал ссылку или страницу перезагрузили.
-        Откройте ссылку ещё раз оттуда, куда сохраняли запись: из события в календаре или из сообщения в Telegram.
-      </p>
-      <p style={sub}>Найти не получается — напишите мне, подскажу время встречи и помогу с отменой.</p>
-      <Btn href={CANCEL_SUPPORT_LINK} full size="lg">Написать в Telegram</Btn>
-    </>
+    <OutcomeBody
+      title="Ссылка неполная"
+      lead="В адресе не хватает кода записи — так бывает, если мессенджер обрезал ссылку или страницу перезагрузили. Откройте ссылку ещё раз оттуда, куда сохраняли запись: из события в календаре или из сообщения в Telegram."
+      action={{ label: 'Написать в Telegram', href: CANCEL_SUPPORT_LINK }}
+    >
+      <p className="pa-outcome-lead">Найти не получается — напишите мне, подскажу время встречи и помогу с отменой.</p>
+    </OutcomeBody>
   );
 }
 
@@ -61,14 +52,13 @@ export function BookingPaidLoadFailed({ kind, onRetry }: { kind: BookingLoadErro
     ? 'Возможно, ссылка неполная или запись уже удалена. Напишите'
     : manage ? 'Нажмите «Обновить» или напишите' : 'Если деньги списаны, запись не потерялась. Нажмите «Обновить» или напишите';
   return (
-    <>
-      <div style={icon}>?</div>
-      <h1 style={h1}>{head}</h1>
-      <p style={sub}>
+    <OutcomeBody
+      title={head}
+      lead={<>
         {lead} мне в Telegram, разберёмся:{' '}
         <a href={CANCEL_SUPPORT_LINK} style={{ color: 'inherit', textDecoration: 'underline' }}>{CANCEL_SUPPORT_HANDLE}</a>.
-      </p>
-      {!notFound && <button onClick={onRetry} style={ghostBtn}>Обновить</button>}
-    </>
+      </>}
+      action={notFound ? undefined : { label: 'Обновить', onClick: onRetry }}
+    />
   );
 }
