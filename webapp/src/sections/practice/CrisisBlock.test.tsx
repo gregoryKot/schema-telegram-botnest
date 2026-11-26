@@ -37,6 +37,16 @@ describe('CrisisBlock — постоянный «спасательный кру
     expect(document.querySelector('.cr-line')?.textContent).toBe('Если есть угроза жизни —\u00a0112');
   });
 
+  it('на листе (onSheet) — без своей бумаги, но сердце остаётся; inset — без сердца', () => {
+    render(<CrisisBlock onSheet />);
+    const card = document.querySelector('[data-crisis-card]');
+    expect(card?.classList.contains('pp-paper')).toBe(false);
+    expect(card?.querySelector('svg')).toBeTruthy();
+    cleanup();
+    render(<CrisisBlock inset />);
+    expect(document.querySelector('[data-crisis-card] [aria-hidden="true"] svg')).toBeNull();
+  });
+
   it('телефон доверия виден и кликабелен (реальная tel:-ссылка)', () => {
     render(<CrisisBlock />);
     const link = screen.getByText(CRISIS_HOTLINE_DISPLAY).closest('a');
