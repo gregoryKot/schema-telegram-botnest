@@ -66,22 +66,19 @@ export function useJourney(deps: JourneyDeps) {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [group, setGroup] = useState<JourneyGroup | 'all'>('all');
   const [period, setPeriod] = useState<JourneyPeriod>('all');
-  // Бампится из reload() (после удаления записи) — только рефетч, без
-  // повторного journey_open (это открытие экрана, не перезагрузка).
+  // Бампится из reload() (удаление, повтор): рефетч без повторного journey_open.
   const [bump, setBump] = useState(0);
 
   useEffect(() => {
     if (bump === 0) deps.trackEvent(JOURNEY_OPEN_EVENT);
+    setFailed(false); // повтор после ошибки — снова скелетон
     deps
       .getJourney()
       .then(setData)
       .catch(() => setFailed(true));
   }, [deps, bump]);
 
-  const reload = useCallback(() => {
-    setFailed(false);
-    setBump((b) => b + 1);
-  }, []); // failed — чтобы «Попробовать снова» показал скелетон
+  const reload = useCallback(() => setBump((b) => b + 1), []);
 
   const stats = useMemo(
     () => (data ? journeyStatRows(data.counts) : []),

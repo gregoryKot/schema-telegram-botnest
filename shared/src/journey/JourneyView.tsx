@@ -46,7 +46,6 @@ export function JourneyView({
   onStart,
 }: JourneyViewProps) {
   const {
-    failed,
     stats,
     total,
     items,
@@ -57,7 +56,7 @@ export function JourneyView({
     sortDir,
     setSortDir,
   } = j;
-  const loading = !j.data && !failed;
+  const loading = !j.data && !j.failed;
   const { Hero, EmptyHero, Stat, Chip, Alert } = kit;
 
   // Откуда это и зачем — до первого действия (правило онбординга).
@@ -67,7 +66,7 @@ export function JourneyView({
   );
 
   if (loading) return <div className="u-mt12">{skeleton}</div>;
-  if (failed)
+  if (j.failed)
     return (
       <Alert
         text={tr(
