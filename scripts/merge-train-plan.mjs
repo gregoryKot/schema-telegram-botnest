@@ -20,12 +20,12 @@ export const isTrain = (p) => p.user?.login === BOT && p.head.ref.startsWith(TRA
 const nums = (cars) => cars.map((c) => `#${c.number}`).join(', ');
 
 /**
- * Пассажиры — отставшие зелёные на своей голове, в порядке готовности, до MAX_CARS.
- * Поезда нет, если первый зелёный очереди в него не годится: он идёт обычным
- * путём, иначе поезда раз за разом обгоняли бы его.
+ * Пассажиры — отставшие зелёные на своей голове или по предку (`proven`,
+ * merge-train-proof.mjs), в порядке готовности, до MAX_CARS. Поезда нет, если первый
+ * зелёный очереди в него не годится: он идёт обычным путём, иначе его обгоняли бы.
  */
 export function pickCars(candidates) {
-  const green = candidates.filter((p) => p.checks.state === 'green' && !p.flagged);
+  const green = candidates.filter((p) => (p.checks.state === 'green' || p.proven) && !p.flagged);
   const fit = green.filter((p) => !p.train && !p.noTrain && p.author !== DEPENDABOT);
   return fit.length >= 2 && fit[0] === green[0] ? fit.slice(0, MAX_CARS) : [];
 }
