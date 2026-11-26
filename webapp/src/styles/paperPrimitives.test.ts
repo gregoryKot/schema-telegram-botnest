@@ -239,10 +239,13 @@ describe('paper-app.css — стили заготовок', () => {
     for (const r of paperRules) for (const x of r.selectors) expect(x, x).not.toMatch(/\.pp-art|\brect\b|\bpath\b/);
   });
 
-  it('второй лист в полосе исхода — целиком в полосе и тоном бумаги (хрома ≤0.04), а не обрывком', () => {
-    const corner = decls(paperRules, '.pa-outcome-band::before');
-    expect(corner).not.toMatch(/(right|bottom):\s*-/);
-    expect(Number(corner.match(/oklch\([\d.]+ ([\d.]+) var\(--h\)\)/)?.[1])).toBeLessThanOrEqual(0.04);
+  it('итог — без коробки: карточка без заливки, тени и скругления, нет второго листа в полосе, действие на линии', () => {
+    const card = decls(paperRules, '.pa-outcome-card');
+    expect(card).not.toMatch(/box-shadow|background|border-radius|overflow/);
+    expect(paperRules.flatMap((r) => r.selectors).some((x) => x.includes('.pa-outcome-band::before'))).toBe(false);
+    const action = decls(paperRules, '.ds-btn.pa-outcome-action');
+    expect(action).toMatch(/border-top:\s*1px solid var\(--paper-sunk\)/);
+    expect(action).toMatch(/background:\s*transparent/);
   });
 
   it('слот знака у чипа — только с меткой (pa-chip--mark): у чипа без знака поля ровные', () => {
