@@ -2,7 +2,7 @@
 // на ленте (застрять и остановиться); форматы — рамка из трёх частей; рефлексия — ступени; обзор — флажки-вехи прогресса;
 // день самопрактики в группе — линия времени (упражнения дня по порядку); Критик терапевта — внутренний голос;
 // трудный клиент и мой копинг — «за и против»; свой Здоровый Взрослый — фигуры частей; Счастливый Ребёнок — копилка
-// радостей; вечерний обход режимов — план на каждый режим.
+// радостей; вечерний обход — план на режим; цикл самомониторинга — круг; анализ проблемы — проба; план на себе — шаг.
 import type { GuideSign } from './guideSignsModel';
 
 export const FARRELL_SHAW_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
@@ -17,4 +17,7 @@ export const FARRELL_SHAW_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   know_your_healthy_adult: 'figures',
   therapist_happy_child: 'keepsake',
   therapist_modes_walk: 'mode_plan',
+  self_monitoring_cycle: 'pie',
+  problem_analysis_modes: 'probe',
+  self_mode_management_plan: 'try_step',
 };
