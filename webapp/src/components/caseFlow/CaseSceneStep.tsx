@@ -6,7 +6,7 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 /**
- * Шаг 1 из 3 — единственное текстовое поле потока: момент своими словами,
+ * Шаг 1 из 4 — единственное текстовое поле потока: момент своими словами,
  * без шаблонов сцен (владелец 2026-10-27). Кризисная детекция (правило №7)
  * стоит прямо в файле с полем: трипваер crisis-path.invariants ищет вызов
  * здесь; карточку рисует нижняя панель шага. `crisis` из хука покрывает
@@ -33,7 +33,7 @@ export function CaseSceneStep({
   return (
     <CaseStepScreen
       onBack={onBack} caution
-      eyebrow="Что случилось · 1 из 3"
+      eyebrow="Что случилось · 1 из 4"
       title="Что случилось?"
       lede="Крупное необязательно. Хватит мелочи: сообщение, взгляд, тишина в ответ."
     >

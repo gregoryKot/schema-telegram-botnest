@@ -20,7 +20,7 @@ function setup(
   return { ...view, props, deps };
 }
 
-/** Доходит до итога: сцена, ворота «Страшно», порыв «Свернуть разговор». */
+/** Доходит до итога: сцена, ворота «Страшно», порыв «Свернуть разговор», потребность пропущена. */
 function toResult(h: ReturnType<typeof setup>) {
   act(() => h.result.current.patch({ scene: 'Тишина в ответ' }));
   act(() => h.result.current.sceneNext());
@@ -28,6 +28,7 @@ function toResult(h: ReturnType<typeof setup>) {
   act(() => h.result.current.feelNext());
   act(() => h.result.current.toggleImpulseChip('impulse_close'));
   act(() => h.result.current.impulseNext());
+  act(() => h.result.current.needNext());
 }
 
 describe('useCaseQuickFlow — путь целиком', () => {
@@ -191,6 +192,51 @@ describe('useCaseQuickFlow — «Своё…» и ворота', () => {
     expect(localStorage.getItem('therapy_crisis_seen_at')).toBeNull();
     act(() => h.result.current.patch({ scene: 'не хочу жить' }));
     expect(localStorage.getItem('therapy_crisis_seen_at')).not.toBeNull();
+  });
+});
+
+describe('useCaseQuickFlow — шаг «Чего не хватило?»', () => {
+  it('порывы → потребность → итог; назад из итога — в потребность, из неё — в порывы', () => {
+    const h = setup();
+    toResult(h);
+    act(() => h.result.current.back());
+    expect(h.result.current.step).toBe('need');
+    act(() => h.result.current.back());
+    expect(h.result.current.step).toBe('impulse');
+    act(() => h.result.current.impulseNext());
+    expect(h.result.current.step).toBe('need');
+  });
+
+  it('выбор потребности пишется в запись; повторный тап снимает; «не пойму» — без неё', async () => {
+    const h = setup();
+    toResult(h);
+    act(() => h.result.current.back());
+    act(() => h.result.current.pickNeed('play'));
+    expect(h.result.current.fields.needId).toBe('play');
+    act(() => h.result.current.pickNeed('play'));
+    expect(h.result.current.fields.needId).toBe('');
+    act(() => h.result.current.pickNeed('limits'));
+    act(() => h.result.current.needNext());
+    await act(() => h.result.current.save());
+    expect(h.props.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ actualNeed: 'Самоконтроль' }),
+    );
+  });
+
+  it('черновик на шаге потребности возобновляется на нём; без ворот — на feel', () => {
+    saveQuickDraft({
+      ...INITIAL_QUICK_FIELDS,
+      step: 'need',
+      scene: 'с',
+      gateId: 'fear',
+      impulseChipIds: ['impulse_close'],
+      needId: 'autonomy',
+    });
+    const h = setup();
+    expect(h.result.current.step).toBe('need');
+    expect(h.result.current.fields.needId).toBe('autonomy');
+    saveQuickDraft({ ...INITIAL_QUICK_FIELDS, step: 'need', scene: 'с' });
+    expect(setup().result.current.step).toBe('feel');
   });
 });
 

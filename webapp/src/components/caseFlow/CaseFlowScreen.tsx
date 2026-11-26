@@ -4,6 +4,7 @@ import { CaseSceneStep } from './CaseSceneStep';
 import { CaseFeelStep } from './CaseFeelStep';
 import { CaseSteadyStep } from './CaseSteadyStep';
 import { CaseImpulseStep } from './CaseImpulseStep';
+import { CaseNeedStep } from './CaseNeedStep';
 import { CaseResultStep } from './CaseResultStep';
 import { CaseModeScreen } from './CaseModeScreen';
 import { CaseDoneScreen } from './CaseDoneScreen';
@@ -23,7 +24,7 @@ const DEPS = { trackEvent: api.trackEvent };
 
 /**
  * Оркестратор «Что случилось» на сайте (простой клиент, этап 4): момент → что
- * внутри → что хотелось → итог → «Записано». Рамка шага — CaseStepScreen (лист шалфея,
+ * внутри → что хотелось → чего не хватило → итог → «Записано». Рамка шага — CaseStepScreen (лист шалфея,
  * на компьютере разворот с «Что собрали»), useHistorySheet ОДИН раз здесь: все «Назад»/
  * «Закрыть» идут через exitFlow. «Тяжело прямо сейчас» открывает поддержку на месте.
  * Состояние — shared useCaseQuickFlow; черновик — сначала «продолжить или заново».
@@ -48,12 +49,7 @@ function CaseFlowSteps(props: CaseQuickProps) {
     switch (f.step) {
       case 'scene':
         return (
-          <CaseSceneStep
-            {...common}
-            value={f.fields.scene}
-            onChange={(v) => f.patch({ scene: v })}
-            onNext={f.sceneNext}
-          />
+          <CaseSceneStep {...common} value={f.fields.scene} onChange={(v) => f.patch({ scene: v })} onNext={f.sceneNext} />
         );
       case 'feel':
         return (
@@ -71,12 +67,7 @@ function CaseFlowSteps(props: CaseQuickProps) {
         );
       case 'steady':
         return (
-          <CaseSteadyStep
-            {...common}
-            saving={f.saving}
-            failed={f.saveFailed}
-            onSave={f.saveSteady}
-          />
+          <CaseSteadyStep {...common} saving={f.saving} failed={f.saveFailed} onSave={f.saveSteady} />
         );
       case 'impulse':
         return (
@@ -89,6 +80,8 @@ function CaseFlowSteps(props: CaseQuickProps) {
             onNext={f.impulseNext}
           />
         );
+      case 'need':
+        return <CaseNeedStep {...common} needId={f.fields.needId} onPick={f.pickNeed} onNext={f.needNext} />;
       case 'result':
         return f.result ? (
           <CaseResultStep
@@ -108,7 +101,7 @@ function CaseFlowSteps(props: CaseQuickProps) {
           <CaseDoneScreen
             name={f.doneName} steady={f.fields.gateId === STEADY_GATE_ID}
             repeat={history ? modeRepeatCount(history, f.savedModeId, todayStr()) : 1}
-            onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow}
+            needId={f.fields.needId} onOpenTracker={props.onOpenTracker} onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow}
           />
         );
       default:

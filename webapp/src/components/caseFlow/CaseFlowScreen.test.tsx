@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// «Что случилось» в три шага (этап 4 простого клиента): путь целиком, «Не
+// «Что случилось» в четыре шага (этап 4 простого клиента): путь целиком, «Не
 // похоже», ошибка сохранения, кризис, «ровный день». Состояние потока
 // проверяет useCaseQuickFlow.test.ts в shared; здесь — экраны и их связка.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -69,10 +69,11 @@ function driveToResult() {
   click('Страшно, тревожно');
   click('Дальше');
   click('Свернуть разговор');
-  click('Что это было?');
+  click('Дальше');
+  click('Не пойму — дальше');
 }
 
-describe('CaseFlowScreen — три шага и итог', () => {
+describe('CaseFlowScreen — четыре шага и итог', () => {
   it('шаг 1: «Дальше» закрыта, пока поле пусто; подпись и подсказка на месте', () => {
     renderFlow();
     expect(
@@ -228,7 +229,8 @@ describe('CaseFlowScreen — три шага и итог', () => {
       screen.getByPlaceholderText('Например: хотелось всё бросить'),
       { target: { value: 'исчезнуть' } },
     );
-    click('Что это было?');
+    click('Дальше');
+    click('Не пойму — дальше');
     expect(screen.getByText(/сжало горло/)).toBeTruthy();
     click('Сохранить');
     await screen.findByText('Записано');
@@ -309,6 +311,65 @@ describe('CaseFlowScreen — три шага и итог', () => {
     renderFlow();
     expect(screen.queryByText('Есть начатый разбор')).toBeNull();
     expect(screen.getByLabelText('Что случилось?')).toBeTruthy();
+  });
+});
+
+/** Сцена → «Страшно, тревожно» → «Свернуть разговор» → «Чего не хватило?». */
+function driveToNeed() {
+  typeScene(SCENE);
+  click('Дальше');
+  click('Страшно, тревожно');
+  click('Дальше');
+  click('Свернуть разговор');
+  click('Дальше');
+}
+
+describe('CaseFlowScreen — «Чего не хватило?» и мост в трекер', () => {
+  it('шаг после порывов; «Дальше» закрыта до выбора, повторный тап снимает выбор', () => {
+    renderFlow();
+    driveToNeed();
+    expect(screen.getByText('Чего не хватило?', { selector: 'h1' })).toBeTruthy();
+    expect(screen.getByText('Что случилось · 4 из 4')).toBeTruthy();
+    const next = () => screen.getByText('Дальше') as HTMLButtonElement;
+    expect(next().disabled).toBe(true);
+    click('Автономия');
+    expect(next().disabled).toBe(false);
+    click('Автономия');
+    expect(next().disabled).toBe(true);
+  });
+
+  it('выбранная потребность уходит в запись как actualNeed', async () => {
+    const p = renderFlow();
+    driveToNeed();
+    click('Спонтанность');
+    click('Дальше');
+    click('Сохранить');
+    await screen.findByText('Записано');
+    expect(p.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ actualNeed: 'Спонтанность' }),
+    );
+  });
+
+  it('«Не пойму — дальше»: запись без actualNeed и без моста в трекер', async () => {
+    const p = renderFlow({ onOpenTracker: vi.fn() });
+    driveToNeed();
+    click('Не пойму — дальше');
+    click('Сохранить');
+    await screen.findByText('Записано');
+    expect(vi.mocked(p.onSave).mock.calls[0][0].actualNeed).toBeUndefined();
+    expect(screen.queryByText(/в трекере:/)).toBeNull();
+  });
+
+  it('«Записано»: мост «в трекере» зовёт onOpenTracker с id потребности и шлёт событие', async () => {
+    const p = renderFlow({ onOpenTracker: vi.fn() });
+    driveToNeed();
+    click('Привязанность');
+    click('Дальше');
+    click('Сохранить');
+    await screen.findByText('Записано');
+    click('Отметь в трекере: Привязанность');
+    expect(p.onOpenTracker).toHaveBeenCalledWith('attachment');
+    expect(trackEvent).toHaveBeenCalledWith('case_need_tracker', { needId: 'attachment' });
   });
 });
 
@@ -394,7 +455,8 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
     click('Страшно, тревожно');
     click('Дальше');
     click('Свернуть разговор');
-    click('Что это было?');
+    click('Дальше');
+    click('Не пойму — дальше');
     click('Сохранить');
     await screen.findByText('Записано');
     expect(screen.getByText(CRISIS_HOTLINES[0].display)).toBeTruthy();
@@ -426,8 +488,9 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
       },
       () => {
         click('Свернуть разговор');
-        click('Что это было?');
+        click('Дальше');
       },
+      () => click('Не пойму — дальше'),
     ];
     for (const next of steps) {
       next();

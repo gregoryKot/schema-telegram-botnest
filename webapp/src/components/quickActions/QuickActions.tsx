@@ -14,7 +14,7 @@ export function QuickActions({ ov }: { ov: ReturnType<typeof useOverlays> }) {
         <QuickActionOverlays
           active={ov.quickAction}
           onClose={() => ov.setQuickAction(null)}
-          onOpenTracker={() => ov.runQuickAction('tracker')}
+          onOpenTracker={ov.openTracker}
           onOpenSchema={ov.openSchema}
         />
       )}

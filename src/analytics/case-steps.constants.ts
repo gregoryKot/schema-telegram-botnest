@@ -26,6 +26,8 @@ export const CASE_EVENTS = [
   'case_finished',
   // С экрана «Записано» открыли карту себя; repeat — экран сказал о повторе режима.
   'case_map_opened',
+  // С «Записано» открыли трекер на потребности разбора; meta.needId.
+  'case_need_tracker',
 ] as const;
 
 export type CaseEventName = (typeof CASE_EVENTS)[number];
@@ -36,3 +38,12 @@ export const CASE_SCENE_SOURCES = ['own', 'frame'] as const;
 export const CASE_SCENE_SOURCE_SET: ReadonlySet<string> = new Set(
   CASE_SCENE_SOURCES,
 );
+
+/** Потребности, которые можно положить в meta.needId у case_need_tracker (= NEED_ORDER сайта). */
+export const CASE_NEED_ID_SET: ReadonlySet<string> = new Set([
+  'attachment',
+  'autonomy',
+  'expression',
+  'play',
+  'limits',
+]);

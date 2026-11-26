@@ -205,6 +205,7 @@ export const FEATURES: readonly FeatureDef[] = [
       'case_recognized',
       'case_finished',
       'case_map_opened',
+      'case_need_tracker',
     ],
   },
   {

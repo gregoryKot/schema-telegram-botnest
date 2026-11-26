@@ -37,6 +37,8 @@ export interface CaseMetrics {
   /** С «Записано» открыли карту: экран сказал о повторе режима / не сказал. */
   mapOpenedRepeat: number;
   mapOpenedFirst: number;
+  /** С «Записано» открыли трекер на потребности разбора. */
+  needTracker: number;
 }
 
 const share = (part: number, whole: number): string =>
@@ -72,6 +74,9 @@ export function formatCaseMetrics(m: CaseMetrics): string {
   const opened = m.mapOpenedRepeat + m.mapOpenedFirst;
   lines.push(
     `После записи открыли карту себя ${opened} из ${m.finished}${share(opened, m.finished)} · из них когда режим повторился ${m.mapOpenedRepeat}`,
+  );
+  lines.push(
+    `После записи открыли трекер на выбранной потребности ${m.needTracker}`,
   );
   return lines.join('\n');
 }

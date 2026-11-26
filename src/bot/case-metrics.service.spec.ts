@@ -27,11 +27,13 @@ describe('CaseMetricsService.getMetrics', () => {
     returned: bigint;
     saved?: number;
     mapOpened?: MetaRow[];
+    needTracker?: number;
   }) => {
     const count = jest
       .fn()
       .mockResolvedValueOnce(opts.started)
-      .mockResolvedValueOnce(opts.finished);
+      .mockResolvedValueOnce(opts.finished)
+      .mockResolvedValueOnce(opts.needTracker ?? 0);
     const queryRaw = jest
       .fn()
       .mockResolvedValueOnce(opts.scene)
@@ -163,11 +165,20 @@ describe('CaseMetricsService.getMetrics', () => {
     expect(m.mapOpenedFirst).toBe(7);
   });
 
-  it('считает события только двух нужных имён', async () => {
+  it('считает открытия трекера с итога', async () => {
+    const { service } = build({ ...FULL, needTracker: 5 });
+    expect((await service.getMetrics()).needTracker).toBe(5);
+  });
+
+  it('считает события только трёх нужных имён', async () => {
     const { service, count } = build(FULL);
     await service.getMetrics();
-    expect(count).toHaveBeenCalledTimes(2);
+    expect(count).toHaveBeenCalledTimes(3);
     const names = count.mock.calls.map((c) => c[0].where.name);
-    expect(names).toEqual(['case_started', 'case_finished']);
+    expect(names).toEqual([
+      'case_started',
+      'case_finished',
+      'case_need_tracker',
+    ]);
   });
 });

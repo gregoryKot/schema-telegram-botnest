@@ -3,6 +3,7 @@ import { DoneSheet } from '../paper/DoneSheet';
 import { SignArt } from '../art/SignArt';
 import { TherapyLine } from '../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
+import { CaseNeedBridge } from './CaseNeedBridge';
 import { CaseSupportBlock } from './CaseSupportFoot';
 import { SteadyArt } from './CaseSteadyStep';
 import { api } from '../../api';
@@ -12,22 +13,18 @@ import '../../styles/case-quick.css';
  * (лента с петлёй «что задело» и ростком; ровный день — ровные полоски, как на его шаге: в спокойный
  * день ничего не задело), имя режима заголовком. Главное действие — «Посмотреть на карте себя»: запись
  * ложится туда; режим уже встречался за две недели (caseRepeat) — об этом прямо, «На главную» тихой ссылкой.
- * Рамка — бар ExScreen без шапки: заголовок несёт сам лист. Карточка поддержки (правило №7):
- * кризисный текст из разбора после сохранения никуда не делся — карточка встаёт над листом;
- * без кризиса ниже листа остаётся «Тяжело прямо сейчас →».
+ * Рамка — бар ExScreen без шапки. Выбрана потребность — мост «в трекере» (CaseNeedBridge). Карточка поддержки
+ * (правило №7): при кризисе встаёт над листом, иначе ниже остаётся «Тяжело прямо сейчас →».
  */
-export function CaseDoneScreen({ name, steady, repeat = 1, onOpenMap, onClose, crisis, onHardNow }: {
-  name: string; steady?: boolean;
+export function CaseDoneScreen({ name, steady, repeat = 1, needId = '', onOpenTracker, onOpenMap, onClose, crisis, onHardNow }: {
+  name: string; steady?: boolean; needId?: string; onOpenTracker?: (needId: string) => void;
   /** Какая это встреча режима за окно caseRepeat, включая только что сохранённую. */
   repeat?: number;
   onOpenMap: () => void; onClose: () => void;
   crisis: boolean; onHardNow: () => void;
 }) {
   const bridge = useTherapyBridgeTexts();
-  const openMap = () => {
-    api.trackEvent('case_map_opened', { repeat: repeat >= 2 });
-    onOpenMap();
-  };
+  const openMap = () => { api.trackEvent('case_map_opened', { repeat: repeat >= 2 }); onOpenMap(); };
   // Порог карты: повтор виден со второй встречи (caseNextStep: count >= 2).
   const sub = repeat >= 2
     ? `${name} — уже ${repeat}-й раз за две недели. На карте видно, что ещё повторяется рядом.`
@@ -45,6 +42,7 @@ export function CaseDoneScreen({ name, steady, repeat = 1, onOpenMap, onClose, c
             secondary={{ label: 'На главную', onClick: onClose }}
             crisis={crisis ? support : undefined}
           />
+          <CaseNeedBridge needId={needId} onOpenTracker={onOpenTracker} />
           {!crisis && <div className="cq-done-support">{support}</div>}
           <TherapyLine place="case_done" text={bridge.lineCase} className="cq-done-therapy" />
         </div>

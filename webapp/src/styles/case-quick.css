@@ -139,3 +139,9 @@
 .cq-mode-intro { margin: 0 0 8px; font-size: 15px; line-height: 1.5; color: var(--text-muted); text-wrap: pretty; }
 .cq-agree-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); text-wrap: pretty; }
 .cq-doubt { width: 100%; margin-top: 8px; }
+
+/* ── Шаг «Чего не хватило?»: пять потребностей столбцом, цвет — --nd из needDataStyle ── */
+.cq-needs { display: flex; flex-direction: column; gap: 8px; }
+.cq-need { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 12px 16px; text-align: left; font: inherit; font-size: 15px; color: var(--text); background: var(--paper-tint); border: 1px solid var(--paper-sunk); border-left: 6px solid var(--nd); border-radius: var(--r-16); cursor: pointer; }
+.cq-need--on { background: color-mix(in srgb, var(--nd) 14%, transparent); border-color: var(--nd); font-weight: 600; }
+.cq-need:focus-visible { outline: 2px solid var(--nd); outline-offset: 2px; }
