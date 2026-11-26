@@ -75,7 +75,8 @@ async function api(path) {
     },
     signal: AbortSignal.timeout(30_000),
   });
-  if (res.status === 404) return null;
+  // Ветки нет: GitHub отвечает 422 на /commits/<ветка>, а не 404.
+  if (res.status === 404 || res.status === 422) return null;
   if (!res.ok) throw new Error(`GitHub API ${path}: ${res.status}`);
   return res.json();
 }

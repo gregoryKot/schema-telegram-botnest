@@ -5,7 +5,7 @@ import { OPERATOR_EMAIL } from '../../legal/operator';
 // Прежние способы входа на сайт, которых больше нет: Google и Telegram (запрос
 // Роскомнадзора: пользователей из России нельзя авторизовать через иностранный
 // сервис) и почта (решение владельца, ч. 10 ст. 8 149-ФЗ). Без подсказки человек
-// решит, что аккаунт пропал. Одна компонента на все случаи (правило №3), видна сразу.
+// решит, что аккаунт пропал. Одна компонента на все случаи (правило №3); вопрос виден сразу, ответ — по тапу (К29).
 //   Telegram: аккаунт открывается внутри Telegram; там в «Аккаунте» добавляют
 //   VK ID или Яндекс ID и дальше входят ими на сайте. Ссылка ведёт в чат бота — это не вход.
 //   Почта и Google: VK ID или Яндекс ID привязывают там, где сайт ещё открыт; иначе — письмо оператору.
@@ -13,7 +13,8 @@ import { OPERATOR_EMAIL } from '../../legal/operator';
 export function LoginFormerNote() {
   const tr = useTr();
   return (
-    <>
+    <details className="al-more">
+      <summary className="al-more-sum">Раньше вход был через Telegram, почту или Google?</summary>
       <p className="al-note" data-testid="login-telegram-note">
         {tr('Раньше вход был через Telegram? Открой приложение в боте ', 'Раньше вход был через Telegram? Откройте приложение в боте ')}
         <a href={botUrl} target="_blank" rel="noopener noreferrer">{botHandle}</a>
@@ -29,6 +30,6 @@ export function LoginFormerNote() {
         )}
         <a href={`mailto:${OPERATOR_EMAIL}`}>{OPERATOR_EMAIL}</a>
       </p>
-    </>
+    </details>
   );
 }
