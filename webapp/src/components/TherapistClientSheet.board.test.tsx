@@ -87,7 +87,7 @@ describe('доска «Задания» ↔ карточка клиента', ()
     mockApi.getTherapyTasksForClient.mockResolvedValue([task(1, 'Дневник схем')]);
     mockApi.createTask.mockResolvedValue({});
     await openBoardTask('Дневник схем');
-    fireEvent.click(await screen.findByText('+ Назначить'));
+    fireEvent.click(await screen.findByText('+ Задание')); // на компьютере назначение — из шапки карточки
     fireEvent.change(screen.getByPlaceholderText(/позвонить другу/), { target: { value: 'Прогулка' } });
     await act(async () => { fireEvent.click(screen.getByText('Назначить задание')); });
     expect(mockApi.createTask).toHaveBeenCalledTimes(1);

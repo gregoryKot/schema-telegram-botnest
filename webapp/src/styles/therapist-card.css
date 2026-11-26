@@ -238,3 +238,5 @@
   .tk-side > .ds-card { box-shadow: 0 0 0 1px var(--panel-line); }
   .pa-outcome.tk-outcome { padding: 16px 16px 24px; }
 }
+/* Пустая «О клиенте» — одна строка-ссылка вместо поля (ClientMemoCard, К31). */
+.ds-link.tk-memo-add { align-self: flex-start; min-height: 44px; }

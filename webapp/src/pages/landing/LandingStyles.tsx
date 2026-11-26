@@ -60,7 +60,7 @@ export function LandingStyles() {
         .about-inner  { display:grid; grid-template-columns:2fr 3fr; gap:48px; align-items:start; }
         .bento-grid   { display:grid; grid-template-columns:repeat(2,1fr); gap:36px 56px; }
         .process-grid { display:grid; grid-template-columns:repeat(3,1fr); }
-        .price-grid   { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+        .price-grid   { display:grid; grid-template-columns:1fr 1fr; gap:40px 56px; }
         .form-grid    { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .edu-grid     { display:grid; grid-template-columns:1fr 2fr; gap:60px; align-items:start; }
         .work-grid    { display:grid; grid-template-columns:repeat(3,1fr); gap:32px 40px; }

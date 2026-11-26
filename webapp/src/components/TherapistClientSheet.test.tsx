@@ -473,7 +473,7 @@ describe('TherapistClientSheet — вкладка «Задания»', () => {
     await openAnnaTasks(true);
     await screen.findByText('Заполнить схема-карточку');
 
-    fireEvent.click(screen.getByText('+ Назначить'));
+    fireEvent.click(screen.getByText('+ Задание')); // на компьютере назначение — из шапки карточки
     await act(async () => {
       fireEvent.click(screen.getByText('Назначить задание'));
     });

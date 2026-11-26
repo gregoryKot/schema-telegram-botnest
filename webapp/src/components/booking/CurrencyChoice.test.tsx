@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Выбор валюты в форме записи (решение владельца Р5): только при поясе без
 // места, валюты кроме рублей, повторное нажатие возвращает рубли, тап-цель
-// не ниже 44px, тексты в обеих формах обращения.
+// не ниже 44px (чип на линии), тексты в обеих формах обращения.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup, renderHook } from '@testing-library/react';
 import { CurrencyChoice } from './CurrencyChoice';
@@ -33,7 +33,7 @@ describe('CurrencyChoice', () => {
     const names = screen.getAllByRole('button').map((b) => b.textContent);
     expect(names).toEqual(['в шекелях ₪', 'в евро €', 'в долларах $']);
     expect(screen.getByText(/Если вы не в России, выберите валюту\./)).toBeTruthy();
-    for (const b of screen.getAllByRole('button')) expect(b.style.minHeight).toBe('44px');
+    for (const b of screen.getAllByRole('button')) expect(b.classList.contains('pa-chip--line')).toBe(true); // min-height 44 — paper-app.css
   });
 
   it('нажатие выбирает валюту и шлёт цель в Метрику; повторное — возвращает рубли', () => {
