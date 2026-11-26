@@ -79,3 +79,19 @@
 }
 /* 320: лист шапки не встаёт на строку «Настроить экран» — заголовку и действиям нужна вся ширина. */
 @media (max-width: 359px) { .cpf-head .pp-art--hero { display: none; } }
+
+/* Телефон: «Настроить экран» и шестерёнка — в строке надписи справа от аватара, а не отдельной строкой. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cpf-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+  .cpf-head-text { display: contents; }
+  .cpf-avatar { grid-column: 1; grid-row: 1 / span 3; align-self: start; }
+  .cpf-head .ds-eyebrow { grid-column: 2; grid-row: 1; }
+  .cpf-head .ds-h1 { grid-column: 2; grid-row: 2; }
+  .cpf-head .cpf-head-sub { grid-column: 2; grid-row: 3; }
+  .cpf-head .pp-art--hero { grid-column: 3; grid-row: 2 / span 2; margin-left: 0; }
+  .cpf-head-actions { grid-column: 2 / -1; grid-row: 1; justify-self: end; gap: 4px; margin: -6px 0; }
+}
+/* Без аватара (нет имени) пустая колонка не сдвигает надпись и заголовок. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cpf-head:not(:has(.cpf-avatar)) { grid-template-columns: 0 minmax(0, 1fr) auto; column-gap: 0; }
+}

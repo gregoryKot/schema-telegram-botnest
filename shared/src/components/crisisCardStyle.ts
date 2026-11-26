@@ -1,5 +1,5 @@
 // Вид кризисной карточки (CrisisCard.tsx) — инлайном: карточку берут и кабинет, и визитка (BookingCrisisNote),
-// CSS экрана туда не доезжает. Только токены и бумага по --h (.pp-paper); тень плашки — сплошной слой без размытия.
+// CSS экрана туда не доезжает. Только токены и бумага по --h (.pp-paper); номера — строки между тонкими линиями, без плашек.
 import type { CSSProperties } from 'react';
 import { ENTITY_LOOK } from '../theme/entityLook';
 
@@ -29,9 +29,9 @@ export const CRISIS_CARD_STYLE = {
   lines: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
     marginTop: 14,
     maxWidth: 680,
+    borderTop: '1px solid var(--panel-line)',
   },
   line: {
     display: 'flex',
@@ -41,29 +41,25 @@ export const CRISIS_CARD_STYLE = {
     rowGap: 2,
     boxSizing: 'border-box',
     minWidth: 0,
-    padding: '8px 18px',
-    borderRadius: 16,
+    padding: '8px 2px',
+    borderBottom: '1px solid var(--panel-line)',
     textDecoration: 'none',
     fontFamily: 'var(--sans)',
     fontVariantNumeric: 'tabular-nums',
     color: 'var(--accent)',
   },
-  // Взрослая линия — главная цель нажатия в продукте: белая плашка, тень — сплошной слой тоном бумаги.
+  // Взрослая линия — главная цель нажатия в продукте: крупный номер первой строкой.
   main: {
-    minHeight: 56,
-    fontSize: 21,
+    minHeight: 60,
+    fontSize: 26,
     fontWeight: 700,
     letterSpacing: '.01em',
-    background: 'var(--surface)',
-    boxShadow: '4px 5px 0 oklch(0.84 0.05 var(--h, 25))',
   },
-  // Детская линия — второй строкой, тише: контурная плашка без заливки и тени — второстепенная кнопка.
+  // Детская линия — второй строкой, тише: тот же ряд, номер мельче.
   sub: {
     minHeight: 52,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 700,
-    boxShadow:
-      'inset 0 0 0 1px color-mix(in srgb, var(--text) 16%, transparent)',
   },
   note: {
     fontSize: 13,

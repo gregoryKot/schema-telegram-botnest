@@ -33,12 +33,14 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'transitional_objects',
       'play_and_joy',
       'creative_mode_work',
+      'child_mode_play',
       'safe_place_imagery',
       'exposure',
       'limited_reparenting',
       'probe_phrases',
       'intimacy_dialogue',
       'trauma_map',
+      'perspective_change',
     ],
     betweenSessions: [
       {

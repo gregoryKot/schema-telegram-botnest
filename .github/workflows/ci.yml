@@ -17,7 +17,7 @@ on:
 
 # Новый пуш в PR отменяет устаревший прогон того же PR (2026-10-16: из 12
 # прогонов в очереди раннеров 4 были для уже заменённых коммитов). Прогон
-# main отменять нельзя — каждый коммит main это деплой. Поэтому вне PR группа
+# main отменять нельзя — зелёный прогон коммита main — пропуск на прод (release.yml). Поэтому вне PR группа
 # своя у каждого прогона (run_id): с общей группой на ветку GitHub держит один
 # идущий и один ожидающий прогон, а следующий ожидающий молча сбрасывает.
 # Гейт: src/test-support/gates/ci-concurrency.spec.ts.
@@ -468,8 +468,8 @@ jobs:
   # build`): у образа 20+ шагов (три npm ci, три сборки фронтендов) и без
   # кэша слоёв каждый прогон CI пересобирал бы всё с нуля — минуты впустую на
   # шагах, которые PR не менял. push:false — только собрать и проверить,
-  # реестр не нужен (сам деплой делает Amvera по push в main, см. CLAUDE.md
-  # «Деплой webapp»).
+  # реестр не нужен (прод собирает Amvera из ветки production, см.
+  # release.yml).
   docker:
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -1182,10 +1182,15 @@ jobs:
   # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
   # после мержа — 8 ночей красного смока. Владелец одобрил время CI: сигнал
   # приходит до мержа. Ночная джоба browser-smoke остаётся: она ловит флаки
-  # на main и кричит через alarm. Сборка сайта + Chromium и WebKit из кэша.
+  # на main и кричит через alarm. Сборка сайта; Chromium и WebKit — из образа.
   browser-smoke:
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # Браузеры и системные библиотеки внутри образа: apt-зеркало раннера не нужно.
+    # Тег = версия @playwright/test из package-lock.json (playwright-install-retry.spec.ts).
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+      options: --ipc=host
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1217,21 +1222,6 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
       - run: npm run build --prefix game
         if: steps.scope.outputs.docs_only != 'true'
-      - name: версия Playwright для ключа кэша браузера
-        if: steps.scope.outputs.docs_only != 'true'
-        id: pw
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: steps.scope.outputs.docs_only != 'true'
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
-      # С кэшем скачивание браузеров пропускается, системные зависимости
-      # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
-      - name: браузеры Playwright (потолок времени и одна повторная попытка)
-        if: steps.scope.outputs.docs_only != 'true'
-        timeout-minutes: 7
-        run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
         if: steps.scope.outputs.docs_only != 'true'
         run: npx playwright test

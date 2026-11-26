@@ -94,13 +94,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (тема farewell_imagery)',
   },
   {
-    id: 'perspective_change',
-    title: 'Смена точки зрения: наблюдатель, расширение, замещение',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 5', 'гл. 8'],
-  },
-  {
     id: 'emotional_resonance_sphere',
     title: 'Сфера эмоционального резонанса',
     status: 'planned',
@@ -165,13 +158,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Пары',
     chapters: ['гл. 9', 'гл. 10'],
-  },
-  {
-    id: 'child_mode_play',
-    title: 'Режимы в игре с ребёнком: куклы, истории, рисунки',
-    status: 'planned',
-    source: 'Луз',
-    chapters: ['гл. 5', 'гл. 9', 'гл. 10', 'гл. 11', 'гл. 12'],
   },
   {
     id: 'inner_house',
