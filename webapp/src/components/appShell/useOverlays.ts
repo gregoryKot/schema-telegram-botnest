@@ -33,6 +33,9 @@ export function useOverlays() {
   // Быстрое действие «+»/⌘K, открытое оверлеем (дневники, разбор, практики).
   const [quickAction, setQuickAction] = useState<OverlayQuickActionId | null>(null);
 
+  // Трекер: без id — как был, с id — сразу на этой потребности (мост из «Записано» разбора).
+  const openTracker = (needId?: string) => { setTrackerNeedId(needId ?? null); setShowTrackerOverlay(true); };
+
   // Один вход для «+» и палитры: трекер — своим флагом, остальное — оверлеем.
   const runQuickAction = (id: QuickActionId) => {
     if (id === 'tracker') { setTrackerNeedId(null); setShowTrackerOverlay(true); }
@@ -63,6 +66,6 @@ export function useOverlays() {
     showTherapistDisclaimer, setShowTherapistDisclaimer,
     showSosCard, setShowSosCard,
     cmdOpen, setCmdOpen,
-    quickAction, setQuickAction, runQuickAction, openSchema,
+    quickAction, setQuickAction, runQuickAction, openSchema, openTracker,
   };
 }

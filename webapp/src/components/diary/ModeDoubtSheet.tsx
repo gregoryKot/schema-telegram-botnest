@@ -8,6 +8,7 @@ import { api } from '../../api';
 import { getModeById } from '../../schemaTherapyData';
 import { modeLookById as lookOf } from './modeLookById';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
+import { modeClinicalName } from '../../../../shared/src/mode/modeDisplayName';
 import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import { MODE_DOUBT_SWITCHED_EVENT } from '../../../../shared/src/share/analytics';
 import { glue } from '../../../../shared/src/utils/typo';
@@ -18,7 +19,7 @@ import { glue } from '../../../../shared/src/utils/typo';
  * Редизайн 2026-11: якорь — бумага группы выбранного режима с его знаком; сосед — бумага своей
  * группы и её знак у заголовка (не цветная точка), «Проверить» — белой вставкой, «Это ближе» —
  * второстепенной кнопкой, «Оставляю: …» — залитой, липнет к низу листа. Заголовок карточки —
- * живая фраза соседа (getModeLeafLabel), термин — пометкой «→ имя». «Это ближе» переключает
+ * имя режима (modeClinicalName), живая фраза (getModeLeafLabel) — подписью под ним. «Это ближе» переключает
  * выбор через onSwitch и закрывает лист. Тексты карточек склеиваются (glue): предлог не висит в конце строки.
  */
 export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
@@ -50,15 +51,14 @@ export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
           <p className="sd-doubt-lede">{glue('Вот с чем его чаще всего путают — и как отличить.')}</p>
           <div className="sd-doubt-list">
             {doubts.map((d) => {
-              const other = getModeById(d.otherId);
-              const look = lookOf(d.otherId);
+              const leaf = getModeLeafLabel(d.otherId), look = lookOf(d.otherId);
               return (
                 <section key={d.otherId} className="pp-paper sd-doubt-card" style={hueStyle(look.hue)}>
                   <div className="sd-doubt-head">
                     <span className="sd-doubt-sign" aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>
                     <div className="sd-doubt-head-text">
-                      <h3 className="sd-doubt-title">{glue(getModeLeafLabel(d.otherId) ?? other?.name ?? d.otherId)}</h3>
-                      <div className="sd-doubt-mode">→ {other?.name ?? d.otherId}</div>
+                      <h3 className="sd-doubt-title">{glue(modeClinicalName(d.otherId))}</h3>
+                      {leaf && leaf !== modeClinicalName(d.otherId) && <div className="sd-doubt-mode">{glue(leaf)}</div>}
                     </div>
                   </div>
                   <p className="sd-doubt-gist">{glue(d.gist)}</p>

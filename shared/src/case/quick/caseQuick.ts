@@ -1,6 +1,6 @@
 /**
- * «Что случилось» в три шага (сайт, простой клиент, этап 4): момент → что
- * внутри → что хотелось сделать → итог. Чистые функции потока; состояние —
+ * «Что случилось» в четыре шага (сайт, простой клиент, этап 4): момент → что
+ * внутри → что хотелось сделать → чего не хватило → итог. Чистые функции потока; состояние —
  * useCaseQuickFlow.ts. Старый поток из десяти шагов (useCaseFlowState,
  * caseFlowTypes) остался за мини-аппом и не меняется.
  *
@@ -17,9 +17,17 @@ import type { CaseChip } from '../caseBodyChips';
 import { IMPULSE_SECOND_DOOR } from '../caseImpulses';
 import { CASE_CARD_FILL, type CaseCardBody } from '../caseFlowTypes';
 import type { CaseGateId } from '../caseTypes';
+import { NEED_NAMES } from '../../needs/needNames';
 
 export type CaseQuickStep =
-  'scene' | 'feel' | 'steady' | 'impulse' | 'result' | 'modes' | 'done';
+  | 'scene'
+  | 'feel'
+  | 'steady'
+  | 'impulse'
+  | 'need'
+  | 'result'
+  | 'modes'
+  | 'done';
 
 export interface CaseQuickFields {
   scene: string;
@@ -28,6 +36,8 @@ export interface CaseQuickFields {
   bodyOwn: string;
   impulseChipIds: string[];
   impulseOwn: string;
+  /** Потребность, которой не хватило (id из NEED_ORDER); пусто — «не пойму». */
+  needId: string;
   /** Режим, выбранный руками («Не похоже»). Пусто — берём предложенный. */
   modeId: string;
 }
@@ -39,6 +49,7 @@ export const INITIAL_QUICK_FIELDS: CaseQuickFields = {
   bodyOwn: '',
   impulseChipIds: [],
   impulseOwn: '',
+  needId: '',
   modeId: '',
 };
 
@@ -47,6 +58,8 @@ export interface CaseQuickProps {
   onSave: (data: ModeEntrySaveData) => Promise<void>;
   onSaveCard: (body: CaseCardBody) => Promise<void>;
   onOpenMap: () => void;
+  /** «Трекер: потребность» на итоге; нет — моста нет. */
+  onOpenTracker?: (needId: string) => void;
   onClose: () => void;
 }
 
@@ -187,6 +200,7 @@ export function buildQuickSaveData(
     feelings: gateTitle(fields.gateId) || undefined,
     bodyFeelings: body || undefined,
     actions: impulse || undefined,
+    actualNeed: NEED_NAMES[fields.needId] || undefined,
     fromCase: true,
   };
 }

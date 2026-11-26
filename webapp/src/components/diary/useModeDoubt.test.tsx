@@ -6,8 +6,8 @@
 //
 // Редизайн 2026-08-04 (жалоба владельца — из листа непонятно как выйти,
 // карточки вели клиническим термином): «← Назад» явно закрывает лист, якорь
-// «сейчас выбран», заголовок карточки — человеческая фраза соседа
-// (getModeLeafLabel), термин — пометкой «→ {имя}», нижняя «Оставляю: {режим}»
+// «сейчас выбран», заголовок карточки — имя режима соседа
+// (modeClinicalName), человеческая фраза (getModeLeafLabel) — подписью, нижняя «Оставляю: {режим}»
 // закрывает без переключения и без аналитики.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -90,18 +90,16 @@ describe('useModeDoubt (webapp)', () => {
     expect(label.previousSibling?.textContent).toMatch(/Уязвимый Ребёнок/);
   });
 
-  it('заголовок карточки — человеческая фраза соседа, термин — пометкой', () => {
+  it('заголовок карточки — имя режима соседа, живая фраза — подписью', () => {
     openSheet();
-    // Заголовки — фразы-label из MODE_PICKER_GROUPS, а не клинические имена.
     expect(
       screen.getByText('Опускаются руки, пусть решат за меня'),
     ).toBeTruthy();
     expect(
       screen.getByText('Прокручиваю худшее снова и снова'),
     ).toBeTruthy();
-    // Термин — пометкой «→ имя», не заголовком.
-    expect(screen.getByText('→ Беспомощный Капитулянт')).toBeTruthy();
-    expect(screen.getByText('→ Беспокоящийся Гиперконтролёр')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Беспомощный Капитулянт' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Беспокоящийся Гиперконтролёр' })).toBeTruthy();
     // Уникальные строки проверки — чтобы не поймать совпадения с заголовком.
     expect(
       screen.getByText(/Спросить себя, чего хочется: чтобы обняли/),

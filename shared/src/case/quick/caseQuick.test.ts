@@ -165,6 +165,23 @@ describe('сборка итога и записи', () => {
     expect(d.bodyFeelings).toBeTruthy();
   });
 
+  it('потребность разбора ложится в actualNeed по имени; без неё поля нет', () => {
+    expect(
+      buildQuickSaveData(fields({ needId: 'play' }), bodyChips, CASE_IMPULSES)
+        .actualNeed,
+    ).toBe('Спонтанность');
+    expect(
+      buildQuickSaveData(fields(), bodyChips, CASE_IMPULSES).actualNeed,
+    ).toBeUndefined();
+    expect(
+      buildQuickSaveData(
+        fields({ needId: 'нет такой' }),
+        bodyChips,
+        CASE_IMPULSES,
+      ).actualNeed,
+    ).toBeUndefined();
+  });
+
   it('без тела и порывов поля undefined, а не пустые строки', () => {
     const d = buildQuickSaveData(fields(), bodyChips, CASE_IMPULSES);
     expect(d.bodyFeelings).toBeUndefined();

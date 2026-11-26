@@ -15,7 +15,7 @@ const base = {
   ratings: {} as Record<string, number>,
   tracker: { filled: 0, total: 5, index: null },
   trackerMeta: 'Ещё не заполнен · ≈1 мин',
-  caseMeta: '≈3 мин',
+  caseMeta: '≈4 мин',
   diaryMeta: 'Пока записей нет',
   onTracker: vi.fn(),
   onCase: vi.fn(),

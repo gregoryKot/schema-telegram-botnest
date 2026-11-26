@@ -156,7 +156,7 @@ describe('TodaySection — пустой аккаунт: ничего выдум�
     expect(screen.getByRole('button', { name: /Что случилось/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Дневник/ })).toBeTruthy();
     expect(screen.getByText('Ещё не заполнен · ≈1 мин')).toBeTruthy();
-    expect(screen.getByText('≈3 мин')).toBeTruthy();
+    expect(screen.getByText('≈4 мин')).toBeTruthy();
     await screen.findByText('Пока записей нет');
     expect(screen.getAllByRole('button')).toHaveLength(5); // три плитки, «Зачем это?» и знак «Карты себя»
     expect(screen.queryByText(/Пока ничего/)).toBeNull();
@@ -220,7 +220,7 @@ describe('TodaySection — плитка дневника', () => {
     mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
     renderSection();
     expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
-    expect(screen.getByText('≈3 мин')).toBeTruthy();
+    expect(screen.getByText('≈4 мин')).toBeTruthy();
     expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
 
@@ -262,7 +262,7 @@ describe('TodaySection — «Что случилось»', () => {
     await screen.findByText('Последняя запись — 3 дн. назад');
     fireEvent.click(screen.getByRole('button', { name: /Что случилось/ }));
     expect((await screen.findByTestId('case-flow-start')).textContent).toBe('flow');
-    expect(screen.getByText('≈3 мин')).toBeTruthy();
+    expect(screen.getByText('≈4 мин')).toBeTruthy();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'case' });
 
     mockApi.getModeDiary.mockResolvedValue([

@@ -54,7 +54,6 @@
 
 ## Следующее
 
-- ⬜ **Лист сомнений называет режим бытовой фразой** — `webapp/src/components/diary/ModeDoubtSheet.tsx:60` ставит заголовком `getModeLeafLabel` («Неловко отказать — соглашаюсь»), а каноническое имя — строкой ниже; вне четырёх экранов карточки Р1 (#1686), сводить по `modeClinicalName` (`shared/src/mode/modeDisplayName.ts`).
 - ⬜ **Merge-драйвер бейслайна бандла не сводит `webapp:largest-chunk`** — два PR справочника растят один чанк `guide-*.js`; после мержа первого `update-branch` у второго суммирует `webapp:total-js`, а `largest-chunk` берёт с одной стороны, и `check-bundle-size-ratchet` краснеет на джобе `webapp` (2026-11-26: #1761 после #1753, прогон 45842963316; #1762 после #1761 — воспроизведено локально, +24 КБ). Лечилось руками: сборка и `--update` в ветке. Смотреть `scripts/bundle-size-baseline.json` в `.gitattributes` и его драйвер.
 - ⬜ **В git лежит ссылка `node_modules` на саму себя** — закоммичена в #1767 (`git ls-files -s node_modules` → режим 120000); `git stash`/`checkout` после `npm ci` возвращают её и стирают установленные зависимости в корне (vitest выходит с кодом 216 без вывода). Починка — `git rm --cached node_modules` (в `.gitignore` уже есть). Найдено при работе над К29 (#1674).
 - ⬜ **Дата по-русски — хвост К25 (#1674)**: карточка клиента («Сессии», «Начало терапии») переведена на `webapp/src/components/DateField.tsx` («26 ноября» поверх нативного календаря); нативный `mm/dd/yyyy` на английской системе остался у `shared/src/therapy/SessionDateTimeFields.tsx` («Следующая сессия»), `TaskCreateSheet.tsx`, `therapist/plan/path/PathStartEdit.tsx`, `PathCreateSheet.tsx`.
@@ -162,6 +161,7 @@
 
 ## Сделано
 
+- ✅ **Лист сомнений называет режим бытовой фразой** — заголовок карточки соседа в `webapp/src/components/diary/ModeDoubtSheet.tsx` теперь `modeClinicalName`, бытовая фраза (`getModeLeafLabel`) — подписью под ним.
 - ✅ **Визитка, лендинг, донат на линиях (К32, #1674)** — «Как устроена работа» строками без карточек и капсулы «Основной» (`webapp/src/pages/landing/PriceRows.tsx`); выбор мессенджера, валюты, дня, времени, суммы доната и теги дневника — один чип на линии `.pa-chip--line` (`webapp/src/styles/paper-app.css`); шаги установки на лендинге — без белых карточек.
 - ✅ **Прод обновляется раз в сутки, а не на каждый мерж** — владелец 2026-11-26 «перестань обновлять прод раз в 20 минут»: `.github/workflows/release.yml` в 20:00 UTC доводит ветку `production` до зелёного `main` (`scripts/release-pick.mjs`), правила №1а и ранбук «Выкатка» переписаны.
 - ✅ **CI: `browser-smoke` падает на установке браузеров Playwright** — потолок попытки в `scripts/playwright-install-retry.sh` 180→300 с, шаг 7→12 мин, джоба browser-smoke 15→20 мин (`ci.yml`, `nightly.yml`); 2026-11-26 медленное зеркало apt снова красило #1751, #1757 и справочник.

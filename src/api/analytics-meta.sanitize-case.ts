@@ -11,7 +11,10 @@
  * (правило №7): в аналитику уходит только modeId и перечислимые метки.
  */
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
-import { CASE_SCENE_SOURCE_SET } from '../analytics/case-steps.constants';
+import {
+  CASE_NEED_ID_SET,
+  CASE_SCENE_SOURCE_SET,
+} from '../analytics/case-steps.constants';
 
 /** modeId — тот же формат, что проверяет notes.controller (`[a-z_]{1,64}`). */
 const MODE_ID_RE = /^[a-z_]{1,64}$/;
@@ -49,6 +52,12 @@ export function sanitizeCaseMeta(
   if (name === 'case_map_opened') {
     return typeof meta.repeat === 'boolean'
       ? { repeat: meta.repeat }
+      : undefined;
+  }
+  if (name === 'case_need_tracker') {
+    const needId = meta.needId;
+    return typeof needId === 'string' && CASE_NEED_ID_SET.has(needId)
+      ? { needId }
       : undefined;
   }
   // case_started — без меты, поля отбрасываются.
