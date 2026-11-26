@@ -31,11 +31,12 @@ describe('глобальные правки примитивов (cabinet.css)',
     expect(on).not.toContain('--ok');
   });
 
-  it('неактивная залитая — контур без заливки и бледный текст, без прозрачности; наведение её не красит', () => {
+  it('неактивная залитая — без капсулы и рамки, приглушённый текст, без прозрачности; наведение её не красит', () => {
     const off = decls(cabinet, '.ds-btn:disabled');
     expect(off).toContain('background: transparent');
-    expect(off).toContain('box-shadow: inset 0 0 0 1px var(--line-strong)');
-    expect(off).toContain('color: var(--text-faint)');
+    expect(off).toContain('box-shadow: none');
+    expect(off).toContain('color: var(--text-muted)');
+    expect(off).not.toMatch(/line-strong|border/);
     expect(off).not.toMatch(/opacity|--paper-sunk/);
     expect(decls(cabinet, '.ds-btn:disabled:hover')).toBe(off);
   });
@@ -131,10 +132,13 @@ describe('диалоги (dialogs.css)', () => {
     expect(scrim).not.toContain('--fg-rgb');
   });
 
-  it('коробка — сплошной сдвинутый слой бумаги из токена, без мягкой тени с размытием', () => {
+  it('коробка окна и палитры — лист с контуром --line (.ds-card), без тени-подложки', () => {
     const box = decls(dialogs, '.sk-dialog-box');
-    expect(box).toMatch(/box-shadow: \d+px \d+px 0 var\(--[\w-]+\)/);
-    expect(box).not.toMatch(/rgba\(/);
+    expect(box).not.toMatch(/box-shadow/);
+    expect(decls(rules('command-palette.css'), '.cmd-panel')).not.toMatch(/box-shadow|border: 0/);
+    const modal = [...read('../index.css').matchAll(/\.sheet-modal-box \{([^}]*)\}/g)].map((m) => m[1]).join('');
+    expect(modal).toContain('border: 1px solid var(--line)');
+    expect(modal).not.toMatch(/box-shadow/);
   });
 
   it('«тихое» окно и лист (useQuietFocus) гасят кольцо и у кнопок внутри, и у себя — правило в index.css', () => {
@@ -239,10 +243,13 @@ describe('paper-app.css — стили заготовок', () => {
     for (const r of paperRules) for (const x of r.selectors) expect(x, x).not.toMatch(/\.pp-art|\brect\b|\bpath\b/);
   });
 
-  it('второй лист в полосе исхода — целиком в полосе и тоном бумаги (хрома ≤0.04), а не обрывком', () => {
-    const corner = decls(paperRules, '.pa-outcome-band::before');
-    expect(corner).not.toMatch(/(right|bottom):\s*-/);
-    expect(Number(corner.match(/oklch\([\d.]+ ([\d.]+) var\(--h\)\)/)?.[1])).toBeLessThanOrEqual(0.04);
+  it('итог — без коробки: карточка без заливки, тени и скругления, нет второго листа в полосе, действие на линии', () => {
+    const card = decls(paperRules, '.pa-outcome-card');
+    expect(card).not.toMatch(/box-shadow|background|border-radius|overflow/);
+    expect(paperRules.flatMap((r) => r.selectors).some((x) => x.includes('.pa-outcome-band::before'))).toBe(false);
+    const action = decls(paperRules, '.ds-btn.pa-outcome-action');
+    expect(action).toMatch(/border-top:\s*1px solid var\(--paper-sunk\)/);
+    expect(action).toMatch(/background:\s*transparent/);
   });
 
   it('слот знака у чипа — только с меткой (pa-chip--mark): у чипа без знака поля ровные', () => {

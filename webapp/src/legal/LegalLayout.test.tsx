@@ -31,6 +31,7 @@ describe('LegalLayout Table', () => {
     for (const cell of cells) {
       expect(cell.style.minWidth).toBe('0px');
       expect(cell.style.overflowWrap).toBe('anywhere');
+      expect(cell.style.hyphens).toBe('auto');
     }
     expect(cells[1].textContent).toBe(long);
   });

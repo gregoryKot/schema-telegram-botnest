@@ -107,6 +107,10 @@
 .pp-empty-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 /* Знак сущности вместо чашки (PaperEmpty art): у знаков поле 120×64 — шире чашки, чтобы не мельчить. */
 .pp-empty--sign .pp-art--empty { width: 72px; height: 40px; }
+/* Заголовок пустого состояния — serif, как заголовок блока на бумаге; текст тихий (#1674, К18).
+   Сам знак и текст лежат на бумаге страницы между линиями (.pp-block): цветного листа вокруг нет. */
+.pp-empty-text > .ds-list-title { font: 400 20px/1.3 var(--serif); text-wrap: balance; }
+.pp-empty-text > .ds-empty { color: var(--text-sub); text-wrap: pretty; }
 
 /* ── Строка-переход с картинкой слева (списки «Ещё», инструменты) ───────── */
 .pp-row-art { display: inline-flex; align-items: center; justify-content: center; width: 44px; flex-shrink: 0; }

@@ -10,6 +10,6 @@ export const btnGhost: React.CSSProperties = {
   ...btn, background: 'transparent', color: 'var(--text-sub)', border: '1.5px solid var(--line-strong)',
 };
 export const input: React.CSSProperties = {
-  padding: '8px 12px', fontSize: 14, fontFamily: 'inherit', background: 'rgba(var(--fg-rgb),0.04)',
-  border: '1.5px solid var(--line)', borderRadius: 'var(--r-8)', color: 'var(--text)', outline: 'none', width: '100%',
+  padding: '8px 12px', fontSize: 14, fontFamily: 'inherit', background: 'transparent',
+  border: 'none', borderBottom: '1.5px solid var(--line-strong)', borderRadius: 0, color: 'var(--text)', outline: 'none', width: '100%',
 };

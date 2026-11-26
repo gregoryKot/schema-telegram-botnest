@@ -29,9 +29,11 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'self_compassion',
     ],
     moreTechniques: [
+      'body_mode_positions',
       'transitional_objects',
       'play_and_joy',
       'creative_mode_work',
+      'child_mode_play',
       'safe_place_imagery',
       'exposure',
       'limited_reparenting',
@@ -39,6 +41,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'intimacy_dialogue',
       'trauma_map',
       'healthy_modes_mindfulness',
+      'perspective_change',
     ],
     betweenSessions: [
       {

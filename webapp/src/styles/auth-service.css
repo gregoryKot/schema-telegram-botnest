@@ -37,7 +37,9 @@
 .as-field-err { font-size: 13px; line-height: 1.5; color: var(--err); }
 
 /* Лист исхода /auth/error: под залитой кнопкой — тихие ссылки строкой (PaperOutcome children). */
-.as-quiet-links { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 20px; align-self: stretch; }
+.as-quiet-links { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 12px; align-self: stretch; }
+/* Тап-цель ≥44×44: короткое «Написать» иначе 60×19. */
+.as-quiet-links .ds-link.pa-quiet { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0 8px; }
 
 /* Загрузка страницы-посредника (ServiceLoading): силуэт листа исхода — полоса и строки. */
 .as-card--skel { box-shadow: 12px 13px 0 var(--paper-sunk); }

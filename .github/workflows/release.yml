@@ -1,0 +1,101 @@
+# Выкатка на прод: раз в сутки ветка production получает последний ЗЕЛЁНЫЙ
+# коммит main, хостинг собирает прод из неё. Мерж в main прод не трогает:
+# каждая пересборка — около минуты простоя сайта (docs/RUNBOOKS.md, «Выкатка»).
+# Выбор коммита — scripts/release-pick.mjs (тест — gates/release-pick.spec.ts).
+name: Выкатка на прод
+
+on:
+  schedule:
+    # Время выкатки, UTC: 20:00 = 23:00 Москва. Меняется этой строкой.
+    - cron: '0 20 * * *'
+  # «Выкатить сейчас» — только починка инцидента (правило №20) и откат.
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Коммит main (40 знаков) для отката; пусто — последний зелёный
+        type: string
+        default: ''
+
+# Одна выкатка за раз, вторая ждёт: параллельные пуши в production не нужны.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          # Глубина = окну release-pick (100 коммитов): нужно дерево выбранного.
+          fetch-depth: 100
+          persist-credentials: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: выбрать коммит main
+        id: pick
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FORCED_SHA: ${{ inputs.sha }}
+        run: |
+          set -o pipefail
+          manual=''
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then manual=--manual; fi
+          node scripts/release-pick.mjs --sha="$FORCED_SHA" $manual | tee -a "$GITHUB_OUTPUT"
+      # Коммит production = дерево выбранного коммита main без .github/workflows:
+      # токен раннера не вправе пушить правки воркфлоу, а сборке образа они не
+      # нужны. История ветки своя (родитель — прошлая выкатка), пуш без force.
+      - name: довести production до выбранного коммита
+        if: steps.pick.outputs.action == 'release'
+        env:
+          SHA: ${{ steps.pick.outputs.sha }}
+          HOLD: ${{ steps.pick.outputs.hold }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          parent=''
+          if git fetch --depth=1 origin production; then parent=$(git rev-parse FETCH_HEAD); fi
+          export GIT_INDEX_FILE="$RUNNER_TEMP/release-index"
+          git fetch --depth=1 origin "$SHA"
+          git read-tree "$SHA"
+          git rm -r -q --cached --ignore-unmatch .github/workflows
+          tree=$(git write-tree)
+          trailers="Main-Commit: $SHA"
+          # Откат ставит замок: расписание молчит до ручного запуска без sha.
+          if [ "$HOLD" = true ]; then trailers="$trailers"$'\n'"Release-Hold: true"; fi
+          commit=$(git commit-tree "$tree" ${parent:+-p "$parent"} \
+            -m "Выкатка main ${SHA:0:7}" -m "$trailers")
+          git push origin "$commit:refs/heads/production"
+          echo "На прод уходит main $SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: выкатывать нечего
+        if: steps.pick.outputs.action == 'none'
+        run: echo "Без выкатки — ${{ steps.pick.outputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
+      # Красный main не выкатывается; джоба краснеет после пуша, чтобы alarm
+      # завёл issue ci-alarm, а зелёная выкатка её закрыла.
+      - name: main красный — сигнал
+        if: steps.pick.outputs.mainRed == 'true'
+        run: |
+          echo "::error::последний завершённый прогон CI в main красный — он на прод не уходит"
+          exit 1
+
+  alarm:
+    needs: [release]
+    if: always()
+    permissions:
+      issues: write
+    uses: ./.github/workflows/alarm.yml
+    with:
+      needs: ${{ toJSON(needs) }}
+      title: 'Выкатка на прод — main красный или выкатка упала'
+      dm: 'Суточная выкатка на прод не прошла чисто'
+    secrets: inherit

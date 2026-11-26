@@ -20,12 +20,12 @@ interface ArticleCardProps {
 export function ArticleCard({ a, index = 0, titleAs: Title = 'p', withYear = false }: ArticleCardProps) {
   const date = formatDateString(utcCalendarDay(a.date), { day: 'numeric', month: 'long', ...(withYear ? { year: 'numeric' } : {}) });
   return (
-    <Link className="ds-card ds-card--flush ds-card--hover ac-card" to={`/articles/${a.slug}`}>
+    <Link className="ac-card" to={`/articles/${a.slug}`}>
       <ArticleCover slug={a.slug} index={index} className="ac-cover" />
       <div className="ac-body">
+        <span className="ac-meta ds-eyebrow">{date} · {a.readMin} мин</span>
         <Title className="ac-title">{glue(a.title)}</Title>
         <p className="ac-desc">{glue(a.description)}</p>
-        <span className="ac-meta">{date} · {a.readMin} мин</span>
       </div>
     </Link>
   );

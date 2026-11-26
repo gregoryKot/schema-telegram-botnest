@@ -16,7 +16,8 @@ import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
 import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
-import { Genogram } from './TechniqueSignsRoediger';
+import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './TechniqueSignsRoediger';
+import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
@@ -30,6 +31,9 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, mask: CriticMask,
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
   trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
+  finger_puppets: FingerPuppets,
+  stand_above: StandAbove, balance_axes: BalanceAxes,
+  side_seat: BodyModePositions,
   breathing_space: BreathingSpace, body_scan: BodyScan, schema_lens: SchemaLens,
   healthy_light: HealthyLight,
 };

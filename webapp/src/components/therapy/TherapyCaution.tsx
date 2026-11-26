@@ -35,14 +35,14 @@ export function TherapyCaution({ place, compact }: { place: 'exercise_start' | '
   return (
     <>
       {compact ? (
-        <div className="th-caution th-caution--compact" role="note">
+        <div className="ds-aside th-caution th-caution--compact" role="note">
           <span className="th-caution-sign" aria-hidden="true"><Limits size="row" /></span>
-          <p className="th-caution-lead">{glue(t.cautionLead)}</p>
+          <p className="ds-aside-lead">{glue(t.cautionLead)}</p>
           <p className="th-caution-body">{glue(t.cautionBody)} {link}</p>
         </div>
       ) : (
-        <div className="th-caution" role="note">
-          <p className="th-caution-lead">{glue(t.cautionLead)}</p>
+        <div className="ds-aside th-caution" role="note">
+          <p className="ds-aside-lead">{glue(t.cautionLead)}</p>
           <p className="th-caution-body">{glue(t.cautionBody)}</p>
           {link}
         </div>

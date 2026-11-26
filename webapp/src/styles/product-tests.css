@@ -20,7 +20,7 @@
 .pl2-quiz-skel { height: var(--row-h); }
 /* Строка — ссылка: на наведение бумага темнеет на тон (это и правда кнопка). */
 .pl2-quiz-row {
-  display: flex; gap: 22px; align-items: center; padding: 20px 24px 20px 20px; border-radius: 24px;
+  display: flex; gap: 22px; align-items: center; padding: 20px 24px 20px 20px; border-radius: var(--r-16);
   text-decoration: none; color: inherit; transition: background .12s;
 }
 .pl2-quiz-row:hover, .pl2-quiz-row:focus-visible { background: oklch(0.89 0.042 var(--h)); }
@@ -31,7 +31,7 @@
    Критика ≈44px). Сдвиг на полтени — знак вместе с тенью-вырезкой стоит по центру. */
 .pl2-quiz-sign {
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box;
-  width: 140px; height: 112px; border-radius: 24px; font-size: 52px; line-height: 1;
+  width: 140px; height: 112px; border-radius: var(--r-16); font-size: 52px; line-height: 1;
   background: oklch(0.965 0.018 var(--h)); transform: rotate(-3deg);
 }
 .pl2-quiz-row:nth-child(even) .pl2-quiz-sign { transform: rotate(3deg); }
@@ -67,7 +67,9 @@
   background: var(--surface); border: 1px solid var(--line); cursor: pointer; text-align: left;
   font: 600 15px/1.5 var(--sans); color: var(--text); transition: border-color .12s, background .12s;
 }
-.pl2-option:hover, .pl2-option:focus-visible { border-color: var(--line-hover); background: var(--paper-tint); }
+/* Выбор — акцентом (рамка и текст), не серой заливкой; наведение только там, где оно есть (на тач залипало). */
+.pl2-option:focus-visible, .pl2-option:active { border-color: var(--accent); color: var(--accent); outline: none; }
+@media (hover: hover) { .pl2-option:hover { border-color: var(--accent); color: var(--accent); } }
 .pl2-progress { height: 8px; border-radius: 4px; background: var(--paper-sunk); }
 .pl2-progress > span { display: block; height: 100%; border-radius: 4px; background: var(--c-amber); transition: width .25s; }
 
@@ -75,12 +77,12 @@
 .pl2-result-eyebrow { margin: 0 0 16px; }
 .pp-paper.pl2-result {
   --h: 240; display: grid; grid-template-columns: minmax(0, 280px) minmax(0, 1fr); gap: 32px; align-items: center;
-  margin-bottom: 18px; padding: 28px 32px; border-radius: 28px;
+  margin-bottom: 18px; padding: 28px 32px; border-radius: var(--r-16);
 }
 /* Лицо результата — его эмодзи на бумажном бейдже. */
 .pl2-result-badge {
   display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; margin-bottom: 6px;
-  border-radius: 20px; font-size: 40px; line-height: 1; background: oklch(0.965 0.018 var(--h)); transform: rotate(-4deg);
+  border-radius: var(--r-16); font-size: 40px; line-height: 1; background: oklch(0.965 0.018 var(--h)); transform: rotate(-4deg);
 }
 .pl2-result-title { margin: 0; font-size: clamp(30px, 4.6vw, 42px); line-height: 1.1; }
 .pl2-hint { --h: 70; margin-bottom: 28px; }
@@ -104,7 +106,7 @@
     display: grid; grid-template-columns: auto 1fr; grid-template-areas: "sign arrow" "body body";
     row-gap: 14px; padding: 18px 18px 20px;
   }
-  .pl2-quiz-sign { grid-area: sign; width: 128px; height: 100px; border-radius: 22px; font-size: 46px; }
+  .pl2-quiz-sign { grid-area: sign; width: 128px; height: 100px; border-radius: var(--r-16); font-size: 46px; }
   .pl2-quiz-sign .scn-sign > .pp-art { height: 62px; }
   .pl2-quiz-row-body { grid-area: body; }
   .pl2-quiz-arrow { grid-area: arrow; align-self: start; justify-self: end; padding-left: 0; }
