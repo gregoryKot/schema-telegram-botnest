@@ -770,29 +770,30 @@ a { color: inherit; text-decoration: none; }
 .animate-fade  { animation: fade-in .18s ease backwards; }
 .animate-slide { animation: slide-up .22s ease backwards; }
 
-/* ─── Баннер куки (CookieBanner.tsx) — лист соломы без контура ──────────────────
-   Тень — сплошной сдвинутый слой, как у листов бумаги, а не мягкая размытая. Кнопка — общая
-   ds-btn (тот же кирпич, что везде). На компьютере — компактный лист в левом нижнем углу, не над
-   формой входа по центру; на телефоне — во всю ширину, над нижней панелью, если она есть. */
+/* ─── Баннер куки (CookieBanner.tsx) — плоская полоса бумаги с линией сверху ──────
+   Во всю ширину у нижнего края, без тени и скругления. На телефоне — над нижней панелью, если она
+   есть; на компьютере — одна строка, а под ней странице оставлен отступ (лендинг, ссылки, вход). */
 .cookie-banner-wrap {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
-  padding: 0 16px calc(20px + var(--safe-bottom)); pointer-events: none;
+  padding: 0 0 var(--safe-bottom); pointer-events: none;
 }
 /* На странице с нижней навигацией баннер стоит НАД ней, а не закрывает её
    пункты (QA 2026-11, C-З1: центры «Сегодня/Записи/Ещё» попадали в баннер). */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: var(--space-12); }
+  body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: 0; }
 }
 .cookie-banner {
   --h: 70;
-  width: min(100%, 440px); margin: 0 auto; box-sizing: border-box; pointer-events: auto;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px 18px;
-  border-radius: var(--r-16); box-shadow: 6px 7px 0 oklch(0.85 0.045 var(--h));
+  width: 100%; margin: 0; box-sizing: border-box; pointer-events: auto;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px 16px;
+  border-top: 1px solid var(--panel-line);
   animation: cookie-in .35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.cookie-banner--compact { flex-direction: row; align-items: center; padding: 12px 14px; }
+.cookie-banner--compact { flex-direction: row; align-items: center; padding: 10px 16px; }
+/* Полоса без скругления; на два класса: .pp-paper (r-16) из paper.css встаёт в сборке позже. */
+.pp-paper.cookie-banner { border-radius: 0; }
 /* Карточка: заголовок и «Понятно» в одной строке, текст под ними — баннер ниже на высоту кнопки. */
-.cookie-banner:not(.cookie-banner--compact) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; }
+.cookie-banner:not(.cookie-banner--compact) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 4px; }
 .cookie-banner:not(.cookie-banner--compact) .cookie-body { display: contents; }
 .cookie-banner:not(.cookie-banner--compact) .cookie-title { grid-column: 1; grid-row: 1; }
 .cookie-banner:not(.cookie-banner--compact) .cookie-text { grid-column: 1 / -1; grid-row: 2; }
@@ -805,11 +806,18 @@ a { color: inherit; text-decoration: none; }
 .ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; }
 .cookie-banner--compact .ds-btn.cookie-btn { align-self: center; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cookie-banner-wrap { right: auto; width: 440px; padding-left: 24px; }
-  .cookie-banner { margin: 0; }
+  /* Одна строка: заголовок и текст слева (текст не шире 90ch), «Понятно» справа по центру. */
+  .cookie-banner:not(.cookie-banner--compact) { grid-template-columns: minmax(0, 90ch) auto; justify-content: space-between; padding: 14px 32px; }
+  .cookie-banner:not(.cookie-banner--compact) .cookie-text { grid-column: 1; }
+  .cookie-banner:not(.cookie-banner--compact) .ds-btn.cookie-btn { grid-row: 1 / span 2; align-self: center; }
   /* В кабинете — у края колонки контента, а не поверх меню и его карточки дня. */
   body:has(.app-shell > .sidebar) .cookie-banner-wrap { left: var(--sidebar-w); }
   body:has(.app-shell > .sidebar.is-collapsed) .cookie-banner-wrap { left: 64px; }
+}
+/* Лендинг: низ страницы не уходит под полосу. */
+body:has(.cookie-banner-wrap) .pl2-root { padding-bottom: calc(190px + var(--safe-bottom)); }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  body:has(.cookie-banner-wrap) .pl2-root { padding-bottom: calc(96px + var(--safe-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

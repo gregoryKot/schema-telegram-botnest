@@ -1,17 +1,17 @@
-/* Экран «Сегодня» кабинета терапевта. Префикс tt-. Язык — «живая бумага» (b29): счётчики — плитки бумаги со
-   знаком (cabinetLook.ts), «Сессии сегодня» — лист неба с Talk один раз, строки — светлая бумага без обводки. */
+/* Экран «Сегодня» кабинета терапевта. Префикс tt-. Язык — «живая бумага»: счётчики — число с подписью на
+   бумаге экрана под линией, знак без плитки (cabinetLook.ts), «Сессии сегодня» — лист неба с Talk один раз, строки — светлая бумага без обводки. */
 .tt-page { max-width: 1200px; }
 /* Колонка кабинета — та же, что у списка и карточки клиента (index.css). */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .tt-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); } }
 
-/* ── Счётчики: плитки бумаги со знаком; не кнопки — реакции на наведение нет ── */
-/* Три плитки всегда в ряд: на 768 с меню минимум 180 ставил «Требуют внимания» одну во второй ряд. */
+/* ── Счётчики: число с подписью под линией; не кнопки — реакции на наведение нет ── */
+/* Три счётчика всегда в ряд: на 768 с меню минимум 180 ставил «Требуют внимания» одну во второй ряд. */
 .tt-counters { container: tt-counters / inline-size; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-/* Порядок один (r1): знак · число · подпись. На ≥768 (r2, M5) знак ~32px слева от числа в одну строку, подпись под
-   ними — плитка ~112px, как в «до»; было знак сверху, 156px и полплитки пусто. Телефон — сверху вниз (ниже). */
+/* Порядок один: знак · число · подпись. На ≥768 знак слева от числа в одну строку, подпись под ними.
+   Телефон — сверху вниз (ниже). */
 .tt-counter {
   display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "sign num" "label label";
-  align-items: center; column-gap: 14px; row-gap: 10px; padding: 18px 20px 16px; border-radius: var(--r-16);
+  align-items: center; column-gap: 14px; row-gap: 8px; padding: 16px 0 0; border-top: 1px solid var(--paper-sunk);
 }
 .tt-counter .ds-label { grid-area: label; color: var(--text-sub); }
 .tt-counter .ds-num { grid-area: num; font-size: 52px; line-height: 1; white-space: nowrap; }
@@ -19,7 +19,7 @@
 .tt-counter-sign .pp-art { width: 60px; height: 32px; }
 /* Цвет несёт только число «требуют внимания», и только когда оно больше нуля. */
 .tt-counter--warn .ds-num { color: var(--warn-ink); }
-/* «/ 6» — подпись на цветной бумаге: --text-sub (≥4.5:1), --text-faint на соломе и шалфее давал 4.36. */
+/* «/ 6» — --text-sub (≥4.5:1 к бумаге). */
 .tt-denom { font-size: 22px; font-style: italic; color: var(--text-sub); }
 @container tt-counters (max-width: 640px) { .tt-counter .ds-num { font-size: 40px; } }
 
@@ -98,9 +98,9 @@
 }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  /* Три плитки в ряд — ~115px на плитку: та же раскладка, мельче. */
-  .tt-counters { gap: 8px; }
-  .tt-counter { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sign" "num" "label"; align-items: start; row-gap: 6px; padding: 12px; border-radius: 16px; }
+  /* Три счётчика в ряд — ~110px на каждый: та же раскладка, мельче. */
+  .tt-counters { gap: 12px; }
+  .tt-counter { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sign" "num" "label"; align-items: start; row-gap: 6px; padding: 12px 0 0; }
   .tt-counter .ds-num { font-size: 28px; }
   .tt-counter-sign .pp-art { width: 44px; height: 24px; }
   .tt-denom { font-size: 14px; }
@@ -118,7 +118,6 @@
 }
 /* 320: подпись «Требуют внимания» шире ячейки (~88px) — тот же капитель плотнее (L9). */
 @media (max-width: 359px) {
-  .tt-counter { padding: 12px 10px; }
   .tt-counter .ds-label { font-size: 10.5px; letter-spacing: .03em; }
   .tt-act { grid-template-columns: 32px minmax(0, 1fr) 40px 36px auto; gap: 8px; }
   .tt-act .ds-avatar { width: 32px; height: 32px; font-size: 11px; }

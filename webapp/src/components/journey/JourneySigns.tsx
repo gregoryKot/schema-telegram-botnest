@@ -18,7 +18,7 @@ import '../../styles/line-tabs.css';
 const modeSign = (modeId: string) => modeLookById(modeId).sign;
 const itemLook = (item: JourneyItem): JourneyLook | null => journeyItemLook(item, modeSign);
 
-/** Знак строки ленты; незнакомый тип — пустая бумажка (строки стоят ровно), без выдуманного знака. */
+/** Знак строки ленты без подложки; незнакомый тип — пустое место (строки стоят ровно), без выдуманного знака. */
 export function JourneySign({ look }: { look: JourneyLook | null }) {
   return (
     <span className="pp-row-art jr-sign" style={look ? hueStyle(look.hue) : undefined} data-sign={look?.sign} aria-hidden="true">
@@ -31,11 +31,11 @@ export function JourneyRowSign({ item }: { item: JourneyItem }) {
   return <JourneySign look={itemLook(item)} />;
 }
 
-/** Плитка счётчика: бумага занятия, знак, число Literata и подпись. */
+/** Счётчик на бумаге экрана: крупное число Literata, знак занятия и подпись, без цветной плитки. */
 export function JourneyStat({ row }: { row: JourneyStatRow }) {
   const look = journeyStatLook(row.type);
   return (
-    <div className="pp-paper jr-stat" style={look ? hueStyle(look.hue) : undefined}>
+    <div className="jr-stat" style={look ? hueStyle(look.hue) : undefined}>
       <span className="jr-stat-sign" aria-hidden="true">{look && <SignArt sign={look.sign} count={look.n} size="row" />}</span>
       <span className="jr-stat-num">{row.count}</span>
       <span className="jr-stat-label">{row.label}</span>

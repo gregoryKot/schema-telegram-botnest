@@ -104,12 +104,12 @@ describe('TherapistTodaySection — реальные данные клиенто
     expect(screen.getByText('7,2')).toBeTruthy();
     expect(screen.getByText('активность сегодня')).toBeTruthy();
     expect(screen.getByText('активность вчера')).toBeTruthy();
-    // Счётчики (b29) — плитки бумаги со знаком: подпись ds-label, оттенок — в --h плитки;
+    // Счётчики — на бумаге экрана без цветной плитки: подпись ds-label, знак со своим оттенком (--h);
     // список активности — светлый лист .tt-list, вид не инлайном.
     const counter = screen.getByText('Активны сегодня');
     expect(counter.classList.contains('ds-label')).toBe(true);
     const tile = counter.closest('.tt-counter') as HTMLElement;
-    expect(tile.classList.contains('pp-paper')).toBe(true);
+    expect(tile.classList.contains('pp-paper')).toBe(false);
     expect(tile.style.getPropertyValue('--h')).toBe('135');
     expect(tile.querySelector('.tt-counter-sign svg')).not.toBeNull();
     const list = screen.getByText('Активность клиентов').parentElement!.querySelector('.tt-list')!;

@@ -1,18 +1,19 @@
 // @vitest-environment jsdom
-// Силуэт «Сегодня» терапевта (b29) — той же бумаги, что экран: литералы силуэта (он в главном чанке и
+// Силуэт «Сегодня» терапевта — той же бумаги, что экран: литерал силуэта (он в главном чанке и
 // cabinetLook не импортирует) сверены с cabinetLook (правило №4); подпись «Загружаются клиенты» — только у экрана.
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { SESSIONS_LOOK, TODAY_COUNTER_LOOK } from './cabinetLook';
+import { SESSIONS_LOOK } from './cabinetLook';
 import { TodaySkeletonBody } from './TodaySkeletonBody';
 
 const hueOf = (el: Element | null) => (el as HTMLElement).style.getPropertyValue('--h');
 
 describe('TodaySkeletonBody', () => {
-  it('бумага плиток и листа сессий — как у экрана', () => {
-    const { active, sessions, attention } = TODAY_COUNTER_LOOK;
+  it('счётчики без цветной плитки, бумага листа сессий — как у экрана', () => {
     const { container } = render(<TodaySkeletonBody />);
-    expect([...container.querySelectorAll('.sks-counter')].map(hueOf)).toEqual([active.hue, sessions.hue, attention.hue].map(String));
+    const counters = [...container.querySelectorAll('.sks-counter')];
+    expect(counters).toHaveLength(3);
+    expect(counters.some((c) => c.classList.contains('pp-paper'))).toBe(false);
     expect(hueOf(container.querySelector('.sks-sessions'))).toBe(String(SESSIONS_LOOK.hue));
     expect(container.querySelector('[role="status"]')).toBeNull();
   });
