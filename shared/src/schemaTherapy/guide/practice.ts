@@ -15,6 +15,7 @@ import { buildPracticeYoungStart } from './practiceYoungStart';
 import { buildPracticeTherapistHeath } from './practiceModeReset';
 import { buildPracticeModelRoediger } from './practiceModelRoediger';
 import { buildPracticeSessionRoediger } from './practiceSessionRoediger';
+import { buildPracticeModeStates } from './practiceModeStates';
 
 /**
  * «Для терапевта»: что добавляют к рамке другие книги, три источника
@@ -64,4 +65,5 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeYoungSession(tr),
   ...buildPracticeModelRoediger(tr),
   ...buildPracticeSessionRoediger(tr),
+  ...buildPracticeModeStates(tr),
 ];

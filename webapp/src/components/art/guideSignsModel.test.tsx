@@ -38,6 +38,7 @@ const NOTE_IDS = [
   'know_your_healthy_adult', 'therapist_happy_child', 'therapist_modes_walk',
   'attachment_assertiveness_poles',
   'session_balance_axes',
+  'mode_states',
   'teen_parent_triangle',
 ];
 

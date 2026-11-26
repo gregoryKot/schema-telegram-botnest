@@ -76,6 +76,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'self_practice_review',
     'attachment_assertiveness_poles',
     'session_balance_axes',
+    'mode_states',
   ].map(w),
   {
     id: 'session_frequency',
@@ -168,13 +169,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 15'],
-  },
-  {
-    id: 'mode_states',
-    title: 'Режим — состояние, схема — черта; здоровое переключение режимов',
-    status: 'planned',
-    source: 'Рафаэли',
-    chapters: ['гл. 8'],
   },
   {
     id: 'supervision',
