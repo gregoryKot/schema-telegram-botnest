@@ -104,8 +104,12 @@ describe('taskMeta', () => {
     expect(taskMeta(failed, 'failed')).toBe('закрыто 5 октября · 1 из 3 дней');
   });
   it('у открытого — срок или дата назначения; у серии — «N из M дней»', () => {
-    expect(taskMeta(t({ dueDate: '2026-10-20' }), 'active')).toBe('до 20 октября');
+    expect(taskMeta(t({ dueDate: '2026-10-20' }), 'active')).toBe(
+      'до 20 октября',
+    );
     const streak = t({ type: 'diary_streak', targetDays: 7, progress: 1 });
-    expect(taskMeta(streak, 'active')).toBe('назначено 1 октября · 1 из 7 дней');
+    expect(taskMeta(streak, 'active')).toBe(
+      'назначено 1 октября · 1 из 7 дней',
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, type TherapyClientSummary } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
@@ -23,6 +23,9 @@ export function ClientMemoCard({ client, detail }: Props) {
   const [failed, setFailed] = useState(false);
   const [done, setDone] = useState(false);
   const [open, setOpen] = useState(stored !== '');
+  const field = useRef<HTMLTextAreaElement>(null);
+  const [focusField, setFocusField] = useState(false); // раскрыли строку — фокус в поле
+  useEffect(() => { if (focusField) field.current?.focus(); }, [focusField]);
   const dirty = text.trim() !== stored;
 
   async function save() {
@@ -43,12 +46,12 @@ export function ClientMemoCard({ client, detail }: Props) {
     <section className="pp-block tk-leaf">
       <SignHead kind="pebbles" className="ds-label">О клиенте</SignHead>
       {!open ? (
-        <button type="button" className="ds-link tk-memo-add" onClick={() => setOpen(true)}>+ Добавить о клиенте</button>
+        <button type="button" className="ds-link tk-memo-add" onClick={() => { setOpen(true); setFocusField(true); }}>+ Добавить о клиенте</button>
       ) : <>
       <p className="ds-sub">{tr('Любой текст о клиенте. Видишь только ты.', 'Любой текст о клиенте. Видите только вы.')}</p>
       <LimitedTextarea
         max={CLIENT_MEMO_MAX} className="ds-textarea" rows={4} value={text}
-        aria-label="О клиенте" autoFocus={stored === ''} onChange={(e) => { setText(e.target.value); setDone(false); }}
+        aria-label="О клиенте" ref={field} onChange={(e) => { setText(e.target.value); setDone(false); }}
       />
       {detectCrisisAny(text) && <CrisisCard surface="note" compact />}
       <div className="gd-acts">
