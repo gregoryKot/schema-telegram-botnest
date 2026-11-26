@@ -17,6 +17,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'group_orientation',
     'group_plan_vs_mode',
     'self_practice_group_day',
+    'therapist_critic',
+    'difficult_client_my_coping',
     'group_mode_roleplay',
     'deliberate_practice',
     'online_format',
