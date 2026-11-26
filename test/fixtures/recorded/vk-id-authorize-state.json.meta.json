@@ -1,0 +1,6 @@
+{
+  "source": "VK ID, GET https://id.vk.com/authorize (client_id приложения сайта 54774325, redirect_uri https://schemehappens.ru/api/auth/vk/callback) — 302 на id.vk.com/auth, где VK переносит наш state в параметр redirect_state",
+  "recordedAt": "2026-10-03",
+  "how": "записано живым curl из сессии разбора инцидента 2026-10-03 (вход через VK падал vk_failed): в state намеренно подставлена строка в форме JWT с точками и символами ~ + = / — из Location ответа взят redirect_state; тот же опыт с настоящим state прода показал 300 символов на входе и 298 без двух точек на выходе",
+  "redacted": "в фикстуре только state запроса и redirect_state ответа; остальные параметры Location (device_id, служебные sdk_type/lang_id, code_challenge) не нужны и не сохранены. Подписанный state прода не записан — вместо него тестовая строка той же формы, без подписи нашим ключом"
+}

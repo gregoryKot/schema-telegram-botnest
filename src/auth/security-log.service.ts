@@ -1,0 +1,141 @@
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { AlertBudget } from '../utils/alert-throttle';
+import { redactSecurityLogData } from './security-log-redact';
+import { securityAlertText } from './security-log-alert';
+
+// Lightweight audit channel: posts security-relevant events to the admin
+// Telegram chat (with e-mail fallback), plus structured server logs. Use
+// sparingly — admin will mute everything if we spam.
+//
+// The DM is budgeted HERE, in the delivery channel, not at each call site —
+// call sites forget (see incident below). The structured `logger.log` line
+// stays ALWAYS unthrottled: logs are cheap, DMs are the scarce channel.
+//
+// Инцидент 2026-07-29 (suspicious_initdata): шквал одинаковых DM = замьюченный
+// чат = ноль алертов. Урок применили точечно (initdata-alert.ts,
+// auth-failure.report.ts), но `csrf_blocked` и `refresh_token_reuse` слали DM
+// БЕЗ троттлинга — регрессия домена cookie/SameSite после деплоя ломает CSRF
+// у каждой записи каждого пользователя разом, админ мьютит чат, и алертинг
+// молчит ровно во время аварии.
+//
+// Один слот на событие (как AlertThrottle) не годится: `merge_confirmed`,
+// `role_changed`, `therapist_request_submitted` — редкие, и КАЖДЫЙ важен
+// по отдельности (двое разных пользователей слили аккаунты в один час — оба
+// DM обязаны дойти). Поэтому здесь AlertBudget: до ALERT_BUDGET_MAX_PER_WINDOW
+// алертов ОДНОГО имени события за окно доставляются все, дальше глушатся
+// счётчиком, который всплывает в следующем допущенном алерте.
+
+export type SecurityEvent =
+  | 'login_success'
+  | 'login_failed'
+  | 'merge_initiated'
+  | 'merge_confirmed'
+  | 'merge_subscription_conflict'
+  | 'provider_linked'
+  | 'provider_unlinked'
+  // Выгрузка всех данных аккаунта (152-ФЗ / GDPR, src/account/data-export.service.ts).
+  // Только след в логах: в ALERT_EVENTS не входит — законная выгрузка не повод для DM.
+  | 'data_exported'
+  | 'role_changed'
+  | 'therapist_request_submitted'
+  | 'therapist_request_decided'
+  | 'csrf_blocked'
+  | 'rate_limited'
+  | 'suspicious_initdata'
+  // Мини-апп открыт в мессенджере, но прислал пустую подпись — сломан клиент,
+  // а не пользователь (инцидент 2026-08-08: вход не работал у всех
+  // пользователей Telegram, и на сервере это было неотличимо от фонового шума
+  // неавторизованных запросов).
+  | 'empty_signature'
+  | 'refresh_token_reuse'
+  // «Это не я» при сверке кода входа, а также перебор кодов через чат бота.
+  // Намеренно НЕ в ALERT_EVENTS: одиночный промах по кнопке — фоновый шум, а
+  // шквал одинаковых DM = замьюченный чат = ноль алертов (урок 2026-07-29).
+  // Картину даёт не отдельное событие, а счётчик в /stats.
+  | 'login_ticket_denied'
+  // Карточку сверки входа нажал не тот, кому её показали (только лог, не DM).
+  | 'login_ticket_cross_user'
+  // Неверный код 2FA/recovery-код (enable/disable/recovery-codes/challenge).
+  // Только след в логах, НЕ в ALERT_EVENTS: опечатка в коде — фоновый шум, а
+  // шквал DM = замьюченный чат (урок 2026-07-29). Перебор виден по частоте
+  // строк на один userId/ip; жёсткий предел ставят @Throttle на самих ручках.
+  | 'totp_failed'
+  | 'totp_locked' // 10 промахов 2FA за сутки на аккаунт (S11): подбор, DM
+  // Отказ по ключу админки (x-admin-key: неверный/слабый/не задан), см.
+  // booking/admin-key-audit.interceptor.ts. Только лог, не DM.
+  | 'admin_key_rejected'
+  | 'account_deleted' // DELETE /api/user (после 2FA, если включена); только лог
+  | 'email_link_conflict'; // адрес занят: ответ как у свободного (B-16), только лог
+
+// Events we DM the admin about. Verbose events (success login etc) only
+// go to server logs.
+const ALERT_EVENTS = new Set<SecurityEvent>([
+  'merge_confirmed',
+  // Живые подписки с обеих сторон слияния: деньги, разбирается руками.
+  // Порождается живым подтверждением человека, но бюджет всё равно нужен —
+  // правило №14: сигнализация без троттлинга мьютит чат в аварии.
+  'merge_subscription_conflict',
+  'role_changed',
+  'therapist_request_submitted',
+  'csrf_blocked',
+  'suspicious_initdata',
+  'empty_signature',
+  'refresh_token_reuse',
+  'totp_locked',
+]);
+
+/** Сколько DM одного и того же события пропускаем за окно, прежде чем
+ *  начать глушить счётчиком. Редкие события (merge_confirmed и т.п.) сюда
+ *  никогда не упираются — потолок бьёт только по шквалу. */
+const ALERT_BUDGET_MAX_PER_WINDOW = 3;
+/** Ширина окна бюджета — 15 минут (см. заголовок файла). */
+const ALERT_BUDGET_WINDOW_MS = 15 * 60_000;
+
+@Injectable()
+export class SecurityLogService {
+  private readonly logger = new Logger('SecurityAudit');
+  private readonly budget = new AlertBudget(
+    ALERT_BUDGET_WINDOW_MS,
+    ALERT_BUDGET_MAX_PER_WINDOW,
+  );
+
+  // Инжектируемые часы — по образцу auth-failure.report.ts: тесты бюджета
+  // обязаны быть детерминированными, без реальных таймеров. @Optional(),
+  // потому что Nest не знает провайдера для типа `() => number` — без него
+  // DI бросил бы UnknownDependenciesException при сборке модуля.
+  constructor(@Optional() private readonly now: () => number = Date.now) {}
+
+  log(event: SecurityEvent, data: Record<string, unknown>): void {
+    const line = `[${event}] ${JSON.stringify(redactSecurityLogData(data))}`;
+    // Структурный лог — ВСЕГДА без троттлинга: логи дёшевы, а бюджет ниже
+    // защищает только скудный канал (DM админу).
+    this.logger.log(line);
+    if (ALERT_EVENTS.has(event)) {
+      const { allow, suppressed } = this.budget.take(event, this.now());
+      // Недоставленный DM обязан быть виден хоть где-то: структурный лог
+      // выше не говорит, дошло ли предупреждение до админа — тишина здесь
+      // и есть урок инцидента 2026-08-08 (обработанная авария невидимее
+      // необработанной). Рекурсии в admin-alert.ts не создаём: logger.warn
+      // не уходит в DM/e-mail, в отличие от AlertLogger.
+      if (allow)
+        this.alertAdmin(event, data, suppressed).catch((err) =>
+          this.logger.warn(
+            `не удалось отправить DM админу про ${event}: ${(err as Error)?.message}`,
+          ),
+        );
+    }
+  }
+
+  private async alertAdmin(
+    event: SecurityEvent,
+    data: Record<string, unknown>,
+    suppressed: number,
+  ): Promise<void> {
+    const redacted = redactSecurityLogData(data);
+    const at = new Date(this.now());
+    const text = securityAlertText(event, redacted, suppressed, at);
+    // Telegram first, e-mail fallback so security events are never lost.
+    await notifyAdminWithFallback(text, `🔐 Security: ${event}`);
+  }
+}

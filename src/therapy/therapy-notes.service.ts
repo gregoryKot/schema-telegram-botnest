@@ -1,0 +1,83 @@
+import { Injectable, Optional } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { requireAffected } from '../utils/require-affected';
+import { findSessionNote, findSessionNotesPage } from './session-notes-page';
+import { findSessionWork } from './session-work-list';
+import { createSessionNote, type NewSessionNote } from './session-note-create';
+import { conceptView } from './concept-store';
+import { saveConceptCounted, type ConceptSaveInput } from './concept-save';
+import { GuideMarksService } from './guide-marks.service';
+
+// Заметки терапевта о сессиях + кейс-концептуализация клиента (включая
+// историю версий). Доступ к чужому клиенту закрыт через
+// TherapyRelationsService.assertHasClient — текст проверки не дублируется.
+@Injectable()
+export class TherapyNotesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly relationsService: TherapyRelationsService,
+    // Событие «Про клиента» на копинге схемы (#1484); в юнит-спеках без него.
+    @Optional() private readonly guideMarks?: GuideMarksService,
+  ) {}
+
+  // ─── Session Notes ───────────────────────────────────────────────────────────
+
+  async getNotes(therapistId: bigint, clientId: bigint) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    return findSessionNotesPage(this.prisma, therapistId, clientId);
+  }
+
+  /** Пункты «Что делали» всех сессий клиента — журнал «На сессиях». */
+  async getSessionWork(therapistId: bigint, clientId: bigint) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    return findSessionWork(this.prisma, therapistId, clientId);
+  }
+
+  /** Одна запись с номером сессии — когда она за пределами страницы заметок. */
+  async getNote(therapistId: bigint, clientId: bigint, noteId: number) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    return findSessionNote(this.prisma, therapistId, clientId, noteId);
+  }
+
+  async createNote(
+    therapistId: bigint,
+    clientId: bigint,
+    body: NewSessionNote,
+  ) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    return createSessionNote(this.prisma, therapistId, clientId, body);
+  }
+
+  async deleteNote(therapistId: bigint, noteId: number): Promise<void> {
+    const where = { id: noteId, therapistId };
+    await requireAffected(this.prisma.therapistNote.deleteMany({ where }));
+  }
+
+  // ─── Case Conceptualization ──────────────────────────────────────────────────
+
+  async getConceptualization(therapistId: bigint, clientId: bigint) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    const row = await this.prisma.clientConceptualization.findUnique({
+      where: { therapistId_clientId: { therapistId, clientId } },
+    });
+    return row ? conceptView(row, row.history) : null;
+  }
+
+  /** Полное тело или патч с версией строки — concept-save.ts. */
+  async saveConceptualization(
+    therapistId: bigint,
+    clientId: bigint,
+    body: ConceptSaveInput,
+  ) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    // Read-modify-write по history и связям — в транзакции (аудит 2026-07,
+    // 2.3; правило №4), версия строки — там же.
+    const key = { therapistId, clientId };
+    const r = await saveConceptCounted(this.prisma, key, body);
+    for (let i = 0; i < r.copingAdded; i++) {
+      await this.guideMarks?.trackAdded(therapistId, 'coping', clientId);
+    }
+    return r.view;
+  }
+}

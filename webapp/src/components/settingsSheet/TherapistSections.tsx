@@ -1,0 +1,85 @@
+import { useEffect, useRef } from 'react';
+import { api } from '../../api';
+import type { UserSettings } from '../../api';
+import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
+import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
+import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROFILE_TOGGLE as PROFILE, therapistConnectedTitle, therapistSectionHint } from '../../../../shared/src/therapy/therapistLinkCopy';
+import { useTr } from '../../utils/addressForm';
+import { ConfirmDialog } from '../ConfirmDialog';
+import { SSection, SRow, Toggle, Tick } from './ui';
+import { SectionLoadState } from './SectionLoadState';
+import type { useTherapyRelationSettings } from './useTherapyRelationSettings';
+import { SettingsInfoHelp } from './SettingsInfoHelp';
+import { TherapistCodeForm } from './TherapistCodeForm';
+
+type Relation = ReturnType<typeof useTherapyRelationSettings>;
+
+// Раздел «Мой терапевт» (клиент): подключение по коду или управление доступом. Предел поля — с
+// запасом под ссылку (ввод чистит общий хук), отключение — с подтверждением, статус — без рода.
+export function MyTherapistSection({ rel, settings, patch }: {
+  rel: Relation; settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<unknown>;
+}) {
+  const tr = useTr();
+  const { therapyRelation, join, leave } = rel;
+  const leaveCopy = leaveTherapyCopy(tr);
+  const active = therapyRelation?.status === 'active';
+  // «Подключиться» уходит вместе с формой кода — фокус на заголовок подключённого терапевта, а не на body.
+  const titleRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (active && join.joined) titleRef.current?.focus(); }, [active, join.joined]);
+  return (
+    <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={therapistSectionHint(therapyRelation?.status === 'active')}>
+      {therapyRelation === undefined ? (
+        <SectionLoadState of="relation" load={rel.load} />
+      ) : active ? (
+        <div className="st-body-block">
+          <div className="st-strong" ref={titleRef} tabIndex={-1}>{therapistConnectedTitle(therapyRelation.partnerName)}</div>
+          {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr, true)}</p>}
+          <div className="st-rows st-rows--ruled">
+            <SRow title={CARDS.title} sub={CARDS.sub} right={<Toggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
+            <SRow title={PROFILE.title} sub={PROFILE.sub} right={<Toggle label={PROFILE.title} on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
+          </div>
+          <button className="ds-link ds-link--danger" onClick={leave.ask}>{leaveCopy.button}</button>
+          {leave.confirming && (
+            <ConfirmDialog
+              title={leaveCopy.title}
+              message={leaveCopy.message}
+              confirmLabel={leaveCopy.confirm}
+              cancelLabel={leaveCopy.cancel}
+              busyLabel={leaveCopy.busy}
+              busy={leave.busy}
+              error={leave.failed ? leaveCopy.error : undefined}
+              onConfirm={() => void leave.confirm()}
+              onCancel={leave.cancel}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="st-body-block">
+          <FormerTherapistNote load={api.getFormerTherapist} enabled={therapyRelation === null} />
+          <TherapistCodeForm join={join} />
+        </div>
+      )}
+    </SSection>
+  );
+}
+
+// Раздел «Кабинет терапевта» (специалист).
+export function CabinetSection({ rel, onOpenTherapistCabinet }: { rel: Relation; onOpenTherapistCabinet?: () => void }) {
+  const { createInvite, invite, inviteCopied, inviteError } = rel;
+  return (
+    <SSection id="s-cabinet" label="Кабинет терапевта">
+      <SRow title="Открыть кабинет" sub="Клиенты, задания, приглашения" onClick={onOpenTherapistCabinet} />
+      <div className="st-body-block">
+        <div className="st-actions">
+          <button type="button" className="ds-link st-act st-go" onClick={createInvite}>Создать приглашение клиенту</button>
+        </div>
+        {/* Раньше «Скопировано ✓» показывалось всегда, даже если navigator.clipboard упал — теперь только при реальном успехе, иначе видна ссылка для ручного копирования. */}
+        {invite && (inviteCopied
+          ? <div className="st-text st-text--ok st-copied" role="status"><Tick />Ссылка скопирована</div>
+          : <div className="st-invite-field">{invite.url}</div>)}
+        {invite && <InviteCodeBox code={invite.code} />}
+        {inviteError && <div className="st-err">{inviteError}</div>}
+      </div>
+    </SSection>
+  );
+}

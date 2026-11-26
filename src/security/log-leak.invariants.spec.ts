@@ -1,0 +1,65 @@
+// Security-трипваер: секреты и PII не попадают в логи (security-таск
+// 2026-07-17). Логи Amvera доступны шире, чем БД, и не шифруются. Если в
+// logger.* интерполировать значение токена/пароля/ключа или РАСШИФРОВАННЫЙ
+// свободный текст — секрет/чужая терапевтическая запись утекут в лог-стрим.
+// Инвариант: ни один logger-вызов не интерполирует опасное ЗНАЧЕНИЕ.
+// (Имя переменной в текстовом сообщении — 'BOT_TOKEN not set' — безопасно.)
+// D1 (аудит 2026-10): сырой URL запроса (`/by-token/:token`, `?token=`,
+// OAuth `?code=&state=`) и `exception.message` (у PrismaClientValidationError
+// внутри полный `args`) тоже опасны: AlertLogger шлёт ПЕРВЫЙ аргумент `.error()`
+// в DM админу и на почту. URL — только через safeRequestPath, message/stack —
+// вторым аргументом (stdout).
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
+
+const SRC = join(__dirname, '..');
+
+// Опасные ЗНАЧЕНИЯ внутри ${...} интерполяции logger-аргумента.
+const DANGER_IN_INTERP =
+  /\$\{[^}]*(password|refreshToken|accessToken|rawRefresh|JWT_SECRET|ENCRYPTION_KEY|\bdecrypt\(|req\.body|\.initData|req\.url|originalUrl|exception\.message)[^}]*\}/;
+
+// Захватываем аргументы каждого logger-вызова (могут быть многострочными).
+const LOGGER_CALL =
+  /logger\.(?:log|warn|error|debug|verbose)\(([\s\S]*?)\)\s*[;,]/g;
+
+describe('трипваер: логи не содержат секретов/расшифрованного текста', () => {
+  const files = collectSourceFiles(SRC);
+
+  it('нашлись logger-вызовы (санити)', () => {
+    const total = files.reduce(
+      (n, f) => n + [...readFileSync(f, 'utf8').matchAll(LOGGER_CALL)].length,
+      0,
+    );
+    expect(total).toBeGreaterThan(50);
+  });
+
+  it('ни один logger-вызов не интерполирует опасное значение', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8');
+      for (const m of src.matchAll(LOGGER_CALL)) {
+        if (DANGER_IN_INTERP.test(m[1])) {
+          const line = src.slice(0, m.index).split('\n').length;
+          offenders.push(`${f.replace(SRC, 'src')}:${line}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('нет логирования всего req/request body целиком', () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8');
+      for (const m of src.matchAll(LOGGER_CALL)) {
+        // JSON.stringify(req...) / ${req.body} — целиком тело в лог
+        if (/JSON\.stringify\(\s*req\b|\$\{\s*req\.body\s*\}/.test(m[1])) {
+          const line = src.slice(0, m.index).split('\n').length;
+          offenders.push(`${f.replace(SRC, 'src')}:${line}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

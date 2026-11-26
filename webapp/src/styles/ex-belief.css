@@ -1,0 +1,44 @@
+/* Упражнение «Проверка убеждения» (BeliefCheckEx, beliefCheck/*). Подключается из sheet-exercises.css.
+   Шаг — как у мастера дневника (sd-ticks, sd-step-q, sd-area — diary-wizard.css), подсказка — общая ExHint
+   (ex-hint.css), итог — общие ExDonePage и ExNext (ex-done.css); здесь — своё: камешки чаш, доводы, сводка. */
+.ex2-belief { display: flex; flex-direction: column; gap: 12px; }
+.ex2-belief-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+/* Зазор под полосками ≥10px: зона нажатия полоски (.sd-tick, margin-block −10px) не уходит под «Шаг N из 4». */
+.ex2-belief-progress > .sd-ticks { margin-bottom: 6px; }
+.ex2-belief-step { color: var(--text-sub); }
+.ex2-belief-quote { font-style: italic; }
+/* Живые весы на листе-герое крупнее знака: камешки доводов должны читаться и на полосе второго шага. */
+.ex2-hero.pa-sheet > .pa-sheet-art:has(> .ex2-belief-scales) { width: 112px; }
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) { .pa-spread-side .ex2-hero.pa-sheet > .pa-sheet-art:has(> .ex2-belief-scales) { width: 220px; } }
+.ex2-belief > .ex2-foot { margin-top: 12px; }
+
+/* ── Камешек чаши (Pebble): «за» — мох, «против» — глина, как на весах листа-героя ── */
+.ex2-pebble { flex: none; width: 16px; height: 11px; }
+
+/* ── Доказательства (за/против) ───────────────────────────────────────── */
+.ex2-evi { display: flex; flex-direction: column; }
+.ex2-evi-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) 44px; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid var(--paper-sunk); }
+.ex2-evi-text { padding: 10px 0; font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.ex2-evi-x { width: 44px; height: 44px; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: var(--text-sub); cursor: pointer; }
+.ex2-evi-x:hover { background: var(--paper-tint); color: var(--text); }
+/* Поле во всю ширину, «Добавить» — круглая кнопка-иконка 44×44 справа. */
+.ex2-evi-add { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: center; padding-top: 14px; }
+.ds-input.ex2-evi-input { min-height: 44px; }
+.ds-btn.ex2-evi-go { width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
+.ds-btn.ex2-evi-go.is-ready { color: var(--accent); border-color: var(--accent); }
+
+/* ── Сводка обеих чаш (BeliefRecap) — перед переформулировкой и на итоге ── */
+.ex2-recap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 28px; padding: 16px 18px 12px; border-radius: var(--r-16); background: var(--surface); }
+.ex2-recap-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--text-sub); }
+.ex2-recap-row { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--paper-sunk); font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.ex2-recap-row > .ex2-pebble { width: 12px; height: 8px; }
+/* Переформулировка — Literata, как слова на листе, а не служебное поле. */
+.ds-textarea.ex2-reframe { min-height: calc(7.5em + 26px); field-sizing: content; font-family: var(--serif); font-size: 18px; line-height: 1.5; }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Главная кнопка шага — во всю ширину отдельной строкой, «Назад» — над ней слева. */
+  .ex2-belief > .ex2-foot > .ds-btn:not(.ex2-ghost) { flex: 1 1 100%; }
+  .ds-textarea.ex2-reframe { font-size: 17px; }
+}
+/* На 320 «Запиши(те) мысль, которую» в 24px не помещалась в строку, и «которую» повисало одно (ревью g6 r2). */
+@media (max-width: 340px) { .ex2-belief .sd-step-q { font-size: 21px; } }

@@ -1,0 +1,224 @@
+import { useEffect, useRef, useState } from 'react';
+import { api, reportClientError } from '../api';
+import type { TherapyClientSummary, UserId } from '../api';
+import { TaskCreateSheet } from './TaskCreateSheet';
+import { OverviewSkeleton } from './therapist/CardSkeleton';
+import { ClientNotesTab } from './therapist/ClientNotesTab';
+import { ClientYSQTab } from './therapist/ClientYSQTab';
+import { useClientDetail } from './therapist/useClientDetail';
+import { useAddClient } from './therapist/useAddClient';
+import { useTasksBoard } from './therapist/useTasksBoard';
+import { ModeMapTab } from './modeMap/ModeMapTab';
+import { ClientListView } from './therapist/ClientListView';
+import { ClientHeader } from './therapist/ClientHeader';
+import { ClientOverviewTab } from './therapist/ClientOverviewTab';
+import { ClientConceptTab } from './therapist/ClientConceptTab';
+import { ClientPlanTab } from './therapist/plan/ClientPlanTab';
+import { ClientSessionsTab } from './therapist/ClientSessionsTab';
+import { ClientTasksTab } from './therapist/ClientTasksTab';
+import { useCabinetRouteActions } from './therapist/cabinetRouteActions';
+import { CONCEPT_SHEET_Z } from './therapist/ConceptFullscreenSheet';
+import { ClientCardFallback } from './therapist/ClientCardFallback';
+import { clientCardState } from './therapist/clientCardState';
+import { useClientTabRoute } from './therapist/useClientTabRoute';
+import { findClientByRef, matchesClientRef } from '../../../shared/src/utils/clientRef';
+interface Props {
+  view: 'list' | 'client';
+  openClientRef?: string | null; // код карточки или старый числовой id из адреса
+  onViewChange: (v: 'list' | 'client') => void;
+  onOpenClient?: (id: UserId) => void;
+  onClose: () => void;
+  backHandlerRef?: React.MutableRefObject<() => void>;
+  onClientsChange?: (clients: TherapyClientSummary[]) => void;
+  /** Палитра «Перейти к…» — лупа в шапке списка (оболочка, ov.setCmdOpen). */
+  onOpenPalette?: () => void;
+}
+
+export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange, onOpenPalette }: Props) {
+  // ─── Client list ──────────────────────────────────────────────────────────────
+  const [clients, setClients] = useState<TherapyClientSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  // Сбой ≠ пусто: терапевт с полным ростером в офлайне не должен видеть
+  // онбординг «клиентов нет» (тот же класс, что схемы клиента в ModeMapCanvas).
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
+  // Доска «Задания»: любое изменение заданий в карточке её перечитывает.
+  const board = useTasksBoard();
+  const [animKey, setAnimKey] = useState(0);
+  const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
+
+  function switchView(v: 'list' | 'client') {
+    setAnimKey(k => k + 1);
+    onViewChange(v);
+  }
+
+  // ─── Hooks ────────────────────────────────────────────────────────────────────
+  const detail = useClientDetail({ onOpenClient, switchView, setClients });
+  const addClient = useAddClient({ setClients });
+  const { routeTab, listTab, setListTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
+
+  // ─── Bootstrap ────────────────────────────────────────────────────────────────
+  const loadRoster = () => { // повтор: скелетон (loading) идёт раньше алерта, loadFailed снимает ответ
+    api.getTherapyClients().then(cl => {
+      setClients(cl); setLoadFailed(false);
+      const c = findClientByRef(cl, openClientRef);
+      if (c) void detail.openClient(c, routeTab ?? 'overview'); // openClient не отклоняется: каждый источник ловит сам и шлёт отчёт
+    }).catch(() => {
+      setLoadFailed(true);
+      reportClientError({ message: 'therapy clients load failed', section: 'therapist.clients' });
+    }).finally(() => setLoading(false));
+  };
+  useEffect(() => { loadRoster(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Sync sidebar when clients list changes (e.g. after adding a client) ──────
+  useEffect(() => {
+    _onClientsChange?.(clients);
+  }, [clients]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── React to URL-driven client navigation ────────────────────────────────────
+  useEffect(() => {
+    if (!openClientRef || loading) return;
+    if (detail.selectedClient && matchesClientRef(detail.selectedClient, openClientRef)) return;
+    const c = findClientByRef(clients, openClientRef);
+    if (c) void detail.openClient(c, routeTab ?? 'overview'); // не отклоняется (см. выше)
+  }, [openClientRef, loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Back button handler ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!backHandlerRef || view !== 'client') return;
+    backHandlerRef.current = () => {
+      if (detail.showAssign) { detail.setShowAssign(false); return; }
+      switchView('list');
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, detail.showAssign, backHandlerRef]);
+
+  // ─── Destructure for JSX convenience ─────────────────────────────────────────
+  const {
+    selectedClient, clientSchemaNotesData, clientModeNotesData,
+    clientDiary, clientData,
+    showAssign, setShowAssign,
+    ysqRequested, ysqError, exportCopied,
+    tabLoading, clientTab,
+    ysqSchemaIds, selfSchemaIds,
+    handleRequestYsq, handleExport,
+  } = detail;
+  // «Назначить из шаблона», «Дать заданием» подсказок и общий поиск — один лист; с концептуализации он встаёт над её листами.
+  const { assignPreset, setAssignPreset, openAssign } = useCabinetRouteActions({ detail, openClientRef, addClient });
+  // «журнал →» в подсказках: «Задания» открываются на журнале техник «На сессиях» (прокрутка — один раз).
+  const journalFocus = useRef(false);
+  const openJournal = () => { journalFocus.current = true; detail.setClientTab('tasks'); };
+  const takeJournalFocus = () => { const f = journalFocus.current; journalFocus.current = false; return f; };
+  const sessionFocus = useRef<number | null>(null); // строка журнала «На сессиях» → запись на вкладке «Сессии»
+  const openSession = (noteId: number) => { sessionFocus.current = noteId; detail.setClientTab('sessions'); };
+  const takeSessionFocus = () => { const id = sessionFocus.current; sessionFocus.current = null; return id; };
+  const cardState = clientCardState({ loading, loadFailed, clients, selected: selectedClient, openClientRef });
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="therapist-sheet tk-sheet">
+      {/* ── LIST VIEW ──────────────────────────────────────────────────────────── */}
+      {view === 'list' && (
+        <ClientListView
+          animKey={animKey}
+          clients={clients}
+          loading={loading}
+          loadFailed={loadFailed} onRetry={() => { setLoading(true); loadRoster(); }}
+          listTab={listTab} setListTab={setListTab}
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+          filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+          onSearch={onOpenPalette}
+          board={board}
+          openClient={detail.openClient}
+          addClient={addClient}
+        />
+      )}
+
+      {/* ── CLIENT VIEW ────────────────────────────────────────────────────────── */}
+      {view === 'client' && cardState !== 'card' && <ClientCardFallback state={cardState} onBack={() => switchView('list')} />}
+      {view === 'client' && cardState === 'card' && selectedClient && (
+        <div className="therapist-scroll therapist-scroll--client" key={`client-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
+          <ClientHeader selectedClient={selectedClient} detail={detail} switchView={switchView} />
+
+          <div className="therapist-scroll therapist-scroll--tabs tk-tabs-body" key={clientTab}>
+            {tabLoading ? (
+              <div aria-hidden><OverviewSkeleton tab={clientTab} /></div>
+            ) : <>
+
+            {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}
+            {clientTab === 'overview' && (
+              <ClientOverviewTab selectedClient={selectedClient} detail={detail} />
+            )}
+
+            {/* ── CONCEPT ──────────────────────────────────────────────────────── */}
+            {clientTab === 'concept' && (
+              <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} onAssign={openAssign} onOpenJournal={openJournal} />
+            )}
+
+            {clientTab === 'plan' && <ClientPlanTab key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} onTasksChanged={board.invalidate} onOpenSession={openSession} />}
+            {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
+            {selectedClient != null && clientTab === 'mode_map' && (
+              <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <ModeMapTab key={`${selectedClient.telegramId}-${canvasMapId}`} clientId={selectedClient.telegramId} initialMapId={canvasMapId ?? undefined} />
+              </div>
+            )}
+
+            {/* ── SESSIONS ─────────────────────────────────────────────────────── */}
+            {clientTab === 'sessions' && (
+              <ClientSessionsTab detail={detail} takeFocus={takeSessionFocus} />
+            )}
+
+            {/* ── TASKS ────────────────────────────────────────────────────────── */}
+            {clientTab === 'tasks' && (
+              <ClientTasksTab
+                detail={detail} onAssign={openAssign} onTasksChanged={board.invalidate}
+                onOpenConcept={() => detail.setClientTab('concept')} takeJournalFocus={takeJournalFocus} onOpenSession={openSession}
+              />
+            )}
+
+            {/* ── YSQ ──────────────────────────────────────────────────────────── */}
+            {clientTab === 'ysq' && (
+              <ClientYSQTab
+                clientData={clientData}
+                selectedClient={selectedClient}
+                selfSchemaIds={selfSchemaIds}
+                ysqSchemaIds={ysqSchemaIds}
+                ysqRequested={ysqRequested}
+                ysqError={ysqError}
+                exportCopied={exportCopied} exportEmpty={detail.exportEmpty}
+                handleRequestYsq={handleRequestYsq}
+                handleExport={handleExport}
+              />
+            )}
+
+            {/* ── CLIENT NOTES ─────────────────────────────────────────────────── */}
+            {clientTab === 'client_notes' && (
+              <ClientNotesTab
+                clientSchemaNotesData={clientSchemaNotesData}
+                clientModeNotesData={clientModeNotesData}
+                clientDiary={clientDiary}
+              />
+            )}
+
+            </> /* end tabLoading ternary */}
+          </div>
+        </div>
+      )}
+
+      {/* ── ASSIGN TASK MODAL ─────────────────────────────────────────────────── */}
+      {showAssign && selectedClient && (
+        <TaskCreateSheet
+          clientId={selectedClient.telegramId}
+          clientName={selectedClient.name ?? undefined}
+          defaultType={assignPreset?.type}
+          defaultText={assignPreset?.text} defaultCatalogId={assignPreset?.catalogId} assignOrigin={assignPreset?.origin}
+          zIndex={clientTab === 'concept' ? CONCEPT_SHEET_Z : undefined}
+          onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); board.invalidate(); }}
+          onClose={() => { setShowAssign(false); setAssignPreset(undefined); }}
+        />
+      )}
+    </div>
+  );
+}

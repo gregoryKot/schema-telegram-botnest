@@ -1,0 +1,259 @@
+{
+  "webapp/src/components/appShell/useTrackerHistory.ts::setHistoryFailed": {
+    "status": "reports"
+  },
+  "webapp/src/components/booking/BookingCancelControl.tsx::setErrorText": {
+    "status": "reports"
+  },
+  "webapp/src/components/booking/ClientBookingSheet.tsx::setPhase": {
+    "status": "reports"
+  },
+  "webapp/src/components/booking/useBookingByToken.ts::setLoadError": {
+    "status": "reports"
+  },
+  "webapp/src/components/booking/useClientBooking.ts::setOverview": {
+    "status": "exempt",
+    "reason": "вспомогательные данные карточки терапевта: без них она показывает дату от терапевта, как без записи; экран рабочий, ложного «записей нет» нет"
+  },
+  "webapp/src/components/diary/GratitudeEntrySheet.tsx::setSaveError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); лист остаётся открытым с текстом"
+  },
+  "webapp/src/components/diary/ModeEntrySheet.tsx::setSaveError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); лист остаётся открытым с текстом"
+  },
+  "webapp/src/components/diary/SchemaEntrySheet.tsx::setSaveError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); лист остаётся открытым с текстом"
+  },
+  "webapp/src/components/diary/quickEntry/useActiveSchemaIds.ts::setIds": {
+    "status": "exempt",
+    "reason": "вспомогательный порядок чипов: без профиля показываются все схемы, запись работает; экран рабочий"
+  },
+  "webapp/src/components/diary/quickEntry/useQuickEntry.ts::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); лист остаётся на шаге ввода"
+  },
+  "webapp/src/components/exercises/BeliefCheckEx.tsx::setSaveError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); черновик упражнения не теряется"
+  },
+  "webapp/src/components/exercises/LetterEx.tsx::setSealError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); черновик письма не теряется"
+  },
+  "webapp/src/components/exercises/PhraseCheckEx.tsx::setSaveError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); черновик упражнения не теряется"
+  },
+  "webapp/src/components/modeMap/CustomModesPalette.tsx::setFailed": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с формой или списком, палитра рабочая, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); введённое название остаётся в форме"
+  },
+  "webapp/src/components/modeMap/WheelProvider.tsx::setStatus": {
+    "status": "reports"
+  },
+  "webapp/src/components/modeMap/useAppendQueue.ts::setStatus": {
+    "status": "reports"
+  },
+  "webapp/src/components/modeMap/useCustomModes.ts::setModes": {
+    "status": "reports"
+  },
+  "webapp/src/components/modeMap/useGenerateFromConcept.ts::setFailed": {
+    "status": "reports"
+  },
+  "webapp/src/components/modeMap/useNewMap.ts::setFailed": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); карта из концептуализации шлёт отчёт сама (createConceptMap)"
+  },
+  "webapp/src/components/settingsSheet/BecomeTherapistSection.tsx::setReqError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/components/settingsSheet/NameAddressSections.tsx::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/components/settingsSheet/ShareAboutSections.tsx::setExportError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); кнопка выгрузки данных"
+  },
+  "webapp/src/components/settingsSheet/useTherapyRelationSettings.ts::setInviteError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/components/therapist/OfflineInviteCard.tsx::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/components/therapist/concept/useConceptShare.ts::setFailed": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); переключатель «показать клиенту»"
+  },
+  "webapp/src/components/therapist/guide/CopingMarkSheet.tsx::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/plan/usePlanAdd.ts::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/plan/path/PathDraftSheet.tsx::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/plan/path/usePath.ts::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/plan/usePlanItems.ts::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/useAddClient.ts::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/components/therapist/useClientDetail.ts::setDeleteError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); диалог удаления клиента"
+  },
+  "webapp/src/components/therapist/useConceptAutosave.ts::setConceptError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/useConceptAutosave.ts::setSaveStatus": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/useConceptGraphImage.ts::setFailed": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/useOpenConceptCanvas.ts::setFailed": {
+    "status": "reports",
+    "via": "createConceptMap"
+  },
+  "webapp/src/components/therapist/useSessionPlan.ts::setError": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapist/useTasksBoard.ts::setFailed": {
+    "status": "reports"
+  },
+  "webapp/src/components/therapy/useTherapySignal.ts::setLoaded": {
+    "status": "exempt",
+    "reason": "необязательная карточка-сигнал: без истории она просто не показывается, экран рабочий; ложного сигнала нет"
+  },
+  "webapp/src/pages/AdminPage.tsx::setAuthed": {
+    "status": "exempt",
+    "reason": "неверный или протухший ключ админки — снова экран ввода ключа; ввод владельца, а не поломка, экран видит только владелец"
+  },
+  "webapp/src/pages/AdminPage.tsx::setKeyError": {
+    "status": "exempt",
+    "reason": "неверный ключ админки — ввод владельца, а не поломка; экран входа в админку видит только владелец"
+  },
+  "webapp/src/pages/LoginPage.tsx::setError": {
+    "status": "reports",
+    "via": "useAuthFailureReport"
+  },
+  "webapp/src/pages/SubscribePage.tsx::setOptsFailed": {
+    "status": "reports"
+  },
+  "webapp/src/pages/SubscribePage.tsx::setStatus": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); форма оформления подписки"
+  },
+  "webapp/src/pages/SubscribePage.tsx::setSubFailed": {
+    "status": "reports"
+  },
+  "webapp/src/pages/account/EmailLinkRow.tsx::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст у поля адреса (b27; раньше — через onError страницы), экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/pages/account/TherapistRequestSection.tsx::setErr": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/pages/account/TwoFactorSection.tsx::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); «неверный код» — ввод человека, а не поломка"
+  },
+  "webapp/src/pages/account/useAccountData.ts::setError": {
+    "status": "reports"
+  },
+  "webapp/src/pages/account/useProviderActions.ts::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/pages/admin/ArticleEditor.tsx::setError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/BookingSection.tsx::setOpts": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/BookingSection.tsx::setS": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/BookingsManager.tsx::setBookingsFailed": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/HealthyAdultCheck.tsx::setError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/HealthyAdultImport.tsx::setStatus": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/HealthyAdultSection.tsx::setError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/MarqueeSection.tsx::setError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/PhotoSection.tsx::setError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/PricesManager.tsx::setOpts": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — пустой блок на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/calendar/CalendarWeek.tsx::setMutateError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/admin/useSaveFeedback.tsx::setError": {
+    "status": "exempt",
+    "reason": "админка визитки: экран видит только владелец — текст ошибки на экране и есть сигнал ему, отчёт наверх ушёл бы ему же в DM"
+  },
+  "webapp/src/pages/authCallback/EmailTokenConsume.tsx::setRetryReason": {
+    "status": "exempt",
+    "reason": "consumeEmailToken не отклоняется: сеть и ответ сервера он сам сводит к { kind: error } (тест consumeEmailToken.test.ts), экран «Нет связи» с «Повторить» рисуется из исхода"
+  },
+  "webapp/src/pages/landing/BookingForm.tsx::setStatus": {
+    "status": "reports"
+  },
+  "webapp/src/pages/merge/useLinkTicket.ts::setActionError": {
+    "status": "exempt",
+    "reason": "ошибка действия: подтверждение привязки не прошло — текст рядом с кнопкой, экран рабочий, повтор в один тап; 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/pages/merge/useLinkTicket.ts::setError": {
+    "status": "reports"
+  },
+  "webapp/src/pages/merge/useLinkTicket.ts::setFailOutcome": {
+    "status": "reports"
+  },
+  "webapp/src/pages/merge/useMergeConfirm.ts::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
+  "webapp/src/pages/merge/useMergePreview.ts::settle": {
+    "status": "reports"
+  },
+  "webapp/src/pages/service/useLoginPreview.ts::setState": {
+    "status": "reports"
+  },
+  "webapp/src/pages/subscribe/useSubscriptionCancel.ts::setPhase": {
+    "status": "reports"
+  }
+}

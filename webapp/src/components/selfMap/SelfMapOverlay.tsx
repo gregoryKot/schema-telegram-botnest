@@ -1,0 +1,76 @@
+import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { ExScreen } from '../exercises/ExScreen';
+import { Skeleton, SkeletonList } from '../Skeleton';
+import { SelfMapScreen } from './SelfMapScreen';
+import { useSelfMapData } from '../../hooks/useSelfMapData';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../../api';
+import { usePatternLayer } from '../../sections/schemas/usePatternLayer';
+import { PATTERNS_PATH } from '../../sections/schemas/patternRoute';
+import type { SelfMapLinkTarget } from '../../../../shared/src/share/analytics';
+import '../../styles/case-quick.css';
+import '../../styles/self-map.css';
+
+/**
+ * Точка монтирования карты себя — грузит данные только когда карту открыли
+ * (правило CLAUDE.md: скелетон по форме контента, а не спиннер, пока карта
+ * не готова: лист неба с местом под сцену, полосы строками). Маршрутизация
+ * «что дальше» здесь же — тест схем и «посмотреть потребности» ведут в свои
+ * разделы, всё остальное возвращает в разбор случая (он и есть основная работа).
+ */
+export function SelfMapOverlay({
+  onClose,
+  onStartCase,
+  onOpenTracker,
+  onOpenSchema,
+}: {
+  onClose: () => void;
+  onStartCase: () => void;
+  onOpenTracker: () => void;
+  onOpenSchema: (opts?: { startTest?: boolean }) => void;
+}) {
+  const goBack = useHistorySheet(onClose);
+  const { map, next, origins } = useSelfMapData();
+  // Режим и схема открываются тем же экраном паттерна, что в «Моих паттернах» (PatternSheet поверх карты).
+  const pat = usePatternLayer();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const track = (to: SelfMapLinkTarget) => { void api.trackEvent('self_map_link', { to }); };
+
+  if (!map || !next || !origins) {
+    return (
+      <ExScreen onBack={goBack} backLabel="Закрыть" spread look="modes" heroArt={<span className="cq-scene sm-scene-skel" />} eyebrow={null} title="Карта себя">
+        <div className="sm-skel" aria-hidden>
+          <Skeleton width={150} height={11} />
+          <SkeletonList rows={3} height={60} />
+          <Skeleton width="100%" height={88} radius={16} />
+        </div>
+      </ExScreen>
+    );
+  }
+
+  return (
+    <>
+      <SelfMapScreen
+        map={map}
+        next={next}
+        origins={origins}
+        onBack={goBack}
+        onPickMode={(id) => { track('mode'); pat.openPattern('mode', id); }}
+        onPickSchema={(id) => { track('schema'); pat.openPattern('schema', id); }}
+        onOpenPatterns={() => {
+          track('patterns');
+          // Карту открыли из самих «Моих паттернов» — достаточно закрыть её.
+          goBack(pathname === PATTERNS_PATH ? undefined : () => navigate(PATTERNS_PATH));
+        }}
+        onStartTest={() => { track('ysq_test'); goBack(() => onOpenSchema({ startTest: true })); }}
+        onNextStep={(id) => goBack(() => {
+          if (id === 'ysq_test') onOpenSchema({ startTest: true });
+          else if (id === 'needs_week') onOpenTracker();
+          else onStartCase();
+        })}
+      />
+      {pat.layer}
+    </>
+  );
+}

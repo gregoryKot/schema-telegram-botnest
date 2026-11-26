@@ -1,0 +1,191 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { NotificationService } from '../notification/notification.service';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { removeTherapistClient } from './remove-client';
+import { isOwnYsqRequestPending, requestYsq } from './ysq-request';
+import { activeRelationWhere } from './relation-where';
+import { decryptRecord } from '../utils/crypto';
+import { sessionInfoData, type SessionInfoBody } from './session-info-data';
+import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
+import { decodeYsqAnswers } from '../bot/ysq.service';
+import {
+  ClientDiaryEntry,
+  readClientDiaryEntries,
+} from './client-diary-entries';
+import { readChildhoodRatings } from './client-childhood';
+// Схемы шифрования — общие с NotesService (правило №4: один список полей).
+import { SCHEMA_NOTE_SCHEMA, MODE_NOTE_SCHEMA } from '../bot/notes.service';
+
+// Скрыто: офлайн-карточка или профиль, закрытый клиентом (свой запрос YSQ виден).
+const HIDDEN = {
+  mySchemaIds: [] as string[],
+  myModeIds: [] as string[],
+  ysqCompletedAt: null,
+  ysqActiveSchemaIds: [] as string[],
+  ysqHistory: [],
+  childhoodRatings: {} as Record<string, number>,
+};
+
+// Данные клиента для терапевта: профиль/YSQ, история, дневники, заметки,
+// запрос YSQ, инфо о сессии и удаление клиента. Кроме удаления — везде
+// обязательна проверка assertHasClient (чужие клинические данные).
+@Injectable()
+export class TherapyClientDataService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: BotAnalyticsService,
+    private readonly notificationService: NotificationService,
+    private readonly relationsService: TherapyRelationsService,
+  ) {}
+
+  async getClientData(therapistId: bigint, clientId: bigint) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    if (clientId < 0n)
+      return { name: null, ...HIDDEN, ysqRequestPending: false };
+    const uid = clientId;
+    const [user, ysq, hist, ysqRequestPending, childhood] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: uid },
+        select: {
+          firstName: true,
+          mySchemaIds: true,
+          myModeIds: true,
+          therapistShareProfile: true,
+        },
+      }),
+      this.prisma.ysqResult.findUnique({ where: { userId: uid } }),
+      this.prisma.ysqResultHistory.findMany({
+        where: { userId: uid },
+        orderBy: { completedAt: 'desc' },
+        take: 20,
+      }),
+      isOwnYsqRequestPending(this.prisma, therapistId, uid),
+      readChildhoodRatings(this.prisma, uid),
+    ]);
+
+    if (user?.therapistShareProfile === false) {
+      return { name: user?.firstName ?? null, ...HIDDEN, ysqRequestPending };
+    }
+
+    const ysqActiveSchemaIds = ysq?.answers
+      ? computeActiveSchemas(decodeYsqAnswers(ysq.answers))
+      : [];
+    const ysqHistory = hist.map((r) => ({
+      id: r.id,
+      completedAt: r.completedAt.toISOString(),
+      scores: computeYsqScores(decodeYsqAnswers(r.answers)),
+    }));
+
+    // mySchemaIds/myModeIds в БД — зашифрованные JSON-строки (bot.service.ts,
+    // profile.service.ts читают их через decryptRecord). Без расшифровки
+    // терапевт получал шифротекст, объявленный массивом (аудит 2026-10, F2).
+    const labels = user
+      ? decryptRecord(user, { jsonArrays: ['mySchemaIds', 'myModeIds'] })
+      : null;
+    return {
+      name: user?.firstName ?? null,
+      mySchemaIds: (labels?.mySchemaIds as string[] | null) ?? [],
+      myModeIds: (labels?.myModeIds as string[] | null) ?? [],
+      ysqCompletedAt: ysq?.completedAt?.toISOString() ?? null,
+      ysqActiveSchemaIds,
+      ysqHistory,
+      ysqRequestPending,
+      childhoodRatings: childhood,
+    };
+  }
+
+  async getClientHistory(
+    therapistId: bigint,
+    clientId: bigint,
+  ): Promise<
+    { date: string; index: number | null; ratings: Record<string, number> }[]
+  > {
+    if (clientId < 0n) return [];
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    const history = await this.analyticsService.getHistoryRatings(clientId, 14);
+    return history.map((h) => {
+      const ratings = h.ratings as Record<string, number>;
+      const vals = Object.values(ratings);
+      const index =
+        vals.length === 5
+          ? Math.round((vals.reduce((s, v) => s + v, 0) / 5) * 10) / 10
+          : null;
+      return { date: h.date, index, ratings };
+    });
+  }
+
+  async getClientDiaryEntries(
+    therapistId: bigint,
+    clientId: bigint,
+  ): Promise<ClientDiaryEntry[]> {
+    if (clientId < 0n) return [];
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    // L1 (аудит 2026-08): дневник чтит therapistShareCards, как соседи-заметки
+    // (getClientSchemaNotes/ModeNotes); свободный клин. текст не течёт при opt-out.
+    if (!(await this.cardsShared(clientId))) return [];
+    return readClientDiaryEntries(this.prisma, clientId);
+  }
+
+  // Клиент может закрыть карточки от терапевта (therapistShareCards=false) —
+  // тогда отдаём пусто. Инвариант privacy: аудит 2026-07 нашёл маршрут-дубль,
+  // где эта проверка терялась (см. therapy-client-data.service.spec.ts).
+  private async cardsShared(clientId: bigint): Promise<boolean> {
+    const client = await this.prisma.user.findUnique({
+      where: { id: clientId },
+      select: { therapistShareCards: true },
+    });
+    return client?.therapistShareCards !== false;
+  }
+
+  async getClientSchemaNotes(therapistId: bigint, clientId: bigint) {
+    if (clientId < 0n) return [];
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    if (!(await this.cardsShared(clientId))) return [];
+    const rows = await this.prisma.userSchemaNote.findMany({
+      where: { userId: clientId },
+    });
+    return rows.map((r) => decryptRecord(r, SCHEMA_NOTE_SCHEMA));
+  }
+
+  async getClientModeNotes(therapistId: bigint, clientId: bigint) {
+    if (clientId < 0n) return [];
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    if (!(await this.cardsShared(clientId))) return [];
+    const rows = await this.prisma.userModeNote.findMany({
+      where: { userId: clientId },
+    });
+    return rows.map((r) => decryptRecord(r, MODE_NOTE_SCHEMA));
+  }
+
+  requestYsq(therapistId: bigint, clientId: bigint): Promise<void> {
+    return requestYsq(
+      {
+        prisma: this.prisma,
+        notifications: this.notificationService,
+        relations: this.relationsService,
+      },
+      therapistId,
+      clientId,
+    );
+  }
+
+  async updateSessionInfo(
+    therapistId: bigint,
+    clientId: bigint,
+    body: SessionInfoBody,
+  ): Promise<void> {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    const data = sessionInfoData(body);
+    if (Object.keys(data).length === 0) return;
+    await this.prisma.therapyRelation.updateMany({
+      where: activeRelationWhere(therapistId, clientId),
+      data,
+    });
+  }
+
+  async removeClient(therapistId: bigint, clientId: bigint): Promise<void> {
+    await removeTherapistClient(this.prisma, therapistId, clientId);
+  }
+}

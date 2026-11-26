@@ -1,0 +1,317 @@
+// Реестр продуктовых событий (правило №8 CLAUDE.md). Источник правды для
+// бэка: DTO валидирует name/kind по этим allow-list'ам, сервис пишет только
+// известные события; фронтовые api.trackEvent шлют те же имена.
+//
+// meta — маленький СТРУКТУРНЫЙ non-PII объект. НИКОГДА не класть свободный
+// текст пользователя (он не шифруется, см. комментарий модели AnalyticsEvent).
+
+// Разрешённые имена событий.
+//   share_card          — нажал «Поделиться» на карточке (meta.kind);
+//   share_result        — исход системного шэра (meta.kind + meta.ok);
+//   crisis_card_shown   — показалась карточка помощи (meta.surface);
+//   crisis_hotline_tapped — нажал на телефон доверия (meta.surface);
+//   outbox_flush        — доехали записи, сделанные без интернета (meta.count);
+//   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
+//   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
+//   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
+//   onboarding_step     — новичок дошёл до шага обучения (meta.step);
+//   home_screen_offer   — предложение значка на экран (meta.action + surface).
+//                         Поверхности мини-аппа (Telegram) шлют событие
+//                         авторизованно через POST /api/event. Сайт добавил
+//                         две свои: баннер «приложение для телефона» в
+//                         кабинете (убран 2026-10, id для старых строк)
+//                         тоже идёт авторизованно через /api/event, а блок
+//                         установки на публичном лендинге
+//                         (webapp/src/pages/landing/AppInstallSection.tsx) —
+//                         анонимно через POST /api/public-event, и там
+//                         принимается ТОЛЬКО surface site_landing;
+//   journey_open        — открыл архив «Мой путь» (без meta);
+//   ysq_help_open       — раскрыл «Как понимать» в результатах теста схем
+//                         (без meta);
+//   quiz_started        — начал мини-тест (meta.quiz + meta.src);
+//   quiz_completed      — дошёл до результата мини-теста (meta.quiz +
+//                         meta.result + meta.src). Шлёт только сайт (бот ведёт
+//                         в приложение), src = 'web' пишет сервер; анонимно
+//                         (userId = null) через POST /api/public-event.
+//   practice_link_click — кликнул ссылку на сайт практики автора с
+//                         продуктового лендинга (meta.place). Всегда анонимно
+//                         (userId = null) через POST /api/public-event.
+//   mode_card_saved     — сохранил заполненную карточку режима
+//                         (meta.modeId + meta.filledFields, 0..7).
+//   mode_entry_saved    — сохранил запись в дневнике режимов
+//                         (meta.filledFields 0..7 + meta.filledHealthy).
+//   mode_test_completed — определил режим тестом «по функции» (meta.modeId).
+//   warm_words_open     — открыл раздел «Тёплые слова» (meta.count — сколько
+//                         записей в коллекции, 0..1000).
+//   mode_chain_followup — после сохранения записи дневника режимов согласился
+//                         разобрать связанный режим (meta.from + meta.to —
+//                         modeId исходного и выбранного режима).
+//   mode_doubt_opened   — открыл «С чем путают режим» с карточки выбранного
+//                         режима (meta.modeId).
+//   mode_doubt_switched — в «С чем путают режим» нажал «Это ближе» (meta.from
+//                         + meta.to — modeId исходного и выбранного режима).
+//   account_link_started — из мессенджера начал перенос данных со своего
+//                         прежнего аккаунта (meta.host: max|telegram);
+//   account_link_confirmed — подтвердил перенос в браузере (meta.host +
+//                         meta.merged — реально ли что-то переехало);
+//   account_link_failed — перенос не состоялся (meta.host + meta.reason:
+//                         expired|error). Без него в отчёте видно только
+//                         успехи, и «сколько людей не смогли» не измерить.
+//   quick_action_toggle — скрыл/вернул пункт в настройке меню (meta.action +
+//                         meta.hidden + meta.surface: 'plus'|'tools').
+//   quick_action_move   — переставил пункт в настройке меню (meta.action +
+//                         meta.surface + meta.dir: 'up'|'down').
+//   screen_customize_open — открыл «Настроить экран» на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.via — переиспользует
+//                         CUSTOMIZE_ENTRY_POINTS).
+//   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.hidden).
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах»
+//                         (meta.screen + meta.block + meta.dir: 'up'|'down').
+//   auth_*/client_error/signup_source/data_export/notify_queue_tick/therapist_resigned
+//                         — СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
+//                         — реестр и описания каждого в server-events.constants.ts
+//                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
+//   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
+//                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
+//   diary_jump           — переход из вкладки «Записи»: к карточке схемы/режима,
+//                         трекеру или разбору (meta.to — DIARY_JUMP_TARGETS).
+//   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
+//   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
+//   push_*               — уведомления в приложении (веб-пуши): push-events.constants.ts.
+//   case_*               — разбор случая («Что это было»); имена, мета и
+//                         описания каждого — в case-steps.constants.ts.
+//   self_map_link        — переход-мост «Карты себя» (meta.to): self-map-events.constants.ts.
+//   game_*               — события игры (game/); реестр, meta и описания
+//                         каждого — game-events.constants.ts.
+//   asset_recovered      — повтор файла сборки помог (анонимно): asset-recovery.constants.ts.
+//   entry_deleted        — удалил свою запись: «Мой путь», разбор фразы, дневник
+//                         (meta.type — ENTRY_DELETE_TYPES, entry-delete.constants.ts):
+//                         текст там очень личный — видно, находят ли удаление вообще.
+import { CASE_EVENTS } from './case-steps.constants';
+import { SELF_MAP_EVENTS } from './self-map-events.constants';
+import { CABINET_EVENTS } from './cabinet-events.constants';
+import { BOOKING_EVENTS } from './booking-events.constants';
+import { CONCEPT_EVENTS } from './concept-events.constants';
+import { GAME_EVENTS } from './game-events.constants';
+import { HOME_EVENTS } from './home-events.constants';
+import { SERVER_EVENTS } from './server-events.constants';
+import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
+import { PUSH_EVENTS } from './push-events.constants';
+import { ASSET_RECOVERY_EVENTS } from './asset-recovery.constants';
+import { LINKS_PAGE_EVENTS } from './links-page.constants';
+
+export const ANALYTICS_EVENTS = [
+  'share_card',
+  'share_result',
+  'crisis_card_shown',
+  'crisis_hotline_tapped',
+  'outbox_flush',
+  'today_streak_toggle',
+  'breath_start',
+  'stop_start',
+  'onboarding_step',
+  'home_screen_offer',
+  'login_method_offer', // карточка «добавь почту или VK ID» (login-method-offer.constants.ts)
+  'journey_open',
+  'ysq_help_open',
+  'quiz_started',
+  'quiz_completed',
+  'practice_link_click',
+  'mode_card_saved',
+  'mode_entry_saved',
+  'mode_test_completed',
+  'warm_words_open',
+  'mode_chain_followup',
+  'mode_doubt_opened',
+  'mode_doubt_switched',
+  'account_link_started',
+  'account_link_confirmed',
+  'account_link_failed',
+  'quick_action_toggle',
+  'quick_action_move',
+  'screen_customize_open',
+  'screen_block_toggle',
+  'screen_block_move',
+  // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
+  ...SERVER_EVENTS,
+  'profile_pattern_open',
+  'diary_jump',
+  ...CONCEPT_EVENTS, // кабинет терапевта: реестры рядом с фичей (правило №10)
+  ...CABINET_EVENTS,
+  // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
+  'login_ticket_step',
+  // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
+  ...CASE_EVENTS,
+  ...SELF_MAP_EVENTS,
+  // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
+  ...GAME_EVENTS,
+  // Удалил свою запись — meta.type из ENTRY_DELETE_TYPES.
+  'entry_deleted',
+  ...HOME_EVENTS,
+  ...BOOKING_EVENTS,
+  ...PUSH_EVENTS, // уведомления в приложении: push-events.constants.ts
+  ...ASSET_RECOVERY_EVENTS,
+  ...LINKS_PAGE_EVENTS, // страница ссылок визитки: links-page.constants.ts
+] as const;
+export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
+
+// События БЕЗ авторизации (POST /api/public-event): мини-тесты, клики лендинга,
+// игра (правило №5/№14), кризисная карточка записи. Остальное — только с входом.
+export const PUBLIC_ANALYTICS_EVENTS = [
+  'quiz_started',
+  'quiz_completed',
+  'practice_link_click',
+  'home_screen_offer',
+  ...GAME_EVENTS,
+  ...PUBLIC_CRISIS_EVENTS,
+  ...ASSET_RECOVERY_EVENTS, // public/asset-recovery.js работает до входа
+  ...LINKS_PAGE_EVENTS,
+] as const;
+export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
+
+// Откуда кликнули по ссылке на сайт практики автора (meta.place для
+// practice_link_click): блок «Кто это делает», подвал лендинга, ответ FAQ,
+// экран результата мини-теста. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PRACTICE_LINK_PLACES = [
+  'author',
+  'footer',
+  'faq',
+  'quiz',
+  'ysq_result', // CTA в результатах теста схем (оба фронтенда)
+] as const;
+export type PracticeLinkPlace = (typeof PRACTICE_LINK_PLACES)[number];
+
+// Как открыли «Настроить экран»: шестерёнка в шапке или долгое нажатие на
+// блок. Нужно, чтобы понять, находят ли жест вообще (он без аффорданса).
+export const CUSTOMIZE_ENTRY_POINTS = ['gear', 'longpress'] as const;
+export type CustomizeEntryPoint = (typeof CUSTOMIZE_ENTRY_POINTS)[number];
+
+// Что произошло с предложением «добавить значок на экран» (meta.action) и где
+// оно показывалось (meta.surface). 'added' приходит событием от Telegram —
+// это единственный достоверный признак, что значок реально появился.
+// 'handoff_ok' / 'handoff_failed' — только страница установки /install: браузер
+// забрал сессию по ссылке из мессенджера / код истёк или не принят (страница
+// осталась анонимной).
+export const HOME_SCREEN_ACTIONS = [
+  'shown',
+  'add',
+  'later',
+  'never',
+  'added',
+  'handoff_ok',
+  'handoff_failed',
+] as const;
+export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
+
+// Откуда переносят данные (meta.host) и почему не вышло (meta.reason) для
+// событий account_link_*. Парная константа на фронтах —
+// shared/src/analytics/accountLogin.ts (синхронно).
+//
+// 'web' появился вместе с карточкой объединения на сайте: там перенос
+// НАЧИНАЕТ сайт, а подтверждает бот. Без этого значения санитайзер вернул бы
+// undefined и meta исчезла целиком — событие записалось бы, а веб-половина
+// воронки в отчёте осталась невидимой.
+export const ACCOUNT_LINK_HOSTS = ['max', 'telegram', 'web'] as const;
+export type AccountLinkHost = (typeof ACCOUNT_LINK_HOSTS)[number];
+
+export const ACCOUNT_LINK_FAIL_REASONS = ['expired', 'error'] as const;
+export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
+
+// 'onboarding'/'today'/'settings' — мини-апп (Telegram). 'site_banner' —
+// баннер «приложение для телефона» в кабинете сайта
+// (убран из кабинета 2026-10; id остаётся, пока в 30-дневных отчётах есть старые строки).
+// 'site_landing' — блок установки на публичном лендинге
+// (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
+// анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
+// поверхность (см. sanitize в public-events.controller.ts).
+// 'site_install' — страница установки /install (webapp/src/pages/InstallPage.tsx),
+// куда кнопка «Добавить значок» ведёт из Telegram/MAX во внешнем браузере;
+// событие анонимное, как у лендинга, поэтому в публичном пути её тоже принимают.
+export const HOME_SCREEN_SURFACES = [
+  'onboarding',
+  'today',
+  'settings',
+  'site_banner',
+  'site_landing',
+  'site_install',
+] as const;
+export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
+
+// Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
+// Используется в двух местах: bot.product-metrics.service.ts фильтрует
+// сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
+// кабинета, лендингом и страницей установки), site-install-metrics.service.ts группирует по этим
+// же surface для отдельного блока «Установка с сайта». IN-список в обоих
+// $queryRaw собирается из этой константы, а не хардкодится дважды.
+export const SITE_INSTALL_SURFACES = [
+  'site_banner',
+  'site_landing',
+  'site_install',
+] as const;
+export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
+
+// ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts (правило №10).
+export {
+  ONBOARDING_STEPS,
+  type OnboardingStep,
+} from './onboarding-steps.constants';
+
+// SHARE_CARD_KINDS/ShareCardKind — вынесены в share-card-kinds.constants.ts (правило №10).
+export {
+  SHARE_CARD_KINDS,
+  type ShareCardKind,
+} from './share-card-kinds.constants';
+
+// Шаги пути входа по билету — в файле-спутнике (правило №10).
+export {
+  LOGIN_TICKET_STEPS,
+  LOGIN_TICKET_HOSTS,
+  type LoginTicketStep,
+  type LoginTicketHost,
+} from './login-ticket-steps.constants';
+
+// Что открыли со вкладки «Я» (meta.kind для profile_pattern_open) — лист
+// схемы или лист режима. Парная константа на фронте —
+// shared/src/share/analytics.ts (синхронно).
+export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
+export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
+
+// Куда перешли из вкладки «Записи» (meta.to для diary_jump). Парная
+// константа на фронте — shared/src/share/analytics.ts (синхронно).
+export const DIARY_JUMP_TARGETS = ['pattern', 'tracker', 'case'] as const;
+export type DiaryJumpTarget = (typeof DIARY_JUMP_TARGETS)[number];
+
+// CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts (правило №10).
+export {
+  CRISIS_SURFACES,
+  type CrisisSurface,
+} from './crisis-surfaces.constants';
+
+// QUICK_ACTION_* — вынесены в quick-actions.constants.ts (правило №10).
+export {
+  QUICK_ACTION_IDS,
+  type QuickActionId,
+  QUICK_ACTION_SURFACES,
+  type QuickActionSurface,
+  QUICK_ACTION_MOVE_DIRS,
+  type QuickActionMoveDir,
+} from './quick-actions.constants';
+
+// SCREEN_BLOCK_IDS/CUSTOMIZABLE_SCREENS — в screen-blocks.constants.ts (№10).
+export {
+  SCREEN_BLOCK_IDS,
+  type ScreenBlockId,
+  CUSTOMIZABLE_SCREENS,
+  type CustomizableScreen,
+} from './screen-blocks.constants';
+
+// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts (правило №10).
+export { SIGNUP_SOURCES, type SignupSource } from './signup-sources.constants';
+
+// ENTRY_DELETE_TYPES/EntryDeleteType — вынесены в entry-delete.constants.ts (правило №10).
+export {
+  ENTRY_DELETE_TYPES,
+  type EntryDeleteType,
+} from './entry-delete.constants';

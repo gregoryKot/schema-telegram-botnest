@@ -1,0 +1,203 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { buildOwnerVcalendar, OwnerCalEvent } from './caldav-owner-event';
+import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
+import { busyQueryXml, Interval } from './caldav-busy';
+import { readBusy } from './caldav-busy-read';
+import { calDavHealth } from './caldav-health';
+import { onEmptyCalendars } from './caldav-empty-guard';
+import { BusyCache } from './caldav-busy-cache';
+import { cachedUnlessEmpty } from './retry-cache';
+import { busySkips, sumSkips } from './caldav-parse-skips';
+
+export type CalDeleteResult = 'deleted' | 'missing' | 'failed';
+
+/**
+ * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
+ * Config (env):
+ *   APPLE_ID            — Apple ID e-mail            (required)
+ *   APPLE_APP_PASSWORD  — app-specific password      (required)
+ *   APPLE_CALDAV_URL    — optional calendar URL (else auto-discovered once).
+ *   APPLE_CALENDAR_NAME — optional display name (else first VEVENT calendar).
+ *
+ * No credentials — every method is a silent no-op (dev without iCloud).
+ */
+@Injectable()
+export class CalDavService {
+  private readonly logger = new Logger(CalDavService.name);
+  private readonly configuredBase: string;
+  private readonly calendarName: string;
+  private readonly auth: string;
+  private readonly busyCache = new BusyCache((f, t) => this.readBusyAll(f, t));
+
+  constructor(config: ConfigService) {
+    this.configuredBase = (config.get<string>('APPLE_CALDAV_URL') ?? '')
+      .replace(/\/?$/, '/')
+      .replace(/^\/$/, '');
+    this.calendarName = config.get<string>('APPLE_CALENDAR_NAME') ?? '';
+    const id = config.get<string>('APPLE_ID') ?? '';
+    const pass = config.get<string>('APPLE_APP_PASSWORD') ?? '';
+    this.auth =
+      id && pass
+        ? 'Basic ' + Buffer.from(`${id}:${pass}`).toString('base64')
+        : '';
+  }
+
+  get enabled(): boolean {
+    return Boolean(this.auth);
+  }
+
+  /** Resolve the target calendar URL: explicit env first, else discover and cache a success. */
+  private async getBase(): Promise<string | null> {
+    return this.configuredBase || this.discover();
+  }
+
+  private readonly discover = cachedUnlessEmpty<string | null>(
+    () =>
+      discoverCalendarUrl(this.auth, this.calendarName)
+        .then((url) => {
+          if (url) this.logger.log(`CalDAV calendar discovered: ${url}`);
+          else
+            this.logger.warn(
+              'CalDAV auto-discovery found no calendar — set APPLE_CALDAV_URL manually',
+            );
+          return url;
+        })
+        .catch((e) => {
+          this.logger.error(`CalDAV discovery failed: ${(e as Error).message}`);
+          return null;
+        }),
+    (url) => !url,
+  );
+
+  /** Create or update the (client-data-free) calendar event for a booking. Returns the iCloud UID, or null. */
+  async pushEvent(ev: OwnerCalEvent): Promise<string | null> {
+    if (!this.enabled) return null;
+    const base = await this.getBase();
+    if (!base) return null;
+    const url = `${base}${ev.uid}.ics`;
+    try {
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Authorization: this.auth,
+          'Content-Type': 'text/calendar; charset=utf-8',
+        },
+        body: buildOwnerVcalendar(ev),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        this.logger.error(
+          `CalDAV PUT ${res.status} to ${url}: ${body.slice(0, 300)}`,
+        );
+        return null;
+      }
+      this.logger.log(`CalDAV event pushed: ${ev.uid}`);
+      return ev.uid;
+    } catch (e) {
+      this.logger.error(`CalDAV PUT failed: ${(e as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Every VEVENT calendar to scan for busy times. If APPLE_CALDAV_URL is set
+   * explicitly, only that one is used; otherwise all calendars in the account
+   * are scanned (so a meeting in any calendar — Home, Work, etc. — blocks the
+   * slot, not just the one we write bookings into). Discovered once and cached.
+   */
+  private readonly getBusyUrls = cachedUnlessEmpty<string[]>(
+    () =>
+      listCalendars(this.auth)
+        .then((cals) => {
+          this.logger.log(
+            `CalDAV busy-scan calendars: ${cals.map((c) => c.name || c.url).join(', ') || 'none'}`,
+          );
+          return cals.map((c) => c.url);
+        })
+        .catch((e) => {
+          this.logger.error(
+            `CalDAV calendar list failed: ${(e as Error).message}`,
+          );
+          return [] as string[];
+        }),
+    (urls) => !urls.length,
+  );
+
+  /**
+   * Busy intervals from ALL of the therapist's calendars in [from, to], so the
+   * slot engine can hide times already occupied by real calendar events.
+   * Cached 60s, one wide window for all slot requests (caldav-busy-cache.ts).
+   * Fail-open: returns [] on any problem (slots still show).
+   */
+  async getBusyTimes(from: Date, to: Date): Promise<Interval[]> {
+    if (!this.enabled) return [];
+    return this.busyCache.get(from, to);
+  }
+
+  private async readBusyAll(from: Date, to: Date): Promise<Interval[]> {
+    const urls = this.configuredBase
+      ? [this.configuredBase]
+      : await this.getBusyUrls();
+    if (!urls.length) return onEmptyCalendars();
+    const body = busyQueryXml(from, to);
+    const all: Interval[] = [];
+    const results = await Promise.all(
+      urls.map((url) => readBusy(url, this.auth, body)),
+    );
+    // Сбой хотя бы одного календаря = чтение неполное: слоты покажутся
+    // поверх личных встреч. Алерт — по смене состояния (caldav-health.ts),
+    // а не на каждый запрос; warn остаётся для лога.
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) {
+      this.logger.warn(`CalDAV busy read failed: ${failed.detail}`);
+      const alert = calDavHealth.noteFailure(failed.kind, failed.detail);
+      if (alert) this.logger.error(alert);
+    } else {
+      const recovered = calDavHealth.noteSuccess();
+      if (recovered) this.logger.error(recovered);
+    }
+    for (const r of results) if (r.ok) all.push(...r.intervals);
+    busySkips.note(sumSkips(results)); // непонятые события — в пробу и /stats
+    return all;
+  }
+
+  /** Diagnostics for the admin panel: which calendars we actually see. */
+  async debugCalendars(): Promise<string[]> {
+    if (!this.enabled) return [];
+    if (this.configuredBase) return [this.configuredBase];
+    try {
+      return (await listCalendars(this.auth)).map((c) => c.name || c.url);
+    } catch (e) {
+      this.logger.warn(`CalDAV debug list failed: ${(e as Error).message}`);
+      return [];
+    }
+  }
+
+  /** Delete the calendar event (cancelled booking, foreign-scrub.ts); undefined — iCloud off.
+   * Сбой — warn, не error: DELETE повторит крон-сверка, недоступный iCloud будит проба caldav. */
+  async removeEvent(uid: string): Promise<CalDeleteResult | undefined> {
+    if (!this.enabled || !uid) return undefined;
+    const base = await this.getBase();
+    if (!base) return 'failed';
+    const url = `${base}${uid}.ics`;
+    try {
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { Authorization: this.auth },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) {
+        this.logger.log(`CalDAV event removed: ${uid}`);
+        return 'deleted';
+      }
+      // События уже нет: повтор DELETE крон-сверкой — успех без строки в логе.
+      if (res.status === 404 || res.status === 410) return 'missing';
+      this.logger.warn(`CalDAV DELETE ${res.status} for ${uid}`);
+    } catch (e) {
+      this.logger.warn(`CalDAV DELETE failed: ${(e as Error).message}`);
+    }
+    return 'failed';
+  }
+}

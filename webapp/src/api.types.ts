@@ -1,0 +1,178 @@
+// Типы API webapp (зеркало бэкенда), вынесены из api.ts (правило №10). Общие с мини-аппом — в
+// shared/src/apiTypes (правило №3), здесь ре-экспорт. ClientConceptualization локальный: расширяет
+// общую ClientConceptualizationBase полями mode-map.
+import type { UserId } from '../../shared/src/apiTypes'; import type { Currency } from '../../shared/src/booking/priceRegion';
+import type { ClientConceptualizationBase } from '../../shared/src/therapy/clientConceptualization';
+export type {
+  UserId,
+  UserSettings,
+  StreakData,
+  Achievement,
+  UserPractice,
+  PartnerInfo,
+  PairsData,
+  PracticePlan,
+  UserTask,
+  TherapyRelationInfo,
+  TherapistNote,
+  ConceptSnapshot,
+  YsqHistoryEntry,
+  ClientData,
+  Insights,
+} from '../../shared/src/apiTypes';
+
+// ─── Site-only types (booking, articles, mode-map) ───────────────────────────
+export type { AdminCalendar, AdminCalendarDay, AdminCalendarCell, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch } from './api.calendar.types';
+export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
+// Запись клиента из приложения (#546): GET /api/client-booking и POST …/book (src/booking/client-booking.service.ts).
+export interface ClientBookingView { startsAt: string; durationMin: number; status: 'HELD' | 'CONFIRMED'; heldUntil: string | null; manageUrl: string; }
+export interface ClientBookingOverview { eligible: boolean; upcoming: ClientBookingView[]; }
+export interface ClientBookResult { cancelToken: string; status: string; heldUntil: string | null; paymentUrl: string | null; manageUrl: string; }
+export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; prices?: Record<Currency, number>; note: string; } // price — рубли (старое поле), prices — по валютам; в старом ответе сервера prices нет — тогда рубли
+export interface AvailabilityRule {
+  id: number; dayOfWeek: number; startHour: number; startMinute: number;
+  endHour: number; endMinute: number; sessionDuration: number; bufferMin: number;
+  timezone: string; isActive: boolean;
+}
+export type NewAvailabilityRule = {
+  dayOfWeek: number; startHour: number; endHour: number;
+  startMinute?: number; endMinute?: number; sessionDuration?: number; bufferMin?: number; timezone?: string;
+};
+export interface AdminBooking {
+  id: number; startsAt: string; durationMin: number; type: string; status: string;
+  clientName: string; clientContact: string; clientChannel?: string | null; message: string | null;
+  cancelToken: string; meetingUrl: string | null; confirmEffectsDoneAt?: string | null; // null — эффекты подтверждения не доведены
+}
+/** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
+export interface AdminBookingStatus {
+  siteUrl: string;
+  appUrl: string;
+  robokassa: boolean;
+  robokassaTest: boolean;
+  zoom: boolean;
+  zoomVars: { accountId: boolean; clientId: boolean; clientSecret: boolean };
+  meetingStaticUrl: boolean;
+  appleCalendar: boolean;
+  calendarBusyCount: number | null;
+  calendarNames: string[];
+  calendarReadError: string | null; calendarBlocking: boolean;
+  emailFallback: boolean;
+}
+export interface ArticleSummary {
+  id: number; slug: string; title: string; description: string; date: string; readMin: number; diagramKey?: string | null;
+}
+export interface Article extends ArticleSummary { content: string; }
+export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; diagramKey?: string | null; };
+export interface MarqueeTopic { label: string; href: string; }
+export interface HealthyAdultPhrase { id: number; text: string; enabled: boolean; sortOrder: number; }
+/** Претензия проверки качества к тексту фразы. */
+export interface PhraseIssue {
+  kind: 'род' | 'робот' | 'слово';
+  rule: string;
+  fragment: string;
+  severity: 'block' | 'warn';
+}
+/** Фраза пула с претензиями — результат проверки всего пула. */
+export interface AuditedPhrase extends HealthyAdultPhrase {
+  issues: PhraseIssue[];
+}
+/** Остаток пула канала: на сколько дней хватит ещё не звучавших фраз. */
+export interface HealthyAdultPoolStatus { enabled: number; unused: number; daysLeft: number; }
+export interface SiteContent { heroPhoto: string | null; marqueeTopicsA: MarqueeTopic[]; marqueeTopicsB: MarqueeTopic[]; }
+export interface TherapistCustomMode {
+  id: number;
+  therapistId: UserId;
+  name: string;
+  emoji: string;
+  nodeType: string;
+  createdAt: string;
+}
+
+export interface ModeMapNode {
+  id: string;
+  type: 'trigger' | 'child' | 'critic' | 'coping' | 'healthy' | 'custom' | 'behavior' | 'schema' | 'origin' | 'need' | 'needs';
+  position: { x: number; y: number };
+  data: {
+    modeId?: string;
+    label: string;
+    note?: string;
+    unmetNeed?: string;
+    customColor?: string;
+    filled?: boolean; fillFull?: boolean;
+    copingSubtype?: 'over' | 'avoid' | 'surr';
+    display?: 'name' | 'note' | 'full';   // что показывать на фигуре
+    healthyResponse?: string;             // что сказал бы Здоровый Взрослый
+    strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
+    fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
+    side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
+    schemaId?: string; schemaIds?: string[]; // схема фигуры «схема»/«опыт»; схемы режима — таблетки на фигуре (schemaId у режима — старая одна)
+    needId?: string; diameter?: number;    // потребность таблетки; диаметр старого круга потребностей
+    wheel?: { period?: WheelPeriod; compare?: boolean; ratings?: Partial<Record<WheelPeriod, Record<string, number>>>; notes?: Partial<Record<WheelPeriod, Record<string, string>>> }; // колесо потребностей: в карте — вид (период, контур детства); оценки и текст — в концептуализации (needLinks), здесь остались у карт #1065 до переноса
+    settle?: boolean;                      // свежая схема случая: после замера колонки раздвинутся по высоте (useSettleFresh), флаг снимется
+  };
+  width?: number; height?: number;
+}
+type WheelPeriod = 'child' | 'teen' | 'now';
+export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to' | 'blocks' | 'meets'; // ✗ схема блокирует потребность, ✓ забота о ней
+
+export type LineStyle = 'solid' | 'dashed' | 'dotted';
+
+export interface ModeMapEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  label?: string;
+  data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle; width?: 'thin' | 'normal' | 'bold' };
+}
+
+export type ModeMapKind = 'concept' | 'personality' | 'problem' | 'couple' | 'free';
+
+export interface ModeMapMeta {
+  id: number;
+  title: string;
+  kind: ModeMapKind;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModeMapFull extends ModeMapMeta {
+  nodes: ModeMapNode[];
+  edges: ModeMapEdge[];
+}
+
+export interface ClientConceptualization extends ClientConceptualizationBase {
+  modeMapNodes: ModeMapNode[];
+  modeMapEdges: ModeMapEdge[];
+}
+export interface BeliefCheckEntry {
+  id: number;
+  belief: string;
+  evidenceFor: string[];
+  evidenceAgainst: string[];
+  reframe: string | null;
+  createdAt: string;
+}
+export interface LetterEntry {
+  id: number;
+  text: string;
+  createdAt: string;
+}
+export interface FlashcardEntry {
+  id: number;
+  modeId: string;
+  needId: string;
+  reflection: string | null;
+  action: string | null;
+  createdAt: string;
+}
+export interface PhraseCheckEntry {
+  id: number;
+  phrase: string;
+  marks: import('../../shared/src/phraseCheck/criteria').PhraseMarkId[];
+  rewrite: string | null;
+  inWarmWords: boolean;
+  createdAt: string;
+}
+

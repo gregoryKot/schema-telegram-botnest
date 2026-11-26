@@ -1,0 +1,6 @@
+{
+  "source": "Amazon S3 API Reference, ListObjectsV2 — пример «Sample Response for general purpose buckets: Using a continuation token», https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html",
+  "recordedAt": "2026-10-14",
+  "how": "взято из документации площадки (curl страницы, блок примера ответа); Cloudflare R2 отдаёт ListObjectsV2 в том же формате S3 (https://developers.cloudflare.com/r2/api/s3/api/). Ответа с прода нет: бакет бэкапов ещё не заведён",
+  "redacted": "ничего — пример из документации, не с прода. Убрана только строка-многоточие «...» после первого <Contents>: в документации это знак «и ещё 999 таких же», а не часть XML"
+}

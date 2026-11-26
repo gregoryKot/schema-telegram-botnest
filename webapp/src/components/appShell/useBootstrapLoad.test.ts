@@ -1,0 +1,272 @@
+// @vitest-environment jsdom
+// useBootstrapLoad — одиннадцать фоновых загрузок AppShell на монтировании.
+// РЕГРЕССИЯ: раньше каждая глушилась `.catch(() => {})` молча, и самый
+// дорогой случай — упавший getProfile() — оставлял терапевта в клиентском
+// интерфейсе без кабинета и без объяснения (CLAUDE.md, правило №14).
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
+import { useBootstrapLoad } from './useBootstrapLoad';
+import { ApiError } from '../../apiClient';
+import { MY_MODE_IDS_KEY, MY_SCHEMA_IDS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { todayStr } from '../../../../shared/src/utils/format';
+import { shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
+
+vi.mock('../../api', () => ({
+  api: {
+    init: vi.fn().mockResolvedValue(undefined),
+    recordActivity: vi.fn().mockResolvedValue(undefined),
+    flushOutbox: vi.fn().mockResolvedValue(undefined),
+    getDisclaimer: vi.fn().mockResolvedValue({ accepted: true }),
+    acceptDisclaimer: vi.fn().mockResolvedValue(undefined),
+    needs: vi.fn().mockResolvedValue([]),
+    ratings: vi.fn().mockResolvedValue({}),
+    getPendingPlans: vi.fn().mockResolvedValue([]),
+    getChildhoodRatings: vi.fn().mockResolvedValue({}),
+    getYsqProgress: vi.fn().mockResolvedValue(null),
+    getYsqResult: vi.fn().mockResolvedValue(null),
+    getProfile: vi.fn().mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] }),
+    getTherapyClients: vi.fn().mockResolvedValue([]),
+    getTherapyRelation: vi.fn().mockResolvedValue(null),
+    getUserFlags: vi.fn().mockResolvedValue({}),
+  },
+  reportClientError: vi.fn(),
+}));
+import { api, reportClientError } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
+
+// Микрозадачи вложенной цепочки (getProfile → getTherapyClients/Relation)
+// требуют нескольких тиков, прежде чем Promise.allSettled увидит финальный
+// исход. setTimeout(0) детерминированно ждёт полного слива очереди микрозадач
+// (тот же приём — shared/src/utils/addressFormCache.test.ts).
+async function flush() {
+  await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+}
+
+function setup(initialPathname = '/today') {
+  const navigate = vi.fn();
+  const result = renderHook(() => useBootstrapLoad({ navigate, initialPathname }));
+  return { navigate, ...result };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+  sessionStorage.clear();
+  mockApi.init.mockResolvedValue(undefined);
+  mockApi.recordActivity.mockResolvedValue(undefined);
+  mockApi.flushOutbox.mockResolvedValue(undefined);
+  mockApi.getDisclaimer.mockResolvedValue({ accepted: true });
+  mockApi.acceptDisclaimer.mockResolvedValue(undefined);
+  mockApi.needs.mockResolvedValue([]);
+  mockApi.ratings.mockResolvedValue({});
+  mockApi.getPendingPlans.mockResolvedValue([]);
+  mockApi.getChildhoodRatings.mockResolvedValue({});
+  mockApi.getYsqProgress.mockResolvedValue(null);
+  mockApi.getYsqResult.mockResolvedValue(null);
+  mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] });
+  mockApi.getTherapyClients.mockResolvedValue([]);
+  mockApi.getTherapyRelation.mockResolvedValue(null);
+  mockApi.getUserFlags.mockResolvedValue({});
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('useBootstrapLoad — сбои фоновых источников не глушатся молча', () => {
+  it('упавший getProfile() шлёт ровно один отчёт с именем «профиль» — терапевт не должен молча остаться клиентом', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('boom'));
+    setup();
+    await flush();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0]).toMatchObject({ section: 'appshell.bootstrap' });
+    expect(mockReport.mock.calls[0][0].message).toContain('профиль');
+  });
+
+  it('несколько упавших источников разом — всё равно один отчёт с обоими именами (троттлинг)', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('boom'));
+    mockApi.getPendingPlans.mockRejectedValue(new Error('boom'));
+    setup();
+    await flush();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    const message = mockReport.mock.calls[0][0].message as string;
+    expect(message).toContain('профиль');
+    expect(message).toContain('задания');
+  });
+
+  it('успех всех источников — reportClientError не вызывается', async () => {
+    const { result } = setup();
+    await flush();
+    expect(result.current.loading).toBe(false);
+    expect(mockReport).not.toHaveBeenCalled();
+  });
+
+  // Регрессия правила №3: отложенные оценки (outbox, тот же контракт, что в
+  // мини-аппе) флашатся один раз на старте — сбой флаша не должен теряться
+  // молча, а попадает в единый отчёт под понятным именем.
+  it('упавший flushOutbox() шлёт отчёт с именем «отложенные оценки»', async () => {
+    mockApi.flushOutbox.mockRejectedValue(new Error('boom'));
+    setup();
+    await flush();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0].message).toContain('отложенные оценки');
+  });
+
+  it('flushOutbox() зовётся ровно один раз на монтировании', async () => {
+    setup();
+    await flush();
+    expect(mockApi.flushOutbox).toHaveBeenCalledTimes(1);
+  });
+
+  // К2 (аудит 2026-08): needs/ratings — самый блокирующий источник (без него
+  // весь AppShell рисует «Не удалось загрузить»), но его catch раньше делал
+  // только setError, минуя общий отчёт — единственный из одиннадцати.
+  it('упавший needs()/ratings() тоже попадает в отчёт с именем «needs/ratings»', async () => {
+    mockApi.needs.mockRejectedValue(new Error('boom'));
+    const { result } = setup();
+    await flush();
+    expect(result.current.error).toBeTruthy();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    expect(mockReport.mock.calls[0][0].message).toContain('needs/ratings');
+  });
+
+  // docs/open/backend.md: отчёт нёс только имена — сеть, лимит, авария сервера
+  // и битое тело были неразличимы, разбор 2026-10-03 потребовал чтения кода.
+  it('у каждого имени — причина: код ответа, обрыв сети, битое тело', async () => {
+    mockApi.getProfile.mockRejectedValue(new ApiError(503, 'Service Unavailable'));
+    mockApi.needs.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockApi.getYsqResult.mockRejectedValue(new SyntaxError('Unexpected token < in JSON'));
+    setup();
+    await flush();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    const message = mockReport.mock.calls[0][0].message as string;
+    expect(message).toContain('профиль [HTTP 503]');
+    expect(message).toContain('needs/ratings [network]');
+    expect(message).toContain('YSQ [parse]');
+  });
+
+  it('текст исключения в отчёт не уезжает — только причина из закрытого списка', async () => {
+    mockApi.getPendingPlans.mockRejectedValue(new Error('fetch /auth#access_token=СЕКРЕТ'));
+    setup();
+    await flush();
+    const message = mockReport.mock.calls[0][0].message as string;
+    expect(message).toBe('appshell bootstrap fail: задания [Error]');
+  });
+});
+
+// QA 2026-11-03, К2: «сегодня» запрашивалось без даты — сервер отдавал СВОЙ
+// день (пояс уведомлений, по умолчанию Москва), а пояс устройства до сервера
+// не доходил: уходило число tzOffset, которое DTO отбрасывал.
+describe('useBootstrapLoad — день и пояс устройства', () => {
+  it('оценки «сегодня» и «вчера» — явными датами дня устройства, без запроса «день сервера»', async () => {
+    setup();
+    await flush();
+    const today = todayStr();
+    expect(mockApi.ratings).toHaveBeenCalledWith(today);
+    expect(mockApi.ratings).toHaveBeenCalledWith(shiftCalendarDay(today, -1));
+    expect(mockApi.ratings.mock.calls.every((c) => typeof c[0] === 'string')).toBe(true);
+  });
+
+  it('init несёт пояс устройства (IANA), а не смещение в часах', async () => {
+    setup();
+    await flush();
+    expect(mockApi.init).toHaveBeenCalledWith(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  });
+});
+
+// Правило №16 (гейт паритета фич): GET /api/user-flags был доступен только
+// мини-аппу. therapistMode оттуда — серверное предпочтение «кабинет vs
+// клиент», source of truth, единый с /api/therapy/therapist-view. Новый
+// браузер (пустой localStorage) теперь спрашивает сервер вместо того, чтобы
+// всегда угадывать «кабинет».
+describe('useBootstrapLoad — дефолтный роутинг терапевта учитывает серверный therapistMode', () => {
+  it('пустой localStorage + сервер отдал therapistMode:false — НЕ уводит терапевта в кабинет', async () => {
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockResolvedValue({ therapistMode: false });
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).not.toHaveBeenCalledWith('/cabinet');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+  });
+
+  it('пустой localStorage + сервер отдал therapistMode:true — уводит в кабинет (как раньше)', async () => {
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockResolvedValue({ therapistMode: true });
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).toHaveBeenCalledWith('/cabinet');
+  });
+
+  it('пустой localStorage + флаги не пришли (сеть легла) — фолбэк как раньше: кабинет', async () => {
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockRejectedValue(new Error('network down'));
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).toHaveBeenCalledWith('/cabinet');
+  });
+
+  it('явный локальный выбор «клиент» (therapist_mode=0) перекрывает сервер', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '0');
+    mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    mockApi.getUserFlags.mockResolvedValue({ therapistMode: true });
+    const { navigate } = setup('/today');
+    await flush();
+    expect(navigate).not.toHaveBeenCalledWith('/cabinet');
+  });
+});
+
+// Не-терапевт с устаревшим флагом режима: роль сняли на другой площадке (мини-апп),
+// а localStorage сайта никто не чистит. Флаг '1' вёл «← Назад» с /account в /cabinet,
+// откуда бутстрап отбрасывал обычным navigate: запись /cabinet оставалась в истории,
+// и браузерный «Назад» снова показывал клиенту кабинет.
+describe('useBootstrapLoad — не-терапевт с устаревшим флагом режима «кабинет»', () => {
+  beforeEach(() => {
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] });
+  });
+
+  it('CLIENT + флаг «1» + старт на /cabinet — флаг сброшен в «0», отскок на /today заменяет запись истории', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    const { navigate } = setup('/cabinet');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+    expect(navigate).toHaveBeenCalledWith('/today', { replace: true });
+  });
+
+  it('CLIENT + флаг «1» на /today — флаг сброшен в «0», навигации нет', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    const { navigate } = setup('/today');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('CLIENT без флага — ключ не создаётся: явное «0» перекрыло бы серверный выбор, если аккаунт станет терапевтом', async () => {
+    const { navigate } = setup('/today');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+// Класс «кэш пережил источник правды» (#939): профиль при старте — источник
+// правды для «моих» схем и режимов, пустой список тоже.
+describe('useBootstrapLoad — кэш «моих» схем и режимов повторяет профиль', () => {
+  it('сервер отдал [] — старая локальная копия стёрта, режимы кэшируются тоже', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [], myModeIds: ['critic'] });
+    setup('/today');
+    await flush();
+    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]');
+    expect(JSON.parse(localStorage.getItem(MY_MODE_IDS_KEY)!)).toEqual(['critic']);
+  });
+
+  it('в профиле нет полей — локальная копия остаётся', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null });
+    setup('/today');
+    await flush();
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBeNull();
+  });
+});

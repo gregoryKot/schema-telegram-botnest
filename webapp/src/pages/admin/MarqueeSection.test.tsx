@@ -1,0 +1,108 @@
+// @vitest-environment jsdom
+// Админ-вкладка «Бегущие строки» лендинга: две независимые редактируемые
+// коллекции (А/Б) — добавить/удалить/переместить/сохранить. Ошибка сохранения
+// обязана быть видна, а не выглядеть как успех.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MarqueeSection } from './MarqueeSection';
+
+vi.mock('../../api', () => ({
+  api: {
+    getSiteContent: vi.fn(),
+    adminSetMarquee: vi.fn(),
+  },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockApi.getSiteContent.mockResolvedValue({
+    marqueeTopicsA: [{ label: 'Тревога', href: '#a' }],
+    marqueeTopicsB: [{ label: 'Границы', href: '#b' }],
+  });
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+describe('MarqueeSection — на чистом контенте пусто, не выдумка', () => {
+  it('без строк в API — списки пустые, без хардкода', async () => {
+    // Начальный state уже пустой: проверка на первом кадре зелёная, что бы
+    // компонент ни сделал с ответом. Ждём сам ответ (как renderSettled в
+    // PhotoSection.test.tsx), потом проверяем.
+    const response = Promise.resolve({ marqueeTopicsA: [], marqueeTopicsB: [] });
+    mockApi.getSiteContent.mockReturnValue(response);
+    render(<MarqueeSection adminKey="k" />);
+    await act(async () => { await response; });
+    expect(mockApi.getSiteContent).toHaveBeenCalled();
+    expect(screen.getByText('Бегущая строка А')).toBeTruthy();
+    expect(screen.queryAllByPlaceholderText('Текст')).toHaveLength(0);
+  });
+});
+
+describe('MarqueeSection — редактирование строки А', () => {
+  it('показывает реальные пункты из API', async () => {
+    render(<MarqueeSection adminKey="k" />);
+    await screen.findByDisplayValue('Тревога');
+    expect(screen.getByDisplayValue('Границы')).toBeTruthy();
+  });
+
+  it('«+ Добавить пункт» добавляет пустую строку в нужную коллекцию', async () => {
+    render(<MarqueeSection adminKey="k" />);
+    await screen.findByDisplayValue('Тревога');
+    const addButtons = screen.getAllByRole('button', { name: '+ Добавить пункт' });
+    fireEvent.click(addButtons[0]);
+    const labelInputs = screen.getAllByPlaceholderText('Текст');
+    // было 1 в строке А + 1 в строке Б = 2, после добавления в А — 3.
+    expect(labelInputs.length).toBe(3);
+  });
+
+  it('удаление пункта убирает его из списка', async () => {
+    render(<MarqueeSection adminKey="k" />);
+    await screen.findByDisplayValue('Тревога');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Удалить' })[0]);
+    expect(screen.queryByDisplayValue('Тревога')).toBeNull();
+  });
+
+  it('сохранение отправляет только заполненные пункты для своей группы (read-after-write через API-вызов)', async () => {
+    mockApi.adminSetMarquee.mockResolvedValue({ ok: true });
+    render(<MarqueeSection adminKey="k" />);
+    await screen.findByDisplayValue('Тревога');
+    const saveButtons = screen.getAllByRole('button', { name: /Сохранить/ });
+    fireEvent.click(saveButtons[0]);
+
+    await screen.findByText('Сохранено ✓');
+    expect(mockApi.adminSetMarquee).toHaveBeenCalledWith('k', 'A', [{ label: 'Тревога', href: '#a' }]);
+  });
+
+  it('ошибка сохранения — видна пользователю, «Сохранено» не показывается', async () => {
+    mockApi.adminSetMarquee.mockRejectedValue(new Error('Не удалось сохранить бегущую строку'));
+    render(<MarqueeSection adminKey="k" />);
+    await screen.findByDisplayValue('Тревога');
+    fireEvent.click(screen.getAllByRole('button', { name: /Сохранить/ })[0]);
+
+    await screen.findByText('Не удалось сохранить бегущую строку');
+    expect(screen.queryByText('Сохранено ✓')).toBeNull();
+  });
+});
+
+// docs/open/ci-tests.md, «Админка: загрузка без отмены»: ответ GET, пришедший после правки,
+// затирал её на экране. Ответ — отложенный, правка — до него (как гонка в PhotoSection.test.tsx).
+describe('MarqueeSection — поздний ответ загрузки', () => {
+  const CONTENT = { marqueeTopicsA: [{ label: 'Тревога', href: '#a' }], marqueeTopicsB: [{ label: 'Границы', href: '#b' }] };
+
+  it('пункт, добавленный до ответа, не затирается — встаёт после загруженных', async () => {
+    let answer: (v: typeof CONTENT) => void = () => {};
+    const late = new Promise<typeof CONTENT>((r) => { answer = r; });
+    mockApi.getSiteContent.mockReturnValue(late);
+    render(<MarqueeSection adminKey="k" />);
+    fireEvent.click(screen.getAllByRole('button', { name: '+ Добавить пункт' })[0]);
+    fireEvent.change(screen.getByPlaceholderText('Текст'), { target: { value: 'Стыд' } });
+
+    await act(async () => { answer(CONTENT); await late; });
+    const labels = screen.getAllByPlaceholderText('Текст').map((el) => (el as HTMLInputElement).value);
+    expect(labels).toEqual(['Тревога', 'Стыд', 'Границы']);
+  });
+});

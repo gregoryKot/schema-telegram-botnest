@@ -1,0 +1,62 @@
+import { useCallback, useEffect, useState } from 'react';
+import { api, reportClientError, type UserTask } from '../../api';
+import { asArray } from './safeData';
+import { useTasksChanged } from '../../../../shared/src/tasks/tasksChanged';
+
+// Загрузка + мутации «Практик на сегодня». Раньше completeTask/refetch после
+// создания задания глотали сбой молча: пользователь заканчивал упражнение
+// или создавал цель, экран закрывался, а на сервере ничего не менялось —
+// список выглядел так, будто действие прошло. Фоновая начальная загрузка
+// (mount/refreshKey) экран не роняет и баннер не показывает (см.
+// TodaySection.test.tsx — «ошибки API не роняют экран»), но и не молчит
+// полностью: сбой уходит в reportClientError, чтобы он был виден в логах,
+// а не терялся навсегда. Действие, которое юзер только что выполнил сам
+// (completeTask/afterCreate) — обязано сказать явно, через taskError.
+export function useTaskActions(refreshKey: number | undefined, section = 'today.tasks') {
+  const [tasks, setTasks] = useState<UserTask[]>([]);
+  const [taskHistory, setTaskHistory] = useState<UserTask[]>([]);
+  const [taskError, setTaskError] = useState(false);
+  // Первая загрузка закончилась (удачно или нет): узел заданий по ссылке
+  // (`tasks_<id>`) решает, открыть задание или показать список.
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(
+    () => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => {
+      setTasks(asArray(t));
+      setTaskHistory(asArray(h));
+    }),
+    [],
+  );
+
+  const reload = useCallback(
+    () => load()
+      .catch(() => reportClientError({ message: 'tasks background load failed', section }))
+      .finally(() => setLoaded(true)),
+    [load, section],
+  );
+  useEffect(() => { void reload(); }, [refreshKey, reload]);
+  // Задание закрыл сервер (пройденный тест на схемы): список перечитывается,
+  // а не ждёт перезагрузки (QA 2026-11, К1).
+  useTasksChanged(() => void reload());
+
+  const completeTask = useCallback(
+    (id: number, onDone?: () => void) => {
+      setTaskError(false);
+      return api.completeTask(id, true)
+        .then(load)
+        .then(() => onDone?.())
+        .catch(() => setTaskError(true));
+    },
+    [load],
+  );
+
+  const afterCreate = useCallback(
+    (onDone?: () => void) => {
+      setTaskError(false);
+      return load().then(() => onDone?.()).catch(() => setTaskError(true));
+    },
+    [load],
+  );
+
+  return { tasks, taskHistory, taskError, loaded, completeTask, afterCreate };
+}

@@ -1,0 +1,185 @@
+// @vitest-environment jsdom
+// AppShell — начальный эффект загрузки данных (роль пользователя, дисклеймер,
+// денормализованный mySchemaIds → localStorage). Дочерние секции замоканы
+// (AppShell.test-helpers.tsx).
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { renderAppShell } from './AppShell.test-helpers';
+import { api } from '../api';
+import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY } from '../utils/storageKeys';
+
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+beforeEach(() => {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  // тестовый полифилл jsdom
+  global.ResizeObserver = ResizeObserverStub;
+  localStorage.clear();
+  sessionStorage.clear();
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+describe('AppShell — согласия: молча не принимаем, нужен экран', () => {
+  it('accepted: false — показан экран согласий, acceptDisclaimer не зван до двух галочек', async () => {
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+    renderAppShell('/today');
+    // Сначала приветствие (как первый шаг визарда мини-аппа), согласия за ним.
+    await screen.findByText('БЕТА-ВЕРСИЯ');
+    fireEvent.click(screen.getByText('Далее'));
+    await screen.findByText('Данные и конфиденциальность');
+    expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Далее'));
+    expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Начать'));
+    await waitFor(() => expect(mockApi.acceptDisclaimer).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByText('Важно знать')).toBeNull());
+  });
+
+  // QA 2026-11 (A-З7): автопоказ «Первый раз здесь» открывался под согласиями.
+  // Шов AppShell ↔ секция: конец очереди входов секция узнаёт только после «Начать».
+  it('секция «Сегодня» узнаёт конец очереди только после согласий', async () => {
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+    renderAppShell('/today');
+    await screen.findByText('БЕТА-ВЕРСИЯ');
+    expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":false');
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Начать'));
+    await waitFor(() => expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":true'));
+  });
+
+  it('accepted: false, но экран входа сайта был показан — принимается без экрана', async () => {
+    localStorage.setItem('login_consent_shown', '1');
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+    renderAppShell('/today');
+    await waitFor(() => expect(mockApi.acceptDisclaimer).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Данные и конфиденциальность')).toBeNull();
+  });
+
+  it('accepted: true — экрана нет и вызова нет', async () => {
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: true });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.queryByText('Данные и конфиденциальность')).toBeNull();
+    expect(mockApi.acceptDisclaimer).not.toHaveBeenCalled();
+  });
+});
+
+describe('AppShell — роль пользователя решает, куда попадает на дефолтном лендинге', () => {
+  it('CLIENT остаётся на клиентском экране «Сегодня»', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'CLIENT', name: 'Аня', mySchemaIds: [] });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.getByText('Аня')).toBeTruthy();
+  });
+
+  it('THERAPIST без явного выбора режима на дефолтном лендинге уходит в кабинет', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('1');
+  });
+
+  it('THERAPIST, ЯВНО выбравший клиентский режим (therapist_mode=0), остаётся клиентом', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '0');
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    // Уважаем явный выбор — кабинет не открывается поверх воли пользователя.
+    expect(screen.queryByTestId('therapist-client-sheet')).toBeNull();
+  });
+
+  it('THERAPIST, зашедший НЕ на дефолтный лендинг (/practice), остаётся там, где был', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/practice');
+    await waitFor(() => expect(screen.getByTestId('practice-section')).toBeTruthy());
+  });
+
+  it('CLIENT, случайно оказавшийся на /cabinet, перенаправляется на /today', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'CLIENT', name: null, mySchemaIds: [] });
+    renderAppShell('/cabinet');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+  });
+});
+
+describe('AppShell — денормализованный mySchemaIds синхронизируется в localStorage (правило №4)', () => {
+  it('профиль с mySchemaIds сохраняет их в localStorage под MY_SCHEMA_IDS_KEY', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'CLIENT', name: null, mySchemaIds: ['abandonment', 'mistrust'] });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]')).toEqual(['abandonment', 'mistrust']);
+  });
+
+  // Сервер — источник правды целиком, пустой список тоже: убрал все схемы на
+  // другом устройстве — здесь старый список не переживает вход (класс «кэш
+  // пережил источник правды», #939/#958). До этого гард length > 0 оставлял
+  // старую копию, и «пустышка» была единственным случаем, который он отличал.
+  it('пустой mySchemaIds стирает старую локальную копию', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'CLIENT', name: null, mySchemaIds: [] });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    await waitFor(() => expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]'));
+  });
+});
+
+describe('AppShell — оценки колеса детства, пришедшие с бэкенда, помечают тест пройденным', () => {
+  it('непустой ответ getChildhoodRatings выставляет CHILDHOOD_DONE_KEY (не показываем колесо заново)', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValueOnce({ safety: 5, autonomy: 7 });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    await waitFor(() => expect(localStorage.getItem(CHILDHOOD_DONE_KEY)).toBe('1'));
+  });
+
+  it('пустой ответ getChildhoodRatings ничего не помечает (колесо ещё не пройдено)', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValueOnce({});
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(localStorage.getItem(CHILDHOOD_DONE_KEY)).toBeNull();
+  });
+});
+
+describe('AppShell — init() шлётся один раз за сессию (sessionStorage init_done)', () => {
+  it('первый монт вызывает api.init', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(mockApi.init).toHaveBeenCalledTimes(1));
+  });
+
+  it('если init_done уже стоит — повторный монт api.init не вызывает', async () => {
+    sessionStorage.setItem('init_done', '1');
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(mockApi.init).not.toHaveBeenCalled();
+  });
+});
+
+describe('AppShell — прогресс YSQ-теста подхватывается из бэкенда (для мини-аппа)', () => {
+  it('незавершённый прогресс без результата сохраняется в localStorage', async () => {
+    mockApi.getYsqProgress.mockResolvedValueOnce({ answers: [1, 2, 3], page: 3 });
+    mockApi.getYsqResult.mockResolvedValueOnce(null);
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    await waitFor(() => expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeTruthy());
+    expect(JSON.parse(localStorage.getItem(YSQ_PROGRESS_KEY)!)).toEqual({ answers: [1, 2, 3], page: 3 });
+  });
+
+  it('если результат УЖЕ есть — незавершённый прогресс в localStorage не пишем (тест не актуален)', async () => {
+    mockApi.getYsqProgress.mockResolvedValueOnce({ answers: [1, 2, 3], page: 3 });
+    mockApi.getYsqResult.mockResolvedValueOnce({ answers: [1, 2, 3, 4], completedAt: '2026-01-01T00:00:00.000Z' });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeNull();
+  });
+});

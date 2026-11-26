@@ -1,0 +1,215 @@
+import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  HttpException,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
+import { type AuthRequest, uid } from '../api/request-utils';
+import { parseClientId } from '../api/parse-user-id';
+import { SubmitTherapistRequestDto } from './therapist-request.dto';
+import { TelegramAuthGuard } from '../api/telegram-auth.guard';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyInviteService } from './therapy-invite.service';
+import {
+  ALREADY_CONNECTED_ERROR,
+  TOO_MANY_INVITES_ERROR,
+} from './therapy-invite';
+import { CreateInviteDto } from './dto/invite.dto';
+import { TherapyClientDataService } from './therapy-client-data.service';
+import { TherapistRequestService } from './therapist-request.service';
+import { AccountService } from '../bot/account.service';
+import { TherapistExitService } from './therapist-exit.service';
+import { JoinTherapyDto, TherapistViewDto } from './dto/connection.dto';
+import { VirtualClientDto } from './dto/virtual-client.dto';
+import { RenameClientDto } from './dto/client-data.dto';
+
+// Подключение клиент↔терапевт: инвайт-коды, join/disconnect, список
+// клиентов (add/virtual/rename/remove) и заявка на роль терапевта.
+@Controller('api/therapy')
+@UseGuards(TelegramAuthGuard)
+export class TherapyConnectionController {
+  constructor(
+    private readonly relationsService: TherapyRelationsService,
+    private readonly invites: TherapyInviteService,
+    private readonly clientDataService: TherapyClientDataService,
+    private readonly accountService: AccountService,
+    private readonly therapistRequestService: TherapistRequestService,
+    private readonly exit: TherapistExitService,
+  ) {}
+
+  private async assertTherapist(req: AuthRequest): Promise<void> {
+    const role = await this.accountService.getUserRole(uid(req));
+    if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
+  }
+
+  // ─── Connection ─────────────────────────────────────────────────────────────
+
+  // Каждый вызов — новый код (инцидент 2026-10-26); живых не больше
+  // MAX_LIVE_INVITES — сверх предела 409 с машиночитаемой причиной.
+  @Post('invite')
+  async createInvite(@Req() req: AuthRequest, @Body() body: CreateInviteDto) {
+    await this.assertTherapist(req);
+    try {
+      return await this.invites.create(uid(req), body.alias);
+    } catch (e) {
+      if (e instanceof Error && e.message === TOO_MANY_INVITES_ERROR)
+        throw new ConflictException({
+          message: 'Too many live invites',
+          reason: 'too_many_invites',
+        });
+      throw e;
+    }
+  }
+
+  @Get('relation')
+  async getRelation(@Req() req: AuthRequest) {
+    return this.relationsService.getRelation(uid(req));
+  }
+
+  // Терапевт отказался от роли — клиенту сообщение вместо «Мой терапевт».
+  @Get('former-therapist')
+  async getFormerTherapist(@Req() req: AuthRequest) {
+    return this.exit.formerTherapist(uid(req));
+  }
+
+  // Проверяет код, как invite/preview, — счётчик в Postgres (правило №5).
+  @Post('join')
+  @PersistentThrottleLimit({
+    short: { limit: 10, ttl: 60_000 },
+    long: { limit: 100, ttl: 24 * 3_600_000 },
+  })
+  async join(@Req() req: AuthRequest, @Body() body: JoinTherapyDto) {
+    if (!body.code) throw new BadRequestException('code required');
+    let ok: boolean;
+    try {
+      ok = await this.invites.join(uid(req), body.code);
+    } catch (e) {
+      // Уже есть активная связь с другим терапевтом (аудит 2026-10, T3): 409 с
+      // машиночитаемой причиной — фронт может показать точный текст вместо
+      // общего «неверный код». Форма успешного ответа не меняется.
+      if (e instanceof Error && e.message === ALREADY_CONNECTED_ERROR)
+        throw new ConflictException({
+          message: 'Already connected to another therapist',
+          reason: 'already_connected',
+        });
+      throw e;
+    }
+    if (!ok) throw new BadRequestException('Invalid or expired code');
+    return { ok: true };
+  }
+
+  @Delete('relation')
+  async disconnect(@Req() req: AuthRequest) {
+    await this.relationsService.disconnect(uid(req));
+    return { ok: true };
+  }
+
+  @Get('clients')
+  async getClients(@Req() req: AuthRequest) {
+    await this.assertTherapist(req);
+    return this.relationsService.getClients(uid(req));
+  }
+
+  @Delete('clients/:clientId')
+  async removeClient(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+  ) {
+    await this.assertTherapist(req);
+    await this.clientDataService.removeClient(
+      uid(req),
+      parseClientId(clientId),
+    );
+    return { ok: true };
+  }
+
+  @Post('clients/virtual')
+  async addVirtualClient(
+    @Req() req: AuthRequest,
+    @Body() body: VirtualClientDto,
+  ) {
+    await this.assertTherapist(req);
+    if (!body.name?.trim()) throw new BadRequestException('name required');
+    return this.relationsService.addVirtualClient(uid(req), body.name);
+  }
+
+  @Post('rename-client/:clientId')
+  async renameClient(
+    @Req() req: AuthRequest,
+    @Param('clientId') clientId: string,
+    @Body() body: RenameClientDto,
+  ) {
+    await this.assertTherapist(req);
+    // Нет активной связи — 403, как у остальных ручек с :clientId.
+    await this.relationsService
+      .renameClient(uid(req), parseClientId(clientId), body.alias)
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.message === 'No active relation')
+          throw new ForbiddenException('No active relation with this client');
+        throw e;
+      });
+    return { ok: true };
+  }
+
+  // DEPRECATED. Replaced by /api/therapy/request → admin approval flow.
+  // Kept returning 410 Gone so any clients still using the old endpoint get
+  // a clear error rather than silent failure.
+  @Post('become-therapist')
+  becomeTherapist() {
+    throw new HttpException(
+      'Способ отключён. Заявка подаётся в приложении: Настройки → «Я психолог».',
+      410,
+    );
+  }
+
+  // ─── Therapist role request (admin-approved) ────────────────────────────
+
+  @Post('request')
+  @PersistentThrottleLimit({
+    short: { limit: 2, ttl: 60_000 },
+    long: { limit: 5, ttl: 24 * 3_600_000 },
+  })
+  async submitRequest(
+    @Req() req: AuthRequest,
+    @Body() body: SubmitTherapistRequestDto,
+  ) {
+    return this.therapistRequestService.submit(uid(req), body);
+  }
+
+  @Get('request')
+  async getMyRequest(@Req() req: AuthRequest) {
+    const row = await this.therapistRequestService.getMine(uid(req));
+    return row ?? null;
+  }
+
+  // ─── Therapist view preference / resignation ────────────────────────────
+
+  // Запоминает предпочтение старта (кабинет vs клиент). Только для THERAPIST —
+  // иначе клиент поднял бы себе UI терапевта (privilege escalation).
+  @Post('therapist-view')
+  async setTherapistView(
+    @Req() req: AuthRequest,
+    @Body() body: TherapistViewDto,
+  ) {
+    await this.assertTherapist(req);
+    await this.accountService.setTherapistMode(uid(req), body.on);
+    return { ok: true };
+  }
+
+  // Отказ от роли терапевта — возврат в CLIENT (см. TherapistExitService.resign).
+  @Delete('therapist-role')
+  async resignTherapist(@Req() req: AuthRequest) {
+    await this.assertTherapist(req);
+    await this.exit.resign(uid(req));
+    return { ok: true };
+  }
+}

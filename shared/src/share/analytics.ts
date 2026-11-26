@@ -1,0 +1,203 @@
+// Тип карточки для продуктового события share_card (правило №8). Общий для
+// обоих фронтендов; бэк держит парный allow-list в
+// src/analytics/analytics.constants.ts — при добавлении вида синхронь оба.
+export type ShareCardKind =
+  | 'weekly'
+  | 'day'
+  | 'achievement'
+  | 'streak'
+  | 'schema'
+  | 'diary'
+  | 'ysq'
+  | 'mode'
+  | 'mode_entry'
+  | 'pair_invite'
+  | 'app_invite'
+  | 'therapist_invite'
+  | 'month'
+  | 'achievements'
+  | 'phrase'
+  | 'gratitude'
+  | 'journey'
+  | 'journey_item'
+  | 'practice'
+  | 'mode_entry_full'
+  | 'phrase_check'
+  | 'phrase_check_full';
+
+export const SHARE_CARD_EVENT = 'share_card';
+// Исход системного шэра: meta { kind, ok }. Позволяет мерить «получилось ли
+// поделиться» (картинка vs текстовый фолбэк). Allow-list — analytics.constants.
+export const SHARE_RESULT_EVENT = 'share_result';
+
+// Шаг обучающего онбординга: meta { step }. По нему в /stats строится воронка
+// «докуда доходят новички». Парный allow-list (ONBOARDING_STEPS) —
+// src/analytics/analytics.constants.ts, при добавлении шага синхронь оба.
+export const ONBOARDING_STEP_EVENT = 'onboarding_step';
+
+// Открытие архива «Мой путь» (без meta). Парное имя — в ANALYTICS_EVENTS
+// на бэке; метрика видна в /stats («Архив „Мой путь“»).
+export const JOURNEY_OPEN_EVENT = 'journey_open';
+
+// Удаление своей записи: meta { type } (shared/src/analytics/trackEntryDeleted.ts).
+// Тип события шире удаляемого в «Моём пути»: разбор фразы и записи дневника
+// удаляются на своих экранах. Парный allow-list — ENTRY_DELETE_TYPES
+// (src/analytics/entry-delete.constants.ts), сверка — analytics-sync.invariants.spec.ts.
+export const ENTRY_DELETED_EVENT = 'entry_deleted';
+export type EntryDeleteType =
+  'belief_check' | 'letter' | 'flashcard' | 'phrase_check' | 'diary';
+export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
+
+// Клик по ссылке на сайт практики автора (kotlarewski.gr) с публичного сайта:
+// meta { place } — блок об авторе / подвал / ответ FAQ / экран результата
+// мини-теста. Страницы видят только гости, событие анонимное — через
+// api.trackPublicEvent (userId = null). Парный allow-list
+// (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts (синхронно).
+export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
+// Клик по кнопке страницы ссылок kotlarewski.gr/privet: meta { target, from } — analytics/linksPage.ts.
+export const LINKS_PAGE_CLICK_EVENT = 'links_page_click';
+// Лендинг открыт кнопкой финала игры (?from=game), без meta; пара — GAME_EVENTS.
+export const GAME_APP_ARRIVE_EVENT = 'game_app_arrive';
+export type PracticeLinkPlace =
+  'author' | 'footer' | 'faq' | 'quiz' | 'ysq_result';
+// Сохранение карточки-портрета режима («Знакомство с режимом»): meta
+// { modeId, filledFields } — сколько из 7 полей заполнено. Парный allow-list
+// (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
+export const MODE_CARD_SAVED_EVENT = 'mode_card_saved';
+
+// Сохранение записи дневника режимов: meta { filledFields 0..7, filledHealthy }.
+// Парный allow-list (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
+export const MODE_ENTRY_SAVED_EVENT = 'mode_entry_saved';
+// Тест «по функции» определил режим: meta { modeId }. Парный allow-list там же.
+export const MODE_TEST_COMPLETED_EVENT = 'mode_test_completed';
+
+// Открытие раздела «Тёплые слова»: meta { count } — сколько записей в
+// коллекции (0..1000). Парный allow-list — src/analytics/analytics.constants.ts.
+export const WARM_WORDS_OPEN_EVENT = 'warm_words_open';
+// Согласился разобрать связанный режим после записи дневника режимов:
+// meta { from, to } — modeId исходного и выбранного режима. Парный allow-list
+// там же.
+export const MODE_CHAIN_FOLLOWUP_EVENT = 'mode_chain_followup';
+
+// Открыл лист «С чем путают режим» (сравнение с соседями по путанице) с
+// карточки выбранного режима: meta { modeId }. Парный allow-list там же.
+export const MODE_DOUBT_OPENED_EVENT = 'mode_doubt_opened';
+// В листе «С чем путают режим» нажал «Это ближе» — переключил выбор:
+// meta { from, to } — modeId исходного и выбранного режима. Парный allow-list там же.
+export const MODE_DOUBT_SWITCHED_EVENT = 'mode_doubt_switched';
+
+/** meta для mode_entry_saved из значений формы дневника (общий, оба фронта). */
+export function modeEntrySavedMeta(
+  fieldValues: string[], // 7 текстовых полей дневника (любой порядок)
+  healthyResponse: string,
+): { filledFields: number; filledHealthy: boolean } {
+  return {
+    filledFields: fieldValues.filter((v) => v.trim().length > 0).length,
+    filledHealthy: healthyResponse.trim().length > 0,
+  };
+}
+
+// 2026-08-31: needs_what/needs_why/needs_result/diaries_why/today_screen/author
+// сняты с визарда — визард
+// дублировал онбординг трекера и пустые состояния фичей, контент переехал
+// туда же. Тип НЕ сокращён — старые события с этими шагами лежат в БД, и
+// воронка /stats за прошлый период должна по-прежнему читаться (парный список
+// на бэке — src/analytics/onboarding-steps.constants.ts, синхронь оба). Новые
+// события с этими шагами больше не приходят.
+export type OnboardingStep =
+  | 'welcome'
+  | 'privacy'
+  | 'not_therapy'
+  | 'needs_what'
+  | 'needs_why'
+  | 'needs_result'
+  | 'diaries_why'
+  | 'today_screen'
+  | 'author'
+  | 'home_screen'
+  | 'done';
+
+// Вход и перенос аккаунта (account_link_*, login_method_offer) — shared/src/analytics/accountLogin.ts.
+
+// Веб-пуши: человек запретил уведомления в окне браузера («Настройки → Уведомления»).
+// Без меты; шлёт webapp/src/push/pushSubscription.ts через api.trackEvent. Парный
+// allow-list — src/analytics/push-events.constants.ts (в analytics-sync — BACKEND_ONLY).
+export const PUSH_DENIED_EVENT = 'push_denied';
+
+// Открытие листа схемы/режима с редизайна вкладки «Я»: meta { kind }.
+// Парный allow-list (ANALYTICS_EVENTS, PROFILE_PATTERN_KINDS) —
+// src/analytics/analytics.constants.ts. Фронт вкладки «Я» ещё не подключён
+// (см. src/security/analytics-sync.invariants.spec.ts, BACKEND_ONLY) — тот
+// же приём, что у MODE_CARD_SAVED_EVENT: контракт заводится раньше UI.
+export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
+export type ProfilePatternKind = 'schema' | 'mode';
+
+// Переход из вкладки «Записи» (webapp/src/sections/diary/): к карточке схемы/режима,
+// к трекеру или к разбору «Что случилось». meta { to }; allow-list — DIARY_JUMP_TARGETS.
+export const DIARY_JUMP_EVENT = 'diary_jump';
+export type DiaryJumpTarget = 'pattern' | 'tracker' | 'case';
+
+// Графическая концептуализация в кабинете терапевта. Без меты (правило №7); имя в api.trackEvent — строковым литералом,
+// так их видит трипваер analytics-sync. Смысл и место каждого — allow-list src/analytics/concept-events.constants.ts.
+// Первые три (схема случая, связи режима, тексты схемы) шлёт useConceptGraphTracking, константы сверяет тест хука.
+export const CONCEPT_GRAPH_OPEN_EVENT = 'concept_graph_open';
+export const CONCEPT_MODE_LINKED_EVENT = 'concept_mode_linked';
+export const CONCEPT_SCHEMA_LINKED_EVENT = 'concept_schema_linked';
+// Только сайт: карта из концептуализации (useOpenConceptCanvas, выбор типа «Концептуализация») и разворот на весь экран.
+export const CONCEPT_CANVAS_OPEN_EVENT = 'concept_canvas_open';
+export const CONCEPT_GRAPH_FULLSCREEN_EVENT = 'concept_graph_fullscreen';
+// «Повторить» после ошибки сохранения (SaveStatusLine): вкладка сайта, холст, кнопка мини-аппа. «Главное» — ConceptBriefButton.
+export const CONCEPT_SAVE_RETRY_EVENT = 'concept_save_retry';
+export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
+// Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
+export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
+export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
+export const CONCEPT_NEEDS_RATED_EVENT = 'concept_needs_rated'; // колесо потребностей на холсте (WheelProvider): первое за открытие сохранение с оценкой или текстом терапевта
+// Подсказки терапевту (#995, guide/useConceptGuide): лист режима, лист схемы, лист техники, «Дать заданием»,
+// «Делали сегодня» в листе техники (только постановка отметки, не снятие); журнал техник во вкладке «Задания» —
+// переход «журнал →» из подсказок и тап по строке журнала (лист техники). Только сайт.
+export const CONCEPT_GUIDE_MODE_OPEN_EVENT = 'concept_guide_mode_open';
+export const CONCEPT_GUIDE_SCHEMA_OPEN_EVENT = 'concept_guide_schema_open';
+export const CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT =
+  'concept_guide_technique_open';
+export const CONCEPT_GUIDE_ASSIGN_EVENT = 'concept_guide_assign';
+export const CONCEPT_GUIDE_MARK_DONE_EVENT = 'concept_guide_mark_done';
+export const CONCEPT_GUIDE_JOURNAL_OPEN_EVENT = 'concept_guide_journal_open';
+export const CONCEPT_GUIDE_JOURNAL_ENTRY_EVENT = 'concept_guide_journal_entry';
+// Схема случая клиенту: терапевт включил/выключил «Показать клиенту» (meta { on }), клиент открыл её в «Мой терапевт».
+export const CONCEPT_SHARED_EVENT = 'concept_shared';
+export const CLIENT_CONCEPT_OPENED_EVENT = 'client_concept_opened';
+
+// «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
+// (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
+export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
+export * from './analyticsCabinetGuide'; // «Справочник» терапевта: cabinet_guide_*
+
+// Запись клиента из приложения (#546): открыл лист «Записаться на сессию» из «Мой терапевт», без меты; шлётся
+// литералом из ClientBookingSheet (его видит analytics-sync). Созданную бронь (`client_booking_created`) пишет
+// сервер. Allow-list — src/analytics/client-booking-events.constants.ts.
+export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
+
+// ── Разбор случая («Что это было») ─────────────────────────────────────────
+// Новая точка входа: человек за три минуты разбирает один случай и получает
+// первую запись дневника, приметы для карточки и метку на карте себя.
+// Имена событий шлются строковыми литералами из компонентов потока — так их
+// видит спека синхронизации (src/security/analytics-sync.invariants.spec.ts);
+// здесь живут типы меты. Парный allow-list и санитайзер —
+// src/analytics/case-steps.constants.ts и src/api/analytics-meta.sanitize-case.ts.
+//
+// Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
+// остаются на клиенте и в зашифрованных полях карточки (правило №7).
+
+/** С «Записано» открыли карту себя: meta.repeat — экран сказал о повторе режима. */
+export interface CaseMapOpenedMeta {
+  repeat: boolean;
+}
+
+/** Переход-мост «Карты себя»: meta.to. Шлётся литералом api.trackEvent('self_map_link', { to }). */
+export const SELF_MAP_LINK_EVENT = 'self_map_link';
+export type SelfMapLinkTarget =
+  'mode' | 'schema' | 'patterns' | 'ysq_test' | 'map';
+
+/** Откуда взялась сцена: meta.source у case_scene. */
+export type CaseSceneSource = 'own' | 'frame';

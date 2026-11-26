@@ -1,0 +1,147 @@
+// DTO-рефактор inline-типов @Body() для инструментов дневника
+// (belief-checks, letters, safe-place, flashcards) — аудит 2026-07, 2г
+// / правило №6 CLAUDE.md.
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import {
+  BeliefCheckDto,
+  LetterDto,
+  SafePlaceDto,
+  FlashcardDto,
+} from './tools.dto';
+import {
+  EXERCISE_TEXT_MAX,
+  LETTER_TEXT_MAX,
+  SAFE_PLACE_TEXT_MAX,
+} from '../../utils/text-limits';
+
+async function errorsFor(
+  cls: new () => object,
+  body: Record<string, unknown>,
+): Promise<string[]> {
+  const dto = plainToInstance(cls, body);
+  const errs = await validate(dto, { whitelist: true });
+  return errs.map((e) => e.property);
+}
+
+describe('BeliefCheckDto', () => {
+  const VALID = {
+    belief: 'я всегда всё порчу',
+    evidenceFor: ['вчера опоздал'],
+    evidenceAgainst: ['обычно успеваю'],
+  };
+
+  it('валидное тело проходит', async () => {
+    await expect(errorsFor(BeliefCheckDto, VALID)).resolves.toEqual([]);
+  });
+
+  it('evidenceFor не массив — отказ', async () => {
+    await expect(
+      errorsFor(BeliefCheckDto, { ...VALID, evidenceFor: 'not-array' }),
+    ).resolves.toContain('evidenceFor');
+  });
+
+  it('элемент evidenceAgainst длиннее 3000 — отказ', async () => {
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        ...VALID,
+        evidenceAgainst: ['x'.repeat(3001)],
+      }),
+    ).resolves.toContain('evidenceAgainst');
+  });
+
+  it('evidenceFor: больше 50 элементов — отказ (L5, ArrayMaxSize)', async () => {
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        ...VALID,
+        evidenceFor: Array.from({ length: 51 }, (_, i) => `e${i}`),
+      }),
+    ).resolves.toContain('evidenceFor');
+  });
+
+  it('пустое belief — отказ', async () => {
+    await expect(
+      errorsFor(BeliefCheckDto, { ...VALID, belief: '' }),
+    ).resolves.toContain('belief');
+  });
+});
+
+describe('LetterDto / SafePlaceDto — оба поля опциональны', () => {
+  it('пустое тело проходит', async () => {
+    await expect(errorsFor(LetterDto, {})).resolves.toEqual([]);
+    await expect(errorsFor(SafePlaceDto, {})).resolves.toEqual([]);
+  });
+
+  it('текст длиннее 10000 — отказ', async () => {
+    await expect(
+      errorsFor(LetterDto, { text: 'x'.repeat(10001) }),
+    ).resolves.toContain('text');
+    await expect(
+      errorsFor(SafePlaceDto, { description: 'x'.repeat(10001) }),
+    ).resolves.toContain('description');
+  });
+});
+
+describe('FlashcardDto', () => {
+  it('needId из специальных режимов (detached/critic) проходит', async () => {
+    await expect(
+      errorsFor(FlashcardDto, { modeId: 'x', needId: 'detached' }),
+    ).resolves.toEqual([]);
+  });
+
+  it('needId вне списка — отказ', async () => {
+    await expect(
+      errorsFor(FlashcardDto, { modeId: 'x', needId: 'hacked' }),
+    ).resolves.toContain('needId');
+  });
+});
+
+// Поля упражнений на сайте получают `maxLength` из тех же констант
+// (`shared/src/limits/textLimits.ts`, сверка — text-limits.parity.spec.ts).
+// Предел DTO, разошедшийся с константой, снова пускал бы в поле текст,
+// который сервер отобьёт 400.
+describe('пределы DTO инструментов = константы text-limits', () => {
+  const cases: [new () => object, Record<string, unknown>, string, number][] = [
+    [LetterDto, {}, 'text', LETTER_TEXT_MAX],
+    [SafePlaceDto, {}, 'description', SAFE_PLACE_TEXT_MAX],
+    [FlashcardDto, { modeId: 'x' }, 'reflection', EXERCISE_TEXT_MAX],
+    [FlashcardDto, { modeId: 'x' }, 'action', EXERCISE_TEXT_MAX],
+    [
+      BeliefCheckDto,
+      { belief: 'мысль', evidenceFor: [], evidenceAgainst: [] },
+      'reframe',
+      EXERCISE_TEXT_MAX,
+    ],
+  ];
+
+  it.each(cases)(
+    '%p.%s: на пределе проходит, на знак больше — отказ',
+    async (cls, base, field, max) => {
+      await expect(
+        errorsFor(cls, { ...base, [field]: 'я'.repeat(max) }),
+      ).resolves.toEqual([]);
+      await expect(
+        errorsFor(cls, { ...base, [field]: 'я'.repeat(max + 1) }),
+      ).resolves.toContain(field);
+    },
+  );
+
+  it('BeliefCheckDto: мысль и каждое доказательство — тот же предел', async () => {
+    const long = 'я'.repeat(EXERCISE_TEXT_MAX + 1);
+    const ok = 'я'.repeat(EXERCISE_TEXT_MAX);
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        belief: ok,
+        evidenceFor: [ok],
+        evidenceAgainst: [ok],
+      }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        belief: long,
+        evidenceFor: [long],
+        evidenceAgainst: [long],
+      }),
+    ).resolves.toEqual(['belief', 'evidenceFor', 'evidenceAgainst']);
+  });
+});

@@ -1,0 +1,32 @@
+// Продолжение полки GUIDE_SOURCES (sources.ts): файл полки в храповике размера.
+import type { GuideSource } from './sources';
+
+export const MORE_SOURCES: GuideSource[] = [
+  {
+    key: 'Фаррелл-Шоу',
+    author: 'Дж. Фаррелл, И. Шоу',
+    title:
+      'Практика схема-терапии: взгляд изнутри. Рабочая тетрадь для терапевтов, 2020',
+  },
+  {
+    key: 'Босуэлл',
+    author: 'Дж. Ф. Босуэлл, М. Дж. Константино',
+    title: 'Намеренная практика в когнитивно-поведенческой терапии, 2021',
+  },
+  {
+    key: 'Касьяник',
+    author: 'П. М. Касьяник, Е. В. Романова',
+    title: 'Диагностика ранних дезадаптивных схем',
+  },
+  {
+    key: 'Бехари',
+    author: 'В. Бехари',
+    title: 'Обезоружить нарцисса, 2-е изд., 2013 (рус. изд. 2019)',
+  },
+  {
+    key: 'Кахья',
+    author: 'Х. Кахья (ред.)',
+    title:
+      'Neuro-affirming Approaches in Schema Therapy: Working Affirmatively with Neurodevelopmental Differences, 2027',
+  },
+];

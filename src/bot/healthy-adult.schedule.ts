@@ -1,0 +1,138 @@
+/**
+ * Расписание публикаций канала «Здоровый Взрослый» с «дрожанием» (jitter).
+ *
+ * Раньше пост выходил ровно в 09:00 и 20:00 — регулярность до минуты выдаёт
+ * бота. Теперь два окна вокруг 10:00 и 19:00 МСК (±час), и точная минута внутри
+ * окна гуляет ото дня ко дню.
+ *
+ * Почему минута ВЫЧИСЛЯЕТСЯ из даты, а не берётся setTimeout-задержкой: на
+ * Amvera каждый деплой перезапускает процесс, и таймер на «через N минут»
+ * потерялся бы вместе с постом. Детерминированная минута от даты переживает
+ * рестарт — после перезапуска пересчитается та же, и если время уже прошло,
+ * ближайший тик крона наверстает (catch-up).
+ */
+
+import { fnv1a } from '../utils/hash';
+
+export type HealthyAdultSlot = 'morning' | 'evening';
+
+/** Час начала окна (МСК) для каждого слота. Окно длится WINDOW_MINUTES. */
+const SLOT_START_HOUR: Record<HealthyAdultSlot, number> = {
+  morning: 9, // окно 09:00–10:55 → центр ~10:00 ±час
+  evening: 18, // окно 18:00–19:55 → центр ~19:00 ±час
+};
+
+/**
+ * Длина окна в минутах. 116 = последний 5-минутный тик крона (10:55 / 19:55):
+ * запланированная минута не должна оказаться позже последнего тика, иначе в
+ * этот день пост не выйдет.
+ */
+const WINDOW_MINUTES = 116;
+
+/** МСК = UTC+3 круглый год (Россия не переводит часы с 2014). */
+const MSK_OFFSET_MIN = 3 * 60;
+
+interface MskParts {
+  hour: number;
+  minute: number;
+  /** YYYY-MM-DD по МСК — сид для минуты дня и ключ «этот день». */
+  dateKey: string;
+}
+
+/** Разложить момент в часы/минуты/дату по московскому времени. */
+export function mskParts(now: Date): MskParts {
+  const shifted = new Date(now.getTime() + MSK_OFFSET_MIN * 60_000);
+  return {
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+    dateKey: shifted.toISOString().slice(0, 10),
+  };
+}
+
+/** Слот, которому принадлежит момент (null — вне обоих окон). */
+export function slotForMoment(now: Date): HealthyAdultSlot | null {
+  return slotForHour(mskParts(now).hour);
+}
+
+/**
+ * Слот, долг которого ещё имеет смысл досылать.
+ *
+ * Окно публикации узкое (два часа), и повторы, живущие только внутри него,
+ * бесполезны для поста, вышедшего на последнем тике: досылать уже нечем
+ * (инцидент 2026-08-09, публикация в 10:55 при окне до 10:55). Поэтому долг
+ * тянется до вечернего окна, а вечерний — до конца суток. Ночью не досылаем:
+ * подписчики спят, а к утру выйдет свежая фраза.
+ */
+export function catchUpSlot(now: Date): HealthyAdultSlot | null {
+  const { hour } = mskParts(now);
+  if (hour >= SLOT_START_HOUR.morning && hour < SLOT_START_HOUR.evening)
+    return 'morning';
+  if (hour >= SLOT_START_HOUR.evening) return 'evening';
+  return null;
+}
+
+/** Слот, которому принадлежит час МСК (null — вне обоих окон). */
+function slotForHour(hour: number): HealthyAdultSlot | null {
+  if (hour === SLOT_START_HOUR.morning || hour === SLOT_START_HOUR.morning + 1)
+    return 'morning';
+  if (hour === SLOT_START_HOUR.evening || hour === SLOT_START_HOUR.evening + 1)
+    return 'evening';
+  return null;
+}
+
+/**
+ * Детерминированная псевдослучайная минута публикации внутри окна [0, WINDOW).
+ * Одинаковая весь день (сид = дата+слот), поэтому переживает рестарт; разная
+ * ото дня ко дню, поэтому не выглядит как бот. Простой строковый хэш — здесь
+ * не нужна криптостойкость, нужна лишь равномерная «размазанность».
+ */
+export function plannedOffset(dateKey: string, slot: HealthyAdultSlot): number {
+  return fnv1a(`${dateKey}:${slot}`) % WINDOW_MINUTES;
+}
+
+/** Момент относительно начала окна: попадает ли `at` (МСК) в слот-окно `slot` того же дня. */
+function isInWindow(
+  at: MskParts,
+  slot: HealthyAdultSlot,
+  dateKey: string,
+): boolean {
+  if (at.dateKey !== dateKey) return false;
+  if (slotForHour(at.hour) !== slot) return false;
+  return true;
+}
+
+/**
+ * Решает, пора ли публиковать прямо сейчас и в какой слот.
+ *
+ * Возвращает слот, если: текущее время в окне слота, дневная запланированная
+ * минута уже наступила, и в этот слот сегодня ещё не публиковали (по времени
+ * последнего поста — оно же ловит ручную публикацию, чтобы не выходило два
+ * подряд). Иначе null — тик крона просто ничего не делает.
+ */
+export function dueSlot(
+  now: Date,
+  lastPostAt: Date | null,
+): HealthyAdultSlot | null {
+  const parts = mskParts(now);
+  const slot = slotForHour(parts.hour);
+  if (!slot) return null;
+
+  const offsetNow = (parts.hour - SLOT_START_HOUR[slot]) * 60 + parts.minute;
+  if (offsetNow < plannedOffset(parts.dateKey, slot)) return null; // ещё рано
+
+  if (postedInSlot(now, lastPostAt, slot)) return null; // уже публиковали
+  return slot;
+}
+
+/**
+ * Вышел ли сегодня пост в слот `slot` — по времени последнего поста. Тот же
+ * признак, что у `dueSlot`: досылка решает по нему, чей слот (тика или её).
+ */
+export function postedInSlot(
+  now: Date,
+  lastPostAt: Date | null,
+  slot: HealthyAdultSlot,
+): boolean {
+  if (!lastPostAt) return false;
+  return isInWindow(mskParts(lastPostAt), slot, mskParts(now).dateKey);
+}

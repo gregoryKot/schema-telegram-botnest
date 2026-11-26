@@ -1,0 +1,6 @@
+{
+  "source": "registry.npmjs.org через npm 10.9.4 (Node 22.22.0, как в CI) — stdout `npm audit --omit=dev --audit-level=high --json --fetch-timeout=15000`",
+  "recordedAt": "2026-10-22",
+  "how": "записано живым запуском по одноразовому lock-файлу с prod-зависимостями lodash@4.17.15 и minimist@1.2.5 (high и critical), код выхода 1",
+  "redacted": "ничего — публичные GitHub Advisories"
+}

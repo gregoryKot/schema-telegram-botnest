@@ -1,0 +1,88 @@
+// Провайдеры только внутри BotModule: суб-агрегаты ProductMetricsService и
+// блоки отчёта /stats (StatsReportService). Вынесены из bot.module.ts, чтобы
+// новый блок метрик не раздувал модуль сверх потолка размера (правило №10).
+// Оба списка отсортированы: две ветки, добавившие по блоку, вставляют строки в
+// разные места, а не в общий хвост (правило №13).
+import { AccountLinkMetricsService } from './account-link-metrics.service';
+import { AuthHealthMetricsService } from './auth-health-metrics.service';
+import { BookingRetentionMetricsService } from './booking-retention-metrics.service';
+import { CaseMetricsService } from './case-metrics.service';
+import { ClientErrorMetricsService } from './client-error-metrics.service';
+import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
+import { CrawlerMetricsService } from './crawler-metrics.service';
+import { DataExportMetricsService } from './data-export-metrics.service';
+import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
+import { GameMetricsService } from './game-metrics.service';
+import { GuideReferenceMetricsService } from './guide-reference-metrics.service';
+import { IntroLeadMetricsService } from './intro-lead-metrics.service';
+import { TherapyInviteMetricsService } from './therapy-invite-metrics.service';
+import { ClientBookingMetricsService } from './client-booking-metrics.service';
+import { TherapyNudgeMetricsService } from './therapy-nudge-metrics.service';
+import { LoginTicketMetricsService } from './login-ticket-metrics.service';
+import { ModeCardMetricsService } from './mode-card-metrics.service';
+import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
+import { MoneyMetricsService } from './money-metrics.service';
+import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
+import { PushMetricsService } from './push-metrics.service';
+import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
+import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
+import { PlanMetricsService } from './plan-metrics.service';
+import { PathMetricsService } from './path-metrics.service';
+import { TaskAssignMetricsService } from './task-assign-metrics.service';
+import { SearchMetricsService } from './search-metrics.service';
+import { PlusMetricsService } from './plus-metrics.service';
+import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { LinksPageMetricsService } from './links-page-metrics.service';
+import { PracticeMetricsService } from './practice-metrics.service';
+import { DiaryJumpMetricsService } from './diary-jump-metrics.service';
+import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
+import { QuizMetricsService } from './quiz-metrics.service';
+import { ScreenMetricsService } from './screen-metrics.service';
+import { ScreenShareMetricsService } from './screen-share-metrics.service';
+import { SessionCurrencyMetricsService } from './session-currency-metrics.service';
+import { SignupSourceMetricsService } from './signup-source-metrics.service';
+import { SiteInstallMetricsService } from './site-install-metrics.service';
+import { WarmWordsMetricsService } from './warm-words-metrics.service';
+
+export const INTERNAL_PROVIDERS = [
+  AccountLinkMetricsService,
+  AuthHealthMetricsService,
+  BookingRetentionMetricsService,
+  CaseMetricsService,
+  ClientErrorMetricsService,
+  ConceptGraphMetricsService,
+  CrawlerMetricsService,
+  DataExportMetricsService,
+  EntryDeleteMetricsService,
+  GameMetricsService,
+  GuideReferenceMetricsService,
+  IntroLeadMetricsService,
+  TherapyNudgeMetricsService,
+  TherapyInviteMetricsService,
+  ClientBookingMetricsService,
+  LoginTicketMetricsService,
+  ModeCardMetricsService,
+  ModeDiaryMetricsService,
+  MoneyMetricsService,
+  NotifyQueueMetricsService,
+  PushMetricsService,
+  TherapistExitMetricsService,
+  PhraseCheckMetricsService,
+  PlanMetricsService,
+  PathMetricsService,
+  TaskAssignMetricsService,
+  SearchMetricsService,
+  PlusMetricsService,
+  PracticeLinkMetricsService,
+  LinksPageMetricsService,
+  PracticeMetricsService,
+  ProfilePatternMetricsService,
+  DiaryJumpMetricsService,
+  QuizMetricsService,
+  ScreenMetricsService,
+  ScreenShareMetricsService,
+  SessionCurrencyMetricsService,
+  SignupSourceMetricsService,
+  SiteInstallMetricsService,
+  WarmWordsMetricsService,
+];

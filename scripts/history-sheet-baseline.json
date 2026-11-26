@@ -1,0 +1,139 @@
+{
+  "webapp/src/components/BottomSheetShell.tsx": {
+    "reason": "Оболочка нижней шторки: «Назад» приходит пропом goBack, который вызывающий считает через useHistorySheet (шапка файла); хук в оболочке дал бы вторую запись истории на один лист. Потребителя гейт видит по тегу <BottomSheetShell (frameOverlays в history-sheet-detect.mjs): без хука он обязан стоять здесь сам.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/Dialog.tsx": {
+    "reason": "Оболочка диалога (бэкдроп sk-dialog-backdrop): запись истории — забота потребителя (useHistorySheet и goBack как onClose), хук в оболочке дал бы вторую запись на одно окно. Потребителя гейт видит по тегу <Dialog (FRAME_TAGS в history-sheet-detect.mjs): без хука он стоит в бейслайне сам, с причиной.",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/ModeMapContextMenu.tsx": {
+    "reason": "Невидимая подложка под контекстным меню карты режимов (поповер у курсора): ловит клик снаружи, закрывает меню. Это не лист, «Назад» с поповером не связана.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/OverlayFrame.tsx": {
+    "reason": "Рамка оверлеев «Все задания» и «Все цели» (класс sk-overlay): goBack приходит пропом, хук вызывает потребитель — sections/today/AllTasksOverlay.tsx (один на оба списка), один раз на лист. Хук в рамке дал бы вторую запись истории.",
+    "since": "#746"
+  },
+  "webapp/src/components/appShell/AppOverlays.tsx": {
+    "reason": "Класс u-sheet здесь — обёртка вокруг ChildhoodWheelEx, который сам вызывает useHistorySheet (ChildhoodWheelEx.tsx:195); обёртка только позиционирует.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/exercises/ExScreen.tsx": {
+    "reason": "Рамка экрана упражнения: хук вызывает каждое упражнение-потребитель (useHistorySheet(onBack)), а сценарий caseFlow — CaseFlowScreen. Хук в рамке дал бы вторую запись истории. ExScreenSkeleton здесь же — силуэт на время загрузки чанка упражнения (Suspense в TaskExerciseHost): запись истории делает упражнение после загрузки, «Назад» силуэта зовёт onBack хоста.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md",
+    "components": [
+      "ExScreen",
+      "ExScreenSkeleton"
+    ]
+  },
+  "webapp/src/components/flashcard/FlashcardFrame.tsx": {
+    "reason": "Рамка экранов «Мне плохо» (класс u-sheet-grid; заменила отдельный экран FlashcardDoneScreen из прежней записи): goBack приходит пропом из SchemaFlashcard.tsx, где хук вызван один раз на весь поток шагов.",
+    "since": "#746"
+  },
+  "webapp/src/components/Dropdown.tsx": {
+    "reason": "Невидимая подложка под выпадающим меню у кнопки (тулбар карты режимов, меню «⋯ Ещё» концептуализации): ловит клик снаружи. Это не лист.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/schemaSheets/SsSheet.tsx": {
+    "reason": "Оболочка листов схем и режимов (класс ss-sheet): onBack приходит пропом, хук вызывает каждый лист-потребитель один раз — SchemaInfoSheet, SchemaDetailSheet, SchemaPickerSheet, ModePickerSheet, YSQTestSheet (его экраны YsqIntro/YsqResult получают goBack пропом), ModeCheckinOverlay. Хук в оболочке дал бы вторую запись истории на один лист.",
+    "since": "#746"
+  },
+  "webapp/src/components/trackerOverlay/CompletionScreen.tsx": {
+    "reason": "Часть TrackerOverlay: экран «Готово» рисуется внутри него, хук вызван в родителе (TrackerOverlay.tsx:42), «Назад» этого экрана — его goBack.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/ysq/YsqQuestion.tsx": {
+    "reason": "Экран вопроса теста YSQ (класс ss-test): один из экранов потока YSQTestSheet.tsx, где хук вызван один раз на весь тест; «Назад» приходит пропом goBack.",
+    "since": "#746"
+  },
+  "webapp/src/pages/LandingPage.tsx": {
+    "reason": "Фиксированный слой «зерно» поверх страницы с pointer-events: none: декор лендинга, не оверлей и не лист.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/sections/schemas/ModeExOverlay.tsx": {
+    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:71); обёртка только позиционирует.",
+    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/caseFlow/CaseDoneScreen.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/diary/ModeEntryDone.tsx": {
+    "reason": "Экран «Готово» записи дневника режимов на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/diary/ModeEntryForm.tsx": {
+    "reason": "Форма записи дневника режимов на рамке ExScreen: шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/diary/ModeSelectScreen.tsx": {
+    "reason": "Выбор режима на рамке ExScreen: шаг потоков ModeEntrySheet.tsx и QuickEntrySheet.tsx, в каждом useHistorySheet вызван один раз; onBack приходит пропом (goBack родителя).",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/ExDonePage.tsx": {
+    "reason": "Общая рамка итога упражнения (ex2-screen + ExBar, лист DoneSheet и колонка «прошлых»): её берут CardDone, BeliefDoneScreen, LetterDone, SafePlaceDone и PhraseDoneScreen — шаги своих упражнений (FlashcardEx, BeliefCheckEx, LetterEx, SafePlaceEx, PhraseCheckEx), где useHistorySheet вызван один раз; «Назад» приходит пропом onBack (goBack упражнения). Хук в рамке дал бы вторую запись истории.",
+    "since": "g6-exercises-fix r1, 2026-11"
+  },
+  "webapp/src/components/exercises/childhoodWheel/ChildhoodFill.tsx": {
+    "reason": "Шаг заполнения «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/childhoodWheel/ChildhoodIntro.tsx": {
+    "reason": "Вводный шаг «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/childhoodWheel/ChildhoodResult.tsx": {
+    "reason": "Итог «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/selfMap/SelfMapScreen.tsx": {
+    "reason": "Экран «Карта себя» на рамке ExScreen: его оборачивает SelfMapOverlay.tsx, где useHistorySheet вызван один раз; «Назад» и переходы — его goBack, пропом.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseStepScreen.tsx": {
+    "reason": "Рамка шага сценария «Что случилось» на ExScreen (лист шалфея, разворот, «Что собрали»): useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги и развилка черновика получают «Назад» пропом; хук в рамке дал бы запись истории на каждый шаг.",
+    "since": "b09-case, редизайн 2026-11"
+  },
+  "webapp/src/components/ConfirmDialog.tsx": {
+    "reason": "Рамка подтверждения на Dialog: запись истории — у потребителя. HistoryConfirmDialog вызывает useHistorySheet и пускает «Отмена», Escape и фон через goBack; прямой <ConfirmDialog гейт видит по тегу (FRAME_TAGS в history-sheet-detect.mjs) — потребитель без хука стоит в бейслайне сам, с причиной.",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/ConsentScreen.tsx": {
+    "reason": "Согласия при первом входе из Telegram и MAX (Dialog в двух ветках — приветствие и согласия): закрыть без согласия нельзя, onClose нет, поэтому нет и записи истории — «Назад» браузера не должен обходить согласия.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "ConsentScreen": 2
+    }
+  },
+  "webapp/src/components/settingsSheet/TherapistSections.tsx": {
+    "reason": "Подтверждение «Отключиться от терапевта?» (ConfirmDialog) поверх листа настроек: у SettingsSheet своя запись истории, окно закрывается «Отмена», фоном и Escape, а «Назад» браузера закрывает лист вместе с ним — исключение для подтверждений поверх листа (.claude/rules/frontend.md).",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/settingsSheet/YsqDataDeleteButton.tsx": {
+    "reason": "Подтверждение «Удалить все результаты теста?» (ConfirmDialog) поверх окна «Данные и конфиденциальность» (InfoModal со своей записью истории) в листе настроек: закрывается «Отмена», фоном и Escape, «Назад» браузера закрывает окно вместе с ним — исключение для подтверждений поверх листа (.claude/rules/frontend.md).",
+    "since": "p23-overlay-gates, 2026-11"
+  },
+  "webapp/src/components/TrackerOverlay.tsx": {
+    "reason": "Две ветки одного листа трекера на классе tk2-overlay — силуэт загрузки и вопрос; useHistorySheet вызван один раз на лист, экран «Готово» (CompletionScreen) живёт на той же записи.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "TrackerOverlay": 2
+    }
+  },
+  "webapp/src/components/exercises/FlashcardEx.tsx": {
+    "reason": "Карточки схемы и режима: по две ветки одного экрана на рамке ExScreen (выбор схемы или режима и вопросы карточки), useHistorySheet вызван один раз на упражнение.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "SchemaEx": 2,
+      "ModeEx": 2
+    }
+  },
+  "webapp/src/components/therapist/ConceptFullscreenSheet.tsx": {
+    "reason": "Две ветки одного листа концептуализации: с панелью — слой cfs-layer со шторкой и затемнением, без панели — fixed на весь экран; useHistorySheet вызван один раз на лист.",
+    "since": "p23-overlay-gates, 2026-11",
+    "overlays": {
+      "ConceptFullscreenSheet": 2
+    }
+  }
+}

@@ -1,0 +1,132 @@
+/* Экран «Все клиенты» кабинета терапевта (префикс tc-). Цвета — токены. Журнальный стиль (#1674):
+   строки и блоки на бумаге между тонкими линиями, без белых листов; плитки — бумага по --h (cabinetLook.ts). */
+.tc-count { font-size: 28px; color: var(--text-muted); } /* --text-ghost — 2.46:1, число значимое (L6) */
+.tc-hero { gap: 18px; }
+.tc-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tc-hero-btn { align-self: flex-start; }
+.tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.tc-search { width: 240px; max-width: 100%; }
+.tc-modes { display: flex; gap: 12px 24px; flex-wrap: wrap; align-items: center; }
+/* На компьютере вкладки по содержимому, не на всю строку; на телефоне — во всю ширину (правило ниже). */
+.tc-modes > .lt { flex: 0 0 auto; }
+.tc-modes > .lt .lt-tab { padding: 0 14px; }
+/* Знак блока (приглашения, сверка, пустая доска) — строчный 44×24 у заголовка. */
+.tc-block-sign { display: flex; flex: none; }
+
+/* ── Форма «Новый клиент» и итог ─────────────────────────────────────────── */
+.tc-add {
+  --h: 240; padding: 24px 28px;
+  display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; align-items: center;
+}
+/* Форма — блок между линиями (.pp-block, #1674): поля по краям колонки; свойства .pp-block — на два класса. */
+.pp-block.tc-add { display: grid; gap: 16px 24px; padding: 20px 0 24px; }
+.tc-add-name {
+  font: 26px var(--serif); color: var(--text); min-width: 0; width: 100%;
+  border: none; border-bottom: 1.5px solid var(--line-input); background: transparent; padding: 6px 0;
+}
+.tc-add-name:focus { outline: none; border-bottom-color: var(--accent); }
+.tc-add-name::placeholder { color: var(--text-ghost); }
+.tc-add-check { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-sub); min-height: 44px; cursor: pointer; }
+.tc-add-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.tc-add-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--text-sub); }
+.pa-alert.tc-add-err { grid-column: 1 / -1; } /* сбой «Создать» — тихий лист соломы на всю ширину формы */
+/* Итог — лист неба терапевта (pp-paper), без тени: он уже бумага, не лист на бумаге. */
+.pp-paper.tc-add--done { background: oklch(0.915 0.03 var(--h)); box-shadow: none; border-radius: var(--r-16); }
+.tc-add-done { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tc-add-done-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.tc-add-done-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tc-add-done-sign .pp-art { width: 60px; height: 32px; }
+.tc-add-done-name { margin: 0; font: 400 clamp(28px, 5vw, 44px)/1.1 var(--serif); overflow-wrap: break-word; }
+.tc-add--done .ds-sub, .tc-add--done .ds-label { color: var(--text-sub); } /* на небе --text-faint 4.33:1 (L6) */
+.tc-invite { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tc-invite code {
+  flex: 1; min-width: 200px; font: 12.5px monospace; color: var(--text-sub);
+  background: var(--paper-sunk); padding: 9px 13px; border-radius: 8px; word-break: break-all;
+}
+.tc-add--done .tc-invite code { background: var(--surface); }
+.tc-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+/* «Ждут подключения» (shared/src/therapy/PendingInvitesList.tsx) и сверка «Это тот же человек?»
+   (shared/src/therapy/CardClaimBanner.tsx) — блоки .pp-block между линиями, знак у заголовка. */
+.pp-block.tc-pending { gap: 0; padding: 18px 0 8px; }
+.pp-block.tc-claim { gap: 0; padding: 16px 0; }
+.tc-claim + .tc-claim { border-top: 0; }
+
+/* ── Список клиентов: строки на бумаге между линиями (.ds-rows), без белых листов (#1674, К5) ─────── */
+/* Компьютер: аватар · имя и статус · встреча и схемы · «→». Свойства, что есть у .ds-list-row, — на два класса
+   (порядок чанков CSS не решает спор). */
+.ds-list-row.tc-row { grid-template-columns: auto minmax(0, 1.1fr) minmax(0, 1fr) auto; gap: 8px 20px; cursor: pointer; }
+.tc-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tc-avatar { width: 48px; height: 48px; font-size: 18px; flex: none; }
+.tc-who { min-width: 0; }
+/* Знак домена — в строке имени, справа (r1): мета под именем получает всю ширину колонки. */
+.tc-name-row { display: flex; align-items: center; gap: 10px; }
+/* Имя — до двух строк по словам (длинное «Константин Константинопольский-…» читается целиком);
+   многоточие — только на третьей строке. overflow-wrap: anywhere не берём: он рвал имя посреди слова. */
+.tc-name {
+  font: 22px/1.15 var(--serif); min-width: 0; transition: color .12s ease;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis;
+}
+@media (hover: hover) { .tc-row:hover .tc-name { color: var(--accent); } }
+.tc-meta { display: flex; gap: 4px 12px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--text-sub); flex-wrap: wrap; }
+/* «в приложении» / «офлайн» — тихий текст без плашки (r1): офлайн-клиента отличает BrandMark в строке имени. */
+.tc-status { font-weight: 400; color: var(--text-sub); } /* r2: обычное начертание — тише имени и даты встречи */
+.tc-sign { display: flex; flex: none; }
+.tc-more { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tc-meeting {
+  display: flex; align-items: center; gap: 10px;
+}
+.tc-meeting-val { font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--text); }
+.tc-meeting-val--none { color: var(--text-sub); font-weight: 500; }
+.tc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Чип схемы — бумага её домена (как у клиента в «Моих паттернах»), без конфетной заливки. */
+.tc-chip {
+  display: inline-flex; align-items: center; border-radius: 8px; padding: 4px 10px;
+  font-size: 12.5px; font-weight: 500; color: var(--text); background: oklch(0.915 0.03 var(--h));
+}
+/* Строка-переход: «→» справа (#1674, В3), без шеврона. */
+.tc-go { font-size: 18px; line-height: 1; color: var(--text-faint); }
+.tc-row-skel { display: flex; align-items: center; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--panel-line); }
+.tc-row-skel > :last-child { flex: 1; }
+.tc-error { margin-top: 4px; }
+
+/* ── Задания (доска) ─────────────────────────────────────────────────────── */
+/* Три колонки, когда помещаются (поле ≥840px), иначе одна — без ряда 2+1 с колонкой-сиротой на 600–1024 (L7).
+   Минимум трека: на ≥840 — треть поля без зазоров, уже — (840px − 100%) × 999 упирается в 100%. */
+.tc-kanban {
+  display: grid; gap: 20px; align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(calc(33.333% - 14px), (840px - 100%) * 999, 100%), 1fr));
+}
+/* Колонка — бумага своего статуса (солома / шалфей с Check / персик), карточки — светлые листы. */
+.tc-kcol { display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 12px; border-radius: var(--r-16); min-width: 0; }
+.tc-kcol-head { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 6px 4px; }
+.tc-kcol-head .ds-label { color: var(--text); }
+.tc-kcol-count { font: 600 13px/1 var(--sans); color: var(--text-sub); }
+.tc-kcol-sign { display: flex; margin-left: auto; }
+.tc-task { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--surface); cursor: pointer; }
+@media (hover: hover) { .tc-task:hover { background: oklch(0.985 0.008 var(--h)); } }
+.tc-task:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Знак типа задания — в строке имени клиента (r1), текст задания — во всю ширину карточки. */
+.tc-task-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tc-task-sign { display: flex; flex: none; }
+.tc-task-client { min-width: 0; font-size: 12px; font-weight: 600; color: var(--text-sub); overflow-wrap: break-word; }
+.tc-task-text { font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: break-word; }
+.tc-task-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.tc-task-due { font-size: 12px; color: var(--text-sub); }
+.tc-dash { padding: 14px 0; text-align: center; color: var(--text-sub); font-size: 13px; }
+.tc-board-empty { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .tc-count { font-size: 24px; }
+  /* «Клиенты/Задания» — равные доли на всю ширину и на доске. */
+  .tc-modes { width: 100%; flex-direction: column; align-items: stretch; gap: 10px; }
+  .tc-modes > .lt { flex: 1 1 auto; }
+  .tc-add { grid-template-columns: 1fr; padding: 20px; }
+  .pp-block.tc-add { padding: 16px 0 20px; }
+  .tc-search { width: 100%; }
+  /* Телефон: встреча и схемы — под именем, «→» — у правого края на высоте имени. */
+  .ds-list-row.tc-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 12px; align-items: start; }
+  .tc-avatar { width: 40px; height: 40px; font-size: 15px; }
+  .tc-name { font-size: 20px; }
+  .tc-more { grid-column: 2; grid-row: 2; }
+  .tc-go { grid-column: 3; grid-row: 1; align-self: center; }
+}

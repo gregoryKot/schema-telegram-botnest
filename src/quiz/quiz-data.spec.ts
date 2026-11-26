@@ -1,0 +1,162 @@
+// Валидность контента мини-тестов: битый resultId, слишком длинный
+// callback_data или потерянная ты/вы-вилка должны ронять jest, а не прод.
+import { buildQuizzes, QUIZ_IDS, quizResultIdSet } from './quiz-registry';
+import type { AddressForm } from '../notification/address-form';
+
+const FORMS: AddressForm[] = ['ty', 'vy'];
+
+describe('quiz-data: контент мини-тестов', () => {
+  it('id тестов уникальны и callback/url-безопасны', () => {
+    expect(new Set(QUIZ_IDS).size).toBe(QUIZ_IDS.length);
+    for (const id of QUIZ_IDS) expect(id).toMatch(/^[a-z_]{2,16}$/);
+  });
+
+  it.each(FORMS)('форма «%s»: структура каждого теста валидна', (form) => {
+    for (const quiz of buildQuizzes(form)) {
+      expect(quiz.title.trim()).not.toBe('');
+      expect(quiz.teaser.trim()).not.toBe('');
+      // Правило онбординга: intro отвечает «что это, зачем, сколько времени».
+      expect(quiz.intro.length).toBeGreaterThan(80);
+
+      // Шаг кодируется одной цифрой в callback_data → максимум 9 вопросов.
+      expect(quiz.questions.length).toBeGreaterThanOrEqual(4);
+      expect(quiz.questions.length).toBeLessThanOrEqual(9);
+
+      const resultIds = quiz.results.map((r) => r.id);
+      expect(new Set(resultIds).size).toBe(resultIds.length);
+
+      const used = new Set<string>();
+      for (const q of quiz.questions) {
+        expect(q.text.trim()).not.toBe('');
+        expect(q.options.length).toBeGreaterThanOrEqual(2);
+        // Индекс ответа — одна цифра в callback_data.
+        expect(q.options.length).toBeLessThanOrEqual(9);
+        for (const o of q.options) {
+          expect(o.label.trim()).not.toBe('');
+          // Кнопка Telegram обрезает длинные подписи — держим читаемый предел.
+          expect(o.label.length).toBeLessThanOrEqual(64);
+          expect(resultIds).toContain(o.resultId);
+          used.add(o.resultId);
+        }
+      }
+      // Каждый результат достижим хотя бы одним вариантом ответа.
+      for (const id of resultIds) expect(used.has(id)).toBe(true);
+
+      for (const r of quiz.results) {
+        expect(r.id).toMatch(/^[a-z_]{2,16}$/);
+        expect(r.title.trim()).not.toBe('');
+        expect(r.text.trim()).not.toBe('');
+        expect(r.hint.trim()).not.toBe('');
+      }
+
+      // Худший callback_data укладывается в лимит Telegram (64 байта).
+      const worst = `qz:q:${quiz.id}:${quiz.questions.length}:${'9'.repeat(
+        quiz.questions.length,
+      )}`;
+      expect(Buffer.byteLength(worst, 'utf8')).toBeLessThanOrEqual(64);
+    }
+  });
+
+  it('формы «ты» и «вы» различаются текстом, но не структурой', () => {
+    const ty = buildQuizzes('ty');
+    const vy = buildQuizzes('vy');
+    ty.forEach((quizTy, i) => {
+      const quizVy = vy[i];
+      // Хоть одна строка развилась — вилка t() не потеряна.
+      expect(JSON.stringify(quizTy)).not.toBe(JSON.stringify(quizVy));
+      // Структура (вопросы/варианты/голоса) идентична.
+      const shape = (q: typeof quizTy) => ({
+        id: q.id,
+        results: q.results.map((r) => r.id),
+        votes: q.questions.map((qq) => qq.options.map((o) => o.resultId)),
+      });
+      expect(shape(quizTy)).toEqual(shape(quizVy));
+    });
+  });
+
+  it('в «вы»-форме не осталось «ты»-обращений вне цитат «…»', () => {
+    // Цитаты («…») — внутренняя речь, им можно. Всё вне кавычек — проверяем
+    // grep-свипом из CLAUDE.md: ты/тебя/твой и глаголы 2 л. ед. ч.
+    const stripQuotes = (s: string) => s.replace(/«[^»]*»/g, '');
+    // Правая граница у императивов — весь остаток слова, а не только «те»:
+    // с `лови(?!те)` под гейт попадало «ловит» (3-е лицо, форме обращения не
+    // родственно), и корректный «вы»-текст краснел.
+    const tyPattern =
+      /(^|[^а-яё])(ты|теб[еяё]|тво[йяеёию]|твоих|твоим)($|[^а-яё])|(узнаешь|увидишь|попробуй|запомни|напиши|назови|спроси|лови|поделись)(?![а-яё])/i;
+    for (const quiz of buildQuizzes('vy')) {
+      const texts = [
+        quiz.title,
+        quiz.teaser,
+        quiz.intro,
+        ...quiz.results.flatMap((r) => [r.title, r.text, r.hint]),
+        ...quiz.questions.map((q) => q.text),
+      ];
+      for (const text of texts) {
+        expect(stripQuotes(text)).not.toMatch(tyPattern);
+      }
+    }
+  });
+
+  it('resultId «батарейки» совпадают с needId трекера потребностей', () => {
+    // Синхрон с NEED_ORDER (webapp needData.ts): результат
+    // теста должен уметь вести в трекер той же потребности.
+    const battery = buildQuizzes('ty').find((q) => q.id === 'battery');
+    expect(battery?.results.map((r) => r.id).sort()).toEqual(
+      ['attachment', 'autonomy', 'expression', 'limits', 'play'].sort(),
+    );
+  });
+
+  it('«критик или Здоровый Взрослый»: в каждом вопросе один верный голос и три маскировки', () => {
+    // Механика теста держится на раскладе вариантов: ровно одна реплика
+    // Здорового Взрослого и по одной маскировке критика (ярлык на личность /
+    // внешнее «надо» / крайности). Потерянный или задвоенный вариант превращает
+    // результат в лотерею — при этом структурная спека выше остаётся зелёной.
+    const voice = buildQuizzes('ty').find((q) => q.id === 'voice');
+    expect(voice).toBeDefined();
+    for (const q of voice!.questions) {
+      expect(q.options.map((o) => o.resultId).sort()).toEqual([
+        'absolute',
+        'adult',
+        'duty',
+        'label',
+      ]);
+      // Верный ответ не стоит на одном и том же месте — иначе тест проходится
+      // не на слух, а по позиции кнопки.
+      expect(
+        q.options.findIndex((o) => o.resultId === 'adult'),
+      ).toBeGreaterThanOrEqual(0);
+    }
+    const adultAt = voice!.questions.map((q) =>
+      q.options.findIndex((o) => o.resultId === 'adult'),
+    );
+    expect(new Set(adultAt).size).toBeGreaterThan(1);
+  });
+
+  it('«кто у руля»: лента и сериалы — Отстранённый Самоутешитель, а не Отстранённый Защитник', () => {
+    const drives = buildQuizzes('ty').find((q) => q.id === 'drives')!;
+    const options = drives.questions.flatMap((q) => q.options);
+    const soother = options.filter((o) => o.resultId === 'soother');
+    expect(soother.length).toBeGreaterThan(0);
+    for (const o of options.filter((x) =>
+      /лент|сериал|серию|видео/i.test(x.label),
+    ))
+      expect(o.resultId).toBe('soother');
+  });
+
+  it('«батарейка»: каждая потребность — в одинаковом числе вопросов', () => {
+    const battery = buildQuizzes('ty').find((q) => q.id === 'battery')!;
+    const perNeed = new Map<string, number>();
+    for (const q of battery.questions)
+      for (const id of new Set(q.options.map((o) => o.resultId)))
+        perNeed.set(id, (perNeed.get(id) ?? 0) + 1);
+    expect(new Set(perNeed.values()).size).toBe(1);
+  });
+
+  it('quizResultIdSet отдаёт пары «тест:результат» для санитизации meta', () => {
+    const set = quizResultIdSet();
+    expect(set.has('drives:critic')).toBe(true);
+    expect(set.has('battery:play')).toBe(true);
+    expect(set.has('drives:play')).toBe(false);
+    expect(set.has('нечто')).toBe(false);
+  });
+});

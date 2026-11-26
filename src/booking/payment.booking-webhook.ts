@@ -1,0 +1,86 @@
+import { ConflictException, Logger } from '@nestjs/common';
+import { BookingService, PaymentAmountMismatchError } from './booking.service';
+import { PaymentAfterCancelError } from './booking.transitions';
+import { ConfirmEffectsFailedError } from './booking.confirm-effects';
+import { BookingNotifyService } from './booking-notify.service';
+import { paidAfterCancelAlert } from './booking-paid-after-cancel';
+import { moneyAlert } from '../logger/money-alert';
+import { paidButFailedAlert } from './payment-failed-alert';
+
+/**
+ * Ветка ResultURL для брони (InvId вне диапазонов подписок и донатов): что
+ * ответить Robokassa. Ответ `OK<InvId>` = «обработано, повторов не нужно»,
+ * любой другой — повтор уведомления. Вынесено из payment.controller.ts
+ * (правило №10).
+ */
+export async function bookingWebhookReply(
+  deps: {
+    booking: BookingService;
+    notify: BookingNotifyService;
+    logger: Logger;
+  },
+  id: number,
+  invId: string,
+  paid: number | undefined,
+): Promise<string> {
+  const { booking, notify, logger } = deps;
+  try {
+    await booking.confirm(id, paid);
+  } catch (e) {
+    // Amount mismatch is NOT a benign repeat — do not ack money we didn't
+    // verify as correct. BookingService.confirm already alerted the admin;
+    // FAIL keeps Robokassa retrying (see CLAUDE.md «Аудит-события»).
+    if (e instanceof PaymentAmountMismatchError) {
+      // Stryker disable next-line CallExpression: только строка в лог — исход (FAIL) и алерт владельцу проверяют тесты
+      logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
+      return `FAIL${invId}`;
+    }
+    // Оплата пришла по отменённой/истёкшей брони (аудит 2026-10-11, P1): деньги
+    // списаны, paidAt уже записан сервисом. Владельцу — в оба канала; ответ OK:
+    // повтор вебхука денег не вернёт и брони не восстановит. warn, не error:
+    // error ушёл бы владельцу вторым DM через AlertLogger. Если сам сигнал не
+    // дошёл (исключение), отвечаем FAIL — Robokassa повторит, повтор оповестит.
+    if (e instanceof PaymentAfterCancelError) {
+      logger.warn(
+        `Booking ${id}: payment received after cancel/expiry (paidAt recorded)`,
+      );
+      try {
+        const { html, subject } = paidAfterCancelAlert(e.booking, e.paidAmount);
+        await notify.notifyAdminBoth(html, subject);
+      } catch (notifyErr) {
+        logger.error(
+          moneyAlert(`PAID after cancel, booking ${id}: admin alert failed`),
+          notifyErr,
+        );
+        return `FAIL${invId}`;
+      }
+      return `OK${invId}`;
+    }
+    // Оплата принята, CAS прошёл — бронь CONFIRMED, но ссылка/календарь не
+    // доехали (security#21). Это не «не подтвердилась»: FAIL нужен, чтобы
+    // Robokassa повторила вебхук, а повтор доделает эффекты (кроме него —
+    // крон-добор). warn, не error: error ушёл бы владельцу вторым DM.
+    if (e instanceof ConfirmEffectsFailedError) {
+      logger.warn(`Booking ${id}: confirmed, effects pending: ${e.message}`);
+      await notify.alertAdmin(
+        `⚠️ <b>Бронь #${id} оплачена и подтверждена, но ссылка на встречу и календарь не готовы</b>\nПовтор уведомления Robokassa или автодобор (раз в 5 минут) доделает сам. Если число «подтверждённых без ссылки» в /stats не уходит — проверьте вручную.`,
+      );
+      return `FAIL${invId}`;
+    }
+    // Остальные ConflictException (COMPLETED: поздний повтор) — ack, чтобы
+    // Robokassa перестала слать. По CONFIRMED сюда не доходит: сервис отвечает ok.
+    if (e instanceof ConflictException) {
+      // Stryker disable next-line CallExpression: только строка в лог — исход (OK, ack повтора) проверяют тесты
+      logger.warn(`Confirm booking ${id}: ${(e as Error).message}`);
+      return `OK${invId}`;
+    }
+    // Real failure: the client PAID but the booking didn't confirm. Alert loudly
+    // and return FAIL so Robokassa retries later. Текст ошибки — только в лог.
+    logger.error(moneyAlert(`PAID but confirm failed for booking ${id}`), e);
+    await notify.alertAdmin(
+      paidButFailedAlert(`бронь #${id} не подтвердилась`, e),
+    );
+    return `FAIL${invId}`;
+  }
+  return `OK${invId}`;
+}

@@ -1,0 +1,20 @@
+/* Подсказки-предложения: «Держи под рукой» (HomeScreenOfferCard), «Поддержать проект»
+   (DonateNudge). Подключается сборником sheet-tasks.css. Шапка «Поддержать проект» и лист без
+   надписи (ef-bare) — entry-flows.css: каркас окон входа один. */
+
+/* ── «Держи под рукой» — лист неба со сценой «значок на экране» в углу ── */
+.pa-sheet.hso-card { margin-bottom: 32px; }
+.hso-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; margin-top: 8px; }
+.hso-quiet { display: inline-flex; gap: 18px; }
+.hso-quiet > .ds-link { min-height: 44px; font-size: 14px; font-weight: 500; color: var(--text-sub); }
+.hso-quiet > .ds-link:hover { color: var(--text); }
+/* В углу — сам значок приложения (знак продукта плиткой на втором листе, ef-art в entry-flows.css).
+   SceneHomeScreen лендинга отсюда не берётся: импорт LandingScenesMore из ленивого чанка «Ещё»
+   выносил сцены в свой CSS-чанк перед index.css (check-css-link-order). */
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet.pa-sheet--scene.ef-art.hso-card > .pa-sheet-art { width: 100px; }
+}
+
+/* ── Поддержать проект ── */
+.sk-dialog-text.sk-nudge-text { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+.ds-btn.sk-nudge-link { text-decoration: none; box-sizing: border-box; }

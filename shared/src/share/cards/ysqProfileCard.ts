@@ -1,0 +1,240 @@
+// Карточка-профиль результата теста на схемы: выраженные схемы горизонтальными
+// барами по среднему баллу (1–6), сгруппированы по пяти потребностям (цвет
+// группы — цвет потребности), пунктир — порог среднего «4 из 6»; подпись называет
+// и второй критерий (больше половины «5–6»), иначе бар ниже пунктира читался бы
+// как невыраженная схема. Невыраженные схемы на
+// карточку не идут: строка с «—» или баллом 1.5 ничего не говорит тому, кому её
+// отправили.
+// Персональные данные — только агрегаты (средние баллы по схемам), без ответов
+// на отдельные вопросы.
+// Лист глины схем со знаком Layers; группа — знак потребности, полосы — цвет данных.
+// Чистая логика (подписи, группировка, высота) отделена от canvas-отрисовки и
+// покрыта тестами (ysqProfileCard.test.ts).
+import {
+  CARD_LOOK,
+  CARD_PAD,
+  CARD_W,
+  FOOTER_H,
+  INK,
+  beginCard,
+  header,
+  headerHeight,
+  headerLines,
+  footer,
+  cardFont,
+  inkAlpha,
+  needDataInk,
+  needTextInk,
+  sign,
+  tracking,
+  progressBar,
+} from '../cardKit';
+import { SCHEMAS, DOMAIN_ORDER, NEED_LABELS } from '../../hooks/ysqSchemas';
+import { isSchemaScoreActive, avgBarPct } from '../../hooks/ysqScoring';
+import { fmtIndex } from '../../needs/dayIndex';
+
+export interface YsqProfileRow {
+  label: string;
+  /** Средний балл 1–6; 0 = нет ответов (бар не рисуется, значение «—»). */
+  avg: number;
+}
+
+export interface YsqProfileDomain {
+  needId: string;
+  label: string;
+  /** Цвет данных потребности (палитра данных) — общий для её баров. */
+  color: string;
+  rows: YsqProfileRow[];
+}
+
+// Полные названия схем не влезают в колонку карточки (~150px) — явные короткие
+// подписи там, где обрезка по «/» теряет смысл или ничего не даёт.
+const SHORT_LABELS: Record<string, string> = {
+  'Дефективность / Стыд': 'Дефективность, стыд',
+  'Страх потери контроля над эмоциями': 'Страх потери контроля',
+  'Жёсткие стандарты / Придирчивость': 'Жёсткие стандарты',
+  'Негативизм / Пессимизм': 'Негативизм, пессимизм',
+  'Пунитивность (на себя)': 'Пунитивность к себе',
+  'Пунитивность (на других)': 'Пунитивность к другим',
+};
+
+/** Короткая подпись схемы для строки профиля (≤ 21 символ). */
+export function shortSchemaLabel(name: string): string {
+  const short = SHORT_LABELS[name] ?? name.split('/')[0].trim();
+  return short
+    .replace('Эмоциональная ', 'Эмоц. ')
+    .replace('Социальная ', 'Соц. ')
+    .replace('Недостаточность ', 'Недост. ');
+}
+
+/**
+ * Профиль для карточки: только выраженные схемы (оба критерия скоринга —
+ * isSchemaScoreActive), домены в порядке DOMAIN_ORDER, внутри домена схемы по
+ * убыванию среднего балла. Домен без выраженных схем в профиль не попадает.
+ * Отсутствующий счёт схемы — защитный ноль, значит не выражена.
+ */
+export function buildYsqProfile(
+  scores: Record<string, { pct5plus: number; avg: number }>,
+): YsqProfileDomain[] {
+  return DOMAIN_ORDER.map((needId) => ({
+    needId,
+    label: NEED_LABELS[needId],
+    color: needDataInk(needId) ?? INK.sub,
+    rows: SCHEMAS.filter((s) => s.needId === needId)
+      .map((s) => {
+        const sc = scores[s.name] ?? { pct5plus: 0, avg: 0 };
+        return {
+          label: shortSchemaLabel(s.name),
+          avg: sc.avg,
+          active: isSchemaScoreActive(sc),
+        };
+      })
+      .filter((r) => r.active)
+      .map(({ label, avg }) => ({ label, avg }))
+      .sort((a, b) => b.avg - a.avg),
+  })).filter((d) => d.rows.length > 0);
+}
+
+// Геометрия строк профиля. Значение (х.х) прижато к правому краю, бар между
+// колонкой названий и значением.
+const NAME_W = 150;
+const BAR_X = CARD_PAD + NAME_W + 8;
+const BAR_W = CARD_W - CARD_PAD - 34 - BAR_X;
+const ROW_H = 26;
+const GROUP_HEAD_H = 30;
+const GROUP_SIGN_W = 36;
+const GROUP_GAP = 8;
+// Пояснительная строка под шапкой («средний балл от 1 до 6 · …»).
+const HINT_H = 30;
+// Тело карточки, когда ни одна схема не выражена.
+const EMPTY_BODY_H = 34;
+
+/**
+ * Высота карточки — чистая формула от числа доменов и строк (для тестов).
+ * titleLines обязателен: заголовок «Выраженных схем не обнаружено» переносится
+ * на две строки, и с расчётом «как будто строка одна» последняя группа схем
+ * уезжает под футер.
+ */
+export function ysqProfileCardHeight(
+  domains: YsqProfileDomain[],
+  hasDate = true,
+  titleLines = 1,
+): number {
+  const rows = domains.reduce((n, d) => n + d.rows.length, 0);
+  // Выраженных схем нет — вместо групп идёт одна поясняющая строка.
+  const bodyH = domains.length
+    ? domains.length * (GROUP_HEAD_H + GROUP_GAP) + rows * ROW_H
+    : EMPTY_BODY_H;
+  return headerHeight(titleLines, hasDate) + HINT_H + bodyH + 12 + FOOTER_H;
+}
+
+export interface YsqProfileCardOpts {
+  /** «N выраженных схем из 20» / «Выраженных схем не обнаружено». */
+  headline: string;
+  dateLabel: string | null;
+}
+
+export function drawYsqProfileCard(
+  canvas: HTMLCanvasElement,
+  domains: YsqProfileDomain[],
+  opts: YsqProfileCardOpts,
+) {
+  const head = {
+    eyebrow: 'Тест на схемы',
+    title: opts.headline,
+    subtitle: opts.dateLabel ?? undefined,
+    sign: CARD_LOOK.ysq.sign,
+  };
+  const titleLines = headerLines(canvas.getContext('2d')!, head).title.length;
+  const H = ysqProfileCardHeight(domains, Boolean(opts.dateLabel), titleLines);
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.ysq.hue });
+  const { ctx } = c;
+
+  const contentY = header(c, head);
+
+  ctx.font = cardFont(11);
+  ctx.fillStyle = INK.sub;
+  ctx.textAlign = 'left';
+  ctx.fillText(
+    domains.length
+      ? 'Выражена: средний от 4 или больше половины «5–6»'
+      : 'Средний балл считается от 1 до 6',
+    CARD_PAD,
+    contentY,
+  );
+
+  if (domains.length === 0) {
+    ctx.font = cardFont(13.5);
+    ctx.fillStyle = INK.text;
+    ctx.fillText(
+      'По ответам ни одна схема не выделилась',
+      CARD_PAD,
+      contentY + 28,
+    );
+    footer(c, 'Тест на схемы');
+    return;
+  }
+
+  const chartTop = contentY + HINT_H;
+  const chartBottom = H - FOOTER_H - 8;
+
+  // Пунктир порога «4 из 6» с меткой; закрашенная часть бара ложится поверх,
+  // так что линия видна только там, куда бар не дотянулся.
+  const thresholdX = BAR_X + (avgBarPct(4) / 100) * BAR_W;
+  ctx.font = cardFont(10);
+  ctx.fillStyle = INK.sub;
+  ctx.textAlign = 'center';
+  ctx.fillText('4', thresholdX, chartTop - 4);
+  ctx.textAlign = 'left';
+  ctx.strokeStyle = inkAlpha(0.22);
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  ctx.beginPath();
+  ctx.moveTo(thresholdX, chartTop);
+  ctx.lineTo(thresholdX, chartBottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  let y = chartTop;
+  for (const d of domains) {
+    // Шапка группы — знак потребности, которую питает домен, и её имя.
+    sign(c, `need_${d.needId}`, CARD_PAD, y + 4, GROUP_SIGN_W);
+    ctx.font = cardFont(10.5, 'bold');
+    ctx.fillStyle = INK.sub;
+    tracking(ctx, 0.6);
+    ctx.fillText(d.label.toUpperCase(), CARD_PAD + GROUP_SIGN_W + 8, y + 17);
+    tracking(ctx, 0);
+    y += GROUP_HEAD_H;
+
+    for (const r of d.rows) {
+      ctx.font = cardFont(12, 'bold');
+      ctx.fillStyle = INK.text;
+      ctx.textAlign = 'left';
+      ctx.fillText(r.label, CARD_PAD, y + 15);
+
+      progressBar(
+        c,
+        BAR_X,
+        y + 8,
+        BAR_W,
+        r.avg >= 1 ? avgBarPct(r.avg) / 100 : 0,
+        d.color,
+      );
+
+      ctx.font = cardFont(11.5, 'bold');
+      ctx.fillStyle = needTextInk(d.needId);
+      ctx.textAlign = 'right';
+      ctx.fillText(
+        r.avg >= 1 ? fmtIndex(r.avg) : '—',
+        CARD_W - CARD_PAD,
+        y + 16,
+      );
+      ctx.textAlign = 'left';
+
+      y += ROW_H;
+    }
+    y += GROUP_GAP;
+  }
+
+  footer(c, 'Тест на схемы');
+}

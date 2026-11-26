@@ -1,0 +1,266 @@
+import { useState, useEffect, useRef } from 'react';
+import { api, type BookingSlot, type SessionOption } from '../api';
+import { BookingErrorNote } from './BookingErrorNote';
+import { Btn } from './landing-kit';
+import { handleBookingFailure } from './bookingFailure';
+import { leadSource } from '../utils/leadSource';
+import { dropUrlParam } from '../utils/dropUrlParam';
+import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
+import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
+import { useClientTimeZone } from './booking/useClientTimeZone';
+import { WriteInsteadNote } from './booking/WriteInsteadNote';
+import { SlotsLoadingNote } from './booking/SlotsLoadingNote';
+import { IntroConfirmNotice } from './booking/IntroConfirmNotice';
+import { ReturningVisitField } from './booking/ReturningVisitField';
+import { RequestField } from './booking/RequestField';
+import { BOOKING_SLOT_MESSAGE_MAX } from '../../../shared/src/limits/textLimits';
+import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
+import { ContactChannelField } from './booking/ContactChannelField';
+import type { ContactChannel } from '../../../shared/src/booking/contactChannel';
+import { BookingSlotsSection } from './booking/BookingSlotsSection';
+import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen, type BookedSession } from './booking/BookingResultScreens';
+import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
+import { usePriceCurrency } from './booking/priceCurrency';
+import { CurrencyChoice } from './booking/CurrencyChoice';
+import { fieldLabel as labelSt } from './booking/fieldLabelStyle';
+import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
+import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
+
+const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
+
+export type BookingType = 'INTRO_15' | 'SESSION_50';
+/** Slot-based booking widget. Falls back to `fallback` when no slots are open; `onWriteInstead` — выход «напишите мне» под слотами; `lockedType` — один формат без переключателя; `compact` — без «Запроса» и «повторной встречи» (страница /book: знакомый клиент, только имя, контакт, оферта). */
+export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = false }: { fallback?: React.ReactNode; onWriteInstead?: () => void; lockedType?: BookingType; compact?: boolean }) {
+  const [tz, setTz] = useClientTimeZone();
+  const { slots, failed: slotsFailed } = useBookingSlots(api.getSlots); // загрузка и дубли — общий хук (shared, #546)
+  const [optionsFailed, setOptionsFailed] = useState(false);
+  const [pickedDay, setDay] = useState('');
+  const [slot, setSlot] = useState<BookingSlot | null>(null);
+  const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
+  const [channel, setChannel] = useState<ContactChannel>('telegram');
+  const [message, setMessage] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [confirmNotice, setConfirmNotice] = useState(false); // переживает переключение формата: ответ на тот же текст
+  const [returning, setReturning] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error' | 'taken' | 'payment_fail' | 'await_payment'>(() => {
+    // Начальный статус выводится из ?payment= на маунте (lazy-init), а не через
+    // setState в эффекте (react-hooks/set-state-in-effect). Чистка URL —
+    // в эффекте ниже (побочный эффект).
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('payment') === 'ok') return 'done';
+    if (p.get('payment') === 'fail') return 'payment_fail';
+    return 'idle';
+  });
+  const [payUrl, setPayUrl] = useState<string | null>(null);
+  const [booked, setBooked] = useState<BookedSession | null>(null);
+  const [cancelled, setCancelled] = useState(false);
+  const [options, setOptions] = useState<SessionOption[]>([]);
+  const [sessionType, setSessionType] = useState<BookingType>(lockedType ?? 'INTRO_15');
+  const [website, setWebsite] = useState(''); // honeypot — stays empty for humans
+  const formFocused = useRef(false);
+  const [invalidField, setInvalidField] = useState<InvalidField | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const contactRef = useRef<HTMLInputElement>(null);
+  const consentRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
+
+  // Возврат с Robokassa (?payment=ok / ?payment=fail): из адреса уходит только
+  // параметр оплаты, метки визита (utm_source, yclid) остаются.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('payment') === 'ok' || p.get('payment') === 'fail') dropUrlParam('payment');
+  }, []);
+
+  useEffect(() => {
+    api.getBookingOptions().then(setOptions).catch(() => setOptionsFailed(true)); // сбой ≠ пусто: без опций не собрать цену — тот же исход, что сбой слотов
+  }, []);
+  const loadFailed = slotsFailed || optionsFailed;
+  const day = pickedDay || firstSlotDay(slots, tz); // пока день не выбран — день первого слота в зоне посетителя
+
+  const chosen = options.find((o) => o.type === sessionType);
+  const { currency, explicit } = usePriceCurrency(tz); // тот же tz и выбор (Р5) уходят в запрос — цена совпадёт с серверной
+  const view = bookingPriceView(chosen, currency);
+
+  // On a terminal screen (done / payment failed), scroll it into view — on mobile
+  // the result renders above the submit button and was easy to miss.
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (status === 'done' || status === 'payment_fail' || status === 'await_payment') {
+      scrollIntoViewSafe(resultRef.current, { block: 'center' });
+    }
+  }, [status]);
+
+  if (slots === null && !loadFailed) {
+    return <SlotsLoadingNote />;
+  }
+  // No availability configured (or load failed): keep the request channel open.
+  if (loadFailed || slots!.length === 0) {
+    return <>{fallback}</>;
+  }
+
+  if (status === 'await_payment') return <AwaitPaymentScreen resultRef={resultRef} slot={slot} tz={tz} priceText={view.paid ? view.text : null} payUrl={payUrl} message={message} />;
+  if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
+  if (status === 'done') return (
+    <DoneScreen
+      resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} booked={booked}
+      sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message} costNote={doneCostNote(view, sessionType)}
+    />
+  );
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    trackGoalOnce('booking_submit_click');
+    if (!slot) return; // форма скрыта без выбранного слота — сюда не дойти
+    const needConfirm = sessionType === 'INTRO_15' && !confirmNotice;
+    const missing: InvalidField | null = !name.trim() ? 'name' : !contact.trim() ? 'contact' : needConfirm ? 'confirmNotice' : !consent ? 'consent' : null;
+    if (missing) {
+      trackGoal('booking_error', { reason: 'validation', field: missing });
+      setInvalidField(missing);
+      ({ name: nameRef, contact: contactRef, confirmNotice: confirmRef, consent: consentRef })[missing].current?.focus();
+      return;
+    }
+    setInvalidField(null);
+    setStatus('loading');
+    try {
+      const res = await api.bookSlot({
+        startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
+        clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
+        returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz, clientChannel: channel, currency: explicit,
+      });
+      setBooked({ cancelToken: res.cancelToken, eventDurationMin: res.eventDurationMin });
+      trackBookingSubmit(sessionType);
+      if (res.paymentUrl) {
+        // Paid session: show a "reserved, go to pay" screen first (so the client
+        // always sees the booking is registered even if Robokassa fails), then
+        // they tap through to payment.
+        setPayUrl(res.paymentUrl);
+        setStatus('await_payment');
+        return;
+      }
+      setStatus('done');
+    } catch (err) {
+      trackGoal('booking_error', { reason: 'server' });
+      setStatus(handleBookingFailure(err));
+    }
+  };
+
+  const onFieldFocus = () => {
+    if (!formFocused.current) {
+      formFocused.current = true;
+      trackGoalOnce('booking_form_focus');
+    }
+  };
+
+  return (
+    // noValidate: поля несут `required` для скринридеров/семантики, но
+    // нативная HTML5-валидация браузера должна её не блокировать сабмит
+    // молча (без наших trackGoal/подсказок) — обработчик submit сам решает,
+    // что показать и куда поставить фокус.
+    <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <CurrencyChoice tz={tz} labelStyle={labelSt} />
+      {options.length > 1 && !lockedType && (
+        <div>
+          <div style={labelSt}>Формат встречи</div>
+          <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
+            {options.map((o) => {
+              const active = o.type === sessionType;
+              return (
+                <button key={o.type} type="button" aria-pressed={active} onClick={() => {
+                  setSessionType(o.type);
+                  if (o.type === 'INTRO_15') { setReturning(false); } // знакомство — всегда первая встреча
+                  trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
+                }} style={{
+                  flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
+                  borderRadius: 'var(--r-12)', fontFamily: 'inherit', transition: 'all .15s',
+                  background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
+                  border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
+                }}>
+                  <div className="u-h15">
+                    {o.label} {formatPriceSuffix(o, currency)}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2 }}>{o.note}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <BookingSlotsSection
+        slots={slots!} tz={tz} onTzChange={setTz}
+        day={day} onDayChange={setDay}
+        slot={slot} onSlotChange={setSlot}
+      />
+      {!slot && onWriteInstead && <WriteInsteadNote onClick={() => { trackGoal('booking_write_instead'); onWriteInstead(); }} />}
+
+      {slot && (
+        <>
+          <div className="form-grid">
+            {/* ym-disable-keys: Вебвизор (визитка, см. metrika.ts shouldRecordSession)
+                не пишет ввод в этих полях — имя и контакт клиента. */}
+            <div>
+              <label style={labelSt} htmlFor="bp-name">Имя *</label>
+              <input
+                id="bp-name" ref={nameRef} className="ym-disable-keys ds-input" placeholder="Ваше имя"
+                value={name} onChange={(e) => { setName(e.target.value); if (invalidField === 'name') setInvalidField(null); }}
+                onFocus={onFieldFocus} required maxLength={100}
+                aria-invalid={invalidField === 'name' || undefined}
+                aria-describedby={invalidField === 'name' ? 'bp-name-hint' : undefined}
+              />
+              {invalidField === 'name' && <p id="bp-name-hint" style={hintSt}>{FIELD_HINTS.name}</p>}
+            </div>
+            <ContactChannelField
+              id="bp-contact" channel={channel} onChannelChange={setChannel} inputRef={contactRef} onFocus={onFieldFocus}
+              value={contact} onChange={(v) => { setContact(v); if (invalidField === 'contact') setInvalidField(null); }}
+              invalid={invalidField === 'contact'} hint={invalidField === 'contact' ? FIELD_HINTS.contact : null}
+              labelStyle={labelSt}
+            />
+          </div>
+          {sessionType === 'INTRO_15' && (
+            <IntroConfirmNotice
+              checked={confirmNotice} invalid={invalidField === 'confirmNotice'} inputRef={confirmRef}
+              onChange={(v) => { setConfirmNotice(v); if (invalidField === 'confirmNotice') setInvalidField(null); }}
+            />
+          )}
+          {/* Honeypot: hidden from users, bots tend to fill it → server rejects */}
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}
+            aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
+          {sessionType === 'SESSION_50' && !compact && (
+            <ReturningVisitField returning={returning} onChange={setReturning} />
+          )}
+          {!compact && <RequestField value={message} onChange={setMessage} labelStyle={labelSt} max={BOOKING_SLOT_MESSAGE_MAX} />}
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-10)', cursor: 'pointer' }}>
+            <input
+              type="checkbox" ref={consentRef} checked={consent}
+              onChange={(e) => { setConsent(e.target.checked); if (invalidField === 'consent') setInvalidField(null); }}
+              style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', width: 16, height: 16 }}
+              aria-invalid={invalidField === 'consent' || undefined}
+              aria-describedby={invalidField === 'consent' ? 'bp-consent-hint' : undefined}
+            />
+            <span style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.6 }}>
+              Я принимаю условия <a href="/offer" target="_blank" className="u-link">Публичной оферты</a>{view.paid ? ' (договора оказания услуг)' : ''} и <a href="/privacy" target="_blank" className="u-link">Политики конфиденциальности</a>, даю согласие на обработку данных
+            </span>
+          </label>
+          {invalidField === 'consent' && <p id="bp-consent-hint" style={{ ...hintSt, margin: '-8px 0 0' }}>{FIELD_HINTS.consent}</p>}
+          {(status === 'error' || status === 'taken') && <BookingErrorNote kind={status} />}
+          {needsOnlinePayment(view) && (
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '-8px 0 0' }}>
+              {localDayLabel(slot.startsAt, tz)}, {localTimeLabel(slot.startsAt, tz)} {submitTimeSuffix(tz)}
+            </p>
+          )}
+          <Btn type="submit" disabled={status === 'loading'} size="lg"
+            style={{
+              alignSelf: 'flex-start',
+              opacity: status === 'loading' ? 0.4 : (!name.trim() || !contact.trim() || !consent || (sessionType === 'INTRO_15' && !confirmNotice)) ? 0.7 : 1,
+            }}>
+            {submitLabel(view, status === 'loading', `Записаться на ${localDayLabel(slot.startsAt, tz).toLowerCase()}, ${localTimeLabel(slot.startsAt, tz)} ${submitTimeSuffix(tz)} →`)}
+          </Btn>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>
+            {submitNote(view)}
+          </p>
+        </>
+      )}
+    </form>
+  );
+}

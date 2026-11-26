@@ -1,0 +1,86 @@
+import { useState, useEffect } from 'react';
+import { api } from '../../api';
+import type { MarqueeTopic } from '../../api';
+import { card, btn, btnGhost, input } from './shared';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
+
+/** Marquee admin tab: edit the two scrolling topic strips on the landing page. */
+export function MarqueeSection({ adminKey }: { adminKey: string }) {
+  const [a, setA] = useState<MarqueeTopic[]>([]);
+  const [b, setB] = useState<MarqueeTopic[]>([]);
+
+  // Ответ, пришедший после правки (пункт добавлен до конца загрузки), её не затирает: до ответа в строке
+  // могут быть только новые пункты — они встают после загруженных. Голая отмена, как в PhotoSection, здесь
+  // хуже: строка осталась бы без загруженных пунктов, и «Сохранить» стёр бы их на сервере.
+  useEffect(() => {
+    let cancelled = false; // размонтирование (и двойной эффект StrictMode) — ответ не применяется
+    api.getSiteContent().then(c => {
+      if (cancelled) return;
+      setA(local => [...c.marqueeTopicsA, ...local]);
+      setB(local => [...c.marqueeTopicsB, ...local]);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <>
+      <TopicListEditor title="Бегущая строка А" adminKey={adminKey} group="A" topics={a} onChange={setA} />
+      <TopicListEditor title="Бегущая строка Б" adminKey={adminKey} group="B" topics={b} onChange={setB} />
+    </>
+  );
+}
+
+function TopicListEditor({ title, adminKey, group, topics, onChange }: {
+  title: string; adminKey: string; group: 'A' | 'B'; topics: MarqueeTopic[]; onChange: (t: MarqueeTopic[]) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [saved, flashSaved] = useTimedFlag(1500);
+  const [error, setError] = useState<string | null>(null);
+
+  const update = (i: number, patch: Partial<MarqueeTopic>) => {
+    onChange(topics.map((t, idx) => idx === i ? { ...t, ...patch } : t));
+  };
+  const remove = (i: number) => onChange(topics.filter((_, idx) => idx !== i));
+  const add = () => onChange([...topics, { label: '', href: '#' }]);
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= topics.length) return;
+    const next = [...topics];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.adminSetMarquee(adminKey, group, topics.filter(t => t.label.trim() && t.href.trim()));
+      flashSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section style={card}>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>{title}</h2>
+      {topics.map((t, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-8)', padding: '6px 0' }}>
+          <input style={{ ...input, flex: 2 }} placeholder="Текст" value={t.label} onChange={e => update(i, { label: e.target.value })} />
+          <input style={{ ...input, flex: 1 }} placeholder="Ссылка (#booking, /reviews...)" value={t.href} onChange={e => update(i, { href: e.target.value })} />
+          <button aria-label="Переместить выше" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, -1)} disabled={i === 0}>↑</button>
+          <button aria-label="Переместить ниже" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12 }} onClick={() => move(i, 1)} disabled={i === topics.length - 1}>↓</button>
+          <button aria-label="Удалить" style={{ ...btnGhost, padding: '4px 8px', fontSize: 12, color: 'var(--accent-red)' }} onClick={() => remove(i)}>✕</button>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 'var(--space-10)', marginTop: 12 }}>
+        <button style={btnGhost} onClick={add}>+ Добавить пункт</button>
+        <button style={btn} onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
+      </div>
+      {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
+      {saved && <p style={{ color: 'var(--accent-green)', fontSize: 13, margin: '10px 0 0' }}>Сохранено ✓</p>}
+    </section>
+  );
+}

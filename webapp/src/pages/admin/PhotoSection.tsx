@@ -1,0 +1,87 @@
+import { useState, useEffect, useRef } from 'react';
+import { api } from '../../api';
+import { card, btn } from './shared';
+import { compressImage } from './imageCompress';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
+
+// Portrait hero photo — narrower and a touch tighter budget than article images.
+const compressPhoto = (file: File) => compressImage(file, 800, 200 * 1024);
+
+/** Photo admin tab: upload + client-side compress the hero photo shown on the landing page. */
+export function PhotoSection({ adminKey }: { adminKey: string }) {
+  const [current, setCurrent] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, flashSaved] = useTimedFlag(1500);
+  // Ответ GET, пришедший после сохранения, не затирает только что
+  // сохранённое фото: сохранение отменяет его применение, как и размонтирование.
+  const loadCancelled = useRef(false);
+
+  useEffect(() => {
+    loadCancelled.current = false;
+    api.getSiteContent().then(c => { if (!loadCancelled.current) setCurrent(c.heroPhoto); }).catch(() => {});
+    return () => { loadCancelled.current = true; };
+  }, []);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    try {
+      setPreview(await compressPhoto(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось обработать фото');
+    }
+  };
+
+  const save = async () => {
+    if (!preview) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.adminSetHeroPhoto(adminKey, preview);
+      loadCancelled.current = true;
+      setCurrent(preview);
+      setPreview(null);
+      flashSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section style={card}>
+      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 14 }}>Фото на сайте</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 16 }}>Используется в блоке «Обо мне» и в шапке. Загрузите новое фото — оно автоматически сожмётся под нужный размер.</p>
+
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 8px' }}>Сейчас на сайте</p>
+          <img src={current ?? '/gregory.jpg'} alt="Текущее фото" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 'var(--r-14)', border: '1px solid var(--line)' }} />
+        </div>
+        {preview && (
+          <div>
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 8px' }}>Новое (превью)</p>
+            <img src={preview} alt="Новое фото" style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 'var(--r-14)', border: '1px solid var(--accent)' }} />
+          </div>
+        )}
+      </div>
+
+      <div className="u-mt16">
+        <input type="file" accept="image/*" onChange={onFile} />
+      </div>
+
+      {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
+      {saved && <p style={{ color: 'var(--accent-green)', fontSize: 13, margin: '10px 0 0' }}>Фото сохранено ✓</p>}
+
+      {preview && (
+        <div className="u-mt16">
+          <button style={btn} onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить фото'}</button>
+        </div>
+      )}
+    </section>
+  );
+}

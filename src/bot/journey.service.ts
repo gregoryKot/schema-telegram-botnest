@@ -1,0 +1,297 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { loadPracticeJourney } from './journey-practice-sessions.util';
+import { modeDiaryItem, schemaDiaryLabels } from './journey-mode-item';
+type PracticeJourney = Awaited<ReturnType<typeof loadPracticeJourney>>;
+
+// «Мой путь» — сводный архив всей активности пользователя: сколько раз и когда
+// он заполнял трекер, дневники, практики, тесты и упражнения. Лента отдаёт
+// тип, дату и enum-идентификаторы (needId/modeId/schemaId); метки дневников
+// шифруются при записи — их расшифровывает journey-diary-labels.ts, свободный
+// текст здесь не читается вовсе. Счётчики — честные полные, из тех же выборок.
+
+export type JourneyItemType =
+  | 'tracker_day'
+  | 'note'
+  | 'schema_diary'
+  | 'mode_diary'
+  | 'case'
+  | 'gratitude'
+  | 'practice'
+  | 'plan_done'
+  | 'ysq'
+  | 'belief_check'
+  | 'letter'
+  | 'flashcard'
+  | 'safe_place'
+  | 'schema_note'
+  | 'mode_note';
+
+export interface JourneyItem {
+  type: JourneyItemType | PracticeJourney['items'][number]['type'];
+  /** ISO-датавремя или YYYY-MM-DD (у дневных записей время не хранится) */
+  at: string;
+  /** id строки-источника — по нему фронт подтягивает содержимое записи
+   * (через обычные расшифровывающие эндпоинты) для карточки-результата */
+  id?: number;
+  needId?: string;
+  modeId?: string;
+  schemaIds?: string[];
+}
+
+export interface JourneyCounts {
+  trackerDays: number;
+  notes: number;
+  schemaDiary: number;
+  modeDiary: number;
+  cases: number;
+  gratitudeDays: number;
+  practices: number;
+  plansDone: number;
+  ysqTests: number;
+  childhoodDone: boolean;
+  beliefChecks: number;
+  letters: number;
+  flashcards: number;
+  safePlace: boolean;
+  schemaNotes: number;
+  modeNotes: number;
+}
+
+export interface JourneyData {
+  counts: JourneyCounts & PracticeJourney['counts'];
+  items: JourneyItem[];
+}
+
+// Потолок ленты: старое сверх лимита не отдаём (счётчики всё равно полные).
+// Тяжёлые источники (растут с каждым действием юзера) ниже разбиты на два
+// запроса вместо одного unbounded findMany: count() — точный тотал БЕЗ
+// загрузки строк, и bounded findMany (take+orderBy) — сама лента.
+const FEED_LIMIT = 500;
+
+const iso = (d: Date): string => d.toISOString();
+
+@Injectable()
+export class JourneyService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getJourney(userId: bigint): Promise<JourneyData> {
+    const p = this.prisma;
+    const by = { userId };
+    const [
+      ratingDates,
+      notesCount,
+      notes,
+      schemaDiaryCount,
+      schemaDiary,
+      modeDiaryCount,
+      casesCount,
+      modeDiary,
+      gratitudeCount,
+      gratitude,
+      practicesCount,
+      practices,
+      plansDone,
+      ysqHistory,
+      ysqResult,
+      childhoodCount,
+      beliefChecksCount,
+      beliefChecks,
+      lettersCount,
+      letters,
+      flashcardsCount,
+      flashcards,
+      safePlace,
+      schemaNotes,
+      modeNotes,
+      { items: practiceItems, counts: practiceCounts },
+    ] = await Promise.all([
+      p.rating.groupBy({ by: ['date'], where: by }),
+      p.note.count({ where: by }),
+      p.note.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      }),
+      p.schemaDiaryEntry.count({ where: by }),
+      p.schemaDiaryEntry.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, createdAt: true, schemaIds: true },
+      }),
+      p.modeDiaryEntry.count({ where: { ...by, fromCase: false } }),
+      p.modeDiaryEntry.count({ where: { ...by, fromCase: true } }),
+      p.modeDiaryEntry.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, createdAt: true, modeId: true, fromCase: true },
+      }),
+      p.gratitudeDiaryEntry.count({ where: by }),
+      p.gratitudeDiaryEntry.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { date: 'desc' },
+        select: { id: true, date: true },
+      }),
+      p.userPractice.count({ where: by }),
+      p.userPractice.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, createdAt: true, needId: true },
+      }),
+      p.practicePlan.findMany({
+        where: { userId, done: true },
+        select: {
+          id: true,
+          checkedAt: true,
+          scheduledDate: true,
+          needId: true,
+        },
+      }),
+      p.ysqResultHistory.findMany({
+        where: by,
+        select: { id: true, completedAt: true },
+      }),
+      p.ysqResult.findUnique({
+        where: { userId },
+        select: { completedAt: true },
+      }),
+      p.childhoodRating.count({ where: by }),
+      p.userBeliefCheck.count({ where: by }),
+      p.userBeliefCheck.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, createdAt: true },
+      }),
+      p.userLetter.count({ where: by }),
+      p.userLetter.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, createdAt: true },
+      }),
+      p.userFlashcard.count({ where: by }),
+      p.userFlashcard.findMany({
+        where: by,
+        take: FEED_LIMIT,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, createdAt: true, modeId: true },
+      }),
+      p.userSafePlace.findUnique({
+        where: { userId },
+        select: { updatedAt: true },
+      }),
+      p.userSchemaNote.findMany({
+        where: by,
+        select: { updatedAt: true, schemaId: true },
+      }),
+      p.userModeNote.findMany({
+        where: by,
+        select: { updatedAt: true, modeId: true },
+      }),
+      loadPracticeJourney(p, userId, FEED_LIMIT),
+    ]);
+
+    // Старые пользователи прошли тест до появления таблицы истории —
+    // сам результат тогда единственный след прохождения.
+    const ysqFeed = ysqHistory.length
+      ? ysqHistory.map((h) => ({
+          type: 'ysq' as const,
+          id: h.id,
+          at: iso(h.completedAt),
+        }))
+      : ysqResult
+        ? [{ type: 'ysq' as const, at: iso(ysqResult.completedAt) }]
+        : [];
+
+    const items: JourneyItem[] = [
+      ...ratingDates.map((r) => ({ type: 'tracker_day' as const, at: r.date })),
+      ...notes.map((n) => ({ type: 'note' as const, at: n.date })),
+      ...schemaDiary.map((e) => ({
+        type: 'schema_diary' as const,
+        id: e.id,
+        at: iso(e.createdAt),
+        schemaIds: schemaDiaryLabels(e),
+      })),
+      ...modeDiary.map(modeDiaryItem),
+      ...gratitude.map((e) => ({
+        type: 'gratitude' as const,
+        id: e.id,
+        at: e.date,
+      })),
+      ...practices.map((e) => ({
+        type: 'practice' as const,
+        id: e.id,
+        at: iso(e.createdAt),
+        needId: e.needId,
+      })),
+      ...plansDone.map((e) => ({
+        type: 'plan_done' as const,
+        id: e.id,
+        at: e.checkedAt ? iso(e.checkedAt) : e.scheduledDate,
+        needId: e.needId,
+      })),
+      ...ysqFeed,
+      ...beliefChecks.map((e) => ({
+        type: 'belief_check' as const,
+        id: e.id,
+        at: iso(e.createdAt),
+      })),
+      ...letters.map((e) => ({
+        type: 'letter' as const,
+        id: e.id,
+        at: iso(e.createdAt),
+      })),
+      ...flashcards.map((e) => ({
+        type: 'flashcard' as const,
+        id: e.id,
+        at: iso(e.createdAt),
+        modeId: e.modeId,
+      })),
+      ...(safePlace
+        ? [{ type: 'safe_place' as const, at: iso(safePlace.updatedAt) }]
+        : []),
+      ...schemaNotes.map((e) => ({
+        type: 'schema_note' as const,
+        at: iso(e.updatedAt),
+        schemaIds: [e.schemaId],
+      })),
+      ...modeNotes.map((e) => ({
+        type: 'mode_note' as const,
+        at: iso(e.updatedAt),
+        modeId: e.modeId,
+      })),
+      ...practiceItems,
+    ]
+      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+      .slice(0, FEED_LIMIT);
+
+    return {
+      counts: {
+        trackerDays: ratingDates.length,
+        notes: notesCount,
+        schemaDiary: schemaDiaryCount,
+        modeDiary: modeDiaryCount,
+        cases: casesCount,
+        gratitudeDays: gratitudeCount,
+        practices: practicesCount,
+        plansDone: plansDone.length,
+        ysqTests: ysqFeed.length,
+        childhoodDone: childhoodCount > 0,
+        beliefChecks: beliefChecksCount,
+        letters: lettersCount,
+        flashcards: flashcardsCount,
+        safePlace: safePlace !== null,
+        schemaNotes: schemaNotes.length,
+        modeNotes: modeNotes.length,
+        ...practiceCounts,
+      },
+      items,
+    };
+  }
+}

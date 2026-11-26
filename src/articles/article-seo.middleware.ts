@@ -1,0 +1,123 @@
+import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { ArticlesService } from './articles.service';
+import {
+  SITE_URL,
+  buildArticleBody,
+  buildArticleJsonLd,
+  buildArticlesListBody,
+  injectSeo,
+  type SeoPage,
+} from './article-seo.render';
+import { PricingService } from '../booking/pricing.service';
+import { requestHost } from '../infra/request-host';
+import { REVALIDATE } from '../infra/static-cache';
+import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
+import { practicePreviewHtml } from '../practice-preview';
+
+// Продукт подписывает вкладку своим именем, визитка (алиас) — именем автора.
+const PRODUCT_SUFFIX = 'Всё по схеме';
+const PRACTICE_SUFFIX = 'Григорий Котляревский';
+const LIST_HEADING = 'Статьи о схема-терапии';
+const LIST_DESCRIPTION =
+  'Статьи о схема-терапии: что это за метод, кому подходит, схемы и режимы, когда стоит обратиться.';
+
+/**
+ * Server-side SEO для /articles и /articles/:slug (до ServeStatic): сайт — SPA,
+ * и без этого поисковики (особенно Яндекс) видят статьи пустыми дублями главной.
+ * Вставляет <title>, description, canonical, OG, JSON-LD и текст статьи в #root;
+ * React потом монтируется как обычно (createRoot заменяет #root).
+ */
+@Injectable()
+export class ArticleSeoMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(ArticleSeoMiddleware.name);
+  private cachedHtml: string | null | undefined;
+
+  constructor(
+    private readonly articles: ArticlesService,
+    private readonly pricing: PricingService,
+  ) {}
+
+  private html(): string | null {
+    if (this.cachedHtml === undefined) {
+      const p = join(__dirname, '..', '..', 'webapp', 'dist', 'index.html');
+      this.cachedHtml = existsSync(p) ? readFileSync(p, 'utf8') : null;
+    }
+    return this.cachedHtml ?? null;
+  }
+
+  async use(req: Request, res: Response, next: () => void): Promise<void> {
+    const base = this.html();
+    if (!base) return next();
+
+    // Path without query string, e.g. "/articles/skhemy-yanga-spisok"
+    const path = req.path.replace(/\/+$/, '');
+    const match = /^\/articles\/([a-z0-9-]+)$/i.exec(path);
+    if (!match && path !== '/articles') return next();
+
+    try {
+      // Alias domains get their own canonical/og:url host and the practice
+      // link card (practice-preview.ts). Аудит 2026-10 (I3): host берётся из
+      // заголовка Host и только из allow-list алиасов, не из клиентского
+      // X-Forwarded-Host (иначе инъекция в canonical/og:url).
+      const host = requestHost(req);
+      const alias = PRACTICE_ALIAS_HOSTS.has(host);
+      const suffix = alias ? PRACTICE_SUFFIX : PRODUCT_SUFFIX;
+      const page = match
+        ? await this.articlePage(match[1], suffix)
+        : await this.listPage(suffix);
+      const shell = alias ? practicePreviewHtml(base) : base;
+      // Цена визитки — в шаблон до текста статьи: его пишет владелец.
+      let out = injectSeo(await this.pricing.landingText(shell), page);
+      if (alias) {
+        out = out.split(SITE_URL).join(`https://${host}`);
+      }
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', REVALIDATE); // как index.html из ServeStatic
+      res.send(out);
+    } catch (err) {
+      // Unknown slug (findBySlug throws) or DB error → SPA renders as before.
+      if (!(err instanceof ArticleLookupError)) {
+        this.logger.warn(
+          `SEO injection failed for ${path}: ${(err as Error).message}`,
+        );
+      }
+      next();
+    }
+  }
+
+  private async articlePage(slug: string, suffix: string): Promise<SeoPage> {
+    let article: Awaited<ReturnType<ArticlesService['findBySlug']>>;
+    try {
+      article = await this.articles.findBySlug(slug);
+    } catch {
+      throw new ArticleLookupError();
+    }
+    const url = `${SITE_URL}/articles/${slug}`;
+    return {
+      title: `${article.title} – ${suffix}`,
+      ogTitle: article.title,
+      description: article.description,
+      canonicalUrl: url,
+      ogType: 'article',
+      bodyHtml: buildArticleBody(article),
+      jsonLd: buildArticleJsonLd(article, url),
+    };
+  }
+
+  private async listPage(suffix: string): Promise<SeoPage> {
+    const articles = await this.articles.list();
+    return {
+      title: `${LIST_HEADING} – ${suffix}`,
+      description: LIST_DESCRIPTION,
+      canonicalUrl: `${SITE_URL}/articles`,
+      ogType: 'website',
+      bodyHtml: buildArticlesListBody(articles),
+    };
+  }
+}
+
+/** Неизвестный slug — штатный случай (SPA покажет 404), в лог не пишем. */
+class ArticleLookupError extends Error {}

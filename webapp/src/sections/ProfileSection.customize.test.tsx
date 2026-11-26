@@ -1,0 +1,136 @@
+// @vitest-environment jsdom
+// «Профиль» на сайте × «Настроить экран»: настройка (те же ключи localStorage
+// и события, что у мини-аппа) реально меняет экран — скрывает блоки и задаёт им
+// порядок. Связка «переключил в листе → блок исчез / поменялся порядок» — через
+// живой лист, а не только через запись в хранилище.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { AddressFormContext } from '../utils/addressForm';
+import { ProfileSection } from './ProfileSection';
+
+vi.mock('../components/useIsMobile', () => ({ useIsMobile: () => true }));
+vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
+vi.mock('../api', () => ({
+  api: {
+    getStreak: vi.fn(), getAchievements: vi.fn(), getInsights: vi.fn(), history: vi.fn(), getTherapyRelation: vi.fn(),
+    getFormerTherapist: vi.fn(() => Promise.resolve(null)),
+    getClientBooking: vi.fn(() => Promise.resolve({ eligible: false, upcoming: [] })),
+    getSchemaDiary: vi.fn(), getModeDiary: vi.fn(), getGratitudeDiary: vi.fn(), getYsqHistory: vi.fn(),
+    getProfile: vi.fn(), getModeNotes: vi.fn(), getSchemaNotes: vi.fn(), getPhraseChecks: vi.fn(), trackEvent: vi.fn(),
+  },
+  reportClientError: vi.fn(),
+}));
+vi.mock('../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
+import { api } from '../api';
+import { notifyPrefsChanged } from '../utils/uiPrefsSync';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+function fill() {
+  mockApi.getStreak.mockResolvedValue({ currentStreak: 5, longestStreak: 12, totalDays: 20, todayDone: true, weekDots: [true] });
+  mockApi.getAchievements.mockResolvedValue([{ id: 'first_day', earned: true }]);
+  mockApi.getInsights.mockResolvedValue({ weeklyStats: [{ needId: 'attachment', avg: 7.2, trend: '↑' }], bestDayOfWeek: 'Пн', worstDayOfWeek: 'Пт', totalDays: 10 });
+  mockApi.history.mockResolvedValue([{ date: '2026-08-01', ratings: {} }]);
+  for (const k of ['getTherapyRelation']) mockApi[k].mockResolvedValue(null);
+  for (const k of ['getSchemaDiary', 'getModeDiary', 'getGratitudeDiary', 'getYsqHistory', 'getModeNotes', 'getSchemaNotes', 'getPhraseChecks']) mockApi[k].mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({ ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds: [], myModeIds: [] });
+}
+
+async function renderProfile() {
+  await act(async () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter><ProfileSection onOpenSettings={vi.fn()} /></MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+  });
+}
+
+const blockVar = (el: Element | null) => (el?.closest('.cpf-blk') as HTMLElement | null)?.style.getPropertyValue('--blk-o');
+const track = () => mockApi.trackEvent as unknown as ReturnType<typeof vi.fn>;
+
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); fill(); });
+afterEach(cleanup);
+
+describe('ProfileSection × «Настроить экран»', () => {
+  it('«Настроить» открывает лист с блоками профиля и шлёт screen_customize_open', async () => {
+    await renderProfile();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
+    expect(await screen.findByRole('dialog', { name: 'Настроить экран' })).toBeTruthy();
+    expect(screen.getAllByRole('switch')).toHaveLength(7);
+    expect(track()).toHaveBeenCalledWith('screen_customize_open', { screen: 'profile', via: 'gear' });
+  });
+
+  it('тумблер в листе прячет блок на экране, запоминает выбор и сообщает синхронизации; повторный — возвращает', async () => {
+    await renderProfile();
+    expect(screen.getByText('Достижения', { selector: 'h2' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
+    const sw = await screen.findByRole('switch', { name: 'Достижения' });
+    fireEvent.click(sw);
+    expect(screen.queryByText('Достижения', { selector: 'h2' })).toBeNull();
+    expect(localStorage.getItem('screen_hidden_profile')).toBe('["achievements"]');
+    expect(track()).toHaveBeenCalledWith('screen_block_toggle', { screen: 'profile', block: 'achievements', hidden: true });
+    expect(notifyPrefsChanged).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('switch', { name: 'Достижения' }));
+    expect(screen.getByText('Достижения', { selector: 'h2' })).toBeTruthy();
+    expect(localStorage.getItem('screen_hidden_profile')).toBeNull();
+  });
+
+  it('скрытые в настройке блоки не рисуются сразу при открытии экрана; остальные на месте', async () => {
+    localStorage.setItem('screen_hidden_profile', '["streak","insights","journey"]');
+    await renderProfile();
+    expect(document.querySelector('.cpf-streak-card')).toBeNull();
+    expect(screen.queryByText('Мой путь', { selector: 'h2' })).toBeNull();
+    expect(screen.queryByText('Паттерны', { selector: 'h2' })).toBeNull();
+    expect(screen.getByText('Достижения', { selector: 'h2' })).toBeTruthy();
+  });
+
+  it('пустой профиль со скрытыми «Мой портрет» и «Мой путь» не остаётся пустым: герой начала на месте', async () => {
+    mockApi.getStreak.mockResolvedValue({ currentStreak: 0, longestStreak: 0, totalDays: 0, todayDone: false, weekDots: [] });
+    mockApi.getAchievements.mockResolvedValue([]);
+    mockApi.history.mockResolvedValue([]);
+    localStorage.setItem('screen_hidden_profile', '["portrait","journey"]');
+    await renderProfile();
+    expect(document.querySelector('.cpf-start')).not.toBeNull();
+    expect(screen.queryByText('Мой путь', { selector: 'h2' })).toBeNull();
+  });
+
+  // Витрина (путь, портрет, тёплые слова) и «ритм дней» (серия, теплокарта) — группы блоков: место группы
+  // на телефоне — место её первого видимого блока, плитки внутри витрины — в порядке листа.
+  const tiles = () => [...document.querySelectorAll('.cpf-shelf-item')].map((el) => el.className.replace(/.*cpf-shelf-item--/, ''));
+
+  it('порядок: по умолчанию как в мини-аппе, сохранённый — приезжает в --blk-o группы и в порядок плиток', async () => {
+    await renderProfile();
+    const streak = () => document.querySelector('.cpf-streak-card');
+    const journey = () => document.querySelector('.cpf-shelf-item--journey');
+    expect(blockVar(journey())).toBe('1'); // витрина — на месте портрета, первого блока
+    expect(blockVar(streak())).toBe('4');
+    expect(tiles()).toEqual(['portrait', 'journey']); // без фраз «Тёплых слов» плитки нет
+    cleanup();
+    localStorage.setItem('screen_order_profile', '["streak","journey"]');
+    await renderProfile();
+    expect(blockVar(streak())).toBe('1');
+    expect(blockVar(journey())).toBe('2');
+    expect(tiles()).toEqual(['journey', 'portrait']);
+  });
+
+  it('ручка «≡» в листе переставляет блок: порядок сохраняется и сразу виден на экране', async () => {
+    await renderProfile();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
+    fireEvent.keyDown(await screen.findByRole('button', { name: 'Переставить: Мой путь' }), { key: 'ArrowUp' });
+    expect(tiles()).toEqual(['portrait', 'journey']);
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Переставить: Мой путь' }), { key: 'ArrowUp' });
+    expect(tiles()).toEqual(['journey', 'portrait']);
+    fireEvent.keyDown(await screen.findByRole('button', { name: 'Переставить: Серия дней' }), { key: 'ArrowUp' });
+    expect(blockVar(document.querySelector('.cpf-streak-card'))).toBe('3');
+    expect(JSON.parse(localStorage.getItem('screen_order_profile') ?? '[]').slice(0, 4)).toEqual(['journey', 'portrait', 'streak', 'warm_words']);
+    expect(track()).toHaveBeenCalledWith('screen_block_move', { screen: 'profile', block: 'streak', dir: 'up' });
+  });
+
+  it('строки листа — со знаком блока (BLOCK_META.sign)', async () => {
+    await renderProfile();
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
+    await screen.findByRole('dialog', { name: 'Настроить экран' });
+    expect(document.querySelectorAll('.cz-block .cz-sign svg.pp-art')).toHaveLength(7);
+  });
+});

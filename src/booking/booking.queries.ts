@@ -1,0 +1,53 @@
+import { NotFoundException } from '@nestjs/common';
+import { BookingStatus } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { EncryptSchema } from '../utils/crypto';
+import { decryptBookingForAdmin } from './booking-admin-view';
+
+// Чтение броней: список для админки, одна по id и публичная проекция по
+// cancel-токену. Вынесено из booking.service.ts (правило №10) — сервис
+// оставляет себе тонкие делегаты, чтобы контроллеры не переписывались.
+
+/**
+ * List bookings for the admin panel.
+ *   upcoming  — future HELD + CONFIRMED (default)
+ *   past      — anything already started
+ *   cancelled — cancelled/expired
+ *   all       — everything, most recent first
+ */
+export async function listBookings(
+  prisma: PrismaService,
+  schema: EncryptSchema,
+  filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming',
+) {
+  const now = new Date();
+  const where =
+    filter === 'past'
+      ? { startsAt: { lt: now } }
+      : filter === 'cancelled'
+        ? { status: BookingStatus.CANCELLED }
+        : filter === 'all'
+          ? {}
+          : {
+              startsAt: { gte: now },
+              status: { in: [BookingStatus.HELD, BookingStatus.CONFIRMED] },
+            };
+  const rows = await prisma.booking.findMany({
+    where,
+    orderBy: { startsAt: filter === 'upcoming' ? 'asc' : 'desc' },
+    take: 200,
+  });
+  return rows.map((r) => decryptBookingForAdmin(r, schema));
+}
+
+export async function getBookingById(
+  prisma: PrismaService,
+  schema: EncryptSchema,
+  id: number,
+) {
+  const booking = await prisma.booking.findUnique({ where: { id } });
+  if (!booking) throw new NotFoundException('Booking not found');
+  return decryptBookingForAdmin(booking, schema);
+}
+
+export { getPublicBookingByToken } from './booking-public-view';

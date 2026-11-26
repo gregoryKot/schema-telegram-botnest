@@ -1,0 +1,866 @@
+[
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/501",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-16T20:26:32Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35146531255"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/501",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-16T21:48:23Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35154344541"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/512",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-18T08:38:55Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35320394599"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/512",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-19T08:34:13Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35429663792"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/512",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-20T08:56:47Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35498201568"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/512",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-20T10:19:53Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35501492443"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/536",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-20T11:23:42Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35507696004"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-22T08:59:09Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35702266716"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-23T08:59:48Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35834606690"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/558",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-24T00:43:25Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35939676696"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-24T08:51:04Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/35971824819"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-25T09:13:32Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/36111722273"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-26T09:01:56Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/36228536712"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-27T09:36:44Z",
+    "body": "Упали джобы: mutation-golden-auth, mutation-golden-payments.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/36306716499"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/550",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-27T11:30:42Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/36310763260"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/566",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-09-29T05:34:13Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/36525429091"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/590",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-03T11:26:43Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37118644008"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/606",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-03T23:01:02Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37160353488"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/610",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-04T10:28:49Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37195410445"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-06T09:49:55Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37443151554"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-07T09:40:12Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37600370842"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-08T09:55:55Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37757556875"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-09T09:59:42Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/37912846536"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/632",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-09T23:29:34Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38004661019"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/632",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-10T09:00:17Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38039824352"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-10T09:29:35Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38040285849"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/632",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-10T15:10:58Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38062554483"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/632",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-10T19:16:28Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38079119976"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-11T07:34:22Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38121775842"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-11T09:43:16Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38128046108"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/614",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-11T10:41:19Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38132741643"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-11T14:22:52Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38146886110"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-11T22:52:30Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38182081355"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-12T08:45:51Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38225490236"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-12T18:27:41Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38290960909"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-13T00:54:33Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38329486741"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-13T07:16:21Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38361533467"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/642",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-13T10:05:59Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38378762527"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-13T15:11:24Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38419770375"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-13T23:53:47Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38486909793"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/642",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-14T08:18:44Z",
+    "body": "Упали джобы: mutation-golden-auth.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38532509227"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-14T08:33:29Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38535855276"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-14T18:35:10Z",
+    "body": "Всё ещё красный (напоминание раз в 6 часов). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38616356207"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/642",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-14T22:50:37Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38648893345"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-15T00:16:15Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38659039339"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-15T04:57:11Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38684152590"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/640",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-15T09:41:22Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38714199628"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/697",
+    "user": {
+      "login": "gregoryKot"
+    },
+    "created_at": "2026-10-15T14:46:16Z",
+    "body": "Разбор прогона 38751067607: сам прод жив (`/health`: `status ok`, `db up`, `selfCheck.failed: []`). Красный только шаг отставания деплоя: образ на проде собран 2026-10-15 04:29 UTC — это #655, а после него в `main` смержено около 30 PR (#665 … #695), и ни один до пользователей не доехал. Amvera не забрала коммиты сама; по RUNBOOKS («Смок прода… отстал») пересборка запускается из панели Amvera. Кодом из репозитория это не чинится.\n\nПеред пересборкой стоит задать в env Amvera `BOT_USERNAME=SchemeHappensBot` (без `@`): с #690 в проде без неё ссылки-приглашения отвечают 503, а проба самопроверки краснеет. Если в панели задан `NODE_ENV`, он должен быть `production` — с #694 иначе краснеет проба `runtimeMode`.\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/697",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-15T18:27:32Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38785736889"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/672",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-16T08:03:16Z",
+    "body": "Упали джобы: mutation-golden-auth, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/38867982140"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/672",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-17T07:50:04Z",
+    "body": "Упали джобы: mutation-golden-auth, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39012830389"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-17T09:06:33Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39019817431"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-17T12:57:40Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39034551608"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-17T16:08:38Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39048060939"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-17T20:49:45Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39068305518"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T00:31:52Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39083081952"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T05:08:01Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39099477520"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/672",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T08:27:03Z",
+    "body": "Упали джобы: mutation-golden-auth, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39107672355"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/672",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T08:42:50Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39112367615"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T09:33:34Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39115789057"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T13:33:20Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39132038579"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/749",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-18T16:54:40Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39147129725"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/784",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-20T08:57:28Z",
+    "body": "Упали джобы: mutation-golden-auth, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39389942749"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/800",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-21T02:01:21Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39530623182"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/784",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-21T08:29:31Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39566157202"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/801",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-21T18:03:43Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39649266380"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/822",
+    "user": {
+      "login": "gregoryKot"
+    },
+    "created_at": "2026-10-22T09:50:19Z",
+    "body": "Причина — отставание деплоя, прод при этом здоров (`db: up`, самопроверка без ошибок). Шаг `check-deploy-lag` верно заметил, что сборка на проде (08:09:05Z, #820) старше последнего коммита `main` (#819, 08:15:37Z): Amvera не выкатила #819. Мерж пришёл через 20 секунд после того, как поднялась предыдущая сборка, и, судя по всему, был отброшен. Сегодня так же пропал #817. Запись об этом — в `docs/open/audit-2026-10.md` (PR #823).\n\nВ 09:46Z смержен #821 — это новый пуш в `main`, и его сборка привезёт #819. Когда она поднимется, я вручную перезапущу смок, и issue закроется сам.\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/822",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-22T10:55:52Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/39766721916"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/839",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-23T22:27:28Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40033706449"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/839",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-24T00:56:06Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40047388379"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/838",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-24T08:08:10Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40074910712"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/847",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-24T09:41:13Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40082918799"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/847",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-24T13:35:36Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40098781592"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/847",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-24T16:57:25Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40113896755"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-24T23:42:54Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40143835986"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-25T06:51:45Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40170602556"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-25T12:15:24Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40192288824"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-25T16:38:31Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40212631826"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-25T21:49:28Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40237268793"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-26T01:44:02Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40255629799"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-26T07:00:54Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40283172054"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/866",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-26T14:13:30Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40337576604"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/871",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-27T02:25:03Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40438265054"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/875",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-27T14:26:46Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health/сайт/мини-апп/игра/самопроверка/деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40521109335"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/875",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-27T19:32:20Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40569955659"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/881",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-29T09:22:43Z",
+    "body": "Упали джобы: browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40846165450"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/888",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-30T02:03:42Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/40989432662"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/881",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-30T09:30:56Z",
+    "body": "Упали джобы: browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41030990234"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/881",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-31T09:23:09Z",
+    "body": "Упали джобы: browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41186756842"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/894",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-10-31T14:56:32Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41212429296"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/881",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-01T10:18:23Z",
+    "body": "Упали джобы: frontend-flaky, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41294704066"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/881",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-01T11:08:17Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41300326962"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/905",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-03T01:43:20Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41561536071"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/903",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-03T10:33:57Z",
+    "body": "Упали джобы: browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41616908386"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/909",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-03T22:00:03Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41726769257"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/903",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-04T10:33:21Z",
+    "body": "Упали джобы: mutation-golden-auth, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41811153950"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/914",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-04T17:12:06Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/41875168100"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/903",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-05T10:19:13Z",
+    "body": "Упали джобы: mutation-golden-auth, browser-smoke.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42006563460"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/903",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-05T12:25:19Z",
+    "body": "Упали джобы: backend-flaky.\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42022535728"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/903",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-05T12:35:55Z",
+    "body": "Снова зелёный: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42024792306"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/951",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-05T23:27:12Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health, сайт, переход с /app/, игра, самопроверка, деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42129323737"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/951",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-06T03:31:06Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health, сайт, переход с /app/, игра, самопроверка, деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42157000662"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/951",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-06T11:31:58Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health, сайт, переход с /app/, игра, самопроверка, деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42210586726"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/951",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-06T18:16:45Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42269180814"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/992",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-07T07:10:51Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42350154495"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/1017",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-07T23:17:39Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health, сайт, переход с /app/, игра, самопроверка, деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42424557483"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/1017",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-08T02:37:10Z",
+    "body": "Всё ещё красный (напоминание не чаще раза в 3 часа). Не отвечает или отвечает не так, как надо (health, сайт, переход с /app/, игра, самопроверка, деплой).\n\nСсылка на прогон: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42439295896"
+  },
+  {
+    "issue_url": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/issues/1017",
+    "user": {
+      "login": "github-actions[bot]"
+    },
+    "created_at": "2026-11-08T09:28:10Z",
+    "body": "Снова отвечает: https://github.com/gregoryKot/schema-telegram-botnest/actions/runs/42467287703"
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "source": "Telegram Bot API, любой метод (здесь sendMessage) при превышении лимита: HTTP 429, тело — объект ответа с ok=false, error_code, description и parameters типа ResponseParameters (https://core.telegram.org/bots/api#making-requests, https://core.telegram.org/bots/api#responseparameters; лимиты — https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)",
+  "recordedAt": "2026-10-18",
+  "how": "собрано по документации Bot API, сверено 2026-10-18 по странице core.telegram.org/bots/api: «Some errors may also have an optional field 'parameters' of the type ResponseParameters»; ResponseParameters.retry_after — Integer, «In case of exceeding flood control, the number of seconds left to wait before the request can be repeated». Ответ с прода не сохранялся: до этой починки 429 никто не отличал от прочих сбоев. Текст description («Too Many Requests: retry after N») — форма, которую Telegram присылает на практике, но код его не читает: срок берётся только из parameters.retry_after. При первом 429 в логах прода — заменить фикстуру записью.",
+  "redacted": "ничего — ответ без идентификаторов чата и токена"
+}

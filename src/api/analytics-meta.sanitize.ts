@@ -1,0 +1,263 @@
+import type { AnalyticsEventName } from '../analytics/analytics.constants';
+import {
+  SHARE_CARD_KIND_SET,
+  CRISIS_SURFACE_SET,
+  ONBOARDING_STEP_SET,
+  HOME_SCREEN_ACTION_SET,
+  HOME_SCREEN_SURFACE_SET,
+  ACCOUNT_LINK_HOST_SET,
+  ACCOUNT_LINK_FAIL_REASON_SET,
+  SIGNUP_SOURCE_SET,
+  PROFILE_PATTERN_KIND_SET,
+  DIARY_JUMP_TARGET_SET,
+  ENTRY_DELETE_TYPE_SET,
+} from './dto/analytics.dto';
+import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
+import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
+import { sanitizeSelfMapMeta } from './analytics-meta.sanitize-self-map';
+import * as cabinet from './analytics-meta.sanitize-cabinet';
+import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
+import { sanitizeLoginMeta } from './analytics-meta.sanitize-login';
+import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
+import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
+import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
+import { PUSH_EVENTS } from '../analytics/push-events.constants';
+import { SERVER_META_EVENTS } from '../analytics/server-events.constants';
+
+const PUSH_EVENT_SET: ReadonlySet<string> = new Set(PUSH_EVENTS);
+
+// Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
+// известные поля конкретного события, чтобы в БД не утёк произвольный
+// (потенциально PII) объект с клиента. Чистая функция — вынесена из
+// analytics.controller.ts отдельным модулем (тестируется без Nest-обвязки).
+export function sanitizeMeta(
+  name: AnalyticsEventName,
+  meta: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!meta) return undefined;
+  if (name === 'share_card') {
+    const kind = meta.kind;
+    if (typeof kind === 'string' && SHARE_CARD_KIND_SET.has(kind)) {
+      return { kind };
+    }
+    return undefined;
+  }
+  if (name === 'share_result') {
+    const kind = meta.kind;
+    const ok = meta.ok;
+    if (
+      typeof kind === 'string' &&
+      SHARE_CARD_KIND_SET.has(kind) &&
+      typeof ok === 'boolean'
+    ) {
+      return { kind, ok };
+    }
+    return undefined;
+  }
+  if (name === 'crisis_card_shown' || name === 'crisis_hotline_tapped') {
+    const surface = meta.surface;
+    if (typeof surface === 'string' && CRISIS_SURFACE_SET.has(surface)) {
+      return { surface };
+    }
+    return undefined;
+  }
+  if (name === 'outbox_flush') {
+    const count = meta.count;
+    // Только положительное целое, с потолком — защита от мусора/переполнения.
+    if (typeof count === 'number' && Number.isInteger(count) && count > 0) {
+      return { count: Math.min(count, 1000) };
+    }
+    return undefined;
+  }
+  if (name === 'today_streak_toggle') {
+    return typeof meta.hidden === 'boolean'
+      ? { hidden: meta.hidden }
+      : undefined;
+  }
+  // «Показать клиенту» схему случая: только включил/выключил, без id клиента.
+  if (name === 'concept_shared') {
+    return typeof meta.on === 'boolean' ? { on: meta.on } : undefined;
+  }
+  if (cabinet.hasCabinetMeta(name))
+    return cabinet.sanitizeCabinetMeta(name, meta);
+  if (name === 'onboarding_step') {
+    const step = meta.step;
+    if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {
+      return { step };
+    }
+    return undefined;
+  }
+  if (name === 'home_screen_offer') {
+    const action = meta.action;
+    const surface = meta.surface;
+    if (
+      typeof action === 'string' &&
+      HOME_SCREEN_ACTION_SET.has(action) &&
+      typeof surface === 'string' &&
+      HOME_SCREEN_SURFACE_SET.has(surface)
+    ) {
+      return { action, surface };
+    }
+    return undefined;
+  }
+  if (name === 'mode_card_saved') {
+    const modeId = meta.modeId;
+    const filledFields = meta.filledFields;
+    if (
+      typeof modeId === 'string' &&
+      /^[a-z_]{1,64}$/.test(modeId) &&
+      typeof filledFields === 'number' &&
+      Number.isInteger(filledFields) &&
+      filledFields >= 0 &&
+      filledFields <= 7
+    ) {
+      return { modeId, filledFields };
+    }
+    return undefined;
+  }
+  if (name === 'mode_entry_saved') {
+    const filledFields = meta.filledFields;
+    const filledHealthy = meta.filledHealthy;
+    if (
+      typeof filledFields === 'number' &&
+      Number.isInteger(filledFields) &&
+      filledFields >= 0 &&
+      filledFields <= 7 &&
+      typeof filledHealthy === 'boolean'
+    ) {
+      return { filledFields, filledHealthy };
+    }
+    return undefined;
+  }
+  if (name === 'warm_words_open') {
+    const count = meta.count;
+    if (
+      typeof count === 'number' &&
+      Number.isInteger(count) &&
+      count >= 0 &&
+      count <= 1000
+    ) {
+      return { count };
+    }
+    // Событие валидно и без meta — count не обязателен для самого факта открытия.
+    return {};
+  }
+  if (name === 'mode_chain_followup' || name === 'mode_doubt_switched') {
+    const from = meta.from;
+    const to = meta.to;
+    if (
+      typeof from === 'string' &&
+      /^[a-z_]{1,64}$/.test(from) &&
+      typeof to === 'string' &&
+      /^[a-z_]{1,64}$/.test(to)
+    ) {
+      return { from, to };
+    }
+    return undefined;
+  }
+  if (name === 'mode_doubt_opened' || name === 'mode_test_completed') {
+    const modeId = meta.modeId;
+    if (typeof modeId === 'string' && /^[a-z_]{1,64}$/.test(modeId)) {
+      return { modeId };
+    }
+    return undefined;
+  }
+  if (name === 'quick_action_toggle' || name === 'quick_action_move') {
+    return sanitizeQuickActionMeta(name, meta);
+  }
+  if (name.startsWith('login_')) return sanitizeLoginMeta(name, meta);
+  if (name === 'account_link_started') {
+    const host = meta.host;
+    if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {
+      return { host };
+    }
+    return undefined;
+  }
+  if (name === 'account_link_confirmed') {
+    const host = meta.host;
+    const merged = meta.merged;
+    if (
+      typeof host === 'string' &&
+      ACCOUNT_LINK_HOST_SET.has(host) &&
+      typeof merged === 'boolean'
+    ) {
+      return { host, merged };
+    }
+    return undefined;
+  }
+  if (name === 'account_link_failed') {
+    const host = meta.host;
+    const reason = meta.reason;
+    if (
+      typeof host === 'string' &&
+      ACCOUNT_LINK_HOST_SET.has(host) &&
+      typeof reason === 'string' &&
+      ACCOUNT_LINK_FAIL_REASON_SET.has(reason)
+    ) {
+      return { host, reason };
+    }
+    return undefined;
+  }
+  if (
+    name === 'screen_customize_open' ||
+    name === 'screen_block_toggle' ||
+    name === 'screen_block_move'
+  ) {
+    return sanitizeScreenMeta(name, meta);
+  }
+  if (name === 'signup_source') {
+    // Пишет только бот в /start (payload src_<slug>, см. parseSourceSlug в
+    // src/telegram/start-source.ts) — на клиентский POST /api/event эта
+    // ветка попасть не должна. Whitelist здесь — defence in depth: даже если
+    // кто-то дёрнет эндпоинт руками, meta ограничена уже нормализованным src
+    // из allow-list, свободный slug сюда попасть не может.
+    const src = meta.src;
+    if (typeof src === 'string' && SIGNUP_SOURCE_SET.has(src)) {
+      return { src };
+    }
+    return undefined;
+  }
+  if (name === 'data_export') return sanitizeDataExportMeta(meta);
+  if (name === 'crawler_visits') return sanitizeCrawlerMeta(meta);
+  if (name === 'profile_pattern_open') {
+    const kind = meta.kind;
+    if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
+      return { kind };
+    }
+    return undefined;
+  }
+  if (name === 'diary_jump') {
+    const to = meta.to;
+    if (typeof to === 'string' && DIARY_JUMP_TARGET_SET.has(to)) {
+      return { to };
+    }
+    return undefined;
+  }
+  if (name === 'entry_deleted') {
+    const type = meta.type;
+    if (typeof type === 'string' && ENTRY_DELETE_TYPE_SET.has(type)) {
+      return { type };
+    }
+    return undefined;
+  }
+  if (name === 'self_map_link') return sanitizeSelfMapMeta(meta);
+  if (name.startsWith('case_')) {
+    return sanitizeCaseMeta(name, meta);
+  }
+  // Запись из приложения (client-booking-events.constants.ts): opened — без
+  // meta; created пишет сервер, статус с клиента не принимается — подделка
+  // через POST /api/event в отчёт /stats не попадёт.
+  if (name === 'client_booking_opened' || name === 'client_booking_created')
+    return undefined;
+  // meta этих событий пишет только сервер (SERVER_META_EVENTS): с клиента не
+  // принимается ничего — подделка без meta в /stats не считается.
+  if (SERVER_META_EVENTS.has(name)) return undefined;
+  // Уведомления в приложении (push-events.constants.ts): push_subscribed/
+  // unsubscribed/gone пишет только сервер — meta с клиента не принимается,
+  // /stats считает только строки с meta; push_denied клиент шлёт без полей.
+  if (PUSH_EVENT_SET.has(name)) return undefined;
+  // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
+  // CONCEPT_EVENTS, CABINET_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken, booking_currency_chosen (подделке — без чисел).
+  // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
+  return sanitizeHomeMeta(name, meta);
+}

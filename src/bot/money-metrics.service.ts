@@ -1,0 +1,108 @@
+import { Injectable } from '@nestjs/common';
+import { BookingStatus } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  MoneyMetrics,
+  MoneySourceStats,
+  MoneyWindow,
+  windowIsEmpty,
+} from './money-metrics.format';
+import {
+  countPaidAfterCancel,
+  formatPaidAfterCancel,
+} from './money-metrics.paid-after-cancel';
+import { countSlotTaken, formatSlotTaken } from './booking-slot-taken-metrics';
+import {
+  countCurrencyChosen,
+  formatCurrencyChosen,
+} from './booking-currency-metrics';
+import { countPaidSessions } from './money-metrics.paid-sessions';
+import { renderMoneyBlock } from './money-metrics.without-link';
+
+type StatusCountSum = {
+  status: string;
+  _count: { _all: number };
+  _sum: { amount: number | null };
+};
+type StatusCount = { status: BookingStatus; _count: { _all: number } };
+
+// Счётчики денег для /stats: донаты, подписка, платные сессии. Свой домен —
+// свой файл (правило №10), образец — account-link-metrics.service.ts.
+@Injectable()
+export class MoneyMetricsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Готовый текстовый блок для /stats. */
+  async render(): Promise<string> {
+    const metrics = await this.getMetrics();
+    const [base, afterCancel, slotTaken, chosen] = await Promise.all([
+      renderMoneyBlock(this.prisma, metrics),
+      countPaidAfterCancel(this.prisma),
+      countSlotTaken(this.prisma),
+      countCurrencyChosen(this.prisma),
+    ]);
+    const extras = [
+      formatPaidAfterCancel(afterCancel, windowIsEmpty(metrics.allTime)),
+      formatSlotTaken(slotTaken),
+      formatCurrencyChosen(chosen),
+    ].filter((lines) => lines.length > 0);
+    return [base, ...extras.flatMap((lines) => ['', ...lines])].join('\n');
+  }
+
+  async getMetrics(): Promise<MoneyMetrics> {
+    const since7 = new Date(Date.now() - 7 * 86_400_000);
+    const [week, allTime] = await Promise.all([
+      this.window(since7),
+      this.window(undefined),
+    ]);
+    return { week, allTime };
+  }
+
+  private async window(since?: Date): Promise<MoneyWindow> {
+    const where = since ? { createdAt: { gte: since } } : undefined;
+    const [donationRows, chargeRows, bookingRows, paidSessions] =
+      await Promise.all([
+        this.prisma.donation.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+        this.prisma.subscriptionCharge.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+        this.prisma.booking.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+        }),
+        countPaidSessions(this.prisma, since),
+      ]);
+    return {
+      donations: sourceStats(donationRows),
+      subscriptions: sourceStats(chargeRows),
+      paidSessions,
+      pendingSessions: sessionCount(bookingRows, [BookingStatus.HELD]),
+    };
+  }
+}
+
+/** Donation/SubscriptionCharge share the same PaymentStatus shape. */
+function sourceStats(rows: StatusCountSum[]): MoneySourceStats {
+  const paid = rows.find((r) => r.status === 'paid');
+  const pending = rows.find((r) => r.status === 'pending');
+  return {
+    paidCount: paid?._count._all ?? 0,
+    paidSum: paid?._sum.amount ?? 0,
+    pendingCount: pending?._count._all ?? 0,
+  };
+}
+
+function sessionCount(rows: StatusCount[], statuses: BookingStatus[]): number {
+  return rows
+    .filter((r) => statuses.includes(r.status))
+    .reduce((sum, r) => sum + r._count._all, 0);
+}

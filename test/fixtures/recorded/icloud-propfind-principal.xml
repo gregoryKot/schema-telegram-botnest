@@ -1,0 +1,4 @@
+<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">
+  <d:response><d:propstat><d:prop>
+    <d:current-user-principal><d:href>/123/principal/</d:href></d:current-user-principal>
+  </d:prop></d:propstat></d:response></d:multistatus>

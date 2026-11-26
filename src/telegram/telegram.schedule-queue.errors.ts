@@ -1,0 +1,53 @@
+// Исходы сбоя отправки из очереди (вынесено из telegram.schedule-queue.ts).
+import { classifySendFailure, describeTelegramError } from './telegram-error';
+import { isUnknownOutcome } from './telegram.send-bounded';
+import type { QueueDeps } from './telegram.schedule-queue';
+import {
+  isPermanentRejection,
+  MAX_REJECTS,
+} from './telegram.schedule-queue.rejects';
+
+/** true — строка осталась на повтор следующим тиком (временный сбой). */
+export async function handleSendError(
+  deps: QueueDeps,
+  { id, userId }: { id: number; userId: bigint | number },
+  err: unknown,
+  seen: { unknown: number[]; transient: number },
+): Promise<boolean> {
+  const { accountService, notificationService, logger } = deps;
+  // Запрос оборван, а Telegram мог его принять: повтор дал бы дубль каждые
+  // 5 минут. Метим отправленным и сообщаем одной строкой на тик.
+  if (isUnknownOutcome(err)) {
+    await notificationService.markSent(id);
+    seen.unknown.push(id);
+    return false;
+  }
+  const verdict = classifySendFailure(err);
+  const desc = describeTelegramError(err);
+
+  if (verdict === 'transient') {
+    // Наша ошибка (разметка, длина, сеть) — не метим человека и не помечаем
+    // отправленным: повтор на следующем тике (429 — в telegram.paced-sender).
+    seen.transient++;
+    logger.error(`Failed to send notification id=${id} (${desc})`, err);
+    // Но 400 на само сообщение повтор не исправит: после MAX_REJECTS отказов
+    // строку снимаем (cancelledAt — не «отправлено»: каденс считает только
+    // реально ушедшие) — telegram.schedule-queue.rejects.ts.
+    if (!isPermanentRejection(err) || !deps.rejects.strike(id)) return true;
+    await notificationService.cancelOne(id);
+    logger.warn(
+      `Notification id=${id}: Telegram отказал ${MAX_REJECTS} раза подряд — снято, повторов не будет (${desc})`,
+    );
+    return false;
+  }
+
+  // Оба оставшихся исхода означают «по этому адресу писать больше нельзя»,
+  // поэтому оба ставят флаг и перестают долбиться каждую ночь. Разводим их
+  // в ЛОГЕ: раньше причина терялась, и «человек закрыл бота» было не отличить
+  // от «мы пишем не туда» — а именно второе и было массовым.
+  await notificationService.markSent(id);
+  await accountService.markUserBlocked(BigInt(userId));
+  const reason = verdict === 'blocked' ? 'bot blocked' : 'chat_not_found';
+  logger.warn(`Skipping notification id=${id} — ${reason} (${desc})`);
+  return false;
+}

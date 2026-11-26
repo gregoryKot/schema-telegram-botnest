@@ -1,0 +1,10 @@
+{
+  "webapp": {
+    "lines": 90,
+    "branches": 80
+  },
+  "shared": {
+    "lines": 90,
+    "branches": 85
+  }
+}

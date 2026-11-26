@@ -1,0 +1,617 @@
+// Прямой тест SlotService (ранее покрывался только косвенно). Генерация
+// слотов, границы окна, буфер, пересечения с бронями/календарём, DST —
+// ошибка тут либо прячет слот, либо показывает занятое время свободным.
+import { ConfigService } from '@nestjs/config';
+import { BookingStatus } from '@prisma/client';
+import { SlotService } from './slot.service';
+import { MIN_BOOK_LEAD_HOURS } from './booking.config';
+
+function makeService(opts: {
+  rules?: any[];
+  bookings?: any[];
+  busy?: { start: Date; end: Date; summary?: string }[];
+  blockBusy?: boolean;
+  overrides?: any[];
+}) {
+  const prisma: any = {
+    availabilityRule: {
+      findMany: jest.fn(() => Promise.resolve(opts.rules ?? [])),
+    },
+    slotOverride: {
+      findMany: jest.fn(() => Promise.resolve(opts.overrides ?? [])),
+    },
+    booking: {
+      findMany: jest.fn(({ where }: any) => {
+        const from: Date = where.startsAt.gte;
+        const to: Date = where.startsAt.lte;
+        const statuses: string[] = where.status.in;
+        return Promise.resolve(
+          (opts.bookings ?? []).filter(
+            (b) =>
+              statuses.includes(b.status) &&
+              b.startsAt >= from &&
+              b.startsAt <= to,
+          ),
+        );
+      }),
+    },
+  };
+  const calDav: any = {
+    getBusyTimes: jest.fn(() => Promise.resolve(opts.busy ?? [])),
+  };
+  const config = {
+    get: (key: string) =>
+      key === 'CALENDAR_BLOCK_SLOTS' && opts.blockBusy ? 'true' : undefined,
+  } as unknown as ConfigService;
+  const service = new SlotService(prisma, calDav, config);
+  return { service, prisma, calDav };
+}
+
+// Понедельник 2026-07-13 00:00 UTC. Окно правила 20:00–22:00 МСК (UTC+3) =
+// 17:00–19:00 UTC, чтобы не упереться в MIN_BOOK_LEAD_HOURS при "now"=полночь.
+const MONDAY = new Date('2026-07-13T00:00:00Z');
+const RULE = {
+  id: 1,
+  dayOfWeek: 1,
+  startHour: 20,
+  startMinute: 0,
+  endHour: 22,
+  endMinute: 0,
+  sessionDuration: 50,
+  bufferMin: 10,
+  timezone: 'Europe/Moscow',
+  isActive: true,
+};
+
+describe('SlotService.getSlots — базовая генерация и границы окна', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('без активных правил — пустой список, бронирования не запрашиваются', async () => {
+    const { service, prisma } = makeService({ rules: [] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots).toEqual([]);
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
+  });
+
+  it('диапазон >366 дней клампится — перебор не виснет, слоты в пределах потолка (D1)', async () => {
+    const { service } = makeService({ rules: [RULE] });
+    const farFuture = new Date(MONDAY.getTime() + 400 * 86_400_000);
+    const slots = await service.getSlots(MONDAY, farFuture);
+    expect(slots.length).toBeGreaterThan(0);
+    // Без клампа слоты дотянулись бы до +400 дней; потолок 366 их обрезает.
+    const ceiling = MONDAY.getTime() + 367 * 86_400_000;
+    expect(Math.max(...slots.map((s) => s.startsAt.getTime()))).toBeLessThan(
+      ceiling,
+    );
+  });
+
+  it('генерирует слоты с шагом sessionDuration+bufferMin (буфер соблюдён)', async () => {
+    const { service } = makeService({ rules: [RULE] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    // 17:00–19:00 UTC, 50 мин сессии, шаг 60 мин: 17:00 и 18:00.
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+    expect(slots[0].endsAt.toISOString()).toBe('2026-07-13T17:50:00.000Z');
+    // Разрыв между концом первого и началом второго = буфер (10 мин), а не 0.
+    const gapMin =
+      (slots[1].startsAt.getTime() - slots[0].endsAt.getTime()) / 60_000;
+    expect(gapMin).toBe(10);
+  });
+
+  it('слот, вылезающий за конец окна, не создаётся (граничная проверка t+duration<=slotEnd)', async () => {
+    const rule = { ...RULE, endHour: 21, endMinute: 10 }; // окно 17:00–18:10 UTC
+    const { service } = makeService({ rules: [rule] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    // Второй слот 18:00–18:50 вылезает за 18:10 → отсекается.
+    expect(slots).toHaveLength(1);
+    expect(slots[0].startsAt.toISOString()).toBe('2026-07-13T17:00:00.000Z');
+  });
+
+  it('правило другого дня недели не порождает слотов в этот день', async () => {
+    const rule = { ...RULE, dayOfWeek: 2 }; // вторник, а MONDAY — понедельник
+    const { service } = makeService({ rules: [rule] });
+    expect(await service.getSlots(MONDAY, MONDAY)).toEqual([]);
+  });
+
+  it('несколько правил в один день — слоты от каждого, итог отсортирован по времени', async () => {
+    const early = { ...RULE, startHour: 8, endHour: 9 }; // МСК 08–09 = 05–06 UTC
+    const late = { ...RULE, startHour: 20, endHour: 21 }; // МСК 20–21 = 17–18 UTC
+    const { service } = makeService({ rules: [late, early] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    const times = slots.map((s) => s.startsAt.getTime());
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+});
+
+describe('SlotService.getSlots — минимальный лид-тайм (MIN_BOOK_LEAD_HOURS)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('слот раньше now+MIN_BOOK_LEAD_HOURS отфильтрован', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+    const { service } = makeService({ rules: [RULE] });
+    const earliest = MONDAY.getTime() + MIN_BOOK_LEAD_HOURS * 3_600_000;
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    for (const s of slots) {
+      expect(s.startsAt.getTime()).toBeGreaterThan(earliest);
+    }
+  });
+
+  it('now сдвинут так, что окно правила целиком раньше лид-тайма — слотов нет', async () => {
+    // now = 08:00 UTC понедельника → earliest = 20:00 UTC, окно правила 17–19 UTC целиком раньше.
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-13T08:00:00Z'));
+    const { service } = makeService({ rules: [RULE] });
+    expect(await service.getSlots(MONDAY, MONDAY)).toEqual([]);
+  });
+});
+
+describe('SlotService.getSlots — пересечения с существующими бронями', () => {
+  // prisma-запрос ищет брони строго внутри [fromDate,toDate] (не "весь день",
+  // как cursor генерации слотов) — окно должно покрывать весь понедельник.
+  const MONDAY_END = new Date('2026-07-13T23:59:59.999Z');
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('HELD/CONFIRMED бронь, пересекающая слот, исключает именно его', async () => {
+    const booking = {
+      startsAt: new Date('2026-07-13T17:00:00.000Z'),
+      durationMin: 50,
+      status: BookingStatus.CONFIRMED,
+    };
+    const { service } = makeService({ rules: [RULE], bookings: [booking] });
+    const slots = await service.getSlots(MONDAY, MONDAY_END);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('частичное пересечение (бронь начинается посреди слота) тоже блокирует слот', async () => {
+    const booking = {
+      startsAt: new Date('2026-07-13T17:30:00.000Z'), // внутри 17:00–17:50
+      durationMin: 50,
+      status: BookingStatus.CONFIRMED,
+    };
+    const { service } = makeService({ rules: [RULE], bookings: [booking] });
+    const slots = await service.getSlots(MONDAY, MONDAY_END);
+    expect(
+      slots.some(
+        (s) => s.startsAt.toISOString() === '2026-07-13T17:00:00.000Z',
+      ),
+    ).toBe(false);
+  });
+
+  it('бронь, вплотную примыкающая к слоту (endsAt === slot.startsAt), НЕ считается пересечением', async () => {
+    const booking = {
+      startsAt: new Date('2026-07-13T16:10:00.000Z'),
+      durationMin: 50, // заканчивается ровно в 17:00
+      status: BookingStatus.CONFIRMED,
+    };
+    const { service } = makeService({ rules: [RULE], bookings: [booking] });
+    const slots = await service.getSlots(MONDAY, MONDAY_END);
+    expect(slots.map((s) => s.startsAt.toISOString())).toContain(
+      '2026-07-13T17:00:00.000Z',
+    );
+  });
+
+  it('CANCELLED-бронь не блокирует слот (не в фильтре HELD/CONFIRMED)', async () => {
+    // Фейковый prisma фильтрует по статусу как настоящий — эта бронь просто
+    // не попадёт в busyBookings, слот останется свободным.
+    const booking = {
+      startsAt: new Date('2026-07-13T17:00:00.000Z'),
+      durationMin: 50,
+      status: BookingStatus.CANCELLED,
+    };
+    const { service } = makeService({ rules: [RULE], bookings: [booking] });
+    const slots = await service.getSlots(MONDAY, MONDAY_END);
+    expect(slots.map((s) => s.startsAt.toISOString())).toContain(
+      '2026-07-13T17:00:00.000Z',
+    );
+  });
+});
+
+describe('SlotService.getSlots — занятость из внешнего календаря (CalDAV)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('CALENDAR_BLOCK_SLOTS выключен (дефолт) — calDav.getBusyTimes не вызывается', async () => {
+    const { service, calDav } = makeService({
+      rules: [RULE],
+      blockBusy: false,
+    });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(calDav.getBusyTimes).not.toHaveBeenCalled();
+    // Без блокировки по календарю оба слота из правила остаются на месте —
+    // это не «пустой список из-за сломанного пути», а честный неотфильтрованный результат.
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('CALENDAR_BLOCK_SLOTS включён — занятый интервал из календаря вычёркивает пересекающийся слот', async () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T17:20:00.000Z'),
+        end: new Date('2026-07-13T17:40:00.000Z'),
+      },
+    ];
+    const { service, calDav } = makeService({
+      rules: [RULE],
+      blockBusy: true,
+      busy,
+    });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    // Календарь читается по окну слотов (целые UTC-сутки), а не по сырым
+    // аргументам — иначе вечер последнего дня невидим (r2-1#2, тесты внизу).
+    expect(calDav.getBusyTimes).toHaveBeenCalledWith(
+      MONDAY,
+      new Date('2026-07-13T23:59:59.999Z'),
+    );
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('summary события календаря (админский busyTitle) не утекает в публичный ответ /slots', async () => {
+    const busy = [
+      {
+        start: new Date('2026-07-13T17:20:00.000Z'),
+        end: new Date('2026-07-13T17:40:00.000Z'),
+        summary: 'Приватная встреча — не для клиентов',
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], blockBusy: true, busy });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    // Слот 17:00 вычеркнут занятостью (как в тесте выше) — тут же проверяем,
+    // что ни в одном из ОСТАВШИХСЯ слотов нет ни поля, ни текста названия.
+    expect(slots.length).toBeGreaterThan(0);
+    expect(slots.every((s) => !('summary' in s))).toBe(true);
+    expect(JSON.stringify(slots)).not.toContain('Приватная встреча');
+  });
+});
+
+describe('SlotService.getSlots — часовые пояса и переход на летнее время (DST)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  // "now" в далёком прошлом, чтобы MIN_BOOK_LEAD_HOURS не участвовал в тесте.
+  const FAR_PAST = new Date('2000-01-01T00:00:00Z');
+
+  // ФИКС (было найдено и задокументировано, потом исправлено в slot.service.ts):
+  // день недели и календарная дата правила теперь берутся из ОДНОЙ и той же
+  // локальной даты (localDate/localMidnightUTC из utils/tz.ts) — для тайзоны
+  // западнее UTC (America/New_York) слот корректно попадает на местный
+  // запрошенный день, а не на день раньше. Тесты ниже проверяют ПРАВИЛЬНОЕ
+  // поведение (было наоборот, см. git-историю этого файла).
+  it('America/New_York ДО перехода на летнее время — офсет EST (UTC-5), слот на запрошенный местный день', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FAR_PAST);
+    // 2026-03-01 — воскресенье, ещё EST (переход 2026-03-08).
+    const day = new Date('2026-03-01T00:00:00Z');
+    const rule = {
+      ...RULE,
+      dayOfWeek: day.getUTCDay(),
+      startHour: 10,
+      startMinute: 0,
+      endHour: 11,
+      endMinute: 0,
+      timezone: 'America/New_York',
+    };
+    const { service } = makeService({ rules: [rule] });
+    const slots = await service.getSlots(day, day);
+    expect(slots).toHaveLength(1);
+    // 10:00 EST 2026-03-01 = 15:00 UTC ТОГО ЖЕ запрошенного дня.
+    expect(slots[0].startsAt.toISOString()).toBe('2026-03-01T15:00:00.000Z');
+  });
+
+  it('America/New_York ПОСЛЕ перехода на летнее время — офсет EDT (UTC-4), слот на запрошенный местный день', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(FAR_PAST);
+    // 2026-03-15 — то же воскресенье через 2 недели, уже EDT.
+    const day = new Date('2026-03-15T00:00:00Z');
+    const rule = {
+      ...RULE,
+      dayOfWeek: day.getUTCDay(),
+      startHour: 10,
+      startMinute: 0,
+      endHour: 11,
+      endMinute: 0,
+      timezone: 'America/New_York',
+    };
+    const { service } = makeService({ rules: [rule] });
+    const slots = await service.getSlots(day, day);
+    expect(slots).toHaveLength(1);
+    // 10:00 EDT 2026-03-15 = 14:00 UTC ТОГО ЖЕ запрошенного дня (на час
+    // раньше EST-случая выше — DST-математика localMidnightUTC верна).
+    expect(slots[0].startsAt.toISOString()).toBe('2026-03-15T14:00:00.000Z');
+  });
+
+  it('west-of-UTC рассинхрон дня недели: правило Sunday не протекает в запрос за Monday', async () => {
+    // До фикса запас курсора без итогового range-фильтра мог бы вернуть
+    // соседний локальный день; здесь явно проверяем, что окно [from,to]
+    // строго соблюдается для чужого дня недели.
+    jest.useFakeTimers();
+    jest.setSystemTime(FAR_PAST);
+    const monday = new Date('2026-03-02T00:00:00Z');
+    const rule = {
+      ...RULE,
+      dayOfWeek: 0, // Sunday (2026-03-01), а запрашиваем Monday
+      startHour: 10,
+      endHour: 11,
+      timezone: 'America/New_York',
+    };
+    const { service } = makeService({ rules: [rule] });
+    expect(await service.getSlots(monday, monday)).toEqual([]);
+  });
+
+  it('Europe/Moscow: результат побайтово идентичен поведению до фикса (регрессия)', async () => {
+    // Прод-таймзона восточнее UTC — фикс НЕ должен менять её вывод.
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+    const { service } = makeService({ rules: [RULE] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+});
+
+// Контракт «Календарь слотов в админке»: ручной слой SlotOverride поверх
+// публичной выдачи /slots (см. src/booking/slot-filters.ts — applyOverrides).
+describe('SlotService.getSlots — ручной слой SlotOverride', () => {
+  const DAY_END = new Date('2026-07-13T23:59:59.999Z');
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('BLOCK убирает пересекающийся слот из выдачи', async () => {
+    const overrides = [
+      {
+        kind: 'BLOCK',
+        startsAt: new Date('2026-07-13T17:00:00Z'),
+        durationMin: 50,
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('OPEN добавляет разовый слот вне окна правил', async () => {
+    const overrides = [
+      {
+        kind: 'OPEN',
+        startsAt: new Date('2026-07-13T20:00:00Z'),
+        durationMin: 45,
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+      '2026-07-13T20:00:00.000Z',
+    ]);
+  });
+
+  it('OPEN до начала запрошенного окна (в запасе скана для BLOCK) — не отдаётся', async () => {
+    const overrides = [
+      {
+        kind: 'OPEN',
+        // 23:00 UTC предыдущих суток — попадает в запас −180 мин от rangeStart.
+        startsAt: new Date('2026-07-12T23:00:00Z'),
+        durationMin: 50,
+      },
+    ];
+    const { service } = makeService({ rules: [RULE], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('OPEN работает и при нуле активных правил (ранний выход не срабатывает)', async () => {
+    const overrides = [
+      {
+        kind: 'OPEN',
+        startsAt: new Date('2026-07-13T20:00:00Z'),
+        durationMin: 45,
+      },
+    ];
+    const { service, prisma } = makeService({ rules: [], overrides });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots.map((s) => s.startsAt.toISOString())).toEqual([
+      '2026-07-13T20:00:00.000Z',
+    ]);
+    // Раз мы не вышли рано — бронирования и календарь всё же проверяются.
+    expect(prisma.booking.findMany).toHaveBeenCalled();
+  });
+
+  it('OPEN, пересекающий существующую бронь, не добавляется', async () => {
+    const booking = {
+      startsAt: new Date('2026-07-13T20:10:00Z'),
+      durationMin: 30,
+      status: BookingStatus.CONFIRMED,
+    };
+    const overrides = [
+      {
+        kind: 'OPEN',
+        startsAt: new Date('2026-07-13T20:00:00Z'),
+        durationMin: 45,
+      },
+    ];
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [booking],
+      overrides,
+    });
+    const slots = await service.getSlots(MONDAY, DAY_END);
+    expect(
+      slots.some(
+        (s) => s.startsAt.toISOString() === '2026-07-13T20:00:00.000Z',
+      ),
+    ).toBe(false);
+  });
+});
+
+// Инцидент 2026-09-29: /api/booking/slots отдавал каждый слот четверга дважды —
+// два активных AvailabilityRule на один день недели с пересекающимися окнами
+// порождали один и тот же startsAt. Регрессия: слоты уникальны по startsAt.
+describe('SlotService.getSlots — пересекающиеся правила не дублируют слоты', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MONDAY);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('два правила на один день с общим окном дают уникальные слоты', async () => {
+    const ruleA = { ...RULE, id: 1 }; // 17:00–19:00 UTC
+    const ruleB = { ...RULE, id: 2, startHour: 19, endHour: 22 }; // 19:00–22:00 МСК = 16:00–19:00 UTC
+    const { service } = makeService({ rules: [ruleA, ruleB] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    const starts = slots.map((s) => s.startsAt.toISOString());
+    expect(new Set(starts).size).toBe(starts.length);
+    expect(starts).toEqual([
+      '2026-07-13T16:00:00.000Z',
+      '2026-07-13T17:00:00.000Z',
+      '2026-07-13T18:00:00.000Z',
+    ]);
+  });
+
+  it('идентичные правила-дубли в данных не задваивают слоты', async () => {
+    const { service } = makeService({ rules: [RULE, { ...RULE, id: 9 }] });
+    const slots = await service.getSlots(MONDAY, MONDAY);
+    expect(slots).toHaveLength(2);
+  });
+});
+
+// Аудит 2026-10-11, r2-1#2: GET /slots без параметров ставит toDate = now+14д
+// (МОМЕНТ посреди суток), слоты раздавались до 23:59:59.999Z этого дня, а
+// брони и события календаря читались только до самого toDate — всё, что
+// начиналось на 14-й день позже времени суток «сейчас», выглядело свободным,
+// и клиент получал 409 уже после заполненной формы. Фейк Prisma фильтрует по
+// where так же, как БД, а фейк CalDAV — как time-range сервера календаря, иначе
+// тест ничего бы не доказал (см. makeService).
+//
+// Про зоны (правило №25): окно считается в UTC, а правило здесь в Europe/Moscow,
+// поэтому тест проверяет точные UTC-значения. Внутри jest смена process.env.TZ
+// до Date не доходит (см. caldav-busy.spec.ts) — вторую зону даёт CI-прогон
+// всего пакета под TZ=Australia/Sydney.
+describe('SlotService.getSlots — последний день окна (toDate — момент посреди суток)', () => {
+  const NOW = new Date('2026-07-13T10:40:00Z'); // понедельник, 10:40 UTC
+  const TO = new Date(NOW.getTime() + 14 * 86_400_000); // 2026-07-27T10:40Z — тоже понедельник
+  const LAST_17 = '2026-07-27T17:00:00.000Z'; // позже 10:40 — раньше выпадало из выборки
+  const LAST_18 = '2026-07-27T18:00:00.000Z';
+  const WEEK_17 = '2026-07-20T17:00:00.000Z';
+  const confirmed = (iso: string, durationMin = 50) => ({
+    startsAt: new Date(iso),
+    durationMin,
+    status: BookingStatus.CONFIRMED,
+  });
+  const starts = (slots: { startsAt: Date }[]) =>
+    slots.map((s) => s.startsAt.toISOString());
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(NOW);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('контроль: бронь внутри [from,to] скрывает слот', async () => {
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [confirmed(WEEK_17)],
+    });
+    expect(starts(await service.getSlots(NOW, TO))).not.toContain(WEEK_17);
+  });
+
+  it('бронь вечером последнего дня (позже времени суток toDate) скрывает слот, свободный вечер остаётся', async () => {
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [confirmed(LAST_17)],
+    });
+    const out = starts(await service.getSlots(NOW, TO));
+    expect(out).not.toContain(LAST_17);
+    expect(out).toContain(LAST_18);
+  });
+
+  it('событие календаря вечером последнего дня скрывает слот, соседний остаётся', async () => {
+    const busy = [
+      { start: new Date(LAST_17), end: new Date('2026-07-27T17:50:00Z') },
+    ];
+    const { service, calDav } = makeService({
+      rules: [RULE],
+      blockBusy: true,
+    });
+    // Как time-range-запрос iCloud: отдаёт события только внутри [from,to].
+    calDav.getBusyTimes.mockImplementation((from: Date, to: Date) =>
+      Promise.resolve(busy.filter((iv) => iv.start < to && iv.end > from)),
+    );
+    const out = starts(await service.getSlots(NOW, TO));
+    expect(out).not.toContain(LAST_17);
+    expect(out).toContain(LAST_18);
+  });
+
+  it('календарь читается по тому же окну, что и слоты: целые UTC-сутки', async () => {
+    const { service, calDav } = makeService({
+      rules: [RULE],
+      blockBusy: true,
+    });
+    await service.getSlots(NOW, TO);
+    const [from, to] = calDav.getBusyTimes.mock.calls[0];
+    expect(from.toISOString()).toBe('2026-07-13T00:00:00.000Z');
+    expect(to.toISOString()).toBe('2026-07-27T23:59:59.999Z');
+  });
+
+  it('с явным to=YYYY-MM-DD (00:00Z) брони всего последнего дня тоже видны', async () => {
+    const from = new Date('2026-07-13'); // как parseSlotDate в контроллере
+    const to = new Date('2026-07-27');
+    const { service } = makeService({
+      rules: [RULE],
+      bookings: [confirmed(LAST_17), confirmed(LAST_18)],
+    });
+    const out = starts(await service.getSlots(from, to));
+    expect(out).not.toContain(LAST_17);
+    expect(out).not.toContain(LAST_18);
+  });
+
+  it('бронь, начавшаяся ДО окна и заходящая в его начало, занимает первый слот', async () => {
+    // Правило UTC 00:00–03:00 по понедельникам: слоты 00:00, 01:00, 02:00.
+    const rule = {
+      ...RULE,
+      startHour: 0,
+      endHour: 3,
+      timezone: 'UTC',
+    };
+    jest.setSystemTime(new Date('2026-07-10T00:00:00Z'));
+    const sundayLate = confirmed('2026-07-19T23:30:00.000Z', 120); // до 01:30
+    const { service } = makeService({ rules: [rule], bookings: [sundayLate] });
+    const out = starts(
+      await service.getSlots(
+        new Date('2026-07-20T00:00:00Z'),
+        new Date('2026-07-20T00:00:00Z'),
+      ),
+    );
+    expect(out).toEqual(['2026-07-20T02:00:00.000Z']);
+  });
+});

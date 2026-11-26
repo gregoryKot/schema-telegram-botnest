@@ -1,0 +1,188 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
+import { SessionType } from '@prisma/client';
+import { encrypt } from '../utils/crypto';
+import { clientKey } from './client-key';
+import { findClientMeeting, hasClientMeeting } from './client-meeting-lookup';
+import { jitsiRoom, readRoomUrl, reuseClientRoom } from './meeting-jitsi';
+import type { MeetingLink } from './meeting-link';
+
+// Zoom — зарубежная база (152-ФЗ, ч. 5 ст. 18): название одно на всех, без имени клиента.
+export const ZOOM_TOPIC = 'Сессия';
+export interface MeetingTarget {
+  id: number;
+  startsAt: Date;
+  durationMin: number;
+  type: SessionType;
+  clientName: string;
+  clientContact: string;
+}
+
+/**
+ * Gives every client a PERSONAL video-call link reused across all their sessions.
+ *
+ * The client is identified by an HMAC of their normalised contact (client-key.ts),
+ * so a returning client who enters the same contact gets the same link. The link
+ * is created once and stored in ClientMeeting.
+ *
+ * Provider (first match wins):
+ *   1. Zoom S2S OAuth — a per-client recurring meeting (type 3, no fixed time).
+ *      Needs ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET.
+ *   2. MEETING_STATIC_URL — one shared permanent room (degenerate fallback).
+ *   3. Jitsi — a per-client random meet.jit.si room (no config, works RU).
+ */
+@Injectable()
+export class MeetingService {
+  private readonly logger = new Logger(MeetingService.name);
+  private readonly staticUrl: string;
+  private readonly zoomAccountId: string;
+  private readonly zoomClientId: string;
+  private readonly zoomClientSecret: string;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    config: ConfigService,
+  ) {
+    this.staticUrl = (config.get<string>('MEETING_STATIC_URL') ?? '').trim();
+    this.zoomAccountId = config.get<string>('ZOOM_ACCOUNT_ID') ?? '';
+    this.zoomClientId = config.get<string>('ZOOM_CLIENT_ID') ?? '';
+    this.zoomClientSecret = config.get<string>('ZOOM_CLIENT_SECRET') ?? '';
+  }
+
+  private get zoomEnabled(): boolean {
+    return Boolean(
+      this.zoomAccountId && this.zoomClientId && this.zoomClientSecret,
+    );
+  }
+
+  /** Public, secret-free view for the admin diagnostics panel. */
+  get status() {
+    return {
+      zoom: this.zoomEnabled,
+      zoomVars: {
+        accountId: !!this.zoomAccountId,
+        clientId: !!this.zoomClientId,
+        clientSecret: !!this.zoomClientSecret,
+      },
+      staticUrl: !!this.staticUrl,
+    };
+  }
+
+  /** True if this contact already has a personal meeting (i.e. a returning client). */
+  async hasMeetingForContact(contact: string): Promise<boolean> {
+    return hasClientMeeting(this.prisma, contact);
+  }
+
+  /** This client's personal meeting link, created on first session; `replaced` — the old room was swapped. */
+  async createMeeting(b: MeetingTarget): Promise<MeetingLink> {
+    if (this.staticUrl) return { url: this.staticUrl, replaced: false };
+
+    const existing = await findClientMeeting(this.prisma, b.clientContact);
+    if (existing) {
+      const key = existing.clientKey;
+      // meetingUrl в БД зашифрован (D-9, аудит 2026-10: `?pwd=` пускает в
+      // комнату клиента); нечитаемую комнату заменит reuseClientRoom.
+      const existingUrl = readRoomUrl(existing.meetingUrl) ?? '';
+      // Upgrade a previously-issued Jitsi room to Zoom once Zoom is configured,
+      // so links created during testing/before Zoom setup don't stay on Jitsi.
+      if (
+        this.zoomEnabled &&
+        !existing.zoomMeetingId &&
+        existingUrl.includes('meet.jit.si')
+      ) {
+        const z = await this.createZoom().catch((e) => {
+          this.logger.error(`Zoom upgrade failed: ${(e as Error).message}`);
+          return null;
+        });
+        if (z) {
+          await this.prisma.clientMeeting.update({
+            where: { clientKey: key },
+            data: { meetingUrl: encrypt(z.url) ?? z.url, zoomMeetingId: z.id },
+          });
+          this.logger.log(`Upgraded client ${key.slice(0, 11)}… Jitsi → Zoom`);
+          return { url: z.url, replaced: true };
+        }
+      }
+      return reuseClientRoom(this.prisma, this.logger, existing);
+    }
+
+    if (!this.zoomEnabled)
+      this.logger.warn(
+        'Zoom not configured (ZOOM_* env) — using Jitsi for new client',
+      );
+    const zoom = this.zoomEnabled
+      ? await this.createZoom().catch((e) => {
+          this.logger.error(
+            `Zoom create failed, falling back to Jitsi: ${(e as Error).message}`,
+          );
+          return null;
+        })
+      : null;
+
+    const meetingUrl = zoom?.url ?? jitsiRoom();
+    const key = clientKey(b.clientContact);
+    await this.prisma.clientMeeting.create({
+      data: {
+        clientKey: key,
+        meetingUrl: encrypt(meetingUrl) ?? meetingUrl,
+        zoomMeetingId: zoom?.id ?? null,
+      },
+    });
+    this.logger.log(
+      `Created personal meeting for client ${key.slice(0, 11)}… (${zoom ? 'zoom' : 'jitsi'})`,
+    );
+    return { url: meetingUrl, replaced: false };
+  }
+
+  /** Per-client recurring Zoom meeting (no fixed time → one stable link); в запросе о клиенте — ничего. */
+  private async createZoom(): Promise<{ url: string; id: string } | null> {
+    const token = await this.zoomToken();
+    if (!token) return null;
+    const res = await fetch('https://api.zoom.us/v2/users/me/meetings', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        topic: ZOOM_TOPIC,
+        type: 3, // recurring meeting with no fixed time → permanent join_url
+        timezone: 'Europe/Moscow',
+        settings: { join_before_host: true, waiting_room: true },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      this.logger.error(
+        `Zoom create meeting ${res.status}: ${body.slice(0, 300)}`,
+      );
+      return null;
+    }
+    const data = (await res.json()) as { join_url?: string; id?: number };
+    if (!data.join_url) return null;
+    return { url: data.join_url, id: String(data.id ?? '') };
+  }
+
+  async zoomToken(): Promise<string | null> {
+    const basic = Buffer.from(
+      `${this.zoomClientId}:${this.zoomClientSecret}`,
+    ).toString('base64');
+    const res = await fetch(
+      `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${this.zoomAccountId}`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Basic ${basic}` },
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      this.logger.error(`Zoom token ${res.status}: ${body.slice(0, 300)}`);
+      return null;
+    }
+    const data = (await res.json()) as { access_token?: string };
+    return data.access_token ?? null;
+  }
+}

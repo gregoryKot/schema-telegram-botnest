@@ -1,0 +1,526 @@
+// Этап 1 плана покрытия (TEST_COVERAGE_PLAN.md): единые ворота всего API.
+// Гард принимает initData Telegram, initData MAX ИЛИ JWT Bearer (сайт) —
+// регрессия здесь означает обход авторизации всех эндпоинтов разом. До
+// этого спека не тестировался вовсе.
+//
+// Подпись initData пересчитывается в тесте НЕЗАВИСИМО по алгоритму Telegram
+// (secret = HMAC-SHA256(key="WebAppData", botToken)), а не через ту же
+// библиотеку, которой валидирует гард. Путь MAX (path 3) мокает MaxProvider
+// напрямую — сам алгоритм MAX проверяется отдельно в max-init-data.spec.ts.
+import { UnauthorizedException, ExecutionContext } from '@nestjs/common';
+import { createHmac } from 'crypto';
+import { TelegramAuthGuard } from './telegram-auth.guard';
+import { MaxProvider } from '../auth/providers/max.provider';
+import { MaxNotConfiguredError } from '../auth/max-init-data';
+
+const BOT_TOKEN = '12345:TEST_TOKEN';
+
+function signInitData(opts: {
+  user?: unknown;
+  authDate?: number;
+  botToken?: string;
+  forgeHash?: boolean;
+}): string {
+  const params = new URLSearchParams();
+  if (opts.user !== undefined) params.set('user', JSON.stringify(opts.user));
+  params.set(
+    'auth_date',
+    String(opts.authDate ?? Math.floor(Date.now() / 1000)),
+  );
+  params.set('query_id', 'AAE_test');
+  const checkString = [...params.entries()]
+    .map(([k, v]) => `${k}=${v}`)
+    .sort()
+    .join('\n');
+  const secret = createHmac('sha256', 'WebAppData')
+    .update(opts.botToken ?? BOT_TOKEN)
+    .digest();
+  let hash = createHmac('sha256', secret).update(checkString).digest('hex');
+  if (opts.forgeHash) hash = hash.replace(/^./, hash[0] === '0' ? '1' : '0');
+  params.set('hash', hash);
+  return params.toString();
+}
+
+interface FakeRequest {
+  headers: Record<string, string | undefined>;
+  ip?: string;
+  telegramFirstName?: string;
+  webUser?: { userId: bigint };
+}
+
+function makeCtx(req: FakeRequest): ExecutionContext {
+  return {
+    switchToHttp: () => ({ getRequest: () => req }),
+  } as unknown as ExecutionContext;
+}
+
+function makeGuard(
+  env: Record<string, string | undefined> = {},
+  opts: { maxProvider?: Partial<MaxProvider> } = {},
+) {
+  const config = {
+    get: (k: string) => ({ BOT_TOKEN, ...env })[k],
+  } as any;
+  const prisma = {
+    user: {
+      // по умолчанию аккаунт жив — тесты про удаление/слияние переопределяют
+      findUnique: jest.fn().mockResolvedValue({ id: 0n, deletedAt: null }),
+    },
+    // живая цепочка сессии по умолчанию — тест про отзыв переопределяет
+    webSession: { findFirst: jest.fn().mockResolvedValue({ id: 's1' }) },
+  } as any;
+  const authService = {
+    verifyAccessToken: jest.fn(),
+    findOrCreateUserByProvider: jest.fn().mockResolvedValue(999n),
+  };
+  const securityLog = { log: jest.fn() };
+  const maxProvider = (opts.maxProvider ?? {
+    verifyInitData: jest.fn(),
+  }) as MaxProvider;
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
+  const guard = new TelegramAuthGuard(
+    config,
+    prisma,
+    authService as any,
+    securityLog as any,
+    maxProvider,
+    analytics as any,
+  );
+  return { guard, prisma, authService, securityLog, maxProvider, analytics };
+}
+
+const ORIGINAL_ENV = { ...process.env };
+let fetchMock: jest.Mock;
+
+beforeEach(() => {
+  process.env.BOT_TOKEN = BOT_TOKEN;
+  process.env.ADMIN_ID = '111';
+  fetchMock = jest.fn().mockResolvedValue({ ok: true });
+  global.fetch = fetchMock;
+});
+
+afterEach(() => {
+  process.env = { ...ORIGINAL_ENV };
+  jest.restoreAllMocks();
+});
+
+describe('путь 1: JWT Bearer (сайт)', () => {
+  it('валидный токен, аккаунт жив → webUser, строку НЕ воскрешаем', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n });
+    prisma.user.findUnique.mockResolvedValue({ id: 555n, deletedAt: null });
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+    expect(req.webUser).toEqual({ userId: 555n });
+    // Округляющего Number(userId) на запросе больше нет — только bigint.
+    expect(req).not.toHaveProperty('telegramUserId');
+    // Только сверка существования — никакого upsert (он воскрешал бы удалённых).
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 555n },
+      select: { deletedAt: true },
+    });
+    expect(prisma.user.upsert).toBeUndefined();
+  });
+
+  // Разбор 2026-08-31: токен живёт 15 минут — дольше удаления/слияния аккаунта.
+  it('аккаунт удалён (строки нет) → 401, зомби-строка НЕ создаётся', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n });
+    prisma.user.findUnique.mockResolvedValue(null);
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('аккаунт помечен deletedAt → 401, не впускаем по старому токену', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 555n,
+      deletedAt: new Date(),
+    });
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  // Хвост S12 (аудит 2026-11): отозванная сессия гасит свой access-токен сразу.
+  it('sid отозванной цепочки → 401, webUser не ставится', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n, sid: 'f1' });
+    prisma.webSession.findFirst.mockResolvedValue(null);
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      'Session revoked',
+    );
+    expect(prisma.webSession.findFirst).toHaveBeenCalledWith({
+      where: { family: 'f1', userId: 555n, revokedAt: null },
+      select: { id: true },
+    });
+    expect(req.webUser).toBeUndefined();
+  });
+
+  it('битый Bearer → исключение от verifyAccessToken пробрасывается', async () => {
+    const { guard, authService } = makeGuard();
+    authService.verifyAccessToken.mockImplementation(() => {
+      throw new UnauthorizedException('Invalid token');
+    });
+    const req: FakeRequest = { headers: { authorization: 'Bearer bad' } };
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+});
+
+describe('путь 2: Telegram initData (мини-апп)', () => {
+  const USER = { id: 42, first_name: 'Грег' };
+
+  it('валидная подпись → канонический userId через AuthProvider (merge-совместимость)', async () => {
+    const { guard, authService } = makeGuard();
+    const req: FakeRequest = {
+      headers: { 'x-telegram-init-data': signInitData({ user: USER }) },
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+    expect(authService.findOrCreateUserByProvider).toHaveBeenCalledWith(
+      'telegram',
+      '42',
+      'Грег',
+    );
+    // канонический id (999) из реестра провайдеров, НЕ сырой telegram id (42)
+    expect(req.webUser).toEqual({ userId: 999n });
+    expect(req).not.toHaveProperty('telegramUserId');
+    expect(req.telegramFirstName).toBe('Грег');
+  });
+
+  it('нет ни Bearer, ни initData → Missing authentication', async () => {
+    const { guard } = makeGuard();
+    await expect(guard.canActivate(makeCtx({ headers: {} }))).rejects.toThrow(
+      'Missing authentication',
+    );
+  });
+
+  it('подделанный hash → Unauthorized + громкий алерт админу (suspicious_initdata)', async () => {
+    const { guard, authService, securityLog } = makeGuard();
+    const req: FakeRequest = {
+      headers: {
+        'x-telegram-init-data': signInitData({ user: USER, forgeHash: true }),
+      },
+      ip: '9.9.9.9',
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      'Invalid initData',
+    );
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '9.9.9.9' }),
+    );
+  });
+
+  it('подпись чужим bot-токеном → Unauthorized', async () => {
+    const { guard } = makeGuard();
+    const initData = signInitData({ user: USER, botToken: '666:EVIL' });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('Invalid initData');
+  });
+
+  // Инцидент 2026-07-29: истёкшая initData — жизненный цикл мини-аппа (Telegram
+  // не обновляет её у свернутого приложения), а не атака. Она обязана давать
+  // машиночитаемый код (мини-апп по нему перевыпускает сессию) и НЕ будить
+  // админа: один вход через час = десяток запросов = десяток DM.
+  it('просроченный auth_date (старше часа) → 401 initdata_expired, без алерта', async () => {
+    const { guard, securityLog } = makeGuard();
+    const initData = signInitData({
+      user: USER,
+      authDate: Math.floor(Date.now() / 1000) - 7200,
+    });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toMatchObject({
+      response: { code: 'initdata_expired' },
+      status: 401,
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
+  });
+
+  it('валидная подпись, но нет user → Missing user', async () => {
+    const { guard } = makeGuard();
+    const initData = signInitData({});
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('Missing user');
+  });
+
+  it('user.id не число → Invalid user data', async () => {
+    const { guard } = makeGuard();
+    const initData = signInitData({ user: { id: 'not-a-number' } });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('Invalid user data');
+  });
+
+  // Пользователя разбирает общий верификатор (readTelegramUser): id — безопасное
+  // целое > 0. Прежняя проверка гарда `typeof id === 'number'` пропускала всё это.
+  it.each([
+    ['ноль', 0],
+    ['отрицательный', -5],
+    ['дробный', 1.5],
+    ['за пределом 2^53', 2 ** 53],
+  ])('user.id %s → 401 Invalid user data', async (_name, id) => {
+    const { guard, authService } = makeGuard();
+    const initData = signInitData({ user: { id } });
+    const attempt = guard.canActivate(
+      makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+    );
+    await expect(attempt).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(attempt).rejects.toThrow('Invalid user data');
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+  });
+
+  it('user.id = 2^53 − 1 (наибольшее безопасное целое) → впускает', async () => {
+    const { guard, authService } = makeGuard();
+    const initData = signInitData({ user: { id: Number.MAX_SAFE_INTEGER } });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).resolves.toBe(true);
+    expect(authService.findOrCreateUserByProvider).toHaveBeenCalledWith(
+      'telegram',
+      '9007199254740991',
+      undefined,
+    );
+  });
+
+  it('BOT_TOKEN не сконфигурирован → Unauthorized', async () => {
+    const { guard } = makeGuard({ BOT_TOKEN: undefined });
+    const initData = signInitData({ user: USER });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('BOT_TOKEN not configured');
+  });
+});
+
+describe('SKIP_AUTH — dev-лазейка (жёстко выключена в production)', () => {
+  const USER = { id: 42, first_name: 'Грег' };
+
+  it('в dev пропускает неподписанный initData (с warn)', async () => {
+    const { guard } = makeGuard({ SKIP_AUTH: 'true' });
+    const initData = signInitData({ user: USER, forgeHash: true });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it('в dev подпись не проверяется, а user всё равно разбирает общий верификатор (id 0 → 401)', async () => {
+    const { guard, authService } = makeGuard({ SKIP_AUTH: 'true' });
+    const initData = signInitData({ user: { id: 0 }, forgeHash: true });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('Invalid user data');
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+  });
+
+  it('в production игнорируется — подделка отбивается несмотря на SKIP_AUTH=true', async () => {
+    process.env.NODE_ENV = 'production';
+    const { guard } = makeGuard({ SKIP_AUTH: 'true' });
+    const initData = signInitData({ user: USER, forgeHash: true });
+    await expect(
+      guard.canActivate(
+        makeCtx({ headers: { 'x-telegram-init-data': initData } }),
+      ),
+    ).rejects.toThrow('Invalid initData');
+  });
+});
+
+describe('путь 3: MAX initData (MAX мини-апп)', () => {
+  it('валидная подпись → канонический userId через AuthProvider (провайдер max)', async () => {
+    const verifyInitData = jest
+      .fn()
+      .mockReturnValue({ providerId: '77', displayName: 'Оля' });
+    const { guard, authService } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = {
+      headers: { 'x-max-init-data': 'raw-max-init-data' },
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+    expect(verifyInitData).toHaveBeenCalledWith('raw-max-init-data');
+    expect(authService.findOrCreateUserByProvider).toHaveBeenCalledWith(
+      'max',
+      '77',
+      'Оля',
+    );
+    // канонический id (999) из реестра провайдеров, НЕ сырой providerId (77)
+    expect(req.webUser).toEqual({ userId: 999n });
+    expect(req).not.toHaveProperty('telegramUserId');
+    expect(req.telegramFirstName).toBe('Оля');
+  });
+
+  it('поддельная подпись → Unauthorized + алерт админу (suspicious_initdata)', async () => {
+    const verifyInitData = jest.fn().mockImplementation(() => {
+      throw new Error('Invalid MAX initData signature');
+    });
+    const { guard, authService, securityLog } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = {
+      headers: { 'x-max-init-data': 'forged' },
+      // IP отличный от остальных кейсов в этом файле — иначе AlertThrottle
+      // (модульный синглтон в initdata-alert.ts) глушит алерт как повтор
+      // с того же IP в пределах окна.
+      ip: '7.7.7.7',
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      'Invalid initData',
+    );
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '7.7.7.7' }),
+    );
+  });
+
+  it('просроченная подпись MAX → 401 initdata_expired, без алерта', async () => {
+    const verifyInitData = jest.fn().mockImplementation(() => {
+      throw new Error('init data expired');
+    });
+    const { guard, securityLog } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = { headers: { 'x-max-init-data': 'stale' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toMatchObject({
+      response: { code: 'initdata_expired' },
+      status: 401,
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
+  });
+
+  // Пока MAX_BOT_TOKEN не проставлен, каждый запрос из мессенджера выглядел бы
+  // для аудита подделкой подписи. Это наша конфигурация: 503 и тишина в лог.
+  it('нет MAX_BOT_TOKEN → 503, и админ НЕ получает алерт о подделке', async () => {
+    const verifyInitData = jest.fn().mockImplementation(() => {
+      throw new MaxNotConfiguredError();
+    });
+    const { guard, authService, securityLog } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    const req: FakeRequest = {
+      headers: { 'x-max-init-data': 'что угодно' },
+      ip: '8.8.8.8',
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toMatchObject({
+      status: 503,
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
+    expect(authService.findOrCreateUserByProvider).not.toHaveBeenCalled();
+  });
+});
+
+// Регресс инцидента 2026-08-08 на серверной стороне шва. Мини-апп в Telegram
+// считал себя открытым в MAX и слал ПУСТУЮ подпись; пустая строка falsy, и
+// запрос уходил в ветку «Missing authentication» — без лога, счётчика и
+// алерта. Вход был сломан у всех пользователей Telegram, а сервер молчал.
+describe('отказ входа: пустая подпись слышна', () => {
+  it('пустой x-max-init-data → 401, алерт админу и серверное событие', async () => {
+    const { guard, securityLog, analytics } = makeGuard();
+    const ctx = makeCtx({ headers: { 'x-max-init-data': '' }, ip: '1.2.3.4' });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'empty_signature',
+      expect.objectContaining({ host: 'max' }),
+    );
+    expect(analytics.track).toHaveBeenCalledWith(
+      null,
+      'auth_rejected',
+      expect.objectContaining({ host: 'max', reason: 'empty_signature' }),
+    );
+  });
+
+  it('запрос вообще без заголовков — 401 молча (фон интернета не будит админа)', async () => {
+    const { guard, securityLog, analytics } = makeGuard();
+    const ctx = makeCtx({ headers: {}, ip: '9.9.9.9' });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).not.toHaveBeenCalled();
+    expect(analytics.track).not.toHaveBeenCalled();
+  });
+});
+
+// Успешный вход в guard'е в аналитику не пишется: строка auth_success шла на
+// каждый Bearer-запрос (раз в 5 минут на человека) и после пересборки блока
+// «Вход в мессенджере» никем не читалась. Блок считает обмен подписи на
+// сессию — messenger_launch / messenger_launch_failed из ручек обмена
+// (src/auth/exchange-failure.report.ts). Горячий путь guard'а пишет в БД только
+// отказ с пустой подписью (auth_rejected, тесты выше).
+describe('успешный вход в guard не пишет событий', () => {
+  it('путь 1 (JWT) — ни одной строки аналитики', async () => {
+    const { guard, authService, analytics } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 111_001n });
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+
+    expect(analytics.track).not.toHaveBeenCalled();
+  });
+
+  it('путь 2 (Telegram initData) — ни одной строки аналитики', async () => {
+    const { guard, authService, analytics } = makeGuard();
+    authService.findOrCreateUserByProvider.mockResolvedValue(111_002n);
+    const req: FakeRequest = {
+      headers: { 'x-telegram-init-data': signInitData({ user: { id: 42 } }) },
+    };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+
+    expect(analytics.track).not.toHaveBeenCalled();
+  });
+
+  it('путь 3 (MAX initData) — ни одной строки аналитики', async () => {
+    const verifyInitData = jest
+      .fn()
+      .mockReturnValue({ providerId: '77', displayName: 'Оля' });
+    const { guard, authService, analytics } = makeGuard(
+      {},
+      { maxProvider: { verifyInitData } },
+    );
+    authService.findOrCreateUserByProvider.mockResolvedValue(111_003n);
+    const req: FakeRequest = { headers: { 'x-max-init-data': 'raw' } };
+
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
+
+    expect(analytics.track).not.toHaveBeenCalled();
+  });
+});

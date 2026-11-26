@@ -1,0 +1,137 @@
+// Недельная сводка по дневникам (экран «Паттерны», дизайн-макет:
+// «Чаще всего звучит — проявлялась N из 7 дней»). Чистая логика отдельно
+// от компонента — покрыта тестом (правило CLAUDE.md «Тесты»).
+// Обобщена на схемы (schemaIds: string[]) и режимы (modeId: string).
+
+import { momentDayKey } from '../utils/momentDate';
+
+export const SUMMARY_WINDOW_DAYS = 7;
+
+export interface WeekTopSummary {
+  id: string;
+  /** В скольких РАЗНЫХ днях недели сущность встретилась в записях */
+  days: number;
+  windowDays: number;
+}
+
+export interface SchemaDatedEntry {
+  createdAt: string;
+  schemaIds: string[];
+}
+
+export interface ModeDatedEntry {
+  createdAt: string;
+  modeId: string;
+}
+
+interface DatedIds {
+  createdAt: string;
+  ids: string[];
+}
+
+/** Частота за последние 7 дней: id → число РАЗНЫХ дней, где сущность встретилась. */
+export function weekFrequencyMap(
+  entries: DatedIds[],
+  now: Date = new Date(),
+): Record<string, number> {
+  const from = new Date(now);
+  from.setDate(from.getDate() - (SUMMARY_WINDOW_DAYS - 1));
+  from.setHours(0, 0, 0, 0);
+
+  const daysById = new Map<string, Set<string>>();
+  for (const e of entries) {
+    const d = new Date(e.createdAt);
+    if (isNaN(d.getTime()) || d < from || d > now) continue;
+    // Окно `from` — от ЛОКАЛЬНОЙ полуночи, поэтому и день записи локальный.
+    const dayKey = momentDayKey(e.createdAt);
+    for (const id of e.ids) {
+      let set = daysById.get(id);
+      if (!set) {
+        set = new Set();
+        daysById.set(id, set);
+      }
+      set.add(dayKey);
+    }
+  }
+  const out: Record<string, number> = {};
+  for (const [id, days] of daysById) out[id] = days.size;
+  return out;
+}
+
+/** Частота по схемам: schemaId → дней/неделю. */
+export function weekSchemaFrequency(
+  entries: SchemaDatedEntry[],
+  now: Date = new Date(),
+): Record<string, number> {
+  return weekFrequencyMap(
+    entries.map((e) => ({ createdAt: e.createdAt, ids: e.schemaIds })),
+    now,
+  );
+}
+
+/** Топ-сущность за последние 7 дней по числу уникальных дней; null — данных нет. */
+export function weekTopSummary(
+  entries: DatedIds[],
+  now: Date = new Date(),
+): WeekTopSummary | null {
+  const freq = weekFrequencyMap(entries, now);
+  let top: WeekTopSummary | null = null;
+  for (const id in freq) {
+    if (!top || freq[id] > top.days) {
+      top = { id, days: freq[id], windowDays: SUMMARY_WINDOW_DAYS };
+    }
+  }
+  return top;
+}
+
+export function weekSchemaSummary(
+  entries: SchemaDatedEntry[],
+  now: Date = new Date(),
+): WeekTopSummary | null {
+  return weekTopSummary(
+    entries.map((e) => ({ createdAt: e.createdAt, ids: e.schemaIds })),
+    now,
+  );
+}
+
+export function weekModeFrequency(
+  entries: ModeDatedEntry[],
+  now: Date = new Date(),
+): Record<string, number> {
+  return weekFrequencyMap(
+    entries.map((e) => ({ createdAt: e.createdAt, ids: [e.modeId] })),
+    now,
+  );
+}
+
+export function weekModeSummary(
+  entries: ModeDatedEntry[],
+  now: Date = new Date(),
+): WeekTopSummary | null {
+  return weekTopSummary(
+    entries.map((e) => ({ createdAt: e.createdAt, ids: [e.modeId] })),
+    now,
+  );
+}
+
+export type WeekPatternKind = 'schema' | 'mode';
+
+export interface WeekPatternTop extends WeekTopSummary {
+  kind: WeekPatternKind;
+}
+
+/**
+ * Паттерн недели для экрана, где схемы и режимы рядом: больше дней — выше;
+ * при равенстве схема (основной предмет экрана). Записей за неделю нет — null.
+ */
+export function weekPatternTop(
+  schemaEntries: SchemaDatedEntry[],
+  modeEntries: ModeDatedEntry[],
+  now: Date = new Date(),
+): WeekPatternTop | null {
+  const s = weekSchemaSummary(schemaEntries, now);
+  const m = weekModeSummary(modeEntries, now);
+  if (s && (!m || s.days >= m.days)) return { ...s, kind: 'schema' };
+  if (m) return { ...m, kind: 'mode' };
+  return null;
+}

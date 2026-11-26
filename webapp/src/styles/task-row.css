@@ -1,0 +1,65 @@
+/* Строка задания (sections/practice/TaskRow, b20): знак слева, текст с одной строкой меты, справа одна колонка —
+   шеврон/ссылка, круглая кнопка-галочка «Готово» или залитая галочка «сделано сегодня». Общий ряд .cp-task — в
+   client-practice.css, откуда этот файл и подключается. Красной полосы и капители «от терапевта» больше нет:
+   «от терапевта» — в мете со знаком Talk (docs/archive/APP_2026-11.md, b20). */
+.cp-task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: var(--space-4); font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.cp-task-from { display: inline-flex; align-items: center; gap: 6px; }
+.cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
+.ds-badge.cp-task-status { padding: 1px 8px; }
+/* Сделано сегодня: знак бледнее, текст прежний — серая полупрозрачная строка читалась выключенной (аудит b20). */
+.cp-task--done > .pp-row-art { opacity: .5; }
+
+/* «Готово» у своего задания — круг 44 с галочкой: пустой круг = не сделано, залитый (ниже) = сделано. */
+.cp-task-done {
+  position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  width: 44px; height: 44px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--text-sub);
+}
+.cp-task-done svg { width: 16px; height: 16px; }
+/* Слово «Готово» — имя кнопки для чтения с экрана, глазу хватает круга с галочкой. */
+.cp-task-done-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cp-task-done:hover, .cp-task-done:focus-visible { border-color: var(--c-moss); color: var(--c-moss-strong); }
+.cp-task-done:disabled { opacity: .55; cursor: default; }
+.cp-task-check {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin: 0 6px; border-radius: 50%; background: var(--c-moss); color: var(--on-accent);
+}
+.cp-task-check svg { width: 14px; height: 14px; }
+
+/* Телефон до 559px: плотность одна на «Практиках», «Заданиях» (/more) и «Все задания» с «Сегодня» — правило на самой
+   строке, а не под .cp-page--phone (ревью g4 r7). .ds-card в селекторе — сильнее .ds-card--row (cabinet.css).
+   Сверка — styles/taskRowGrid.test.tsx. */
+@media (max-width: 559px) {
+  .ds-card.cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }
+  .ds-card.cp-task:has(> .cp-task-done) { padding-right: var(--space-8); }
+}
+
+/* Строка задания со слотом действий .cp-task-acts (вкладка «Задания» карточки клиента у терапевта: «Выполнено»,
+   корзина; статус — ярлыком под названием). Список .cp-task-list — контейнер: раскладка по ширине самого списка,
+   а не экрана (на 768 с меню колонка уже 560). Узкий список — сетка: знак и название на всю строку, действия второй
+   строкой под текстом. До b31 строка терапевта была flex без переноса с overflow-wrap: anywhere: на 390 название
+   шло колонкой в букву, на 360/320 корзина и «Выполнено» уходили за край. Слово не рвётся посередине (break-word,
+   без hyphens — см. client-practice.css). Сверка — therapist/ClientTasksTab.layout.test.tsx и e2e-browser/therapy-smoke.spec.ts. */
+.cp-task-list { display: flex; flex-direction: column; gap: 10px; container: cp-task-list / inline-size; }
+.cp-task-list .cp-task-title { overflow-wrap: break-word; }
+.cp-task-acts { display: flex; align-items: center; gap: var(--space-8); flex-shrink: 0; }
+/* Узкий список: тело строки раскрывается в сетку (display: contents) — название во всю ширину справа от знака,
+   под ним срок и статус, ниже действия; одна корзина (у клиента с аккаунтом «Выполнено» нет) встаёт в строку срока
+   справа, а не одна на целую строку. */
+@container cp-task-list (max-width: 559px) {
+  .ds-card.cp-task:has(> .cp-task-acts) {
+    display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center;
+    grid-template-areas: "art title title" ". meta meta" ". acts acts";
+    column-gap: var(--space-12); row-gap: var(--space-6); padding: var(--space-12) var(--space-16);
+  }
+  .ds-card.cp-task:has(> .cp-task-acts > :only-child) { grid-template-areas: "art title title" ". meta acts"; }
+  .cp-task:has(> .cp-task-acts) > .pp-row-art { grid-area: art; align-self: start; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-body { display: contents; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-body > .cp-task-title { grid-area: title; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-body > :not(.cp-task-title) { grid-area: meta; margin-top: 0; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-acts { grid-area: acts; flex-wrap: wrap; }
+  .cp-task-acts > :last-child:not(:only-child) { margin-left: auto; }
+}
+/* Задание из справочника: под названием «что делать» и «зачем» обычным текстом (TaskRowTitle). */
+.cp-task-part { margin: var(--space-4) 0 0; font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; white-space: pre-line; }
+.cp-task-part-label { margin-right: 6px; font-weight: 700; color: var(--text-sub); }

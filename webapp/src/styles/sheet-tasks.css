@@ -1,0 +1,13 @@
+/* Листы заданий, планов, практик, палитры, «Мне плохо» и мелкие оверлеи (префикс sk-). */
+/* Сборник: правил здесь нет, каждый раздел живёт в своём файле (раскрой 2026-11).
+   Порядок @import = прежний порядок разделов в каскаде — не переставлять; новое
+   правило — в файл своего экрана. Компоненты по-прежнему подключают этот файл. */
+@import './plans.css';
+@import './feeds.css';
+@import './flashcard.css';
+@import './dialogs.css';
+@import './celebration.css';
+@import './error-screen.css';
+@import './all-tasks.css';
+@import './nudges.css';
+@import './therapist-disclaimer.css';

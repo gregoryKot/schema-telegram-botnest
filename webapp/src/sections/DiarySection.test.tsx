@@ -1,0 +1,662 @@
+// @vitest-environment jsdom
+// Компонентные тесты DiarySection («Записи», простой клиент, этап 3): реальные
+// записи из api (без хардкод-заглушек), пустое онбординг-объяснение, сегмент
+// «Все · Трекер · Дневник», строки трекера по дням, серия, удаление с
+// подтверждением, черновики мастеров, ошибки API не роняют экран.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { DiarySection } from './DiarySection';
+import { saveDraft, clearDraft } from '../utils/drafts';
+import { todayStr } from '../utils/format';
+
+// SchemaEntrySheet/ModeEntrySheet/GratitudeEntrySheet используют
+// useHistorySheet (нужен Router) — оборачиваем все рендеры.
+function renderSection(onOpenTrackerHistory?: () => void) {
+  return render(
+    <MemoryRouter>
+      <DiarySection onOpenTrackerHistory={onOpenTrackerHistory} />
+    </MemoryRouter>,
+  );
+}
+
+// Листы создания записи — тяжёлые формы (не в скоупе этого файла).
+// Мокаем кнопочницей, чтобы проверить только то, что решает сам
+// DiarySection: onSave добавляет запись в список и закрывает лист.
+vi.mock('../components/diary/SchemaEntrySheet', () => ({
+  SchemaEntrySheet: (p: { onClose: () => void; onSave: (d: { trigger: string; emotions: string[]; schemaIds: string[] }) => Promise<void> }) => (
+    <div data-testid="schema-entry-sheet">
+      <button onClick={() => p.onSave({ trigger: 'Новый триггер', emotions: [], schemaIds: [] })}>Сохранить схему</button>
+      <button onClick={p.onClose}>Закрыть лист схемы</button>
+    </div>
+  ),
+}));
+vi.mock('../components/diary/ModeEntrySheet', () => ({
+  ModeEntrySheet: (p: { onClose: () => void; onSave: (d: { situation: string; modeId: string }) => Promise<void> }) => (
+    <div data-testid="mode-entry-sheet">
+      <button onClick={() => p.onSave({ situation: 'Новая ситуация', modeId: 'critic' })}>Сохранить режим</button>
+      <button onClick={p.onClose}>Закрыть лист режима</button>
+    </div>
+  ),
+}));
+vi.mock('../components/diary/GratitudeEntrySheet', () => ({
+  GratitudeEntrySheet: (p: { onClose: () => void; date: string; existingItems?: string[]; onSave: (date: string, items: string[], base: string[]) => Promise<void> }) => (
+    <div data-testid="gratitude-entry-sheet">
+      <div data-testid="gratitude-existing">{JSON.stringify(p.existingItems ?? null)}</div>
+      <button onClick={() => p.onSave(p.date, ['Новый пункт'], p.existingItems ?? [])}>Сохранить благодарность</button>
+      <button onClick={p.onClose}>Закрыть лист благодарности</button>
+    </div>
+  ),
+}));
+
+vi.mock('../components/diary/QuickEntrySheet', () => ({
+  QuickEntrySheet: (p: { onClose: () => void; onSaved?: () => void }) => (
+    <div data-testid="quick-entry-sheet">
+      <button onClick={p.onSaved}>Имитировать сохранение</button>
+      <button onClick={p.onClose}>Закрыть быструю запись</button>
+    </div>
+  ),
+}));
+
+vi.mock('../api', () => {
+  const api: Record<string, (...a: unknown[]) => unknown> = {
+    getSchemaDiary: vi.fn(),
+    getModeDiary: vi.fn(),
+    getGratitudeDiary: vi.fn(),
+    getProfile: vi.fn(),
+    history: vi.fn(),
+    deleteSchemaDiary: vi.fn(),
+    deleteModeDiary: vi.fn(),
+    deleteGratitudeDiary: vi.fn(),
+    createSchemaDiary: vi.fn(),
+    createModeDiary: vi.fn(),
+    createGratitudeDiary: vi.fn(),
+    trackEvent: vi.fn(),
+  };
+  // «Записи» грузят дневник страницами (R6): первая страница — то, что отдают
+  // моки списков, «есть ещё» нет. Догрузку проверяет DiarySection.more.test.tsx.
+  const LIST: Record<string, string> = { schema: 'getSchemaDiary', mode: 'getModeDiary', gratitude: 'getGratitudeDiary' };
+  api.getDiaryPage = vi.fn(async (kind: unknown) => ({ items: await api[LIST[kind as string]](), hasMore: false }));
+  return { api };
+});
+import { api } from '../api';
+import { plainText } from '../test-support/plainText';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+function schemaEntry(overrides: Partial<{ id: number; createdAt: string; trigger: string; schemaIds: string[] }> = {}) {
+  return {
+    id: 1, createdAt: '2026-08-01T10:00:00Z', trigger: 'Коллега не ответил на сообщение',
+    emotions: [], schemaIds: [],
+    ...overrides,
+  };
+}
+function modeEntry(overrides: Partial<{ id: number; createdAt: string; situation: string; modeId: string }> = {}) {
+  return { id: 1, createdAt: '2026-08-01T11:00:00Z', situation: 'Критика на работе', modeId: 'vulnerable_child', ...overrides };
+}
+function gratitudeEntry(overrides: Partial<{ id: number; date: string; items: string[] }> = {}) {
+  return { id: 1, date: '2026-08-01', items: ['Хорошая погода'], createdAt: '2026-08-01T20:00:00Z', ...overrides };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockApi.getSchemaDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getGratitudeDiary.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({ ysq: { activeSchemaIds: [] }, streak: 0 });
+  mockApi.history.mockResolvedValue([]);
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+/** Кнопка сегмента: у трекера дня в строке даты тоже имя «Трекер — …», поэтому ищем внутри сегмента. */
+const tabs = () => within(screen.getByRole('tablist', { name: 'Тип записей' }));
+const seg = (name: RegExp) => tabs().getByRole('tab', { name });
+
+const rated = (date: string, values: number[]) => ({
+  date,
+  ratings: Object.fromEntries(['attachment', 'autonomy', 'expression', 'play', 'limits'].slice(0, values.length).map((id, i) => [id, values[i]])),
+});
+
+describe('DiarySection — шапка и вход «Записать»', () => {
+  it('заголовок «Записи» (имя вкладки), без счётчика «N/31», трёх карточек входа и строки «Архив»', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await screen.findByText('Коллега не ответил на сообщение');
+    expect(screen.getByRole('heading', { name: 'Записи' })).toBeTruthy();
+    expect(document.querySelector('.cd-stats')).toBeNull();
+    expect(document.querySelector('.cd-quick')).toBeNull();
+    expect(screen.queryByText(/Архив ·/)).toBeNull();
+    expect(screen.queryByText('Трекер потребностей')).toBeNull();
+  });
+
+  it('«Записать» открывает «Дневник одной страницей»; после сохранения лента перечитывается', async () => {
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Записать' }));
+    await screen.findByTestId('quick-entry-sheet');
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Только что записанное' })]);
+    fireEvent.click(screen.getByText('Имитировать сохранение'));
+    await screen.findByText('Только что записанное');
+    expect(mockApi.getSchemaDiary).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByText('Закрыть быструю запись'));
+    expect(screen.queryByTestId('quick-entry-sheet')).toBeNull();
+  });
+});
+
+describe('DiarySection — пустой аккаунт (без хардкод-заглушек)', () => {
+  it('без записей показывает объясняющее пустое состояние с кнопкой «Записать» выше', async () => {
+    renderSection();
+    await waitFor(() => expect(screen.getByText('Пока ни одной записи')).toBeTruthy());
+    expect(screen.getByText(/кнопка «Записать» выше/)).toBeTruthy();
+    expect(screen.queryByText(/дней подряд|день подряд/)).toBeNull();
+  });
+
+  // b11 (сбой ≠ пусто): раньше под баннером сбоя шло объяснение новичка «Пока ни одной записи» —
+  // записи на сервере есть, просто не загрузились. Экран не падает, «Записать» остаётся. Под строкой сбоя
+  // нет и силуэта ленты: серые плашки читались «ещё грузится» (ревью g3, принцип 8).
+  it('ошибка getSchemaDiary не роняет экран — строка сбоя без силуэта и без объяснения новичка', async () => {
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
+    const { container } = renderSection();
+    await screen.findByRole('alert');
+    expect(screen.queryByText('Пока ни одной записи')).toBeNull();
+    expect(container.querySelector('.skel')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
+  });
+});
+
+describe('DiarySection — сбой загрузки (сбой ≠ пусто)', () => {
+  // Регрессия: отказ загрузки раньше оставлял [] без объяснения — дневник
+  // выглядел стёртым, хотя записи целы на сервере (пара к miniapp).
+  it('провал загрузки показывает неблокирующий баннер, кнопка «Записать» остаётся', async () => {
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
+    renderSection();
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
+  });
+
+  it('«Обновить» перезапрашивает записи и убирает баннер при успехе', async () => {
+    mockApi.getSchemaDiary.mockRejectedValueOnce(new Error('network down'));
+    renderSection();
+    await screen.findByRole('alert');
+    mockApi.getSchemaDiary.mockResolvedValueOnce([schemaEntry({ trigger: 'Загрузилось после повтора' })]);
+    fireEvent.click(screen.getByText('Обновить'));
+    await screen.findByText('Загрузилось после повтора');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  // Ревью g3 r2: повторная загрузка (после быстрой записи, «Повторить» трекера) упала — строка сбоя
+  // заменяла уже показанную ленту одной плашкой «записи на месте» без единой записи, и пропадали числа
+  // в сегменте. Сбой повторной загрузки ставит строку НАД лентой.
+  it('первая загрузка ок, повторная упала — записи и числа сегмента на месте, строка сбоя сверху', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Уже показанная запись' })]);
+    renderSection();
+    await screen.findByText('Уже показанная запись');
+    fireEvent.click(screen.getByRole('button', { name: 'Записать' }));
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
+    fireEvent.click(screen.getByText('Имитировать сохранение'));
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.getByText('Уже показанная запись')).toBeTruthy();
+    expect(seg(/^Все/).textContent).toMatch(/1/);
+    // Строка сбоя — над лентой, а не под ней.
+    const card = screen.getByText('Уже показанная запись');
+    expect(alert.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('сбой истории трекера и профиля не роняет дневники', async () => {
+    mockApi.history.mockRejectedValue(new Error('offline'));
+    mockApi.getProfile.mockRejectedValue(new Error('network down'));
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Видно несмотря на сбой' })]);
+    renderSection();
+    await screen.findByText('Видно несмотря на сбой');
+    expect(screen.queryByRole('alert')).toBeNull();
+    // Сбой трекера ≠ «отметок нет»: об этом сказано, а «Повторить» перезапрашивает историю.
+    expect(plainText(screen.getByRole('status'))).toMatch(/Отметки трекера не загрузились/);
+    mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    await screen.findByLabelText('Трекер — индекс 7,2');
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  // Ревью g3 r3: трекер не загрузился, «Повторить» уронил и записи — над лентой вставали две одинаковые
+  // песочные плашки подряд. Сбой записей — одна строка: её «Обновить» перезапрашивает и трекер.
+  it('сбой трекера, затем сбой записей — одна строка сбоя над лентой, а не две', async () => {
+    mockApi.history.mockRejectedValue(new Error('offline'));
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись до сбоя' })]);
+    renderSection();
+    await screen.findByText('Запись до сбоя');
+    expect(plainText(screen.getByRole('status'))).toMatch(/Отметки трекера не загрузились/);
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getAllByRole('button', { name: /^(Повторить|Обновить)$/ })).toHaveLength(1);
+    expect(screen.getByText('Запись до сбоя')).toBeTruthy();
+  });
+});
+
+describe('DiarySection — реальные записи из api', () => {
+  it('показывает реальный триггер записи схемы, а не выдуманный текст', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Реальный триггер из API' })]);
+    renderSection();
+    await screen.findByText('Реальный триггер из API');
+  });
+
+  it('запись без схем и эмоций подписана «Мысль», запись со схемой — «Схема»', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([
+      schemaEntry({ id: 2, trigger: 'Просто мысль дня' }),
+      { ...schemaEntry({ id: 1, trigger: 'Разобранный момент' }), schemaIds: ['abandonment'] },
+    ]);
+    renderSection();
+    const thought = (await screen.findByText('Просто мысль дня')).closest('.cd-entry') as HTMLElement;
+    expect(thought.querySelector('.cd-kind')?.textContent).toBe('Мысль');
+    // Своя обёртка-контейнер у каждой карточки: раскладка по её ширине и вне ленты (client-diary-entry.css).
+    expect(thought.parentElement?.classList.contains('cd-entry-box')).toBe(true);
+    const full = screen.getByText('Разобранный момент').closest('.cd-entry') as HTMLElement;
+    expect(full.querySelector('.cd-kind')?.textContent).toBe('Схема');
+  });
+
+  it('запись благодарности показывает реальные пункты, а не заглушку', async () => {
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ items: ['Утренний кофе', 'Звонок другу'] })]);
+    renderSection();
+    await screen.findByText('Утренний кофе');
+    expect(screen.getByText('Звонок другу')).toBeTruthy();
+  });
+});
+
+describe('DiarySection — вкладки «Все · Трекер · Разборы · Дневник»', () => {
+  const setup = () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись-схема' })]);
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ situation: 'Запись-режим' })]);
+    mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8]), rated('2026-07-31', [5, 5, 5])]);
+  };
+
+  it('счётчики: всего, дней трекера, записей дневника', async () => {
+    setup();
+    renderSection();
+    await screen.findByText('Запись-схема');
+    const counts = tabs().getAllByRole('tab').map(b => b.textContent);
+    expect(counts).toEqual(['Все4', 'Трекер2', 'Разборы0', 'Дневник2']);
+  });
+
+  it('в ленте за день — строка трекера: «Трекер — индекс 7,2» при всех пяти оценках, «Трекер: 3 из 5» при неполных', async () => {
+    setup();
+    renderSection();
+    await screen.findByLabelText('Трекер — индекс 7,2');
+    expect(screen.getByLabelText('Трекер: 3 из 5')).toBeTruthy();
+  });
+
+  it('«Трекер» скрывает дневниковые записи, «Дневник» — строки трекера', async () => {
+    setup();
+    renderSection();
+    await screen.findByText('Запись-схема');
+    fireEvent.click(seg(/^Трекер/));
+    expect(screen.queryByText('Запись-схема')).toBeNull();
+    expect(screen.getByLabelText('Трекер — индекс 7,2')).toBeTruthy();
+    fireEvent.click(seg(/^Дневник/));
+    expect(screen.getByText('Запись-схема')).toBeTruthy();
+    expect(screen.getByText('Запись-режим')).toBeTruthy();
+    expect(screen.queryByLabelText('Трекер — индекс 7,2')).toBeNull();
+  });
+
+  it('«Разборы» показывает только разборы (fromCase), «Дневник» их не показывает', async () => {
+    mockApi.getModeDiary.mockResolvedValue([
+      modeEntry({ id: 1, situation: 'Обычная запись режима' }),
+      { ...modeEntry({ id: 2, situation: 'Тишина в ответ' }), fromCase: true },
+    ]);
+    renderSection();
+    await screen.findByText('Тишина в ответ');
+    const counts = tabs().getAllByRole('tab').map(b => b.textContent);
+    expect(counts).toEqual(['Все2', 'Трекер0', 'Разборы1', 'Дневник1']);
+    fireEvent.click(seg(/^Разборы/));
+    expect(screen.getByText('Тишина в ответ')).toBeTruthy();
+    expect(screen.queryByText('Обычная запись режима')).toBeNull();
+    fireEvent.click(seg(/^Дневник/));
+    expect(screen.getByText('Обычная запись режима')).toBeTruthy();
+    expect(screen.queryByText('Тишина в ответ')).toBeNull();
+  });
+
+  it('пустые «Разборы» — объяснение, что такое разбор и откуда его начать', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+    fireEvent.click(seg(/^Разборы/));
+    await screen.findByText('Разборов пока нет');
+    expect(screen.getByText(/плитка «Что случилось» на главной/)).toBeTruthy();
+  });
+
+  it('сегмент без записей своего типа — честное «пока нет», а не пустота', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+    fireEvent.click(seg(/^Трекер/));
+    await screen.findByText('Отметок трекера пока нет');
+  });
+
+  it('тап по строке трекера открывает историю оценок', async () => {
+    mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
+    const onOpenTrackerHistory = vi.fn();
+    renderSection(onOpenTrackerHistory);
+    fireEvent.click(await screen.findByRole('button', { name: 'Трекер — индекс 7,2' }));
+    expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
+  });
+
+  // До 2026-11 лента брала 30 дней: дневники видны за всё время, а строки
+  // трекера старше месяца пропадали. Год — потолок эндпоинта.
+  it('история трекера запрашивается за год, а не за месяц', async () => {
+    renderSection();
+    await waitFor(() => expect(mockApi.history).toHaveBeenCalledWith(365));
+  });
+
+  it('«Дневник»: кнопка «Поделиться дневником» есть при записях; на «Все» её нет', async () => {
+    setup();
+    renderSection();
+    await screen.findByText('Запись-схема');
+    expect(screen.queryByRole('button', { name: 'Поделиться дневником' })).toBeNull();
+    fireEvent.click(seg(/^Дневник/));
+    expect(screen.getByRole('button', { name: 'Поделиться дневником' })).toBeTruthy();
+  });
+});
+
+describe('DiarySection — серия дней подряд (из профиля)', () => {
+  it('под лентой: «5 дней подряд. Сбиться — не страшно.»', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    mockApi.getProfile.mockResolvedValue({ ysq: { activeSchemaIds: [] }, streak: 5 });
+    renderSection();
+    await screen.findByText('5 дней подряд. Сбиться — не страшно.');
+  });
+
+  it('серия 0 — строки нет; «1 день», «2 дня» склоняются', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    const { unmount } = renderSection();
+    await screen.findByText('Коллега не ответил на сообщение');
+    expect(screen.queryByText(/Сбиться — не страшно/)).toBeNull();
+    unmount();
+    mockApi.getProfile.mockResolvedValue({ ysq: { activeSchemaIds: [] }, streak: 1 });
+    renderSection();
+    await screen.findByText('1 день подряд. Сбиться — не страшно.');
+  });
+});
+
+describe('DiarySection — удаление записи (с подтверждением)', () => {
+  it('удаление требует подтверждения и вызывает api.deleteSchemaDiary только после второго клика', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ id: 42 })]);
+    mockApi.deleteSchemaDiary.mockResolvedValue(undefined);
+    renderSection();
+
+    const entry = await screen.findByText('Коллега не ответил на сообщение');
+    fireEvent.click(entry); // раскрыть карточку
+    fireEvent.click(screen.getByText('Удалить'));
+    expect(mockApi.deleteSchemaDiary).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+    await waitFor(() => expect(mockApi.deleteSchemaDiary).toHaveBeenCalledWith(42));
+    await waitFor(() => expect(screen.queryByText('Коллега не ответил на сообщение')).toBeNull());
+  });
+
+  it('"Отмена" в подтверждении удаления не вызывает api', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+
+    const entry = await screen.findByText('Коллега не ответил на сообщение');
+    fireEvent.click(entry);
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Отмена'));
+
+    expect(mockApi.deleteSchemaDiary).not.toHaveBeenCalled();
+    expect(screen.getByText('Коллега не ответил на сообщение')).toBeTruthy();
+  });
+});
+
+describe('DiarySection — мастера по черновику («Продолжить →»)', () => {
+  it('черновик схемы открывает лист схемы; сохранение добавляет запись и закрывает лист (read-after-write)', async () => {
+    saveDraft('schema', { trigger: 'Черновик-триггер' });
+    mockApi.createSchemaDiary.mockResolvedValue(schemaEntry({ id: 99, trigger: 'Новый триггер' }));
+    renderSection();
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    fireEvent.click(await screen.findByText('Сохранить схему'));
+    await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
+    await screen.findByText('Новый триггер');
+    clearDraft('schema');
+  });
+
+  it('черновик режима открывает лист режима, сохранение добавляет запись', async () => {
+    saveDraft('mode', { situation: 'Черновик-ситуация' });
+    mockApi.createModeDiary.mockResolvedValue(modeEntry({ id: 98, situation: 'Новая ситуация' }));
+    renderSection();
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    await screen.findByTestId('mode-entry-sheet');
+    fireEvent.click(screen.getByText('Сохранить режим'));
+    await waitFor(() => expect(screen.queryByTestId('mode-entry-sheet')).toBeNull());
+    await screen.findByText('Новая ситуация');
+    clearDraft('mode');
+  });
+
+  it('черновик благодарности: лист открывается с пунктами сегодняшнего дня (existingItems), сохранение добавляет запись', async () => {
+    saveDraft('gratitude', { items: ['Черновик-пункт'] });
+    // «Сегодня» дневника — местный день (shared/src/diary/diaryDay.ts), не UTC.
+    const today = todayStr();
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ date: today, items: ['Уже записано'] })]);
+    mockApi.createGratitudeDiary.mockResolvedValue(gratitudeEntry({ id: 97, date: today, items: ['Новый пункт'] }));
+    renderSection();
+    await screen.findByText('Уже записано');
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    expect((await screen.findByTestId('gratitude-existing')).textContent).toBe(JSON.stringify(['Уже записано']));
+    fireEvent.click(screen.getByText('Сохранить благодарность'));
+    await waitFor(() => expect(screen.queryByTestId('gratitude-entry-sheet')).toBeNull());
+    await screen.findByText('Новый пункт');
+    // base листа доходит до API: сервер сливает сохранение с днём, а не заменяет его.
+    expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith(today, ['Новый пункт'], ['Уже записано']);
+    clearDraft('gratitude');
+  });
+
+  it('закрытие листа без сохранения возвращает на ленту (архив не меняется)', async () => {
+    saveDraft('schema', { trigger: 'Черновик-триггер' });
+    renderSection();
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    fireEvent.click(await screen.findByText('Закрыть лист схемы'));
+    await waitFor(() => expect(screen.queryByTestId('schema-entry-sheet')).toBeNull());
+    expect(mockApi.createSchemaDiary).not.toHaveBeenCalled();
+    clearDraft('schema');
+  });
+
+  it('удаление черновика (× затем подтверждение) убирает баннер', async () => {
+    saveDraft('schema', { trigger: 'Черновик-триггер' });
+    renderSection();
+    await screen.findByText('Продолжить →');
+    fireEvent.click(screen.getByLabelText('Удалить черновик'));
+    fireEvent.click(screen.getByText('удалить'));
+    await waitFor(() => expect(screen.queryByText('Продолжить →')).toBeNull());
+    expect(document.querySelector('.cd-drafts')).toBeNull();
+    clearDraft('schema');
+  });
+
+  // Пустая обёртка в .ds-page — лишний gap: 48px между «Записать» и фильтрами (скрин владельца 2026-11-06).
+  it('без черновиков обёртки .cd-drafts нет; с черновиком — есть', async () => {
+    renderSection();
+    await screen.findByRole('tablist', { name: 'Тип записей' });
+    expect(document.querySelector('.cd-drafts')).toBeNull();
+    cleanup();
+    saveDraft('mode', { situation: 'Черновик-ситуация' });
+    renderSection();
+    await screen.findByText('Продолжить →');
+    expect(document.querySelector('.cd-drafts')).not.toBeNull();
+    clearDraft('mode');
+  });
+});
+
+describe('DiarySection — удаление записей режима и благодарности', () => {
+  it('удаление записи режима убирает её из списка', async () => {
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ id: 55, situation: 'Критика на работе' })]);
+    mockApi.deleteModeDiary.mockResolvedValue(undefined);
+    renderSection();
+
+    const entry = await screen.findByText('Критика на работе');
+    fireEvent.click(entry);
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    await waitFor(() => expect(mockApi.deleteModeDiary).toHaveBeenCalledWith(55));
+    await waitFor(() => expect(screen.queryByText('Критика на работе')).toBeNull());
+  });
+
+  it('удаление записи благодарности убирает её из списка', async () => {
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ id: 33, items: ['Удаляемый пункт'] })]);
+    mockApi.deleteGratitudeDiary.mockResolvedValue(undefined);
+    renderSection();
+
+    const entry = await screen.findByText('Удаляемый пункт');
+    fireEvent.click(entry);
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    await waitFor(() => expect(mockApi.deleteGratitudeDiary).toHaveBeenCalledWith(33));
+    await waitFor(() => expect(screen.queryByText('Удаляемый пункт')).toBeNull());
+  });
+});
+
+// QA клиента 2026-11, З2: при 500 удаление проходило молча (исключение в
+// консоль), второй клик слал ещё один DELETE и ловил 404 тем же исключением.
+// Необработанный отказ vitest засчитывает как падение прогона.
+describe('DiarySection — сбой удаления виден, повторный клик не шлёт второй DELETE', () => {
+  const httpError = (status: number, message: string) => Object.assign(new Error(message), { status });
+  async function confirmDelete(text: string) {
+    fireEvent.click(await screen.findByText(text));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+  }
+
+  it('500: текст ошибки, запись остаётся, кнопка снова доступна', async () => {
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ id: 55, situation: 'Критика на работе' })]);
+    mockApi.deleteModeDiary.mockRejectedValue(httpError(500, 'Internal server error'));
+    renderSection();
+
+    await confirmDelete('Критика на работе');
+
+    // сбой удаления — компактный лист соломы (PaperAlert role=status) под ссылками, а не красная строка (ревью g3 r5)
+    const note = await screen.findByRole('status');
+    expect(note.classList.contains('pa-alert')).toBe(true);
+    expect(plainText(note)).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
+    expect(screen.getByText('Критика на работе')).toBeTruthy();
+    expect((screen.getByText('Удалить навсегда') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('двойной клик — один DELETE; после ответа запись уходит из списка', async () => {
+    let resolve!: () => void;
+    mockApi.getModeDiary.mockResolvedValue([modeEntry({ id: 55, situation: 'Критика на работе' })]);
+    mockApi.deleteModeDiary.mockImplementation(() => new Promise<void>(r => { resolve = r; }));
+    renderSection();
+
+    await confirmDelete('Критика на работе');
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+
+    expect(mockApi.deleteModeDiary).toHaveBeenCalledTimes(1);
+    resolve();
+    await waitFor(() => expect(screen.queryByText('Критика на работе')).toBeNull());
+  });
+
+  it('404 (запись уже удалена) — запись уходит из списка без ошибки', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ id: 42, trigger: 'Уже удалённая' })]);
+    mockApi.deleteSchemaDiary.mockRejectedValue(httpError(404, 'Entry not found'));
+    renderSection();
+
+    await confirmDelete('Уже удалённая');
+
+    await waitFor(() => expect(screen.queryByText('Уже удалённая')).toBeNull());
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText(/Не\sудалось\sудалить/)).toBeNull();
+  });
+});
+
+describe('DiarySection — группировка по дате', () => {
+  it('группа сегодняшних записей помечена "сегодня"', async () => {
+    const today = new Date().toISOString();
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ createdAt: today })]);
+    renderSection();
+
+    // «сегодня · понедельник» рендерится как два соседних текстовых узла —
+    // ищем по содержимому родителя, а не по одному узлу.
+    await waitFor(() => {
+      const rel = document.querySelector('.cd-day-rel');
+      expect(rel?.textContent).toContain('сегодня');
+    });
+  });
+});
+
+// Инцидент 2026-10-26: «сегодня» дневника было гринвичским днём на момент
+// загрузки бандла. Благодарность, записанная в 00:19 по Москве, получала 26.10,
+// а архив подписывал запись вторника «сегодня · понедельник».
+describe('DiarySection — «сегодня» по местному дню, а не по UTC', () => {
+  const NIGHT = new Date('2026-10-26T21:19:00Z'); // 00:19 27.10 по Москве
+  let prevTz: string | undefined;
+  beforeEach(() => {
+    prevTz = process.env.TZ;
+    process.env.TZ = 'Europe/Moscow';
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NIGHT);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    clearDraft('gratitude');
+    if (prevTz === undefined) delete process.env.TZ;
+    else process.env.TZ = prevTz;
+  });
+
+  it('благодарность в 00:19 по Москве сохраняется датой 27-го', async () => {
+    saveDraft('gratitude', { items: ['Черновик-пункт'] });
+    mockApi.createGratitudeDiary.mockResolvedValue(gratitudeEntry({ id: 5, date: '2026-10-27', items: ['Новый пункт'] }));
+    renderSection();
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    fireEvent.click(await screen.findByText('Сохранить благодарность'));
+    await waitFor(() => expect(mockApi.createGratitudeDiary).toHaveBeenCalledWith('2026-10-27', ['Новый пункт'], []));
+  });
+
+  it('уже записанная за 27-е благодарность открывается своими пунктами, вчерашняя — нет', async () => {
+    saveDraft('gratitude', { items: ['Черновик-пункт'] });
+    mockApi.getGratitudeDiary.mockResolvedValue([
+      gratitudeEntry({ id: 2, date: '2026-10-27', items: ['Чай с мятой'] }),
+      gratitudeEntry({ id: 1, date: '2026-10-26', items: ['Вчерашнее'] }),
+    ]);
+    renderSection();
+    await screen.findByText('Чай с мятой');
+    fireEvent.click(await screen.findByText('Продолжить →'));
+    expect((await screen.findByTestId('gratitude-existing')).textContent).toBe(JSON.stringify(['Чай с мятой']));
+  });
+
+  it('лента: запись схемы в 00:19 и благодарность 27-го — одна группа «27 октября · сегодня · вторник»', async () => {
+    mockApi.getGratitudeDiary.mockResolvedValue([gratitudeEntry({ id: 3, date: '2026-10-27', items: ['Тёплый плед'] })]);
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ id: 4, createdAt: NIGHT.toISOString() })]);
+    renderSection();
+    await screen.findByText('Тёплый плед');
+    const days = [...document.querySelectorAll('.cd-day-date')].map((n) => n.textContent);
+    expect(days).toEqual(['27 октября']);
+    expect(document.querySelector('.cd-day-rel')?.textContent).toBe('сегодня · вторник');
+  });
+});
+
+describe('DiarySection — мост к терапевту', () => {
+  const LINE = /Записи — самопомощь, не замена терапии/;
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  it('клиенту строка про самопомощь видна', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await screen.findByText('Коллега не ответил на сообщение');
+    expect(screen.getByText(LINE)).toBeTruthy();
+  });
+
+  it('самому терапевту строки нет', async () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
+    localStorage.setItem('therapy_contact_name', 'вам');
+    localStorage.setItem('therapy_is_therapist', '1');
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
+    renderSection();
+    await screen.findByText('Коллега не ответил на сообщение');
+    expect(screen.queryByText(LINE)).toBeNull();
+  });
+});

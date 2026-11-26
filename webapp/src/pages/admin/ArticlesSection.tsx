@@ -1,0 +1,72 @@
+import { useState, useCallback } from 'react';
+import { api } from '../../api';
+import type { Article } from '../../api';
+import { useAsyncData } from '../../hooks/useAsyncData';
+import { ArticleEditor } from './ArticleEditor';
+import { HistoryConfirmDialog } from '../../components/HistoryConfirmDialog';
+import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
+import { card, btn, btnGhost } from './shared';
+
+/** Articles admin tab: list with create/edit/delete, backed by the WYSIWYG editor. */
+export function ArticlesSection({ adminKey }: { adminKey: string }) {
+  const [editing, setEditing] = useState<Article | 'new' | null>(null);
+
+  const fetcher = useCallback(() => api.adminListArticles(adminKey), [adminKey]);
+  const { data: articles, reload, failed } = useAsyncData<Article[]>(fetcher, []);
+  // Ж4 (аудит 2026-08): вместо нативного confirm() — общий ConfirmDialog;
+  // сбой удаления виден в диалоге, статья остаётся (раньше промис без catch).
+  const [toDelete, setToDelete] = useState<Article | null>(null);
+  const del = useConfirmedAction(
+    () => (toDelete ? api.adminDeleteArticle(adminKey, toDelete.id) : Promise.resolve()),
+    () => { void reload(); }, // диалог закрывает сам HistoryConfirmDialog (goBack → onCancel); reload из useAsyncData не отклоняется: сбой → failed на экране
+  );
+  const askDelete = (a: Article) => { setToDelete(a); del.ask(); };
+  const cancelDelete = () => { setToDelete(null); del.cancel(); };
+
+  if (editing) {
+    return (
+      <ArticleEditor
+        adminKey={adminKey}
+        article={editing === 'new' ? null : editing}
+        onDone={() => { setEditing(null); void reload(); /* не отклоняется: сбой → failed */ }}
+        onCancel={() => setEditing(null)}
+      />
+    );
+  }
+
+  return (
+    <section style={card}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', margin: 0, flex: 1 }}>Статьи</h2>
+        <button style={btn} onClick={() => setEditing('new')}>+ Новая статья</button>
+      </div>
+      {/* Сбой ≠ пусто: неверный ключ или обрыв сети раньше выглядел как «статей нет». */}
+      {failed && <p role="alert" style={{ color: 'var(--accent-red)', fontSize: 14 }}>Не удалось загрузить статьи — возможно, неверный админ-ключ или нет соединения.</p>}
+      {!failed && articles.length === 0 && <p className="u-faint14">Пока нет статей.</p>}
+      {articles.map(a => (
+        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-12)', padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+          <div className="u-flex1">
+            <div style={{ color: 'var(--text)', fontSize: 14, fontWeight: 600 }}>{a.title}</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>/{a.slug} · {a.readMin} мин · {new Date(a.date).toLocaleDateString('ru')}</div>
+          </div>
+          <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13 }} onClick={() => setEditing(a)}>Редактировать</button>
+          <button aria-label="Удалить статью" style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }}
+            onClick={() => askDelete(a)}>
+            ✕
+          </button>
+        </div>
+      ))}
+      {toDelete && del.confirming && (
+        <HistoryConfirmDialog
+          title="Удалить статью?"
+          message={`«${toDelete.title}» пропадёт со страницы статей.`}
+          confirmLabel="Удалить"
+          busyLabel="Удаляю…"
+          error={del.failed ? 'Не удалось удалить — статья на месте. Возможно, неверный админ-ключ или нет соединения.' : undefined}
+          run={del.confirm}
+          onCancel={cancelDelete}
+        />
+      )}
+    </section>
+  );
+}

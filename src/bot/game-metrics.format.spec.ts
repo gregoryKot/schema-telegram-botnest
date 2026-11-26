@@ -1,0 +1,157 @@
+// Блок «Игра» в /stats.
+//
+// Пустое состояние проверяется первым и намеренно: на чистой базе отчёт не
+// должен показывать «0/NaN/мусор» — правило №8 требует именно этого.
+import { formatGameMetrics } from './game-metrics.format';
+import type { GameMetrics } from './game-metrics.tally';
+import { emptyWeek } from './game-week.tally';
+import {
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
+} from '../analytics/game-events.constants';
+
+const emptySources = () =>
+  Object.fromEntries(
+    GAME_ENTRY_SOURCES.map((s) => [s, 0]),
+  ) as GameMetrics['opensBySource'];
+
+const emptyPlaces = () =>
+  Object.fromEntries(
+    GAME_CTA_PLACES.map((p) => [p, 0]),
+  ) as GameMetrics['ctaClicksByPlace'];
+
+const emptyChapters = () =>
+  GAME_CHAPTERS.map((chapter) => ({
+    chapter,
+    started: 0,
+    finished: 0,
+  }));
+
+const EMPTY: GameMetrics = {
+  opens: 0,
+  opensBySource: emptySources(),
+  chapters: emptyChapters(),
+  ctaShown: 0,
+  ctaClicks: 0,
+  ctaClicksByPlace: emptyPlaces(),
+  ctaClicksByTarget: { app: 0, booking: 0, bot: 0 },
+  appArrivals: 0,
+  shares: 0,
+  week: emptyWeek(),
+};
+
+describe('пустая база', () => {
+  it('говорит словами, что игру не открывали, без цифр и NaN', () => {
+    const out = formatGameMetrics(EMPTY);
+
+    expect(out).toBe('🎮 <b>Игра</b>: за 30 дней никто не открывал.');
+    expect(out).not.toMatch(/\b0\b/);
+    expect(out).not.toContain('NaN');
+    expect(out).not.toContain('undefined');
+  });
+});
+
+describe('полный отчёт', () => {
+  const FULL: GameMetrics = {
+    opens: 120,
+    opensBySource: { site: 80, bot: 20, share: 10, direct: 5, other: 5 },
+    chapters: [
+      { chapter: 'chapter1', started: 90, finished: 60 },
+      { chapter: 'chapter2', started: 55, finished: 30 },
+      { chapter: 'chapter3', started: 20, finished: 10 },
+      { chapter: 'chapter4', started: 5, finished: 3 },
+    ],
+    ctaShown: 40,
+    ctaClicks: 15,
+    ctaClicksByPlace: { act1: 10, cabinet: 5, ending: 0 },
+    ctaClicksByTarget: { app: 9, booking: 4, bot: 2 },
+    appArrivals: 7,
+    shares: 8,
+    week: emptyWeek(),
+  };
+
+  it('показывает открытия с разбивкой по источникам', () => {
+    const out = formatGameMetrics(FULL);
+    expect(out).toContain(
+      'Открыли: 120 — с сайта 80, из бота 20, по ссылке от друга 10, напрямую 5, с незнакомой меткой 5',
+    );
+  });
+
+  it('показывает воронку по каждой начатой главе', () => {
+    const out = formatGameMetrics(FULL);
+    expect(out).toContain(
+      'Главы (начали → дошли до конца):\n• Глава 1: 90 → 60\n',
+    );
+    expect(out).toContain('• Глава 2: 55 → 30\n');
+    expect(out).toContain('• Глава 4: 5 → 3\n');
+  });
+
+  it('показывает приглашение к терапии с разбивкой по местам (нулевое место не перечисляется)', () => {
+    const out = formatGameMetrics(FULL);
+    expect(out).toContain(
+      'Приглашение к терапии: увидели 40, нажали 15 (после первой части 10, в кабинете 5)',
+    );
+    expect(out).not.toContain('в запасном финале');
+  });
+
+  it('показывает, куда вела кнопка финала, и сколько дошли до сайта', () => {
+    const out = formatGameMetrics(FULL);
+    expect(out).toContain(
+      'Куда нажали: в приложение 9, на запись к терапевту 4, в бота в Telegram 2',
+    );
+    expect(out).toContain('Пришли из игры на сайт: 7');
+  });
+
+  it('показывает шаринг', () => {
+    expect(formatGameMetrics(FULL)).toContain('Поделились игрой: 8');
+  });
+});
+
+describe('частичный отчёт', () => {
+  it('только opens: нет строк про главы, приглашение или шаринг', () => {
+    const out = formatGameMetrics({
+      ...EMPTY,
+      opens: 10,
+      opensBySource: { ...emptySources(), site: 10 },
+    });
+
+    expect(out).toContain('Открыли: 10 — с сайта 10');
+    expect(out).not.toContain('Главы (');
+    expect(out).not.toContain('Приглашение к терапии');
+    expect(out).not.toContain('Поделились');
+  });
+
+  it('нулевые источники открытия не перечисляются', () => {
+    const out = formatGameMetrics({
+      ...EMPTY,
+      opens: 3,
+      opensBySource: { ...emptySources(), bot: 3 },
+    });
+
+    expect(out).toContain('Открыли: 3 — из бота 3');
+    expect(out).not.toContain('с сайта');
+    expect(out).not.toContain('по ссылке от друга');
+  });
+
+  it('глава без стартов не печатается, даже если у неё есть finished', () => {
+    const chapters = emptyChapters();
+    chapters[1] = { chapter: 'chapter2', started: 0, finished: 3 };
+    const out = formatGameMetrics({ ...EMPTY, opens: 1, chapters });
+
+    // finished без стартов — аномалия; started === 0 у всех — блок «Главы» пропущен.
+    expect(out).not.toContain('Главы (');
+  });
+
+  it('клики без отметки цели (старая игра) — без строки «Куда нажали»', () => {
+    const out = formatGameMetrics({ ...EMPTY, ctaShown: 2, ctaClicks: 1 });
+    expect(out).toContain('нажали 1');
+    expect(out).not.toContain('Куда нажали');
+  });
+
+  it('только приход на сайт из игры — блок не пустой', () => {
+    const out = formatGameMetrics({ ...EMPTY, appArrivals: 2 });
+    expect(out).toContain('Пришли из игры на сайт: 2');
+    expect(out).not.toContain('никто не открывал');
+  });
+});

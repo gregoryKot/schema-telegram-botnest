@@ -1,0 +1,399 @@
+// TherapyNotesController был на 0% покрытия. Инстанцируем напрямую (без Nest
+// TestingModule) с типизированными двойниками — паттерн auth-2fa.controller.spec.ts
+// (Pick<Service, 'method'> & { method: jest.Mock }). Каждый хендлер: роль !=
+// THERAPIST → 403 до вызова сервиса; сервис бросает 'No active relation' →
+// 403; невалидное тело (дата/текст заметки) → 400 до вызова сервиса.
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import type { Request } from 'express';
+import { TherapyNotesController } from './therapy-notes.controller';
+import { TherapyNotesService } from './therapy-notes.service';
+import { TherapyClientDataService } from './therapy-client-data.service';
+import { AccountService } from '../bot/account.service';
+
+type NotesMock = Pick<
+  TherapyNotesService,
+  | 'getNotes'
+  | 'createNote'
+  | 'deleteNote'
+  | 'getConceptualization'
+  | 'saveConceptualization'
+> & {
+  getNotes: jest.Mock;
+  createNote: jest.Mock;
+  deleteNote: jest.Mock;
+  getConceptualization: jest.Mock;
+  saveConceptualization: jest.Mock;
+};
+
+type ClientDataMock = Pick<TherapyClientDataService, 'updateSessionInfo'> & {
+  updateSessionInfo: jest.Mock;
+};
+
+type AccountMock = Pick<AccountService, 'getUserRole'> & {
+  getUserRole: jest.Mock;
+};
+
+function makeNotes(): NotesMock {
+  return {
+    getNotes: jest
+      .fn()
+      .mockResolvedValue({ notes: [{ id: 1, text: 'заметка' }], total: 7 }),
+    createNote: jest
+      .fn()
+      .mockResolvedValue({ id: 2, date: '2026-07-01', text: 'новая' }),
+    deleteNote: jest.fn().mockResolvedValue(undefined),
+    getConceptualization: jest.fn().mockResolvedValue({ schemaIds: [] }),
+    saveConceptualization: jest.fn().mockResolvedValue({ ok: true }),
+  };
+}
+
+function makeClientData(): ClientDataMock {
+  return { updateSessionInfo: jest.fn().mockResolvedValue(undefined) };
+}
+
+function makeAccount(role: 'CLIENT' | 'THERAPIST' = 'THERAPIST'): AccountMock {
+  return { getUserRole: jest.fn().mockResolvedValue(role) };
+}
+
+function makeReq(userId = 42n): Request {
+  return { webUser: { userId } } as unknown as Request;
+}
+
+function makeController(opts: { account?: AccountMock } = {}) {
+  const notes = makeNotes();
+  const clientData = makeClientData();
+  const account = opts.account ?? makeAccount();
+  const controller = new TherapyNotesController(
+    notes as unknown as TherapyNotesService,
+    clientData as unknown as TherapyClientDataService,
+    account as unknown as AccountService,
+  );
+  return { controller, notes, clientData, account };
+}
+
+describe('TherapyNotesController.getNotes', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(controller.getNotes(makeReq(), '5')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(notes.getNotes).not.toHaveBeenCalled();
+  });
+
+  it('терапевт → делегирует getNotes(therapistId, clientId)', async () => {
+    const { controller, notes } = makeController();
+    const res = await controller.getNotes(makeReq(3n), '5');
+    expect(notes.getNotes).toHaveBeenCalledWith(3n, 5n);
+    expect(res).toEqual({ notes: [{ id: 1, text: 'заметка' }], total: 7 });
+  });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, notes } = makeController();
+    notes.getNotes.mockRejectedValue(new Error('No active relation'));
+    await expect(controller.getNotes(makeReq(3n), '5')).rejects.toThrow(
+      'No active relation with this client',
+    );
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть, не подменяется на 403', async () => {
+    const { controller, notes } = makeController();
+    notes.getNotes.mockRejectedValue(new Error('DB connection lost'));
+    await expect(controller.getNotes(makeReq(3n), '5')).rejects.toThrow(
+      'DB connection lost',
+    );
+  });
+});
+
+describe('TherapyNotesController.createNote', () => {
+  const VALID_BODY = { date: '2026-07-01', text: 'текст заметки' };
+
+  it('не терапевт → ForbiddenException, createNote не вызывается', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.createNote(makeReq(), '5', VALID_BODY),
+    ).rejects.toThrow(ForbiddenException);
+    expect(notes.createNote).not.toHaveBeenCalled();
+  });
+
+  it('пустой text → BadRequestException, сервис не вызывается', async () => {
+    const { controller, notes } = makeController();
+    await expect(
+      controller.createNote(makeReq(3n), '5', {
+        date: '2026-07-01',
+        text: '  ',
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(notes.createNote).not.toHaveBeenCalled();
+  });
+
+  it('невалидная дата → BadRequestException("Invalid date")', async () => {
+    const { controller, notes } = makeController();
+    await expect(
+      controller.createNote(makeReq(3n), '5', {
+        date: '01-07-2026',
+        text: 'x',
+      }),
+    ).rejects.toThrow('Invalid date');
+    expect(notes.createNote).not.toHaveBeenCalled();
+  });
+
+  it('форма верна, а дня нет (2026-02-30, 2026-13-01) → BadRequestException("Invalid date")', async () => {
+    const { controller, notes } = makeController();
+    for (const date of ['2026-02-30', '2026-13-01', '0000-00-00']) {
+      await expect(
+        controller.createNote(makeReq(3n), '5', { date, text: 'x' }),
+      ).rejects.toThrow('Invalid date');
+    }
+    expect(notes.createNote).not.toHaveBeenCalled();
+  });
+
+  it('валидное тело → делегирует createNote(therapistId, clientId, {date, text})', async () => {
+    const { controller, notes } = makeController();
+    const res = await controller.createNote(makeReq(3n), '5', VALID_BODY);
+    expect(notes.createNote).toHaveBeenCalledWith(3n, 5n, {
+      date: '2026-07-01',
+      text: 'текст заметки',
+      work: [],
+    });
+    expect(res).toEqual({ id: 2, date: '2026-07-01', text: 'новая' });
+  });
+
+  it('пустой text с пунктом «Что делали» сохраняется; мусорные пункты отброшены (#1330)', async () => {
+    const { controller, notes } = makeController();
+    const item = { id: 'a', kind: 'technique', refId: 'chairwork' };
+    await controller.createNote(makeReq(3n), '5', {
+      date: '2026-07-01',
+      text: '',
+      work: [
+        { ...item, fields: { theme: 'стыд', чужой: 'x' } },
+        { ...item, refId: 'нет такой' },
+      ],
+    });
+    expect(notes.createNote.mock.calls[0][2].work).toEqual([
+      {
+        ...item,
+        modeIds: [],
+        schemaIds: [],
+        needIds: [],
+        fields: { theme: 'стыд' },
+      },
+    ]);
+    // Одни незнакомые пункты без текста — та же пустая заметка.
+    await expect(
+      controller.createNote(makeReq(3n), '5', {
+        date: '2026-07-01',
+        text: '',
+        work: [{ ...item, kind: 'custom2' }],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('пустой text с отмеченными пунктами плана принимается; без пунктов — по-прежнему 400', async () => {
+    const { controller, notes } = makeController();
+    await controller.createNote(makeReq(3n), '5', {
+      date: '2026-07-01',
+      text: '',
+      planItemIds: [4],
+    });
+    expect(notes.createNote.mock.calls[0][2].planItemIds).toEqual([4]);
+    await expect(
+      controller.createNote(makeReq(3n), '5', {
+        date: '2026-07-01',
+        text: '',
+        planItemIds: [],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('текст длиннее прежних 5000 доходит до сервиса целиком: лимит один, в DTO (backend#29)', async () => {
+    const { controller, notes } = makeController();
+    const longText = 'а'.repeat(6000);
+    await controller.createNote(makeReq(3n), '5', {
+      date: '2026-07-01',
+      text: longText,
+    });
+    const passed = notes.createNote.mock.calls[0][2] as { text: string };
+    expect(passed.text).toBe(longText);
+  });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, notes } = makeController();
+    notes.createNote.mockRejectedValue(new Error('No active relation'));
+    await expect(
+      controller.createNote(makeReq(3n), '5', VALID_BODY),
+    ).rejects.toThrow('No active relation with this client');
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, notes } = makeController();
+    notes.createNote.mockRejectedValue(new Error('DB connection lost'));
+    await expect(
+      controller.createNote(makeReq(3n), '5', VALID_BODY),
+    ).rejects.toThrow('DB connection lost');
+  });
+});
+
+describe('TherapyNotesController.deleteNote', () => {
+  it('не терапевт → ForbiddenException', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(controller.deleteNote(makeReq(), '9')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(notes.deleteNote).not.toHaveBeenCalled();
+  });
+
+  it('терапевт → делегирует deleteNote(therapistId, noteId) и возвращает { ok: true }', async () => {
+    const { controller, notes } = makeController();
+    const res = await controller.deleteNote(makeReq(3n), '9');
+    expect(notes.deleteNote).toHaveBeenCalledWith(3n, 9);
+    expect(res).toEqual({ ok: true });
+  });
+});
+
+describe('TherapyNotesController.getConceptualization', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.getConceptualization(makeReq(), '5'),
+    ).rejects.toThrow(ForbiddenException);
+    expect(notes.getConceptualization).not.toHaveBeenCalled();
+  });
+
+  it('терапевт → делегирует getConceptualization(therapistId, clientId)', async () => {
+    const { controller, notes } = makeController();
+    const res = await controller.getConceptualization(makeReq(3n), '5');
+    expect(notes.getConceptualization).toHaveBeenCalledWith(3n, 5n);
+    expect(res).toEqual({ schemaIds: [] });
+  });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, notes } = makeController();
+    notes.getConceptualization.mockRejectedValue(
+      new Error('No active relation'),
+    );
+    await expect(
+      controller.getConceptualization(makeReq(3n), '5'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, notes } = makeController();
+    notes.getConceptualization.mockRejectedValue(
+      new Error('DB connection lost'),
+    );
+    await expect(
+      controller.getConceptualization(makeReq(3n), '5'),
+    ).rejects.toThrow('DB connection lost');
+  });
+});
+
+describe('TherapyNotesController.updateSessionInfo', () => {
+  it('не терапевт → ForbiddenException, updateSessionInfo не вызывается', async () => {
+    const { controller, clientData } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.updateSessionInfo(makeReq(), '5', {}),
+    ).rejects.toThrow(ForbiddenException);
+    expect(clientData.updateSessionInfo).not.toHaveBeenCalled();
+  });
+
+  it('терапевт → делегирует updateSessionInfo(therapistId, clientId, body) и возвращает { ok: true }', async () => {
+    const { controller, clientData } = makeController();
+    const body = { therapyStartDate: '2026-01-01', meetingDays: [1, 3] };
+    const res = await controller.updateSessionInfo(makeReq(3n), '5', body);
+    expect(clientData.updateSessionInfo).toHaveBeenCalledWith(3n, 5n, body);
+    expect(res).toEqual({ ok: true });
+  });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, clientData } = makeController();
+    clientData.updateSessionInfo.mockRejectedValue(
+      new Error('No active relation'),
+    );
+    await expect(
+      controller.updateSessionInfo(makeReq(3n), '5', {}),
+    ).rejects.toThrow('No active relation with this client');
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, clientData } = makeController();
+    clientData.updateSessionInfo.mockRejectedValue(
+      new Error('DB connection lost'),
+    );
+    await expect(
+      controller.updateSessionInfo(makeReq(3n), '5', {}),
+    ).rejects.toThrow('DB connection lost');
+  });
+});
+
+describe('TherapyNotesController.saveConceptualization', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, notes } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.saveConceptualization(makeReq(), '5', {}),
+    ).rejects.toThrow(ForbiddenException);
+    expect(notes.saveConceptualization).not.toHaveBeenCalled();
+  });
+
+  it('терапевт → делегирует saveConceptualization(therapistId, clientId, body)', async () => {
+    const { controller, notes } = makeController();
+    const body = { schemaIds: ['abandonment'] };
+    const res = await controller.saveConceptualization(makeReq(3n), '5', body);
+    expect(notes.saveConceptualization).toHaveBeenCalledWith(3n, 5n, body);
+    expect(res).toEqual({ ok: true });
+  });
+
+  it('No active relation → ForbiddenException', async () => {
+    const { controller, notes } = makeController();
+    notes.saveConceptualization.mockRejectedValue(
+      new Error('No active relation'),
+    );
+    await expect(
+      controller.saveConceptualization(makeReq(3n), '5', {}),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('прочая ошибка сервиса пробрасывается как есть', async () => {
+    const { controller, notes } = makeController();
+    notes.saveConceptualization.mockRejectedValue(
+      new Error('DB connection lost'),
+    );
+    await expect(
+      controller.saveConceptualization(makeReq(3n), '5', {}),
+    ).rejects.toThrow('DB connection lost');
+  });
+});
+
+// S18 (аудит 2026-11): id Int-колонок и -TherapyRelation.id за int32 уходили в
+// Prisma — 500 и DM владельцу. Теперь 400 до сервиса.
+describe('TherapyNotesController — id за int32 → 400 (S18)', () => {
+  it('noteId 3000000000 и -3000000000 → 400, сервис не зовётся', async () => {
+    const { controller, notes } = makeController();
+    for (const raw of ['3000000000', '-3000000000'])
+      await expect(controller.deleteNote(makeReq(), raw)).rejects.toThrow(
+        BadRequestException,
+      );
+    expect(notes.deleteNote).not.toHaveBeenCalled();
+  });
+
+  it('офлайн-клиент -3000000000 → 400; веб-id 3000000000 законен', async () => {
+    const { controller, notes } = makeController();
+    await expect(controller.getNotes(makeReq(), '-3000000000')).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(notes.getNotes).not.toHaveBeenCalled();
+    await controller.getNotes(makeReq(3n), '3000000000');
+    expect(notes.getNotes).toHaveBeenCalledWith(3n, 3000000000n);
+  });
+});

@@ -1,0 +1,717 @@
+// Этап 1 плана покрытия (TEST_COVERAGE_PLAN.md): критический контур
+// шифрования. AES-256-GCM для всех терапевтических текстов + multi-key
+// ротация ENCRYPTION_KEY — CLAUDE.md называет баг ротации худшим сценарием
+// (необратимая порча данных). До этого спека crypto.ts не имел прямых тестов.
+//
+// crypto.ts читает ключи один раз на уровне модуля, поэтому каждый сценарий
+// загружает свежую копию модуля через jest.isolateModules с нужным env.
+
+import { loadAsSubject } from '../test-support/load-as-subject';
+
+type CryptoModule = typeof import('./crypto');
+type NestLogger = typeof import('@nestjs/common').Logger;
+
+const KEY_A = 'aa'.repeat(32); // 64 hex-символа = 32 байта
+const KEY_B = 'bb'.repeat(32);
+
+const ORIGINAL_ENV = { ...process.env };
+
+// Logger из ТОГО ЖЕ изолированного реестра, что и свежая копия crypto.ts: у
+// другого реестра другой класс, и спай на нём ничего бы не увидел.
+let isolatedLogger: NestLogger;
+
+function loadCrypto(env: {
+  key?: string;
+  old?: string;
+  nodeEnv?: string;
+  /** Переменной нет вовсе (undefined), а не пустая строка: так выглядит
+   * окружение, где ключ ни разу не задавали. */
+  unsetOld?: boolean;
+}): CryptoModule {
+  process.env.ENCRYPTION_KEY = env.key ?? '';
+  process.env.ENCRYPTION_KEY_OLD = env.old ?? '';
+  if (env.unsetOld) delete process.env.ENCRYPTION_KEY_OLD;
+  process.env.NODE_ENV = env.nodeEnv ?? 'test';
+  let mod: CryptoModule | undefined;
+  jest.isolateModules(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    mod = require('./crypto') as CryptoModule;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nest = require('@nestjs/common') as typeof import('@nestjs/common');
+    isolatedLogger = nest.Logger;
+  });
+  return mod!;
+}
+
+// Тесты поведения берут готовые экземпляры (beforeAll); свежая загрузка в тесте —
+// только когда предмет теста сама загрузка (разбор ключей, падение на буте) или
+// троттлинг error-лога, который нечем сбросить.
+let keyedA: CryptoModule;
+let loggerA: NestLogger;
+let keyedB: CryptoModule;
+let keyless: CryptoModule;
+let loggerKeyless: NestLogger;
+let rotatedMod: CryptoModule;
+let onlyB: CryptoModule;
+let oldOnly: CryptoModule;
+beforeAll(() => {
+  keyedA = loadCrypto({ key: KEY_A });
+  loggerA = isolatedLogger;
+  keyedB = loadCrypto({ key: KEY_B });
+  keyless = loadCrypto({});
+  loggerKeyless = isolatedLogger;
+  rotatedMod = loadCrypto({ key: KEY_B, old: KEY_A });
+  onlyB = loadCrypto({ key: KEY_B });
+  oldOnly = loadCrypto({ old: KEY_A });
+});
+
+afterEach(() => {
+  process.env = { ...ORIGINAL_ENV };
+  jest.restoreAllMocks();
+});
+
+describe('encrypt/decrypt roundtrip', () => {
+  it('расшифровывает то, что зашифровал (кириллица, эмодзи, переносы)', () => {
+    const { encrypt, decrypt } = keyedA;
+    const text = 'Дневник: мне тяжело 😔\nно я справляюсь';
+    const blob = encrypt(text);
+    expect(blob).not.toBe(text);
+    expect(decrypt(blob)).toBe(text);
+  });
+
+  it('шифротекст — base64-блоб формата iv(12)+tag(16)+data', () => {
+    const { encrypt } = keyedA;
+    const blob = encrypt('x')!;
+    const buf = Buffer.from(blob, 'base64');
+    // 12 IV + 16 GCM-тэг + 1 байт данных
+    expect(buf.length).toBe(29);
+  });
+
+  it('два шифрования одного текста дают разные блобы (случайный IV)', () => {
+    const { encrypt } = keyedA;
+    expect(encrypt('одинаковый текст')).not.toBe(encrypt('одинаковый текст'));
+  });
+
+  it('ровно 29 декодированных байт (iv12+tag16+1 байт данных) — минимально валидный шифротекст, decrypt его реально расшифровывает, а не отбрасывает как "слишком короткий" (граница < vs <=)', () => {
+    const { encrypt, decrypt } = keyedA;
+    const blob = encrypt('x')!;
+    expect(Buffer.from(blob, 'base64').length).toBe(29);
+    expect(decrypt(blob)).toBe('x');
+  });
+
+  it('null/undefined/пустая строка проходят насквозь', () => {
+    const { encrypt, decrypt } = keyedA;
+    expect(encrypt(null)).toBeNull();
+    expect(encrypt(undefined)).toBeNull();
+    expect(encrypt('')).toBe('');
+    expect(decrypt(null)).toBeNull();
+    expect(decrypt('')).toBe('');
+  });
+
+  it('легаси-плейнтекст (не base64-блоб) возвращается как есть без error-лога', () => {
+    const { decrypt } = keyedA;
+    const warn = jest
+      .spyOn(loggerA.prototype, 'error')
+      .mockImplementation(() => {});
+    expect(decrypt('обычная старая заметка')).toBe('обычная старая заметка');
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('конфигурация ключей', () => {
+  it('без ключа в dev — passthrough (encrypt и decrypt не трогают текст)', () => {
+    const { encrypt, decrypt } = keyless;
+    expect(encrypt('текст')).toBe('текст');
+    expect(decrypt('текст')).toBe('текст');
+  });
+
+  it('ключ неверной длины игнорируется (эквивалент отсутствия)', () => {
+    const { encrypt } = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: 'deadbeef' }),
+    );
+    expect(encrypt('текст')).toBe('текст');
+  });
+
+  // Аудит 2026-10 (D3): 64 символа, но не hex — Buffer.from(…, 'hex') даёт
+  // короткий буфер, раньше ключ проходил проверку длины.
+  it('ключ из 64 НЕ-hex символов в production — падение на буте, а не на первой записи', () => {
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ key: 'zz'.repeat(32), nodeEnv: 'production' }),
+      ),
+    ).toThrow(/ENCRYPTION_KEY missing or malformed/);
+  });
+
+  it('ключ из 64 НЕ-hex символов вне production — как «ключа нет» (passthrough), без короткого буфера', () => {
+    const { encrypt } = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: 'zz'.repeat(32) }),
+    );
+    expect(encrypt('текст')).toBe('текст');
+  });
+
+  it('ENCRYPTION_KEY_OLD с битым ключом в production — падение на буте', () => {
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({
+          key: KEY_A,
+          old: `${KEY_B},${'zz'.repeat(32)}`,
+          nodeEnv: 'production',
+        }),
+      ),
+    ).toThrow(/ENCRYPTION_KEY_OLD/);
+  });
+
+  it('валидные hex-ключи в любом регистре принимаются (контрольный случай)', () => {
+    const { encrypt, decrypt } = loadAsSubject(
+      'разбор ключа при загрузке модуля',
+      () => loadCrypto({ key: 'AB'.repeat(32) }),
+    );
+    expect(decrypt(encrypt('x'))).toBe('x');
+    expect(encrypt('x')).not.toBe('x');
+  });
+
+  it('в production без ключа модуль падает на загрузке (крash на буте, не тихий плейнтекст)', () => {
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ nodeEnv: 'production' }),
+      ),
+    ).toThrow(/ENCRYPTION_KEY missing/);
+  });
+
+  it('текст падения говорит, как сгенерировать ключ — читают его при упавшем проде', () => {
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ nodeEnv: 'production' }),
+      ),
+    ).toThrow(/randomBytes\(32\)\.toString\('hex'\)/);
+  });
+
+  it('перевод строки или пробелы вокруг ключа (вставка в панель хостинга) — тот же ключ', () => {
+    const blob = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: `${KEY_A}\n` }),
+    ).encrypt('текст')!;
+    // Ключ реально принят: без обрезки он считался бы «битым», модуль
+    // переходил в passthrough, и blob оказывался бы открытым текстом — а
+    // roundtrip ниже в passthrough тоже проходит, поэтому одного его мало.
+    expect(blob).not.toBe('текст');
+    expect(Buffer.from(blob, 'base64').length).toBe(
+      12 + 16 + 'текст'.length * 2,
+    );
+    expect(keyedA.decrypt(blob)).toBe('текст');
+    const padded = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: `  ${KEY_A} ` }),
+    ).encrypt('текст')!;
+    expect(padded).not.toBe('текст');
+    expect(keyedA.decrypt(padded)).toBe('текст');
+  });
+
+  // Якоря HEX_KEY_RE. Без `^` подходил бы мусор перед ключом, без `$` — после
+  // него и лишние hex-цифры; Buffer.from(…, 'hex') обрезает такой ключ молча
+  // (пустой буфер или 32 байта из 65 символов), и ключ «принят», хотя это не
+  // тот ключ, который вписал владелец.
+  const MALFORMED_KEYS: Array<[string, string]> = [
+    ['мусор перед 64 hex', `zz${KEY_A}`],
+    ['мусор после 64 hex', `${KEY_A}zz`],
+    ['65 hex-символов', `${KEY_A}a`],
+    ['65 hex-символов, лишний спереди', `a${KEY_A}`],
+    ['63 hex-символа', KEY_A.slice(1)],
+  ];
+
+  it.each(MALFORMED_KEYS)(
+    'ключ: %s — отвергнут как «ключа нет» (passthrough), без обрезанного буфера',
+    (_name, key) => {
+      const { encrypt } = loadAsSubject(
+        'разбор ключа при загрузке модуля',
+        () => loadCrypto({ key }),
+      );
+      expect(encrypt('текст')).toBe('текст');
+    },
+  );
+
+  it.each(MALFORMED_KEYS)(
+    'ключ: %s — в production падение на буте',
+    (_name, key) => {
+      expect(() =>
+        loadAsSubject('бросок при загрузке модуля в production', () =>
+          loadCrypto({ key, nodeEnv: 'production' }),
+        ),
+      ).toThrow(/ENCRYPTION_KEY missing or malformed/);
+    },
+  );
+
+  it.each(MALFORMED_KEYS)(
+    'старый ключ: %s — в production падение на буте, а не молча не читается',
+    (_name, old) => {
+      expect(() =>
+        loadAsSubject('бросок при загрузке модуля в production', () =>
+          loadCrypto({ key: KEY_B, old, nodeEnv: 'production' }),
+        ),
+      ).toThrow(/ENCRYPTION_KEY_OLD.*1 шт/);
+    },
+  );
+
+  it('ENCRYPTION_KEY_OLD: пробелы вокруг ключей и пустые элементы списка — не ошибка, ключи читают', () => {
+    // Вставка в панель хостинга даёт пробелы и хвостовую запятую; такой
+    // список в production не должен ронять бут, а ключи в нём — работать.
+    const a = keyedA.encrypt('от ключа A')!;
+    const b = keyedB.encrypt('от ключа B')!;
+    const rotated = loadAsSubject(
+      'бросок при загрузке модуля в production',
+      () =>
+        loadCrypto({
+          key: 'cc'.repeat(32),
+          old: ` ${KEY_A} , ${KEY_B} ,,`,
+          nodeEnv: 'production',
+        }),
+    );
+    expect(rotated.decrypt(a)).toBe('от ключа A');
+    expect(rotated.decrypt(b)).toBe('от ключа B');
+  });
+
+  it('пустой ENCRYPTION_KEY_OLD в production — не ошибка', () => {
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ key: KEY_A, old: '', nodeEnv: 'production' }),
+      ),
+    ).not.toThrow();
+  });
+
+  it('ENCRYPTION_KEY_OLD не задан вовсе в production — не ошибка, текущий ключ работает', () => {
+    // Обычное состояние прода вне ротации: переменной нет. Проверка списка
+    // старых ключей не должна принимать «нет переменной» за мусорный ключ.
+    const mod = loadAsSubject('бросок при загрузке модуля в production', () =>
+      loadCrypto({
+        key: KEY_A,
+        unsetOld: true,
+        nodeEnv: 'production',
+      }),
+    );
+    expect(mod.decrypt(mod.encrypt('текст'))).toBe('текст');
+  });
+
+  it('битый старый ключ вне production не роняет загрузку — отбрасывается, текущий и валидные старые работают', () => {
+    // Падать на бут из-за мусора в OLD нужно только в проде; в dev/тестах
+    // молчаливо игнорируем, чтобы не ломать локальный запуск.
+    const fromA = keyedA.encrypt('от ключа A')!;
+    const mod = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: KEY_B, old: `zz${KEY_A},${KEY_A}` }),
+    );
+    expect(mod.decrypt(fromA)).toBe('от ключа A');
+    expect(mod.decrypt(mod.encrypt('свежее'))).toBe('свежее');
+  });
+
+  it('текст падения из-за битого старого ключа объясняет последствие — его читают при упавшем проде', () => {
+    expect(() =>
+      loadAsSubject('бросок при загрузке модуля в production', () =>
+        loadCrypto({ key: KEY_B, old: 'zz', nodeEnv: 'production' }),
+      ),
+    ).toThrow(/молча не использовался бы для расшифровки/);
+  });
+
+  it('encrypt() перепроверяет NODE_ENV динамически при каждом вызове, а не только на загрузке модуля', () => {
+    // Модуль грузим НЕ в production (падения при загрузке не будет), затем окружение
+    // переключается в production уже после загрузки — encrypt() обязан среагировать
+    // на это при следующем вызове, а не полагаться только на проверку из loadKeys().
+    const { encrypt } = keyless;
+    process.env.NODE_ENV = 'production';
+    expect(() => encrypt('текст')).toThrow(/ENCRYPTION_KEY is not configured/);
+  });
+});
+
+describe('ALL_KEYS: полное отсутствие ключей (ни current, ни old)', () => {
+  it('decrypt без единого настроенного ключа не пытается расшифровать блоб-подобную строку и не шлёт предупреждение', () => {
+    // Если бы CURRENT_KEY (null) случайно попадал в ALL_KEYS вместо того, чтобы быть
+    // отфильтрованным, ALL_KEYS.length перестал бы быть 0 — decrypt() пошёл бы в цикл
+    // расшифровки, впустую перебрал бы "ключ" null и с шумом сообщил бы о порче данных,
+    // хотя на самом деле шифрование просто не настроено вовсе.
+    const { decrypt } = keyless; // ни ENCRYPTION_KEY, ни ENCRYPTION_KEY_OLD
+    const warn = jest
+      .spyOn(loggerKeyless.prototype, 'error')
+      .mockImplementation(() => {});
+    const blobShaped = Buffer.alloc(30, 1).toString('base64'); // валиден по форме (>=29 байт)
+    expect(decrypt(blobShaped)).toBe(blobShaped);
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('multi-key ротация (сценарий из CLAUDE.md)', () => {
+  it('блоб, зашифрованный старым ключом, читается через ENCRYPTION_KEY_OLD', () => {
+    const oldMod = keyedA;
+    const blob = oldMod.encrypt('данные до ротации');
+
+    const rotated = rotatedMod;
+    expect(rotated.decrypt(blob)).toBe('данные до ротации');
+  });
+
+  it('новые записи шифруются ТОЛЬКО текущим ключом (старый — read-only)', () => {
+    const rotated = rotatedMod;
+    const blob = rotated.encrypt('данные после ротации');
+
+    const onlyNew = onlyB;
+    expect(onlyNew.decrypt(blob)).toBe('данные после ротации');
+  });
+
+  it('reencrypt перешифровывает старый блоб текущим ключом', () => {
+    const oldMod = keyedA;
+    const oldBlob = oldMod.encrypt('перешифруй меня');
+
+    const rotated = rotatedMod;
+    const newBlob = rotated.reencrypt(oldBlob);
+    expect(newBlob).not.toBe(oldBlob);
+
+    // после удаления ENCRYPTION_KEY_OLD данные обязаны остаться читаемыми
+    const onlyNew = onlyB;
+    expect(onlyNew.decrypt(newBlob)).toBe('перешифруй меня');
+  });
+
+  it('reencrypt не трогает плейнтекст и null', () => {
+    const { reencrypt } = keyedA;
+    expect(reencrypt('просто текст')).toBe('просто текст');
+    expect(reencrypt(null)).toBeNull();
+  });
+
+  it('ENCRYPTION_KEY_OLD принимает несколько ключей через запятую', () => {
+    const a = keyedA.encrypt('от ключа A');
+    const b = keyedB.encrypt('от ключа B');
+
+    const third = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({
+        key: 'cc'.repeat(32),
+        old: ` ${KEY_A} , ${KEY_B} `,
+      }),
+    );
+    expect(third.decrypt(a)).toBe('от ключа A');
+    expect(third.decrypt(b)).toBe('от ключа B');
+  });
+
+  it('старый ключ из ENCRYPTION_KEY_OLD парсится в Buffer правильной длины (32 байта), а не остаётся сырой hex-строкой — иначе createDecipheriv валится на длине ключа и расшифровка молча не срабатывает', () => {
+    const oldMod = keyedA;
+    const blob = oldMod.encrypt('чувствительный текст под старым ключом')!;
+
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const rotated = loadAsSubject('разбор ключа при загрузке модуля', () =>
+      loadCrypto({ key: KEY_B, old: KEY_A }),
+    );
+    expect(rotated.decrypt(blob)).toBe(
+      'чувствительный текст под старым ключом',
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('reencrypt без CURRENT_KEY (настроен только OLD) не пытается зашифровать заново — блоб остаётся зашифрованным, а не превращается в открытый текст', () => {
+    // Опасный сценарий: если ранний return по !CURRENT_KEY пропадёт, reencrypt дойдёт
+    // до decrypt() (успешно расшифрует через OLD-ключ) и затем до encrypt() — а encrypt()
+    // без CURRENT_KEY в dev/test-режиме возвращает текст КАК ЕСТЬ, т.е. plaintext секрет
+    // вместо исходного шифроблока.
+    const encrypted = keyedA.encrypt(
+      'чувствительные данные, не должны утечь в plaintext',
+    )!;
+    const { reencrypt } = oldOnly; // CURRENT_KEY отсутствует
+    expect(reencrypt(encrypted)).toBe(encrypted);
+  });
+
+  it('reencrypt: значение, которое decrypt() распознал как легаси-плейнтекст (не шифроблок), не прогоняется через encrypt() заново', () => {
+    const { reencrypt } = keyedA;
+    const legacyPlain = 'ещё одна легаси-запись без шифрования';
+    expect(reencrypt(legacyPlain)).toBe(legacyPlain);
+  });
+});
+
+describe('GCM-аутентификация и алерт о порче (аудит 2026-07, S-3)', () => {
+  function tamper(blob: string): string {
+    const buf = Buffer.from(blob, 'base64');
+    buf[buf.length - 1] ^= 0xff; // портим последний байт шифротекста
+    return buf.toString('base64');
+  }
+
+  it('подделанный блоб не расшифровывается и пишет error-лог (AlertLogger → DM владельцу)', () => {
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const tampered = tamper(encrypt('секрет')!);
+
+    // возвращается как есть (легаси-фолбэк), но никогда — расшифрованный текст
+    expect(decrypt(tampered)).toBe(tampered);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[crypto]'));
+    // Предупреждение называет вероятную причину — иначе по логу не понять,
+    // куда смотреть (порча данных или недокатившаяся ротация ключа).
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('неполная ротация ENCRYPTION_KEY'),
+    );
+  });
+
+  // D-8 (аудит 2026-10): алерт обязан быть уровня error (AlertLogger шлёт в DM
+  // только error), и в нём нет ни шифротекста, ни расшифрованного значения.
+  it('лог порчи идёт под контекстом Crypto', () => {
+    // По контексту владелец находит строку порчи в логах Amvera и фильтрует
+    // AlertLogger; потеря имени делает алерт неотличимым от шума.
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
+    const err = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    decrypt(tamper(encrypt('секрет')!));
+    const logger = err.mock.contexts[0] as unknown as { context: string };
+    expect(logger.context).toBe('Crypto');
+  });
+
+  it('лог порчи — именно error и без содержимого поля', () => {
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
+    const err = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'warn')
+      .mockImplementation(() => {});
+    const tampered = tamper(encrypt('СЕКРЕТНЫЙ-ТЕКСТ')!);
+    decrypt(tampered);
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(warn).not.toHaveBeenCalled();
+    const logged = String(err.mock.calls[0][0]);
+    expect(logged).not.toContain(tampered);
+    expect(logged).not.toContain('СЕКРЕТНЫЙ');
+  });
+
+  // Легаси plaintext (имя/e-mail из OAuth до шифрования) при мягком декоде
+  // base64 может дать ≥29 байт и провалить GCM, но это не порча: без этой
+  // проверки каждая такая строка будила бы владельца ложной тревогой.
+  it('длинный легаси-plaintext (не строгий base64) не поднимает тревогу', () => {
+    const { decrypt } = keyedA;
+    const err = jest
+      .spyOn(loggerA.prototype, 'error')
+      .mockImplementation(() => {});
+    const legacy = 'ivan.petrov.very.long.address@example-organisation.com';
+    expect(decrypt(legacy)).toBe(legacy);
+    expect(err).not.toHaveBeenCalled();
+  });
+
+  it('блоб от неизвестного ключа (неполная ротация) тоже даёт error-лог', () => {
+    const foreign = keyedA.encrypt('чужой ключ')!;
+    const { decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_B }),
+    );
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+
+    expect(decrypt(foreign)).toBe(foreign);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('error-лог троттлится: не чаще раза в минуту', () => {
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const t0 = 1_700_000_000_000;
+    const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
+
+    const bad = tamper(encrypt('секрет')!);
+    decrypt(bad);
+    decrypt(bad);
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    now.mockReturnValue(t0 + 61_000);
+    expect(decrypt(bad)).toBe(bad);
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(String(warn.mock.calls[1][0])).toMatch(/decrypt/i);
+  });
+
+  it('троттлинг: ровно 60000мс с прошлого лога — это уже НЕ "слишком рано", error-лог обязан сработать снова (граница < vs <=)', () => {
+    const { encrypt, decrypt } = loadAsSubject(
+      'одноразовый лог decrypt — состояние модуля, сбросить нечем',
+      () => loadCrypto({ key: KEY_A }),
+    );
+    const warn = jest
+      .spyOn(isolatedLogger.prototype, 'error')
+      .mockImplementation(() => {});
+    const t0 = 1_700_000_000_000;
+    const now = jest.spyOn(Date, 'now').mockReturnValue(t0);
+    const bad = tamper(encrypt('секрет')!);
+
+    // Порченый блоб возвращается как есть (расшифровать нечем) — проверяем
+    // и это, чтобы тест не сводился к одному счётчику вызовов спая.
+    expect(decrypt(bad)).toBe(bad);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toMatch(/decrypt/i);
+
+    now.mockReturnValue(t0 + 60_000); // ровно минута, а не "меньше минуты"
+    expect(decrypt(bad)).toBe(bad);
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('encryptJson / decryptJson', () => {
+  it('roundtrip массива и объекта', () => {
+    const { encryptJson, decryptJson } = keyedA;
+    const items = [{ id: 1, text: 'пункт' }, 'строка'];
+    expect(decryptJson(encryptJson(items))).toEqual(items);
+  });
+
+  it('null → null; мусор после расшифровки → null', () => {
+    const { encrypt, encryptJson, decryptJson } = keyedA;
+    expect(encryptJson(null)).toBeNull();
+    // валидный блоб, но внутри не JSON
+    expect(decryptJson(encrypt('не json'))).toBeNull();
+  });
+});
+
+describe('looksLikeCiphertext (используется classify в encrypt-migration.rows.ts для защиты от двойного шифрования)', () => {
+  it('настоящий шифроблок распознаётся как «похоже на шифротекст»', () => {
+    const { encrypt, looksLikeCiphertext } = keyedA;
+    const blob = encrypt('данные')!;
+    expect(looksLikeCiphertext(blob)).toBe(true);
+  });
+
+  it('обычный плейнтекст (не base64 нужной длины) — не похож на шифротекст', () => {
+    const { looksLikeCiphertext } = keyedA;
+    expect(looksLikeCiphertext('anxiety,anger')).toBe(false);
+    expect(looksLikeCiphertext('')).toBe(false);
+    expect(looksLikeCiphertext(null)).toBe(false);
+    expect(looksLikeCiphertext(undefined)).toBe(false);
+  });
+
+  it('короткий base64-блоб (< 29 байт) и мусор с недопустимыми символами — не похожи на шифротекст', () => {
+    const { looksLikeCiphertext } = keyedA;
+    expect(looksLikeCiphertext(Buffer.from('short').toString('base64'))).toBe(
+      false,
+    );
+    // содержит пробел/запятую — не строгий base64-алфавит
+    expect(looksLikeCiphertext('not base64!, with spaces ===')).toBe(false);
+  });
+
+  it('невалидный символ (пробел) внутри строки правильной длины (кратной 4, декод >=29 байт) не считается шифротекстом — регэксп обязан быть заякорён и слева (^), и справа ($)', () => {
+    const { encrypt, looksLikeCiphertext } = keyedA;
+    // достаточно длинный текст, чтобы порча одного символа не увела декодированную
+    // длину ниже 29 байт — иначе тест ловил бы длину, а не алфавит
+    const blob = encrypt(
+      'текст такой длины, чтобы порча одного символа не опустила декодированную длину ниже 29 байт',
+    )!;
+    const tampered = blob.slice(0, 10) + ' ' + blob.slice(11);
+    expect(tampered.length % 4).toBe(0);
+    expect(Buffer.from(tampered, 'base64').length).toBeGreaterThanOrEqual(29);
+    expect(looksLikeCiphertext(tampered)).toBe(false);
+  });
+
+  it('длина строки не кратна 4 — не похоже на шифротекст, даже если алфавит валиден', () => {
+    const { encrypt, looksLikeCiphertext } = keyedA;
+    const blob = encrypt(
+      'текст такой длины, чтобы обрезка на 1 символ не увела декодированную длину ниже 29 байт',
+    )!;
+    const truncated = blob.slice(0, -1);
+    expect(truncated.length % 4).not.toBe(0);
+    expect(looksLikeCiphertext(truncated)).toBe(false);
+  });
+
+  it('ровно 29 декодированных байт — граница >= (не >), считается шифротекстом', () => {
+    const { encrypt, looksLikeCiphertext } = keyedA;
+    const blob = encrypt('x')!;
+    expect(Buffer.from(blob, 'base64').length).toBe(29);
+    expect(looksLikeCiphertext(blob)).toBe(true);
+  });
+
+  it('длина декодируется именно как base64, а не как utf8-байты самой строки — короткий (28 байт) payload с длинной (40 символов) base64-записью не должен ложно распознаваться как шифротекст', () => {
+    const { looksLikeCiphertext } = keyedA;
+    // 28 декодированных байт (< 29 — НЕ шифротекст), но сама base64-строка длиной
+    // 40 символов (её utf8-длина как текста была бы >= 29 — если бы decode шёл
+    // как utf8 вместо base64, проверка длины ложно прошла бы)
+    const raw = Buffer.alloc(28, 5).toString('base64');
+    expect(raw.length).toBe(40);
+    expect(Buffer.from(raw, 'base64').length).toBe(28);
+    expect(looksLikeCiphertext(raw)).toBe(false);
+  });
+});
+
+describe('encryptRecord / decryptRecord (схема записи)', () => {
+  const SCHEMA = { strings: ['text'], jsonArrays: ['items'] };
+
+  it('roundtrip: шифрует объявленные поля, не трогает id/userId/enum', () => {
+    const { encryptRecord, decryptRecord } = keyedA;
+    const data = {
+      id: 7,
+      userId: 42n,
+      needId: 'safety',
+      text: 'зашифруй меня',
+      items: ['a', 'b'],
+    };
+    const stored = encryptRecord(data, SCHEMA);
+    expect(stored.id).toBe(7);
+    expect(stored.userId).toBe(42n);
+    expect(stored.needId).toBe('safety');
+    expect(stored.text).not.toBe(data.text);
+    expect(typeof stored.items).toBe('string');
+
+    expect(decryptRecord(stored, SCHEMA)).toEqual(data);
+  });
+
+  it('null-поля остаются null', () => {
+    const { encryptRecord, decryptRecord } = keyedA;
+    const stored = encryptRecord({ text: null, items: null }, SCHEMA);
+    expect(stored).toEqual({ text: null, items: null });
+    expect(decryptRecord(stored, SCHEMA)).toEqual({ text: null, items: null });
+  });
+
+  it('forward-compat: легаси-строка с уже десериализованным JSON-полем возвращается как есть', () => {
+    const { decryptRecord } = keyedA;
+    const legacyRow = { text: 'плейнтекст', items: ['уже', 'массив'] };
+    expect(decryptRecord(legacyRow, SCHEMA)).toEqual(legacyRow);
+  });
+
+  it('jsonArrays-поле реально шифруется (в хранимом значении нет читаемого текста) — это не эквивалент незашифрованного JSON.stringify', () => {
+    const { encryptRecord, looksLikeCiphertext } = keyedA;
+    const stored = encryptRecord(
+      { items: ['секретный пункт', 'ещё один секрет'] },
+      { jsonArrays: ['items'] },
+    );
+    expect(stored.items).not.toContain('секретный пункт');
+    expect(looksLikeCiphertext(stored.items as string)).toBe(true);
+  });
+});
+
+describe('encryptRecord/decryptRecord: необъявленные поля не трогаются (дефолт-массив полей ?? [] не должен стать непустым)', () => {
+  // Если бы `schema.strings ?? []` / `schema.jsonArrays ?? []` вдруг вернул непустой
+  // список полей по умолчанию, поле с таким именем "утекло" бы в шифрование/расшифровку,
+  // даже не будучи объявленным в схеме вызывающего кода.
+  const PLACEHOLDER = 'Stryker was here';
+
+  it('encryptRecord: поле без объявления в strings/jsonArrays не меняется', () => {
+    const { encryptRecord } = keyedA;
+    const data = { id: 1, [PLACEHOLDER]: 'не должно измениться' };
+    expect(encryptRecord(data, {})[PLACEHOLDER]).toBe('не должно измениться');
+  });
+
+  it('decryptRecord: поле без объявления в strings/jsonArrays не меняется', () => {
+    const { decryptRecord } = keyedA;
+    const row = { id: 1, [PLACEHOLDER]: 'плейнтекст' };
+    expect(decryptRecord(row, {})[PLACEHOLDER]).toBe('плейнтекст');
+  });
+});
+
+describe('encryptRecord/decryptRecord: undefined-поле остаётся undefined, а не превращается в null', () => {
+  it('encryptRecord пропускает undefined-поле (не подставляет encrypt(undefined) === null)', () => {
+    const { encryptRecord } = keyedA;
+    const data: Record<string, unknown> = { id: 1, text: undefined };
+    expect(encryptRecord(data, { strings: ['text'] }).text).toBeUndefined();
+  });
+
+  it('decryptRecord пропускает undefined-поле (не подставляет decrypt(undefined) === null)', () => {
+    const { decryptRecord } = keyedA;
+    const row: Record<string, unknown> = { id: 1, text: undefined };
+    expect(decryptRecord(row, { strings: ['text'] }).text).toBeUndefined();
+  });
+});

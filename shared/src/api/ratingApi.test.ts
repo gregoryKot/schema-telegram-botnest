@@ -1,0 +1,232 @@
+// @vitest-environment jsdom
+// createRatingApi — контракт оффлайн-надёжности оценки (единственная копия
+// для обоих фронтендов). Интеграция через webapp/api.test.ts уже есть; здесь
+// сам примитив: успех — как есть, 4xx — бросок, сеть/5xx — в outbox с
+// ответом-успехом, flushOutbox — доотправка очереди + outbox_flush.
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createRatingApi, HttpStatusError } from './ratingApi';
+
+const authedFetch = vi.fn();
+const trackEvent = vi.fn();
+const reportError = vi.fn();
+
+function makeApi() {
+  return createRatingApi(authedFetch, trackEvent, reportError);
+}
+
+const okJson = (body: unknown) => ({
+  ok: true,
+  json: () => Promise.resolve(body),
+});
+
+beforeEach(() => {
+  localStorage.clear();
+  authedFetch.mockReset();
+  trackEvent.mockReset();
+  reportError.mockReset();
+});
+
+describe('createRatingApi.saveRating', () => {
+  it('успех — ответ сервера как есть', async () => {
+    authedFetch.mockResolvedValue(
+      okJson({ ok: true, allDone: true, streak: { current: 3 } }),
+    );
+    const res = await makeApi().saveRating('safety', 7, '2026-08-16');
+    expect(res.allDone).toBe(true);
+    const body = JSON.parse(
+      (authedFetch.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body).toEqual({ needId: 'safety', value: 7, date: '2026-08-16' });
+  });
+
+  it('4xx — бросает HttpStatusError, в outbox НЕ кладёт', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 422 });
+    await expect(makeApi().saveRating('safety', 7)).rejects.toThrow(
+      HttpStatusError,
+    );
+    // Очередь пуста: флаш ничего не шлёт и событие не трекает.
+    authedFetch.mockResolvedValue(okJson({ ok: true, allDone: false }));
+    await makeApi().flushOutbox();
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('сетевой сбой — оценка в outbox, ответ успешен (дата зафиксирована)', async () => {
+    authedFetch.mockRejectedValue(new Error('offline'));
+    const res = await makeApi().saveRating('safety', 7, '2026-08-10');
+    expect(res.ok).toBe(true);
+
+    // Read-after-write: при следующем старте флаш шлёт отложенное с ТОЙ датой.
+    authedFetch.mockReset();
+    authedFetch.mockResolvedValue(okJson({ ok: true, allDone: false }));
+    await makeApi().flushOutbox();
+    const sent = JSON.parse(
+      (authedFetch.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(sent).toEqual({ needId: 'safety', value: 7, date: '2026-08-10' });
+    expect(trackEvent).toHaveBeenCalledWith('outbox_flush', { count: 1 });
+
+    // Очередь очищена — второй флаш молчит.
+    authedFetch.mockClear();
+    trackEvent.mockClear();
+    await makeApi().flushOutbox();
+    expect(authedFetch).not.toHaveBeenCalled();
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it('5xx — тоже оффлайн-путь (сервер упал ≠ пользователь виноват)', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 503 });
+    const res = await makeApi().saveRating('care', 5);
+    expect(res.ok).toBe(true);
+  });
+
+  it('шлёт POST на /api/rating (не любой путь/метод)', async () => {
+    authedFetch.mockResolvedValue(okJson({ ok: true, allDone: false }));
+    await makeApi().saveRating('safety', 5, '2026-08-16');
+    expect(authedFetch.mock.calls[0][0]).toBe('/api/rating');
+    expect((authedFetch.mock.calls[0][1] as RequestInit).method).toBe('POST');
+  });
+
+  it('HttpStatusError.message содержит код ответа (виден в логах)', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 418 });
+    await expect(makeApi().saveRating('safety', 5)).rejects.toThrow(
+      'API error: 418',
+    );
+  });
+});
+
+describe('createRatingApi.saveRating — границы классификации 4xx/5xx', () => {
+  // isClientError смотрит на диапазон [400, 500) — четыре теста ниже бьют
+  // именно по границам этого диапазона и по условию instanceof, а не по
+  // «типичным» кодам вроде 422/503, которые уже были покрыты выше и не
+  // ловят мутации операторов сравнения (>= → >, < → <=) на самой границе.
+  it('статус 399 (ниже границы 4xx) — уходит в outbox, не бросает', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 399 });
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.ok).toBe(true);
+  });
+
+  it('статус 400 (нижняя граница 4xx включительно) — бросает', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 400 });
+    await expect(makeApi().saveRating('safety', 5)).rejects.toThrow(
+      HttpStatusError,
+    );
+  });
+
+  it('статус 500 (нижняя граница 5xx, уже не клиентская) — уходит в outbox с allDone:false', async () => {
+    authedFetch.mockResolvedValue({ ok: false, status: 500 });
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.ok).toBe(true);
+    expect(res.allDone).toBe(false);
+    expect(res.queued).toBe(true); // QA B-З9: экран обязан знать, что оценка не дошла
+  });
+
+  it('контроль: ответ сервера 200 — без пометки queued', async () => {
+    authedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true, allDone: false }),
+    });
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.queued).toBeUndefined();
+  });
+
+  it('ошибка не instanceof HttpStatusError со «случайным» полем status — всё равно в outbox', async () => {
+    // Сетевые/таймаут-ошибки — обычные Error без .status, но если у ошибки
+    // случайно окажется числовое поле status (например, чужой класс ошибки
+    // из другого модуля) — классификация обязана идти по instanceof, а не
+    // по наличию поля.
+    class FakeStatusError extends Error {
+      status = 499;
+    }
+    authedFetch.mockRejectedValue(new FakeStatusError('boom'));
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.ok).toBe(true);
+  });
+});
+
+// Аудит 2026-11, E4: 401/429 пробрасывались как 4xx — плитка показывала
+// оценку, которой нет ни на сервере, ни в очереди.
+describe('createRatingApi.saveRating — отказ, который пройдёт сам', () => {
+  it.each([401, 408, 429])(
+    '%i — оценка в очереди, ответ queued',
+    async (status) => {
+      authedFetch.mockResolvedValue({ ok: false, status });
+      const res = await makeApi().saveRating('safety', 6, '2026-08-16');
+      expect(res).toEqual({ ok: true, allDone: false, queued: true });
+      expect(JSON.parse(localStorage.getItem('rating_outbox_v1')!)).toEqual([
+        { needId: 'safety', value: 6, date: '2026-08-16' },
+      ]);
+    },
+  );
+
+  it.each([400, 403, 404])(
+    'контроль: %i — бросок, очередь пуста',
+    async (status) => {
+      authedFetch.mockResolvedValue({ ok: false, status });
+      await expect(makeApi().saveRating('safety', 6)).rejects.toThrow(
+        HttpStatusError,
+      );
+      expect(localStorage.getItem('rating_outbox_v1')).toBeNull();
+    },
+  );
+
+  it('сеть легла и хранилище недоступно — бросок: оценка не сохранена нигде', async () => {
+    authedFetch.mockRejectedValue(new TypeError('offline'));
+    const spy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      });
+    try {
+      await expect(makeApi().saveRating('safety', 6)).rejects.toThrow(
+        'offline',
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+// Хвост волны 2 (#1022): оценка с постоянным 4xx (удалённый needId) стояла
+// в голове очереди вечно, и за ней не уезжала ни одна другая.
+describe('createRatingApi.flushOutbox — постоянный отказ', () => {
+  const queue = (...items: object[]) =>
+    localStorage.setItem('rating_outbox_v1', JSON.stringify(items));
+  const status = (code: number) => ({ ok: false, status: code });
+
+  it('404 снимается с отчётом наверх, остальные уезжают', async () => {
+    queue(
+      { needId: 'gone', value: 3, date: '2026-08-10' },
+      { needId: 'safety', value: 7, date: '2026-08-10' },
+    );
+    authedFetch
+      .mockResolvedValueOnce(status(404))
+      .mockResolvedValueOnce(okJson({ ok: true, allDone: false }));
+    await makeApi().flushOutbox();
+    expect(authedFetch).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem('rating_outbox_v1')).toBeNull();
+    expect(reportError).toHaveBeenCalledTimes(1);
+    expect(reportError.mock.calls[0][0]).toEqual({
+      section: 'rating_outbox',
+      message: expect.stringMatching(/404 \(needId=gone, 2026-08-10\)/),
+    });
+    expect(trackEvent).toHaveBeenCalledWith('outbox_flush', { count: 1 });
+  });
+
+  it.each([401, 408, 429, 503])(
+    'контроль: %i — выгрузка встаёт, очередь цела, отчёта нет',
+    async (code) => {
+      queue(
+        { needId: 'safety', value: 7, date: '2026-08-10' },
+        { needId: 'play', value: 2, date: '2026-08-10' },
+      );
+      authedFetch.mockResolvedValue(status(code));
+      await makeApi().flushOutbox();
+      expect(authedFetch).toHaveBeenCalledTimes(1);
+      expect(
+        JSON.parse(localStorage.getItem('rating_outbox_v1')!),
+      ).toHaveLength(2);
+      expect(reportError).not.toHaveBeenCalled();
+    },
+  );
+});

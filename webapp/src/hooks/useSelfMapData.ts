@@ -1,0 +1,61 @@
+import { useEffect, useState } from 'react';
+import { api } from '../api';
+import { todayStr } from '../utils/format';
+import {
+  buildMapInput,
+  buildNextStepInput,
+} from '../../../shared/src/map/mapInputs';
+import type { MapInput } from '../../../shared/src/map/mapVm';
+import type { OriginsInput } from '../../../shared/src/map/mapOrigins';
+import { MY_SCHEMA_IDS_KEY, cachedMyIds, trustedProfileLists } from '../utils/storageKeys';
+import type { NextStepInput } from '../../../shared/src/case/caseNextStep';
+import { collectWarmWords } from '../../../shared/src/warmWords/collectWarmWords';
+
+/**
+ * Данные карты себя: разборы (записи дневника режимов) и карточки режимов.
+ * Отдельного хранилища у разбора нет — он сохраняется обычной записью, и
+ * карта строится из неё. Транспорт — webapp api.
+ */
+export function useSelfMapData(refreshKey = 0): {
+  map: MapInput | null;
+  next: NextStepInput | null;
+  origins: OriginsInput | null;
+} {
+  const [map, setMap] = useState<MapInput | null>(null);
+  const [next, setNext] = useState<NextStepInput | null>(null);
+  const [origins, setOrigins] = useState<OriginsInput | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+    // Все записи режимов: `fromCase` появился в этапе 4 простого клиента, фильтрация — отдельное решение (docs/open/frontend-ux.md).
+    Promise.all([api.getModeDiary(), api.getModeNotes(), api.getProfile()])
+      .then(([cases, notes, profile]) => {
+        if (ignore) return;
+        const today = todayStr();
+        const ysqDone = !!profile.ysq?.completedAt;
+        const warm = collectWarmWords(notes, cases);
+        setMap(
+          buildMapInput(
+            cases,
+            notes,
+            ysqDone,
+            warm.map((w) => w.text),
+            today,
+          ),
+        );
+        setNext(buildNextStepInput(cases, notes, ysqDone, today));
+        // Схемы — тот же источник, что у «Моих паттернов» (useSchemasData): тест + ручной выбор.
+        setOrigins({
+          ysqSchemaIds: Array.isArray(profile.ysq?.activeSchemaIds) ? profile.ysq.activeSchemaIds : [],
+          manualSchemaIds: trustedProfileLists(profile).mySchemaIds ?? cachedMyIds(MY_SCHEMA_IDS_KEY),
+          ysqDone,
+        });
+      })
+      .catch((e) => console.error('self map load failed', e));
+    return () => {
+      ignore = true;
+    };
+  }, [refreshKey]);
+
+  return { map, next, origins };
+}

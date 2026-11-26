@@ -1,0 +1,55 @@
+/* Служебные страницы входа вне AppShell (редизайн 2026-11, b26). Префикс as-. Рабочая форма
+   (сверка входа /auth/confirm) — ServicePage: белый лист по центру с тенью-слоем
+   тоном бумаги экрана (--h), шапка со знаком продукта, у сверки — полоса бумаги со знаком. Исходы
+   (готово, отказ, устарело, сбой) — PaperOutcome (paper-app.css). Корень сам красит экран
+   (light-lock) и занимает всю ширину #root (flex-ряд, pageRoots.test.ts). */
+.as-root {
+  flex: 1 1 auto; align-self: flex-start; width: 100%; min-width: 0;
+  min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text);
+  font-family: var(--sans); display: flex; align-items: safe center; justify-content: center;
+  padding: 40px 24px; box-sizing: border-box;
+}
+/* Безопасное центрирование (см. .pa-outcome): высокая карточка на 320 прокручивается с верха, поля сверху
+   и снизу остаются (ревью b26: верх прилипал к y=0, тень снизу срезалась). */
+.as-root > .as-card { margin-block: auto; }
+.as-card {
+  width: 100%; max-width: 460px; min-width: 0; overflow: hidden; border-radius: var(--r-16); background: var(--surface);
+  box-shadow: 12px 13px 0 oklch(var(--pa-layer-lc) var(--h));
+}
+.as-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 30px 0; }
+.as-head--paper { border-radius: 0; padding: 14px 24px 14px 30px; min-height: 104px; box-sizing: border-box; }
+.as-head-sign { width: 88px; flex-shrink: 0; }
+.as-main { padding: 22px 30px 30px; }
+.as-title { text-wrap: balance; } /* «Это свой вход в / приложение?» — без висячего слова (ревью b26) */
+/* Знак — ссылка на главную сайта: по ширине содержимого, зона 44px по высоте при знаке 28px. */
+.as-brand {
+  display: flex; align-items: center; gap: 10px; width: fit-content;
+  min-height: 44px; color: inherit; text-decoration: none;
+}
+.as-brand-name { font-family: var(--serif); font-size: 16px; }
+.as-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.as-lead { font-size: 15px; line-height: 1.55; color: var(--text-sub); margin: 0; text-wrap: pretty; }
+.as-lead a { color: inherit; text-decoration: underline; }
+.as-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+/* Поле сверки кода билета (/auth/confirm, S9 аудита 2026-11). */
+.as-field { display: flex; flex-direction: column; gap: 6px; }
+.as-code-input { font-size: 20px; letter-spacing: .15em; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 52px; }
+.as-field-err { font-size: 13px; line-height: 1.5; color: var(--err); }
+
+/* Лист исхода /auth/error: под залитой кнопкой — тихие ссылки строкой (PaperOutcome children). */
+.as-quiet-links { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 20px; align-self: stretch; }
+
+/* Загрузка страницы-посредника (ServiceLoading): силуэт листа исхода — полоса и строки. */
+.as-card--skel { box-shadow: 12px 13px 0 var(--paper-sunk); }
+.as-skel-band { height: 176px; background: var(--paper-sunk); }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .as-root { padding: calc(16px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); }
+  .as-card { border-radius: var(--r-16); box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h)); }
+  .as-card--skel { box-shadow: 7px 8px 0 var(--paper-sunk); }
+  .as-skel-band { height: 148px; }
+  .as-head { padding: 18px 20px 0; }
+  .as-head--paper { padding: 10px 16px 10px 20px; min-height: 88px; }
+  .as-head-sign { width: 72px; }
+  .as-main { padding: 20px 20px 24px; }
+}

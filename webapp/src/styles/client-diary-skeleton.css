@@ -1,0 +1,34 @@
+/* Силуэт ленты «Записей» (sections/diary/DiaryFeedSkeleton.tsx, b11): те же места, что у ленты в
+   client-diary.css, — шапка, сегмент, строка даты с местом полосок трекера, карточки со знаком слева,
+   справа место «Этой недели». Подключается самим силуэтом: силуэт раздела (SectionSkeleton) рисуется до
+   чанка «Записей». Шапка (.cdk-top) — по окну, как .cd-head; лента — по ширине своей страницы, как
+   лента: свой контейнер cd-page у силуэта раздела, у силуэта внутри ленты — сама .cd-page. Пороги
+   совпадают с .cd-day и .cd-feed--week (diarySkeleton.test.ts): иначе на 768 с меню силуэт рисовал
+   колонку даты, а лента приходила столбиком. */
+.cdk-page { max-width: 1100px; container: cd-page / inline-size; }
+.cdk-top { display: flex; flex-direction: column; gap: 16px; }
+.cdk-seg { max-width: 360px; }
+.cdk-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.cdk-feed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+.cdk-timeline { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+.cdk-day { display: flex; flex-direction: column; gap: 10px; }
+.cdk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.cdk-items { display: flex; flex-direction: column; gap: 10px; }
+.cdk-card { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px 18px 20px; border-radius: 16px; background: var(--surface); }
+.cdk-week { display: none; }
+
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cdk-top { flex-direction: row; align-items: center; justify-content: space-between; }
+  .cdk-write { width: 132px; }
+}
+@container cd-page (min-width: 600px) {
+  .cdk-day { display: grid; grid-template-columns: 156px minmax(0, 1fr); column-gap: 24px; row-gap: 10px; }
+  .cdk-head { display: contents; }
+  .cdk-head > .cdk-col { grid-column: 1; grid-row: 1 / span 2; align-self: start; padding-top: 6px; }
+  .cdk-head > .skel { grid-column: 2; }
+  .cdk-items { grid-column: 2; }
+}
+@container cd-page (min-width: 880px) {
+  .cdk-feed { grid-template-columns: minmax(0, 1fr) 224px; }
+  .cdk-week { display: block; }
+}

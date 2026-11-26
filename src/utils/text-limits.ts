@@ -1,0 +1,46 @@
+/**
+ * Пределы длины пользовательского текста — ЕДИНСТВЕННОЕ место на бэкенде
+ * (находка аудита 2026-10-11, backend#29).
+ *
+ * Лимит стоит в DTO (`@MaxLength`) и больше нигде: превышение — 400 от
+ * ValidationPipe, без `.slice(0, N)` (гейт `scripts/check-body-truncation.mjs`).
+ *
+ * Значения зеркалятся фронтендами (`shared/src/limits/textLimits.ts`, имя в
+ * имя): textarea с `maxLength` и счётчиком остатка. Расхождение двух копий
+ * ловит `text-limits.parity.spec.ts` (правило №4 CLAUDE.md).
+ */
+export const SESSION_NOTE_MAX = 10000; // заметка терапевта по сессии
+export const CLIENT_MEMO_MAX = 5000; // заметка терапевта «О клиенте» в карточке
+export const DAY_NOTE_MAX = 500; // заметка к дню в трекере (счётчик «N/500»); длиннее — только слитая, правка без роста (src/bot/day-note-limit.ts)
+export const DIARY_FIELD_MAX = 10000; // поле записи дневника / пункт благодарности
+export const PRACTICE_TEXT_MAX = 200; // своя практика в плане
+export const MODE_MAP_TITLE_MAX = 120; // название карты режимов
+export const MODE_MAP_NODE_TEXT_MAX = 2000; // карта режимов: любая строка узла или связи (название, заметка, ответ Здорового Взрослого, подпись стрелки)
+export const CONCEPT_FIELD_TEXT_MAX = 5000; // концептуализация, вид «Поля»: каждое текстовое поле (цели, ранний опыт, триггеры…)
+export const CONCEPT_MODE_ALIAS_MAX = 80; // графическая концептуализация: как режим называет клиент
+export const CONCEPT_MODE_TEXT_MAX = 1000; // графическая концептуализация: истоки / проявления / работа с режимом
+export const CONCEPT_SCHEMA_TEXT_MAX = 1000; // графическая концептуализация: убеждение схемы / как нарушалась потребность
+export const CONCEPT_TECHNIQUE_MARKS_MAX = 50; // графическая концептуализация: отметок «Делали сегодня» у одной связи режима или схемы (худшее тело запроса < потолка, concept-save.dto.spec.ts)
+export const CONCEPT_SCHEMA_IDS_MAX = 40; // концептуализация: схем в общем списке (в форме Янга 18, потолок — ради худшего тела запроса); его же держит дописывание с холста (concept-append.ts)
+export const CUSTOM_MODE_NAME_MAX = 80; // название своего режима на карте
+export const CUSTOM_MODE_EMOJI_MAX = 8; // значок своего режима
+export const THERAPIST_REQUEST_NAME_MAX = 100; // заявка «Я психолог»: ФИО
+export const THERAPIST_REQUEST_QUAL_MAX = 500; // заявка «Я психолог»: квалификация
+export const THERAPIST_REQUEST_CONTACTS_MAX = 200; // заявка «Я психолог»: контакты
+export const THERAPIST_REQUEST_MESSAGE_MAX = 1000; // заявка «Я психолог»: сообщение админу
+export const BOOKING_NAME_MAX = 100; // заявка с сайта: имя
+export const BOOKING_CONTACT_MAX = 100; // заявка с сайта: контакт
+export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запрос
+export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
+export const BOOKING_SLOT_MESSAGE_MAX = 2000; // запись на слот (/api/booking/book): запрос
+export const CLIENT_NAME_MAX = 100; // имя/псевдоним клиента у терапевта (добавление офлайн-клиента и переименование)
+export const TASK_TEXT_MAX = 10000; // «Своё задание»: текст задания (терапевта клиенту или своей цели)
+export const EXERCISE_TEXT_MAX = 3000; // упражнения: проверка убеждения (мысль, доказательство, новый взгляд), разбор фразы критика (фраза и ответ), флешкарта (отклик и шаг)
+export const NOTE_CARD_FIELD_MAX = 3000; // карточка схемы или режима: каждое поле (триггеры, чувства, голос, истоки…)
+export const LETTER_TEXT_MAX = 10000; // письмо себе в детстве
+export const SAFE_PLACE_TEXT_MAX = 10000; // безопасное место: описание целиком (общее впечатление и органы чувств одной строкой)
+export const PLAN_ITEM_TEXT_MAX = 5000; // пункт плана работы с клиентом (рубрика справочника целиком помещается)
+export const GUIDE_MARK_NOTE_MAX = 1000; // «Про клиента» из справочника: строка «как это у него»
+export const GUIDE_MARK_SNAPSHOT_MAX = 20000; // «Про клиента»: текст раздела справочника на момент отметки
+export const GUIDE_MARK_FRAGMENT_MAX = 3000; // «Про клиента»: выделенный в справочнике фрагмент (лежит в snapshot)
+export const CONCEPT_COPING_NOTE_MAX = 300; // схема случая: «как это у клиента» к стилю копинга схемы (отметка «Про клиента» из «Справочника»)

@@ -1,0 +1,116 @@
+// Чистые вычисления вкладки «Обзор» и шапки карточки клиента: группировка
+// схем по доменам, сводка режимов, бары потребностей, столбики индекса,
+// превью дневника. Цвета не здесь — только hue (lib/tone.ts), тип записи и уровни.
+import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
+import { diaryTitle } from './diaryTitle';
+import { NEED_ORDER } from '../../../../shared/src/needs/types';
+import { NEED_NAMES } from '../../../../shared/src/needs/needNames';
+import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, indexLevel, type IndexLevel } from '../../lib/tone';
+
+export interface DomainTile {
+  id: string;
+  name: string;
+  hue: number;
+  schemas: { id: string; name: string }[];
+}
+
+/** Активные схемы, сгруппированные по доменам (порядок доменов — как в справочнике; пустые домены опущены). */
+export function groupSchemasByDomain(activeIds: readonly string[]): DomainTile[] {
+  const tiles: DomainTile[] = [];
+  for (const d of SCHEMA_DOMAINS) {
+    const schemas = d.schemas.filter((s) => activeIds.includes(s.id)).map((s) => ({ id: s.id, name: s.name }));
+    if (schemas.length > 0) tiles.push({ id: d.id, name: d.domain, hue: DOMAIN_HUE[d.id], schemas });
+  }
+  return tiles;
+}
+
+export interface ModeColumn {
+  id: string;
+  name: string;
+  hue: number;
+  modes: { id: string; name: string }[];
+}
+
+/** Все группы режимов с их активными режимами (пустая группа остаётся колонкой). */
+export function summarizeModes(activeIds: readonly string[]): ModeColumn[] {
+  return MODE_GROUPS.map((g) => ({
+    id: g.id,
+    name: g.group,
+    hue: MODE_GROUP_HUE[g.id],
+    modes: g.items.filter((m) => activeIds.includes(m.id)).map((m) => ({ id: m.id, name: m.name })),
+  }));
+}
+
+export interface NeedBar {
+  id: string;
+  label: string;
+  hue: number;
+  value: number;
+  /** Ширина заливки, %: оценка 0..10 → 0..100. */
+  widthPct: number;
+}
+
+
+/** Бары потребностей дня; потребности без оценки пропускаются. */
+export function needBars(ratings: Record<string, number> | undefined): NeedBar[] {
+  const bars: NeedBar[] = [];
+  for (const id of NEED_ORDER) {
+    const label = NEED_NAMES[id];
+    const v = ratings?.[id];
+    if (v == null) continue;
+    bars.push({ id, label, hue: NEED_HUE[id], value: v, widthPct: Math.max(0, Math.min(10, v)) * 10 });
+  }
+  return bars;
+}
+
+export interface SparkBar {
+  heightPct: number;
+  level: IndexLevel;
+}
+
+/** Столбики индекса за N дней в хронологическом порядке; на входе index 0 = сегодня. Пропуск → пустой столбик. */
+export function indexSparkBars(history: readonly { index: number | null }[], days = 14): SparkBar[] {
+  return history
+    .slice(0, days)
+    .map((d) => ({
+      heightPct: d.index == null ? 0 : Math.max(0, Math.min(10, d.index)) * 10,
+      level: indexLevel(d.index),
+    }))
+    .reverse();
+}
+
+export interface DiaryEntryLike {
+  type: 'schema' | 'mode' | 'gratitude';
+  date: string;
+  schemaIds?: string[];
+  modeId?: string;
+  excerpt: string;
+}
+
+export interface DiaryPreviewRow {
+  /** Тип записи — знак строки (noteLook). */
+  type: DiaryEntryLike['type'];
+  typeLabel: string | null;
+  title: string;
+  excerpt: string;
+  date: string;
+}
+
+/** Последние записи клиента для строк превью: у благодарности тип и есть заголовок — без подписи. */
+export function diaryPreview(entries: readonly DiaryEntryLike[], limit = 5): DiaryPreviewRow[] {
+  return entries.slice(0, limit).map((e) => {
+    const { title, typeLabel } = diaryTitle(e);
+    return { type: e.type, typeLabel: e.type === 'gratitude' ? null : typeLabel, title, excerpt: e.excerpt, date: e.date };
+  });
+}
+
+/**
+ * Отличие индекса сегодня от среднего за предыдущие дни (index 0 = сегодня).
+ * Нужно ≥7 записей истории и хотя бы одна оценка до сегодня; иначе null — не выдумываем.
+ */
+export function weekDelta(history: readonly { index: number | null }[], todayIndex: number): number | null {
+  if (history.length < 7) return null;
+  const prev = history.slice(1, 8).map((d) => d.index).filter((v): v is number => v != null);
+  if (prev.length === 0) return null;
+  return todayIndex - prev.reduce((s, v) => s + v, 0) / prev.length;
+}

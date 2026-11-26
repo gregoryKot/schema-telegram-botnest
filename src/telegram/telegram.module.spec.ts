@@ -1,0 +1,62 @@
+// Тест «монтажной схемы» TelegramModule: не поднимаем весь Nest-контекст
+// (тяжело — тянет BotModule/NotificationModule/TherapyModule/AnalyticsModule
+// со всеми их провайдерами), а читаем метаданные декоратора @Module(...)
+// напрямую через Reflect (то же, что делает NestFactory при компиляции).
+// До этого теста файл был непокрыт — 0% (аудит покрытия src/telegram 2026-08).
+// Ловит реальный класс бага: кто-то забыл добавить новый сервис в providers
+// или экспорт в exports — сервис зарегистрирован, но недоступен зависящим
+// модулям (DI бросит только в рантайме, а не на этом тесте — здесь фиксируем
+// состав списка).
+import { MODULE_METADATA } from '@nestjs/common/constants';
+import { TelegramModule } from './telegram.module';
+import { TelegramService } from './telegram.service';
+import { TelegramScheduleService } from './telegram.schedule.service';
+import { TELEGRAF_BOT } from './telegram.constants';
+import { TelegramSettingsService } from './telegram.settings.service';
+import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
+import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
+import { TelegramQuizService } from './telegram.quiz.service';
+import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
+import { AnalyticsAdminController } from './analytics-admin.controller';
+
+describe('TelegramModule — метаданные @Module', () => {
+  it('экспортирует TelegramService, TelegramScheduleService и бота (нужны другим модулям)', () => {
+    const exportsList = Reflect.getMetadata(
+      MODULE_METADATA.EXPORTS,
+      TelegramModule,
+    );
+    expect(exportsList).toEqual([
+      TelegramService,
+      TelegramScheduleService,
+      TELEGRAF_BOT,
+    ]);
+  });
+
+  it('регистрирует только админские контроллеры (фразы канала, аналитика)', () => {
+    const controllers = Reflect.getMetadata(
+      MODULE_METADATA.CONTROLLERS,
+      TelegramModule,
+    );
+    expect(controllers).toEqual([
+      HealthyAdultAdminController,
+      AnalyticsAdminController,
+    ]);
+  });
+
+  it('providers содержит все telegram-сервисы бота (не забыт ни один при регистрации)', () => {
+    const providers = Reflect.getMetadata(
+      MODULE_METADATA.PROVIDERS,
+      TelegramModule,
+    );
+    for (const svc of [
+      TelegramService,
+      TelegramScheduleService,
+      TelegramSettingsService,
+      TelegramNotifyActionsService,
+      TelegramNotifySettingsService,
+      TelegramQuizService,
+    ]) {
+      expect(providers).toContain(svc);
+    }
+  });
+});

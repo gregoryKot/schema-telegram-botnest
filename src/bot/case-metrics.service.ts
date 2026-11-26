@@ -1,0 +1,111 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CaseMetrics } from './case-metrics.format';
+import {
+  EMPTY_SELF_MAP_METRICS,
+  SelfMapMetrics,
+} from './self-map-metrics.format';
+import { SELF_MAP_LINK_TARGET_SET } from '../analytics/self-map-events.constants';
+
+// Счётчики разбора случая для /stats. Свой домен — свой файл (правило №10,
+// образец: practice-metrics.service.ts).
+//
+// Воронку считаем по AnalyticsEvent: у разбора нет собственной таблицы — он
+// сохраняется записью дневника режимов. С этапа 4 «простого клиента»
+// (миграция 20261027120000_mode_diary_from_case) такая запись помечена
+// `fromCase`, и «сохранено разборов» берётся прямо из ModeDiaryEntry; записи
+// до этой даты помечены false, поэтому на ретро-срез это число не опирается.
+// События остаются источником воронки (начали/сцена/узнавание) — по ним видно
+// и тех, кто не дошёл до записи. Сайт/мини-апп по строкам — backend-core.md.
+//
+// «Вернулись за вторым разбором» считаем по людям, а не по событиям: один
+// человек с пятью разборами не должен выглядеть как пятеро вернувшихся.
+@Injectable()
+export class CaseMetricsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getMetrics(): Promise<CaseMetrics> {
+    const since30 = new Date(Date.now() - 30 * 86_400_000);
+
+    const count = (name: string) =>
+      this.prisma.analyticsEvent.count({
+        where: { name, createdAt: { gte: since30 } },
+      });
+
+    // Разрез по одному полю меты: groupBy по JSON Prisma не умеет, поэтому
+    // сырой запрос — тот же приём, что у остальных мета-разрезов отчёта.
+    const byMetaKey = async (name: string, key: string) => {
+      const rows = await this.prisma.$queryRaw<
+        Array<{ value: string | null; c: bigint }>
+      >`
+        SELECT "meta"->>${key} AS value, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = ${name} AND "createdAt" >= ${since30}
+        GROUP BY 1`;
+      return (v: string) => Number(rows.find((r) => r.value === v)?.c ?? 0);
+    };
+
+    const [
+      started,
+      finished,
+      scene,
+      recognized,
+      peopleRows,
+      returnedRows,
+      saved,
+      mapOpened,
+    ] = await Promise.all([
+      count('case_started'),
+      count('case_finished'),
+      byMetaKey('case_scene', 'source'),
+      byMetaKey('case_recognized', 'agreed'),
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT "userId")::bigint AS c FROM "AnalyticsEvent"
+        WHERE "name" = 'case_started' AND "createdAt" >= ${since30}`,
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(*)::bigint AS c FROM (
+          SELECT "userId" FROM "AnalyticsEvent"
+          WHERE "name" = 'case_finished' AND "createdAt" >= ${since30}
+          GROUP BY "userId" HAVING count(*) > 1
+        ) t`,
+      this.prisma.modeDiaryEntry.count({
+        where: { fromCase: true, createdAt: { gte: since30 } },
+      }),
+      byMetaKey('case_map_opened', 'repeat'),
+    ]);
+
+    return {
+      started,
+      finished,
+      saved,
+      sceneOwn: scene('own'),
+      sceneFrame: scene('frame'),
+      // meta->>'agreed' отдаёт булев JSON как строку 'true'/'false'.
+      recognizedAgreed: recognized('true'),
+      recognizedDoubted: recognized('false'),
+      people: Number(peopleRows[0]?.c ?? 0),
+      peopleReturned: Number(returnedRows[0]?.c ?? 0),
+      mapOpenedRepeat: mapOpened('true'),
+      mapOpenedFirst: mapOpened('false'),
+    };
+  }
+
+  /** Переходы «Карты себя» за 30 дней по полю meta.to. */
+  async getSelfMapLinks(): Promise<SelfMapMetrics> {
+    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const rows = await this.prisma.$queryRaw<
+      Array<{ value: string | null; c: bigint }>
+    >`
+      SELECT "meta"->>'to' AS value, count(*)::bigint AS c
+      FROM "AnalyticsEvent"
+      WHERE "name" = 'self_map_link' AND "createdAt" >= ${since30}
+      GROUP BY 1`;
+    const out: SelfMapMetrics = { ...EMPTY_SELF_MAP_METRICS };
+    for (const r of rows) {
+      if (r.value && SELF_MAP_LINK_TARGET_SET.has(r.value)) {
+        out[r.value as keyof SelfMapMetrics] = Number(r.c);
+      }
+    }
+    return out;
+  }
+}

@@ -1,0 +1,86 @@
+import { useMemo, useState } from 'react';
+import { api } from '../../api';
+import { pickForm, useAddressForm } from '../../utils/addressForm';
+import { useGuide, type Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
+import { PaperAlert } from '../../components/paper/PaperAlert';
+import { GuideReferenceList } from './GuideReferenceList';
+import { GuideSchemaTable } from './GuideSchemaTable';
+import { SchemaViewSwitch, type SchemaView } from './GuideSchemaTableBar';
+import { LineTabs } from '../../components/LineTabs';
+import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceTab } from './guideReferenceModel';
+import { searchReference } from './guideReferenceSearch';
+import { buildReferenceBody } from './guideReferenceBody';
+import { buildAnswerSources, referenceAnswer } from './guideReferenceAnswer';
+import { GuideAnswerCard } from './GuideAnswerCard';
+import { GuideReferenceSkeleton } from './GuideReferenceSkeleton';
+import { useRouteGuideSheet } from './guideSheetRoute';
+import { useAddressSheet } from './guideAddressSheet';
+import { useReferenceSheets } from './useReferenceSheets';
+import type { GuideMarkClient } from '../../components/therapist/guide/marks/useClientGuideMarks';
+
+/**
+ * Тело «Справочника»: пока чанк текстов грузится — силуэт списка, не
+ * загрузился — лист соломы (PaperAlert) и «Повторить» (родитель монтирует тело заново).
+ */
+export function GuideReference({ onRetry, client, openAddress }: {
+  onRetry: () => void;
+  /** Справочник из карточки клиента: «Про клиента» сразу ему, без выбора. */
+  client?: GuideMarkClient;
+  /** Адрес раздела (`kind:id/path`): лист открывается сразу, один раз. */
+  openAddress?: string;
+}) {
+  const texts = useGuide();
+  if (texts === undefined) return <GuideReferenceSkeleton />;
+  if (texts === null) {
+    return <PaperAlert sign="layers" title="Справочник не загрузился. Обычно помогает ещё одна попытка" onRetry={onRetry} />;
+  }
+  return <GuideReferenceLoaded texts={texts} client={client} openAddress={openAddress} />;
+}
+
+/**
+ * Поиск по названиям и текстам листов, вкладки разделов на линии (LineTabs; у «Схем» справа — вид)
+ * и список. Пустой раздел в переключатель не попадает. Листы — useReferenceSheets.
+ */
+function GuideReferenceLoaded({ texts, client, openAddress }: { texts: Guide; client?: GuideMarkClient; openAddress?: string }) {
+  const form = useAddressForm();
+  const tr = useMemo(() => (ty: string, vy: string) => pickForm(form, ty, vy), [form]);
+  const ref = useMemo(() => buildReference(texts, tr), [texts, tr]);
+  const schemaGuides = useMemo(() => texts.buildSchemaDomainGuides(tr), [texts, tr]);
+  const [tab, setTab] = useState<ReferenceTab>('modes');
+  const [query, setQuery] = useState('');
+  const [schemaView, setSchemaView] = useState<SchemaView>('list');
+  const { open, sheets, markCoping } = useReferenceSheets(texts, tr, client);
+  const tabs = REFERENCE_TABS.filter((t) => ref[t.id].length > 0);
+  const body = useMemo(() => buildReferenceBody(texts, tr), [texts, tr]);
+  const found = useMemo(() => searchReference(ref, query, body), [ref, query, body]);
+  const sources = useMemo(() => buildAnswerSources(texts, tr), [texts, tr]);
+  const answer = useMemo(() => referenceAnswer(ref, sources, query), [ref, sources, query]);
+  const searching = query.trim() !== '';
+  const schemaTable = tab === 'schemas' && !searching && schemaView === 'table';
+  const pickSchemaView = (v: SchemaView) => {
+    if (v === 'table' && schemaView !== 'table') api.trackEvent('cabinet_guide_table_open');
+    setSchemaView(v);
+  };
+  useAddressSheet(ref, open, openAddress);
+  useRouteGuideSheet(ref, open); // лист из общего поиска (⌘K): состояние маршрута → open
+  return (
+    <div className="gr-column">
+      <input
+        type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={80}
+        placeholder="Найти по названию или тексту" aria-label="Найти в справочнике" className="ds-input ds-input--search"
+      />
+      {!searching && (
+        <LineTabs
+          tabs={tabs} value={tab} onPick={setTab} label="Разделы справочника" look="scroll"
+          aside={tab === 'schemas' ? <SchemaViewSwitch view={schemaView} onPick={pickSchemaView} /> : undefined}
+        />
+      )}
+      {answer && <GuideAnswerCard answer={answer} onOpen={open} />}
+      {schemaTable && <GuideSchemaTable groups={ref.schemas} guides={schemaGuides} onOpen={open} onMark={markCoping} />}
+      {!schemaTable && (searching && found.length === 0
+        ? <p className="ds-empty">Ничего не нашлось</p>
+        : <GuideReferenceList groups={searching ? found : ref[tab]} layout={referenceLayout(tab, searching)} onOpen={open} />)}
+      {sheets}
+    </div>
+  );
+}

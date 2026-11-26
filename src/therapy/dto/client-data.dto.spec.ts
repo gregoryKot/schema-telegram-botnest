@@ -1,0 +1,216 @@
+// DTO-рефактор inline-типов @Body() для клиентских данных терапевта
+// (аудит 2026-07, 2г / правило №6 CLAUDE.md). Отдельный акцент на
+// SessionInfoDto: поля принимают string | null | undefined — проверяем,
+// что null (сброс даты) не отклоняется валидатором.
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import {
+  RenameClientDto,
+  CreateSessionNoteDto,
+  SessionInfoDto,
+} from './client-data.dto';
+import { latestTodayOnEarth } from './not-future-day';
+
+async function errorsFor(
+  cls: new () => object,
+  body: Record<string, unknown>,
+): Promise<string[]> {
+  const dto = plainToInstance(cls, body);
+  const errs = await validate(dto, { whitelist: true });
+  return errs.map((e) => e.property);
+}
+
+describe('RenameClientDto', () => {
+  it('alias длиннее 100 — отказ', async () => {
+    await expect(
+      errorsFor(RenameClientDto, { alias: 'x'.repeat(101) }),
+    ).resolves.toContain('alias');
+  });
+});
+
+describe('CreateSessionNoteDto', () => {
+  it('валидное тело проходит', async () => {
+    await expect(
+      errorsFor(CreateSessionNoteDto, {
+        date: '2026-07-14',
+        text: 'заметка сессии',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('work: форма и границы пунктов «Что делали» (#1330)', async () => {
+    const item = { id: 'a', kind: 'custom', customName: 'Своё', fields: {} };
+    const body = (work: unknown) => ({ date: '2026-07-14', text: '', work });
+    await expect(
+      errorsFor(CreateSessionNoteDto, body([item])),
+    ).resolves.toEqual([]);
+    for (const bad of [
+      'строка',
+      Array.from({ length: 13 }, () => item),
+      [{ ...item, kind: 'song' }],
+      [{ ...item, customName: 'н'.repeat(81) }],
+      [{ ...item, fields: { what: 'ж'.repeat(601) } }],
+      [{ ...item, modeIds: Array.from({ length: 13 }, () => 'm') }],
+      [{ ...item, id: 5 }],
+    ])
+      await expect(
+        errorsFor(CreateSessionNoteDto, body(bad)),
+      ).resolves.toContain('work');
+  });
+
+  // QA 2026-10-26: заметка принимала `2026-13-45` и `0000-00-00`.
+  it('date — настоящий календарный день', async () => {
+    for (const bad of ['2026-13-45', '0000-00-00', '2026-02-30', '2026-7-1'])
+      await expect(
+        errorsFor(CreateSessionNoteDto, { date: bad, text: 'заметка' }),
+      ).resolves.toContain('date');
+  });
+});
+
+describe('SessionInfoDto', () => {
+  it('null сбрасывает дату — проходит', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, {
+        therapyStartDate: null,
+        nextSession: null,
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('валидная строка даты проходит', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { nextSession: '2026-08-01' }),
+    ).resolves.toEqual([]);
+  });
+
+  it('число вместо строки/null — отказ', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { nextSession: 12345 }),
+    ).resolves.toContain('nextSession');
+  });
+
+  it('meetingDays — массив чисел', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { meetingDays: [1, 3, 5] }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(SessionInfoDto, { meetingDays: ['mon'] }),
+    ).resolves.toContain('meetingDays');
+  });
+});
+
+// Аудит 2026-10, T6: форматы дат и границы дней недели.
+describe('SessionInfoDto — memo «О клиенте»', () => {
+  it('строка до 5000, null и отсутствие проходят', async () => {
+    for (const memo of ['x'.repeat(5000), '', null, undefined])
+      await expect(errorsFor(SessionInfoDto, { memo })).resolves.toEqual([]);
+  });
+
+  it('5001 знак и не-строка отклоняются', async () => {
+    for (const memo of ['x'.repeat(5001), 42])
+      await expect(errorsFor(SessionInfoDto, { memo })).resolves.toEqual([
+        'memo',
+      ]);
+  });
+});
+
+describe('SessionInfoDto — форматы (T6)', () => {
+  it('therapyStartDate: только YYYY-MM-DD', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { therapyStartDate: '2026-01-31' }),
+    ).resolves.toEqual([]);
+    for (const bad of [
+      '31.01.2026',
+      '2026-01-31T10:00',
+      'x'.repeat(5000),
+      '2026-02-30',
+    ])
+      await expect(
+        errorsFor(SessionInfoDto, { therapyStartDate: bad }),
+      ).resolves.toContain('therapyStartDate');
+  });
+
+  it('nextSession: день или момент (datetime-local сайта), мусор и простыни — отказ', async () => {
+    for (const ok of ['2026-08-01', '2026-08-01T14:30', '2026-08-01T14:30:00'])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: ok }),
+      ).resolves.toEqual([]);
+    for (const bad of ['завтра', '2026-08-01 14:30', 'x'.repeat(5000)])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: bad }),
+      ).resolves.toContain('nextSession');
+  });
+
+  // docs/open/backend.md: день внутри момента сверялся только регэкспом —
+  // `2026-02-30T25:00` уходил в БД и в карточку как «NaN …».
+  it('nextSession: несуществующий день и время вне суток — отказ', async () => {
+    for (const ok of ['2028-02-29', '2026-08-01T00:00', '2026-08-01T23:59:59'])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: ok }),
+      ).resolves.toEqual([]);
+    for (const bad of [
+      '2026-02-30',
+      '2026-13-01',
+      '2026-02-30T10:00',
+      '2026-08-01T25:00',
+      '2026-08-01T24:00',
+      '2026-08-01T14:60',
+      '2026-08-01T14:30:60',
+    ])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: bad }),
+      ).resolves.toContain('nextSession');
+  });
+
+  it('meetingDays: не более 7 элементов, каждый 0–6', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { meetingDays: [0, 6] }),
+    ).resolves.toEqual([]);
+    for (const bad of [[7], [-1], [0, 1, 2, 3, 4, 5, 6, 0], [1.5]])
+      await expect(
+        errorsFor(SessionInfoDto, { meetingDays: bad }),
+      ).resolves.toContain('meetingDays');
+  });
+});
+
+// QA 2026-10-26: «Начало терапии» принимало дату в будущем — карточка
+// показывала «в работе сегодня», список — «с сегодняшнего дня». Граница —
+// самый поздний местный «сегодня» на Земле (UTC+14): день терапевта сервер
+// не знает, а законный сегодняшний день не должен отсекаться ни в одной зоне.
+describe('SessionInfoDto — начало терапии не в будущем', () => {
+  beforeAll(() => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    // 21:10 UTC 26-го: в Москве уже 27-е, на Киритимати (UTC+14) — 27-е 11:10.
+    jest.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+  });
+  afterAll(() => jest.useRealTimers());
+
+  it('прошлое и местное сегодня восточнее UTC — проходят', async () => {
+    for (const ok of ['2025-09-26', '2026-10-26', '2026-10-27'])
+      await expect(
+        errorsFor(SessionInfoDto, { therapyStartDate: ok }),
+      ).resolves.toEqual([]);
+  });
+
+  it('день, который ещё нигде не наступил, — отказ', async () => {
+    for (const bad of ['2026-10-28', '2026-11-26', '2027-01-01'])
+      await expect(
+        errorsFor(SessionInfoDto, { therapyStartDate: bad }),
+      ).resolves.toContain('therapyStartDate');
+  });
+
+  it('null (сброс) по-прежнему проходит', async () => {
+    await expect(
+      errorsFor(SessionInfoDto, { therapyStartDate: null }),
+    ).resolves.toEqual([]);
+  });
+
+  it('latestTodayOnEarth: граница сдвигается в 10:00 UTC', () => {
+    expect(latestTodayOnEarth(Date.parse('2026-10-26T09:59:59Z'))).toBe(
+      '2026-10-26',
+    );
+    expect(latestTodayOnEarth(Date.parse('2026-10-26T10:00:00Z'))).toBe(
+      '2026-10-27',
+    );
+  });
+});

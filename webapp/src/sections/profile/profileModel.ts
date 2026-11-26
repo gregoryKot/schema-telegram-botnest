@@ -1,0 +1,118 @@
+// Чистые вычисления «Профиля»: тепловая карта, уровни, месяцы, достижения, дата сессии, склонение.
+import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
+import { dateStringParts, shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
+
+export const HEAT_WEEKS = 18;
+/** Ширина, до которой кабинет считается телефонным (синхронно с @media в css). */
+export const PHONE_MAX_WIDTH = 767;
+const HEAT_MIN_WEEKS = 8;
+const HEAT_MAX_PHONE_WEEKS = 16;
+const HEAT_MIN_CELL = 18;
+const HEAT_GAP = 3;
+// Поля вокруг сетки на телефоне: поля страницы 2×16 + карточка 2×16 + рамка 2 + колонка подписей дней 22.
+const HEAT_PHONE_CHROME = 88;
+export const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+/** Уровень дня 0..3 по числу оценённых потребностей: 0 — нет записи, 1 — 1–2, 2 — 3–4, 3 — 5 и больше. */
+export function dayLevel(ratings: Record<string, number> | null | undefined): number {
+  const n = ratings ? Object.keys(ratings).filter(id => isRated(ratings, id)).length : 0;
+  if (n <= 0) return 0;
+  if (n <= 2) return 1;
+  if (n <= 4) return 2;
+  return 3;
+}
+
+/** Карта «дата → уровень» из истории. День есть в истории, но без оценок — уровень 1 (запись была). */
+export function buildLevelMap(history: { date: string; ratings?: Record<string, number> }[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const h of history) m.set(h.date, Math.max(1, dayLevel(h.ratings)));
+  return m;
+}
+
+/** Сколько недель тепловой карты влезает в экран: на десктопе все 18, на телефоне — по ширине (клетка ≥18px), 8–16. */
+export function heatWeeksForWidth(width: number): number {
+  if (width > PHONE_MAX_WIDTH) return HEAT_WEEKS;
+  const fit = Math.floor((width - HEAT_PHONE_CHROME + HEAT_GAP) / (HEAT_MIN_CELL + HEAT_GAP));
+  return Math.min(HEAT_MAX_PHONE_WEEKS, Math.max(HEAT_MIN_WEEKS, fit));
+}
+
+export interface HeatCell { dateStr: string; level: number; future: boolean }
+
+/** Недели (пн–вс), последняя содержит `today` — местный день человека (`todayStr()`): сервер
+ *  кладёт дни истории по его поясу, и «сегодня» по UTC в Москве до 03:00 было бы вчера (E5).
+ *  Дни — календарные строки, арифметика в UTC (правило №25): от зоны машины не зависит. */
+export function buildHeatWeeks(levels: Map<string, number>, today: string, weeks = HEAT_WEEKS): HeatCell[][] {
+  const todayDow = ((dateStringParts(today)?.weekday ?? 1) + 6) % 7;
+  const start = shiftCalendarDay(today, -todayDow - (weeks - 1) * 7);
+  const out: HeatCell[][] = [];
+  for (let w = 0; w < weeks; w++) {
+    const week: HeatCell[] = [];
+    for (let d = 0; d < 7; d++) {
+      const dateStr = shiftCalendarDay(start, w * 7 + d);
+      const future = dateStr > today;
+      week.push({ dateStr, level: future ? 0 : levels.get(dateStr) ?? 0, future });
+    }
+    out.push(week);
+  }
+  return out;
+}
+
+/** Подпись месяца над неделей, в которой он начинается (первая неделя — всегда подписана). */
+export function monthLabels(weeks: HeatCell[][]): string[] {
+  let prev = -1;
+  return weeks.map(week => {
+    const month = Number(week[0].dateStr.slice(5, 7)) - 1;
+    const label = month !== prev ? MONTH_SHORT[month] : '';
+    prev = month;
+    return label;
+  });
+}
+
+/** «день / дня / дней» по числу. */
+export function daysWord(n: number): string {
+  return pluralRu(n, 'день', 'дня', 'дней');
+}
+
+/** Счётчики «Прогресса» со склонением: «1 день стрика», а не «1 дней» (QA 2026-11-03). */
+export function counterItems(c: { streak: number; totalDays: number; diaryCount: number; ysqCount: number }): [number, string][] {
+  return [
+    [c.streak, `${daysWord(c.streak)} стрика`],
+    [c.totalDays, `${daysWord(c.totalDays)} всего`],
+    [c.diaryCount, `${pluralRu(c.diaryCount, 'запись', 'записи', 'записей')} дневника`],
+    [c.ysqCount, `${pluralRu(c.ysqCount, 'прохождение', 'прохождения', 'прохождений')} теста`],
+  ];
+}
+
+const PROGRESS_TARGET: Record<string, { kind: 'streak' | 'total'; goal: number }> = {
+  streak_3: { kind: 'streak', goal: 3 }, streak_7: { kind: 'streak', goal: 7 },
+  streak_14: { kind: 'streak', goal: 14 }, streak_30: { kind: 'streak', goal: 30 },
+  streak_100: { kind: 'streak', goal: 100 },
+  total_10: { kind: 'total', goal: 10 }, total_50: { kind: 'total', goal: 50 },
+};
+
+/** Прогресс к ещё не полученному достижению («5/7») или null. */
+export function achievementProgress(id: string, earned: boolean, currentStreak: number, totalDays: number): string | null {
+  if (earned) return null;
+  const t = PROGRESS_TARGET[id];
+  if (!t) return null;
+  const v = t.kind === 'streak' ? currentStreak : totalDays;
+  return v > 0 ? `${v}/${t.goal}` : null;
+}
+
+/** Инициалы для аватара: первая буква имени; нет имени — пусто, кружок не рисуется. */
+export function avatarInitial(name: string | null | undefined): string {
+  const c = (name ?? '').trim().charAt(0);
+  return c.toUpperCase();
+}
+
+export type TrendKind = 'up' | 'down' | 'flat';
+export function trendKind(trend: string): TrendKind {
+  return trend === '↑' ? 'up' : trend === '↓' ? 'down' : 'flat';
+}
+export const TREND_SYMBOL: Record<TrendKind, string> = { up: '↑', down: '↓', flat: '≈' };
+
+/** Заполнение полосы паттерна: среднее по шкале 0–10 → 0–100%. */
+export function patternBarPercent(avg: number | null): number {
+  return Math.min(100, Math.max(0, Math.round((avg ?? 0) * 10)));
+}

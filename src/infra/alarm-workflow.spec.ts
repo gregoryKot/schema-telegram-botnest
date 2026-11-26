@@ -1,0 +1,414 @@
+// Джоба `alarm` в prod-smoke.yml и общая alarm.yml (её зовут nightly.yml и
+// mutation-bot.yml) — наблюдатель за наблюдателем (CLAUDE.md, правило №24).
+// До 2026-10-13 её шаг «DM владельцу» без секретов BOT_TOKEN/ADMIN_ID печатал
+// «DM не отправлен» и выходил нулём: два реальных простоя прода (10-09 и
+// 10-11) прошли при зелёной джобе, а единственная проба-замена живёт внутри
+// Nest, которого в таких авариях нет.
+//
+// Здесь шаг не пересказывается, а ИСПОЛНЯЕТСЯ: `run:` вытаскивается из
+// настоящего YAML и идёт в bash с пустыми и заполненными секретами и
+// подменённым `curl` в PATH (шов — сам скрипт воркфлоу, не его описание).
+// Разбор шагов по отступу — src/test-support/workflow-steps.ts.
+import { spawnSync } from 'child_process';
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import {
+  jobBody,
+  runBlock,
+  stepName,
+  steps,
+  withInputs,
+} from '../test-support/workflow-steps';
+
+const WORKFLOWS = join(process.cwd(), '.github', 'workflows');
+const read = (file: string) => readFileSync(join(WORKFLOWS, file), 'utf8');
+
+const alarmJob = (yml: string) => jobBody(yml, 'alarm');
+
+// Шаги alarm.yml исполняются с теми входами, что передаёт nightly.yml: так
+// сверяется, что заголовок ночной issue и текст DM после выноса не сменились.
+const NIGHTLY = withInputs(alarmJob(read('nightly.yml')));
+const NIGHTLY_ENV = { TITLE: NIGHTLY.title, LABEL: 'ci-alarm' };
+
+const dmStep = (file: string) => {
+  const found = steps(alarmJob(read(file))).find((s) =>
+    stepName(s).startsWith('DM владельцу'),
+  );
+  if (!found) throw new Error(`шага «DM владельцу» нет в ${file}`);
+  return found;
+};
+
+let bin: string;
+let curlLog: string;
+
+beforeAll(() => {
+  bin = mkdtempSync(join(tmpdir(), 'fake-curl-'));
+  curlLog = join(bin, 'curl.log');
+  const fake = join(bin, 'curl');
+  writeFileSync(fake, '#!/bin/sh\necho "CALL $*" >> "$CURL_LOG"\n');
+  chmodSync(fake, 0o755);
+});
+afterAll(() => rmSync(bin, { recursive: true, force: true }));
+
+function runStep(step: string, env: Record<string, string>) {
+  if (existsSync(curlLog)) rmSync(curlLog);
+  const r = spawnSync('bash', ['-e', '-c', runBlock(step)], {
+    env: {
+      PATH: `${bin}:${process.env.PATH}`,
+      CURL_LOG: curlLog,
+      GITHUB_SERVER_URL: 'https://github.com',
+      GITHUB_REPOSITORY: 'owner/repo',
+      GITHUB_RUN_ID: '1',
+      ...env,
+    },
+    encoding: 'utf8',
+  });
+  const curlCalls = existsSync(curlLog)
+    ? readFileSync(curlLog, 'utf8')
+        .split(/^CALL /m)
+        .map((c) => c.trim())
+        .filter(Boolean)
+    : [];
+  return { status: r.status, out: `${r.stdout}${r.stderr}`, curlCalls };
+}
+
+const NO_SECRETS = { BOT_TOKEN: '', ADMIN_ID: '' };
+const SECRETS = { BOT_TOKEN: 'fake-token', ADMIN_ID: '42' };
+
+describe.each([
+  ['prod-smoke.yml', 'created', { NOTIFY: 'created' }],
+  ['prod-smoke.yml', 'reminder', { NOTIFY: 'reminder' }],
+  [
+    'alarm.yml',
+    'провал джоб',
+    { FAILED: 'browser-smoke,npm-audit', DM_LEAD: NIGHTLY.dm },
+  ],
+])('%s: шаг «DM владельцу» (%s)', (file, _label, extra) => {
+  const step = dmStep(file);
+
+  it('нет секретов: ненулевой код и ::error, curl не вызван — отсутствие канала видно', () => {
+    const r = runStep(step, { ...NO_SECRETS, ...extra });
+    expect(r.status).not.toBe(0);
+    expect(r.out).toContain('::error::');
+    expect(r.out).toContain('BOT_TOKEN/ADMIN_ID');
+    expect(r.curlCalls).toEqual([]);
+  });
+
+  it.each([
+    ['пуст ADMIN_ID', { BOT_TOKEN: 'fake-token', ADMIN_ID: '' }],
+    ['пуст BOT_TOKEN', { BOT_TOKEN: '', ADMIN_ID: '42' }],
+  ])('%s: тоже красный', (_n, secrets) => {
+    const r = runStep(step, { ...secrets, ...extra });
+    expect(r.status).not.toBe(0);
+    expect(r.curlCalls).toEqual([]);
+  });
+
+  it('контроль: с секретами — код 0 и ровно один sendMessage владельцу', () => {
+    const r = runStep(step, { ...SECRETS, ...extra });
+    expect(r.status).toBe(0);
+    expect(r.curlCalls).toHaveLength(1);
+    expect(r.curlCalls[0]).toContain(
+      'https://api.telegram.org/botfake-token/sendMessage',
+    );
+    expect(r.curlCalls[0]).toContain('chat_id=42');
+  });
+});
+
+describe('prod-smoke.yml: «прод снова отвечает» без секретов', () => {
+  // Исключение, у которого есть контрольный образец (правило №15 п.2): красный
+  // alarm на выздоровлении красил бы весь прогон смока, и проба ciRuns
+  // докладывала бы «смок красный» про здоровый прод до следующего тика.
+  const step = dmStep('prod-smoke.yml');
+
+  it('recovered: ::warning и код 0 — не красит прогон смока', () => {
+    const r = runStep(step, { ...NO_SECRETS, NOTIFY: 'recovered' });
+    expect(r.status).toBe(0);
+    expect(r.out).toContain('::warning::');
+    expect(r.out).not.toContain('::error::');
+    expect(r.curlCalls).toEqual([]);
+  });
+
+  it('контрольный образец: исключение не шире recovered — любое другое NOTIFY без секретов красное', () => {
+    for (const notify of ['created', 'reminder', 'unexpected', '']) {
+      expect(runStep(step, { ...NO_SECRETS, NOTIFY: notify }).status).not.toBe(
+        0,
+      );
+    }
+  });
+});
+
+describe.each(['prod-smoke.yml', 'alarm.yml'])(
+  '%s: порядок шагов alarm',
+  (file) => {
+    const all = steps(alarmJob(read(file)));
+    const issueAt = all.findIndex((s) =>
+      stepName(s).startsWith('issue ci-alarm'),
+    );
+    const dmAt = all.findIndex((s) => stepName(s).startsWith('DM владельцу'));
+
+    it('issue ci-alarm заводится ДО DM-шага: красный DM не срывает issue', () => {
+      expect(issueAt).toBeGreaterThanOrEqual(0);
+      expect(dmAt).toBeGreaterThan(issueAt);
+    });
+
+    it('у шага issue нет if: — его исход не зависит от DM и секретов', () => {
+      expect(all[issueAt]).not.toMatch(/^ {8}if:/m);
+      expect(all[issueAt]).not.toMatch(/secrets\./);
+    });
+
+    it('нет continue-on-error у DM-шага: красный шаг не глушится', () => {
+      expect(all[dmAt]).not.toMatch(/continue-on-error/);
+    });
+  },
+);
+
+// Шаг issue ci-alarm исполняется с поддельными github/context/core: `script:`
+// вытаскивается из настоящего YAML (github-script отдаёт его AsyncFunction).
+type Call = { kind: string; args: Record<string, unknown> };
+type Issue = {
+  number: number;
+  title: string;
+  body: string;
+  updated_at?: string;
+};
+
+function issueScript(file: string): string {
+  const step = steps(alarmJob(read(file))).find((s) =>
+    stepName(s).startsWith('issue ci-alarm'),
+  );
+  if (!step) throw new Error(`шага issue ci-alarm нет в ${file}`);
+  const lines = step.split('\n');
+  const at = lines.findIndex((l) => /^ {10}script: \|\s*$/.test(l));
+  return lines
+    .slice(at + 1)
+    .filter((l) => l.trim() === '' || l.startsWith(' '.repeat(12)))
+    .map((l) => l.slice(12))
+    .join('\n');
+}
+
+async function execIssueStep(
+  file: string,
+  opts: {
+    env: Record<string, string>;
+    issue?: Issue;
+    comments?: { body: string; user: { type: string } }[];
+  },
+) {
+  const calls: Call[] = [];
+  const outputs: Record<string, string> = {};
+  const rec = (kind: string) => async (args: Record<string, unknown>) => {
+    calls.push({ kind, args });
+    return {};
+  };
+  const github = {
+    paginate: async () => opts.comments ?? [],
+    rest: {
+      issues: {
+        listForRepo: async () => ({ data: opts.issue ? [opts.issue] : [] }),
+        listComments: () => undefined,
+        create: rec('create'),
+        createComment: rec('comment'),
+        update: rec('update'),
+      },
+    },
+  };
+  const context = {
+    serverUrl: 'https://github.com',
+    runId: 7,
+    repo: { owner: 'o', repo: 'r' },
+  };
+  const core = {
+    setOutput: (k: string, v: string) => (outputs[k] = v),
+    warning: () => undefined,
+  };
+  const AsyncFunction = Object.getPrototypeOf(async () => 0).constructor;
+  const fn = new AsyncFunction(
+    'github',
+    'context',
+    'core',
+    'process',
+    issueScript(file),
+  );
+  await fn(github, context, core, { env: opts.env });
+  return { calls, outputs };
+}
+
+describe('alarm.yml с входами nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
+  const exec = (opts: {
+    failed: string;
+    issue?: Issue;
+    comments?: { body: string; user: { type: string } }[];
+  }) =>
+    execIssueStep('alarm.yml', {
+      env: { FAILED: opts.failed, ...NIGHTLY_ENV },
+      issue: opts.issue,
+      comments: opts.comments,
+    });
+
+  const TITLE = 'Ночная flaky-детекция — красный прогон';
+  const bot = (body: string) => ({ body, user: { type: 'Bot' } });
+
+  it('заголовок ночной issue прежний: открытую тревогу находит, а не плодит вторую', () => {
+    expect(NIGHTLY.title).toBe(TITLE);
+  });
+
+  it('новая джоба: тело комментария начинается с «Новые: …»', async () => {
+    const r = await exec({
+      failed: 'mutation-golden-auth,browser-smoke',
+      issue: { number: 903, title: TITLE, body: 'Упали джобы: browser-smoke.' },
+      comments: [bot('Упали джобы: browser-smoke.\n\nСсылка на прогон: x')],
+    });
+    expect(r.calls[0].kind).toBe('comment');
+    expect(String(r.calls[0].args.body)).toMatch(
+      /^Новые: mutation-golden-auth\.\n\nУпали джобы: mutation-golden-auth, browser-smoke\./,
+    );
+    expect(r.outputs.new).toBe('mutation-golden-auth');
+  });
+
+  it('те же джобы: строки «Новые» нет', async () => {
+    const r = await exec({
+      failed: 'browser-smoke',
+      issue: { number: 903, title: TITLE, body: 'Упали джобы: browser-smoke.' },
+      comments: [bot('Упали джобы: browser-smoke.\n\nСсылка на прогон: x')],
+    });
+    expect(String(r.calls[0].args.body)).not.toContain('Новые');
+    expect(r.outputs.new).toBe('');
+  });
+
+  it('нет комментариев бота: сравнивает с телом issue', async () => {
+    const r = await exec({
+      failed: 'a,b',
+      issue: { number: 1, title: TITLE, body: 'Упали джобы: a.\n\nСсылка' },
+      comments: [],
+    });
+    expect(String(r.calls[0].args.body)).toMatch(/^Новые: b\./);
+  });
+
+  it('прошлый отчёт не разобрался: без «Новые», не падает', async () => {
+    const r = await exec({
+      failed: 'a',
+      issue: { number: 1, title: TITLE, body: 'что-то своё' },
+      comments: [],
+    });
+    expect(r.calls[0].kind).toBe('comment');
+    expect(String(r.calls[0].args.body)).toMatch(/^Упали джобы: a\./);
+  });
+
+  it('issue нет: создаётся, как раньше', async () => {
+    const r = await exec({ failed: 'a' });
+    expect(r.calls.map((c) => c.kind)).toEqual(['create']);
+    expect(String(r.calls[0].args.body)).toMatch(/^Упали джобы: a\./);
+  });
+
+  it('зелёный прогон: комментарий и закрытие issue', async () => {
+    const r = await exec({
+      failed: '',
+      issue: { number: 5, title: TITLE, body: '' },
+    });
+    expect(r.calls.map((c) => c.kind)).toEqual(['comment', 'update']);
+  });
+
+  it('DM: «Новые» попадают в текст уведомления', () => {
+    const dm = dmStep('alarm.yml');
+    const r = runStep(dm, {
+      ...SECRETS,
+      FAILED: 'a,b',
+      NEW_JOBS: 'b',
+      DM_LEAD: NIGHTLY.dm,
+    });
+    expect(r.status).toBe(0);
+    expect(r.curlCalls[0]).toContain('text=Ночная проверка упала: a, b.');
+    expect(r.curlCalls[0]).toContain('Новые: b.');
+  });
+});
+
+// Issue без исполнителя не приходит владельцу ни уведомлением, ни в «Assigned
+// to me» (аудит 2026-10, «Красный смок не говорит, что именно лежит»): пока
+// нет секретов DM, это единственный канал, который GitHub доставляет сам.
+describe.each([
+  ['prod-smoke.yml', { PROD_SMOKE_RESULT: 'failure' }],
+  ['alarm.yml', { FAILED: 'backend-flaky', ...NIGHTLY_ENV }],
+])('%s: новая issue ci-alarm', (file, env) => {
+  it('назначается владельцу репозитория (assignees: [context.repo.owner])', async () => {
+    const r = await execIssueStep(file, { env });
+    const create = r.calls.filter((c) => c.kind === 'create');
+    expect(create).toHaveLength(1);
+    expect(create[0].args.assignees).toEqual(['o']);
+    expect(create[0].args.labels).toEqual(['ci-alarm']);
+  });
+
+  // Правило №20: починка инцидента приезжает со строкой в docs/INCIDENTS.md.
+  // Три коротких красных смока октября закрылись сами без строки (аудит
+  // 2026-10, «Реестр инцидентов отстаёт»): напоминание стоит в самой issue.
+  it('в теле — чеклист «строка в docs/INCIDENTS.md», ссылка на прогон на месте', async () => {
+    const r = await execIssueStep(file, { env });
+    const body = String(r.calls[0].args.body);
+    expect(body).toMatch(/^- \[ \] строка в docs\/INCIDENTS\.md/m);
+    expect(body).toContain(
+      'Ссылка на прогон: https://github.com/o/r/actions/runs/7',
+    );
+  });
+
+  it('контроль: повторный провал дописывает комментарий без второго чеклиста', async () => {
+    const r = await execIssueStep(file, {
+      env,
+      issue: {
+        number: 1,
+        title: String((await execIssueStep(file, { env })).calls[0].args.title),
+        body: 'Упали джобы: backend-flaky.',
+        updated_at: '2000-01-01T00:00:00Z',
+      },
+    });
+    const comments = r.calls.filter((c) => c.kind === 'comment');
+    expect(comments).toHaveLength(1);
+    expect(String(comments[0].args.body)).not.toContain('INCIDENTS');
+  });
+});
+
+// Контекст needs вызывающего воркфлоу в alarm.yml не виден: результаты джоб
+// приходят строкой toJSON(needs), список упавших шаг собирает из неё сам.
+describe('alarm.yml: шаг «собрать список упавших джоб»', () => {
+  const step = steps(alarmJob(read('alarm.yml'))).find((s) =>
+    stepName(s).startsWith('собрать список'),
+  );
+  const collect = (results: Record<string, string>) => {
+    const needs = Object.fromEntries(
+      Object.entries(results).map(([job, result]) => [
+        job,
+        { result, outputs: {} },
+      ]),
+    );
+    const output = join(bin, 'github-output');
+    writeFileSync(output, '');
+    const r = runStep(step ?? '', {
+      NEEDS_JSON: JSON.stringify(needs, null, 2),
+      GITHUB_OUTPUT: output,
+    });
+    return { status: r.status, output: readFileSync(output, 'utf8') };
+  };
+
+  it('берёт вход needs, а не контекст needs вызываемого воркфлоу', () => {
+    expect(step).toMatch(/^ {10}NEEDS_JSON: \$\{\{ inputs\.needs \}\}$/m);
+  });
+
+  it('failure и cancelled — в списке, success и skipped — нет', () => {
+    expect(
+      collect({ a: 'failure', b: 'success', c: 'cancelled', d: 'skipped' }),
+    ).toEqual({ status: 0, output: 'failed=a,c\nhas_failures=true\n' });
+  });
+
+  it('контроль: все зелёные — список пуст, has_failures=false', () => {
+    expect(collect({ a: 'success', b: 'skipped' })).toEqual({
+      status: 0,
+      output: 'failed=\nhas_failures=false\n',
+    });
+  });
+});

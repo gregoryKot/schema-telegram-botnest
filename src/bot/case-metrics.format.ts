@@ -1,0 +1,77 @@
+// Блок «Разбор случая» для /stats (правило №8: метрика, которой нет в
+// отчёте, — невидима, её будто нет).
+//
+// Что здесь меряется и почему именно это. Время в приложении и «дошёл до
+// пятой записи» ничего не доказывают: в исследованиях приложений схема-
+// терапии изменения симптомов с временем использования не коррелировали.
+// Поэтому главные числа блока — не объём, а два признака того, что разбор
+// работает:
+//
+//   1. «У меня было иначе» — индикатор эффекта Барнума. Восемь ворот с
+//      тёплыми описаниями устроены так, что узнать себя можно почти везде.
+//      Если этой кнопки не жмёт почти никто, описания подходят всем подряд
+//      и не значат ничего — это повод заострить их, а не радоваться
+//      конверсии.
+//   2. Второй разбор — вернулся ли он вообще; паттерн виден только с
+//      третьего-пятого случая.
+//
+// Чистый форматчик, покрыт тестом, включая пустую БД. Язык — без терминов:
+// «сказали „у меня было иначе“», а не «доля disagreement».
+
+export interface CaseMetrics {
+  /** Открыли поток разбора. */
+  started: number;
+  /** Довели разбор до конца. */
+  finished: number;
+  /** Записей режимов с меткой `fromCase` за 30 дней (с даты миграции). */
+  saved: number;
+  /** Сцена своими словами против сцены от готовой рамки. */
+  sceneOwn: number;
+  sceneFrame: number;
+  /** Экран узнавания: согласились и нажали «у меня было иначе». */
+  recognizedAgreed: number;
+  recognizedDoubted: number;
+  /** Разных людей начали разбор и сколько из них вернулись за вторым. */
+  people: number;
+  peopleReturned: number;
+  /** С «Записано» открыли карту: экран сказал о повторе режима / не сказал. */
+  mapOpenedRepeat: number;
+  mapOpenedFirst: number;
+}
+
+const share = (part: number, whole: number): string =>
+  whole === 0 ? '' : ` (${Math.round((part / whole) * 100)}%)`;
+
+/** Текстовый блок для /stats. Чистая функция. */
+export function formatCaseMetrics(m: CaseMetrics): string {
+  const lines = ['🧭 <b>Разбор случая</b> (за месяц)'];
+  const savedLine = `Разборов записано с сайта: ${m.saved} за 30 дней`;
+  if (m.started === 0) {
+    lines.push('Пока никто не начинал');
+    lines.push(savedLine);
+    return lines.join('\n');
+  }
+
+  lines.push(`Начали ${m.started} · дошли до конца ${m.finished}`);
+  lines.push(savedLine);
+  lines.push(`Своими словами ${m.sceneOwn} · по готовой рамке ${m.sceneFrame}`);
+
+  const seen = m.recognizedAgreed + m.recognizedDoubted;
+  lines.push(
+    `Сказали «у меня было иначе» ${m.recognizedDoubted} из ${seen}${share(m.recognizedDoubted, seen)}`,
+  );
+  if (seen >= 20 && m.recognizedDoubted / seen < 0.1) {
+    lines.push(
+      'Почти никто не спорит — описания подходят всем подряд, стоит их заострить',
+    );
+  }
+
+  lines.push(
+    `Разных людей ${m.people} · вернулись за вторым разбором ${m.peopleReturned}${share(m.peopleReturned, m.people)}`,
+  );
+  const opened = m.mapOpenedRepeat + m.mapOpenedFirst;
+  lines.push(
+    `После записи открыли карту себя ${opened} из ${m.finished}${share(opened, m.finished)} · из них когда режим повторился ${m.mapOpenedRepeat}`,
+  );
+  return lines.join('\n');
+}

@@ -1,0 +1,33 @@
+/* Кабинет терапевта (TherapistClientSheet, ClientListView): цепочка flex на компьютере.
+   Подключается через index-tail.css. */
+/* ─── Therapist cabinet (TherapistClientSheet) ───────────────────────────────
+   Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
+   whole page scrolls like a regular section. Layout is kept in CSS (not inline
+   styles) so mobile breakpoint can cleanly override without !important hacks. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .therapist-sheet {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* List view: fills sheet, scrolls internally */
+  .therapist-scroll--list {
+    flex: 1;
+    overflow: auto;
+  }
+  /* Client view outer: fixed header + scrollable tab area */
+  .therapist-scroll--client {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* Tab content: scrolls independently inside the client view */
+  .therapist-scroll--tabs {
+    flex: 1;
+    overflow: auto;
+  }
+}

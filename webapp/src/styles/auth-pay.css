@@ -1,0 +1,127 @@
+/* Подписка и донат (/subscribe, /donate) — язык живой бумаги (docs/archive/APP_2026-11.md, b28). Префикс ap-.
+   Страницы живут вне AppShell (и на визитке практики): корень сам красит экран и тянется на всю ширину
+   (#root — flex-ряд, без flex: 1 страница липла к левому краю). Каркас — pages/subscribe/PayLayout.tsx:
+   лист соломы со сценой FinalCorners (EntitySheet .ap-sheet) + форма, на ≥1024 — разворот SpreadLayout.
+   Исходы (спасибо, «скоро», сбой управления) — PaperOutcome/ThanksSheet, своих правил здесь у них нет.
+   Тарифы — плитки бумаги: выбранная — солома с тёмной кромкой и галочкой (принципы 3, 5, 6), без контура
+   акцентом; одна залитая кнопка; сбой — PaperAlert у формы. Цвет — токены и бумага oklch(… var(--h)). */
+.ap-page {
+  --h: 70;
+  padding-top: var(--safe-top);
+  flex: 1; align-self: flex-start; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text); font-family: var(--sans);
+}
+.pa-spread.ap-main { flex: 1; max-width: 640px; margin: 0 auto; padding: 8px 16px 40px; }
+.ap-main > .pa-spread-main { gap: 14px; }
+
+/* Лист-герой: углы сцены прижаты к краям листа, текст держится левее правого угла. left/top — явно:
+   product-landing.css (чанк лендинга в SPA) ставит углам свои left/top. */
+.pp-paper.ap-sheet { position: relative; overflow: hidden; padding: 22px 128px 26px 22px; }
+.ap-sheet .pa-sheet-title i { font-style: italic; }
+.ap-sheet .pl2-final-corner--a { position: absolute; left: auto; right: 18px; bottom: 0; width: 84px; height: auto; }
+.ap-sheet .pl2-final-corner--b { position: absolute; left: auto; right: 14px; top: 14px; width: 92px; height: auto; }
+.ap-lead { display: block; }
+.ap-skel { flex: 1; align-self: flex-start; width: 100%; display: flex; min-width: 0; } /* обёртка силуэта — тоже корень в flex-ряду #root */
+.ap-skel-sheet { display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
+
+.ap-honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+/* Нативный инпут под оформлением плитки: доступен с клавиатуры и скринридеру */
+.ap-native { position: absolute; opacity: 0; width: 100%; height: 100%; inset: 0; margin: 0; cursor: pointer; }
+.ap-note { font-size: 14px; color: var(--text-sub); }
+.ap-fine { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+
+/* ── Тарифы: плитки бумаги ───────────────────────────────────────────────── */
+.ap-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ap-plan {
+  position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
+  box-sizing: border-box; min-height: 108px; padding: 16px 16px 14px 18px; cursor: pointer;
+  border-radius: var(--r-16); border: 1.5px solid var(--line); background: var(--surface); color: var(--text);
+}
+.ap-plan.is-on { background: oklch(0.9 0.035 var(--h)); border-color: oklch(0.55 0.04 var(--h)); }
+.ap-plan:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ap-plan-top { display: flex; justify-content: space-between; align-items: center; min-height: 24px; }
+.ap-plan-name { font-size: 15px; font-weight: 600; }
+.ap-plan.is-on .ap-plan-name { font-weight: 700; }
+.ap-radio { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 24px; }
+.ap-plan:not(.is-on) .ap-radio::before {
+  content: ''; width: 18px; height: 18px; margin-left: auto; border-radius: 50%; box-sizing: border-box; border: 1.5px solid var(--text-faint);
+}
+.ap-plan-bottom { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.ap-plan-price { font-family: var(--serif); font-size: 32px; line-height: 1; }
+.ap-plan-per { font-size: 13px; color: var(--text-sub); }
+.ap-badge {
+  font-size: 12px; font-weight: 700; color: var(--text-sub); white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 2px 8px;
+}
+
+/* ── Суммы доната: чипы бумаги (SignChip) ───────────────────────────────── */
+.ap-sums { display: flex; flex-wrap: wrap; gap: 8px; }
+.ap-sums > .ds-chip { min-height: 44px; }
+/* Узкий телефон: четыре суммы не влезают в ряд — сетка 2×2, а не одинокий чип на второй строке (ревью b28). */
+@media (max-width: 379px) {
+  .ap-sums { display: grid; grid-template-columns: 1fr 1fr; }
+  .ap-sums > .ds-chip { justify-content: center; }
+}
+
+/* ── Согласие, перечень, ссылки ─────────────────────────────────────────── */
+.ap-consent { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; font-size: 13px; line-height: 1.5; color: var(--text-sub); cursor: pointer; }
+.ap-consent input { flex-shrink: 0; width: 22px; height: 22px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+/* Сбой загрузки подписки по ссылке: обёртка PaperOutcome с role=alert — корень в #root, как .al-expired. */
+.ap-failed { align-self: flex-start; flex: 1 1 auto; width: 100%; min-width: 0; display: flex; }
+.ap-consent input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } /* outline снят глобально */
+.ap-checks { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.45; color: var(--text-sub); }
+/* Галочка нарисована рамкой, а не символом ✓ (принцип 7: ни эмодзи, ни глифов). */
+.ap-checks li { position: relative; padding-left: 24px; }
+.ap-checks li::before {
+  content: ''; position: absolute; left: 3px; top: 4px; width: 10px; height: 6px;
+  border-left: 2px solid oklch(0.55 0.04 var(--h)); border-bottom: 2px solid oklch(0.55 0.04 var(--h)); transform: rotate(-45deg);
+}
+.ap-alt { margin: 0; font-size: 13px; color: var(--text-sub); }
+.ap-alt a { color: var(--text); display: inline-block; padding: 12px 4px; }
+.ap-cta { margin-top: 4px; }
+.ds-btn.ap-cancel { align-self: flex-start; }
+.ap-home { display: none; } /* «← На главную» внизу — только на компьютере; на телефоне она в шапке */
+
+/* ── Телефон ─────────────────────────────────────────────────────────────── */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .pp-paper.ap-sheet { min-height: 136px; padding: 16px 76px 18px 18px; }
+  .ap-sheet .pa-sheet-body { gap: 6px; }
+  .ap-sheet .pa-sheet-title { font-size: 24px; }
+  .ap-sheet .pa-sheet-sub { font-size: 14px; line-height: 1.45; }
+  .ap-sheet .pl2-final-corner--a { right: 10px; width: 56px; }
+  .ap-sheet .pl2-final-corner--b { right: 8px; top: 10px; width: 62px; }
+  .ap-plan { min-height: 96px; padding: 12px 12px 12px 14px; }
+  .ap-plan-price { font-size: 26px; }
+  .ds-btn.ap-cancel { align-self: stretch; }
+}
+
+/* ── Компьютер ───────────────────────────────────────────────────────────
+   Шапки нет, «← На главную» — последней строкой колонки формы. На ≥1024 — разворот: лист слева липкий,
+   форма справа (SpreadLayout); 768–1023 — лист сверху, форма под ним, колонкой 640 по центру. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .ap-page .ds-sheet-head--page { display: none; }
+  .ap-page .ap-home {
+    display: inline-flex; align-items: center; justify-content: flex-start; align-self: flex-start; min-height: 44px;
+    font-size: 13px; color: var(--text-sub); text-decoration: none;
+  }
+  .ap-page .ap-home:hover { color: var(--accent); }
+  .pa-spread.ap-main { padding: 56px 32px 48px; }
+  .ap-main .ds-btn--lg { width: 100%; }
+  /* Полоса 768–1023: углы рядом справа, не друг на друге — полоски левее листа с камешком. */
+  .pp-paper.ap-sheet { padding: 30px 216px 34px 32px; }
+  .ap-sheet .pl2-final-corner--a { right: 118px; width: 84px; }
+  .ap-sheet .pl2-final-corner--b { right: 18px; top: 16px; width: 96px; }
+}
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  /* Разворот по центру окна, как исходы «спасибо» и «скоро» (ревью b28: нижняя половина пустовала).
+     margin-block: auto в колонке .ap-page — безопасно: высокая форма прокручивается с верха. */
+  .pa-spread.ap-main { max-width: 1088px; padding-top: 48px; flex: 0 1 auto; margin-block: auto; }
+  /* В колонке разворота лист выше: сцена уходит вниз под текст, текст — во всю ширину листа. */
+  .pa-spread-side .pp-paper.ap-sheet { min-height: 380px; padding: 32px 32px 168px; }
+  .pa-spread-side .ap-sheet .pl2-final-corner--a { right: auto; left: 28px; width: 140px; }
+  .pa-spread-side .ap-sheet .pl2-final-corner--b { top: auto; bottom: 26px; right: 26px; width: 140px; }
+  /* Управление подпиской: лист не выше колонки рядом — углы справа от текста, как на телефоне. */
+  .pa-spread-side .pp-paper.ap-sheet--short { min-height: 0; padding: 32px 128px 34px 32px; }
+  .pa-spread-side .ap-sheet--short .pl2-final-corner--a { left: auto; right: 18px; bottom: 0; width: 84px; }
+  .pa-spread-side .ap-sheet--short .pl2-final-corner--b { top: 14px; bottom: auto; right: 14px; width: 92px; }
+}

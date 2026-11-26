@@ -1,0 +1,181 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { guardOverwrite } from '../utils/crypto-record';
+import { requireAffected } from '../utils/require-affected';
+import { clientMapAuthors } from './client-map-authors';
+import { clientModeMap, MODE_MAP_SCHEMA } from './client-mode-map';
+import { normalizeModeMapKind } from './mode-map-kinds';
+
+// Declarative encryption schemas — single source of truth, so a newly added
+// free-text field can't silently end up in plaintext (just add it here).
+const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
+
+// Карты режимов (mode maps) терапевта для клиента + кастомные режимы терапевта.
+// Доступ к чужому клиенту закрыт через TherapyRelationsService.assertHasClient.
+@Injectable()
+export class ModeMapsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly relationsService: TherapyRelationsService,
+  ) {}
+
+  // ─── Mode Maps ───────────────────────────────────────────────────────────────
+
+  async listModeMaps(therapistId: bigint, clientId: bigint) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    const rows = await this.prisma.modeMap.findMany({
+      where: { therapistId, clientId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        kind: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
+  }
+
+  async getModeMap(therapistId: bigint, mapId: number) {
+    const row = await this.prisma.modeMap.findUnique({
+      where: { id: mapId },
+    });
+    if (!row || row.therapistId.toString() !== therapistId.toString())
+      throw new Error('Not found');
+    // Связь могла быть разорвана уже ПОСЛЕ создания карты — сверка
+    // therapistId на строке этого не отражает. Как весь клинический доступ
+    // (assertHasClient на каждом обращении), догоняем связь здесь же.
+    await this.relationsService.assertHasClient(
+      therapistId,
+      (row as { clientId: bigint }).clientId,
+    );
+    return decryptRecord(row, MODE_MAP_SCHEMA);
+  }
+
+  async createModeMap(
+    therapistId: bigint,
+    clientId: bigint,
+    title: string,
+    kind?: string,
+  ) {
+    await this.relationsService.assertHasClient(therapistId, clientId);
+    const k = normalizeModeMapKind(kind);
+    const row = await this.prisma.modeMap.create({
+      data: {
+        therapistId,
+        clientId,
+        kind: k,
+        ...encryptRecord({ title }, MODE_MAP_SCHEMA),
+      },
+    });
+    return decryptRecord({ ...row, nodes: [], edges: [] }, MODE_MAP_SCHEMA);
+  }
+
+  async updateModeMap(
+    therapistId: bigint,
+    mapId: number,
+    body: {
+      title?: string;
+      nodes?: unknown[];
+      edges?: unknown[];
+    },
+  ) {
+    const existing = await this.prisma.modeMap.findUnique({
+      where: { id: mapId },
+    });
+    if (!existing || existing.therapistId.toString() !== therapistId.toString())
+      throw new Error('Not found');
+    // См. getModeMap: догоняющая проверка связи, симметрично для записи.
+    await this.relationsService.assertHasClient(
+      therapistId,
+      (existing as { clientId: bigint }).clientId,
+    );
+    const fields: Record<string, unknown> = {};
+    if (body.title !== undefined) fields.title = body.title;
+    if (body.nodes !== undefined) fields.nodes = body.nodes;
+    if (body.edges !== undefined) fields.edges = body.edges;
+    // Нечитаемые nodes/edges ушли клиенту как [] — запись поверх стёрла бы их.
+    guardOverwrite(existing, MODE_MAP_SCHEMA, fields, `modeMap#${mapId}`);
+    const row = await this.prisma.modeMap.update({
+      where: { id: mapId },
+      data: encryptRecord(fields, MODE_MAP_SCHEMA),
+    });
+    return decryptRecord(row, MODE_MAP_SCHEMA);
+  }
+
+  async deleteModeMap(therapistId: bigint, mapId: number) {
+    const existing = await this.prisma.modeMap.findUnique({
+      where: { id: mapId },
+    });
+    if (!existing || existing.therapistId.toString() !== therapistId.toString())
+      throw new Error('Not found');
+    // См. getModeMap: догоняющая проверка связи, симметрично для удаления.
+    await this.relationsService.assertHasClient(
+      therapistId,
+      (existing as { clientId: bigint }).clientId,
+    );
+    await this.prisma.modeMap.delete({ where: { id: mapId } });
+  }
+
+  // ─── Client's read-only view of their own maps ───────────────────────────────
+
+  async listMyModeMaps(userId: bigint) {
+    const authors = await clientMapAuthors(this.prisma, userId);
+    const rows = await this.prisma.modeMap.findMany({
+      where: { clientId: userId, therapistId: { in: authors } },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, title: true, kind: true, updatedAt: true },
+    });
+    return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
+  }
+
+  getMyModeMap(userId: bigint, mapId: number) {
+    return clientModeMap(this.prisma, userId, mapId, MODE_MAP_SCHEMA);
+  }
+
+  // ─── Therapist Custom Modes ──────────────────────────────────────────────────
+
+  async listCustomModes(therapistId: bigint) {
+    const rows = await this.prisma.therapistCustomMode.findMany({
+      where: { therapistId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return rows.map((r) => decryptRecord(r, CUSTOM_MODE_SCHEMA));
+  }
+
+  async createCustomMode(
+    therapistId: bigint,
+    body: { name: string; emoji?: string; nodeType?: string },
+  ) {
+    const allowed = [
+      'trigger',
+      'child',
+      'critic',
+      'coping',
+      'healthy',
+      'custom',
+    ];
+    const nodeType = allowed.includes(body.nodeType ?? '')
+      ? body.nodeType
+      : 'custom';
+    const row = await this.prisma.therapistCustomMode.create({
+      data: {
+        therapistId,
+        nodeType,
+        emoji: body.emoji ?? '⬡',
+        ...encryptRecord({ name: body.name }, CUSTOM_MODE_SCHEMA),
+      },
+    });
+    return decryptRecord(row, CUSTOM_MODE_SCHEMA);
+  }
+
+  async deleteCustomMode(therapistId: bigint, modeId: number) {
+    const where = { id: modeId, therapistId };
+    await requireAffected(
+      this.prisma.therapistCustomMode.deleteMany({ where }),
+    );
+  }
+}

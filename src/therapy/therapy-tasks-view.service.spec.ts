@@ -1,0 +1,591 @@
+// Тесты на TherapyTasksViewService (не покрыт ранее): терапевтский обзор
+// задач по всем/одному клиенту. Фокус — двусторонний ownership: терапевт
+// видит только СВОИХ клиентов (активная TherapyRelation) и только задачи,
+// которые НАЗНАЧИЛ САМ (assignedBy: therapistId) — даже если у клиента есть
+// задачи от другого терапевта. В отличие от mode-maps.service.ts, здесь
+// проверка активности связи происходит на каждом обращении, а не только
+// при листинге — контраст зафиксирован в отчёте.
+import { TherapyTasksViewService } from './therapy-tasks-view.service';
+import { TherapyTasksService } from './therapy-tasks.service';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { encrypt } from '../utils/crypto';
+import { localDate } from '../utils/tz';
+
+function matchWhere(row: any, where: any): boolean {
+  return Object.entries(where ?? {}).every(([k, v]) => {
+    if (v === undefined) return true;
+    const val = row[k];
+    if (
+      v !== null &&
+      typeof v === 'object' &&
+      !Array.isArray(v) &&
+      !(v instanceof Date)
+    ) {
+      // Окно серии — обе границы сразу: { gte, lt } (streak-window.ts)
+      if ('gte' in v || 'lt' in v)
+        return (!('gte' in v) || val >= v.gte) && (!('lt' in v) || val < v.lt);
+      if ('in' in v) return v.in.includes(val);
+    }
+    return val === v;
+  });
+}
+
+function makeDb() {
+  const relations: any[] = [];
+  const tasks: any[] = [];
+  const users: any[] = [];
+  const ratings: any[] = [];
+  const schemaDiary: any[] = [];
+  const modeDiary: any[] = [];
+  const gratitudeDiary: any[] = [];
+  const db: any = {
+    therapyRelation: {
+      findMany: jest.fn(({ where }: any) =>
+        Promise.resolve(
+          relations
+            .filter((r) => matchWhere(r, where))
+            .map((r) => ({
+              ...r,
+              client: r.clientId
+                ? {
+                    id: r.clientId,
+                    firstName: r.clientName ?? null,
+                    // как в схеме: пояс не null, по умолчанию Москва
+                    notifyTimezone:
+                      users.find((u) => u.id === r.clientId)?.notifyTimezone ??
+                      'Europe/Moscow',
+                  }
+                : null,
+            })),
+        ),
+      ),
+      findFirst: jest.fn(({ where }: any) =>
+        Promise.resolve(relations.find((r) => matchWhere(r, where)) ?? null),
+      ),
+    },
+    userTask: {
+      findMany: jest.fn(({ where, orderBy }: any) => {
+        let rows = tasks.filter((t) => matchWhere(t, where));
+        if (orderBy?.createdAt === 'desc')
+          rows = [...rows].sort((a, b) => b.createdAt - a.createdAt);
+        return Promise.resolve(rows);
+      }),
+      // ленивое закрытие просроченной серии (streak-expire.ts) — только открытых
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hits = tasks.filter((t) => matchWhere(t, where));
+        hits.forEach((t) => Object.assign(t, data));
+        return Promise.resolve({ count: hits.length });
+      }),
+    },
+    user: {
+      findUnique: jest.fn(({ where }: any) =>
+        Promise.resolve(users.find((u) => u.id === where.id) ?? null),
+      ),
+    },
+    rating: {
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(ratings.filter((r) => matchWhere(r, where)).length),
+      ),
+      groupBy: jest.fn(({ where }: any) => {
+        const dates = new Set(
+          ratings.filter((r) => matchWhere(r, where)).map((r) => r.date),
+        );
+        return Promise.resolve(Array.from(dates).map((date) => ({ date })));
+      }),
+    },
+    schemaDiaryEntry: {
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(schemaDiary.filter((r) => matchWhere(r, where)).length),
+      ),
+      groupBy: jest.fn(({ where }: any) =>
+        Promise.resolve(schemaDiary.filter((r) => matchWhere(r, where))),
+      ),
+    },
+    modeDiaryEntry: {
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(modeDiary.filter((r) => matchWhere(r, where)).length),
+      ),
+      groupBy: jest.fn(({ where }: any) =>
+        Promise.resolve(modeDiary.filter((r) => matchWhere(r, where))),
+      ),
+    },
+    gratitudeDiaryEntry: {
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(
+          gratitudeDiary.filter((r) => matchWhere(r, where)).length,
+        ),
+      ),
+      findMany: jest.fn(({ where }: any) =>
+        Promise.resolve(gratitudeDiary.filter((r) => matchWhere(r, where))),
+      ),
+    },
+  };
+  return {
+    db,
+    relations,
+    tasks,
+    users,
+    ratings,
+    schemaDiary,
+    modeDiary,
+    gratitudeDiary,
+  };
+}
+
+function makeService() {
+  const t = makeDb();
+  const notificationService = {
+    schedule: jest.fn(() => Promise.resolve()),
+  } as any;
+  const tasksService = new TherapyTasksService(t.db, notificationService);
+  // Настоящий TherapyRelationsService: граница доступа одна на весь контур
+  // (assertHasClient), копии проверки во view-сервисе нет (аудит 2026-10, T4).
+  const relationsService = new TherapyRelationsService(t.db, {} as any);
+  const service = new TherapyTasksViewService(
+    t.db,
+    tasksService,
+    relationsService,
+  );
+  return { service, tasksService, ...t };
+}
+
+const T1 = 100n; // владелец связи
+const T2 = 200n; // чужой терапевт
+const CLIENT_A = 555n;
+const CLIENT_B = 777n;
+
+describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
+  it('видит только задачи своих активных клиентов и только те, что назначил сам', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+      clientName: 'Аня',
+    });
+    tasks.push(
+      {
+        id: 1,
+        userId: CLIENT_A,
+        assignedBy: T1,
+        type: 'custom',
+        text: encrypt('от T1') ?? 'от T1',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+      // Задача от ДРУГОГО терапевта тому же клиенту A — не должна попасть в обзор T1
+      {
+        id: 2,
+        userId: CLIENT_A,
+        assignedBy: T2,
+        type: 'custom',
+        text: encrypt('от T2') ?? 'от T2',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+      // Задача клиенту B, с которым у T1 нет связи — не должна попасть
+      {
+        id: 3,
+        userId: CLIENT_B,
+        assignedBy: T1,
+        type: 'custom',
+        text: encrypt('чужой клиент') ?? 'чужой клиент',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+    );
+    const result = await service.getAllTasksForTherapist(T1);
+    expect(result).toHaveLength(1);
+    expect(result[0].clientName).toBe('Аня');
+    expect(result[0].tasks).toHaveLength(1);
+    expect(result[0].tasks[0].text).toBe('от T1');
+  });
+
+  it('виртуальный клиент: имя берётся из clientAlias, иначе virtualClientName, иначе «Без имени · N»', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push({
+      id: 42,
+      therapistId: T1,
+      clientId: null,
+      status: 'active',
+      virtualClientName: 'Оффлайн клиент',
+    });
+    tasks.push({
+      id: 1,
+      userId: -42n,
+      assignedBy: T1,
+      type: 'custom',
+      text: 'офлайн задача',
+      targetDays: null,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+    const result = await service.getAllTasksForTherapist(T1);
+    expect(result).toHaveLength(1);
+    expect(result[0].clientId).toBe(-42n);
+    expect(result[0].clientName).toBe('Оффлайн клиент');
+  });
+
+  // docs/open/therapy.md: клиент без имени звался «ID 123» в доске заданий и
+  // «#123» на «Сегодня». Форма одна с сайтом (client-display-name.sync.spec.ts).
+  it('без псевдонима и имени — «Без имени · N», номер без минуса', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push({
+      id: 42,
+      therapistId: T1,
+      clientId: null,
+      status: 'active',
+      virtualClientName: null,
+    });
+    tasks.push({
+      id: 1,
+      userId: -42n,
+      assignedBy: T1,
+      type: 'custom',
+      text: 'офлайн задача',
+      targetDays: null,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+    const result = await service.getAllTasksForTherapist(T1);
+    expect(result[0].clientName).toBe('Без имени · 42');
+  });
+
+  // Регресс O2: userId: { lt: 0 } матчил ВСЕХ виртуальных клиентов терапевта
+  // разом — при батч-запросе (фикс N+1) группировка обязана держать задачи
+  // виртуальных клиентов раздельно, а не объединять их.
+  it('два виртуальных клиента — каждый видит только свои задачи, не задачи другого', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push(
+      {
+        id: 5,
+        therapistId: T1,
+        clientId: null,
+        status: 'active',
+        virtualClientName: 'Виртуальный 1',
+      },
+      {
+        id: 7,
+        therapistId: T1,
+        clientId: null,
+        status: 'active',
+        virtualClientName: 'Виртуальный 2',
+      },
+    );
+    tasks.push(
+      {
+        id: 1,
+        userId: -5n,
+        assignedBy: T1,
+        type: 'custom',
+        text: encrypt('задача первого') ?? 'задача первого',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        userId: -7n,
+        assignedBy: T1,
+        type: 'custom',
+        text: encrypt('задача второго') ?? 'задача второго',
+        targetDays: null,
+        needId: null,
+        dueDate: null,
+        done: null,
+        completedAt: null,
+        createdAt: new Date(),
+      },
+    );
+
+    const result = await service.getAllTasksForTherapist(T1);
+
+    expect(result).toHaveLength(2);
+    const first = result.find((r) => r.clientId === -5n)!;
+    const second = result.find((r) => r.clientId === -7n)!;
+    expect(first.tasks).toHaveLength(1);
+    expect(first.tasks[0].text).toBe('задача первого');
+    expect(second.tasks).toHaveLength(1);
+    expect(second.tasks[0].text).toBe('задача второго');
+  });
+});
+
+describe('TherapyTasksViewService.getTasksForClient — доступ по активной связи', () => {
+  it('без активной связи с клиентом — null (даже если задачи от этого терапевта в БД есть)', async () => {
+    const { service, tasks } = makeService();
+    tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T2,
+      type: 'custom',
+      text: 'x',
+      targetDays: null,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+    const result = await service.getTasksForClient(T2, CLIENT_A);
+    expect(result).toBeNull();
+  });
+
+  it('с активной связью — возвращает задачи, расшифрованные, с прогрессом через TherapyTasksService.getStreakProgress', async () => {
+    const { service, relations, tasks, users, ratings } = makeService();
+    relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
+    // TZ-стабильность: сервис считает «сегодня» в зоне клиента (localDate),
+    // а не в UTC. Фикстура обязана совпасть — иначе в окне 21:00–24:00 UTC
+    // Москва уже следующий день и doneToday ложно false (пред-существующий
+    // флейк, аудит 2026-07: Ось 3, TZ-хрупкие тесты).
+    const today = localDate('Europe/Moscow', new Date());
+    ratings.push({ userId: CLIENT_A, date: today });
+    tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('трекер каждый день') ?? 'трекер каждый день',
+      targetDays: 3,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+    const [task] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(task.text).toBe('трекер каждый день');
+    expect(task.doneToday).toBe(true);
+    expect(task.progress).toBe(1); // одна отметка сегодня => прогресс 1 из 3
+  });
+
+  it('сверка (правило №4): «N из 7 дней» у терапевта и у клиента — одно число, с дня назначения', async () => {
+    const { service, tasksService, relations, tasks, users, ratings } =
+      makeService();
+    relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    users.push({ id: CLIENT_A, notifyTimezone: 'Asia/Vladivostok' });
+    const now = Date.now();
+    for (let i = 0; i < 7; i++) {
+      const date = localDate(
+        'Asia/Vladivostok',
+        new Date(now - i * 86_400_000),
+      );
+      ratings.push({ userId: CLIENT_A, date });
+    }
+    tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('серия') ?? 'серия',
+      targetDays: 7,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(now - 2 * 86_400_000), // назначено позавчера
+    });
+    const [therapistView] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    const [clientView] = await tasksService.getTasks(CLIENT_A);
+    expect(therapistView.progress).toBe(3); // позавчера, вчера, сегодня
+    expect(clientView.progress).toBe(therapistView.progress);
+  });
+
+  it('виртуальный клиент (отрицательный id): без активной связи по relation.id — null; с ней — задачи без doneToday/progress', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push({
+      id: 42,
+      therapistId: T1,
+      clientId: null,
+      status: 'active',
+      virtualClientName: 'V',
+    });
+    tasks.push({
+      id: 1,
+      userId: -42n,
+      assignedBy: T1,
+      type: 'custom',
+      text: encrypt('офлайн задача') ?? 'офлайн задача',
+      targetDays: null,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+
+    const foreignAttempt = await service.getTasksForClient(T2, -42n);
+    expect(foreignAttempt).toBeNull();
+
+    const [task] = (await service.getTasksForClient(T1, -42n))!;
+    expect(task.text).toBe('офлайн задача');
+    expect(task.doneToday).toBeUndefined();
+    expect(task.progress).toBeUndefined();
+  });
+});
+
+// E15 аудита 2026-11: окно серии шло до «сейчас», и отметки после срока
+// засчитывались: просроченное задание закрывалось выполненным, а у закрытого
+// «не вышло» число у терапевта продолжало расти. Окно — targetDays местных
+// дней клиента; у закрытого задания оно замирает в момент закрытия.
+describe('TherapyTasksViewService.getTasksForClient — окно серии и закрытые задания (E15)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  const setup = (tz: string) => {
+    const ctx = makeService();
+    ctx.relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    ctx.users.push({ id: CLIENT_A, notifyTimezone: tz });
+    ctx.tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('серия') ?? 'серия',
+      targetDays: 3,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date('2026-11-01T01:00:00Z'),
+    });
+    return ctx;
+  };
+  const mark = (ratings: any[], ...dates: string[]) =>
+    dates.forEach((date) => ratings.push({ userId: CLIENT_A, date }));
+
+  it('отметки после срока: у психолога то же число, что клиент видел в последний день окна', async () => {
+    const { service, tasksService, tasks, ratings } = setup('Asia/Vladivostok');
+    // назначено в 11:00 1-го по Владивостоку: окно 1–3 ноября
+    mark(ratings, '2026-11-01', '2026-11-03');
+    jest.useFakeTimers({ now: new Date('2026-11-03T12:00:00Z') }); // 22:00 3-го
+    const [clientView] = await tasksService.getTasks(CLIENT_A);
+    expect(clientView.progress).toBe(2);
+
+    jest.setSystemTime(new Date('2026-11-05T02:00:00Z')); // 12:00 5-го
+    mark(ratings, '2026-11-04', '2026-11-05');
+    await tasksService.checkStreakTasks(CLIENT_A);
+    expect(tasks[0].done).toBeNull(); // до починки — true: 4 «дня» из 3
+    const [therapistView] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(therapistView.progress).toBe(clientView.progress);
+
+    // клиент открыл /tasks — просрочка закрыла задание «не вышло»
+    expect(await tasksService.getTasks(CLIENT_A)).toHaveLength(0);
+    const [closed] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(closed.done).toBe(false);
+    expect(closed.progress).toBe(2);
+  });
+
+  it('закрытое раньше срока: новые отметки в окне число не меняют', async () => {
+    const { service, tasks, ratings } = setup('Europe/Moscow');
+    mark(ratings, '2026-11-01');
+    // закрыто 1-го в 20:00 по Москве, дальше клиент отмечался в окне
+    Object.assign(tasks[0], {
+      done: false,
+      completedAt: new Date('2026-11-01T17:00:00Z'),
+    });
+    mark(ratings, '2026-11-02', '2026-11-03');
+    const [task] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(task.progress).toBe(1); // до починки — 3
+  });
+});
+
+// Хвост волны 3: просроченную серию лениво закрывал только getTasks клиента —
+// психолог видел её открытой, пока клиент не откроет «Задания».
+describe('просроченная серия закрывается и при чтении психологом (streak-expire.ts)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  const setup = () => {
+    const ctx = makeService();
+    ctx.relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    ctx.users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
+    ctx.tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('серия') ?? 'серия',
+      targetDays: 3,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date('2026-11-01T09:00:00Z'), // окно 1–3 ноября
+    });
+    // 5 ноября: срок вышел, клиент «Задания» не открывал
+    jest.useFakeTimers({ now: new Date('2026-11-05T09:00:00Z') });
+    return ctx;
+  };
+
+  it('карточка клиента у психолога: закрыто «не вышло» — и клиент находит его закрытым', async () => {
+    const { service, tasksService, tasks } = setup();
+    const [seen] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(seen.done).toBe(false); // до починки — null: «открыто»
+    expect(tasks[0].done).toBe(false);
+    expect(tasks[0].completedAt).toEqual(new Date('2026-11-05T09:00:00Z'));
+
+    // клиент: в активных его нет — закрытие лежит в БД, а не только в ответе
+    expect(await tasksService.getTasks(CLIENT_A)).toHaveLength(0);
+    expect(tasks[0].completedAt).toEqual(new Date('2026-11-05T09:00:00Z'));
+  });
+
+  it('обзор всех клиентов: то же закрытие, карточка клиента видит его', async () => {
+    const { service, tasks } = setup();
+    const [group] = await service.getAllTasksForTherapist(T1);
+    expect(group.tasks[0].done).toBe(false); // до починки — null
+    expect(tasks[0].done).toBe(false);
+    const [card] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(card.done).toBe(false);
+  });
+
+  it('закрыл клиент — психолог видит то же закрытие, не перезаписывая его', async () => {
+    const { service, tasksService, tasks } = setup();
+    await tasksService.getTasks(CLIENT_A);
+    const closedAt = tasks[0].completedAt;
+    jest.setSystemTime(new Date('2026-11-06T09:00:00Z'));
+    const [seen] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(seen.done).toBe(false);
+    expect(seen.completedAt).toEqual(closedAt);
+  });
+});

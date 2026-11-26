@@ -1,0 +1,1278 @@
+// @vitest-environment jsdom
+// Компонентные тесты SettingsSheet (webapp) — денежный/доверительный путь
+// «Данные»: удаление аккаунта (обязательное двойное подтверждение, ошибка
+// API не должна молча «удаться») и экспорт данных для терапевта.
+// Образец сетапа: SubscribePage.test.tsx (мок '../api'), NoteSheet.test.tsx
+// (MemoryRouter — useHistorySheet требует useNavigate/useLocation),
+// AuthCallback.test.tsx (подмена window.location для window.location.reload).
+import { useEffect, useState } from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import { SettingsSheet } from './SettingsSheet';
+import { requestSettingsOpen } from './settingsSheet/settingsLaunch';
+import {
+  withAddressForm,
+  mockLocationReload,
+  restoreLocation,
+  seedWipeTestStorage,
+  openDeleteSheet,
+  confirmAccountDeletion,
+  fillTherapistRequestForm,
+} from './settingsSheet/SettingsSheet.test-helpers';
+
+vi.mock('../api', () => ({
+  api: {
+    getSettings: vi.fn(),
+    getPair: vi.fn(),
+    getTherapyRelation: vi.fn(),
+    getTherapistRequest: vi.fn(),
+    getExport: vi.fn(),
+    deleteAllUserData: vi.fn(),
+    updateSettings: vi.fn(),
+    createPairInvite: vi.fn(),
+    joinPair: vi.fn(),
+    leavePair: vi.fn(),
+    leaveTherapy: vi.fn(),
+    joinTherapy: vi.fn(),
+    createTherapyInvite: vi.fn(),
+    updateName: vi.fn(),
+    deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
+    submitTherapistRequest: vi.fn(),
+  },
+  reportClientError: vi.fn(),
+}));
+import { api } from '../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const SETTINGS = {
+  notifyEnabled: false,
+  notifyLocalHour: 21,
+  notifyTimezone: 'Europe/Moscow',
+  notifyReminderEnabled: false,
+  notifySummaryEnabled: false,
+  pairCardDismissed: false,
+  mySchemaIds: [],
+  myModeIds: [],
+  therapistShareCards: true,
+  therapistShareProfile: true,
+};
+
+let reloadSpy: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  // jsdom не реализует scrollIntoView (используется сайдбар-навигацией).
+  Element.prototype.scrollIntoView = vi.fn();
+  mockApi.getSettings.mockResolvedValue(SETTINGS);
+  mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
+  mockApi.getTherapyRelation.mockResolvedValue(null);
+  mockApi.getTherapistRequest.mockResolvedValue(null);
+  mockApi.updateSettings.mockResolvedValue(undefined);
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
+  reloadSpy = mockLocationReload();
+});
+
+afterEach(() => {
+  cleanup();
+  restoreLocation();
+});
+
+async function renderSheet(userRole?: 'CLIENT' | 'THERAPIST') {
+  const utils = render(
+    <MemoryRouter>
+      <SettingsSheet onClose={vi.fn()} userRole={userRole} />
+    </MemoryRouter>,
+  );
+  // Дожидаемся загрузки настроек (useEffect -> api.getSettings), иначе
+  // компонент застрял бы на силуэте (SettingsSkeleton, заголовок — плашка).
+  await screen.findByText('Настройки');
+  return utils;
+}
+
+async function renderSheetWithForm(form: 'ty' | 'vy') {
+  const utils = render(
+    <MemoryRouter>{withAddressForm(<SettingsSheet onClose={vi.fn()} />, form)}</MemoryRouter>,
+  );
+  await screen.findByText('Настройки');
+  return utils;
+}
+
+/** Находит переключатель (role="switch"), стоящий в одной строке SRow с заголовком title. */
+function toggleForRow(title: string): HTMLElement {
+  const row = screen.getByText(title).parentElement!.parentElement!;
+  return within(row).getByRole('switch');
+}
+
+describe('SettingsSheet — имена переключателей', () => {
+  // Шов «строка подписана, а контрол нет» (аудит 2026-10, «Доступность»):
+  // заголовок SRow виден глазами, а switch рядом был безымянным.
+  it('каждый switch уведомлений назван заголовком своей строки', async () => {
+    await renderSheetWithForm('ty');
+    for (const title of ['Итоги дня', 'Напоминания']) {
+      expect(screen.getByRole('switch', { name: title })).toBe(toggleForRow(title));
+    }
+  });
+});
+
+describe('SettingsSheet — диалог (К4)', () => {
+  // К4 дизайн-аудита 2026-08: оверлей — role="dialog"/aria-modal.
+  it('размечен как диалог', async () => {
+    await renderSheet();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+});
+
+// QA 2026-11, М10: раздел «Обращение» был в контенте, а в оглавлении слева —
+// нет. Оглавление и разделы — два места, обязанные совпадать (правило №4).
+describe('SettingsSheet — оглавление совпадает с разделами', () => {
+  it.each(['CLIENT', 'THERAPIST'] as const)('%s: у каждого раздела есть строка в оглавлении', async (role) => {
+    await renderSheet(role);
+    const sections = document.querySelectorAll('.settings-content-inner [id^="s-"]');
+    const nav = document.querySelectorAll('.settings-sidenav .settings-sidenav-item');
+    expect(sections.length).toBeGreaterThan(5);
+    expect([...nav].map((n) => n.getAttribute('data-target'))).toEqual([...sections].map((el) => el.id)); // и состав, и порядок
+    expect(screen.getByRole('button', { name: 'Обращение' })).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — раздел из общего поиска', () => {
+  it('запрошенный раздел прокручивается в видимую область после загрузки настроек, один раз', async () => {
+    requestSettingsOpen('s-data');
+    const { unmount } = await renderSheet();
+    const scrolled = () => vi.mocked(Element.prototype.scrollIntoView).mock.contexts.map((el) => (el as Element).id);
+    // Прокрутку запускает эффект после загрузки настроек: заголовок уже на экране, эффект ещё нет.
+    await waitFor(() => expect(scrolled()).toEqual(['s-data']));
+    unmount();
+    await renderSheet();
+    await act(async () => {}); // эффект второго листа отработал
+    expect(scrolled()).toEqual(['s-data']); // лист открыт заново — без запроса не прокручивается
+  });
+});
+
+describe('SettingsSheet — удаление аккаунта: подтверждение обязательно', () => {
+  it('первый клик открывает предупреждение с кнопками «Отмена»/«Удалить», без вызова api', async () => {
+    await renderSheet();
+    openDeleteSheet();
+
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
+    expect(screen.getByText('Отмена')).toBeTruthy();
+    expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
+  });
+
+  it('«Отмена» закрывает предупреждение, ничего не удаляя', async () => {
+    await renderSheet();
+    openDeleteSheet();
+    fireEvent.click(screen.getByText('Отмена'));
+
+    expect(screen.queryByText('Отмена')).toBeNull();
+    expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull();
+    expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
+  });
+
+  it('первый «Удалить» только переводит во второй шаг подтверждения — api ещё не вызван', async () => {
+    await renderSheet();
+    openDeleteSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+
+    expect(screen.getByText('Точно? Восстановить невозможно.')).toBeTruthy();
+    expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
+  });
+
+  it('только финальное «Да, удалить всё навсегда» вызывает api.deleteAllUserData', async () => {
+    mockApi.deleteAllUserData.mockResolvedValue(undefined);
+    await renderSheet();
+    confirmAccountDeletion();
+
+    await waitFor(() =>
+      expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1),
+    );
+  });
+});
+
+describe('SettingsSheet — удаление аккаунта: успех', () => {
+  it('после успешного api.deleteAllUserData чистит localStorage/sessionStorage и перезагружает страницу', async () => {
+    mockApi.deleteAllUserData.mockResolvedValue(undefined);
+    seedWipeTestStorage();
+
+    await renderSheet();
+    confirmAccountDeletion();
+
+    await waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
+    // Тема и cookie-согласие переживают очистку осознанно, остальное — нет.
+    expect(localStorage.getItem('app_theme')).toBe('dark');
+    expect(localStorage.getItem('cookie_consent')).toBe('accepted');
+    expect(localStorage.getItem('some_other_key')).toBeNull();
+  });
+});
+
+describe('SettingsSheet — удаление аккаунта: ошибка API', () => {
+  it('ошибка api.deleteAllUserData НЕ перезагружает страницу и НЕ чистит хранилище', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    localStorage.setItem('some_other_key', 'still-here');
+
+    await renderSheet();
+    confirmAccountDeletion();
+
+    await waitFor(() =>
+      expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1),
+    );
+    // Даём микротаскам catch-ветки отработать.
+    await act(async () => {});
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(localStorage.getItem('some_other_key')).toBe('still-here');
+  });
+
+  it('после ошибки предложение возвращается к первому шагу (кнопка «Удалить» снова доступна)', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    confirmAccountDeletion();
+
+    await waitFor(() =>
+      expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull(),
+    );
+    expect(screen.getByRole('button', { name: 'Удалить' })).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — экспорт данных для терапевта', () => {
+  it('клик по «Сводка для терапевта» вызывает api.getExport и показывает текст в модалке', async () => {
+    mockApi.getExport.mockResolvedValue({ text: 'Экспорт: 30 дней данных…' });
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Сводка для терапевта'));
+
+    await screen.findByText('Экспорт: 30 дней данных…');
+    expect(mockApi.getExport).toHaveBeenCalledTimes(1);
+  });
+
+  it('в модалке экспорта есть кнопка «Скопировать», закрытие модалки её убирает', async () => {
+    mockApi.getExport.mockResolvedValue({ text: 'текст сводки' });
+    await renderSheet();
+    fireEvent.click(screen.getByText('Сводка для терапевта'));
+    await screen.findByText('текст сводки');
+
+    expect(screen.getByText('Скопировать')).toBeTruthy();
+  });
+});
+
+// Регрессия (аудит доверия к тестам, п.3): «Сводка для терапевта» звала
+// api.getExport() без try/catch — при отказе сети обработчик падал
+// необработанным промисом. Ни сообщения, ни завершения ожидания: для
+// пользователя это выглядело как «нажал и ничего не произошло».
+describe('сводка для терапевта: отказ API виден пользователю', () => {
+  it('ошибка getExport показывает сообщение, а не тишину', async () => {
+    mockApi.getExport.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Сводка для терапевта'));
+
+    await waitFor(() =>
+      expect(screen.queryByText(/Не удалось собрать сводку/i)).toBeTruthy(),
+    );
+    // Модалка со сводкой не открывается — показывать нечего.
+    expect(screen.queryByText(/Скопировать/i)).toBeNull();
+  });
+});
+
+// Регрессия (CI run 36409902702): таймер тоста «Сохранено ✓» не чистился при
+// размонтировании и стрелял после сноса jsdom — «ReferenceError: window is not
+// defined» валил весь прогон vitest, хотя все тесты уже прошли.
+describe('SettingsSheet — таймеры тоста не переживают размонтирование', () => {
+  it('после сохранения и unmount не остаётся висящих таймеров', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const { unmount } = await renderSheet();
+      fireEvent.click(toggleForRow('Итоги дня'));
+      await screen.findByText('Сохранено');
+      unmount();
+      // jsdom 31 после снятия фокуса ставит одноразовый интервал фокус-фиксапа (~17 мс): прогоняем его.
+      await vi.advanceTimersByTimeAsync(50);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// ── Сохранение настройки (patch): успех и отказ ──────────────────────────────
+// Регрессия: patch() показывало «Сохранено ✓» независимо от того, удался ли
+// api.updateSettings — отказ сети выглядел как успех. Тест ловит именно это.
+describe('SettingsSheet — сохранение переключателя видно пользователю', () => {
+  it('успех: тумблер переключается, вызывается api.updateSettings, показывается «Сохранено ✓»', async () => {
+    await renderSheet();
+    const toggle = toggleForRow('Итоги дня');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+
+    fireEvent.click(toggle);
+
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({
+        notifySummaryEnabled: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(toggle.getAttribute('aria-checked')).toBe('true'),
+    );
+    await screen.findByText('Сохранено');
+  });
+
+  it('отказ сети: показывается «Не сохранилось», тумблер откатывается назад', async () => {
+    mockApi.updateSettings.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    const toggle = toggleForRow('Итоги дня');
+
+    fireEvent.click(toggle);
+
+    // Оптимистичное состояние сразу включается…
+    await waitFor(() =>
+      expect(toggle.getAttribute('aria-checked')).toBe('true'),
+    );
+    // ...но после отказа сети откатывается и видна причина, а не молчание.
+    await screen.findByText('Не сохранилось');
+    await waitFor(() =>
+      expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe(
+        'false',
+      ),
+    );
+    expect(screen.queryByText('Сохранено')).toBeNull();
+  });
+});
+
+// ── Переключение подвидов (время уведомления) ────────────────────────────────
+describe('SettingsSheet — переключение вида «Время уведомления»', () => {
+  it('открывает список часов, выбор часа сохраняет и возвращает на главный экран', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Время'));
+    await screen.findByText('Время уведомления');
+
+    fireEvent.click(screen.getByText('09:00'));
+
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({
+        notifyLocalHour: 9,
+      }),
+    );
+    await screen.findByText('Настройки');
+    expect(screen.queryByText('Время уведомления')).toBeNull();
+  });
+
+  it('кнопка «Назад» в подвиде возвращает на главный экран без сохранения', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Время'));
+    await screen.findByText('Время уведомления');
+    fireEvent.click(screen.getByText('← Назад'));
+
+    await screen.findByText('Настройки');
+    expect(mockApi.updateSettings).not.toHaveBeenCalled();
+  });
+});
+
+// ── Пара: приглашение и вход по коду ──────────────────────────────────────────
+// «Пригласить друга»/«Войти» встречаются на странице дважды (партнёр и,
+// отдельно, приглашение в приложение/кабинет терапевта) — скоуп через блок
+// секции «Партнёр» (id="s-partner"), чтобы клик не попадал в чужой обработчик.
+function partnerSectionContent(): HTMLElement {
+  return document.getElementById('s-partner')!
+    .nextElementSibling as HTMLElement;
+}
+
+describe('SettingsSheet — пара: создание приглашения', () => {
+  it('успех: показывает ссылку-приглашение для отправки другу', async () => {
+    mockApi.createPairInvite.mockResolvedValue({
+      code: 'ABC123',
+      url: 'https://schemehappens.ru/p/ABC123',
+    });
+    mockApi.getPair
+      .mockResolvedValueOnce({ partners: [], pendingCode: null })
+      .mockResolvedValueOnce({ partners: [], pendingCode: 'ABC123' });
+    await renderSheet();
+
+    fireEvent.click(
+      within(partnerSectionContent()).getByText('Позвать в пару'),
+    );
+
+    await screen.findByText('https://schemehappens.ru/p/ABC123');
+    expect(mockApi.createPairInvite).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SettingsSheet — пара: вход по коду', () => {
+  it('неверный код — видимая ошибка, а не тишина', async () => {
+    mockApi.joinPair.mockRejectedValue(new Error('код не найден'));
+    await renderSheet();
+
+    fireEvent.click(within(partnerSectionContent()).getByText('Ввести код'));
+    fireEvent.change(
+      within(partnerSectionContent()).getByPlaceholderText('Код'),
+      {
+        target: { value: 'zzzzzz' },
+      },
+    );
+    fireEvent.click(within(partnerSectionContent()).getByText('Присоединиться'));
+
+    await screen.findByText('Код не найден или уже использован');
+  });
+
+  it('верный код — данные партнёра подгружаются заново', async () => {
+    mockApi.joinPair.mockResolvedValue(undefined);
+    mockApi.getPair
+      .mockResolvedValueOnce({ partners: [], pendingCode: null })
+      .mockResolvedValueOnce({
+        partners: [
+          {
+            code: 'XYZ',
+            partnerName: 'Аня',
+            partnerTodayDone: true,
+            partnerIndex: 7.2,
+          },
+        ],
+        pendingCode: null,
+      });
+    await renderSheet();
+
+    fireEvent.click(within(partnerSectionContent()).getByText('Ввести код'));
+    fireEvent.change(
+      within(partnerSectionContent()).getByPlaceholderText('Код'),
+      {
+        target: { value: 'xyz123' },
+      },
+    );
+    fireEvent.click(within(partnerSectionContent()).getByText('Присоединиться'));
+
+    await screen.findByText('Аня сегодня');
+    expect(mockApi.joinPair).toHaveBeenCalledWith('XYZ123');
+  });
+});
+
+// ── Удаление аккаунта: отказ теперь виден пользователю (не только «сброс») ──
+describe('SettingsSheet — удаление аккаунта: отказ показывает сообщение', () => {
+  it('после ошибки видно «Не удалось удалить аккаунт» на первом шаге, а не тишина', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    confirmAccountDeletion();
+
+    await screen.findByText(/Не удалось удалить аккаунт/i);
+  });
+
+  it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    confirmAccountDeletion();
+    await screen.findByText(/Не удалось удалить аккаунт/i);
+
+    fireEvent.click(screen.getByText('Отмена'));
+    openDeleteSheet();
+
+    expect(screen.queryByText(/Не удалось удалить аккаунт/i)).toBeNull();
+  });
+
+  it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheetWithForm('ty');
+    confirmAccountDeletion();
+    await screen.findByText(
+      'Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.',
+    );
+    cleanup();
+
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
+    await renderSheetWithForm('vy');
+    confirmAccountDeletion();
+    await screen.findByText(
+      'Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.',
+    );
+  });
+});
+
+// ── ты/вы: валидация заявки на роль специалиста звучит в обеих формах ────────
+describe('SettingsSheet — форма обращения в заявке на роль специалиста', () => {
+  it('форма «ты»: пустая заявка просит на «ты»', async () => {
+    await renderSheetWithForm('ty');
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await screen.findByText('Заполни ФИО, квалификацию и контакты');
+  });
+
+  it('форма «вы»: та же проверка звучит на «вы»', async () => {
+    await renderSheetWithForm('vy');
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await screen.findByText('Заполните ФИО, квалификацию и контакты');
+  });
+});
+
+// ── Регрессии check-silent-catch: провал молча проглатывался, теперь виден ──
+function mockClipboard() {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true, writable: true });
+  return writeText;
+}
+
+describe('SettingsSheet — сохранение имени: отказ виден (был: catch намеренно пуст)', () => {
+  it('ошибка api.updateName показывает сообщение, кнопка возвращается в рабочее состояние', async () => {
+    mockApi.updateName.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    const input = screen.getByPlaceholderText('Твоё имя');
+    fireEvent.change(input, { target: { value: 'Новое Имя' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+
+    await screen.findByText('Не удалось сохранить имя');
+    expect(screen.getByText('Сохранить')).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — «Отключиться от терапевта»: отказ виден (был: .catch(() => {}))', () => {
+  it('ошибка api.leaveTherapy показывает сообщение, связь не разрывается визуально', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
+    mockApi.leaveTherapy.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    await screen.findByText('Терапевт: Анна');
+
+    // Инцидент 2026-10-26: один тап рвал связь — теперь сначала вопрос.
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    expect(mockApi.leaveTherapy).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByText('Отключиться', { selector: 'button' }));
+    await screen.findByText(/Не удалось отключиться/);
+    // Всё ещё подключены — не откатились на форму ввода кода молча.
+    expect(screen.getByText('Терапевт: Анна')).toBeTruthy();
+  });
+
+  it('подтверждение → связь снята, видна форма кода', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
+    mockApi.leaveTherapy.mockResolvedValue(undefined);
+    await renderSheet();
+    await screen.findByText('Терапевт: Анна');
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    fireEvent.click(await screen.findByText('Отключиться', { selector: 'button' }));
+    await screen.findByLabelText('Код от терапевта');
+    expect(mockApi.leaveTherapy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SettingsSheet — приглашение клиенту (терапевт): отказ и подделка «Скопировано ✓»', () => {
+  it('ошибка api.createTherapyInvite показывает сообщение', async () => {
+    mockApi.createTherapyInvite.mockRejectedValue(new Error('network down'));
+    await renderSheet('THERAPIST');
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
+    await screen.findByText(/Не удалось создать приглашение/);
+  });
+
+  it('регресс: клипборд падает — раньше «Скопировано ✓» показывалось всё равно, теперь видна сама ссылка', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true, writable: true,
+    });
+    await renderSheet('THERAPIST');
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
+
+    await screen.findByText('https://t.me/bot?start=abc');
+    expect(screen.queryByText('Скопировано ✓')).toBeNull();
+  });
+
+  it('клипборд успевает — показывает «Скопировано ✓»', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
+    mockClipboard();
+    await renderSheet('THERAPIST');
+    fireEvent.click(screen.getByText('Создать приглашение клиенту'));
+    await screen.findByText('Ссылка скопирована');
+    // Код — отдельной строкой, для клиента на сайте (инцидент 2026-10-26).
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByText('Скопировать код')).toBeTruthy();
+  });
+});
+
+describe('SettingsSheet — «Выйти из пары»: отказ виден (был: .catch(() => {}))', () => {
+  it('ошибка api.leavePair показывает сообщение', async () => {
+    mockApi.getPair.mockResolvedValue({ partners: [{ code: 'ABC', partnerName: 'Друг', partnerTodayDone: false, partnerIndex: null }], pendingCode: null });
+    mockApi.leavePair.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+    await screen.findByText('Выйти из пары');
+
+    fireEvent.click(screen.getByText('Выйти из пары'));
+    // Выход идёт через подтверждение (ONE_FRONTEND_PLAN): первый тап пару не рвёт.
+    expect(mockApi.leavePair).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByText('Выйти'));
+    await screen.findByText(/Не удалось выйти из пары/);
+    expect(mockApi.leavePair).toHaveBeenCalledWith('ABC');
+  });
+});
+
+describe('SettingsSheet — загрузка партнёра: отказ не выглядит как «нет партнёра»', () => {
+  it('регресс: getPair падает — видна ошибка с «Повторить», а не форма приглашения', async () => {
+    mockApi.getPair.mockRejectedValue(new Error('network down'));
+    await renderSheet();
+
+    await screen.findByText('Не удалось загрузить данные о партнёре');
+    // Раньше подключённый пользователь на сбое сети видел форму приглашения
+    // партнёра («Ввести код») — как будто партнёр пропал, а не сбой сети.
+    expect(screen.queryByText('Ввести код')).toBeNull();
+    expect(screen.getByText('Повторить')).toBeTruthy();
+  });
+
+  it('«Повторить» после починки сети загружает данные партнёра', async () => {
+    mockApi.getPair.mockRejectedValueOnce(new Error('network down'));
+    await renderSheet();
+    await screen.findByText('Повторить');
+
+    mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
+    fireEvent.click(screen.getByText('Повторить'));
+    await screen.findByText('Позвать в пару');
+  });
+});
+
+describe('SettingsSheet — удаление результатов YSQ: приватность (был: localStorage чистился ДО ответа сервера)', () => {
+  beforeEach(() => {
+    localStorage.setItem('ysq_progress', JSON.stringify({ answers: [1] }));
+  });
+
+  // Кнопка сначала спрашивает подтверждение и стирает всё про тест
+  // (DELETE /api/ysq-data) — подробные сценарии в DataSection.test.tsx.
+  async function confirmYsqDelete() {
+    await renderSheet();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    fireEvent.click(await screen.findByText('Удалить результаты теста'));
+    fireEvent.click(await screen.findByText('Удалить всё'));
+  }
+
+  it('ошибка api.deleteYsqData: localStorage НЕ очищается, видна ошибка, окно не закрывается', async () => {
+    mockApi.deleteYsqData.mockRejectedValue(new Error('network down'));
+    await confirmYsqDelete();
+
+    await screen.findByText(/Не удалось удалить/);
+    expect(localStorage.getItem('ysq_progress')).not.toBeNull();
+    // Подтверждение осталось открытым.
+    expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
+  });
+
+  it('успех: localStorage очищается только после подтверждённого удаления', async () => {
+    mockApi.deleteYsqData.mockResolvedValue(undefined);
+    await confirmYsqDelete();
+
+    await waitFor(() => expect(mockApi.deleteYsqData).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(localStorage.getItem('ysq_progress')).toBeNull());
+  });
+});
+
+// ── Отказ getSettings/getTherapistRequest: экран не должен зависнуть или упасть ──
+describe('SettingsSheet — сбой начальной загрузки не блокирует экран', () => {
+  it('getSettings() падает — используются безопасные дефолты, экран открывается', async () => {
+    mockApi.getSettings.mockRejectedValueOnce(new Error('network down'));
+    await renderSheet();
+    // Дефолт notifySummaryEnabled=false — тумблер «Итоги дня» реально отрисован
+    // и выключен, а не «повис» на силуэте загрузки.
+    expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('getTherapistRequest() падает — «Не загрузилось» вместо формы новой заявки (дубль не уйдёт)', async () => {
+    mockApi.getTherapistRequest.mockRejectedValueOnce(new Error('network down'));
+    await renderSheet();
+    expect(await screen.findByText('Не загрузилось.')).toBeTruthy();
+    expect(screen.queryByText('Я психолог — подать заявку')).toBeNull();
+  });
+});
+
+describe('SettingsSheet — заявка на специалиста: отказ сервера виден (не только клиентская валидация)', () => {
+  it('api.submitTherapistRequest падает — текст ошибки сервера показан, форма не закрывается', async () => {
+    mockApi.submitTherapistRequest.mockRejectedValue(new Error('уже подана заявка'));
+    await renderSheet();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fillTherapistRequestForm();
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await screen.findByText('уже подана заявка');
+    // Форма всё ещё открыта — поля никуда не делись.
+    expect(screen.getByPlaceholderText('ФИО')).toBeTruthy();
+  });
+
+  it('успех: заявка уходит на сервер, форма закрывается, статус — «на рассмотрении»', async () => {
+    mockApi.submitTherapistRequest.mockResolvedValue(undefined);
+    await renderSheet();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fillTherapistRequestForm();
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await waitFor(() =>
+      expect(mockApi.submitTherapistRequest).toHaveBeenCalledWith({
+        fullName: 'Иван Иванов', qualification: 'Психолог', contacts: '@ivan', message: undefined,
+      }),
+    );
+    await screen.findByText('Заявка на рассмотрении.', { exact: false });
+    expect(screen.queryByPlaceholderText('ФИО')).toBeNull();
+  });
+});
+
+// ── ты/вы: переключатель формы обращения ──────────────────────────────────────
+describe('SettingsSheet — переключатель формы обращения (ты/вы)', () => {
+  it('клик «На «вы»»» сохраняет форму локально и на сервере', async () => {
+    const setForm = vi.fn();
+    render(
+      <MemoryRouter>{withAddressForm(<SettingsSheet onClose={vi.fn()} />, 'ty', setForm)}</MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByText('На «вы»'));
+
+    expect(setForm).toHaveBeenCalledWith('vy');
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ addressForm: 'vy' }),
+    );
+  });
+
+  it('текущая форма отмечена выбранным чипом', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, addressForm: 'vy' });
+    await renderSheetWithForm('vy');
+    expect(screen.getByRole('radio', { name: 'На «вы»' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'На «ты»' }).getAttribute('aria-checked')).toBe('false');
+  });
+});
+
+// ── Подвиды: частота, тихие часы, часовой пояс (аналогично «время») ──────────
+describe('SettingsSheet — переключение подвидов «Частота»/«Тихие часы»/«Часовой пояс»', () => {
+  it('«Частота»: выбор варианта сохраняет и возвращает на главный экран', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
+    await renderSheet();
+    fireEvent.click(screen.getByText('Частота'));
+    await screen.findByText('Частота напоминаний');
+
+    fireEvent.click(screen.getByText('Каждый день'));
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ notifyFrequency: 0 }),
+    );
+    await screen.findByText('Настройки');
+  });
+
+  it('«Тихие часы»: пресет — нативная кнопка, клик сохраняет', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
+    await renderSheet();
+    fireEvent.click(screen.getByText('Тихие часы'));
+    await screen.findByText('В тихие часы бот не пишет вообще', { exact: false });
+
+    const firstPreset = screen.getAllByRole('button').find(b => b.textContent?.includes('–'));
+    expect(firstPreset).toBeTruthy();
+    expect(firstPreset!.tagName).toBe('BUTTON');
+    fireEvent.click(firstPreset!);
+    await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
+  });
+
+  it('«Часовой пояс»: выбор часового пояса сохраняет и возвращает на главный экран', async () => {
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
+    await renderSheet();
+    fireEvent.click(screen.getByText('Часовой пояс'));
+    await waitFor(() => expect(mockApi.updateSettings).not.toHaveBeenCalled());
+
+    const moscow = screen.getAllByText(/Москва/i)[0];
+    fireEvent.click(moscow);
+    await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
+    await screen.findByText('Настройки');
+  });
+});
+
+describe('SettingsSheet — «Меньше движения»: тумблер показывает подтверждение сохранения', () => {
+  it('клик по тумблеру показывает «Сохранено ✓»', async () => {
+    await renderSheet();
+    const row = screen.getByText('Меньше движения').parentElement!.parentElement!;
+    fireEvent.click(within(row).getByRole('switch'));
+    await screen.findByText('Сохранено');
+  });
+});
+
+// ── Уведомления: пауза, зависимые строки, игровой режим ───────────────────────
+describe('SettingsSheet — блок уведомлений: пауза и зависимые от notifyEnabled строки', () => {
+  it('notifyPausedUntil в будущем — показывает баннер паузы, «Возобновить» снимает её', async () => {
+    const future = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyPausedUntil: future });
+    await renderSheet();
+    await screen.findByText(/Уведомления на паузе до/);
+
+    fireEvent.click(screen.getByText('Возобновить'));
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ notifyPausedUntil: null }),
+    );
+  });
+
+  it('«Время»/«Частота»/«Тихие часы»/«Часовой пояс» скрыты, пока и «Итоги дня», и «Напоминания» выключены', async () => {
+    await renderSheet();
+    expect(screen.queryByText('Частота')).toBeNull();
+    expect(screen.queryByText('Тихие часы')).toBeNull();
+  });
+
+  it('включение «Итоги дня» показывает зависимые строки, включая «Игровой режим»', async () => {
+    await renderSheet();
+    fireEvent.click(toggleForRow('Итоги дня'));
+    await waitFor(() => expect(screen.getByText('Игровой режим')).toBeTruthy());
+
+    const gameRow = screen.getByText('Игровой режим').parentElement!.parentElement!;
+    fireEvent.click(within(gameRow).getByRole('switch'));
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ notifyGamified: true }),
+    );
+  });
+});
+
+// ── Кабинет терапевта: режим, доступ и приглашение — сфера видимости (терапевт видит SRow) ──
+describe('SettingsSheet — режим терапевта (userRole=THERAPIST): блок «Режим» и «Открыть кабинет»', () => {
+  // #902: на телефоне сайдбар с переключателем скрыт — режим выбирается первым
+  // блоком настроек; выбор другого режима закрывает лист (goBack), чтобы
+  // человек оказался в выбранном режиме, а не остался в настройках.
+  async function renderTherapist(therapistMode: boolean) {
+    const onClose = vi.fn();
+    const onSet = vi.fn();
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={onClose} userRole="THERAPIST" therapistMode={therapistMode} onSetTherapistMode={onSet} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    return { onClose, onSet };
+  }
+  const modeGroup = () => screen.getByRole('tablist', { name: 'Режим' });
+
+  it('первым блоком главного вида — группа «Режим» с «Клиент»/«Терапевт», нажат текущий режим', async () => {
+    await renderTherapist(true);
+    const group = modeGroup();
+    expect(within(group).getByRole('tab', { name: 'Клиент' }).getAttribute('aria-selected')).toBe('false');
+    expect(within(group).getByRole('tab', { name: 'Терапевт' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByText(/Кабинет терапевта — клиенты и концептуализации/)).toBeTruthy();
+    const firstSection = document.querySelector('.st-inner .st-section')!;
+    expect(firstSection.contains(group)).toBe(true);
+    expect(screen.getByText('Режим', { selector: 'button' })).toBeTruthy(); // пункт бокового оглавления
+  });
+
+  it('«Клиент» зовёт обработчик с false и закрывает лист — сначала закрытие, затем переключение', async () => {
+    const { onClose, onSet } = await renderTherapist(true);
+    fireEvent.click(within(modeGroup()).getByRole('tab', { name: 'Клиент' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onSet).toHaveBeenCalledTimes(1);
+    expect(onSet).toHaveBeenCalledWith(false);
+    expect(onSet.mock.invocationCallOrder[0]).toBeGreaterThan(onClose.mock.invocationCallOrder[0]);
+  });
+
+  it('«Терапевт» из режима клиента зовёт обработчик с true и закрывает лист', async () => {
+    const { onClose, onSet } = await renderTherapist(false);
+    fireEvent.click(within(modeGroup()).getByRole('tab', { name: 'Терапевт' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onSet).toHaveBeenCalledWith(true);
+  });
+
+  it('тап по текущему режиму ничего не делает: лист открыт, обработчик не зван', async () => {
+    const { onClose, onSet } = await renderTherapist(true);
+    fireEvent.click(within(modeGroup()).getByRole('tab', { name: 'Терапевт' }));
+    expect(onSet).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('Настройки')).toBeTruthy();
+  });
+
+  // #902: /account вне AppShell, а с телефона из кабинета другого пути к нему нет —
+  // под переключателем режима строка-вход. Как и выбор режима, она сначала
+  // закрывает лист (goBack), и только потом переходит.
+  it('под переключателем режима — строка «Аккаунт и способы входа» с подписью, в том же блоке', async () => {
+    await renderTherapist(true);
+    const row = screen.getByRole('button', { name: /Аккаунт и способы входа/ });
+    expect(within(row).getByText('Привязки, двухфакторная защита, выход')).toBeTruthy();
+    expect(modeGroup().closest('.st-section')!.contains(row)).toBe(true);
+  });
+
+  it('клик по строке закрывает лист и только затем ведёт на /account', async () => {
+    const log: string[] = [];
+    // Как в AppOverlays: onClose размонтирует лист (иначе хук истории видит вторую
+    // смену адреса — уже /account — и зовёт закрытие повторно).
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return open ? (
+        <SettingsSheet onClose={() => { log.push('close'); setOpen(false); }} userRole="THERAPIST" therapistMode onSetTherapistMode={vi.fn()} />
+      ) : null;
+    }
+    function PathProbe() {
+      const { pathname } = useLocation();
+      useEffect(() => { if (pathname === '/account') log.push('navigate /account'); }, [pathname]);
+      return <output data-testid="path">{pathname}</output>;
+    }
+    render(<MemoryRouter><Host /><PathProbe /></MemoryRouter>);
+    await screen.findByText('Настройки');
+    expect(screen.getByTestId('path').textContent).toBe('/');
+    fireEvent.click(screen.getByRole('button', { name: /Аккаунт и способы входа/ }));
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/account'));
+    expect(log).toEqual(['close', 'navigate /account']);
+    expect(screen.queryByText('Настройки')).toBeNull();
+  });
+
+  it('тумблера «Режим специалиста» в «Оформлении» больше нет (одно место для режима)', async () => {
+    await renderTherapist(false);
+    expect(screen.queryByText('Режим специалиста')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Режим специалиста' })).toBeNull();
+  });
+
+  it('без обработчика режима блока нет (терапевт без переключения — как раньше)', async () => {
+    await renderSheet('THERAPIST');
+    expect(screen.queryByRole('tablist', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
+  });
+
+  it('у клиента (userRole=CLIENT) группы «Режим» нет даже с обработчиком', async () => {
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="CLIENT" therapistMode={false} onSetTherapistMode={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    expect(screen.queryByRole('tablist', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByText('Режим специалиста')).toBeNull();
+    // у клиента вход на /account уже есть в его разделе «Профиль» («Аккаунт и привязки»)
+    expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
+  });
+
+  it('«Открыть кабинет» вызывает onOpenTherapistCabinet', async () => {
+    const onOpenCabinet = vi.fn();
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onOpenTherapistCabinet={onOpenCabinet} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByText('Открыть кабинет'));
+    expect(onOpenCabinet).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── Снять роль специалиста: отмена/подтверждение (onResignTherapist) ─────────
+describe('SettingsSheet — «Перестать быть специалистом»: двойное подтверждение', () => {
+  it('первый клик показывает предупреждение и кнопки «Отмена»/«Снять роль», без вызова колбэка', async () => {
+    const onResign = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onSetTherapistMode={vi.fn()} onResignTherapist={onResign} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByText('Перестать быть специалистом'));
+
+    expect(screen.getByText('Снять роль')).toBeTruthy();
+    expect(onResign).not.toHaveBeenCalled();
+  });
+
+  it('«Отмена» возвращает к исходной кнопке без вызова колбэка', async () => {
+    const onResign = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onSetTherapistMode={vi.fn()} onResignTherapist={onResign} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByText('Перестать быть специалистом'));
+    fireEvent.click(screen.getByText('Отмена'));
+
+    expect(screen.getByText('Перестать быть специалистом')).toBeTruthy();
+    expect(onResign).not.toHaveBeenCalled();
+  });
+
+  it('«Снять роль» вызывает onResignTherapist и возвращает к первому шагу после завершения', async () => {
+    const onResign = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onSetTherapistMode={vi.fn()} onResignTherapist={onResign} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByText('Перестать быть специалистом'));
+    fireEvent.click(screen.getByText('Снять роль'));
+
+    await waitFor(() => expect(onResign).toHaveBeenCalledTimes(1));
+  });
+});
+
+// ── Поделиться: приглашение в приложение и экспорт через navigator.share ─────
+describe('SettingsSheet — «Поделиться»: приглашение в приложение открывает карточку', () => {
+  it('клик по «Пригласить друга» в разделе «Поделиться» открывает ShareCardSheet с приглашением', async () => {
+    await renderSheet();
+    // QA 2026-11, М7: «Пригласить друга» — одна строка; кнопка пары
+    // называется «Позвать в пару» (раньше два одинаковых ярлыка).
+    const buttonsBefore = screen.getAllByText('Пригласить друга');
+    expect(buttonsBefore.length).toBe(1);
+    fireEvent.click(buttonsBefore[0]);
+    // ShareCardSheet рендерит свой заголовок с тем же текстом — после
+    // открытия совпадений на один больше (карточка реально появилась).
+    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(2));
+  });
+});
+
+describe('SettingsSheet — экспорт для терапевта: устройство умеет navigator.share', () => {
+  it('если navigator.share доступен — использует его вместо копирования, модалка не открывается', async () => {
+    mockApi.getExport.mockResolvedValue({ text: 'сводка' });
+    const shareFn = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: shareFn, configurable: true, writable: true });
+    await renderSheet();
+
+    fireEvent.click(screen.getByText('Сводка для терапевта'));
+    await waitFor(() => expect(shareFn).toHaveBeenCalledWith({ text: 'сводка' }));
+    expect(screen.queryByText('Скопировать')).toBeNull();
+
+    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true, writable: true });
+  });
+});
+
+// ── Приватность: модалка открывается и закрывается ────────────────────────────
+describe('SettingsSheet — «Конфиденциальность»: модалка открывается по клику', () => {
+  it('открывает модалку с описанием хранимых данных', async () => {
+    await renderSheet();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    await screen.findByText('Данные и конфиденциальность');
+    expect(screen.getByText('Что хранится')).toBeTruthy();
+  });
+
+  it('клик по фону модалки закрывает её', async () => {
+    await renderSheet();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    await screen.findByText('Данные и конфиденциальность');
+    fireEvent.click(document.querySelector('.sheet-modal')!);
+    await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
+  });
+});
+
+// ── Мелкие интерактивные элементы, которые прежде не кликались ────────────────
+describe('SettingsSheet — боковая навигация: клик по пункту прокручивает к нужному разделу', () => {
+  it('клик по «Уведомления» в сайдбаре скроллит именно к секции id=s-notifications', async () => {
+    await renderSheet();
+    fireEvent.click(screen.getByText('Уведомления', { selector: 'button' }));
+    const section = document.getElementById('s-notifications')!;
+    expect(section.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+});
+
+// R2 (аудит 2026-11): «Напоминания» — notifyEnabled вместе с notifyReminderEnabled,
+// «Итоги дня» — свой флаг; один тумблер другой не трогает.
+describe('SettingsSheet — «Напоминания»: тумблер сохраняет отдельно от «Итоги дня»', () => {
+  it('включает оба флага напоминаний и не трогает итоги', async () => {
+    await renderSheet();
+    fireEvent.click(toggleForRow('Напоминания'));
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ notifyEnabled: true, notifyReminderEnabled: true }),
+    );
+    expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe('false');
+  });
+});
+
+describe('SettingsSheet — приватность карточек терапевту: тумблеры видимы, когда есть активная связь', () => {
+  it('переключение «Дневники и карточки» и «Мои схемы и тест» шлёт patch с реальным значением', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
+    await renderSheet();
+    await screen.findByText('Терапевт: Анна');
+
+    fireEvent.click(toggleForRow('Дневники и карточки'));
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ therapistShareCards: false }),
+    );
+    fireEvent.click(toggleForRow('Мои схемы и тест'));
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ therapistShareProfile: false }),
+    );
+  });
+});
+
+describe('SettingsSheet — вход по коду терапевта (клиент): успех подключает связь', () => {
+  // Инцидент 2026-10-26: поле пускало 8 знаков при коде из 12 — вставленный
+  // код обрезался, и подключиться не мог никто.
+  it('код из 12 знаков строчными с пробелами уходит в joinTherapy целиком; успех — кто и что видит', async () => {
+    mockApi.getTherapyRelation
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ role: 'client', status: 'active', partnerName: 'Игорь', partnerId: 2, code: 'Y', nextSession: null });
+    mockApi.joinTherapy.mockResolvedValue(undefined);
+    await renderSheet();
+    const input = await screen.findByLabelText('Код от терапевта');
+    fireEvent.change(input, { target: { value: ' 7f3a9c21b04e ' } });
+    expect(input).toHaveProperty('value', '7F3A9C21B04E');
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
+
+    await screen.findByText('Терапевт: Игорь');
+    expect(mockApi.joinTherapy).toHaveBeenCalledWith('7F3A9C21B04E');
+    expect(screen.getByRole('status').textContent).toMatch(/Терапевт Игорь видит/);
+  });
+
+  // 409 { reason: 'already_connected' }: код верный, мешает действующее
+  // подключение — «Код не подошёл» вводил бы в заблуждение.
+  it('409 already_connected — текст про действующее подключение, а не «Код не подошёл»', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(null);
+    mockApi.joinTherapy.mockRejectedValue(
+      Object.assign(new Error('already'), { status: 409, reason: 'already_connected' }),
+    );
+    await renderSheet();
+    fireEvent.change(await screen.findByLabelText('Код от терапевта'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
+
+    await screen.findByText(/У тебя уже есть подключение к терапевту/);
+    expect(screen.queryByText(/Код не подошёл/)).toBeNull();
+  });
+
+  it('любой другой отказ — «Код не подошёл» с выходом', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(null);
+    mockApi.joinTherapy.mockRejectedValue(Object.assign(new Error('nf'), { status: 404 }));
+    await renderSheet();
+    fireEvent.change(await screen.findByLabelText('Код от терапевта'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
+
+    await screen.findByText(/Код не подошёл. Проверь его или попроси у терапевта новый/);
+  });
+});
+
+describe('SettingsSheet — заявка на специалиста: необязательное сообщение и отмена формы', () => {
+  it('отмена формы очищает ошибку и возвращает к кнопке «Я психолог — подать заявку»', async () => {
+    await renderSheet();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fireEvent.click(screen.getByText('Отправить заявку'));
+    await screen.findByText('Заполни ФИО, квалификацию и контакты');
+
+    fireEvent.click(screen.getByText('Отмена'));
+    expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
+    expect(screen.queryByText('Заполни ФИО, квалификацию и контакты')).toBeNull();
+  });
+
+  it('необязательное сообщение уходит в submitTherapistRequest', async () => {
+    mockApi.submitTherapistRequest.mockResolvedValue(undefined);
+    await renderSheet();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fillTherapistRequestForm({ fio: 'Иван' });
+    fireEvent.change(screen.getByPlaceholderText('Сообщение (необязательно)'), { target: { value: 'Работаю со схема-терапией' } });
+    fireEvent.click(screen.getByText('Отправить заявку'));
+
+    await waitFor(() =>
+      expect(mockApi.submitTherapistRequest).toHaveBeenCalledWith({
+        fullName: 'Иван', qualification: 'Психолог', contacts: '@ivan', message: 'Работаю со схема-терапией',
+      }),
+    );
+  });
+});
+
+describe('SettingsSheet — пара: копирование ссылки-приглашения и переход назад из формы кода', () => {
+  it('успешное копирование ссылки показывает «✓ Скопировано»', async () => {
+    mockClipboard();
+    mockApi.createPairInvite.mockResolvedValue({ code: 'ABC123', url: 'https://schemehappens.ru/p/ABC123' });
+    mockApi.getPair
+      .mockResolvedValueOnce({ partners: [], pendingCode: null })
+      .mockResolvedValueOnce({ partners: [], pendingCode: 'ABC123' });
+    await renderSheet();
+    fireEvent.click(within(partnerSectionContent()).getByText('Позвать в пару'));
+    await screen.findByText('https://schemehappens.ru/p/ABC123');
+
+    fireEvent.click(within(partnerSectionContent()).getByText('Скопировать ссылку'));
+    await screen.findByText('Скопировано');
+  });
+
+  it('«← Назад» из формы ввода кода возвращает к экрану приглашения', async () => {
+    await renderSheet();
+    fireEvent.click(within(partnerSectionContent()).getByText('Ввести код'));
+    await screen.findByPlaceholderText('Код');
+
+    fireEvent.click(within(partnerSectionContent()).getByText('← Назад'));
+    expect(within(partnerSectionContent()).getByText('Позвать в пару')).toBeTruthy();
+    expect(within(partnerSectionContent()).queryByPlaceholderText('Код')).toBeNull();
+  });
+});
+
+describe('SettingsSheet — карточки-приглашения и модалка экспорта закрываются штатно', () => {
+  it('карточка приглашения в приложение закрывается кликом по фону', async () => {
+    await renderSheet();
+    const before = screen.getAllByText('Пригласить друга').length;
+    fireEvent.click(screen.getAllByText('Пригласить друга')[before - 1]);
+    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(before + 1));
+
+    fireEvent.click(document.querySelector('[role="presentation"]')!);
+    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(before));
+  });
+
+  it('модалка экспорта: копирование текста показывает «✓ Скопировано», закрытие убирает модалку', async () => {
+    mockClipboard();
+    mockApi.getExport.mockResolvedValue({ text: 'текст сводки' });
+    await renderSheet();
+    fireEvent.click(screen.getByText('Сводка для терапевта'));
+    await screen.findByText('текст сводки');
+
+    fireEvent.click(screen.getByText('Скопировать'));
+    await screen.findByText('Скопировано');
+
+    fireEvent.click(document.querySelector('.sheet-modal')!);
+    await waitFor(() => expect(screen.queryByText('текст сводки')).toBeNull());
+  });
+});
+
+describe('SettingsSheet — удаление аккаунта: закрытие модалки фоном сбрасывает подтверждение', () => {
+  it('клик по фону во время второго шага закрывает модалку целиком', async () => {
+    await renderSheet();
+    openDeleteSheet();
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    await screen.findByText('Точно? Восстановить невозможно.');
+
+    fireEvent.click(document.querySelector('.sk-dialog-backdrop')!);
+    await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
+    // Модалка закрылась целиком, не откатилась на первый шаг.
+    expect(screen.queryByText(/аккаунт целиком/)).toBeNull();
+  });
+});
+
+// #906: шапка — общая ds-sheet-head/ds-back, своих .st-head/.st-title нет. b25: заголовок вида (ds-h2) —
+// первым в теле, а не в шапке: «Время уведомления» рядом с «← Назад» на 320–390 резалось.
+describe('SettingsSheet — шапка листа (#906)', () => {
+  it('«← Закрыть» — ds-back в ds-sheet-head; заголовок ds-h2 — первым в теле листа', async () => {
+    await renderSheet();
+    const back = screen.getByRole('button', { name: '← Закрыть' });
+    expect(back.className).toBe('ds-back');
+    const head = back.parentElement!;
+    expect(head.className).toBe('ds-sheet-head');
+    expect(head.querySelector('h2')).toBeNull();
+    expect(document.querySelector('.st-inner > h2.ds-h2:first-child')?.textContent).toBe('Настройки');
+    expect(document.querySelector('.st-head, .st-title')).toBeNull();
+  });
+});
+
+// Ревью b25: корень и шапка листа — одни узлы до и после загрузки, подэкран — свой уровень истории.
+describe('SettingsSheet — фокус и уровни', () => {
+  it('фокус на «← Закрыть» переживает смену силуэта содержимым', async () => {
+    render(<MemoryRouter><SettingsSheet onClose={vi.fn()} /></MemoryRouter>);
+    const before = screen.getByRole('button', { name: '← Закрыть' });
+    expect(document.activeElement).toBe(before);
+    await screen.findByText('Настройки');
+    expect(screen.getByRole('button', { name: '← Закрыть' })).toBe(before);
+    expect(document.activeElement).toBe(before);
+  });
+  it('Escape в подэкране возвращает на главный вид: лист открыт, фокус на строке, открывшей подэкран', async () => {
+    const onClose = vi.fn();
+    render(<MemoryRouter><SettingsSheet onClose={onClose} /></MemoryRouter>);
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByRole('button', { name: /Часовой пояс/ }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: '← Назад' })));
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    await screen.findByText('Настройки');
+    expect(onClose).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Часовой пояс/ }));
+  });
+});
+
+// ── Загрузка: силуэт по форме, а не спиннер (правило скелетонов; docs/open/backend.md) ──
+describe('SettingsSheet — пока настройки грузятся', () => {
+  it('силуэт листа без спиннера; «Закрыть» уже работает', async () => {
+    mockApi.getSettings.mockReturnValueOnce(new Promise(() => {}));
+    const onClose = vi.fn();
+    const { container } = render(<MemoryRouter><SettingsSheet onClose={onClose} /></MemoryRouter>);
+    expect(container.querySelector('[data-skeleton="settings"] .skel')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '← Закрыть' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+});

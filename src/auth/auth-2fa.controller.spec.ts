@@ -1,0 +1,448 @@
+// Auth2faController был на 0% покрытия. Инстанцируем напрямую (без Nest
+// TestingModule) с типизированными двойниками зависимостей — паттерн
+// auth-flow.service.spec.ts (Pick<Service, 'method'> & { method: jest.Mock },
+// makeReq/makeRes с `as unknown as Request/Response`). Каждый мутирующий
+// хендлер проверяет CSRF-инвариант (requireCsrf вызывается ДО сервиса —
+// правило "Обработка ошибок" в CLAUDE.md), плюс happy-path и главную ошибку.
+import { UnauthorizedException } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { Auth2faController } from './auth-2fa.controller';
+import { AuthService, TokenPair } from './auth.service';
+import { SecurityLogService } from './security-log.service';
+import { TotpService } from './totp.service';
+import { REFRESH_COOKIE } from './auth-http.util';
+import { TwoFaChallengeDto, TwoFaCodeDto } from './dto/twofa.dto';
+import { PERSISTENT_THROTTLE_KEY } from '../api/persistent-throttle.decorator';
+
+const FAKE_TOKENS: TokenPair = {
+  accessToken: 'access-abc',
+  refreshToken: 'refresh-abc',
+  expiresIn: 900,
+};
+
+type AuthMock = Pick<
+  AuthService,
+  'getUserProviders' | 'issueTokens' | 'verifyTotpChallengeToken'
+> & {
+  getUserProviders: jest.Mock;
+  issueTokens: jest.Mock;
+  verifyTotpChallengeToken: jest.Mock;
+};
+
+type TotpMock = Pick<
+  TotpService,
+  | 'startSetup'
+  | 'confirmSetup'
+  | 'disable'
+  | 'regenerateRecoveryCodes'
+  | 'verifyCode'
+> & {
+  startSetup: jest.Mock;
+  confirmSetup: jest.Mock;
+  disable: jest.Mock;
+  regenerateRecoveryCodes: jest.Mock;
+  verifyCode: jest.Mock;
+};
+
+type SecurityLogMock = Pick<SecurityLogService, 'log'> & { log: jest.Mock };
+
+function makeAuth(): AuthMock {
+  return {
+    getUserProviders: jest.fn().mockResolvedValue([]),
+    issueTokens: jest.fn().mockResolvedValue(FAKE_TOKENS),
+    verifyTotpChallengeToken: jest
+      .fn()
+      .mockReturnValue({ userId: 7n, ip: null, ua: '' }),
+  };
+}
+
+function makeTotp(): TotpMock {
+  return {
+    startSetup: jest.fn().mockResolvedValue({
+      otpauthUrl: 'otpauth://totp/x',
+      qrDataUrl: 'data:image/png;base64,xx',
+    }),
+    confirmSetup: jest
+      .fn()
+      .mockResolvedValue({ recoveryCodes: ['a1b2c3d4e5'] }),
+    disable: jest.fn().mockResolvedValue(undefined),
+    regenerateRecoveryCodes: jest
+      .fn()
+      .mockResolvedValue({ recoveryCodes: ['f6g7h8i9j0'] }),
+    verifyCode: jest.fn().mockResolvedValue(true),
+  };
+}
+
+function makeSecurityLog(): SecurityLogMock {
+  return { log: jest.fn() };
+}
+
+function makeReq(
+  opts: {
+    csrf?: boolean;
+    webUser?: { userId: bigint };
+    cookies?: Record<string, string>;
+    ip?: string;
+  } = {},
+): Request {
+  const headers: Record<string, string> = {};
+  if (opts.csrf !== false) headers['x-requested-with'] = 'XMLHttpRequest';
+  return {
+    headers,
+    webUser: opts.webUser,
+    ip: opts.ip ?? '198.51.100.1',
+    cookies: opts.cookies ?? {},
+  } as unknown as Request;
+}
+
+function makeRes(): Response & {
+  cookie: jest.Mock;
+  clearCookie: jest.Mock;
+} {
+  return {
+    cookie: jest.fn(),
+    clearCookie: jest.fn(),
+  } as unknown as Response & {
+    cookie: jest.Mock;
+    clearCookie: jest.Mock;
+  };
+}
+
+function makeController() {
+  const auth = makeAuth();
+  const securityLog = makeSecurityLog();
+  const totp = makeTotp();
+  const controller = new Auth2faController(
+    auth as unknown as AuthService,
+    securityLog as unknown as SecurityLogService,
+    totp as unknown as TotpService,
+  );
+  return { controller, auth, securityLog, totp };
+}
+
+const CODE_DTO: TwoFaCodeDto = { code: '123456' };
+
+describe('Auth2faController.totpSetup', () => {
+  it('без CSRF-заголовка → UnauthorizedException, сервис не вызывается', async () => {
+    const { controller, totp } = makeController();
+    await expect(
+      controller.totpSetup(makeReq({ csrf: false, webUser: { userId: 1n } })),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(totp.startSetup).not.toHaveBeenCalled();
+  });
+
+  it('валидный запрос → метка из email первого провайдера', async () => {
+    const { controller, auth, totp } = makeController();
+    auth.getUserProviders.mockResolvedValue([
+      { provider: 'google', email: 'greg@example.com', displayName: 'Грег' },
+    ]);
+    const res = await controller.totpSetup(
+      makeReq({ webUser: { userId: 5n } }),
+    );
+    expect(totp.startSetup).toHaveBeenCalledWith(5n, 'greg@example.com');
+    expect(res).toEqual({
+      otpauthUrl: 'otpauth://totp/x',
+      qrDataUrl: 'data:image/png;base64,xx',
+    });
+  });
+
+  it('нет email/displayName у провайдеров → метка "user-<id>"', async () => {
+    const { controller, auth, totp } = makeController();
+    auth.getUserProviders.mockResolvedValue([]);
+    await controller.totpSetup(makeReq({ webUser: { userId: 9n } }));
+    expect(totp.startSetup).toHaveBeenCalledWith(9n, 'user-9');
+  });
+});
+
+describe('Auth2faController.totpEnable', () => {
+  it('без CSRF-заголовка → UnauthorizedException, confirmSetup не вызывается', async () => {
+    const { controller, totp } = makeController();
+    await expect(
+      controller.totpEnable(
+        makeReq({ csrf: false, webUser: { userId: 1n } }),
+        CODE_DTO,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(totp.confirmSetup).not.toHaveBeenCalled();
+  });
+
+  it('валидный запрос → confirmSetup + аудит role_changed(2fa_enabled)', async () => {
+    const { controller, totp, securityLog } = makeController();
+    const res = await controller.totpEnable(
+      makeReq({ webUser: { userId: 3n } }),
+      CODE_DTO,
+    );
+    expect(totp.confirmSetup).toHaveBeenCalledWith(3n, '123456', undefined);
+    expect(securityLog.log).toHaveBeenCalledWith('role_changed', {
+      userId: 3n,
+      event: '2fa_enabled',
+    });
+    expect(res).toEqual({ recoveryCodes: ['a1b2c3d4e5'] });
+  });
+
+  // S12: включение 2FA гасит остальные сессии — сервису уходит refresh-кука
+  // этого браузера, чтобы её семья осталась (отзыв — totp.service/session-proof).
+  it('сервису уходит refresh-кука этого браузера — её сессия останется', async () => {
+    const { controller, totp } = makeController();
+    await controller.totpEnable(
+      makeReq({
+        webUser: { userId: 3n },
+        cookies: { [REFRESH_COOKIE]: 'raw-r' },
+      }),
+      CODE_DTO,
+    );
+    expect(totp.confirmSetup).toHaveBeenCalledWith(3n, '123456', 'raw-r');
+  });
+});
+
+describe('Auth2faController.totpDisable', () => {
+  it('без CSRF-заголовка → UnauthorizedException, disable не вызывается', async () => {
+    const { controller, totp } = makeController();
+    await expect(
+      controller.totpDisable(
+        makeReq({ csrf: false, webUser: { userId: 1n } }),
+        CODE_DTO,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(totp.disable).not.toHaveBeenCalled();
+  });
+
+  it('валидный запрос → disable + аудит role_changed(2fa_disabled)', async () => {
+    const { controller, totp, securityLog } = makeController();
+    const res = await controller.totpDisable(
+      makeReq({ webUser: { userId: 3n } }),
+      CODE_DTO,
+    );
+    expect(totp.disable).toHaveBeenCalledWith(3n, '123456');
+    expect(securityLog.log).toHaveBeenCalledWith('role_changed', {
+      userId: 3n,
+      event: '2fa_disabled',
+    });
+    expect(res).toEqual({ ok: true });
+  });
+});
+
+describe('Auth2faController.totpRegenerateRecovery', () => {
+  it('без CSRF-заголовка → UnauthorizedException, регенерация не вызывается', async () => {
+    const { controller, totp } = makeController();
+    await expect(
+      controller.totpRegenerateRecovery(
+        makeReq({ csrf: false, webUser: { userId: 1n } }),
+        CODE_DTO,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(totp.regenerateRecoveryCodes).not.toHaveBeenCalled();
+  });
+
+  it('валидный запрос → делегирует в totp.regenerateRecoveryCodes', async () => {
+    const { controller, totp } = makeController();
+    const res = await controller.totpRegenerateRecovery(
+      makeReq({ webUser: { userId: 4n } }),
+      CODE_DTO,
+    );
+    expect(totp.regenerateRecoveryCodes).toHaveBeenCalledWith(4n, '123456');
+    expect(res).toEqual({ recoveryCodes: ['f6g7h8i9j0'] });
+  });
+});
+
+describe('Auth2faController.totpChallenge', () => {
+  const CHALLENGE_DTO: TwoFaChallengeDto = {
+    code: '654321',
+    challengeToken: 'challenge-tok',
+  };
+
+  it('без CSRF-заголовка → UnauthorizedException, токен не проверяется', async () => {
+    const { controller, auth } = makeController();
+    await expect(
+      controller.totpChallenge(
+        makeReq({ csrf: false }),
+        makeRes(),
+        CHALLENGE_DTO,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(auth.verifyTotpChallengeToken).not.toHaveBeenCalled();
+  });
+
+  it('верный код → сессия выдана, cookie httpOnly/strict', async () => {
+    const { controller, auth, totp } = makeController();
+    auth.verifyTotpChallengeToken.mockReturnValue({
+      userId: 7n,
+      ip: null,
+      ua: '',
+    });
+    totp.verifyCode.mockResolvedValue(true);
+    const req = makeReq();
+    const res = makeRes();
+    const result = await controller.totpChallenge(req, res, CHALLENGE_DTO);
+    expect(totp.verifyCode).toHaveBeenCalledWith(7n, '654321');
+    expect(auth.issueTokens).toHaveBeenCalledWith(
+      7n,
+      '198.51.100.1',
+      undefined,
+    );
+    expect(res.cookie).toHaveBeenCalledWith(
+      REFRESH_COOKIE,
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
+    );
+    expect(result).toEqual({
+      accessToken: FAKE_TOKENS.accessToken,
+      expiresIn: FAKE_TOKENS.expiresIn,
+    });
+  });
+
+  it('неверный код → UnauthorizedException, tokens не выдаются', async () => {
+    const { controller, auth, totp } = makeController();
+    totp.verifyCode.mockResolvedValue(false);
+    await expect(
+      controller.totpChallenge(makeReq(), makeRes(), CHALLENGE_DTO),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+});
+
+// Второй фактор больше НЕ одобряет билет на сервере (device-code phishing,
+// разбор 2026-08-31): код в теле мог подставить кто угодно. Билет теперь
+// подтверждает человек на /auth/confirm; здесь проверяем лишь, что сам вход в
+// браузере работает и на билет не завязан.
+describe('Auth2faController.totpChallenge', () => {
+  const challenge = { code: '123456', challengeToken: 'chal' };
+
+  it('код верный — выдаёт сессию, даже если в теле приехал билет', async () => {
+    const { controller, totp } = makeController();
+    totp.verifyCode.mockResolvedValue(true);
+
+    const out = await controller.totpChallenge(makeReq({}), makeRes(), {
+      ...challenge,
+      ticket: 'K7M2QX94',
+    });
+
+    expect(out.accessToken).toBeTruthy();
+  });
+
+  it('код неверный — вход не выдаётся', async () => {
+    const { controller, totp, auth } = makeController();
+    totp.verifyCode.mockResolvedValue(false);
+
+    await expect(
+      controller.totpChallenge(makeReq({}), makeRes(), {
+        ...challenge,
+        ticket: 'K7M2QX94',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+
+  it('обычный вход без билета — выдаёт сессию', async () => {
+    const { controller, totp } = makeController();
+    totp.verifyCode.mockResolvedValue(true);
+
+    const out = await controller.totpChallenge(
+      makeReq({}),
+      makeRes(),
+      challenge,
+    );
+
+    expect(out.accessToken).toBeTruthy();
+  });
+});
+
+// H1 аудита 2026-10: шестизначный код без @Throttle подбирался за сутки
+// (штатные 200 запросов/мин на пользователя). Метаданные читаем напрямую —
+// так их расставляют декораторы (образец: booking.controller.spec.ts).
+describe('Auth2faController — троттлинг ручек, проверяющих код (H1)', () => {
+  const proto = Auth2faController.prototype;
+  const routes = [
+    ['totpEnable', proto.totpEnable],
+    ['totpDisable', proto.totpDisable],
+    ['totpRegenerateRecovery', proto.totpRegenerateRecovery],
+    ['totpChallenge', proto.totpChallenge],
+  ] as const;
+
+  it.each(routes)('%s: 5/мин и 20/час', (_name, handler) => {
+    expect(Reflect.getMetadata('THROTTLER:LIMITshort', handler)).toBe(5);
+    expect(Reflect.getMetadata('THROTTLER:TTLshort', handler)).toBe(60_000);
+    expect(Reflect.getMetadata('THROTTLER:LIMITlong', handler)).toBe(20);
+    expect(Reflect.getMetadata('THROTTLER:TTLlong', handler)).toBe(3_600_000);
+  });
+
+  it.each(routes)(
+    '%s: @PersistentThrottle — счётчик общий на все инстансы (Postgres)',
+    (_name, handler) => {
+      expect(Reflect.getMetadata(PERSISTENT_THROTTLE_KEY, handler)).toBe(true);
+    },
+  );
+});
+
+describe('Auth2faController — неверный код пишется в аудит totp_failed (H1)', () => {
+  const failed = (route: string) => [
+    'totp_failed',
+    { userId: 3n, ip: '198.51.100.1', route },
+  ];
+
+  it('enable: неверный код → totp_failed (userId, ip), ошибка пробрасывается', async () => {
+    const { controller, totp, securityLog } = makeController();
+    totp.confirmSetup.mockRejectedValue(
+      new UnauthorizedException('Invalid code'),
+    );
+    await expect(
+      controller.totpEnable(makeReq({ webUser: { userId: 3n } }), CODE_DTO),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(...failed('2fa/enable'));
+  });
+
+  it('disable: неверный код → totp_failed', async () => {
+    const { controller, totp, securityLog } = makeController();
+    totp.disable.mockRejectedValue(new UnauthorizedException('Invalid code'));
+    await expect(
+      controller.totpDisable(makeReq({ webUser: { userId: 3n } }), CODE_DTO),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(...failed('2fa/disable'));
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'role_changed',
+      expect.anything(),
+    );
+  });
+
+  it('recovery-codes: неверный код → totp_failed', async () => {
+    const { controller, totp, securityLog } = makeController();
+    totp.regenerateRecoveryCodes.mockRejectedValue(
+      new UnauthorizedException('Invalid code'),
+    );
+    await expect(
+      controller.totpRegenerateRecovery(
+        makeReq({ webUser: { userId: 3n } }),
+        CODE_DTO,
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      ...failed('2fa/recovery-codes'),
+    );
+  });
+
+  it('challenge: неверный код → totp_failed с userId из challenge-токена', async () => {
+    const { controller, auth, totp, securityLog } = makeController();
+    auth.verifyTotpChallengeToken.mockReturnValue({ userId: 3n });
+    totp.verifyCode.mockResolvedValue(false);
+    await expect(
+      controller.totpChallenge(makeReq(), makeRes(), {
+        code: '000000',
+        challengeToken: 'chal',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(...failed('2fa/challenge'));
+  });
+
+  it('верный код и не-401 ошибка (setup не начат) — totp_failed не пишется', async () => {
+    const { controller, totp, securityLog } = makeController();
+    await controller.totpEnable(makeReq({ webUser: { userId: 3n } }), CODE_DTO);
+    totp.confirmSetup.mockRejectedValue(new Error('Setup not started'));
+    await expect(
+      controller.totpEnable(makeReq({ webUser: { userId: 3n } }), CODE_DTO),
+    ).rejects.toThrow('Setup not started');
+    expect(securityLog.log).not.toHaveBeenCalledWith(
+      'totp_failed',
+      expect.anything(),
+    );
+  });
+});

@@ -1,0 +1,124 @@
+// Разделы «Главных цифр» /stats. В отчёте каждый раздел — свой блок
+// settleBlocks (admin-stats.blocks.ts); здесь — их текст целиком, в том же
+// порядке, что в отчёте.
+import {
+  formatDays,
+  formatDiary,
+  formatNoticed,
+  formatPairs,
+  formatPeople,
+  formatStatsHeader,
+  type DaysData,
+  type DiaryData,
+  type NoticedData,
+  type PeopleData,
+} from './admin-stats.sections';
+
+type AdminStatsData = { today: string; activePairs: number } & PeopleData &
+  DiaryData &
+  DaysData &
+  NoticedData;
+
+const formatAdminStats = (d: AdminStatsData): string =>
+  [
+    formatStatsHeader(d.today),
+    formatPeople(d),
+    formatDiary(d),
+    formatDays(d),
+    formatNoticed(d),
+    formatPairs(d.activePairs),
+  ].join('\n\n');
+
+const EMPTY: AdminStatsData = {
+  today: '2026-07-26',
+  totalUsers: 0,
+  newUsers7: 0,
+  newUsers30: 0,
+  notifyOff: 0,
+  blockedUsers: 0,
+  todayCount: 0,
+  fillRate: 0,
+  week7Count: 0,
+  activeCoreCount: 0,
+  month30Count: 0,
+  churnRisk: 0,
+  ret1: 0,
+  ret3: 0,
+  ret7: 0,
+  ret30: 0,
+  lowestNeed: undefined,
+  bestDow: null,
+  activePairs: 0,
+};
+
+describe('разделы «Главных цифр»', () => {
+  // Правило №8: пустое состояние обязательно — на чистой БД без NaN/undefined.
+  it('на пустых данных не показывает NaN/undefined/мусор', () => {
+    const out = formatAdminStats(EMPTY);
+    expect(out).not.toMatch(/NaN/);
+    expect(out).not.toMatch(/undefined/);
+    // Нет данных о потребностях → безопасная строка, а не «в среднем undefined».
+    expect(out).toContain('Пока мало данных о потребностях');
+    // Заголовок и дата на месте.
+    expect(out).toContain('Что происходит в приложении');
+    expect(out).toContain('2026-07-26');
+    // Аудит 2026-10: на пустой базе день недели не выдумывается — раньше
+    // indexOf(max) от семи нулей давал 0 и отчёт писал «вс» (правило №8).
+    expect(out).toContain(
+      'Чаще всего заполняют: пока мало записей, чтобы сказать',
+    );
+    expect(out).not.toMatch(/Чаще всего заполняют: (вс|пн|вт|ср|чт|пт|сб)/);
+    // Активное ядро на пустой БД — честный «0 из 0», а не NaN/пропуск строки.
+    expect(out).toContain(
+      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 0 из 0 заходивших за неделю',
+    );
+  });
+
+  it('форматирует населённый отчёт с метками потребностей и днём недели', () => {
+    const out = formatAdminStats({
+      ...EMPTY,
+      totalUsers: 120,
+      newUsers7: 8,
+      newUsers30: 30,
+      notifyOff: 5,
+      blockedUsers: 3,
+      todayCount: 42,
+      fillRate: 35,
+      week7Count: 60,
+      activeCoreCount: 25,
+      month30Count: 120,
+      churnRisk: 7,
+      ret1: 100,
+      ret3: 70,
+      ret7: 40,
+      ret30: 12,
+      lowestNeed: { needId: 'play', _avg: { value: 4.25 } },
+      bestDow: 1,
+    });
+    expect(out).toContain('Всего людей: 120');
+    expect(out).toContain('Заполнили сегодня: 42 (это 35%');
+    // Активное ядро — подмножество недельных, оба числа читаются вместе.
+    expect(out).toContain(
+      'Ведут дневник регулярно (хотя бы 3 дня из последних 7): 25 из 60 заходивших за неделю',
+    );
+    expect(out).toContain('Могут уйти');
+    expect(out).toContain('7'); // churnRisk
+    // needId → человекочитаемая метка (play → Спонтанность) + округление до 0.1.
+    expect(out).toContain('Спонтанность (в среднем 4.3 из 10)');
+    expect(out).toContain('Чаще всего заполняют: пн'); // bestDow=1
+    expect(out).not.toMatch(/NaN|undefined/);
+  });
+
+  it('bestDow = 0 — настоящее воскресенье, а не «нет данных»', () => {
+    const out = formatAdminStats({ ...EMPTY, bestDow: 0 });
+    expect(out).toContain('Чаще всего заполняют: вс');
+  });
+
+  it('неизвестный needId выводится как есть, без падения', () => {
+    const out = formatAdminStats({
+      ...EMPTY,
+      lowestNeed: { needId: 'mystery', _avg: { value: 5 } },
+    });
+    expect(out).toContain('mystery (в среднем 5.0 из 10)');
+  });
+});

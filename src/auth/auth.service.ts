@@ -1,0 +1,522 @@
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
+import { WEB_USER_ID_MIN, WEB_USER_ID_MAX } from './user-id-range';
+import { SecurityLogService } from './security-log.service';
+import { EmailService } from './email.service';
+import * as jwt from 'jsonwebtoken';
+import * as crypto from 'crypto';
+// Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
+import { encrypt as encField } from '../utils/crypto';
+import { sendMagicLink } from './magic-link';
+import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя — PII
+import { issueRotatedPair, type RotatingSession } from './refresh-issue';
+import { normalizeAddressForm } from '../notification/address-form';
+import { shouldSkipRotation } from './refresh-rotation';
+import { rejectInitData } from '../api/initdata-alert';
+import { resolveReuse } from './refresh-reuse';
+import { revokeFamilyQuiet } from './refresh-logout';
+import { unlinkProviderSafely } from './unlink-provider';
+import { verifyTelegramInitData } from './telegram-init-data';
+import {
+  ChallengeExpiredException,
+  type TotpChallenge,
+} from './totp-challenge';
+
+function isValidEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
+}
+
+const ACCESS_TOKEN_TTL_S = 15 * 60; // 15 minutes
+const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
+
+// Издатель и аудитория JWT прибиты: токен не переиграть в другом сервисе,
+// который случайно делит с нами JWT_SECRET.
+const JWT_ISSUER = 'schemehappens.ru';
+const JWT_AUDIENCE = 'schemehappens.ru';
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string; // raw token — hash is stored in DB
+  expiresIn: number; // seconds
+  rotated: boolean; // false = кука не меняется, см. refresh-rotation.ts
+}
+type OnReject = (err: unknown) => void; // см. exchange-failure.report.ts
+
+@Injectable()
+export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly securityLog: SecurityLogService,
+    private readonly emailSvc: EmailService,
+  ) {}
+
+  // ─── Telegram WebApp initData ──────────────────────────────────────────────
+
+  // Тип ответа — из return ниже. onReject — отказ до 401, строка в /stats.
+  verifyTelegramWebAppData(initData: string, ip?: string, onReject?: OnReject) {
+    const botToken = this.config.getOrThrow<string>('BOT_TOKEN');
+    // Один верификатор на все входы (telegram-init-data.ts); отказ — как у
+    // гарда: просрочка → 401 `initdata_expired`, подделка → `suspicious_initdata`.
+    try {
+      const { user } = verifyTelegramInitData(initData, botToken);
+      return { id: user.id, firstName: user.first_name ?? '' };
+    } catch (err) {
+      onReject?.(err);
+      rejectInitData(err, ip, this.logger, this.securityLog);
+    }
+  }
+
+  // ─── Привязка почты ───────────────────────────────────────────────────────
+
+  // Magic link привязки почты (purpose='link_email_auth'), не новый вход.
+  async linkEmailToAccount(
+    targetUserId: bigint,
+    email: string,
+  ): Promise<{ ok: true }> {
+    if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
+    const lower = email.toLowerCase().trim();
+
+    const taken = await this.prisma.authProvider.findUnique({
+      where: { provider_providerId: { provider: 'email', providerId: lower } },
+    });
+    if (taken && BigInt(taken.userId) !== targetUserId) {
+      // B-16: ответ как у свободного адреса, письма нет (иначе 409 — перебор).
+      this.securityLog.log('email_link_conflict', { userId: targetUserId });
+      return { ok: true };
+    }
+
+    await this.sendMagicLink(targetUserId, lower);
+    return { ok: true };
+  }
+
+  // ─── Find or create user ───────────────────────────────────────────────────
+
+  async findOrCreateUserByProvider(
+    provider: string,
+    providerId: string,
+    displayName?: string,
+    email?: string,
+  ): Promise<bigint> {
+    const existing = await this.prisma.authProvider.findUnique({
+      where: { provider_providerId: { provider, providerId } },
+    });
+    if (existing) {
+      if (displayName) {
+        await this.prisma.authProvider.update({
+          where: { id: existing.id },
+          data: authPii.encryptAuthProviderFields({ displayName, email }),
+        });
+      }
+      return existing.userId;
+    }
+
+    // Telegram: userId = telegramId (данные бота); остальные — веб-id.
+    const userId =
+      provider === 'telegram' ? BigInt(providerId) : this.generateWebUserId();
+
+    // User мог завести бот. firstName открытый — адрес почты в него нет (S16).
+    const firstName = isValidEmail(displayName ?? '') ? undefined : displayName;
+    await this.prisma.user.upsert({
+      where: { id: userId },
+      update: firstName ? { firstName } : {},
+      create: { id: userId, firstName },
+    });
+
+    // Atomic upsert (ON CONFLICT): параллельные запросы мини-аппа на первом
+    // входе иначе гонятся между findUnique и insert и падают на unique.
+    const pii = authPii.encryptAuthProviderFields({ displayName, email });
+    const row = await this.prisma.authProvider.upsert({
+      where: { provider_providerId: { provider, providerId } },
+      update: pii,
+      create: { userId, provider, providerId, ...pii },
+    });
+
+    this.logger.log(
+      `New ${provider} auth provider linked to userId ${row.userId}`,
+    );
+    return row.userId;
+  }
+
+  // ─── Account linking (merge two providers to one user) ────────────────────
+
+  async linkProviderToUser(
+    userId: bigint,
+    provider: string,
+    providerId: string,
+    displayName?: string,
+    email?: string,
+  ): Promise<{ ok: true } | { ok: false; conflictUserId: string }> {
+    const existing = await this.prisma.authProvider.findUnique({
+      where: { provider_providerId: { provider, providerId } },
+    });
+
+    if (existing) {
+      if (String(existing.userId) === String(userId)) return { ok: true };
+      // The other account is real and has its own userId. Caller decides
+      // whether to merge.
+      return { ok: false, conflictUserId: String(existing.userId) };
+    }
+
+    try {
+      const pii = authPii.encryptAuthProviderFields({ displayName, email });
+      await this.prisma.authProvider.create({
+        data: { userId, provider, providerId, ...pii },
+      });
+    } catch (e: unknown) {
+      // Race: a concurrent request inserted the same (provider, providerId)
+      // between the findUnique above and this create. Re-resolve deterministically
+      // instead of crashing on the unique constraint (mirrors the atomic-upsert
+      // fix in findOrCreateUserByProvider).
+      if ((e as { code?: string }).code === 'P2002') {
+        const now = await this.prisma.authProvider.findUnique({
+          where: { provider_providerId: { provider, providerId } },
+        });
+        if (now && String(now.userId) === String(userId)) return { ok: true };
+        if (now) return { ok: false, conflictUserId: String(now.userId) };
+      }
+      throw e;
+    }
+    this.logger.log(`Linked ${provider} provider to userId ${userId}`);
+    return { ok: true };
+  }
+
+  // Short-lived signed token used to confirm a merge in the next request
+  // (e.g. user must click "Yes, merge" in the UI before destructive work runs).
+  buildMergeToken(
+    targetUserId: bigint,
+    sourceUserId: bigint,
+    provider: string,
+    providerId: string,
+  ): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign(
+      {
+        kind: 'merge',
+        target: String(targetUserId),
+        source: String(sourceUserId),
+        provider,
+        providerId,
+      },
+      secret,
+      {
+        expiresIn: 10 * 60,
+        algorithm: 'HS256',
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      },
+    );
+  }
+
+  verifyMergeToken(token: string): {
+    target: bigint;
+    source: bigint;
+    provider: string;
+    providerId: string;
+  } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const p = jwt.verify(token, secret, {
+        algorithms: ['HS256'],
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      }) as {
+        kind: string;
+        target: string;
+        source: string;
+        provider: string;
+        providerId: string;
+      };
+      if (p.kind !== 'merge') throw new Error('Wrong token kind');
+      return {
+        target: BigInt(p.target),
+        source: BigInt(p.source),
+        provider: p.provider,
+        providerId: p.providerId,
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid or expired merge token');
+    }
+  }
+
+  // ─── 2FA challenge token ─────────────────────────────────────────────────
+  // Short-lived (5 min) token returned to client after primary auth IF the
+  // user has TOTP enabled. The client exchanges it + the TOTP code on
+  // /api/auth/2fa/challenge for a real access token.
+  buildTotpChallengeToken(
+    userId: bigint,
+    ip?: string,
+    userAgent?: string,
+  ): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign(
+      {
+        kind: 'totp_challenge',
+        sub: String(userId),
+        ip: ip ?? null,
+        ua: (userAgent ?? '').slice(0, 120),
+      },
+      secret,
+      {
+        expiresIn: 5 * 60,
+        algorithm: 'HS256',
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      },
+    );
+  }
+
+  verifyTotpChallengeToken(token: string): TotpChallenge {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const p = jwt.verify(token, secret, {
+        algorithms: ['HS256'],
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      }) as { kind: string; sub: string; ip: string | null; ua: string };
+      if (p.kind !== 'totp_challenge') throw new Error('Wrong token kind');
+      return { userId: BigInt(p.sub), ip: p.ip ?? null, ua: p.ua ?? '' };
+    } catch {
+      throw new ChallengeExpiredException();
+    }
+  }
+
+  async unlinkProvider(userId: bigint, provider: string): Promise<void> {
+    await unlinkProviderSafely(this.prisma, userId, provider);
+    this.logger.log(`Unlinked ${provider} from userId ${userId}`);
+  }
+
+  async getUserProviders(userId: bigint): Promise<
+    Array<{
+      provider: string;
+      email: string | null;
+      displayName: string | null;
+    }>
+  > {
+    const rows = await this.prisma.authProvider.findMany({
+      where: { userId },
+      select: { provider: true, email: true, displayName: true },
+    });
+    return rows.map(authPii.decryptAuthProviderRow);
+  }
+
+  // ─── Token issuance ────────────────────────────────────────────────────────
+
+  // Access-токен issueTokens/rotateRefreshToken; sid = family цепочки (live-access.ts).
+  private signAccessToken(userId: bigint, sid: string): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign({ sub: String(userId), type: 'access', sid }, secret, {
+      expiresIn: ACCESS_TOKEN_TTL_S,
+      algorithm: 'HS256',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
+  }
+
+  async issueTokens(
+    userId: bigint,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<TokenPair> {
+    const family = crypto.randomBytes(16).toString('hex');
+    const accessToken = this.signAccessToken(userId, family);
+    const rawRefresh = crypto.randomBytes(40).toString('hex');
+    const tokenHash = this.hashToken(rawRefresh);
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
+
+    await this.prisma.webSession.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId,
+        tokenHash,
+        family,
+        expiresAt,
+        ipAddress: ip,
+        userAgent,
+      },
+    });
+
+    return {
+      accessToken,
+      refreshToken: rawRefresh,
+      expiresIn: ACCESS_TOKEN_TTL_S,
+      rotated: true, // первая выдача — семантически тоже "новый refresh"
+    };
+  }
+
+  // ─── Short-lived one-time link token (60s, for OAuth redirect URLs) ─────────
+
+  buildLinkToken(userId: bigint): string {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return jwt.sign({ sub: String(userId), type: 'link' }, secret, {
+      expiresIn: 60,
+      algorithm: 'HS256',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
+  }
+
+  verifyLinkToken(token: string): { userId: bigint } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const payload = jwt.verify(token, secret, {
+        algorithms: ['HS256'],
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      }) as { sub: string; type: string };
+      if (payload.type !== 'link')
+        throw new UnauthorizedException('Wrong token type');
+      return { userId: BigInt(payload.sub) };
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      throw new UnauthorizedException('Invalid or expired link token');
+    }
+  }
+
+  // ─── Token verification ────────────────────────────────────────────────────
+
+  verifyAccessToken(token: string): { userId: bigint; sid?: string } {
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    try {
+      const payload = jwt.verify(token, secret, {
+        algorithms: ['HS256'],
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      }) as { sub: string; type: string; sid?: unknown };
+      if (payload.type !== 'access')
+        throw new UnauthorizedException('Wrong token type');
+      const sid = typeof payload.sid === 'string' ? payload.sid : undefined;
+      return { userId: BigInt(payload.sub), sid };
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      throw new UnauthorizedException('Invalid or expired access token');
+    }
+  }
+
+  // ─── Refresh token rotation (with theft detection) ─────────────────────────
+
+  async rotateRefreshToken(
+    rawRefresh: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<TokenPair> {
+    const tokenHash = this.hashToken(rawRefresh);
+
+    const session = await this.prisma.webSession.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!session) throw new UnauthorizedException('Unknown refresh token');
+
+    // Потерянный ответ vs кража — refresh-reuse.ts (classifyReuse + бюджет
+    // восстановлений); не-recover исход бросает 401.
+    const now = new Date();
+    if (session.revokedAt || session.expiresAt < now) {
+      await resolveReuse(
+        {
+          prisma: this.prisma,
+          onAlert: (userId, family) =>
+            this.securityLog.log('refresh_token_reuse', { userId, family }),
+          onEcho: (msg) => this.logger.warn(msg),
+          onWarn: (msg) => this.logger.warn(msg),
+        },
+        session,
+        now,
+      );
+      return this.issueRotated(session, rawRefresh, ip, userAgent);
+    }
+
+    // Ротировали недавно — только access, кука прежняя (rotated:false).
+    if (shouldSkipRotation(session.createdAt, now)) {
+      return {
+        accessToken: this.signAccessToken(session.userId, session.family),
+        expiresIn: ACCESS_TOKEN_TTL_S,
+        refreshToken: rawRefresh,
+        rotated: false,
+      };
+    }
+    return this.issueRotated(session, rawRefresh, ip, userAgent);
+  }
+
+  /** Тонкая обёртка над refresh-issue.ts: сервис собирает зависимости. */
+  private issueRotated(
+    session: RotatingSession,
+    rawRefresh: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<TokenPair> {
+    const deps = {
+      prisma: this.prisma,
+      hashToken: (raw: string) => this.hashToken(raw),
+      signAccessToken: (u: bigint, s: string) => this.signAccessToken(u, s),
+      accessTtlS: ACCESS_TOKEN_TTL_S,
+      refreshTtlS: REFRESH_TOKEN_TTL_S,
+    };
+    return issueRotatedPair(deps, session, rawRefresh, ip, userAgent);
+  }
+
+  // ─── Logout ────────────────────────────────────────────────────────────────
+
+  // Выход закрывает всю family предъявленного токена, а не одну строку: иначе
+  // вор с наследником той же цепочки переживал «Выйти» жертвы (аудит 2026-10).
+  async revokeSession(rawRefresh: string): Promise<void> {
+    const session = await this.prisma.webSession.findUnique({
+      where: { tokenHash: this.hashToken(rawRefresh) },
+      select: { family: true },
+    });
+    if (session) await revokeFamilyQuiet(this.prisma, session.family);
+  }
+
+  async revokeAllSessions(userId: bigint): Promise<void> {
+    await this.prisma.webSession.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+
+  private hashToken(raw: string): string {
+    return crypto.createHash('sha256').update(raw).digest('hex');
+  }
+
+  private generateWebUserId(): bigint {
+    // Random BigInt in [WEB_USER_ID_MIN, WEB_USER_ID_MAX) — safe from Telegram ID collisions
+    const range = WEB_USER_ID_MAX - WEB_USER_ID_MIN;
+    const rand = BigInt('0x' + crypto.randomBytes(8).toString('hex')) % range;
+    return WEB_USER_ID_MIN + rand;
+  }
+  private async userAddressForm(id: bigint) {
+    const owner = await this.prisma.user.findUnique({
+      where: { id },
+      select: { addressForm: true },
+    });
+    return normalizeAddressForm(owner?.addressForm);
+  }
+  // Тонкая обёртка над magic-link.ts: сервис только собирает зависимости.
+  private sendMagicLink(userId: bigint, lower: string): Promise<void> {
+    return sendMagicLink(
+      {
+        prisma: this.prisma,
+        webappUrl: this.config.getOrThrow<string>('WEBAPP_URL'),
+        encryptEmail: (e) => encField(e) ?? e,
+        addressForm: (id) => this.userAddressForm(id),
+        sendLink: (e, l, f) => this.emailSvc.sendLinkEmailLetter(e, l, f),
+        onSendError: (m) =>
+          this.logger.error(
+            `linkEmailToAccount sendLinkEmailLetter failed: ${m}`,
+          ),
+      },
+      userId,
+      lower,
+    );
+  }
+}

@@ -1,0 +1,260 @@
+// e2e SMOKE (TEST_IMPROVEMENT_PLAN.md, этап 1.2) — продолжение
+// therapy-ownership.e2e-spec.ts. Отдельный файл (не хвост первого, чтобы
+// уложиться в лимит ~300 строк на файл, правило №10 CLAUDE.md) и отдельная
+// пара терапевт/клиент (T3/C2), чтобы не зависеть от порядка выполнения
+// тестов в соседнем файле.
+//
+// Сценарий 3: связь с клиентом РАЗРЫВАЕТСЯ — клиент C2 вызывает DELETE
+// /api/therapy/relation (с 2026-10 этот маршрут рвёт только связи в роли
+// КЛИЕНТА, аудит T2; терапевт убирает клиента через DELETE clients/:id, а оно
+// стирает и клинические данные — здесь нужен именно разрыв с сохранением
+// строк). RelationStatus знает только pending/active, назад к pending код не
+// переводит. После разрыва TherapyRelation-строка удаляется, но
+// ModeMap/TherapistNote/ClientConceptualization, созданные ПОКА связь была
+// активна, остаются в БД с прежним (therapistId, clientId). Регресс
+// PR #66: getModeMap/updateModeMap искали карту только по
+// id+therapistId и не перепроверяли активность связи — терапевт с разорванной
+// связью всё ещё мог читать/писать чужую (бывшую) клиническую карту.
+// mode-maps.service.ts сейчас держит "догоняющую" проверку
+// assertHasClient во ВСЕХ мутаторах карты — этот тест фиксирует, что она
+// не потеряется снова.
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+
+describe('e2e smoke: therapy ownership — after disconnect (PR #66 regression)', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const secret = () => process.env.JWT_SECRET as string;
+
+  const T3 = 4_000_000_000_000_004n;
+  const C2 = 4_000_000_000_000_005n;
+  const C2_ID = Number(C2);
+  const ALL_USER_IDS = [T3, C2];
+  const WORK_ITEM = {
+    id: 'w1',
+    kind: 'technique',
+    refId: 'chairwork',
+    modeIds: ['punitive_critic'],
+    schemaIds: [],
+    needIds: [],
+    fields: { theme: 'спор с Критиком' },
+  };
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. На реальном Postgres обязательна и перед
+    // прямой вставкой User-строк ниже (role: THERAPIST/CLIENT) — иначе
+    // повторный локальный прогон падает на PK-конфликте id.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
+
+  function agentAs(userId: bigint) {
+    const token = signAccessToken(userId, secret());
+    const auth = (r: request.Test) => r.set('Authorization', `Bearer ${token}`);
+    return {
+      get: (url: string) => auth(request(app.getHttpServer()).get(url)),
+      post: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).post(url)).send(body),
+      patch: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).patch(url)).send(body),
+      delete: (url: string) => auth(request(app.getHttpServer()).delete(url)),
+    };
+  }
+
+  let mapId: number;
+  let noteId: number;
+
+  beforeAll(async () => {
+    await prisma.user.create({ data: { id: T3, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: C2, role: 'CLIENT' } });
+
+    const t3 = agentAs(T3);
+    const c2 = agentAs(C2);
+    const invite = await t3.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+    const join = await c2.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.status).toBeLessThan(300);
+    expect(join.body).toEqual({ ok: true });
+
+    // Заметка, концептуализация, задача и карта режимов — все создаются
+    // ПОКА связь активна, чтобы после разрыва проверить, что доступ к уже
+    // существующим строкам всё равно закрывается.
+    const note = await t3.post(`/api/therapy/notes/${C2_ID}`, {
+      date: '2026-07-22',
+      text: 'заметка до разрыва связи',
+      work: [WORK_ITEM],
+    });
+    expect(note.status).toBeLessThan(300);
+    // «Сохранил → нашёл» пунктов «Что делали» через живую БД.
+    const work = await t3.get(`/api/therapy/notes/${C2_ID}/work`);
+    expect(work.body.entries).toEqual([
+      { noteId: note.body.id, date: '2026-07-22', work: [WORK_ITEM] },
+    ]);
+
+    // Одна запись по id — так открывается запись за пределами страницы заметок.
+    const one = await t3.get(`/api/therapy/notes/${C2_ID}/one/${note.body.id}`);
+    expect(one.body.number).toBe(1);
+    expect(one.body.note.text).toBe('заметка до разрыва связи');
+    expect(one.body.note.work).toEqual([WORK_ITEM]);
+    noteId = note.body.id as number;
+
+    const concept = await t3.post(`/api/therapy/conceptualization/${C2_ID}`, {
+      earlyExperience: 'опыт клиента C2',
+    });
+    expect(concept.status).toBeLessThan(300);
+
+    const task = await t3.post('/api/therapy/tasks', {
+      type: 'custom',
+      text: 'задача до разрыва связи',
+      clientId: C2_ID,
+    });
+    expect(task.status).toBeLessThan(300);
+
+    const map = await t3.post(`/api/therapy/mode-maps/${C2_ID}`, {
+      title: 'Карта до разрыва связи',
+    });
+    expect(map.status).toBeLessThan(300);
+    mapId = map.body.id as number;
+
+    // Клиент разрывает связь — терапевтские строки остаются в БД.
+    const disconnect = await c2.delete('/api/therapy/relation');
+    expect(disconnect.status).toBeLessThan(300);
+    expect(disconnect.body).toEqual({ ok: true });
+  });
+
+  it('после разрыва связи T3 не может читать mode-maps клиента (список)', async () => {
+    const t3 = agentAs(T3);
+    const res = await t3.get(`/api/therapy/mode-maps/${C2_ID}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('после разрыва связи T3 не может читать конкретную карту режимов по id (регресс PR #66)', async () => {
+    const t3 = agentAs(T3);
+    // Карта физически всё ещё в БД с therapistId=T3 — проверяем, что одной
+    // сверки therapistId на строке недостаточно, нужна ЖИВАЯ связь.
+    const mapRow = await prisma.modeMap.findUnique({ where: { id: mapId } });
+    expect(mapRow).not.toBeNull();
+    const res = await t3.get(`/api/therapy/mode-maps/map/${mapId}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('после разрыва связи T3 не может обновить карту режимов по id', async () => {
+    const t3 = agentAs(T3);
+    const res = await t3.patch(`/api/therapy/mode-maps/map/${mapId}`, {
+      title: 'Попытка правки после разрыва',
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('после разрыва связи T3 не может читать заметки сессий C2', async () => {
+    const t3 = agentAs(T3);
+    const res = await t3.get(`/api/therapy/notes/${C2_ID}`);
+    expect(res.status).toBe(403);
+    const work = await t3.get(`/api/therapy/notes/${C2_ID}/work`);
+    expect(work.status).toBe(403);
+    expect(JSON.stringify(work.body)).not.toContain('спор с Критиком');
+    const one = await t3.get(`/api/therapy/notes/${C2_ID}/one/${noteId}`);
+    expect(one.status).toBe(403);
+  });
+
+  it('после разрыва связи T3 не может читать концептуализацию C2', async () => {
+    const t3 = agentAs(T3);
+    const res = await t3.get(`/api/therapy/conceptualization/${C2_ID}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('после разрыва связи T3 не может читать client-data C2', async () => {
+    const t3 = agentAs(T3);
+    const res = await t3.get(`/api/therapy/client-data/${C2_ID}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('после разрыва связи T3 не видит задачу C2 через tasks/client/:clientId', async () => {
+    const t3 = agentAs(T3);
+    const res = await t3.get(`/api/therapy/tasks/client/${C2_ID}`);
+    expect(res.status).toBe(403);
+  });
+});
+
+// Заметка «О клиенте» (TherapyRelation.therapistMemo): пишет и видит только
+// терапевт этой связи.
+describe('e2e smoke: therapy ownership — заметка «О клиенте»', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const T4 = 4_000_000_000_000_020n;
+  const T5 = 4_000_000_000_000_021n;
+  const C3 = 4_000_000_000_000_022n;
+  const ALL_USER_IDS = [T4, T5, C3];
+
+  const as = (userId: bigint) => {
+    const token = signAccessToken(userId, process.env.JWT_SECRET as string);
+    const auth = (r: request.Test) => r.set('Authorization', `Bearer ${token}`);
+    return {
+      get: (url: string) => auth(request(app.getHttpServer()).get(url)),
+      post: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).post(url)).send(body),
+    };
+  };
+  const memoOf = async (therapist: bigint) =>
+    (await as(therapist).get('/api/therapy/clients')).body.find(
+      (c: { telegramId: number }) => c.telegramId === Number(C3),
+    )?.memo;
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await prisma.user.create({ data: { id: T4, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: T5, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: C3, role: 'CLIENT' } });
+    const invite = await as(T4).post('/api/therapy/invite');
+    await as(C3).post('/api/therapy/join', { code: invite.body.code });
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
+
+  it('свой терапевт: сохранил → список клиентов вернул заметку; null очищает', async () => {
+    const saved = await as(T4).post(`/api/therapy/session-info/${C3}`, {
+      memo: 'приходит с сестрой',
+    });
+    expect(saved.status).toBeLessThan(300);
+    expect(await memoOf(T4)).toBe('приходит с сестрой');
+    await as(T4).post(`/api/therapy/session-info/${C3}`, { memo: null });
+    expect(await memoOf(T4)).toBeNull();
+  });
+
+  it('чужой терапевт не пишет заметку чужому клиенту и не видит его в списке', async () => {
+    await as(T4).post(`/api/therapy/session-info/${C3}`, { memo: 'секрет' });
+    const res = await as(T5).post(`/api/therapy/session-info/${C3}`, {
+      memo: 'подмена',
+    });
+    expect(res.status).toBe(403);
+    expect(await memoOf(T4)).toBe('секрет');
+    expect(await memoOf(T5)).toBeUndefined();
+  });
+
+  it('клиент не видит заметку в GET /relation', async () => {
+    const res = await as(C3).get('/api/therapy/relation');
+    expect(JSON.stringify(res.body)).not.toMatch(/секрет|memo/i);
+  });
+
+  it('заметка длиннее 5000 знаков — 400', async () => {
+    const res = await as(T4).post(`/api/therapy/session-info/${C3}`, {
+      memo: 'x'.repeat(5001),
+    });
+    expect(res.status).toBe(400);
+  });
+});

@@ -1,0 +1,108 @@
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useDialogLayer, type LayerOpts } from './dialogStack';
+
+// Диалоговая семантика модалок (К4 дизайн-аудита 2026-08): один хук в базовом шите чинит все места
+// разом. При монтировании запоминает activeElement, переносит фокус внутрь (на первый фокусируемый
+// элемент, иначе на контейнер), держит Tab внутри (трап), при размонтировании возвращает фокус. Трап и
+// Escape — только у верхнего (стек dialogStack.ts): onEscape — закрыть, holdEscape — держать, ни того
+// ни другого — Escape слою ниже (лист под трапом).
+export interface DialogA11yProps {
+  ref: React.RefObject<HTMLDivElement | null>;
+  role: 'dialog';
+  'aria-modal': true;
+  tabIndex: -1;
+}
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'textarea:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+function focusableIn(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter((el) => !el.hasAttribute('disabled'));
+}
+
+// Ленивый лист: пока качается чанк, фон уже inert, и браузер снимает фокус с открывателя — к монтированию
+// activeElement = body. Элемент, потерявший фокус внутри inert, — открыватель; любой новый фокус его забывает.
+let blurredByInert: HTMLElement | null = null;
+if (typeof document !== 'undefined') {
+  document.addEventListener(
+    'focusout',
+    (e) => {
+      const t = e.target as HTMLElement | null;
+      if (!e.relatedTarget && t?.closest?.('[inert]')) blurredByInert = t;
+    },
+    true,
+  );
+  document.addEventListener(
+    'focusin',
+    () => {
+      blurredByInert = null;
+    },
+    true,
+  );
+}
+function openerOf(active: Element | null): HTMLElement | null {
+  if (active && active !== document.body) return active as HTMLElement;
+  return blurredByInert?.isConnected
+    ? blurredByInert
+    : (active as HTMLElement | null);
+}
+
+export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
+  const ref = useRef<HTMLDivElement>(null);
+  const layer = useDialogLayer(opts);
+
+  // В layout-фазе, вместе с DOM: пассивная очистка отстаёт, и снятое окно ещё держало Escape.
+  useLayoutEffect(() => layer.join(), [layer]);
+  useEffect(() => {
+    if (!ref.current) return;
+    // Отдельный const с точным типом: TS не переносит сужение во вложенную
+    // функцию, а повторная проверка внутри trapTab была бы недостижимой веткой.
+    const container: HTMLElement = ref.current;
+    const previouslyFocused = openerOf(document.activeElement);
+    const parent =
+      container.parentElement?.closest<HTMLElement>('[role="dialog"]');
+    const first = focusableIn(container)[0];
+    (first ?? container).focus();
+
+    function trapTab(e: KeyboardEvent) {
+      if (e.key !== 'Tab' || !layer.isTop()) return;
+      const items = focusableIn(container);
+      if (items.length === 0) {
+        e.preventDefault();
+        container.focus();
+        return;
+      }
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
+      const active = document.activeElement;
+      const inside = active instanceof Node && container.contains(active);
+      if (e.shiftKey) {
+        if (!inside || active === firstItem) {
+          e.preventDefault();
+          lastItem.focus();
+        }
+      } else if (!inside || active === lastItem) {
+        e.preventDefault();
+        firstItem.focus();
+      }
+    }
+    document.addEventListener('keydown', trapTab);
+
+    return () => {
+      document.removeEventListener('keydown', trapTab);
+      // Открыватель мог уйти из DOM вместе с окном — тогда фокус в слой-родитель, а не на body.
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      else if (parent?.isConnected) parent.focus();
+    };
+  }, [layer]);
+
+  return { ref, role: 'dialog', 'aria-modal': true, tabIndex: -1 };
+}

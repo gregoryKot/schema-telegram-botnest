@@ -1,0 +1,3 @@
+{
+  "src/api/tracker.controller.ts:Record<string, number>": "POST /api/childhood-ratings, за TelegramAuthGuard. Формально Record, но по факту это карта needId→оценка: перед использованием каждое значение проходит ручную проверку (typeof === 'number', Number.isInteger, диапазон 0..10) по фиксированному списку NEED_IDS — эквивалент валидации есть, просто не через class-validator. Ключи вне NEED_IDS молча игнорируются."
+}

@@ -1,0 +1,295 @@
+// Поведенческие тесты /settings: экран рендерится из реальных настроек (не
+// хардкода), каждый action отвечает answerCbQuery, пишет верное поле через
+// botService.updateUserSettings и правит сообщение editMessageText (НЕ reply —
+// правило CLAUDE.md «Telegram: editMessageText, не reply»).
+import { Logger } from '@nestjs/common';
+import {
+  TelegramSettingsService,
+  buildSettingsView,
+} from './telegram.settings.service';
+import { ERROR_RETRY } from './telegram.constants';
+import {
+  makeFakeBot,
+  runCommand,
+  runAction,
+} from './telegram.test-helpers.spec';
+
+const BASE_SETTINGS = {
+  notifyEnabled: true,
+  notifyLocalHour: 21,
+  notifyTimezone: 'Europe/Moscow',
+  notifyReminderEnabled: true,
+  notifyFrequency: 1,
+  notifyQuietStart: 23,
+  notifyQuietEnd: 7,
+  notifyGamified: false,
+  notifyPausedUntil: null,
+  notifyNextRemindDate: null,
+  addressForm: 'ty',
+};
+
+function makeBotService(overrides: Record<string, any> = {}) {
+  let settings: any = { ...BASE_SETTINGS, ...overrides };
+  return {
+    getUserSettings: jest.fn(() => Promise.resolve(settings)),
+    updateUserSettings: jest.fn((_userId: bigint, patch: any) => {
+      settings = { ...settings, ...patch };
+      return Promise.resolve();
+    }),
+    _get: () => settings,
+  };
+}
+
+function makeService(botService: any) {
+  const notificationService = {
+    cancelProactive: jest.fn().mockResolvedValue(undefined),
+  };
+  const scheduleService = {
+    rescheduleForUser: jest.fn().mockResolvedValue(undefined),
+  };
+  const fakeBot = makeFakeBot();
+  const accountService: any = {
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
+  };
+  const service = new TelegramSettingsService(
+    fakeBot.bot,
+    botService,
+    accountService,
+    notificationService as any,
+    scheduleService as any,
+  );
+  return { service, fakeBot, notificationService, scheduleService };
+}
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe('buildSettingsView', () => {
+  it('пусто, если настроек нет — не выдумывает данные', async () => {
+    const botService = { getUserSettings: jest.fn().mockResolvedValue(null) };
+    const view = await buildSettingsView(botService as any, 1n);
+    expect(view.text).toContain('не найдены');
+  });
+
+  it('строит текст из реальных полей настроек, форма «вы»', async () => {
+    const botService = makeBotService({
+      addressForm: 'vy',
+      notifyGamified: true,
+    });
+    const view = await buildSettingsView(botService as any, 1n);
+    expect(view.text).toContain('на «вы»');
+    expect(view.text).toContain('🎮 включён');
+    expect(view.text).toContain('21:00');
+  });
+
+  it('тихие часы выключены, если start === end', async () => {
+    const botService = makeBotService({
+      notifyQuietStart: 5,
+      notifyQuietEnd: 5,
+    });
+    const view = await buildSettingsView(botService as any, 1n);
+    expect(view.text).toContain('Тихие часы: выключены');
+  });
+});
+
+describe('TelegramSettingsService — /settings command', () => {
+  it('отвечает reply (первый вход в меню — это команда, не правка)', async () => {
+    const { service, fakeBot } = makeService(makeBotService());
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'settings');
+    expect(ctx.reply).toHaveBeenCalledTimes(1);
+    expect(ctx.reply.mock.calls[0][0]).toContain('Настройки уведомлений');
+  });
+});
+
+describe('TelegramSettingsService — settings:toggle', () => {
+  it('answerCbQuery вызван, notifyEnabled инвертируется, редактирует (не reply)', async () => {
+    const botService = makeBotService({ notifyEnabled: true });
+    const { service, fakeBot, notificationService, scheduleService } =
+      makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:toggle');
+    expect(ctx.answerCbQuery).toHaveBeenCalled();
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
+      notifyEnabled: false,
+    });
+    expect(botService._get().notifyEnabled).toBe(false);
+    expect(notificationService.cancelProactive).toHaveBeenCalledWith(1n);
+    expect(scheduleService.rescheduleForUser).not.toHaveBeenCalled();
+    expect(ctx.editMessageText).toHaveBeenCalledTimes(1);
+    expect(ctx.reply).not.toHaveBeenCalled();
+  });
+
+  // R2 (аудит 2026-11): «Напоминания» — оба флага, как тумблер сайта; «Итоги
+  // дня» — свой флаг, статус виден рядом, выключение напоминаний его не трогает.
+  it('напоминание выключено отдельно — кнопка «Включить напоминания» поднимает оба флага', async () => {
+    const botService = makeBotService({ notifyReminderEnabled: false });
+    const { service, fakeBot, scheduleService } = makeService(botService);
+    service.onModuleInit();
+    await runAction(fakeBot, 'settings:toggle');
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
+      notifyEnabled: true,
+      notifyReminderEnabled: true,
+    });
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
+  });
+
+  it('экран показывает статус обоих тумблеров', async () => {
+    const on = await buildSettingsView(makeBotService() as never, 1n);
+    expect(on.text).toContain('Напоминания: 🔔 включены');
+    expect(on.text).toContain('Итоги дня: включены');
+    const off = await buildSettingsView(
+      makeBotService({
+        notifyEnabled: false,
+        notifySummaryEnabled: false,
+      }) as never,
+      1n,
+    );
+    expect(off.text).toContain('Напоминания: 🔕 выключены');
+    expect(off.text).toContain('Итоги дня: выключены');
+    expect(JSON.stringify(off.keyboard)).toContain('🔔 Включить напоминания');
+  });
+
+  it('включение обратно — переплпнирует, а не отменяет', async () => {
+    const botService = makeBotService({ notifyEnabled: false });
+    const { service, fakeBot, notificationService, scheduleService } =
+      makeService(botService);
+    service.onModuleInit();
+    await runAction(fakeBot, 'settings:toggle');
+    expect(botService._get().notifyEnabled).toBe(true);
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
+    expect(notificationService.cancelProactive).not.toHaveBeenCalled();
+  });
+});
+
+describe('TelegramSettingsService — settings:toggle_gamified', () => {
+  it('переключает notifyGamified и перепланирует', async () => {
+    const botService = makeBotService({ notifyGamified: false });
+    const { service, fakeBot, scheduleService } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:toggle_gamified');
+    expect(botService._get().notifyGamified).toBe(true);
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
+    expect(ctx.editMessageText).toHaveBeenCalled();
+  });
+});
+
+describe('TelegramSettingsService — час напоминания', () => {
+  it('settings:hour:9 пишет notifyLocalHour=9 и перепланирует', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot, scheduleService } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:hour:9');
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
+      notifyLocalHour: 9,
+    });
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
+    expect(ctx.editMessageText).toHaveBeenCalled();
+  });
+
+  // Аудит 2026-10: Number(match[1]) шёл в БД без сверки; 24 сохранялся как
+  // «24:00», 25+ давали Invalid Date при планировании уже после записи.
+  // 0 и 7 — контрольные образцы: сайт их принимает, но бот таких кнопок не рисует.
+  it.each(['24', '25', '99', '100', '7', '0'])(
+    'settings:hour:%s не пишет настройку и не перепланирует',
+    async (hour) => {
+      const botService = makeBotService();
+      const { service, fakeBot, scheduleService } = makeService(botService);
+      service.onModuleInit();
+      const ctx = await runAction(fakeBot, `settings:hour:${hour}`);
+      expect(ctx.answerCbQuery).toHaveBeenCalled();
+      expect(botService.updateUserSettings).not.toHaveBeenCalled();
+      expect(scheduleService.rescheduleForUser).not.toHaveBeenCalled();
+      expect(botService._get().notifyLocalHour).toBe(21);
+    },
+  );
+
+  // Шов: кнопки настоящего pick_hour -> настоящий обработчик hour на одном
+  // боте. Падает, если клавиатуру расширили, а allow-list нет (или наоборот).
+  it('каждая кнопка pick_hour принимается обработчиком и пишет свой час', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot } = makeService(botService);
+    service.onModuleInit();
+    const pick = await runAction(fakeBot, 'settings:pick_hour');
+    const markup = pick.editMessageText.mock.calls[0][1];
+    const hourData: string[] = markup.reply_markup.inline_keyboard
+      .flat()
+      .map((b: { callback_data: string }) => b.callback_data)
+      .filter((d: string) => d.startsWith('settings:hour:'));
+    expect(hourData).toHaveLength(16);
+    for (const data of hourData) {
+      const expected = Number(data.split(':')[2]);
+      await runAction(fakeBot, data);
+      expect(botService._get().notifyLocalHour).toBe(expected);
+    }
+  });
+
+  it('settings:pick_hour показывает клавиатуру часов, не трогает БД', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:pick_hour');
+    expect(botService.updateUserSettings).not.toHaveBeenCalled();
+    expect(ctx.editMessageText).toHaveBeenCalledWith(
+      expect.stringContaining('Выбери время уведомления'),
+      expect.anything(),
+    );
+  });
+});
+
+describe('TelegramSettingsService — часовой пояс', () => {
+  it('settings:tz:Europe/Berlin пишет валидную таймзону из списка', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot, scheduleService } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:tz:Europe/Berlin');
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
+      notifyTimezone: 'Europe/Berlin',
+    });
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
+    expect(ctx.editMessageText).toHaveBeenCalled();
+  });
+
+  it('таймзона не из белого списка — тихо игнорируется (без записи в БД)', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:tz:Mars/Colony');
+    expect(botService.updateUserSettings).not.toHaveBeenCalled();
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+  });
+});
+
+describe('TelegramSettingsService — settings:back', () => {
+  it('просто перерисовывает экран настроек, без записи', async () => {
+    const botService = makeBotService();
+    const { service, fakeBot } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:back');
+    expect(botService.updateUserSettings).not.toHaveBeenCalled();
+    expect(ctx.editMessageText).toHaveBeenCalledWith(
+      expect.stringContaining('Настройки уведомлений'),
+      expect.anything(),
+    );
+  });
+});
+
+describe('TelegramSettingsService — ошибки', () => {
+  it('падение при чтении настроек не роняет хендлер, сообщение об ошибке с кнопкой «К настройкам»', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const botService = {
+      getUserSettings: jest.fn().mockRejectedValue(new Error('db down')),
+      updateUserSettings: jest.fn(),
+    };
+    const { service, fakeBot } = makeService(botService);
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'settings:toggle');
+    expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).toHaveBeenLastCalledWith(
+      ERROR_RETRY,
+      expect.anything(),
+    );
+  });
+});

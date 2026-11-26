@@ -1,0 +1,538 @@
+// Тест гейта check-history-sheet.mjs — оверлей на весь экран обязан вызывать
+// useHistorySheet либо стоять в scripts/history-sheet-baseline.json с причиной.
+//
+// Родился из находки аудита 2026-10: чек-ин «Режим прямо сейчас» в ModesTab —
+// `position: fixed, inset: 0` с голым setShowCheckin(false) вместо хука —
+// пережил запись дизайн-аудита «~54 места, одно нарушение»: гейт стоял в списке
+// кандидатов. Проверяются оба исхода и контрольные образцы (правило №15:
+// похожий, но незаконный случай обязан остаться красным), включая слепую зону
+// «оверлей задан классом из CSS, а не инлайном» — 35 из 47 листов такие.
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { runGate } from './gate-sandbox';
+import { callExport, importExport } from './pattern-loader';
+
+const GATE = 'check-history-sheet.mjs';
+const REAL_BASELINE = JSON.parse(
+  readFileSync(
+    join(__dirname, '..', '..', '..', 'scripts', 'history-sheet-baseline.json'),
+    'utf8',
+  ),
+) as Record<string, { reason: string; since: string }>;
+
+const entry = (reason = 'честная причина длиннее двадцати символов') => ({
+  reason,
+  since: 'abc1234',
+});
+const baseline = (o: Record<string, unknown> = {}) => JSON.stringify(o);
+
+const INLINE_NO_HOOK = [
+  'export function Sheet({ onClose }: { onClose: () => void }) {',
+  '  return (',
+  "    <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>",
+  '      <button onClick={onClose}>Назад</button>',
+  '    </div>',
+  '  );',
+  '}',
+  '',
+].join('\n');
+
+const WITH_HOOK = [
+  "import { useHistorySheet } from '../hooks/useHistorySheet';",
+  'export function Sheet({ onClose }: { onClose: () => void }) {',
+  '  const goBack = useHistorySheet(onClose);',
+  '  return (',
+  "    <div style={{ position: 'fixed', inset: 0, zIndex: 400 }}>",
+  '      <button onClick={goBack}>Назад</button>',
+  '    </div>',
+  '  );',
+  '}',
+  '',
+].join('\n');
+
+const CSS = [
+  '.ex-screen {',
+  '  position: fixed; inset: 0;',
+  '  background: var(--bg);',
+  '}',
+  '.ex-screen::before { content: ""; position: fixed; inset: 0; }',
+  '.plain { padding: 8px; }',
+  '@media (max-width: 600px) {',
+  '  .sidebar-open { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }',
+  '}',
+  '',
+].join('\n');
+
+describe('check-history-sheet.mjs — инлайновые оверлеи', () => {
+  it('чистое дерево: оверлей с хуком — exit 0', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx': WITH_HOOK,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('✓ гейт оверлеев');
+  });
+
+  it('оверлей fixed + inset: 0 без хука и без записи — красный, с путём и строкой', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx': INLINE_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/Sheet.tsx');
+    expect(res.stderr).toContain('L3');
+  });
+
+  it('четыре стороны в нуле вместо inset: 0 — тоже оверлей', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx': INLINE_NO_HOOK.replace(
+        'inset: 0',
+        'top: 0, left: 0, right: 0, bottom: 0',
+      ),
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+  });
+
+  it('контроль: fixed и inset: 0 в РАЗНЫХ объектах — не оверлей (плавающая кнопка)', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Fab.tsx': [
+        'export const Fab = () => (',
+        '  <div>',
+        "    <button style={{ position: 'fixed', bottom: 16, right: 16 }}>+</button>",
+        '    <div style={{ inset: 0 }} />',
+        '  </div>',
+        ');',
+        '',
+      ].join('\n'),
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('контроль: хук только в комментарии не считается вызовом', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx':
+        '// TODO useHistorySheet(onClose)\n' + INLINE_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+  });
+
+  it('тестовые файлы не сканируются', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.test.tsx': INLINE_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+});
+
+describe('check-history-sheet.mjs — оверлей, заданный классом из CSS', () => {
+  const USES_CLASS = [
+    'export const Screen = () => (',
+    '  <div className="ex-screen">',
+    '    <button>Назад</button>',
+    '  </div>',
+    ');',
+    '',
+  ].join('\n');
+
+  it('className с классом, у которого в CSS fixed + inset: 0, без хука — красный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/index.css': CSS,
+      'webapp/src/Screen.tsx': USES_CLASS,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/Screen.tsx');
+    expect(res.stderr).toContain('ex-screen');
+  });
+
+  it('тот же класс, файл вызывает хук — зелёный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/index.css': CSS,
+      'webapp/src/Screen.tsx':
+        'function S(){useHistorySheet(c);return <i className="ex-screen"/>}',
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('класс из @media-правила с четырьмя сторонами в нуле тоже ловится', () => {
+    const res = runGate(GATE, {
+      'webapp/src/index.css': CSS,
+      'webapp/src/Screen.tsx': USES_CLASS.replace(
+        'ex-screen',
+        'a sidebar-open',
+      ),
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('sidebar-open');
+  });
+
+  it('контроль: класс без fixed в CSS и класс-подстрока (ex-screen-title) — не оверлей', () => {
+    const res = runGate(GATE, {
+      'webapp/src/index.css': CSS,
+      'webapp/src/Screen.tsx': [
+        'export const Screen = () => (',
+        '  <div className="plain ex-screen-title">x</div>',
+        ');',
+        '',
+      ].join('\n'),
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('контроль: правило на псевдоэлемент (::before) не делает класс оверлеем', () => {
+    const res = runGate(GATE, {
+      'webapp/src/index.css': '.decor::before { position: fixed; inset: 0; }\n',
+      'webapp/src/Screen.tsx':
+        'export const S = () => <div className="decor" />;\n',
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('CSS в комментарии не создаёт класс-оверлей', () => {
+    const res = runGate(GATE, {
+      'webapp/src/index.css': '/* .ghost { position: fixed; inset: 0; } */\n',
+      'webapp/src/Screen.tsx':
+        'export const S = () => <div className="ghost" />;\n',
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+});
+
+describe('check-history-sheet.mjs — бейслайн', () => {
+  it('оверлей без хука, но с записью и внятной причиной — зелёный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx': INLINE_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline({
+        'webapp/src/Sheet.tsx': entry(),
+      }),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('протухшая запись: файл получил хук — красный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx': WITH_HOOK,
+      'scripts/history-sheet-baseline.json': baseline({
+        'webapp/src/Sheet.tsx': entry(),
+      }),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('протухшая запись');
+  });
+
+  it('протухшая запись: файл исчез или перестал быть оверлеем — красный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/Plain.tsx': 'export const P = () => <div />;\n',
+      'scripts/history-sheet-baseline.json': baseline({
+        'webapp/src/Plain.tsx': entry(),
+        'webapp/src/Gone.tsx': entry(),
+      }),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('Plain.tsx');
+    expect(res.stderr).toContain('Gone.tsx');
+  });
+
+  it.each([
+    ['короткая причина', { reason: 'мало', since: 'abc1234' }],
+    [
+      'причина-отписка',
+      { reason: 'legacy, потом разберёмся с этим файлом', since: 'abc1234' },
+    ],
+    ['нет since', { reason: 'честная причина длиннее двадцати символов' }],
+  ])('запись с дефектом (%s) — красный', (_name, bad) => {
+    const res = runGate(GATE, {
+      'webapp/src/Sheet.tsx': INLINE_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline({
+        'webapp/src/Sheet.tsx': bad,
+      }),
+    });
+    expect(res.status).toBe(1);
+  });
+});
+
+// Рамки-оверлеи (ExScreen, BottomSheetShell, Dialog, ConfirmDialog) рисуют fixed-оболочку
+// сами, а у потребителя своего `position: fixed` нет: без тега гейт их не видел (шторка
+// «О советах» жила с локальным onClose, CelebrationDialog — без записи истории).
+const FRAME_NO_HOOK = [
+  "import { ExScreen } from './exercises/ExScreen';",
+  'export function Ex({ onBack }: { onBack: () => void }) {',
+  '  return <ExScreen onBack={onBack} title="Упражнение" />;',
+  '}',
+  '',
+].join('\n');
+const SHEET_FRAME_NO_HOOK = [
+  "import { BottomSheetShell } from './BottomSheetShell';",
+  'export function Advice({ onClose }: { onClose: () => void }) {',
+  '  return <BottomSheetShell goBack={onClose} zIndex={300}>О советах</BottomSheetShell>;',
+  '}',
+  '',
+].join('\n');
+const DIALOG_NO_HOOK = [
+  "import { Dialog } from './Dialog';",
+  'export function Note({ onClose }: { onClose: () => void }) {',
+  '  return <Dialog label="Заметка" onClose={onClose} closeOnEscape>текст</Dialog>;',
+  '}',
+  '',
+].join('\n');
+const CONFIRM_NO_HOOK = [
+  "import { ConfirmDialog } from './ConfirmDialog';",
+  'export function Ask({ onClose }: { onClose: () => void }) {',
+  '  return <ConfirmDialog title="Удалить?" message="м" confirmLabel="Да" onConfirm={onClose} onCancel={onClose} />;',
+  '}',
+  '',
+].join('\n');
+const FRAME_WITH_HOOK = [
+  "import { ExScreen } from './exercises/ExScreen';",
+  "import { useHistorySheet } from '../hooks/useHistorySheet';",
+  'export function Ex({ onBack }: { onBack: () => void }) {',
+  '  const goBack = useHistorySheet(onBack);',
+  '  return <ExScreen onBack={goBack} title="Упражнение" />;',
+  '}',
+  '',
+].join('\n');
+
+describe('check-history-sheet.mjs — потребители рамок-оверлеев', () => {
+  it.each([
+    ['<ExScreen', FRAME_NO_HOOK],
+    ['<BottomSheetShell', SHEET_FRAME_NO_HOOK],
+    ['<Dialog', DIALOG_NO_HOOK],
+    ['<ConfirmDialog', CONFIRM_NO_HOOK],
+  ])('%s без хука и без записи — красный, с путём', (_tag, src) => {
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': src,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/components/Consumer.tsx');
+    expect(res.stderr).toContain('рамка');
+  });
+
+  it('потребитель с хуком — зелёный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': FRAME_WITH_HOOK,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('шаг потока без хука (хук у родителя) с записью в бейслайне — зелёный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': FRAME_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline({
+        'webapp/src/components/Consumer.tsx': entry(
+          'шаг потока: хук вызывает родитель-поток',
+        ),
+      }),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('контроль: рамка в комментарии, похожие имена (ExScreenSkeleton; HistoryConfirmDialog — хук внутри) и импорт без тега — не оверлей', () => {
+    const src = [
+      "import { ExScreen, ExScreenSkeleton } from './exercises/ExScreen';",
+      "import { HistoryConfirmDialog } from './HistoryConfirmDialog';",
+      '// раньше здесь был <ExScreen> и <Dialog> — теперь силуэт',
+      'export const S = () => <><ExScreenSkeleton /><HistoryConfirmDialog title="?" /></>;',
+      '',
+    ].join('\n');
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': src,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+});
+
+// Каждая запись настоящего бейслайна — не «вес», а решение: причина внятная, у
+// записи есть since. Протухание (файл получил хук/исчез) настоящий гейт ловит в
+// CI на реальном дереве; здесь пинится форма записей.
+describe('scripts/history-sheet-baseline.json — форма записей', () => {
+  it.each(Object.entries(REAL_BASELINE))(
+    '%s: причина и since на месте',
+    (_file, e) => {
+      expect(e.reason.trim().length).toBeGreaterThanOrEqual(20);
+      expect(e.since.trim()).not.toBe('');
+    },
+  );
+
+  it('бейслайн — только webapp/ и shared/ (мини-апп вне зоны гейта)', () => {
+    for (const file of Object.keys(REAL_BASELINE)) {
+      expect(file).toMatch(/^(webapp|shared)\/src\/.+\.tsx$/);
+    }
+  });
+});
+
+// Распознавание вынесено в scripts/history-sheet-detect.mjs (правило №10:
+// движок не растёт вместе с правилами). Его чистые функции пинятся здесь
+// напрямую — сломанный детектор молча не видел бы ни одного оверлея, и гейт
+// зеленел бы на всём.
+describe('history-sheet-detect.mjs — чистые функции', () => {
+  const call = (fn: string, input: string): unknown =>
+    callExport('history-sheet-detect.mjs', fn, input);
+
+  it('coversViewport: inset: 0 или четыре стороны в нуле', () => {
+    expect(
+      call('coversViewport', "position: 'fixed', inset: 0, zIndex: 9"),
+    ).toBe(true);
+    expect(call('coversViewport', 'position: fixed; inset: 0px;')).toBe(true);
+    expect(
+      call('coversViewport', 'top: 0; left: 0; right: 0; bottom: 0;'),
+    ).toBe(true);
+  });
+
+  it('контроль coversViewport: три стороны, ненулевой inset и многозначный inset (полоса) — не весь экран', () => {
+    expect(call('coversViewport', 'top: 0; left: 0; right: 0;')).toBe(false);
+    expect(call('coversViewport', 'inset: 12px;')).toBe(false);
+    expect(call('coversViewport', "inset: '0 0 auto 0'")).toBe(false);
+    expect(call('coversViewport', 'inset: 0 0 auto 0;')).toBe(false);
+  });
+
+  it('callsHistorySheet: вызов в коде — да; в комментарии и голый импорт — нет', () => {
+    expect(
+      call('callsHistorySheet', 'const goBack = useHistorySheet(onClose);'),
+    ).toBe(true);
+    expect(
+      call('callsHistorySheet', '// useHistorySheet(onClose)\nconst a = 1;'),
+    ).toBe(false);
+    expect(
+      call(
+        'callsHistorySheet',
+        "import { useHistorySheet } from '../hooks/useHistorySheet';",
+      ),
+    ).toBe(false);
+  });
+
+  it('frameOverlays: тег рамки — находка со строкой; ExScreenSkeleton и комментарий — нет', () => {
+    const hits = call('frameOverlays', FRAME_NO_HOOK) as { line: number }[];
+    expect(hits).toHaveLength(1);
+    expect(hits[0].line).toBe(3);
+    expect(
+      call('frameOverlays', '// <ExScreen>\nconst s = <ExScreenSkeleton />;'),
+    ).toEqual([]);
+  });
+
+  it('inlineOverlays: строка находки указывает на position: fixed', () => {
+    const hits = call('inlineOverlays', INLINE_NO_HOOK) as { line: number }[];
+    expect(hits).toHaveLength(1);
+    expect(hits[0].line).toBe(3);
+  });
+});
+
+describe('check-history-sheet.mjs — style, спред и класс одного элемента складываются', () => {
+  const run = (tsx: string[]) =>
+    runGate(GATE, {
+      'webapp/src/utils.css':
+        '.u-fill { inset: 0; }\n.u-fixed { position: fixed; }\n',
+      'webapp/src/Sheet.tsx': [...tsx, ''].join('\n'),
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+
+  it('position: fixed в style + inset: 0 в классе — красный, с классом в сообщении', () => {
+    const res = run([
+      'export const Sheet = () => (',
+      '  <div className="u-fill" style={{ position: \'fixed\', zIndex: 400 }} />',
+      ');',
+    ]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/Sheet.tsx › Sheet');
+    expect(res.stderr).toContain('style + классы «u-fill»');
+  });
+
+  it('класс fixed + inset: 0 в style — красный', () => {
+    const res = run([
+      'export const Sheet = () => (',
+      '  <div className="u-fixed" style={{ inset: 0 }} />',
+      ');',
+    ]);
+    expect(res.status).toBe(1);
+  });
+
+  it('спред константы того же файла + position: fixed — красный', () => {
+    const res = run([
+      'const FULL: React.CSSProperties = { inset: 0, zIndex: 400 };',
+      'export const Sheet = () => (',
+      "  <div style={{ ...FULL, position: 'fixed' }} />",
+      ');',
+    ]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('style + спред константы');
+  });
+
+  it('контроль: только fixed без inset (style + класс) — не оверлей', () => {
+    const res = run([
+      'const PAD = { padding: 8 };',
+      'export const Fab = () => (',
+      '  <button className="u-fixed" style={{ ...PAD, bottom: 16, right: 16 }}>+</button>',
+      ');',
+    ]);
+    expect(res.status).toBe(0);
+  });
+
+  it('контроль: fixed в style, класс inset: 0 у вложенного элемента — не оверлей', () => {
+    const res = run([
+      'export const Fab = () => (',
+      "  <div style={{ position: 'fixed', bottom: 0 }}>",
+      '    <i className="u-fill" />',
+      '  </div>',
+      ');',
+    ]);
+    expect(res.status).toBe(0);
+  });
+
+  it('оверлей в одном style не считается второй раз — хук закрывает его один', () => {
+    const res = run([
+      "import { useHistorySheet } from '../hooks/useHistorySheet';",
+      'export function Sheet({ onClose }: { onClose: () => void }) {',
+      '  const goBack = useHistorySheet(onClose);',
+      '  return <div className="u-fill" style={{ position: \'fixed\', inset: 0 }} onClick={goBack} />;',
+      '}',
+    ]);
+    expect(res.status).toBe(0);
+  });
+});
+
+describe('history-sheet-jsx.mjs — elementOverlays', () => {
+  const hits = (src: string, decls: string) =>
+    JSON.parse(
+      importExport(
+        'history-sheet-jsx.mjs',
+        'elementOverlays',
+        `(fn) => fn(${JSON.stringify(src)}, ${decls})`,
+      ),
+    ) as { line: number; what: string }[];
+  const DECLS =
+    "new Map([['u-fill', 'inset: 0;'], ['whole', 'position: fixed; inset: 0;']])";
+
+  it('style + класс одного элемента — находка со строкой тега; источник-оверлей сам по себе — нет', () => {
+    const src = [
+      'const a = useState<number>(0);',
+      'const B = <div className="u-fill" style={{ position: \'fixed\' }} />;',
+      'const C = <div className="whole" style={{ position: \'fixed\' }} />;',
+    ].join('\n');
+    expect(hits(src, DECLS)).toEqual([
+      {
+        line: 2,
+        what: '<div>: style + классы «u-fill» (fixed + весь экран вместе)',
+      },
+    ]);
+  });
+
+  it('style={CONST} и спред вложенного элемента не путаются с атрибутами тега', () => {
+    const src = [
+      "const S = { position: 'fixed' } as const;",
+      'const D = <div className="u-fill" style={S} />;',
+      'const E = <div className="x" icon={<i style={{ position: \'fixed\' }} />} />;',
+    ].join('\n');
+    expect(hits(src, DECLS).map((h) => h.line)).toEqual([2]);
+  });
+});

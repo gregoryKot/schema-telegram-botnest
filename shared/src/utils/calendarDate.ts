@@ -1,0 +1,117 @@
+// Строки с датой приезжают из API в двух видах, и это разные сущности:
+//
+//   • момент времени — ISO с зоной: `2026-07-21T10:00:00.000Z`;
+//   • календарный день — `2026-07-21`: ни времени, ни зоны в нём нет.
+//
+// Инцидент 2026-09-17: календарный день разбирался как `${at}T00:00:00` —
+// без `Z`, то есть как полночь ЗОНЫ МАШИНЫ. На UTC+3 запись уезжала на три
+// часа назад и выпадала из недельной выборки «Моего пути», под TZ=UTC всё
+// сходилось — CI был зелёный, баг нашёл владелец на своей машине.
+//
+// Конвенция проекта: **календарный день = полночь UTC**, и читается он, и
+// показывается в UTC. Причины: строка не несёт зоны, а данные у web и
+// мини-аппа общие — один и тот же день обязан фильтроваться одинаково с
+// телефона в Москве и с ноутбука в Лиссабоне. Тем же способом день уже
+// сравнивался в sortJourneyItems и в бэкендовом journey.service.
+//
+// Момент времени остаётся моментом: его показывают в зоне читателя (её и
+// имеет в виду пользователь, когда смотрит «во сколько это было»).
+
+/** `YYYY-MM-DD` — календарный день без времени. */
+const CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function isCalendarDate(value: string): boolean {
+  return CALENDAR_DATE.test(value);
+}
+
+/**
+ * Момент для сравнения и сортировки; `NaN` — нечитаемая строка.
+ * Календарный день берётся полночью UTC, поэтому результат один в любой зоне.
+ */
+export function dateStringMs(value: string): number {
+  return Date.parse(isCalendarDate(value) ? `${value}T00:00:00Z` : value);
+}
+
+/** Зона, в которой строку надо читать и показывать. */
+function zoneOf(value: string): 'UTC' | undefined {
+  return isCalendarDate(value) ? 'UTC' : undefined;
+}
+
+export interface DateStringParts {
+  year: number;
+  /** 1-12 (не 0-11, как у Date) */
+  month: number;
+  day: number;
+  /** 0 — воскресенье, как у Date.getDay() */
+  weekday: number;
+}
+
+/**
+ * Календарные части строки в её собственной зоне: у дня — в UTC (день
+ * остаётся собой), у момента — в зоне читателя. Нечитаемая строка — `null`.
+ */
+export function dateStringParts(value: string): DateStringParts | null {
+  const ms = dateStringMs(value);
+  if (Number.isNaN(ms)) return null;
+  const d = new Date(ms);
+  return isCalendarDate(value)
+    ? {
+        year: d.getUTCFullYear(),
+        month: d.getUTCMonth() + 1,
+        day: d.getUTCDate(),
+        weekday: d.getUTCDay(),
+      }
+    : {
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        weekday: d.getDay(),
+      };
+}
+
+/**
+ * Дата для показа. Нечитаемая строка — пустая строка, не «Invalid Date».
+ * Календарный день форматируется в UTC: иначе на западных смещениях
+ * `2026-07-14` показалось бы как 13 июля.
+ */
+export function formatDateString(
+  value: string,
+  options: Intl.DateTimeFormatOptions,
+  locale = 'ru-RU',
+): string {
+  const ms = dateStringMs(value);
+  if (Number.isNaN(ms)) return '';
+  return new Date(ms).toLocaleDateString(locale, {
+    timeZone: zoneOf(value),
+    ...options,
+  });
+}
+
+/** День, который сервер хранит полночью UTC в DateTime и отдаёт моментом
+ * (`2026-01-10T00:00:00.000Z`, дата статьи): в зоне читателя западнее UTC он
+ * показался бы 9 января (E14). `YYYY-MM-DD` — как есть, нечитаемое — пусто. */
+export function utcCalendarDay(value: string): string {
+  const ms = dateStringMs(value);
+  return Number.isNaN(ms) ? '' : new Date(ms).toISOString().slice(0, 10);
+}
+
+/**
+ * Сегодняшний день UTC — только для дней, которые ПОСЧИТАЛ СЕРВЕР в UTC:
+ * `todayStr()` там, где местная дата другая, с ними не совпадает (2026-09-17).
+ *
+ * Дни самого человека (QA 2026-10-26) — настенное время, которое он ввёл
+ * (`nextSession`, начало терапии), записи дневника, оценки по его зоне —
+ * сравниваются с его МЕСТНЫМ днём, `todayStr()`: с днём UTC в 00:10 по Москве
+ * вчерашняя встреча была «сегодня». «Сегодня» другого человека (клиента у
+ * терапевта) фронт не знает — его считает сервер (`daysSinceActive`).
+ */
+export function todayCalendarDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Календарный день со сдвигом на `delta` суток («вчера» дня `day` — `-1`). */
+export function shiftCalendarDay(day: string, delta: number): string {
+  return new Date(dateStringMs(day) + delta * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}

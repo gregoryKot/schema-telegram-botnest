@@ -1,0 +1,325 @@
+// TherapyTasksController был на 0% покрытия. Инстанцируем напрямую (без Nest
+// TestingModule) с типизированными двойниками — паттерн auth-2fa.controller.spec.ts
+// (Pick<Service, 'method'> & { method: jest.Mock }). Особое внимание —
+// createTask: SECURITY-инвариант "терапевт может создать задачу клиенту
+// только при реальной активной связи" (assertHasClient) и условная нотификация
+// (только для реальных, не виртуальных, клиентов).
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import type { Request } from 'express';
+import { TherapyTasksController } from './therapy-tasks.controller';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { TherapyTasksService } from './therapy-tasks.service';
+import { TherapyTasksViewService } from './therapy-tasks-view.service';
+import { AccountService } from '../bot/account.service';
+
+type RelationsMock = Pick<TherapyRelationsService, 'assertHasClient'> & {
+  assertHasClient: jest.Mock;
+};
+
+type TasksMock = Pick<
+  TherapyTasksService,
+  | 'createTask'
+  | 'getTasks'
+  | 'getTaskHistory'
+  | 'completeTask'
+  | 'completeOfflineTask'
+  | 'deleteAssignedTask'
+  | 'scheduleTaskNotification'
+> & {
+  createTask: jest.Mock;
+  getTasks: jest.Mock;
+  getTaskHistory: jest.Mock;
+  completeTask: jest.Mock;
+  completeOfflineTask: jest.Mock;
+  deleteAssignedTask: jest.Mock;
+  scheduleTaskNotification: jest.Mock;
+};
+
+type TasksViewMock = Pick<
+  TherapyTasksViewService,
+  'getAllTasksForTherapist' | 'getTasksForClient'
+> & {
+  getAllTasksForTherapist: jest.Mock;
+  getTasksForClient: jest.Mock;
+};
+
+type AccountMock = Pick<AccountService, 'getUserRole'> & {
+  getUserRole: jest.Mock;
+};
+
+function makeRelations(): RelationsMock {
+  return { assertHasClient: jest.fn().mockResolvedValue(undefined) };
+}
+
+function makeTasks(): TasksMock {
+  return {
+    createTask: jest.fn().mockResolvedValue({ id: 1, text: 'задача' }),
+    getTasks: jest.fn().mockResolvedValue([{ id: 1 }]),
+    getTaskHistory: jest.fn().mockResolvedValue([{ id: 2 }]),
+    completeTask: jest.fn().mockResolvedValue(true),
+    completeOfflineTask: jest.fn().mockResolvedValue(false),
+    deleteAssignedTask: jest.fn().mockResolvedValue(true),
+    scheduleTaskNotification: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+function makeTasksView(): TasksViewMock {
+  return {
+    getAllTasksForTherapist: jest.fn().mockResolvedValue([{ clientId: 1 }]),
+    getTasksForClient: jest.fn().mockResolvedValue([{ id: 3 }]),
+  };
+}
+
+function makeAccount(role: 'CLIENT' | 'THERAPIST' = 'THERAPIST'): AccountMock {
+  return { getUserRole: jest.fn().mockResolvedValue(role) };
+}
+
+function makeReq(userId = 42n): Request {
+  return { webUser: { userId } } as unknown as Request;
+}
+
+function makeController(
+  opts: { account?: AccountMock; relations?: RelationsMock } = {},
+) {
+  const relations = opts.relations ?? makeRelations();
+  const tasks = makeTasks();
+  const tasksView = makeTasksView();
+  const account = opts.account ?? makeAccount();
+  const controller = new TherapyTasksController(
+    relations as unknown as TherapyRelationsService,
+    tasks as unknown as TherapyTasksService,
+    tasksView as unknown as TherapyTasksViewService,
+    account as unknown as AccountService,
+  );
+  return { controller, relations, tasks, tasksView, account };
+}
+
+describe('TherapyTasksController.createTask', () => {
+  it('без clientId → своя задача, assignedBy не выставляется, нотификация не шлётся', async () => {
+    const { controller, tasks, relations } = makeController();
+    const body = { type: 'custom', text: 'моя задача' };
+    const res = await controller.createTask(makeReq(7n), body);
+    expect(relations.assertHasClient).not.toHaveBeenCalled();
+    expect(tasks.createTask).toHaveBeenCalledWith(7n, body, undefined);
+    expect(tasks.scheduleTaskNotification).not.toHaveBeenCalled();
+    expect(res).toEqual({ id: 1, text: 'задача' });
+  });
+
+  it('с clientId, не терапевт → ForbiddenException, createTask не вызывается', async () => {
+    const { controller, tasks } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(
+      controller.createTask(makeReq(7n), {
+        type: 'x',
+        text: 'y',
+        clientId: '5',
+      }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(tasks.createTask).not.toHaveBeenCalled();
+  });
+
+  it('с clientId, нет активной связи (assertHasClient бросает) → ForbiddenException, createTask не вызывается', async () => {
+    const { controller, relations, tasks } = makeController();
+    relations.assertHasClient.mockRejectedValue(
+      new Error('No active relation'),
+    );
+    await expect(
+      controller.createTask(makeReq(7n), {
+        type: 'x',
+        text: 'y',
+        clientId: '5',
+      }),
+    ).rejects.toThrow('No therapy relation with this client');
+    expect(tasks.createTask).not.toHaveBeenCalled();
+  });
+
+  it('реальный клиент (clientId > 0) → createTask с targetUserId=BigInt(clientId), assignedBy=terapistId, шлётся нотификация', async () => {
+    const { controller, tasks, relations } = makeController();
+    const body = {
+      type: 'reading',
+      text: 'почитать главу',
+      clientId: '5',
+      needId: 'safety',
+      dueDate: '2026-08-01',
+    };
+    const res = await controller.createTask(makeReq(7n), body);
+    expect(relations.assertHasClient).toHaveBeenCalledWith(7n, 5n);
+    expect(tasks.createTask).toHaveBeenCalledWith(5n, body, 7n);
+    expect(tasks.scheduleTaskNotification).toHaveBeenCalledWith(5n, 1); // id задания: кнопка открывает его (U2)
+    expect(res).toEqual({ id: 1, text: 'задача' });
+  });
+
+  it('виртуальный клиент (clientId < 0) → createTask вызван, но нотификация НЕ шлётся', async () => {
+    const { controller, tasks } = makeController();
+    await controller.createTask(makeReq(7n), {
+      type: 'reading',
+      text: 'y',
+      clientId: '-3',
+    });
+    expect(tasks.createTask).toHaveBeenCalledWith(-3n, expect.any(Object), 7n);
+    expect(tasks.scheduleTaskNotification).not.toHaveBeenCalled();
+  });
+});
+
+// Аудит 2026-10, X-1: id > 2^53 (выдуманный, веб-id ниже) обязан дойти до
+// сервиса ТОЧНЫМ bigint, а не округлённым числом
+// (Number('1000000000000000123') !== 1000000000000000123).
+describe('TherapyTasksController — клиент с выдуманным id > 2^53', () => {
+  const WEB = 1000000000000000123n;
+
+  it('createTask: clientId-строка → точный bigint в assertHasClient и createTask', async () => {
+    const { controller, tasks, relations } = makeController();
+    await controller.createTask(makeReq(7n), {
+      type: 'reading',
+      text: 'y',
+      clientId: '1000000000000000123',
+    });
+    expect(relations.assertHasClient).toHaveBeenCalledWith(7n, WEB);
+    expect(tasks.createTask).toHaveBeenCalledWith(WEB, expect.any(Object), 7n);
+    const [, passed] = relations.assertHasClient.mock.calls[0];
+    expect(typeof passed).toBe('bigint');
+  });
+
+  it('getTasksForClient: :clientId парсится в точный bigint', async () => {
+    const { controller, tasksView } = makeController();
+    await controller.getTasksForClient(makeReq(7n), '1000000000000000123');
+    expect(tasksView.getTasksForClient).toHaveBeenCalledWith(7n, WEB);
+  });
+});
+
+describe('TherapyTasksController.getTasks / getTaskHistory', () => {
+  it('getTasks делегирует getTasks(userId)', async () => {
+    const { controller, tasks } = makeController();
+    const res = await controller.getTasks(makeReq(7n));
+    expect(tasks.getTasks).toHaveBeenCalledWith(7n);
+    expect(res).toEqual([{ id: 1 }]);
+  });
+
+  it('getTaskHistory делегирует getTaskHistory(userId)', async () => {
+    const { controller, tasks } = makeController();
+    const res = await controller.getTaskHistory(makeReq(7n));
+    expect(tasks.getTaskHistory).toHaveBeenCalledWith(7n);
+    expect(res).toEqual([{ id: 2 }]);
+  });
+});
+
+describe('TherapyTasksController.getAllTasks', () => {
+  it('не терапевт → ForbiddenException', async () => {
+    const { controller } = makeController({ account: makeAccount('CLIENT') });
+    await expect(controller.getAllTasks(makeReq())).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('терапевт → делегирует getAllTasksForTherapist(therapistId)', async () => {
+    const { controller, tasksView } = makeController();
+    const res = await controller.getAllTasks(makeReq(7n));
+    expect(tasksView.getAllTasksForTherapist).toHaveBeenCalledWith(7n);
+    expect(res).toEqual([{ clientId: 1 }]);
+  });
+});
+
+describe('TherapyTasksController.getTasksForClient', () => {
+  it('не терапевт → ForbiddenException', async () => {
+    const { controller } = makeController({ account: makeAccount('CLIENT') });
+    await expect(controller.getTasksForClient(makeReq(), '5')).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('сервис вернул null (нет активной связи) → ForbiddenException', async () => {
+    const { controller, tasksView } = makeController();
+    tasksView.getTasksForClient.mockResolvedValue(null);
+    await expect(
+      controller.getTasksForClient(makeReq(7n), '5'),
+    ).rejects.toThrow('No active relation with this client');
+  });
+
+  it('терапевт → делегирует getTasksForClient(therapistId, clientId)', async () => {
+    const { controller, tasksView } = makeController();
+    const res = await controller.getTasksForClient(makeReq(7n), '5');
+    expect(tasksView.getTasksForClient).toHaveBeenCalledWith(7n, 5n);
+    expect(res).toEqual([{ id: 3 }]);
+  });
+});
+
+describe('TherapyTasksController.completeTask', () => {
+  it('задача не принадлежит юзеру и не офлайн-клиента терапевта → ForbiddenException', async () => {
+    const { controller, tasks } = makeController();
+    tasks.completeTask.mockResolvedValue(false);
+    await expect(
+      controller.completeTask(makeReq(7n), '9', { done: true }),
+    ).rejects.toThrow('Task not found or not yours');
+    expect(tasks.completeTask).toHaveBeenCalledWith(7n, 9, true);
+    expect(tasks.completeOfflineTask).toHaveBeenCalledWith(7n, 9, true);
+  });
+
+  // QA 2026-10-26: задание офлайн-клиента закрыть было некому.
+  it('задание офлайн-клиента закрывает назначивший терапевт', async () => {
+    const { controller, tasks } = makeController();
+    tasks.completeTask.mockResolvedValue(false);
+    tasks.completeOfflineTask.mockResolvedValue(true);
+    await expect(
+      controller.completeTask(makeReq(7n), '9', { done: true }),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it('своё задание клиента не доходит до ветки терапевта', async () => {
+    const { controller, tasks } = makeController();
+    await expect(
+      controller.completeTask(makeReq(7n), '9', { done: true }),
+    ).resolves.toEqual({ ok: true });
+    expect(tasks.completeTask).toHaveBeenCalledWith(7n, 9, true);
+    expect(tasks.completeOfflineTask).not.toHaveBeenCalled();
+  });
+
+  it('задача принадлежит юзеру → { ok: true }', async () => {
+    const { controller, tasks } = makeController();
+    const res = await controller.completeTask(makeReq(7n), '9', {
+      done: false,
+    });
+    expect(tasks.completeTask).toHaveBeenCalledWith(7n, 9, false);
+    expect(res).toEqual({ ok: true });
+  });
+});
+
+// QA 2026-10-26: задание нельзя было удалить ни в интерфейсе, ни в API.
+describe('TherapyTasksController.deleteTask', () => {
+  it('не терапевт → ForbiddenException, сервис не вызывается', async () => {
+    const { controller, tasks } = makeController({
+      account: makeAccount('CLIENT'),
+    });
+    await expect(controller.deleteTask(makeReq(7n), '9')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(tasks.deleteAssignedTask).not.toHaveBeenCalled();
+  });
+
+  it('чужое или несуществующее задание → ForbiddenException', async () => {
+    const { controller, tasks } = makeController();
+    tasks.deleteAssignedTask.mockResolvedValue(false);
+    await expect(controller.deleteTask(makeReq(7n), '9')).rejects.toThrow(
+      'Task not found or not yours',
+    );
+    expect(tasks.deleteAssignedTask).toHaveBeenCalledWith(7n, 9);
+  });
+
+  it('своё задание → { ok: true }', async () => {
+    const { controller } = makeController();
+    await expect(controller.deleteTask(makeReq(7n), '9')).resolves.toEqual({
+      ok: true,
+    });
+  });
+});
+
+describe('TherapyTasksController — id за int32 → 400 (S18)', () => {
+  it('taskId 3000000000 и -3000000000 → 400 до сервиса', async () => {
+    const { controller, tasks } = makeController();
+    for (const raw of ['3000000000', '-3000000000'])
+      await expect(controller.deleteTask(makeReq(), raw)).rejects.toThrow(
+        BadRequestException,
+      );
+    expect(tasks.deleteAssignedTask).not.toHaveBeenCalled();
+  });
+});

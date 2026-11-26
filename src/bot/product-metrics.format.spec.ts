@@ -1,0 +1,161 @@
+// Тест форматтера продуктовых метрик /stats (правило №8): простые слова,
+// корректные проценты и — обязательно — пустая БД без NaN/мусора.
+import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { ONBOARDING_STEPS } from '../analytics/analytics.constants';
+
+const FULL: ProductMetrics = {
+  onboarding: { cohort30: 118, completed30: 70 },
+  onboardingSteps: [
+    { step: 'welcome', count: 100 },
+    { step: 'not_therapy', count: 88 },
+    { step: 'needs_what', count: 80 },
+    { step: 'diaries_why', count: 75 },
+    { step: 'done', count: 70 },
+  ],
+  adoption: {
+    diaries: 320,
+    ysqDone: 210,
+    exercises: 140,
+    practices: 90,
+    childhood: 60,
+  },
+  ysq: { started: 260, completed: 210, helpOpens: 44 },
+  addressForm: { ty: 900, vy: 250, notChosen: 90 },
+  shareCard: {
+    total7: 12,
+    total30: 40,
+    byKind30: [
+      { kind: 'streak', count: 20 },
+      { kind: 'schema', count: 3 },
+    ],
+  },
+  crisis: {
+    shown: 12,
+    hotlineTapped: 3,
+    booking: { shown: 5, hotlineTapped: 2 },
+  },
+  shareResult: { ok: 35, fallback: 5 },
+  outbox: { flushes: 8, recovered: 21 },
+  today: {
+    blocksHidden: [{ block: 'streak', count: 7 }],
+  },
+  journey: { opens: 18 },
+  homeScreen: { shown: 200, add: 60, later: 90, never: 30, added: 45 },
+};
+
+const EMPTY: ProductMetrics = {
+  onboarding: { cohort30: 0, completed30: 0 },
+  onboardingSteps: [],
+  adoption: {
+    diaries: 0,
+    ysqDone: 0,
+    exercises: 0,
+    practices: 0,
+    childhood: 0,
+  },
+  ysq: { started: 0, completed: 0, helpOpens: 0 },
+  addressForm: { ty: 0, vy: 0, notChosen: 0 },
+  shareCard: { total7: 0, total30: 0, byKind30: [] },
+  crisis: {
+    shown: 0,
+    hotlineTapped: 0,
+    booking: { shown: 0, hotlineTapped: 0 },
+  },
+  shareResult: { ok: 0, fallback: 0 },
+  outbox: { flushes: 0, recovered: 0 },
+  today: {
+    blocksHidden: [],
+  },
+  journey: { opens: 0 },
+  homeScreen: { shown: 0, add: 0, later: 0, never: 0, added: 0 },
+};
+
+describe('formatProductMetrics', () => {
+  it('простыми словами, с процентами и человекочитаемыми подписями', () => {
+    const t = formatProductMetrics(FULL);
+    expect(t).toContain('Дошли до конца: 70 из 118 (59%)');
+    // воронка обучения: подписи шагов простыми словами, в порядке показа
+    expect(t).toContain('поздоровались — 100');
+    expect(t).toContain('это не терапия — 88');
+    expect(t).toContain('что за пять потребностей — 80');
+    expect(t).toContain('зачем дневники схем и режимов — 75');
+    expect(t).toContain('дошли до конца — 70');
+    expect(t.indexOf('поздоровались')).toBeLessThan(
+      t.indexOf('что за пять потребностей'),
+    );
+    expect(t).not.toContain('needs_what');
+    expect(t).toContain('Дневники: 320');
+    expect(t).toContain('Начали: 260 · дошли до конца: 210 (81%)');
+    expect(t).toContain('Читали «как понимать результат»: 44 раз');
+    expect(t).toContain('На «ты»: 900 · на «вы»: 250');
+    expect(t).toContain('позвонили по телефону доверия: 3');
+    expect(t).toContain('Отправили картинку: 35 · сохранили текстом: 5');
+    expect(t).toContain('записей вернули: 21');
+    // делятся карточками: итоги + подписи видов без англицизмов
+    expect(t).toContain('за неделю: 12, за месяц: 40');
+    expect(t).toContain('🔥 сколько дней подряд — 20');
+    expect(t).toContain('🧩 схема — 3');
+    // что прятали — человеческими подписями, не ключами
+    expect(t).toContain('🔥 счётчик дней подряд — 7');
+    expect(t).not.toContain('therapist_banner');
+    expect(t).toContain('Открывали свою историю: 18 раз');
+    // значок на экране: доля согласившихся и реально появившиеся значки
+    expect(t).toContain('Предложили: 200 · нажали «добавить»: 60 (30%)');
+    expect(t).toContain('Значок реально появился: 45');
+    expect(t).toContain('попросили не предлагать: 30');
+    // никакого жаргона
+    expect(t).not.toMatch(/YSQ|retention|adoption|event|toggle|focus/i);
+  });
+
+  // Сверка с реестром шагов: новый шаг без подписи показал бы в /stats сырой
+  // ключ (diaries_why вместо слов) — правило №8 требует простой язык.
+  it('каждый шаг из ONBOARDING_STEPS подписан словами, ключ не светится', () => {
+    const t = formatProductMetrics({
+      ...EMPTY,
+      onboardingSteps: ONBOARDING_STEPS.map((step) => ({ step, count: 1 })),
+    });
+    for (const step of ONBOARDING_STEPS) {
+      expect(t).not.toContain(step);
+    }
+  });
+
+  it('карточка помощи: всего и отдельно из формы записи, простыми словами', () => {
+    const t = formatProductMetrics(FULL);
+    expect(t).toContain(
+      'Показали: 12 · позвонили по телефону доверия: 3 (из них в форме записи на консультацию: показали 5, позвонили 2)',
+    );
+    expect(t).not.toMatch(/surface|booking|crisis/i);
+  });
+
+  it('карточка помощи на пустой БД: нули словами, без NaN/undefined', () => {
+    const t = formatProductMetrics(EMPTY);
+    expect(t).toContain(
+      'Показали: 0 · позвонили по телефону доверия: 0 (из них в форме записи на консультацию: показали 0, позвонили 0)',
+    );
+    expect(t).not.toMatch(/NaN|undefined/);
+  });
+
+  // Аудит 2026-10-11: прогресс теста удаляется при завершении, и отчёт писал
+  // «Начали: 1 · дошли до конца: 3 (300%)». Процент выше 100 не печатается.
+  it('тест схем: дошедших больше, чем начавших — «данные не сходятся», без 300%', () => {
+    const t = formatProductMetrics({
+      ...FULL,
+      ysq: { started: 1, completed: 3, helpOpens: 0 },
+    });
+    expect(t).toContain('Начали: 1 · дошли до конца: 3 — данные не сходятся');
+    expect(t).not.toContain('300%');
+  });
+
+  it('пустая БД: без NaN и без «висящих» процентов', () => {
+    const t = formatProductMetrics(EMPTY);
+    expect(t).toContain('Пока тест никто не начинал');
+    expect(t).not.toContain('NaN');
+    expect(t).not.toContain('%'); // все знаменатели 0 → проценты не печатаются
+    expect(t).toContain('Дошли до конца: 0 из 0');
+    expect(t).toContain('Пока никто не делился'); // пустой share_card
+    expect(t).toContain('Пока обучение никто не открывал');
+    expect(t).toContain('Блоки с главного пока не прятали');
+    expect(t).toContain('Пока никому не предлагали');
+    expect(t).toContain('Свою историю пока никто не открывал');
+  });
+});

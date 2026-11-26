@@ -1,0 +1,80 @@
+import { useState, useEffect } from 'react';
+import { api } from '../api';
+import { BookingSection } from './admin/BookingSection';
+import { ArticlesSection } from './admin/ArticlesSection';
+import { PhotoSection } from './admin/PhotoSection';
+import { MarqueeSection } from './admin/MarqueeSection';
+import { HealthyAdultSection } from './admin/HealthyAdultSection';
+import { AnalyticsSection } from './admin/analytics/AnalyticsSection';
+import { btn, input } from './admin/shared';
+
+// L7 (аудит 2026-08): ключ админа в sessionStorage, не localStorage — XSS не
+// утащит его из закрытой вкладки и он не переживает браузер (вводится раз в сессию).
+
+type Tab = 'analytics' | 'booking' | 'articles' | 'photo' | 'marquee' | 'healthyAdult';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'analytics', label: 'Аналитика' }, { id: 'booking', label: 'Запись' }, { id: 'articles', label: 'Статьи' },
+  { id: 'photo', label: 'Фото' }, { id: 'marquee', label: 'Бегущая строка' }, { id: 'healthyAdult', label: 'Канал ЗВ' },
+];
+
+/** Single admin panel for the whole site — one key, tabbed sections. */
+export function AdminPage() {
+  const [key, setKey] = useState<string>('') // только в памяти: в sessionStorage ключ утёк бы при XSS (E4);
+  const [authed, setAuthed] = useState(false);
+  const [keyInput, setKeyInput] = useState('');
+  const [keyError, setKeyError] = useState(false);
+  const [tab, setTab] = useState<Tab>('booking');
+
+  useEffect(() => {
+    if (!key) return;
+    api.adminStatus(key).then(() => setAuthed(true)).catch(() => { setAuthed(false); setKey(''); });
+  }, [key]);
+
+  const tryKey = async () => {
+    setKeyError(false);
+    try {
+      await api.adminStatus(keyInput);
+      setKey(keyInput);
+    } catch { setKeyError(true); }
+  };
+
+  // ym-hide-content: метка Яндекс.Вебвизора «не писать содержимое узла».
+  // Вебвизор включается только на визитке (kotlarewski.gr, см. metrika.ts
+  // shouldRecordSession), и админка технически внутри её allow-list —
+  // экран редактирования сайта не должен уйти в запись сессии.
+  if (!authed) return (
+    <div className="ym-hide-content" style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
+      <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)' }}>Админка</h1>
+      <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Введите ключ доступа (ADMIN_BOOKING_KEY).</p>
+      <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }}>
+        <input style={{ ...input, flex: 1 }} type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && tryKey()} placeholder="Ключ" />
+        <button style={btn} onClick={tryKey}>Войти</button>
+      </div>
+      {keyError && <p style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 8 }}>Неверный ключ</p>}
+    </div>
+  );
+
+  return (
+    <div className="ym-hide-content" style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px 80px', fontFamily: 'var(--sans)' }}>
+      <h1 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 400, color: 'var(--text)', marginBottom: 20 }}>Админка</h1>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: '8px 16px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', borderRadius: 100,
+            background: tab === t.id ? 'var(--accent)' : 'transparent', color: tab === t.id ? 'var(--on-accent)' : 'var(--text-sub)',
+            border: `1.5px solid ${tab === t.id ? 'var(--accent)' : 'var(--line-strong)'}`,
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab === 'analytics' && <AnalyticsSection adminKey={key} />}
+      {tab === 'booking' && <BookingSection adminKey={key} />}
+      {tab === 'articles' && <ArticlesSection adminKey={key} />}
+      {tab === 'photo' && <PhotoSection adminKey={key} />}
+      {tab === 'marquee' && <MarqueeSection adminKey={key} />}
+      {tab === 'healthyAdult' && <HealthyAdultSection adminKey={key} />}
+    </div>
+  );
+}

@@ -1,0 +1,124 @@
+/* Клиент · Сегодня (sections/TodaySection.tsx, sections/today/*). Префикс ct-.
+   Одна колонка: шапка и три плитки, больше ничего (владелец 2026-11-05). На ≥768 ширину даёт рамка (client-frame.css). */
+.ct-page { max-width: 600px; }
+/* Кнопка «Зачем это?» стоит в строке с датой, а не рядом с h1: иначе она
+   отнимает ширину у приветствия и «Привет, Имя» переносится на телефоне. */
+.ct-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.ct-head-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
+/* Имя из почты или ника без пробелов резалось краем экрана посреди слова (QA мобильной 2026-11, М5):
+   одна строка с многоточием, как имена кабинета в #911, без overflow-wrap: anywhere.
+   padding-bottom — под хвосты «р», «у», «д»: строка ds-h1 (1.05) ниже глифов, и overflow: hidden
+   срезал их («Привет, Григорий» без хвоста у «р», скриншот владельца 2026-11-06). */
+.ct-h1 { margin: 0; padding-bottom: .14em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-link {
+  min-height: 44px; padding: 0; display: inline-flex; align-items: center; background: none; border: 0;
+  cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
+}
+.ct-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ct-head-why { flex-shrink: 0; margin-left: auto; }
+/* Знак «Карты себя» рядом с «Зачем это?»; точка — на карте новое с последнего открытия (mapSeen.ts). */
+.ct-head-map { flex-shrink: 0; }
+.ct-head-map-art { position: relative; display: flex; align-items: center; justify-content: center; }
+.ct-head-map-art > .pp-art { width: 30px; height: auto; }
+.ct-head-map-dot { position: absolute; top: -3px; right: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--c-clay); box-shadow: 0 0 0 2px var(--bg); }
+/* «Зачем это?» — журнальная ссылка: подпись акцентом над волосяной линией, без плашки и тени. */
+.ct-link.ct-head-why {
+  text-decoration: underline; text-decoration-color: var(--panel-line);
+  text-decoration-thickness: 1px; text-underline-offset: 5px;
+}
+.ct-link.ct-head-why:hover { text-decoration-color: currentColor; }
+/* Главная по референсу владельца 2026-11-04 («бумажная аппликация»): блок трекера,
+   два квадрата цветной бумаги, картинки — примитивы pp-* из styles/paper.css и
+   components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
+.ct-home { display: flex; flex-direction: column; gap: 20px; }
+.ct-tile { border-radius: var(--r-16); }
+/* Полоски дня (TrackerBlock: SignScene со Strokes values). Телефон и планшет — эталон владельца: знак
+   плоско, без тени-вырезки, 112 (на телефоне 96). Пустое место (оценки нет) — бледный тон своей
+   потребности с кромкой цветом бумаги, без тени: одно правило с карточкой дня в меню и силуэтом
+   (.pp-strokes-values, paper.css); один тон соломы на все пять — «выцвело» (ревью владельца g1). */
+.ct-strokes { width: 112px; }
+.ct-strokes > .pp-art:first-child { display: none; }
+/* Мета квадрата рядом со стрелкой: короткая («Пока записей нет», «Сегодня 2 записи») — одной строкой
+   и на 360 (аудит 2026-11: рвалась на две — на телефоне без разрядки и с узким зазором, ниже).
+   Длинная («Последняя запись — вчера») переносится ровными строками, стрелка — у последней:
+   многоточие съело бы «вчера», а это и есть данные. Колонки — minmax(0, 1fr): длинная мета не
+   раздвигает квадрат за край экрана. */
+.ct-squares.pp-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Квадрат — контейнер своего названия: на узком телефоне (320–345, квадрат 137–150) «случилось» кеглем
+   26 шире поля квадрата и вылезал за край листа (ревью вёрстки g1 r2, на 320 — на 15px). Кегль названия —
+   не больше доли поля квадрата (cqi, ниже), так слово встаёт в поле на любой ширине; на 390 — прежний. */
+.ct-squares > .pp-square { container-type: inline-size; }
+.ct-home .pp-square-foot { align-items: flex-end; }
+.ct-home .pp-square-foot .pp-meta { min-width: 0; text-wrap: balance; }
+.ct-home .pp-arrow { flex-shrink: 0; }
+
+/* Телефон: «Сегодня» — один экран без прокрутки (владелец 2026-11-06). Страница уезжала на ~70px
+   под статус-бар: нижнее поле .ds-page (40) стояло поверх зазора над панелью у .canvas (24). Поля и
+   ритм страницы даёт .ds-page--fit (cabinet.css); здесь по его шкале сжимаются блоки главной:
+   отступы — от --fit-room, кегли и картинки — от --fit-size, они уменьшаются последними.
+   От 840px высоты — исходные размеры. Сверка — e2e-browser/today-fit.spec.ts. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .ct-page .ct-head { margin-bottom: calc(var(--fit-room) * .04); }
+  .ct-page .ct-home { gap: calc(12px + var(--fit-room) * .04); }
+  .ct-main.pp-block { padding: calc(12px + var(--fit-room) * .06) 0 calc(14px + var(--fit-room) * .07); gap: calc(12px + var(--fit-room) * .05); }
+  .ct-main .pp-hero-body { gap: calc(6px + var(--fit-room) * .02); }
+  .ct-main .pp-hero-title { font-size: calc(26px + var(--fit-size) * .05); }
+  .ct-home .pp-square { min-height: 0; padding: calc(14px + var(--fit-room) * .03) 18px calc(12px + var(--fit-room) * .02); gap: calc(4px + var(--fit-room) * .02); }
+  .ct-home .pp-title { font-size: min(calc(22px + var(--fit-size) * .0333), 19.2cqi); }
+  .ct-home .pp-art--square { height: calc(36px + var(--fit-size) * .2); width: auto; max-width: 100%; aspect-ratio: 120 / 64; }
+  /* Мета 12 без разрядки, стрелка 19, зазор 4: «Пока записей нет», «Сегодня 2 записи», «Сегодня: 1 разбор»
+     встают в строку на 390 (квадрат 169, поле под мету 110 — замер шрифта 2026-11), на 360 — с полем ниже. */
+  .ct-home .pp-square-foot { margin-top: calc(4px + var(--fit-room) * .03); gap: 4px; }
+  .ct-home .pp-square-foot .pp-meta { font-size: 12px; letter-spacing: 0; }
+  .ct-home .pp-arrow { font-size: 19px; }
+  .ct-strokes { width: 96px; }
+}
+@media (max-width: 374px) {
+  .ct-home .pp-square { padding-left: 16px; padding-right: 14px; }
+}
+@media (max-width: 345px) {
+  .ct-home .pp-square { padding-left: 14px; padding-right: 12px; }
+}
+
+/* Компьютер (≥1024) — разворот (docs/archive/APP_2026-11.md, b05): слева лист соломы трекера с
+   полосками дня крупно и тенью-вырезкой — опорный элемент экрана; справа квадраты горизонтальными
+   плитками, знак справа от текста. Колонки равные, зазор как в бенто лендинга; всё — в первом экране.
+   На 768–1023 — одна колонка, как на телефоне (#925). Заданий и ленты на главной нет (владелец
+   2026-11-05: только три кнопки). */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .ct-head-top { justify-content: flex-start; gap: 20px; }
+  .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+  .ct-main.pp-block {
+    justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: var(--r-16);
+    background: oklch(0.915 0.03 var(--h)); transition: background .12s; --strokes-edge: oklch(0.915 0.03 var(--h));
+  }
+  .ct-main.pp-block:hover { background: oklch(0.895 0.04 var(--h)); }
+  .ct-main .pp-hero { grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+  /* Знак встаёт по левому краю надписи: поле холста Strokes (~7% ширины) — сдвигом назад. */
+  .ct-main .ct-strokes { order: -1; width: 216px; margin-left: -14px; }
+  .ct-main .ct-strokes > .pp-art:first-child { display: block; }
+  /* Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
+  .ct-main .ds-label { color: var(--text-sub); }
+  .ct-main .pp-hero-title { font-size: 36px; }
+  .ct-squares.pp-squares { grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 24px; }
+  /* Плитка как в бенто лендинга: название и подпись во всю ширину, стрелка — в углу на строке
+     названия, знак крупно в нижнем правом углу, мета — внизу слева (строка ног раскрыта в сетку). */
+  .ct-home .pp-square {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
+    column-gap: 20px; row-gap: 8px; min-height: 0; padding: 28px 30px 26px 32px; border-radius: var(--r-16);
+  }
+  .ct-home .pp-square > .pp-title { grid-column: 1 / -1; grid-row: 1; padding-right: 40px; }
+  .ct-home .pp-square > .pp-text { grid-column: 1 / -1; grid-row: 2; }
+  .ct-home .pp-square > .pp-art { grid-column: 2; grid-row: 3 / 5; align-self: end; margin: 0 -4px -2px 0; width: 168px; height: auto; }
+  .ct-home .pp-square > .pp-square-foot { display: contents; }
+  .ct-home .pp-square-foot > .pp-meta { grid-column: 1; grid-row: 4; align-self: end; }
+  .ct-home .pp-square-foot > .pp-arrow { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; }
+  .ct-home .pp-title { font-size: 30px; }
+}
+/* 1024–1199: колонка ~330px — знаки меньше, иначе знак плитки наезжает на подпись. */
+@media (min-width: 1024px) and (max-width: 1199px) and (min-height: 501px), (min-width: 1024px) and (max-width: 1199px) and (pointer: fine) {
+  .ct-home .pp-square > .pp-art { width: 124px; }
+  .ct-main .ct-strokes { width: 180px; margin-left: -12px; }
+  .ct-main .pp-hero-title { font-size: 32px; }
+  .ct-home .pp-title { font-size: 27px; }
+}

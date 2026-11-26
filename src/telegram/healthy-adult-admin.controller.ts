@@ -1,0 +1,146 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { HealthyAdultService } from '../bot/healthy-adult.service';
+import { ChannelPublisherService } from '../channel/channel-publisher.service';
+import type { PublishResult } from '../channel/channel-target';
+import { publishBusy } from '../channel/publish-report';
+import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
+import {
+  CheckPhraseDto,
+  CreatePhraseDto,
+  ImportPhrasesDto,
+  UpdatePhraseDto,
+} from '../bot/healthy-adult.dto';
+import { findIssues } from '../bot/healthy-adult.quality';
+import { formatImportReport } from '../bot/healthy-adult.import';
+
+/** Кто держит флаг публикации, пока идёт кнопка, — так его назовёт отказ /zv. */
+export const ADMIN_HOLDER = 'публикация из админки';
+
+/**
+ * Админ-эндпоинты управления фразами «Здорового Взрослого», защищены тем же
+ * ADMIN_BOOKING_KEY, что и вся админка (x-admin-key header). Живёт в
+ * TelegramModule, т.к. тестовая публикация ходит через ChannelPublisherService.
+ */
+@AdminThrottle()
+@Controller('api/healthy-adult/admin')
+export class HealthyAdultAdminController {
+  private readonly adminKey: string;
+
+  constructor(
+    private readonly phrases: HealthyAdultService,
+    private readonly publisher: ChannelPublisherService,
+    config: ConfigService,
+  ) {
+    this.adminKey = config.get<string>('ADMIN_BOOKING_KEY') ?? '';
+  }
+
+  /**
+   * Прогнать текст через планку, ничего не сохраняя: «покажи, что не так».
+   * Отдаём и пометки ('warn'), не только блокирующее — решает человек.
+   */
+  @Post('check')
+  @HttpCode(HttpStatus.OK)
+  check(@Body() dto: CheckPhraseDto, @Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return { issues: findIssues(dto.text) };
+  }
+
+  /**
+   * Претензии ко всему пулу. Фразы, заведённые до появления планки, её не
+   * проходили — этот список показывает, что чинить руками.
+   */
+  @Get('audit')
+  async audit(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.audit();
+  }
+
+  @Get('list')
+  async list(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.list();
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async create(
+    @Body() dto: CreatePhraseDto,
+    @Headers('x-admin-key') key: string,
+  ) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.create(dto.text);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePhraseDto,
+    @Headers('x-admin-key') key: string,
+  ) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.update(id, dto);
+  }
+
+  @Delete(':id')
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-admin-key') key: string,
+  ) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.remove(id);
+  }
+
+  /**
+   * Добавить пачку фраз списком (по одной на строку). Отчёт возвращаем
+   * текстом: сколько добавлено и что отсеялось с причиной.
+   */
+  @Post('import')
+  @HttpCode(HttpStatus.OK)
+  async import(
+    @Body() dto: ImportPhrasesDto,
+    @Headers('x-admin-key') key: string,
+  ) {
+    assertAdminKey(key, this.adminKey);
+    const { created, report } = await this.phrases.importMany(dto.text);
+    return { created, message: formatImportReport(report) };
+  }
+
+  /** Остаток пула — на сколько дней хватит неповторённых фраз. */
+  @Get('pool-status')
+  async poolStatus(@Headers('x-admin-key') key: string) {
+    assertAdminKey(key, this.adminKey);
+    return this.phrases.poolStatus();
+  }
+
+  /**
+   * Опубликовать сообщение по всем площадкам сейчас — проверка связки из
+   * админки. Флаг «в полёте» — общий с тиком расписания и /zv (хвост R7):
+   * без него кнопка во время тика давала в канале второй пост.
+   */
+  @Post('test-post')
+  @HttpCode(HttpStatus.OK)
+  async testPost(@Headers('x-admin-key') key: string): Promise<PublishResult> {
+    assertAdminKey(key, this.adminKey);
+    const gate = this.publisher.inFlight;
+    const release = gate.claim(ADMIN_HOLDER);
+    if (!release) return publishBusy(gate.holder);
+    try {
+      return await this.publisher.publish();
+    } finally {
+      release();
+    }
+  }
+}

@@ -1,0 +1,138 @@
+// Реестр возможностей, зависящих от конфигурации (щит, волна 8) — класс
+// «ветка, зависящая от конфигурации, деградирует МОЛЧА»: не хватает одной
+// env-переменной, и фича просто не работает, а никто в системе об этом не
+// узнаёт. Самый тяжёлый случай — src/utils/admin-alert.ts: без BOT_TOKEN/ADMIN_ID
+// И без ключей Postbox с ADMIN_EMAIL КАЖДЫЙ алерт (безопасность, платежи, сбои
+// канала) улетает в никуда — это позвоночник всех рантайм-наблюдателей щита.
+//
+// Чистая функция от env — для загрузочной сводки (capability-boot-log.ts) и
+// блока «Настройки» в /stats (src/bot/capability-metrics.format.ts). Гейт
+// scripts/check-capability-registry.mjs: файл с веткой «if (!config) return»
+// — либо в `files` ниже, либо в capability-registry-baseline.json.
+import { buildIntegrationCapabilities } from './capability-integrations';
+import { POSTBOX_ENV_VARS, postboxCredentials } from './postbox-mail';
+
+export interface CapabilityStatus {
+  /** Слаг для тестов/сверки. */
+  id: string;
+  /** Человеческое имя фичи. */
+  title: string;
+  /** Включена ли возможность сейчас. */
+  on: boolean;
+  /** Какие env-переменные её включают. */
+  envVars: string[];
+  /** Человеческим языком: что именно выключено и почему. */
+  offReason: string;
+  /** Файлы, где физически живёт молчаливая ветка (для гейта). */
+  files: string[];
+  /** true, если выключение — это авария сигнализации, а не просто фичи. */
+  critical: boolean;
+}
+
+type Env = Record<string, string | undefined>;
+
+const has = (env: Env, key: string): boolean => Boolean(env[key]?.trim());
+
+/** Строит отчёт по всем известным возможностям. Чистая функция — без DI. */
+export function buildCapabilityReport(
+  env: Env = process.env,
+): CapabilityStatus[] {
+  const alertTelegram = has(env, 'BOT_TOKEN') && has(env, 'ADMIN_ID');
+  const alertEmail = !!postboxCredentials(env) && has(env, 'ADMIN_EMAIL');
+  // Оба канала admin-alert.ts мертвы разом — сигнализация выключена целиком:
+  // события безопасности, сбои платежей, сбои канала не долетят никуда.
+  const alertDead = !alertTelegram && !alertEmail;
+
+  return [
+    {
+      id: 'alertTelegram',
+      title: 'Алерты админу в Telegram',
+      on: alertTelegram,
+      envVars: ['BOT_TOKEN', 'ADMIN_ID'],
+      offReason:
+        'Алерты в Telegram не уходят: не заданы BOT_TOKEN и/или ADMIN_ID.',
+      files: ['src/utils/admin-alert.ts'],
+      critical: alertDead,
+    },
+    {
+      id: 'alertEmail',
+      title: 'Резервные алерты админу на почту',
+      on: alertEmail,
+      envVars: [...POSTBOX_ENV_VARS, 'ADMIN_EMAIL'],
+      offReason:
+        'Резервные алерты на почту не уходят: не заданы ключи Postbox (POSTBOX_ACCESS_KEY_ID, POSTBOX_SECRET_ACCESS_KEY) и/или ADMIN_EMAIL.',
+      files: ['src/utils/admin-alert.ts'],
+      critical: alertDead,
+    },
+    {
+      id: 'emailDelivery',
+      title: 'Почта пользователям (magic-link, подтверждение адреса)',
+      on: !!postboxCredentials(env),
+      envVars: [...POSTBOX_ENV_VARS],
+      offReason:
+        'Почта пользователям не отправляется: не заданы ключи Postbox (POSTBOX_ACCESS_KEY_ID и POSTBOX_SECRET_ACCESS_KEY).',
+      files: ['src/auth/email.service.ts'],
+      critical: false,
+    },
+    {
+      id: 'zoomMeetings',
+      title: 'Личные Zoom-ссылки для сессий',
+      on:
+        has(env, 'ZOOM_ACCOUNT_ID') &&
+        has(env, 'ZOOM_CLIENT_ID') &&
+        has(env, 'ZOOM_CLIENT_SECRET'),
+      envVars: ['ZOOM_ACCOUNT_ID', 'ZOOM_CLIENT_ID', 'ZOOM_CLIENT_SECRET'],
+      offReason:
+        'Zoom не подключён: клиентам достаётся резервная комната Jitsi ' +
+        '(не заданы ZOOM_ACCOUNT_ID/ZOOM_CLIENT_ID/ZOOM_CLIENT_SECRET).',
+      files: ['src/booking/meeting.service.ts'],
+      critical: false,
+    },
+    {
+      // Не «фича выключена», а деградация в более строгую сторону: без
+      // секретов подпись проверить нечем, и лимит запросов считается по
+      // адресу. Обход этим не открывается — наоборот, закрывается; цену
+      // платят честные люди за общим NAT, деля один лимит на всех.
+      id: 'verifiedThrottleIdentity',
+      title: 'Лимит запросов по проверенной подписи',
+      on: has(env, 'JWT_SECRET') && has(env, 'BOT_TOKEN'),
+      envVars: ['JWT_SECRET', 'BOT_TOKEN'],
+      offReason:
+        'Лимит запросов считается только по адресу: без JWT_SECRET и ' +
+        'BOT_TOKEN подпись проверить нечем, и люди за общим NAT делят один ' +
+        'лимит на всех.',
+      files: ['src/api/throttler-identity.ts'],
+      critical: false,
+    },
+    {
+      // Найдено 2026-09-13 по логам: iCloud отвечал 403, warn без алерта,
+      // слоты шли поверх личных встреч. Здесь — «настроен ли»; «читается
+      // ли» — блок «Личный календарь» в /stats (caldav-health.ts).
+      id: 'appleCalendar',
+      title: 'Личный календарь (iCloud) в слотах записи',
+      on: has(env, 'APPLE_ID') && has(env, 'APPLE_APP_PASSWORD'),
+      envVars: ['APPLE_ID', 'APPLE_APP_PASSWORD'],
+      offReason:
+        'Личный календарь не подключён: слоты записи не учитывают встречи ' +
+        'владельца (не заданы APPLE_ID/APPLE_APP_PASSWORD).',
+      files: ['src/booking/caldav.service.ts'],
+      critical: false,
+    },
+    {
+      id: 'threadsTokenRefresh',
+      title: 'Автообновление токена Threads',
+      on: has(env, 'HEALTHY_ADULT_THREADS_TOKEN'),
+      envVars: ['HEALTHY_ADULT_THREADS_TOKEN'],
+      offReason:
+        'Канал Threads не настроен: нет стартового HEALTHY_ADULT_THREADS_TOKEN.',
+      files: ['src/channel/targets/threads-token.service.ts'],
+      critical: false,
+    },
+    ...buildIntegrationCapabilities(env),
+  ];
+}
+
+/** true, если сигнализация (оба канала admin-alert.ts) мертва целиком. */
+export function isAlertChannelDead(report: CapabilityStatus[]): boolean {
+  return report.some((c) => c.critical);
+}

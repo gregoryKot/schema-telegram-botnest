@@ -1,0 +1,169 @@
+// Форматтеры продуктовых метрик для /stats (правило №8): чистые функции, покрыты
+// тестом, в т.ч. пустая БД (без NaN/мусора). Язык простой, без терминов.
+import type { CrisisMetrics } from './crisis-metrics';
+import { ysqFunnelLine } from './ysq-funnel-metrics';
+
+export interface ProductMetrics {
+  // Новички за месяц: сколько дошло до конца обучающего онбординга.
+  onboarding: { cohort30: number; completed30: number };
+  // Воронка обучения: сколько человек увидело каждый шаг (в порядке показа).
+  onboardingSteps: Array<{ step: string; count: number }>;
+  // Кто чем пользовался хоть раз (за всё время), число разных людей.
+  adoption: {
+    diaries: number;
+    ysqDone: number;
+    exercises: number;
+    practices: number;
+    childhood: number;
+  };
+  // Тест схем (YSQ): начали → дошли до конца; helpOpens — сколько раз за
+  // месяц раскрывали объяснение «как понимать результат».
+  ysq: { started: number; completed: number; helpOpens: number };
+  // Как просят обращаться.
+  addressForm: { ty: number; vy: number; notChosen: number };
+  // Событийные метрики (таблица AnalyticsEvent, за месяц).
+  // Делятся карточками: всего за неделю/месяц + разбивка по виду карточки.
+  shareCard: {
+    total7: number;
+    total30: number;
+    byKind30: Array<{ kind: string; count: number }>;
+  };
+  crisis: CrisisMetrics;
+  shareResult: { ok: number; fallback: number };
+  outbox: { flushes: number; recovered: number };
+  // Главный экран «Сегодня» (за месяц): что прятали (старый счётчик серии).
+  today: {
+    blocksHidden: Array<{ block: string; count: number }>;
+  };
+  // Архив «Мой путь» (за месяц): сколько раз открывали свою историю.
+  journey: { opens: number };
+  // Значок на экране телефона (за месяц): предлагали / что ответили.
+  homeScreen: {
+    shown: number;
+    add: number;
+    later: number;
+    never: number;
+    added: number;
+  };
+}
+
+const pct = (part: number, whole: number): string =>
+  whole === 0 ? '' : ` (${Math.round((part / whole) * 100)}%)`;
+
+// Понятные подписи видов карточек (meta.kind) — без англицизмов.
+const SHARE_KIND_LABELS: Record<string, string> = {
+  streak: '🔥 сколько дней подряд',
+  weekly: '📅 итоги недели',
+  day: '☀️ карточка дня',
+  achievement: '🏆 награда',
+  schema: '🧩 схема',
+  diary: '📔 дневник',
+  ysq: '📋 тест схем',
+  mode: '🎭 режим',
+  mode_entry: '🌿 запись режима',
+  mode_entry_full: '🌿 запись режима целиком',
+  phrase_check: '🔎 фраза: было и стало',
+  phrase_check_full: '🔎 разбор фразы целиком',
+  pair_invite: '🤝 приглашение в пару',
+  app_invite: '🌱 позвать друга в приложение',
+  therapist_invite: '🩺 приглашение клиенту от терапевта',
+  month: '🗓 итоги месяца',
+  achievements: '🏅 все награды разом',
+  phrase: '💬 фраза поддержки',
+  gratitude: '🌱 благодарность',
+  journey: '🧭 мой путь (вся история)',
+  journey_item: '🧭 один шаг пути',
+  practice: '🧘 быстрая практика',
+};
+
+// Подписи блоков главного экрана — словами пользователя, не ключами.
+const TODAY_BLOCK_LABELS: Record<string, string> = {
+  streak: '🔥 счётчик дней подряд',
+};
+
+// Подписи шагов обучения — тем же простым языком, каким шаг звучит для юзера.
+const ONBOARDING_STEP_LABELS: Record<string, string> = {
+  welcome: 'поздоровались',
+  privacy: 'что будет с записями',
+  not_therapy: 'это не терапия',
+  needs_what: 'что за пять потребностей',
+  needs_why: 'зачем отмечать',
+  needs_result: 'что увидят через 3–5 дней',
+  diaries_why: 'зачем дневники схем и режимов',
+  today_screen: 'главный экран под себя',
+  author: 'об авторе',
+  home_screen: 'значок на телефон',
+  done: 'дошли до конца',
+};
+
+/** Собирает все продуктовые блоки /stats простыми словами. Чистая функция. */
+export function formatProductMetrics(m: ProductMetrics): string {
+  return [
+    `🎓 <b>Новички проходят обучение</b> (за месяц)`,
+    `Дошли до конца: ${m.onboarding.completed30} из ${m.onboarding.cohort30}${pct(
+      m.onboarding.completed30,
+      m.onboarding.cohort30,
+    )}`,
+    m.onboardingSteps.length === 0
+      ? 'Пока обучение никто не открывал'
+      : 'Сколько человек увидело каждый экран: ' +
+        m.onboardingSteps
+          .map(
+            (s) => `${ONBOARDING_STEP_LABELS[s.step] ?? s.step} — ${s.count}`,
+          )
+          .join(' · '),
+    '',
+    `🧩 <b>Кто чем пользуется</b> (за всё время, число людей)`,
+    `Дневники: ${m.adoption.diaries} · Тест схем: ${m.adoption.ysqDone} · ` +
+      `Упражнения: ${m.adoption.exercises} · «Что питает»: ${m.adoption.practices} · ` +
+      `Колесо детства: ${m.adoption.childhood}`,
+    '',
+    `📋 <b>Тест схем: доходят ли до конца</b>`,
+    ysqFunnelLine(m.ysq),
+    `Читали «как понимать результат»: ${m.ysq.helpOpens} раз (за месяц)`,
+    '',
+    `🗣 <b>Как просят обращаться</b>`,
+    `На «ты»: ${m.addressForm.ty} · на «вы»: ${m.addressForm.vy} · ` +
+      `ещё не выбрали: ${m.addressForm.notChosen}`,
+    '',
+    `📣 <b>Делятся карточками</b> (за неделю: ${m.shareCard.total7}, за месяц: ${m.shareCard.total30})`,
+    m.shareCard.byKind30.length === 0
+      ? 'Пока никто не делился — это только начало 🙂'
+      : 'Чем делятся (за месяц): ' +
+        m.shareCard.byKind30
+          .map((k) => `${SHARE_KIND_LABELS[k.kind] ?? k.kind} — ${k.count}`)
+          .join(' · '),
+    '',
+    `💛 <b>Карточка помощи в трудный момент</b> (за месяц)`,
+    `Показали: ${m.crisis.shown} · позвонили по телефону доверия: ${m.crisis.hotlineTapped} (из них в форме записи на консультацию: показали ${m.crisis.booking.shown}, позвонили ${m.crisis.booking.hotlineTapped})`,
+    '',
+    `📤 <b>Получилось ли поделиться картинкой</b> (за месяц)`,
+    `Отправили картинку: ${m.shareResult.ok} · сохранили текстом: ${m.shareResult.fallback}`,
+    '',
+    `📦 <b>Спасли записи, сделанные без интернета</b> (за месяц)`,
+    `Случаев: ${m.outbox.flushes} · записей вернули: ${m.outbox.recovered}`,
+    '',
+    `🎛 <b>Главный экран</b> (за месяц)`,
+    m.today.blocksHidden.length === 0
+      ? 'Блоки с главного пока не прятали'
+      : 'Что прятали: ' +
+        m.today.blocksHidden
+          .map((b) => `${TODAY_BLOCK_LABELS[b.block] ?? b.block} — ${b.count}`)
+          .join(' · '),
+    '',
+    `🧭 <b>Архив «Мой путь»</b> (за месяц)`,
+    m.journey.opens === 0
+      ? 'Свою историю пока никто не открывал'
+      : `Открывали свою историю: ${m.journey.opens} раз`,
+    '',
+    `📲 <b>Значок приложения на экране телефона</b> (за месяц)`,
+    m.homeScreen.shown === 0
+      ? 'Пока никому не предлагали'
+      : `Предложили: ${m.homeScreen.shown} · нажали «добавить»: ${m.homeScreen.add}` +
+        `${pct(m.homeScreen.add, m.homeScreen.shown)}`,
+    m.homeScreen.shown === 0
+      ? ''
+      : `Значок реально появился: ${m.homeScreen.added} · отложили: ${m.homeScreen.later} · ` +
+        `попросили не предлагать: ${m.homeScreen.never}`,
+  ].join('\n');
+}

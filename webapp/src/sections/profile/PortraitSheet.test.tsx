@@ -1,0 +1,136 @@
+// @vitest-environment jsdom
+// Лист «Мой портрет»: списки «Мои схемы»/«Мои режимы» со статусом карточки и
+// частотой за неделю (из общего usePatternLayer), строка открывает экран
+// паттерна, открытие трекается. Пусто — подсказка вместо тишины. Записи
+// дневников лист берёт у useAboutMe профиля — своего запроса нет.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { AddressFormContext } from '../../utils/addressForm';
+import { buildPortrait } from '../../../../shared/src/portrait/portraitData';
+import type { AboutMeState } from '../../../../shared/src/portrait/useAboutMe';
+import { PortraitSheet } from './PortraitSheet';
+
+vi.mock('../../api', () => ({
+  api: {
+    getSchemaDiary: vi.fn(), getModeDiary: vi.fn(), getSchemaNotes: vi.fn(), getModeNotes: vi.fn(), trackEvent: vi.fn(),
+  },
+  reportClientError: vi.fn(),
+}));
+vi.mock('../../components/patternSheet/PatternSheet', () => ({
+  PatternSheet: (p: { kind: string; id: string; onClose: () => void }) => (
+    <div data-testid="pattern-sheet">{p.kind}:{p.id}<button onClick={p.onClose}>закрыть паттерн</button></div>
+  ),
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
+function aboutMe(schemas: string[], modes: string[], extra: Partial<AboutMeState> = {}) {
+  return {
+    portrait: buildPortrait({ manualSchemaIds: schemas, myModeIds: modes }), mySchemaIds: schemas, myModeIds: modes,
+    schemaEntries: [], modeEntries: [], setSchemaEntries: vi.fn(), setModeEntries: vi.fn(), diaries: 'ready', ...extra,
+  } as unknown as AboutMeState;
+}
+function renderSheet(state: AboutMeState, onClose = vi.fn(), form: 'ty' | 'vy' = 'ty') {
+  return render(
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <MemoryRouter><PortraitSheet aboutMe={state} onClose={onClose} /></MemoryRouter>
+    </AddressFormContext.Provider>,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockApi.getSchemaDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
+  mockApi.getModeNotes.mockResolvedValue([]);
+});
+afterEach(cleanup);
+
+describe('PortraitSheet', () => {
+  it('лист — диалог с именем для диктора, фокус внутри', async () => {
+    renderSheet(aboutMe([], []));
+    const dlg = screen.getByRole('dialog', { name: 'Мой портрет' });
+    expect(dlg.contains(document.activeElement)).toBe(true);
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+  });
+
+  it('пусто: подсказка отметить схемы или пройти тест, форма «вы» — без «ты»; дневники сам не читает', async () => {
+    renderSheet(aboutMe([], []), vi.fn(), 'vy');
+    expect(screen.getByText(/Отметьте схемы и режимы, которые узнаёте/)).toBeTruthy();
+    expect(screen.queryByText('Мои схемы')).toBeNull();
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+    expect(mockApi.getSchemaDiary).not.toHaveBeenCalled();
+    expect(mockApi.getModeDiary).not.toHaveBeenCalled();
+  });
+
+  it('списки схем и режимов; статус карточки словами и частота — из дневника', async () => {
+    const schemaEntries = [
+      { id: 1, createdAt: daysAgo(0), trigger: 'Т', emotions: [], schemaIds: ['abandonment'] },
+      { id: 2, createdAt: daysAgo(1), trigger: 'Т', emotions: [], schemaIds: ['abandonment'] },
+    ];
+    renderSheet(aboutMe(['abandonment', 'mistrust'], ['vulnerable_child'], { schemaEntries } as Partial<AboutMeState>));
+    expect(screen.getByText('Мои схемы')).toBeTruthy();
+    expect(screen.getByText('Мои режимы')).toBeTruthy();
+    expect(await screen.findByText('2 дня')).toBeTruthy();
+    expect(screen.getAllByText(/карточка пока пустая/).length).toBe(3);
+  });
+
+  it('пока дневник не загрузился (или не загрузился вовсе), статус и частоту не выдумываем', async () => {
+    renderSheet(aboutMe(['abandonment'], [], { diaries: 'loading' }));
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+    expect(screen.queryByText(/карточка пока пустая/)).toBeNull();
+    cleanup();
+    renderSheet(aboutMe(['abandonment'], [], { diaries: 'failed' }));
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/карточка пока пустая/)).toBeNull();
+  });
+
+  it('строка открывает экран паттерна и трекает открытие; закрытие паттерна оставляет лист', async () => {
+    renderSheet(aboutMe(['abandonment'], ['vulnerable_child']));
+    await screen.findAllByText(/карточка пока пустая/);
+    fireEvent.click(screen.getAllByRole('button').find((b) => b.classList.contains('cpf-prow'))!);
+    expect((await screen.findByTestId('pattern-sheet')).textContent).toContain('schema:abandonment');
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('profile_pattern_open', { kind: 'schema' });
+    fireEvent.click(screen.getByText('закрыть паттерн'));
+    expect(screen.queryByTestId('pattern-sheet')).toBeNull();
+    expect(screen.getByText('Мои схемы')).toBeTruthy();
+  });
+
+  it('режим открывается как режим', async () => {
+    renderSheet(aboutMe([], ['vulnerable_child']));
+    await screen.findAllByText(/карточка пока пустая/);
+    fireEvent.click(screen.getAllByRole('button').find((b) => b.classList.contains('cpf-prow'))!);
+    expect((await screen.findByTestId('pattern-sheet')).textContent).toContain('mode:vulnerable_child');
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('profile_pattern_open', { kind: 'mode' });
+  });
+
+  it('герой — лист портрета со сценой: слои над потребностью — по её схемам из данных', async () => {
+    renderSheet(aboutMe(['abandonment', 'mistrust'], []));
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+    const scene = document.querySelector('.pa-sheet svg.scn');
+    expect(scene).not.toBeNull();
+    // «Покинутость» и «Недоверие» стоят за привязанностью: два слоя у неё, у остальных — ни одного.
+    expect(scene!.querySelectorAll(':scope > [data-need="attachment"] [data-layer]')).toHaveLength(2);
+    expect(scene!.querySelectorAll(':scope > [data-need]:not([data-need="attachment"]) [data-layer]')).toHaveLength(0);
+  });
+
+  it('строки схем и режимов — со знаком домена и группы, без цветной точки и эмодзи', async () => {
+    renderSheet(aboutMe(['abandonment'], ['vulnerable_child']));
+    await screen.findAllByText(/карточка пока пустая/);
+    const rows = [...document.querySelectorAll('.cpf-prow')];
+    expect(rows).toHaveLength(2);
+    for (const r of rows) expect(r.querySelector('.pp-row-art svg.pp-art')).not.toBeNull();
+    for (const glyph of ['🤝', '🧭', '💬', '🎉', '⚖', '▼', '▲']) expect(document.body.textContent).not.toContain(glyph);
+  });
+
+  it('«Назад» закрывает лист', async () => {
+    const onClose = vi.fn();
+    renderSheet(aboutMe(['abandonment'], []), onClose);
+    fireEvent.click(screen.getByText(/Назад/));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+});

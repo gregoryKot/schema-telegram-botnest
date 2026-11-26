@@ -1,0 +1,6 @@
+{
+  "source": "npm 10.9.4 (Node 22.22.0, как в CI) — stdout `npm audit --omit=dev --audit-level=high --json --fetch-timeout=15000 --prefix <каталог без package-lock.json>`; реестр не опрашивается — ошибка локальная",
+  "recordedAt": "2026-10-22",
+  "how": "записано живым запуском по пустому каталогу (нет lock-файла) при ревью обёртки scripts/npm-audit.mjs; код выхода 1",
+  "redacted": "ничего — в ответе только код и текст ошибки npm, данных аккаунта и путей нет"
+}

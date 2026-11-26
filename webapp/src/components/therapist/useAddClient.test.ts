@@ -1,0 +1,242 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { useAddClient } from './useAddClient';
+
+// ── Mock api ─────────────────────────────────────────────────────────────────
+vi.mock('../../api', () => ({
+  api: {
+    addVirtualClient: vi.fn(),
+    createTherapyInvite: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
+  },
+}));
+
+import { api } from '../../api';
+
+const mockApi = api as unknown as {
+  addVirtualClient: ReturnType<typeof vi.fn>;
+  createTherapyInvite: ReturnType<typeof vi.fn>;
+  getTherapyInvites: ReturnType<typeof vi.fn>;
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function makeSetClients() {
+  return vi.fn();
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Silence clipboard errors in jsdom
+  Object.assign(navigator, {
+    clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+  });
+});
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+describe('useAddClient', () => {
+  it('initialises with empty state', () => {
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    expect(result.current.name).toBe('');
+    expect(result.current.withInvite).toBe(false);
+    expect(result.current.created).toBeNull();
+    expect(result.current.submitting).toBe(false);
+    expect(result.current.error).toBe('');
+    expect(result.current.copied).toBe(false);
+  });
+
+  it('valid is false when name < 2 chars', () => {
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => { result.current.setName('A'); });
+    expect(result.current.valid).toBe(false);
+    act(() => { result.current.setName('AB'); });
+    expect(result.current.valid).toBe(true);
+  });
+
+  it('submit without valid name does not call api', async () => {
+    const setClients = makeSetClients();
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    // name is empty — not valid
+    await act(async () => { await result.current.submit(); });
+    expect(mockApi.addVirtualClient).not.toHaveBeenCalled();
+  });
+
+  it('submit with valid name calls addVirtualClient and sets created', async () => {
+    const setClients = makeSetClients();
+    const updatedClients = [{ telegramId: 1, name: null, clientAlias: 'Иван' }];
+    mockApi.addVirtualClient.mockResolvedValue(updatedClients);
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => { result.current.setName('Иван'); });
+    await act(async () => { await result.current.submit(); });
+
+    expect(mockApi.addVirtualClient).toHaveBeenCalledWith('Иван');
+    expect(setClients).toHaveBeenCalledWith(updatedClients);
+    expect(result.current.created).toEqual({ name: 'Иван', invite: null });
+    expect(result.current.name).toBe(''); // cleared after submit
+    expect(mockApi.createTherapyInvite).not.toHaveBeenCalled();
+  });
+
+  // Инцидент 2026-10-26: галочка создавала И офлайн-карточку, И независимое
+  // приглашение — после подключения в списке было две карточки одного человека.
+  it('withInvite: только приглашение с этим именем, офлайн-карточки нет; список ждущих перечитан', async () => {
+    const setClients = makeSetClients();
+    mockApi.createTherapyInvite.mockResolvedValue({ code: 'ABCDEF123456', url: 'https://t.me/bot?start=abc' });
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => {
+      result.current.setName(' Мария К. ');
+      result.current.setWithInvite(true);
+    });
+    await act(async () => {}); // первая загрузка списка ждущих
+    const loadsBefore = mockApi.getTherapyInvites.mock.calls.length;
+    expect(loadsBefore).toBe(1);
+    await act(async () => { await result.current.submit(); });
+
+    expect(mockApi.createTherapyInvite).toHaveBeenCalledWith('Мария К.');
+    expect(mockApi.addVirtualClient).not.toHaveBeenCalled();
+    expect(setClients).not.toHaveBeenCalled();
+    expect(result.current.created).toEqual({
+      name: 'Мария К.',
+      invite: { code: 'ABCDEF123456', url: 'https://t.me/bot?start=abc' },
+    });
+    expect(mockApi.getTherapyInvites.mock.calls.length).toBe(loadsBefore + 1);
+  });
+
+  it('withInvite: предел живых приглашений — текст с выходом, а не сырой ответ', async () => {
+    mockApi.createTherapyInvite.mockRejectedValue({ status: 409, reason: 'too_many_invites' });
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => {
+      result.current.setName('Мария');
+      result.current.setWithInvite(true);
+    });
+    await act(async () => { await result.current.submit(); });
+    expect(result.current.error).toMatch(/Отзови ненужные/);
+    expect(result.current.created).toBeNull();
+  });
+
+  it('trims whitespace from name before submit', async () => {
+    const setClients = makeSetClients();
+    mockApi.addVirtualClient.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => { result.current.setName('  Пётр  '); });
+    await act(async () => { await result.current.submit(); });
+
+    expect(mockApi.addVirtualClient).toHaveBeenCalledWith('Пётр');
+    expect(result.current.created?.name).toBe('Пётр');
+  });
+
+  it('sets error when addVirtualClient throws', async () => {
+    const setClients = makeSetClients();
+    mockApi.addVirtualClient.mockRejectedValue(new Error('Network error'));
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => { result.current.setName('Тест'); });
+    await act(async () => { await result.current.submit(); });
+
+    expect(result.current.error).toBe('Network error');
+    expect(result.current.created).toBeNull();
+  });
+
+  it('без галочки приглашение не создаётся', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => { result.current.setName('Тест'); });
+    await act(async () => { await result.current.submit(); });
+    expect(mockApi.createTherapyInvite).not.toHaveBeenCalled();
+  });
+
+  it('reset clears created state and resets toggles', async () => {
+    const setClients = makeSetClients();
+    mockApi.createTherapyInvite.mockResolvedValue({ code: 'ABCDEF123456', url: 'https://example.com/i' });
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => {
+      result.current.setName('Тест');
+      result.current.setWithInvite(true);
+    });
+    await act(async () => { await result.current.submit(); });
+    expect(result.current.created).not.toBeNull();
+
+    act(() => { result.current.reset(); });
+    expect(result.current.created).toBeNull();
+    expect(result.current.withInvite).toBe(false);
+    expect(result.current.error).toBe('');
+    expect(result.current.copied).toBe(false);
+  });
+
+  it('copyInvite writes to clipboard and sets copied flag', async () => {
+    const setClients = makeSetClients();
+    mockApi.createTherapyInvite.mockResolvedValue({ code: 'x', url: 'https://example.com/invite' });
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => {
+      result.current.setName('Копия');
+      result.current.setWithInvite(true);
+    });
+    await act(async () => { await result.current.submit(); });
+    expect(result.current.created?.invite?.url).toBe('https://example.com/invite');
+
+    await act(async () => { await result.current.copyInvite(); });
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://example.com/invite');
+    expect(result.current.copied).toBe(true);
+  });
+
+  it('copyInvite does nothing when created has no invite', async () => {
+    const setClients = makeSetClients();
+    mockApi.addVirtualClient.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAddClient({ setClients }));
+    act(() => { result.current.setName('Без ссылки'); });
+    await act(async () => { await result.current.submit(); });
+    expect(result.current.created?.invite).toBeNull();
+
+    await act(async () => { await result.current.copyInvite(); });
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+});
+
+// QA 2026-11: двойной Enter в поле имени создавал двух клиентов — submit не
+// проверял, что запрос уже идёт; «Добавить ещё» после первого клиента прятало
+// форму (open жил в списке и оставался false).
+describe('useAddClient — двойной Enter и «Добавить ещё»', () => {
+  it('два submit в одном кадре — один клиент', async () => {
+    let resolve!: (v: unknown[]) => void;
+    mockApi.addVirtualClient.mockReturnValue(new Promise(r => { resolve = r; }));
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => { result.current.setName('Анна К.'); });
+    let first!: Promise<unknown>;
+    act(() => {
+      first = result.current.submit();
+      void result.current.submit();
+    });
+    await act(async () => { resolve([]); await first; });
+    expect(mockApi.addVirtualClient).toHaveBeenCalledTimes(1);
+  });
+
+  it('после ответа следующий клиент добавляется', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    act(() => { result.current.setName('Анна К.'); });
+    await act(async () => { await result.current.submit(); });
+    act(() => { result.current.reset(); result.current.setName('Борис'); });
+    await act(async () => { await result.current.submit(); });
+    expect(mockApi.addVirtualClient).toHaveBeenCalledTimes(2);
+  });
+
+  it('«Добавить ещё» (reset) держит форму открытой, «к списку» (close) — сворачивает', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    const { result } = renderHook(() => useAddClient({ setClients: makeSetClients() }));
+    expect(result.current.open).toBe(false);
+    act(() => { result.current.setName('Анна К.'); });
+    await act(async () => { await result.current.submit(); });
+    act(() => { result.current.reset(); });
+    expect(result.current.open).toBe(true);
+    expect(result.current.created).toBeNull();
+    act(() => { result.current.close(); });
+    expect(result.current.open).toBe(false);
+    expect(result.current.created).toBeNull();
+  });
+});

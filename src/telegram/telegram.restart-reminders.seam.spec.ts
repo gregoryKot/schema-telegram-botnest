@@ -1,0 +1,164 @@
+// Регрессия аудита 2026-10, backend#21: «⏰ Напомню через час» стиралось
+// рестартом. onModuleInit безусловно звал «одноразовую» уборку
+// cancelAllPreReminders (updateMany по ВСЕМ неотправленным pre_reminder), а
+// деплой — это рестарт, 4–6 раз в день. Напоминание не приходило никогда, в
+// логе — одна строка «Cancelled 1 legacy…».
+//
+// Тест на шве: настоящий хендлер snooze_reminder → настоящий NotificationService
+// → таблица → ДВА настоящих onModuleInit поверх неё → getDue() через час.
+// Метод уборки здесь не мокается (его больше нет): фейк только у таблицы.
+import { Logger } from '@nestjs/common';
+import { NotificationService } from '../notification/notification.service';
+import { TelegramService } from './telegram.service';
+import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
+import { createFakeTransaction } from '../test-support/fake-prisma.spec-helper';
+
+type Row = {
+  id: number;
+  userId: bigint;
+  type: string;
+  sendAt: Date;
+  payload: unknown;
+  sentAt: Date | null;
+  cancelledAt: Date | null;
+};
+
+function makeTable() {
+  const rows: Row[] = [];
+  const match = (r: Row, where: Record<string, unknown>) =>
+    Object.entries(where).every(([k, v]) => {
+      const val = (r as Record<string, unknown>)[k];
+      if (v && typeof v === 'object' && 'lte' in v) {
+        return (val as Date) <= (v.lte as Date);
+      }
+      return val === v;
+    });
+  return {
+    rows,
+    create: ({ data }: { data: Partial<Row> }) => {
+      const row = {
+        id: rows.length + 1,
+        sentAt: null,
+        cancelledAt: null,
+        payload: null,
+        ...data,
+      } as Row;
+      rows.push(row);
+      return row;
+    },
+    updateMany: ({
+      where,
+      data,
+    }: {
+      where: Record<string, unknown>;
+      data: Partial<Row>;
+    }) => {
+      const hit = rows.filter((r) => match(r, where));
+      hit.forEach((r) => Object.assign(r, data));
+      return { count: hit.length };
+    },
+    findMany: ({ where }: { where: Record<string, unknown> }) =>
+      rows.filter((r) => match(r, where)),
+  };
+}
+
+/** «Процесс»: новый TelegramService + onModuleInit поверх общей очереди. */
+function bootProcess(notifications: NotificationService) {
+  const botService = {
+    getUserSettings: jest.fn().mockResolvedValue({
+      notifyTimezone: 'Europe/Moscow',
+      notifyQuietStart: 22,
+      notifyQuietEnd: 8,
+    }),
+  };
+  const accountService = {
+    canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
+  };
+  const fakeBot = makeFakeBot();
+  fakeBot.bot.launch.mockImplementation(() => new Promise(() => {}));
+  const stub = {} as never;
+  const service = new TelegramService(
+    fakeBot.bot,
+    botService as never,
+    stub,
+    accountService as never,
+    stub,
+    stub,
+    notifications,
+    { track: jest.fn() } as never,
+    stub,
+  );
+  service.onModuleInit();
+  return { service, fakeBot };
+}
+
+const flush = () => new Promise((r) => setImmediate(r));
+
+// Часы подделаны на весь тест, а setImmediate/nextTick — настоящие: прежнее
+// переключение fake↔real между шагами под нагрузкой воркеров упиралось в
+// таймаут jest. Дедлайн — страховка: тест ждёт событий, а не времени.
+jest.setTimeout(30_000);
+const at = (iso: string) => jest.setSystemTime(new Date(iso));
+
+describe('snooze → рестарт: отложенное напоминание переживает деплой', () => {
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    delete process.env.BOT_REDIRECT_USERNAME;
+    delete process.env.ADMIN_ID;
+    jest.useFakeTimers({
+      doNotFake: [
+        'nextTick',
+        'queueMicrotask',
+        'setImmediate',
+        'clearImmediate',
+      ],
+    });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('нажал в 14:30 МСК, деплой в 14:45, в 15:31 pre_reminder на месте и due', async () => {
+    const table = makeTable();
+    // Отложенное ставится под advisory-локом в транзакции (replace-pending.ts):
+    // в памяти ждать некого, транзакция — сам «клиент».
+    const prisma: Record<string, unknown> = {
+      scheduledNotification: table,
+      $executeRaw: jest.fn(async () => 1),
+    };
+    prisma.$transaction = createFakeTransaction(prisma);
+    const notifications = new NotificationService(prisma as never);
+    at('2026-10-11T11:25:00Z');
+    const first = bootProcess(notifications);
+    await flush();
+
+    at('2026-10-11T11:30:00Z');
+    const ctx = await runAction(first.fakeBot, 'snooze_reminder', {
+      from: { id: 42 },
+    });
+    expect(ctx.editMessageText).toHaveBeenCalledWith('⏰ Напомню в 15:30');
+
+    // Два рестарта подряд: частота деплоев не должна иметь значения.
+    at('2026-10-11T11:45:00Z');
+    first.service.onModuleDestroy();
+    const second = bootProcess(notifications);
+    await flush();
+    at('2026-10-11T11:50:00Z');
+    second.service.onModuleDestroy();
+    bootProcess(notifications);
+    await flush();
+
+    expect(table.rows).toHaveLength(1);
+    expect(table.rows[0]).toMatchObject({
+      type: 'pre_reminder',
+      cancelledAt: null,
+      sentAt: null,
+    });
+
+    at('2026-10-11T12:31:00Z');
+    const due = await notifications.getDue();
+    expect(due.map((d) => d.type)).toEqual(['pre_reminder']);
+  });
+});

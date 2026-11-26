@@ -1,0 +1,12 @@
+{
+  "total": 12,
+  "errors": 12,
+  "warnings": 0,
+  "byRule": {
+    "@typescript-eslint/no-unsafe-member-access": 1,
+    "@typescript-eslint/no-unsafe-assignment": 1,
+    "@typescript-eslint/no-unsafe-return": 1,
+    "prettier/prettier": 8,
+    "@typescript-eslint/no-unnecessary-type-assertion": 1
+  }
+}

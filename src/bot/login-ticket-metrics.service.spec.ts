@@ -1,0 +1,129 @@
+// Агрегат пути входа: маппинг bigint→number и — главное — то, что запрос
+// считает ТОЛЬКО серверные строки. Событие пишет один шов (LoginTicketReport)
+// всегда с userId = null, а /api/event открыт клиентам: без фильтра отчёт о
+// здоровье входа накручивался бы с любого фронта. Образец —
+// auth-health-metrics.service.spec.ts.
+import { LoginTicketMetricsService } from './login-ticket-metrics.service';
+
+describe('LoginTicketMetricsService.getMetrics', () => {
+  const build = (rows: Array<Record<string, unknown>>) => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce(rows)
+      .mockResolvedValue([]);
+    // Хвост блока — входы через VK и Яндекс и приглашение добавить почту
+    // (oauth-login-metrics.ts, login-offer-metrics.ts).
+    const prisma = {
+      $queryRaw: queryRaw,
+      analyticsEvent: {
+        count: jest.fn().mockResolvedValue(0),
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+    } as never;
+    return { service: new LoginTicketMetricsService(prisma), queryRaw };
+  };
+
+  it('раскладывает ступени воронки по полям', async () => {
+    const { service } = build([
+      {
+        issued: 120n,
+        bot_opened: 60n,
+        confirmed: 74n,
+        taken: 71n,
+        too_late: 5n,
+        denied: 1n,
+        max_issued: 9n,
+        max_taken: 6n,
+      },
+    ]);
+    await expect(service.getMetrics()).resolves.toEqual({
+      issued: 120,
+      botOpened: 60,
+      confirmed: 74,
+      taken: 71,
+      tooLate: 5,
+      denied: 1,
+      maxIssued: 9,
+      maxTaken: 6,
+    });
+  });
+
+  it('пустой результат — нули, а не NaN/undefined', async () => {
+    const { service } = build([]);
+    await expect(service.getMetrics()).resolves.toEqual({
+      issued: 0,
+      botOpened: 0,
+      confirmed: 0,
+      taken: 0,
+      tooLate: 0,
+      denied: 0,
+      maxIssued: 0,
+      maxTaken: 0,
+    });
+  });
+
+  it('считает только серверные строки события входа', async () => {
+    const { service, queryRaw } = build([]);
+    await service.getMetrics();
+    const sql = (
+      queryRaw.mock.calls[0][0] as { join?: unknown } & string[]
+    ).join('?');
+    expect(sql).toContain('"userId" IS NULL');
+    expect(sql).toContain(`"name" = 'login_ticket_step'`);
+  });
+
+  it('окно — ровно неделя, границей идёт параметр запроса', async () => {
+    const { service, queryRaw } = build([]);
+    const before = Date.now();
+    await service.getMetrics();
+    const since = queryRaw.mock.calls[0][1] as Date;
+    expect(since).toBeInstanceOf(Date);
+    const days = (before - since.getTime()) / 86_400_000;
+    expect(days).toBeCloseTo(7, 3);
+  });
+
+  it('render отдаёт готовый текст блока', async () => {
+    const { service } = build([]);
+    await expect(service.render()).resolves.toContain('Вход по коду');
+  });
+
+  // Аудит 2026-10 (правило №8): входы через окно One Tap — в том же блоке входа.
+  it('render добавляет строку окна Google из серверных строк login_one_tap', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ signed_in: 9n, twofa: 1n, rejected: 0n }]);
+    const count = jest.fn().mockResolvedValue(3);
+    const groupBy = jest.fn().mockResolvedValue([
+      {
+        meta: { provider: 'yandex', outcome: 'signed_in' },
+        _count: { _all: 4 },
+      },
+    ]);
+    const service = new LoginTicketMetricsService({
+      $queryRaw: queryRaw,
+      analyticsEvent: { count, groupBy },
+    } as never);
+    const text = await service.render();
+    expect(text).toContain('Вошли одним касанием: 9');
+    // Входы через внешние сервисы (login_oauth) — в том же разделе отчёта.
+    expect(text).toContain('Вход через Яндекс: вошли 4 раза');
+    // И строка приглашения добавить почту или VK ID (login_method_offer).
+    expect(text).toContain('Приглашение увидели: 3');
+    expect(count).toHaveBeenCalledTimes(3);
+    const sql = (queryRaw.mock.calls[1][0] as string[]).join('?');
+    expect(sql).toContain('"userId" IS NULL');
+    expect(sql).toContain(`"name" = 'login_one_tap'`);
+  });
+
+  it('getOneTap на пустой базе — нули, а не NaN', async () => {
+    const service = new LoginTicketMetricsService({
+      $queryRaw: jest.fn().mockResolvedValueOnce([]),
+    } as never);
+    await expect(service.getOneTap()).resolves.toEqual({
+      signedIn: 0,
+      twofa: 0,
+      rejected: 0,
+    });
+  });
+});

@@ -1,0 +1,273 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { HealthyAdultService } from '../bot/healthy-adult.service';
+import {
+  catchUpSlot,
+  dueSlot,
+  mskParts,
+  postedInSlot,
+  type HealthyAdultSlot,
+} from '../bot/healthy-adult.schedule';
+import { DeliveryLogService } from './delivery-log.service';
+import { planRetry } from './retry-plan';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { SlotAttempts } from '../bot/healthy-adult.attempts';
+import { ChannelPublisherService } from './channel-publisher.service';
+import { shouldReportSlot, slotReportText } from './slot-report';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import { OneAtATime } from './one-at-a-time';
+import {
+  UnknownOutcomeWarnings,
+  splitUnknown,
+  unknownOutcomeText,
+} from './unknown-outcome';
+
+/** Часовой пояс расписания канала (единый для broadcast, не per-user). */
+const POST_TZ = 'Europe/Moscow';
+// Тики каждые 5 минут внутри окон 09:00–10:55 и 18:00–19:55 МСК. Публикует не
+// каждый тик — а один раз за окно, в детерминированно-случайную минуту (jitter,
+// см. healthy-adult.schedule): время гуляет ото дня ко дню, но переживает
+// рестарт — setTimeout-задержка потерялась бы при деплое.
+const MORNING_CRON = '*/5 9,10 * * *';
+/**
+ * Досылка долга — своим тиком, шире окна публикации. Пост, вышедший на
+ * последнем тике окна, иначе оставался бы недосланным: повторять было уже
+ * нечем (инцидент 2026-08-09).
+ */
+const CATCH_UP_CRON = '*/15 * * * *';
+const EVENING_CRON = '*/5 18,19 * * *';
+/** Кто держит флаг публикации, пока идёт тик, — так его назовёт отказ /zv и админки. */
+export const SCHEDULE_HOLDER = 'пост по расписанию';
+/** Имя слота для владельца и для журнала отправок. */
+const SLOT_NAME: Record<HealthyAdultSlot, string> = {
+  morning: 'утро',
+  evening: 'вечер',
+};
+
+/**
+ * Когда каналу «Здоровый Взрослый» пора говорить: дважды в день, утром
+ * (~10:00 ±час) и вечером (~19:00 ±час), в случайную минуту, чтобы не выглядеть
+ * ботом. Что именно и куда уходит — дело ChannelPublisherService: этот сервис
+ * решает только «пора / не пора / хватит пробовать».
+ */
+@Injectable()
+export class ChannelScheduleService {
+  private readonly logger = new Logger(ChannelScheduleService.name);
+  private readonly attempts = new SlotAttempts();
+
+  /** Счётчик попыток досылки — свой, чтобы не жечь попытки самой публикации. */
+  private readonly retries = new SlotAttempts();
+
+  /** Публикация и досылка «в полёте» (R7, one-at-a-time.ts). Проверка — после
+   * аренды: пока процесс публикует, тик за ним, а не за соседним инстансом.
+   * Флаг публикации — у publisher: его же держит /zv. */
+  private readonly retrying = new OneAtATime();
+  /** «Исход неизвестен» — владельцу раз на площадку в слоте (unknown-outcome.ts). */
+  private readonly unknownWarned = new UnknownOutcomeWarnings();
+
+  constructor(
+    private readonly publisher: ChannelPublisherService,
+    private readonly phrases: HealthyAdultService,
+    private readonly deliveries: DeliveryLogService,
+    private readonly cronLeader: CronLeaderService,
+  ) {}
+
+  @Cron(MORNING_CRON, { name: 'healthyAdultMorning', timeZone: POST_TZ })
+  async tickMorning() {
+    // Без аренды второй инстанс (масштабирование/рестарт) продублирует пост
+    // подписчикам канала в то же окно — один и тот же слот выйдет дважды.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultMorning',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
+    await this.maybePost();
+  }
+
+  @Cron(EVENING_CRON, { name: 'healthyAdultEvening', timeZone: POST_TZ })
+  async tickEvening() {
+    // Тот же риск, что и у утреннего тика, но для вечернего окна.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultEvening',
+        LEASE_WINDOW.fiveMinutes,
+      ))
+    )
+      return;
+    await this.maybePost();
+  }
+
+  @Cron(CATCH_UP_CRON, { name: 'healthyAdultCatchUp', timeZone: POST_TZ })
+  async tickCatchUp() {
+    // Единственный вход досылки: из maybePost под арендой утра/вечера фраза в
+    // 9–10 и 18–19 уходила дважды (аудит 2026-10). Аренда разводит и инстансы.
+    if (
+      !(await this.cronLeader.claimRun(
+        'healthyAdultCatchUp',
+        LEASE_WINDOW.fifteenMinutes,
+      ))
+    )
+      return;
+    try {
+      await this.catchUp(new Date());
+    } catch (err) {
+      this.logger.error(
+        `healthy-adult catch-up failed: ${(err as Error)?.message}`,
+      );
+    }
+  }
+
+  /**
+   * Тик расписания: публикует, только если настала запланированная минута слота
+   * и в этот слот ещё не постили (ручная публикация из админки и /zv идёт мимо,
+   * через publisher.publish()). Полная неудача не пишется как пост, поэтому
+   * следующий тик попробует снова — но не бесконечно: три попытки на слот и
+   * одно сообщение владельцу, когда они кончились (инцидент 2026-07-29: 24
+   * одинаковых DM за утро).
+   */
+  async maybePost(now = new Date()): Promise<void> {
+    const gate = this.publisher.inFlight;
+    if (!(await gate.run(() => this.postIfDue(now), SCHEDULE_HOLDER)))
+      this.logger.warn(
+        `healthy-adult: публикация ещё идёт (${gate.holder}) — тик пропущен`,
+      );
+  }
+
+  private async postIfDue(now: Date): Promise<void> {
+    try {
+      const slot = dueSlot(now, await this.phrases.lastPostAt());
+      // Слот закрыт: долг досылает только tickCatchUp (см. там), не этот тик.
+      if (!slot) return;
+      const day = mskParts(now).dateKey;
+      const key = `${day}:${slot}`;
+      if (!this.attempts.allow(key)) return;
+
+      const res = await this.publisher.publish(SLOT_NAME[slot]);
+      if (res.posted) {
+        this.attempts.reset(key);
+        // Частичный успех: слот закрыт (повтор дал бы дубль там, где пост уже
+        // вышел), но про упавшую площадку владелец должен узнать — один раз.
+        // Молчащие (нет env) — раз в неделю, в понедельник утром: ежедневный
+        // одинаковый DM перестают читать, почему так — в slot-report.ts.
+        // Исход неизвестен — не «дошлю», а «проверить вручную» (хвост R7).
+        const { failed, unknown } = splitUnknown(res.failed);
+        const report = { failed, silent: res.silent };
+        if (shouldReportSlot(report, day, slot))
+          await this.alert(slotReportText(SLOT_NAME[slot], report), failed);
+        await this.warnUnknown(key, SLOT_NAME[slot], unknown);
+        return;
+      }
+
+      const { attempt, exhausted } = this.attempts.fail(key);
+      // Владельца будим один раз — когда стало ясно, что само не починится.
+      if (exhausted)
+        await this.alert(
+          `Канал ЗВ (${SLOT_NAME[slot]}): не вышло ничего\n${res.message}`,
+        );
+      else
+        this.logger.warn(
+          `healthy-adult ${slot}: попытка ${attempt} не удалась — ${res.message}`,
+        );
+    } catch (err) {
+      this.logger.error(
+        `healthy-adult tick failed: ${(err as Error)?.message}`,
+      );
+    }
+  }
+
+  /**
+   * Досылка тем площадкам, которые пост этого слота не приняли.
+   *
+   * До 2026-08 частичный успех означал пропуск: слот закрывался, и упавшая
+   * площадка теряла публикацию до следующего слота с другой фразой. Повторять
+   * весь фан-аут нельзя — это дубль там, где пост уже вышел, — поэтому долг
+   * считается по журналу и досылается только должникам.
+   */
+  async catchUp(now = new Date()): Promise<void> {
+    if (!(await this.retrying.run(() => this.retryDebt(now))))
+      this.logger.warn('healthy-adult: досылка ещё идёт — тик пропущен');
+  }
+
+  private async retryDebt(now: Date): Promise<void> {
+    const slot = catchUpSlot(now);
+    if (!slot) return;
+    const slotKey = `${mskParts(now).dateKey}:${slot}`;
+    const key = `${slotKey}:повтор`;
+    if (!this.retries.allow(key)) return;
+    const name = SLOT_NAME[slot];
+    // Окно слота длится два часа, поэтому трёх часов назад заведомо хватает.
+    const since = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+    const plan = planRetry(await this.deliveries.slotRows(name, since));
+    if (!plan) return;
+    // Пост мог выйти — не досылаем, просим проверить руками (хвост R7).
+    await this.warnUnknown(slotKey, name, plan.unknown);
+    if (plan.platforms.length === 0) return;
+    const owner = await this.slotOwner(now, slot);
+    if (owner === 'tick') return;
+    // Слот не вышел нигде — досылка его первый выход (хвост волны 9).
+    const firstOut = owner === 'catchUp' && !plan.delivered;
+    const { text, platforms } = plan;
+    const res = await this.publisher.retry(name, text, platforms, firstOut);
+    if (res.ok) {
+      this.retries.reset(key);
+      // Хорошая новость закрывает историю: владелец уже получил «дошло не
+      // везде» и иначе остался бы с ней наедине.
+      await this.alert(
+        `Канал ЗВ (${name}): досталось со второй попытки — ${plan.platforms.join(', ')}.`,
+      );
+      return;
+    }
+    this.retries.fail(key);
+    this.logger.warn(
+      `healthy-adult ${slot}: повтор не удался — ${res.message}`,
+    );
+  }
+
+  /**
+   * У слота один механизм повтора (хвост волны 8). Не вышел нигде, а окно
+   * открыто — повторяет тик новой фразой всем (`tick`): досылка старой дала бы
+   * ожившей площадке второй пост. Окно закрылось — слот берёт досылка
+   * (`catchUp`), но не в полёт публикации. Пост вышел — добор долга (`posted`).
+   */
+  private async slotOwner(now: Date, slot: HealthyAdultSlot) {
+    const lastPostAt = await this.phrases.lastPostAt();
+    if (postedInSlot(now, lastPostAt, slot)) return 'posted';
+    const tick =
+      dueSlot(now, lastPostAt) === slot || !!this.publisher.inFlight.holder;
+    return tick ? 'tick' : 'catchUp';
+  }
+
+  /** «Исход неизвестен» — раз на площадку в слоте: ключ общий у тика и досылки. */
+  private async warnUnknown(
+    slotKey: string,
+    name: string,
+    platforms: string[],
+  ) {
+    const fresh = this.unknownWarned.fresh(slotKey, platforms);
+    if (fresh.length === 0) return;
+    const down = fresh.map((platform) => ({ platform }));
+    await this.alert(unknownOutcomeText(name, fresh), down);
+  }
+
+  /**
+   * Сообщение владельцу — напрямую, а не через `logger.error` → AlertLogger
+   * (инцидент 2026-07-31: DM не пришёл — лишнее звено троттлило, обрезало и
+   * глотало ошибки). Алерт о канале слишком редкий, чтобы его троттлить.
+   */
+  private async alert(
+    text: string,
+    failed: { platform: string }[] = [],
+  ): Promise<void> {
+    // warn, а не error: DM уходит явной строкой ниже, дублировать не нужно.
+    this.logger.warn(text);
+    // Если упал сам Telegram, DM пойдёт тем же путём, который не работает —
+    // сообщение о недоступности Telegram по Telegram не доставить (инцидент
+    // 2026-08-09: сбои шли три дня, а владелец не знал). Тогда сразу почтой.
+    const telegramDown = failed.some((f) => f.platform === 'telegram');
+    await notifyAdminWithFallback(text, 'Канал «Здоровый Взрослый»', {
+      skipTelegram: telegramDown,
+    });
+  }
+}

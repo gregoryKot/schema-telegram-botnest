@@ -1,0 +1,60 @@
+import type { TherapistNote } from '../apiTypes';
+
+/** Страница заметок сессий: свежие `notes` (сервер режет по 100) и `total` — сколько
+ * всего у клиента; total > notes.length = есть более ранние, «Сессия N» — от total. */
+export interface TherapistNotesPage {
+  notes: TherapistNote[];
+  total: number;
+}
+
+export const EMPTY_NOTES_PAGE: TherapistNotesPage = { notes: [], total: 0 };
+
+type NoteKey = Pick<TherapistNote, 'id' | 'date' | 'createdAt'>;
+
+/**
+ * Порядок сессий по возрастанию: дата, при равной — время создания, затем id.
+ * По нему считается «Сессия N». Бэкенд режет страницу в обратном порядке
+ * (SESSION_NOTES_ORDER в src/therapy/session-notes-page.ts) — отрезаются
+ * ровно самые ранние по номеру, и номера показанных не сдвигаются.
+ */
+export function compareNotesAsc(a: NoteKey, b: NoteKey): number {
+  return (
+    a.date.localeCompare(b.date) ||
+    a.createdAt.localeCompare(b.createdAt) ||
+    a.id - b.id
+  );
+}
+
+/** Сохранённая заметка встаёт на своё место, total растёт. Задним числом раньше среза
+ * её место среди скрытых: в срез не встаёт (иначе «Сессия N» = offset + 1). */
+export function addNoteToPage(
+  page: TherapistNotesPage,
+  note: TherapistNote,
+): TherapistNotesPage {
+  const sorted = [...page.notes, note].sort((a, b) => compareNotesAsc(b, a));
+  const older = hiddenCount(page) > 0 && sorted[sorted.length - 1] === note;
+  return { notes: older ? page.notes : sorted, total: page.total + 1 };
+}
+
+/** Удалённая заметка: total − 1, но не ниже числа показанных. Её нет среди показанных —
+ * значит, она из скрытых (открыта из журнала по id): меняется только total. */
+export function removeNoteFromPage(
+  page: TherapistNotesPage,
+  id: number,
+): TherapistNotesPage {
+  const notes = page.notes.filter((n) => n.id !== id);
+  const shown = notes.length < page.notes.length;
+  if (!shown && hiddenCount(page) === 0) return page;
+  return { notes, total: Math.max(notes.length, page.total - 1) };
+}
+
+/** Сколько заметок есть на сервере, но не показано. */
+export function hiddenCount(page: TherapistNotesPage): number {
+  return Math.max(0, page.total - page.notes.length);
+}
+
+/** Строка о срезе или null, если показано всё. Безличная: обращения и рода нет. */
+export function notesHint(page: TherapistNotesPage): string | null {
+  if (hiddenCount(page) === 0) return null;
+  return `Показаны последние ${page.notes.length} из ${page.total}. Более ранние заметки сохранены, но здесь не выводятся.`;
+}

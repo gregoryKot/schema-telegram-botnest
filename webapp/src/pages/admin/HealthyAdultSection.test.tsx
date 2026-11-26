@@ -1,0 +1,298 @@
+// @vitest-environment jsdom
+// Админ-вкладка канала «Здоровый Взрослый»: пул фраз (добавить/сохранить/
+// включить-выключить/удалить), тестовая отправка, массовый импорт (дочерний
+// HealthyAdultImport — рендерится внутри секции, отдельного файла не заводим,
+// см. правило №10). Скелетон остатка пула вместо спиннера/нуля — тоже здесь.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { act } from '@testing-library/react';
+import { useEffect } from 'react';
+import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react';
+import { HealthyAdultSection } from './HealthyAdultSection';
+
+vi.mock('../../api', () => ({
+  api: {
+    adminListPhrases: vi.fn(),
+    adminCreatePhrase: vi.fn(),
+    adminUpdatePhrase: vi.fn(),
+    adminDeletePhrase: vi.fn(),
+    adminTestPhrasePost: vi.fn(),
+    adminPhrasePoolStatus: vi.fn(),
+    adminImportPhrases: vi.fn(),
+  },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+// Ж4 (аудит 2026-08): подтверждение удаления — ConfirmDialog; шпион на
+// window.confirm ловит возврат к нативному диалогу.
+const confirmSpy = vi.fn(() => true);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubGlobal('confirm', confirmSpy);
+  mockApi.adminListPhrases.mockResolvedValue([
+    { id: 1, text: 'Устал – значит устал.', enabled: true },
+  ]);
+  mockApi.adminPhrasePoolStatus.mockResolvedValue({ enabled: 5, unused: 3, daysLeft: 20 });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+describe('HealthyAdultSection — на чистом пуле пусто, не выдумка', () => {
+  it('без фраз в API — «Активных фраз: 0 / 0», список пуст', async () => {
+    mockApi.adminListPhrases.mockResolvedValue([]);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    // «0 / 0» стоит и до ответа (начальный state пуст): ждём конца загрузки,
+    // потом проверяем — иначе тест зелёный, что бы компонент ни сделал с ответом.
+    await waitFor(() => expect(screen.queryByText('Загрузка…')).toBeNull());
+    expect(mockApi.adminListPhrases).toHaveBeenCalledWith('k');
+    expect(screen.getByText('Активных фраз: 0 / 0')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Выключить' })).toBeNull();
+  });
+});
+
+describe('HealthyAdultSection — счётчик и список', () => {
+  it('показывает реальное число активных фраз из API', async () => {
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByText('Активных фраз: 1 / 1');
+    expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
+  });
+
+  it('ошибка загрузки списка показывается, не молчаливый пустой экран', async () => {
+    mockApi.adminListPhrases.mockRejectedValue(new Error('Не удалось получить пул'));
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByText('Не удалось получить пул');
+  });
+});
+
+describe('HealthyAdultSection — добавить фразу', () => {
+  it('пустой текст — кнопка «Добавить» задизейблена, запрос не уходит', async () => {
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    const addButton = screen.getByRole('button', { name: 'Добавить' });
+    expect((addButton as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('добавил → фраза сразу видна в списке (read-after-write)', async () => {
+    mockApi.adminCreatePhrase.mockResolvedValue({ id: 2, text: 'Ошибка не делает плохим.', enabled: true });
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), {
+      target: { value: 'Ошибка не делает плохим.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+
+    await screen.findByDisplayValue('Ошибка не делает плохим.');
+    expect(mockApi.adminCreatePhrase).toHaveBeenCalledWith('k', 'Ошибка не делает плохим.');
+  });
+
+  it('ошибка добавления — видна, черновик не очищается молча', async () => {
+    mockApi.adminCreatePhrase.mockRejectedValue(new Error('Дубль фразы'));
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), { target: { value: 'та же' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+
+    await screen.findByText('Дубль фразы');
+  });
+});
+
+describe('HealthyAdultSection — тестовая отправка', () => {
+  it('успех — отчёт из ответа сервера показан как есть, не выдуман', async () => {
+    mockApi.adminTestPhrasePost.mockResolvedValue({ message: 'Отправлено: «Устал – значит устал.»' });
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.click(screen.getByRole('button', { name: /Проверить: отправить сейчас/ }));
+
+    await screen.findByText('Отправлено: «Устал – значит устал.»');
+  });
+
+  it('ошибка отправки — тоже показана в том же месте, а не потеряна', async () => {
+    mockApi.adminTestPhrasePost.mockRejectedValue(new Error('Канал недоступен'));
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.click(screen.getByRole('button', { name: /Проверить: отправить сейчас/ }));
+
+    await screen.findByText('Канал недоступен');
+  });
+});
+
+describe('HealthyAdultSection — строка фразы (сохранить/вкл-выкл/удалить)', () => {
+  it('кнопка «Сохранить» у строки задизейблена, пока текст не изменился', async () => {
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    const row = textarea.closest('section')!;
+    expect((within(row).getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('изменил и сохранил → карточка обновляется по ответу сервера (read-after-write)', async () => {
+    mockApi.adminUpdatePhrase.mockResolvedValue({ id: 1, text: 'Устал – это нормально.', enabled: true });
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.change(textarea, { target: { value: 'Устал – это нормально.' } });
+    const row = textarea.closest('section')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Сохранить' }));
+
+    await screen.findByText('Сохранено ✓');
+    expect(mockApi.adminUpdatePhrase).toHaveBeenCalledWith('k', 1, { text: 'Устал – это нормально.' });
+  });
+
+  it('«Выключить» переключает фразу и подпись', async () => {
+    mockApi.adminUpdatePhrase.mockResolvedValue({ id: 1, text: 'Устал – значит устал.', enabled: false });
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    const row = textarea.closest('section')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Выключить' }));
+
+    await within(row).findByText('выключена');
+    expect(mockApi.adminUpdatePhrase).toHaveBeenCalledWith('k', 1, { enabled: false });
+  });
+
+  it('«Отмена» в диалоге фразу НЕ удаляет', async () => {
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    const row = textarea.closest('section')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
+    const dialog = screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    // Диалог вне карточки: opacity выключенной фразы не ложится на него.
+    expect(row.contains(dialog)).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Отмена' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mockApi.adminDeletePhrase).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('подтверждение в диалоге убирает фразу из списка', async () => {
+    mockApi.adminDeletePhrase.mockResolvedValue(undefined);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    const row = textarea.closest('section')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
+    const dialog = screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    await screen.findByText('Активных фраз: 0 / 0');
+    expect(mockApi.adminDeletePhrase).toHaveBeenCalledWith('k', 1);
+    expect(screen.queryByDisplayValue('Устал – значит устал.')).toBeNull();
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('«Назад» браузера закрывает диалог удаления, фраза остаётся', async () => {
+    const nav: { go: ReturnType<typeof useNavigate> | null } = { go: null };
+    const Probe = () => { const n = useNavigate(); useEffect(() => { nav.go = n; }); return null; };
+    render(<MemoryRouter initialEntries={['/', '/admin']} initialIndex={1}><Probe /><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    fireEvent.click(within(textarea.closest('section')!).getByRole('button', { name: 'Удалить' }));
+    screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    act(() => { nav.go!(-1); });
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Удалить фразу?' })).toBeNull());
+    expect(mockApi.adminDeletePhrase).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
+  });
+
+  it('сбой удаления виден в диалоге, фраза остаётся', async () => {
+    mockApi.adminDeletePhrase.mockRejectedValue(new Error('API error: 500'));
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    const row = textarea.closest('section')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
+    const dialog = screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    expect((await within(dialog).findByRole('alert')).textContent).toMatch(/Не удалось удалить — фраза на месте/);
+    expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
+  });
+});
+
+describe('HealthyAdultSection — массовый импорт (HealthyAdultImport)', () => {
+  it('остаток пула — скелетон до ответа API, потом реальные числа (не 0/спиннер)', async () => {
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByText(/Ещё не звучали: 3 из 5/);
+  });
+
+  it('пустая строка не считается — кнопка показывает 0 и задизейблена', async () => {
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/);
+    fireEvent.change(textarea, { target: { value: '\n\n  \n' } });
+    expect(screen.getByRole('button', { name: 'Добавить (0)' })).toBeTruthy();
+  });
+
+  it('успешный импорт → отчёт показан, добавленные фразы попадают в общий список (read-after-write)', async () => {
+    mockApi.adminImportPhrases.mockResolvedValue({
+      message: 'Добавлено 2, дублей 0',
+      created: [
+        { id: 10, text: 'Первая новая фраза.', enabled: true },
+        { id: 11, text: 'Вторая новая фраза.', enabled: true },
+      ],
+    });
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/);
+    fireEvent.change(textarea, { target: { value: 'Первая новая фраза.\nВторая новая фраза.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить (2)' }));
+
+    await screen.findByText('Добавлено 2, дублей 0');
+    expect(screen.getByDisplayValue('Первая новая фраза.')).toBeTruthy();
+    expect(screen.getByDisplayValue('Вторая новая фраза.')).toBeTruthy();
+  });
+
+  it('ошибка импорта — видна, черновик НЕ очищается (можно поправить и повторить)', async () => {
+    mockApi.adminImportPhrases.mockRejectedValue(new Error('Сервер недоступен'));
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    const textarea = screen.getByPlaceholderText(/Нет сил – значит нет сил/) as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'Фраза, которая не сохранится.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить (1)' }));
+
+    await screen.findByText('Сервер недоступен');
+    expect(textarea.value).toBe('Фраза, которая не сохранится.');
+  });
+});
+
+// docs/open/ci-tests.md, «Админка: загрузка без отмены»: фраза, добавленная до ответа списка,
+// пропадала с экрана — `.then(setPhrases)` затирал её поздним ответом (на сервере она цела).
+describe('HealthyAdultSection — поздний ответ списка', () => {
+  const LOADED = [{ id: 1, text: 'Устал – значит устал.', enabled: true }];
+
+  it('фраза, добавленная до ответа, остаётся; загруженные встают перед ней', async () => {
+    let answer: (v: typeof LOADED) => void = () => {};
+    const late = new Promise<typeof LOADED>((r) => { answer = r; });
+    mockApi.adminListPhrases.mockReturnValue(late);
+    mockApi.adminCreatePhrase.mockResolvedValue({ id: 2, text: 'Сил больше нет — пора отдохнуть.', enabled: true });
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), {
+      target: { value: 'Сил больше нет — пора отдохнуть.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+    await waitFor(() => expect(mockApi.adminCreatePhrase).toHaveBeenCalled());
+
+    answer(LOADED);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    expect(screen.getByDisplayValue('Сил больше нет — пора отдохнуть.')).toBeTruthy();
+    expect(screen.getByText('Активных фраз: 2 / 2')).toBeTruthy();
+  });
+
+  it('контроль: фраза, которую ответ уже содержит, не задваивается', async () => {
+    let answer: (v: unknown) => void = () => {};
+    const late = new Promise((r) => { answer = r; });
+    mockApi.adminListPhrases.mockReturnValue(late);
+    const ROW = { id: 2, text: 'Можно передохнуть.', enabled: true };
+    mockApi.adminCreatePhrase.mockResolvedValue(ROW);
+    render(<MemoryRouter><HealthyAdultSection adminKey="k" /></MemoryRouter>);
+    fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), { target: { value: ROW.text } });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+    await waitFor(() => expect(mockApi.adminCreatePhrase).toHaveBeenCalled());
+
+    answer([...LOADED, ROW]); // сервер обработал GET после создания — фраза уже в ответе
+    await screen.findByDisplayValue('Устал – значит устал.');
+    expect(screen.getAllByDisplayValue(ROW.text)).toHaveLength(1);
+    expect(screen.getByText('Активных фраз: 2 / 2')).toBeTruthy();
+  });
+});

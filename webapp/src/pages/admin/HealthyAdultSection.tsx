@@ -1,0 +1,203 @@
+import { useState, useEffect, useRef } from 'react';
+import { api } from '../../api';
+import type { HealthyAdultPhrase } from '../../api';
+import { card, btn, btnGhost, input } from './shared';
+import { HealthyAdultImport } from './HealthyAdultImport';
+import { HealthyAdultCheck } from './HealthyAdultCheck';
+import { HistoryConfirmDialog } from '../../components/HistoryConfirmDialog';
+import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
+
+/** Админ-вкладка: управление пулом фраз «Здорового Взрослого» для канала. */
+export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
+  const [phrases, setPhrases] = useState<HealthyAdultPhrase[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [testMsg, setTestMsg] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  // Пока список грузится, строк на экране нет — правка возможна только «Добавить» и импортом. Поздний
+  // ответ их не затирает: фразы, которых нет в ответе, остаются после загруженных. Ответ по прежнему
+  // ключу (смена ключа, размонтирование) не применяется вовсе.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .adminListPhrases(adminKey)
+      .then((loaded) => {
+        if (!cancelled) setPhrases((local) => [...loaded, ...local.filter((r) => !loaded.some((l) => l.id === r.id))]);
+      })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Ошибка загрузки'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [adminKey]);
+
+  const add = async () => {
+    const text = draft.trim();
+    if (!text) return;
+    setError(null);
+    try {
+      const row = await api.adminCreatePhrase(adminKey, text);
+      setPhrases((p) => [...p, row]);
+      setDraft('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось добавить');
+    }
+  };
+
+  const patch = (row: HealthyAdultPhrase) =>
+    setPhrases((p) => p.map((x) => (x.id === row.id ? row : x)));
+  const drop = (id: number) => setPhrases((p) => p.filter((x) => x.id !== id));
+
+  const testPost = async () => {
+    setTesting(true);
+    setTestMsg(null);
+    try {
+      const res = await api.adminTestPhrasePost(adminKey);
+      setTestMsg(res.message);
+    } catch (e) {
+      setTestMsg(e instanceof Error ? e.message : 'Ошибка отправки');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const enabledCount = phrases.filter((p) => p.enabled).length;
+
+  return (
+    <>
+      <section style={card}>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', marginTop: 0, marginBottom: 8 }}>
+          Канал «Здоровый Взрослый»
+        </h2>
+        <p style={{ color: 'var(--text-sub)', fontSize: 14, margin: '0 0 14px', lineHeight: 1.5 }}>
+          Сообщения голосом «Здорового Взрослого» уходят в Telegram-канал
+          автоматически дважды в день — утром (около 10:00) и вечером (около
+          19:00) МСК, в случайную минуту, чтобы не выглядеть ботом. Публикуется фраза из
+          пула ниже — та, что дольше всех не звучала. Пул пополняется вручную:
+          пачка генерируется через Claude Code по брифу из{' '}
+          <code>HEALTHY_ADULT.md</code> и вставляется списком. Канал задаётся
+          переменной <code>HEALTHY_ADULT_CHANNEL</code>, бот должен быть
+          администратором канала.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button style={btnGhost} onClick={() => testPost()} disabled={testing}>
+            {testing ? 'Отправка…' : 'Проверить: отправить сейчас'}
+          </button>
+          <span style={{ color: 'var(--text-sub)', fontSize: 13 }}>
+            Активных фраз: {enabledCount} / {phrases.length}
+          </span>
+        </div>
+        {testMsg && (
+          <p style={{ whiteSpace: 'pre-wrap', fontSize: 13, margin: '10px 0 0', color: 'var(--text)', background: 'rgba(var(--fg-rgb),0.04)', padding: 10, borderRadius: 'var(--r-8)' }}>
+            {testMsg}
+          </p>
+        )}
+      </section>
+
+      <section style={card}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginTop: 0, marginBottom: 12 }}>
+          Добавить фразу
+        </h3>
+        <div style={{ display: 'flex', gap: 'var(--space-8)', alignItems: 'flex-start' }}>
+          <textarea
+            style={{ ...input, flex: 1, minHeight: 60, resize: 'vertical', lineHeight: 1.5 }}
+            placeholder="Безличная поддерживающая фраза (без «ты/вы»)…"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button style={btn} onClick={add} disabled={!draft.trim()}>Добавить</button>
+        </div>
+        {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
+      </section>
+
+      <HealthyAdultCheck adminKey={adminKey} />
+
+      <HealthyAdultImport
+        adminKey={adminKey}
+        onImported={(rows) => setPhrases((p) => [...p, ...rows])}
+      />
+
+      {loading ? (
+        <p style={{ color: 'var(--text-sub)', fontSize: 14 }}>Загрузка…</p>
+      ) : (
+        phrases.map((p) => (
+          <PhraseRow key={p.id} adminKey={adminKey} row={p} onPatch={patch} onDrop={drop} />
+        ))
+      )}
+    </>
+  );
+}
+
+function PhraseRow({ adminKey, row, onPatch, onDrop }: {
+  adminKey: string;
+  row: HealthyAdultPhrase;
+  onPatch: (r: HealthyAdultPhrase) => void;
+  onDrop: (id: number) => void;
+}) {
+  const [text, setText] = useState(row.text);
+  const [busy, setBusy] = useState(false);
+  const [saved, flashSaved] = useTimedFlag(1500);
+  const [error, setError] = useState<string | null>(null);
+  const dirty = text.trim() !== row.text && text.trim().length > 0;
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const save = () =>
+    run(async () => {
+      const updated = await api.adminUpdatePhrase(adminKey, row.id, { text: text.trim() });
+      onPatch(updated);
+      flashSaved();
+    });
+  const toggle = () =>
+    run(async () => onPatch(await api.adminUpdatePhrase(adminKey, row.id, { enabled: !row.enabled })));
+  // Строку убираем после закрытия диалога (onCancel), а не в onDone: иначе она размонтируется
+  // раньше, чем диалог снимет запись истории; asking — потому что confirming гаснет сразу.
+  const deleted = useRef(false); const [asking, setAsking] = useState(false);
+  const del = useConfirmedAction(() => api.adminDeletePhrase(adminKey, row.id), () => { deleted.current = true; });
+  const ask = () => { del.ask(); setAsking(true); };
+  const closeDialog = () => { setAsking(false); del.cancel(); if (deleted.current) onDrop(row.id); };
+
+  return (
+    <>
+      <section style={{ ...card, marginBottom: 10, opacity: row.enabled ? 1 : 0.55 }}>
+        <textarea
+          style={{ ...input, minHeight: 52, resize: 'vertical', lineHeight: 1.5 }}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button style={btn} onClick={save} disabled={busy || !dirty}>Сохранить</button>
+          <button style={btnGhost} onClick={toggle} disabled={busy}>
+            {row.enabled ? 'Выключить' : 'Включить'}
+          </button>
+          <button style={{ ...btnGhost, color: 'var(--accent-red)' }} onClick={ask} disabled={busy}>
+            Удалить
+          </button>
+          {saved && <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Сохранено ✓</span>}
+          {!row.enabled && <span style={{ color: 'var(--text-sub)', fontSize: 12 }}>выключена</span>}
+          {error && <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>{error}</span>}
+        </div>
+      </section>
+      {/* Вне section: opacity выключенной фразы иначе легла бы и на диалог. */}
+      {asking && (
+        <HistoryConfirmDialog
+          title="Удалить фразу?" confirmLabel="Удалить" busyLabel="Удаляю…"
+          message="Фраза уйдёт из пула канала. Чтобы только приостановить её, есть «Выключить»."
+          error={del.failed ? 'Не удалось удалить — фраза на месте. Возможно, неверный админ-ключ или нет соединения.' : undefined}
+          run={del.confirm} onCancel={closeDialog}
+        />
+      )}
+    </>
+  );
+}

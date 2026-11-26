@@ -1,0 +1,96 @@
+# Записанные фикстуры внешних площадок
+
+Контекст-диагноз, из-за которого этот каталог завёлся: два из трёх последних
+инцидентов календаря (PR #491, PR #494) были одним и тем же классом —
+парсер внешнего формата (CalDAV-ответ iCloud) тестировался на фикстуре,
+которую написал сам автор кода, а не на том, что реально присылает площадка.
+Автор угадывал форму дважды подряд и ошибался дважды. Правило №14 CLAUDE.md
+(«тесты стояли по обе стороны шва, но не на шве») — про это же.
+
+Этот каталог — место для ответов/входов, которые **по факту сняты с площадки**
+(либо взяты из её официальной документации), а не придуманы по памяти.
+Гейт `scripts/check-recorded-fixtures.mjs` требует для каждого найденного
+парсера внешнего формата в `src/**` явной записи в
+`scripts/recorded-fixtures-baseline.json`: либо `status: "recorded"` со
+ссылкой на файл(ы) здесь, либо честный `status: "exempt"` — «записи с
+площадки нет, фикстура авторская» (это долг, а не нарушение — см. правило №15
+CLAUDE.md: гейт не прячет то, чего не может починить, он делает это видимым).
+
+## Формат
+
+Каждая фикстура — обычный файл (`.xml`, `.json`, `.txt`, …) + СОСЕДНИЙ
+`<имя>.meta.json` с полями:
+
+```json
+{
+  "source": "какая площадка/эндпоинт — human-readable, с URL если есть",
+  "recordedAt": "YYYY-MM-DD — дата, когда фикстура получена (не обязательно дата самого запроса)",
+  "how": "как получено: «записано с прода из логов 2026-09-16», «взято из документации площадки, ссылка», «восстановлено из PR #494 по разбору инцидента» — честно, без «наверное»",
+  "redacted": "что в фикстуре заменено на заглушки, и почему; 'ничего' — если содержимое и так безопасно (публичная документация)"
+}
+```
+
+Метаданные — сайдкаром, не шапкой-комментарием внутри файла: часть форматов
+(строгий JSON, initData-строка) не допускает комментариев вовсе, а
+единообразный `.meta.json` проще парсить самому гейту при желании его
+расширить.
+
+## Правило про секреты и персональные данные
+
+**Секреты и персональные данные в фикстуре недопустимы.** Перед тем как класть
+сюда что-то, снятое с прода:
+
+- токены, пароли, ключи API — вообще не попадают в фикстуру (обрезаются до
+  структуры, а не маскируются посимвольно);
+- email/телефон/имя реального человека → `user@example.com` / `REDACTED` /
+  вымышленное имя того же грамматического рода, если род важен для теста;
+  идентификаторы (`Apple ID`, `chat_id`, `telegramId`) → короткий плейсхолдер
+  вроде `123`;
+- что именно заменено — обязано быть перечислено в `redacted` соседнего
+  `.meta.json`, а не молчаливо.
+
+Фикстура, снятая из официальной документации площадки (не с прода), обычно
+уже не содержит PII — `redacted: "ничего — пример из документации, не с прода"`
+это тоже честный ответ.
+
+## Как использовать в тесте
+
+```ts
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
+
+const xml = loadRecordedFixture('icloud-propfind-calendars.xml');
+```
+
+`loadRecordedFixture` (`src/test-support/recorded-fixture.ts`) резолвит путь
+от корня репозитория — работает из любого спека в `src/**` независимо от
+jest `rootDir`. См. `src/booking/caldav-discovery.spec.ts` и
+`src/booking/caldav-resourcetype.spec.ts` — образец использования.
+
+## Текущий состав
+
+| Файл | Площадка/эндпоинт | Почему это «настоящий» формат |
+| --- | --- | --- |
+| `icloud-propfind-principal.xml` | iCloud CalDAV, PROPFIND шаг 1 (`current-user-principal`) | Форма, на которой держится `caldav-discovery.ts`; см. PR #494 |
+| `icloud-propfind-home.xml` | iCloud CalDAV, PROPFIND шаг 2 (`calendar-home-set`) | Та же форма PR #494 |
+| `icloud-propfind-calendars.xml` | iCloud CalDAV, PROPFIND Depth 1 шаг 3 (список календарей) | Корень первым, без `<calendar/>` (инцидент #491) + календарь тегом `<C:calendar xmlns:C="…"/>` С АТРИБУТАМИ (инцидент/регресс #494) — та самая форма, на которой дважды ловили баг |
+| `github-workflow-runs.json` | GitHub REST, `GET /repos/{owner}/{repo}/actions/workflows/{file}/runs?status=completed&per_page=1` | Форма ответа для пробы `ciRuns` (`src/infra/self-check/probe-ci-runs.ts`) — наблюдатель за CI переехал в приложение, т.к. GitHub-джоба `alarm` не может слать DM без секретов, заведённых только на Amvera |
+
+| `s3-list-objects-v2-truncated.xml`, `s3-list-objects-v2-prefix.xml` | S3 API, `GET /<бакет>?list-type=2` (ListObjectsV2) — Cloudflare R2 отвечает в том же формате | Примеры ответа из документации AWS (обрезанная страница с курсором и последняя страница с XML-прологом); ими проверяются оба разбора — `src/infra/s3-list-objects.ts` (проба `backupFreshness`) и `S3_LIST_JS` в `scripts/s3-api.sh` (скрипты бэкапа) |
+| `aws-sigv4-test-suite.json` | AWS Signature Version 4 Test Suite (запрос → ожидаемый `Authorization`) | Опубликованные AWS эталоны подписи; ими сверена `src/infra/s3-sigv4.ts`, а через поддельный S3 (`fake-s3.ts`) — и подпись `curl --aws-sigv4` в скриптах бэкапа |
+| `jest-run-output.json` | Вывод jest 30 в двух режимах nightly (`backend-flaky`): воркеры с `--silent` и один процесс с `--detectOpenHandles` | Строки из логов CI (прогоны 38700877351 и 38532509227) и локальных прогонов jest 30.5.1; ими проверяется `scripts/jest-exit-guard.mjs`. Показали, чего не видно по памяти: с `--silent` строки «Ran all test suites» нет, конец прогона — сводка «Test Suites: … total» |
+| `telegram-429-too-many-requests.json` | Telegram Bot API, ответ 429 «слишком часто» (`parameters.retry_after`) | Форма из документации Bot API (ResponseParameters), с прода пока не записана — см. шапку `.meta.json`. Из неё в спеке строится настоящий `TelegramError` telegraf, а шовный спек отдаёт её локальным сервером настоящему `Telegraf`: так проверяется весь путь «telegraf разобрал тело → `telegram-rate-limit.ts` прочитал срок» |
+| `postbox-send-email-denied.json` | Yandex Cloud Postbox, `POST /v2/email/outbound-emails` (отправка письма) — отказ подписи | Записано живым curl 2026-11-12 без подписи и с неверной подписью: `403`, `text/plain`, тело `Forbidden` — отказ приходит НЕ в JSON и раньше разбора тела. Им проверяются `parsePostboxError` (`src/infra/postbox-mail.ts`) и красный исход пробы `postbox`. Ответов на запрос с верным ключом и JSON-ошибок из документации здесь нет — см. `.meta.json` |
+| `yandex-id-oauth.json` | Яндекс ID: `GET oauth.yandex.ru/authorize`, возврат на redirect_uri, `POST oauth.yandex.ru/token`, `GET login.yandex.ru/info?format=json` | Записано 2026-11-12 при тестовом входе владельца и живыми curl с неверными данными. Показало, чего нет в документации: `code` — 16 символов `a-z0-9` (а не 7 цифр), вместе с ним приходит `cid`, `state` возвращается с точками JWT как есть. Им проверяются разбор ответов и запросы `src/auth/providers/yandex.provider.ts` и судьи пробы `yandexOAuth` (`src/infra/self-check/probe-yandex-oauth.ts`). Ответа `/token` на код-пустышку с ВЕРНЫМ секретом здесь нет — см. `.meta.json` и шапку пробы |
+| `github-ci-alarm-closed-issues.json`, `github-ci-alarm-comments.json` | GitHub REST, закрытые issue с меткой `ci-alarm` и комментарии к ним | Живой `gh api` 2026-11: 37 issue и 108 комментариев бота; по ним `src/test-support/gates/incident-registry.spec.ts` проверяет `scripts/check-incident-registry.mjs` |
+| `github-ci-alarm-open-issues.json` | GitHub REST, открытые issue с меткой `ci-alarm` | Живой `gh api` 2026-11-16: одна открытая #1057; по ней тот же спек проверяет правило «открытая тревога старше 48 ч» |
+| `github-open-pulls.json` | GitHub REST, `GET /repos/{owner}/{repo}/pulls?state=open` | Живой `gh api`: 7 открытых PR, 2 от dependabot; читает проба `dependabotPrs` (`probe-dependabot-prs.spec.ts`) |
+| `github-repo-merge-settings.json`, `github-rules-branch-main.json`, `github-rulesets.json` | GitHub REST: настройки слияния репозитория, правила ветки `main`, список ruleset | Живой `gh api`; ими `live-ruleset.spec.ts` и `merge-queue.spec.ts` сверяют копию `.github/rulesets/main.json` и разбор `scripts/check-live-ruleset.mjs` |
+| `npm-audit-*.json` (`clean`, `moderate`, `high`, `critical`, `enolock`, `registry-400`) | stdout `npm audit --omit=dev --audit-level=high --json` (npm 10.9.4) | Живые запуски по настоящим и одноразовым lock-файлам, включая отказ реестра 400; ими `npm-audit.spec.ts` (через `fake-npm.ts`) проверяет `scripts/npm-audit.mjs` |
+| `oauth-authorize-responses.json` | VK ID, `GET id.vk.com/authorize` — статус и `Location` первого ответа | Живой curl из разбора инцидента 2026-10-03; верный и чужой адрес возврата — судья пробы `vkOAuth` (`probe-oauth-providers.spec.ts`) |
+| `vk-id-authorize-state.json` | VK ID, `GET id.vk.com/authorize` → `redirect_state` | Живой curl 2026-10-03 со `state` в форме JWT: VK вырезает точки и `~+=/` — на этом держится `src/auth/providers/vk-state.ts` (`vk-state.spec.ts`) |
+| `s3-sigv4-reference.json` | Подпись S3 SigV4: пример из документации S3 и подпись botocore | Эталоны для `src/infra/s3-sigv4.ts` (`s3-sigv4.spec.ts`) |
+| `zoom-list-meetings.json` | Zoom Meetings API, `GET /v2/users/me/meetings` (List meetings) | Пример ответа из документации Zoom: `id` числом, `type`, `topic`, `next_page_token`. Первой страницей его отдаёт поддельный Zoom в `foreign-scrub.spec.ts` — так проверяется разбор списка в `src/booking/zoom-room.ts` для поиска комнат вне базы. С прода не записан: токена Zoom у агента нет, см. `.meta.json` |
+
+Новый парсер внешнего формата → см. `scripts/check-recorded-fixtures.mjs`
+(требует записи в `scripts/recorded-fixtures-baseline.json`) прежде, чем PR
+пройдёт CI.

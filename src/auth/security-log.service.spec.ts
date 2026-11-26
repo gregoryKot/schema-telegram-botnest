@@ -1,0 +1,428 @@
+// security-log.service.ts — the audit trail + admin-DM trigger for
+// security-relevant events (merge, 2FA, CSRF, suspicious initData...).
+// Covers: every event is logged, only ALERT_EVENTS DM the admin, and secrets
+// never leak into either channel. Admin delivery (notifyAdminWithFallback)
+// is mocked at the module boundary — no network I/O, no dependency on
+// admin-alert.ts's own env-driven behavior (covered by admin-alert.spec.ts).
+//
+// Регресс инцидента 2026-07-29 (шквал DM = замьюченный чат = ноль алертов),
+// перенесённый на call sites, которые тот фикс не покрыл: `csrf_blocked`
+// (auth-http.util.ts) и `refresh_token_reuse` (auth.service.ts) слали DM без
+// единого троттлинга. Троттлинг теперь живёт в самом канале доставки
+// (SecurityLogService), а не у вызывающего — новый call site защищён по
+// умолчанию, ему не нужно об этом помнить. Часы инжектируются (как в
+// auth-failure.report.ts) — тесты бюджета детерминированы, без реальных
+// таймеров.
+import type { Logger as LoggerType } from '@nestjs/common';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
+
+// Мок доставки — `mock`-префикс, чтобы фабрика jest.mock могла на него
+// сослаться; фабрика вызывается заново на каждую свежую загрузку модулей
+// (см. loadFresh), и все загрузки обязаны делить ОДИН мок, иначе тест смотрел
+// бы в чужой.
+const mockNotify = jest.fn().mockResolvedValue(undefined);
+jest.mock('../utils/admin-alert', () => ({
+  notifyAdminWithFallback: (...args: unknown[]) => mockNotify(...args),
+}));
+
+type ServiceModule = typeof import('./security-log.service');
+
+// Сервис грузится ЗАНОВО на каждый тест, внутри теста. Причина — атрибуция
+// мутаций: код уровня модуля (`ALERT_EVENTS`, окно бюджета) исполняется при
+// загрузке, и если спек грузит файл статическим импортом, Stryker считает его
+// «статическим» мутантом ни одним тестом не покрытым. Единственный спек,
+// который грузил модуль внутри теста, — data-export.service.spec.ts, и после
+// #605 именно он «владел» десятью мутантами списка алертов, не проверяя DM
+// (nightly golden-auth: security-log.service 95.74% → 65.71%, issue #614).
+// Образец — loadCrypto в crypto.spec.ts. Logger берём из той же свежей
+// загрузки: изолированный реестр держит свой экземпляр @nestjs/common.
+function loadFresh(): {
+  SecurityLogService: ServiceModule['SecurityLogService'];
+  Logger: typeof LoggerType;
+} {
+  let loaded!: ReturnType<typeof loadFresh>;
+  jest.isolateModules(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Logger } = require('@nestjs/common') as {
+      Logger: typeof LoggerType;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./security-log.service') as ServiceModule;
+    loaded = { SecurityLogService: mod.SecurityLogService, Logger };
+  });
+  return loaded;
+}
+
+const mockedNotify = mockNotify;
+const flush = () => new Promise((r) => setImmediate(r));
+
+let SecurityLogService: ServiceModule['SecurityLogService'];
+let Logger: typeof LoggerType;
+let logSpy: jest.SpiedFunction<typeof LoggerType.prototype.log>;
+
+// Один раз: загрузка в beforeEach засчитывается Stryker тесту (check-spec-load-in-test).
+beforeAll(() => {
+  ({ SecurityLogService, Logger } = loadFresh());
+});
+
+beforeEach(() => {
+  mockedNotify.mockReset();
+  mockedNotify.mockResolvedValue(undefined);
+  logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe('SecurityLogService — every event is logged', () => {
+  it('writes a structured line via Logger.log for a non-alert event', () => {
+    const service = new SecurityLogService();
+    service.log('login_success', { userId: 1 });
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[login_success]'),
+    );
+  });
+});
+
+describe('SecurityLogService — канал аудита', () => {
+  it('строки аудита идут под контекстом SecurityAudit', () => {
+    // По контексту админ фильтрует аудит в логах Amvera; переименование
+    // молча ломает его запрос и алерты на строки аудита.
+    new SecurityLogService().log('login_success', { userId: 1 });
+    // `context` — приватное поле Logger из @nestjs/common: обновление Nest может
+    // его переименовать, и тест упадёт без изменения нашего кода. Публичного
+    // геттера контекста у Logger нет; при падении после апгрейда сверь поле.
+    const logger = logSpy.mock.contexts[0] as unknown as { context: string };
+    expect(logger.context).toBe('SecurityAudit');
+  });
+});
+
+describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
+  const ALERT_EVENTS = [
+    'merge_confirmed',
+    'merge_subscription_conflict',
+    'role_changed',
+    'therapist_request_submitted',
+    'csrf_blocked',
+    'suspicious_initdata',
+    'empty_signature',
+    'refresh_token_reuse',
+    'totp_locked', // S11: подбор кода 2FA — DM админу
+  ] as const;
+
+  const NON_ALERT_EVENTS = [
+    'login_success',
+    'login_failed',
+    'merge_initiated',
+    'provider_linked',
+    'provider_unlinked',
+    'data_exported',
+    'therapist_request_decided',
+    'rate_limited',
+    'totp_failed',
+  ] as const;
+
+  it.each(ALERT_EVENTS)(
+    '%s triggers notifyAdminWithFallback',
+    async (event) => {
+      const service = new SecurityLogService();
+      service.log(event, { endpoint: 'x' });
+      await flush();
+      expect(mockedNotify).toHaveBeenCalledTimes(1);
+      expect(mockedNotify.mock.calls[0][1]).toBe(`🔐 Security: ${event}`);
+    },
+  );
+
+  it.each(NON_ALERT_EVENTS)(
+    '%s does NOT trigger notifyAdminWithFallback',
+    async (event) => {
+      const service = new SecurityLogService();
+      service.log(event, { endpoint: 'x' });
+      await flush();
+      expect(mockedNotify).not.toHaveBeenCalled();
+      // Не-алертное событие всё равно попадает в обычный лог — молчит только DM.
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`[${event}]`),
+      );
+    },
+  );
+
+  it('a rejected admin DM never throws out of log() (fire-and-forget .catch), and the failure to deliver is logged', async () => {
+    // Регресс: раньше .catch(() => null) — недоставка DM была невидима
+    // (см. правило №14 CLAUDE.md, инцидент 2026-08-08). Структурный лог
+    // выше в log() пишется всегда, но именно ФАКТ недоставки DM обязан
+    // тоже попасть в лог, иначе авария молчит на обоих концах.
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    mockedNotify.mockRejectedValueOnce(new Error('telegram + email both down'));
+    const service = new SecurityLogService();
+    expect(() => service.log('csrf_blocked', { endpoint: 'x' })).not.toThrow();
+    await flush(); // let the rejected promise settle before the test ends
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('csrf_blocked'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('telegram + email both down'),
+    );
+  });
+
+  it('отказ доставки без Error (reject(undefined)) не роняет log() и пишется в лог как есть', async () => {
+    // Транспорт может отклонить промис чем угодно, в том числе undefined:
+    // `err.message` на нём бросил бы уже ВНУТРИ catch-обработчика, и ошибка
+    // ушла бы в unhandledRejection — недоставка снова невидима.
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const unhandled = jest.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      mockedNotify.mockRejectedValueOnce(undefined);
+      new SecurityLogService().log('csrf_blocked', { endpoint: 'x' });
+      await flush();
+      await flush();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
+    expect(warnSpy).toHaveBeenCalledWith(
+      'не удалось отправить DM админу про csrf_blocked: undefined',
+    );
+    expect(unhandled).not.toHaveBeenCalled();
+  });
+});
+
+describe('SecurityLogService — redaction', () => {
+  it('redacts token/password/secret-like keys and initData in the log line', () => {
+    const service = new SecurityLogService();
+    service.log('login_failed', {
+      accessToken: 'super-secret-value',
+      password: 'hunter2',
+      apiSecret: 'sk-live-xyz',
+      initData: 'query_id=abc&hash=def',
+      userId: 5,
+    });
+    const line = logSpy.mock.calls[0][0] as string;
+    expect(line).not.toContain('super-secret-value');
+    expect(line).not.toContain('hunter2');
+    expect(line).not.toContain('sk-live-xyz');
+    expect(line).not.toContain('query_id=abc');
+    expect(line).toContain('[redacted]');
+    expect(line).toContain('"userId":5'); // non-secret fields pass through
+  });
+
+  it('redacts secrets in the admin DM text too, not just the log line', async () => {
+    const service = new SecurityLogService();
+    service.log('csrf_blocked', {
+      endpoint: 'refresh',
+      refreshToken: 'raw-refresh-value',
+    });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expect(text).not.toContain('raw-refresh-value');
+    // В DM — только поля из DM_FIELDS: вычищенное туда не попадает вовсе.
+    expect(text).not.toContain('refreshToken');
+  });
+
+  it('converts BigInt fields to strings so JSON.stringify never throws', () => {
+    const service = new SecurityLogService();
+    expect(() =>
+      service.log('merge_initiated', { userId: 123_456_789_012_345n }),
+    ).not.toThrow();
+    expect(logSpy.mock.calls[0][0]).toContain('123456789012345');
+  });
+});
+
+// Класс «троттлинг сигнализации живёт у ВЫЗЫВАЮЩЕГО, а не в канале доставки»
+// (аудит после 2026-07-29): budget теперь встроен в SecurityLogService, и
+// call site не обязан ничего помнить. Часы — injected, детерминированные,
+// без setTimeout/jest.useFakeTimers.
+describe('SecurityLogService — DM-бюджет по имени события', () => {
+  const WINDOW_MS = 15 * 60_000;
+  const K = 3; // ALERT_BUDGET_MAX_PER_WINDOW — держим синхронно с сервисом
+
+  it('структурный лог не троттлится НИКОГДА, даже когда DM подавлен', () => {
+    let now = 0;
+    const service = new SecurityLogService(() => now);
+    for (let i = 0; i < K + 20; i++) {
+      now = i * 10;
+      service.log('csrf_blocked', { endpoint: 'x' });
+    }
+    expect(logSpy).toHaveBeenCalledTimes(K + 20);
+    // Не просто счётчик — каждая из K+20 строк реально содержит событие,
+    // а не пустышку.
+    for (const call of logSpy.mock.calls) {
+      expect(call[0]).toContain('[csrf_blocked]');
+    }
+  });
+
+  it('шквал одного события даёт максимум K DM за окно', async () => {
+    let now = 0;
+    const service = new SecurityLogService(() => now);
+    for (let i = 0; i < 50; i++) {
+      now = i * 10; // все 50 попаданий — внутри одного 15-минутного окна
+      service.log('csrf_blocked', { endpoint: 'refresh' });
+    }
+    await flush();
+    expect(mockedNotify).toHaveBeenCalledTimes(K);
+    // Дошедшие K DM — все про то же событие, не про что-то другое.
+    for (const call of mockedNotify.mock.calls) {
+      expect(call[1]).toBe('🔐 Security: csrf_blocked');
+    }
+  });
+
+  it('редкое событие для РАЗНЫХ пользователей — каждый получает свой DM', async () => {
+    let now = 0;
+    const service = new SecurityLogService(() => now);
+    for (const userId of [1, 2, 3]) {
+      now += 5 * 60_000; // разные пользователи, минуты друг от друга
+      service.log('merge_confirmed', { userId });
+    }
+    await flush();
+    // Три разных пользователя слили аккаунты — три отдельных DM, не один,
+    // и каждый называет СВОЙ userId (а не последний/первый по ошибке).
+    expect(mockedNotify.mock.calls.map((c) => c[0])).toEqual([
+      expect.stringContaining('userId: 1'),
+      expect.stringContaining('userId: 2'),
+      expect.stringContaining('userId: 3'),
+    ]);
+  });
+
+  it('DM после подавления называет число проглоченных', async () => {
+    let now = 0;
+    const service = new SecurityLogService(() => now);
+    for (let i = 0; i < K; i++) {
+      now = i * 10;
+      service.log('csrf_blocked', { endpoint: 'x' });
+    }
+    for (let i = 0; i < 7; i++) {
+      now = 1_000 + i * 10;
+      service.log('csrf_blocked', { endpoint: 'x' }); // подавлены бюджетом
+    }
+    now = WINDOW_MS + 1; // новое окно — снова допущен
+    service.log('csrf_blocked', { endpoint: 'x' });
+    await flush();
+    const lastText = mockedNotify.mock.calls.at(-1)?.[0] as string;
+    expect(lastText).toContain('ещё 7 за окно');
+  });
+
+  // Свежий бюджет (suppressed=0) — хвост «ещё N за окно» вообще не должен
+  // появляться. Точный toBe (не toContain) нужен, чтобы поймать мутанта,
+  // подменяющего '' (пустую ветку тернарника) на непустую строку — toContain
+  // такую подмену не ловит, если сам искомый текст не задет.
+  it('первый DM в свежем окне: точный текст — заголовок, id, время, без хвоста подавления', async () => {
+    const service = new SecurityLogService(() => 0);
+    // ip, путь и свободный текст остаются в логе: в DM — id и время.
+    service.log('csrf_blocked', {
+      userId: 5,
+      endpoint: 'refresh',
+      ip: '203.0.113.7',
+    });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expect(text).toBe(
+      '🔐 csrf_blocked\nuserId: 5\nвремя: 01.01.1970, 03:00 МСК\nПодробности — в логе приложения.',
+    );
+  });
+
+  // Ключи `source`, `target`, `host`, `provider`, `role`, `event` в DM —
+  // только из перечня (id — цифры): свободная строка под тем же ключом
+  // (Host, referrer, путь, имя) превращается в «—».
+  it.each([
+    ['source', PII.source],
+    ['target', PII.name],
+    ['userId', PII.ua],
+    ['host', PII.path],
+    ['provider', PII.email],
+    ['role', PII.qualification],
+    ['event', PII.message],
+  ])('%s со свободной строкой — в DM «—», маркера нет', async (key, marker) => {
+    const service = new SecurityLogService(() => 0);
+    service.log('merge_confirmed', { [key]: marker });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expectNoMarkers(text);
+    expect(text).toContain(`\n${key}: —\n`);
+  });
+
+  it('известные значения проходят как есть', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('merge_confirmed', {
+      target: 12n,
+      source: 34,
+      provider: 'vk',
+      host: 'max',
+      role: 'THERAPIST',
+      event: '2fa_enabled',
+    });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    for (const line of [
+      'target: 12',
+      'source: 34',
+      'provider: vk',
+      'host: max',
+      'role: THERAPIST',
+      'event: 2fa_enabled',
+    ]) {
+      expect(text).toContain(`\n${line}\n`);
+    }
+  });
+
+  // Сигнал в Telegram: ни ip, ни user-agent, ни путь, ни квалификация из
+  // заявки терапевта (`summary`) — даже под разрешёнными для лога ключами.
+  it('данные человека из маркеров в DM не попадают; лог хранит их как раньше', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('therapist_request_submitted', {
+      userId: 7,
+      requestId: 3,
+      ip: PII.ip,
+      ua: PII.ua,
+      path: PII.path,
+      endpoint: PII.path,
+      summary: PII.qualification,
+      detail: PII.message,
+      reason: PII.error,
+      telegramId: PII.telegramId,
+    });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expectNoMarkers(text);
+    expect(text).toContain('userId: 7');
+    expect(text).toContain('requestId: 3');
+    expect(logSpy.mock.calls[0][0]).toContain(PII.ip);
+  });
+
+  it('разные имена событий не делят один бюджет', async () => {
+    let now = 0;
+    const service = new SecurityLogService(() => now);
+    for (let i = 0; i < K; i++) {
+      now = i * 10;
+      service.log('csrf_blocked', { endpoint: 'x' });
+    }
+    // csrf_blocked уже упёрся в потолок этого окна — refresh_token_reuse
+    // получает свой собственный бюджет и всё равно доставляется.
+    now = 100;
+    service.log('refresh_token_reuse', { userId: 1 });
+    await flush();
+    const subjects = mockedNotify.mock.calls.map((c) => c[1]);
+    expect(subjects).toEqual([
+      '🔐 Security: csrf_blocked',
+      '🔐 Security: csrf_blocked',
+      '🔐 Security: csrf_blocked',
+      '🔐 Security: refresh_token_reuse',
+    ]);
+  });
+
+  // Отрицательная ветка счётчика. Тест выше проверяет, что «ещё N за окно»
+  // ПОЯВЛЯЕТСЯ, — и этого мало: мутация «приписывать всегда» (`suppressed >= 0`)
+  // его переживала, потому что случай «ничего не подавлено» никто не смотрел.
+  // Цена ошибки не косметическая: приписка «ещё 0 за окно» в каждом обычном
+  // алерте — это ложный сигнал «часть событий проглочена» там, где ничего не
+  // проглочено, то есть ровно та потеря доверия к каналу, ради которой бюджет
+  // и заводился.
+  it('обычный алерт (ничего не подавлено) — без приписки про окно', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('merge_confirmed', { userId: 1 });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expect(text).toContain('merge_confirmed');
+    expect(text).not.toContain('за окно');
+  });
+});

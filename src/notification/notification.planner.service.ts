@@ -1,0 +1,252 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { NotificationService } from './notification.service';
+import {
+  NotificationCadenceService,
+  CadenceUser,
+} from './notification.cadence.service';
+import { BotService } from '../bot/bot.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { PracticesService } from '../bot/practices.service';
+import type { ReminderStandIn, SwapGuard } from './replace-pending';
+import {
+  addDaysLocal,
+  daysBetweenLocal,
+  localDateString,
+  nextSendAt,
+} from './notification.time';
+
+export interface PlannerUser extends CadenceUser {
+  notifyLocalHour: number;
+  notifyReminderEnabled: boolean;
+  notifyGamified?: boolean;
+  addressForm?: string | null;
+  hasPush?: boolean; // подписка в приложении, как SendSettings.hasPush
+}
+
+/** Сообщение дня — только если такого ещё нет: проверка под локом замены
+ *  (replace-pending.ts). Уже стоит — оно и есть сообщение дня. */
+const ONCE: SwapGuard = { unlessPending: true };
+
+/**
+ * Дневной бюджет: максимум ОДНО проактивное уведомление на юзера в день.
+ * Единственная точка решения — первый матч по приоритету, остальное молчит.
+ * Реактивные (summary, comeback, вехи, терапевтские) бюджету не подчиняются.
+ *
+ * День плана (E13, аудит 2026-11) — местный день, на который выпадает час
+ * отправки: `localDate(nextSendAt(час))`. Обход один, в 00:00 UTC, и у
+ * Владивостока (+10) это 10:00 местного: напоминание на 08:00 уходит завтра.
+ * Раньше обход считал его «сегодняшним» — вечерняя запись его снимала, и в
+ * первый пропущенный день напоминания не было; воскресная сводка приходила в
+ * понедельник. Теперь день захвата, решение движка частоты, воскресенье и
+ * 1-е число — про день отправки, а заполнение снимает напоминания только до
+ * дня следующего контакта (notification.fill-cancel.ts). Москве с 21:00 обход
+ * в 03:00 даёт тот же день, что и раньше. Не «каждый день — завтрашний»: Москва
+ * решала бы за 21 час до дня (движок частоты до вечерней записи). Вопрос о
+ * невыполненном плане — о дне перед днём плана (missed-plan.ts).
+ */
+@Injectable()
+export class NotificationPlannerService {
+  private readonly logger = new Logger(NotificationPlannerService.name);
+
+  constructor(
+    private readonly notifications: NotificationService,
+    private readonly cadence: NotificationCadenceService,
+    private readonly botService: BotService,
+    private readonly analytics: BotAnalyticsService,
+    private readonly practicesService: PracticesService,
+  ) {}
+
+  async planDay(user: PlannerUser, now = new Date()) {
+    const { id: uid, notifyLocalHour: hour, notifyTimezone: tz } = user;
+    const sendAt = nextSendAt(hour, tz, now);
+    const planDate = localDateString(tz, sendAt); // день плана — шапка класса
+    if (!(await this.cadence.claimPlanDay(user, now, planDate))) return;
+    const pauseState = await this.cadence.expirePauseIfDue(user, now, planDate);
+    if (pauseState === 'paused') return;
+    if (pauseState === 'expired') {
+      if (!(await this.notifications.hasPending(uid, 'welcome_back')))
+        await this.notifications.schedule(uid, 'welcome_back', sendAt);
+      return;
+    }
+
+    // Оценка движка идёт каждую ночь — детекция игнора и сдвиги уровня не зависят
+    // от того, какое сообщение (и было ли) отправлено сегодня.
+    const { remindToday } = await this.cadence.evaluate(user, now, planDate);
+    // Дней без записей — на день плана: остаток сегодняшнего дня считаем
+    // пустым, а запись в нём снимет перерыв (notification.fill-cancel.ts).
+    const rawSince = await this.analytics.getDaysSinceLastFill(uid, tz);
+    const daysSince =
+      rawSince < 0
+        ? rawSince
+        : rawSince + daysBetweenLocal(localDateString(tz, now), planDate);
+
+    // Перерывы: 3 → lapsing_3, 7 → dormant_7, 30 → reengagement_30, дальше nudge раз в 45 дней.
+    // Гейт по ВЫБРАННОЙ юзером частоте (notifyFrequency), а не по эффективному уровню.
+    // Если человек сам попросил редкий контакт (≥2×/нед и реже), перерыв 3–7 дней для него
+    // ожидаем — «тебя не было пару дней» прозвучало бы навязчиво. Но если частоту снизил САМ
+    // движок из-за игноров (notifyFrequency низкий, adaptive высокий), редкого контакта юзер
+    // не выбирал — заботливое сообщение про перерыв уместно. Раньше гейт стоял на effective
+    // уровне, из-за чего адаптивно-задавленный юзер переставал получать мягкие сообщения и
+    // оставался с сухими напоминаниями (см. инцидент со скриншотом 2026-07-15).
+    const chosenSparse = user.notifyFrequency >= 2;
+    const lapsingType =
+      daysSince === 3 && !chosenSparse
+        ? 'lapsing_3'
+        : daysSince === 7 && !chosenSparse
+          ? 'dormant_7'
+          : daysSince === 30
+            ? 'reengagement_30'
+            : daysSince > 30 && (daysSince - 30) % 45 === 0
+              ? 'nudge'
+              : null;
+    // Перерыв, value_recap, сводка, донат, план, инсайт встают вместо
+    // напоминания одной транзакцией под локом его замены (swapReminder).
+    if (lapsingType) {
+      const nudge = lapsingType === 'nudge' ? { daysSince } : undefined;
+      await this.standIn(uid, lapsingType, sendAt, nudge);
+      return;
+    }
+
+    // День 14 без записей: возврат через зеркало СОБСТВЕННЫХ данных (value_recap).
+    // Заполняет мёртвое окно между dormant_7 и reengagement_30. Только при значимом
+    // портрете (≥5 дней), иначе тишина; в очереди — только число дней (РКН, #1135).
+    if (daysSince === 14) {
+      if (await this.notifications.hasPending(uid, 'value_recap')) return;
+      const insight = await this.analytics.getProfileInsight(uid);
+      if (insight) {
+        const recap = { totalDays: insight.totalDays };
+        await this.standIn(uid, 'value_recap', sendAt, recap);
+      }
+      return;
+    }
+
+    // Воскресенье (день плана) для активных: недельная сводка заменяет напоминание
+    const isSunday = new Date(`${planDate}T12:00:00Z`).getUTCDay() === 0;
+    if (isSunday && daysSince >= 0 && daysSince < 7) {
+      // Сводка недели без payload: текст в Telegram постоянный (РКН, #1135).
+      await this.standIn(uid, 'weekly', sendAt);
+      return;
+    }
+
+    // 1-е число месяца (локальное): мягкое напоминание о донате активным.
+    // totalDays → value-anchored формулировка для давних юзеров.
+    // Порог daysSince<7 (а не <14): просьба о донате уместна только пока юзер
+    // реально в контакте с приложением. На перерыве ≥7 дней всё остальное молчит
+    // (см. подавление напоминаний ниже) — донат в это окно выбивался бы из тона.
+    if (planDate.endsWith('-01') && daysSince >= 0 && daysSince < 7) {
+      const totalDays = await this.analytics.getTotalDaysFilled(uid);
+      const donate = { seed: Number(uid % 3n), totalDays };
+      await this.standIn(uid, 'donate_reminder', sendAt, donate);
+      return;
+    }
+
+    if (remindToday && user.notifyReminderEnabled) {
+      // Долгий перерыв (≥7 дней без записей): сухие напоминания замолкают совсем.
+      // Контакт в это время держат только мягкие milestone-сообщения (dormant_7,
+      // value_recap, reengagement_30, nudge) — они выше по приоритету и приходят в
+      // свои дни. Между ними — тишина, а не еженедельное «отметь оценки за сегодня».
+      // Это и есть авто-затихание: после reengagement_30 остаётся лишь nudge раз в 45.
+      if (daysSince >= 7) return;
+      await this.scheduleReminder(
+        uid,
+        hour,
+        tz,
+        now,
+        !!user.notifyGamified,
+        daysSince,
+        user.notifyIgnoredCount,
+      );
+      return;
+    }
+
+    // Дни без напоминания: невыполненный план или инсайт о низкой потребности.
+    // План — дня перед днём плана: если тот к обходу ещё идёт (Владивосток),
+    // вопрос встаёт заранее, а отметка плана его снимает (missed-plan.ts).
+    const day = addDaysLocal(planDate, -1);
+    const missed = await this.practicesService.getMissedPlans(uid, day);
+    if (missed.length > 0) {
+      // Текст плана в очередь не кладём (РКН, #1135): «Вчера был план» — шаблон.
+      const guard = { ...ONCE, openPlanDay: day };
+      await this.standIn(uid, 'practice_missed', sendAt, undefined, guard);
+      return;
+    }
+
+    // Инсайт выведен из оценок — только в приложение (PUSH_ONLY_TYPES).
+    if (user.hasPush) await this.scheduleLowStreakInsight(uid, hour, tz, now);
+  }
+
+  /** Напоминание: серия (оценок и потребностей в payload нет — РКН, #1135).
+   *  gamified=true добавляет позитивную срочность («ещё день до вехи»).
+   *  daysSince≥3 → мягкий «перерыв-осознающий» тон без императива.
+   *  ignoredCount>0 или перерыв → показываем полный набор кнопок саморегуляции,
+   *  иначе — компактный (открыть + «реже»), чтобы напоминание не выглядело простынёй кнопок. */
+  async scheduleReminder(
+    userId: bigint,
+    notifyLocalHour: number,
+    tz: string,
+    now = new Date(),
+    gamified = false,
+    daysSince = 0,
+    ignoredCount = 0,
+  ) {
+    const [streak, seq] = await Promise.all([
+      this.analytics.getConsecutiveDays(userId, tz),
+      this.cadence.nextReminderSeq(userId),
+    ]);
+    // Ротация текста — по монотонному счётчику отправленных напоминаний (seq),
+    // а не по календарному дню: при фиксированном интервале dayIndex % N совпадал
+    // и юзер видел один и тот же текст подряд (инцидент со скриншотом 2026-07-15).
+    // seq растёт на 1 на каждое реальное напоминание → соседние всегда различаются.
+    const onBreak = daysSince >= 3;
+    // В игровом режиме подсвечиваем ближайшую веху: если завтра серия достигнет 7/14/30.
+    const approachingStreak = gamified
+      ? [7, 14, 30].find((m) => streak + 1 === m)
+      : undefined;
+    const payload = {
+      streak,
+      variant: seq % 5,
+      gamified,
+      approachingStreak,
+      onBreak,
+      // Компактная клавиатура только для вовлечённого юзера без признаков усталости.
+      compactControls: ignoredCount === 0 && !onBreak,
+    };
+    // Снять зависшее и поставить заново — атомарно и между инстансами (E16)
+    await this.notifications.replacePending(
+      userId,
+      'reminder',
+      nextSendAt(notifyLocalHour, tz, now),
+      payload,
+    );
+  }
+
+  private async scheduleLowStreakInsight(
+    userId: bigint,
+    notifyLocalHour: number,
+    tz: string,
+    now: Date,
+  ) {
+    const lowNeeds = await this.analytics.getLowStreakNeeds(userId, 5, 3, tz);
+    if (lowNeeds.length === 0) return;
+    // Повод — только условие; в очереди ни потребности, ни числа дней (РКН, #1135).
+    const sendAt = nextSendAt(notifyLocalHour, tz, now);
+    await this.standIn(userId, 'low_streak_insight', sendAt);
+  }
+
+  /** Сообщение дня вместо напоминания — одной транзакцией под локом его замены. */
+  private standIn(
+    userId: bigint,
+    type: ReminderStandIn,
+    sendAt: Date,
+    payload?: object,
+    guard = ONCE,
+  ) {
+    return this.notifications.swapReminder(
+      userId,
+      type,
+      sendAt,
+      payload,
+      guard,
+    );
+  }
+}

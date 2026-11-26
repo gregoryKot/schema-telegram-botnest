@@ -1,0 +1,13 @@
+/* Листы дневников и истории (редизайн 2026-10). Префикс sd-. */
+/* Сборник: правил здесь нет, каждый раздел живёт в своём файле (раскрой 2026-11).
+   Порядок @import = прежний порядок разделов в каскаде — не переставлять; новое
+   правило — в файл своего экрана. Компоненты по-прежнему подключают этот файл. */
+@import './history.css';
+@import './diary-explainer.css';
+@import './card-tone.css';
+@import './diary-wizard.css';
+@import './diary-mode.css';
+@import './diary-gratitude.css';
+@import './note-sheet.css';
+@import './share-sheet.css';
+@import './journey.css';

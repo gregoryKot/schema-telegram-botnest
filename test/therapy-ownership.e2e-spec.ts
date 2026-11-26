@@ -1,0 +1,681 @@
+// e2e SMOKE (TEST_IMPROVEMENT_PLAN.md, этап 1.2) — ownership-изоляция для
+// therapy-контура: до этого спека ни один маршрут из 5 therapy-контроллеров
+// (TherapyConnectionController, TherapyNotesController, ModeMapsController,
+// TherapyController, TherapyTasksController) не вызывался в e2e вообще. Это
+// privacy-критичный контур: заметки сессий, кейс-концептуализация, карты
+// режимов и задачи — клинические данные РЕАЛЬНЫХ клиентов терапии.
+//
+// Тот же build-test-app.ts (реальный AppModule, fake Prisma + bot), что и в
+// app-ownership*.e2e-spec.ts. Инвариант, который проверяем: терапевт видит
+// ТОЛЬКО своих клиентов (граница — активная TherapyRelation, проверяемая
+// TherapyRelationsService.assertHasClient), а клиент не может залезть в
+// терапевтские ручки вообще.
+//
+// Этот файл: сценарии 1/2/4/5/6/7 (позитив T1↔C1, негатив T2 без связи,
+// клиент не терапевт, POST от чужого терапевта не создаёт запись, задачи и
+// custom-modes не текут между терапевтами). Разрыв связи (сценарий 3,
+// регресс PR #66 mode-maps) — в therapy-ownership-2.e2e-spec.ts, там же
+// отдельная пара пользователей, чтобы не зависеть от порядка тестов здесь.
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { buildTestApp, TestApp } from './e2e-support/build-test-app';
+import { signAccessToken } from './e2e-support/jwt';
+import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { CONCEPT_NEED_NOTE_MAX } from '../src/therapy/dto/concept-needs.dto';
+
+describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+
+  const secret = () => process.env.JWT_SECRET as string;
+
+  // T1 — терапевт с активной связью с C1. T2 — терапевт БЕЗ связи с C1
+  // (проверяем, что чужой терапевт не видит данные C1). C1 — клиент T1.
+  const T1 = 4_000_000_000_000_001n;
+  const T2 = 4_000_000_000_000_002n;
+  const C1 = 4_000_000_000_000_003n;
+  const C1_ID = Number(C1);
+  // C2 — клиент без связей: чужой для карты C1; в самом конце файла — клиент T2.
+  const C2 = 4_000_000_000_000_006n;
+  const C2_ID = Number(C2);
+  const ALL_USER_IDS = [T1, T2, C1, C2];
+
+  beforeAll(async () => {
+    ({ app, prisma } = await buildTestApp());
+    // Изоляция между прогонами (TEST_TRUST_PLAN.md, п.1) — см. комментарий
+    // в app-ownership.e2e-spec.ts. На реальном Postgres обязательна и перед
+    // прямой вставкой User-строк ниже (role: THERAPIST) — иначе повторный
+    // локальный прогон падает на PK-конфликте id.
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+  });
+
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, ALL_USER_IDS);
+    await app.close();
+  });
+
+  function agentAs(userId: bigint) {
+    const token = signAccessToken(userId, secret());
+    const auth = (r: request.Test) => r.set('Authorization', `Bearer ${token}`);
+    return {
+      get: (url: string) => auth(request(app.getHttpServer()).get(url)),
+      post: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).post(url)).send(body),
+      delete: (url: string) => auth(request(app.getHttpServer()).delete(url)),
+      patch: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).patch(url)).send(body),
+    };
+  }
+
+  beforeAll(async () => {
+    // Роль THERAPIST выдаётся только через админ-одобренную заявку
+    // (POST /api/therapy/request), HTTP-пути «стать терапевтом» самому нет —
+    // поэтому роль проставляем напрямую в fake-prisma, как единственный
+    // доступный способ подготовить фикстуру (аналог ручного апрува админом).
+    await prisma.user.create({ data: { id: T1, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: T2, role: 'THERAPIST' } });
+    await prisma.user.create({ data: { id: C1, role: 'CLIENT' } });
+    await prisma.user.create({ data: { id: C2, role: 'CLIENT' } });
+
+    // Реальный invite→join HTTP-флоу — как в проде, не прямая вставка связи.
+    const t1 = agentAs(T1);
+    const c1 = agentAs(C1);
+    const invite = await t1.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+    const join = await c1.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.status).toBeLessThan(300);
+    expect(join.body).toEqual({ ok: true });
+  });
+
+  // ─── Сценарий 1: T1 (активная связь) видит СВОИ данные C1 ────────────────
+
+  it('T1 создаёт заметку сессии и карту концептуализации, видит их по GET', async () => {
+    const t1 = agentAs(T1);
+    const created = await t1.post(`/api/therapy/notes/${C1_ID}`, {
+      date: '2026-07-20',
+      text: 'первая сессия: тревога, избегание',
+    });
+    expect(created.status).toBeLessThan(300);
+
+    const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);
+    expect(notes.status).toBe(200);
+    expect(notes.body.notes).toHaveLength(1);
+    expect(notes.body.total).toBe(1);
+    expect(notes.body.notes[0].text).toBe('первая сессия: тревога, избегание');
+    // Записей без пунктов «Что делали» ручка пунктов не отдаёт.
+    const work = await t1.get(`/api/therapy/notes/${C1_ID}/work`);
+    expect(work.status).toBe(200);
+    expect(work.body.entries).toEqual([]);
+
+    const savedConcept = await t1.post(
+      `/api/therapy/conceptualization/${C1_ID}`,
+      {
+        schemaIds: ['abandonment'],
+        earlyExperience: 'ранний опыт клиента',
+      },
+    );
+    expect(savedConcept.status).toBeLessThan(300);
+
+    const concept = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(concept.status).toBe(200);
+    expect(concept.body.schemaIds).toEqual(['abandonment']);
+    expect(concept.body.earlyExperience).toBe('ранний опыт клиента');
+  });
+
+  it('T1 видит client-data C1 (не 403, профиль по умолчанию открыт)', async () => {
+    const t1 = agentAs(T1);
+    const data = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(data.status).toBe(200);
+    expect(data.body.mySchemaIds).toEqual([]);
+  });
+
+  // «Колесо детства» клиента — на холсте терапевта (сохранил → нашёл через HTTP).
+  it('C1 оценил «Колесо детства» → client-data T1 отдаёт оценки', async () => {
+    const saved = await agentAs(C1).post('/api/childhood-ratings', {
+      attachment: 3,
+      play: 9,
+    });
+    expect(saved.status).toBeLessThan(300);
+    const data = await agentAs(T1).get(`/api/therapy/client-data/${C1_ID}`);
+    expect(data.body.childhoodRatings).toEqual({ attachment: 3, play: 9 });
+  });
+
+  // QA 2026-11: «запрос отправлен» переживает перезагрузку — признак приходит
+  // в client-data своего терапевта (сохранил → нашёл через HTTP).
+  it('T1 запрашивает YSQ у C1 → client-data отдаёт ysqRequestPending', async () => {
+    const t1 = agentAs(T1);
+    const before = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(before.body.ysqRequestPending).toBe(false);
+    const req = await t1.post(`/api/therapy/request-ysq/${C1_ID}`, {});
+    expect(req.status).toBeLessThan(300);
+    const after = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(after.body.ysqRequestPending).toBe(true);
+    // Запрос — задание клиенту (QA 2026-11, К1): его видят и терапевт, и
+    // клиент без Telegram; признак выше считается по нему же.
+    const tasks = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
+    expect(tasks.body.map((t: { type: string }) => t.type)).toEqual([
+      'ysq_test',
+    ]);
+  });
+
+  it('T1 назначает задачу C1 и видит её через tasks/client/:clientId', async () => {
+    const t1 = agentAs(T1);
+    const task = await t1.post('/api/therapy/tasks', {
+      type: 'custom',
+      text: 'заполнить дневник схем',
+      clientId: C1_ID,
+    });
+    expect(task.status).toBeLessThan(300);
+
+    const list = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
+    expect(list.status).toBe(200);
+    // Плюс задание «пройти тест на схемы» из запроса YSQ шагом выше. Порядок
+    // — createdAt desc на живой базе; фейк его не держит, поэтому сортируем.
+    expect(list.body.map((t: { text: string }) => t.text).sort()).toEqual(
+      ['Пройти тест на схемы', 'заполнить дневник схем'].sort(),
+    );
+  });
+
+  it('T1 создаёт карту режимов для C1 и видит её в списке', async () => {
+    const t1 = agentAs(T1);
+    const createdMap = await t1.post(`/api/therapy/mode-maps/${C1_ID}`, {
+      title: 'Карта T1↔C1',
+    });
+    expect(createdMap.status).toBeLessThan(300);
+
+    const list = await t1.get(`/api/therapy/mode-maps/${C1_ID}`);
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].title).toBe('Карта T1↔C1');
+  });
+
+  // ─── Сценарий 2: T2 (нет связи с C1) — отказ, чужих данных в теле нет ─────
+
+  it('T2 без связи с C1: GET notes/conceptualization/client-data/tasks/mode-maps → 403', async () => {
+    const t2 = agentAs(T2);
+    const routes = [
+      `/api/therapy/notes/${C1_ID}`,
+      `/api/therapy/notes/${C1_ID}/work`,
+      `/api/therapy/conceptualization/${C1_ID}`,
+      `/api/therapy/client-data/${C1_ID}`,
+      `/api/therapy/tasks/client/${C1_ID}`,
+      `/api/therapy/mode-maps/${C1_ID}`,
+    ];
+    for (const url of routes) {
+      const res = await t2.get(url);
+      expect(res.status).toBe(403);
+      // Тело ответа — только текст ошибки NestJS, не JSON с данными C1.
+      expect(JSON.stringify(res.body)).not.toContain('тревога');
+      expect(JSON.stringify(res.body)).not.toContain('abandonment');
+      expect(JSON.stringify(res.body)).not.toContain('дневник схем');
+      expect(JSON.stringify(res.body)).not.toContain('Карта T1');
+    }
+  });
+
+  // ─── Сценарий 4: клиент C1 не может дёргать терапевтские маршруты ─────────
+
+  it('C1 (клиент, не терапевт) получает 403 на терапевтские ручки', async () => {
+    const c1 = agentAs(C1);
+    const asTherapistOnly = [
+      () => c1.get('/api/therapy/clients'),
+      () => c1.post('/api/therapy/invite'),
+      () => c1.get(`/api/therapy/notes/${C1_ID}`),
+      () => c1.get(`/api/therapy/notes/${C1_ID}/work`),
+      () => c1.get(`/api/therapy/mode-maps/${C1_ID}`),
+      () => c1.get('/api/therapy/tasks/all'),
+      () => c1.get('/api/therapy/custom-modes'),
+      () =>
+        c1.post(`/api/therapy/conceptualization/${C1_ID}/append`, {
+          modeIds: ['angry_child'],
+        }),
+      () =>
+        c1.post(`/api/therapy/conceptualization/${C1_ID}/needs`, {
+          needLinks: [],
+        }),
+    ];
+    for (const call of asTherapistOnly) {
+      const res = await call();
+      expect(res.status).toBe(403);
+    }
+  });
+
+  // Свой read-only срез (my-mode-maps) клиенту доступен — это не терапевтская
+  // ручка, роль THERAPIST не требуется.
+  it('C1 видит собственный my-mode-maps (без 403, но пусто — карта на T1)', async () => {
+    const c1 = agentAs(C1);
+    const res = await c1.get('/api/therapy/my-mode-maps');
+    expect(res.status).toBe(200);
+    // Карта режимов принадлежит связке (therapistId, clientId) в ModeMap с
+    // clientId=C1 — modeMapsService.listMyModeMaps фильтрует по clientId,
+    // поэтому клиент СВОЮ карту, созданную его терапевтом, увидит.
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  // ─── Сценарий 5: POST от T2 (нет связи) → отказ, заметка НЕ создана ──────
+
+  it('T2 не может создать заметку C1 — запись не появляется в БД', async () => {
+    const t2 = agentAs(T2);
+    // Фильтруем по clientId (не read-all таблицы) — на реальном Postgres в
+    // той же таблице могут лежать строки других therapy-ownership-спеков
+    // этого же CI-прогона.
+    const before = (
+      await prisma.therapistNote.findMany({ where: { clientId: C1 } })
+    ).length;
+
+    const res = await t2.post(`/api/therapy/notes/${C1_ID}`, {
+      date: '2026-07-21',
+      text: 'заметка от чужого терапевта',
+    });
+    expect(res.status).toBe(403);
+
+    const after = (
+      await prisma.therapistNote.findMany({ where: { clientId: C1 } })
+    ).length;
+    expect(after).toBe(before);
+    // Убедимся и через T1: список заметок C1 не пополнился чужой записью.
+    const t1 = agentAs(T1);
+    const notes = await t1.get(`/api/therapy/notes/${C1_ID}`);
+    expect(
+      notes.body.notes.some(
+        (n: { text: string }) => n.text === 'заметка от чужого терапевта',
+      ),
+    ).toBe(false);
+  });
+
+  // ─── Сценарий 5а: «дописать с холста» (#963) — только свой клиент ────────
+
+  it('T1 дописывает в концептуализацию C1 с холста → GET находит, прежнее на месте', async () => {
+    const t1 = agentAs(T1);
+    const res = await t1.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      {
+        modeIds: ['vulnerable_child'],
+        modeLinks: [
+          { modeId: 'punitive_critic', schemaIds: ['defectiveness'] },
+        ],
+        // Колесо потребностей: «✗» схема → потребность; belief холст не
+        // пишет — whitelist отрезает его внутри связи.
+        schemaLinks: [
+          { schemaId: 'defectiveness', needIds: ['attachment'], belief: 'x' },
+        ],
+      },
+    );
+    expect(res.status).toBeLessThan(300);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.schemaIds).toEqual(['abandonment', 'defectiveness']);
+    expect(got.body.modeIds).toEqual(['vulnerable_child', 'punitive_critic']);
+    expect(got.body.earlyExperience).toBe('ранний опыт клиента');
+    expect(got.body.schemaLinks).toEqual([
+      {
+        schemaId: 'defectiveness',
+        belief: '',
+        origin: '',
+        needIds: ['attachment'],
+      },
+    ]);
+    // Неизвестная потребность — 400 (DTO), а не тихая запись.
+    const bad = await t1.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      { schemaLinks: [{ schemaId: 'defectiveness', needIds: ['safety'] }] },
+    );
+    expect(bad.status).toBe(400);
+  });
+
+  it('T2 без связи с C1 не может дописать в концептуализацию — 403, строк не прибавилось', async () => {
+    const t2 = agentAs(T2);
+    const res = await t2.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      { modeIds: ['angry_child'], schemaIds: ['mistrust'] },
+    );
+    expect(res.status).toBe(403);
+    expect(JSON.stringify(res.body)).not.toContain('abandonment');
+    const rows = await prisma.clientConceptualization.findMany({
+      where: { clientId: C1 },
+    });
+    expect(rows.map((r) => r.therapistId)).toEqual([T1]);
+    // Концептуализация T1 не пополнилась чужим режимом.
+    const got = await agentAs(T1).get(
+      `/api/therapy/conceptualization/${C1_ID}`,
+    );
+    expect(got.body.modeIds).not.toContain('angry_child');
+  });
+
+  // ─── Сценарий 5б: колесо потребностей в концептуализации — свой клиент ───
+  // POST conceptualization/:clientId/needs: колесо целиком (replace); полное
+  // сохранение вкладки его не трогает; клиенту в my-concept оно не уходит.
+
+  const NEEDS_URL = `/api/therapy/conceptualization/${C1_ID}/needs`;
+  const WHEEL = [
+    {
+      needId: 'attachment',
+      ratings: { child: 2, teen: 4, now: 7 },
+      notes: { child: 'мама часто уезжала', now: 'есть близкая подруга' },
+    },
+    { needId: 'play', ratings: { now: 0 }, notes: {} },
+  ];
+
+  it('T1 сохраняет колесо потребностей C1 → GET находит, остальные поля на месте', async () => {
+    const t1 = agentAs(T1);
+    const before = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    const res = await t1.post(NEEDS_URL, {
+      // Лишние поля режет whitelist: и в теле, и в записи, и во вложенных объектах.
+      goals: 'эта ручка поля не пишет',
+      needLinks: [
+        { ...WHEEL[0], belief: 'x', ratings: { ...WHEEL[0].ratings, old: 3 } },
+        WHEEL[1],
+      ],
+    });
+    expect(res.status).toBeLessThan(300);
+    expect(res.body.needLinks).toEqual(WHEEL);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.needLinks).toEqual(WHEEL);
+    // Колесо — единственное, что изменилось: поля, связи и история прежние.
+    expect({ ...got.body, needLinks: [], updatedAt: null }).toEqual({
+      ...before.body,
+      needLinks: [],
+      updatedAt: null,
+    });
+    expect(got.body.goals).not.toBe('эта ручка поля не пишет');
+  });
+
+  it('колесо — replace: запись с меньшим набором убирает прежние значения', async () => {
+    const t1 = agentAs(T1);
+    const next = [{ needId: 'attachment', ratings: { now: 8 }, notes: {} }];
+    expect((await t1.post(NEEDS_URL, { needLinks: next })).status).toBe(201);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.needLinks).toEqual(next);
+    // Вернули полное колесо — для сценариев ниже.
+    await t1.post(NEEDS_URL, { needLinks: WHEEL });
+  });
+
+  it('колесо: оценка 11, дробная, неизвестная потребность, шесть записей — 400, колесо прежнее', async () => {
+    const t1 = agentAs(T1);
+    const link = (over: object) => ({ needId: 'limits', ...over });
+    const bodies = [
+      {},
+      { needLinks: [link({ ratings: { now: 11 } })] },
+      { needLinks: [link({ ratings: { teen: 7.5 } })] },
+      { needLinks: [{ needId: 'safety', ratings: { now: 5 } }] },
+      {
+        needLinks: [
+          link({ notes: { now: 'ж'.repeat(CONCEPT_NEED_NOTE_MAX + 1) } }),
+        ],
+      },
+      { needLinks: Array.from({ length: 6 }, () => link({})) },
+    ];
+    for (const body of bodies)
+      expect((await t1.post(NEEDS_URL, body)).status).toBe(400);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.needLinks).toEqual(WHEEL);
+  });
+
+  it('полное сохранение концептуализации колесо не трогает (и с needLinks в теле)', async () => {
+    const t1 = agentAs(T1);
+    const saved = await t1.post(`/api/therapy/conceptualization/${C1_ID}`, {
+      triggers: 'критика на работе',
+      needLinks: [],
+    });
+    expect(saved.status).toBeLessThan(300);
+    expect(saved.body.needLinks).toEqual(WHEEL);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.triggers).toBe('критика на работе');
+    expect(got.body.needLinks).toEqual(WHEEL);
+    // История версий колесо не несёт.
+    for (const snap of got.body.history)
+      expect(snap).not.toHaveProperty('needLinks');
+  });
+
+  it('T2 без связи с C1 не может записать колесо — 403, колесо T1 прежнее, строк не прибавилось', async () => {
+    const res = await agentAs(T2).post(NEEDS_URL, {
+      needLinks: [{ needId: 'limits', ratings: { now: 1 }, notes: {} }],
+    });
+    expect(res.status).toBe(403);
+    expect(JSON.stringify(res.body)).not.toContain('мама часто уезжала');
+    const rows = await prisma.clientConceptualization.findMany({
+      where: { clientId: C1 },
+    });
+    expect(rows.map((r) => r.therapistId)).toEqual([T1]);
+    const got = await agentAs(T1).get(
+      `/api/therapy/conceptualization/${C1_ID}`,
+    );
+    expect(got.body.needLinks).toEqual(WHEEL);
+  });
+
+  it('клиент C1 в my-concept колесо не получает: ни поля, ни оценок, ни заметок', async () => {
+    const share = `/api/therapy/conceptualization/${C1_ID}/share`;
+    const on = await agentAs(T1).patch(share, { shared: true });
+    expect(on.status).toBe(200);
+    const mine = await agentAs(C1).get('/api/therapy/my-concept');
+    expect(mine.status).toBe(200);
+    // Схема показана (иначе проверка ниже ничего бы не доказывала).
+    expect(mine.body.schemaIds).toEqual(['abandonment', 'defectiveness']);
+    expect(mine.body).not.toHaveProperty('needLinks');
+    expect(JSON.stringify(mine.body)).not.toMatch(
+      /мама часто уезжала|есть близкая подруга|ratings/,
+    );
+    // Показ выключаем: остальные сценарии файла от него не зависят.
+    await agentAs(T1).patch(share, { shared: false });
+  });
+
+  // ─── Сценарий 5в: оценки колеса клиент видит на своей карте, заметки — нет ─
+  // GET my-mode-maps/:mapId отдаёт needRatings, когда на карте лежит колесо.
+
+  const wheelNode = (wheel: object) => ({
+    id: 'w',
+    type: 'needs',
+    position: { x: 0, y: 0 },
+    data: { label: 'Потребности', wheel },
+  });
+  const c1MapId = async (): Promise<number> =>
+    (await agentAs(T1).get(`/api/therapy/mode-maps/${C1_ID}`)).body[0].id;
+
+  it('T1 положил колесо на карту → C1 видит на ней оценки, заметок листа нет', async () => {
+    const mapId = await c1MapId();
+    const c1 = agentAs(C1);
+    // Колеса на карте ещё нет — оценок нет, хотя в концептуализации они лежат.
+    const before = await c1.get(`/api/therapy/my-mode-maps/${mapId}`);
+    expect([before.status, before.body.needRatings]).toEqual([200, []]);
+
+    // У старых карт заметки листа лежали прямо в узле — клиенту не уходят и они.
+    const put = await agentAs(T1).patch(`/api/therapy/mode-maps/map/${mapId}`, {
+      nodes: [
+        wheelNode({
+          period: 'now',
+          compare: true,
+          notes: { now: { attachment: 'старая заметка в узле' } },
+        }),
+      ],
+    });
+    expect(put.status).toBe(200);
+
+    const res = await c1.get(`/api/therapy/my-mode-maps/${mapId}`);
+    expect(res.status).toBe(200);
+    // Оценка 0 — это оценка, а не «пусто».
+    expect(res.body.needRatings).toEqual([
+      { needId: 'attachment', ratings: { child: 2, teen: 4, now: 7 } },
+      { needId: 'play', ratings: { now: 0 } },
+    ]);
+    expect(res.body.nodes[0].data.wheel).toEqual({
+      period: 'now',
+      compare: true,
+    });
+    expect(JSON.stringify(res.body)).not.toMatch(
+      /мама часто уезжала|есть близкая подруга|старая заметка в узле|"notes"/,
+    );
+  });
+
+  it('чужой клиент C2 карту C1 по id не получает — 403, ни оценок, ни заметок', async () => {
+    const mapId = await c1MapId();
+    const res = await agentAs(C2).get(`/api/therapy/my-mode-maps/${mapId}`);
+    expect(res.status).toBe(403);
+    expect(res.body).not.toHaveProperty('needRatings');
+    expect(JSON.stringify(res.body)).not.toMatch(
+      /ratings|мама часто уезжала|есть близкая подруга|старая заметка в узле/i,
+    );
+  });
+
+  // ─── Сценарий 6: задачи не текут между терапевтами ────────────────────────
+
+  it('T2 не видит задачу T1→C1 ни через tasks/all, ни через tasks/client/:clientId', async () => {
+    const t2 = agentAs(T2);
+    const all = await t2.get('/api/therapy/tasks/all');
+    expect(all.status).toBe(200);
+    expect(all.body).toEqual([]); // у T2 вообще нет клиентов с задачами
+
+    const forClient = await t2.get(`/api/therapy/tasks/client/${C1_ID}`);
+    expect(forClient.status).toBe(403);
+  });
+
+  it('T1 видит задачу C1 через tasks/all', async () => {
+    const t1 = agentAs(T1);
+    const all = await t1.get('/api/therapy/tasks/all');
+    expect(all.status).toBe(200);
+    expect(all.body).toHaveLength(1);
+    expect(all.body[0].tasks.map((t: { text: string }) => t.text)).toContain(
+      'заполнить дневник схем',
+    );
+  });
+
+  // ─── Сценарий 7: custom-modes терапевта не текут другому терапевту ───────
+
+  it('custom-modes T1 не видны T2', async () => {
+    const t1 = agentAs(T1);
+    const t2 = agentAs(T2);
+
+    const created = await t1.post('/api/therapy/custom-modes', {
+      name: 'Мой кастомный режим',
+    });
+    expect(created.status).toBeLessThan(300);
+
+    const ownList = await t1.get('/api/therapy/custom-modes');
+    expect(ownList.status).toBe(200);
+    expect(ownList.body).toHaveLength(1);
+
+    const otherList = await t2.get('/api/therapy/custom-modes');
+    expect(otherList.status).toBe(200);
+    expect(otherList.body).toEqual([]);
+  });
+
+  // ─── Аудит терапевт↔клиент 2026-10 ────────────────────────────────────────
+  // T2: DELETE /relation от терапевта сносил всех его клиентов и приглашения.
+  // T3: клиент мог невидимо подключиться ко второму терапевту.
+  // Эти кейсы идут последними: они не меняют данные, на которых стоят
+  // сценарии выше (T3-кейс отказывает до изменения связи).
+
+  it('T3: клиент с активной связью не может принять код ДРУГОГО терапевта (409 already_connected)', async () => {
+    const t2 = agentAs(T2);
+    const c1 = agentAs(C1);
+    const invite = await t2.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+
+    const join = await c1.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.status).toBe(409);
+    expect(join.body.reason).toBe('already_connected');
+
+    // Код остался неиспользованным, у T2 клиентов не появилось.
+    const row = await prisma.therapyRelation.findFirst({
+      where: { code: invite.body.code },
+    });
+    expect(row?.clientId).toBeNull();
+    expect(row?.status).toBe('pending');
+    expect((await t2.get('/api/therapy/clients')).body).toEqual([]);
+  });
+
+  it('T2: терапевт, вызвавший DELETE /relation, не теряет клиентов и приглашения', async () => {
+    const t1 = agentAs(T1);
+    const invite = await t1.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+
+    const res = await t1.delete('/api/therapy/relation');
+    expect(res.status).toBe(200);
+
+    const clients = await t1.get('/api/therapy/clients');
+    expect(clients.status).toBe(200);
+    expect(
+      clients.body.map((c: { telegramId: number }) => c.telegramId),
+    ).toEqual([C1_ID]);
+    const pendingInvite = await prisma.therapyRelation.findFirst({
+      where: { code: invite.body.code },
+    });
+    expect(pendingInvite?.therapistId).toBe(T1);
+    // Заметки по-прежнему доступны: связь жива.
+    expect((await t1.get(`/api/therapy/notes/${C1_ID}`)).status).toBe(200);
+  });
+
+  // Находка аудита 2026-10: take: 100 без признака «есть ещё». Шов — ответ
+  // уходит через HTTP: контроллер + сервис + Prisma (фейк и живой Postgres в
+  // джобе migrations) вместе отдают срез и общий счётчик.
+  it('101 заметка → GET отдаёт 100 и total (признак «есть ещё»), срез — самые поздние по дате', async () => {
+    const t1 = agentAs(T1);
+    const existing = (await t1.get(`/api/therapy/notes/${C1_ID}`)).body.total;
+    const base = Date.UTC(2026, 0, 1);
+    for (let i = 0; i < 101; i++) {
+      await prisma.therapistNote.create({
+        data: {
+          therapistId: T1,
+          clientId: C1,
+          date: new Date(base + i * 86_400_000).toISOString().slice(0, 10),
+          text: `срез-${i}`,
+        },
+      });
+    }
+    const res = await t1.get(`/api/therapy/notes/${C1_ID}`);
+    expect(res.status).toBe(200);
+    expect(res.body.notes).toHaveLength(100);
+    expect(res.body.total).toBe(existing + 101);
+    const dates = res.body.notes.map((n: { date: string }) => n.date);
+    expect([...dates].sort().reverse()).toEqual(dates);
+    // самая ранняя из 101 (2026-01-01) не пережила срез
+    expect(
+      res.body.notes.some((n: { text: string }) => n.text === 'срез-0'),
+    ).toBe(false);
+  });
+
+  // Последним в файле: сценарий заводит и рвёт связь T2↔C2.
+  it('клиент отключился от терапевта → карта закрыта, оценок колеса с ней нет', async () => {
+    const t2 = agentAs(T2);
+    const c2 = agentAs(C2);
+    const invite = await t2.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+    const join = await c2.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.body).toEqual({ ok: true });
+
+    const created = await t2.post(`/api/therapy/mode-maps/${C2_ID}`, {
+      title: 'Карта T2↔C2',
+    });
+    expect(created.status).toBeLessThan(300);
+    const mapUrl = `/api/therapy/my-mode-maps/${created.body.id}`;
+    const put = await t2.patch(
+      `/api/therapy/mode-maps/map/${created.body.id}`,
+      { nodes: [wheelNode({ period: 'now' })] },
+    );
+    expect(put.status).toBe(200);
+    const saved = await t2.post(
+      `/api/therapy/conceptualization/${C2_ID}/needs`,
+      {
+        needLinks: [
+          {
+            needId: 'limits',
+            ratings: { now: 3 },
+            notes: { now: 'заметка T2' },
+          },
+        ],
+      },
+    );
+    expect(saved.status).toBe(201);
+
+    const open = await c2.get(mapUrl);
+    expect(open.status).toBe(200);
+    expect(open.body.needRatings).toEqual([
+      { needId: 'limits', ratings: { now: 3 } },
+    ]);
+    expect(JSON.stringify(open.body)).not.toContain('заметка T2');
+
+    const left = await c2.delete('/api/therapy/relation');
+    expect([left.status, left.body]).toEqual([200, { ok: true }]);
+    const closed = await c2.get(mapUrl);
+    expect(closed.status).toBe(403);
+    expect(closed.body).not.toHaveProperty('needRatings');
+    expect(JSON.stringify(closed.body)).not.toMatch(/заметка T2|ratings/i);
+  });
+});

@@ -1,0 +1,252 @@
+// Сборка шаринга «Моего пути» — единственная копия для обоих фронтендов:
+// «лента по времени» (кнопка сверху), «итоги» (кнопка в hero) и «один шаг»
+// (шаринг из детального вида записи).
+// Возвращает готовые пропсы для per-frontend ShareCardSheet.
+import { useMemo, useState } from 'react';
+import { NEED_NAMES } from '../needs/needNames';
+import {
+  type JourneyItem,
+  type JourneyPeriod,
+  JOURNEY_PERIOD_SUBTITLE,
+  JOURNEY_PERIOD_TITLE,
+  formatJourneyDay,
+  journeyTypeMeta,
+  sortJourneyItems,
+} from './journeyMeta';
+import {
+  JOURNEY_CARD_MAX_ROWS,
+  buildJourneyCardRows,
+  drawJourneyCard,
+} from '../share/cards/journeyCard';
+import { journeyItemLook } from './journeyLook';
+import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
+import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
+import { type JourneyStatRow, statRowsFromItems } from './journeyStats';
+import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
+import {
+  drawNeedsDayCard,
+  type NeedsDayRow,
+} from '../share/cards/needsDayCard';
+import {
+  buildYsqProfile,
+  drawYsqProfileCard,
+} from '../share/cards/ysqProfileCard';
+import { buildYsqShareText, ysqCardHeadline } from '../share/cards/ysqCard';
+import type { JourneyResult } from './journeyContent';
+import {
+  journeyItemShareText,
+  journeyShareEmoji,
+  journeyShareText,
+  pluralEntries,
+} from '../share/shareTexts';
+import type { ShareCardKind } from '../share/analytics';
+import { fmtIndex } from '../needs/dayIndex';
+
+export type JourneyShareState =
+  | { kind: 'summary' }
+  | { kind: 'feed' }
+  | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
+
+/** Строки карточки «Мой день» (пять столбиков, needsDayCard) из оценок трекера — порядок как в NEED_NAMES.
+ * Пропущенная потребность не превращается в ноль (правило «никаких заглушек»).
+ * Чистая (тест: пустые/частичные оценки). */
+export function journeyDayRows(
+  ratings: Record<string, number> | undefined,
+): NeedsDayRow[] {
+  return Object.keys(NEED_NAMES).map((id) => {
+    const value = ratings?.[id];
+    return {
+      id,
+      label: NEED_NAMES[id],
+      value: value ?? null,
+      valueText: value !== undefined ? String(value) : '—',
+    };
+  });
+}
+
+/** Индекс дня карточки — среднее по отмеченным, «—» без оценок. Чистая. */
+export function journeyDayIndex(
+  ratings: Record<string, number> | undefined,
+): string {
+  const vals = Object.keys(NEED_NAMES)
+    .map((id) => ratings?.[id])
+    .filter((v): v is number => typeof v === 'number');
+  return fmtIndex(
+    vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null,
+  );
+}
+
+export interface JourneySharePayload {
+  title: string;
+  draw: (canvas: HTMLCanvasElement) => void;
+  shareText: string;
+  filename: string;
+  eventKind: ShareCardKind;
+}
+
+export function buildJourneySharePayload(
+  share: JourneyShareState,
+  items: readonly JourneyItem[],
+  total: number,
+  stats: JourneyStatRow[],
+  subtitle: (item: JourneyItem) => string | null,
+  link: string,
+  period: JourneyPeriod = 'all',
+): JourneySharePayload {
+  if (share.kind === 'summary') {
+    // Главная карточка «Моего пути»: «дневник режимов 18 раз, практик 8…».
+    // При включённом фильтре периода счётчики считаются по видимым записям —
+    // серверные counts всегда за всё время и показали бы чужие числа.
+    const byPeriod = period !== 'all';
+    const rows = byPeriod ? statRowsFromItems(items) : stats;
+    const count = byPeriod ? items.length : total;
+    return {
+      title: byPeriod ? JOURNEY_PERIOD_TITLE[period] : 'Итоги пути',
+      draw: (canvas) =>
+        drawJourneyTotalsCard(canvas, rows, count, {
+          title: byPeriod ? JOURNEY_PERIOD_TITLE[period] : undefined,
+          subtitle: byPeriod
+            ? `${JOURNEY_PERIOD_SUBTITLE[period]} · сколько чего накопилось`
+            : undefined,
+        }),
+      shareText: journeyShareText(count, link, period),
+      filename: byPeriod
+        ? `journey-totals-${period}.png`
+        : 'journey-totals.png',
+      eventKind: 'journey',
+    };
+  }
+  if (share.kind === 'feed') {
+    const rows = buildJourneyCardRows(
+      sortJourneyItems(items, 'desc'),
+      JOURNEY_CARD_MAX_ROWS,
+    );
+    // За период счётчик и подпись — по выбранному периоду (не «всё время»).
+    const count = period === 'all' ? total : items.length;
+    const title = JOURNEY_PERIOD_TITLE[period];
+    const sub =
+      period === 'all'
+        ? undefined
+        : `${count} ${pluralEntries(count)} заботы о себе`;
+    return {
+      title,
+      draw: (canvas) => drawJourneyCard(canvas, rows, count, title, sub),
+      shareText: journeyShareText(count, link, period),
+      filename: period === 'all' ? 'journey.png' : `journey-${period}.png`,
+      eventKind: 'journey',
+    };
+  }
+  const meta = journeyTypeMeta(share.item.type);
+  // Вид шага на карточке — знак и бумага сущности (journeyLook), как строка ленты и шапка детали.
+  const look = journeyItemLook(share.item);
+  const view = {
+    hue: look?.hue ?? null,
+    sign: look?.sign ?? null,
+    ...(look?.n !== undefined ? { n: look.n } : {}),
+  };
+  const day = formatJourneyDay(share.item.at);
+  const shareText = journeyItemShareText(
+    journeyShareEmoji(share.item.type),
+    meta.label,
+    link,
+  );
+  // День трекера — не текстовая строка «Привязанность — 7 · …», а столбики
+  // потребностей (та же карточка, что у дня трекера).
+  if (share.item.type === 'tracker_day' && share.result?.ratings) {
+    const ratings = share.result.ratings;
+    const data = {
+      eyebrow: 'Трекер потребностей',
+      title: 'Мой день',
+      subtitle: day,
+      rows: journeyDayRows(ratings),
+      center: { value: journeyDayIndex(ratings), caption: 'индекс' },
+      footerLabel: 'Мой путь',
+    };
+    return {
+      title: 'Результат',
+      draw: (canvas) => drawNeedsDayCard(canvas, data),
+      shareText,
+      filename: 'journey-result.png',
+      eventKind: 'journey_item',
+    };
+  }
+  // Тест на схемы — не строка «Выраженных схем: 6 из 20», а профиль всех
+  // 20 схем барами (та же карточка, что на экране результата теста).
+  if (share.item.type === 'ysq' && share.result?.ysq) {
+    const { scores, activeCount } = share.result.ysq;
+    const domains = buildYsqProfile(scores);
+    const opts = { headline: ysqCardHeadline(activeCount), dateLabel: day };
+    return {
+      title: 'Результат теста',
+      draw: (canvas) => drawYsqProfileCard(canvas, domains, opts),
+      shareText: buildYsqShareText(activeCount, link),
+      filename: 'journey-schema-test.png',
+      eventKind: 'journey_item',
+    };
+  }
+  // Есть содержимое → карточка-результат с текстом; нет — карточка шага.
+  if (share.result?.parts.length) {
+    const data = { label: meta.label, day, ...view, parts: share.result.parts };
+    return {
+      title: 'Результат',
+      draw: (canvas) => drawJourneyResultCard(canvas, data),
+      shareText,
+      filename: 'journey-result.png',
+      eventKind: 'journey_item',
+    };
+  }
+  const data = { label: meta.label, sub: subtitle(share.item), day, ...view };
+  return {
+    title: 'Шаг пути',
+    draw: (canvas) => drawJourneyItemCard(canvas, data),
+    shareText,
+    filename: 'journey-step.png',
+    eventKind: 'journey_item',
+  };
+}
+
+/**
+ * Состояние шаринга экрана: кнопка «поделиться» → лента, тап по записи →
+ * один шаг. payload — готовые пропсы для ShareCardSheet (null = шит закрыт).
+ */
+export function useJourneyShare(
+  j: {
+    items: JourneyItem[];
+    total: number;
+    stats: JourneyStatRow[];
+    period: JourneyPeriod;
+  },
+  subtitle: (item: JourneyItem) => string | null,
+  link: string,
+  fetchResult: (item: JourneyItem) => Promise<JourneyResult | null>,
+) {
+  const [share, setShare] = useState<JourneyShareState | null>(null);
+  const payload = useMemo(
+    () =>
+      share
+        ? buildJourneySharePayload(
+            share,
+            j.items,
+            j.total,
+            j.stats,
+            subtitle,
+            link,
+            j.period,
+          )
+        : null,
+    [share, j.items, j.total, j.stats, j.period, subtitle, link],
+  );
+  return {
+    payload,
+    shareSummary: () => setShare({ kind: 'summary' }),
+    shareFeed: () => setShare({ kind: 'feed' }),
+    // Сначала тянем содержимое записи (расшифровывающий эндпоинт) — если
+    // не вышло/нечего, показываем обычную карточку шага.
+    shareItem: (item: JourneyItem) => {
+      void fetchResult(item)
+        .catch(() => null)
+        .then((result) => setShare({ kind: 'item', item, result }));
+    },
+    close: () => setShare(null),
+  };
+}

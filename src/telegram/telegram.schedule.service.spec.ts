@@ -1,0 +1,325 @@
+// Поведенческие тесты дневного планировщика TelegramScheduleService:
+// scheduleDailyReminders (изоляция ошибок по юзеру) и rescheduleForUser
+// (гварды: выключено/пауза/due/pending). Очередь отправки (processQueue) —
+// в telegram.schedule-queue.service.spec.ts (лимит ~300 строк на файл,
+// CLAUDE.md). Дедуп «одно pair_activity в день» — telegram.pair-notify.spec.ts.
+import { Logger } from '@nestjs/common';
+import { TelegramScheduleService } from './telegram.schedule.service';
+import { LEASE_WINDOW } from '../infra/cron-leader.service';
+import {
+  catchUpClaimWindowMs,
+  RESUME_WINDOW_MS,
+} from './telegram.midnight-lease';
+
+function makeService(
+  opts: {
+    bot?: any;
+    users?: any[];
+    planDay?: jest.Mock;
+    claimRun?: boolean;
+    unfinishedRun?: Date | null;
+  } = {},
+) {
+  const botService: any = {
+    getUserSettings: jest.fn().mockResolvedValue(null),
+  };
+  const analyticsService: any = {};
+  const accountService: any = {
+    getAllUsersWithSettings: jest.fn(() => Promise.resolve(opts.users ?? [])),
+  };
+  const pairsService: any = { getUserPairs: jest.fn().mockResolvedValue([]) };
+  const notificationService: any = {
+    cancel: jest.fn().mockResolvedValue(undefined),
+    hasPending: jest.fn().mockResolvedValue(false),
+  };
+  const cadenceService: any = {};
+  const plannerService: any = {
+    planDay: opts.planDay ?? jest.fn().mockResolvedValue(undefined),
+    scheduleReminder: jest.fn().mockResolvedValue(undefined),
+  };
+  const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
+  const cronLeader: any = {
+    claimRun,
+    finishRun: jest.fn().mockResolvedValue(undefined),
+    unfinishedRun: jest.fn().mockResolvedValue(opts.unfinishedRun ?? null),
+  };
+  const bot = opts.bot === undefined ? { telegram: {} } : opts.bot;
+  const service = new TelegramScheduleService(
+    bot,
+    botService,
+    analyticsService,
+    accountService,
+    pairsService,
+    notificationService,
+    cadenceService,
+    plannerService,
+    cronLeader,
+  );
+  return {
+    service,
+    botService,
+    accountService,
+    notificationService,
+    plannerService,
+    claimRun,
+    cronLeader,
+  };
+}
+
+beforeEach(() => {
+  jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe('scheduleDailyReminders', () => {
+  it('бот не запущен (null) — цикл не стартует, planDay не вызывается', async () => {
+    const { service, plannerService, accountService } = makeService({
+      bot: null,
+      users: [{ id: 1n }],
+    });
+    // bot===null роняет функцию на самом первом `if (!this.bot) return` —
+    // единственный дополнительный наблюдаемый эффект здесь: она обязана
+    // тихо вернуть undefined, не бросить. Ловит мутанта, убирающего guard
+    // целиком (тогда упало бы на getAllUsersWithSettings/цикле ниже).
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
+    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
+    expect(plannerService.planDay).not.toHaveBeenCalled();
+  });
+
+  it('зовёт planDay для каждого юзера из getAllUsersWithSettings', async () => {
+    const users = [{ id: 1n }, { id: 2n }, { id: 3n }];
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, claimRun, cronLeader } = makeService({ users, planDay });
+    await service.scheduleDailyReminders();
+    // Все считают «сегодня» от одного и того же момента захвата аренды — им же
+    // отмечается завершение прогона (доделка после рестарта сверяет его).
+    const [, , runAt] = claimRun.mock.calls[0];
+    expect(runAt).toBeInstanceOf(Date);
+    expect(planDay).toHaveBeenCalledTimes(3);
+    expect(planDay).toHaveBeenNthCalledWith(1, users[0], runAt);
+    expect(planDay).toHaveBeenNthCalledWith(2, users[1], runAt);
+    expect(planDay).toHaveBeenNthCalledWith(3, users[2], runAt);
+    expect(cronLeader.finishRun).toHaveBeenCalledWith('midnightPlanner', runAt);
+  });
+
+  it('изоляция ошибок: падение planDay для одного юзера не останавливает цикл для остальных', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const users = [{ id: 1n }, { id: 2n }, { id: 3n }];
+    const planDay = jest
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('boom for user 2'))
+      .mockResolvedValueOnce(undefined);
+    const { service } = makeService({ users, planDay });
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
+    // Все три юзера обработаны, несмотря на ошибку у второго.
+    expect(planDay).toHaveBeenCalledTimes(3);
+    expect(planDay).toHaveBeenNthCalledWith(3, users[2], expect.any(Date));
+  });
+
+  it('тик уже забрал другой инстанс — цикл по юзерам не стартует', async () => {
+    const users = [{ id: 1n }, { id: 2n }];
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, accountService, claimRun } = makeService({
+      users,
+      planDay,
+      claimRun: false,
+    });
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
+    expect(claimRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      LEASE_WINDOW.hourly,
+      expect.any(Date),
+    );
+    expect(accountService.getAllUsersWithSettings).not.toHaveBeenCalled();
+    expect(planDay).not.toHaveBeenCalled();
+    // Отказ — штатная работа: уровень log, не warn/error (правило №17).
+    expect(Logger.prototype.log).toHaveBeenCalledWith(
+      'Midnight planner: аренду уже взял другой прогон',
+    );
+  });
+
+  // Доделка — только при старте: на тике второй инстанс в 00:00 обходил бы
+  // параллельно лидеру, и лидерство потеряло бы смысл.
+  it('тик забран другим инстансом, а прогон не завершён — тик НЕ доделывает', async () => {
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, cronLeader, claimRun } = makeService({
+      users: [{ id: 1n }],
+      planDay,
+      claimRun: false,
+      unfinishedRun: new Date('2026-10-22T00:00:00Z'),
+    });
+    await expect(service.scheduleDailyReminders()).resolves.toBeUndefined();
+    expect(claimRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      LEASE_WINDOW.hourly,
+      expect.any(Date),
+    );
+    expect(cronLeader.unfinishedRun).not.toHaveBeenCalled();
+    expect(planDay).not.toHaveBeenCalled();
+    expect(cronLeader.finishRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('catchUpAfterStart — старт процесса', () => {
+  it('прогон оборван рестартом — доделывает его с тем же runAt и не берёт новую аренду', async () => {
+    const runAt = new Date('2026-10-22T00:00:00Z');
+    const users = [{ id: 1n }, { id: 2n }];
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, claimRun, cronLeader } = makeService({
+      users,
+      planDay,
+      claimRun: false,
+      unfinishedRun: runAt,
+    });
+    await service.catchUpAfterStart();
+    expect(cronLeader.unfinishedRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      RESUME_WINDOW_MS,
+    );
+    expect(planDay.mock.calls).toEqual([
+      [users[0], runAt],
+      [users[1], runAt],
+    ]);
+    expect(cronLeader.finishRun).toHaveBeenCalledWith('midnightPlanner', runAt);
+    expect(claimRun).not.toHaveBeenCalled();
+  });
+
+  it('доделывать нечего — пробует пропущенную полночь через claimRun', async () => {
+    jest.useFakeTimers({ now: new Date('2026-10-22T10:00:00Z') });
+    const planDay = jest.fn().mockResolvedValue(undefined);
+    const { service, claimRun } = makeService({
+      users: [{ id: 1n }],
+      planDay,
+      unfinishedRun: null,
+    });
+    await service.catchUpAfterStart();
+    jest.useRealTimers();
+    expect(claimRun).toHaveBeenCalledWith(
+      'midnightPlanner',
+      catchUpClaimWindowMs(new Date('2026-10-22T10:00:00Z')),
+      new Date('2026-10-22T10:00:00Z'),
+    );
+    expect(planDay).toHaveBeenCalledWith({ id: 1n }, claimRun.mock.calls[0][2]);
+  });
+
+  it('бот не запущен — ни доделки, ни захвата', async () => {
+    const { service, claimRun, cronLeader } = makeService({
+      bot: null,
+      unfinishedRun: new Date('2026-10-22T00:00:00Z'),
+    });
+    await expect(service.catchUpAfterStart()).resolves.toBeUndefined();
+    expect(cronLeader.unfinishedRun).not.toHaveBeenCalled();
+    expect(claimRun).not.toHaveBeenCalled();
+  });
+
+  it('onModuleDestroy во время обхода — обход останавливается, прогон не отмечен завершённым', async () => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const users = [{ id: 1n }, { id: 2n }, { id: 3n }];
+    const ref: { service?: TelegramScheduleService } = {};
+    const planDay = jest.fn(() => {
+      if (planDay.mock.calls.length === 1) ref.service?.onModuleDestroy();
+      return Promise.resolve();
+    });
+    const built = makeService({ users, planDay });
+    ref.service = built.service;
+    await built.service.scheduleDailyReminders();
+    expect(planDay.mock.calls.map((c) => c[0])).toEqual([users[0]]);
+    expect(built.cronLeader.finishRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('rescheduleForUser', () => {
+  it('уведомления выключены — отменяет reminder, планировщик не зовёт', async () => {
+    const { service, botService, plannerService, notificationService } =
+      makeService();
+    botService.getUserSettings.mockResolvedValue({
+      notifyEnabled: false,
+      notifyReminderEnabled: true,
+    });
+    await service.rescheduleForUser(1n);
+    expect(notificationService.cancel).toHaveBeenCalledWith(1n, 'reminder');
+    expect(plannerService.planDay).not.toHaveBeenCalled();
+  });
+
+  it('юзер на паузе — ничего не планирует и не отменяет', async () => {
+    const { service, botService, notificationService, plannerService } =
+      makeService();
+    botService.getUserSettings.mockResolvedValue({
+      notifyEnabled: true,
+      notifyReminderEnabled: true,
+      disclaimerAccepted: true,
+      notifyPausedUntil: new Date(Date.now() + 86_400_000),
+      notifyTimezone: 'Europe/Moscow',
+    });
+    await service.rescheduleForUser(1n);
+    expect(botService.getUserSettings).toHaveBeenCalledWith(1n);
+    expect(notificationService.cancel).not.toHaveBeenCalled();
+    expect(plannerService.scheduleReminder).not.toHaveBeenCalled();
+  });
+
+  it('due (nextRemindDate устарел) — планирует напоминание через plannerService', async () => {
+    const { service, botService, plannerService } = makeService();
+    botService.getUserSettings.mockResolvedValue({
+      notifyEnabled: true,
+      notifyReminderEnabled: true,
+      disclaimerAccepted: true,
+      notifyTimezone: 'Europe/Moscow',
+      notifyNextRemindDate: '2020-01-01',
+      notifyLocalHour: 21,
+      notifyGamified: false,
+    });
+    await service.rescheduleForUser(1n);
+    expect(plannerService.scheduleReminder).toHaveBeenCalledWith(
+      1n,
+      21,
+      'Europe/Moscow',
+      expect.any(Date),
+      false,
+    );
+  });
+
+  it('hadPending=true пере-планирует, даже если формально ещё не due', async () => {
+    const { service, botService, notificationService, plannerService } =
+      makeService();
+    const farFuture = '2999-01-01';
+    botService.getUserSettings.mockResolvedValue({
+      notifyEnabled: true,
+      notifyReminderEnabled: true,
+      disclaimerAccepted: true,
+      notifyTimezone: 'Europe/Moscow',
+      notifyNextRemindDate: farFuture,
+      notifyLocalHour: 21,
+    });
+    notificationService.hasPending.mockResolvedValue(true);
+    await service.rescheduleForUser(1n);
+    expect(plannerService.scheduleReminder).toHaveBeenCalledWith(
+      1n,
+      21,
+      'Europe/Moscow',
+      expect.any(Date),
+      false,
+    );
+  });
+
+  it('не due и нет висящего pending — тишина (не пере-планирует зря)', async () => {
+    const { service, botService, notificationService, plannerService } =
+      makeService();
+    const farFuture = '2999-01-01';
+    botService.getUserSettings.mockResolvedValue({
+      notifyEnabled: true,
+      notifyReminderEnabled: true,
+      disclaimerAccepted: true,
+      notifyTimezone: 'Europe/Moscow',
+      notifyNextRemindDate: farFuture,
+      notifyLocalHour: 21,
+    });
+    notificationService.hasPending.mockResolvedValue(false);
+    await service.rescheduleForUser(1n);
+    expect(notificationService.hasPending).toHaveBeenCalledWith(1n, 'reminder');
+    expect(plannerService.scheduleReminder).not.toHaveBeenCalled();
+  });
+});

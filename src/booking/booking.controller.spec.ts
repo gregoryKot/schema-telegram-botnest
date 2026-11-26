@@ -1,0 +1,290 @@
+// BookingController — публичные (анонимные) эндпоинты бронирования, до этого
+// теста без покрытия совсем. Инстанцируется напрямую, зависимости —
+// шпионы/фейки (стиль payment.controller.spec.ts). Проверяем реальную сборку
+// CreateBookingDto из BookDto (дефолты, trim, BigInt), honeypot и то, что
+// контроллер возвращает результат сервиса как есть, а не подделывает его.
+import { BadRequestException } from '@nestjs/common';
+import { SessionType } from '@prisma/client';
+import { BookingController } from './booking.controller';
+
+function makeController() {
+  const slots = { getSlots: jest.fn() };
+  const booking = {
+    book: jest.fn(),
+    getPublicByToken: jest.fn(),
+    cancel: jest.fn(),
+  };
+  const pricing = { getOptions: jest.fn() };
+  const prisma = { booking: { findUnique: jest.fn() } };
+  const config = { get: jest.fn().mockReturnValue(undefined) };
+  const controller = new BookingController(
+    slots as any,
+    booking as any,
+    pricing as any,
+    prisma as any,
+    config as any,
+  );
+  return { controller, slots, booking, pricing, prisma };
+}
+
+const BASE_DTO = {
+  startsAt: '2026-08-10T10:00:00.000Z',
+  clientName: 'Иван',
+  clientContact: '+79990000000',
+  acceptedOffer: true,
+};
+
+describe('BookingController.getOptions', () => {
+  it('возвращает результат PricingService.getOptions как есть', async () => {
+    const { controller, pricing } = makeController();
+    const options = [{ type: SessionType.INTRO_15, price: 0 }];
+    pricing.getOptions.mockReturnValue(options);
+    expect(controller.getOptions()).toBe(options);
+  });
+});
+
+describe('BookingController.getSlots', () => {
+  // Даты ниже — август 2026: «сейчас» прибито к концу июля, иначе после
+  // августа они стали бы прошлым и ушли в 400 (S17, slot-range.ts).
+  beforeEach(() => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-07-31T12:00:00Z'));
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('без from/to — from по умолчанию "сейчас", to = from + 14 дней', async () => {
+    const { controller, slots } = makeController();
+    slots.getSlots.mockResolvedValue([]);
+    await controller.getSlots(undefined as any, undefined as any);
+
+    const [fromArg, toArg] = slots.getSlots.mock.calls[0];
+    const diffDays = (toArg.getTime() - fromArg.getTime()) / 86_400_000;
+    expect(diffDays).toBeCloseTo(14, 5);
+  });
+
+  it('с явными from/to — передаёт их как Date дальше без искажения', async () => {
+    const { controller, slots } = makeController();
+    slots.getSlots.mockResolvedValue([]);
+    await controller.getSlots('2026-08-01', '2026-08-05');
+
+    const [fromArg, toArg] = slots.getSlots.mock.calls[0];
+    expect(fromArg.toISOString().slice(0, 10)).toBe('2026-08-01');
+    expect(toArg.toISOString().slice(0, 10)).toBe('2026-08-05');
+  });
+
+  it('сериализует слоты в ISO-строки и durationMin как есть', async () => {
+    const { controller, slots } = makeController();
+    slots.getSlots.mockResolvedValue([
+      {
+        startsAt: new Date('2026-08-01T10:00:00Z'),
+        endsAt: new Date('2026-08-01T10:50:00Z'),
+        durationMin: 50,
+      },
+    ]);
+    const result = await controller.getSlots('2026-08-01', '2026-08-02');
+    expect(result).toEqual([
+      {
+        startsAt: '2026-08-01T10:00:00.000Z',
+        endsAt: '2026-08-01T10:50:00.000Z',
+        durationMin: 50,
+      },
+    ]);
+  });
+
+  it('кривой from → BadRequestException (400), а не Invalid Date → Prisma 500 (L11)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('not-a-date', '2026-08-05'),
+    ).rejects.toThrow(BadRequestException);
+    // Падаем ДО обращения к БД — 400 вместо 500.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('кривой to (синтаксически похож, но невалиден) → BadRequestException, БД не трогаем (L11)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('2026-08-01', '2026-13-45'),
+    ).rejects.toThrow(BadRequestException);
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('гигантский диапазон → BadRequestException, перебор по суткам не запускается (D1 DoS)', async () => {
+    const { controller, slots } = makeController();
+    await expect(
+      controller.getSlots('2000-01-01', '9999-12-31'),
+    ).rejects.toThrow(BadRequestException);
+    // Ключевое: НЕ доходим до getSlots — event-loop не блокируется.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  // Аудит 2026-11, S17: прошлое и перевёрнутый диапазон — 400 до сервиса
+  // (и до REPORT в iCloud), дни за горизонтом записи — тоже.
+  it.each([
+    ['from в прошлом', '2026-07-01', '2026-07-05'],
+    ['to раньше from', '2026-08-05', '2026-08-01'],
+    ['to за горизонтом записи', '2026-08-01', '2026-11-30'],
+  ])('%s → BadRequestException, сервис не зовётся', async (_, from, to) => {
+    const { controller, slots } = makeController();
+    await expect(controller.getSlots(from, to)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  it('диапазон в пределах 92 дней проходит к сервису с теми же датами', async () => {
+    const { controller, slots } = makeController();
+    slots.getSlots.mockResolvedValue([]);
+    await controller.getSlots('2026-08-01', '2026-10-01'); // ~61 день
+    const [fromArg, toArg] = slots.getSlots.mock.calls[0];
+    expect(fromArg.toISOString().slice(0, 10)).toBe('2026-08-01');
+    expect(toArg.toISOString().slice(0, 10)).toBe('2026-10-01');
+  });
+});
+
+describe('BookingController.bookSlot', () => {
+  it('honeypot заполнен → BadRequestException, BookingService.book не вызывается', async () => {
+    const { controller, booking } = makeController();
+    await expect(
+      controller.bookSlot({ ...BASE_DTO, website: 'i-am-a-bot' }),
+    ).rejects.toThrow(BadRequestException);
+    expect(booking.book).not.toHaveBeenCalled();
+  });
+
+  it('собирает CreateBookingDto с дефолтами: durationMin=50, type=INTRO_15, returning/acceptedOffer=false по умолчанию', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockResolvedValue({ id: 1 });
+    await controller.bookSlot({
+      startsAt: BASE_DTO.startsAt,
+      clientName: BASE_DTO.clientName,
+      clientContact: BASE_DTO.clientContact,
+      acceptedOffer: true,
+    });
+
+    const dto = booking.book.mock.calls[0][0];
+    expect(dto.durationMin).toBe(50);
+    expect(dto.type).toBe(SessionType.INTRO_15);
+    expect(dto.returning).toBe(false);
+    expect(dto.acceptedOffer).toBe(true);
+    expect(dto.startsAt).toEqual(new Date(BASE_DTO.startsAt));
+  });
+
+  it('обрезает пробелы у clientName/clientContact/message/source', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockResolvedValue({ id: 1 });
+    await controller.bookSlot({
+      ...BASE_DTO,
+      clientName: '  Иван  ',
+      clientContact: '  +79990000000  ',
+      message: '  привет  ',
+      source: '  /booking?ref=vk  ',
+    });
+
+    const dto = booking.book.mock.calls[0][0];
+    expect(dto.clientName).toBe('Иван');
+    expect(dto.clientContact).toBe('+79990000000');
+    expect(dto.message).toBe('привет');
+    expect(dto.source).toBe('/booking?ref=vk');
+  });
+
+  it('пустой source после trim становится undefined, а не пустой строкой', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockResolvedValue({ id: 1 });
+    await controller.bookSlot({ ...BASE_DTO, source: '   ' });
+    expect(booking.book.mock.calls[0][0].source).toBeUndefined();
+  });
+
+  // C-9 (аудит 2026-10): эндпоинт анонимный — Telegram-id из тела нельзя
+  // принимать: можно привязать чужую бронь к чужому человеку (и подтянуть её
+  // при его удалении аккаунта). Поле не входит в DTO и не доходит до сервиса,
+  // даже если контроллеру передали его напрямую.
+  it('clientTelegramId из тела не доходит до сервиса', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockResolvedValue({ id: 1 });
+    await controller.bookSlot({
+      ...BASE_DTO,
+      clientTelegramId: 123456,
+    } as typeof BASE_DTO);
+    expect(booking.book.mock.calls[0][0]).not.toHaveProperty(
+      'clientTelegramId',
+    );
+  });
+
+  // Р5: выбор валюты доходит до сервиса как есть — учесть его или нет (по
+  // поясу) решает resolveBookingPrice, а не контроллер.
+  it('currency из тела доходит до сервиса; без поля — undefined', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockResolvedValue({ id: 1 });
+    await controller.bookSlot({
+      ...BASE_DTO,
+      clientTimeZone: 'UTC',
+      currency: 'EUR',
+    });
+    await controller.bookSlot(BASE_DTO);
+    expect(booking.book.mock.calls[0][0]).toMatchObject({
+      clientTimeZone: 'UTC',
+      currency: 'EUR',
+    });
+    expect(booking.book.mock.calls[1][0].currency).toBeUndefined();
+  });
+
+  it('возвращает результат BookingService.book как есть', async () => {
+    const { controller, booking } = makeController();
+    const result = { id: 5, cancelToken: 'tok', status: 'CONFIRMED' };
+    booking.book.mockResolvedValue(result);
+    await expect(controller.bookSlot(BASE_DTO)).resolves.toBe(result);
+  });
+
+  it('ошибка BookingService.book (напр. слот занят) пробрасывается наружу', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockRejectedValue(new Error('Slot already taken'));
+    await expect(controller.bookSlot(BASE_DTO)).rejects.toThrow(
+      'Slot already taken',
+    );
+  });
+});
+
+describe('BookingController.getByToken / cancelByToken', () => {
+  it('getByToken делегирует BookingService.getPublicByToken и возвращает результат', async () => {
+    const { controller, booking } = makeController();
+    const view = { status: 'CONFIRMED', type: SessionType.INTRO_15 };
+    booking.getPublicByToken.mockResolvedValue(view);
+    await expect(controller.getByToken('tok-1')).resolves.toBe(view);
+    expect(booking.getPublicByToken).toHaveBeenCalledWith('tok-1');
+  });
+
+  it('cancelByToken делегирует BookingService.cancel и возвращает результат', async () => {
+    const { controller, booking } = makeController();
+    booking.cancel.mockResolvedValue({ ok: true });
+    await expect(controller.cancelByToken('tok-1')).resolves.toEqual({
+      ok: true,
+    });
+    expect(booking.cancel).toHaveBeenCalledWith('tok-1');
+  });
+});
+
+// getIcs — сборка сама покрыта booking-ics.spec.ts; здесь проверяем только
+// то, что контроллер делает сам: заголовки ответа.
+describe('BookingController.getIcs', () => {
+  it('ставит Content-Type text/calendar и Content-Disposition attachment', async () => {
+    const { controller, prisma } = makeController();
+    prisma.booking.findUnique.mockResolvedValue({
+      id: 1,
+      status: 'CONFIRMED',
+      type: 'SESSION_50',
+      startsAt: new Date('2026-08-10T10:00:00Z'),
+      durationMin: 50,
+      meetingUrl: null,
+    });
+    const setHeader = jest.fn();
+    const res = { setHeader } as any;
+    const ics = await controller.getIcs('tok-1', res);
+    expect(setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'text/calendar; charset=utf-8',
+    );
+    expect(setHeader).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="zapis.ics"',
+    );
+    expect(ics).toContain('BEGIN:VCALENDAR');
+  });
+});

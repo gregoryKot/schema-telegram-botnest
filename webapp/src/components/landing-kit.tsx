@@ -1,0 +1,56 @@
+// Shared component primitives for landing pages (LandingPage — терапевт,
+// ProductLandingPage — продукт). Tokens/hooks live in ./landing-kit-hooks.
+
+// ─── Button – single source for all CTAs ─────────────────────────────────────
+// Вид варианта и наведение — классы .lk-btn* в index.css: инлайн-цвет перебил бы :hover.
+// Радиус — ступень карточки шкалы --r-*: капсула только у чипов (#1619, п.3).
+type BtnVariant = 'primary' | 'ghost' | 'dark';
+type BtnSize = 'sm' | 'md' | 'lg';
+const BTN_PAD: Record<BtnSize, string> = { sm: '8px 18px', md: '13px 24px', lg: '15px 30px' };
+const BTN_FS:  Record<BtnSize, number> = { sm: 13, md: 14, lg: 15 };
+
+export function Btn({
+  children, variant = 'primary', size = 'md',
+  href, onClick, type = 'button', full = false, disabled = false, style, newTab,
+}: {
+  children: React.ReactNode;
+  variant?: BtnVariant;
+  size?: BtnSize;
+  href?: string;
+  onClick?: () => void;
+  type?: 'button' | 'submit';
+  full?: boolean;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+  /** Override new-tab behaviour. Defaults to true for http links, false for relative. */
+  newTab?: boolean;
+}) {
+  const className = `lk-btn lk-btn--${variant}${disabled ? ' is-disabled' : ''}`;
+  const css: React.CSSProperties = {
+    padding: BTN_PAD[size], fontSize: BTN_FS[size],
+    borderRadius: 'var(--r-12)',
+    width: full ? '100%' : undefined,
+    ...style,
+  };
+  if (href) {
+    const ext = href.startsWith('http');
+    const openNewTab = newTab !== undefined ? newTab : ext;
+    return <a href={href} target={openNewTab ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined}
+      className={className} style={css}>{children}</a>;
+  }
+  return <button type={type} onClick={onClick} disabled={disabled} className={className} style={css}>{children}</button>;
+}
+
+// ─── Theme toggle icon – crisp sun/moon (no unicode glyph rendering issues) ──
+export function ThemeIcon({ dark }: { dark: boolean }) {
+  return dark ? (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2v2.2M12 19.8V22M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2 12h2.2M19.8 12H22M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+    </svg>
+  ) : (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  );
+}

@@ -1,0 +1,41 @@
+import { LEASE_WINDOW } from '../cron-leader.service';
+
+/** Зона кронов канала — `POST_TZ` в channel-schedule.service.ts. */
+const MSK = 'Europe/Moscow';
+
+/**
+ * Имя аренды (первый аргумент `claimRun`) → окно `LEASE_WINDOW`, cron-строка
+ * её крона и часовой пояс (`timeZone` из `@Cron`; нет — зона процесса). Ручной
+ * реестр по правилу №4 CLAUDE.md: поля сверяются с исходниками (сканер
+ * `cron-source-scan.ts`, cron-lease-registry.spec.ts) — новый leader-крон или
+ * разъехавшаяся cron-строка/зона красят тест, а не прячутся от пробы аренд.
+ */
+export const CRON_LEASE_REGISTRY: Record<
+  string,
+  { window: keyof typeof LEASE_WINDOW; cron: string; tz?: string }
+> = {
+  threadsTokenRefresh: { window: 'daily', cron: '17 3 * * *' },
+  healthyAdultMorning: {
+    window: 'fiveMinutes',
+    cron: '*/5 9,10 * * *',
+    tz: MSK,
+  },
+  healthyAdultEvening: {
+    window: 'fiveMinutes',
+    cron: '*/5 18,19 * * *',
+    tz: MSK,
+  },
+  healthyAdultCatchUp: {
+    window: 'fifteenMinutes',
+    cron: '*/15 * * * *',
+    tz: MSK,
+  },
+  introLeadRedelivery: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
+  bookingConfirmRetry: { window: 'fiveMinutes', cron: '*/5 * * * *' },
+  bookingCalendarReconcile: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
+  bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },
+  bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },
+  notificationQueue: { window: 'fiveMinutes', cron: '*/5 * * * *' },
+  midnightPlanner: { window: 'hourly', cron: '0 0 * * *' },
+  subscriptionChargeDue: { window: 'hourly', cron: '0 * * * *' },
+};

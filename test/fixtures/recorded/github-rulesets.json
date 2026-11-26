@@ -1,0 +1,21 @@
+[
+  {
+    "id": 26764047,
+    "name": "main",
+    "target": "branch",
+    "source_type": "Repository",
+    "source": "gregoryKot/schema-telegram-botnest",
+    "enforcement": "active",
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5E-j3ezgGYYw8",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/gregoryKot/schema-telegram-botnest/rulesets/26764047"
+      },
+      "html": {
+        "href": "https://github.com/gregoryKot/schema-telegram-botnest/rules/26764047"
+      }
+    },
+    "created_at": "2026-11-07T16:50:17.043Z",
+    "updated_at": "2026-11-07T16:50:17.158Z"
+  }
+]

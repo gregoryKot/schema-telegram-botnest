@@ -1,0 +1,141 @@
+# Dependabot — автообновление зависимостей (best-practice, отсутствовал до 2026-07).
+# npm audit-гейт в CI ловит уже известные уязвимости, но НЕ предлагает апдейты —
+# секьюрити-патчи копились без движения. Для соло-мейнтейнера автоматизация PR
+# важнее, чем для команды.
+#
+# Покрыты ВСЕ package-lock.json репозитория (корень, webapp, shared,
+# game) плюс сами actions — сверка тестом
+# src/test-support/gates/dependabot-coverage.spec.ts: lock-файл без записи или
+# запись без lock-файла роняют jest.
+#
+# Как устроены очереди:
+#  - minor + patch — одна недельная группа на пакет (не заваливать ревью);
+#  - major — группами по СЕМЕЙСТВАМ (Nest, Stryker, Vitest): члены семейства
+#    требуют друг друга и поодиночке не ставятся, одиночный PR красный по
+#    построению. Остальные мажоры — отдельными PR, они ломающие и требуют глаз;
+#  - мажор, который осознанно не берём, — в `ignore:` с причиной и условием
+#    возврата (решения владельца — docs/open/ci-tests.md, «Мажоры зависимостей»).
+#
+# Зелёный minor/patch мержит сам dependabot-automerge.yml, отставший от main
+# подтягивает очередь мержа merge-queue.yml; дни записей разные, час тихий: под
+# `strict` бот-PR, открытые разом, блокируют друг друга.
+# Красный бот-PR, мажоры и /game доводит агент — docs/open/audit-2026-10.md.
+#
+# Ошибка в этом файле CI не роняет: Dependabot молча перестаёт работать, а
+# причина видна только в Insights → Dependency graph → Dependabot. После
+# каждой правки файла — зайти и посмотреть статус.
+#
+# Лейблов `dependencies`/`frontend`/`ci` в репозитории нет (бот жаловался в
+# каждом PR), поэтому ключей `labels:` здесь нет. Создашь лейблы — верни ключи.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: '05:00'
+    open-pull-requests-limit: 8
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+      # Nest 12: serve-static 12 требует @nestjs/core ^12, поодиночке не ставится.
+      nestjs-major:
+        patterns: ['@nestjs/*']
+        update-types: [major]
+      # Stryker 10: jest-runner 10 требует core 10.
+      stryker-major:
+        patterns: ['@stryker-mutator/*']
+        update-types: [major]
+    # Не берём (решение владельца 2026-10-22, docs/open/ci-tests.md):
+    #  - typescript 7 — нативный компилятор, typescript-eslint и ts-jest его ещё
+    #    не принимают; вернуть, когда объявят поддержку;
+    #  - https-proxy-agent 8+ — только ESM, а бэкенд собран в CommonJS (jest
+    #    падает на telegram.providers.spec.ts); вернуть при переезде на ESM;
+    #  - Babel 8 — только ESM: jest на Node 22 не грузит @babel/core внутри
+    #    спека (esm-to-cjs.transform.spec.ts); Babel нужен лишь трансформеру
+    #    ESM-пакетов Nest для jest, на Node 24.9+ он уходит вместе с Babel.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      - dependency-name: https-proxy-agent
+        update-types:
+          - version-update:semver-major
+      - dependency-name: '@babel/*'
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: npm
+    directory: /webapp
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: '05:00'
+    open-pull-requests-limit: 5
+    groups:
+      webapp-minor-patch:
+        update-types: [minor, patch]
+      # @vitest/coverage-v8 пинит точную версию vitest: вместе или никак.
+      # В shared то же семейство (пара версий едина).
+      vitest-major:
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major]
+    # TypeScript 7 (нативный компилятор) не берём, пока typescript-eslint и
+    # ts-jest его не принимают; версия компилятора едина во всех пакетах
+    # (решение владельца 2026-10-22, docs/open/ci-tests.md).
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
+  # shared/ собирается в фронтенд; его vitest и react разъезжаются с
+  # фронтовыми, если бамп пришёл в одном пакете без пары.
+  - package-ecosystem: npm
+    directory: /shared
+    schedule:
+      interval: weekly
+      day: thursday
+      time: '05:00'
+    open-pull-requests-limit: 5
+    groups:
+      shared-minor-patch:
+        update-types: [minor, patch]
+      # Причина та же, что у webapp: vitest и coverage-v8 идут парой.
+      vitest-major:
+        patterns: ['vitest', '@vitest/*']
+        update-types: [major]
+    # TypeScript 7 (нативный компилятор) не берём, пока typescript-eslint и
+    # ts-jest его не принимают; версия компилятора едина во всех пакетах
+    # (решение владельца 2026-10-22, docs/open/ci-tests.md).
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
+  # Игра заморожена (CLAUDE.md, game/), но собирается в прод-образ (Dockerfile,
+  # CI-джоба docker), а тестов у неё нет. Поэтому только патчи, один PR за раз.
+  # Уязвимости транзитивных зависимостей (postcss, source-map-js под vite)
+  # version update не чинит — это Dependabot security updates, их включает
+  # владелец в Settings → Code security (см. README).
+  - package-ecosystem: npm
+    directory: /game
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 1
+    groups:
+      game-patch:
+        update-types: [patch]
+    # Миноры и мажоры игры осознанно не берём: проверить их нечем, кроме сборки.
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '05:00'

@@ -1,0 +1,155 @@
+// @vitest-environment jsdom
+// «Безопасное место» — свободный текст (общее впечатление + 4 органа чувств),
+// но до этого теста компонент НЕ прогонял ввод через detectCrisisAny/CrisisCard
+// (правило №7 CLAUDE.md) — миниапп (SafePlace.tsx, CrisisGate) это уже делал,
+// вебапп отстал (правило №3 — парные файлы). Тест фиксирует починку и
+// закрывает регресс. Заодно read-after-write: заполнил → сохранил → карточка
+// с сохранёнными данными видна на экране «готово».
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { AddressFormContext } from '../../utils/addressForm';
+import { SafePlaceEx } from './SafePlaceEx';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { SAFE_PLACE_FIELD_MAX, SENSES } from './safePlaceText';
+import { SAFE_PLACE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
+
+vi.mock('../../api', () => ({
+  api: {
+    saveSafePlace: vi.fn(),
+    trackEvent: vi.fn(),
+  },
+}));
+import { api } from '../../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+function renderEx(form: 'ty' | 'vy' = 'ty') {
+  return render(
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <MemoryRouter>
+        <SafePlaceEx onBack={vi.fn()} />
+      </MemoryRouter>
+    </AddressFormContext.Provider>,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear(); // черновик упражнения не должен переезжать в следующий тест
+  mockApi.saveSafePlace.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+// Общее описание места и любое из четырёх чувств — одна детекция на все поля.
+describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+  label: 'общее описание места',
+  open: () => renderEx(),
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: text } }),
+});
+for (const sense of SENSES) {
+  describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+    label: sense.label,
+    open: () => renderEx(),
+    enter: (text) => fireEvent.change(screen.getByLabelText(sense.label), { target: { value: text } }),
+  });
+}
+
+describe('SafePlaceEx — сохранение и обращение ты/вы', () => {
+  it('кнопка сохранить выключена, пока не заполнено общее описание и хотя бы одно чувство', () => {
+    renderEx();
+    const save = screen.getByRole('button', { name: /Сохранить место/ }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+  });
+
+  it('заполнил → сохранил → на экране «готово» видно то, что ввели (read-after-write)', async () => {
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'дача у бабушки' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'скрип половиц' } });
+    const save = screen.getByRole('button', { name: /Сохранить место/ }) as HTMLButtonElement;
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    // «…» места есть и в превью формы: ждём сам экран «сохранено», иначе под
+    // нагрузкой проверка опережала ответ сохранения (кнопка ещё «Сохраняю…»).
+    expect(await screen.findByText('Безопасное место · сохранено')).toBeTruthy();
+    expect(screen.getByText('«дача у бабушки»')).toBeTruthy();
+    expect(screen.getByText('скрип половиц')).toBeTruthy();
+    expect(mockApi.saveSafePlace).toHaveBeenCalledWith(expect.stringContaining('дача у бабушки'));
+  });
+
+  // Аудит 2026-08-22, находка №2 (та же беда, что в FlashcardEx): раньше
+  // save() глотал ошибку («best-effort») и не показывал состояние отправки.
+  it('во время сохранения кнопка заблокирована и подписана «Сохраняю…»', async () => {
+    let resolveSave: () => void = () => {};
+    mockApi.saveSafePlace.mockImplementation(() => new Promise<void>((res) => { resolveSave = res; }));
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+
+    const btn = screen.getByRole('button', { name: /Сохраняю/ }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    resolveSave();
+    await screen.findByText('«лес»');
+  });
+
+  it('ошибка сохранения показывает сообщение, а не тихо переходит к «готово»', async () => {
+    mockApi.saveSafePlace.mockRejectedValue(new Error('offline'));
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    // Остаёмся на экране ввода (кнопка «Сохранить место» всё ещё тут) —
+    // не перескочили на «готово», как раньше делал best-effort catch.
+    expect(screen.getByRole('button', { name: /Сохранить место/ })).toBeTruthy();
+  });
+
+  it('повторное нажатие во время отправки не шлёт запрос дважды', async () => {
+    mockApi.saveSafePlace.mockImplementation(() => new Promise<void>(() => {}));
+    renderEx();
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Сохраняю/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Сохраняю/ }));
+    expect(mockApi.saveSafePlace).toHaveBeenCalledTimes(1);
+  });
+
+  it('форма «ты» — заголовок обращается на «ты»', async () => {
+    renderEx('ty');
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+    expect(await screen.findByText('Твоё')).toBeTruthy();
+  });
+
+  it('форма «вы» — заголовок обращается на «вы»', async () => {
+    renderEx('vy');
+    fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: 'лес' } });
+    fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
+    expect(await screen.findByText('Ваше')).toBeTruthy();
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('SafePlaceEx — пределы полей', () => {
+  it('все пять полей несут предел, при котором описание целиком влезает в DTO', async () => {
+    renderEx();
+    const fields = screen.getAllByRole('textbox') as HTMLInputElement[];
+    expect(fields).toHaveLength(5);
+    for (const f of fields) expect(f.maxLength).toBe(SAFE_PLACE_FIELD_MAX);
+    const full = 'я'.repeat(SAFE_PLACE_FIELD_MAX);
+    for (const f of fields) fireEvent.change(f, { target: { value: full } });
+    fireEvent.click(screen.getByText(/Сохранить место/));
+    await screen.findByText('безопасное место.');
+    const sent = mockApi.saveSafePlace.mock.calls[0][0] as string;
+    expect(sent.length).toBeLessThanOrEqual(SAFE_PLACE_TEXT_MAX);
+  });
+});

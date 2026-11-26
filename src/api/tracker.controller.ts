@@ -1,0 +1,195 @@
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
+import { Request } from 'express';
+import { uid } from './request-utils';
+import { BotService, NeedId, NEED_IDS } from '../bot/bot.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { PairsService } from '../bot/pairs.service';
+import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
+import { TherapyTasksService } from '../therapy/therapy-tasks.service';
+import { TelegramAuthGuard } from './telegram-auth.guard';
+import { SaveRatingDto } from './dto/ratings.dto';
+import { SaveNoteDto } from './dto/notes.dto';
+import { historyDays, HistoryQueryDto } from './dto/history-query.dto';
+import { buildExportSummary, EXPORT_DAYS } from './export-summary';
+import { isCalendarDay } from '../utils/calendar-day';
+
+interface AuthRequest extends Request {
+  webUser: { userId: bigint };
+}
+
+// Трекер потребностей: оценки дня, история/стрик/аналитика, дневная
+// заметка и «детский» опросник (childhood wheel).
+@Controller('api')
+@UseGuards(TelegramAuthGuard)
+export class TrackerController {
+  private readonly logger = new Logger(TrackerController.name);
+
+  constructor(
+    private readonly botService: BotService,
+    private readonly analyticsService: BotAnalyticsService,
+    private readonly pairsService: PairsService,
+    private readonly scheduleService: TelegramScheduleService,
+    private readonly tasksService: TherapyTasksService,
+  ) {}
+
+  @Get('needs')
+  getNeeds() {
+    return this.botService.getNeeds();
+  }
+
+  @Get('ratings')
+  async getRatings(@Req() req: AuthRequest, @Query('date') date?: string) {
+    if (date && !isCalendarDay(date))
+      throw new BadRequestException('Invalid date format');
+    return this.botService.getRatings(uid(req), date);
+  }
+
+  @Post('rating')
+  async saveRating(@Req() req: AuthRequest, @Body() body: SaveRatingDto) {
+    if (body.date && !isCalendarDay(body.date))
+      throw new BadRequestException('Invalid date');
+    await this.botService.saveRating(
+      uid(req),
+      body.needId as NeedId,
+      body.value,
+      body.date,
+    );
+    this.tasksService
+      .checkStreakTasks(uid(req))
+      .catch((err) => this.logger.error('checkStreakTasks failed', err));
+
+    // Сайт и мини-апп всегда шлют дату (день устройства — она же уходит в
+    // офлайн-очередь), поэтому бэкфилл — это не «дата есть», а «день не
+    // сегодняшний». Раньше любая дата считалась бэкфиллом, и заполненный на
+    // сайте день не снимал напоминание и не давал серию (QA 2026-11-03).
+    const today = await this.botService.userToday(uid(req));
+    if (body.date && body.date !== today) return { ok: true, allDone: false };
+
+    // Check if all needs are now rated today → trigger diary-complete logic
+    const ratings = await this.botService.getRatings(uid(req), today);
+    const allDone = NEED_IDS.every((id) => ratings[id] !== undefined);
+    if (allDone) {
+      const [streak] = await Promise.all([
+        this.analyticsService.getStreakData(uid(req)).catch((err) => {
+          this.logger.error('getStreakData failed', err);
+          return null;
+        }),
+        this.scheduleService.onDiaryComplete(uid(req)).catch((err) => {
+          this.logger.error('onDiaryComplete failed', err);
+        }),
+      ]);
+      return { ok: true, allDone: true, streak };
+    }
+
+    return { ok: true, allDone: false };
+  }
+
+  @Get('history')
+  async getHistory(@Req() req: AuthRequest, @Query() q: HistoryQueryDto) {
+    return this.analyticsService.getHistoryRatings(uid(req), historyDays(q));
+  }
+
+  @Get('streak')
+  async getStreak(@Req() req: AuthRequest) {
+    return this.analyticsService.getStreakData(uid(req));
+  }
+
+  @Post('activity')
+  async recordActivity(@Req() req: AuthRequest) {
+    return this.analyticsService.recordActivity(uid(req));
+  }
+
+  @Get('export')
+  async getExport(@Req() req: AuthRequest) {
+    const [history, streak] = await Promise.all([
+      this.analyticsService.getHistoryRatings(uid(req), EXPORT_DAYS),
+      this.analyticsService.getStreakData(uid(req)),
+    ]);
+    return {
+      text: buildExportSummary(this.botService.getNeeds(), history, streak),
+    };
+  }
+
+  @Get('insights')
+  async getInsights(@Req() req: AuthRequest) {
+    const id = uid(req);
+    // Один скан истории на best+worst (аудит 2026-08, H4) вместо двух.
+    const [weeklyStats, dow, streak] = await Promise.all([
+      this.analyticsService.getWeeklyStats(id),
+      this.analyticsService.getDayOfWeekExtremes(id),
+      this.analyticsService.getStreakData(id),
+    ]);
+    return {
+      weeklyStats,
+      bestDayOfWeek: dow.best,
+      worstDayOfWeek: dow.worst,
+      totalDays: streak.totalDays,
+    };
+  }
+
+  @Get('achievements')
+  async getAchievements(@Req() req: AuthRequest) {
+    const [achievements, pairs] = await Promise.all([
+      this.analyticsService.getAchievements(uid(req)),
+      this.pairsService.getUserPairs(uid(req)),
+    ]);
+    const hasPair = pairs.some((p) => p.status === 'active');
+    return [...achievements, { id: 'pair_connected', earned: hasPair }];
+  }
+
+  @Get('note')
+  async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
+    if (!isCalendarDay(date))
+      throw new BadRequestException('Invalid date format');
+    return this.botService.getNote(uid(req), date);
+  }
+
+  @Post('note')
+  async saveNote(@Req() req: AuthRequest, @Body() body: SaveNoteDto) {
+    if (!isCalendarDay(body.date) || typeof body.text !== 'string')
+      throw new BadRequestException();
+    await this.botService.saveNote(uid(req), body.date, body.text, body.tags);
+    return { ok: true };
+  }
+
+  // ─── Childhood Wheel ────────────────────────────────────────────────────────
+
+  @Get('childhood-ratings')
+  async getChildhoodRatings(@Req() req: AuthRequest) {
+    return this.botService.getChildhoodRatings(uid(req));
+  }
+
+  @Post('childhood-ratings')
+  async saveChildhoodRatings(
+    @Req() req: AuthRequest,
+    // Не DTO: map needId→value, ключи и значения валидируются ниже вручную
+    // (сервис saveChildhoodRatings принимает их как есть, без проверки).
+    @Body() body: Record<string, number>,
+  ) {
+    const ratings: Record<string, number> = {};
+    for (const needId of NEED_IDS) {
+      if (
+        typeof body[needId] === 'number' &&
+        Number.isInteger(body[needId]) &&
+        body[needId] >= 0 &&
+        body[needId] <= 10
+      ) {
+        ratings[needId] = body[needId];
+      }
+    }
+    if (Object.keys(ratings).length === 0)
+      throw new BadRequestException('No valid ratings');
+    await this.botService.saveChildhoodRatings(uid(req), ratings);
+    return { ok: true };
+  }
+}

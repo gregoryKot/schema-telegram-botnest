@@ -1,0 +1,15 @@
+/* Пустой кабинет терапевта (CabinetEmpty, b29): сцена SceneCabinet + текст + одно действие.
+   Телефон — сцена над текстом, не шире 220px: первый экран на 390 не уезжает под неё;
+   от 640px — сцена слева, текст справа (как пустая лента «Записей», client-diary-empty.css). */
+.ce-empty { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 12px; }
+.ce-empty-scene { width: min(100%, 220px); }
+.ce-empty-scene > .scn { display: block; width: 100%; height: auto; }
+.ce-empty-body { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; justify-self: stretch; min-width: 0; }
+.ce-empty-title { margin: 0; font: 400 28px/1.15 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.ce-empty-text { margin: 0; max-width: 52ch; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+.ce-empty-body > .ds-btn { margin-top: 6px; }
+@media (min-width: 640px) {
+  .ce-empty { grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); justify-items: stretch; align-items: center; column-gap: 40px; }
+  .ce-empty-scene { width: 100%; }
+  .ce-empty-title { font-size: 32px; }
+}

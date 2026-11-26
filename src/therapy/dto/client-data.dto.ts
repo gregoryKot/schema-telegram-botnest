@@ -1,0 +1,83 @@
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { WORK_ITEMS_MAX } from '../session-work';
+import { SessionWorkItemDto } from './session-work.dto';
+import { CLIENT_NAME_MAX, SESSION_NOTE_MAX } from '../../utils/text-limits';
+import { IsCalendarDay } from '../../utils/calendar-day';
+import { IsDayOrWallMoment } from '../../utils/wall-moment';
+import { NotFutureDay } from './not-future-day';
+import { PlanItemIds } from './plan-item-ids';
+import { ClientMemoDto } from './client-memo.dto';
+
+/**
+ * DTO для работы терапевта с клиентскими данными (аудит 2026-07, 2г /
+ * правило №6 CLAUDE.md). `date` — настоящий календарный день (IsCalendarDay):
+ * регэксп формы в контроллере пропускал `2026-13-45` и `0000-00-00`.
+ */
+export class RenameClientDto {
+  @IsString()
+  @MaxLength(CLIENT_NAME_MAX)
+  alias!: string;
+}
+
+export class CreateSessionNoteDto {
+  @IsString()
+  @MaxLength(10)
+  @IsCalendarDay()
+  date!: string;
+
+  @IsString()
+  @MaxLength(SESSION_NOTE_MAX)
+  text!: string;
+
+  // «Что делали»: с пунктами текст может быть пустым (контроллер).
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(WORK_ITEMS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => SessionWorkItemDto)
+  work?: SessionWorkItemDto[];
+  @PlanItemIds() planItemIds?: number[];
+}
+
+// therapyStartDate/nextSession/memo: строка, null (сброс), undefined (не менять).
+// Формат (аудит 2026-10, T6) уходит в БД и карточки как есть: therapyStartDate —
+// настоящий день (IsCalendarDay) не в будущем; nextSession — день или настенное
+// время терапевта `YYYY-MM-DDTHH:mm[:ss]` (день без времени — встреча «в этот день»):
+// день настоящий, часы 00–23, минуты 00–59 (IsDayOrWallMoment).
+
+export class SessionInfoDto extends ClientMemoDto {
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(10)
+  @IsCalendarDay()
+  @NotFutureDay()
+  therapyStartDate?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(19)
+  @IsDayOrWallMoment()
+  nextSession?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  meetingDays?: number[];
+}

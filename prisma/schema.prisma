@@ -1,0 +1,1205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Rating {
+  id     Int    @id @default(autoincrement())
+  userId BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   String
+  needId String
+  value  Int
+
+  @@unique([userId, date, needId])
+  @@index([userId, date])
+  // Индекс под фильтр по date без userId (/stats: COUNT DISTINCT userId за
+  // день, ретеншен-GROUP BY) — userId-ведущий индекс выше для этого не годится.
+  //
+  // Был `@@index([date])` (аудит M2, 2026-08). Замер планов на синтетике
+  // горизонта роста (docs/PERF_PLANS.md) показал, что одной колонки мало:
+  // индекс находил строки, а `userId` всё равно читался из таблицы —
+  // `COUNT(DISTINCT "userId") WHERE date = $1` трогал 9402 страницы за 70 мс.
+  // Со второй колонкой тот же запрос идёт Index Only Scan: 33 страницы, 2 мс
+  // (×285 по страницам). Индексов по-прежнему два, не три: `[date, userId]`
+  // обслуживает всё, что обслуживал `[date]` (date — ведущая колонка), так что
+  // второй индекс заменён, а не добавлен — лишняя запись на каждый INSERT
+  // в самую растущую таблицу нам не нужна.
+  @@index([date, userId])
+}
+
+model YsqProgress {
+  userId    BigInt   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers   Json
+  page      Int
+  updatedAt DateTime @default(now())
+}
+
+enum UserRole {
+  CLIENT
+  THERAPIST
+}
+
+
+// ── Статусы как enum (аудит 2026-07, D-3): раньше — голые String с
+// комментарием-списком, БД не защищала от опечатки в статусе. ──────────────
+enum RelationStatus {
+  pending
+  active
+  // Связь завершена: терапевт отказался от роли или убрал клиента, клиент
+  // отключился сам (endReason). Строка остаётся, но во все «активные» выборки
+  // она не попадает и сама не оживает: новая связь — только через новое приглашение.
+  ended
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+}
+
+enum SubscriptionStatus {
+  pending
+  active
+  cancelled
+  past_due
+}
+
+model User {
+  id                     BigInt   @id
+  createdAt              DateTime @default(now())
+  firstName              String?
+  role                   UserRole @default(CLIENT)
+  disclaimerAccepted     Boolean  @default(false)
+  notifyEnabled          Boolean  @default(true)
+  notifyLocalHour        Int      @default(21)
+  notifyTimezone         String   @default("Europe/Moscow")
+  notifyTimezoneChosen   Boolean  @default(false) // пояс выбран руками; false — следует за поясом устройства (/api/init)
+  notifyReminderEnabled  Boolean  @default(true)
+  notifySummaryEnabled   Boolean  @default(true) // «Итоги дня»: сводка после заполнения, вехи, «с возвращением» (R2, решение Р1)
+  // ── Adaptive notification cadence ────────────────────────────────────────
+  notifyFrequency        Int      @default(0)  // выбор юзера: 0=каждый день,1=через день,2=2×/нед,3=раз/нед — потолок для адаптации
+  notifyAdaptiveLevel    Int      @default(0)  // управляется движком; effective = max(frequency, adaptive)
+  notifyIgnoredCount     Int      @default(0)  // подряд проигнорированных напоминаний на текущем уровне
+  notifyNextRemindDate   String?               // YYYY-MM-DD (локальная дата) следующего дня напоминания
+  notifySkipAckDate      String?               // YYYY-MM-DD «Сегодня не могу» — день не считается игнором
+  notifyLastEvalDate     String?               // YYYY-MM-DD последнего прогона движка — идемпотентность catch-up
+  notifyLastFillDate     String?               // YYYY-MM-DD дня, чьё заполнение уже отработало (сводка, вехи) — захват дня, E16
+  notifyPausedUntil      DateTime?             // пауза уведомлений (UTC instant)
+  notifyQuietStart       Int      @default(22) // тихие часы: начало, локальный час
+  notifyQuietEnd         Int      @default(8)  // тихие часы: конец; start==end → выключено
+  notifyGamified         Boolean  @default(false) // opt-in игровой режим: серия с 1 дня + «ещё день до вехи»
+  notifyReminderSeq      Int      @default(0)  // счётчик реально отправленных напоминаний — ротация текста без календарных совпадений
+  addressForm            String?               // 'ty' | 'vy'; null = ещё не выбрал → показать выбор при входе
+  pairCardDismissed      Boolean  @default(false)
+  mySchemaIds            Json     @default("[]")
+  myModeIds              Json     @default("[]")
+  therapistShareCards    Boolean  @default(true)
+  therapistShareProfile  Boolean  @default(true)
+  // ── Typed UI flags (migrated out of localStorage) ───────────────────────
+  onboardingV2Done         Boolean  @default(false)
+  practicesOnboardingDone  Boolean  @default(false)
+  therapistMode            Boolean  @default(false)
+  uiPrefs                  Json?    // серверное зеркало кастомизации экранов (SYNCED_PREF_KEYS), src/api/ui-prefs.sanitize.ts
+  botBlockedAt           DateTime?
+  deletedAt              DateTime?
+
+  notifications          ScheduledNotification[]
+  notes                  Note[]
+  schemaNotes            UserSchemaNote[]
+  modeNotes              UserModeNote[]
+  beliefChecks           UserBeliefCheck[]
+  phraseChecks           UserPhraseCheck[]
+  letters                UserLetter[]
+  safePlace              UserSafePlace?
+  flashcards             UserFlashcard[]
+  pairs1                 Pair[]            @relation("PairUser1")
+  pairs2                 Pair[]            @relation("PairUser2")
+  therapistRelations     TherapyRelation[] @relation("TherapistOf")
+  clientRelations        TherapyRelation[] @relation("ClientOf")
+  ysqHistory             YsqResultHistory[]
+  authProviders          AuthProvider[]
+  webSessions            WebSession[]
+  loginTickets           LoginTicket[]
+  drafts                 DiaryDraft[]
+  therapistRequest       TherapistRequest?
+  // ── 2FA (TOTP, RFC 6238) ────────────────────────────────────────────────
+  // totpSecret: AES-256-GCM encrypted base32 string of the TOTP shared secret.
+  // totpEnabledAt: set when user confirms first valid code. null = not enabled.
+  // totpRecoveryCodes: encrypted JSON array of one-time recovery hashes
+  //   (sha256 hex) — used if user loses their authenticator.
+  totpSecret             String?
+  totpEnabledAt          DateTime?
+  totpRecoveryCodes      Json     @default("[]")
+  // totpLastStep: последний ПРИНЯТЫЙ time-step TOTP (floor(unix/30)). Защита от
+  // реплея (L2 аудита 2026-08): один и тот же 6-значный код в пределах окна
+  // (±1 шаг, ~90с) не должен приниматься дважды — verifyCode двигает значение
+  // вперёд атомарно и отвергает шаг ≤ сохранённого. null = ещё не входил по TOTP.
+  totpLastStep           Int?
+  // Не используется с #864: восстановление по почте убрано; удалить миграцией отдельным PR после выкладки (см. docs/open/audit-2026-10.md)
+  recoveryEmail          String?  @unique
+  recoveryEmailVerifiedAt DateTime?
+
+  // ── Back-refs добавлены аудитом 2026-07 (D-2): Cascade на уровне БД ──────
+  ratings                Rating[]
+  ysqProgress            YsqProgress?
+  ysqResult              YsqResult?
+  childhoodRatings       ChildhoodRating[]
+  practices              UserPractice[]
+  practicePlans          PracticePlan[]
+  practiceSessions       PracticeSession[]
+  schemaDiaries          SchemaDiaryEntry[]
+  modeDiaries            ModeDiaryEntry[]
+  gratitudeDiaries       GratitudeDiaryEntry[]
+  appActivities          AppActivity[]
+  analyticsEvents        AnalyticsEvent[]
+  bookings               Booking[]
+  pushSubscriptions      PushSubscription[]
+  guideMarks             GuideMark[]
+}
+
+// Подписка браузера на уведомления в приложении (веб-пуши, src/push/).
+// endpoint — capability-URL push-сервиса: по нему можно слать человеку
+// уведомления, поэтому он и ключи шифрования лежат зашифрованными, а поиск
+// идёт по endpointHash (sha256 от endpoint). Unique глобальный, без userId:
+// одна подписка браузера — один аккаунт; вход другим аккаунтом в том же
+// браузере переносит подписку к нему (upsert по хэшу, push-subscription.store.ts).
+model PushSubscription {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  endpointHash String   @unique
+  endpoint     String
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Email magic-link tokens — вход по ссылке и привязка адреса.
+// One-use, ~30 min TTL. Hash stored, raw token only in the email.
+model EmailToken {
+  id        String   @id @default(cuid())
+  userId    BigInt?  // null = вход по почте для адреса, у которого ещё нет аккаунта
+  tokenHash String   @unique
+  email     String   // sent to this address
+  purpose   String   // 'login' | 'link_email_auth' (до #864 ещё 'recovery' | 'verify_email')
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// User-initiated request to be granted THERAPIST role. Admin reviews via the
+// Telegram bot (inline buttons "Approve" / "Reject"). Replaces the previous
+// shared-static THERAPIST_CODE flow.
+model TherapistRequest {
+  id            Int       @id @default(autoincrement())
+  userId        BigInt    @unique
+  fullName      String
+  qualification String
+  contacts      String    // free text: site, telegram handle, etc
+  message       String?   // optional cover letter
+  status        RequestStatus @default(pending)
+  reviewedAt    DateTime?
+  reviewedBy    BigInt?   // admin's Telegram id
+  rejectReason  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // onUpdate: NoAction — это НЕ ослабление, а фиксация реальности. Эти 6 FK
+  // созданы своими CREATE TABLE как «ON DELETE CASCADE» без ON UPDATE, т.е. в
+  // БД лежит NO ACTION, а дефолт Prisma (Cascade) давал вечный дрейф в diff.
+  // User.id — Telegram-id, он не меняется нигде (merge переносит userId у
+  // дочерних строк, а не правит User.id), поэтому ON UPDATE — мёртвая ветка.
+  // Переписывать 6 констрейнтов на живых таблицах ради no-op — лишний
+  // ACCESS EXCLUSIVE lock, дешевле объявить правду в схеме.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status])
+}
+
+// Unsaved diary entry drafts (replaces localStorage `diary_draft_*` keys)
+model DiaryDraft {
+  userId    BigInt
+  type      String   // 'schema' | 'mode' | 'gratitude'
+  startedAt DateTime
+  data      Json
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, type])
+}
+
+// Способ входа → userId: telegram | vk | yandex | max | email | google.
+// google — только прежние строки (вход через Google убран 2026-11); email —
+// привязанная почта: входа по ней нет (решение владельца, ч. 10 ст. 8 149-ФЗ).
+// Аккаунт ищется только по паре (provider, providerId): совпавшая почта VK или
+// Яндекса аккаунты не склеивает (решение владельца 2026-11-12).
+model AuthProvider {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  provider    String   // 'telegram' | 'vk' | 'yandex' | 'max' | 'email' | 'google' (прежние строки)
+  providerId  String   // telegramId, id VK/Яндекса/MAX, адрес почты (email) или Google sub
+  email       String?
+  displayName String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// Web sessions — refresh token rotation with theft detection
+model WebSession {
+  id           String   @id @default(cuid())
+  userId       BigInt
+  // SHA-256 hash of the actual refresh token (token itself never stored)
+  tokenHash    String   @unique
+  family       String   // random ID per login — if old token reused, entire family revoked
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  // Хеш токена, выданного взамен этого при ротации. По нему видно, ПОЛЬЗОВАЛСЯ
+  // ли кто-нибудь наследником: если нет — значит ответ ротации не доехал до
+  // клиента, и предъявление старого токена это потерянный ответ, а не кража
+  // (разбор 2026-08-28). Пусто у токенов, выданных до этой правки.
+  replacedByHash String?
+  // Строка рождена восстановлением потерянного ответа ротации; счётчик детекции
+  // кражи: третье восстановление в семье за сутки — второй участник цепочки
+  // (src/auth/refresh-recover-budget.ts).
+  recoveredAt  DateTime?
+  ipAddress    String?
+  userAgent    String?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([family])
+}
+
+// Привязка аккаунта мессенджера к уже существующему (device authorization
+// grant, RFC 8628 — тот же приём, которым телевизор подключают к Netflix).
+//
+// Зачем отдельная таблица, а не подписанный токен: браузер ПОДТВЕРЖДАЕТ, а
+// мини-апп ОПРАШИВАЕТ — им нужно общее изменяемое состояние. В JWT его не
+// положишь.
+//
+// Живёт минуты и содержит только служебное — при merge аккаунтов такие строки
+// удаляются, а не переносятся (SECURITY_SENSITIVE_TABLES, рядом с WebSession).
+// Кодов два, как в самой RFC. Длинный (device_code) знает только мини-апп —
+// им он опрашивает сервер. Короткий (user_code) видит человек, он же едет в
+// ссылке на браузер. Хранятся хэшами: подсмотренная строка в БД не даёт войти.
+// Билет входа. Контейнер (ярлык, вкладка браузера, мини-апп) создаёт билет у
+// себя, уводит человека подтверждать вход куда угодно — в бота, во внешний
+// браузер — и потом ЗАБИРАЕТ сессию опросом. Так вход возвращается ровно
+// туда, где начался: установленное приложение живёт в отдельной банке кук, и
+// сессия, выданная внешнему браузеру, ему не видна (разбор 2026-08-28).
+//
+// Выросло из device-link (RFC 8628, привязка аккаунта мессенджера к
+// существующему). Механизм тот же, поэтому второй таблицы рядом не заводим —
+// добавлен `intent`, а `userId` стал необязательным: у входа хозяина ещё нет.
+model LoginTicket {
+  id             String    @id @default(cuid())
+  deviceCodeHash String    @unique
+  userCodeHash   String    @unique
+  // Кто ПОПРОСИЛ билет. У привязки (intent='link') это аккаунт мессенджера, и
+  // при подтверждении хозяин меняется на целевой аккаунт — иначе строку унесло
+  // бы каскадом вместе с исчезающим аккаунтом прямо посреди переноса, и
+  // забирать сессию было бы неоткуда. У входа (intent='login') хозяина нет.
+  userId         BigInt?
+  // 'login' — вход в пустой контейнер; 'link' — привязка к существующему.
+  intent         String    @default("link")
+  provider       String    // 'max' | 'telegram' | 'google' | 'vk' | 'email'
+  // Где билет создан ('web' | 'telegram' | 'max') и на чём — строка вида
+  // «iPhone · Safari». Показывается человеку при сверке, чтобы подтверждение
+  // не было слепым.
+  hostId         String    @default("web")
+  deviceLabel    String    @default("")
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  // Кто подтвердил. Он же становится хозяином данных.
+  approvedUserId BigInt?
+  approvedAt     DateTime?
+  // Человек нажал «это не я» — билет мёртв, и это видно опросу.
+  deniedAt       DateTime?
+  // Сессия забрана — код больше не действует (одноразовость).
+  consumedAt     DateTime?
+  // СЫРОЙ telegramId того, кому бот показал карточку сверки (первый увидевший
+  // выигрывает). Подтвердить/отклонить из Telegram может только он: иначе
+  // карточку из группы или пересылки нажал бы кто угодно и отдал свою сессию
+  // (аудит 2026-10, B1). Null — в Telegram билет не показывали (MAX/веб).
+  shownToTelegramId BigInt?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  date      String
+  text      String
+  tags      String   @default("")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// Инвариант «одна активная пара на двоих в любой ориентации» держит частичный
+// unique-индекс Pair_active_users_key (миграция 20261016100000_active_relation_unique):
+// выражение LEAST/GREATEST и WHERE в PSL не выражаются, `migrate diff` его не видит.
+model Pair {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  userId1   BigInt
+  userId2   BigInt?
+  status    RelationStatus @default(pending)
+  createdAt DateTime @default(now())
+  user1     User     @relation("PairUser1", fields: [userId1], references: [id], onDelete: Cascade)
+  user2     User?    @relation("PairUser2", fields: [userId2], references: [id], onDelete: SetNull)
+}
+
+model UserPractice {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  needId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, needId])
+}
+
+model PracticePlan {
+  id              Int       @id @default(autoincrement())
+  userId          BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  needId          String
+  practiceText    String
+  scheduledDate   String    // YYYY-MM-DD — дата когда планируем выполнить
+  reminderUtcHour Int?      // null = без напоминания
+  done            Boolean?  // null = не ответил, true/false = результат
+  checkedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, scheduledDate])
+}
+
+// Быстрые практики «Здесь и сейчас» (дыхание/заземление 5-4-3-2-1/«Стоп») —
+// след каждого прохождения, чтобы «Мой путь» и /stats видели, что и сколько
+// раз человек прошёл, а не только то, что практика вообще существует.
+model PracticeSession {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tool      String   // QUICK_PRACTICE_IDS: 'breathing' | 'grounding' | 'stop'
+  createdAt DateTime @default(now())
+
+  @@index([userId, tool])
+  @@index([userId, createdAt])
+}
+
+model YsqResult {
+  userId      BigInt   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers     Json
+  completedAt DateTime @default(now())
+}
+
+model YsqResultHistory {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  answers     Json
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+}
+
+model ChildhoodRating {
+  id     Int    @id @default(autoincrement())
+  userId BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  needId String
+  value  Int
+
+  @@unique([userId, needId])
+  @@index([userId])
+}
+
+model SchemaDiaryEntry {
+  id                 Int      @id @default(autoincrement())
+  userId             BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  trigger            String   // Спусковой механизм (что произошло)
+  emotions           Json     // {id, intensity}[] — Эмоции
+  thoughts           String?  // Мысли (что думаю, предполагаю, чего боюсь)
+  bodyFeelings       String?  // Физические проявления (что с телом)
+  actualBehavior     String?  // Фактическое поведение (что делаю)
+  schemaIds          Json     // string[] — Схемы
+  schemaOrigin       String?  // Откуда эта схема
+  healthyView        String?  // Здоровый взгляд (что на самом деле происходит)
+  realProblems       String?  // Реальные проблемы
+  excessiveReactions String?  // Чрезмерные реакции (где переоценил/а)
+  healthyBehavior    String?  // Здоровое поведение (что могу сделать)
+
+  @@index([userId, createdAt])
+}
+
+model ModeDiaryEntry {
+  id                Int      @id @default(autoincrement())
+  userId            BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  modeId            String   // Режим (кто включился)
+  situation         String   // Ситуация (что произошло)
+  thoughts          String?  // Мысли
+  feelings          String?  // Чувства
+  bodyFeelings      String?  // Тело (что ощутили)
+  actions           String?  // Действия (что конкретно делали)
+  actualNeed        String?  // Что на самом деле было нужно
+  childhoodMemories String?  // Детские воспоминания связанные с ситуацией
+  healthyResponse   String?  // Что бы сказал Здоровый Взрослый (пишет клиент сам)
+  fromCase          Boolean  @default(false) // запись родилась из потока «Что случилось» (сайт, этап 4); старые — false
+
+  @@index([userId, createdAt])
+  @@index([fromCase, createdAt]) // /stats: разборы за 30 дней (check-query-plans, stats-report)
+}
+
+model GratitudeDiaryEntry {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String
+  items     Json     // string[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model AppActivity {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // YYYY-MM-DD in user's timezone
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+// Продуктовая аналитика (правило №8 CLAUDE.md: фича = событие). Событие —
+// это факт «юзер сделал X» для проверки гипотез метриками (D1/D7/D30 и т.п.).
+// name — из allow-list на бэке (src/analytics/analytics.constants.ts).
+// meta — маленький СТРУКТУРНЫЙ non-PII JSON (напр. { kind: 'weekly' }). НИКОГДА
+// не класть сюда свободный текст пользователя — это не шифруется.
+model AnalyticsEvent {
+  id        Int      @id @default(autoincrement())
+  // null = анонимное событие с публичного сайта (мини-тесты без регистрации,
+  // POST /api/public-event). Все авторизованные события пишутся с userId.
+  userId    BigInt?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // событие, напр. 'share_card'
+  meta      Json?    // структурные параметры события (без PII)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([name, createdAt])
+}
+
+// Инвариант «одна активная связь на (therapistId, clientId)» держит частичный
+// unique-индекс TherapyRelation_active_pair_key (миграция
+// 20261016100000_active_relation_unique); у офлайн-клиентов clientId NULL, они не дубли.
+model TherapyRelation {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  // Постоянный код адреса карточки в кабинете терапевта: /cabinet/<urlCode>.
+  // 8 букв без цифр — не путается со старым числовым id в адресе
+  // (shared/src/utils/clientRef.ts). Ставит Postgres, поэтому код получит
+  // связь из любого пути создания; при подключении офлайн-карточки код
+  // переезжает на связь клиента (therapy-invite-attach.ts) — ссылка живёт.
+  urlCode     String   @unique @default(dbgenerated("translate(\"left\"((gen_random_uuid())::text, 8), '0123456789'::text, 'ghjkmnpqrs'::text)"))
+  therapistId BigInt
+  clientId    BigInt?
+  status      RelationStatus @default(pending)
+  clientAlias       String?  // therapist's custom name for client
+  virtualClientName String?  // if set: offline/virtual client (no Telegram account)
+  therapistMemo     String?  // свободная заметка терапевта о клиенте, шифротекст; клиенту не уходит
+  therapyStartDate  String?  // YYYY-MM-DD, editable by therapist
+  nextSession       String?  // YYYY-MM-DD, next scheduled session
+  meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
+  createdAt   DateTime @default(now())
+  // Когда и почему связь стала `ended` (src/therapy/relation-end-reason.ts).
+  // Причина — машинный код, не свободный текст: therapist_resigned /
+  // therapist_removed / client_left — по ней клиент видит строку о бывшем
+  // терапевте (GET /api/therapy/former-therapist).
+  // endedAt NULL у связей, завершённых до появления колонки (дата неизвестна).
+  endedAt     DateTime?
+  endReason   String?  @db.VarChar(32)
+  // Приглашение, созданное из карточки офлайн-клиента, помнит id этой карточки;
+  // удаление карточки каскадом отзывает её приглашения. На АКТИВНОЙ связи с
+  // клиентом — «ждёт сверки» (S8, src/therapy/therapy-invite-card-claim.ts):
+  // код карточки ввёл аккаунт, данные карточки переедут на него, только когда
+  // терапевт подтвердит «это тот же человек»; до удаления карточки отметку
+  // со связей клиентов снимают, иначе каскад снёс бы и связь.
+  attachToId  Int?
+
+  attachTo      TherapyRelation?  @relation("AttachInvite", fields: [attachToId], references: [id], onDelete: Cascade)
+  attachInvites TherapyRelation[] @relation("AttachInvite")
+  therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
+  client      User? @relation("ClientOf",    fields: [clientId],    references: [id], onDelete: SetNull)
+
+  @@index([therapistId, status])
+  @@index([clientId, status])
+  // Каскад при удалении офлайн-карточки и поиск её живого приглашения
+  // (therapy-invite-from-card.ts) — без индекса это скан всей таблицы.
+  @@index([attachToId])
+}
+
+model UserTask {
+  id          Int       @id @default(autoincrement())
+  userId      BigInt
+  // БЕЗ FK на User (осознанно): задачи виртуальных клиентов терапевта
+  // хранятся с отрицательным userId = -TherapyRelation.id — строки User нет.
+  // Чистится вручную в deleteAllUserData (см. table-registry.spec).
+  assignedBy  BigInt?   // null = self, therapistId = from therapist
+  type        String    // 'custom' | 'diary_streak' | 'tracker_streak' | 'schema_diary' | 'mode_diary'
+  text        String
+  targetDays  Int?      // for streak types
+  needId      String?
+  dueDate     String?   // YYYY-MM-DD
+  catalogId   String?   // запись справочника заданий (shared/src/tasks/catalog), null — не из справочника
+  done        Boolean?  // null = in progress
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  planItems   TherapyPlanItem[]
+
+  @@index([userId, done, createdAt])
+  @@index([userId, done, type])
+}
+
+model TherapistNote {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  date        String   // YYYY-MM-DD
+  text        String
+  work        Json     @default("[]") // «Что делали»: шифротекст-строка (SessionWorkItem[]), [] — пунктов нет
+  planItemIds Int[]    @default([]) // пункты плана (TherapyPlanItem.id), над которыми работали; без FK, как clientId
+  createdAt   DateTime @default(now())
+
+  @@index([therapistId, clientId, createdAt])
+}
+
+// Пункт плана работы с клиентом: видит только терапевт. Без FK на User, как
+// TherapistNote: clientId офлайн-клиента отрицательный (-TherapyRelation.id).
+model TherapyPlanItem {
+  id          Int       @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  rubric      String    // PLAN_RUBRICS (src/therapy/therapy-plan.types.ts)
+  text        String    // шифруется
+  status      String    @default("planned") // PLAN_STATUSES: planned | active | done | postponed | dropped
+  position    Int       @default(0)
+  sourceAddress String? // адрес раздела справочника (#1484): `mode:<id>/cognitive`
+  // Источник до адресов: читается, только если sourceAddress пуст (planAddress.ts).
+  sourceKind  String?
+  sourceId    String?
+  sourceField String?
+  taskId      Int?      // задание, которым пункт выдан клиенту
+  task        UserTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  phaseId     Int?      // фаза «Пути клиента»; null — «Без фазы»
+  phase       TherapyPathPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([therapistId, clientId, position])
+}
+
+// «Путь клиента»: план работы по фазам во времени, один на пару терапевт–клиент.
+// clientId без FK, как у TherapyPlanItem (офлайн-клиент — отрицательный id).
+model TherapyPath {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  startDate   String   // YYYY-MM-DD
+  templateId  String?  // шаблон из shared/src/therapy/path/templates
+  phases      TherapyPathPhase[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([therapistId, clientId])
+}
+
+model TherapyPathPhase {
+  id              Int      @id @default(autoincrement())
+  pathId          Int
+  path            TherapyPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  position        Int      @default(0)
+  name            String   // шифруется
+  goal            String?  // шифруется
+  weeks           Int?     // null — срока нет (общий шаблон)
+  templatePhaseId String?
+  startedAt       String?  // YYYY-MM-DD, фактическое начало
+  endedAt         String?  // YYYY-MM-DD, фактическое окончание
+  criteriaDone    Json     @default("[]") // номера отмеченных признаков перехода фазы шаблона
+  note            String?  // шифруется
+  planItems       TherapyPlanItem[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([pathId, position])
+}
+
+// Отметка «Про клиента» из «Справочника» (#1484): раздел по адресу
+// (shared/src/schemaTherapy/guide/address/) у клиента терапевта. Копинги схемы
+// сюда не идут — они в ClientConceptualization.schemaLinks. clientId без FK,
+// как у TherapyPlanItem: у офлайн-клиента он отрицательный (-TherapyRelation.id).
+model GuideMark {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  therapist   User     @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+  clientId    BigInt
+  address     String   // адрес раздела после реестра переименований
+  note        String?  // шифруется: «как это у него»
+  snapshot    String   // шифруется: текст раздела на момент отметки (у фрагмента — выделенный текст)
+  fragmentKey String   @default("") // '' — раздел целиком; иначе хэш выделенного фрагмента (несколько на адрес)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([therapistId, clientId, address, fragmentKey])
+}
+
+model ClientConceptualization {
+  id              Int      @id @default(autoincrement())
+  therapistId     BigInt
+  clientId        BigInt
+  schemaIds       Json     @default("[]")  // string[]
+  modeIds         Json     @default("[]")  // string[]
+  earlyExperience String?  // Ранний дисфункциональный опыт
+  unmetNeeds      String?  // Неудовлетворённые базовые потребности
+  triggers        String?  // Схемные триггеры
+  copingStyles    String?  // Стили совладания
+  goals           String?  // Цели схема-терапии
+  currentProblems String?  // Текущие проблемы и симптомы
+  modeTransitions String?  // Переключение режимов
+  modeLinks       Json     @default("[]")  // ConceptModeLink[] — encrypted JSON: связи режимов графической концептуализации
+  schemaLinks     Json     @default("[]")  // ConceptSchemaLink[] — encrypted JSON: убеждение, детский опыт и блокируемые потребности схем графической концептуализации
+  needLinks       Json     @default("[]")  // ConceptNeedLink[] — encrypted JSON: колесо потребностей клиента (оценки 0–10 и заметки за детство, подростковый возраст и сейчас); пишет только POST conceptualization/:clientId/needs, в историю версий не входит
+  modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
+  modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
+  history         Json     @default("[]")  // ConceptSnapshot[]
+  // Терапевт показал клиенту схему случая (тумблер «Показать клиенту», null — не показана):
+  // клиент видит её в «Мой терапевт» без истоков и задач терапии (src/therapy/client-concept-view.ts).
+  sharedWithClientAt DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@unique([therapistId, clientId])
+}
+
+// Therapist's personal custom modes — shown in palette across all clients.
+model TherapistCustomMode {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  name        String
+  emoji       String   @default("⬡")
+  nodeType    String   @default("custom")  // trigger|child|critic|coping|healthy|custom
+  createdAt   DateTime @default(now())
+
+  @@index([therapistId, createdAt])
+}
+
+// Named mode maps — multiple per client, each with own title and canvas state.
+// nodes/edges stored as encrypted JSON (same pattern as modeMapNodes above).
+model ModeMap {
+  id          Int      @id @default(autoincrement())
+  therapistId BigInt
+  clientId    BigInt
+  title       String   @default("Карта режимов")
+  kind        String   @default("problem")  // 'personality' | 'problem' | 'couple' | 'concept' | 'free' (MODE_MAP_KINDS)
+  nodes       Json     @default("[]")
+  edges       Json     @default("[]")
+  createdAt   DateTime @default(now())
+  // @default(now()) — не косметика: колонка NOT NULL без DEFAULT роняет любой
+  // сырой INSERT без явного updatedAt (ловушка правила №2 «Миграции БД»).
+  // DEFAULT есть в БД с самого CREATE TABLE — фиксируем его в схеме, а не
+  // снимаем с прода.
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([therapistId, clientId, createdAt])
+}
+
+model UserSchemaNote {
+  id          Int      @id @default(autoincrement())
+  userId      BigInt
+  schemaId    String
+  triggers    String   @default("")
+  feelings    String   @default("")
+  thoughts    String   @default("")
+  origins     String   @default("")
+  reality     String   @default("")
+  healthyView String   @default("")
+  behavior    String   @default("")
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, schemaId])
+}
+
+model UserModeNote {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  modeId       String
+  triggers     String   @default("")
+  feelings     String   @default("")
+  thoughts     String   @default("")
+  needs        String   @default("")
+  origins      String   @default("")
+  healthyView  String   @default("")
+  behavior     String   @default("")
+  // Бланк проработки режима: функция режима и «даёт ли поведение то, что нужно»
+  modeFunction String   @default("")
+  needsMet     String   @default("")
+  // Имя, которым человек называет режим своими словами («Стена»), и вопрос
+  // «чего боишься, если этот режим перестанет так делать» — оба свободный
+  // текст, шифруются (MODE_NOTE_SCHEMA).
+  alias        String   @default("")
+  fear         String   @default("")
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, modeId])
+}
+
+model UserBeliefCheck {
+  id              Int      @id @default(autoincrement())
+  userId          BigInt
+  belief          String
+  evidenceFor     String
+  evidenceAgainst String
+  reframe         String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+}
+
+// Разбор фразы внутреннего голоса по приметам самокритики: сама фраза,
+// отмеченные приметы (id из shared/src/phraseCheck) и переписанный вариант.
+model UserPhraseCheck {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  phrase    String
+  /**
+   * Массив id примет, отмеченных как голос критика (PHRASE_MARK_IDS).
+   * Перечисление, а не свободный текст — поэтому открытым (правило шифрования
+   * в CLAUDE.md), и по нему считается разбивка в /stats.
+   */
+  marks     Json
+  rewrite   String?
+  /**
+   * Забрать переписанную фразу в «Тёплые слова» — выбор пользователя на шаге
+   * переписывания. Отдельный флаг, а не «все rewrite подряд»: в коллекцию
+   * попадает только то, что человек сам счёл словами поддержки.
+   */
+  inWarmWords Boolean @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+}
+
+model UserLetter {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  text      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+}
+
+model UserSafePlace {
+  userId      BigInt   @id
+  description String
+  // См. комментарий у ModeMap.updatedAt — DEFAULT сохраняем.
+  updatedAt   DateTime @default(now()) @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model UserFlashcard {
+  id         Int      @id @default(autoincrement())
+  userId     BigInt
+  modeId     String
+  needId     String
+  reflection String?
+  action     String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, createdAt])
+}
+
+model ScheduledNotification {
+  id          Int       @id @default(autoincrement())
+  userId      BigInt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sendAt      DateTime  // UTC, рассчитано заранее
+  type        String    // reminder | summary | onboarding_1 | onboarding_3 | onboarding_7 | streak_7 | streak_14 | streak_30 | lapsing_2 | lapsing_4 | dormant_7 | reengagement_30 | weekly
+  payload     Json?
+  sentAt      DateTime?
+  cancelledAt DateTime?
+  /// Захват строки очередью до отправки (backend#15, notification-claim.ts).
+  attemptedAt DateTime?
+
+  // Тик очереди (getDue) идёт частичным индексом ScheduledNotification_due_sendAt_idx
+  // (sendAt) WHERE sentAt IS NULL AND cancelledAt IS NULL — Prisma его не описывает,
+  // он в миграции 20261109010000_notification_due_index (P6, docs/PERF_PLANS.md).
+  @@index([type, sendAt])
+  @@index([userId, type, sentAt])
+}
+
+// ── Booking system ───────────────────────────────────────────────────────────
+
+// Therapist's recurring availability rules (e.g. Mon 10:00–19:00, 50 min sessions)
+model AvailabilityRule {
+  id              Int      @id @default(autoincrement())
+  dayOfWeek       Int      // 0=Sun … 6=Sat (JS convention)
+  startHour       Int      // local hour, e.g. 10
+  startMinute     Int      @default(0)
+  endHour         Int      // local hour, e.g. 19
+  endMinute       Int      @default(0)
+  sessionDuration Int      @default(50)  // minutes
+  bufferMin       Int      @default(10)  // gap between sessions
+  timezone        String   @default("Europe/Moscow")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+enum SlotOverrideKind {
+  BLOCK // закрыть время, которое иначе открыто правилом (или встречей при выключенной блокировке)
+  OPEN  // открыть разовый слот вне недельных правил
+}
+
+// Ручной слой поверх недельных AvailabilityRule: одна строка на момент времени
+// (startsAt @unique — BLOCK и OPEN на одну ячейку не могут сосуществовать по построению).
+model SlotOverride {
+  id          Int              @id @default(autoincrement())
+  kind        SlotOverrideKind
+  startsAt    DateTime         @unique // UTC, начало слота
+  durationMin Int              @default(50)
+  createdAt   DateTime         @default(now())
+}
+
+enum BookingStatus {
+  HELD        // slot reserved, not yet confirmed (hold expires in 15 min)
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum SessionType {
+  INTRO_15    // free intro call
+  SESSION_50  // full session
+}
+
+// One booked (or pending) session. PII fields are AES-256-GCM encrypted.
+model Booking {
+  id              Int           @id @default(autoincrement())
+  startsAt        DateTime      // UTC
+  durationMin     Int
+  type            SessionType   @default(SESSION_50)
+  status          BookingStatus @default(HELD)
+  heldUntil       DateTime?     // non-null while status=HELD
+  // PII — stored encrypted
+  clientName      String
+  clientContact   String        // phone or telegram @handle
+  clientChannel   String?       // канал связи: telegram | whatsapp | email — не PII, открыто
+  message         String?
+  // Telegram-адрес клиента. Анонимная форма его не пишет (C-9); пишет только
+  // клиентская запись из приложения — из проверенной подписи, не из тела.
+  clientTelegramId BigInt?
+  // Аккаунт клиента, записавшегося из приложения («Мой терапевт» → «Записаться
+  // на сессию», src/booking/client-booking.service.ts). Публичная форма без
+  // входа его не пишет. Удаление аккаунта отвязывает бронь (SetNull + явный
+  // updateMany в account.delete.ts), слияние переносит (USER_OWNED_TABLES).
+  userId          BigInt?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cancelToken     String        @unique  // random UUID for self-cancel link
+  meetingUrl      String?       // Zoom/Телемост link, set after confirmation
+  // CalDAV sync
+  calDavUid       String?       @unique  // iCloud event UID
+  // Атрибуция лида: страница + referrer в момент брони (собирает фронт).
+  // Структурные данные, не PII — хранится открыто, идёт в уведомление админу.
+  source          String?
+  // Часовой пояс посетителя (IANA, напр. "Asia/Bangkok") — собирает фронт из
+  // Intl, сервер проверяет валидность и игнорирует мусор (не 400). Нужен,
+  // чтобы уведомление админу показывало и местное время клиента.
+  clientTimeZone  String?
+  // Legal: when the client accepted the public offer (consent checkbox) — proof
+  // of the basis on which payment is taken. Not encrypted (a timestamp only).
+  acceptedOfferAt  DateTime?
+  // Обезличивание по сроку (решение владельца 2026-10-08, находка L3 аудита
+  // 2026-07-20): через 12 месяцев после даты сессии имя, контакт и текст
+  // запроса затираются кроном (booking-retention.service.ts), а факт записи —
+  // дата, тип, согласие с офертой — остаётся. Непустое значение = строка уже
+  // обезличена, повторно крон её не берёт.
+  anonymizedAt    DateTime?
+  // Когда пришла оплата, подтверждённая вебхуком Robokassa (подпись + сумма
+  // сверены). Источник правды «деньги получены», не зависящий от статуса:
+  // платёж мог прийти уже после истечения холда или отмены (CANCELLED +
+  // paidAt — «деньги есть, брони нет»). У бесплатного знакомства и у брони,
+  // подтверждённой руками админа, пусто. Метка времени — не шифруется.
+  paidAt          DateTime?
+  // Сумма счёта в валюте `currency`: цена на момент брони. Для рублей вебхук
+  // сверяет оплату с ней, а не с текущей ценой в админке — смена цены между
+  // записью и оплатой не превращает честный платёж в «фрод». Пусто у
+  // бесплатного знакомства и у броней до миграции (их сверка берёт текущую
+  // цену). Число, не PII — не шифруется.
+  amount          Int?
+  // Валюта цены (RUB | ILS | EUR | USD): определяется по часовому поясу
+  // посетителя (src/booking/price-region.ts). Вне рублей онлайн-оплаты нет —
+  // бронь подтверждается сразу, об оплате владелец договаривается сам. У
+  // старых строк — рубли. Код валюты, не PII — не шифруется.
+  currency        String        @default("RUB")
+  // Побочные эффекты подтверждения (ссылка на встречу, событие календаря, DM и
+  // письма админу) доведены до конца. Пусто у CONFIRMED-брони = эффекты не
+  // доделаны (падение БД или смерть пода после CAS HELD→CONFIRMED): их
+  // доводят повтор вебхука, ручное подтверждение и крон-добор. Ставит
+  // `BookingNotifyService.onConfirmed` CAS-ом прямо перед отправкой DM.
+  confirmEffectsDoneAt DateTime?
+  // Проход подтверждения заменил постоянную комнату клиента, создавая ссылку
+  // этой брони (старая перестала подходить). Пишется вместе с meetingUrl, чтобы
+  // повтор после падения (крон-добор, повтор вебхука) сказал владельцу в DM
+  // «комната заменена», а не потерял это вместе с локальной переменной.
+  roomReplacedAt  DateTime?
+  // Reminders
+  reminder24SentAt DateTime?
+  reminder2SentAt  DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([startsAt, status])
+  @@index([heldUntil, status])
+  @@index([userId, startsAt])
+}
+
+// Заявка с простой формы знакомства на визитке (POST /api/booking, без слота).
+// Пишется в БД ДО уведомлений: если Telegram и почта мертвы, заявка не
+// исчезает (находка глобального аудита 2026-10-11). Связи с аккаунтом нет
+// (форма публичная), поэтому в USER_DATA_TABLES модели нет, а срок хранения
+// держит крон intro-lead-retention.service.ts. PII зашифрована.
+model IntroLead {
+  id               Int       @id @default(autoincrement())
+  createdAt        DateTime  @default(now())
+  // PII — stored encrypted (intro-lead.schema.ts)
+  clientName       String
+  clientContact    String
+  message          String?
+  clientChannel    String?   // telegram | whatsapp | max | email — не PII, открыто
+  source           String?   // страница + referrer — структурная атрибуция, не PII
+  // Факт доставки админу по каждому каналу; оба null = заявка до владельца не
+  // дошла, её подберёт повтор доставки (intro-lead.service.ts); deliveryAttempts —
+  // сколько раз его уже пробовал крон.
+  tgDeliveredAt    DateTime?
+  emailDeliveredAt DateTime?
+  deliveryAttempts Int       @default(0)
+  // Обезличено по сроку (12 месяцев от createdAt): имя, контакт и текст затёрты.
+  anonymizedAt     DateTime?
+
+  @@index([createdAt])
+}
+
+// Persistent per-client video room. A returning client (same contact) reuses
+// the same Zoom meeting link across all their sessions. clientKey is an HMAC of
+// the normalised contact under ENCRYPTION_KEY (src/booking/client-key.ts,
+// `k1:` prefix); bare 64-hex keys are the old unsalted sha256, migrated on boot.
+model ClientMeeting {
+  clientKey     String   @id          // k1:HMAC(normalised contact)
+  meetingUrl    String                // join_url reused for all sessions
+  zoomMeetingId String?               // Zoom meeting id (for future updates/deletes)
+  createdAt     DateTime @default(now())
+}
+
+// Editable key/value settings for the booking module (e.g. session prices),
+// so the therapist can change them in the admin panel without code/env edits.
+model BookingSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// Voluntary donation (app / game), paid via Robokassa. email/comment encrypted.
+model Donation {
+  id        Int       @id @default(autoincrement())
+  amount    Int                          // rubles
+  status    PaymentStatus @default(pending)
+  source    String    @default("app")     // app | game
+  email     String?
+  comment   String?
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([status, createdAt])
+}
+
+// Recurring subscription (support / membership), billed via Robokassa recurring.
+// Currently unlocks nothing ("без ограничений") — it's recurring support of the
+// project. email is encrypted. Managed by cancelToken (web) or telegramId (bot).
+model Subscription {
+  id             Int      @id @default(autoincrement())
+  status         SubscriptionStatus @default(pending)
+  period         String                        // "month" | "year"
+  amount         Int                           // rubles per period
+  email          String?                       // encrypted
+  telegramId     BigInt?                       // if subscribed from Telegram — for management
+  firstInvId     Int?                          // InvId of the establishing charge (PreviousInvoiceID source)
+  acceptedOfferAt DateTime?                    // when the client consented to recurring auto-charges
+  nextChargeAt   DateTime?                     // when the next recurring charge is due
+  lastChargeAt   DateTime?
+  failedAttempts Int      @default(0)
+  cancelToken    String   @unique              // random UUID for the management/cancel link
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  charges        SubscriptionCharge[]
+
+  @@index([status, nextChargeAt])
+}
+
+// One Robokassa payment in a subscription's lifecycle. InvId = base + charge.id,
+// so the shared Result webhook can map a payment back to its subscription.
+model SubscriptionCharge {
+  id             Int          @id @default(autoincrement())
+  subscriptionId Int
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  amount         Int
+  status         PaymentStatus @default(pending)
+  isFirst        Boolean      @default(false)      // the establishing (CIT) payment
+  paidAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([subscriptionId])
+  @@index([status])
+}
+
+// ── Blog articles ────────────────────────────────────────────────────────────
+
+// Site articles (schemehappens.ru/articles), managed from the admin panel.
+// Global content, not user-owned data — not part of the account-deletion checklist.
+model Article {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String
+  content     String
+  date        DateTime
+  readMin     Int
+  diagramKey  String?  // which built-in SVG diagram to render (rendered client-side, kept out of editable content)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Фразы «Здорового Взрослого» для авто-публикации в Telegram-канал.
+// Управляются из админки (вкладка «Канал ЗВ»). Глобальный контент, не
+// пользовательские данные — вне чеклиста удаления аккаунта/merge.
+model HealthyAdultPhrase {
+  id           Int       @id @default(autoincrement())
+  text         String
+  enabled      Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  lastPostedAt DateTime? // когда фраза последний раз выходила в канал (для LRU-ротации — не повторять подряд)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// Лог реально опубликованных сообщений канала «Здоровый Взрослый».
+// Нужен, чтобы (1) не постить точный дубль недавнего и (2) отдавать
+// генератору последние N сообщений как контекст «не повторяй форму».
+// Глобальный контент, не пользовательские данные.
+model HealthyAdultPost {
+  id        Int      @id @default(autoincrement())
+  text      String
+  source    String // 'ai' | 'pool'
+  createdAt DateTime @default(now())
+}
+
+/// Журнал отправок канала «ЗВ»: строка на каждую площадку каждой публикации.
+/// Без него «утром пришло не всё» восстанавливается только по логам хостинга и
+/// по памяти — а вопрос «дошло ли и почему нет» задаётся каждый раз (инцидент
+/// 2026-07-31). Пользовательских данных тут нет: id канала и текст ошибки API.
+model ChannelDelivery {
+  id          Int      @id @default(autoincrement())
+  source      String // 'утро' | 'вечер' | 'вручную' | 'проверка' (+ ' — повтор')
+  platform    String
+  destination String
+  ok          Boolean
+  reason      String? // причина отказа площадки, если не дошло
+  /// Фраза публикации: по ней повтор досылает упавшей площадке то же самое,
+  /// а не новый текст из пула.
+  text        String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Кто из инстансов уже отработал крон в текущем окне. Без строки-аренды
+/// второй инстанс (масштабирование, перекатывающийся деплой) отрабатывает то
+/// же расписание второй раз: подписчики канала получают два одинаковых поста,
+/// пользователь — два одинаковых напоминания. См. src/infra/cron-leader.service.ts.
+/// Пользовательских данных нет: имя крона, время прогона и имя процесса.
+/// `doneRunAt` — runAt прогона, дошедшего до конца (только у обходов, которые
+/// умеют доделываться после рестарта, — сейчас midnightPlanner): отличается от
+/// runAt — прогон оборван, см. src/infra/cron-run-done.ts.
+model CronLease {
+  name       String    @id
+  runAt      DateTime
+  instanceId String
+  doneRunAt  DateTime?
+}
+
+/// Жизнь процесса приложения — для пробы cronLeases (src/infra/self-check/
+/// process-lives.ts): тик крона, пришедшийся на жизнь прошлого процесса, тоже
+/// судится, а не прощается рестартом (суточный крон при деплоях чаще раза в
+/// сутки иначе ловился на 4-е сутки). id — HOSTNAME и время старта; seenAt —
+/// последний прогон пробы этим процессом; dbFailureAt — последний отказ аренды
+/// из-за недоступной базы (тики до него прощаются, как у живого процесса).
+model ProcessLife {
+  id          String    @id
+  startedAt   DateTime
+  seenAt      DateTime
+  dbFailureAt DateTime?
+}
+
+/// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):
+/// счётчик @nestjs/throttler по умолчанию живёт в памяти процесса, и на двух
+/// инстансах Amvera лимит на POST /api/booking/book обходился ротацией
+/// инстанса. `key` — sha256 маршрута+бакета из ThrottlerGuard.generateKey
+/// (правило №5: бакет уже верифицирован), PII в нём нет. См.
+/// src/api/postgres-throttle-storage.ts.
+model ThrottleHit {
+  key          String    @id
+  hits         Int
+  expiresAt    DateTime
+  blockedUntil DateTime?
+
+  @@index([expiresAt])
+}

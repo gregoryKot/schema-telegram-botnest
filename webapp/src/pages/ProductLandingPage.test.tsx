@@ -1,0 +1,176 @@
+// @vitest-environment jsdom
+// ProductLandingPage — маркетинговый лендинг app-домена (0% покрытия, 290
+// строк). Логика здесь минимальна (в основном JSX/стили — тест не
+// обязателен по CLAUDE.md), но две вещи важны: авторизованный юзер видит
+// главную с дверью в приложение (не «Войти»), а статьи в блоке «Статьи» —
+// реальные из API, не заглушка.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ProductLandingPage } from './ProductLandingPage';
+import { AuthContext, type AuthState } from '../auth/authContext';
+import {
+  HOME_HERO, HOME_HEADINGS, HOME_STEPS, HOME_FEATURES, HOME_TRUST, HOME_FAQ, HOME_FINAL, type RichText,
+} from '../../../src/articles/home-landing.content';
+
+const listArticles = vi.fn();
+vi.mock('../api', () => ({
+  api: { listArticles: (...a: unknown[]) => listArticles(...a) },
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  listArticles.mockResolvedValue([]);
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+function authValue(overrides: Partial<AuthState> = {}): AuthState {
+  const value: AuthState = {
+    accessToken: null,
+    isLoading: false,
+    isAuthenticated: false,
+    authError: null,
+    setAccessToken: vi.fn(),
+    getAccessToken: () => value.accessToken,
+    logout: vi.fn(),
+    refreshToken: vi.fn(),
+    ...overrides,
+  };
+  return value;
+}
+
+function renderPage(auth: AuthState = authValue()) {
+  return render(
+    <MemoryRouter initialEntries={['/']}>
+      <AuthContext.Provider value={auth}>
+        <ProductLandingPage />
+      </AuthContext.Provider>
+    </MemoryRouter>,
+  );
+}
+
+describe('ProductLandingPage — неавторизованный визитор', () => {
+  it('рендерит главный заголовок и CTA на вход', () => {
+    renderPage();
+    expect(screen.getByText(/это происходит\?/)).toBeTruthy();
+    const ctas = screen.getAllByText('Начать →') as HTMLAnchorElement[];
+    expect(ctas.length).toBeGreaterThan(0);
+    for (const a of ctas) expect(a.getAttribute('href')).toBe('/login');
+    expect(screen.queryByText(/Начать бесплатно/)).toBeNull();
+    // Под кнопками — чем входят на сайт: те же способы, что на экране входа.
+    expect(screen.getByText('Вход через ВКонтакте, Яндекс или MAX · регистрация не нужна')).toBeTruthy();
+  });
+
+  it('шапка и футер — знак продукта (тот же, что в меню и favicon), а не 🧠', () => {
+    const { container } = renderPage();
+    expect(container.querySelector('header a[href="/"] svg[data-brand-mark="full"]')).toBeTruthy();
+    expect(container.querySelector('footer a[href="/"] svg[data-brand-mark="full"]')).toBeTruthy(); // знак в футере тоже ведёт на главную
+    expect(container.textContent).not.toContain('🧠');
+  });
+
+  it('рендерит блок «Как это работает» и «Возможности» без падений', () => {
+    renderPage();
+    expect(screen.getAllByText('Как это работает').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Возможности').length).toBeGreaterThan(0);
+  });
+
+  it('без статей из API блок «Статьи» не рендерится (не выдуманные карточки)', async () => {
+    listArticles.mockResolvedValue([]);
+    renderPage();
+    await waitFor(() => expect(listArticles).toHaveBeenCalled());
+    expect(screen.queryByText('Все статьи →')).toBeNull();
+  });
+
+  it('реальные статьи из API рендерятся карточками', async () => {
+    listArticles.mockResolvedValue([
+      { id: 1, slug: 'a', title: 'Статья про схемы', description: 'т', date: '2026-01-01', readMin: 4 },
+    ]);
+    renderPage();
+    expect(await screen.findByText('Статья про схемы')).toBeTruthy();
+  });
+
+  it('футер содержит ссылки на оферту и политику конфиденциальности', () => {
+    renderPage();
+    const offerLink = screen.getByText('Оферта') as HTMLAnchorElement;
+    const privacyLink = screen.getByText('Политика конфиденциальности') as HTMLAnchorElement;
+    expect(offerLink.getAttribute('href')).toBe('/offer');
+    expect(privacyLink.getAttribute('href')).toBe('/privacy');
+  });
+});
+
+describe('ProductLandingPage — тот же текст, что получает робот', () => {
+  // Сервер вкладывает home-landing.content.ts в #root главной (GEO.md). Если
+  // страница перестанет брать текст оттуда, робот и человек разойдутся.
+  const plain = (r: RichText) => r.map((p) => (typeof p === 'string' ? p : p.text)).join('');
+  // Неразрывные пробел, дефис и склейка диапазона U+2060 (glue, shared/src/utils/typo.ts) — те же слова, что у робота.
+  const norm = (s: string) => s.replace(/\u2011/g, '-').replace(/\u2060/g, '').replace(/\s+/g, ' ').trim();
+
+  it('каждая строка текста для робота есть на странице', () => {
+    const { container } = renderPage();
+    const page = norm(container.textContent ?? '');
+    const t = HOME_HERO.title;
+    const robot = [
+      t.before + t.accent + t.after, HOME_HERO.lead, ...Object.values(HOME_HEADINGS),
+      ...[...HOME_STEPS, ...HOME_FEATURES].flatMap((x) => [x.title, x.text]),
+      ...HOME_TRUST.flatMap((x) => [x.title, plain(x.text)]),
+      ...HOME_FAQ.flatMap((f) => [f.q, plain(f.a)]),
+      HOME_FINAL.title, HOME_FINAL.text,
+    ];
+    for (const s of robot) expect(page).toContain(norm(s));
+  });
+});
+
+describe('ProductLandingPage — мобильное меню (В4, аудит 2026-08)', () => {
+  // .pl2-nav скрывается CSS-медиазапросом ≤960px — jsdom его не вычисляет,
+  // поэтому кнопка всегда в DOM (видимость — забота CSS, проверенного глазами
+  // в браузере); тест бьёт по реальному поведению: кнопка есть, открывает
+  // меню со всеми ссылками нав-бара, включая «Войти».
+  it('бургер-кнопка открывает ProductMobileMenu со ссылками нав-бара', () => {
+    renderPage();
+    fireEvent.click(screen.getByLabelText('Открыть меню'));
+    const dialog = screen.getByRole('dialog', { name: 'Меню' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(screen.getAllByText('Как это работает').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Войти').length).toBeGreaterThan(0);
+  });
+
+  it('«×» в мобильном меню закрывает его', () => {
+    renderPage();
+    fireEvent.click(screen.getByLabelText('Открыть меню'));
+    fireEvent.click(screen.getByLabelText('Закрыть меню'));
+    expect(screen.queryByRole('dialog', { name: 'Меню' })).toBeNull();
+  });
+});
+
+describe('ProductLandingPage — авторизованный юзер', () => {
+  // Раньше главная молча уводила залогиненного на /today — и посмотреть её
+  // было нельзя. Теперь лендинг виден, а кнопки ведут в приложение.
+  it('видит главную; кнопки ведут в приложение, «Войти» нет', () => {
+    renderPage(authValue({ isAuthenticated: true, accessToken: 'tok' }));
+    expect(screen.getByText(/это происходит\?/)).toBeTruthy();
+    expect(screen.queryByText('Войти')).toBeNull();
+    expect(screen.queryByText(/регистрация не нужна/)).toBeNull();
+    const ctas = screen.getAllByText('Перейти в приложение →') as HTMLAnchorElement[];
+    expect(ctas.length).toBe(2);
+    for (const a of ctas) expect(a.getAttribute('href')).toBe('/today');
+    expect((screen.getByText('В приложение') as HTMLAnchorElement).getAttribute('href')).toBe('/today');
+  });
+
+  it('в мобильном меню тоже «В приложение», а не «Войти»', () => {
+    renderPage(authValue({ isAuthenticated: true, accessToken: 'tok' }));
+    fireEvent.click(screen.getByLabelText('Открыть меню'));
+    expect(screen.queryByText('Войти')).toBeNull();
+    expect(screen.getAllByText('В приложение').length).toBe(2);
+  });
+});
+
+describe('ProductLandingPage — Telegram не перетягивает внимание', () => {
+  it('на главной нет промо бота', () => {
+    renderPage();
+    expect(screen.queryByText(/Есть и в Telegram/)).toBeNull();
+    expect(screen.queryByText(/Живёт и в/)).toBeNull();
+  });
+});

@@ -1,0 +1,4 @@
+/* Строка сбоя загрузки истории (HistorySheet, .sd-banner). Подключается сборником sheet-diary.css.
+   Объяснения пустого дневника (.sd-explainer-stack/-card/-why) ушли вместе с прежней пустой лентой: её
+   рисует DiaryEmptyExplainer на своих классах (client-diary-empty.css, b11). */
+.sd-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-color: var(--err); font-size: 13px; line-height: 1.5; }

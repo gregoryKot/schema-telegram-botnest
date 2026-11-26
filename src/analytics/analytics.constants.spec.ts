@@ -1,0 +1,232 @@
+// Реестры-allow-list продуктовой аналитики (правило №4/№8 CLAUDE.md): каждый
+// массив здесь — источник правды, по которому DTO валидирует meta и /stats
+// считает метрики. Дубль id или пустая строка в этих списках не упадёт при
+// импорте (TS видит только тип строки) — упадёт только рантайм-проверка типа
+// `ANALYTICS_EVENTS.includes(name)`, и упадёт молча (событие просто исчезнет
+// из БД, см. AnalyticsService.track). Сверку фронт↔бэк держит отдельный
+// трипваер (src/security/analytics-sync.invariants.spec.ts) — здесь
+// проверяется внутренняя целостность самих реестров.
+import {
+  ANALYTICS_EVENTS,
+  PUBLIC_ANALYTICS_EVENTS,
+  PRACTICE_LINK_PLACES,
+  CUSTOMIZE_ENTRY_POINTS,
+  HOME_SCREEN_ACTIONS,
+  HOME_SCREEN_SURFACES,
+  SITE_INSTALL_SURFACES,
+  ONBOARDING_STEPS,
+  SHARE_CARD_KINDS,
+  CRISIS_SURFACES,
+  SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
+  DIARY_JUMP_TARGETS,
+} from './analytics.constants';
+import { CABINET_EVENTS } from './cabinet-events.constants';
+import { CONCEPT_EVENTS } from './concept-events.constants';
+import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
+import {
+  PUBLIC_CRISIS_EVENTS,
+  PUBLIC_CRISIS_SURFACES,
+} from './public-crisis.constants';
+import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
+import {
+  GAME_EVENTS,
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
+} from './game-events.constants';
+
+/** Все перечислимые реестры events/enum'ов этого модуля — сверяются одинаково. */
+const REGISTRIES: Record<string, readonly string[]> = {
+  ANALYTICS_EVENTS,
+  PUBLIC_ANALYTICS_EVENTS,
+  PRACTICE_LINK_PLACES,
+  CUSTOMIZE_ENTRY_POINTS,
+  HOME_SCREEN_ACTIONS,
+  HOME_SCREEN_SURFACES,
+  SITE_INSTALL_SURFACES,
+  ONBOARDING_STEPS,
+  SHARE_CARD_KINDS,
+  CRISIS_SURFACES,
+  SIGNUP_SOURCES,
+  PROFILE_PATTERN_KINDS,
+  DIARY_JUMP_TARGETS,
+  GAME_EVENTS,
+  GAME_CHAPTERS,
+  GAME_CTA_PLACES,
+  GAME_ENTRY_SOURCES,
+  CONCEPT_EVENTS,
+  CABINET_EVENTS,
+};
+
+describe('реестры analytics.constants: без дублей и пустых значений', () => {
+  it.each(Object.entries(REGISTRIES))('%s: непусто', (_name, values) => {
+    expect(values.length).toBeGreaterThan(0);
+  });
+
+  it.each(Object.entries(REGISTRIES))('%s: id уникальны', (_name, values) => {
+    // Дубль в allow-list — не ошибка типов (строка есть строка), но два
+    // разных смысла срослись бы в один при санитизации meta / отчёте /stats.
+    expect(new Set(values).size).toBe(values.length);
+  });
+
+  it.each(Object.entries(REGISTRIES))(
+    '%s: ни одного пустого/пробельного значения',
+    (_name, values) => {
+      for (const v of values) expect(v.trim()).not.toBe('');
+    },
+  );
+
+  it.each(Object.entries(REGISTRIES))(
+    '%s: значения — снейк_кейс из латиницы/цифр (безопасны для callback_data/meta)',
+    (_name, values) => {
+      for (const v of values) expect(v).toMatch(/^[a-z][a-z0-9_]*$/);
+    },
+  );
+});
+
+describe('CABINET_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('«Показ экрана» есть в allow-list и закрыт для анонимов', () => {
+    expect(CABINET_EVENTS).toContain('cabinet_screen_share_on');
+    // «Справочник» терапевта (#995): открытие и листы из него — отдельно от concept_guide_*.
+    expect(CABINET_EVENTS).toEqual(
+      expect.arrayContaining([
+        'cabinet_guide_open',
+        'cabinet_guide_mode_open',
+        'cabinet_guide_schema_open',
+        'cabinet_guide_technique_open',
+        'cabinet_guide_note_open',
+        'cabinet_guide_need_open',
+        'cabinet_guide_concern_open',
+        'cabinet_guide_phase_open',
+        'cabinet_guide_table_open',
+        'cabinet_guide_answer_show',
+        'cabinet_guide_answer_link',
+      ]),
+    );
+    for (const name of CABINET_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
+});
+
+describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('каждое событие схемы случая есть в общем allow-list и не открыто анонимно', () => {
+    // Терапевт всегда авторизован: анонимный путь (POST /api/public-event) для
+    // клинических событий закрыт — иначе их можно накрутить без входа.
+    for (const name of CONCEPT_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
+
+  it('перенос на холст — событие реестра (concept_canvas_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_canvas_open');
+  });
+
+  it('разворот на весь экран — событие реестра (concept_graph_fullscreen)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_graph_fullscreen');
+  });
+
+  it('повтор сохранения после ошибки — событие реестра (concept_save_retry, #879)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_save_retry');
+  });
+
+  it('экран «Главное» — событие реестра (concept_brief_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_brief_open');
+  });
+
+  it('связь холста с полями — события реестра (concept_sync_to_map/from_map, #963)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_sync_to_map');
+    expect(CONCEPT_EVENTS).toContain('concept_sync_from_map');
+  });
+
+  it('колесо потребностей на холсте — событие реестра (concept_needs_rated)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_needs_rated');
+  });
+
+  it('подсказки терапевту — события реестра (concept_guide_*, #995)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_guide_mode_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_schema_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_technique_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_assign');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_mark_done');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_journal_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_journal_entry');
+  });
+});
+
+describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('каждое публичное (анонимное) событие есть в общем allow-list', () => {
+    // Иначе AnalyticsService.track молча дропнет «публичное» событие: DTO его
+    // пропустит (PUBLIC_ANALYTICS_EVENTS разрешает без авторизации), а сервис
+    // отбросит по ANALYTICS_EVENTS.includes(name) — метрика тихо пропадёт.
+    for (const name of PUBLIC_ANALYTICS_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+});
+
+describe('SITE_INSTALL_SURFACES ⊆ HOME_SCREEN_SURFACES', () => {
+  it('каждая сайтовая surface установки есть в общем реестре поверхностей', () => {
+    // Иначе фильтр воронки мини-аппа (bot.product-metrics.service.ts) и блок
+    // «Установка с сайта» (site-install-metrics.service.ts) молча разъедутся
+    // с DTO-валидацией surface (правило №4: дублированные реестры — только
+    // с тестом-сверкой).
+    for (const surface of SITE_INSTALL_SURFACES) {
+      expect(HOME_SCREEN_SURFACES).toContain(surface);
+    }
+  });
+});
+
+describe('CRISIS_SURFACES реэкспортирован без искажений', () => {
+  it('analytics.constants.ts отдаёт тот же массив, что и crisis-surfaces.constants.ts', () => {
+    // Правило №10: CRISIS_SURFACES вынесен в отдельный файл ради лимита строк
+    // — реэкспорт легко может «протухнуть» (забыть обновить при рефакторинге
+    // импортов), тест ловит расхождение.
+    expect(CRISIS_SURFACES).toEqual(CRISIS_SURFACES_DIRECT);
+  });
+});
+
+describe('SIGNUP_SOURCES реэкспортирован без искажений', () => {
+  it('analytics.constants.ts отдаёт тот же массив, что и signup-sources.constants.ts', () => {
+    expect(SIGNUP_SOURCES).toEqual(SIGNUP_SOURCES_DIRECT);
+  });
+
+  it('содержит other — обязательный фолбэк для неизвестного/мусорного slug', () => {
+    expect(SIGNUP_SOURCES).toContain('other');
+  });
+});
+
+describe('GAME_EVENTS ⊆ PUBLIC_ANALYTICS_EVENTS', () => {
+  it('каждое событие игры разрешено анонимно — иначе DTO публичного эндпоинта его отвергнет', () => {
+    // Игра вообще не авторизует пользователя (правило №5/№14): если бы
+    // событие игры оказалось только в ANALYTICS_EVENTS, PublicEventDto
+    // (IsIn(PUBLIC_ANALYTICS_EVENTS)) отклонил бы его ещё до сервиса.
+    for (const name of GAME_EVENTS) {
+      expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+});
+
+describe('анонимная кризисная карточка (форма записи на визитке)', () => {
+  it('каждая публичная поверхность карточки есть в общем реестре CRISIS_SURFACES', () => {
+    // Иначе sanitizeMeta POST /api/event её отбросит, а /stats разойдётся с
+    // тем, что принимает публичный путь (правило №4).
+    for (const surface of PUBLIC_CRISIS_SURFACES) {
+      expect(CRISIS_SURFACES).toContain(surface);
+    }
+  });
+
+  it('публичные кризисные события разрешены анонимно и входят в общий allow-list', () => {
+    for (const name of PUBLIC_CRISIS_EVENTS) {
+      expect(PUBLIC_ANALYTICS_EVENTS).toContain(name);
+      expect(ANALYTICS_EVENTS).toContain(name);
+    }
+  });
+
+  it('публичная поверхность — только booking: остальные экраны с авторизацией', () => {
+    expect(PUBLIC_CRISIS_SURFACES).toEqual(['booking']);
+  });
+});

@@ -1,0 +1,167 @@
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Res,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Header,
+  Logger,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { RobokassaService } from './robokassa.service';
+import { BookingService } from './booking.service';
+import { bookingWebhookReply } from './payment.booking-webhook';
+import { paidButFailedAlert } from './payment-failed-alert';
+import { screenResultWebhook } from './payment.result-guard';
+import { BookingNotifyService } from './booking-notify.service';
+import { DonationService } from '../donation/donation.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { normalizeBaseUrl } from '../utils/url';
+
+/**
+ * Robokassa payment lifecycle endpoints.
+ *
+ * POST /api/payment/result   — Robokassa ResultURL webhook (confirms booking)
+ * GET  /api/payment/success  — Robokassa SuccessURL redirect
+ * GET  /api/payment/fail     — Robokassa FailURL redirect
+ */
+@Controller('api/payment')
+export class PaymentController {
+  private readonly logger = new Logger(PaymentController.name);
+  private readonly siteUrl: string;
+
+  private readonly appUrl: string;
+
+  constructor(
+    private readonly robokassa: RobokassaService,
+    private readonly booking: BookingService,
+    private readonly notify: BookingNotifyService,
+    private readonly donation: DonationService,
+    private readonly subscription: SubscriptionService,
+    config: ConfigService,
+  ) {
+    this.siteUrl = normalizeBaseUrl(
+      config.get<string>('SITE_URL'),
+      'https://kotlarewski.gr',
+    );
+    this.appUrl = normalizeBaseUrl(
+      config.get<string>('APP_URL'),
+      'https://schemehappens.ru',
+    );
+  }
+
+  /**
+   * Robokassa calls this endpoint when payment succeeds.
+   * Must respond with the literal string "OK{InvId}" — any other response
+   * makes Robokassa retry the notification.
+   */
+  @Post('result')
+  @HttpCode(HttpStatus.OK)
+  @Header('Content-Type', 'text/plain; charset=utf-8') // не text/html: ответ не разметка
+  async handleResult(
+    @Body('OutSum') outSum: string,
+    @Body('InvId') invId: string,
+    @Body('SignatureValue') sig: string,
+    @Body('IsTest') isTest?: string,
+  ): Promise<string> {
+    const screen = await screenResultWebhook(
+      { robokassa: this.robokassa, notify: this.notify, logger: this.logger },
+      { outSum, invId, sig, isTest },
+    );
+    if ('reply' in screen) return screen.reply;
+    const { id } = screen;
+    const paidAmount = Number.parseFloat(outSum);
+    const paid = Number.isFinite(paidAmount) ? paidAmount : undefined;
+
+    // Subscriptions and donations live in their own InvId ranges and share this
+    // one webhook. Check subscriptions first (highest range).
+    if (SubscriptionService.isSubscriptionInvId(id)) {
+      try {
+        await this.subscription.markChargePaidByInvId(id, paid);
+      } catch (e) {
+        // Same asymmetry as booking below: the client PAID, but the charge
+        // didn't get recorded. Without this alert it was invisible — only
+        // this.logger.error, which nobody reads until a person complains.
+        this.logger.error(`PAID but subscription not marked: InvId ${id}`, e);
+        await this.notify.alertAdmin(
+          paidButFailedAlert(`подписка (InvId ${id}) не подтвердилась`, e),
+        );
+        return `FAIL${invId}`;
+      }
+      return `OK${invId}`;
+    }
+    if (DonationService.isDonationInvId(id)) {
+      try {
+        await this.donation.markPaidByInvId(id, paid);
+      } catch (e) {
+        this.logger.error(`PAID but donation not marked: InvId ${id}`, e);
+        await this.notify.alertAdmin(
+          paidButFailedAlert(`донат (InvId ${id}) не подтвердился`, e),
+        );
+        return `FAIL${invId}`;
+      }
+      return `OK${invId}`;
+    }
+
+    return bookingWebhookReply(
+      { booking: this.booking, notify: this.notify, logger: this.logger },
+      id,
+      invId,
+      paid,
+    );
+  }
+
+  /**
+   * Robokassa SuccessURL — the client's browser returns here after paying.
+   * We validate the success signature, then send them to a real confirmation
+   * page: bookings → /booking/paid?token=… (status only, no meeting link: it
+   * goes to the owner's DM, audit 2026-10), donations → the donate page.
+   * Handles both InvId ranges (works with one fixed SuccessURL in the cabinet).
+   */
+  @Get('success')
+  async successRedirect(
+    @Query('InvId') invId: string,
+    @Query('OutSum') outSum: string,
+    @Query('SignatureValue') sig: string,
+    @Res() res: Response,
+  ) {
+    const id = parseInt(invId, 10);
+    if (isNaN(id) || !this.robokassa.validateSuccess(outSum, invId, sig)) {
+      // Can't trust the InvId — show a generic "payment received" page.
+      return res.redirect(`${this.siteUrl}/booking/paid`);
+    }
+    if (SubscriptionService.isSubscriptionInvId(id)) {
+      // The subscribe page reads ?sub=ok; the token came through on our own
+      // successUrl, but Robokassa may use the cabinet URL — so add it back.
+      return res.redirect(`${this.appUrl}/subscribe?sub=ok`);
+    }
+    if (DonationService.isDonationInvId(id)) {
+      return res.redirect(`${this.appUrl}/donate?donation=ok`);
+    }
+    try {
+      const b = await this.booking.getById(id);
+      return res.redirect(
+        `${this.siteUrl}/booking/paid?token=${(b as { cancelToken: string }).cancelToken}`,
+      );
+    } catch {
+      return res.redirect(`${this.siteUrl}/booking/paid`);
+    }
+  }
+
+  /** Robokassa FailURL — redirect back so the user can retry. */
+  @Get('fail')
+  failRedirect(@Query('InvId') invId: string, @Res() res: Response) {
+    const id = parseInt(invId, 10);
+    if (!isNaN(id) && SubscriptionService.isSubscriptionInvId(id)) {
+      return res.redirect(`${this.appUrl}/subscribe?sub=fail`);
+    }
+    if (!isNaN(id) && DonationService.isDonationInvId(id)) {
+      return res.redirect(`${this.appUrl}/donate?donation=fail`);
+    }
+    return res.redirect(`${this.siteUrl}/booking/paid?fail=1`);
+  }
+}

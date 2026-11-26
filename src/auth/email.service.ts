@@ -1,0 +1,76 @@
+import { Injectable, Logger } from '@nestjs/common';
+import * as postbox from '../infra/postbox-mail';
+import { AddressForm } from '../notification/address-form';
+import * as health from '../utils/alert-email-health';
+import { linkEmailLetter } from './email-link.letter';
+
+// Доставка писем: ссылка привязки адреса (токены — AuthService),
+// уведомления владельцу. Отправляет Yandex Cloud Postbox (infra/postbox-mail.ts);
+// без ключей (dev/CI) письмо логируется. Ответ Postbox — в снимок пробы почты
+// (alert-email-health.ts): ключи те же, что у резервных алертов.
+@Injectable()
+export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
+
+  // Привязка адреса к существующему аккаунту — своё письмо, не «Войти» (A3).
+  // Форму обращения знает вызывающий (AuthService); 'ty' — по умолчанию.
+  async sendLinkEmailLetter(
+    to: string,
+    link: string,
+    form: AddressForm = 'ty',
+  ): Promise<void> {
+    const letter = linkEmailLetter(form, link);
+    await this.send(to, letter.subject, letter.body);
+  }
+
+  async sendAdminNotification(subject: string, text: string): Promise<boolean> {
+    const to = process.env.ADMIN_EMAIL;
+    // true = Postbox принял письмо. Пустой адрес — warn, не error (№14, без DM).
+    if (!to) {
+      this.logger.warn(`ADMIN_EMAIL пуст, письмо не ушло: ${subject}`);
+      return false;
+    }
+    return this.send(to, subject, text).catch((err) => {
+      this.logger.error(
+        `sendAdminNotification failed: ${(err as Error).message}`,
+      );
+      return false;
+    });
+  }
+
+  async send(to: string, subject: string, text: string): Promise<boolean> {
+    const credentials = postbox.postboxCredentials();
+    if (!credentials) {
+      // M9 (аудит 2026-07): тело письма НЕ логируем в проде — `text` несёт
+      // живой magic-link-токен. Нет ключей тут = мисконфиг: алерт без токена.
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error(
+          'POSTBOX_ACCESS_KEY_ID/POSTBOX_SECRET_ACCESS_KEY not configured — email NOT sent (misconfiguration)',
+        );
+        return false;
+      }
+      // Dev / CI — тело можно логировать для локальной проверки ссылки.
+      this.logger.warn(
+        `[DEV: no Postbox keys] would send to ${to}:\n  Subject: ${subject}\n  Body: ${text}`,
+      );
+      return false;
+    }
+
+    let res: postbox.PostboxResult;
+    try {
+      const from = postbox.emailFrom();
+      res = await postbox.sendPostboxEmail(
+        { from, to, subject, text },
+        { credentials },
+      );
+    } catch (e) {
+      health.noteAlertEmailError(e);
+      this.logger.error(`Postbox error: ${(e as Error).message}`, e);
+      throw new Error('Email delivery failed', { cause: e });
+    }
+    health.noteAlertEmailResponse(res);
+    if (res.ok) return true;
+    this.logger.error(`Postbox send failed ${res.status}: ${res.error}`);
+    throw new Error('Email delivery failed');
+  }
+}

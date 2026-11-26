@@ -1,0 +1,50 @@
+/* Вкладки текстом на линии (components/LineTabs.tsx). Линия — у обёртки (тень внутрь): лента под ней прокручивается,
+   а линия стоит на всю ширину колонки; черта выбранной вкладки ложится поверх линии. Без фона и рамок. */
+.lt { display: flex; align-items: stretch; gap: 16px; min-width: 0; box-shadow: inset 0 -1px 0 var(--line); }
+.lt-strip { display: flex; flex: 1 1 auto; min-width: 0; }
+.lt-strip--scroll { gap: 22px; overflow-x: auto; scrollbar-width: none; }
+.lt-strip--scroll::-webkit-scrollbar { display: none; }
+/* Затухание края, за которым есть пункты (атрибут data-fade-* ставит LineTabs через useStripEdges); запас прокрутки
+   выводит выбранный пункт из зоны затухания. */
+.lt-strip--scroll { scroll-padding-inline: 36px; }
+.lt-strip--scroll[data-fade-end] { -webkit-mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent); mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent); }
+.lt-strip--scroll[data-fade-start] { -webkit-mask-image: linear-gradient(to right, transparent, var(--text) 32px); mask-image: linear-gradient(to right, transparent, var(--text) 32px); }
+.lt-strip--scroll[data-fade-start][data-fade-end] {
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--text) 32px, var(--text) calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, transparent, var(--text) 32px, var(--text) calc(100% - 32px), transparent);
+}
+.lt-tab {
+  display: inline-flex; align-items: center; flex: 0 0 auto; min-height: 44px; padding: 0 2px; cursor: pointer;
+  border: none; border-bottom: 2px solid transparent; background: none; white-space: nowrap;
+  font: 500 15px/1.2 var(--sans); color: var(--text-sub);
+}
+.lt-strip--fill > .lt-tab { flex: 1 1 0; justify-content: center; min-width: 0; padding: 0 4px; }
+.lt-tab[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--text); }
+.lt-tab:hover { color: var(--text); }
+/* Число раздела — тихое, без плашки общего .ds-count. */
+.ds-count.lt-count { margin-left: 5px; padding: 0; background: none; font-size: 12px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+/* Кольцо фокуса — внутрь: лента прокручивается и режет всё за своим краем. */
+.lt-tab:focus-visible, .lt-q:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 6px; }
+/* Число у вкладки — тихо, без плашки (образец — .tk-count в карточке клиента). */
+.ds-count.lt-count { margin-left: 5px; padding: 0; background: none; font-size: 12px; font-weight: 400; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.lt-aside { flex: none; display: flex; align-items: center; }
+/* Тихая пара «Списком · Таблицей»: выбранное — основным цветом, второе — приглушённым. */
+.lt-quiet { display: inline-flex; align-items: center; }
+.lt-q {
+  min-height: 44px; padding: 0 4px; cursor: pointer; border: none; background: none; white-space: nowrap;
+  font: 400 14px/1.2 var(--sans); color: var(--text-muted);
+}
+.lt-q[aria-selected="true"], .lt-q[aria-pressed="true"] { color: var(--text); font-weight: 500; }
+.lt-sep { color: var(--text-ghost); font-size: 14px; }
+/* Отбор с линией под выбранным («Все · Активны · …» на «Клиентах»): та же тихая подпись, без коробок и капсул. */
+.lt-quiet--mark { flex-wrap: wrap; }
+.lt-quiet--mark .lt-q[aria-selected="true"] {
+  text-decoration: underline; text-decoration-color: var(--text); text-decoration-thickness: 1.5px; text-underline-offset: 8px;
+}
+
+/* Телефон: пара вида справа не отнимает ширину у вкладок — встаёт под ленту, подписи вкладок целиком (К19, #1674). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .lt:has(> .lt-aside) { flex-wrap: wrap; gap: 0; box-shadow: none; }
+  .lt:has(> .lt-aside) > .lt-strip { flex: 1 1 100%; box-shadow: inset 0 -1px 0 var(--line); }
+  .lt:has(> .lt-aside) > .lt-aside { margin-left: auto; }
+}

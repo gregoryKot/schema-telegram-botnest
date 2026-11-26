@@ -1,0 +1,124 @@
+# Multi-stage (аудит 2026-07, I-2): build-стадия с dev-зависимостями и
+# исходниками, runtime-стадия — только прод-артефакты под непривилегированным
+# пользователем. До этого прод-образ тянул полные node_modules webapp/game,
+# TS-исходники и работал от root.
+
+# ── Stage 1: build ───────────────────────────────────────────────────────────
+FROM node:22-slim AS build
+# openssl (нужен движку Prisma) ставится скриптом с повтором и запасным
+# зеркалом: см. deploy/install-openssl.sh — сеть билдера Amvera до
+# deb.debian.org отваливается, и сборка не обязана падать с первой попытки.
+COPY deploy/install-openssl.sh /tmp/
+RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
+WORKDIR /app
+
+# Облегчение сборки (слабый билдер Amvera ловил OOM на `npm ci --prefix webapp`
+# — npm error "Exit handler never called!", т.е. процесс прибивал kernel).
+# audit строит в памяти полный граф зависимостей и ходит в реестр; fund /
+# update-notifier — лишний ввод-вывод. Отключаем на всю build-стадию: это
+# снижает пик памяти и время всех `npm ci` (на установленное дерево не влияет).
+ENV npm_config_audit=false \
+    npm_config_fund=false \
+    npm_config_update_notifier=false
+
+# Backend dependencies.
+# setup-merge-drivers.mjs копируется ДО npm ci: корневой npm-хук `prepare`
+# запускает его на каждом install, и без файла `npm ci` падает с ENOENT —
+# ровно так деплой молча стоял с #256 по #258 (инцидент 2026-08-04). Внутри
+# образа скрипт сам выходит нулём («не git-репозиторий, пропускаю»).
+# merge-drivers-check.mjs — его статический импорт (логика `--check`): без
+# него скрипт падает с ERR_MODULE_NOT_FOUND ещё до разбора аргументов.
+# setup-git-hooks.mjs — второй скрипт того же `prepare` (pre-push хук), та же
+# причина; в образе тоже выходит нулём без git.
+COPY package*.json ./
+COPY scripts/setup-merge-drivers.mjs scripts/merge-drivers-check.mjs scripts/setup-git-hooks.mjs scripts/
+RUN npm ci
+
+# Webapp dependencies
+COPY webapp/package*.json ./webapp/
+RUN npm ci --prefix webapp
+
+# Game dependencies
+COPY game/package*.json ./game/
+RUN npm ci --prefix game
+
+# Copy source and build
+COPY . .
+# Метка сборки: пишется после копирования исходников, поэтому меняется вместе
+# с ними. По ней `/zv log` показывает, свежий образ работает или позавчерашний
+# (инцидент 31.07.2026: хостинг не смог подтянуть коммит, а пересборка молча
+# собрала старое).
+RUN date -u +%Y-%m-%dT%H:%M:%SZ > BUILD_INFO
+RUN npx prisma generate
+RUN npm run build
+
+# Build webapp (website) — output → webapp/dist/ → served at /
+# VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
+ENV VITE_BOT_USERNAME=SchemeHappensBot
+# Ник бота мини-приложения MAX (ссылка max.ru/<ник>): без него кнопки «Войти через MAX» нет
+ENV VITE_MAX_BOT_USERNAME="se13646337_bot"
+RUN npm run build --prefix webapp
+
+# Build the game (vite base '/game/') → served at /game by the same ServeStatic
+RUN npm run build --prefix game
+RUN mkdir -p webapp/dist/game && cp -r game/dist/* webapp/dist/game/
+
+# Только прод-зависимости бэкенда едут в runtime (prisma CLI — в dependencies,
+# он нужен для `migrate deploy` на старте)
+RUN npm prune --production
+
+# ── Stage 2: runtime ─────────────────────────────────────────────────────────
+FROM node:22-slim
+COPY deploy/install-openssl.sh /tmp/
+RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
+# pg_dump/psql 17 и curl — для зашифрованных бэкапов в Yandex Object Storage (deploy/backup-scheduler.cjs
+# → scripts/backup-upload.sh). Только в runtime: в build-стадии они не нужны.
+COPY deploy/install-pg-client.sh /tmp/
+RUN sh /tmp/install-pg-client.sh && rm /tmp/install-pg-client.sh
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=build --chown=node:node /app/package*.json ./
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/prisma ./prisma
+COPY --from=build --chown=node:node /app/prisma.config.js ./
+COPY --from=build --chown=node:node /app/webapp/dist ./webapp/dist
+# Шрифт для картинки пина Pinterest: node:22-slim идёт без шрифтов вообще,
+# без него кириллица в пине превратилась бы в пустые прямоугольники.
+COPY --from=build --chown=node:node /app/assets ./assets
+COPY --from=build --chown=node:node /app/BUILD_INFO ./
+# Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
+# контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
+# Там же deploy/s3-sign.cjs — подпись S3: её берут и dist/infra/s3-sigv4.js
+# (require ../../deploy/), и scripts/s3-api.sh.
+COPY --from=build --chown=node:node /app/deploy ./deploy
+# Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-upload.sh,
+# restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
+# backup-fetch-latest.sh скачивает свежий бэкап из Yandex Object Storage (docs/RUNBOOKS.md, «Yandex Object Storage — бэкапы базы»);
+# s3-api.sh — общий вход в хранилище (подпись SigV4 — deploy/s3-sign.cjs, запрос — curl), его подключают оба.
+COPY --from=build --chown=node:node /app/scripts/backup-upload.sh /app/scripts/restore-backup.sh /app/scripts/backup-fetch-latest.sh /app/scripts/s3-api.sh ./scripts/
+
+# Непривилегированный пользователь (в node-образе уже есть `node`)
+USER node
+
+# Зависший процесс/потерянная БД/парковка на техработах видны оркестратору.
+# Смотрим ТЕЛО /health, а не код: front (deploy/front-server.mjs) отвечает 200
+# страницей техработ на любой путь, и по r.ok запаркованный контейнер был бы
+# «здоров». Маркер тот же, что в prod-smoke.yml. HEALTHCHECK
+# ничего не перезапускает, он даёт честный статус (unhealthy).
+# 127.0.0.1 (front слушает IPv4); redirect:'manual' — хостовый редирект не
+# уведёт проверку на внешний прод.
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health',{redirect:'manual'}).then(r=>r.text()).then(t=>process.exit(t.includes('\"status\":\"ok\"')?0:1)).catch(()=>process.exit(1))"
+
+# Точка входа — Node-супервизор (deploy/entrypoint.mjs). Front держит публичный
+# порт 3000 с первой секунды; приложение слушает внутренний APP_PORT. Пока идёт
+# старт (recover-p3009 → migrate deploy → буст Nest) или пока приложение
+# крашлупит — клиент видит нашу страницу техработ, а не generic-503 Amvera;
+# приложение подняло APP_PORT — front прозрачно проксирует на него.
+# Node как PID 1 ловит SIGTERM/SIGINT и пробрасывает их дочернему процессу —
+# graceful shutdown (bot.stop, prisma disconnect) сохранён.
+# recover-p3009 снимает застрявшую failed-миграцию (P3009, инцидент 2026-07-16)
+# идемпотентно; после стабилизации env RECOVER_CMD можно свести к `true`.
+CMD ["node", "deploy/entrypoint.mjs"]

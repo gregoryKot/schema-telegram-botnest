@@ -1,0 +1,250 @@
+// Жизненный цикл билета входа: выписать, подтвердить, забрать сессию.
+//
+// Зачем механизм. Установленное приложение (ярлык на телефоне) живёт в
+// ОТДЕЛЬНОЙ банке кук, не связанной с браузером. Пока вход был обычным
+// редиректом, он уходил на страницу провайдера — адрес вне scope
+// приложения, — и система отдавала его внешнему браузеру.
+// Сессия выдавалась ТАМ, а приложение, из которого человек вышел, оставалось
+// на экране входа навсегда (разбор 2026-08-28).
+//
+// Билет разрывает эту связь: контейнер держит длинный секрет у себя, человек
+// подтверждает вход во внешнем браузере (почтой или VK ID), — и контейнер
+// ЗАБИРАЕТ сессию опросом. Куда бы ни ушёл человек, сессия возвращается ровно
+// туда, где вход начался.
+//
+// Выросло из device-link (RFC 8628). Второго механизма рядом не заводим —
+// привязка аккаунта это тот же билет с `intent: 'link'` (CLAUDE.md, «одна
+// механика — один компонент»); тяжёлая часть привязки — в ticket-link.service.
+// Передача сессии из мессенджера в браузер — тоже он, `intent: 'handoff'`
+// (ticket-handoff.ts).
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
+import { createHash, randomBytes } from 'crypto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AuthService } from '../auth.service';
+import { SecurityLogService } from '../security-log.service';
+import { newUserCode, staleTicketsWhere } from './ticket-user-code';
+import { claimApproval, loadForApproval } from './ticket-approval';
+import { assertTicketViewer, claimTicketView } from './ticket-viewer';
+import { LoginTicketReport } from './login-ticket.report';
+import { issueHandoff, type HandoffInput } from './ticket-handoff';
+import { assertSiteAccount } from './site-login';
+import { grantTicketSession } from './ticket-session';
+import { TotpService } from '../totp.service';
+import type { StartTicketInput } from './ticket-start.types';
+import type {
+  TicketForConfirm,
+  TicketIntent,
+  TicketStatus,
+} from './login-ticket.types';
+
+export const TTL_S = 300;
+export const POLL_INTERVAL_S = 3;
+
+@Injectable()
+export class LoginTicketService {
+  private readonly logger = new Logger(LoginTicketService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auth: AuthService,
+    private readonly report: LoginTicketReport,
+    private readonly totp: TotpService,
+    @Optional() private readonly securityLog?: SecurityLogService,
+  ) {}
+
+  hash(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
+  }
+
+  /** Шаг 1: контейнер просит билет. Длинный секрет наружу больше не выходит. */
+  async start(input: StartTicketInput): Promise<{
+    deviceCode: string;
+    userCode: string;
+    expiresIn: number;
+    interval: number;
+  }> {
+    // Что подчистить перед выпиской — см. staleTicketsWhere.
+    await this.prisma.loginTicket.deleteMany({
+      where: staleTicketsWhere(input.requesterUserId),
+    });
+
+    const deviceCode = randomBytes(32).toString('hex');
+    const userCode = newUserCode();
+    await this.prisma.loginTicket.create({
+      data: {
+        deviceCodeHash: this.hash(deviceCode),
+        userCodeHash: this.hash(userCode),
+        userId: input.requesterUserId,
+        intent: input.intent,
+        provider: input.provider,
+        hostId: input.hostId,
+        deviceLabel: input.deviceLabel,
+        expiresAt: new Date(Date.now() + TTL_S * 1000),
+      },
+    });
+    // Только вход: привязка аккаунтов считается своими событиями
+    // (account_link_*), и мешать их в одну воронку значило бы считать разное.
+    if (input.intent === 'login')
+      this.report.step('issued', input.hostId, input.provider);
+    return {
+      deviceCode,
+      userCode,
+      expiresIn: TTL_S,
+      interval: POLL_INTERVAL_S,
+    };
+  }
+
+  /** Сессия уже есть (сайт внутри Telegram/MAX): билет сразу подтверждён. */
+  handoff(input: HandoffInput) {
+    return issueHandoff(this.prisma, input);
+  }
+
+  /**
+   * Живой билет по короткому коду. Бросает, если его нет, он погашен или
+   * протух — или (viaTelegramId задан) карточку показали не этому человеку.
+   */
+  async liveByUserCode(userCode: string, viaTelegramId?: bigint) {
+    const row = await this.prisma.loginTicket.findUnique({
+      where: { userCodeHash: this.hash(userCode.trim().toUpperCase()) },
+    });
+    if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
+      throw new BadRequestException('Код не найден или истёк');
+    }
+    assertTicketViewer(this.securityLog, row, viaTelegramId);
+    return row;
+  }
+
+  /**
+   * Что показать при сверке. Отдельный метод, а не `liveByUserCode` наружу:
+   * бот получает только то, что покажет человеку, и не может случайно
+   * отправить в чат хеши или чужой userId.
+   */
+  async forConfirm(
+    userCode: string,
+    viewerTelegramId?: bigint,
+  ): Promise<TicketForConfirm | null> {
+    const row = await this.prisma.loginTicket
+      .findUnique({
+        where: { userCodeHash: this.hash(userCode.trim().toUpperCase()) },
+      })
+      .catch((err: Error) => {
+        this.logger.error(`ticket lookup failed: ${err.message}`, err.stack);
+        return null;
+      });
+    if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
+      return null;
+    }
+    // Бот показывает только привязку. Вход он не подтверждает с 2026-11
+    // (site-login.ts) — шаги воронки `bot_opened` и `too_late` больше не
+    // пишутся; короткий код handoff не показывают вовсе.
+    if (row.intent !== 'link') return null;
+    // Карточку закрепляем за первым увидевшим; остальным код «не найден».
+    const mine = await claimTicketView(
+      this.prisma,
+      this.securityLog,
+      row,
+      viewerTelegramId,
+    );
+    if (!mine) return null;
+    return {
+      userCode: userCode.trim().toUpperCase(),
+      intent: row.intent as TicketIntent,
+      deviceLabel: row.deviceLabel,
+      hostId: row.hostId,
+    };
+  }
+
+  /**
+   * Подтверждение входа (`intent: 'login'`) из браузера, где человек вошёл
+   * почтой или VK ID: билет получает хозяина, и опрос выдаст сессию именно
+   * этого аккаунта. Бот вход не подтверждает (site-login.ts). Привязка идёт
+   * другим путём — TicketLinkService, там нужен перенос данных.
+   */
+  async approveLogin(userCode: string, approvedUserId: bigint): Promise<void> {
+    await assertSiteAccount(this.prisma, approvedUserId);
+    // Идемпотентность (разбор 2026-08-31, аудит 2026-10): повторный тап «это
+    // я» тем же человеком — НЕ ошибка, ни до опроса, ни после него: раньше
+    // бот рисовал ложный провал поверх успеха. ЧУЖОЙ занятый код — отказ.
+    const row = await loadForApproval(
+      { prisma: this.prisma, tickets: this },
+      userCode,
+      { userId: approvedUserId, intent: 'login' },
+    );
+    if (!row) return;
+    if ((await claimApproval(this.prisma, row, approvedUserId)) === 'repeat') {
+      return;
+    }
+    this.report.step('confirmed', row.hostId, row.provider);
+  }
+
+  /**
+   * Подтвердить вход, не роняя поток, который УЖЕ состоялся: OAuth-callback,
+   * переход по ссылке из письма и второй фактор вызывают это после того, как
+   * человек вошёл в браузере. Провал билета не повод отдавать ему ошибку — но
+   * и молчать нельзя, иначе «приложение не впустило» останется без следа.
+   */
+  async approveLoginIfPossible(
+    userCode: string,
+    approvedUserId: bigint,
+  ): Promise<boolean> {
+    try {
+      await this.approveLogin(userCode, approvedUserId);
+      return true;
+    } catch (err) {
+      this.logger.warn(`ticket approve skipped: ${(err as Error).message}`);
+      return false;
+    }
+  }
+
+  /**
+   * «Это не я». Отказ обязан быть отдельным исходом, а не молчаливым
+   * протуханием: экран, который просто ждёт пять минут, не скажет человеку,
+   * что вход отклонили — а тому, кого пытались обмануть, важно это увидеть.
+   */
+  async deny(userCode: string, viaTelegramId?: bigint): Promise<void> {
+    const row = await this.liveByUserCode(userCode, viaTelegramId);
+    await this.prisma.loginTicket.update({
+      where: { id: row.id },
+      data: { deniedAt: new Date() },
+    });
+    if (row.intent === 'login')
+      this.report.step('denied', row.hostId, row.provider);
+  }
+
+  /** Шаг 4: контейнер опрашивает по длинному коду и забирает сессию. */
+  async poll(
+    deviceCode: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<TicketStatus> {
+    const row = await this.prisma.loginTicket.findUnique({
+      where: { deviceCodeHash: this.hash(deviceCode) },
+    });
+    if (!row || row.consumedAt || row.expiresAt < new Date()) {
+      return { status: 'expired' };
+    }
+    if (row.deniedAt) return { status: 'denied' };
+    if (!row.approvedUserId) return { status: 'pending' };
+
+    // Одноразовость: помечаем ДО выдачи токенов, чтобы повторный опрос (или
+    // второй экземпляр приложения) не получил вторую сессию по тому же коду.
+    const claimed = await this.prisma.loginTicket.updateMany({
+      where: { id: row.id, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+    if (claimed.count === 0) return { status: 'expired' };
+
+    const deps = { auth: this.auth, totp: this.totp };
+    const ticket = { userId: row.approvedUserId, intent: row.intent };
+    const result = await grantTicketSession(deps, ticket, ip, userAgent);
+    // «Человек внутри» — только с сессией: с 2FA впереди ещё код.
+    if (result.status === 'linked' && row.intent === 'login')
+      this.report.step('taken', row.hostId, row.provider);
+    return result;
+  }
+}

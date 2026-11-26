@@ -1,0 +1,42 @@
+import type { EntityId, PaperHue, SignKey } from '../../../../../shared/src/theme/entityLook';
+import { getModeById, getSchemaById } from '../../../schemaTherapyData';
+import { modeLookById } from '../modeLookById';
+import { pebblesLaid } from '../../art/paper';
+import { QUICK_TAG_ENTITY, type QuickSaved } from './quickEntryModel';
+
+/** Вид листа «Записано»: сущность записи, своя бумага и сцена из данных, если они есть. */
+export interface QuickDoneView {
+  entity: EntityId;
+  /** Бумага листа, если у записи она своя (режим — бумага его группы). */
+  hue?: PaperHue;
+  /** Знак в сцене «готово» (Sprout) вместо знака сущности — знак группы выбранного режима. */
+  sprout?: SignKey;
+  /** Сколько камешков легло — пункты благодарности за день (до трёх), только реальные. */
+  pebbles?: number;
+}
+
+/**
+ * Лист «Записано» по типу записи (b10a в docs/archive/APP_2026-11.md, таблица ENTITY_LOOK в docs/design/APP_2026-11.md): мысль —
+ * камешек лёг на персике, схема — Sprout с Layers на глине, режим — Sprout со знаком его группы
+ * на бумаге группы, благодарность — камешки на бирюзе, легло столько, сколько пунктов за день.
+ * Нет данных (мастер «Заполнить подробно» их не отдаёт) — сцена сущности по умолчанию.
+ */
+export function quickDoneView(saved: QuickSaved): QuickDoneView {
+  const entity = QUICK_TAG_ENTITY[saved.tag];
+  if (saved.tag === 'mode' && saved.modeId) {
+    const look = modeLookById(saved.modeId);
+    return { entity, hue: look.hue, sprout: look.sign };
+  }
+  if (saved.tag === 'gratitude' && saved.gratitudeCount !== undefined) {
+    return { entity, pebbles: pebblesLaid(saved.gratitudeCount) };
+  }
+  return { entity };
+}
+
+/** Куда вести с «Записано»: режим важнее схемы, схем несколько — берётся первая. */
+export function quickDoneNext(saved: QuickSaved): { kind: 'mode' | 'schema'; id: string; name: string } | null {
+  const mode = saved.modeId ? getModeById(saved.modeId) : undefined;
+  if (mode) return { kind: 'mode', id: mode.id, name: mode.name };
+  const schema = saved.schemaIds?.map(getSchemaById).find(Boolean);
+  return schema ? { kind: 'schema', id: schema.id, name: schema.name } : null;
+}

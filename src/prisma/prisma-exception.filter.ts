@@ -1,0 +1,147 @@
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import type { Request, Response } from 'express';
+import { safeRequestPath } from './safe-request-path';
+import { replyHttpException } from './http-exception-body';
+import { isStatementTimeout } from './statement-timeout';
+import { clientHttpError } from './client-http-error';
+
+// Global filter that maps Prisma errors to friendly 4xx responses.
+//
+// Without this, NestJS's default exception filter returns a 500 with
+// `error.message` straight from Prisma — which can include table/column
+// names, query fragments, and other DB internals we'd rather not leak.
+//
+// We translate the most common error codes; everything else falls through
+// to the default filter (Nest will return a generic 500 and the message
+// goes only to our logs).
+@Catch(Prisma.PrismaClientKnownRequestError, Prisma.PrismaClientValidationError)
+export class PrismaExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(PrismaExceptionFilter.name);
+
+  catch(exception: Error, host: ArgumentsHost) {
+    const res = host.switchToHttp().getResponse<Response>();
+    const req = host.switchToHttp().getRequest<Request>();
+    // Аудит 2026-10 (D1): AlertLogger шлёт админу в DM и на почту ТОЛЬКО
+    // первый аргумент `.error()`. Сырой `req.url` (токены записи в пути,
+    // `?token=`, OAuth `?code=&state=`) и `exception.message` (у
+    // PrismaClientValidationError внутри полный `args` с открытыми колонками)
+    // туда попадать не должны. Поэтому первый аргумент — маскированный путь +
+    // код/класс ошибки, а полный message — вторым (только stdout; конвенция
+    // H0/H6, см. client-errors.controller.ts).
+    const path = safeRequestPath(req.url);
+    if (isStatementTimeout(exception)) {
+      // Строку владельцу с местом вызова уже написал PrismaService
+      // ($on('error')) — здесь warn, чтобы не слать второй DM. 500, а не 503:
+      // GET на 502/503/504 клиент повторяет дважды, а запрос, упёршийся в предел, повтор лишь утяжелит.
+      this.logger.warn(`Таймаут запроса к БД на ${path}`);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: 500,
+        error: 'Internal Server Error',
+        message: 'База данных не ответила вовремя',
+      });
+    }
+    const kind =
+      exception instanceof Prisma.PrismaClientKnownRequestError
+        ? exception.code
+        : exception.name;
+    this.logger.error(`Prisma error on ${path} (${kind})`, exception.message);
+
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      switch (exception.code) {
+        case 'P2002': // Unique constraint violation
+          return res.status(HttpStatus.CONFLICT).json({
+            statusCode: 409,
+            error: 'Conflict',
+            message: 'Запись уже существует',
+          });
+        case 'P2025': // Record not found
+          return res.status(HttpStatus.NOT_FOUND).json({
+            statusCode: 404,
+            error: 'Not Found',
+            message: 'Запись не найдена',
+          });
+        case 'P2003': // Foreign key violation
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: 'Связанная запись отсутствует',
+          });
+      }
+    }
+    if (exception instanceof Prisma.PrismaClientValidationError) {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Неверный формат данных',
+      });
+    }
+
+    // Unknown Prisma error — generic 500.
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Внутренняя ошибка сервера',
+    });
+  }
+}
+
+// Re-throws HttpException as-is, hides any other unhandled exception's message.
+// Acts as a safety net so that a stray TypeError or raw fetch error doesn't
+// leak its stack to the API client.
+@Catch()
+export class GenericExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GenericExceptionFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    // До пропуска HttpException: с Nest 12.4 http-errors приходят завёрнутыми
+    // в него (client-http-error.ts).
+    const client = clientHttpError(exception);
+    if (!client && exception instanceof HttpException) {
+      // Nest's normal exception flow — pass through (строка → объект, как у Nest).
+      return replyHttpException(host, exception);
+    }
+    const req = host.switchToHttp().getRequest<Request>();
+    const err = exception instanceof Error ? exception : undefined;
+    // D1: первый аргумент уходит в ALERT-канал — только маскированный путь и
+    // класс ошибки; message и стек — вторым (stdout), см. PrismaExceptionFilter.
+    // Сырой req.url не попадает в логи ни в одной из веток ниже — трипваер
+    // src/security/log-leak.invariants.spec.ts следит именно за этим.
+    const path = safeRequestPath(req.url);
+
+    if (client) {
+      // Уровень `warn`, а не `error`: в стандартный вывод строка попадает,
+      // в канал алертов (AlertLogger переопределяет только `error`) — нет.
+      // Сообщение самой ошибки клиенту не отдаём и в лог не кладём.
+      this.logger.warn(
+        `Client error on ${path} (${client.name}) → ${client.status}`,
+      );
+      return host
+        .switchToHttp()
+        .getResponse<Response>()
+        .status(client.status)
+        .json({
+          statusCode: client.status,
+          error: 'Client Error',
+          message: client.message,
+        });
+    }
+
+    this.logger.error(
+      `Unhandled error on ${path} (${err?.name ?? typeof exception})`,
+      err?.stack ?? err?.message ?? String(exception),
+    );
+    host.switchToHttp().getResponse<Response>().status(500).json({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Внутренняя ошибка сервера',
+    });
+  }
+}

@@ -1,0 +1,135 @@
+/* Раздел «Практика» кабинета клиента. Префикс cp-. */
+/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
+   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
+   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
+@import './task-row.css';
+/* Редизайн b14 (docs/archive/APP_2026-11.md): герой дыхания, квадраты бумаги быстрых практик,
+   кризисная полоса, бенто библиотеки. Белые ds-card остались у плотных строк (задания, цели,
+   каталоги); цвет — бумага oklch(0.915 0.03 var(--h)), мелкий текст на ней — --text-sub. */
+.cp-page { max-width: 1100px; }
+.cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
+.cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
+.cp-here { gap: 18px; container: cp-here / inline-size; }
+.cp-here-text { margin: 0; max-width: 78ch; line-height: 1.6; text-wrap: pretty; }
+
+/* Квадраты «Здесь и сейчас» (QuickSquares, плитка QuickTile): как два квадрата «Сегодня», знак — с тенью-вырезкой.
+   Знак лежит в своём слоте: правило .pp-square .pp-art (paper.css) не должно двигать слои знака.
+   Колонки minmax(0, 1fr), кегль названия — по ширине квадрата: «Заземление» Literata 26 на 320
+   распирало колонку и уводило второй квадрат за край экрана. Три квадрата в узкой колонке
+   (компьютер 768 с меню) — два в ряд, «Мне плохо» под ними вширь, знак справа. */
+.cp-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cp-squares--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cp-sq { min-height: 0; container-type: inline-size; }
+.cp-sq > .pp-title { font-size: clamp(18px, 16cqi, 26px); line-height: 1.08; }
+@container cp-here (max-width: 640px) {
+  .cp-squares--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-squares--3 > .cp-sq:last-child {
+    grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px;
+    grid-template-areas: "title art" "text art" "foot foot"; align-content: start;
+  }
+  .cp-squares--3 > .cp-sq:last-child > .pp-title { grid-area: title; }
+  .cp-squares--3 > .cp-sq:last-child > .pp-text { grid-area: text; }
+  .cp-squares--3 > .cp-sq:last-child > .cp-sq-art { grid-area: art; align-self: center; width: 104px; margin: 0; }
+  .cp-squares--3 > .cp-sq:last-child > .pp-square-foot { grid-area: foot; }
+}
+.cp-sq-art { display: block; width: 118px; margin: auto 0 0 -8px; }
+.cp-sq-art .scn-sign { width: 100%; }
+.cp-sq .scn-sign > .pp-art { margin: 0; }
+.cp-sq .pp-square-foot { margin-top: 4px; }
+.cp-sq:focus-visible, .cp-ex:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Задания и цели */
+.cp-tasks { display: flex; flex-direction: column; gap: 10px; }
+.cp-tasks.ds-rows { gap: 0; }
+.cp-task { display: flex; align-items: center; gap: 16px; min-height: 44px; }
+.cp-task-body { flex: 1; min-width: 0; }
+/* Название — текст терапевта или клиента: склейка пробелов в TaskRow (glueSpaces), pretty — без одинокого слова в последней строке. */
+.cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; text-wrap: pretty; }
+.cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+
+/* Библиотека — бенто плиток бумаги (ExerciseTile): знак и время, название, строка описания,
+   мета и стрелка. Колонки — по ширине самого раздела (container), без дыр: последняя плитка
+   неполного ряда растягивается и ложится вширь (знак справа), как широкие плитки лендинга. */
+.cp-lib-block { container: cp-lib / inline-size; }
+.cp-lib { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cp-ex {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
+  grid-template-areas: "art time" "title title" "desc desc" "foot foot"; column-gap: 12px; row-gap: 6px;
+  align-items: start; box-sizing: border-box; min-height: 236px; padding: 18px 22px 16px; border: 0;
+  text-align: left; cursor: pointer; font-family: var(--sans); transition: background .12s;
+}
+.pp-paper.cp-ex { border-radius: var(--r-16); } /* на два класса: .pp-paper (20px) не зависит от порядка чанков */
+.cp-ex:hover { background: oklch(0.895 0.04 var(--h)); }
+.cp-ex-art { grid-area: art; display: block; width: 104px; margin: 0 0 8px -8px; }
+.cp-ex-art .scn-sign { width: 100%; }
+.cp-ex-time { grid-area: time; justify-self: end; font-size: 12.5px; font-weight: 600; color: var(--text-sub); white-space: nowrap; }
+.cp-ex-title { grid-area: title; font-family: var(--serif); font-size: 23px; line-height: 1.12; letter-spacing: -0.005em; text-wrap: balance; }
+.cp-ex-desc { grid-area: desc; font-size: 14px; line-height: 1.45; color: var(--text-sub); text-wrap: pretty; }
+.cp-ex-foot { grid-area: foot; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.cp-ex-state { font-size: 13px; font-weight: 600; color: var(--text-sub); }
+.cp-ex-state > span { white-space: nowrap; } /* «3 дн. назад» не рвётся посередине — только после « ·» */
+@container cp-lib (min-width: 720px) {
+  .cp-ex:last-child:nth-child(3n+2) { grid-column: span 2; }
+  .cp-ex:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+  .cp-ex:last-child:not(:nth-child(3n)) { grid-template-areas: "time art" "title art" "desc art" "foot foot"; }
+  .cp-ex:last-child:not(:nth-child(3n)) > .cp-ex-desc { max-width: 46ch; }
+  .cp-ex:last-child:not(:nth-child(3n)) > .cp-ex-art { align-self: center; width: 150px; margin: 0 8px 0 0; }
+  .cp-ex:last-child:not(:nth-child(3n)) > .cp-ex-time { justify-self: start; }
+}
+@container cp-lib (max-width: 719px) {
+  .cp-lib { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-ex:last-child:nth-child(2n+1) { grid-column: 1 / -1; grid-template-areas: "time art" "title art" "desc art" "foot foot"; }
+  .cp-ex:last-child:nth-child(2n+1) > .cp-ex-art { align-self: center; width: 120px; margin: 0; }
+  .cp-ex:last-child:nth-child(2n+1) > .cp-ex-time { justify-self: start; }
+}
+
+/* ── Телефон (.cp-page--phone ставит PracticeSection по useIsMobile) ──────────
+   Шапка и заголовки блоков — те же, что на ноутбуке (ds-eyebrow + ds-h1 + ds-sub,
+   секции — Literata ds-h2; #906). Дыхание первым, под ним два квадрата и лист кризисных
+   строк; «Инструменты» — плитки в две колонки: знак, название, время и внизу мета, а у не
+   начатого упражнения — описание в две строки на её месте (ExerciseTile, ревью g4 r2). */
+.cp-here-lead { margin: 0; font-size: 14px; line-height: 1.5; }
+.cp-here-intro { display: flex; flex-direction: column; align-items: flex-start; }
+.cp-here-intro > .cp-selfhelp { margin-bottom: -8px; }
+.cp-page--phone .cp-block { gap: var(--space-10); }
+.cp-page--phone .cp-here { gap: var(--space-12); }
+.cp-page--phone .cp-squares { gap: var(--space-10); }
+.cp-page--phone .cp-sq { padding: 18px 16px 14px; gap: 6px; }
+.cp-page--phone .cp-sq .pp-text { font-size: 14px; line-height: 1.4; }
+.cp-page--phone .cp-sq-art { width: 92px; margin-left: -6px; }
+.cp-page--phone .cp-sq .pp-meta { font-size: 12.5px; letter-spacing: 0; }
+/* Герой дыхания на телефоне — компактный: сцена 124px справа от надписи и заголовка, текст, кнопка и
+   подвал во всю ширину. Сцена 248px над заголовком занимала первый экран: на 360×640 «Начать дыхание»
+   уходило под нижнее меню, на 390×844 квадраты и строки «Мне плохо» — за сгиб (ревью g4). Крупная
+   сцена остаётся листу из ⌘K и итога разбора, где она — единственное содержание. */
+.cp-page--phone .qb-in { grid-template-columns: minmax(0, 1fr) 124px; column-gap: 12px; row-gap: 8px; }
+.cp-page--phone .qb-body { display: contents; }
+.cp-page--phone .qb-scene { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 100%; }
+.cp-page--phone .qb-label { grid-column: 1; grid-row: 1; align-self: end; }
+.cp-page--phone .qb-title { grid-column: 1; grid-row: 2; align-self: start; font-size: 28px; }
+.cp-page--phone .qb-body > :not(.qb-label):not(.qb-title) { grid-column: 1 / -1; }
+.cp-page--phone .qb-count { width: 40px; height: 40px; border-radius: 10px; font-size: 24px; }
+
+/* Строки целей и каталогов: плотность и сетка «Готово под текстом» до 559px — на самой строке, в task-row.css. */
+/* Слово не рвётся посередине («недостаточ / но»): ломается только токен длиннее строки. Без hyphens: auto —
+   Chrome рвал по слогам и влезающие слова (ревью g1). */
+.cp-page--phone .cp-task-title { overflow-wrap: break-word; }
+.cp-page--phone .cp-sq .pp-meta { white-space: nowrap; } /* «прошли 3 раза» — одной строкой */
+
+/* Плитки «Инструментов» */
+.cp-page--phone .cp-lib { gap: var(--space-10); }
+.cp-page--phone .cp-ex {
+  min-height: 0; padding: 14px 14px 12px 16px; border-radius: var(--r-16); row-gap: 4px;
+  grid-template-areas: "art art" "title title" "time time" "desc desc" "foot foot"; grid-template-rows: auto auto auto auto 1fr;
+}
+.cp-page--phone .cp-ex:hover { background: oklch(0.915 0.03 var(--h)); }
+.cp-page--phone .cp-ex-art { width: 78px; margin: -2px 0 6px -6px; }
+.cp-page--phone .cp-ex-title { font-size: 19px; line-height: 1.15; }
+.cp-page--phone .cp-ex-time { justify-self: start; font-size: 12.5px; }
+/* Описание — только у не начатой плитки (меты нет): ответ новичку «откуда это и зачем», поэтому целиком, без
+   многоточия — с обрезкой в 2–3 строки на 390 «Тёплые слова» обрывались на «Слова поддержки — перечитать, когда…»,
+   а в пустом разделе обрезались 5 описаний из 8; ряд и так вровень с более высокой соседкой (ревью g4 r3, r5). */
+.cp-page--phone .cp-ex-desc { margin-top: 2px; font-size: 13px; line-height: 1.4; }
+.cp-page--phone .cp-ex-foot { align-self: end; margin-top: 6px; justify-content: flex-end; }
+.cp-page--phone .cp-ex-state { margin-right: auto; }
+

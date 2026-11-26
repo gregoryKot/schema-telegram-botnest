@@ -1,0 +1,48 @@
+import { useEffect } from 'react';
+import type { TherapyNudgePlace } from '../../../../shared/src/analytics/therapyNudge';
+import { ExternalLink } from '../../host/ExternalLink';
+import { glue } from '../../../../shared/src/utils/typo';
+import { trackTherapyNudge } from './trackTherapyNudge';
+import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
+import { useTherapyTarget } from './useTherapyTarget';
+import '../../styles/therapy-bridge.css';
+
+interface Props {
+  place: TherapyNudgePlace;
+  /** Строка для клиента без своего терапевта; клиенту с терапевтом — lineTherapist (он уже в терапии). */
+  text: string;
+  /** Дописывается к th-line: место подгоняет строку под свою вёрстку (подпись листа «Зачем это всё»). */
+  className?: string;
+}
+
+// Карточка TherapyNote (shared/src/components, без аналитики) стоит только в «Мне плохо» (FlashcardSteps): «если нужна
+// терапия» на каждом шаге мешала бы пути «мне плохо прямо сейчас». Остальные места — эта строка с листом и событиями.
+export function TherapyLine({ place, text, className }: Props) {
+  const t = useTherapyBridgeTexts();
+  const target = useTherapyTarget(place);
+  const { hidden } = target;
+
+  useEffect(() => {
+    if (!hidden) trackTherapyNudge(place, 'shown');
+  }, [place, hidden]);
+
+  if (hidden) return null;
+
+  return (
+    <>
+      <p className={className ? `th-line ${className}` : 'th-line'}>
+        {glue(target.connected ? t.lineTherapist : text)}{' '}
+        {target.write ? (
+          <ExternalLink className="th-link" href={target.write.url} onClick={target.write.onClick}>
+            {t.linkWrite}
+          </ExternalLink>
+        ) : (
+          <button type="button" className="th-link" onClick={target.open}>
+            {t.linkTalk}
+          </button>
+        )}
+      </p>
+      {target.sheet}
+    </>
+  );
+}

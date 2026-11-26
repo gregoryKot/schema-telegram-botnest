@@ -1,0 +1,63 @@
+import { localDateStr, todayStr } from './format';
+import type { DayHistory } from '../types';
+
+// Константы «сегодня/вчера» на момент загрузки бандла — единственная копия
+// (правило №3; жили дублем в удалённом мини-аппе и
+// webapp/appShell/useBootstrapLoad.ts).
+/** Ключ «день заполнен, праздник показан» — по нему же сайт узнаёт, что история есть. */
+export const celebratedKey = (day: string) => 'celebrated_' + day;
+
+// Единственный писатель семейства celebrated_<день>.
+export function isCelebrated(day: string): boolean {
+  return !!localStorage.getItem(celebratedKey(day));
+}
+
+export function markCelebrated(day: string): void {
+  localStorage.setItem(celebratedKey(day), '1');
+}
+
+// Константы ниже заморожены при загрузке бандла: для экрана, который живёт
+// через полночь, — useLocalDay (./useLocalDay.ts) и useDayRatings.
+export const TODAY_DATE = todayStr();
+export const TODAY_KEY = celebratedKey(TODAY_DATE);
+export const YESTERDAY_DATE = (() => {
+  const [y, m, d] = TODAY_DATE.split('-').map(Number);
+  return localDateStr(new Date(y, m - 1, d - 1));
+})();
+
+// Заполнение дырок в истории трекера пустыми днями (read-after-write: сервер
+// хранит только дни с оценками, экраны истории показывают ровный календарь).
+// Раньше жила дублем в webapp
+// (правило №3, свип jscpd 2026-08) — единственная копия, оба фронтенда
+// импортируют отсюда.
+// Второй параметр — день, от которого функция считает «сегодня»: раньше
+// он читался изнутри из `new Date()`, и вызывающий код не мог его задать
+// (функция была нечистой относительно входа). Теперь день приходит
+// аргументом, дефолт — `TODAY_DATE`, поведение старых вызовов не меняется.
+export function fillHistoryGaps(
+  h: DayHistory[],
+  todayDate: string = TODAY_DATE,
+): DayHistory[] {
+  if (h.length === 0) return h;
+  const byDate = new Map(h.map((d) => [d.date, d]));
+  const todayEntry = h.find((d) => d.date === todayDate);
+  const nonToday = h.filter((d) => d.date !== todayDate);
+  if (nonToday.length === 0) return h;
+  const earliest = nonToday[nonToday.length - 1].date;
+  const filled: DayHistory[] = todayEntry ? [todayEntry] : [];
+  const [y, m, d] = todayDate.split('-').map(Number);
+  const cursor = new Date(y, m - 1, d - 1); // «вчера» ОТ переданного дня
+  for (let i = 0; i < 60; i++) {
+    // localDateStr, а НЕ toISOString(): TODAY_DATE выше считается по
+    // локальной зоне, и в зонах, где локальная дата уже другая (UTC+10
+    // после полудня UTC), UTC-курсор давал «вчера», равное локальному
+    // сегодня — день выпадал из календаря истории, а тест падал только в
+    // те часы, когда даты расходятся (джоба TZ=Australia/Sydney, правило
+    // про TZ-тесты в CLAUDE.md).
+    const date = localDateStr(cursor);
+    if (date < earliest) break;
+    filled.push(byDate.get(date) ?? { date, ratings: {} });
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return filled;
+}

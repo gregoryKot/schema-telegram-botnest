@@ -1,0 +1,9 @@
+{
+  "webapp/dist/index.html": [
+    "sheet-tasks",
+    "sceneKit",
+    "AuthorAvatar",
+    "useTherapyTarget",
+    "index"
+  ]
+}

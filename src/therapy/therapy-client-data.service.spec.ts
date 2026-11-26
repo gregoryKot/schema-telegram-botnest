@@ -1,0 +1,910 @@
+// TEST_COVERAGE_PLAN.md, этап 3 п.11: TherapyClientDataService раскрывает
+// терапевту клинические данные КЛИЕНТА. Единственная граница — assertHasClient
+// (активная связь). Тестируем: (a) доступ с активной связью, (b) отказ без
+// связи/с pending-связью, (c) изоляция между клиентами, (d) расшифровка на
+// чтении, (e) ownership на write-путях, (f) приватность карточек клиента
+// (therapistShareCards — регрессия privacy-бага аудита 2026-07: маршрут-дубль
+// GET /api/therapy/client/:id/{schema,mode}-notes игнорировал эту настройку,
+// дубль удалён). Ключа шифрования нет — encrypt()/decrypt() passthrough, но
+// реально вызываются на пути чтения.
+import { TherapyClientDataService } from './therapy-client-data.service';
+import { TherapyRelationsService } from './therapy-relations.service';
+import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
+import { decrypt, encrypt, encryptJson } from '../utils/crypto';
+import { decryptName } from './client-name';
+import { YsqService } from '../bot/ysq.service';
+
+const blank = { triggers: '', feelings: '', thoughts: '', behavior: '' };
+const blankSchemaNote = { ...blank, origins: '', reality: '', healthyView: '' };
+const blankModeNote = { ...blank, needs: '', origins: '', healthyView: '' };
+const mkUser = (id: bigint, name: string, schemas: string[], share = true) => ({
+  id,
+  firstName: name,
+  mySchemaIds: schemas,
+  myModeIds: [],
+  therapistShareProfile: share,
+});
+const mkDiaryRow = (userId: bigint, schemaIds: string[], trigger: string) => ({
+  userId,
+  schemaIds: JSON.stringify(schemaIds),
+  trigger: encrypt(trigger) ?? trigger,
+  createdAt: new Date('2026-07-10T10:00:00Z'),
+});
+const mkSchemaNote = (
+  id: number,
+  userId: bigint,
+  schemaId: string,
+  o: any = {},
+) => ({ id, userId, schemaId, ...blankSchemaNote, ...o });
+const mkModeNote = (
+  id: number,
+  userId: bigint,
+  modeId: string,
+  o: any = {},
+) => ({ id, userId, modeId, ...blankModeNote, ...o });
+
+function makeDb(rels: Rel[]) {
+  const base = makeRelationPrismaMock(rels);
+  // `in` у id и status — завершение связи (end-client-relations.ts).
+  const isIn = (v: unknown, c: any) =>
+    c?.in ? (c.in as unknown[]).includes(v) : v === c;
+  const relWhere = (r: Rel, w: any) =>
+    (w.id === undefined || isIn(r.id, w.id)) &&
+    (w.therapistId === undefined || r.therapistId === w.therapistId) &&
+    (w.clientId === undefined || r.clientId === w.clientId) &&
+    (w.status === undefined || isIn(r.status, w.status)) &&
+    (w.attachToId === undefined || (r as any).attachToId === w.attachToId);
+  const users: any[] = [];
+  const schemaDiary: any[] = [];
+  const modeDiary: any[] = [];
+  const gratitudeDiary: any[] = [];
+  const schemaNotes: any[] = [];
+  const modeNotes: any[] = [];
+  const childhood: any[] = [];
+  const tasks: any[] = [];
+  const taskWhere = (t: any, w: any) =>
+    Object.entries(w).every(([k, v]: [string, any]) =>
+      v?.in ? v.in.includes(t[k]) : t[k] === v,
+    );
+  const modeMaps: any[] = [];
+  const desc = (rows: any[], userId: bigint, key: string, take: number) =>
+    rows
+      .filter((r) => r.userId === userId)
+      .sort((a, b) => (a[key] < b[key] ? 1 : a[key] > b[key] ? -1 : 0))
+      .slice(0, take);
+  const many = (rows: any[], key = 'createdAt') =>
+    jest.fn(({ where, take }: any) =>
+      Promise.resolve(desc(rows, where.userId, key, take)),
+    );
+  const findByUser = (rows: any[]) =>
+    jest.fn(({ where }: any) =>
+      Promise.resolve(rows.filter((n) => n.userId === where.userId)),
+    );
+
+  const db: any = {
+    therapyRelation: {
+      ...base.therapyRelation,
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hit = rels.filter((r) => relWhere(r, where));
+        hit.forEach((r) => Object.assign(r, data));
+        return Promise.resolve({ count: hit.length });
+      }),
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = rels.length;
+        for (let i = rels.length - 1; i >= 0; i--)
+          if (relWhere(rels[i], where)) rels.splice(i, 1);
+        return Promise.resolve({ count: before - rels.length });
+      }),
+    },
+    user: {
+      findUnique: jest.fn(({ where }: any) =>
+        Promise.resolve(users.find((u) => u.id === where.id) ?? null),
+      ),
+    },
+    ysqResult: { findUnique: jest.fn(() => Promise.resolve(null)) },
+    ysqResultHistory: { findMany: jest.fn(() => Promise.resolve([])) },
+    schemaDiaryEntry: { findMany: many(schemaDiary) },
+    modeDiaryEntry: { findMany: many(modeDiary) },
+    gratitudeDiaryEntry: { findMany: many(gratitudeDiary, 'date') },
+    userSchemaNote: { findMany: findByUser(schemaNotes) },
+    userModeNote: { findMany: findByUser(modeNotes) },
+    childhoodRating: { findMany: findByUser(childhood) },
+    therapistNote: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
+    therapyPlanItem: {
+      deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
+    },
+    therapyPath: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
+    guideMark: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
+    clientConceptualization: {
+      deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
+    },
+    modeMap: {
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = modeMaps.length;
+        for (let i = modeMaps.length - 1; i >= 0; i--)
+          if (
+            modeMaps[i].therapistId === where.therapistId &&
+            modeMaps[i].clientId === where.clientId
+          )
+            modeMaps.splice(i, 1);
+        return Promise.resolve({ count: before - modeMaps.length });
+      }),
+    },
+    userTask: {
+      create: jest.fn(({ data }: any) => {
+        tasks.push({ id: tasks.length + 1, done: null, ...data });
+        return Promise.resolve(tasks[tasks.length - 1]);
+      }),
+      count: jest.fn(({ where }: any) =>
+        Promise.resolve(tasks.filter((t) => taskWhere(t, where)).length),
+      ),
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hit = tasks.filter((t) => taskWhere(t, where));
+        hit.forEach((t) => Object.assign(t, data));
+        return Promise.resolve({ count: hit.length });
+      }),
+      deleteMany: jest.fn(({ where }: any) => {
+        const before = tasks.length;
+        for (let i = tasks.length - 1; i >= 0; i--)
+          if (
+            tasks[i].userId === where.userId &&
+            tasks[i].assignedBy === where.assignedBy
+          )
+            tasks.splice(i, 1);
+        return Promise.resolve({ count: before - tasks.length });
+      }),
+    },
+    $transaction: jest.fn((arg: any) =>
+      Array.isArray(arg) ? Promise.all(arg) : arg(db),
+    ),
+  };
+  return {
+    db,
+    users,
+    schemaDiary,
+    modeDiary,
+    gratitudeDiary,
+    schemaNotes,
+    modeNotes,
+    childhood,
+    tasks,
+    modeMaps,
+  };
+}
+
+function makeService(given: Rel[]) {
+  // Копии строк: завершение связи (removeClient) меняет строку на месте, а
+  // relA/relVirtual — общие для всех спеков файла.
+  const rels = given.map((r) => ({ ...r }));
+  const t = makeDb(rels);
+  const relationsService = new TherapyRelationsService(t.db, {} as any);
+  const analyticsService = {
+    getHistoryRatings: jest.fn(() => Promise.resolve([])),
+  } as any;
+  const notificationService = {
+    schedule: jest.fn(() => Promise.resolve(undefined)),
+    hasPending: jest.fn(() => Promise.resolve(false)),
+  } as any;
+  const svc = new TherapyClientDataService(
+    t.db,
+    analyticsService,
+    notificationService,
+    relationsService,
+  );
+  return { svc, ...t, rels, analyticsService, notificationService };
+}
+
+const T1 = 100n; // терапевт-владелец связи с CLIENT_A
+const T2 = 200n; // чужой терапевт — не должен видеть данные CLIENT_A
+const CLIENT_A = 555n;
+const CLIENT_B = 777n;
+const CID_A = CLIENT_A;
+const relA: Rel = {
+  id: 1,
+  therapistId: T1,
+  clientId: CLIENT_A,
+  status: 'active',
+  code: 'AAA111',
+};
+const relB: Rel = {
+  id: 2,
+  therapistId: T1,
+  clientId: CLIENT_B,
+  status: 'active',
+  code: 'BBB222',
+};
+
+const relVirtual: Rel = {
+  id: 3,
+  therapistId: T1,
+  clientId: null,
+  status: 'active',
+  code: 'VVV333',
+};
+
+describe('TherapyClientDataService — граница доступа (assertHasClient)', () => {
+  it.each<[string, (svc: TherapyClientDataService) => Promise<unknown>]>([
+    ['getClientData', (svc) => svc.getClientData(T2, CID_A)],
+    ['getClientHistory', (svc) => svc.getClientHistory(T2, CID_A)],
+    ['getClientDiaryEntries', (svc) => svc.getClientDiaryEntries(T2, CID_A)],
+    ['getClientSchemaNotes', (svc) => svc.getClientSchemaNotes(T2, CID_A)],
+    ['getClientModeNotes', (svc) => svc.getClientModeNotes(T2, CID_A)],
+    ['requestYsq', (svc) => svc.requestYsq(T2, CID_A)],
+    [
+      'updateSessionInfo',
+      (svc) => svc.updateSessionInfo(T2, CID_A, { nextSession: '2026-08-01' }),
+    ],
+  ])(
+    '%s без активной связи с клиентом → отказ (No active relation)',
+    async (_n, call) => {
+      const { svc } = makeService([relA]); // связь есть, но у T1, не у T2
+      await expect(call(svc)).rejects.toThrow('No active relation');
+    },
+  );
+
+  it('pending-связь (клиент не подтвердил) доступа не даёт', async () => {
+    const { svc } = makeService([{ ...relA, status: 'pending' }]);
+    await expect(svc.getClientData(T1, CID_A)).rejects.toThrow(
+      'No active relation',
+    );
+  });
+
+  it('терапевт с активной связью получает данные; при therapistShareProfile=false — только имя', async () => {
+    const { svc, users } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', ['abandonment']));
+    const shared = await svc.getClientData(T1, CID_A);
+    expect(shared.name).toBe('Аня');
+    expect(shared.mySchemaIds).toEqual(['abandonment']);
+
+    users[0].therapistShareProfile = false;
+    const hidden = await svc.getClientData(T1, CID_A);
+    expect(hidden.name).toBe('Аня');
+    expect(hidden.mySchemaIds).toEqual([]);
+    expect(hidden.myModeIds).toEqual([]);
+  });
+});
+
+describe('TherapyClientDataService — изоляция между клиентами одного терапевта', () => {
+  it('данные/дневник/заметки клиента A не содержат ничего от клиента B', async () => {
+    const { svc, users, schemaDiary, schemaNotes } = makeService([relA, relB]);
+    users.push(
+      mkUser(CLIENT_A, 'Аня', ['abandonment']),
+      mkUser(CLIENT_B, 'Боря', ['mistrust']),
+    );
+    schemaDiary.push(
+      mkDiaryRow(CLIENT_A, ['abandonment'], 'триггер А'),
+      mkDiaryRow(CLIENT_B, ['mistrust'], 'триггер Б'),
+    );
+    schemaNotes.push(
+      mkSchemaNote(1, CLIENT_A, 'abandonment', { triggers: 'т-А' }),
+      mkSchemaNote(2, CLIENT_B, 'mistrust', { triggers: 'т-Б' }),
+    );
+
+    const dataA = await svc.getClientData(T1, CID_A);
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    const notes = await svc.getClientSchemaNotes(T1, CID_A);
+
+    expect(dataA.name).toBe('Аня');
+    expect(dataA.mySchemaIds).toEqual(['abandonment']);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].excerpt).toBe('триггер А');
+    expect(notes).toHaveLength(1);
+    expect(notes[0].schemaId).toBe('abandonment');
+  });
+});
+
+describe('TherapyClientDataService — расшифровка на пути чтения', () => {
+  it('дневник схем/режимов/благодарности: поля приходят расшифрованными к plaintext', async () => {
+    const { svc, schemaDiary, modeDiary, gratitudeDiary } = makeService([relA]);
+    schemaDiary.push({
+      ...mkDiaryRow(CLIENT_A, [], 'меня проигнорировали'),
+      schemaIds: encryptJson(['abandonment', 'mistrust']),
+    });
+    modeDiary.push({
+      userId: CLIENT_A,
+      modeId: encrypt('vulnerable_child') ?? 'vulnerable_child',
+      situation: encrypt('поругались с партнёром') ?? 'поругались с партнёром',
+      createdAt: new Date('2026-07-10T09:00:00Z'),
+    });
+    gratitudeDiary.push({
+      userId: CLIENT_A,
+      date: '2026-07-09',
+      items: encryptJson(['выспалась', 'вкусный кофе', 'солнце']),
+    });
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    const schemaEntry = entries.find((e) => e.type === 'schema')!;
+    const modeEntry = entries.find((e) => e.type === 'mode')!;
+    const gratEntry = entries.find((e) => e.type === 'gratitude')!;
+    expect(schemaEntry.excerpt).toBe('меня проигнорировали');
+    expect(schemaEntry.schemaIds).toEqual(['abandonment', 'mistrust']);
+    expect(modeEntry.modeId).toBe('vulnerable_child');
+    expect(modeEntry.excerpt).toBe('поругались с партнёром');
+    // excerpt дневника благодарности — первые 2 пункта через « · »
+    expect(gratEntry.excerpt).toBe('выспалась · вкусный кофе');
+  });
+
+  // Регрессия инцидента 2026-09-17: дата благодарности хранится календарным
+  // днём и разбиралась без `Z` — в зоне процесса. На сервере восточнее UTC
+  // «сегодняшняя» благодарность получала момент предыдущих суток и вставала в
+  // ленте ниже вчерашнего разбора. Ловится вторым прогоном jest под
+  // TZ=Australia/Sydney (джоба backend).
+  it('лента отсортирована по дате независимо от зоны процесса', async () => {
+    const { svc, modeDiary, gratitudeDiary } = makeService([relA]);
+    modeDiary.push({
+      userId: CLIENT_A,
+      modeId: 'vulnerable_child',
+      situation: 'разбор девятого числа',
+      createdAt: new Date('2026-07-09T15:00:00Z'),
+    });
+    gratitudeDiary.push({
+      userId: CLIENT_A,
+      date: '2026-07-10',
+      items: ['благодарность десятого'],
+    });
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    expect(entries.map((e) => e.type)).toEqual(['gratitude', 'mode']);
+  });
+
+  // E15 аудита 2026-11: дата записи дневника схем/режимов — момент createdAt,
+  // и день брался в UTC. Запись в 01:30 по Москве стояла у психолога
+  // вчерашним числом, вечерняя запись в Нью-Йорке — завтрашним.
+  it.each([
+    ['Europe/Moscow', '2026-07-09T22:30:00Z', '2026-07-10'], // 01:30 МСК 10-го
+    ['Asia/Vladivostok', '2026-07-09T15:30:00Z', '2026-07-10'], // 01:30 10-го
+    ['America/New_York', '2026-07-10T02:00:00Z', '2026-07-09'], // 22:00 9-го
+    ['Asia/Kolkata', '2026-07-09T19:00:00Z', '2026-07-10'], // 00:30 10-го
+  ])('дата записи — местный день клиента (%s)', async (tz, at, day) => {
+    const { svc, users, schemaDiary, modeDiary } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), notifyTimezone: tz });
+    schemaDiary.push({
+      ...mkDiaryRow(CLIENT_A, [], 'т'),
+      createdAt: new Date(at),
+    });
+    modeDiary.push({
+      userId: CLIENT_A,
+      modeId: 'vulnerable_child',
+      situation: 'с',
+      createdAt: new Date(at),
+    });
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    expect(entries.map((e) => [e.type, e.date])).toEqual([
+      ['schema', day],
+      ['mode', day],
+    ]);
+  });
+
+  it('заметки по схеме и режиму: decryptRecord возвращает исходные строки полей', async () => {
+    const { svc, schemaNotes, modeNotes } = makeService([relA]);
+    schemaNotes.push(
+      mkSchemaNote(1, CLIENT_A, 'abandonment', {
+        triggers: encrypt('партнёр опоздал') ?? 'партнёр опоздал',
+        feelings: encrypt('тревога') ?? 'тревога',
+      }),
+    );
+    modeNotes.push(
+      mkModeNote(1, CLIENT_A, 'vulnerable_child', {
+        triggers: encrypt('одиночество') ?? 'одиночество',
+        needs: encrypt('поддержка') ?? 'поддержка',
+        origins: encrypt('так было в детстве') ?? 'так было в детстве',
+        healthyView: encrypt('это пройдёт') ?? 'это пройдёт',
+      }),
+    );
+    const [sNote] = await svc.getClientSchemaNotes(T1, CID_A);
+    const [mNote] = await svc.getClientModeNotes(T1, CID_A);
+    expect(sNote.triggers).toBe('партнёр опоздал');
+    expect(sNote.feelings).toBe('тревога');
+    expect(mNote.triggers).toBe('одиночество');
+    expect(mNote.needs).toBe('поддержка');
+    expect(mNote.origins).toBe('так было в детстве');
+    expect(mNote.healthyView).toBe('это пройдёт');
+  });
+});
+
+describe('TherapyClientDataService — ownership на write-путях', () => {
+  it('updateSessionInfo: чужой терапевт отклонён без записи в БД, владелец — применяет', async () => {
+    const { svc, db, rels } = makeService([relA]); // связь есть только у T1
+    await expect(
+      svc.updateSessionInfo(T2, CID_A, { nextSession: '2026-08-01' }),
+    ).rejects.toThrow('No active relation');
+    expect(db.therapyRelation.updateMany).not.toHaveBeenCalled();
+
+    await svc.updateSessionInfo(T1, CID_A, { nextSession: '2026-08-01' });
+    expect((rels[0] as any).nextSession).toBe('2026-08-01');
+  });
+
+  // Находка: removeClient не вызывает assertHasClient явно (в отличие от
+  // остальных методов) — но WHERE в deleteMany ограничен therapistId, так что
+  // чужой терапевт физически не может удалить чужую связь. Фиксируем поведение.
+  // С 2026-11-05 связь клиента с аккаунтом не удаляется, а завершается
+  // (ended + therapist_removed); открытые задания — личные цели клиента.
+  it('removeClient: чужой терапевт не выбрасывает и не трогает связь, владелец — завершает', async () => {
+    const { svc, rels, tasks } = makeService([relA]);
+    tasks.push(
+      { id: 1, userId: CLIENT_A, assignedBy: T1, done: null },
+      { id: 2, userId: CLIENT_A, assignedBy: T1, done: true },
+    );
+    await expect(svc.removeClient(T2, CID_A)).resolves.toBeUndefined();
+    expect(rels[0].status).toBe('active'); // связь T1↔A цела
+    expect(tasks[0].assignedBy).toBe(T1);
+
+    await svc.removeClient(T1, CID_A);
+    expect(rels).toHaveLength(1);
+    expect(rels[0]).toMatchObject({
+      status: 'ended',
+      endReason: 'therapist_removed',
+    });
+    expect(tasks.map((t) => t.assignedBy)).toEqual([null, T1]);
+  });
+
+  it('removeClient с виртуальным клиентом (clientId<0) удаляет связь по -clientId=id', async () => {
+    const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
+    await svc.removeClient(T1, -3n);
+    expect(rels).toHaveLength(0);
+  });
+
+  it('removeClient с отрицательным id связи с РЕАЛЬНЫМ клиентом — no-op (иначе заметки остались бы сиротами)', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
+    await svc.removeClient(T1, -1n);
+    expect(rels).toHaveLength(1);
+  });
+
+  it('removeClient виртуального клиента удаляет его задания, чужие и «свои» задания других остаются', async () => {
+    const { svc, tasks } = makeService([relVirtual]); // id 3 → userId -3
+    tasks.push(
+      { id: 1, userId: -3n, assignedBy: T1 }, // задание виртуальному клиенту
+      { id: 2, userId: -2n, assignedBy: T1 }, // другой виртуальный клиент
+      { id: 3, userId: -3n, assignedBy: T2 }, // не от этого терапевта
+    );
+    await svc.removeClient(T1, -3n);
+    expect(tasks.map((t) => t.id)).toEqual([2, 3]);
+  });
+
+  it('removeClient стирает именные карты режимов пары, чужие карты остаются', async () => {
+    const { svc, modeMaps } = makeService([relA]); // relA.id === 1
+    modeMaps.push(
+      { id: 1, therapistId: T1, clientId: CLIENT_A }, // карта этой пары
+      { id: 2, therapistId: T1, clientId: 777n }, // другой клиент того же терапевта
+      { id: 3, therapistId: T2, clientId: CLIENT_A }, // другой терапевт, тот же клиент
+    );
+    await svc.removeClient(T1, CID_A);
+    expect(modeMaps.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('removeClient виртуального клиента стирает его карты режимов', async () => {
+    const { svc, modeMaps } = makeService([relVirtual]); // id 3 → clientId -3
+    modeMaps.push(
+      { id: 1, therapistId: T1, clientId: -3n },
+      { id: 2, therapistId: T1, clientId: -2n },
+    );
+    await svc.removeClient(T1, -3n);
+    expect(modeMaps.map((m) => m.id)).toEqual([2]);
+  });
+
+  it('removeClient клиента с аккаунтом НЕ трогает задания — они у клиента', async () => {
+    const { svc, tasks } = makeService([relA]);
+    tasks.push({ id: 1, userId: CLIENT_A, assignedBy: T1 });
+    await svc.removeClient(T1, CID_A);
+    expect(tasks.map((t) => t.id)).toEqual([1]);
+  });
+});
+
+describe('TherapyClientDataService — виртуальный клиент (id<0) в getClientData', () => {
+  it('getClientData возвращает заглушку без чтения User/YSQ, но проверяет связь', async () => {
+    // relVirtual.id === 3 → clientId=-3 (связь реального клиента relA под -1
+    // больше не проходит как «виртуальная» — аудит 2026-10, T4)
+    const { svc, db } = makeService([relVirtual]);
+    const result = await svc.getClientData(T1, -3);
+    expect(result).toEqual({
+      name: null,
+      mySchemaIds: [],
+      myModeIds: [],
+      ysqCompletedAt: null,
+      ysqActiveSchemaIds: [],
+      ysqHistory: [],
+      ysqRequestPending: false,
+      childhoodRatings: {},
+    });
+    expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.childhoodRating.findMany).not.toHaveBeenCalled();
+  });
+
+  it('getClientData для виртуального клиента без активной связи → отказ', async () => {
+    const { svc } = makeService([relA]);
+    await expect(svc.getClientData(T1, -999)).rejects.toThrow(
+      'No active relation',
+    );
+  });
+});
+
+// «Колесо детства» клиента на холсте терапевта: сохранённые клиентом оценки
+// (ChildhoodRating) доходят до getClientData под той же приватностью, что YSQ.
+describe('TherapyClientDataService — getClientData: «Колесо детства» (childhoodRatings)', () => {
+  const rate = (userId: bigint, needId: string, value: unknown) => ({
+    userId,
+    needId,
+    value,
+  });
+
+  it('отдаёт оценки клиента одним findMany с select needId/value', async () => {
+    const { svc, users, childhood, db } = makeService([relA, relB]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    childhood.push(
+      rate(CLIENT_A, 'attachment', 2),
+      rate(CLIENT_A, 'limits', 0),
+      rate(CLIENT_A, 'play', 10),
+      rate(CLIENT_B, 'autonomy', 7), // чужой клиент того же терапевта
+    );
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.childhoodRatings).toEqual({
+      attachment: 2,
+      limits: 0,
+      play: 10,
+    });
+    expect(db.childhoodRating.findMany).toHaveBeenCalledTimes(1);
+    expect(db.childhoodRating.findMany).toHaveBeenCalledWith({
+      where: { userId: CLIENT_A },
+      select: { needId: true, value: true },
+    });
+  });
+
+  it('мусор отброшен: неизвестный needId, дробь, вне 0–10, не число', async () => {
+    const { svc, users, childhood } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    childhood.push(
+      rate(CLIENT_A, 'autonomy', 5),
+      rate(CLIENT_A, 'safety', 4),
+      rate(CLIENT_A, 'attachment', 11),
+      rate(CLIENT_A, 'expression', -1),
+      rate(CLIENT_A, 'play', 3.5),
+      rate(CLIENT_A, 'limits', '7'),
+    );
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.childhoodRatings).toEqual({ autonomy: 5 });
+  });
+
+  it('клиент не проходил упражнение → {}', async () => {
+    const { svc, users } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    expect((await svc.getClientData(T1, CID_A)).childhoodRatings).toEqual({});
+  });
+
+  it('профиль скрыт клиентом (therapistShareProfile=false) → {}', async () => {
+    const { svc, users, childhood } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', [], false));
+    childhood.push(rate(CLIENT_A, 'attachment', 2));
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.childhoodRatings).toEqual({});
+    // Контрольный образец: тот же клиент с открытым профилем — оценка видна.
+    users[0].therapistShareProfile = true;
+    expect((await svc.getClientData(T1, CID_A)).childhoodRatings).toEqual({
+      attachment: 2,
+    });
+  });
+
+  it('чужой терапевт оценок не получает — отказ связи', async () => {
+    const { svc, users, childhood } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    childhood.push(rate(CLIENT_A, 'attachment', 2));
+    await expect(svc.getClientData(T2, CID_A)).rejects.toThrow(
+      'No active relation',
+    );
+  });
+});
+
+describe('TherapyClientDataService — getClientData: ветки без пользователя/с историей YSQ', () => {
+  it('юзер не найден в БД (User удалён) → пустой профиль без падения', async () => {
+    const { svc } = makeService([relA]); // users пуст
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.name).toBeNull();
+    expect(data.mySchemaIds).toEqual([]);
+    expect(data.myModeIds).toEqual([]);
+  });
+
+  it('с заполненным YSQ (answers) и историей — считает активные схемы и историю попыток', async () => {
+    const { svc, users, db } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', ['abandonment']));
+    const answers = new Array(116).fill(6); // все вопросы «6» → все схемы активны
+    db.ysqResult.findUnique = jest.fn(() =>
+      Promise.resolve({
+        userId: CLIENT_A,
+        answers,
+        completedAt: new Date('2026-07-01T00:00:00Z'),
+      }),
+    );
+    db.ysqResultHistory.findMany = jest.fn(() =>
+      Promise.resolve([
+        { id: 1, completedAt: new Date('2026-06-01T00:00:00Z'), answers },
+      ]),
+    );
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.ysqCompletedAt).toBe('2026-07-01T00:00:00.000Z');
+    expect(data.ysqActiveSchemaIds.length).toBeGreaterThan(0);
+    expect(data.ysqHistory).toHaveLength(1);
+    expect(data.ysqHistory[0].scores).toBeDefined();
+  });
+});
+
+describe('TherapyClientDataService — clientId<0 короткие пути', () => {
+  it('getClientHistory для виртуального клиента → [] без обращения к analyticsService', async () => {
+    const { svc, analyticsService } = makeService([relA]);
+    expect(await svc.getClientHistory(T1, -1)).toEqual([]);
+    expect(analyticsService.getHistoryRatings).not.toHaveBeenCalled();
+  });
+
+  it('getClientDiaryEntries для виртуального клиента → [] без обращения к БД', async () => {
+    const { svc, db } = makeService([relA]);
+    expect(await svc.getClientDiaryEntries(T1, -1)).toEqual([]);
+    expect(db.schemaDiaryEntry.findMany).not.toHaveBeenCalled();
+  });
+
+  it('requestYsq для виртуального клиента → связь проверяется, но уведомление не шлётся', async () => {
+    const { svc, db, notificationService } = makeService([relVirtual]);
+    const findFirstSpy = jest.spyOn(db.therapyRelation, 'findFirst');
+    await svc.requestYsq(T1, -3);
+    expect(notificationService.schedule).not.toHaveBeenCalled();
+    // «связь проверяется» — это реальный поход в БД за relation по -clientId=id,
+    // а не голый early-return без проверки принадлежности.
+    expect(findFirstSpy).toHaveBeenCalledWith({
+      where: { id: 3, therapistId: T1, clientId: null, status: 'active' },
+    });
+  });
+});
+
+describe('TherapyClientDataService — getClientHistory с данными', () => {
+  it('день с 5 оценками получает индекс (среднее *10/10), день с < 5 — index:null', async () => {
+    const { svc, analyticsService } = makeService([relA]);
+    analyticsService.getHistoryRatings.mockResolvedValue([
+      {
+        date: '2026-07-20',
+        ratings: {
+          attachment: 8,
+          autonomy: 6,
+          expression: 7,
+          play: 5,
+          limits: 9,
+        },
+      },
+      { date: '2026-07-19', ratings: { attachment: 4 } }, // неполный день
+    ]);
+    const history = await svc.getClientHistory(T1, CID_A);
+    expect(history).toHaveLength(2);
+    const full = history.find((h) => h.date === '2026-07-20')!;
+    expect(full.index).toBeCloseTo(7); // (8+6+7+5+9)/5 = 7
+    const partial = history.find((h) => h.date === '2026-07-19')!;
+    expect(partial.index).toBeNull();
+    expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(
+      CLIENT_A,
+      14,
+    );
+  });
+});
+
+// QA 2026-11, К1: запрос YSQ был только сообщением бота — у аккаунта без
+// Telegram очередь его отменяла, а терапевт видел «✓ Запрос отправлен». Теперь
+// запрос — задание клиенту (ysq-request.ts), а сообщение — второй канал.
+// Задания здесь живут в общем массиве `tasks` фейковой базы: request →
+// getClientData видят одни и те же строки, а не «вызвали мок».
+describe('TherapyClientDataService — requestYsq: задание «пройти тест на схемы»', () => {
+  const relA2: Rel = {
+    id: 4,
+    therapistId: T2,
+    clientId: CLIENT_A,
+    status: 'active',
+    code: 'AAA222',
+  };
+  const ysqTasks = (tasks: any[]) => tasks.filter((t) => t.type === 'ysq_test');
+
+  it('клиенту приходит задание от терапевта — его видно на любой площадке, Telegram не нужен', async () => {
+    const { svc, tasks } = makeService([relA]);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqTasks(tasks)).toHaveLength(1);
+    const [task] = ysqTasks(tasks);
+    expect(task).toMatchObject({
+      userId: CLIENT_A,
+      assignedBy: T1,
+      done: null,
+    });
+    expect(decrypt(task.text)).toBe('Пройти тест на схемы');
+  });
+
+  it('повтор, пока тест не пройден, — ни второго задания, ни второго сообщения', async () => {
+    const { svc, tasks, notificationService } = makeService([relA]);
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqTasks(tasks)).toHaveLength(1);
+    expect(notificationService.schedule).toHaveBeenCalledTimes(1);
+  });
+
+  it('сообщение в Telegram: имя терапевта; без имени в профиле — null', async () => {
+    const { svc, users, notificationService } = makeService([relA, relB]);
+    users.push(mkUser(T1, 'Доктор Иванова', []));
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.schedule).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+      expect.any(Date),
+      { therapistName: 'Доктор Иванова' },
+    );
+    users.length = 0;
+    await svc.requestYsq(T1, CLIENT_B);
+    expect(notificationService.schedule).toHaveBeenLastCalledWith(
+      CLIENT_B,
+      'ysq_requested',
+      expect.any(Date),
+      { therapistName: null },
+    );
+  });
+
+  it('сообщение уже ждёт в очереди → задание создаётся, второе сообщение — нет', async () => {
+    const { svc, tasks, notificationService } = makeService([relA]);
+    notificationService.hasPending.mockResolvedValue(true);
+    await svc.requestYsq(T1, CID_A);
+    expect(notificationService.hasPending).toHaveBeenCalledWith(
+      CLIENT_A,
+      'ysq_requested',
+    );
+    expect(ysqTasks(tasks)).toHaveLength(1);
+    expect(notificationService.schedule).not.toHaveBeenCalled();
+  });
+
+  it('чужой терапевт без связи → отказ до записи', async () => {
+    const { svc, tasks, notificationService } = makeService([relA]);
+    await expect(svc.requestYsq(T2, CID_A)).rejects.toThrow(
+      'No active relation',
+    );
+    expect(tasks).toHaveLength(0);
+    expect(notificationService.schedule).not.toHaveBeenCalled();
+  });
+
+  it('офлайн-клиент: аккаунта нет — задания нет', async () => {
+    const { svc, tasks } = makeService([relVirtual]);
+    await svc.requestYsq(T1, -3);
+    expect(tasks).toHaveLength(0);
+  });
+
+  // Read-after-write: запрос → карточка клиента видит, что он висит; тест
+  // пройден (настоящий YsqService на той же базе) → задание закрыто и
+  // признак погас. Источник правды один — открытое задание.
+  it('запрос → ysqRequestPending true; тест пройден → задание закрыто, false', async () => {
+    const { svc, db, tasks } = makeService([relA]);
+    db.ysqResult.upsert = jest.fn(() => Promise.resolve({}));
+    db.ysqResultHistory.create = jest.fn(() => Promise.resolve({}));
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
+    await svc.requestYsq(T1, CID_A);
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(true);
+    await new YsqService(db).saveYsqResult(CLIENT_A, [1, 2, 3]);
+    expect(ysqTasks(tasks)[0].done).toBe(true);
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
+  });
+
+  it('терапевт удалил задание → запрос снят, его можно поставить снова', async () => {
+    const { svc, db, tasks } = makeService([relA]);
+    await svc.requestYsq(T1, CID_A);
+    await db.userTask.deleteMany({
+      where: { userId: CLIENT_A, assignedBy: T1 },
+    });
+    expect((await svc.getClientData(T1, CID_A)).ysqRequestPending).toBe(false);
+    await svc.requestYsq(T1, CID_A);
+    expect(ysqTasks(tasks)).toHaveLength(1);
+  });
+
+  // Признак — по паре: чужой запрос не выдаёт второму терапевту, что у
+  // клиента есть другой (docs/open/therapy.md), и не мешает ему запросить своё.
+  it('запрос другого терапевта этого клиента — не «свой»', async () => {
+    const { svc, tasks } = makeService([relA, relA2]);
+    await svc.requestYsq(T1, CID_A);
+    expect((await svc.getClientData(T2, CID_A)).ysqRequestPending).toBe(false);
+    await svc.requestYsq(T2, CID_A);
+    expect(ysqTasks(tasks).map((t) => t.assignedBy)).toEqual([T1, T2]);
+  });
+
+  it('профиль скрыт клиентом — свой висящий запрос терапевт всё равно видит', async () => {
+    const { svc, users } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', ['abandonment'], false));
+    await svc.requestYsq(T1, CID_A);
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.mySchemaIds).toEqual([]);
+    expect(data.ysqRequestPending).toBe(true);
+  });
+});
+
+describe('TherapyClientDataService — updateSessionInfo: поля и виртуальный клиент', () => {
+  it('обновляет только переданное поле therapyStartDate', async () => {
+    const { svc, rels } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, {
+      therapyStartDate: '2026-01-15',
+    });
+    expect((rels[0] as any).therapyStartDate).toBe('2026-01-15');
+  });
+
+  it('обновляет meetingDays', async () => {
+    const { svc, rels } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, { meetingDays: [1, 3, 5] });
+    expect((rels[0] as any).meetingDays).toEqual([1, 3, 5]);
+  });
+
+  it('memo пишется шифротекстом, пустая строка и null очищают', async () => {
+    const { svc, rels } = makeService([relA]);
+    await svc.updateSessionInfo(T1, CID_A, { memo: '  боится опоздать  ' });
+    const stored = (rels[0] as any).therapistMemo as string;
+    expect(decryptName(stored)).toBe('боится опоздать');
+    await svc.updateSessionInfo(T1, CID_A, { memo: '   ' });
+    expect((rels[0] as any).therapistMemo).toBeNull();
+  });
+
+  it('memo офлайн-клиента пишется в его карточку (-id)', async () => {
+    const { svc, rels } = makeService([relVirtual]);
+    await svc.updateSessionInfo(T1, -3n, { memo: 'без телефона' });
+    expect(decryptName((rels[0] as any).therapistMemo)).toBe('без телефона');
+  });
+
+  it('пустое тело (все поля undefined) — не трогает БД', async () => {
+    const { svc, db, rels } = makeService([relA]);
+    const before = { ...rels[0] };
+    await svc.updateSessionInfo(T1, CID_A, {});
+    expect(db.therapyRelation.updateMany).not.toHaveBeenCalled();
+    // Не только мок не звали — сама связь осталась побитово той же.
+    expect(rels[0]).toEqual(before);
+  });
+
+  it('виртуальный клиент (clientId<0): обновляет связь по -clientId=id, не по clientId', async () => {
+    const { svc, rels } = makeService([relVirtual]); // relVirtual.id === 3
+    await svc.updateSessionInfo(T1, -3n, { nextSession: '2026-09-01' });
+    expect((rels[0] as any).nextSession).toBe('2026-09-01');
+  });
+
+  // Аудит 2026-10, T4: -id связи РЕАЛЬНОГО клиента не должен проходить как
+  // виртуальный клиент — ни проверка доступа, ни запись в чужую строку.
+  it('-relA.id (связь реального клиента) не проходит как виртуальный: отказ, строка не тронута', async () => {
+    const { svc, rels } = makeService([relA]); // relA.id === 1, clientId задан
+    const before = (rels[0] as any).nextSession; // relA — общий объект, мог быть изменён раньше
+    await expect(
+      svc.updateSessionInfo(T1, -1n, { nextSession: '2026-09-01' }),
+    ).rejects.toThrow('No active relation');
+    expect((rels[0] as any).nextSession).toBe(before);
+  });
+});
+
+// Переиспользует makeService()/makeDb() выше — граница assertHasClient уже
+// покрыта it.each в первом describe; здесь только приватность карточек.
+describe('доступ терапевта к карточкам клиента (therapistShareCards)', () => {
+  it('therapistShareCards=false → пусто, сами заметки не читаются', async () => {
+    const { svc, users, schemaNotes, db } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: false });
+    schemaNotes.push(mkSchemaNote(1, CLIENT_A, 'abandonment'));
+    expect(await svc.getClientSchemaNotes(T1, CID_A)).toEqual([]);
+    expect(await svc.getClientModeNotes(T1, CID_A)).toEqual([]);
+    expect(db.userSchemaNote.findMany).not.toHaveBeenCalled();
+  });
+
+  it('therapistShareCards=false → дневник ТОЖЕ пуст, записи не читаются (L1)', async () => {
+    const { svc, users, schemaDiary, db } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: false });
+    schemaDiary.push(mkDiaryRow(CLIENT_A, ['abandonment'], 'триггер А'));
+    // Диари-путь раньше терял этот флаг — отдавал клинический текст в обход
+    // opt-out клиента. Теперь гейт срабатывает ДО чтения строк дневника.
+    expect(await svc.getClientDiaryEntries(T1, CID_A)).toEqual([]);
+    expect(db.schemaDiaryEntry.findMany).not.toHaveBeenCalled();
+  });
+
+  it('therapistShareCards=null → дневник отдаётся (гейт условный, не всегда пусто) (L1)', async () => {
+    const { svc, users, schemaDiary } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: null });
+    schemaDiary.push(mkDiaryRow(CLIENT_A, ['abandonment'], 'триггер А'));
+    expect(await svc.getClientDiaryEntries(T1, CID_A)).toHaveLength(1);
+  });
+
+  it('therapistShareCards=null (дефолт «делюсь», поле не задано) → заметки отдаются', async () => {
+    const { svc, users, schemaNotes } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), therapistShareCards: null });
+    schemaNotes.push(mkSchemaNote(1, CLIENT_A, 'abandonment'));
+    expect(await svc.getClientSchemaNotes(T1, CID_A)).toHaveLength(1);
+  });
+
+  it('виртуальный клиент (id<0) → пусто без обращений к БД', async () => {
+    const { svc, db } = makeService([relA]);
+    expect(await svc.getClientSchemaNotes(T1, -5)).toEqual([]);
+    expect(db.user.findUnique).not.toHaveBeenCalled();
+  });
+});

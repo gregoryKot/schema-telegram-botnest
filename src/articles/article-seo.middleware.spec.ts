@@ -1,0 +1,379 @@
+import { ArticleSeoMiddleware } from './article-seo.middleware';
+import type { ArticlesService } from './articles.service';
+import { landingPriceText } from '../booking/landing-price';
+import type { PricingService } from '../booking/pricing.service';
+import { REVALIDATE } from '../infra/static-cache';
+import { PRACTICE_PREVIEW } from '../practice-preview';
+
+// Цена сессии в админке — 4 500 ₽ (так её отдаст PricingService.landingText).
+const PRICING = {
+  landingText: (text: string) =>
+    Promise.resolve(landingPriceText(text, { RUB: 4500 })),
+} as unknown as PricingService;
+
+// existsSync/readFileSync экспортируются из 'fs' как non-configurable
+// свойства в текущем Node — jest.spyOn(fs, ...) падает "Cannot redefine
+// property". jest.mock() подменяет весь модуль на уровне резолвера, это
+// работает независимо от дескрипторов свойств рантайма.
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fs = require('fs') as {
+  existsSync: jest.Mock;
+  readFileSync: jest.Mock;
+};
+
+// Minimal index.html mirroring the real one's SEO-relevant tags.
+const BASE_HTML = `<!doctype html>
+<html lang="ru">
+  <head>
+    <title>Григорий Котляревский – схема-терапия онлайн</title>
+    <meta name="description" content="Онлайн-консультации в подходе схема-терапии." />
+    <link rel="canonical" href="https://schemehappens.ru/" />
+    <meta property="og:url"         content="https://schemehappens.ru/" />
+    <meta property="og:title"       content="Григорий Котляревский" />
+    <meta property="og:description" content="Онлайн-консультации." />
+    <meta property="og:type"        content="website" />
+    <meta property="og:image"       content="https://schemehappens.ru/og-app-v1.jpg" />
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
+
+function makeMiddleware(
+  article: any,
+  list: jest.Mock = jest.fn().mockResolvedValue(article ? [article] : []),
+): ArticleSeoMiddleware {
+  const service = {
+    list,
+    findBySlug: jest.fn(async (slug: string) => {
+      if (article && article.slug === slug) return article;
+      throw new Error('not found');
+    }),
+  } as unknown as ArticlesService;
+  const mw = new ArticleSeoMiddleware(service, PRICING);
+  // Inject base HTML so the middleware doesn't read from disk.
+  (mw as any).cachedHtml = BASE_HTML;
+  return mw;
+}
+
+function mockReqRes(
+  path: string,
+  host = 'schemehappens.ru',
+  extraHeaders: Record<string, string> = {},
+) {
+  // hostname повторяет поведение Express при trust proxy: сперва клиентский
+  // X-Forwarded-Host, потом Host.
+  const req = {
+    path,
+    hostname: extraHeaders['x-forwarded-host'] ?? host,
+    headers: { host, ...extraHeaders },
+  } as any;
+  let sent: string | null = null;
+  const res = {
+    setHeader: jest.fn(),
+    send: jest.fn((body: string) => {
+      sent = body;
+    }),
+  } as any;
+  return { req, res, getSent: () => sent };
+}
+
+const ARTICLE = {
+  slug: 'skhemy-yanga-spisok',
+  title: '18 схем Янга: полный список',
+  description: 'Полный список 18 ранних дезадаптивных схем по Джеффри Янгу.',
+  content: '<h2>Домен I</h2><p>Первый текст.</p><p>Второй текст.</p>',
+  date: new Date('2025-05-10T00:00:00.000Z'),
+  readMin: 10,
+};
+
+describe('ArticleSeoMiddleware', () => {
+  it('injects the article title, description and canonical for a known slug', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    const next = jest.fn();
+
+    await mw.use(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    const html = getSent()!;
+    expect(html).toContain(
+      '<title>18 схем Янга: полный список – Всё по схеме</title>',
+    );
+    expect(html).toContain(
+      'content="Полный список 18 ранних дезадаптивных схем по Джеффри Янгу."',
+    );
+    expect(html).toContain(
+      '<link rel="canonical" href="https://schemehappens.ru/articles/skhemy-yanga-spisok" />',
+    );
+    expect(html).toContain('property="og:type" content="article"');
+  });
+
+  it('injects the article body text into #root so crawlers read it', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain('<h1>18 схем Янга: полный список</h1>');
+    expect(html).toContain('Первый текст.');
+    expect(html).toContain('application/ld+json');
+    expect(html).toContain('"@type":"Article"');
+  });
+
+  it('цена визитки из админки — в шаблоне страницы, текст статьи не трогается', async () => {
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      content: '<p>Сессия у частного специалиста — 4 000 ₽.</p>',
+    });
+    Object.assign(mw, {
+      cachedHtml: BASE_HTML.replace(
+        '</head>',
+        '<script type="application/ld+json">{"price": "4000"}</script></head>',
+      ),
+    });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    expect(getSent()).toContain('{"price": "4500"}');
+    expect(getSent()).toContain('частного специалиста — 4 000 ₽.');
+  });
+
+  it('falls through to the SPA for an unknown slug', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res } = mockReqRes('/articles/does-not-exist');
+    const next = jest.fn();
+    await mw.use(req, res, next);
+    // next() зовётся без аргументов (не next(err)) — это «пропусти дальше», а не ошибка.
+    expect(next).toHaveBeenCalledWith();
+    expect(res.send).not.toHaveBeenCalled();
+    // SEO-заголовок не проставлен — раздача уходит ServeStatic как есть.
+    expect(res.setHeader).not.toHaveBeenCalled();
+  });
+
+  it('injects the article list for /articles', async () => {
+    const list = jest.fn().mockResolvedValue([ARTICLE]);
+    const mw = makeMiddleware(ARTICLE, list);
+    const { req, res, getSent } = mockReqRes('/articles/');
+    const next = jest.fn();
+    await mw.use(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(list).toHaveBeenCalledTimes(1);
+    const html = getSent()!;
+    expect(html).toContain('<h1>Статьи о схема-терапии</h1>');
+    expect(html).toContain('href="/articles/skhemy-yanga-spisok"');
+    expect(html).toContain(
+      '<link rel="canonical" href="https://schemehappens.ru/articles" />',
+    );
+    expect(html).toContain('property="og:type" content="website"');
+    expect(html).not.toContain('application/ld+json');
+  });
+
+  it('/articles: ошибка БД → SPA как есть (next(), без send)', async () => {
+    const list = jest.fn().mockRejectedValue(new Error('db down'));
+    const mw = makeMiddleware(ARTICLE, list);
+    const { req, res } = mockReqRes('/articles');
+    const next = jest.fn();
+    await mw.use(req, res, next);
+    expect(next).toHaveBeenCalledWith();
+    expect(res.send).not.toHaveBeenCalled();
+  });
+
+  it('dateModified в JSON-LD берёт updatedAt, если он позже date', async () => {
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      updatedAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain('"datePublished":"2025-05-10T00:00:00.000Z"');
+    expect(html).toContain('"dateModified":"2026-09-01T00:00:00.000Z"');
+  });
+
+  it('<title>: продукт — «Всё по схеме», визитка — имя автора', async () => {
+    const title = async (path: string, host: string) => {
+      const mw = makeMiddleware(
+        ARTICLE,
+        jest.fn().mockResolvedValue([ARTICLE]),
+      );
+      const { req, res, getSent } = mockReqRes(path, host);
+      await mw.use(req, res, () => {});
+      return /<title>([^<]*)<\/title>/.exec(getSent()!)?.[1];
+    };
+    const slug = '/articles/skhemy-yanga-spisok';
+    expect(await title(slug, 'schemehappens.ru')).toBe(
+      '18 схем Янга: полный список – Всё по схеме',
+    );
+    expect(await title(slug, 'kotlarewski.gr')).toBe(
+      '18 схем Янга: полный список – Григорий Котляревский',
+    );
+    expect(await title('/articles', 'schemehappens.ru')).toBe(
+      'Статьи о схема-терапии – Всё по схеме',
+    );
+    expect(await title('/articles', 'kotlarewski.gr')).toBe(
+      'Статьи о схема-терапии – Григорий Котляревский',
+    );
+  });
+
+  it('rewrites canonical host for alias domains', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'kotlarewski.gr',
+    );
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain(
+      'href="https://kotlarewski.gr/articles/skhemy-yanga-spisok"',
+    );
+    expect(html).not.toContain('https://schemehappens.ru');
+    // Карточка в HTML зависит от хоста — кэш как у index.html из ServeStatic.
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', REVALIDATE);
+  });
+
+  // Карточка ссылки: в index.html — продукт, статья на визитке показывает
+  // обложку визитки, на продукте — продукта (practice-preview.ts).
+  it('alias-домен — обложка визитки, продуктовый хост — продукта', async () => {
+    const cover = async (host: string) => {
+      const mw = makeMiddleware(ARTICLE);
+      const { req, res, getSent } = mockReqRes(
+        '/articles/skhemy-yanga-spisok',
+        host,
+      );
+      await mw.use(req, res, () => {});
+      return /property="og:image"\s+content="([^"]+)"/.exec(getSent()!)?.[1];
+    };
+    expect(await cover('kotlarewski.gr')).toBe(PRACTICE_PREVIEW.image);
+    expect(await cover('schemehappens.ru')).toBe(
+      'https://schemehappens.ru/og-app-v1.jpg',
+    );
+  });
+
+  // Аудит 2026-10 (I3): клиентский X-Forwarded-Host (его читает req.hostname
+  // при trust proxy) отражался в canonical/og:url без экранирования.
+  it('X-Forwarded-Host с разметкой не попадает в HTML — остаётся канонический хост', async () => {
+    const evil = 'evil"><script>alert(1)</script>';
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'schemehappens.ru',
+      { 'x-forwarded-host': evil },
+    );
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).not.toContain('evil');
+    expect(html).not.toContain('alert(1)');
+    expect(html).toContain(
+      'href="https://schemehappens.ru/articles/skhemy-yanga-spisok"',
+    );
+  });
+
+  it('произвольный Host вне списка алиасов канонический хост не меняет', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'attacker.example',
+    );
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).not.toContain('attacker.example');
+    expect(html).toContain('https://schemehappens.ru/articles/');
+  });
+
+  it('X-Forwarded-Host алиаса не подменяет Host канонического сайта', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes(
+      '/articles/skhemy-yanga-spisok',
+      'schemehappens.ru',
+      { 'x-forwarded-host': 'kotlarewski.gr' },
+    );
+    await mw.use(req, res, () => {});
+    expect(getSent()!).toContain('https://schemehappens.ru/articles/');
+  });
+
+  it('escapes HTML-significant characters in the title', async () => {
+    const mw = makeMiddleware({ ...ARTICLE, title: 'КПТ & «схемы» <тест>' });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain(
+      '<title>КПТ &amp; «схемы» &lt;тест&gt; – Всё по схеме</title>',
+    );
+  });
+
+  it('strips <script> from article content before injecting', async () => {
+    const mw = makeMiddleware({
+      ...ARTICLE,
+      content: '<p>ok</p><script>alert(1)</script>',
+    });
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const html = getSent()!;
+    expect(html).toContain('<p>ok</p>');
+    expect(html).not.toContain('alert(1)');
+  });
+
+  it('JSON-LD статьи без image: обложку рисует сайт, картинки статьи в базе нет', async () => {
+    const mw = makeMiddleware(ARTICLE);
+    const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(req, res, () => {});
+    const jsonLd =
+      /<script type="application\/ld\+json">([^<]+)<\/script>/.exec(
+        getSent()!,
+      )?.[1] ?? '';
+    expect(jsonLd).toContain('"@type":"Article"');
+    expect(jsonLd).not.toContain('"image"');
+  });
+});
+
+// html() читает dist/index.html с диска и кэширует результат на инстансе —
+// остальные тесты выше обходят это, подставляя cachedHtml напрямую. Здесь
+// мокаем fs, чтобы не зависеть от того, собран ли webapp/dist локально.
+describe('ArticleSeoMiddleware — чтение index.html с диска (html())', () => {
+  afterEach(() => {
+    fs.existsSync.mockReset();
+    fs.readFileSync.mockReset();
+  });
+
+  it('index.html не найден на диске → SPA как есть (next(), без send)', async () => {
+    fs.existsSync.mockReturnValue(false);
+    const service = {
+      findBySlug: jest.fn(),
+      list: jest.fn(),
+    } as unknown as ArticlesService;
+    const mw = new ArticleSeoMiddleware(service, PRICING);
+    const { req, res } = mockReqRes('/articles/skhemy-yanga-spisok');
+    const next = jest.fn();
+
+    await mw.use(req, res, next);
+
+    expect(next).toHaveBeenCalledWith();
+    expect(res.send.mock.calls).toEqual([]);
+    expect(fs.readFileSync.mock.calls).toEqual([]);
+    // articles.service не должен даже дёргаться — early return до похода в БД.
+    expect(service.findBySlug.mock.calls).toEqual([]);
+  });
+
+  it('index.html найден на диске → читается, кэшируется, статья инжектится', async () => {
+    fs.existsSync.mockReturnValue(true);
+    fs.readFileSync.mockReturnValue(BASE_HTML);
+    const service = {
+      findBySlug: jest.fn().mockResolvedValue(ARTICLE),
+    } as unknown as ArticlesService;
+    const mw = new ArticleSeoMiddleware(service, PRICING);
+
+    const first = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(first.req, first.res, () => {});
+    expect(first.getSent()).toContain('18 схем Янга');
+    expect(fs.readFileSync).toHaveBeenCalledTimes(1);
+
+    // Второй запрос переиспользует закэшированный HTML — файл читается один раз.
+    const second = mockReqRes('/articles/skhemy-yanga-spisok');
+    await mw.use(second.req, second.res, () => {});
+    expect(fs.readFileSync).toHaveBeenCalledTimes(1);
+  });
+});

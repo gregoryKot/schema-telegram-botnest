@@ -1,0 +1,154 @@
+# compiled output
+/dist
+node_modules/
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Claude Code local settings (may contain env vars from permission prompts).
+# Шаблон с `**/` — иначе правило якорится к корню и вложенные .claude остаются затреканными.
+**/.claude/settings.local.json
+**/.claude/worktrees/
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+
+# webapp dist — built by Dockerfile on Amvera, no need to commit
+webapp/dist/
+
+# shared: не npm-workspace (README.md), поэтому /node_modules и /coverage
+# корневого .gitignore его не покрывают — свой пакет, свои артефакты.
+shared/node_modules
+shared/coverage/
+
+
+# macOS junk
+.DS_Store
+**/.DS_Store
+
+# Дампы и бэкапы БД — НИКОГДА в git (репозиторий публичный).
+*.sql.gz
+*.dump
+*.pgdump
+scripts/*_data.sql
+backup*.sql
+dump*.sql
+
+# Аудиты с ОТКРЫТЫМИ (ещё не закрытыми) находками — репозиторий публичный,
+# коммит такого файла = публикация карты уязвимостей. Держать локально, пока
+# находки не закрыты; после закрытия — переносить в docs/archive/ и коммитить.
+docs/SECOND_AUDIT.md
+
+# Accidental project duplicates (never commit these)
+schema-telegram-botnest
+schema-telegram-botnest/
+schema-telegram-botnest.zip
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Generated Prisma config artifacts (prisma.config.js itself is a tracked source file)
+prisma.config.d.ts
+prisma.config.js.map
+
+# Воркспейс .claire — не код проекта (затреканный файл из чужого worktree
+# давал environment-зависимый eslint в CI)
+.claire/
+
+# Stryker (mutation testing, этап 4.1): песочница и отчёты — артефакты
+# прогона, в репозиторий не кладутся. В git едут только stryker.config.json
+# и scripts/mutation-baseline.json (счёт по золотым зонам).
+.stryker-tmp/
+reports/
+
+# Playwright (браузерный smoke, TEST_TRUST_PLAN.md п.4): трейсы/скриншоты
+# упавших прогонов — артефакт запуска, в CI уезжает отдельным upload-artifact.
+test-results/
+playwright-report/
+
+# Артефакты `tsc -b` рядом с TS-исходниками тестов и конфигов: сборка webapp
+# (`npm run build --prefix webapp`) собирает и связанные проекты, оставляя
+# .js/.d.ts/.js.map возле каждого .ts. Это мусор сборки, не код.
+e2e-browser/**/*.js
+e2e-browser/**/*.d.ts
+e2e-browser/**/*.js.map
+test/**/*.js
+test/**/*.d.ts
+test/**/*.js.map
+playwright.config.js
+playwright.config.d.ts
+playwright.config.js.map
+
+# Отчёт замера планов запросов (test/perf/run-plans.ts → scripts/check-query-plans.mjs).
+# Артефакт джобы `perf`, снимается на синтетике: в репозитории ему делать
+# нечего, планки живут в scripts/query-plan-baseline.json.
+/.perf
+
+# Кэш ts-jest: джоба backend задаёт абсолютный JEST_CACHE_DIR (корень
+# репозитория, `.jest-cache`), а относительный путь jest резолвит от rootDir
+# каждого конфига: бэкенд пишет в src/.jest-cache, e2e (test/jest-e2e.json) —
+# в test/.jest-cache. Правило без `/` в начале ловит все три места. Локальный
+# прогон оставляет тысячи файлов под `git status` — ровно то, что однажды
+# уедет в коммит целиком (так и случилось: #243). Правило отслеживаемое не
+# снимает, поэтому есть scripts/check-ignored-tracked.mjs.
+.jest-cache/
+
+# Журнал замера контекста агента (хук .claude/hooks/log-tool-use.mjs) — локальный, у каждой сессии свой.
+.claude/state/
+
+# Мини-апп удалён из репозитория (#917); у владельца остаётся старый клон
+# gregoryKot/schema-miniapp в корне — его node_modules иначе попадают в
+# неотслеживаемое и в чистое дерево precheck (ENOBUFS в check-unwatched-code).
+schema-miniapp/
+
+# превью арта «Недели» (генерируется game/art/build.py)
+game/art/out/

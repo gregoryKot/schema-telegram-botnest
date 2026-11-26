@@ -1,0 +1,288 @@
+// @vitest-environment jsdom
+// Сцены приложения (AppScenes*.tsx) и варианты сцен лендинга для кабинета (SceneChildhood
+// values, SceneCheckIn days, SceneQuizMini, HeroCollage compact): контракт сцены
+// (sceneContract.test-helpers.ts), данные — только реальные, пусто — без выдуманных фигур,
+// значения по умолчанию — вид лендинга.
+import type { ReactElement } from 'react';
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { render } from '@testing-library/react';
+import { expectSceneContract, expectEmptyScene } from './sceneContract.test-helpers';
+import { Sprout, SceneBreath, ScenePebbleLaid, SignInScene, type BreathScenePhase } from './AppScenes';
+import { SceneJourney, ScenePathStart, SceneConceptStart, DoneScene } from './AppScenesMore';
+import { SceneChildhood } from './LandingScenes';
+import { SceneCheckIn, SceneQuiz, SceneQuizMini } from './LandingScenesMore';
+import { HeroCollage } from './HeroCollage';
+import { INK } from './scenePaper';
+import { NEED_DATA_PAPER, PAPER } from './paper';
+import { SignArt } from './SignArt';
+
+const outside = (el: Element) => !el.closest('.scn-shade');
+
+describe('контракт сцены: декор, тень слоем, без фильтров, токены, равные поля', () => {
+  it.each([
+    ['Sprout', <Sprout sign="scales" hue={70} />],
+    ['SceneBreath', <SceneBreath />],
+    ['ScenePebbleLaid', <ScenePebbleLaid />],
+    ['SceneJourney', <SceneJourney count={12} />],
+    ['ScenePathStart', <ScenePathStart />],
+    ['SceneConceptStart', <SceneConceptStart />],
+    ['SceneQuizMini', <SceneQuizMini hue={240} />],
+    ['HeroCollage compact', <HeroCollage compact />],
+    ['SceneCheckIn days', <SceneCheckIn days={4} />],
+    ['SceneChildhood values', <SceneChildhood values={[8, 3, null, 6, 10]} />],
+  ])('%s', (_, ui) => expectSceneContract(ui));
+});
+
+describe('Sprout и знак в сцене', () => {
+  it('знак сущности — тот же мотив по ключу, вложенным svg; рядом лист; оттенок — бумага сущности', () => {
+    const { container } = render(<Sprout sign="grounded" hue={135} />);
+    const scene = container.querySelector('svg.scn') as SVGSVGElement;
+    expect(scene.style.getPropertyValue('--h')).toBe('135');
+    const signs = [...scene.querySelectorAll('svg.pp-art')];
+    expect(signs).toHaveLength(2); // знак и его тень-слой
+    const { container: alone } = render(<SignArt sign="grounded" />);
+    expect(signs[1].innerHTML).toBe(alone.querySelector('svg')!.innerHTML);
+  });
+
+  it('Check в сцене «готово» — плашкой бумаги, а не шалфеем на шалфее (неактивный чекбокс)', () => {
+    const { container } = render(<Sprout sign="check" hue={135} />);
+    const front = [...container.querySelectorAll('svg.pp-art rect')].filter(outside);
+    expect(front).toHaveLength(1);
+    expect(front[0].getAttribute('fill')).toBe('var(--surface)');
+  });
+
+  // Ревью g4 r2: крупный Pause (длинная лента в две волны у дуги) в итоге «Стопа» читался червяком.
+  it('«Стоп» в сцене «готово» — вариант мотива: лента короче дуги-ладоней, дуга толще ленты, лист на месте', () => {
+    const { container } = render(<Sprout sign="pause" hue={70} />);
+    const motif = [...container.querySelectorAll('[data-motif="pause"]')].find(outside)!;
+    expect(container.querySelector('svg.pp-art')).toBeNull(); // знак не вложен крупно
+    const [ribbon, palms] = [...motif.querySelectorAll('path')];
+    const xs = (ribbon.getAttribute('d')!.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number).filter((_, i) => i % 2 === 0);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(100); // лента — меньше трети холста
+    expect(Number(palms.getAttribute('stroke-width'))).toBeGreaterThan(Number(ribbon.getAttribute('stroke-width')) * 2 - 1);
+    expect(ribbon.getAttribute('stroke')).toBe(INK.clay);
+    expect(palms.getAttribute('stroke')).toBe(INK.moss);
+    expectSceneContract(<Sprout sign="pause" hue={70} />);
+  });
+
+  it('SignInScene кладёт знак в рамку холста', () => {
+    const { container } = render(<svg><SignInScene sign="leaf" x={1} y={2} w={3} h={4} /></svg>);
+    expect(container.querySelector('svg svg')?.getAttribute('width')).toBe('3');
+  });
+
+  it('верхний слой знака в сцене непрозрачен — правило в paper-scenes.css', () => {
+    const css = readFileSync(join(__dirname, '../../styles/paper-scenes.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css).toMatch(/\.scn svg\.pp-art \[fill-opacity\]\s*\{\s*fill-opacity:\s*1;?\s*\}/);
+  });
+});
+
+describe('SceneBreath: фаза → положение дуг', () => {
+  const arcs = (phase: BreathScenePhase, seconds?: number) => {
+    const { container, unmount } = render(<SceneBreath phase={phase} seconds={seconds} />);
+    const g = container.querySelector('.scn-breath-arcs') as SVGGElement;
+    const fig = container.querySelector('.scn-breath-fig') as SVGGElement;
+    const out = {
+      transform: g.style.transform,
+      figure: fig.style.transform,
+      duration: g.style.transitionDuration,
+      figDuration: fig.style.transitionDuration,
+      leaf: container.querySelectorAll('path[d^="M178 206"]').length,
+    };
+    unmount();
+    return out;
+  };
+  /** Масштаб из `scale(a)` или `scale(x, y)` — по каждой оси. */
+  const scaleOf = (t: string) => {
+    const [x, y = x] = t.replace(/^scale\(|\)$/g, '').split(',').map(Number);
+    return { x, y };
+  };
+
+  it('вдох — дуги расходятся, задержка — стоят там же, выдох — сходятся', () => {
+    expect(arcs('in').transform).toBe('scale(1.14)');
+    expect(arcs('hold').transform).toBe(arcs('in').transform);
+    expect(arcs('out').transform).toBe('scale(0.86)');
+  });
+
+  // Регрессия g4 r2: при 1.08 ↔ 1 дуги в герое 124px сдвигались на ~3px — сцена читалась стоящей.
+  it('размах дыхания виден глазом: вдох к выдоху ≥ 1.25 по обеим осям', () => {
+    const inS = scaleOf(arcs('in').transform);
+    const outS = scaleOf(arcs('out').transform);
+    expect(inS.x / outS.x).toBeGreaterThanOrEqual(1.25);
+    expect(inS.y / outS.y).toBeGreaterThanOrEqual(1.25);
+  });
+
+  // Регрессия g4 r3: при 1.18 ножки внешней дуги выходили за землю к краю листа. Геометрия — из
+  // самой сцены: внешний край дуги — радиус + полштриха от центра 160, земля — её концы и скругление.
+  it('на вдохе внешняя дуга не шире земли', () => {
+    const { container, unmount } = render(<SceneBreath phase="in" />);
+    const outer = container.querySelector('.scn-breath-arcs path')!;
+    const r = Number(/A(\d+)/.exec(outer.getAttribute('d')!)![1]) + Number(outer.getAttribute('stroke-width')) / 2;
+    const ground = Array.from(container.querySelectorAll('path')).find((p) => /^M30 210 H290$/.test(p.getAttribute('d')!))!;
+    const reach = 130 + Number(ground.getAttribute('stroke-width')) / 2;
+    unmount();
+    expect(r * scaleOf(arcs('in').transform).x).toBeLessThanOrEqual(reach);
+    expect(r * 1.18).toBeGreaterThan(reach); // контрольный образец: прежний масштаб выходил за землю
+  });
+
+  it('полоска вытягивается на вдохе и задержке, на выдохе и в покое стоит ровно; переход той же длины', () => {
+    expect(scaleOf(arcs('in').figure).y).toBeGreaterThan(1);
+    expect(arcs('hold').figure).toBe(arcs('in').figure);
+    expect(arcs('out').figure).toBe('scale(1)');
+    expect(arcs('rest').figure).toBe('scale(1)');
+    expect(arcs('in', 4).figDuration).toBe('4s');
+  });
+
+  it('улеглось — дуги осели ниже выдоха, у основания полоски вырос лист (с тенью)', () => {
+    const rest = arcs('rest');
+    expect(scaleOf(rest.transform).y).toBeLessThan(scaleOf(arcs('out').transform).y);
+    expect(rest.leaf).toBe(2);
+    expect(arcs('in').leaf).toBe(0);
+  });
+
+  it('длина перехода — длина фазы; reduced-motion снимает движение; бесконечной анимации нет', () => {
+    expect(arcs('out', 6).duration).toBe('6s');
+    const css = readFileSync(join(__dirname, '../../styles/paper-scenes.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.scn-breath-arcs,\s*\.scn-breath-fig\s*\{\s*transition:\s*none;?\s*\}/);
+    expect(css).not.toMatch(/infinite/);
+  });
+});
+
+describe('ScenePebbleLaid, SceneJourney, ScenePathStart, SceneConceptStart', () => {
+  it('пустой лист: ни один камешек не лёг, все три ждут на земле пустым тоном и без тени', () => {
+    expectEmptyScene(<ScenePebbleLaid filled={0} />, 'ellipse[data-laid="yes"]');
+    const waiting = [...render(<ScenePebbleLaid filled={0} />).container.querySelectorAll('ellipse[data-laid="no"]')];
+    expect(waiting).toHaveLength(3);
+    expect(waiting.every(outside)).toBe(true);
+    expect(waiting.every((e) => e.getAttribute('fill') === INK.hollow)).toBe(true);
+  });
+
+  it('пустая лента: один камешек на листе, два ждут на земле', () => {
+    const { container } = render(<ScenePebbleLaid filled={1} />);
+    expect([...container.querySelectorAll('ellipse[data-laid="yes"]')].filter(outside)).toHaveLength(1);
+    expect(container.querySelectorAll('ellipse[data-laid="no"]')).toHaveLength(2);
+  });
+
+  // Ревью g3 r2: за день два пункта — третий ждущий был колечком втрое меньше уложенных в углу листа.
+  it('ждущий камешек — того же размера, что уложенный, и первым в очереди у угла листа', () => {
+    const size = (e: Element) => [e.getAttribute('rx'), e.getAttribute('ry')];
+    const laid = [...render(<ScenePebbleLaid filled={3} />).container.querySelectorAll('ellipse[data-laid="yes"]')].filter(outside);
+    const wait = [...render(<ScenePebbleLaid filled={0} />).container.querySelectorAll('ellipse[data-laid="no"]')];
+    expect(wait.map(size)).toEqual(laid.map(size));
+    const lastOne = render(<ScenePebbleLaid filled={2} />).container.querySelector('ellipse[data-laid="no"]')!;
+    expect(size(lastOne)).toEqual(size(laid[2]));
+    expect(lastOne.getAttribute('cx')).toBe(wait[0].getAttribute('cx'));
+  });
+
+  it('последний камешек только лёг: своя тень выше остальных', () => {
+    const { container } = render(<ScenePebbleLaid filled={3} />);
+    const shades = [...container.querySelectorAll('.scn-shade')].filter((g) => g.querySelector('ellipse'));
+    expect(shades.map((g) => g.getAttribute('transform'))).toEqual(['translate(3 4)', 'translate(8 9)']);
+    expect(container.querySelectorAll('ellipse[data-laid="yes"]').length).toBe(6);
+    expect(container.querySelectorAll('ellipse[data-laid="no"]').length).toBe(0);
+  });
+
+  it('стопка пути по числу шагов; ноль шагов — пустая земля', () => {
+    const sheets = (count: number) => render(<SceneJourney count={count} />).container.querySelectorAll('[data-sheet]').length / 2;
+    expect([1, 3, 4, 100].map(sheets)).toEqual([1, 2, 3, 6]);
+    expectEmptyScene(<SceneJourney count={0} />, '[data-sheet]');
+  });
+
+  it('начало пути: одна полоска, пустые листы-силуэты бледные, без тени и сплошным тоном стопкой', () => {
+    const { container } = render(<ScenePathStart />);
+    const blanks = [...container.querySelectorAll('rect[data-blank]')];
+    expect(blanks).toHaveLength(3);
+    expect(blanks.every(outside)).toBe(true);
+    // полупрозрачные листы двоились краями в наложении (ревью волны 0, круг 2): тон — сплошной,
+    // у каждого листа стопки свой, верхний (последний в DOM) — светлее
+    expect(blanks.some((r) => r.hasAttribute('fill-opacity'))).toBe(false);
+    expect(new Set(blanks.map((r) => r.getAttribute('fill'))).size).toBe(3);
+    expect(blanks[2].getAttribute('fill')).toBe('var(--bg)');
+  });
+
+  it('пустая схема случая: потребность и два слоя легли с тенью, третий бледный и без тени', () => {
+    const { container } = render(<SceneConceptStart />);
+    const pale = [...container.querySelectorAll('rect[fill-opacity]')];
+    expect(pale).toHaveLength(1);
+    expect(outside(pale[0])).toBe(true);
+    const laid = [...container.querySelectorAll('rect[height="26"]:not([fill-opacity])')];
+    expect(laid.filter(outside)).toHaveLength(3);
+    expect(laid.filter((r) => !outside(r))).toHaveLength(3);
+  });
+});
+
+describe('варианты сцен лендинга для кабинета', () => {
+  it('SceneChildhood values: длина — оценка, ниже 5 — бледная и без тени, без оценки — нет полоски', () => {
+    const { container } = render(<SceneChildhood values={[10, 3, null, 5, 0]} />);
+    const bars = [...container.querySelectorAll('rect[data-value]')].filter(outside);
+    expect(bars.map((b) => [b.getAttribute('data-value'), b.getAttribute('height'), b.hasAttribute('fill-opacity')])).toEqual([
+      ['3', '30', true], ['0', '30', true], ['10', '72', false], ['5', '36', false],
+    ]);
+  });
+
+  it('SceneChildhood без values — композиция лендинга', () => {
+    const { container } = render(<SceneChildhood />);
+    expect(container.querySelectorAll('rect[data-value]')).toHaveLength(0);
+    expect([...container.querySelectorAll('rect[fill-opacity]')]).toHaveLength(1);
+  });
+
+  it('SceneCheckIn days: за сегодняшним листом — дни серии (до четырёх); 0 — пустой лист; по умолчанию — вид лендинга', () => {
+    const look = (days?: number) => {
+      const { container, unmount } = render(<SceneCheckIn days={days} />);
+      const behind = [...container.querySelectorAll('.scn-shade > rect')].length;
+      const bars = [...container.querySelectorAll('.scn-shade g rect[rx="10"]')].length;
+      const box = container.querySelector('svg')!.getAttribute('viewBox');
+      unmount();
+      return { behind, bars, box };
+    };
+    expect([0, 1, 2, 4, 5, 30].map((d) => look(d).behind)).toEqual([0, 0, 1, 3, 4, 4]);
+    expect(look(0).bars).toBe(0);
+    expect(look(1).bars).toBe(5);
+    expect(look()).toEqual({ behind: 2, bars: 5, box: '34 31 259 218' });
+    expect(look(3)).toEqual(look());
+  });
+
+  it('SceneCheckIn values: полоски дня как у Strokes values (ValueStrokes); без них — палитра лендинга, как была', () => {
+    const look = (values?: readonly (number | null)[]) => {
+      const { container, unmount } = render(<SceneCheckIn days={1} values={values} />);
+      const out = [...container.querySelectorAll('svg > g:not(.scn-shade) rect[rx="10"]')].map((r) => [r.getAttribute('fill'), r.getAttribute('data-rated')]);
+      unmount();
+      return out;
+    };
+    expect(look([4, null, 7, null, 1])).toEqual([
+      [NEED_DATA_PAPER[0], 'yes'], [PAPER.hollow, 'no'], [NEED_DATA_PAPER[2], 'yes'], [PAPER.hollow, 'no'], [NEED_DATA_PAPER[4], 'yes'],
+    ]);
+    expect(look()).toEqual([INK.moss, INK.amber, INK.clay, INK.slate, INK.plum].map((f) => [f, null]));
+  });
+
+  it('SceneQuizMini: тот же веер без листа-подложки, окно по карточкам', () => {
+    const { container: mini } = render(<SceneQuizMini hue={135} />);
+    const { container: full } = render(<SceneQuiz hue={135} />);
+    expect(mini.querySelector('.scn-sheet')).toBeNull();
+    expect(full.querySelector('.scn-sheet')).not.toBeNull();
+    expect(mini.querySelector('svg')!.getAttribute('viewBox')).not.toBe('0 0 320 260');
+  });
+
+  it('HeroCollage compact — один холст 320×140 без лендинговых классов', () => {
+    const { container } = render(<HeroCollage compact />);
+    const svgs = container.querySelectorAll('svg.scn');
+    expect(svgs).toHaveLength(1);
+    expect(svgs[0].getAttribute('viewBox')).toBe('0 0 320 140');
+    expect(svgs[0].getAttribute('class')).not.toMatch(/pl2-hero-collage/);
+  });
+});
+
+describe('DoneScene: сцена «готово» по ENTITY_LOOK', () => {
+  it('разбор — знак с ростком, дневник — камешек лёг, дыхание — улеглось, трекер — лист дня без выдуманной серии', () => {
+    const scene = (ui: ReactElement) => render(ui).container;
+    expect(scene(<DoneScene entity="case" />).querySelector('svg.pp-art')).not.toBeNull();
+    expect(scene(<DoneScene entity="diary" />).querySelectorAll('ellipse').length).toBeGreaterThan(0);
+    expect(scene(<DoneScene entity="breathing" />).querySelector('.scn-breath--rest')).not.toBeNull();
+    const tracker = scene(<DoneScene entity="tracker" />);
+    expect(tracker.querySelectorAll('.scn-shade > rect')).toHaveLength(0);
+    expect(tracker.querySelectorAll('.scn-shade g rect[rx="10"]')).toHaveLength(5);
+    expect(scene(<DoneScene entity="journey" />).innerHTML).toBe('');
+    expect(scene(<DoneScene entity="sos" />).querySelector('svg.scn')?.getAttribute('style')).toContain('--h: 25');
+  });
+});

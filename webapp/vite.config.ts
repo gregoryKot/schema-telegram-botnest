@@ -1,0 +1,53 @@
+/// <reference types="vitest/config" />
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { requireBotUsernamePlugin } from '../shared/src/build/requireBotUsername.ts';
+
+export default defineConfig({
+  plugins: [react(), requireBotUsernamePlugin()],
+  // shared/ импортирует react: без dedupe он резолвится в КОРНЕВОЙ
+  // node_modules → два инстанса React (hooks dispatcher = null).
+  resolve: { dedupe: ['react', 'react-dom'] },
+  server: {
+    // dev-сервер должен читать ../shared (реэкспорты выходят за root)
+    fs: { allow: ['..'] },
+    port: 5174,
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+    },
+  },
+  // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
+  // Очистка DOM после теста — setupFiles (test-support/rtlCleanup.ts), не память автора.
+  test: {
+    setupFiles: ['./src/test-support/rtlCleanup.ts', './src/test-support/crashScreenGuard.ts'],
+    // Запас на медленный раннер (самый долгий тест локально — 1.6с). Прежние
+    // 15000 стояли ради `findByText(…, {timeout: 8000})` — их больше нет.
+    testTimeout: 10000,
+    coverage: {
+      provider: 'v8',
+      // json-summary — обязателен: его читает scripts/check-frontend-coverage-ratchet.mjs.
+      reporter: ['text', 'json-summary'],
+      include: ['src/**'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+      ],
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 400,
+    rolldownOptions: {
+      output: {
+        // Группа забирает рантайм-зависимости своих модулей; общий модуль берёт группа с большим priority.
+        codeSplitting: { groups: [
+          { name: 'vendor-react', test: /[\\/]node_modules[\\/](react[\w-]*|scheduler)[\\/]/, priority: 3 },
+          // Таблицы вида — стартовый чанк без зависимостей (почему — docs/architecture/frontends.md, «Подводные камни»).
+          { name: 'entity-look', test: /[\\/]shared[\\/]src[\\/]theme[\\/](entityLook|entityLookMaps|entityHue|signKeys|techniqueSignKeys|pathSignKeys)\.ts$/, priority: 2 },
+          { name: 'schema-data', test: /schemaTherapyData|needData/, priority: 1 },
+        ] },
+      },
+    },
+  },
+});

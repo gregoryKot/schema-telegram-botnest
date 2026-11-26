@@ -1,0 +1,433 @@
+// @vitest-environment jsdom
+// ModeMapSelector — графические карты клиента (3% покрытия). Сам
+// ModeMapEditor мокаем стабом (он тяжёлый, xyflow-based и уже отдельно
+// покрыт своими тестами) — здесь проверяем логику самого селектора: список
+// карт, создание/переименование/удаление, выбор типа новой карты, пустое
+// состояние. Типы карт и сборка «Концептуализации» — ModeMapSelector.kinds.test.tsx.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  cleanup,
+  waitFor,
+  act,
+} from '@testing-library/react';
+import { ModeMapSelector } from './ModeMapSelector';
+import { AddressFormContext } from '../utils/addressForm';
+import type { ModeMapMeta, ModeMapFull } from '../api';
+
+// Запись в истории (useHistorySheet) нужна диалогу удаления карты (HistoryConfirmDialog)
+// и требует Router: здесь goBack просто закрывает диалог и зовёт then.
+vi.mock('../hooks/useHistorySheet', () => ({
+  useHistorySheet: (onClose: () => void) => (then?: unknown) => { onClose(); if (typeof then === 'function') then(); },
+}));
+
+const listModeMaps = vi.fn();
+const getModeMap = vi.fn();
+const createModeMap = vi.fn();
+const deleteModeMap = vi.fn();
+const updateModeMap = vi.fn();
+const getConceptualization = vi.fn();
+vi.mock('../api', () => ({
+  api: {
+    getConceptualization: (...a: unknown[]) => getConceptualization(...a),
+    listModeMaps: (...a: unknown[]) => listModeMaps(...a),
+    getModeMap: (...a: unknown[]) => getModeMap(...a),
+    createModeMap: (...a: unknown[]) => createModeMap(...a),
+    deleteModeMap: (...a: unknown[]) => deleteModeMap(...a),
+    updateModeMap: (...a: unknown[]) => updateModeMap(...a),
+  },
+}));
+
+vi.mock('./ModeMapEditor', () => ({
+  ModeMapEditor: ({ mapId, kind }: { mapId: number; kind: string }) => (
+    <div data-testid="mm-editor-stub">
+      editor:{mapId}:{kind}
+    </div>
+  ),
+}));
+
+function meta(
+  id: number,
+  title: string,
+  kind: ModeMapMeta['kind'] = 'problem',
+): ModeMapMeta {
+  return { id, title, kind, createdAt: '2026-01-01', updatedAt: '2026-01-01' };
+}
+function full(
+  id: number,
+  title: string,
+  kind: ModeMapMeta['kind'] = 'problem',
+): ModeMapFull {
+  return { ...meta(id, title, kind), nodes: [], edges: [] };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  getConceptualization.mockResolvedValue(null);
+});
+afterEach(() => cleanup());
+
+// Список карт грузится в mount-эффекте (listModeMaps / getModeMap) —
+// обновление прилетает из-под await, вне act, и опрос findByText/findByTestId
+// (timeout 8000) с ним иногда расходится. Оборачиваем сам render (или клик,
+// когда именно он дёргает api) в act(async): дальше ассерт синхронный.
+describe('ModeMapSelector — пустое состояние', () => {
+  it('без карт показывает выбор типа первой карты', async () => {
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(<ModeMapSelector clientId={1} />);
+    });
+    expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
+    expect(screen.getByText('Карта режимов')).toBeTruthy();
+    expect(screen.getByText('Карта ситуации')).toBeTruthy();
+    expect(screen.getByText('Карта пары')).toBeTruthy();
+  });
+
+  it('подсказка «Выбери тип первой карты» звучит на «ты»/«вы»', async () => {
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+          <ModeMapSelector clientId={1} />
+        </AddressFormContext.Provider>,
+      );
+    });
+    expect(screen.getByText('Выбери тип первой карты')).toBeTruthy();
+    cleanup();
+
+    listModeMaps.mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ModeMapSelector clientId={1} />
+        </AddressFormContext.Provider>,
+      );
+    });
+    expect(screen.getByText('Выберите тип первой карты')).toBeTruthy();
+  });
+
+  it('клик по типу карты в пустом состоянии создаёт и открывает её', async () => {
+    listModeMaps.mockResolvedValue([]);
+    createModeMap.mockResolvedValue(full(9, 'Карта режимов', 'personality'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={1} />);
+    });
+    expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
+    fireEvent.click(screen.getByText('Карта режимов'));
+    expect(createModeMap).toHaveBeenCalledWith(
+      1,
+      'Карта режимов',
+      'personality',
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
+        'editor:9:personality',
+      ),
+    );
+  });
+});
+
+describe('ModeMapSelector — список карт и переключение', () => {
+  it('вкладки карт — вкладки на линии (tab) с aria-selected у активной (#906)', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    const a = screen.getByRole('tab', { name: 'Карта А' });
+    expect(a.classList.contains('lt-tab')).toBe(true);
+    expect(a.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Карта Б' }).getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('загружает карты клиента и автоматически открывает первую', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    render(<ModeMapSelector clientId={5} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
+        'editor:1:problem',
+      ),
+    );
+    expect(screen.getByText('Карта А')).toBeTruthy();
+    expect(screen.getByText('Карта Б')).toBeTruthy();
+  });
+
+  it('клик по вкладке другой карты подгружает и показывает её', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap
+      .mockResolvedValueOnce(full(1, 'Карта А'))
+      .mockResolvedValueOnce(full(2, 'Карта Б'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
+    fireEvent.click(screen.getByText('Карта Б'));
+    await waitFor(() =>
+      expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
+        'editor:2:problem',
+      ),
+    );
+  });
+});
+
+describe('ModeMapSelector — initialMapId («Открыть на холсте»)', () => {
+  it('открывает карту initialMapId, а не первую в списке', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(7, 'Схема случая · 15 окт.', 'personality')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} initialMapId={7} />);
+    });
+    expect(getModeMap).toHaveBeenCalledTimes(1);
+    expect(getModeMap).toHaveBeenCalledWith(7);
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:7:problem');
+  });
+
+  it('карты с таким id в списке нет — открывается первая, как раньше', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} initialMapId={99} />);
+    });
+    expect(getModeMap).toHaveBeenCalledWith(1);
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+  });
+
+  it('без initialMapId поведение прежнее: первая карта', async () => {
+    listModeMaps.mockResolvedValue([meta(3, 'Карта В'), meta(4, 'Карта Г')]);
+    getModeMap.mockImplementation((id: number) => Promise.resolve(full(id, `Карта ${id}`)));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(getModeMap).toHaveBeenCalledWith(3);
+  });
+});
+
+describe('ModeMapSelector — создание новой карты через меню', () => {
+  it('кнопка «Новая карта» открывает список типов, клик создаёт карту нужного вида', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    createModeMap.mockResolvedValue(full(2, 'Пара 1', 'couple'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
+    fireEvent.click(screen.getByText('Новая карта'));
+    fireEvent.click(screen.getByText('Карта пары'));
+    expect(createModeMap).toHaveBeenCalledWith(5, 'Пара 1', 'couple');
+    await waitFor(() =>
+      expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
+        'editor:2:couple',
+      ),
+    );
+  });
+});
+
+describe('ModeMapSelector — переименование и удаление карты', () => {
+  const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Действия с картой' }));
+  it('«⋯» → «Переименовать» открывает поле, Enter сохраняет через API', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Старое имя')]);
+    getModeMap.mockResolvedValue(full(1, 'Старое имя'));
+    updateModeMap.mockResolvedValue(full(1, 'Новое имя'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Переименовать' }));
+    const input = screen.getByDisplayValue('Старое имя');
+    fireEvent.change(input, { target: { value: 'Новое имя' } });
+    // Enter вызывает api.updateModeMap — оборачиваем в act(async), чтобы
+    // дождаться промиса вместо опроса findByText.
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' });
+    });
+    expect(updateModeMap).toHaveBeenCalledWith(1, { title: 'Новое имя' });
+    expect(screen.getByText('Новое имя')).toBeTruthy();
+  });
+
+  // Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
+  // клик по «Удалить карту» открывает диалог, удаление подтверждается его
+  // собственной кнопкой «Удалить».
+  it('удаление подтверждённой картой убирает её из списка и открывает следующую', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap
+      .mockResolvedValueOnce(full(1, 'Карта А'))
+      .mockResolvedValueOnce(full(2, 'Карта Б'));
+    deleteModeMap.mockResolvedValue(undefined);
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByText('Удалить'));
+    expect(deleteModeMap).toHaveBeenCalledWith(1);
+    await waitFor(() =>
+      expect(screen.getByTestId('mm-editor-stub').textContent).toBe(
+        'editor:2:problem',
+      ),
+    );
+    expect(screen.queryByText('Карта А')).toBeNull();
+  });
+
+  it('отмена в диалоге не удаляет карту', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    fireEvent.click(screen.getByText('Отмена'));
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    expect(screen.getByText('Карта А')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('Escape в диалоге закрывает его без удаления', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(deleteModeMap).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('двойной клик по вкладке не открывает поле переименования', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    fireEvent.doubleClick(screen.getByText('Карта А'));
+    expect(screen.queryByDisplayValue('Карта А')).toBeNull();
+  });
+
+  it('единственная карта: в меню нет пункта «Удалить карту»', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Единственная')]);
+    getModeMap.mockResolvedValue(full(1, 'Единственная'));
+    await act(async () => {
+      render(<ModeMapSelector clientId={5} />);
+    });
+    expect(screen.getByTestId('mm-editor-stub')).toBeTruthy();
+    openMenu();
+    expect(screen.getByRole('menuitem', { name: 'Переименовать' })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: 'Удалить карту' })).toBeNull();
+  });
+});
+
+describe('ModeMapSelector — смена клиента сбрасывает и грузит заново', () => {
+  it('смена clientId запрашивает карты нового клиента', async () => {
+    listModeMaps
+      .mockResolvedValueOnce([meta(1, 'Карта клиента 1')])
+      .mockResolvedValueOnce([meta(2, 'Карта клиента 2')]);
+    getModeMap
+      .mockResolvedValueOnce(full(1, 'Карта клиента 1'))
+      .mockResolvedValueOnce(full(2, 'Карта клиента 2'));
+    let rerender!: ReturnType<typeof render>['rerender'];
+    await act(async () => {
+      ({ rerender } = render(<ModeMapSelector clientId={1} />));
+    });
+    expect(screen.getByText('Карта клиента 1')).toBeTruthy();
+    // Смена clientId запускает новый mount-эффект (новый listModeMaps) —
+    // тот же промис вне act, тот же приём: оборачиваем rerender.
+    await act(async () => {
+      rerender(<ModeMapSelector clientId={2} />);
+    });
+    expect(screen.getByText('Карта клиента 2')).toBeTruthy();
+    expect(listModeMaps).toHaveBeenCalledWith(2);
+  });
+});
+
+// #906 (волна 1): пока грузится список карт, на месте холста — его силуэт
+// (ModeMapSkeleton), а не текст «Загрузка…» — правило «скелетон по форме
+// контента» (.claude/rules/frontend.md).
+describe('ModeMapSelector — загрузка', () => {
+  it('пока карты грузятся — силуэт холста, не текст «Загрузка…»; после ответа силуэт уходит', async () => {
+    let done!: (maps: ModeMapMeta[]) => void;
+    listModeMaps.mockReturnValue(new Promise<ModeMapMeta[]>((r) => { done = r; }));
+    render(<ModeMapSelector clientId={1} />);
+    expect(screen.getByTestId('mm-skeleton')).toBeTruthy();
+    expect(screen.queryByText(/Загрузка/)).toBeNull();
+
+    await act(async () => { done([]); });
+    expect(screen.queryByTestId('mm-skeleton')).toBeNull();
+    expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
+  });
+});
+
+// Отказ сервера виден терапевту (2026-11): промисы открытия, переименования и
+// удаления шли без catch — no-floating-promises в webapp нашёл их, когда правило
+// включили. Раньше отказ был невиден: вкладка подсвечивала одну карту, а в
+// редакторе оставалась другая; удаление и переименование молча не происходили.
+describe('ModeMapSelector — отказ сервера виден', () => {
+  const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Действия с картой' }));
+  const pressed = () => screen.getAllByRole('tab', { selected: true }).map((b) => b.textContent);
+
+  it('карта не открылась — в редакторе прежняя, вкладка подсвечивает её же, на экране «Не получилось открыть»', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValueOnce(full(1, 'Карта А')).mockRejectedValueOnce(new Error('503'));
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    await act(async () => { fireEvent.click(screen.getByText('Карта Б')); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось открыть карту');
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+    expect(pressed()).toEqual(['Карта А']);
+    // Повтор тапом по той же вкладке работает: она не «залипла» активной.
+    getModeMap.mockResolvedValueOnce(full(2, 'Карта Б'));
+    await act(async () => { fireEvent.click(screen.getByText('Карта Б')); });
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:2:problem');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('переименование отклонено — имя прежнее, поле с введённым текстом открыто, ошибка на экране', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Старое имя')]);
+    getModeMap.mockResolvedValue(full(1, 'Старое имя'));
+    updateModeMap.mockRejectedValue(new Error('500'));
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Переименовать' }));
+    const input = screen.getByDisplayValue('Старое имя');
+    fireEvent.change(input, { target: { value: 'Новое имя' } });
+    await act(async () => { fireEvent.keyDown(input, { key: 'Enter' }); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось переименовать карту');
+    expect(screen.getByDisplayValue('Новое имя')).toBeTruthy();
+  });
+
+  it('удаление отклонено — карта остаётся в списке и в редакторе, ошибка на экране', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    deleteModeMap.mockRejectedValue(new Error('500'));
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    await act(async () => { fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить')); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось удалить карту');
+    expect(screen.getByText('Карта А')).toBeTruthy();
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+  });
+
+  it('удалилась, а следующая не открылась — удалённая не возвращается в редактор', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValueOnce(full(1, 'Карта А')).mockRejectedValueOnce(new Error('503'));
+    deleteModeMap.mockResolvedValue(undefined);
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    await act(async () => { fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить')); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось открыть карту');
+    expect(screen.queryByTestId('mm-editor-stub')).toBeNull();
+    expect(screen.queryByText('Карта А')).toBeNull();
+  });
+});

@@ -1,0 +1,21 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "setupFiles": [
+    "<rootDir>/e2e-support/env.setup.ts",
+    "<rootDir>/setup-e2e.ts"
+  ],
+  "setupFilesAfterEnv": [
+    "<rootDir>/e2e-support/throttle-reset.setup.ts",
+    "<rootDir>/../src/test-support/exit-code-leak.setup.ts"
+  ],
+  "transform": {
+    "/node_modules/(@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)|@noble/hashes|@otplib/[a-z-]+|@scure/base)/.+\\.js$": "<rootDir>/../src/test-support/esm-to-cjs.transform.cjs",
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "transformIgnorePatterns": [
+    "/node_modules/(?!(@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)|@noble/hashes|@otplib/[a-z-]+|@scure/base)/)"
+  ]
+}

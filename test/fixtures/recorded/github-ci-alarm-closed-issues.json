@@ -1,0 +1,483 @@
+[
+  {
+    "number": 1017,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-07T19:47:04Z",
+    "closed_at": "2026-11-08T09:28:10Z",
+    "comments": 3,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 992,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-07T02:58:20Z",
+    "closed_at": "2026-11-07T07:10:52Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 965,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-06T10:20:12Z",
+    "closed_at": "2026-11-06T20:50:11Z",
+    "comments": 0,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 951,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-05T17:59:18Z",
+    "closed_at": "2026-11-06T18:16:48Z",
+    "comments": 4,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 914,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-04T09:06:20Z",
+    "closed_at": "2026-11-04T17:12:07Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 909,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-03T16:32:06Z",
+    "closed_at": "2026-11-03T22:00:04Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 905,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-02T19:27:48Z",
+    "closed_at": "2026-11-03T01:43:21Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 903,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-11-02T10:40:14Z",
+    "closed_at": "2026-11-05T12:35:56Z",
+    "comments": 5,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 894,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-31T08:52:15Z",
+    "closed_at": "2026-10-31T14:56:32Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 888,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-29T22:15:59Z",
+    "closed_at": "2026-10-30T02:03:43Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 881,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-28T09:30:23Z",
+    "closed_at": "2026-11-01T11:08:17Z",
+    "comments": 5,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 875,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-27T08:07:53Z",
+    "closed_at": "2026-10-27T19:32:21Z",
+    "comments": 2,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 871,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-26T23:34:29Z",
+    "closed_at": "2026-10-27T02:25:03Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 866,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-24T19:15:09Z",
+    "closed_at": "2026-10-26T14:13:30Z",
+    "comments": 8,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 847,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-24T05:19:20Z",
+    "closed_at": "2026-10-24T16:57:26Z",
+    "comments": 3,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 839,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-23T19:24:26Z",
+    "closed_at": "2026-10-24T00:56:07Z",
+    "comments": 2,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 838,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-23T08:23:17Z",
+    "closed_at": "2026-10-24T08:08:10Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 822,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-22T09:45:57Z",
+    "closed_at": "2026-10-22T10:55:53Z",
+    "comments": 2,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 801,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-21T13:13:52Z",
+    "closed_at": "2026-10-21T18:03:44Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 800,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-20T23:34:04Z",
+    "closed_at": "2026-10-21T02:01:21Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 784,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-19T09:08:02Z",
+    "closed_at": "2026-10-21T08:29:32Z",
+    "comments": 2,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 749,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-17T04:59:33Z",
+    "closed_at": "2026-10-18T16:54:40Z",
+    "comments": 9,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 697,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-15T14:24:30Z",
+    "closed_at": "2026-10-15T18:27:32Z",
+    "comments": 2,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 672,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-15T08:19:05Z",
+    "closed_at": "2026-10-18T08:42:51Z",
+    "comments": 4,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 642,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-12T10:09:57Z",
+    "closed_at": "2026-10-14T22:50:37Z",
+    "comments": 3,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 640,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-11T01:27:01Z",
+    "closed_at": "2026-10-15T09:41:22Z",
+    "comments": 14,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 632,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-09T14:28:24Z",
+    "closed_at": "2026-10-10T19:16:29Z",
+    "comments": 4,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 614,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-05T10:01:13Z",
+    "closed_at": "2026-10-11T10:41:20Z",
+    "comments": 7,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 610,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-04T09:11:33Z",
+    "closed_at": "2026-10-04T10:28:50Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 606,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-03T20:06:29Z",
+    "closed_at": "2026-10-03T23:01:03Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 590,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-10-03T08:54:17Z",
+    "closed_at": "2026-10-03T11:26:43Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 566,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-09-28T09:59:56Z",
+    "closed_at": "2026-09-29T05:34:13Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 558,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-09-23T22:29:51Z",
+    "closed_at": "2026-09-24T00:43:25Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 550,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-09-21T09:14:31Z",
+    "closed_at": "2026-09-27T11:30:42Z",
+    "comments": 7,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 536,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-09-20T06:12:41Z",
+    "closed_at": "2026-09-20T11:23:43Z",
+    "comments": 1,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 512,
+    "title": "Ночная flaky-детекция — красный прогон",
+    "state": "closed",
+    "created_at": "2026-09-17T09:01:01Z",
+    "closed_at": "2026-09-20T10:19:54Z",
+    "comments": 4,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  },
+  {
+    "number": 501,
+    "title": "Смок прода — красный прогон",
+    "state": "closed",
+    "created_at": "2026-09-16T13:45:10Z",
+    "closed_at": "2026-09-16T21:48:24Z",
+    "comments": 2,
+    "labels": [
+      {
+        "name": "ci-alarm"
+      }
+    ]
+  }
+]

@@ -1,0 +1,297 @@
+// Тест гейта check-overlay-stack.mjs: под-лист с z-index ниже родителя
+// (инцидент 2026-11-05: PatternSheet стоял на zIndex={205}, а опросник
+// «Дополнить» (.ex2-screen, 200) и «О схеме» (SsSheet, 200) рисовались ПОД
+// ним — кнопка «не работает», в DOM всё на месте).
+//
+// Проверяет ОБА исхода (правило «Тестовые храповики и e2e»): краснеет на
+// фикстуре «родитель 205, ребёнок 200» и зеленеет на чистом дереве.
+import { existsSync } from 'fs';
+import { join } from 'path';
+import { cleanupTmp, runGate } from './gate-sandbox';
+
+const OK = '✓ стек оверлеев: под-листов ниже родителя нет';
+
+const CSS = {
+  'webapp/src/styles/sheet-schemas.css':
+    '.ss-sheet {\n  position: fixed; inset: 0; z-index: 200; background: var(--bg);\n}\n',
+  'webapp/src/styles/sheet-exercises.css':
+    '.ex2-screen { position: fixed; inset: 0; z-index: 200; }\n',
+};
+
+const SHELL = {
+  'webapp/src/components/SsSheet.tsx': [
+    'export function SsSheet({ zIndex, children }: { zIndex?: number; children: React.ReactNode }) {',
+    '  return <div className="ss-sheet" style={zIndex ? { zIndex } : undefined}>{children}</div>;',
+    '}',
+    "export { SsHead } from './SsHead';",
+    '',
+  ].join('\n'),
+  'webapp/src/components/SsHead.tsx':
+    'export function SsHead({ title }: { title: string }) { return <h1 className="ss-title">{title}</h1>; }\n',
+  'webapp/src/components/ExScreen.tsx':
+    'export function ExScreen({ children }: { children: React.ReactNode }) { return <div className="ex2-screen">{children}</div>; }\n',
+  'webapp/src/components/FlashcardEx.tsx': [
+    "import { ExScreen } from './ExScreen';",
+    'export function ModeEx() { return <ExScreen>вопросы</ExScreen>; }',
+    '',
+  ].join('\n'),
+};
+
+const patternSheet = (shellTag: string) =>
+  [
+    "import { lazy } from 'react';",
+    "import { SsSheet, SsHead } from './SsSheet';",
+    "const ModeEx = lazy(() => import('./FlashcardEx').then((m) => ({ default: m.ModeEx })));",
+    'export function PatternSheet({ sub }: { sub: string | null }) {',
+    '  return (',
+    '    <>',
+    `      ${shellTag}`,
+    '        <SsHead title="Покинутость" />',
+    '      </SsSheet>',
+    "      {sub === 'edit' && <ModeEx />}",
+    '    </>',
+    '  );',
+    '}',
+    '',
+  ].join('\n');
+
+// Обёртка .u-sheet живёт в CSS shared (удвоенный селектор), а модалка 300 —
+// в одном файле с примитивами настроек (как settingsSheet/ui.tsx).
+const USHEET = {
+  'shared/src/theme/utilities.css':
+    '.u-sheet.u-sheet {\n  position: fixed;\n  inset: 0;\n  z-index: 80;\n}\n' +
+    '.u-sheet-grid.u-sheet-grid { position: fixed; inset: 0; z-index: 80; display: grid; }\n',
+  'webapp/src/styles/sheet-modal.css':
+    '.sheet-modal { position: fixed; inset: 0; z-index: 300; }\n',
+  'webapp/src/components/About.tsx':
+    'export function About() { return <div className="u-sheet-grid">о приложении</div>; }\n',
+  'webapp/src/components/ui.tsx': [
+    'export function SSection({ children }: { children: React.ReactNode }) {',
+    '  return <section className="st-section">{children}</section>;',
+    '}',
+    'export function InfoModal({ children }: { children: React.ReactNode }) {',
+    '  return <div className="sheet-modal">{children}</div>;',
+    '}',
+    '',
+  ].join('\n'),
+};
+
+describe('check-overlay-stack.mjs', () => {
+  it('родитель zIndex={205}, ленивый под-лист .ex2-screen 200 — exit 1 с путём и строкой', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      'webapp/src/components/PatternSheet.tsx': patternSheet(
+        '<SsSheet zIndex={205}>',
+      ),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/components/PatternSheet.tsx:10: <ModeEx> z=200 под родителем z=205',
+    );
+  });
+
+  it('явный zIndex={190} на теге ребёнка ниже родителя-по-классу 200 — exit 1', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      'webapp/src/components/Parent.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        'export function Parent() {',
+        '  return <SsSheet><SsSheet zIndex={190}>под</SsSheet></SsSheet>;',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/components/Parent.tsx:3: <SsSheet> z=190 под родителем z=200',
+    );
+  });
+
+  // Обёртка — свой контекст наложения: лист 200 внутри неё лежит ПОД экраном
+  // паттерна (b15, 2026-11-10).
+  it('.u-sheet (80) после оболочки 200 и лист на .u-sheet-grid под оболочкой 300 — exit 1', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      ...USHEET,
+      'webapp/src/components/PatternSheet.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { ModeEx } from './FlashcardEx';",
+        'export function PatternSheet({ sub }: { sub: boolean }) {',
+        '  return (',
+        '    <>',
+        '      <SsSheet>Покинутость</SsSheet>',
+        '      {sub && (',
+        '        <div className="u-sheet">',
+        '          <ModeEx />',
+        '        </div>',
+        '      )}',
+        '    </>',
+        '  );',
+        '}',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Settings.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { About } from './About';",
+        'export function Settings({ open }: { open: boolean }) {',
+        '  return <><SsSheet zIndex={300}>настройки</SsSheet>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/components/PatternSheet.tsx:8: <div> z=80 под родителем z=200',
+    );
+    expect(res.stderr).toContain(
+      'webapp/src/components/Settings.tsx:4: <About> z=80 под родителем z=300',
+    );
+  });
+
+  // z компонента — по его объявлению: модалка из файла с примитивами остаётся
+  // оболочкой, а помощник, которого компонент возвращает, — его z.
+  it('модалка из ui.tsx и помощник `return <PickerModal />` сохраняют свой z — exit 1', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      ...USHEET,
+      'webapp/src/components/Data.tsx': [
+        "import { SSection, InfoModal } from './ui';",
+        "import { About } from './About';",
+        'export function Data({ open }: { open: boolean }) {',
+        '  return <><SSection>данные</SSection><InfoModal>политика</InfoModal>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Picker.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        'export function Picker() { return <PickerModal />; }',
+        'function PickerModal() { return <SsSheet zIndex={300}>обращение</SsSheet>; }',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Top.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { Picker } from './Picker';",
+        'export function Top() { return <><SsSheet zIndex={400}>вход</SsSheet><Picker /></>; }',
+        '',
+      ].join('\n'),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      'webapp/src/components/Data.tsx:4: <About> z=80 под родителем z=300',
+    );
+    expect(res.stderr).toContain(
+      'webapp/src/components/Top.tsx:3: <Picker> z=300 под родителем z=400',
+    );
+  });
+
+  // Разбор вынесен в модули (лимит размера, правило №10); песочница копирует
+  // их вместе с гейтом — иначе ERR_MODULE_NOT_FOUND, а движок был бы кодом
+  // без теста (check-unwatched-code).
+  it('модули разбора уезжают в песочницу вместе с гейтом', () => {
+    const res = runGate('check-overlay-stack.mjs', CSS, { keepTmp: true });
+    try {
+      for (const mod of [
+        'scripts/overlay-stack-scan.mjs',
+        'scripts/overlay-stack-css.mjs',
+      ])
+        expect(existsSync(join(res.tmp, mod))).toBe(true);
+      expect(res.status).toBe(0);
+    } finally {
+      cleanupTmp(res.tmp);
+    }
+  });
+
+  // ——— КОНТРОЛЬНЫЕ ОБРАЗЦЫ: то, что краснеть НЕ должно ———
+
+  it('ЧИСТОЕ ДЕРЕВО: родитель без zIndex, под-листы 200 и 320 — exit 0', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      'webapp/src/components/PatternSheet.tsx': patternSheet('<SsSheet>'),
+      // Реэкспорт SsHead из SsSheet.tsx — не оболочка 200, а заголовок.
+      'webapp/src/components/Share.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        'export function Share({ zIndex = 320 }: { zIndex?: number }) { return <SsSheet zIndex={zIndex}>карточка</SsSheet>; }',
+        '',
+      ].join('\n'),
+      'webapp/src/components/WithShare.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        "import { Share } from './Share';",
+        'export function WithShare() { return <><SsSheet>лист</SsSheet><Share zIndex={320} /></>; }',
+        '',
+      ].join('\n'),
+      // Страница, которая просто рисует оверлеи (самозакрывающиеся теги),
+      // оболочкой не считается — App с баннером не становится родителем 9999.
+      'webapp/src/App.tsx': [
+        "import { ModeEx } from './components/FlashcardEx';",
+        "import { Share } from './components/Share';",
+        'export function App() { return <main><Share /><ModeEx /></main>; }',
+        '',
+      ].join('\n'),
+      // Спек с нарушением не считается.
+      'webapp/src/components/Bad.test.tsx': patternSheet(
+        '<SsSheet zIndex={205}>',
+      ),
+    });
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(OK);
+  });
+
+  it('ЧИСТОЕ ДЕРЕВО .u-sheet: обёртка над страницей, под-лист выше, примитив рядом с модалкой — exit 0', () => {
+    const res = runGate('check-overlay-stack.mjs', {
+      ...CSS,
+      ...SHELL,
+      ...USHEET,
+      // Обёртка над страницей, а не над листом (ModeExOverlay): страница не оверлей.
+      'webapp/src/components/ModeExOverlay.tsx': [
+        "import { ModeEx } from './FlashcardEx';",
+        'export function ModeExOverlay() { return <div className="u-sheet"><ModeEx /></div>; }',
+        '',
+      ].join('\n'),
+      'webapp/src/components/Patterns.tsx': [
+        "import { ModeExOverlay } from './ModeExOverlay';",
+        'export function Patterns() { return <main><h1>Мои паттерны</h1><ModeExOverlay /></main>; }',
+        '',
+      ].join('\n'),
+      // Лист на .u-sheet открывает под-лист 200 — ребёнок выше родителя.
+      'webapp/src/components/Journey.tsx': [
+        "import { SsSheet } from './SsSheet';",
+        'export function Journey({ open }: { open: boolean }) {',
+        '  return <div className="u-sheet">путь{open && <SsSheet>шаг</SsSheet>}</div>;',
+        '}',
+        '',
+      ].join('\n'),
+      // <SSection> — примитив, а не модалка из того же ui.tsx: раздел настроек
+      // оболочкой 300 не становится, лист «О приложении» (80) рядом законен.
+      'webapp/src/components/AboutSection.tsx': [
+        "import { SSection } from './ui';",
+        "import { About } from './About';",
+        'export function AboutSection({ open }: { open: boolean }) {',
+        '  return <><SSection>о приложении</SSection>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+      // То же через lazy: компонент берётся по имени из `.then((m) => …)`.
+      'webapp/src/components/LazySection.tsx': [
+        "import { lazy } from 'react';",
+        "import { About } from './About';",
+        "const Section = lazy(() => import('./ui').then((m) => ({ default: m.SSection })));",
+        'export function LazySection({ open }: { open: boolean }) {',
+        '  return <><Section>о приложении</Section>{open && <About />}</>;',
+        '}',
+        '',
+      ].join('\n'),
+      // `style={{ zIndex }}` на своём теге перебивает z класса.
+      'webapp/src/components/ShareLocal.tsx':
+        'export function ShareLocal({ zIndex = 320 }: { zIndex?: number }) { return <div className="ss-sheet" style={{ zIndex }}>карточка</div>; }\n',
+    });
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(OK);
+  });
+});

@@ -1,0 +1,44 @@
+// «Мост к терапевту» (простой клиент, 2026-10-27): напоминание «это самопомощь,
+// не замена терапии» и выход на запись. Событие therapy_nudge, meta
+// { place, action, trigger? } — без текстов и оценок пользователя.
+// Парный реестр — src/analytics/therapy-nudge.constants.ts (при добавлении
+// значений синхронь оба).
+export const THERAPY_NUDGE_EVENT = 'therapy_nudge';
+
+/** Где показана строка/карточка/лист. more_bottom — строка внизу «Ещё»
+ *  (HomeTherapyLine); до 2026-11-05 она стояла внизу главной и слала home. */
+export type TherapyNudgePlace =
+  | 'home'
+  | 'tracker_done'
+  | 'case_done'
+  | 'diary_done'
+  | 'more'
+  | 'more_bottom'
+  | 'signal_card'
+  | 'home_card'
+  | 'practice'
+  | 'diary'
+  | 'exercise_start'
+  | 'test_start'
+  | 'why'
+  | 'childhood_result'
+  | 'profile'
+  | 'share'
+  | 'schema_info'
+  | 'weekly_card';
+
+/** shown — показали; open — открыли лист; book — «Выбрать время на сайте»; write — написали (Telegram/терапевту);
+ *  dismiss — «Не сейчас» у карточки по сигналу или «Скрыть» у постоянной (home_card, practice);
+ *  session — «Ближайшая встреча» у своего терапевта без канала связи (лист «Терапевт рядом», U4). */
+export type TherapyNudgeAction =
+  'shown' | 'open' | 'book' | 'write' | 'dismiss' | 'session';
+
+/** Что вызвало карточку по сигналу; у остальных мест — none или без поля. */
+export type TherapyNudgeTrigger =
+  'low_index' | 'repeat_mode' | 'crisis' | 'none';
+
+export interface TherapyNudgeMeta {
+  place: TherapyNudgePlace;
+  action: TherapyNudgeAction;
+  trigger?: TherapyNudgeTrigger;
+}

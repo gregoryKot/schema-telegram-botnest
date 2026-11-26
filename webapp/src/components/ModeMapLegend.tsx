@@ -1,0 +1,52 @@
+import '../styles/sheet-modemap.css';
+import { TYPE_COLORS } from './modeMapData';
+import { MMIcon } from './modeMapIcons';
+import { BLOB_PATH } from './modeMap/shapeOptions';
+
+const ITEMS: { label: string; shape: 'cloud' | 'circle' | 'oct' | 'penta' | 'shield' | 'pill' | 'rect' | 'blob'; color: string }[] = [
+  { label: 'Триггер / ситуация', shape: 'cloud',  color: TYPE_COLORS.trigger },
+  { label: 'Детский режим',      shape: 'circle', color: TYPE_COLORS.child },
+  { label: 'Критик',             shape: 'oct',    color: TYPE_COLORS.critic },
+  { label: 'Копинг: гипер',      shape: 'penta',  color: TYPE_COLORS.coping },
+  { label: 'Копинг: избегание',  shape: 'shield', color: TYPE_COLORS.coping },
+  { label: 'Копинг: капитуляция',shape: 'pill',   color: TYPE_COLORS.coping },
+  { label: 'Здоровый / свой',    shape: 'rect',   color: TYPE_COLORS.healthy },
+  { label: 'Схема (убеждение)',  shape: 'rect',   color: TYPE_COLORS.schema },
+  { label: 'Опыт детства',       shape: 'blob',   color: TYPE_COLORS.origin },
+  { label: 'Потребность',        shape: 'pill',   color: TYPE_COLORS.need },
+];
+
+function Glyph({ shape, color }: { shape: string; color: string }) {
+  const c = color, sw = 1.6, fill = color.startsWith('#') ? `${color}22` : `color-mix(in srgb, ${color} 16%, transparent)`;
+  const paths: Record<string, string> = {
+    oct:    'M4,1 L20,1 L23,4 L23,20 L20,23 L4,23 L1,20 L1,4 Z',
+    penta:  'M12,1 L23,9 L19,23 L5,23 L1,9 Z',
+    shield: 'M2,2 L22,2 L22,16 L12,23 L2,16 Z',
+    cloud:  'M1,6 L23,6 L19.5,12 L23,18 L1,18 L4.5,12 Z', // лента триггера (modeMap/paperShapes.ts)
+    blob:   BLOB_PATH,
+  };
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+      {shape === 'circle' ? <circle cx={12} cy={12} r={10.5} fill={fill} stroke={c} strokeWidth={sw} />
+        : shape === 'pill' ? <rect x={1} y={7} width={22} height={10} rx={5} fill={fill} stroke={c} strokeWidth={sw} />
+        : shape === 'rect' ? <rect x={2} y={5} width={20} height={14} rx={3} fill={fill} stroke={c} strokeWidth={sw} />
+        : <path d={paths[shape]} fill={fill} stroke={c} strokeWidth={sw} />}
+    </svg>
+  );
+}
+
+export function ModeMapLegend({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="ds-card mm2-legend">
+      <div className="mm2-legend-head">
+        <span className="ds-label">Легенда</span>
+        <button onClick={onClose} title="Скрыть" aria-label="Скрыть" className="mm2-x"><MMIcon name="close" size={14} /></button>
+      </div>
+      <div className="mm2-legend-list">
+        {ITEMS.map(it => (
+          <div key={it.label} className="mm2-legend-chip"><Glyph shape={it.shape} color={it.color} /><span>{it.label}</span></div>
+        ))}
+      </div>
+    </div>
+  );
+}

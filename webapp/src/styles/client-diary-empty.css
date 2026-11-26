@@ -1,0 +1,33 @@
+/* Пустая лента «Записей» (components/diary/DiaryEmptyExplainer.tsx, b11). Новичку — сцена «первая страница»
+   (ScenePebbleLaid: свой лист персика) прямо на бумаге страницы, как сцены лендинга, — без второго листа под
+   ней (персик 45 рядом с плиткой схем 28 читался одним розовым); на телефоне сцена сверху, на широкой — слева;
+   пустой сегмент — лист своей сущности со знаком (EntitySheet). «Схема» и «Режим» — заметки между линиями
+   (pp-block--note) со знаком крупно, на широкой странице — в два столбца (строки короче ~60 знаков). */
+.cd-empty-stack { display: flex; flex-direction: column; gap: 14px; }
+.cd-empty { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 14px; padding: 4px 0 10px; }
+.cd-empty-scene { width: min(100%, 248px); }
+.cd-empty-scene > .scn { display: block; width: 100%; height: auto; }
+.cd-empty-body { display: flex; flex-direction: column; gap: 10px; justify-self: stretch; }
+.cd-empty-title { margin: 0; font: 400 28px/1.15 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.cd-empty-sub { margin: 0; max-width: 52ch; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+.cd-empty-foot { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-sub); text-wrap: pretty; }
+
+/* В столбец — одна линия между заметками, а не две подряд. */
+.cd-explainers { display: grid; grid-template-columns: minmax(0, 1fr); }
+.pp-block.cd-explainer { gap: 10px; }
+.pp-block.cd-explainer + .cd-explainer { border-top: 0; }
+.pp-block-head > .cd-explainer-name { align-self: center; font-size: 24px; line-height: 1.1; }
+.cd-explainer-sign { width: 84px; }
+.cd-explainer-sign .scn-sign { width: 100%; }
+.cd-explainer-what { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text); text-wrap: pretty; }
+.cd-explainer-why { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+
+@container cd-page (min-width: 640px) {
+  .cd-empty { grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); justify-items: stretch; align-items: center; column-gap: 40px; padding: 8px 0 16px; }
+  .cd-empty-scene { width: 100%; }
+  .cd-empty-title { font-size: 32px; }
+  .cd-explainers { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; }
+  .pp-block.cd-explainer + .cd-explainer { border-top: 1px solid var(--panel-line); }
+  .cd-explainer-sign { width: 104px; }
+}
+.ds-btn.cd-empty-start { align-self: flex-start; margin-top: 16px; }

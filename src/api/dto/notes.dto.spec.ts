@@ -1,0 +1,163 @@
+// DTO-рефактор inline-типов @Body() для заметок по схемам/режимам
+// (аудит 2026-07, 2г / правило №6 CLAUDE.md).
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { SaveNoteDto, SchemaNoteDto, ModeNoteDto } from './notes.dto';
+import { NOTE_CARD_FIELD_MAX } from '../../utils/text-limits';
+
+async function errorsFor(
+  cls: new () => object,
+  body: Record<string, unknown>,
+): Promise<string[]> {
+  const dto = plainToInstance(cls, body);
+  const errs = await validate(dto, { whitelist: true });
+  return errs.map((e) => e.property);
+}
+
+describe('SaveNoteDto', () => {
+  it('валидное тело проходит', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, { date: '2026-07-14', text: 'привет' }),
+    ).resolves.toEqual([]);
+  });
+
+  it('гигантский text — отказ (abuse guard)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'x'.repeat(10001),
+      }),
+    ).resolves.toContain('text');
+  });
+
+  it('tags: больше 50 штук — отказ (L5, ArrayMaxSize)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'привет',
+        tags: Array.from({ length: 51 }, (_, i) => `t${i}`),
+      }),
+    ).resolves.toContain('tags');
+  });
+
+  it('tags: элемент длиннее 100 символов — отказ (L5)', async () => {
+    await expect(
+      errorsFor(SaveNoteDto, {
+        date: '2026-07-14',
+        text: 'привет',
+        tags: ['x'.repeat(101)],
+      }),
+    ).resolves.toContain('tags');
+  });
+});
+
+describe('SchemaNoteDto', () => {
+  it('валидное тело с частичными полями проходит', async () => {
+    await expect(
+      errorsFor(SchemaNoteDto, {
+        schemaId: 'abandonment',
+        triggers: 'что-то произошло',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('поле длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(SchemaNoteDto, {
+        schemaId: 'abandonment',
+        feelings: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('feelings');
+  });
+
+  // Поле карточки на сайте (FlashcardEx) получает maxLength из той же константы.
+  it('предел поля — NOTE_CARD_FIELD_MAX: на пределе проходит, на знак больше — отказ', async () => {
+    const body = (n: number) => ({
+      schemaId: 'abandonment',
+      reality: 'я'.repeat(n),
+    });
+    await expect(
+      errorsFor(SchemaNoteDto, body(NOTE_CARD_FIELD_MAX)),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(SchemaNoteDto, body(NOTE_CARD_FIELD_MAX + 1)),
+    ).resolves.toContain('reality');
+  });
+});
+
+describe('ModeNoteDto', () => {
+  it('валидное тело проходит', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, { modeId: 'vulnerable_child', needs: 'опора' }),
+    ).resolves.toEqual([]);
+  });
+
+  it('лишнее поле — срезается whitelist, не ломает валидацию', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        hacked: 'ignored',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  // origins/healthyView зеркалят одноимённые поля SchemaNoteDto (карточка
+  // режима донабрала недостающие 2 из 7 полей карточки схемы).
+  it('origins/healthyView — валидное тело проходит', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        origins: 'так реагировали в детстве',
+        healthyView: 'сейчас я в безопасности',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('origins длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        origins: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('origins');
+  });
+
+  it('healthyView длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        healthyView: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('healthyView');
+  });
+
+  // modeFunction/needsMet — вопросы бланка проработки режима («какая у режима
+  // функция», «даёт ли поведение то, что нужно»), режим-специфичные поля.
+  it('modeFunction/needsMet — валидное тело проходит', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        modeFunction: 'защищает от боли отвержения',
+        needsMet: 'даёт передышку, но потребность остаётся',
+      }),
+    ).resolves.toEqual([]);
+  });
+
+  it('modeFunction длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        modeFunction: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('modeFunction');
+  });
+
+  it('needsMet длиннее 3000 символов — отказ', async () => {
+    await expect(
+      errorsFor(ModeNoteDto, {
+        modeId: 'vulnerable_child',
+        needsMet: 'x'.repeat(3001),
+      }),
+    ).resolves.toContain('needsMet');
+  });
+});

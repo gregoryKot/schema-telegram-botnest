@@ -1,0 +1,711 @@
+import { BadRequestException } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { SecurityNoticeService } from './security-notice.service';
+import { AuthFlowService, SignInOutcome } from './auth-flow.service';
+import { AuthService, TokenPair } from './auth.service';
+import { ConfigService } from '@nestjs/config';
+import { AuthProviderRegistry } from './providers/registry';
+import { MergeService } from './merge.service';
+import { TotpService } from './totp.service';
+import { AuthProviderHandler, ProviderIdentity } from './providers/types';
+
+type AuthServiceMock = Pick<
+  AuthService,
+  | 'findOrCreateUserByProvider'
+  | 'linkProviderToUser'
+  | 'issueTokens'
+  | 'buildTotpChallengeToken'
+  | 'buildMergeToken'
+> & {
+  findOrCreateUserByProvider: jest.Mock;
+  linkProviderToUser: jest.Mock;
+  issueTokens: jest.Mock;
+  buildTotpChallengeToken: jest.Mock;
+  buildMergeToken: jest.Mock;
+};
+
+const FAKE_TOKENS: TokenPair = {
+  accessToken: 'access-abc',
+  refreshToken: 'refresh-abc',
+  expiresIn: 900,
+};
+
+function makeAuth(): AuthServiceMock {
+  return {
+    findOrCreateUserByProvider: jest.fn().mockResolvedValue(1n),
+    linkProviderToUser: jest.fn().mockResolvedValue({ ok: true }),
+    issueTokens: jest.fn().mockResolvedValue(FAKE_TOKENS),
+    buildTotpChallengeToken: jest.fn().mockReturnValue('totp-challenge-tok'),
+    buildMergeToken: jest.fn().mockReturnValue('merge-tok'),
+  };
+}
+
+// Env провайдеров OAuth по умолчанию заданы: провайдер включён.
+const OAUTH_ENV: Record<string, string> = {
+  VK_APP_ID: 'vkid',
+  VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
+};
+
+function makeConfig(
+  webappUrl = 'https://schemehappens.ru',
+  env: Record<string, string | undefined> = OAUTH_ENV,
+): ConfigService {
+  return {
+    get: jest.fn((key: string) => env[key]),
+    getOrThrow: jest.fn((key: string) => {
+      if (key === 'WEBAPP_URL') return webappUrl;
+      if (key === 'JWT_SECRET') return 'test-jwt-secret';
+      throw new Error(`unexpected config key ${key}`);
+    }),
+  } as unknown as ConfigService;
+}
+
+function makeRegistry(handler?: Partial<AuthProviderHandler>): {
+  registry: AuthProviderRegistry;
+  get: jest.Mock;
+} {
+  const get = jest.fn().mockReturnValue(handler);
+  return { registry: { get } as unknown as AuthProviderRegistry, get };
+}
+
+function makeMerge(
+  twoFactorLost = false,
+): MergeService & { summarize: jest.Mock } {
+  return {
+    summarize: jest
+      .fn()
+      .mockResolvedValue({ counts: { Note: 3, Rating: 12 }, twoFactorLost }),
+  } as unknown as MergeService & { summarize: jest.Mock };
+}
+
+function makeTotp(enabled = false): TotpService & { isEnabled: jest.Mock } {
+  return {
+    isEnabled: jest.fn().mockResolvedValue(enabled),
+  } as unknown as TotpService & { isEnabled: jest.Mock };
+}
+
+function makeNotice(): SecurityNoticeService & { linked: jest.Mock } {
+  return { linked: jest.fn() } as unknown as SecurityNoticeService & {
+    linked: jest.Mock;
+  };
+}
+
+function makeService(opts: {
+  auth?: AuthServiceMock;
+  config?: ConfigService;
+  registry?: AuthProviderRegistry;
+  merge?: MergeService;
+  totp?: TotpService;
+  notice?: SecurityNoticeService;
+}): AuthFlowService {
+  const auth = opts.auth ?? makeAuth();
+  const config = opts.config ?? makeConfig();
+  const registry = opts.registry ?? makeRegistry().registry;
+  const merge = opts.merge ?? makeMerge();
+  const totp = opts.totp ?? makeTotp();
+  const notice = opts.notice ?? makeNotice();
+  return new AuthFlowService(
+    auth as unknown as AuthService,
+    config,
+    registry,
+    merge,
+    totp,
+    notice,
+  );
+}
+
+function makeIdentity(
+  overrides: Partial<ProviderIdentity> = {},
+): ProviderIdentity {
+  return {
+    providerId: 'g-42',
+    displayName: 'Грег',
+    email: 'greg@example.com',
+    ...overrides,
+  };
+}
+
+function makeRes(): Response & {
+  cookie: jest.Mock;
+  redirect: jest.Mock;
+  clearCookie: jest.Mock;
+} {
+  return {
+    cookie: jest.fn(),
+    redirect: jest.fn(),
+    clearCookie: jest.fn(),
+  } as unknown as Response & {
+    cookie: jest.Mock;
+    redirect: jest.Mock;
+    clearCookie: jest.Mock;
+  };
+}
+
+function makeReq(overrides: Partial<Request> = {}): Request {
+  return {
+    headers: {},
+    cookies: {},
+    ip: '198.51.100.1',
+    ...overrides,
+  } as unknown as Request;
+}
+
+describe('AuthFlowService.signInOrLinkOrMerge', () => {
+  it('linkUserId=null, без 2FA → findOrCreate + issueTokens, исход "tokens"', async () => {
+    const auth = makeAuth();
+    const svc = makeService({ auth });
+    const outcome = await svc.signInOrLinkOrMerge('vk', makeIdentity(), {
+      linkUserId: null,
+      ip: '1.1.1.1',
+      userAgent: 'ua',
+    });
+    expect(auth.findOrCreateUserByProvider).toHaveBeenCalledWith(
+      'vk',
+      'g-42',
+      'Грег',
+      'greg@example.com',
+    );
+    expect(auth.issueTokens).toHaveBeenCalledWith(1n, '1.1.1.1', 'ua');
+    expect(auth.buildTotpChallengeToken).not.toHaveBeenCalled();
+    expect(outcome).toEqual({
+      kind: 'tokens',
+      userId: 1n,
+      tokens: FAKE_TOKENS,
+    });
+  });
+
+  it('linkUserId=null, 2FA включена → исход "totp_challenge", tokens НЕ выдаются', async () => {
+    const auth = makeAuth();
+    const totp = makeTotp(true);
+    const svc = makeService({ auth, totp });
+    const outcome = await svc.signInOrLinkOrMerge('vk', makeIdentity(), {
+      linkUserId: null,
+      ip: '1.1.1.1',
+      userAgent: 'ua',
+    });
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+    expect(auth.buildTotpChallengeToken).toHaveBeenCalledWith(
+      1n,
+      '1.1.1.1',
+      'ua',
+    );
+    expect(outcome).toEqual({
+      kind: 'totp_challenge',
+      userId: 1n,
+      challengeToken: 'totp-challenge-tok',
+    });
+  });
+
+  it('S12: привязка без конфликта → владельцу уведомление о новом способе входа', async () => {
+    const notice = makeNotice();
+    const svc = makeService({ notice });
+    await svc.signInOrLinkOrMerge('vk', makeIdentity({ providerId: 'vk-1' }), {
+      linkUserId: 777n,
+    });
+    expect(notice.linked).toHaveBeenCalledWith(777n, 'vk');
+  });
+
+  it('обычный вход (linkUserId=null) — не привязка, уведомления нет', async () => {
+    const notice = makeNotice();
+    const svc = makeService({ notice });
+    const outcome = await svc.signInOrLinkOrMerge('vk', makeIdentity(), {
+      linkUserId: null,
+    });
+    expect(outcome).toMatchObject({ kind: 'tokens', userId: 1n });
+    expect(notice.linked).not.toHaveBeenCalled();
+  });
+
+  it('linkUserId задан, конфликтов нет → линкует провайдера, issueTokens на linkUserId', async () => {
+    const auth = makeAuth();
+    const svc = makeService({ auth });
+    const outcome = await svc.signInOrLinkOrMerge(
+      'vk',
+      makeIdentity({ providerId: 'vk-1' }),
+      {
+        linkUserId: 777n,
+      },
+    );
+    expect(auth.linkProviderToUser).toHaveBeenCalledWith(
+      777n,
+      'vk',
+      'vk-1',
+      'Грег',
+      'greg@example.com',
+    );
+    expect(auth.issueTokens).toHaveBeenCalledWith(777n, undefined, undefined);
+    expect(outcome).toEqual({
+      kind: 'tokens',
+      userId: 777n,
+      tokens: FAKE_TOKENS,
+    });
+  });
+
+  it('linkUserId задан, providerId уже занят другим userId → исход "merge" с summary и otherDisplay', async () => {
+    const auth = makeAuth();
+    auth.linkProviderToUser.mockResolvedValue({
+      ok: false,
+      conflictUserId: '555',
+    });
+    const merge = makeMerge();
+    const svc = makeService({ auth, merge });
+    const outcome = await svc.signInOrLinkOrMerge('vk', makeIdentity(), {
+      linkUserId: 777n,
+    });
+    expect(auth.buildMergeToken).toHaveBeenCalledWith(777n, 555n, 'vk', 'g-42');
+    expect(merge.summarize).toHaveBeenCalledWith(555n, 777n);
+    expect(outcome).toEqual({
+      kind: 'merge',
+      mergeToken: 'merge-tok',
+      summary: { Note: 3, Rating: 12 },
+      twoFactorLost: false,
+      otherDisplay: 'Грег',
+    });
+  });
+
+  it('linkUserId задан, конфликт, у source включена 2FA, у target — нет → twoFactorLost: true', async () => {
+    const auth = makeAuth();
+    auth.linkProviderToUser.mockResolvedValue({
+      ok: false,
+      conflictUserId: '555',
+    });
+    const merge = makeMerge(true);
+    const svc = makeService({ auth, merge });
+    const outcome = await svc.signInOrLinkOrMerge('vk', makeIdentity(), {
+      linkUserId: 777n,
+    });
+    expect(outcome).toEqual(
+      expect.objectContaining({ kind: 'merge', twoFactorLost: true }),
+    );
+  });
+
+  it('merge-исход: otherDisplay падает на email, если displayName отсутствует', async () => {
+    const auth = makeAuth();
+    auth.linkProviderToUser.mockResolvedValue({
+      ok: false,
+      conflictUserId: '555',
+    });
+    const svc = makeService({ auth });
+    const outcome = await svc.signInOrLinkOrMerge(
+      'vk',
+      makeIdentity({ displayName: undefined }),
+      { linkUserId: 777n },
+    );
+    expect(outcome).toEqual(
+      expect.objectContaining({
+        kind: 'merge',
+        otherDisplay: 'greg@example.com',
+      }),
+    );
+  });
+
+  it('merge-исход: otherDisplay = null, если нет ни displayName, ни email', async () => {
+    const auth = makeAuth();
+    auth.linkProviderToUser.mockResolvedValue({
+      ok: false,
+      conflictUserId: '555',
+    });
+    const svc = makeService({ auth });
+    const outcome = await svc.signInOrLinkOrMerge(
+      'vk',
+      makeIdentity({ displayName: undefined, email: undefined }),
+      { linkUserId: 777n },
+    );
+    expect(outcome).toEqual(
+      expect.objectContaining({ kind: 'merge', otherDisplay: null }),
+    );
+  });
+});
+
+describe('AuthFlowService.finishOAuthRedirect', () => {
+  const FRONTEND = 'https://schemehappens.ru';
+
+  it('исход "merge" → редирект на /account/merge только с токеном и провайдером', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'merge',
+      mergeToken: 'mt-1',
+      summary: { Note: 2 },
+      twoFactorLost: false,
+      otherDisplay: 'Грег',
+    };
+    svc.finishOAuthRedirect(outcome, 'vk', res, FRONTEND);
+    expect(res.cookie).not.toHaveBeenCalled();
+    const url = res.redirect.mock.calls[0][0] as string;
+    expect(url).toMatch(`${FRONTEND}/account/merge?`);
+    expect(url).toContain('token=mt-1');
+    expect(url).toContain('provider=vk');
+    // Имя и сводка — через POST merge/preview, не в адресе (история, логи).
+    expect(url).not.toContain(encodeURIComponent('Грег'));
+    expect(url).not.toContain('summary');
+    expect(url).not.toContain('name=');
+  });
+
+  it('исход "merge" с twoFactorLost: true → в query есть twofa=1', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'merge',
+      mergeToken: 'mt-1',
+      summary: { Note: 2 },
+      twoFactorLost: true,
+      otherDisplay: 'Грег',
+    };
+    svc.finishOAuthRedirect(outcome, 'vk', res, FRONTEND);
+    const url = res.redirect.mock.calls[0][0] as string;
+    expect(url).toContain('twofa=1');
+  });
+
+  it('исход "merge" с twoFactorLost: false → параметра twofa в query нет вовсе', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'merge',
+      mergeToken: 'mt-1',
+      summary: { Note: 2 },
+      twoFactorLost: false,
+      otherDisplay: 'Грег',
+    };
+    svc.finishOAuthRedirect(outcome, 'vk', res, FRONTEND);
+    const url = res.redirect.mock.calls[0][0] as string;
+    expect(url).not.toContain('twofa');
+  });
+
+  it('исход "totp_challenge" → редирект на /auth/2fa с challenge-токеном', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'totp_challenge',
+      userId: 1n,
+      challengeToken: 'ch tok/weird',
+    };
+    svc.finishOAuthRedirect(outcome, 'vk', res, FRONTEND);
+    expect(res.redirect).toHaveBeenCalledWith(
+      `${FRONTEND}/auth/2fa?token=${encodeURIComponent('ch tok/weird')}`,
+    );
+  });
+
+  // Login-CSRF (аудит 2026-11): токена в адресе нет — фронт берёт сессию
+  // refresh-ом по куке, которую ставит этот же ответ.
+  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback без токена в URL', async () => {
+    const svc = makeService({});
+    const res = makeRes();
+    const outcome: SignInOutcome = {
+      kind: 'tokens',
+      userId: 1n,
+      tokens: FAKE_TOKENS,
+    };
+    svc.finishOAuthRedirect(outcome, 'vk', res, FRONTEND);
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      FAKE_TOKENS.refreshToken,
+      expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
+    );
+    expect(res.redirect).toHaveBeenCalledWith(`${FRONTEND}/auth/callback`);
+    const url = String(res.redirect.mock.calls[0][0]);
+    expect(url).not.toContain(FAKE_TOKENS.accessToken);
+    expect(url).not.toContain('#');
+  });
+});
+
+describe('AuthFlowService.linkUserIdFromState', () => {
+  // state теперь — подписанный JWT (oauth-state.ts, C1), не base64url JSON.
+  // Крипта сама покрыта oauth-state.spec.ts; здесь — сквозной roundtrip через
+  // AuthFlowService (buildLinkState/linkUserIdFromState делят один stateSecret()).
+  it('roundtrip: buildLinkState → linkUserIdFromState сохраняет linkUserId', () => {
+    const svc = makeService({});
+    const state = svc.buildLinkState(42n);
+    expect(svc.linkUserIdFromState(state)).toBe(42n);
+  });
+
+  it('buildLinkState(null) (анонимный вход) → linkUserIdFromState возвращает null', () => {
+    const svc = makeService({});
+    const state = svc.buildLinkState(null);
+    expect(svc.linkUserIdFromState(state)).toBeNull();
+  });
+
+  it('РЕГРЕССИЯ C1: неподписанный base64url JSON (старый формат = вектор атаки) → null', () => {
+    const svc = makeService({});
+    // Ровно то, что слал бы атакующий: linkUserId=<жертва> без подписи.
+    const forged = Buffer.from(
+      JSON.stringify({ nonce: 'x', linkUserId: '999' }),
+    ).toString('base64url');
+    expect(svc.linkUserIdFromState(forged)).toBeNull();
+  });
+
+  it('битый state → null, не бросает', () => {
+    const svc = makeService({});
+    expect(svc.linkUserIdFromState('garbage!!!')).toBeNull();
+  });
+});
+
+describe('AuthFlowService.oauthRedirect', () => {
+  it('провайдер поддерживает buildAuthUrl → ставит oauth_state cookie и редиректит на authUrl', () => {
+    const buildAuthUrl = jest
+      .fn()
+      .mockReturnValue('https://id.vk.com/o/authorize?x=1');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    // Привязка — по куке link_token (выдана после step-up), не по Bearer.
+    const req = makeReq({ webUser: { userId: 999n, viaLinkToken: true } });
+
+    svc.oauthRedirect('vk', req, res);
+
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_state',
+      expect.any(String),
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/api/auth',
+      }),
+    );
+    // state — подписанный JWT (C1), не самоописывающийся JSON — читаем его
+    // тем же путём, что и продовый код (svc.linkUserIdFromState), а не
+    // Buffer/JSON.parse напрямую.
+    const state = res.cookie.mock.calls[0][1] as string;
+    expect(svc.linkUserIdFromState(state)).toBe(999n);
+    // Есть webUser → ПРИВЯЗКА → forceChooser=true (принудительный выбор аккаунта).
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, true);
+    expect(res.redirect).toHaveBeenCalledWith(
+      'https://id.vk.com/o/authorize?x=1',
+    );
+  });
+
+  // S12: скрипт с украденным Bearer не начинает привязку чужого VK —
+  // такой запрос идёт как обычный вход (state без linkUserId).
+  it('webUser из голого Bearer (без куки link_token) → вход, не привязка', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://id.vk.com/x');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    svc.oauthRedirect('vk', makeReq({ webUser: { userId: 999n } }), res);
+    const state = res.cookie.mock.calls[0][1] as string;
+    expect(svc.linkUserIdFromState(state)).toBeNull();
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, false);
+  });
+
+  it('анонимный запрос (без webUser) → linkUserId в state равен null', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://x');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq();
+
+    svc.oauthRedirect('vk', req, res);
+    const state = res.cookie.mock.calls[0][1] as string;
+    expect(svc.linkUserIdFromState(state)).toBeNull();
+    // Нет webUser → ВХОД → forceChooser=false: VK впустит уже вошедшего
+    // одним касанием, а не «с нуля» (разбор 2026-08-31).
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, false);
+  });
+
+  // Рубильник (2026-11): без env провайдера старт падал 500 на getOrThrow.
+  it('провайдер без конфигурации → 302 на /auth/error?reason=<id>_disabled, без куки и buildAuthUrl', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://x');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+    });
+    const config = makeConfig('https://schemehappens.ru', {
+      ...OAUTH_ENV,
+      VK_REDIRECT_URI: '  ',
+    });
+    const svc = makeService({ registry, config });
+    const res = makeRes();
+
+    svc.oauthRedirect('vk', makeReq(), res);
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      'https://schemehappens.ru/auth/error?reason=vk_disabled',
+    );
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(buildAuthUrl).not.toHaveBeenCalled();
+  });
+
+  it('провайдер не поддерживает OAuth (нет buildAuthUrl) → BadRequestException', () => {
+    const { registry } = makeRegistry({
+      id: 'telegram',
+      displayName: 'Telegram',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq();
+    expect(() => svc.oauthRedirect('telegram', req, res)).toThrow(
+      BadRequestException,
+    );
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
+
+  // РЕГРЕССИЯ 2026-09-08: сайт целиком (включая /login и /api/auth/*)
+  // обслуживается и с домена-алиаса (kotlarewski.gr) — колбэк провайдера
+  // всегда приходит на канонический хост, поэтому кука oauth_state,
+  // поставленная на алиасе, там не увидится («OAuth state mismatch»).
+  it('РЕГРЕССИЯ 2026-09-08: анонимный вход с алиас-домена → 302 на хост колбэка, кука oauth_state НЕ ставится, buildAuthUrl не вызывается', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://id.vk.com/x');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+      callbackOrigin: () => 'https://schemehappens.ru',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      originalUrl: '/api/auth/vk?ticket=K7M2QX94',
+    });
+
+    svc.oauthRedirect('vk', req, res);
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      302,
+      'https://schemehappens.ru/api/auth/vk?ticket=K7M2QX94&_oh=1',
+    );
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(buildAuthUrl).not.toHaveBeenCalled();
+  });
+
+  it('привязка (webUser есть) с алиас-домена → редиректа на канонический хост нет, кука ставится как обычно', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://id.vk.com/x');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+      callbackOrigin: () => 'https://schemehappens.ru',
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    const req = makeReq({
+      headers: { host: 'kotlarewski.gr' },
+      webUser: { userId: 999n, viaLinkToken: true },
+    });
+
+    svc.oauthRedirect('vk', req, res);
+
+    // Никакого редиректа на другой хост — привязка живёт куками текущего хоста.
+    expect(res.redirect).toHaveBeenCalledWith('https://id.vk.com/x');
+    expect(res.cookie).toHaveBeenCalledWith(
+      'oauth_state',
+      expect.any(String),
+      expect.objectContaining({ path: '/api/auth' }),
+    );
+    expect(buildAuthUrl).toHaveBeenCalled();
+  });
+});
+
+// Билет входа: вход начат в установленном приложении, VK ID требует
+// системный браузер — без этого куска сессия оставалась бы в браузере, а
+// приложение стояло бы на экране входа (разбор 2026-08-28).
+describe('finishOAuthRedirect — возврат сессии в контейнер, начавший вход', () => {
+  function makeRes() {
+    return {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as Response & { redirect: jest.Mock; cookie: jest.Mock };
+  }
+
+  const tokensOutcome = {
+    kind: 'tokens' as const,
+    userId: 999n,
+    tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 900 },
+  };
+
+  it('с билетом НЕ одобряет молча, а уводит на экран сверки', async () => {
+    // Ядро фикса device-code phishing (разбор 2026-08-31): сервер больше не
+    // подтверждает билет за вошедшего. Код в `?ticket=` мог подставить кто
+    // угодно, поэтому одобрение отдаётся человеку на /auth/confirm.
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      tokensOutcome,
+      'vk',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    const url = res.redirect.mock.calls[0][0];
+    expect(url).toBe('https://schemehappens.ru/auth/confirm?code=K7M2QX94');
+    // Сессия для БРАУЗЕРА всё равно выдана — refresh-кукой, не токеном в
+    // адресе (login-CSRF, аудит 2026-11).
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'r',
+      expect.anything(),
+    );
+    expect(url).not.toContain('access_token');
+    // Прежнего «тихого» флага одобрения не осталось.
+    expect(url).not.toContain('ticket=1');
+    expect(url).not.toContain('/auth/callback');
+  });
+
+  it('без билета — обычный приём сессии на /auth/callback', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      tokensOutcome,
+      'vk',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    const url = res.redirect.mock.calls[0][0];
+    expect(url).toBe('https://schemehappens.ru/auth/callback');
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'r',
+      expect.anything(),
+    );
+    expect(url).not.toContain('/auth/confirm');
+  });
+
+  it('второй фактор: билет доезжает до страницы 2FA, а не теряется', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'vk',
+      res,
+      'https://schemehappens.ru',
+      'K7M2QX94',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toContain('/auth/2fa?token=chal');
+    expect(res.redirect.mock.calls[0][0]).toContain('ticket=K7M2QX94');
+  });
+
+  it('второй фактор без билета — прежний адрес без хвоста', async () => {
+    const service = makeService({});
+    const res = makeRes();
+
+    service.finishOAuthRedirect(
+      { kind: 'totp_challenge', userId: 999n, challengeToken: 'chal' },
+      'vk',
+      res,
+      'https://schemehappens.ru',
+    );
+
+    expect(res.redirect.mock.calls[0][0]).toBe(
+      'https://schemehappens.ru/auth/2fa?token=chal',
+    );
+  });
+});

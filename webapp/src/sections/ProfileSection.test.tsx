@@ -1,0 +1,519 @@
+// @vitest-environment jsdom
+// ProfileSection — экран «Профиль» (стрик, достижения, паттерны, активность).
+// До этого теста 0% покрытия (130 непокрытых строк) при том, что экран
+// целиком построен на цифрах пользователя — по CLAUDE.md любое такое число
+// обязано приезжать из API, а не быть хардкод-заглушкой. Проверяем: скелетон
+// на время загрузки, реальные (не выдуманные) цифры на чистом аккаунте и на
+// аккаунте с данными, ты/вы-вилку, модалку достижений, удаление аккаунта
+// (в т.ч. дефект — ошибка API при удалении не показывается пользователю).
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { AddressFormContext } from '../utils/addressForm';
+import { ProfileSection } from './ProfileSection';
+import { plainText } from '../test-support/plainText';
+
+vi.mock('../api', () => ({
+  api: {
+    getStreak: vi.fn(),
+    getAchievements: vi.fn(),
+    getInsights: vi.fn(),
+    history: vi.fn(),
+    getTherapyRelation: vi.fn(),
+    // Связи нет → карточка спрашивает бывшего терапевта (TherapistCard.test.tsx).
+    getFormerTherapist: vi.fn(() => Promise.resolve(null)),
+    // Запись из приложения (#546) — у клиента не владельца раздела нет.
+    getClientBooking: vi.fn(() => Promise.resolve({ eligible: false, upcoming: [] })),
+    getSchemaDiary: vi.fn(),
+    getModeDiary: vi.fn(),
+    getGratitudeDiary: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getProfile: vi.fn(),
+    getModeNotes: vi.fn(),
+    getSchemaNotes: vi.fn(),
+    getPhraseChecks: vi.fn(),
+    deleteAllUserData: vi.fn(),
+    trackEvent: vi.fn(),
+  },
+  reportClientError: vi.fn(),
+}));
+import { api, reportClientError } from '../api';
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const mockLogout = vi.fn();
+vi.mock('../auth/authContext', () => ({
+  useAuth: () => ({ logout: mockLogout }),
+}));
+
+// JourneySheet — тяжёлый общий компонент (собственные API-вызовы, canvas
+// шаринг-карточки), не в скоупе этого файла — мокаем заглушкой-кнопочницей,
+// чтобы проверить только то, что решает сам ProfileSection: открывается ли
+// он по клику и закрывается ли по onClose.
+vi.mock('../components/JourneySheet', () => ({
+  JourneySheet: (p: { onClose: () => void }) => (
+    <div data-testid="journey-sheet">
+      <button onClick={p.onClose}>Закрыть путь</button>
+    </div>
+  ),
+}));
+
+function emptyMocks() {
+  mockApi.getStreak.mockResolvedValue({ currentStreak: 0, longestStreak: 0, totalDays: 0, todayDone: false, weekDots: [] });
+  mockApi.getAchievements.mockResolvedValue([]);
+  mockApi.getInsights.mockResolvedValue({ weeklyStats: [], bestDayOfWeek: null, worstDayOfWeek: null, totalDays: 0 });
+  mockApi.history.mockResolvedValue([]);
+  mockApi.getTherapyRelation.mockResolvedValue(null);
+  mockApi.getSchemaDiary.mockResolvedValue([]);
+  mockApi.getModeDiary.mockResolvedValue([]);
+  mockApi.getGratitudeDiary.mockResolvedValue([]);
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getProfile.mockResolvedValue({ ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds: [], myModeIds: [] });
+  mockApi.getModeNotes.mockResolvedValue([]);
+  mockApi.getSchemaNotes.mockResolvedValue([]);
+  mockApi.getPhraseChecks.mockResolvedValue([]);
+}
+
+/** Профиль с одной отметкой дня — уже не пустой (isFreshProfile): витрина, ритм дней, достижения. */
+function activeMocks(over: Record<string, unknown> = {}) {
+  mockApi.getStreak.mockResolvedValue({ currentStreak: 0, longestStreak: 1, totalDays: 1, todayDone: false, weekDots: [], ...over });
+}
+
+function renderSection(props: Partial<Parameters<typeof ProfileSection>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
+  return render(
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <MemoryRouter>
+        <ProfileSection {...props} />
+      </MemoryRouter>
+    </AddressFormContext.Provider>,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  emptyMocks();
+  localStorage.clear();
+});
+
+afterEach(() => cleanup());
+
+describe('ProfileSection — загрузка', () => {
+  it('до ответа API показывает скелетон, а не пустые/нулевые карточки', () => {
+    renderSection();
+    // «Стрик»/«Прогресс» ещё не должны быть отрисованы — это и есть скелетон-состояние.
+    expect(screen.queryByText('Прогресс')).toBeNull();
+  });
+});
+
+describe('ProfileSection — чистый аккаунт (без хардкод-заглушек)', () => {
+  it('пустой профиль: вместо стены нулей и пустых карточек — начало пути и одна кнопка «Пройти тест»', async () => {
+    const onTakeTest = vi.fn();
+    await act(async () => { renderSection({ onTakeTest }); });
+    expect(screen.getByRole('heading', { name: 'Мой портрет' })).toBeTruthy();
+    expect(document.querySelector('.cpf-start svg.scn')).not.toBeNull();
+    expect(screen.queryByText('Прогресс')).toBeNull();
+    expect(document.querySelector('.cpf-streak-num')).toBeNull();
+    expect(screen.queryByText('Достижения')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Пройти тест' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
+    expect(onTakeTest).toHaveBeenCalledTimes(1);
+  });
+
+  it('только практики и дыхание (профиль их не считает): под героем есть плитка «Мой путь», она открывает путь', async () => {
+    await act(async () => { renderSection(); });
+    expect(document.querySelector('.cpf-start')).not.toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Мои тёплые слова' })).toBeNull();
+    fireEvent.click(screen.getByText('Мой путь', { selector: 'h2' }));
+    await screen.findByTestId('journey-sheet');
+  });
+
+  it('серия прервалась — настоящий ноль серии, а не прочерк и не выдуманная цифра', async () => {
+    activeMocks();
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('Прогресс')).toBeTruthy();
+    expect(document.querySelector('.cpf-streak-num')?.textContent).toBe('0');
+    // В исходнике текст с литеральным '\n' — testing-library нормализует пробелы.
+    expect(screen.getByText('серия прервалась')).toBeTruthy();
+  });
+
+  it('без достижений блок показывает «0 из 0» и подсказку про первую запись, а не выдуманный прогресс', async () => {
+    activeMocks();
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('Достижения')).toBeTruthy();
+    expect(screen.getByText('Первое – за первую запись в дневник')).toBeTruthy();
+  });
+});
+
+describe('ProfileSection — реальные данные пользователя', () => {
+  function fillMocks() {
+    mockApi.getStreak.mockResolvedValue({ currentStreak: 5, longestStreak: 12, totalDays: 20, todayDone: true, weekDots: [true, true, false, true, true, false, false] });
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'first_day', earned: true },
+      { id: 'streak_3', earned: true },
+      { id: 'streak_7', earned: false },
+    ]);
+    mockApi.getInsights.mockResolvedValue({
+      weeklyStats: [{ needId: 'attachment', avg: 7.2, trend: '↑' }],
+      bestDayOfWeek: 'Пн', worstDayOfWeek: 'Пт', totalDays: 10,
+    });
+    mockApi.history.mockResolvedValue([{ date: '2026-08-01', ratings: {} }]);
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1 }]);
+    mockApi.getModeDiary.mockResolvedValue([{ id: 2 }]);
+    mockApi.getGratitudeDiary.mockResolvedValue([{ id: 3 }]);
+    mockApi.getYsqHistory.mockResolvedValue([{ id: 1 }]);
+  }
+
+  it('цифры прогресса приходят из API (5 стрика, 20 всего, 3 записей дневника, 1 тест)', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    // currentStreak появляется дважды (карточка «Прогресс» + блок «Стрик»).
+    expect(screen.getAllByText('5').length).toBeGreaterThan(0);
+    // totalDays появляется дважды (заголовок + карточка) — используем getAllByText.
+    expect(screen.getAllByText('20').length).toBeGreaterThan(0);
+    // diaryCount = 1 (schema) + 1 (mode) + 1 (gratitude) = 3
+    expect(screen.getByText('3')).toBeTruthy();
+  });
+
+  it('заработанные достижения показывают эмодзи и заголовок из мета-справочника', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('Достижения')).toBeTruthy();
+    // "{n} из {m} →" рендерится как несколько текстовых узлов — сверяем
+    // целиком по textContent родителя, а не точным совпадением строки.
+    expect(screen.getByText((_, node) => node?.textContent?.trim() === '2 из 3')).toBeTruthy();
+    expect(screen.getByText('Первый шаг')).toBeTruthy();
+  });
+
+  it('«?» у «лучшего дня» — настоящая кнопка с именем, нажатие открывает пояснение', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    const help = screen.getByRole('button', { name: 'Что такое лучший день' });
+    expect(help.tagName).toBe('BUTTON');
+    fireEvent.click(help);
+    expect(screen.getByText('Становится точнее с каждой неделей.')).toBeTruthy();
+  });
+
+  it('клик по карточке достижений открывает модалку со всеми достижениями', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+    // В модалке виден незаработанный streak_7 с прогрессом 5/7.
+    expect(screen.getByText('5/7')).toBeTruthy();
+  });
+
+  it('паттерны: клик по «?» у лучшего дня открывает тултип-пояснение, клик по фону закрывает', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('?'));
+    expect(screen.getByText(/выше всего/)).toBeTruthy();
+
+    fireEvent.click(document.querySelectorAll('[role="presentation"]')[0]);
+    expect(screen.queryByText(/выше всего/)).toBeNull();
+  });
+
+  it('модалка достижений закрывается кликом по фону', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+    expect(screen.getByText('5/7')).toBeTruthy();
+
+    fireEvent.click(document.querySelectorAll('[role="presentation"]')[0]);
+    expect(screen.queryByText('5/7')).toBeNull();
+  });
+
+  it('клик по заработанному достижению открывает детальную карточку (AchievementDetail)', async () => {
+    fillMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+    // «Первый шаг» дублируется — в полосе достижений на странице и в
+    // открывшейся модалке; берём последнее вхождение (из модалки).
+    const cards = screen.getAllByText('Первый шаг');
+    fireEvent.click(cards[cards.length - 1]);
+    // Деталь заменяет список (два диалога с фокус-ловушкой на одном документе
+    // дерутся за Tab): остаётся одно окно — достижение, список скрыт.
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Первый шаг' })).toBeTruthy());
+    expect(screen.queryByText('5/7')).toBeNull();
+  });
+
+  it('прогресс к недостигнутым достижениям (стрик/всего) показывает реальные числа, а не заглушку', async () => {
+    mockApi.getStreak.mockResolvedValue({ currentStreak: 4, longestStreak: 4, totalDays: 8, todayDone: true, weekDots: [] });
+    mockApi.getAchievements.mockResolvedValue([
+      { id: 'streak_3', earned: true }, { id: 'streak_7', earned: false },
+      { id: 'streak_14', earned: false }, { id: 'total_10', earned: false }, { id: 'total_50', earned: false },
+    ]);
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Достижения'));
+
+    expect(screen.getByText('4/7')).toBeTruthy();
+    expect(screen.getByText('4/14')).toBeTruthy();
+    expect(screen.getByText('8/10')).toBeTruthy();
+    expect(screen.getByText('8/50')).toBeTruthy();
+  });
+});
+
+describe('ProfileSection — терапевт: следующая сессия', () => {
+  it('клиент с активной связью и датой сессии видит форматированную дату/время', async () => {
+    // Прошедшую дату карточка уже не показывает (upcomingSession, 2026-10-26) —
+    // «сегодня» зафиксировано до встречи, иначе литерал однажды становится прошлым.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-01T09:00:00Z'));
+    try {
+      mockApi.getTherapyRelation.mockResolvedValue({
+        role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+        nextSession: '2026-09-03T14:30:00',
+      });
+      await act(async () => { renderSection(); });
+      expect(screen.getByText('Терапевт')).toBeTruthy();
+      expect(screen.getByText('Анна')).toBeTruthy();
+      // Чт, 3 сен · 14:30 (2026-09-03 — четверг).
+      expect(document.querySelector('.cbk-ticket-when')?.textContent).toBe('Чт, 3 сен · 14:30');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('без даты сессии блок терапевта показан, но строка "Следующая сессия" — нет', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({
+      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x', nextSession: null,
+    });
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('Терапевт')).toBeTruthy();
+    expect(screen.queryByText('Следующая сессия')).toBeNull();
+  });
+});
+
+describe('ProfileSection — сбой части загрузки (регресс check-silent-catch)', () => {
+  // Было: каждый фетч глотал свою ошибку по отдельности — экран уходил в
+  // "ready" и молча показывал 0 вместо реальных данных, будто это настоящий
+  // прогресс пользователя. Теперь сбой виден баннером, а данные, которые
+  // всё же успешно загрузились, всё равно отображаются.
+  it('падение одного из фетчей (getStreak) показывает баннер ошибки, а не тихий 0', async () => {
+    mockApi.getStreak.mockRejectedValue(new Error('network down'));
+    mockApi.getAchievements.mockResolvedValue([{ id: 'first_day', earned: true }]);
+    await act(async () => { renderSection(); });
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить часть данных/);
+    // Сбой на нашей стороне — исход our_side: персик 45 и `Breath` (две дуги и круг), а не лист шапки.
+    expect((alert as HTMLElement).style.getPropertyValue('--h')).toBe('45');
+    expect(alert.querySelector('.pa-alert-sign svg circle')).not.toBeNull();
+    // Достижения всё же успели загрузиться и отображаются несмотря на сбой стрика.
+    expect(screen.getByText('Первый шаг')).toBeTruthy();
+  });
+
+  it('на «вы» баннер звучит в форме «вы»', async () => {
+    mockApi.getInsights.mockRejectedValue(new Error('network down'));
+    await act(async () => { renderSection({}, 'vy'); });
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toBe('Не удалось загрузить часть данных. Обновите страницу.');
+  });
+
+  it('все фетчи успешны — баннера нет', async () => {
+    await act(async () => { renderSection(); });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('ProfileSection — обновление (refreshKey)', () => {
+  it('смена refreshKey сбрасывает экран в состояние загрузки (скелетон) заново', async () => {
+    mockApi.getStreak.mockResolvedValue({ currentStreak: 2, longestStreak: 2, totalDays: 2, todayDone: false, weekDots: [] });
+    const { rerender } = render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter><ProfileSection refreshKey={1} /></MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await act(async () => {});
+    expect(screen.getByText('Прогресс')).toBeTruthy();
+    rerender(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter><ProfileSection refreshKey={2} /></MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    // Сразу после смены ключа — снова скелетон, до ответа API.
+    expect(screen.queryByText('Прогресс')).toBeNull();
+    await act(async () => {});
+    expect(screen.getByText('Прогресс')).toBeTruthy();
+  });
+});
+
+describe('ProfileSection — ты/вы', () => {
+  it('форма «вы» звучит в тексте раздела «Мой путь»', async () => {
+    activeMocks();
+    await act(async () => { renderSection({}, 'vy'); });
+    expect(screen.getByText(/Вся ваша история в одном месте/)).toBeTruthy();
+  });
+  it('форма «ты» звучит в тексте раздела «Мой путь»', async () => {
+    activeMocks();
+    await act(async () => { renderSection({}, 'ty'); });
+    expect(screen.getByText(/Вся твоя история в одном месте/)).toBeTruthy();
+  });
+});
+
+describe('ProfileSection — действия', () => {
+  it('выход из аккаунта зовёт logout()', async () => {
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Выйти'));
+    expect(mockLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('удаление аккаунта: подтверждение зовёт api.deleteAllUserData', async () => {
+    mockApi.deleteAllUserData.mockResolvedValue(undefined);
+    const reload = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...originalLocation, reload } });
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Удалить аккаунт'));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
+    // QA 2026-11, К2: тот же диалог, что в настройках, — с уборкой хранилища.
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+  });
+
+  it('регресс: провал удаления аккаунта виден пользователю, а не гасит кнопку молча', async () => {
+    // Было: catch только возвращал кнопку в исходное состояние. Человек нажал
+    // «Удалить», ничего не произошло — и он не мог понять, удалён аккаунт или
+    // нет. Для необратимой операции это худший из возможных исходов.
+    mockApi.deleteAllUserData.mockRejectedValue(new Error('network'));
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Удалить аккаунт'));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
+    await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
+    // Кнопка снова активна — повтор возможен…
+    await waitFor(() => expect(screen.getByText('Удалить')).toBeTruthy());
+    // ...и рядом сказано, что произошло и что данные на месте.
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось удалить аккаунт/);
+    expect(alert.textContent).toMatch(/Данные на месте/);
+  });
+
+  it('«Мой путь» открывает JourneySheet, закрытие убирает его', async () => {
+    activeMocks();
+    await act(async () => { renderSection(); });
+    fireEvent.click(screen.getByText('Мой путь', { selector: 'h2' }));
+    await screen.findByTestId('journey-sheet');
+
+    fireEvent.click(screen.getByText('Закрыть путь'));
+    expect(screen.queryByTestId('journey-sheet')).toBeNull();
+  });
+
+  it('«Аккаунт и привязки» переходит на маршрут /account', async () => {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter initialEntries={['/profile']}>
+          <Routes>
+            <Route path="/profile" element={<ProfileSection />} />
+            <Route path="/account" element={<div>Экран аккаунта</div>} />
+          </Routes>
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Аккаунт и привязки'));
+    await screen.findByText('Экран аккаунта');
+  });
+});
+
+// Этап 3 единой версии: «Мой портрет» и «Тёплые слова» в профиле. Связка
+// «отметил схемы в профиле → портрет их показывает» (read-after-write).
+describe('ProfileSection — портрет и тёплые слова', () => {
+  const profileWith = (mySchemaIds: string[], myModeIds: string[]) => ({
+    ysq: { completedAt: null, activeSchemaIds: [] }, mySchemaIds, myModeIds,
+  });
+
+  it('портрет без схем объясняет, что это, «Пройти тест» зовёт тест и не открывает лист, тёплых слов нет', async () => {
+    activeMocks();
+    const onTakeTest = vi.fn();
+    await act(async () => { renderSection({ onTakeTest }); });
+    expect(await screen.findByText(/Здесь соберётся твой портрет/)).toBeTruthy();
+    expect(screen.queryByText('Мои тёплые слова')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
+    expect(onTakeTest).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Мои схемы')).toBeNull();
+  });
+
+  it('пустое «Тёплые слова» не оставляет обёртки блока на странице (двойной зазор)', async () => {
+    activeMocks();
+    await act(async () => { renderSection(); });
+    expect(document.querySelector('.cpf-shelf-item--warm_words')).toBeNull();
+    expect(document.querySelector('.cpf-shelf')?.className).toContain('cpf-shelf--n2');
+  });
+
+  it('отмеченные схемы и режимы попадают в портрет, тап открывает лист «Мой портрет»', async () => {
+    mockApi.getProfile.mockResolvedValue(profileWith(['abandonment', 'mistrust'], ['vulnerable_child']));
+    await act(async () => { renderSection(); });
+    expect(await screen.findByText(/2 схемы · 1 режим/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Мой портрет'));
+    expect(await screen.findByText('Мои схемы')).toBeTruthy();
+    expect(screen.getByText('Мои режимы')).toBeTruthy();
+  });
+
+  it('тёплые слова из дневника режимов видны карточкой с числом фраз', async () => {
+    mockApi.getModeDiary.mockResolvedValue([
+      { id: 1, modeId: 'vulnerable_child', healthyResponse: 'Я рядом', createdAt: '2026-08-10T00:00:00.000Z' },
+    ]);
+    await act(async () => { renderSection(); });
+    expect(await screen.findByText('Мои тёплые слова')).toBeTruthy();
+    expect(screen.getByText('«Я рядом»')).toBeTruthy();
+    expect(screen.getByText('1 фраза')).toBeTruthy();
+  });
+
+  // Профиль читал дневники схем и режимов трижды: счётчик ProfileSection, useAboutMe и лист
+  // портрета (usePatternLayer). Источник один — useAboutMe; лист берёт его записи.
+  it('дневники схем и режимов запрашиваются один раз — и для счётчика, и для листа портрета', async () => {
+    mockApi.getProfile.mockResolvedValue(profileWith(['abandonment'], []));
+    const at = '2026-08-10T00:00:00.000Z';
+    mockApi.getSchemaDiary.mockResolvedValue([1, 2].map(id => ({ id, createdAt: at, schemaIds: ['abandonment'] })));
+    mockApi.getModeDiary.mockResolvedValue([{ id: 3, createdAt: at, modeId: 'vulnerable_child' }]);
+    mockApi.getGratitudeDiary.mockResolvedValue([{ id: 4 }]);
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('4')).toBeTruthy(); // 2 + 1 + 1 записи
+    fireEvent.click(await screen.findByLabelText('Мой портрет'));
+    expect(await screen.findByText('Мои схемы')).toBeTruthy();
+    await act(async () => {});
+    expect(mockApi.getSchemaDiary).toHaveBeenCalledTimes(1);
+    expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
+  });
+
+  it('сбой дневника — баннер ошибки, а не тихий заниженный счётчик', async () => {
+    mockApi.getModeDiary.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    expect(plainText(await screen.findByRole('alert'))).toMatch(/Не удалось загрузить часть данных/);
+  });
+
+  it('сбой загрузки портрета уходит в отчёт, а не в консоль', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    await screen.findByText(/Здесь соберётся твой портрет/);
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'getProfile failed', section: 'profile-about' });
+  });
+});
+
+// Профиль читал историю теста дважды: свой счётчик и useAboutMe (портрет). Источник один — useAboutMe.
+describe('ProfileSection — история теста', () => {
+  it('один запрос на экран: из него и счётчик «прохождения теста», и портрет', async () => {
+    activeMocks();
+    mockApi.getYsqHistory.mockResolvedValue([1, 2].map(id => ({ id, completedAt: '2026-08-01T00:00:00.000Z', scores: [] })));
+    await act(async () => { renderSection(); });
+    const counter = screen.getByText('прохождения теста').closest('.cpf-counter');
+    expect(counter?.querySelector('.cpf-counter-num')?.textContent).toBe('2');
+    expect(mockApi.getYsqHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it('сбой истории — баннер ошибки, а не тихий ноль прохождений', async () => {
+    activeMocks();
+    mockApi.getYsqHistory.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    expect(plainText(await screen.findByRole('alert'))).toMatch(/Не удалось загрузить часть данных/);
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'getYsqHistory failed', section: 'profile-about' });
+  });
+});
+
+describe('ProfileSection — строка моста к терапевту', () => {
+  it('«самопомощь, не замена терапии» с «Поговорить →», показ уходит с местом profile', async () => {
+    await act(async () => { renderSection(); });
+    expect(screen.getByText(/^Приложение — самопомощь, не замена терапии\./)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('therapy_nudge', { place: 'profile', action: 'shown' });
+  });
+});

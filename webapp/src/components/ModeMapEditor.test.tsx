@@ -1,0 +1,322 @@
+// @vitest-environment jsdom
+// ModeMapEditor — сборка палитры + холста + бокового редактора (0% покрытия).
+// Рендерим по-настоящему (палитра и холст не мокаются — их проверенное
+// поведение и есть то, что должен собрать ModeMapEditor). Проверяем сквозной
+// путь пользователя: выбрал режим в палитре → он появился на холсте → выбрал
+// узел → открылась форма редактора → изменения долетают до debounced
+// api.updateModeMap (read-after-write, CLAUDE.md).
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { ModeMapEditor } from './ModeMapEditor';
+import type { ModeMapNode, ModeMapEdge } from '../api';
+import { installFlowTestPolyfills } from '../test-support/renderWithFlow';
+
+const updateModeMap = vi.fn();
+const getConceptualization = vi.fn();
+const listCustomModes = vi.fn();
+vi.mock('../api', () => ({
+  api: {
+    updateModeMap: (...a: unknown[]) => updateModeMap(...a),
+    getConceptualization: (...a: unknown[]) => getConceptualization(...a),
+    listCustomModes: (...a: unknown[]) => listCustomModes(...a),
+    createCustomMode: vi.fn().mockResolvedValue({}),
+    deleteCustomMode: vi.fn().mockResolvedValue(undefined),
+  },
+  reportClientError: vi.fn(),
+}));
+
+function mmNode(
+  id: string,
+  type: ModeMapNode['type'],
+  label: string,
+  extra: Partial<ModeMapNode['data']> = {},
+): ModeMapNode {
+  return { id, type, position: { x: 0, y: 0 }, data: { label, ...extra } };
+}
+function mmEdge(id: string, source: string, target: string): ModeMapEdge {
+  return { id, source, target, data: { edgeType: 'activates' } };
+}
+
+function renderEditor(nodes: ModeMapNode[] = [], edges: ModeMapEdge[] = []) {
+  return render(
+    <ModeMapEditor
+      mapId={1}
+      clientId={7}
+      kind="problem"
+      initialNodes={nodes}
+      initialEdges={edges}
+    />,
+  );
+}
+
+// jsdom не реализует DOMMatrixReadOnly — xyflow дёргает его при пересчёте
+// внутренних размеров узла (updateNodeInternals), это срабатывает только на
+// смене типа узла (другая форма/размер). Минимальный стаб — m22 (zoom) не
+// важен для этого теста, значение не проверяется.
+class DOMMatrixReadOnlyStub {
+  m22 = 1;
+  constructor(_transform?: string) {
+    void _transform;
+  }
+}
+
+beforeEach(() => {
+  installFlowTestPolyfills();
+  (window as unknown as { DOMMatrixReadOnly: unknown }).DOMMatrixReadOnly =
+    DOMMatrixReadOnlyStub;
+  localStorage.clear();
+  vi.clearAllMocks();
+  getConceptualization.mockResolvedValue(null);
+  listCustomModes.mockResolvedValue([]);
+  updateModeMap.mockResolvedValue({});
+  window.innerWidth = 1200; // компьютер: холст есть (на телефоне вкладка его не показывает)
+});
+afterEach(() => cleanup());
+
+describe('ModeMapEditor — палитра → холст', () => {
+  it('клик по режиму в палитре добавляет узел на холст', () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole('button', { name: 'Триггер' }));
+    expect(screen.getAllByText('Триггер').some(el => el.closest('.react-flow__node'))).toBe(true);
+  });
+
+  it('два клика по палитре — две фигуры на разных местах, не друг на друге (QA 2026-10-26)', async () => {
+    renderEditor();
+    await act(async () => {});
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Триггер' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Поведение' }));
+      await vi.advanceTimersByTimeAsync(1300);
+      const body = updateModeMap.mock.calls.at(-1)![1] as { nodes: ModeMapNode[] };
+      expect(body.nodes).toHaveLength(2);
+      const [a, b] = body.nodes.map(n => n.position);
+      expect(Math.abs(a.x - b.x) + Math.abs(a.y - b.y)).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('кнопка «Скрыть панель режимов» прячет палитру, «Показать» возвращает', () => {
+    renderEditor();
+    expect(screen.getByPlaceholderText('Режим или схема…')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Скрыть панель режимов'));
+    expect(screen.queryByPlaceholderText('Режим или схема…')).toBeNull();
+    fireEvent.click(screen.getByLabelText('Показать панель режимов'));
+    expect(screen.getByPlaceholderText('Режим или схема…')).toBeTruthy();
+  });
+});
+
+describe('ModeMapEditor — массовое добавление и смена типа узла', () => {
+  it('«вынести все режимы клиента» из палитры добавляет несколько узлов разом', async () => {
+    getConceptualization.mockResolvedValue({
+      modeIds: ['vulnerable_child', 'demanding_critic'],
+    });
+    // Список режимов клиента приезжает из api.getConceptualization в mount-
+    // эффекте палитры — обновление прилетает из-под await, вне act, и опрос
+    // findByText (timeout 8000) с ним иногда расходится. Оборачиваем сам
+    // рендер в act(async): он дожидается промиса, дальше ассерт синхронный.
+    // '▼ 2' не годится для проверки — то же самое число показывает статичный
+    // счётчик группы «Копинг: Капитуляция» (2 стандартных режима), совпадение
+    // текста делает ассерт неоднозначным. Кнопка «Вынести все» рендерится
+    // только вместе с блоком режимов клиента — по ней и проверяем.
+    await act(async () => {
+      renderEditor();
+    });
+    expect(
+      screen.getByLabelText('Вынести все режимы клиента на карту'),
+    ).toBeTruthy();
+    fireEvent.click(
+      screen.getByLabelText('Вынести все режимы клиента на карту'),
+    );
+    expect(
+      screen
+        .getAllByText('Уязвимый Ребёнок')
+        .some((el) => el.closest('.react-flow__node')),
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByText('Требовательный Критик')
+        .some((el) => el.closest('.react-flow__node')),
+    ).toBe(true);
+  });
+
+  it('смена фигуры в редакторе узла меняет тип узла на холсте', () => {
+    renderEditor([mmNode('n1', 'child', 'Ребёнок')]);
+    fireEvent.click(screen.getByText('Ребёнок').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByTitle('Здоровый режим'));
+    const el = screen.getByText('Ребёнок').closest('.react-flow__node')!;
+    expect(el.className).toContain('react-flow__node-healthy');
+  });
+});
+
+describe('ModeMapEditor — выбор узла открывает редактор', () => {
+  it('клик по узлу на холсте открывает форму с его названием', () => {
+    renderEditor([mmNode('n1', 'child', 'Уязвимый Ребёнок')]);
+    fireEvent.click(
+      screen.getByText('Уязвимый Ребёнок').closest('.react-flow__node')!,
+    );
+    expect((screen.getByLabelText('Название') as HTMLInputElement).value).toBe(
+      'Уязвимый Ребёнок',
+    );
+  });
+
+  it('«Закрыть» в редакторе узла снимает выделение и закрывает форму', () => {
+    renderEditor([mmNode('n1', 'child', 'Уязвимый Ребёнок')]);
+    fireEvent.click(
+      screen.getByText('Уязвимый Ребёнок').closest('.react-flow__node')!,
+    );
+    expect(screen.getByLabelText('Название')).toBeTruthy();
+    // Индекс 0 — кнопка «Закрыть» гайда (открыт по умолчанию), индекс 1 — самого редактора узла.
+    fireEvent.click(screen.getAllByLabelText('Закрыть')[1]);
+    expect(screen.queryByLabelText('Название')).toBeNull();
+  });
+});
+
+describe('ModeMapEditor — удаление узла снимает и его рёбра (read-after-write)', () => {
+  it('«Удалить фигуру» в редакторе убирает узел и его связи из сохранённой модели', async () => {
+    renderEditor(
+      [
+        mmNode('n1', 'trigger', 'Ссора'),
+        mmNode('n2', 'behavior', 'Поведение'),
+      ],
+      [mmEdge('e1', 'n1', 'n2')],
+    );
+    // ModeMapPalette фетчит режимы клиента/кастомные режимы в mount-эффекте
+    // (промисы, не таймеры) — даём им долетать на настоящих часах, прежде
+    // чем подменить время: иначе их setState гонится с планировщиком React
+    // под фейковым временем (флаки под нагрузкой полного прогона).
+    await act(async () => {});
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(
+        screen.getByText('Ссора').closest('.react-flow__node')!,
+      );
+      fireEvent.click(screen.getByText('Удалить фигуру'));
+      expect(screen.queryByText('Ссора')).toBeNull();
+
+      await vi.advanceTimersByTimeAsync(1300);
+
+      expect(updateModeMap).toHaveBeenCalled();
+      const lastCall = updateModeMap.mock.calls.at(-1)!;
+      const body = lastCall[1] as {
+        nodes: ModeMapNode[];
+        edges: ModeMapEdge[];
+      };
+      expect(body.nodes.map((n) => n.id)).toEqual(['n2']);
+      expect(body.edges).toEqual([]); // ребро на удалённый узел не осталось «повисшим»
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// РЕГРЕССИЯ: scheduleSave (теперь useModeMapAutosave — детальные кейсы см.
+// useModeMapAutosave.test.ts) взводил setTimeout на 1200мс без очистки при
+// размонтировании — уход с экрана раньше срабатывания либо терял правку,
+// либо звал setState на пропавшем дереве (unhandled rejection под
+// vitest --coverage). Здесь — сквозная проверка, что реальная проводка
+// ModeMapEditor (не изолированный хук) действительно долетает до api.
+describe('ModeMapEditor — размонтирование со взведённым таймером сохранения', () => {
+  it('уход с экрана до срабатывания автосейва всё равно отправляет несохранённую правку', async () => {
+    const { unmount } = renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    await act(async () => {});
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByTitle('Здоровый режим')); // меняет тип узла → scheduleSave взводит таймер
+    expect(updateModeMap).not.toHaveBeenCalled(); // таймер ещё не сработал (1200мс не прошло)
+
+    unmount(); // размонтирование ДО срабатывания таймера — работа не должна потеряться
+
+    expect(updateModeMap).toHaveBeenCalledTimes(1); // отправлено немедленно, а не потеряно
+    const body = updateModeMap.mock.calls.at(-1)![1] as { nodes: ModeMapNode[] };
+    expect(body.nodes[0].type).toBe('healthy');
+  });
+});
+
+describe('ModeMapEditor — горячие клавиши', () => {
+  it('Escape снимает выделение узла', () => {
+    renderEditor([mmNode('n1', 'child', 'Ребёнок')]);
+    fireEvent.click(screen.getByText('Ребёнок').closest('.react-flow__node')!);
+    expect(screen.getByLabelText('Название')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByLabelText('Название')).toBeNull();
+  });
+
+  it('Backspace удаляет выбранный узел вместе с его рёбрами', async () => {
+    renderEditor(
+      [
+        mmNode('n1', 'trigger', 'Ссора'),
+        mmNode('n2', 'behavior', 'Поведение'),
+      ],
+      [mmEdge('e1', 'n1', 'n2')],
+    );
+    // См. комментарий у теста «Удалить фигуру» выше — тот же mount-race.
+    await act(async () => {});
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(
+        screen.getByText('Ссора').closest('.react-flow__node')!,
+      );
+      fireEvent.keyDown(window, { key: 'Backspace' });
+      expect(screen.queryByText('Ссора')).toBeNull();
+
+      await vi.advanceTimersByTimeAsync(1300);
+      const body = updateModeMap.mock.calls.at(-1)![1] as {
+        nodes: ModeMapNode[];
+        edges: ModeMapEdge[];
+      };
+      expect(body.edges).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('Backspace с фокусом в текстовом поле не удаляет узел (не перехватывает ввод)', () => {
+    renderEditor([mmNode('n1', 'child', 'Ребёнок')]);
+    fireEvent.click(screen.getByText('Ребёнок').closest('.react-flow__node')!);
+    const nameField = screen.getByLabelText('Название');
+    fireEvent.keyDown(nameField, { key: 'Backspace' });
+    expect(screen.getByText('Ребёнок')).toBeTruthy();
+  });
+
+  it('⌘Z отменяет последнее действие (удаление узла)', () => {
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByText('Удалить фигуру'));
+    expect(screen.queryByText('Ссора')).toBeNull();
+    fireEvent.keyDown(window, { key: 'z', metaKey: true });
+    expect(screen.getByText('Ссора')).toBeTruthy();
+  });
+
+  it('⌘D дублирует выбранный узел', () => {
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
+    fireEvent.keyDown(window, { key: 'd', metaKey: true });
+    // Гайд тоже упоминает «Триггер» (мини-превью цепочки) — считаем только узлы холста.
+    const onCanvas = screen
+      .getAllByText('Ссора')
+      .filter((el) => el.closest('.react-flow__node'));
+    expect(onCanvas).toHaveLength(2);
+  });
+
+  it('⌘⇧Z (shift) повторяет отменённое действие через redo', () => {
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByText('Удалить фигуру'));
+    expect(screen.queryByText('Ссора')).toBeNull();
+    fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo — вернули узел
+    expect(screen.getByText('Ссора')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'z', metaKey: true, shiftKey: true }); // redo — снова удалён
+    expect(screen.queryByText('Ссора')).toBeNull();
+  });
+
+  it('⌘Y тоже повторяет отменённое действие (альтернативный redo)', () => {
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByText('Удалить фигуру'));
+    fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo
+    expect(screen.getByText('Ссора')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'y', metaKey: true }); // redo
+    expect(screen.queryByText('Ссора')).toBeNull();
+  });
+});

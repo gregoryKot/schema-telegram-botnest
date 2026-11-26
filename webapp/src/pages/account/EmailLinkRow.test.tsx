@@ -1,0 +1,288 @@
+// @vitest-environment jsdom
+// Регрессия на вынос блока email из AccountPage (страница упиралась в лимит
+// размера). Поведение обязано остаться прежним: форма видна только когда
+// адрес не привязан, отправка ведёт на экран «письмо отправлено», а отказ
+// сервера виден человеку текстом, а не тишиной.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { StepUpProvider } from '../../components/stepUp/StepUpProvider';
+import { EMAIL_WHY, EmailLinkRow } from './EmailLinkRow';
+import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
+
+function jsonResponse(status: number, body: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: () => Promise.resolve(body),
+  } as unknown as Response;
+}
+
+let fetchMock: ReturnType<typeof vi.fn>;
+const onLinked = vi.fn();
+
+/** Ошибку строка показывает сама, у поля адреса (b27): проверяем «видно текстом». */
+function Harness({
+  linked = false,
+  email = null,
+  form = 'ty',
+}: {
+  linked?: boolean;
+  email?: string | null;
+  form?: AddressForm;
+}) {
+  return (
+    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+      <EmailLinkRow
+        accessToken="tok123"
+        linked={linked}
+        email={email}
+        busy={false}
+        onUnlink={vi.fn()}
+        onLinked={onLinked}
+      />
+    </AddressFormContext.Provider>
+  );
+}
+
+beforeEach(() => {
+  onLinked.mockReset();
+  fetchMock = vi.fn(() => Promise.resolve(jsonResponse(200, {})));
+  vi.stubGlobal('fetch', fetchMock);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+describe('EmailLinkRow — когда видна форма', () => {
+  // Онбординг: до первого нажатия видно, зачем привязывать почту, — для писем
+  // о безопасности; входа по почте нет (ч. 10 ст. 8 149-ФЗ).
+  it('адрес не привязан — подсказка «зачем» видна до нажатия и не обещает вход', () => {
+    render(<Harness />);
+    expect(screen.getByText(EMAIL_WHY)).toBeTruthy();
+    expect(EMAIL_WHY).toMatch(/^На почту придёт письмо/);
+    expect(EMAIL_WHY).not.toMatch(/входят|запасной вход/);
+  });
+
+  it('адрес не привязан — «Привязать» открывает поле ввода', () => {
+    render(<Harness />);
+    expect(screen.getByText('не привязан')).toBeTruthy();
+    expect(screen.queryByPlaceholderText('your@email.com')).toBeNull();
+
+    fireEvent.click(screen.getByText('Привязать'));
+
+    expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
+  });
+
+  it('адрес привязан — вместо формы отвязка и сам адрес', () => {
+    render(<Harness linked email="me@example.com" />);
+
+    expect(screen.getByText('me@example.com')).toBeTruthy();
+    expect(screen.getByText('Отвязать')).toBeTruthy();
+    expect(screen.queryByText('Привязать')).toBeNull();
+    expect(screen.queryByText(/Пригодится, если пропадёт доступ/)).toBeNull();
+  });
+});
+
+describe('EmailLinkRow — отправка письма', () => {
+  it('успех — POST с введённым адресом и экран «письмо отправлено»', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+
+    await screen.findByText(/письмо придёт в течение минуты/);
+    expect(screen.getByText('me@example.com')).toBeTruthy();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/auth/email/link-to-account');
+    expect(JSON.parse(init.body as string)).toEqual({
+      email: 'me@example.com',
+    });
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      'Bearer tok123',
+    );
+  });
+
+  // B-16 (аудит 2026-10): сервер отвечает одинаково для свободного и занятого
+  // адреса, поэтому экран не обещает «письмо отправлено» и не говорит «занят».
+  it('после отправки — нейтральный текст: не «отправлено» и не «уже привязан»', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+    await screen.findByText(/Если адрес свободен, письмо придёт в течение минуты/);
+    expect(screen.queryByText(/Письмо отправлено/)).toBeNull();
+    expect(screen.queryByText(/уже привязан/)).toBeNull();
+  });
+
+  it('«Ввести другой email» возвращает форму', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+    await screen.findByText(/письмо придёт в течение минуты/);
+
+    fireEvent.click(screen.getByText('Ввести другой email'));
+
+    expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
+    expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
+  });
+
+  it('отказ сервера виден текстом и не выдаётся за отправку', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(409, { message: 'Email уже занят' }),
+    );
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'taken@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+
+    await screen.findByText('Email уже занят');
+    expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
+  });
+
+  it('ошибка отправки — у поля адреса (role=alert), поле помечено, форма на месте', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(429, { message: 'Слишком много писем' }));
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    const input = screen.getByPlaceholderText('your@email.com');
+    fireEvent.change(input, { target: { value: 'me@example.com' } });
+    fireEvent.click(screen.getByText('Отправить'));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Слишком много писем');
+    expect(input.closest('form')!.contains(alert)).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('возврат по ссылке из письма: успех — статусом, отказ — причиной у строки', () => {
+    const { rerender } = render(
+      <EmailLinkRow accessToken="t" linked busy={false} onUnlink={vi.fn()} onLinked={onLinked} notice={{ kind: 'ok', text: 'Email успешно привязан' }} />,
+    );
+    expect(screen.getByRole('status').textContent).toBe('Email успешно привязан');
+    rerender(
+      <EmailLinkRow accessToken="t" linked={false} busy={false} onUnlink={vi.fn()} onLinked={onLinked} notice={{ kind: 'error', text: 'Адрес занят' }} />,
+    );
+    expect(screen.getByRole('alert').textContent).toBe('Адрес занят');
+  });
+
+  it('форма «вы» — подсказка после отправки во «вы»', async () => {
+    render(<Harness form="vy" />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+
+    await screen.findByText(/Введите код здесь или перейдите по ссылке/);
+    expect(screen.queryByText(/Введи код здесь или перейди по ссылке/)).toBeNull();
+  });
+});
+
+// Привязка кодом из письма (2026-11): внутри Telegram/MAX ссылка из письма
+// открывается в другом браузере, где аккаунт не открыт, — код вводят здесь.
+describe('EmailLinkRow — код из письма', () => {
+  const CODE_URL = '/api/auth/email/link-code';
+  async function toCodeForm() {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+    return (await screen.findByLabelText('Код из письма')) as HTMLInputElement;
+  }
+  const submit = () => fireEvent.click(screen.getAllByRole('button', { name: 'Привязать' }).at(-1)!);
+  const codeCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).includes(CODE_URL));
+
+  it('неполный код не отправляется; полный уходит с сессией и CSRF, успех — onLinked', async () => {
+    const input = await toCodeForm();
+    fireEvent.change(input, { target: { value: 'k7m2' } });
+    expect(screen.getAllByRole<HTMLButtonElement>('button', { name: 'Привязать' }).at(-1)!.disabled).toBe(true);
+
+    // Код набран как в письме — с дефисом и строчными: уходит нормализованным.
+    fireEvent.change(input, { target: { value: 'k7m2-qx94' } });
+    expect(input.value).toBe('K7M2-QX94');
+    submit();
+    await waitFor(() => expect(onLinked).toHaveBeenCalledTimes(1));
+    const [, init] = codeCalls()[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ code: 'K7M2QX94' });
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer tok123');
+    expect(headers['x-requested-with']).toBe('webapp');
+  });
+
+  it('код не подошёл — текст сервера виден, onLinked не зовётся, форма на месте', async () => {
+    const input = await toCodeForm();
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes(CODE_URL)
+          ? jsonResponse(400, { message: 'Код не подошёл или истёк' })
+          : jsonResponse(200, {}),
+      ),
+    );
+    fireEvent.change(input, { target: { value: 'ZZZZZZZZ' } });
+    submit();
+    await screen.findByText('Код не подошёл или истёк');
+    // Ошибка — у поля кода (b27), а не баннером страницы.
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toMatch(/^Код не\sподошёл или истёк$/);
+    expect(screen.getByLabelText('Код из письма').closest('form')!.contains(alert)).toBe(true);
+    expect(onLinked).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Код из письма')).toBeTruthy();
+  });
+});
+
+// S12 (аудит 2026-11): у аккаунта с 2FA новый способ входа — только с кодом.
+// Сервер отвечает 403 totp_required → общее окно кода → тот же запрос с
+// `x-totp-code`; окно закрыли — письмо не уходит, форма остаётся.
+describe('EmailLinkRow — включённая 2FA', () => {
+  const need = () => new Response(JSON.stringify({ reason: 'totp_required' }), { status: 403 });
+  const totp = (init?: RequestInit) => (init?.headers as Record<string, string>)['x-totp-code'];
+
+  function renderWithStepUp() {
+    render(
+      <MemoryRouter>
+        <StepUpProvider><Harness /></StepUpProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'me@example.com' } });
+    fireEvent.click(screen.getByText('Отправить'));
+  }
+  async function codeDialog() {
+    await screen.findByText('Подтверди, что это ты');
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+  }
+
+  it('403 totp_required → код → письмо уходит повтором с кодом', async () => {
+    fetchMock.mockImplementation((_u: string, init?: RequestInit) =>
+      Promise.resolve(totp(init) === '123456' ? jsonResponse(200, {}) : need()));
+    renderWithStepUp();
+    await codeDialog();
+    fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await screen.findByText(/письмо придёт в течение минуты/);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('окно закрыто — письма нет, форма на месте, ошибки нет', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(need()));
+    renderWithStepUp();
+    await codeDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+    await waitFor(() => expect(screen.queryByText('Подтверди, что это ты')).toBeNull());
+    expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
+    expect(screen.queryByText(/письмо придёт/)).toBeNull();
+    expect(screen.queryByText(/Нужен код|Не удалось/)).toBeNull();
+  });
+});

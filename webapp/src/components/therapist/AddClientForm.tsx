@@ -1,0 +1,93 @@
+import { TherapistInviteShare } from '../../share/TherapistInviteShare';
+import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
+import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
+import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
+import type { useAddClient } from './useAddClient';
+import { SignArt } from '../art/SignArt';
+import { BrandMark } from '../art/BrandMark';
+import { PaperAlert } from '../paper/PaperAlert';
+import { INVITE_SIGN } from './cabinetLook';
+import '../../styles/therapist-clients.css';
+
+interface Props {
+  addClient: ReturnType<typeof useAddClient>;
+}
+
+// Открыта ли форма, решает useAddClient (`open`). Вид (b29): форма — светлый лист с тенью слоем неба, сбой — PaperAlert
+// без «Повторить» (повтор — та же «Создать»); итог — лист неба, у имени знак: приглашение — Talk, офлайн-карточка — BrandMark.
+export function AddClientForm({ addClient }: Props) {
+  const {
+    name: addName, setName: setAddName,
+    withInvite, setWithInvite,
+    created: addCreated, submitting: addSubmitting, error: addError, copied: addCopied, copyFailed: addCopyFailed, valid: addValid,
+    inputRef: addInputRef,
+    submit: submitAddClient, reset: resetAddClient, close: closeAddClient, copyInvite: copyAddInvite,
+  } = addClient;
+
+  if (addCreated) {
+    const invite = addCreated.invite;
+    return (
+      <div className="pp-paper tc-add tc-add--done">
+        <div className="tc-add-done">
+          <div className="tc-add-done-head">
+            <div className="tc-add-done-title">
+              <div className="ds-eyebrow">{invite ? 'Приглашение создано' : 'Клиент добавлен'}</div>
+              <h2 className="tc-add-done-name">{addCreated.name}</h2>
+            </div>
+            <span className="tc-block-sign tc-add-done-sign" aria-hidden="true">
+              {invite ? <SignArt sign={INVITE_SIGN} size="row" /> : <BrandMark size={40} simple bare />}
+            </span>
+          </div>
+          {invite ? (
+            <div>
+              <div className="ds-label">Ссылка-приглашение</div>
+              <div className="tc-invite">
+                <code>{invite.url}</code>
+                <button className="ds-btn ds-btn--sm" onClick={copyAddInvite}>
+                  {addCopied ? '✓ Скопировано' : 'Скопировать'}
+                </button>
+                <TherapistInviteShare invite={invite} />
+              </div>
+              <CopyFailedHint show={addCopyFailed} />
+              <InviteCodeBox code={invite.code} />
+              <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
+            </div>
+          ) : (
+            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без аккаунта в приложении.</p>
+          )}
+          <div className="tc-actions">
+            <button className={`ds-btn ds-btn--sm${invite ? ' ds-btn--secondary' : ''}`} onClick={resetAddClient}>Добавить ещё</button>
+            <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={closeAddClient}>к списку</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pp-block tc-add">
+      <input
+        className="tc-add-name"
+        id="add-client-name" ref={addInputRef}
+        aria-label="Имя клиента"
+        value={addName}
+        onChange={e => setAddName(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && submitAddClient()}
+        placeholder="Имя клиента, например Анна К."
+        autoComplete="off"
+        maxLength={CLIENT_NAME_MAX}
+      />
+      <button className="ds-btn ds-btn--accent" onClick={submitAddClient} disabled={!addValid || addSubmitting}>
+        {addSubmitting ? '...' : withInvite ? 'Создать приглашение' : 'Создать карточку'}
+      </button>
+      <label className="tc-add-check">
+        <input type="checkbox" checked={withInvite} onChange={e => setWithInvite(e.target.checked)} />
+        Пригласить в приложение (ссылка и код)
+      </label>
+      {withInvite && (
+        <p className="tc-add-note">Офлайн-карточка не создаётся: карточка с этим именем появится, когда клиент подключится по ссылке или коду</p>
+      )}
+      {addError && <PaperAlert className="tc-add-err" title={addError} />}
+    </div>
+  );
+}

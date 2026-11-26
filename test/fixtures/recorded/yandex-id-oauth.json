@@ -1,0 +1,98 @@
+{
+  "authorizeAnonymous": {
+    "request": {
+      "url": "https://oauth.yandex.ru/authorize",
+      "query": {
+        "response_type": "code",
+        "client_id": "11c76b6012374a5c8ad05acaeca11895",
+        "redirect_uri": "https://schemehappens.ru/api/auth/yandex/callback",
+        "state": "selfcheck.aBc-123_xyz.Sig",
+        "scope": "login:email login:info"
+      }
+    },
+    "response": {
+      "status": 302,
+      "contentType": "text/plain; charset=utf-8",
+      "location": "https://passport.yandex.ru/auth?retpath=https%3A%2F%2Foauth.yandex.ru%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D11c76b6012374a5c8ad05acaeca11895%26redirect_uri%3Dhttps%253A%252F%252Fschemehappens.ru%252Fapi%252Fauth%252Fyandex%252Fcallback%26state%3Dselfcheck.aBc-123_xyz.Sig%26scope%3Dlogin%253Aemail%2520login%253Ainfo&noreturn=1&origin=oauth"
+    }
+  },
+  "callback": {
+    "stateSent": "fixture.aBc-123_xyz.Sig",
+    "query": {
+      "state": "fixture.aBc-123_xyz.Sig",
+      "code": "REDACTED16chars00",
+      "cid": "REDACTED"
+    },
+    "queryKeysInOrder": ["state", "code", "cid"],
+    "codeLength": 16,
+    "codeAlphabet": "a-z0-9",
+    "cidLength": 26
+  },
+  "token": {
+    "ok": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "access_token": "REDACTED",
+        "expires_in": 31535895,
+        "refresh_token": "REDACTED",
+        "token_type": "bearer"
+      }
+    },
+    "wrongSecret": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_client",
+        "error_description": "Wrong client secret"
+      }
+    },
+    "unknownClient": {
+      "status": 400,
+      "contentType": "application/json",
+      "body": {
+        "error": "invalid_client",
+        "error_description": "Client not found"
+      }
+    }
+  },
+  "info": {
+    "ok": {
+      "status": 200,
+      "contentType": "application/json; charset=UTF-8",
+      "body": {
+        "id": "1234567890",
+        "login": "user",
+        "client_id": "11c76b6012374a5c8ad05acaeca11895",
+        "display_name": "user",
+        "real_name": "Иван Иванов",
+        "first_name": "Иван",
+        "last_name": "Иванов",
+        "sex": "male",
+        "default_email": "user@example.com",
+        "emails": ["user@example.com"],
+        "psuid": "1.AAAAAA.REDACTED.REDACTED"
+      }
+    },
+    "noToken": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "code": "NOT_AUTHORIZED",
+        "details": {},
+        "message": "err on user auth: : oauth token not provided",
+        "status": "error"
+      }
+    },
+    "badToken": {
+      "status": 401,
+      "contentType": "application/json",
+      "body": {
+        "code": "NOT_AUTHORIZED",
+        "details": {},
+        "message": "err on user auth: : access denied: blackbox: INVALID: expired_token",
+        "status": "error"
+      }
+    }
+  }
+}

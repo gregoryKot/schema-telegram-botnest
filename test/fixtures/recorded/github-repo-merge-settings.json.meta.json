@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo} (настройки слияния репозитория)",
+  "recordedAt": "2026-11-08",
+  "how": "записано из сессии агента командой `gh api repos/gregoryKot/schema-telegram-botnest`, HTTP 200. Запрос шёл с токеном GitHub App прокси песочницы, у которого admin-доступ к репозиторию: поля allow_* и delete_branch_on_merge GitHub отдаёт не каждому токену — без токена или с правом только на чтение их может не быть (scripts/check-live-ruleset.mjs на это краснеет с отдельной причиной)",
+  "redacted": "из тела ответа оставлены только поля, которые читает scripts/check-live-ruleset.mjs, плюс id, full_name, private, default_branch для опознания; убраны owner (публичный логин и avatar_url), служебные ссылки API, счётчики и temp_clone_token — парсеру не нужны"
+}

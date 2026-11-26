@@ -1,0 +1,133 @@
+// Фабрика общих API-методов (правило №3): один список эндпоинтов на оба
+// фронтенда. Тест держит контракт «метод → верный глагол и путь»: смок зовёт
+// КАЖДЫЙ метод через фейковый транспорт (ни один не может молча сломаться),
+// точечные ассерты — за ветвящимися методами.
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { buildSharedApi, type ApiTransport } from './sharedApi';
+
+const calls: { verb: string; path: string; body?: unknown }[] = [];
+const t = {
+  get: vi.fn((path: string) => {
+    calls.push({ verb: 'get', path });
+    return Promise.resolve(null);
+  }),
+  post: vi.fn((path: string, body?: unknown) => {
+    calls.push({ verb: 'post', path, body });
+    return Promise.resolve();
+  }),
+  postJson: vi.fn((path: string, body: unknown) => {
+    calls.push({ verb: 'postJson', path, body });
+    return Promise.resolve(null);
+  }),
+  del: vi.fn((path: string, body?: unknown) => {
+    calls.push({ verb: 'del', path, body });
+    return Promise.resolve();
+  }),
+} as unknown as ApiTransport;
+const api = buildSharedApi(t);
+
+beforeEach(() => {
+  calls.length = 0;
+});
+
+describe('buildSharedApi: смок всех методов', () => {
+  it('каждый метод дёргает транспорт с /api/-путём', async () => {
+    for (const [name, fn] of Object.entries(api)) {
+      calls.length = 0;
+      // Дженерик-аргументы: сигнатуры принимают примитивы/объекты — фейковый
+      // транспорт не валидирует. Метод обязан сделать ровно ≥1 вызов /api/.
+      await (fn as (...a: unknown[]) => unknown)('x', 1, 'y');
+      expect(calls.length, `${name} не дошёл до транспорта`).toBeGreaterThan(0);
+      for (const c of calls) {
+        expect(c.path, `${name} бьёт мимо /api/: ${c.path}`).toMatch(
+          /^\/api\//,
+        );
+      }
+    }
+  });
+});
+
+describe('ветвящиеся методы', () => {
+  it('ratings: без даты — чистый путь, с датой — query с кодированием', async () => {
+    await api.ratings();
+    expect(calls[0].path).toBe('/api/ratings');
+    await api.ratings('2026-01-05');
+    expect(calls[1].path).toBe('/api/ratings?date=2026-01-05');
+  });
+
+  it('history: дефолт 7 дней', async () => {
+    await api.history();
+    expect(calls[0].path).toBe('/api/history?days=7');
+  });
+
+  it('trackEvent: fire-and-forget, ошибка транспорта не пробрасывается', () => {
+    const bad = {
+      ...t,
+      post: () => Promise.reject(new Error('сеть упала')),
+    } as unknown as ApiTransport;
+    const a = buildSharedApi(bad);
+    expect(() => a.trackEvent('share_card', { place: 'test' })).not.toThrow();
+  });
+
+  it('leavePair: DELETE с телом — код пары уезжает в body, не в URL', async () => {
+    await api.leavePair('ABC123');
+    expect(calls[0]).toEqual({
+      verb: 'del',
+      path: '/api/pair',
+      body: { code: 'ABC123' },
+    });
+  });
+
+  it('createPairInvite: POST с пустым объектом (раньше webapp слал raw fetch)', async () => {
+    await api.createPairInvite();
+    expect(calls[0].verb).toBe('postJson');
+    expect(calls[0].path).toBe('/api/pair/invite');
+  });
+
+  it('createGratitudeDiary: base уезжает в теле — сервер сливает с ним день', async () => {
+    await api.createGratitudeDiary('2026-10-31', ['б'], ['а']);
+    await api.createGratitudeDiary('2026-10-31', ['б']);
+    expect(calls[0]).toEqual({
+      verb: 'postJson',
+      path: '/api/diary/gratitude',
+      body: { date: '2026-10-31', items: ['б'], base: ['а'] },
+    });
+    // Без base в JSON поля нет — сервер ведёт себя по-старому (замена дня).
+    expect(JSON.parse(JSON.stringify(calls[1].body))).toEqual({
+      date: '2026-10-31',
+      items: ['б'],
+    });
+  });
+});
+
+// Аудит 2026-10, X-1: веб-id (> 2^53) приходит с сервера СТРОКОЙ и обязан
+// доехать до URL/тела без округления. Number('1000000000000000123') дал бы
+// 1000000000000000100 — запрос ушёл бы в чужую (несуществующую) связь.
+describe('веб-id клиента (строка > 2^53) доезжает до URL и тела точно', () => {
+  const WEB = '1000000000000000123';
+
+  it('therapy-методы с :clientId в пути', async () => {
+    await api.getTherapistNotes(WEB);
+    await api.getTherapyClientData(WEB);
+    await api.getTherapyTasksForClient(WEB);
+    await api.removeClient(WEB);
+    await api.renameClient(WEB, 'А');
+    await api.requestYsq(WEB);
+    await api.updateSessionInfo(WEB, {});
+    await api.getClientSchemaNotes(WEB);
+    await api.getClientModeNotes(WEB);
+    for (const c of calls) expect(c.path).toContain(WEB);
+    expect(calls).toHaveLength(9);
+  });
+
+  it('createTherapistNote: id в пути', async () => {
+    await api.createTherapistNote(WEB, '2026-10-01', 'текст');
+    expect(calls[0].path).toBe(`/api/therapy/notes/${WEB}`);
+  });
+
+  it('createTask: clientId-строка уходит в теле как строка', async () => {
+    await api.createTask({ type: 'custom', text: 'x', clientId: WEB });
+    expect((calls[0].body as { clientId: unknown }).clientId).toBe(WEB);
+    expect(JSON.stringify(calls[0].body)).toContain(`"${WEB}"`);
+  });
+});

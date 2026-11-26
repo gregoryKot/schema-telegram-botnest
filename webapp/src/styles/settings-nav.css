@@ -1,0 +1,51 @@
+/* Настройки: боковое оглавление и раскладка содержимого на компьютере (SettingsSheet).
+   Подключается через index-tail.css. Вид строк и групп — sheet-settings.css. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  /* Settings overlay: don't cover the sidebar on desktop */
+  .settings-overlay { left: var(--sidebar-w) !important; }
+  /* Планшет (768–1023): одна колонка во всю ширину листа, без потолка; поля как у страниц кабинета. */
+  .settings-content-inner.st-inner { padding: 32px clamp(24px, 4vw, 56px) 80px; }
+}
+/* Боковое оглавление — с 1024: на планшете (768–1023) рядом с сайдбаром оно оставляло колонке ~250px. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .settings-sidenav { display: flex !important; }
+}
+
+/* ─── Оглавление: пункты текстом на тонкой линии, у читаемого раздела — черта акцента (как .lt-tab) ─── */
+.settings-sidenav {
+  display: none; /* hidden on mobile */
+  flex-direction: column;
+  width: 200px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-right: 1px solid var(--line);
+  padding: 44px 16px 24px 24px;
+  overflow-y: auto;
+}
+.settings-sidenav-item {
+  display: block; width: 100%; box-sizing: border-box; min-height: 34px; text-align: left;
+  padding: 7px 0 7px 14px; background: none; border: none; box-shadow: inset 1px 0 0 var(--panel-line);
+  font: 500 13px/1.4 var(--sans); color: var(--text-muted); cursor: pointer; transition: color .12s, box-shadow .12s;
+}
+.settings-sidenav-item:hover { color: var(--text); }
+.settings-sidenav-item[aria-current] { color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+.settings-sidenav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-4); }
+@media (pointer: coarse) { .settings-sidenav-item { min-height: 44px; } }
+
+/* ─── Компьютер (≥1024): лист во всю ширину холста с потолком, секция — журнальный разворот ───
+   Слева (треть) — ярлык капсом и пояснение, справа — строки и поля; секции через линию во всю ширину. */
+@media (min-width: 1024px) {
+  .settings-content-inner { max-width: 1200px; }
+  .settings-content-inner.st-inner { padding: 40px clamp(32px, 4vw, 56px) 80px; }
+  .settings-content-inner.st-inner--sub { max-width: 720px; }
+  /* Пункт оглавления докручивает и последние группы заголовком к верху: запас снизу — высота окна без шапки и группы. */
+  .settings-content-inner.st-inner:not(.st-inner--sub) { gap: 0; padding-bottom: clamp(80px, calc(100vh - 300px), 900px); }
+  .settings-content-inner.st-inner:not(.st-inner--sub) > .st-h { margin-bottom: 24px; }
+  .settings-content-inner.st-inner:not(.st-inner--sub) > .st-section {
+    padding: 22px 0 30px; border-top: 1px solid var(--panel-line);
+  }
+  .settings-content-inner.st-inner:not(.st-inner--sub) > .st-section > .st-sec-head { padding: 14px 0 0; border-bottom: none; }
+  /* Подэкран узкий (720): разворот не нужен, секция колонкой. */
+  .st-inner--sub .st-section.ds-spread { display: block; }
+  .settings-content-inner.st-inner:not(.st-inner--sub) .st-hint { margin-top: 8px; max-width: 34ch; }
+}

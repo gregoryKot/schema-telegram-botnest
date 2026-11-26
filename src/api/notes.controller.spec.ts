@@ -1,0 +1,109 @@
+// Карточки схем/режимов: userId только из req (см. CLAUDE.md правило про
+// денормализацию mySchemaIds/UserSchemaNote). schemaId/modeId — id справочника,
+// проверку держит DTO (src/therapy/dto/kb-id.validator.spec.ts).
+import { NotesController } from './notes.controller';
+import type { NotesService } from '../bot/notes.service';
+
+function makeReq(userId = 1n) {
+  return { webUser: { userId } } as any;
+}
+
+function makeController(overrides: Partial<NotesService> = {}) {
+  const notesService = {
+    getSchemaNotes: jest.fn().mockResolvedValue([]),
+    upsertSchemaNote: jest.fn().mockResolvedValue({ id: 1 }),
+    getModeNotes: jest.fn().mockResolvedValue([]),
+    upsertModeNote: jest.fn().mockResolvedValue({ id: 2 }),
+    ...overrides,
+  } as unknown as NotesService;
+  return { controller: new NotesController(notesService), notesService };
+}
+
+describe('NotesController.getSchemaNotes / getModeNotes', () => {
+  it('делегирует чтение с userId из req', async () => {
+    const { controller, notesService } = makeController();
+    await controller.getSchemaNotes(makeReq(5n));
+    expect(notesService.getSchemaNotes).toHaveBeenCalledWith(5n);
+    await controller.getModeNotes(makeReq(5n));
+    expect(notesService.getModeNotes).toHaveBeenCalledWith(5n);
+  });
+});
+
+describe('NotesController.upsertSchemaNote', () => {
+  it('валидный schemaId → сохраняет под userId из req, поля тримятся сервисом-обёрткой', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertSchemaNote(makeReq(3n), {
+      schemaId: 'abandonment',
+      triggers: '  громко  ',
+      reality: '  правда  ',
+    });
+    expect(notesService.upsertSchemaNote).toHaveBeenCalledWith(
+      3n,
+      'abandonment',
+      expect.objectContaining({ triggers: 'громко', reality: 'правда' }),
+    );
+  });
+
+  it('чужой userId в теле игнорируется — сохраняется под userId из req', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertSchemaNote(makeReq(3n), {
+      schemaId: 'abandonment',
+      userId: 999, // атака: подсунуть чужой id в body
+    } as any);
+    expect(notesService.upsertSchemaNote).toHaveBeenCalledWith(
+      3n,
+      'abandonment',
+      expect.anything(),
+    );
+  });
+});
+
+describe('NotesController.upsertModeNote', () => {
+  it('валидный modeId — needs тримится и передаётся отдельным полем', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertModeNote(makeReq(7n), {
+      modeId: 'punitive_parent',
+      needs: '  безопасность  ',
+    });
+    expect(notesService.upsertModeNote).toHaveBeenCalledWith(
+      7n,
+      'punitive_parent',
+      expect.objectContaining({ needs: 'безопасность' }),
+      undefined,
+    );
+  });
+
+  it('modeFunction/needsMet тримятся и передаются отдельными полями', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertModeNote(makeReq(7n), {
+      modeId: 'punitive_parent',
+      modeFunction: '  защищает от боли  ',
+      needsMet: '  на время — да, по сути — нет  ',
+    });
+    expect(notesService.upsertModeNote).toHaveBeenCalledWith(
+      7n,
+      'punitive_parent',
+      expect.objectContaining({
+        modeFunction: 'защищает от боли',
+        needsMet: 'на время — да, по сути — нет',
+      }),
+      undefined,
+    );
+  });
+
+  // QA 2026-11, К1: поля разбора «Что случилось» ложатся только в пустое место.
+  it('fillIfEmpty доходит до сервиса как есть', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertModeNote(makeReq(7n), {
+      modeId: 'detached_protector',
+      triggers: 'Подруга не ответила',
+      fillIfEmpty: ['triggers', 'feelings', 'behavior'],
+    });
+    expect(notesService.upsertModeNote).toHaveBeenCalledWith(
+      7n,
+      'detached_protector',
+      expect.objectContaining({ triggers: 'Подруга не ответила' }),
+      ['triggers', 'feelings', 'behavior'],
+    );
+  });
+});

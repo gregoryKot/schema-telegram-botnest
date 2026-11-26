@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/rulesets (список ruleset репозитория с полем enforcement)",
+  "recordedAt": "2026-11-08",
+  "how": "записано из сессии агента командой `gh api repos/gregoryKot/schema-telegram-botnest/rulesets`, HTTP 200",
+  "redacted": "ничего — ответ целиком, только переформатирован с отступами; персональных данных и секретов в нём нет"
+}

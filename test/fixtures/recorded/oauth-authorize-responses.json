@@ -1,0 +1,14 @@
+{
+  "sampleState": "eyJhbGciOiJIUzI1NiJ9.eyJzZWxmQ2hlY2siOnRydWV9.c2VsZi1jaGVjaw",
+  "vkSentState": "ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKelpXeG1RMmhsWTJzaU9uUnlkV1Y5LmMyVnNaaTFqYUdWamF3",
+  "responses": {
+    "vkAccepted": {
+      "status": 302,
+      "location": "https://id.vk.com/auth?app_id=54774325&client_id=54774325&device_id=&response_type=code&redirect_uri=https://schemehappens.ru/api/auth/vk/callback&scope=email%20phone&sdk_type=vkid&lang_id=3&scheme=&oauth_version=2&redirect_state=ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKelpXeG1RMmhsWTJzaU9uUnlkV1Y5LmMyVnNaaTFqYUdWamF3&code_challenge=w6v_3_Ebc7aJAgMNWxR36bTWMaVPPZbAI0SAsBhUOeg&code_challenge_method=sha256"
+    },
+    "vkWrongRedirect": {
+      "status": 200,
+      "location": null
+    }
+  }
+}

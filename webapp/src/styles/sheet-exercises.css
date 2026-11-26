@@ -1,0 +1,115 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Упражнения и «Разбор случая» — оболочка редизайна 2026-10 (префикс ex2-).
+   Старые ex-* в ex-legacy.css не трогаем: ими ещё пользуются соседние экраны.
+   Цвета — токены; оттенок сущности приходит в --h (lib/tone.ts).
+   Никаких «видно только по hover»: любое действие доступно пальцем.
+   ───────────────────────────────────────────────────────────────────────── */
+/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
+   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
+   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
+@import './ex-cards.css';
+@import './ex-belief.css';
+@import './ex-letter.css';
+@import './ex-phrase.css';
+@import './ex-wheel.css';
+@import './ex-case.css';
+@import './ex-warm.css';
+@import './ex-done.css';
+@import './ex-hint.css';
+
+/* ── Каркас экрана упражнения ─────────────────────────────────────────── */
+.ex2-screen {
+  position: fixed; inset: 0; z-index: 200; background: var(--bg); color: var(--text);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+/* Шапка — общая .ds-sheet-head/.ds-back из cabinet.css (#906); здесь только
+   липкость и отступ под статус-бар. */
+.ex2-top { position: sticky; top: 0; z-index: 2; }
+/* Телефон: отступ под статус-бар установленного приложения (#902) — на самой
+   липкой шапке, а не на корне .ex2-screen: sticky считает top: 0 от края
+   скролл-контейнера, и padding корня уезжает при первом же скролле. Бар
+   остаётся 56 поверх отступа. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .ex2-top { padding-top: var(--safe-top); min-height: calc(56px + var(--safe-top)); } }
+.ex2-body {
+  display: grid; grid-template-columns: minmax(0, 720px) 300px; gap: 56px;
+  align-items: start; justify-content: center; box-sizing: border-box;
+  max-width: 1160px; margin: 0 auto; padding: 40px clamp(16px, 4vw, 56px) 96px;
+}
+.ex2-body--single { grid-template-columns: minmax(0, 720px); }
+.ex2-main { min-width: 0; }
+.ex2-skel { display: flex; flex-direction: column; gap: 14px; } /* силуэт загрузки (ExScreenSkeleton) */
+.ex2-aside { position: sticky; top: 80px; min-width: 0; }
+.ds-h2.ex2-title { margin: 8px 0 12px; } /* кегль — ds-h2, без локального (#906) */
+/* Курсив хвоста заголовка (.it) — и в заголовке-тексте, и в листе-герое ExScreen look (NeedDetailSheet,
+   NoteSheet «Заметка к дню»; до сведения g5 правило жило в need-detail.css и работало, только если тот загружен). */
+.ex2-title .it, .ex2-hero .pa-sheet-title .it { font-style: italic; }
+.ex2-lede.ds-sub { margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: var(--text-sub); max-width: 560px; }
+@media (max-width: 900px) {
+  .ex2-body { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 24px; padding-bottom: 120px; }
+  .ex2-aside { position: static; }
+}
+
+/* ── Герой и раскладки редизайна 2026-11 (ExScreen look / hintBeforeField / spread) ── */
+/* Герой — лист упражнения (EntitySheet, paper-app.css); под ним поле. */
+.ex2-main > .ex2-hero { margin-bottom: 28px; }
+/* «Самопомощь» у героя — под кнопками (ExScreen, по умолчанию); под листом — только по cautionAt="head". */
+.ex2-main > .ex2-hero + .th-caution { margin-top: -12px; margin-bottom: 28px; }
+.ex2-body--spread .pa-spread-main > .th-caution { margin-top: 0; }
+/* hintBeforeField (шаги примет «Критик или забота?», PhraseCheckEx): шапка, подсказка и поле — отдельные ячейки.
+   На компьютере подсказка справа на обе строки (лишняя высота — во вторую строку, а не в зазор под шапкой), на ≤900 —
+   между шапкой и полем: «Примета N из 9» стоит до вариантов ответа, а не под «самопомощью». */
+.ex2-body--split { grid-template-areas: 'head aside' 'main aside'; grid-template-rows: auto 1fr; row-gap: 28px; }
+.ex2-body--split > .ex2-head { grid-area: head; min-width: 0; }
+.ex2-body--split > .ex2-main { grid-area: main; }
+.ex2-body--split > .ex2-aside { grid-area: aside; }
+.ex2-head > .ex2-lede.ds-sub:last-child { margin-bottom: 0; }
+/* Разворот: колонки держит SpreadLayout; подсказка — в левой колонке под листом, не липнет
+   отдельно (липнет вся колонка, ниже шапки упражнения). */
+.ex2-body--spread { display: block; max-width: 1180px; --pa-sticky-top: 80px; }
+.ex2-body--spread .ex2-aside { position: static; }
+/* Уже 1024 разворот — колонкой: лист, строка ExHint (до поля, ExHint.test.tsx), форма, остальное из aside — после неё
+   (принцип 5). Колонка и aside раскрываются в поток; :where не перебивает display у aside экрана («Что собрали»). */
+@media (max-width: 1023px), (pointer: coarse) and (max-height: 500px) {
+  .ex2-body--spread .pa-spread-side, :where(.ex2-body--spread .pa-spread-side) > .ex2-aside { display: contents; }
+  .ex2-body--spread .pa-spread-main { order: 2; }
+  .ex2-body--spread .ex2-aside > :not(.ex2-hint) { order: 3; position: static; }
+}
+@media (max-width: 900px) {
+  .ex2-body--split { grid-template-areas: 'head' 'aside' 'main'; grid-template-rows: none; row-gap: 24px; }
+}
+
+/* ── Шаги, вопрос, низ экрана ─────────────────────────────────────────── */
+.ex2-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--paper-sunk); }
+.ex2-step {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  border-radius: 14px; cursor: pointer; font-size: 12.5px; color: var(--text-faint);
+}
+.ex2-step-n { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-ghost); }
+.ex2-step.is-active { background: var(--paper-sunk); color: var(--text); font-weight: 600; }
+.ex2-step.is-active .ex2-step-n { color: var(--accent); }
+.ex2-step.is-done { color: var(--text-sub); }
+.ex2-step.is-done .ex2-step-n { color: var(--ok); }
+.ex2-prompt { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 24px; }
+.ex2-prompt-label { font-family: var(--serif); font-size: 26px; line-height: 1.2; color: var(--text); margin-bottom: 8px; }
+.ex2-prompt-label--sm { font-size: 22px; }
+/* Экран с листом-героем (ExScreen look): на телефоне заголовок листа — Literata 26–28, и вопрос того
+   же кегля прямо под ним спорил с ним за главное — вопрос ступенью ниже. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .ex2-screen--hero .ex2-prompt-label { font-size: 22px; } }
+.ex2-prompt-hint { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ex2-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--paper-sunk); }
+.ex2-spacer { flex: 1; }
+.ds-btn.ex2-ghost, .ds-btn.ex2-ghost:hover:not(:disabled) { background: transparent; color: var(--text-sub); }
+.ds-btn.ex2-ghost:hover:not(:disabled) { color: var(--text); background: var(--paper-tint); }
+/* Неактивная прозрачная («← Назад» на первом шаге): без подложки, но бледная. Фон пишется и здесь:
+   .ds-btn:disabled той же специфичности (0,2,0), что .ds-btn.ex2-ghost, и без пары исход решал бы
+   порядок файлов в сборке (0,3,0 — всегда). */
+.ds-btn.ex2-ghost:disabled { background: transparent; box-shadow: none; color: var(--text-ghost); }
+.ex2-gap { margin-top: 16px; }
+.ex2-fine { margin: 0 0 20px; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
+
+/* ── Текст листа вердикта разбора (PhraseVerdict) и предупреждений ─────── */
+.ex2-note-h { margin: 0 0 8px; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.25; }
+.ex2-note-body { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+
+.ex2-main > .pp-art { display: block; margin-bottom: 12px; }
+.ds-card--warn .ex2-note-body, .ds-card--warn .ds-label { color: var(--warn-ink); }

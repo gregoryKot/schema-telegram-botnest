@@ -1,0 +1,103 @@
+// Read busy intervals (each with an optional SUMMARY, see caldav-summary.ts)
+// from the iCloud calendar via CalDAV. Best-effort: RRULE events are skipped;
+// on parse issues we fail open with fewer/no intervals (slots still show) and
+// count what was dropped (caldav-parse-skips.ts).
+
+import { zonedWallClockToUtc } from '../utils/tz';
+import { eventEnd } from './caldav-event-end';
+import { noSkips } from './caldav-parse-skips';
+import { readSummary } from './caldav-summary';
+
+export interface Interval {
+  start: Date;
+  end: Date;
+  summary?: string;
+}
+
+export function busyQueryXml(from: Date, to: Date): string {
+  const f = fmtUtc(from),
+    t = fmtUtc(to);
+  // <c:expand> unrolls recurring events into instances within [from,to]; if
+  // iCloud ignores it, we just skip the (RRULE) master event — fail-open.
+  return `<?xml version="1.0" encoding="utf-8"?>
+<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+  <d:prop><c:calendar-data><c:expand start="${f}" end="${t}"/></c:calendar-data></d:prop>
+  <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">
+    <c:time-range start="${f}" end="${t}"/>
+  </c:comp-filter></c:comp-filter></c:filter>
+</c:calendar-query>`;
+}
+
+/** Parse VEVENT DTSTART + DTEND/DURATION (RFC 5545 §3.6.1) from a multistatus;
+ * `skipped` accumulates what fail-open dropped (one object per read). */
+export function parseBusy(xml: string, skipped = noSkips()): Interval[] {
+  const out: Interval[] = [];
+  // Unfold iCal line continuations (RFC 5545: lines wrapped with CRLF + space).
+  const text = xml
+    .replace(/\r\n[ \t]/g, '')
+    .replace(/&#13;/g, '')
+    .replace(/&#10;/g, '\n');
+  const events = text.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) ?? [];
+  for (const ev of events) {
+    if (/(?:^|\n)RRULE[:;]/.test(ev)) {
+      skipped.recurring += 1; // skip recurring (MVP)
+      continue;
+    }
+    const start = findDate(ev, 'DTSTART');
+    if (!start) {
+      skipped.badStart += 1;
+      continue;
+    }
+    const dtend = findDate(ev, 'DTEND');
+    if (!dtend && fieldLine(ev, 'DTEND')) skipped.badEnd += 1;
+    const tzid = tzidOf(fieldLine(ev, 'DTSTART')?.[1]);
+    const end = eventEnd(ev, start, dtend, tzid);
+    const summary = readSummary(ev);
+    out.push({ start, end, ...(summary ? { summary } : {}) });
+  }
+  return out;
+}
+
+const fieldLine = (ev: string, field: 'DTSTART' | 'DTEND') =>
+  ev.match(new RegExp(`(?:^|\\n)${field}([^:\\n]*):([^\\r\\n]+)`));
+const tzidOf = (params = '') => params.match(/TZID=([^;:]+)/)?.[1];
+
+function findDate(ev: string, field: 'DTSTART' | 'DTEND'): Date | null {
+  const m = fieldLine(ev, field);
+  if (!m) return null;
+  const params = m[1],
+    value = m[2].trim();
+  if (/^\d{8}$/.test(value)) {
+    // All-day (VALUE=DATE) — treat the whole day as busy (UTC).
+    const y = +value.slice(0, 4),
+      mo = +value.slice(4, 6) - 1,
+      d = +value.slice(6, 8);
+    return new Date(Date.UTC(y, mo, d, 0, 0, 0));
+  }
+  const dt = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/);
+  if (!dt) return null;
+  const [, Y, Mo, D, h, mi, s, z] = dt;
+  if (z === 'Z') return new Date(`${Y}-${Mo}-${D}T${h}:${mi}:${s}.000Z`);
+  const tzid = tzidOf(params);
+  if (tzid) {
+    // Стенное время в зоне события. Перевод — общий хелпер (src/utils/tz.ts):
+    // локальная копия этой логики была сломана и игнорировала смещение TZID
+    // на любом не-UTC сервере, см. комментарий к zonedWallClockToUtc.
+    try {
+      return zonedWallClockToUtc(`${Y}-${Mo}-${D}T${h}:${mi}:${s}`, tzid);
+    } catch {
+      // Нестандартный TZID (Outlook шлёт «Russian Standard Time») — Intl бросает
+      // RangeError. Деградируем до floating (UTC) ниже, а не роняем разбор
+      // всего календаря из-за одного кривого ивента (fail-open — правило файла).
+    }
+  }
+  // Floating time — assume UTC (best effort).
+  return new Date(`${Y}-${Mo}-${D}T${h}:${mi}:${s}.000Z`);
+}
+
+function fmtUtc(d: Date): string {
+  return d
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '');
+}

@@ -1,0 +1,235 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { formatProductMetrics, ProductMetrics } from './product-metrics.format';
+import { countCrisis } from './crisis-metrics';
+import { countYsqFunnel } from './ysq-funnel-metrics';
+import { formatQuizMetrics } from './quiz-metrics.format';
+import { QuizMetricsService } from './quiz-metrics.service';
+import { formatPracticeLinkMetrics } from './practice-link-metrics.format';
+import { PracticeLinkMetricsService } from './practice-link-metrics.service';
+import { formatLinksPageMetrics } from './links-page-metrics.format';
+import { LinksPageMetricsService } from './links-page-metrics.service';
+import { formatPracticeMetrics } from './practice-metrics.format';
+import { PracticeMetricsService } from './practice-metrics.service';
+import { formatCaseMetrics } from './case-metrics.format';
+import { formatSelfMapMetrics } from './self-map-metrics.format';
+import { CaseMetricsService } from './case-metrics.service';
+import {
+  ONBOARDING_STEPS,
+  SITE_INSTALL_SURFACES,
+} from '../analytics/analytics.constants';
+
+// IN-список сайтовых surface для исключения из воронки мини-аппа — сама
+// строка ${...} собирается один раз, а не в каждом запросе.
+const SITE_SURFACES_LIST = Prisma.join(SITE_INSTALL_SURFACES);
+
+// Продуктовые метрики для /stats (правило №8). Всё выводится из БД: часть — из
+// таблиц-фич (онбординг/adoption/распределения), часть — из событий
+// AnalyticsEvent (кризис/шэр/офлайн). Один сервис = запросы, форматтер отдельно
+// (product-metrics.format.ts, покрыт тестом).
+@Injectable()
+export class ProductMetricsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly quizMetrics: QuizMetricsService,
+    private readonly practiceLink: PracticeLinkMetricsService,
+    private readonly practiceMetrics: PracticeMetricsService,
+    private readonly caseMetrics: CaseMetricsService,
+    private readonly linksPage: LinksPageMetricsService,
+  ) {}
+
+  /** Готовый текстовый блок для /stats (+ мини-тесты, переходы к автору, практики). */
+  async render(): Promise<string> {
+    const [metrics, quiz, practice, practiceSessions, cases, selfMap, links] =
+      await Promise.all([
+        this.getMetrics(),
+        this.quizMetrics.getMetrics(),
+        this.practiceLink.getMetrics(),
+        this.practiceMetrics.getMetrics(),
+        this.caseMetrics.getMetrics(),
+        this.caseMetrics.getSelfMapLinks(),
+        this.linksPage.getMetrics(),
+      ]);
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatLinksPageMetrics(links)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}\n\n${formatSelfMapMetrics(selfMap)}`;
+  }
+
+  async getMetrics(): Promise<ProductMetrics> {
+    const since7 = new Date(Date.now() - 7 * 86_400_000);
+    const since30 = new Date(Date.now() - 30 * 86_400_000);
+    const num = (rows: Array<{ c: bigint }>): number => Number(rows[0]?.c ?? 0);
+    const activeUser = { deletedAt: null } as const;
+    const ev = (name: string) =>
+      this.prisma.analyticsEvent.count({
+        where: { name, createdAt: { gte: since30 } },
+      });
+
+    const [
+      cohort30,
+      completed30,
+      diaries,
+      exercises,
+      practices,
+      childhood,
+      ty,
+      vy,
+      notChosen,
+      crisis,
+      shareRows,
+      outboxRows,
+      shareCard7,
+      shareCard30,
+      shareKindRows,
+      blocksHiddenRows,
+      onboardingStepRows,
+      homeScreenRows,
+      journeyOpens,
+      ysqHelpOpens,
+      ysqFunnel,
+    ] = await Promise.all([
+      this.prisma.user.count({
+        where: { ...activeUser, createdAt: { gte: since30 } },
+      }),
+      this.prisma.user.count({
+        where: {
+          ...activeUser,
+          createdAt: { gte: since30 },
+          onboardingV2Done: true, // ставят онбординг мини-аппа и экран согласий сайта
+        },
+      }),
+      // Дневники и упражнения — разные люди, объединение таблиц (COUNT DISTINCT).
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT uid)::bigint AS c FROM (
+          SELECT "userId" AS uid FROM "SchemaDiaryEntry"
+          UNION SELECT "userId" FROM "ModeDiaryEntry"
+          UNION SELECT "userId" FROM "GratitudeDiaryEntry"
+        ) t`,
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT uid)::bigint AS c FROM (
+          SELECT "userId" AS uid FROM "UserFlashcard"
+          UNION SELECT "userId" FROM "UserBeliefCheck"
+          UNION SELECT "userId" FROM "UserPhraseCheck"
+          UNION SELECT "userId" FROM "UserLetter"
+          UNION SELECT "userId" FROM "UserSafePlace"
+        ) t`,
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT "userId")::bigint AS c FROM "UserPractice"`,
+      this.prisma.$queryRaw<Array<{ c: bigint }>>`
+        SELECT count(DISTINCT "userId")::bigint AS c FROM "ChildhoodRating"`,
+      this.prisma.user.count({ where: { ...activeUser, addressForm: 'ty' } }),
+      this.prisma.user.count({ where: { ...activeUser, addressForm: 'vy' } }),
+      this.prisma.user.count({ where: { ...activeUser, addressForm: null } }),
+      countCrisis(this.prisma, since30),
+      this.prisma.$queryRaw<Array<{ ok: string | null; c: bigint }>>`
+        SELECT "meta"->>'ok' AS ok, count(*)::bigint AS c FROM "AnalyticsEvent"
+        WHERE "name" = 'share_result' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'ok'`,
+      this.prisma.$queryRaw<Array<{ flushes: bigint; recovered: bigint }>>`
+        SELECT count(*)::bigint AS flushes,
+               COALESCE(SUM(("meta"->>'count')::int), 0)::bigint AS recovered
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'outbox_flush' AND "createdAt" >= ${since30}`,
+      this.prisma.analyticsEvent.count({
+        where: { name: 'share_card', createdAt: { gte: since7 } },
+      }),
+      this.prisma.analyticsEvent.count({
+        where: { name: 'share_card', createdAt: { gte: since30 } },
+      }),
+      this.prisma.$queryRaw<Array<{ kind: string | null; c: bigint }>>`
+        SELECT "meta"->>'kind' AS kind, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'share_card' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'kind'
+        ORDER BY c DESC`,
+      // Скрытия счётчика серии на главном (событие устарело — блоков с
+      // отдельным переключателем больше нет; копится только история).
+      this.prisma.$queryRaw<Array<{ block: string | null; c: bigint }>>`
+        SELECT 'streak' AS block, count(*)::bigint AS c
+          FROM "AnalyticsEvent"
+         WHERE "name" = 'today_streak_toggle' AND "meta"->>'hidden' = 'true'
+           AND "createdAt" >= ${since30}`,
+      // Воронка обучения: люди (не события) на каждом шаге — один человек мог
+      // вернуться к шагу точками навигации, это не должно раздувать счёт.
+      this.prisma.$queryRaw<Array<{ step: string | null; c: bigint }>>`
+        SELECT "meta"->>'step' AS step, count(DISTINCT "userId")::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'onboarding_step' AND "createdAt" >= ${since30}
+        GROUP BY "meta"->>'step'`,
+      // Воронка мини-аппа: сайтовые surface (site_banner/site_landing) не
+      // считаются здесь — у них своя семантика shown/add/added (см. блок
+      // «Установка с сайта», site-install-metrics.*), подмешивать их сюда
+      // значит пачкать воронку Telegram цифрами с другого источника.
+      this.prisma.$queryRaw<Array<{ action: string | null; c: bigint }>>(
+        Prisma.sql`
+        SELECT "meta"->>'action' AS action, count(*)::bigint AS c
+        FROM "AnalyticsEvent"
+        WHERE "name" = 'home_screen_offer' AND "createdAt" >= ${since30}
+          AND ("meta"->>'surface' IS NULL
+               OR "meta"->>'surface' NOT IN (${SITE_SURFACES_LIST}))
+        GROUP BY "meta"->>'action'`,
+      ),
+      ev('journey_open'),
+      ev('ysq_help_open'),
+      // Последним: юнит-моки $queryRaw позиционные (ysq-funnel-metrics.ts).
+      countYsqFunnel(this.prisma),
+    ]);
+
+    const shareOk = Number(shareRows.find((r) => r.ok === 'true')?.c ?? 0n);
+    const shareFallback = Number(
+      shareRows.find((r) => r.ok === 'false')?.c ?? 0n,
+    );
+
+    const hsCount = (action: string): number =>
+      Number(homeScreenRows.find((r) => r.action === action)?.c ?? 0n);
+
+    // Порядок — как в онбординге (ONBOARDING_STEPS), а не по убыванию счёта:
+    // воронка читается сверху вниз, видно, на каком шаге обрыв.
+    const stepCounts = new Map(
+      onboardingStepRows.map((r) => [r.step ?? '', Number(r.c)]),
+    );
+    const onboardingSteps = ONBOARDING_STEPS.filter((s) =>
+      stepCounts.has(s),
+    ).map((step) => ({ step, count: stepCounts.get(step) ?? 0 }));
+
+    return {
+      onboarding: { cohort30, completed30 },
+      onboardingSteps,
+      adoption: {
+        diaries: num(diaries),
+        ysqDone: ysqFunnel.completed,
+        exercises: num(exercises),
+        practices: num(practices),
+        childhood: num(childhood),
+      },
+      ysq: { ...ysqFunnel, helpOpens: ysqHelpOpens },
+      addressForm: { ty, vy, notChosen },
+      shareCard: {
+        total7: shareCard7,
+        total30: shareCard30,
+        byKind30: shareKindRows.map((r) => ({
+          kind: r.kind ?? 'другое',
+          count: Number(r.c),
+        })),
+      },
+      crisis,
+      shareResult: { ok: shareOk, fallback: shareFallback },
+      outbox: {
+        flushes: Number(outboxRows[0]?.flushes ?? 0n),
+        recovered: Number(outboxRows[0]?.recovered ?? 0n),
+      },
+      today: {
+        blocksHidden: blocksHiddenRows
+          .filter((r) => r.block != null && Number(r.c) > 0)
+          .map((r) => ({ block: r.block ?? '', count: Number(r.c) })),
+      },
+      journey: { opens: journeyOpens },
+      homeScreen: {
+        shown: hsCount('shown'),
+        add: hsCount('add'),
+        later: hsCount('later'),
+        never: hsCount('never'),
+        added: hsCount('added'),
+      },
+    };
+  }
+}

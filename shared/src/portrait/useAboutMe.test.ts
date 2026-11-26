@@ -1,0 +1,347 @@
+// @vitest-environment jsdom
+// Общий хук useAboutMe (api инъекцией; переехал из мини-аппа) — грузит 6 источников параллельно (профиль/тест-историю/дневник
+// схем/дневник режимов + getModeNotes/getPhraseChecks для «Тёплых слов»),
+// склеивает mySchemaIds (активные ⋃ ручные), считает недельную частоту
+// (общий слой patternsSummary — не пересчитываем здесь) и собирает
+// warmWordsItems. getModeNotes/getPhraseChecks добавлены сюда 2026-08-23:
+// раньше WarmWordsCard грузил их САМ при своём монтировании, только после
+// готовности этого хука — сеть уходила второй волной (замер 2026-08-22, 3G:
+// +621мс). getModeDiary для тёплых слов переиспользуется, не дублируется.
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { useAboutMe, type AboutMeApi } from './useAboutMe';
+
+const mockApi = {
+  getProfile: vi.fn(),
+  getYsqHistory: vi.fn(),
+  getSchemaDiary: vi.fn(),
+  getModeDiary: vi.fn(),
+  getModeNotes: vi.fn(),
+  getPhraseChecks: vi.fn(),
+};
+const api = mockApi as unknown as AboutMeApi;
+const reportError = vi.fn();
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
+
+const emptyProfile = {
+  name: 'Аня',
+  role: 'CLIENT',
+  ysq: { completedAt: null, activeSchemaIds: [] as string[] },
+  notifications: {
+    enabled: false,
+    reminderEnabled: false,
+    timezone: 'UTC',
+    localHour: 9,
+  },
+  streak: 0,
+  lastActivity: {
+    needsTracker: null,
+    schemaDiary: null,
+    modeDiary: null,
+    gratitudeDiary: null,
+  },
+  mySchemaIds: [] as string[],
+  myModeIds: [] as string[],
+};
+
+describe('useAboutMe — одна волна из шести запросов', () => {
+  it('все шесть источников запрашиваются синхронно при монтировании', () => {
+    mockApi.getProfile.mockReturnValue(new Promise(() => {}));
+    mockApi.getYsqHistory.mockReturnValue(new Promise(() => {}));
+    mockApi.getSchemaDiary.mockReturnValue(new Promise(() => {}));
+    mockApi.getModeDiary.mockReturnValue(new Promise(() => {}));
+    mockApi.getModeNotes.mockReturnValue(new Promise(() => {}));
+    mockApi.getPhraseChecks.mockReturnValue(new Promise(() => {}));
+
+    renderHook(() => useAboutMe(api, { reportError }));
+
+    expect(mockApi.getProfile).toHaveBeenCalledTimes(1);
+    expect(mockApi.getYsqHistory).toHaveBeenCalledTimes(1);
+    expect(mockApi.getSchemaDiary).toHaveBeenCalledTimes(1);
+    // Ровно один раз — не дублируем ради тёплых слов (переиспользуем).
+    expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
+    expect(mockApi.getModeNotes).toHaveBeenCalledTimes(1);
+    expect(mockApi.getPhraseChecks).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useAboutMe — happy path', () => {
+  it('объединяет активные и ручные схемы без дублей, обе готовности true после загрузки', async () => {
+    mockApi.getProfile.mockResolvedValue({
+      ...emptyProfile,
+      ysq: {
+        completedAt: '2026-08-01T00:00:00.000Z',
+        activeSchemaIds: ['abandonment', 'mistrust'],
+      },
+      mySchemaIds: ['mistrust', 'defectiveness'],
+      myModeIds: ['vulnerable_child'],
+    });
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([
+      { id: 1, createdAt: '2026-08-10', schemaIds: ['abandonment'] } as never,
+    ]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
+
+    expect(new Set(result.current.mySchemaIds)).toEqual(
+      new Set(['abandonment', 'mistrust', 'defectiveness']),
+    );
+    expect(result.current.myModeIds).toEqual(['vulnerable_child']);
+    expect(result.current.ysqCompletedAt).toBe('2026-08-01T00:00:00.000Z');
+    expect(result.current.portrait.totalSchemas).toBe(3);
+    expect(result.current.warmWordsItems).toEqual([]);
+  });
+
+  it('провал одного источника не роняет остальные (each .catch → null/[])', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('network'));
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
+
+    expect(result.current.mySchemaIds).toEqual([]);
+    expect(result.current.portrait.totalSchemas).toBe(0);
+    expect(result.current.warmWordsItems).toEqual([]);
+  });
+
+  it('провал остальных пяти источников (не только getProfile) тоже не роняет хук — готовности true с безопасными дефолтами', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockRejectedValue(new Error('network'));
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network'));
+    mockApi.getModeDiary.mockRejectedValue(new Error('network'));
+    mockApi.getModeNotes.mockRejectedValue(new Error('network'));
+    mockApi.getPhraseChecks.mockRejectedValue(new Error('network'));
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
+
+    expect(result.current.schemaEntries).toEqual([]);
+    expect(result.current.modeEntries).toEqual([]);
+    expect(result.current.warmWordsItems).toEqual([]);
+  });
+
+  it('собирает warmWordsItems из карточек режимов, дневника режимов и разборов фраз', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([
+      {
+        id: 1,
+        modeId: 'vulnerable_child',
+        healthyResponse: 'Свежее тёплое слово',
+        createdAt: '2026-08-10T00:00:00.000Z',
+      },
+    ]);
+    mockApi.getModeNotes.mockResolvedValue([
+      {
+        modeId: 'vulnerable_child',
+        healthyView: 'Старое слово',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
+
+    expect(result.current.warmWordsItems).toHaveLength(2);
+    expect(result.current.warmWordsItems[0].text).toBe('Свежее тёплое слово');
+  });
+});
+
+// Замер 2026-08-23: вкладка «Я» была ~2× дольше соседних, потому что обе
+// карточки ждали общий Promise.all из шести запросов. Гейт per-карточка:
+// портрет готов по своим двум источникам, не дожидаясь «тёплых слов».
+describe('useAboutMe — готовность по карточкам, не общая', () => {
+  it('портрет готов, пока getModeNotes/getPhraseChecks ещё висят', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockReturnValue(new Promise(() => {}));
+    mockApi.getPhraseChecks.mockReturnValue(new Promise(() => {}));
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+    expect(result.current.warmWordsReady).toBe(false);
+  });
+
+  it('и наоборот: тёплые слова готовы, пока профиль ещё висит', async () => {
+    mockApi.getProfile.mockReturnValue(new Promise(() => {}));
+    mockApi.getYsqHistory.mockReturnValue(new Promise(() => {}));
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+
+    await waitFor(() => expect(result.current.warmWordsReady).toBe(true));
+    expect(result.current.portraitReady).toBe(false);
+  });
+});
+
+describe('useAboutMe — сбои уходят в reportError, а не в консоль', () => {
+  it('каждый упавший источник сообщает своё имя', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('x'));
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('x'));
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockRejectedValue(new Error('x'));
+
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() =>
+      expect(
+        result.current.portraitReady && result.current.warmWordsReady,
+      ).toBe(true),
+    );
+
+    expect(reportError.mock.calls.map((c) => c[0]).sort()).toEqual([
+      'getPhraseChecks failed',
+      'getProfile failed',
+      'getSchemaDiary failed',
+    ]);
+  });
+
+  it('без reportError сбой не бросает', async () => {
+    mockApi.getProfile.mockRejectedValue(new Error('x'));
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+    const { result } = renderHook(() => useAboutMe(api));
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+  });
+
+  // Дневники — единственное чтение профиля (счётчик записей, лист портрета):
+  // потребителю нужно знать, пришли ли они, а не гадать по пустому массиву.
+  it('diaries: loading → ready после обоих дневников; сбой любого — failed', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+    const ok = renderHook(() => useAboutMe(api, { reportError }));
+    expect(ok.result.current.diaries).toBe('loading');
+    await waitFor(() => expect(ok.result.current.diaries).toBe('ready'));
+
+    mockApi.getModeDiary.mockRejectedValue(new Error('x'));
+    const bad = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() => expect(bad.result.current.diaries).toBe('failed'));
+    expect(reportError).toHaveBeenCalledWith('getModeDiary failed');
+  });
+
+  // История теста — тоже единственное чтение профиля: счётчик прохождений берёт её длину,
+  // а сбой виден флагом к готовности портрета (профиль показывает баннер, а не тихий ноль).
+  it('ysqCount — длина истории; сбой — ysqHistoryFailed к portraitReady, повтор с ответом его снимает', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockRejectedValue(new Error('x'));
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+    const { result, rerender } = renderHook(
+      ({ refreshKey }) => useAboutMe(api, { refreshKey, reportError }),
+      { initialProps: { refreshKey: 1 } },
+    );
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+    expect(result.current.ysqHistoryFailed).toBe(true);
+    expect(result.current.ysqCount).toBe(0);
+    expect(reportError).toHaveBeenCalledWith('getYsqHistory failed');
+
+    mockApi.getYsqHistory.mockResolvedValue(
+      [1, 2].map((id) => ({
+        id,
+        completedAt: '2026-08-01T00:00:00.000Z',
+        scores: [],
+      })),
+    );
+    rerender({ refreshKey: 2 });
+    await waitFor(() => expect(result.current.ysqCount).toBe(2));
+    expect(result.current.ysqHistoryFailed).toBe(false);
+    expect(mockApi.getYsqHistory).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Нечитаемый на сервере список (unreadableLists) приходит `[]` — это «не
+// прочиталось», а не «пусто»: «Портрет» берёт локальную копию, как «Мои
+// паттерны» (docs/open/frontend-ux.md). Прочитанный пустой — правда сервера.
+describe('useAboutMe — нечитаемый на сервере список не показывается пустым', () => {
+  const load = async (profile: Record<string, unknown>) => {
+    mockApi.getProfile.mockResolvedValue({ ...emptyProfile, ...profile });
+    for (const k of [
+      'getYsqHistory',
+      'getSchemaDiary',
+      'getModeDiary',
+      'getModeNotes',
+      'getPhraseChecks',
+    ] as const) {
+      mockApi[k].mockResolvedValue([]);
+    }
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+    return result.current;
+  };
+  afterEach(() => localStorage.clear());
+
+  it('список в unreadableLists — из локальной копии', async () => {
+    localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
+    localStorage.setItem('my_mode_ids', JSON.stringify(['vulnerable_child']));
+    const r = await load({
+      mySchemaIds: [],
+      myModeIds: [],
+      unreadableLists: ['mySchemaIds', 'myModeIds'],
+    });
+    expect(r.mySchemaIds).toEqual(['defectiveness']);
+    expect(r.myModeIds).toEqual(['vulnerable_child']);
+  });
+
+  it('нечитаем только один список — второй остаётся серверным', async () => {
+    localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
+    localStorage.setItem('my_mode_ids', JSON.stringify(['angry_child']));
+    const r = await load({
+      mySchemaIds: [],
+      myModeIds: ['vulnerable_child'],
+      unreadableLists: ['mySchemaIds'],
+    });
+    expect(r.mySchemaIds).toEqual(['defectiveness']);
+    expect(r.myModeIds).toEqual(['vulnerable_child']);
+  });
+
+  it('контроль: прочитанный пустой список — пусто, локальная копия не всплывает', async () => {
+    localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
+    const r = await load({ mySchemaIds: [], unreadableLists: [] });
+    expect(r.mySchemaIds).toEqual([]);
+  });
+});

@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "name": "документация S3: GET Bucket (List Objects)",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+      "secretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      "region": "us-east-1",
+      "date": "2013-05-24T00:00:00Z",
+      "method": "GET",
+      "url": "https://examplebucket.s3.amazonaws.com/?max-keys=2&prefix=J",
+      "authz": "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=34b48302e7b5fa45bde8084f4b7868a86f0a534bc59db6670ed5711ef69dc6f7"
+    },
+    {
+      "name": "botocore: листинг R2, страница 2 — курсор с /, + и =",
+      "accessKeyId": "AKIDEXAMPLE",
+      "secretAccessKey": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+      "region": "auto",
+      "date": "2026-11-08T12:00:00Z",
+      "method": "GET",
+      "url": "https://example.r2.cloudflarestorage.com/my-bucket?list-type=2&prefix=schemehappens-&continuation-token=1ue%2FX%2Bb%3D",
+      "authz": "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20261108/auto/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=21330ff19fe5ce7cdc8259b9885ef3eb6465c530727b25bb50b48efe5c74ef31"
+    }
+  ]
+}

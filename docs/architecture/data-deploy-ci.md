@@ -1,0 +1,125 @@
+# Карта: данные, деплой, CI, тесты
+
+> Подробности к [docs/ARCHITECTURE.md](../ARCHITECTURE.md). Читай раздел нужного модуля
+> (`grep -n '^### ' docs/architecture/data-deploy-ci.md`), а не весь файл. Карта врёт или
+> молчит — исправь строку в том же PR и запиши промах в [docs/agent/NAV_LOG.md](../agent/NAV_LOG.md).
+
+### Данные (`prisma/`)
+
+`prisma/schema.prisma` (1039 строк): 51 модель и 8 enum (`UserRole`, `RelationStatus`, `RequestStatus`, `PaymentStatus`, `SubscriptionStatus`, `SlotOverrideKind`, `BookingStatus`, `SessionType`). Генератор `prisma-client-js`. В `datasource db` нет `url`: он берётся из `prisma.config.js`.
+
+| домен | модели |
+|---|---|
+| аккаунт и вход | User, AuthProvider, WebSession, LoginTicket, EmailToken |
+| трекер потребностей и тесты | Rating, Note, YsqProgress, YsqResult, YsqResultHistory, ChildhoodRating |
+| дневники и самопомощь | SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, DiaryDraft, UserSchemaNote, UserModeNote, UserBeliefCheck, UserPhraseCheck, UserLetter, UserSafePlace, UserFlashcard |
+| практики | UserPractice, PracticePlan, PracticeSession |
+| терапия и пары | Pair, TherapyRelation, TherapistRequest, UserTask, TherapistNote, TherapyPlanItem, TherapyPath, TherapyPathPhase, ClientConceptualization, TherapistCustomMode, ModeMap |
+| запись на консультации | AvailabilityRule, SlotOverride, Booking, IntroLead, ClientMeeting, BookingSetting |
+| платежи | Donation, Subscription, SubscriptionCharge |
+| контент и канал «ЗВ» | Article, HealthyAdultPhrase, HealthyAdultPost, ChannelDelivery |
+| аналитика и уведомления | AppActivity, AnalyticsEvent, ScheduledNotification |
+| инфраструктура | CronLease, ThrottleHit |
+
+- Миграции: `prisma/migrations/<YYYYMMDDHHMMSS>_<snake_name>/migration.sql`, сейчас 106 каталогов плюс `migration_lock.toml` (provider postgresql). Генерировать через `npx prisma migrate dev`; рукописный SQL сначала прогнать `migrate deploy` на чистой БД.
+- SQL обязан быть идемпотентным целиком: `IF NOT EXISTS`, вставки через `WHERE NOT EXISTS`, `updatedAt` явно (`CURRENT_TIMESTAMP`), потому что Prisma не оборачивает миграцию в транзакцию (правило — `.claude/rules/data.md`). Частичные unique-индексы (например `Pair_active_users_key`) в PSL не выражаются, они живут только в SQL.
+- Новая модель с `userId` обязана попасть в `USER_DATA_TABLES` (`src/bot/user-data-tables.ts`) и `USER_OWNED_TABLES` (`src/auth/merge.service.ts`), в реестр шифрования `src/utils/encryption-coverage.spec.ts`, и иметь `onDelete: Cascade`.
+- `prisma/recover-p3009.sql`: `DELETE FROM "_prisma_migrations" WHERE finished_at IS NULL AND rolled_back_at IS NULL AND pg_try_advisory_xact_lock(72707369)`. Снимает застрявшую запись после P3009, но не трогает миграцию, которая выполняется прямо сейчас. Запускается entrypoint-ом перед каждым `migrate deploy` и вручную через `ops.sh op=migrate-resolve-failed`.
+- `prisma.config.js` (CJS): `defineConfig({ datasource: { url: process.env.DATABASE_URL } })`. В Prisma 7 у `db execute` нет `--schema`, URL берётся отсюда. Файл копируется в runtime-образ.
+
+### Деплой
+
+**Dockerfile**, два этапа на `node:22-slim`:
+- Стадия `build`:
+  - ставит openssl (`deploy/install-openssl.sh`, три попытки с запасным зеркалом);
+  - `COPY package*.json` и три скрипта `setup-merge-drivers.mjs` + `merge-drivers-check.mjs` + `setup-git-hooks.mjs`, затем `npm ci` (нужны npm-хуку `prepare`; без git скрипты выходят нулём);
+  - `npm ci --prefix webapp` и `npm ci --prefix game`;
+  - `COPY . .`, затем `BUILD_INFO` (`date -u`), `npx prisma generate`, `npm run build` (nest, `dist/`);
+  - `VITE_BOT_USERNAME=SchemeHappensBot` и `npm run build --prefix webapp` (webapp/dist);
+  - `npm run build --prefix game` (`prebuild` = `i18n:check`), копия в webapp/dist/game/;
+  - `npm prune --production`.
+- Стадия runtime:
+  - openssl, `postgresql-client` 17 из PGDG (мажор сервера прода) и curl (`deploy/install-pg-client.sh`), `NODE_ENV=production`;
+  - копируются `package*.json`, прод `node_modules`, `dist`, `prisma/`, `prisma.config.js`, webapp/dist, `assets/`, `BUILD_INFO`;
+  - `deploy/` копируется целиком (в нём и `s3-sign.cjs`, его `require`-ит `dist/infra/s3-sigv4.js`), из `scripts/` только `backup-upload.sh`, `restore-backup.sh`, `backup-fetch-latest.sh`, `s3-api.sh`;
+  - `USER node`; `HEALTHCHECK` смотрит тело `/health` на `"status":"ok"`, а не код ответа;
+  - `CMD ["node","deploy/entrypoint.mjs"]`.
+
+**`deploy/entrypoint.mjs`** (супервизор, PID 1) по порядку:
+1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, ответ с диска (`front-static.mjs`): файлы сборки `webapp/dist` — любому хосту (нет файла — 404 `no-store`, не HTML: при выкладке HTML мог прийти от соседнего контейнера, инцидент 2026-11-04), страницы — только визитке (`kotlarewski.gr`, сюда идёт реклама). Страницы продукта, API, `/app`, `/health`, `robots.txt` и `sitemap.xml` получают `maintenance.html` с заголовком `X-Maintenance-Reason` — состоянием супервизора (`starting`, `db-wait`, `migrating`, `app-starting`, `migrate-failed`, `crashloop-parked`, `db-unreachable`; список и страница — `maintenance-page.mjs`, смок прода печатает заголовок).
+2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
+3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
+4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
+5. `backup-scheduler.cjs`: бэкап БД в Yandex Object Storage с арендой через `CronLease`, стартует только после миграций.
+6. `exec node dist/main` на `APP_PORT`, с номером запуска, числом падений за сутки и решением троттла DM (`STARTUP_LAUNCH`, `STARTUP_CRASHES_DAY`, `STARTUP_NOTICE`). Рестарты до `STARTUP_MAX_FAILS`=3 падений за окно `STARTUP_CRASH_WINDOW_MS`=15 мин или `STARTUP_MAX_FAILS_HOUR`=6 за час (`crash-window.mjs`), затем техработы, пауза 5 мин (×2, потолок 1 ч) и новая серия. Рост паузы сбрасывает только прогон дольше окна.
+
+Состояние держит `supervisor-status.mjs`; парковка (упавший `migrate deploy`, исчерпанный лимит перезапусков, база не поднялась) шлёт DM владельцу через Bot API по `BOT_TOKEN`/`ADMIN_ID` с троттлом как у DM о перезапуске (1, 2, 4, 8… остановка по причине за сутки); без них молчит. Настройки из env — `entrypoint-config.mjs`. SIGTERM/SIGINT пробрасываются приложению.
+
+- `amvera.yml`: `environment: docker`, `toolchain: docker`, `run.containerPort: 3000`. Amvera сама тянет из GitHub ветку `production` и собирает Dockerfile; ветку ведёт `release.yml` (ниже), руками в неё не пушат.
+- `branch-cleanup.yml`: ручной `workflow_dispatch`, чистка веток смерженных PR (`scripts/branch-cleanup.mjs`): без `apply` — только список, с `apply` — удаление веток, чья голова совпадает с head смерженного PR и без открытого PR. Права на запись в refs — только у этой джобы; тест — `src/test-support/gates/branch-cleanup.spec.ts`.
+- Остальное в `deploy/`:
+  - `threads-relay/` — Cloudflare Worker (`worker.js` + README), ретранслятор запросов к `graph.threads.net`;
+  - `app-exit.mjs` — решение супервизора по выходу приложения;
+  - `pg-url-env.cjs` — `DATABASE_URL` в переменные libpq;
+  - `backup-lease-release.cjs` — при SIGTERM синхронно отпускает аренду бэкапа (иначе следующий процесс ждёт окно);
+
+### CI
+
+`.github/workflows/ci.yml`: триггеры `push` на main, `pull_request`, `workflow_dispatch`. Токен только на чтение. PR-прогоны отменяются при новом пуше, прогоны main не отменяются. Рядом лежат `CODEOWNERS`, `dependabot.yml`, `pull_request_template.md` и `rulesets/main.json` — копия ruleset `main` (только через PR, все джобы `ci.yml` обязательны, `strict`; живой — в настройках GitHub, правка — владелец, порядок — правило №13), сверка с джобами — `src/test-support/gates/main-ruleset.spec.ts`.
+
+**Документный дифф.** PR, где все файлы — `docs/**` (кроме `docs/design/` и `docs/RUNBOOKS.md`, их читают тесты), `*.md` в корне и `.claude/rules/**`, проходит CI за минуты: первым шагом каждой тяжёлой джобы (кроме `checks`, где гейты над документами) `scripts/ci-docs-only.mjs` (дифф `HEAD^1..HEAD`, только `pull_request`; сбой или пустой дифф — полный круг) пишет `docs_only`, остальные шаги джобы пропускаются условием, а сама джоба зелёная. Шаги `npm audit` не пропускаются (гейт `lockfile-audit`). Условие на джобу и `paths-ignore` не используются: обязательная проверка без прогона висит. Новая джоба = шаг `scope` и охрана шагов (`ci-docs-only.spec.ts`).
+
+**Контент справочника.** PR, где кроме документов только `shared/src/schemaTherapy/{guide,kb}/**` и бейслайны `bundle-size`, `file-size`, `guide-addresses`, пропускает шаги трёх джоб — `migrations`, `perf` (живой Postgres) и `webapp-tz` (второй прогон того же vitest под другой зоной): там скрипт зовётся с `--skip-guide-content`. Остальные джобы идут полностью. Тест — тот же `ci-docs-only.spec.ts`.
+
+| джоба | что гоняет (≤15 слов) |
+|---|---|
+| backend | tsc, coverage-храповик, jest под TZ Sydney и e2e на фейках через `jest-exit-guard`, npm audit корня и game, 6 храповиков |
+| checks | fs-only гейты без `npm ci`, shellcheck `scripts/*.sh` |
+| docker | `docker build` прод-образа (`push: false`, кэш gha) |
+| migrations | Postgres 17 (как прод), клиент 17 из `deploy/install-pg-client.sh`: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
+| perf | сид синтетики, EXPLAIN ANALYZE горячих путей, `check-query-plans.mjs` |
+| webapp | типы тестов (`typecheck:test`), build, bundle-size, vitest+coverage, UI-гейты, npm audit |
+| webapp-tz | vitest `webapp` под TZ Sydney — отдельной джобой, параллельно `webapp` |
+| shared | coverage-храповик и vitest под TZ Sydney для `shared/`, npm audit |
+| eslint | vitest игры (`npm test --prefix game`), `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
+| browser-smoke | build webapp, `playwright test` (Chromium и WebKit из `actions/cache`), снимки `desktop-1280` и `phone-screens` и трейс артефактами |
+| mutation-changed | не на push; Stryker только по изменённым файлам из `mutate` конфигов golden-auth, golden-payments, outbox, crisis (`mutation-changed-files.mjs`), храповик `--partial`; без таких файлов зелёная сразу |
+
+Шаги npm audit всех джоб зовут обёртку `scripts/npm-audit.mjs <каталог>`: голый `npm audit` висел на реестре до таймаута шага (регресс #814). Попытка до 45 с, до трёх попыток; high/critical — код 4 сразу (не 1: его node отдаёт на упавшем скрипте), «реестр не ответил» — код 2 и отдельный `::error::`, «npm не может проверить» (нет lock-файла) — код 3 без повторов; реестр и `--offline=false` заданы флагами, env и `.npmrc` их не перекрывают. Разбор ответа npm — `scripts/npm-audit-report.mjs`. Шаг засчитывается гейтом, только если скрипт `run:` — одна команда (так, как его склеят YAML и `\`-продолжения shell, — `src/test-support/gates/step-script.ts`) и вызов — её исход: без `||`, `;`, `&`, `|` после него, без `exit`/`trap`/`set +e`, без своего `shell:` и `continue-on-error` с любым значением, кроме `false`. Исполняется с поддельным npm в `src/test-support/gates/npm-audit.spec.ts`.
+
+**nightly.yml** (cron `0 3 * * *` ежедневно, плюс dispatch; второе расписание — только своим воркфлоу, гейт `alarm-needs.spec.ts`). Красный nightly не блокирует PR.
+- `backend-flaky` — jest три раза подряд через `jest-exit-guard.mjs`, затем `--detectOpenHandles`.
+- `frontend-flaky` — vitest webapp ×3, shared ×1.
+- `mutation-golden-auth` — Stryker, волна А, затем `check-mutation-ratchet`.
+- `mutation-golden-payments` — Stryker, волна Б, затем кризис и outbox, каждый с храповиком.
+- `browser-smoke` — build webapp, `playwright test` (Chromium и WebKit); тот же смок идёт и в PR-CI, ночной ловит флаки на main под alarm.
+- `browser-live` — живой проход связи клиент↔терапевт: сервис Postgres 17, `migrate deploy`, стенд `test/e2e-support/live-stand.ts` в фоне (настоящий `AppModule`, `E2E_REAL_DB=1`, :3000 + вход :3001), прод-сборка сайта и `vite preview --config vite.live.config.ts` (:5174, прокси `/api`), `playwright test -c e2e-browser/live/playwright.config.ts` (Chromium); остановка стенда стоп-файлом, трейсы и логи артефактом при провале.
+- `macos-build` — то же на `macos-26` (регистронезависимая ФС, как у владельца; образ прибит, гейт `runner-pin.spec.ts`): `npm ci` корня, `webapp` и `shared`, `check-filename-case`, build webapp, vitest webapp и shared. Без Playwright и Postgres: что зелено на Linux, обязано быть зелёным и здесь (инцидент 2026-11-05, #933).
+- `backup-restore` — репетиция: зашифрованный бэкап, restore во вторую БД, `migrate diff`, пробы с порчей файла и неверным ключом.
+- `npm-audit` — `scripts/npm-audit.mjs` (`npm audit --omit=dev --audit-level=high` с таймером на попытку и повторами) по каждому lock-файлу из `git ls-files`, под alarm.
+- `alarm` — вызов `alarm.yml` (ниже): issue `ci-alarm` и DM в Telegram, если упала любая джоба.
+
+**mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, храповик `check-mutation-ratchet` с полом `scripts/mutation-bot-baseline.json`, отчёт артефактом; `alarm` — вызов `alarm.yml` со своим заголовком issue.
+
+**alarm.yml** (`workflow_call`, зовут `nightly.yml` и `mutation-bot.yml`): `alarm` — issue `ci-alarm` (одна открытая на заголовок, зелёный прогон её закрывает) и DM владельцу; результаты джоб приходят входом `needs` (`toJSON(needs)`), секреты бота — `secrets: inherit`. Шаги исполняет `src/infra/alarm-workflow.spec.ts`, вызов сверяет `src/infra/alarm-call.spec.ts`; у `prod-smoke.yml` своя джоба `alarm`.
+
+**release.yml** (cron `0 20 * * *`, плюс dispatch с полем `sha`): `release` — `scripts/release-pick.mjs` берёт самый новый коммит `main` с зелёным `ci.yml` новее выкаченного и пушит в `production` коммит с его деревом без `.github/workflows` (токен раннера правки воркфлоу пушить не вправе) и трейлером `Main-Commit`; красный `main` — джоба красная, `alarm` заводит `ci-alarm`. Группа `release` — одна выкатка за раз.
+
+**prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
+- `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`; тело — `src/api/health-report.ts`, в нём и `startedAt`/`launch`/`crashesDay` — старт процесса и рестарты в контейнере), `/`, `/app/`, `/game/` по маркерам (маркер игры сверяет с `game/index.html` `src/test-support/gates/game-smoke-marker.spec.ts`).
+- `alarm` — issue `ci-alarm` и DM, троттлинг напоминаний раз в 3 часа.
+
+**dependabot-automerge.yml** (`pull_request`, только PR автора `dependabot[bot]`; в обязательные проверки ruleset не входит): `automerge` — `dependabot/fetch-metadata` читает тип обновления (у группы — наивысший среди её пакетов), patch и minor получают auto-merge (squash); мержит GitHub, когда зелёные все джобы `ci.yml` и ветка свежая (`strict`). Мажоры, `/game` и красные бот-PR ждут агента. Отставший бот-PR подтягивает к main очередь мержа `merge-queue.yml` (ниже); дни у записей `dependabot.yml` разные, час тихий, чтобы бот-PR не открывались разом (сверка — `src/test-support/gates/dependabot-automerge.spec.ts`). Мерж от `GITHUB_TOKEN` не запускает `push`-прогон `ci.yml` на main: дерево то же, что проверено в PR.
+
+**merge-queue.yml** (`push` в main, `workflow_run` по завершении `CI`, cron `*/15`, плюс dispatch с `dry_run`; событий PR нет, чекаут — main с полной историей; в обязательные проверки ruleset не входит): `queue` — очередь мержа для всех PR (`scripts/merge-queue.mjs`, правила — `merge-queue-plan.mjs`). В очереди открытые PR в main с auto-merge, не черновики, без `do-not-merge`, не из форка. За прогон — один PR: свежий PR с идущим CI (чей пуш — не важно, не дольше 45 минут; или позеленевший меньше 10 минут назад) «в полёте», остальных не трогают; отменённые обязательные проверки у отставшего — update-branch (перезапуск CI), «без прогона» без конфликта — строка в логе; иначе первый отставший (зелёные по времени готовности, затем с идущим прогоном) получает update-branch с `expected_head_sha` (иной отказ у бот-PR — комментарий `@dependabot recreate` раз на голову). Конфликт (422 или отставший PR без прогона) сводит `merge-queue-conflict.mjs`: main вливается в ветку PR в отдельном worktree с merge-драйверами из `.gitattributes` main и пушится от `GITHUB_TOKEN`; что драйверы не свели — комментарий «конфликт в <файлы>, нужен автор» и метка `merge-conflict` (раз, метку очередь снимает сама). Пуш от `GITHUB_TOKEN` ставит `pull_request`-прогоны на одобрение (политика `first_time_contributors`), а прогон `ci.yml` через dispatch ruleset в зачёт auto-merge не берёт (сводка проверок PR его не видит; #1104 подтягивался 20 раз за день без мержа) — поэтому очередь одобряет свои прогоны (`actions/runs/{id}/approve`, только `github-actions[bot]` и не форк). Красный PR и PR без прогона и без конфликта доводит агент. Тест — `src/test-support/gates/merge-queue.spec.ts`: скрипт против поддельного API, обязательные проверки — из записанного ответа, конфликты — на настоящих git-репозиториях во временном каталоге.
+
+### Тесты
+
+- **Юнит (бэкенд):** `src/**/*.spec.ts` (631 файл) рядом с кодом. В `package.json` у jest `rootDir: src`, `testRegex: .*\.spec\.ts$`. `src/test-support/` — хелперы (`fake-prisma.spec-helper`, `fake-s3`). `src/test-support/gates/` (76 файлов) — спеки инвариантов CI и скриптов-гейтов (`job-timeouts`, `ci-concurrency`, `deploy-lag` и т.д.).
+- **e2e бэкенда:** `test/*.e2e-spec.ts` (71), конфиг `test/jest-e2e.json` (`rootDir: test`, setup `e2e-support/env.setup.ts` и `setup-e2e.ts`). По умолчанию реальный `AppModule` с фейковыми Prisma и ботом: `test/e2e-support/build-test-app.ts`. С `E2E_REAL_DB=1` и `DATABASE_URL` подключается настоящий Postgres (`build-real-db-test-app.ts`). На живую БД ссылаются 27 спеков, в CI они идут в джобе `migrations` с `--runInBand`.
+- **`test/e2e-support/`** (20 файлов): `build-test-app`, `build-real-db-test-app`, `fake-prisma` (+`-engine`), `fake-bot`, `fake-cron-lease`, `jwt`, `cleanup-fixtures`, `throttle-reset.setup`, `jose.stub` и др. `e2e-site-static.ts` — статика сайта в e2e как в `main.ts`: загрузчик `ServeStaticModule` подменён на `ExpressLoader` (тестовый модуль иначе берёт `NoopLoader`), корень — сборка-фикстура `test/fixtures/site-dist/`, живой стенд передаёт настоящую `webapp/dist`; сверка — `test/site-static.e2e-spec.ts`.
+- **`test/fixtures/recorded/`**: записанные ответы внешних площадок (iCloud PROPFIND, S3 ListObjectsV2, AWS SigV4, OAuth, VK ID) и соседний `*.meta.json` (`source`, `recordedAt`, `how`, `redacted`). Контролирует `check-recorded-fixtures`.
+- **`test/perf/`** для джобы `perf`: сидер `seed.ts` (чистка диапазона, волны, VACUUM) → билдер `seed-steps.ts` → объёмы `seed-profile.ts`, кирпичи SQL `seed-sql.ts` и шаги по таблицам `seed-<область>.ts` (кабинет терапевта — `seed-therapy.ts`); сценарии `scenarios.ts` и `scenarios-<область>.ts` (худший случай — `worst-case-ids.ts` и `worst-case-<область>.ts`, env на вызов — `scenario-env.ts`), `record-sql.ts`, `explain.ts`, `run-plans.ts`, `long-paths.ts`. Нужен Postgres после `migrate deploy`: `npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/seed.ts`, затем `.../run-plans.ts`, затем `node scripts/check-query-plans.mjs`.
+- **Фронтенды (vitest):** `*.test.ts(x)` рядом с кодом в `webapp/src`, `shared/src` (1021 файл). jsdom включается pragma `// @vitest-environment jsdom` в самом файле. Запуск: `npm test --prefix webapp` (так же `shared`; везде `vitest run`). Покрытие: `node scripts/check-frontend-coverage-ratchet.mjs --package webapp` (также `shared`). CI второй раз гоняет vitest с `TZ=Australia/Sydney`. Игра — `game/src/*.test.ts` под node (модули без Phaser и DOM), `npm test --prefix game` в джобе `eslint`, без пола покрытия и прогона под TZ.
+- **Playwright:** `e2e-browser/` (`a11y-smoke` — axe-храповик `a11y-baseline.json` по `/`, `/articles` и кабинету `/today`, `/diary`, `/practice` с заданием терапевта в светлой теме, с `app_theme=dark` в localStorage и с тёмным атрибутом на `<html>` после отрисовки — унаследованный цвет внутри `.light-lock`, инцидент 2026-11-05; `asset-recovery`, `crisis-smoke`, `page-rhythm` — у видимого ребёнка `.ds-page` на «Сегодня», «Записях», «Ещё», «Практике» высота больше нуля (пустая обёртка удваивает gap страницы), `public-pages`, `tracker-smoke`, `therapy-smoke` (в том числе задание терапевта в «Ещё» → «Задания» и уход выполненного в «Выполнено»), `today-fit` — «Сегодня» на четырёх телефонах (safe-area iPhone ставится переменными) не длиннее экрана, `sheet-scroll` — лист «История» и лист `.ex-screen` «Сравни с похожими» на 390×844 и 360×640 прокручиваются до конца (инцидент 2026-11-09, класс 24 `docs/INCIDENTS.md`), `support/test.ts` — общий `test`: стаб API и проверка на падение для каждого спека, гость — `test.use({ session: 'anonymous' })`; `support/clientTasks.ts` — путь клиента к заданиям, общий для смока и живого `link2.spec` (переедут задания — краснеет PR-CI, а не ночь, ci-alarm #965); `support/stubApi.ts` — перехват `/api`, `api.overrides` — ответ ручке поверх фикстур для одного теста, `support/stubFixtures.ts`, `support/stubPublic.ts` и `support/therapistCabinet.ts` (кабинет терапевта с офлайн-клиентом: список, карточка, «Графические карты») — ответы формы сервера, которые на каждом PR сверяет с настоящим AppModule на живом Postgres `test/browser-stub-contract.e2e-spec.ts` (статус и тело, джоба `migrations`); ручка без фикстуры получает 404, отчёт клиента о сбое и `pageerror` роняют тест (`throwOnPageError`). Что спек берёт `test` из `support/test.ts`, не заводит свой перехват `/api` и стоит в `testMatch` (иначе не запускается), держит `src/test-support/gates/browser-smoke-specs.spec.ts`). Проекты (`vite preview` на :4173): `webapp` — Chromium, все спеки, кроме `phone-screens`; `webkit-iphone` — WebKit на iPhone 13: `today-fit`, `tracker-fit`, `sheet-scroll`, `page-rhythm` и `phone-screens` (снимки «Сегодня», «Записей», листа записи и кабинета терапевта: пустого, списка с офлайн-клиентом, «Обзора» карточки и «Графических карт» — артефакт `phone-screens` джобы `browser-smoke`, попиксельной сверки нет). `telegram-dark` (проект `webapp`) — `/today` в кадре 390×844 на `web.telegram.org` с тёмной палитрой Telegram в адресе запуска (настоящий `/telegram-web-app.js`) и `app_theme=dark`: axe `color-contrast` в кадре — ноль, прокрутки вбок нет, снимок — в том же артефакте. Проект `game` — `game-smoke`: прод-сборка игры (`npm run build --prefix game`, `vite preview` на :4174, база `/game/`), вход по хешу `#intro`/`#tutorial`/`#chapterN` в каждую сцену, смерть → чекпоинт, кнопки финала гл.4 с подписью и кризисная строка; гейт сверяет `testMatch` всех проектов. Локально: `VITE_BOT_USERNAME=SchemeHappensBot npm run build --prefix webapp`, затем `npm run smoke` (= `playwright test`); без WebKit (в песочнице агента только Chromium) — `npx playwright test --project=webapp`. В CI гоняется в PR-CI (джоба `browser-smoke`, Chromium и WebKit из `actions/cache`) и в nightly `browser-smoke` (флаки на main, кричит через `alarm`). `desktop-layout` — ключевые страницы и «Обзор» карточки клиента на 1280 (без прокрутки вбок и обрезанных блоков, колонка по центру), снимки — артефакт `desktop-1280` джобы `browser-smoke`; `a11y-nested-sheet` — подтверждение поверх листа настроек (axe, ловушка фокуса, Escape). Отдельно `e2e-browser/live/` (`link*.spec.ts`, `offline-invite.spec.ts`, `telegram-frame.spec.ts` — сайт в iframe Telegram Web рисуется, у чужого хоста CSP блокирует, `helpers.ts`, свой `playwright.config.ts`) — проход по живому стенду, а не стабу: nightly `browser-live`, рецепт локального запуска в шапке `test/e2e-support/live-stand.ts`.
+- **Mutation (nightly):** `npm run mutation`, `mutation:golden-auth`, `mutation:golden-payments`, `mutation:crisis`, `mutation:outbox`.

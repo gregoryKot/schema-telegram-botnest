@@ -1,0 +1,370 @@
+// @vitest-environment jsdom
+// App.tsx — маршрутизация корневого компонента: два набора роутов (личный
+// сайт kotlarewski vs. продуктовый app-домен, определяется по hostname),
+// защита приватных маршрутов через RequireAuth, страница ошибки входа,
+// Метрика-трекер и мост токена в api-клиент. Домен переключается подменой
+// адреса: роутер App.tsx кэшируется по объекту location (модуль один).
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import App from './App';
+
+vi.mock('../../shared/src/host', () => ({
+  getHost: () => ({ sessionExchange: () => null }),
+}));
+
+// jsdom не реализует IntersectionObserver (LandingPage → useReveal) — тот же
+// минимальный мок, что в LandingPage.test.tsx.
+class MockIntersectionObserver {
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+}
+
+let fetchMock: ReturnType<typeof vi.fn>;
+
+function jsonResponse(status: number, body: unknown) {
+  return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) };
+}
+
+function stubLocation(overrides: Partial<Record<'hostname' | 'pathname' | 'search' | 'hash' | 'href', string>>) {
+  vi.stubGlobal('location', {
+    ...window.location,
+    hostname: 'localhost',
+    pathname: '/',
+    search: '',
+    hash: '',
+    href: 'http://localhost/',
+    ...overrides,
+  });
+}
+
+/** App под текущий (подменённый) адрес: роутер App.tsx кэширует по объекту location,
+ *  а stubLocation каждый раз даёт новый. Раньше — vi.resetModules и холодный import всего
+ *  графа на каждый тест (домен считался при импорте), под нагрузкой это упиралось в 10 с. */
+async function loadApp() {
+  return App;
+}
+
+beforeEach(() => {
+  // По умолчанию — «не залогинен»: /api/auth/refresh отвечает 401, RequireAuth
+  // не блокируется навсегда. Тесты, которым нужен вход, переопределяют это.
+  // По умолчанию 401 на всё, КРОМЕ выписки билета входа: экран /login сам
+  // просит билет при открытии, и без него провайдеры не рисуются (ссылки
+  // строятся из кода билета — webapp/src/pages/login/LoginProviderButtons).
+  fetchMock = vi.fn().mockImplementation((url: string) =>
+    Promise.resolve(
+      String(url).includes('/api/auth/ticket/start')
+        ? jsonResponse(200, {
+            deviceCode: 'd'.repeat(64),
+            userCode: 'K7M2QX94',
+            expiresIn: 300,
+            interval: 3,
+          })
+        : jsonResponse(401, {}),
+    ),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+  localStorage.clear();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+describe('App — публичные маршруты app-домена', () => {
+  it('/login показывает три способа входа', async () => {
+    stubLocation({ pathname: '/login', href: 'http://localhost/login' });
+    const App = await loadApp();
+    render(<App />);
+    await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
+  });
+
+  it('/ на app-домене — продуктовый лендинг (document.title)', async () => {
+    stubLocation({ pathname: '/', href: 'http://localhost/' });
+    const App = await loadApp();
+    render(<App />);
+    await waitFor(() => expect(document.title).toBe('Всё по схеме — инструмент схема-терапии'));
+  });
+
+  it('/tests доступен на app-домене (мини-тесты — публичный лид-магнит)', async () => {
+    stubLocation({ pathname: '/tests', href: 'http://localhost/tests' });
+    const App = await loadApp();
+    render(<App />);
+    await waitFor(() => expect(document.title).toBe('Мини-тесты — Всё по схеме'));
+  });
+});
+
+// Аудит 2026-11, E10: приватный режим и «блокировать данные сайтов» роняют
+// любое обращение к localStorage; чтение темы на уровне модуля без try давало
+// исключение при загрузке App — белый экран вместо сайта.
+describe('App — хранилище недоступно', () => {
+  it('localStorage бросает — модуль грузится и вход рисуется', async () => {
+    const denied = () => { throw new DOMException('denied', 'SecurityError'); };
+    const spies = (['getItem', 'setItem', 'removeItem'] as const).map((m) =>
+      vi.spyOn(Storage.prototype, m).mockImplementation(denied));
+    try {
+      stubLocation({ pathname: '/login', href: 'http://localhost/login' });
+      const App = await loadApp();
+      render(<App />);
+      await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+    }
+  });
+});
+
+describe('App — личный сайт (домен kotlarewski)', () => {
+  it('/ показывает лендинг практики, а не продуктовый', async () => {
+    stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });
+    const App = await loadApp();
+    render(<App />);
+    await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+  });
+
+  it('favicon переключается на персональный', async () => {
+    // Проверяем svg-иконку (без sizes); ветка png 96×96 — в domainChrome.test.
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/svg+xml';
+    document.head.appendChild(link);
+    try {
+      stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });
+      // Оформление визитки ставится при первом рендере (вместе с роутером), не при импорте.
+      const App = await loadApp();
+      render(<App />);
+      expect(link.href).toContain('favicon-personal-192.png');
+      expect(link.type).toBe('image/png');
+    } finally {
+      link.remove();
+    }
+  });
+
+  it('?site=personal на петле (dev, браузерный смок) включает личный сайт', async () => {
+    stubLocation({ pathname: '/', search: '?site=personal', href: 'http://localhost/?site=personal' });
+    const App = await loadApp();
+    render(<App />);
+    await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+  });
+
+  // S15 (аудит 2026-11): на продуктовом хосте параметр включал визитку и её
+  // Метрику у вошедшего человека. В проде он игнорируется.
+  it('?site=personal на schemehappens.ru в проде — продуктовый лендинг, не визитка', async () => {
+    vi.stubEnv('DEV', false);
+    try {
+      stubLocation({ hostname: 'schemehappens.ru', pathname: '/', search: '?site=personal', href: 'https://schemehappens.ru/?site=personal' });
+      const App = await loadApp();
+      const { container } = render(<App />);
+      await waitFor(() => expect(document.title).toBe('Всё по схеме — инструмент схема-терапии'));
+      expect(container.querySelector('.landing-personal-brand')).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
+
+describe('App — один бренд на всю визитку (PracticeBrand)', () => {
+  const practice = (pathname: string) =>
+    stubLocation({ hostname: 'kotlarewski.example', pathname, href: `http://kotlarewski.example${pathname}` });
+
+  it.each(['/privacy', '/offer', '/reviews'])('%s рендерится внутри .landing-personal-brand', async (pathname) => {
+    practice(pathname);
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('.landing-personal-brand h1')).toBeTruthy());
+  });
+
+  it('/subscribe — осознанно продуктовый (light-lock), вне бренда визитки', async () => {
+    practice('/subscribe');
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('h1')).toBeTruthy());
+    expect(container.querySelector('.landing-personal-brand')).toBeNull();
+  });
+
+  it('обёртка не создаёт бокс: display: contents не ломает раскладку #root', async () => {
+    practice('/privacy');
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await waitFor(() => expect(container.querySelector('.landing-personal-brand')).toBeTruthy());
+    expect((container.querySelector('.landing-personal-brand') as HTMLElement).style.display).toBe('contents');
+  });
+});
+
+describe('App — защищённые маршруты (RequireAuth)', () => {
+  it('неавторизованный визит на /account уводит на /login', async () => {
+    stubLocation({ pathname: '/account', href: 'http://localhost/account' });
+    const App = await loadApp();
+    render(<App />);
+    await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
+  });
+
+  it('авторизованный пользователь реально попадает на защищённую страницу (не редиректится на /login)', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/api/auth/refresh')) {
+        return Promise.resolve(jsonResponse(200, { accessToken: 'tok', expiresIn: 900 }));
+      }
+      // AccountPage тоже что-то запросит — 401 ей не помешает отрендериться.
+      return Promise.resolve(jsonResponse(401, {}));
+    });
+    stubLocation({ pathname: '/account', href: 'http://localhost/account' });
+    const App = await loadApp();
+    render(<App />);
+
+    await screen.findByText('Аккаунт');
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
+  });
+
+  it('пока идёт проверка сессии — виден лоадер, а не пустой экран или чужая страница', async () => {
+    let resolveRefresh!: (v: unknown) => void;
+    // Промис создаём заранее: `resolveRefresh` нужен ДО того, как до refresh
+    // дойдёт очередь — иначе к моменту проверки лоадера его ещё не было бы.
+    const pendingRefresh = new Promise((r) => {
+      resolveRefresh = r;
+    });
+    fetchMock.mockImplementation((url: string) =>
+      String(url).includes('/api/auth/ticket/start')
+        ? Promise.resolve(
+            jsonResponse(200, {
+              deviceCode: 'd'.repeat(64),
+              userCode: 'K7M2QX94',
+              expiresIn: 300,
+              interval: 3,
+            }),
+          )
+        : pendingRefresh,
+    );
+    stubLocation({ pathname: '/account', href: 'http://localhost/account' });
+    const App = await loadApp();
+    const { container } = render(<App />);
+
+    // b04 (2026-11): силуэт экрана (колонка страницы аккаунта), а не крутилка.
+    expect(container.querySelector('.gate-page[aria-busy="true"]')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+    resolveRefresh(jsonResponse(401, {}));
+    await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
+  });
+
+  // Диагностика «постоянно нужно логиниться заново» (2026-08-21): 5xx на
+  // /api/auth/refresh раньше вёл себя как 401 и редиректил на /login поверх
+  // живой куки. Теперь — «нет связи», НЕ /login.
+  it('5xx на /api/auth/refresh — «нет связи», а не редирект на /login (2026-08-21)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(500, {}));
+    stubLocation({ pathname: '/account', href: 'http://localhost/account' });
+    const App = await loadApp();
+    render(<App />);
+
+    await screen.findByText('Сервер не отвечает', {}, { timeout: 3000 });
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
+  });
+});
+
+describe('App — страница ошибки входа (/auth/error)', () => {
+  it('показывает известный код причины из query-параметра (S20: только из словаря)', async () => {
+    stubLocation({ pathname: '/auth/error', search: '?reason=vk_failed', href: 'http://localhost/auth/error?reason=vk_failed' });
+    const App = await loadApp();
+    render(<App />);
+    await screen.findByText('vk_failed');
+    expect(screen.getByText('Вход не удался')).toBeTruthy();
+  });
+
+  it('без причины — блок с текстом ошибки не рисуется вовсе', async () => {
+    stubLocation({ pathname: '/auth/error', href: 'http://localhost/auth/error' });
+    const App = await loadApp();
+    const { container } = render(<App />);
+    await screen.findByText('Вход не удался');
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
+  });
+});
+
+// b26: неизвестный адрес продуктового хоста — экран 404 с одной кнопкой, а не молчаливый уход
+// гостя на вход и вошедшего в «Сегодня» под чужим адресом. Известные старые пути — по-прежнему редирект.
+describe('App — 404 (маршрут *)', () => {
+  it('гостю — «Такой страницы нет» и кнопка на главную', async () => {
+    stubLocation({ pathname: '/no-such-page-xyz', href: 'http://localhost/no-such-page-xyz' });
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Такой страницы нет' });
+    expect(screen.getByRole('link', { name: 'На главную' }).getAttribute('href')).toBe('/');
+    expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
+  });
+
+  it('вошедшему — кнопка в приложение (/today); глубокий путь кабинета — тоже 404', async () => {
+    fetchMock.mockImplementation((url: string) => Promise.resolve(
+      String(url).includes('/api/auth/refresh') ? jsonResponse(200, { accessToken: 'tok', expiresIn: 900 }) : jsonResponse(401, {}),
+    ));
+    stubLocation({ pathname: '/cabinet/1/notes/extra', href: 'http://localhost/cabinet/1/notes/extra' });
+    render(<App />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'В приложение' }).getAttribute('href')).toBe('/today'));
+    expect(screen.getByRole('heading', { name: 'Такой страницы нет' })).toBeTruthy();
+  });
+
+  it('визитка: неизвестный путь по-прежнему уводит на главную визитки', async () => {
+    stubLocation({ hostname: 'kotlarewski.example', pathname: '/no-such-page-xyz', href: 'http://kotlarewski.example/no-such-page-xyz' });
+    render(<App />);
+    await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+    expect(screen.queryByRole('heading', { name: 'Такой страницы нет' })).toBeNull();
+  });
+});
+
+describe('App — Яндекс.Метрика SPA-трекинг', () => {
+  afterEach(() => {
+    delete (window as unknown as { ym?: unknown }).ym;
+  });
+
+  it('на публичной странице шлёт hit БЕЗ секретов из query и фрагмента (L6)', async () => {
+    const ym = vi.fn();
+    (window as unknown as { ym: typeof ym }).ym = ym;
+    stubLocation({
+      pathname: '/articles/some-slug',
+      search: '?code=SECRET_CODE&utm_source=ad',
+      href: 'http://localhost/articles/some-slug?code=SECRET_CODE&utm_source=ad#access_token=SECRET_JWT',
+    });
+    const App = await loadApp();
+    render(<App />);
+    await waitFor(() => expect(ym).toHaveBeenCalled());
+    expect(ym.mock.calls[0][1]).toBe('hit');
+    const urlArg = String(ym.mock.calls[0][2]);
+    expect(urlArg).toBe('http://localhost/articles/some-slug?utm_source=ad'); // метка есть, секретов нет
+    expect(urlArg).not.toContain('SECRET');
+  });
+
+  it('на /auth/callback (не публичный маршрут) в Метрику не уходит ничего — D-4', async () => {
+    const ym = vi.fn();
+    (window as unknown as { ym: typeof ym }).ym = ym;
+    stubLocation({ pathname: '/auth/callback', href: 'http://localhost/auth/callback#access_token=SECRET_JWT&expires_in=900' });
+    const App = await loadApp();
+    render(<App />);
+    // Дать приложению отработать проверку сессии, затем убедиться, что хитов нет.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(ym).not.toHaveBeenCalled();
+  });
+});
+
+describe('App — токен-мост (TokenBridge → api-клиент)', () => {
+  it('после проверки сессии api-клиент реально получает функцию-провайдер токена', async () => {
+    // Единственный сценарий с подменой модуля: шпион на api нужен до импорта
+    // App, поэтому здесь — свой холодный граф (остальные тесты делят один).
+    vi.resetModules();
+    vi.doMock('./api', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('./api')>();
+      return { ...actual, setTokenProvider: vi.fn(actual.setTokenProvider) };
+    });
+    try {
+      stubLocation({ pathname: '/login', href: 'http://localhost/login' });
+      const mod = await import('./App');
+      const { setTokenProvider } = await import('./api');
+      const spy = setTokenProvider as unknown as ReturnType<typeof vi.fn>;
+      render(<mod.default />);
+
+      await waitFor(() => expect(spy).toHaveBeenCalled());
+      // Без сохранённой сессии провайдер отдаёт null — заголовок Authorization
+      // в api-клиенте реально не появится (не просто «функция была вызвана»).
+      const provider = spy.mock.calls[spy.mock.calls.length - 1][0] as () => string | null;
+      expect(provider()).toBeNull();
+    } finally {
+      vi.doUnmock('./api');
+      vi.resetModules();
+    }
+  });
+});

@@ -1,0 +1,200 @@
+// @vitest-environment jsdom
+// Чек-ин «Режим прямо сейчас» во вкладке режимов справочника схем — вложенный
+// fullscreen-оверлей. Находка аудита 2026-10: «Назад» у него был голым
+// setShowCheckin(false), а системная «Назад» и Escape закрывали весь справочник
+// вместе с чек-ином. Тест ставит оба листа в реальную связку: настоящий
+// SchemaInfoSheet под хостом, который размонтирует его по onClose.
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { useEffect, useState } from 'react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { SchemaInfoSheet } from '../SchemaInfoSheet';
+import { AddressFormContext } from '../../utils/addressForm';
+
+// Canvas в jsdom нет — смотрим, с какими данными режим уходит в рисование карточки.
+const drawSchemaCard = vi.hoisted(() => vi.fn());
+vi.mock('../../../../shared/src/share/cards/schemaCard', () => ({ drawSchemaCard }));
+
+const nav: { back: () => void } = { back: () => {} };
+function BackSpy() {
+  const navigate = useNavigate();
+  useEffect(() => { nav.back = () => navigate(-1); });
+  return null;
+}
+
+function Host() {
+  const [open, setOpen] = useState(true);
+  return open ? <SchemaInfoSheet onClose={() => setOpen(false)} /> : <div>HOST-CLOSED</div>;
+}
+
+function openCheckin(form: 'ty' | 'vy' = 'ty') {
+  render(
+    <AddressFormContext.Provider value={{ form, setForm: () => {} }}>
+      <MemoryRouter initialEntries={['/schemas']}>
+        <BackSpy />
+        <Host />
+      </MemoryRouter>
+    </AddressFormContext.Provider>,
+  );
+  fireEvent.click(screen.getByText('Режимы'));
+  fireEvent.click(screen.getByText('Режим прямо сейчас'));
+}
+
+const popBack = () => act(() => nav.back());
+const pressEscape = () =>
+  act(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  });
+
+afterEach(() => cleanup());
+
+describe('ModesTab — чек-ин живёт в истории браузера', () => {
+  it('открытие чек-ина не закрывает справочник под ним', () => {
+    openCheckin();
+    expect(screen.getByText('Выбери самое близкое ощущение')).toBeTruthy();
+    expect(screen.queryByText('HOST-CLOSED')).toBeNull();
+    // Справочник на месте: его надпись видна (дефис неразрывный — glue в EntitySheet).
+    expect(screen.getByText(/^Схема.терапия$/)).toBeTruthy();
+  });
+
+  it('системная «Назад» на выборе закрывает только чек-ин; второе «Назад» — справочник', () => {
+    openCheckin();
+
+    popBack();
+    expect(screen.queryByText('Выбери самое близкое ощущение')).toBeNull();
+    expect(screen.queryByText('HOST-CLOSED')).toBeNull();
+    expect(screen.getByText('Режимы')).toBeTruthy();
+
+    popBack();
+    expect(screen.getByText('HOST-CLOSED')).toBeTruthy();
+  });
+
+  it('Escape закрывает только чек-ин', () => {
+    openCheckin();
+
+    pressEscape();
+
+    expect(screen.queryByText('Выбери самое близкое ощущение')).toBeNull();
+    expect(screen.queryByText('HOST-CLOSED')).toBeNull();
+  });
+
+  // Два «Назад» на экране: справочника (внизу) и чек-ина (поверх) — нужен последний.
+  const clickTopBack = () => {
+    const buttons = screen.getAllByText('Назад');
+    fireEvent.click(buttons[buttons.length - 1]);
+  };
+
+  it('кнопка «Назад» чек-ина закрывает чек-ин через историю; справочник остаётся и закрывается следующим «Назад»', () => {
+    openCheckin();
+
+    clickTopBack();
+    expect(screen.queryByText('Выбери самое близкое ощущение')).toBeNull();
+    expect(screen.queryByText('HOST-CLOSED')).toBeNull();
+
+    popBack();
+    expect(screen.getByText('HOST-CLOSED')).toBeTruthy();
+  });
+});
+
+describe('ModesTab — результат чек-ина', () => {
+  it('выбор ощущения показывает режим и «Что помогает»', () => {
+    openCheckin();
+
+    fireEvent.click(screen.getByText('Легко и радостно'));
+
+    // «Счастливый Ребёнок» есть и в списке режимов под оверлеем, поэтому
+    // результат опознаём по блоку «Что помогает» (он только в чек-ине).
+    expect(screen.getByText('Что помогает')).toBeTruthy();
+    expect(screen.getAllByText('Счастливый Ребёнок').length).toBeGreaterThan(1);
+  });
+
+  it('«Понятно» закрывает чек-ин и снимает его запись истории: следующее «Назад» закрывает справочник', () => {
+    openCheckin();
+    fireEvent.click(screen.getByText('Легко и радостно'));
+
+    fireEvent.click(screen.getByText('Понятно'));
+    expect(screen.queryByText('Что помогает')).toBeNull();
+    expect(screen.queryByText('HOST-CLOSED')).toBeNull();
+
+    // Запись чек-ина снята: один POP — справочник, а не лишнее «Назад» вхолостую.
+    popBack();
+    expect(screen.getByText('HOST-CLOSED')).toBeTruthy();
+  });
+
+  it('системная «Назад» на экране результата закрывает весь чек-ин, справочник остаётся', () => {
+    openCheckin();
+    fireEvent.click(screen.getByText('Легко и радостно'));
+
+    popBack();
+
+    expect(screen.queryByText('Что помогает')).toBeNull();
+    expect(screen.queryByText('Выбери самое близкое ощущение')).toBeNull();
+    expect(screen.queryByText('HOST-CLOSED')).toBeNull();
+  });
+
+  it('форма «вы»: подсказка выбора и совет обращены на «вы»', () => {
+    openCheckin('vy');
+    expect(screen.getByText('Выберите самое близкое ощущение')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Давление / «надо больше»'));
+    expect(screen.getByText(/Это не ваш голос/)).toBeTruthy();
+  });
+});
+
+describe('ModesTab — «Поделиться» у режима (паритет с мини-аппом)', () => {
+  function openModes() {
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: () => {} }}>
+        <MemoryRouter initialEntries={['/schemas']}>
+          <SchemaInfoSheet onClose={() => {}} />
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    fireEvent.click(screen.getByText('Режимы'));
+  }
+
+  // Редизайн 2026-11 (b16): кнопка шаринга у каждой из одиннадцати строк была шумом — строка режима
+  // раскрывается (описание + «Поделиться»), открыта одна строка за раз.
+  it('строка режима раскрывается: описание и «Поделиться» этого режима, одна строка за раз', () => {
+    openModes();
+    expect(screen.queryAllByRole('button', { name: /^Поделиться режимом/ })).toHaveLength(0);
+    const rows = screen.getAllByRole('button', { expanded: false }).filter((b) => b.classList.contains('ss-mode-head'));
+    expect(rows).toHaveLength(11);
+    fireEvent.click(screen.getByRole('button', { name: /^Карающий Критик/ }));
+    expect(screen.getByRole('button', { name: 'Поделиться режимом «Карающий Критик»' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Здоровый Взрослый/ }));
+    expect(screen.getAllByRole('button', { name: /^Поделиться режимом/ })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Поделиться режимом «Здоровый Взрослый»' })).toBeTruthy();
+  });
+
+  it('тап открывает лист «Карточка режима» и рисует карточку именно этого режима', () => {
+    openModes();
+    fireEvent.click(screen.getByRole('button', { name: /^Карающий Критик/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Поделиться режимом «Карающий Критик»' }));
+    expect(screen.getByText('Карточка режима')).toBeTruthy();
+    expect(drawSchemaCard).toHaveBeenCalled();
+    const [, data] = drawSchemaCard.mock.calls[drawSchemaCard.mock.calls.length - 1];
+    expect(data).toMatchObject({
+      domain: 'Критикующие режимы',
+      name: 'Карающий Критик',
+      footerLabel: 'Режимы',
+    });
+    expect(data.belief).toMatch(/^Чувствуется как: стыд/);
+  });
+});
+
+describe('ModesTab — плитки чек-ина', () => {
+  // Подпись склеена (glue: неразрывные пробелы и дефис в «что-то») — ищем по началу.
+  const tile = (label: RegExp) => screen.getByText(label).closest('button')!;
+
+  it('знак — у первой плитки серии; у остальных нет пустого места под знак, подпись по центру (ревью g5 r3)', () => {
+    openCheckin();
+    const first = tile(/^Давление/);
+    expect(first.querySelector('.ss-checkin-tile-sign svg')).toBeTruthy();
+    expect(first.className).not.toContain('ss-checkin-btn--bare');
+    for (const label of [/^Стыдно/, /^Вина/]) {
+      expect(tile(label).querySelector('.ss-checkin-tile-sign')).toBeNull();
+      expect(tile(label).className).toContain('ss-checkin-btn--bare');
+    }
+  });
+});

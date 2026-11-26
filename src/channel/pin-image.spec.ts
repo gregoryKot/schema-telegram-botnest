@@ -1,0 +1,160 @@
+// Картинка пина: Pinterest не примет пин без изображения, поэтому проверяем
+// не «нарисовалось что-то», а что это валидный PNG нужного формата (2:3 —
+// лента Pinterest режет всё остальное) и что длинная фраза не ломает вёрстку.
+import { createCanvas } from '@napi-rs/canvas';
+import {
+  renderPhrasePin,
+  clampPinLines,
+  makeChannelPost,
+  wrapPinText,
+  FONT,
+} from './pin-image';
+import { pinStyle } from './pin-style';
+
+/** Ширина и высота PNG лежат в IHDR — байты 16..23 после сигнатуры. */
+function pngSize(buf: Buffer): { width: number; height: number } {
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
+
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+describe('pin-image', () => {
+  it('рисует PNG вертикального формата 2:3', () => {
+    const png = renderPhrasePin('Ты сегодня сделал достаточно.');
+    expect(png.subarray(0, 4)).toEqual(PNG_MAGIC);
+    const { width, height } = pngSize(png);
+    expect({ width, height }).toEqual({ width: 1000, height: 1500 });
+  });
+
+  it('длинная фраза не роняет рендер и остаётся в тех же границах', () => {
+    const long = 'Список писал человек, который не знал про твою ночь. '.repeat(
+      12,
+    );
+    const png = renderPhrasePin(long);
+    expect(pngSize(png)).toEqual({ width: 1000, height: 1500 });
+  });
+
+  it('одна и та же фраза рисуется одинаково — повтор не даст второй вид', () => {
+    // Оформление берётся из текста, а не случайно: ретрай отправки не должен
+    // порождать непохожий пин на ту же фразу.
+    const text = 'Ты имеешь право передумать.';
+    expect(renderPhrasePin(text).equals(renderPhrasePin(text))).toBe(true);
+  });
+
+  it('разные фразы получают разное оформление, а не только разный текст', () => {
+    // Лента Pinterest — витрина превью: одинаковые пины подряд читаются как
+    // один, показанный много раз. Совпадения при случайном выборе неизбежны,
+    // поэтому проверяем не «все разные», а что вариантов действительно много.
+    const looks = new Set<string>();
+    const palettes = new Set<string>();
+    for (let i = 0; i < 24; i++) {
+      const s = pinStyle(`фраза номер ${i} про заботу о себе`);
+      palettes.add(s.palette.name);
+      looks.add(
+        [s.palette.name, s.layout, s.backdrop, s.corner, s.decor].join(),
+      );
+    }
+    expect(looks.size).toBeGreaterThanOrEqual(20);
+    expect(palettes.size).toBeGreaterThanOrEqual(8);
+  });
+
+  it('одна строка и многострочная фраза дают разные картинки', () => {
+    const short = renderPhrasePin('Отдых не надо заслуживать.');
+    const long = renderPhrasePin(
+      'Отдых не надо заслуживать. Он входит в стоимость жизни, как сон и еда.',
+    );
+    expect(short.equals(long)).toBe(false);
+  });
+
+  describe('wrapPinText', () => {
+    // Тот же шрифт, что и у настоящего рендера (регистрируется побочным
+    // эффектом renderPhrasePin) — иначе метрики нерегистрированного шрифта
+    // непредсказуемы и переносы ломаются посередине обычных слов.
+    renderPhrasePin('прогрев шрифта');
+    const ctx = createCanvas(10, 10).getContext('2d');
+    ctx.font = `40px ${FONT}`;
+
+    it('переносит по словам, не разбивая обычные слова', () => {
+      const lines = wrapPinText(ctx, 'раз два три четыре пять', 400);
+      expect(lines.length).toBeGreaterThan(1);
+      // Ни одна строка не содержит символов сверх исходных слов (без разрывов).
+      expect(lines.join(' ').replace(/\s+/g, ' ')).toBe(
+        'раз два три четыре пять',
+      );
+    });
+
+    it('слово шире строки (длинная ссылка) рвётся по символам, а не теряется', () => {
+      // Инцидент-класс: ссылка без пробелов шире maxW целиком не влезает ни в
+      // одну строку — без посимвольного разрыва строка ушла бы за край пина.
+      const longWord = 'а'.repeat(80);
+      const lines = wrapPinText(ctx, longWord, 50);
+      expect(lines.length).toBeGreaterThan(1);
+      // Все символы сохранены — просто разложены по нескольким строкам.
+      expect(lines.join('')).toBe(longWord);
+      for (const line of lines) {
+        expect(ctx.measureText(line).width).toBeLessThanOrEqual(50);
+      }
+    });
+
+    it('пустой текст — пустой список строк, а не строка с мусором', () => {
+      expect(wrapPinText(ctx, '   ', 100)).toEqual([]);
+    });
+  });
+
+  describe('clampPinLines', () => {
+    it('короткий текст оставляет как есть', () => {
+      expect(clampPinLines(['раз', 'два'], 11)).toEqual(['раз', 'два']);
+    });
+
+    it('лишние строки срезает, последнюю закрывает многоточием', () => {
+      const lines = Array.from({ length: 15 }, (_, i) => `строка ${i}`);
+      const clamped = clampPinLines(lines, 11);
+      expect(clamped).toHaveLength(11);
+      expect(clamped[10]).toBe('строка 10…');
+    });
+
+    it('не оставляет висящий знак препинания перед многоточием', () => {
+      const lines = Array.from({ length: 12 }, () => 'текст,');
+      expect(clampPinLines(lines, 11)[10]).toBe('текст…');
+    });
+  });
+
+  describe('makeChannelPost', () => {
+    it('картинка считается один раз на публикацию', async () => {
+      const post = makeChannelPost('Тебе можно остановиться.');
+      const [first, second] = await Promise.all([post.image(), post.image()]);
+      expect(first).toBe(second);
+      expect(first.subarray(0, 4)).toEqual(PNG_MAGIC);
+    });
+
+    it('текст доезжает до площадок без изменений', () => {
+      expect(makeChannelPost('Так бывает у живых людей.').text).toBe(
+        'Так бывает у живых людей.',
+      );
+    });
+  });
+});
+
+// @napi-rs/canvas 1.0.12 оборачивает CanvasRenderingContext2D.prototype.fill
+// при каждой загрузке index.js, а прототип нативного класса в процессе один.
+// jest грузит модуль заново в каждом тест-файле воркера: обёртки складываются,
+// и fill() без аргументов бросает «parameter 1 is not of type 'Path2D'» —
+// упало в pin-draw.ts:78 на CI #843 (2026-10-24), локально проходило, если
+// второй загрузки в воркере не было. С 1.1.0 исходный fill хранится один раз
+// (`ctxNative.fill ??=`), обёртки не складываются; тест ловит регресс детерминированно.
+describe('@napi-rs/canvas: повторная загрузка модуля', () => {
+  it('не ломает fill() без аргументов', () => {
+    let canvas: typeof import('@napi-rs/canvas') | undefined;
+    jest.isolateModules(() => {
+      jest.requireActual('@napi-rs/canvas');
+    });
+    jest.isolateModules(() => {
+      canvas =
+        jest.requireActual<typeof import('@napi-rs/canvas')>('@napi-rs/canvas');
+    });
+    const ctx = canvas!.createCanvas(10, 10).getContext('2d');
+    ctx.beginPath();
+    ctx.arc(5, 5, 2, 0, Math.PI * 2);
+    expect(() => ctx.fill()).not.toThrow();
+  });
+});

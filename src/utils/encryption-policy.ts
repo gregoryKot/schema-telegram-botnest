@@ -1,0 +1,287 @@
+// ЕДИНСТВЕННЫЙ реестр решений о шифровании (правило №4 CLAUDE.md: два места,
+// обязанные совпадать, — в одно). Раньше жил внутри encryption-coverage.spec.ts
+// и был недоступен рантайму; экспорту (data-export.service.ts) нужно знать в
+// рантайме, какое поле расшифровывать — вынесено сюда, спек импортирует
+// реестр обратно и продолжает падать на неклассифицированном поле так же,
+// как раньше (поведение спека не изменилось, изменился только адрес импорта).
+const BOT = 'src/bot';
+const TH = 'src/therapy';
+
+export type Policy = { enc: string } | { plain: string };
+export const enc = (file: string): Policy => ({ enc: file });
+export const plain = (reason: string): Policy => ({ plain: reason });
+
+export const ID = plain('идентификатор/enum/дата — не свободный текст');
+export const DATE = plain('дата YYYY-MM-DD, не контент');
+export const TOKEN = plain('криптографический токен/хэш, PII не содержит');
+
+import { INFRA_FIELD_POLICY } from './encryption-policy.infra';
+import { THROTTLE_FIELD_POLICY } from './encryption-policy.throttle';
+
+export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
+  Rating: { date: DATE, needId: ID },
+  YsqProgress: { answers: enc(`${BOT}/ysq.service.ts`) },
+  User: {
+    firstName: plain('только имя, без фамилии и почты (src/auth/providers)'),
+    notifyTimezone: ID,
+    notifyNextRemindDate: DATE,
+    notifySkipAckDate: DATE,
+    notifyLastEvalDate: DATE,
+    notifyLastFillDate: DATE,
+    addressForm: plain("'ty'|'vy' — настройка обращения"),
+    mySchemaIds: enc(`${BOT}/bot.service.ts`),
+    myModeIds: enc(`${BOT}/bot.service.ts`),
+    totpSecret: enc('src/auth/totp.service.ts'),
+    totpRecoveryCodes: enc('src/auth/totp-recovery.ts'),
+    recoveryEmail: plain(
+      'по всей видимости пуста и не используется с #864 (восстановление по почте убрано); ' +
+        'колонку удаляет отдельная миграция — docs/open/audit-2026-10.md',
+    ),
+    uiPrefs: plain(
+      'серверное зеркало кастомизации мини-аппа — плоский объект флагов/id ' +
+        'из фиксированных реестров (SYNCED_PREF_KEYS: видимость/порядок ' +
+        'блоков, фокус-практика), свободный текст отсекает sanitizeUiPrefs ' +
+        '(src/api/ui-prefs.sanitize.ts)',
+    ),
+  },
+  EmailToken: {
+    id: ID,
+    tokenHash: TOKEN,
+    email: enc('src/auth/auth.service.ts'), // encryptEmail → magic-link.ts
+    purpose: ID,
+  },
+  TherapistRequest: {
+    fullName: enc(`${TH}/therapist-request.service.ts`),
+    qualification: enc(`${TH}/therapist-request.service.ts`),
+    contacts: enc(`${TH}/therapist-request.service.ts`),
+    message: enc(`${TH}/therapist-request.service.ts`),
+    rejectReason: plain('текст админа, не PII заявителя'),
+  },
+  DiaryDraft: { type: ID, data: enc('src/cli/rotate-encryption/targets.ts') }, // ручки удалены, пишет только ротация
+  AuthProvider: {
+    provider: ID,
+    providerId: plain(
+      'лукап-ключ OAuth (для email-провайдера равен адресу) — ' +
+        'шифрование сломает findUnique; осознанный компромисс',
+    ),
+    email: enc('src/utils/auth-provider-crypto.ts'),
+    displayName: enc('src/utils/auth-provider-crypto.ts'),
+  },
+  LoginTicket: {
+    id: ID,
+    deviceCodeHash: TOKEN,
+    userCodeHash: TOKEN,
+    provider: ID,
+    intent: ID,
+    hostId: ID,
+    // Класс устройства и браузер («iPhone · Safari»), собранные из User-Agent
+    // без версий и сборок (device-label.ts). Живут пять минут и показываются
+    // самому человеку при сверке — шифровать нечего, свободного текста нет.
+    deviceLabel: plain(
+      'класс устройства для сверки входа, без версий и сборок',
+    ),
+  },
+  // Уведомления в приложении (src/push/): адрес подписки — capability-URL,
+  // по нему можно слать человеку уведомления; ключи — секрет шифрования.
+  PushSubscription: {
+    endpointHash: TOKEN,
+    endpoint: enc('src/push/push-subscription.store.ts'),
+    p256dh: enc('src/push/push-subscription.store.ts'),
+    auth: enc('src/push/push-subscription.store.ts'),
+  },
+  WebSession: {
+    id: ID,
+    tokenHash: TOKEN,
+    // Хеш токена-наследника: по нему видно, пользовался ли им кто-нибудь.
+    // Такой же непрозрачный хеш, как tokenHash, — шифровать нечего.
+    replacedByHash: TOKEN,
+    family: TOKEN,
+    ipAddress: plain('security-телеметрия сессий («активные устройства»)'),
+    userAgent: plain('security-телеметрия сессий («активные устройства»)'),
+  },
+  Note: {
+    date: DATE,
+    text: enc(`${BOT}/bot.service.ts`),
+    tags: enc(`${BOT}/bot.service.ts`),
+  },
+  Pair: { code: TOKEN },
+  UserPractice: { needId: ID, text: enc(`${BOT}/practices.service.ts`) },
+  PracticeSession: {
+    tool: plain(
+      'перечислимый идентификатор быстрой практики (breathing|grounding|stop), ' +
+        'не PII/не свободный текст',
+    ),
+  },
+  PracticePlan: {
+    needId: ID,
+    practiceText: enc(`${BOT}/practices.service.ts`),
+    scheduledDate: DATE,
+  },
+  YsqResult: { answers: enc(`${BOT}/ysq.service.ts`) },
+  YsqResultHistory: { answers: enc(`${BOT}/ysq.service.ts`) },
+  ChildhoodRating: { needId: ID },
+  SchemaDiaryEntry: {
+    trigger: enc(`${BOT}/diary.service.ts`),
+    emotions: enc(`${BOT}/diary.service.ts`),
+    thoughts: enc(`${BOT}/diary.service.ts`),
+    bodyFeelings: enc(`${BOT}/diary.service.ts`),
+    actualBehavior: enc(`${BOT}/diary.service.ts`),
+    schemaIds: enc(`${BOT}/diary.service.ts`),
+    schemaOrigin: enc(`${BOT}/diary.service.ts`),
+    healthyView: enc(`${BOT}/diary.service.ts`),
+    realProblems: enc(`${BOT}/diary.service.ts`),
+    excessiveReactions: enc(`${BOT}/diary.service.ts`),
+    healthyBehavior: enc(`${BOT}/diary.service.ts`),
+  },
+  ModeDiaryEntry: {
+    modeId: enc(`${BOT}/diary.service.ts`),
+    situation: enc(`${BOT}/diary.service.ts`),
+    thoughts: enc(`${BOT}/diary.service.ts`),
+    feelings: enc(`${BOT}/diary.service.ts`),
+    bodyFeelings: enc(`${BOT}/diary.service.ts`),
+    actions: enc(`${BOT}/diary.service.ts`),
+    actualNeed: enc(`${BOT}/diary.service.ts`),
+    childhoodMemories: enc(`${BOT}/diary.service.ts`),
+    healthyResponse: enc(`${BOT}/diary.service.ts`),
+  },
+  GratitudeDiaryEntry: { date: DATE, items: enc(`${BOT}/gratitude-merge.ts`) },
+  AppActivity: { date: DATE },
+  AnalyticsEvent: {
+    name: plain('allow-list имён событий (правило №8)'),
+    meta: plain(
+      'санитизируется allow-list полей, свободный текст/PII запрещены',
+    ),
+  },
+  TherapyRelation: {
+    code: TOKEN,
+    urlCode: plain(
+      'случайный код адреса карточки в кабинете (8 букв), PII не содержит',
+    ),
+    clientAlias: enc(`${TH}/therapy-relations.service.ts`),
+    virtualClientName: enc(`${TH}/therapy-relations.service.ts`),
+    therapistMemo: enc(`${TH}/session-info-data.ts`),
+    therapyStartDate: DATE,
+    nextSession: DATE,
+    meetingDays: plain('номера дней недели'),
+    endReason: ID,
+  },
+  UserTask: {
+    type: ID,
+    text: enc(`${TH}/therapy-tasks.service.ts`),
+    needId: ID,
+    dueDate: DATE,
+    catalogId: ID,
+  },
+  TherapistNote: {
+    date: DATE,
+    text: enc(`${TH}/session-note-create.ts`),
+    work: enc(`${TH}/session-note-create.ts`),
+  },
+  TherapyPlanItem: {
+    rubric: ID,
+    text: enc(`${TH}/therapy-plan.view.ts`),
+    status: ID,
+    sourceAddress: plain(
+      'адрес раздела справочника из кода, не свободный текст',
+    ),
+    sourceKind: ID,
+    sourceId: ID,
+    sourceField: ID,
+  },
+  TherapyPath: {
+    startDate: DATE,
+    templateId: ID,
+  },
+  TherapyPathPhase: {
+    name: enc(`${TH}/therapy-path.view.ts`),
+    goal: enc(`${TH}/therapy-path.view.ts`),
+    templatePhaseId: ID,
+    startedAt: DATE,
+    endedAt: DATE,
+    criteriaDone: plain('номера отмеченных признаков фазы шаблона, не текст'),
+    note: enc(`${TH}/therapy-path.view.ts`),
+  },
+  GuideMark: {
+    address: plain('адрес раздела справочника из кода, не свободный текст'),
+    note: enc(`${TH}/guide-marks.service.ts`),
+    snapshot: enc(`${TH}/guide-marks.service.ts`),
+    fragmentKey: plain('хэш выделенного текста, не сам текст'),
+  },
+  ClientConceptualization: {
+    schemaIds: enc(`${TH}/concept-store.ts`),
+    modeIds: enc(`${TH}/concept-store.ts`),
+    earlyExperience: enc(`${TH}/concept-store.ts`),
+    unmetNeeds: enc(`${TH}/concept-store.ts`),
+    triggers: enc(`${TH}/concept-store.ts`),
+    copingStyles: enc(`${TH}/concept-store.ts`),
+    goals: enc(`${TH}/concept-store.ts`),
+    currentProblems: enc(`${TH}/concept-store.ts`),
+    modeTransitions: enc(`${TH}/concept-store.ts`),
+    modeMapNodes: enc(`${TH}/concept-store.ts`),
+    modeMapEdges: enc(`${TH}/concept-store.ts`),
+    modeLinks: enc(`${TH}/concept-store.ts`),
+    schemaLinks: enc(`${TH}/concept-store.ts`),
+    needLinks: enc(`${TH}/concept-needs.ts`), // колесо потребностей — свой писатель
+    history: plain(
+      'контейнер снапшотов; чувствительные поля снапшота шифруются попольно (encryptConceptFields)',
+    ),
+  },
+  TherapistCustomMode: {
+    name: enc(`${TH}/mode-maps.service.ts`),
+    emoji: ID,
+    nodeType: ID,
+  },
+  ModeMap: {
+    title: enc(`${TH}/client-mode-map.ts`),
+    kind: ID,
+    nodes: enc(`${TH}/client-mode-map.ts`),
+    edges: enc(`${TH}/client-mode-map.ts`),
+  },
+  UserSchemaNote: {
+    schemaId: plain('лукап-ключ карточки (@@unique userId+schemaId)'),
+    triggers: enc(`${BOT}/notes.service.ts`),
+    feelings: enc(`${BOT}/notes.service.ts`),
+    thoughts: enc(`${BOT}/notes.service.ts`),
+    origins: enc(`${BOT}/notes.service.ts`),
+    reality: enc(`${BOT}/notes.service.ts`),
+    healthyView: enc(`${BOT}/notes.service.ts`),
+    behavior: enc(`${BOT}/notes.service.ts`),
+  },
+  UserModeNote: {
+    modeId: plain('лукап-ключ карточки (@@unique userId+modeId)'),
+    triggers: enc(`${BOT}/notes.service.ts`),
+    feelings: enc(`${BOT}/notes.service.ts`),
+    thoughts: enc(`${BOT}/notes.service.ts`),
+    needs: enc(`${BOT}/notes.service.ts`),
+    origins: enc(`${BOT}/notes.service.ts`),
+    healthyView: enc(`${BOT}/notes.service.ts`),
+    behavior: enc(`${BOT}/notes.service.ts`),
+    modeFunction: enc(`${BOT}/notes.service.ts`),
+    needsMet: enc(`${BOT}/notes.service.ts`),
+    alias: enc(`${BOT}/notes.service.ts`),
+    fear: enc(`${BOT}/notes.service.ts`),
+  },
+  UserBeliefCheck: {
+    belief: enc(`${BOT}/exercises.service.ts`),
+    evidenceFor: enc(`${BOT}/exercises.service.ts`),
+    evidenceAgainst: enc(`${BOT}/exercises.service.ts`),
+    reframe: enc(`${BOT}/exercises.service.ts`),
+  },
+  UserPhraseCheck: {
+    phrase: enc(`${BOT}/phrase-check.service.ts`),
+    marks: plain(
+      'перечисление id примет (PHRASE_MARK_IDS), свободного текста нет',
+    ),
+    rewrite: enc(`${BOT}/phrase-check.service.ts`),
+  },
+  UserLetter: { text: enc(`${BOT}/exercises.service.ts`) },
+  UserSafePlace: { description: enc(`${BOT}/exercises.service.ts`) },
+  UserFlashcard: {
+    modeId: ID,
+    needId: ID,
+    reflection: enc(`${BOT}/exercises.service.ts`),
+    action: enc(`${BOT}/exercises.service.ts`),
+  },
+  ...INFRA_FIELD_POLICY,
+  ...THROTTLE_FIELD_POLICY,
+};

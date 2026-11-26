@@ -1,0 +1,321 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+// Общая логика теста на схемы (116 утверждений, скоринг, персист прогресса и
+// результата, история прохождений) — общий модуль для webapp
+// (правило №3); UI — в YSQTestSheet.tsx площадки, api-клиент приходит
+// параметром. Вопросы/схемы/скоринг/шаринг — в соседних модулях (правило №10),
+// ре-экспортируются здесь, чтобы импорты потребителей не менялись.
+export * from './ysqQuestions';
+export * from './ysqSchemas';
+export * from './ysqScoring';
+export * from './ysqShareText';
+
+import { QUESTIONS, TOTAL_PAGES } from './ysqQuestions';
+import { computeScores, type Phase, type YsqHistoryEntry } from './ysqScoring';
+
+// Ключи — в ysqStorageKeys.ts; ре-экспорт держит старые `from './useYsqTest'`.
+import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
+export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
+import {
+  clearYsqProgress,
+  writeYsqProgress,
+  writeYsqResult,
+} from './ysqProgressStore';
+import { submitYsqResult } from './ysqSubmitResult';
+
+// Типы и сборка результата — соседние модули; ре-экспорт держит старый путь.
+import type { UseYsqTestOptions } from './ysqTest.types';
+export type {
+  YsqApi,
+  UseYsqTestOptions,
+  ResultViewDomain,
+  ResultView,
+} from './ysqTest.types';
+import { buildYsqResultView } from './buildYsqResultView';
+
+// Переход к следующему вопросу (или сабмит) ждёт анимацию выбора ответа.
+const ANSWER_ADVANCE_DELAY = 160;
+
+export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
+  const [phase, setPhase] = useState<Phase>('intro');
+  const [answers, setAnswers] = useState<number[]>(
+    Array(QUESTIONS.length).fill(0),
+  );
+  const [page, setPage] = useState(0);
+  const [slideKey, setSlideKey] = useState(0);
+  const [slideDir, setSlideDir] = useState<'forward' | 'back'>('forward');
+  const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [history, setHistory] = useState<YsqHistoryEntry[]>([]);
+  const userStartedRef = useRef(false);
+  // Таймер автоперехода к следующему вопросу. Держим ссылку, чтобы отменить
+  // его при размонтировании: иначе человек, ответивший и тут же закрывший
+  // тест, через 160 мс всё равно получал запись прогресса на страницу, до
+  // которой не дошёл, — а на последнем вопросе ещё и отправку результата.
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    },
+    [],
+  );
+  const [hasProgress, setHasProgress] = useState(false);
+  const [inactiveExpanded, setInactiveExpanded] = useState(false);
+  const [retakeConfirm, setRetakeConfirm] = useState(false);
+  // Не удалось проверить сохранённый на сервере прогресс/результат — без
+  // флага «Начать тест» выглядит безопасным, а первый ответ перезаписывает
+  // на сервере то, что реально отвечено на другом устройстве (upsert).
+  const [resumeCheckFailed, setResumeCheckFailed] = useState(false);
+  // Сабмит результата упал: localStorage уже обновлён, но на сервере его нет.
+  const [resultSaveError, setResultSaveError] = useState(false);
+
+  const progressAnswered = answers.filter((a) => a > 0).length;
+
+  const goToPage = (newPage: number, dir: 'forward' | 'back') => {
+    setSlideDir(dir);
+    setSlideKey((k) => k + 1);
+    setPage(newPage);
+  };
+
+  // Отдельная функция (не только тело mount-эффекта), чтобы кнопка
+  // «Проверить снова» могла повторить её после сетевого сбоя.
+  const checkServerState = () => {
+    Promise.all([api.getYsqResult(), api.getYsqProgress()])
+      .then(([serverResult, serverProgress]) => {
+        setResumeCheckFailed(false);
+        if (userStartedRef.current) return;
+        const serverHasProgress =
+          serverProgress?.answers &&
+          Array.isArray(serverProgress.answers) &&
+          serverProgress.answers.length === QUESTIONS.length;
+        if (serverHasProgress) {
+          writeYsqProgress(serverProgress.answers, serverProgress.page);
+          setHasProgress(true);
+        }
+        if (autoResume && serverHasProgress) {
+          setAnswers(serverProgress.answers);
+          setPage(serverProgress.page);
+          setPhase('test');
+        } else if (
+          serverResult?.answers &&
+          Array.isArray(serverResult.answers) &&
+          serverResult.answers.length === QUESTIONS.length
+        ) {
+          const dateStr = serverResult.completedAt ?? new Date().toISOString();
+          writeYsqResult(dateStr, serverResult.answers);
+          setAnswers(serverResult.answers);
+          setCompletedAt(dateStr);
+          setPhase('result');
+        } else if (serverHasProgress) {
+          setAnswers(serverProgress.answers);
+          setPage(serverProgress.page);
+        }
+      })
+      .catch(() => setResumeCheckFailed(true));
+  };
+
+  /** Черновик прохождения на этом устройстве (или null). */
+  const readDraft = (): { answers: number[]; page: number } | null => {
+    try {
+      const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
+      const parsed = saved
+        ? (JSON.parse(saved) as { answers: number[]; page?: number })
+        : null;
+      return parsed &&
+        Array.isArray(parsed.answers) &&
+        parsed.answers.length === QUESTIONS.length
+        ? { answers: parsed.answers, page: parsed.page ?? 0 }
+        : null;
+    } catch {
+      return null; // битая запись — как будто черновика нет
+    }
+  };
+
+  // Загрузка сохранённого состояния. autoResume означает «сразу к месту, где
+  // пользователь остановился»: есть незаконченный прогресс → внутрь теста;
+  // прогресса нет, но есть результат → показать результат (раньше autoResume
+  // вовсе не грузил результат, и после прохождения кнопка входа открывала
+  // интро с «Начать тест» — результаты было не найти).
+  useEffect(() => {
+    let resumedToTest = false;
+    try {
+      const draft = readDraft();
+      if (draft) {
+        setHasProgress(true);
+        setAnswers(draft.answers);
+        if (autoResume) {
+          setPage(draft.page);
+          setPhase('test');
+          resumedToTest = true;
+        }
+      }
+      if (!resumedToTest) {
+        const result = localStorage.getItem(YSQ_RESULT_KEY);
+        if (result) {
+          const parsed = JSON.parse(result) as {
+            answers?: number[];
+            date?: string;
+          };
+          if (
+            parsed.answers &&
+            Array.isArray(parsed.answers) &&
+            parsed.answers.length === QUESTIONS.length
+          ) {
+            setAnswers(parsed.answers);
+            setPhase('result');
+            if (parsed.date) setCompletedAt(parsed.date);
+          }
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    if (!resumedToTest) {
+      api
+        .getYsqHistory()
+        .then((h) => {
+          if (h) setHistory(h);
+        })
+        .catch((e) => console.error('getYsqHistory failed', e));
+
+      checkServerState();
+    }
+  }, []);
+
+  const saveProgress = writeYsqProgress;
+
+  const handleContinue = () => {
+    userStartedRef.current = true;
+    const draft = readDraft();
+    if (draft) {
+      setAnswers(draft.answers);
+      setPage(draft.page);
+    }
+    setPhase('test');
+  };
+
+  const handleStartFresh = () => {
+    userStartedRef.current = true;
+    clearYsqProgress();
+    setAnswers(Array(QUESTIONS.length).fill(0));
+    setPage(0);
+    setHasProgress(false);
+    setPhase('test');
+  };
+
+  // Ответ = незаконченный тест: после «✕» интро обязано звать «Продолжить», а
+  // не «Начать тест», который затирал прогресс (QA 2026-10-26).
+  const handleAnswer = (qIndex: number, value: number) => {
+    const next = [...answers];
+    next[qIndex] = value;
+    setAnswers(next);
+    setHasProgress(true);
+    saveProgress(next, page);
+  };
+
+  // Выбор ответа на текущий вопрос: сохраняет ответ сразу, а через
+  // ANSWER_ADVANCE_DELAY переходит к следующему вопросу либо (на последнем
+  // вопросе) сабмитит результат.
+  const selectAnswer = (qIdx: number, value: number) => {
+    handleAnswer(qIdx, value);
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      const newAnswers = answers.map((a, idx) => (idx === qIdx ? value : a));
+      if (page < TOTAL_PAGES - 1) {
+        const next = page + 1;
+        goToPage(next, 'forward');
+        saveProgress(newAnswers, next);
+        // Локальный прогресс уже записан строкой выше — фон, не потеря
+        // данных на этом устройстве, но лог нужен ловить рассинхрон между.
+        api
+          .saveYsqProgress(newAnswers, next)
+          .catch((e) => console.error('saveYsqProgress failed', e));
+      } else {
+        const dateStr = new Date().toISOString();
+        writeYsqResult(dateStr, newAnswers);
+        // Локальный результат уже показан вне зависимости от ответа
+        // сервера — resultSaveError показывает баннер с кнопкой повтора.
+        submitResult(newAnswers, () =>
+          api
+            .getYsqHistory()
+            .then((h) => {
+              if (h) setHistory(h);
+            })
+            .catch((e) => console.error('getYsqHistory failed', e)),
+        );
+        clearYsqProgress();
+        setAnswers(newAnswers);
+        setCompletedAt(dateStr);
+        setPhase('result');
+      }
+    }, ANSWER_ADVANCE_DELAY);
+  };
+
+  const submitResult = (a: number[], onSaved?: () => unknown) =>
+    submitYsqResult(api, a, setResultSaveError, onSaved);
+  // Повтор отправки после сбоя — локальные ответы уже верны.
+  const retrySaveResult = () => submitResult(answers);
+
+  const handleBack = () => {
+    if (page > 0) {
+      const prev = page - 1;
+      goToPage(prev, 'back');
+      saveProgress(answers, prev);
+      api
+        .saveYsqProgress(answers, prev)
+        .catch((e) => console.error('saveYsqProgress failed', e));
+    } else {
+      setPhase('intro');
+    }
+  };
+
+  // «Пройти заново» (U8, аудит 2026-11): итог стирался сразу, и брошенное
+  // новое прохождение оставляло «Мои паттерны» без выраженных схем. Теперь
+  // итог живёт, пока новое прохождение не завершено: ответы копятся
+  // черновиком, последний ответ перезапишет итог (прошлый — в истории).
+  const handleRetake = () => {
+    const draft = readDraft(); // брошенный прошлый заход — «Продолжить (N из 116)»
+    setAnswers(draft?.answers ?? Array(QUESTIONS.length).fill(0));
+    setPage(draft?.page ?? 0);
+    setHasProgress(draft !== null);
+    setInactiveExpanded(false);
+    setRetakeConfirm(false);
+    setPhase('intro');
+  };
+
+  const scores = phase === 'result' ? computeScores(answers) : null;
+
+  const resultView = useMemo(
+    () => buildYsqResultView(scores, history, completedAt),
+    [scores, history, completedAt],
+  );
+
+  return {
+    phase,
+    setPhase,
+    answers,
+    page,
+    slideKey,
+    slideDir,
+    completedAt,
+    history,
+    hasProgress,
+    inactiveExpanded,
+    setInactiveExpanded,
+    retakeConfirm,
+    setRetakeConfirm,
+    progressAnswered,
+    handleContinue,
+    handleStartFresh,
+    selectAnswer,
+    handleBack,
+    handleRetake,
+    scores,
+    resultView,
+    resumeCheckFailed,
+    retryResumeCheck: checkServerState,
+    resultSaveError,
+    retrySaveResult,
+  };
+}

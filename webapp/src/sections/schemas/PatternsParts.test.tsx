@@ -1,0 +1,88 @@
+// @vitest-environment jsdom
+// Новые куски мобильных «Паттернов»: шапка, сегмент, строки схем по доменам,
+// строка теста (сворачиваемая карта — общая Disclosure, shared/src/components/Disclosure.test.tsx).
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { PatternsHeader } from './PatternsHeader';
+import { PatternsTabsBar } from './PatternsTabsBar';
+import { MySchemasList } from './MySchemasList';
+import { YsqTestRow } from './YsqTestRow';
+
+afterEach(cleanup);
+
+const [a, b] = SCHEMA_DOMAINS[0].schemas;
+
+describe('PatternsHeader', () => {
+  // Один состав на любой ширине (#906): надпись, ds-h1, подпись; «Настроить экран» — ссылка,
+  // шестерёнка — общие «Настройки», «Библиотека» — кнопка. Телефон меняет только слова.
+  it.each([
+    [true, 'Паттерны', 'Привычные реакции родом из детства'],
+    [false, 'Мои паттерны', 'Схемы, режимы, потребности'],
+  ])('mobile=%s: надпись, заголовок «%s», подпись; каждое действие зовёт свой обработчик', (mobile, title, sub) => {
+    const open = vi.fn();
+    const customize = vi.fn();
+    const settings = vi.fn();
+    render(<PatternsHeader mobile={mobile} onOpenLibrary={open} onCustomize={customize} onOpenSettings={settings} />);
+    expect(screen.getByText('Схема-терапия', { selector: '.ds-eyebrow' })).toBeTruthy();
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.textContent).toBe(title);
+    expect(h1.className).toContain('ds-h1');
+    expect(screen.getByText(sub)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Библиотека' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить экран' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настройки' }));
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(customize).toHaveBeenCalledTimes(1);
+    expect(settings).toHaveBeenCalledTimes(1);
+  });
+  it('без обработчика настроек шестерёнки нет', () => {
+    render(<PatternsHeader mobile onOpenLibrary={vi.fn()} onCustomize={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Настройки' })).toBeNull();
+  });
+});
+
+describe('PatternsTabsBar', () => {
+  it('отмечает выбранную вкладку и сообщает о переключении', () => {
+    const change = vi.fn();
+    render(<PatternsTabsBar tab="modes" onChange={change} />);
+    expect(screen.getByRole('tab', { name: 'Режимы' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Схемы' }).getAttribute('aria-selected')).toBe('false');
+    fireEvent.click(screen.getByRole('tab', { name: 'Потребности' }));
+    expect(change).toHaveBeenCalledWith('needs');
+  });
+});
+
+describe('MySchemasList', () => {
+  const base = { onAdd: vi.fn(), onOpenSchema: vi.fn() };
+  it('группирует по доменам, показывает статус и частоту, открывает схему', () => {
+    const open = vi.fn();
+    render(<MySchemasList {...base} onOpenSchema={open} ids={[a.id, b.id]} statusFor={() => 'карточка пока пустая'} freq={{ [a.id]: 2 }} />);
+    expect(screen.getByText(SCHEMA_DOMAINS[0].domain)).toBeTruthy();
+    expect(screen.getAllByText('карточка пока пустая')).toHaveLength(2);
+    expect(screen.getByText('2 дня')).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button')[0]);
+    expect(open).toHaveBeenCalledWith(a.id);
+  });
+  it('без статусов и частоты (ещё грузятся) — только названия; «+ Добавить схему» работает', () => {
+    const add = vi.fn();
+    render(<MySchemasList {...base} onAdd={add} ids={[a.id]} />);
+    expect(screen.queryByText('карточка пока пустая')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '+ Добавить схему' }));
+    expect(add).toHaveBeenCalledTimes(1);
+  });
+  it('пусто — одна кнопка добавления', () => {
+    render(<MySchemasList {...base} ids={[]} />);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+});
+
+describe('YsqTestRow', () => {
+  it('рисует подпись и действие, кнопка запускает тест', () => {
+    const start = vi.fn();
+    render(<YsqTestRow progressAnswered={12} completedAt={null} onStart={start} />);
+    expect(screen.getByText('Начат · отвечено 12 из 116')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }));
+    expect(start).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,0 +1,111 @@
+// Строки общего поиска (палитра ⌘K, CommandPalette.tsx): чистая сборка из клиентов, разделов, листов
+// «Справочника» и действий. Каждая строка — в группе с подписью. Пустой запрос — обзор: первые клиенты,
+// разделы, действия. Запрос — вес строки (shared/src/search/rankRows.ts): внутри группы по убыванию
+// веса, группы — по лучшему весу, при равенстве — в порядке GROUP_ORDER. Только в кабинете терапевта:
+// листы справочника (guideRows.ts), вкладки карточки клиента (clientTabRows.ts), задания (taskRows.ts) и действия
+// кабинета (cabinetActionRows.ts); шаг «Кому дать задание?» — одни клиенты (clientRows.ts). Только в режиме клиента:
+// своё, упражнения, схемы и режимы (clientModeRows.ts). У всех по запросу — настройки и статьи (commonRows.ts). Без запроса первой — «Недавнее» (recentRows.ts).
+import { buildPlusActions } from '../../../../shared/src/quickActions/quickActions';
+import { hasLatin, toRussianLayout } from '../../../../shared/src/search/keyboardLayout';
+import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
+import { SECTION_LOOK, THERAPIST_NAV } from '../appShell/navLook';
+import type { Section } from '../appShell/navigation';
+import { quickActionSign } from '../quickActionSign';
+import { cabinetActionRows } from './cabinetActionRows';
+import { ASSIGN_GROUP, CLIENTS_GROUP, assigneeRows, clientRows, clientsPreview } from './clientRows';
+import { allClientModeRows, clientModeRows } from './clientModeRows';
+import { ARTICLE_GROUP, SETTINGS_GROUP, allCommonRows, commonRows } from './commonRows';
+import { CLIENT_TAB_GROUP, allClientTabRows, clientTabRows } from './clientTabRows';
+import type { CmdRow } from './cmdRow';
+import { GUIDE_GROUP, allGuideRows, guideRows } from './guideRows';
+import { OWN_TASK_GROUP, PLAN_GROUP, ownTasksPreview } from './ownRows';
+import type { PaletteInput } from './paletteInput';
+import { EXERCISE_GROUP, MODE_GROUP, SCHEMA_GROUP } from './patternRows';
+import { RECENT_GROUP, recentRows } from './recentRows';
+import { TASK_GROUP, allTaskRows, taskRows } from './taskRows';
+
+export const GROUP = {
+  recent: RECENT_GROUP, clients: CLIENTS_GROUP, clientTabs: CLIENT_TAB_GROUP, sections: 'Разделы', guide: GUIDE_GROUP,
+  tasks: TASK_GROUP, actions: 'Действия', assign: ASSIGN_GROUP, settings: SETTINGS_GROUP, articles: ARTICLE_GROUP,
+  ownTasks: OWN_TASK_GROUP, exercises: EXERCISE_GROUP, schemas: SCHEMA_GROUP, modes: MODE_GROUP, plans: PLAN_GROUP,
+} as const;
+const GROUP_ORDER: string[] = [
+  GROUP.clients, GROUP.clientTabs, GROUP.sections, GROUP.ownTasks, GROUP.exercises, GROUP.schemas, GROUP.modes, GROUP.plans,
+  GROUP.guide, GROUP.tasks, GROUP.actions, GROUP.settings, GROUP.articles,
+];
+export type { PaletteGuide, PaletteInput } from './paletteInput';
+
+const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
+  { id: 'today', label: 'Сегодня', sub: 'Главная', hint: '⌘ 1' },
+  { id: 'diary', label: 'Записи', sub: 'Дневники', hint: '⌘ 2' },
+  { id: 'more', label: 'Ещё', sub: 'Всё остальное', hint: '⌘ 3' },
+  { id: 'schemas', label: 'Паттерны', sub: '20 схем', hint: '' },
+  { id: 'profile', label: 'Профиль', sub: 'Аккаунт', hint: '' },
+  { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
+];
+
+function sectionRows({ therapistMode, run }: PaletteInput): CmdRow[] {
+  if (therapistMode) {
+    return Object.values(THERAPIST_NAV).map((n) => ({
+      key: `section:${n.to}`, kind: 'section', group: GROUP.sections, label: n.label, mark: { sign: n.sign },
+      search: n === THERAPIST_NAV.tasks ? `${n.label} доска задания клиентов` : n.label,
+      action: () => run.path(n.to),
+    }));
+  }
+  return NAV_ITEMS.map((n) => ({
+    key: `section:${n.id}`, kind: 'section', group: GROUP.sections, label: n.label, sub: n.sub, hint: n.hint,
+    mark: { sign: SECTION_LOOK[n.id].sign }, search: `${n.label} ${n.sub}`,
+    action: () => run.section(n.id),
+  }));
+}
+
+/** Переключатель режима — в «Действиях»; быстрые действия клиента — группами реестра, при запросе — там же. */
+function actionRows(input: PaletteInput): CmdRow[] {
+  const { therapist, therapistMode, tr, run, query } = input;
+  const toggle = therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в кабинет терапевта';
+  const toggleSub = therapistMode ? 'Клиентский вид' : 'Кабинет';
+  const searching = query.trim() !== '';
+  return [
+    ...(therapist ? [{
+      key: 'action:toggle-mode', kind: 'action' as const, group: GROUP.actions, label: toggle, sub: toggleSub, mark: { sign: 'cluster' as const },
+      search: `${toggle} ${toggleSub}`, action: run.toggleMode,
+    }] : []),
+    ...(therapist && therapistMode ? cabinetActionRows(input, GROUP.actions) : []),
+    ...(therapistMode ? [] : buildPlusActions(tr).flatMap((g) => g.actions.map((a): CmdRow => ({
+      key: `action:${a.id}`, kind: 'action', group: searching ? GROUP.actions : g.title, label: a.label, sub: a.sub, mark: { sign: quickActionSign(a.id) },
+      search: `${a.label} ${g.title} ${a.sub}`, action: () => run.quick(a.id),
+    })))),
+  ];
+}
+
+export function buildPaletteRows(input: PaletteInput): CmdRow[] {
+  const { query, therapist, therapistMode, screenShare, tr } = input;
+  const clients = therapist && !screenShare ? clientRows(input) : [];
+  const cabinet = therapist && therapistMode;
+  if (cabinet && input.assign) return assigneeRows(input, input.assign.catalogId);
+  const rows = [...clients, ...sectionRows(input), ...actionRows(input)];
+  if (query.trim() === '') {
+    const more = [...(cabinet ? [...allGuideRows(input), ...allClientTabRows(input), ...allTaskRows(input)] : allClientModeRows(input)), ...allCommonRows(input)];
+    return [...recentRows(input.recent, [...rows, ...more]), ...(cabinet ? [] : ownTasksPreview(input)), ...clientsPreview(clients, tr), ...rows.slice(clients.length)];
+  }
+  const scored = rows
+    .map((row) => ({ row, score: rowScore(row.label, row.search, query) }))
+    .filter((r) => r.score > ROW_SCORE.none);
+  scored.push(...(cabinet ? [...guideRows(input), ...clientTabRows(input), ...taskRows(input)] : clientModeRows(input)), ...commonRows(input));
+  const best = new Map<string, number>();
+  for (const { row, score } of scored) best.set(row.group, Math.max(best.get(row.group) ?? 0, score));
+  const order = (group: string) => GROUP_ORDER.indexOf(group);
+  return scored
+    .sort((a, b) => ((best.get(b.row.group) ?? 0) - (best.get(a.row.group) ?? 0)) || (order(a.row.group) - order(b.row.group)) || (b.score - a.score))
+    .map((r) => r.row);
+}
+
+/** Строки по запросу; ничего не нашлось и запрос набран латиницей — по нему же в русской раскладке. */
+export function searchPalette(input: PaletteInput): { rows: CmdRow[]; query: string; layoutFixed: boolean } {
+  const { query } = input;
+  const rows = buildPaletteRows(input);
+  const fixed = toRussianLayout(query);
+  if (rows.length > 0 || query.trim() === '' || !hasLatin(query) || fixed === query) return { rows, query, layoutFixed: false };
+  const fixedRows = buildPaletteRows({ ...input, query: fixed });
+  return fixedRows.length > 0 ? { rows: fixedRows, query: fixed, layoutFixed: true } : { rows, query, layoutFixed: false };
+}

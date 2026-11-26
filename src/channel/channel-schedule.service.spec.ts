@@ -1,0 +1,621 @@
+// Расписание канала: когда пора говорить, когда пора перестать пробовать и как
+// владелец об этом узнаёт.
+//
+// Инцидент 2026-07-29: отправка падала, пост не записывался — и тик крона (раз
+// в 5 минут, окно два часа) пробовал снова 24 раза за утро, каждый раз отправляя
+// владельцу отдельный DM.
+//
+// Инцидент 2026-07-31: пост вышел не на все площадки, а сообщения владельцу не
+// пришло вовсе. Алерт шёл через logger.error → AlertLogger, у которого свой
+// троттлинг и молчаливое проглатывание ошибок. Теперь расписание зовёт
+// notifyAdminWithFallback напрямую — это и проверяется здесь.
+import { Logger } from '@nestjs/common';
+import { ChannelScheduleService } from './channel-schedule.service';
+import type { ChannelPublisherService } from './channel-publisher.service';
+import { OneAtATime } from './one-at-a-time';
+import { markUnknown } from './unknown-outcome';
+import type { PublishResult } from './channel-target';
+import type { HealthyAdultService } from '../bot/healthy-adult.service';
+import { notifyAdminWithFallback } from '../utils/admin-alert';
+import type { DeliveryLogService } from './delivery-log.service';
+import {
+  LEASE_WINDOW,
+  type CronLeaderService,
+} from '../infra/cron-leader.service';
+
+jest.mock('../utils/admin-alert', () => ({
+  notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
+}));
+const alerts = notifyAdminWithFallback as jest.Mock;
+/** Тексты DM владельцу — то, ради чего расписание вообще говорит. */
+const alertTexts = () => alerts.mock.calls.map((c) => String(c[0]));
+
+const delivered = (platform = 'telegram') => ({
+  platform,
+  title: platform,
+  destination: '@ch',
+});
+
+const okResult: PublishResult = {
+  ok: true,
+  posted: true,
+  message: '✅ Опубликовано',
+  delivered: [delivered()],
+  failed: [],
+  silent: [],
+};
+
+const failResult: PublishResult = {
+  ok: false,
+  posted: false,
+  message: '❌ Не дошло: Telegram (@ch) — ETIMEDOUT',
+  delivered: [],
+  failed: [{ ...delivered(), reason: 'ETIMEDOUT' }],
+  silent: [],
+};
+
+const partialResult: PublishResult = {
+  ok: false,
+  posted: true,
+  message: '⚠️ Опубликовано: Telegram (@ch)',
+  delivered: [delivered()],
+  failed: [{ ...delivered('vk'), reason: '403: нет доступа' }],
+  silent: [],
+};
+
+const silentResult: PublishResult = {
+  ...okResult,
+  silent: [{ title: 'Threads', envKey: 'HEALTHY_ADULT_THREADS_USER' }],
+};
+
+/** Журнал отправок: по нему считается, кому досылать долг слота. */
+function makeJournal(rows: unknown[] = []) {
+  const slotRows = jest.fn().mockResolvedValue(rows);
+  return {
+    journal: { slotRows } as unknown as DeliveryLogService,
+    slotRows,
+  };
+}
+
+/** Лидерство по умолчанию: этот инстанс всегда забирает тик — так тестируется
+ * вся остальная логика расписания, а «не лидер» проверяется отдельно ниже. */
+function makeCronLeader(claim = true) {
+  const claimRun = jest.fn().mockResolvedValue(claim);
+  return { cronLeader: { claimRun } as unknown as CronLeaderService, claimRun };
+}
+
+function makeService(
+  result: PublishResult = okResult,
+  lastPostAt: Date | null = null,
+  rows: unknown[] = [],
+  cronLeader: CronLeaderService = makeCronLeader().cronLeader,
+) {
+  const publish = jest.fn().mockResolvedValue(result);
+  const retry = jest.fn().mockResolvedValue(okResult);
+  const phrases = {
+    lastPostAt: jest.fn().mockResolvedValue(lastPostAt),
+  } as unknown as HealthyAdultService;
+  const { journal, slotRows } = makeJournal(rows);
+  const service = new ChannelScheduleService(
+    {
+      publish,
+      retry,
+      inFlight: new OneAtATime(),
+    } as unknown as ChannelPublisherService,
+    phrases,
+    journal,
+    cronLeader,
+  );
+  return { service, publish, retry, phrases, slotRows };
+}
+
+/** Строка журнала: недошедшая площадка с текстом опубликованной фразы. */
+const row = (platform: string, ok: boolean) => ({
+  source: 'утро',
+  platform,
+  destination: platform === 'max' ? '-77' : '@ch',
+  ok,
+  reason: ok ? null : 'таймаут',
+  text: 'фраза этого слота',
+  createdAt: new Date(),
+});
+
+/** Логи расписания: тихий тик не пишет ничего. */
+function spyLogger() {
+  const errors = jest
+    .spyOn(Logger.prototype, 'error')
+    .mockImplementation(() => undefined);
+  const warns = jest
+    .spyOn(Logger.prototype, 'warn')
+    .mockImplementation(() => undefined);
+  const texts = (spy: jest.SpyInstance) =>
+    spy.mock.calls.map((c) => String(c[0]));
+  return { errors, warns, texts };
+}
+
+// Момент по МСК → UTC (МСК = UTC+3). 2026-07-20 — понедельник, 21-е — вторник.
+const msk = (hour: number, minute = 0, day = 20): Date =>
+  new Date(Date.UTC(2026, 6, day, hour - 3, minute));
+const TUESDAY = 21;
+
+describe('ChannelScheduleService', () => {
+  beforeEach(() => alerts.mockClear());
+  afterEach(() => jest.restoreAllMocks());
+
+  it('вне окна (день) — тик молчит и не тревожит владельца', async () => {
+    const { errors, warns, texts } = spyLogger();
+    const { service, publish } = makeService();
+    await service.maybePost(msk(13, 0));
+    expect(publish).not.toHaveBeenCalled();
+    expect([...texts(errors), ...texts(warns)]).toEqual([]);
+    expect(alerts).not.toHaveBeenCalled();
+  });
+
+  it('в конце утреннего окна публикует, если сегодня ещё не постили', async () => {
+    // 10:55 МСК — offset 115 ≥ любой planned (<116), lastPostAt=null.
+    const { errors, warns, texts } = spyLogger();
+    const { service, publish } = makeService();
+    await service.maybePost(msk(10, 55));
+    expect(publish).toHaveBeenCalledTimes(1);
+    // Слот попадает в журнал именем, понятным владельцу.
+    expect(publish).toHaveBeenCalledWith('утро');
+    // Удачная публикация проходит молча — DM владельцу только при сбое.
+    expect([...texts(errors), ...texts(warns)]).toEqual([]);
+    expect(alerts).not.toHaveBeenCalled();
+  });
+
+  it('вечерний слот подписан вечером — журнал не путает утро с вечером', async () => {
+    spyLogger();
+    const { service, publish } = makeService();
+    await service.maybePost(msk(19, 55));
+    expect(publish).toHaveBeenCalledWith('вечер');
+  });
+
+  it('не постит второй раз в тот же слот (lastPostAt в окне)', async () => {
+    const { errors, warns, texts } = spyLogger();
+    const { service, publish } = makeService(okResult, msk(10, 0));
+    await service.maybePost(msk(10, 55));
+    expect(publish).not.toHaveBeenCalled();
+    expect([...texts(errors), ...texts(warns)]).toEqual([]);
+    expect(alerts).not.toHaveBeenCalled();
+  });
+
+  it('сбой чтения последнего поста не роняет тик', async () => {
+    const { service, phrases } = makeService();
+    (phrases.lastPostAt as jest.Mock).mockRejectedValue(new Error('db down'));
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    await expect(service.maybePost(msk(10, 55))).resolves.toBeUndefined();
+  });
+
+  describe('повторы при полном сбое отправки', () => {
+    const failingTicks = () => ({ ...spyLogger(), ...makeService(failResult) });
+
+    it('пробует не больше трёх раз за слот, а не весь два часа', async () => {
+      const { service, publish, warns, texts } = failingTicks();
+      for (const minute of [55, 56, 57, 58, 59]) {
+        await service.maybePost(msk(10, minute));
+      }
+      expect(publish).toHaveBeenCalledTimes(3);
+      // Первые две попытки — тихие warn, третья будит владельца (см. ниже).
+      expect(texts(warns).filter((t) => t.includes('попытка'))).toEqual([
+        expect.stringContaining('попытка 1'),
+        expect.stringContaining('попытка 2'),
+      ]);
+    });
+
+    it('владельца будим ровно один раз — на исчерпании попыток', async () => {
+      const { service } = failingTicks();
+      for (const minute of [55, 56, 57, 58, 59]) {
+        await service.maybePost(msk(10, minute));
+      }
+      expect(alerts).toHaveBeenCalledTimes(1);
+      expect(alertTexts()[0]).toContain('ETIMEDOUT');
+      expect(alertTexts()[0]).toContain('не вышло ничего');
+    });
+
+    it('вечерний слот не наказан за утренние неудачи', async () => {
+      const { service, publish, warns, texts } = failingTicks();
+      for (const minute of [55, 56, 57])
+        await service.maybePost(msk(10, minute));
+      publish.mockClear();
+      await service.maybePost(msk(19, 55));
+      expect(publish).toHaveBeenCalledTimes(1);
+      // Счёт попыток у вечера свой — начинается с первой, а не с четвёртой.
+      expect(texts(warns).at(-1)).toContain('evening: попытка 1');
+    });
+  });
+
+  describe('частичный успех', () => {
+    const partialTicks = () => ({
+      ...spyLogger(),
+      ...makeService(partialResult),
+    });
+
+    it('не считается неудачей — попытки слота не сгорают', async () => {
+      // В бою повтора не будет: пост записан, и dueSlot закроет слот. Здесь
+      // фейковый lastPostAt не двигается, поэтому видно главное — частичный
+      // успех не копит счётчик неудач и не упирается в лимит трёх попыток.
+      const { service, publish, warns, texts } = partialTicks();
+      for (const minute of [55, 56, 57, 58]) {
+        await service.maybePost(msk(10, minute));
+      }
+      expect(publish).toHaveBeenCalledTimes(4);
+      expect(texts(warns).filter((t) => t.includes('попытка'))).toEqual([]);
+    });
+
+    it('владелец узнаёт, какая площадка не приняла пост', async () => {
+      const { service } = partialTicks();
+      await service.maybePost(msk(10, 55));
+      expect(alerts).toHaveBeenCalledTimes(1);
+      expect(alertTexts()[0]).toContain('vk');
+      expect(alertTexts()[0]).toContain('403: нет доступа');
+    });
+
+    it('DM уходит напрямую, а не через logger.error', async () => {
+      // Инцидент 2026-07-31: единственный путь сообщения шёл через AlertLogger,
+      // и когда оно не дошло, у владельца не осталось ничего.
+      const { service, errors } = partialTicks();
+      await service.maybePost(msk(10, 55));
+      expect(alertTexts()).toEqual([expect.stringContaining('дошло не везде')]);
+      expect(errors).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('досылка тем, кто не принял пост', () => {
+    // До 2026-08 частичный успех означал пропуск: слот закрывался, и упавшая
+    // площадка теряла публикацию до следующего слота с другой фразой.
+    const closedSlot = (rows: unknown[]) =>
+      makeService(okResult, msk(10, 0), rows);
+
+    it('досылает ту же фразу только должникам', async () => {
+      spyLogger();
+      const { service, retry, publish } = closedSlot([
+        row('max', false),
+        row('telegram', true),
+      ]);
+
+      await service.catchUp(msk(10, 30));
+
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max'],
+        false,
+      );
+      // Обычная публикация не повторяется — иначе дубль там, где пост вышел.
+      expect(publish).not.toHaveBeenCalled();
+    });
+
+    it('успешная досылка закрывает историю сообщением владельцу', async () => {
+      spyLogger();
+      const { service } = closedSlot([row('max', false)]);
+      await service.catchUp(msk(10, 30));
+      expect(alertTexts()).toEqual([expect.stringContaining('досталось')]);
+    });
+
+    it('успешный повтор в журнале снимает долг площадки', async () => {
+      spyLogger();
+      // Новые записи сверху: повтор прошёл — досылать больше нечего.
+      const { service, retry, slotRows } = closedSlot([
+        { ...row('max', true), source: 'утро — повтор' },
+        row('max', false),
+      ]);
+      await service.catchUp(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      // Журнал всё же прочитан — решение принято по данным, а не по памяти.
+      expect(slotRows).toHaveBeenCalledWith('утро', expect.any(Date));
+    });
+
+    // Хвост R7 (аудит 2026-11): таймаут ответа или обрыв после отправки —
+    // пост мог выйти, а досылка через 15 минут повторяла его вторым.
+    it('исход неизвестен — не досылает, владельцу раз за слот: проверить руками', async () => {
+      spyLogger();
+      const unknown = {
+        ...row('telegram', false),
+        reason: markUnknown('таймаут ответа'),
+      };
+      const { service, retry } = closedSlot([unknown, row('max', false)]);
+
+      await service.catchUp(msk(10, 30));
+      await service.catchUp(msk(10, 45));
+
+      // Досылка — только тому, кто точно не получил.
+      expect((retry as jest.Mock).mock.calls).toEqual([
+        ['утро', 'фраза этого слота', ['max'], false],
+        ['утро', 'фраза этого слота', ['max'], false],
+      ]);
+      const checks = alertTexts().filter((t) =>
+        t.includes('проверить вручную'),
+      );
+      expect(checks).toEqual([expect.stringContaining('telegram')]);
+      // Telegram не ответил — сообщение о нём идёт почтой, не через него же.
+      const call = alerts.mock.calls.find((c) => String(c[0]) === checks[0]);
+      expect(call?.[2]).toEqual({ skipTelegram: true });
+    });
+
+    it('только неизвестный исход — повтора нет вовсе', async () => {
+      spyLogger();
+      const { service, retry } = closedSlot([
+        { ...row('vk', false), reason: markUnknown('socket hang up') },
+      ]);
+      await service.catchUp(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      expect(alertTexts()).toEqual([expect.stringContaining('vk')]);
+    });
+
+    it('не долбится бесконечно — три попытки на слот', async () => {
+      spyLogger();
+      const { service, retry } = makeService(okResult, msk(10, 0), [
+        row('max', false),
+      ]);
+      (retry as jest.Mock).mockResolvedValue({
+        ...okResult,
+        ok: false,
+        message: 'не дошло',
+      });
+
+      for (const minute of [10, 15, 20, 25, 30])
+        await service.catchUp(msk(10, minute));
+
+      expect(retry).toHaveBeenCalledTimes(3);
+      // Каждая попытка — та же фраза тем же должникам.
+      expect((retry as jest.Mock).mock.calls).toEqual(
+        Array(3).fill(['утро', 'фраза этого слота', ['max'], false]),
+      );
+    });
+
+    // Хвост волны 9: слот не вышел нигде, окно закрылось — досылка его
+    // первый выход, и пост обязан попасть в историю (lastPostAt, дедуп пула).
+    it('слот не вышел нигде — досылка помечена первым выходом', async () => {
+      spyLogger();
+      const { service, retry } = makeService(okResult, null, [
+        row('max', false),
+        row('telegram', false),
+      ]);
+      await service.catchUp(msk(11, 0));
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max', 'telegram'],
+        true,
+      );
+    });
+
+    it('прошлая досылка уже дошла до одной площадки — добор, не первый выход', async () => {
+      spyLogger();
+      const { service, retry } = makeService(okResult, null, [
+        { ...row('telegram', true), source: 'утро — повтор' },
+        row('max', false),
+        row('telegram', false),
+      ]);
+      await service.catchUp(msk(11, 30));
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max'],
+        false,
+      );
+    });
+
+    it('досылает и после закрытия окна публикации', async () => {
+      // Инцидент 2026-08-09: пост вышел в 10:55 — на последнем тике окна, и
+      // повторять было уже нечем. Долг тянется до вечера.
+      spyLogger();
+      const { service, retry } = closedSlot([row('max', false)]);
+      await service.catchUp(msk(14, 0));
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max'],
+        false,
+      );
+    });
+
+    it('ночью не досылает — подписчики спят, утром выйдет свежая фраза', async () => {
+      spyLogger();
+      const { service, retry, slotRows } = closedSlot([row('max', false)]);
+      await service.catchUp(msk(3, 0));
+      expect(retry).not.toHaveBeenCalled();
+      expect(slotRows).not.toHaveBeenCalled();
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('дошло везде — досылать нечего и в сеть не ходим', async () => {
+      spyLogger();
+      const { service, retry } = closedSlot([
+        row('telegram', true),
+        row('max', true),
+      ]);
+      await service.catchUp(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('тик публикации при закрытом слоте долг не трогает — у досылки один вход', async () => {
+      // Аудит 2026-10: maybePost звал досылку под арендой утра/вечера, а
+      // tickCatchUp — под своей. Разные аренды друг друга не исключают.
+      spyLogger();
+      const { service, retry, slotRows } = closedSlot([row('max', false)]);
+      await service.maybePost(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      expect(slotRows).not.toHaveBeenCalled();
+      // Ни «досталось», ни «дошло не везде» — этот тик про долг молчит.
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('долг держится — следующий тик досылки пробует снова', async () => {
+      // Контроль к гонке ниже: один вызов retry там — из-за одного входа, а
+      // не потому, что вторая досылка не идёт вообще.
+      spyLogger();
+      const { service, retry } = closedSlot([row('max', false)]);
+      retry.mockResolvedValue({ ...okResult, ok: false, message: 'не дошло' });
+      await service.catchUp(msk(9, 15));
+      await service.catchUp(msk(9, 31));
+      expect(retry.mock.calls).toEqual([
+        ['утро', 'фраза этого слота', ['max'], false],
+        ['утро', 'фраза этого слота', ['max'], false],
+      ]);
+    });
+
+    it('тики утра и досылки в одну минуту досылают фразу один раз', async () => {
+      // Аудит 2026-10: в 9:15 оба крона бежали параллельно, оба читали один
+      // долг из журнала до того, как первый повтор в него записался.
+      jest.useFakeTimers({
+        now: msk(9, 15),
+        doNotFake: ['setTimeout', 'setImmediate', 'nextTick'],
+      });
+      spyLogger();
+      const rows: unknown[] = [row('max', false)];
+      const { service, retry, slotRows } = makeService(okResult, msk(9, 0));
+      // Журнал с состоянием: повтор попадает в него только после фан-аута.
+      slotRows.mockImplementation(async () => [...rows]);
+      retry.mockImplementation(async () => {
+        await new Promise((r) => setTimeout(r, 10));
+        rows.unshift({ ...row('max', true), source: 'утро — повтор' });
+        return okResult;
+      });
+      try {
+        await Promise.all([service.tickMorning(), service.tickCatchUp()]);
+      } finally {
+        jest.useRealTimers();
+      }
+      expect(retry.mock.calls).toEqual([
+        ['утро', 'фраза этого слота', ['max'], false],
+      ]);
+    });
+  });
+
+  it('tickMorning/tickEvening — обёртки крона, обе зовут maybePost без аргументов', async () => {
+    // @Cron-декорированные методы — единственный вход в реальном рантайме
+    // (сам maybePost тестируется напрямую выше с явным `now`). Если обёртка
+    // забудет вызвать maybePost — крон тикает, а публикаций не будет никогда.
+    spyLogger();
+    const { service } = makeService();
+    const spy = jest.spyOn(service, 'maybePost');
+
+    await service.tickMorning();
+    await service.tickEvening();
+
+    // now не передан из крона — обёртка не подсовывает свой момент времени.
+    expect(spy.mock.calls).toEqual([[], []]);
+  });
+
+  describe('leader election — не лидер, тело крона не выполняется', () => {
+    it('tickMorning: тик уже забрал другой инстанс — maybePost не зовётся', async () => {
+      spyLogger();
+      const { cronLeader, claimRun } = makeCronLeader(false);
+      const { service, publish } = makeService(okResult, null, [], cronLeader);
+      const spy = jest.spyOn(service, 'maybePost');
+
+      await service.tickMorning();
+
+      expect(claimRun).toHaveBeenCalledWith(
+        'healthyAdultMorning',
+        LEASE_WINDOW.fiveMinutes,
+      );
+      expect(spy).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+    });
+
+    it('tickEvening: тик уже забрал другой инстанс — maybePost не зовётся', async () => {
+      spyLogger();
+      const { cronLeader, claimRun } = makeCronLeader(false);
+      const { service, publish } = makeService(okResult, null, [], cronLeader);
+      const spy = jest.spyOn(service, 'maybePost');
+
+      await service.tickEvening();
+
+      expect(claimRun).toHaveBeenCalledWith(
+        'healthyAdultEvening',
+        LEASE_WINDOW.fiveMinutes,
+      );
+      expect(spy).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+    });
+
+    it('tickCatchUp: тик уже забрал другой инстанс — досылка не запускается', async () => {
+      spyLogger();
+      const { cronLeader, claimRun } = makeCronLeader(false);
+      const { service, retry } = makeService(
+        okResult,
+        msk(10, 0),
+        [row('max', false)],
+        cronLeader,
+      );
+
+      await service.tickCatchUp();
+
+      expect(claimRun).toHaveBeenCalledWith(
+        'healthyAdultCatchUp',
+        LEASE_WINDOW.fifteenMinutes,
+      );
+      expect(retry).not.toHaveBeenCalled();
+    });
+  });
+
+  it('про сбой самого Telegram пишем мимо Telegram — почтой', async () => {
+    // Инцидент 2026-08-09: канал падал три дня, а алерты уходили тем же
+    // путём, который и не работал. Сообщение о недоступности Telegram по
+    // Telegram не доставить.
+    spyLogger();
+    const { service } = makeService({
+      ...partialResult,
+      failed: [{ ...delivered('telegram'), reason: 'ETIMEDOUT' }],
+    });
+
+    await service.maybePost(msk(10, 55));
+
+    expect(alerts.mock.calls[0][2]).toEqual({ skipTelegram: true });
+  });
+
+  it('упала другая площадка — DM в Telegram остаётся рабочим путём', async () => {
+    spyLogger();
+    const { service } = makeService(partialResult);
+    await service.maybePost(msk(10, 55));
+    expect(alerts.mock.calls[0][2]).toEqual({ skipTelegram: false });
+  });
+
+  describe('молчащая площадка (нет env)', () => {
+    it('в понедельник утром названа в отчёте, а не пропущена молча', async () => {
+      // Молчание площадки без env раньше было неотличимо от успеха.
+      spyLogger();
+      const { service } = makeService(silentResult);
+      await service.maybePost(msk(10, 55));
+      expect(alerts).toHaveBeenCalledTimes(1);
+      expect(alertTexts()[0]).toContain('Threads');
+      expect(alertTexts()[0]).toContain('HEALTHY_ADULT_THREADS_USER');
+      expect(alertTexts()[0]).toContain('раз в неделю');
+    });
+
+    it('во вторник владельца не будит — напоминание раз в неделю', async () => {
+      // Pinterest без env с июля 2026: DM «Молчали: Pinterest» приходил каждое
+      // утро, и его перестали читать.
+      spyLogger();
+      const { service, publish } = makeService(silentResult);
+      await service.maybePost(msk(10, 55, TUESDAY));
+      expect(publish).toHaveBeenCalledWith('утро');
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('в понедельник вечером молчит — хватило утреннего напоминания', async () => {
+      spyLogger();
+      const { service, publish } = makeService(silentResult);
+      await service.maybePost(msk(19, 55));
+      expect(publish).toHaveBeenCalledWith('вечер');
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('площадка упала во вторник — отчёт уходит и называет молчащих', async () => {
+      spyLogger();
+      const { service } = makeService({
+        ...partialResult,
+        silent: silentResult.silent,
+      });
+      await service.maybePost(msk(10, 55, TUESDAY));
+      expect(alerts).toHaveBeenCalledTimes(1);
+      expect(alertTexts()[0]).toContain('403: нет доступа');
+      expect(alertTexts()[0]).toContain('HEALTHY_ADULT_THREADS_USER');
+      expect(alertTexts()[0]).toContain('Пробую дослать');
+    });
+  });
+});

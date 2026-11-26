@@ -1,0 +1,482 @@
+// Security-трипваер: рассинхрон имён продуктовых событий между фронтом и
+// бэком (правило №8 CLAUDE.md, этап 2.5 TEST_IMPROVEMENT_PLAN.md). Бэк
+// валидирует событие по allow-list ANALYTICS_EVENTS
+// (src/analytics/analytics.constants.ts) и молча дропает всё незнакомое
+// (AnalyticsService.track) — опечатка в имени события на фронте не падает
+// нигде, метрика просто тихо никогда не появляется в /stats. Инвариант:
+// каждое имя события, которое фронт шлёт строковым литералом через
+// trackEvent('...')/api.trackEvent('...'), обязано быть в ANALYTICS_EVENTS.
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { collectSourceFiles } from './collect-source-files';
+import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
+import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
+import {
+  SEARCH_RESULT_KINDS,
+  TASK_ASSIGN_SOURCES,
+} from '../analytics/cabinet-events.constants';
+
+const ROOT = join(__dirname, '..', '..');
+
+// Директории фронтендов, где вообще есть трекинг (пайплайн
+// событий общий, но реализация вызова живёт в каждом фронте + shared).
+// 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
+// ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
+// POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
+// как и у остальных фронтендов.
+const FRONTEND_DIRS = ['webapp/src', 'shared/src', 'game/src'];
+
+// Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
+// вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит
+// api.trackPublicEvent(...) — это осознанное ограничение грепа по литералам,
+// см. BACKEND_ONLY ниже с реальной причиной для каждого такого события.
+const TRACK_EVENT_RE = /trackEvent\(\s*['"]([^'"]+)['"]/g;
+
+function findTrackedEvents(): Set<string> {
+  const names = new Set<string>();
+  for (const rel of FRONTEND_DIRS) {
+    const dir = join(ROOT, rel);
+    for (const file of collectSourceFiles(dir, {
+      extensions: ['.ts', '.tsx'],
+    })) {
+      const src = readFileSync(file, 'utf8');
+      let m: RegExpExecArray | null;
+      TRACK_EVENT_RE.lastIndex = 0;
+      while ((m = TRACK_EVENT_RE.exec(src))) names.add(m[1]);
+    }
+  }
+  return names;
+}
+
+// (обратная сверка) События бэкенда, которые грепом по литералам не найти —
+// каждое с реальной причиной. Список может только СОКРАЩАТЬСЯ (если событие
+// перейдёт на литерал вместо константы — можно убрать отсюда).
+const BACKEND_ONLY: Record<string, string> = {
+  share_card:
+    'шлётся через импортируемую константу SHARE_CARD_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — ' +
+    'WeeklyCardSheet.tsx/ShareCardSheet.tsx',
+  share_result:
+    'константа SHARE_RESULT_EVENT, та же группа файлов, что и share_card',
+  auth_rejected:
+    'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
+    'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
+    'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
+  crisis_card_shown:
+    'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
+    "вызовом track('crisis_card_shown', …), где track — параметр функции " +
+    '(в реальности api.trackEvent), а не литеральный вызов trackEvent(',
+  crisis_hotline_tapped:
+    'та же причина, что и crisis_card_shown — useCrisisCardTracking.ts',
+  today_streak_toggle:
+    'легаси-имя: переключателей блоков «Сегодня» больше нет (см. ' +
+    'комментарий в analytics.constants.ts), фронт не шлёт — оставлено в allow-list ' +
+    'только ради уже накопленных исторических строк в БД',
+  onboarding_step:
+    'константа ONBOARDING_STEP_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из useOnboardingStepTracking.ts',
+  journey_open:
+    'константа JOURNEY_OPEN_EVENT, шлётся через deps.trackEvent в ' +
+    'shared/src/journey/useJourney.ts',
+  quiz_started:
+    'шлётся через api.trackPublicEvent (анонимный путь /api/public-event, ' +
+    'QuizPage.tsx), а не api.trackEvent; дублируется прямым server-side ' +
+    'track() из бота (telegram.quiz.service.ts)',
+  quiz_completed: 'та же причина, что и quiz_started — QuizPage.tsx + бот',
+  game_app_arrive:
+    'константа GAME_APP_ARRIVE_EVENT (shared/src/share/analytics.ts), шлёт ' +
+    'лендинг через api.trackPublicEvent, когда его открыла кнопка финала ' +
+    'игры (?from=game) — webapp/src/pages/landing/useGameArrival.ts',
+  practice_link_click:
+    'шлётся только через api.trackPublicEvent (анонимный клик с ' +
+    'лендинга, practiceLink.ts), не через api.trackEvent',
+  mode_card_saved:
+    'константа MODE_CARD_SAVED_EVENT (shared/src/share/analytics.ts), ' +
+    'та же группа, что и share_card/onboarding_step — грепом по литералу не ловится',
+  mode_entry_saved:
+    'константа MODE_ENTRY_SAVED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeEntrySheet.tsx (оба фронта) через api.trackEvent',
+  mode_test_completed:
+    'константа MODE_TEST_COMPLETED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeFeelingBrowse.tsx (оба фронта) — единственный вход выбора ' +
+    'режима после удаления окна-теста (ModeTestSheet/ModeTestScreen)',
+  warm_words_open:
+    'константа WARM_WORDS_OPEN_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из WarmWords.tsx (мини-апп) и WarmWordsEx.tsx (сайт) — ' +
+    'грепом по литералу не ловится',
+  mode_chain_followup:
+    'константа MODE_CHAIN_FOLLOWUP_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeEntrySheet.tsx (оба фронта) при принятой подсказке ' +
+    '«разобрать связанный режим»',
+  mode_doubt_opened:
+    'константа MODE_DOUBT_OPENED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из useModeDoubt.tsx (оба фронта) при открытии листа ' +
+    '«С чем путают режим»',
+  mode_doubt_switched:
+    'константа MODE_DOUBT_SWITCHED_EVENT (shared/src/share/analytics.ts), ' +
+    'шлётся из ModeDoubtSheet.tsx (оба фронта) при нажатии «Это ближе»',
+  account_link_started:
+    'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/analytics/accountLogin.ts), ' +
+    'шлётся из AccountLinkSection.tsx (сайт) при нажатии на ссылку переноса',
+  account_link_confirmed:
+    'константа ACCOUNT_LINK_CONFIRMED_EVENT (shared/src/analytics/accountLogin.ts), ' +
+    'шлётся из LinkDevicePage.tsx (сайт) — подтверждение происходит в ' +
+    'браузере, а не в мессенджере, поэтому фронт тут только один',
+  account_link_failed:
+    'серверное событие: пишет trackLinkFailed (src/telegram/telegram.link-outcome.ts), ' +
+    'когда код переноса протух или подтверждение упало; фронт его не шлёт',
+  client_error:
+    'серверное событие: пишет только ClientErrorsController при ' +
+    'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
+    'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
+    'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
+    'auth_rejected',
+  signup_source:
+    'серверное событие: пишет только бот в /start, когда payload — ' +
+    'deep-link `src_<slug>` (parseSourceSlug, src/telegram/start-source.ts), ' +
+    'ровно один раз при первом касании нового юзера. Фронт его не шлёт и не ' +
+    'должен — атрибуция посева живёт только на сервере, иначе её можно ' +
+    'подделать через POST /api/event',
+  profile_pattern_open:
+    'константа PROFILE_PATTERN_OPEN_EVENT (shared/src/share/analytics.ts) — ' +
+    'та же группа, что и mode_card_saved: контракт события (allow-list + ' +
+    'sanitizeMeta + /stats) заведён раньше UI редизайна вкладки «Я», сам ' +
+    'вызов api.trackEvent(PROFILE_PATTERN_OPEN_EVENT, …) приедет с UI-PR',
+  diary_jump:
+    'шлётся через импортируемую константу DIARY_JUMP_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом: ' +
+    'api.trackEvent(DIARY_JUMP_EVENT, { to }) из webapp/src/sections/diary/',
+  login_ticket_step:
+    'серверное событие: пишет единственный шов LoginTicketReport ' +
+    '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
+    'тот же приём, что у auth_rejected. Фронт его не шлёт и не ' +
+    'должен: шаги воронки входа известны только серверу (подтверждение ' +
+    'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
+    'просил билет), и отчёт /stats считает строки с userId IS NULL',
+  data_export:
+    'серверное событие: пишет только эндпоинт выгрузки данных ' +
+    '(GET /api/account/export, право на доступ по 152-ФЗ/GDPR), с реальным ' +
+    'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
+    'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
+    'том же обработчике, что формирует файл',
+  home_tile:
+    'шлётся через импортируемую константу HOME_TILE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(HOME_TILE_EVENT, { tile }) по тапу на плитку главной ' +
+    '(простой клиент, этап 1, #872); тот же приём, что у entry_deleted',
+  tracker_skip:
+    'шлётся через импортируемую константу TRACKER_SKIP_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(TRACKER_SKIP_EVENT) по «Пропустить» на вопросе трекера ' +
+    '(простой клиент, этап 2); тот же приём, что у home_tile',
+  diary_quick_save:
+    'шлётся через импортируемую константу DIARY_QUICK_SAVE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/components/diary/quickEntry/trackQuickSave.ts зовёт ' +
+    'api.trackEvent(DIARY_QUICK_SAVE_EVENT, { tag, detailed }) после ' +
+    'сохранения записи «Дневника одной страницей» (простой клиент, ' +
+    'этап 3); тот же приём, что у home_tile',
+  done_next_step:
+    'шлётся через импортируемую константу DONE_NEXT_STEP_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(DONE_NEXT_STEP_EVENT, { from, to }) по тапу на «Что ' +
+    'дальше» после трекера или дневника; тот же приём, что у home_tile',
+  therapy_nudge:
+    'шлётся через импортируемую константу THERAPY_NUDGE_EVENT (shared/), ' +
+    'не строковым литералом — строки «это самопомощь, не замена терапии» ' +
+    'внизу экранов-итогов, карточка по сигналу на главной и лист «Поговорить ' +
+    'с кем-то» зовут api.trackEvent(THERAPY_NUDGE_EVENT, { place, action, ' +
+    'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
+  entry_deleted:
+    'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — общий ' +
+    'trackEntryDeleted (shared/src/analytics/trackEntryDeleted.ts) зовут ' +
+    'useJourneyDelete, deleteDiaryEntry и PhraseHistoryCard сразу за успешным ' +
+    'удалением записи; та же причина, что у share_card',
+  notify_queue_tick:
+    'серверное событие: пишет только крон очереди уведомлений бота ' +
+    '(src/telegram/telegram.schedule-queue.tally.ts), userId = null, meta — ' +
+    'только числа прогона. Клиентского действия за ним нет вовсе: это итог ' +
+    'отправки напоминаний, отчёт /stats считает строки с userId IS NULL',
+  therapist_resigned:
+    'серверное событие: пишет только TherapistExitService.resign после ' +
+    'транзакции отказа от роли (DELETE /api/therapy/therapist-role), meta — ' +
+    'число завершённых связей с клиентами. Фронт его не шлёт: отказ — сам ' +
+    'HTTP-запрос, а /stats считает только строки с числом в meta, которое ' +
+    'клиентский путь не пропускает (у события нет ветки в sanitizeMeta)',
+  therapy_invite:
+    'серверное событие: пишет только TherapyInviteService ' +
+    '(src/therapy/therapy-invite.service.ts) при создании, подключении и ' +
+    'отзыве приглашения; ветки в sanitizeMeta нет — meta с клиента ' +
+    'отбрасывается, а /stats считает только строки с step и kind из ' +
+    'therapy-invite-events.constants.ts',
+  crawler_visits:
+    'серверное событие: пишет только крон CrawlerHitsService ' +
+    '(src/analytics/crawler-hits.service.ts) — счётчики заходов роботов ' +
+    'нейросетей по User-Agent за час, userId = null. Фронт его не шлёт: ' +
+    'заход робота видит только сервер; /stats считает только строки с ' +
+    'userId IS NULL, а sanitizeMeta пропускает лишь закрытые списки',
+  client_booking_created:
+    'серверное событие: пишет только ClientBookingService ' +
+    '(src/booking/client-booking.service.ts) после созданной брони, meta — ' +
+    'статус held|confirmed; ветка sanitizeMeta отбрасывает meta с клиента, ' +
+    'а /stats считает только строки со статусом из ' +
+    'client-booking-events.constants.ts',
+  booking_slot_taken:
+    'серверное событие: пишет только createBookingGuarded ' +
+    '(src/booking/booking.create.ts), когда запись ответила 409 «время уже ' +
+    'заняли», userId = null, без meta. Фронт его не шлёт: отказ — ответ на ' +
+    'HTTP-запрос записи; /stats считает только строки с userId = null',
+  booking_currency_chosen:
+    'серверное событие: пишет только BookingService.book после созданной ' +
+    'брони, когда валюту назначил явный выбор посетителя при поясе без места ' +
+    '(решение Р5), userId = null, meta — валюта. Выбор уходит полем currency ' +
+    'в POST /api/booking/book, а не событием: форма записи анонимная, ' +
+    'POST /api/event её не принял бы; /stats считает только строки с userId = null',
+  reminder_snoozed:
+    'серверное событие: пишет только бот после постановки отложенного ' +
+    'напоминания в очередь (src/telegram/telegram.snooze.ts), meta — булев ' +
+    'quietShift. Кнопка «Напомню через час» живёт под сообщением бота, у ' +
+    'сайта такого действия нет; ветка sanitizeMeta отбрасывает meta с ' +
+    'клиента, а /stats считает только строки с quietShift',
+  login_one_tap:
+    'серверное событие: пишет только GoogleOneTapService после проверки ' +
+    'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
+    'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
+    'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
+  login_oauth:
+    'серверное событие: пишет общий хвост OAuth-колбэков после входа через ' +
+    'VK ID или Яндекс ID (src/auth/oauth-login.report.ts), userId = null. ' +
+    'Исход (вход / новый аккаунт / привязка) знает только сервер; с фронта ' +
+    'событие открыло бы отчёт о входе для накрутки через /api/event',
+  messenger_launch:
+    'серверное событие: пишут ручки обмена подписи на сессию telegram/webapp ' +
+    'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
+    'userId = null. Фронт присылает только поле platform в теле обмена ' +
+    '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
+  messenger_launch_failed:
+    'серверное событие: пара к messenger_launch — пишут те же ручки обмена, ' +
+    'когда подпись не сменилась на сессию (src/auth/exchange-failure.report.ts), ' +
+    'userId = null. Причину отказа знает только сервер; клиент получил 401 и ' +
+    'слать о нём отдельное событие ему незачем',
+  asset_recovered:
+    'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
+    "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
+    'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
+  guide_mark_added:
+    'серверное событие: пишет GuideMarksService.trackAdded при создании ' +
+    'отметки «Про клиента» (PUT /api/therapy/guide-marks/:clientId); meta с ' +
+    'клиента отбрасывается (SERVER_META_EVENTS), /stats считает строки с kind',
+  ysq_data_deleted:
+    'серверное событие: пишет YsqController после транзакции DELETE ' +
+    '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
+    'стёрто, знает только сервер; кликать на фронте второй раз нечего',
+  home_screen_offer:
+    'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
+    'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
+    'HomeScreenOfferCard на «Сегодня» сайта, surface onboarding/today/' +
+    'settings; «Сегодня» сайта — today) и api.trackPublicEvent с лендинга ' +
+    '(AppInstallSection, surface site_landing) — та же причина, что у ' +
+    "crisis_card_shown. Единственный литерал trackEvent('home_screen_offer') " +
+    'жил в баннере кабинета MobileAppBanner, убранном 2026-10 (PR #771)',
+  push_subscribed:
+    'серверное событие: пишет только PushService.subscribe ' +
+    '(src/push/push.service.ts) после сохранённой подписки и пробного ' +
+    'уведомления, meta — delivered и service. Включение — сам HTTP-запрос ' +
+    'POST /api/push/subscription; ветка sanitizeMeta отбрасывает meta с ' +
+    'клиента, а /stats считает только строки с service',
+  push_unsubscribed:
+    'серверное событие: пишет только PushService.unsubscribe после ' +
+    'POST /api/push/unsubscribe, meta — reason (user|logout); с клиента meta ' +
+    'отбрасывается, /stats считает только строки с reason',
+  push_gone:
+    'серверное событие: пишет PushService, когда push-сервис ответил, что ' +
+    'подписки больше нет, и сервер её удалил (очередь уведомлений или ' +
+    'пробная отправка), meta — service. У фронта такого действия нет',
+  push_denied:
+    'шлётся через импортируемую константу PUSH_DENIED_EVENT ' +
+    '(shared/src/share/analytics.ts), когда человек отказал в разрешении ' +
+    'браузера на уведомления; та же причина, что у share_card',
+  links_page_click:
+    'константа LINKS_PAGE_CLICK_EVENT (shared/src/share/analytics.ts), шлёт ' +
+    'страница ссылок визитки через api.trackPublicEvent — ' +
+    'webapp/src/pages/links/trackLinksClick.ts',
+  login_method_offer:
+    'шлётся через импортируемую константу LOGIN_METHOD_OFFER_EVENT ' +
+    '(shared/src/analytics/accountLogin.ts) из SiteAccessCard.tsx; значение ' +
+    'сверяет трипваер констант входа в конце файла',
+};
+
+describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
+  const tracked = findTrackedEvents();
+
+  it('санити: парсер живой — найдено ≥5 уникальных событий', () => {
+    expect(tracked.size).toBeGreaterThanOrEqual(5);
+  });
+
+  it.each([...tracked])(
+    'событие "%s", отправляемое фронтом, есть в ANALYTICS_EVENTS',
+    (name) => {
+      expect(ANALYTICS_EVENTS).toContain(name);
+    },
+  );
+
+  it('каждое незасвеченное грепом событие бэка задокументировано в BACKEND_ONLY', () => {
+    const undocumented = ANALYTICS_EVENTS.filter(
+      (name) => !tracked.has(name) && !BACKEND_ONLY[name],
+    );
+    expect(undocumented).toEqual([]);
+  });
+
+  it('BACKEND_ONLY не разросся сверх известного (может только сокращаться)', () => {
+    // Потолок поднят с 11 до 13 (mode_entry_saved/mode_test_completed, 2026-07),
+    // затем до 15 (warm_words_open/mode_chain_followup, 2026-08), затем до 17
+    // (mode_doubt_opened/mode_doubt_switched, 2026-08), затем до 20
+    // (account_link_*, 2026-08) осознанно: те же кросс-фронтовые события
+    // через именованные константы — тот же легитимный паттерн, что и
+    // share_card/onboarding_step/mode_card_saved, не обход правила.
+    // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
+    // слать не может по замыслу (отказ входа фиксирует guard). 22 —
+    // auth_success, удалён 2026-11 (его место занял messenger_launch_failed).
+    // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
+    // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
+    // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
+    // /start, тот же приём (серверное событие, фронт не шлёт). 25 —
+    // profile_pattern_open (редизайн вкладки «Я», 2026-08): контракт-первым
+    // паттерн, тот же приём, что и mode_card_saved — UI ещё не подключён.
+    // 26 — login_ticket_step (путь входа по билету, 2026-08): четвёртое
+    // серверное событие подряд, к фронту не относится по устройству механизма.
+    // Билет подтверждают ВНЕ контейнера, который его просил (бот или внешний
+    // браузер), поэтому шаги воронки видит только сервер; отправить их с
+    // фронта было бы не «удобнее», а неверно — и открыло бы отчёт о здоровье
+    // входа для накрутки через POST /api/event. 27 — data_export (право на
+    // доступ по 152-ФЗ/GDPR): пятое серверное событие подряд, тот же приём —
+    // выгрузку запускает сам HTTP-запрос к эндпоинту, кликать на фронте
+    // нечего. 28 — entry_deleted (удаление своей записи в архиве «Мой
+    // путь»): не серверное, а константное — фронт шлёт его из общего хука
+    // useJourneyDelete через ENTRY_DELETED_EVENT, как share_card.
+    // 29 — home_screen_offer (2026-10): последний литерал trackEvent ушёл
+    // вместе с баннером кабинета, событие осталось на колбэке общего хука.
+    // 30 — notify_queue_tick (аудит 2026-10, ответ 429): итог прогона очереди
+    // уведомлений, пишет крон — у фронта такого действия нет по устройству.
+    // 31 — therapist_resigned (решение владельца 2026-10-22): отказ терапевта
+    // от роли — сам HTTP-запрос, событие пишет сервер после транзакции.
+    // 32 — home_tile (2026-10, главная простого клиента, #872): константное
+    // событие, как entry_deleted.
+    // 33 — tracker_skip (2026-10, простой клиент, этап 2): тоже константа.
+    // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
+    // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
+    // 36 — therapy_invite (2026-11, воронка приглашения клиента): серверное.
+    // 37 — crawler_visits (2026-11, GEO.md: заходы роботов нейросетей): серверное,
+    // заход робота — HTTP-запрос к сайту, у фронта такого действия нет.
+    // 38 — client_booking_created (2026-11, запись из приложения, #546):
+    // серверное — бронь создаёт HTTP-запрос, событие пишет сервис после неё.
+    // 39 — booking_slot_taken (2026-11, аудит 2026-10 r2-1#2): серверное —
+    // отказ «время уже заняли» есть только в ответе сервера на запись.
+    // 40 — reminder_snoozed (2026-11, аудит 2026-10 backend#16): серверное —
+    // кнопка под сообщением бота, у сайта такого действия нет.
+    // 41 — booking_currency_chosen (2026-11, решение владельца Р5): серверное —
+    // форма записи анонимная, выбор валюты приходит полем брони.
+    // 42–44 — push_subscribed/push_unsubscribed/push_gone (2026-11,
+    // уведомления в приложении): серверные — подписку сохраняет и удаляет
+    // HTTP-запрос, мёртвую подписку находит очередь. 45 — push_denied:
+    // константа PUSH_DENIED_EVENT, как entry_deleted.
+    // 46 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
+    // исход проверки токена есть только у сервера, тот же приём userId = null.
+    // 47 — messenger_launch (аудит 2026-10, платформа запуска): серверное —
+    // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
+    // messenger_launch_failed (2026-11, на место auth_success): серверное —
+    // отказ обмена подписи, причину знает только ручка обмена.
+    // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
+    // HTTP-запрос, число стёртых попыток видно только в транзакции.
+    // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из
+    // webapp/public, а не бандл; FRONTEND_DIRS его не видят по устройству.
+    // 50 — login_oauth (2026-11, вход через VK ID и Яндекс ID): серверное —
+    // вход завершает колбэк площадки, у фронта такого действия нет.
+    // 51 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
+    // 52 — login_method_offer: константа, как push_denied; значение сверяется ниже.
+    // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
+    // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
+    // 56 — done_next_step (DONE_NEXT_STEP_EVENT, как home_tile) и diary_jump (DIARY_JUMP_EVENT, вкладка «Записи»).
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(56);
+  });
+});
+
+// Тип удалённой записи (meta.type события entry_deleted): фронт держит union
+// EntryDeleteType, бэк — allow-list ENTRY_DELETE_TYPES. Значение, которого нет
+// на бэке, sanitizeMeta молча выбросит, и удаление пропадёт из /stats.
+// До 2026-11 тип события был тем же, что «удаляемо в Моём пути»
+// (JourneyDeletableType), и разбор фразы с дневником в него не помещались.
+describe('трипваер: EntryDeleteType фронта = ENTRY_DELETE_TYPES бэка (правило №4)', () => {
+  const FRONT = 'shared/src/share/analytics.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const m = src.match(/export type EntryDeleteType\s*=([^;]+);/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('union EntryDeleteType найден и непуст', () => {
+    expect(front.length).toBeGreaterThan(0);
+  });
+
+  it('списки совпадают в обе стороны', () => {
+    expect([...front].sort()).toEqual([...ENTRY_DELETE_TYPES].sort());
+  });
+});
+
+// Вид открытой строки общего поиска (meta.kind события search_result_open): значение,
+// которого нет на бэке, sanitizeMeta выбросит, и вид пропадёт из /stats.
+describe('трипваер: SEARCH_RESULT_KINDS фронта = бэка (правило №4)', () => {
+  const FRONT = 'shared/src/share/searchAnalytics.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const m = src.match(/export const SEARCH_RESULT_KINDS\s*=\s*\[([^\]]+)\]/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('список SEARCH_RESULT_KINDS найден и непуст', () => {
+    expect(front.length).toBeGreaterThan(0);
+  });
+
+  it('списки совпадают в обе стороны', () => {
+    expect([...front].sort()).toEqual([...SEARCH_RESULT_KINDS].sort());
+  });
+});
+
+// Источник назначенного задания (meta.source события task_assign_source): та же пара списков.
+describe('трипваер: TASK_ASSIGN_SOURCES фронта = бэка (правило №4)', () => {
+  const src = readFileSync(
+    join(ROOT, 'shared/src/share/taskAssignAnalytics.ts'),
+    'utf8',
+  );
+  const m = src.match(/export const TASK_ASSIGN_SOURCES\s*=\s*\[([^\]]+)\]/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('списки непусты и совпадают в обе стороны', () => {
+    expect(front.length).toBeGreaterThan(0);
+    expect([...front].sort()).toEqual([...TASK_ASSIGN_SOURCES].sort());
+  });
+});
+
+// Константы событий входа грепом по литералу не видны (BACKEND_ONLY), поэтому
+// их значения сверяются с allow-list напрямую: опечатка в константе падает здесь.
+describe('трипваер: константы событий входа фронта ⊆ ANALYTICS_EVENTS (правило №8)', () => {
+  const FRONT = 'shared/src/analytics/accountLogin.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const values = [
+    ...src.matchAll(/export const [A-Z0-9_]+_EVENT\s*=\s*['"]([^'"]+)['"]/g),
+  ].map((x) => x[1]);
+
+  it('константы найдены, среди них login_method_offer', () => {
+    expect(values).toContain('login_method_offer');
+  });
+
+  it.each(values)('"%s" есть в ANALYTICS_EVENTS', (name) => {
+    expect(ANALYTICS_EVENTS).toContain(name);
+  });
+});

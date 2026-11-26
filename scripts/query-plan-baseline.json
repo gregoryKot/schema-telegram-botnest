@@ -1,0 +1,57 @@
+{
+  "scenarios": {
+    "bearer-guard": {
+      "blocks": 10,
+      "msCeiling": 500
+    },
+    "client-booking": {
+      "blocks": 12,
+      "msCeiling": 500
+    },
+    "former-therapist": {
+      "blocks": 16,
+      "msCeiling": 500
+    },
+    "history-30d": {
+      "blocks": 38,
+      "msCeiling": 500
+    },
+    "history-365d": {
+      "blocks": 392,
+      "msCeiling": 500
+    },
+    "notify-queue-tick": {
+      "blocks": 118,
+      "msCeiling": 1500
+    },
+    "proactive-budget": {
+      "blocks": 224,
+      "msCeiling": 500
+    },
+    "stats-report": {
+      "blocks": 78249,
+      "msCeiling": 10000
+    },
+    "therapist-client-data": {
+      "blocks": 41,
+      "msCeiling": 500
+    },
+    "therapist-clients": {
+      "blocks": 561,
+      "msCeiling": 1500
+    },
+    "therapist-clients-long-streaks": {
+      "blocks": 1560,
+      "msCeiling": 1500
+    },
+    "therapist-notes": {
+      "blocks": 174,
+      "msCeiling": 500
+    },
+    "therapist-path": {
+      "blocks": 27,
+      "msCeiling": 500
+    }
+  },
+  "seqScanAllowed": {}
+}

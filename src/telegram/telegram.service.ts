@@ -1,0 +1,451 @@
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Inject,
+  Optional,
+  Logger,
+} from '@nestjs/common';
+import { Telegraf, Context, Markup } from 'telegraf';
+import { failCallback } from './callback-failure';
+import { openDiaryButton } from '../notification/notification.buttons';
+import { TELEGRAF_BOT, DONATE_URL } from './telegram.constants';
+import { BotService } from '../bot/bot.service';
+import { BotAnalyticsService } from '../bot/bot.analytics.service';
+import { AccountService } from '../bot/account.service';
+import { PairsService } from '../bot/pairs.service';
+import { PracticesService } from '../bot/practices.service';
+import { NotificationService } from '../notification/notification.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { parseSourceSlug } from './start-source';
+import { readStartPayload } from './start-payload';
+import { sendStartWelcome } from './telegram.start-welcome';
+import { ADDRESS_PROMPT, WELCOME_TEXT } from './telegram.consent-text';
+import {
+  handlePairStart,
+  PAIR_PREFIX,
+  type PairStartDeps,
+} from './telegram.pair-start';
+import {
+  buildAddressKeyboard,
+  buildWelcomeKeyboard,
+} from './telegram.keyboards';
+// Ре-экспорт: telegram.notify-actions.service импортирует клавиатуру отсюда.
+export { buildWelcomeKeyboard };
+import { isLoginPayload, loginClosedText } from './login-payload';
+import { isLinkPayload } from './link-payload';
+import { TelegramLinkService } from './telegram.link.service';
+import { snoozeReminder, snoozeFailText } from './telegram.snooze';
+import { setupBotMenu } from './telegram.menu-setup';
+import { adminChat, sendAdminDm } from './admin-notify';
+import { BotLauncher } from './telegram.launch';
+import { t, AddressForm } from '../notification/address-form';
+import {
+  CABINET_KEYBOARD,
+  acceptRetryText,
+  resolveForm,
+} from './telegram.reply-helpers';
+import { resumePendingPair } from './telegram.pair-resume';
+
+export { WELCOME_TEXT } from './telegram.consent-text';
+
+// Запасные ответы команд на сбой: без кнопки и без формы обращения из БД.
+const DONATE_FALLBACK = `💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`;
+const THERAPIST_FALLBACK =
+  '🩺 Заявка на роль психолога подаётся в приложении «Всё по схеме»: Настройки → «Стать специалистом» → «Я психолог — подать заявку».';
+
+@Injectable()
+export class TelegramService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(TelegramService.name);
+  private readonly shutdown = new AbortController(); // гасит ретраи меню
+
+  constructor(
+    @Inject(TELEGRAF_BOT)
+    @Optional()
+    private readonly bot: Telegraf<Context> | null,
+    private readonly botService: BotService,
+    private readonly analyticsService: BotAnalyticsService,
+    private readonly accountService: AccountService,
+    private readonly pairsService: PairsService,
+    private readonly practicesService: PracticesService,
+    private readonly notificationService: NotificationService,
+    private readonly analyticsEvents: AnalyticsService,
+    private readonly linkService: TelegramLinkService,
+  ) {}
+
+  private launcher: BotLauncher | undefined;
+  // Pending pair codes for users who need to accept consent first (in-memory, 15 min TTL)
+  private pairDeps(): PairStartDeps {
+    return {
+      botService: this.botService,
+      pairsService: this.pairsService,
+      accountService: this.accountService,
+      pending: this.pendingPairCodes,
+      now: () => Date.now(),
+    };
+  }
+
+  private snoozeDeps() {
+    const { accountService, botService, notificationService } = this;
+    const analytics = this.analyticsEvents;
+    return { accountService, botService, notificationService, analytics };
+  }
+
+  /** Форма обращения по сырому telegramId — привязка общего помощника. */
+  private form(rawId: number | undefined) {
+    return resolveForm(this.accountService, this.botService, rawId);
+  }
+
+  private readonly pendingPairCodes = new Map<
+    number,
+    { code: string; expiresAt: number }
+  >();
+
+  onModuleInit() {
+    if (!this.bot) {
+      this.logger.warn('BOT_TOKEN not provided — bot will not start.');
+      return;
+    }
+
+    // Sweep expired pair-code entries every 30 min so the in-memory map
+    // doesn't accumulate stale entries from users who never completed consent.
+    setInterval(() => {
+      const now = Date.now();
+      for (const [uid, entry] of this.pendingPairCodes) {
+        if (entry.expiresAt < now) this.pendingPairCodes.delete(uid);
+      }
+    }, 30 * 60_000).unref();
+
+    this.launcher = new BotLauncher(this.bot, this.logger);
+
+    const redirectUsername = process.env.BOT_REDIRECT_USERNAME;
+    if (redirectUsername) {
+      const redirectText = `Бот переехал! Открывай @${redirectUsername}`;
+      this.bot.on('message', async (ctx) => {
+        await ctx.reply(redirectText).catch(() => null);
+      });
+      this.bot.on('callback_query', async (ctx) => {
+        await ctx
+          .answerCbQuery(redirectText, { show_alert: true })
+          .catch(() => null);
+      });
+      this.launcher.start();
+      this.logger.log(`Bot running in redirect mode → @${redirectUsername}`);
+      return;
+    }
+
+    this.bot.command('start', async (ctx) => {
+      try {
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        // Канонический номер, а не сырой telegramId: после слияния аккаунтов
+        // данные человека лежат под веб-номером, и registerUser по сырому
+        // номеру завёл бы рядом второй, пустой аккаунт — раздвоение
+        // возвращалось само на следующем /start.
+        const userId = await this.accountService.canonicalUserId(rawId);
+        const existingSettings = await this.botService.getUserSettings(userId);
+        const isReturning = !!existingSettings;
+        await this.accountService.registerUser(userId, ctx.from?.first_name);
+        const payload = readStartPayload(ctx);
+        // Атрибуция посева (src_<slug>) — ровно один раз, при первом
+        // касании нового юзера, ДО гейта согласия (чтобы видеть и конверсию
+        // «переход → принял соглашение»). Возвращающийся по той же ссылке
+        // повторно не считается — isReturning уже вычислен выше.
+        const sourceSlug = parseSourceSlug(payload);
+        if (sourceSlug && !isReturning) {
+          void this.analyticsEvents.track(userId, 'signup_source', {
+            src: sourceSlug,
+          });
+        }
+        // Прежняя ссылка «Войти через Telegram» (вход на сайт убран 2026-11):
+        // говорим, куда идти, и продолжаем обычный /start с кнопкой приложения.
+        if (isLoginPayload(payload)) {
+          await ctx.reply(loginClosedText(await this.form(rawId)));
+        }
+        // Объединение идёт ДО гейта согласия: человек ждёт
+        // подтверждения на другом экране, и упереться здесь в соглашение
+        // значит оставить тот экран висеть.
+        if (isLinkPayload(payload)) {
+          await this.linkService.handleStart(ctx, payload!, rawId);
+          return;
+        }
+        if (payload?.startsWith(PAIR_PREFIX)) {
+          await handlePairStart(this.pairDeps(), ctx, payload, rawId, userId);
+          return;
+        }
+        await sendStartWelcome(
+          {
+            botService: this.botService,
+            analyticsService: this.analyticsService,
+          },
+          ctx,
+          userId,
+          existingSettings,
+        );
+      } catch (err) {
+        this.logger.error('start command failed', err);
+        await ctx
+          .reply(
+            'Что-то пошло не так. Кнопка ниже откроет «Всё по схеме» ещё раз.',
+            CABINET_KEYBOARD,
+          )
+          .catch(() => null);
+      }
+    });
+
+    this.bot.command('ping', async (ctx) => {
+      try {
+        await ctx.reply('OK');
+      } catch (err) {
+        this.logger.error('ping command failed', err);
+        // Весь ответ — этот reply: повтор доходит чаще, чем молчание.
+        await ctx.reply('OK').catch(() => null);
+      }
+    });
+
+    // Subscription is hidden until Robokassa's recurring service is live, so this
+    // command currently offers only a one-off donation. Re-add the subscribe
+    // button (SUBSCRIBE_URL) when subscriptions go live.
+    this.bot.command('subscribe', async (ctx) => {
+      try {
+        await ctx.reply(
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+            'Приложение бесплатное. Если оно полезно — можно поддержать проект разовым донатом.',
+          {
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [[{ text: 'Разовый донат', url: DONATE_URL }]],
+            },
+          },
+        );
+      } catch (err) {
+        this.logger.error('subscribe command failed', err);
+        await ctx
+          .reply(DONATE_FALLBACK, { parse_mode: 'HTML' })
+          .catch(() => null);
+      }
+    });
+
+    this.bot.command('donate', async (ctx) => {
+      try {
+        const form = await this.form(ctx.from?.id);
+        const text =
+          '💛 <b>Поддержать SchemeHappens</b>\n\n' +
+          t(
+            form,
+            'Приложение бесплатное и без рекламы. Если оно тебе помогает — поддержи проект любой суммой. Спасибо 🙏',
+            'Приложение бесплатное и без рекламы. Если оно вам помогает — поддержите проект любой суммой. Спасибо 🙏',
+          );
+        await ctx.reply(text, {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '💛 Поддержать проект', url: DONATE_URL }],
+            ],
+          },
+        });
+      } catch (err) {
+        // If the inline button is rejected (e.g. an invalid URL), still give
+        // a working plain-text link instead of failing silently.
+        this.logger.error('donate command failed', err);
+        await ctx
+          .reply(DONATE_FALLBACK, { parse_mode: 'HTML' })
+          .catch(() => null);
+      }
+    });
+
+    this.bot.action('cancel', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        await ctx.deleteMessage();
+      } catch (err) {
+        this.logger.error('cancel action failed', err);
+      }
+    });
+
+    this.bot.action('back:welcome', async (ctx) => {
+      try {
+        await ctx.answerCbQuery();
+        try {
+          await ctx.editMessageText(WELCOME_TEXT, buildWelcomeKeyboard());
+        } catch {
+          await ctx.reply(WELCOME_TEXT, buildWelcomeKeyboard());
+        }
+      } catch (err) {
+        this.logger.error('back:welcome action failed', err);
+      }
+    });
+
+    // Единый экран согласия: кнопка = согласие + 18+ + форма обращения
+    // (этап 4.3 — на один шаг меньше до полезного контента).
+    this.bot.action(/^accept:(ty|vy)$/, async (ctx) => {
+      try {
+        // Без текста: тост уходит до записи согласия; итог — приветствие ниже.
+        await ctx.answerCbQuery();
+        const rawId = ctx.from?.id;
+        if (!rawId) return;
+        const form = (ctx.match as RegExpMatchArray)[1] as AddressForm;
+        const userId = await this.accountService.canonicalUserId(rawId);
+        await this.botService.acceptDisclaimer(userId);
+        await this.botService.updateUserSettings(userId, {
+          addressForm: form,
+        });
+        if (await resumePendingPair(this.pairDeps(), ctx, rawId)) return;
+        const ack = t(
+          form,
+          'Договорились, на «ты». Поменять можно в любой момент в /settings.',
+          'Договорились, на «вы». Поменять можно в любой момент в /settings.',
+        );
+        const welcome = t(
+          form,
+          WELCOME_TEXT,
+          WELCOME_TEXT.replace('Привет!', 'Здравствуйте!'),
+        );
+        try {
+          await ctx.editMessageText(
+            `${ack}\n\n${welcome}`,
+            buildWelcomeKeyboard(),
+          );
+        } catch {
+          await ctx.reply(`${ack}\n\n${welcome}`, buildWelcomeKeyboard());
+        }
+      } catch (err) {
+        this.logger.error('accept action failed', err);
+        // Форма — из callback_data (ctx.match вне try); новым сообщением: кнопки целы.
+        const form = (ctx.match as RegExpMatchArray | undefined)?.[1] as
+          AddressForm | undefined;
+        await ctx.reply(acceptRetryText(form)).catch(() => null);
+      }
+    });
+
+    // Легаси-кнопка старых consent-сообщений, уже отправленных в чаты до
+    // объединения экранов: принимаем согласие и спрашиваем форму отдельно.
+    this.bot.action('accept_consent', async (ctx) => {
+      try {
+        await ctx.answerCbQuery(); // без текста: итог — выбор обращения ниже
+        const rawId = ctx.from?.id;
+        if (rawId) {
+          const userId = await this.accountService.canonicalUserId(rawId);
+          await this.botService.acceptDisclaimer(userId);
+          if (await resumePendingPair(this.pairDeps(), ctx, rawId)) return;
+        }
+        // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
+        try {
+          await ctx.editMessageText(ADDRESS_PROMPT, buildAddressKeyboard());
+        } catch {
+          await ctx.reply(ADDRESS_PROMPT, buildAddressKeyboard());
+        }
+      } catch (err) {
+        this.logger.error('accept_consent action failed', err);
+        // Форма ещё не выбрана — «ты», как весь флоу до выбора; кнопка остаётся.
+        await ctx.reply(acceptRetryText()).catch(() => null);
+      }
+    });
+
+    this.bot.action('snooze_reminder', async (ctx) => {
+      try {
+        await ctx.answerCbQuery(); // без текста: итог — время в сообщении
+        const rawId = ctx.from?.id;
+        if (rawId) await snoozeReminder(this.snoozeDeps(), ctx, rawId);
+        else await ctx.editMessageReplyMarkup(undefined).catch(() => null);
+      } catch (err) {
+        this.logger.error('snooze_reminder action failed', err);
+        await ctx.reply(snoozeFailText(err)).catch(() => null);
+      }
+    });
+
+    // Кнопки «Сделано / Не получилось» (plan_done:<id>, plan_skip:<id>) из старых
+    // сообщений: ответ о практике через Telegram больше не принимаем — отметка
+    // в приложении (РКН, #1135).
+    this.bot.action(/^plan_(done|skip):(\d+)$/, async (ctx) => {
+      try {
+        await ctx.answerCbQuery('Отметить можно в приложении');
+        await ctx
+          .editMessageReplyMarkup(
+            Markup.inlineKeyboard([[openDiaryButton]]).reply_markup,
+          )
+          .catch(() => null);
+      } catch (err) {
+        await failCallback(this.logger, ctx, 'plan checkin', err);
+      }
+    });
+
+    this.bot.command('therapist', async (ctx) => {
+      // DEPRECATED: was `/therapist <THERAPIST_CODE>` — bypassed the new
+      // admin-approval flow. Redirect users to the app's settings form.
+      try {
+        const form = await this.form(ctx.from?.id);
+        await ctx.reply(
+          t(
+            form,
+            '🩺 Заявка на роль психолога подаётся в настройках приложения:\n' +
+              'Открой приложение в Telegram → Настройки → «Стать специалистом» → «Я психолог — подать заявку» и заполни форму.\n' +
+              'Администратор проверит заявку — решение придёт в этот чат.',
+            '🩺 Заявка на роль психолога подаётся в настройках приложения:\n' +
+              'Откройте приложение в Telegram → Настройки → «Стать специалистом» → «Я психолог — подать заявку» и заполните форму.\n' +
+              'Администратор проверит заявку — решение придёт в этот чат.',
+          ),
+        );
+      } catch (err) {
+        this.logger.error('therapist command failed', err);
+        await ctx.reply(THERAPIST_FALLBACK).catch(() => null);
+      }
+    });
+
+    this.bot.command('about', async (ctx) => {
+      const text = [
+        '🧠 <b>Всё по схеме</b>',
+        '',
+        'Инструмент самопознания на основе схема-терапии: трекер потребностей, дневники схем и режимов, тесты, практики и пространство для работы с терапевтом.',
+        '',
+        '<b>Об авторе</b>',
+        'Канал о схема-терапии — @SchemeHappens',
+        'Записаться на сессию — @kotlarewski',
+        '',
+        'Приложение бесплатное 💛 Поддержать проект можно донатом ниже.',
+      ].join('\n');
+      try {
+        await ctx.reply(text, {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '💛 Поддержать проект', url: DONATE_URL }],
+            ],
+          },
+        });
+      } catch (err) {
+        // If the donate button URL is rejected, still show the info (with a
+        // plain-text donate link) rather than a bare error.
+        this.logger.error('about command failed', err);
+        await ctx
+          .reply(`${text}\n\n💛 ${DONATE_URL}`, { parse_mode: 'HTML' })
+          .catch(() => null);
+      }
+    });
+
+    setupBotMenu(this.bot, this.logger, this.shutdown.signal);
+
+    this.launcher.start();
+    // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
+  }
+
+  /** Канал к владельцу настроен (бот и ADMIN_ID); без него notifyAdmin — false без попытки. */
+  canNotifyAdmin(): boolean {
+    return adminChat(this.bot) !== null;
+  }
+
+  /** Сообщение администратору; true — доставлено (admin-notify.ts). */
+  notifyAdmin(text: string): Promise<boolean> {
+    return sendAdminDm(this.bot, text, this.logger);
+  }
+
+  onModuleDestroy() {
+    this.shutdown.abort();
+    this.launcher?.stop();
+    try {
+      this.bot?.stop();
+    } catch {
+      /* expected on graceful shutdown */
+    }
+  }
+}

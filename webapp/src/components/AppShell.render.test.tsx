@@ -1,0 +1,193 @@
+// @vitest-environment jsdom
+// AppShell — рендер по роуту, состояния загрузки/ошибки (CLAUDE.md: «ошибка
+// API видна пользователю, лист не закрывается молча» + «скелетоны по форме
+// контента»). Дочерние секции/оверлеи замоканы кнопочницами
+// (AppShell.test-helpers.tsx) — здесь проверяем ТОЛЬКО то, что решает сам
+// AppShell: какой экран показан по URL, что видно, пока грузятся данные, и
+// что видно, если загрузка упала.
+//
+// Загрузка — силуэт кабинета (сайдбар, топбар, раздел по форме), а не спиннер
+// на пустом экране (QA 2026-11, B-З8; правило «скелетоны по форме контента»).
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { renderAppShell } from './AppShell.test-helpers';
+import { api } from '../api';
+
+const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+beforeEach(() => {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  // тестовый полифилл jsdom
+  global.ResizeObserver = ResizeObserverStub;
+  localStorage.clear();
+  sessionStorage.clear();
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  cleanup();
+  document.documentElement.removeAttribute('data-theme');
+  document.documentElement.style.colorScheme = '';
+});
+
+// Инцидент 2026-11-05: html оставался тёмным (App.tsx ставит data-theme после
+// модульного вызова, тумблер лендинга — при SPA-переходе), и в кабинете текст
+// без явного цвета был светлым на светлой бумаге.
+describe('AppShell — светлая тема при тёмном html', () => {
+  it('html с data-theme="dark" до рендера → после монтирования светлый', () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.colorScheme = 'dark';
+    renderAppShell('/today');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+  });
+});
+
+describe('AppShell — состояние загрузки', () => {
+  it('пока начальные данные не пришли — силуэт: сайдбар с логотипом и плитки «Сегодня», спиннера нет', () => {
+    const { container } = renderAppShell('/today');
+    // Проверяем СРАЗУ после рендера, до того как промисы резолвнутся —
+    // именно в этот момент компонент обязан показать состояние загрузки.
+    expect(screen.getByTestId('app-shell-skeleton')).toBeTruthy();
+    expect(container.querySelector('.sidebar .sb-brand')).toBeTruthy();
+    expect(screen.getByTestId('today-skeleton')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+  });
+
+  it('другой раздел — общий силуэт экрана, не плитки «Сегодня»', () => {
+    const { container } = renderAppShell('/diary');
+    expect(screen.getByTestId('app-shell-skeleton')).toBeTruthy();
+    expect(screen.queryByTestId('today-skeleton')).toBeNull();
+    expect(container.querySelector('.canvas .skel')).toBeTruthy();
+  });
+
+  it('после загрузки спиннер уходит и появляется секция «Сегодня»', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+  });
+});
+
+describe('AppShell — ошибка загрузки видна пользователю (правило: не молчим)', () => {
+  it('needs() падает → показывает текст ошибки и кнопку «Повторить», не пустой экран', async () => {
+    mockApi.needs.mockRejectedValueOnce(new Error('network down'));
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByText('Не удалось загрузить')).toBeTruthy());
+    expect(screen.getByText('Повторить')).toBeTruthy();
+    // На экране ошибки секция НЕ рендерится — иначе пользователь увидит
+    // пустой/сломанный контент вместо явного сообщения об ошибке.
+    expect(screen.queryByTestId('today-section')).toBeNull();
+  });
+
+  it('«Повторить» на экране ошибки перезагружает страницу', async () => {
+    mockApi.needs.mockRejectedValueOnce(new Error('network down'));
+    const reload = vi.fn();
+    vi.stubGlobal('location', { ...window.location, reload });
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByText('Повторить')).toBeTruthy());
+    fireEvent.click(screen.getByText('Повторить'));
+    expect(reload).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('AppShell — роутинг: URL решает, какая секция показана', () => {
+  it.each([
+    ['/today', 'today-section'],
+    ['/diary', 'diary-section'],
+    ['/more', 'more-section'],
+    ['/schemas', 'schemas-section'],
+    ['/profile', 'profile-section'],
+    ['/practice', 'practice-section'],
+  ])('путь %s → рендерит testid %s', async (path, testid) => {
+    renderAppShell(path);
+    await waitFor(() => expect(screen.getByTestId(testid)).toBeTruthy());
+  });
+
+  it('легаси-путь /help редиректит на секцию «Практика» (sectionFromPath)', async () => {
+    renderAppShell('/help');
+    await waitFor(() => expect(screen.getByTestId('practice-section')).toBeTruthy());
+  });
+
+  it('неизвестный путь по умолчанию показывает «Сегодня»', async () => {
+    renderAppShell('/some-unknown-path');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+  });
+
+  it('переход по нижней мобильной навигации меняет секцию', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    const diaryLinks = screen.getAllByRole('link', { name: /Записи/ });
+    fireEvent.click(diaryLinks[0]);
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+  });
+
+  it('нижняя панель телефона — три вкладки; меню слева на компьютере — шесть пунктов (#925)', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    const nav = document.querySelector('.mobile-nav') as HTMLElement;
+    expect(Array.from(nav.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Ещё']);
+    expect(Array.from(nav.querySelectorAll('a')).map(a => a.getAttribute('href'))).toEqual(['/today', '/diary', '/more']);
+    const side = document.querySelector('.sb-nav') as HTMLElement;
+    expect(Array.from(side.querySelectorAll('a')).map(a => a.textContent)).toEqual(['Сегодня', 'Записи', 'Практики', 'Мои паттерны', 'Профиль', 'Ещё']);
+  });
+});
+
+describe('AppShell — офлайн-индикатор (реальное browser-событие, не константа)', () => {
+  // b04 (2026-11): одна плашка «Нет сети» на телефоне и компьютере вместо слова «офлайн» в шапке.
+  it('событие offline показывает плашку «Нет сети», online её убирает', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.queryByText(/^Нет сети\./)).toBeNull();
+
+    fireEvent(window, new Event('offline'));
+    await waitFor(() => expect(screen.getByText(/^Нет сети\./)).toBeTruthy());
+    expect(screen.queryByText('офлайн')).toBeNull();
+
+    fireEvent(window, new Event('online'));
+    await waitFor(() => expect(screen.queryByText(/^Нет сети\./)).toBeNull());
+  });
+});
+
+describe('AppShell — виджет «Сегодня» в сайдбаре (реальные данные, не заглушка)', () => {
+  // Правило «никаких хардкод-заглушек»: индекс дня либо посчитан из РЕАЛЬНЫХ
+  // ratings, либо (на чистом аккаунте) показывает вход в трекер, а не
+  // выдуманное число. Подпись — «трекер»: открывается он (QA 2026-11, A-З9). Карточка — вне «Сегодня»:
+  // на главной тот же трекер листом (Sidebar.test.tsx), поэтому раздел здесь — «Записи».
+  it('без оценок — CTA «Заполнить трекер», а не число', async () => {
+    mockApi.needs.mockResolvedValueOnce([{ id: 'safety', emoji: '🛡️', title: 'Безопасность', chartLabel: 'Без.' }]);
+    mockApi.ratings.mockResolvedValueOnce({}).mockResolvedValueOnce({});
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByText('Заполнить трекер →')).toBeTruthy());
+  });
+
+  it('когда все потребности оценены — считает индекс из реальных ratings', async () => {
+    mockApi.needs.mockResolvedValueOnce([
+      { id: 'safety', emoji: '🛡️', title: 'Безопасность', chartLabel: 'Без.' },
+      { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Авт.' },
+    ]);
+    mockApi.ratings.mockResolvedValueOnce({ safety: 8, autonomy: 6 }).mockResolvedValueOnce({});
+    renderAppShell('/diary');
+    // (8+6)/2 = 7,0 (fmtIndex: запятая, как на плитке) — ожидаем реально посчитанное значение, не хардкод.
+    await waitFor(() => expect(screen.getByText('7,0')).toBeTruthy());
+  });
+});
+
+describe('AppShell — плавающего «+» нет', () => {
+  it('ни на «Записях», ни на «Сегодня», ни на «Ещё» (простой клиент, этап 3)', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    cleanup();
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+    cleanup();
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    expect(screen.queryByLabelText('Быстрое действие')).toBeNull();
+  });
+});

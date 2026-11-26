@@ -1,0 +1,139 @@
+// Экран «Карточка недели» — отрисовка и расчёты в shared/src/share
+// (единственная копия, правило №3). Здесь только вёрстка ExScreen и share-флоу.
+import { useEffect, useRef, useState } from 'react';
+import type { Need, DayHistory } from '../types';
+import { ExScreen } from './exercises/ExScreen';
+import { TherapyLine } from './therapy/TherapyLine';
+import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
+import { FallbackTextSheet } from './FallbackTextSheet';
+import { useHistorySheet } from '../hooks/useHistorySheet';
+import { api, reportClientError } from '../api';
+import {
+  drawWeeklyCard,
+  buildWeeklyShareText,
+} from '../../../shared/src/share/cards/weeklyCard';
+import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import { CheckIcon } from '../../../shared/src/share/ShareIcon';
+import { useCardFontsReady } from '../../../shared/src/share/useCardFonts';
+import {
+  SHARE_CARD_EVENT,
+  SHARE_RESULT_EVENT,
+} from '../../../shared/src/share/analytics';
+import { useCopyToClipboard } from '../../../shared/src/utils/useCopyToClipboard';
+import { botShortUrl } from '../utils/botConfig';
+import { useTr } from '../utils/addressForm';
+import '../styles/sheet-diary.css';
+
+interface Props {
+  needs: Need[];
+  history: DayHistory[];
+  onClose: () => void;
+}
+
+export function WeeklyCardSheet({ needs, history, onClose }: Props) {
+  const goBack = useHistorySheet(onClose);
+  const tr = useTr();
+  const bridge = useTherapyBridgeTexts();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [streak, setStreak] = useState(0);
+  const [sharing, setSharing] = useState(false);
+  const { copied, copy } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'weekly card clipboard write failed', section: 'weeklyCard' }),
+  });
+  const [fallbackText, setFallbackText] = useState<string | null>(null);
+  const { copied: fallbackCopied, copy: copyFallback } = useCopyToClipboard({
+    onError: () => reportClientError({ message: 'weekly card fallback clipboard write failed', section: 'weeklyCard' }),
+  });
+
+  useEffect(() => {
+    api
+      .getStreak()
+      .then((s) => setStreak(s.currentStreak))
+      .catch(() => reportClientError({ message: 'weekly card streak load failed', section: 'weeklyCard' }));
+  }, []);
+
+  const fontsReady = useCardFontsReady(); // шрифты карточки пришли — перерисовать
+
+  useEffect(() => {
+    if (!canvasRef.current || history.length === 0) return;
+    try {
+      drawWeeklyCard(canvasRef.current, needs, history, streak);
+    } catch { reportClientError({ message: 'weekly card draw failed', section: 'weeklyCard' }); } // не роняем экран
+  }, [needs, history, streak, fontsReady]);
+
+  async function handleShare() {
+    if (!canvasRef.current) return;
+    setSharing(true);
+    try {
+      await shareCanvasImage(
+        canvasRef.current,
+        buildWeeklyShareText(needs, history, streak, false, botShortUrl),
+        'needs-week.png',
+        { downloadFallback: true },
+      );
+      api.trackEvent(SHARE_CARD_EVENT, { kind: 'weekly' });
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: 'weekly', ok: true });
+    } catch {
+      api.trackEvent(SHARE_RESULT_EVENT, { kind: 'weekly', ok: false });
+      const text = buildWeeklyShareText(needs, history, streak, true, botShortUrl);
+      await copy(text);
+      setFallbackText(text);
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  return (
+    <ExScreen
+      onBack={goBack}
+      backLabel="Назад к истории"
+      eyebrow="Итоги недели"
+      title={
+        <>
+          Карточка
+          <br />
+          <span className="it">для поделиться</span>
+        </>
+      }
+      lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
+    >
+      {history.length === 0 ? (
+        <p className="ds-empty">Нет данных за неделю</p>
+      ) : (
+        <>
+          <div className="sd-canvas">
+            <canvas ref={canvasRef} className="sd-canvas-el" />
+          </div>
+
+          <div className="sd-foot sd-foot--card">
+            <span className="sd-spacer" />
+            <button
+              onClick={handleShare}
+              disabled={sharing}
+              className={'ds-btn' + (copied ? ' sd-btn-ok' : '')}
+            >
+              {copied && <CheckIcon size={17} />}
+              {copied
+                ? 'Скопировано'
+                : sharing
+                  ? 'Подготовка…'
+                  : 'Поделиться'}
+            </button>
+          </div>
+
+          {/* Экран не ходит через ShareCardSheet (свой share-флоу с фолбэком), поэтому строка моста стоит здесь. */}
+          <TherapyLine place="weekly_card" text={bridge.lineTracker} />
+        </>
+      )}
+
+      {fallbackText && (
+        <FallbackTextSheet
+          text={fallbackText}
+          copied={fallbackCopied}
+          onCopy={() => void copyFallback(fallbackText)}
+          onClose={() => setFallbackText(null)}
+        />
+      )}
+    </ExScreen>
+  );
+}

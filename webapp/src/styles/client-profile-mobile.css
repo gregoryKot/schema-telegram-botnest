@@ -1,0 +1,97 @@
+/* Клиент · Профиль · телефон (≤767px): раскладка и плотность как у «Я» в мини-аппе.
+   Десктоп (≥768px) этим файлом не затрагивается. Шапка — та же, что на ноутбуке
+   (client-profile.css, #906): надпись, заголовок, подпись и те же действия. */
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+
+  /* Порядок: шапка → блоки из «Настроить экран» (по умолчанию: портрет, тёплые слова, «Мой путь», стрик,
+     активность, достижения, паттерны — как в мини-аппе) → остальное. Место блока — --blk-o на обёртке;
+     у витрины и «ритма дней» — место их первого видимого блока. */
+  .cpf-page > * { order: 10; }
+  .cpf-block, .cpf-skeleton, .cpf-error { order: 0; }
+  .cpf-blk { --blk-o: 5; order: var(--blk-o); }
+  .cpf-duo { display: contents; }
+
+  .cpf-avatar { width: 56px; height: 56px; font-size: 20px; }
+  .cpf-head { gap: 12px 14px; }
+  .cpf-head .pp-art--hero { width: 72px; height: 60px; }
+
+  /* Пустой профиль: сцена над текстом, кнопка во всю ширину. */
+  .cpf-start { grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+  .cpf-start-art { order: -1; width: min(260px, 80%); justify-self: center; }
+  .cpf-start-cta { align-self: stretch; }
+
+  /* Счётчики дублируют серию; без серии и теплокарты блок «ритма» не нужен. */
+  .cpf-progress, .cpf-rhythm--bare { display: none; }
+
+  /* Стрик: без заголовка, «дней подряд» в одну строку. */
+  .cpf-streak-title { display: none; }
+  .cpf-streak-top { flex-wrap: nowrap; }
+  .cpf-streak-cap { white-space: normal; font-size: 15px; }
+
+  /* Активность: подписи дней слева, без «последние N недель». */
+  .cpf-heat-range { display: none; }
+  .cpf-heat-wrap { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: var(--space-4); row-gap: var(--space-6); }
+  .cpf-heat-months { grid-column: 2; grid-row: 1; }
+  .cpf-heat-days { display: grid; grid-column: 1; grid-row: 2; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+  .cpf-heat-days span { align-self: center; font-size: 11px; line-height: 1; color: var(--text-faint); text-align: right; }
+  .cpf-heat-grid { grid-column: 2; grid-row: 2; }
+  .cpf-heat-months, .cpf-heat-grid { gap: 3px; }
+  .cpf-heat { border-radius: 3px; }
+
+  /* Достижения: полученные значками, остальные — строкой «ещё N». */
+  .cpf-ach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+  .cpf-ach-grid > .cpf-ach:not(.is-earned) { display: none; }
+  .cpf-skel-ach > .cpf-ach:not(.is-earned):nth-child(-n+4) { display: flex; }
+  .cpf-ach-more { display: flex; align-items: center; min-height: 54px; font-size: 13px; font-weight: 600; color: var(--text-sub); }
+  .cpf-badge { width: 48px; height: 48px; border-radius: 12px; }
+  .cpf-badge .pp-art { width: 38px; height: 22px; }
+
+  .cpf-former { padding: 16px; border-radius: var(--r-16); }
+  .cpf-paper-dlg { padding: 22px 18px; }
+  .cpf-bar-name { width: 172px; white-space: nowrap; }
+}
+
+/* Витрина на узком телефоне: каждая плитка — строка во всю ширину (текст слева, знак справа), без дыры
+   от третьей плитки и без колонки по 140px, где подпись «Моего пути» шла в восемь строк. Между строками —
+   одна линия, а не две подряд. */
+@media (max-width: 559px) {
+  .cpf-shelf, .cpf-shelf--n2, .cpf-shelf--n3 { --cpf-tile-h: 150px; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .cpf-shelf--n3 > :last-child { grid-column: auto; }
+  .cpf-shelf .pp-block.cpf-tile { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 6px; padding: 18px 0 12px; }
+  .cpf-shelf > * + * .pp-block.cpf-tile { border-top: 0; }
+  .cpf-shelf .cpf-tile > :not(.cpf-tile-art) { grid-column: 1; }
+  .cpf-shelf .cpf-tile > .cpf-tile-art { grid-column: 2; grid-row: 1 / 3; align-self: start; margin: 2px 0 0; padding: 0; }
+  .cpf-shelf .cpf-tile > .cpf-tile-foot { grid-column: 1 / -1; margin-top: 2px; }
+  .cpf-shelf .pp-block-title.cpf-tile-title { font-size: 24px; }
+  .cpf-shelf .cpf-tile-art .pp-art { width: 84px; height: 45px; }
+  .cpf-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 380px) {
+  .cpf-bar-name { width: 150px; font-size: 13px; }
+  .cpf-bar-sign { width: 32px; }
+  /* 320: заголовок плитки в одну строку рядом со знаком, значки достижений мельче — подпись не в пять строк. */
+  .cpf-shelf .cpf-tile-title { font-size: 22px; }
+  .cpf-shelf .cpf-tile-art .pp-art { width: 64px; height: 34px; }
+  .cpf-ach { gap: 8px; }
+  .cpf-badge { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 0 0 1px var(--panel-line); }
+  .cpf-badge .pp-art { width: 32px; height: 18px; }
+}
+/* 320: лист шапки не встаёт на строку «Настроить экран» — заголовку и действиям нужна вся ширина. */
+@media (max-width: 359px) { .cpf-head .pp-art--hero { display: none; } }
+
+/* Телефон: «Настроить экран» и шестерёнка — в строке надписи справа от аватара, а не отдельной строкой. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cpf-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+  .cpf-head-text { display: contents; }
+  .cpf-avatar { grid-column: 1; grid-row: 1 / span 3; align-self: start; }
+  .cpf-head .ds-eyebrow { grid-column: 2; grid-row: 1; }
+  .cpf-head .ds-h1 { grid-column: 2; grid-row: 2; }
+  .cpf-head .cpf-head-sub { grid-column: 2; grid-row: 3; }
+  .cpf-head .pp-art--hero { grid-column: 3; grid-row: 2 / span 2; margin-left: 0; }
+  .cpf-head-actions { grid-column: 2 / -1; grid-row: 1; justify-self: end; gap: 4px; margin: -6px 0; }
+}
+/* Без аватара (нет имени) пустая колонка не сдвигает надпись и заголовок. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cpf-head:not(:has(.cpf-avatar)) { grid-template-columns: 0 minmax(0, 1fr) auto; column-gap: 0; }
+}

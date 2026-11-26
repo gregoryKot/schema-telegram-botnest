@@ -1,0 +1,121 @@
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { IsKbId } from '../../therapy/dto/kb-id.validator';
+import { DAY_NOTE_MERGED_MAX } from '../../bot/day-note-limit';
+import { MODE_NOTE_FIELDS } from '../../bot/notes.service';
+import { NOTE_CARD_FIELD_MAX } from '../../utils/text-limits';
+
+/**
+ * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
+ * (аудит 2026-07, 2г / правило №6 CLAUDE.md). `date` (YYYY-MM-DD) и
+ * `schemaId`/`modeId` (`[a-z_]{1,64}`) проверяются в контроллере вручную.
+ */
+export class SaveNoteDto {
+  @IsString()
+  date!: string;
+
+  // Защитный потолок слитых заметок; предел 500 — в сервисе (bot/day-note-limit.ts)
+  @IsString()
+  @MaxLength(DAY_NOTE_MERGED_MAX)
+  text!: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  tags?: string[];
+}
+
+// Поля, общие для карточки схемы и карточки режима (правило №11 — одна
+// механика ввода не копипастится). Схема-специфичные (`reality`) и
+// режим-специфичные (`needs`) поля — в дочерних классах.
+export class NoteFieldsDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  triggers?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  feelings?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  thoughts?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  origins?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  healthyView?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  behavior?: string;
+}
+
+export class SchemaNoteDto extends NoteFieldsDto {
+  @IsString()
+  @MaxLength(64)
+  @IsKbId('schema')
+  schemaId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  reality?: string;
+}
+
+export class ModeNoteDto extends NoteFieldsDto {
+  @IsString()
+  @MaxLength(64)
+  @IsKbId('mode')
+  modeId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  needs?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  modeFunction?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  needsMet?: string;
+
+  /** Имя режима своими словами — короткое, это подпись, а не текст. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  alias?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(NOTE_CARD_FIELD_MAX)
+  fear?: string;
+
+  /** Поля, которые пишутся только в пустое место карточки (разбор «Что случилось»). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MODE_NOTE_FIELDS.length)
+  @IsIn(MODE_NOTE_FIELDS, { each: true })
+  fillIfEmpty?: string[];
+}

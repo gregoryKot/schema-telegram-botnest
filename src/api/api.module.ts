@@ -1,0 +1,63 @@
+import { Module } from '@nestjs/common';
+import { ApiController } from './api.controller';
+import { YsqController } from './ysq.controller';
+import { PairsController } from './pairs.controller';
+import { PlansController } from './plans.controller';
+import { PracticeIcsController } from './practice-ics.controller';
+import { ExercisesController } from './exercises.controller';
+import { PhraseCheckController } from './phrase-check.controller';
+import { NotesController } from './notes.controller';
+import { TrackerController } from './tracker.controller';
+import { SettingsController } from './settings.controller';
+import { HealthController } from './health.controller';
+import { DiaryController } from './diary.controller';
+import { IntroLeadModule } from '../booking/intro-lead.module';
+import { ClientErrorsController } from './client-errors.controller';
+import { AnalyticsController } from './analytics.controller';
+import { PublicEventsController } from './public-events.controller';
+import { QuizController } from './quiz.controller';
+import { JourneyController } from './journey.controller';
+import { PracticeSessionsController } from './practice-sessions.controller';
+import { AccountApiModule } from './account-api.module';
+import { TelegramAuthGuard } from './telegram-auth.guard';
+import { BotModule } from '../bot/bot.module';
+import { NotificationModule } from '../notification/notification.module';
+import { TelegramModule } from '../telegram/telegram.module';
+import { TherapyModule } from '../therapy/therapy.module';
+import { AuthModule } from '../auth/auth.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
+
+@Module({
+  imports: [
+    BotModule,
+    NotificationModule,
+    TelegramModule,
+    TherapyModule,
+    AuthModule,
+    AnalyticsModule,
+    AccountApiModule,
+    IntroLeadModule,
+  ],
+  controllers: [
+    ApiController,
+    YsqController,
+    PairsController,
+    PlansController,
+    PracticeIcsController,
+    ExercisesController,
+    PhraseCheckController,
+    NotesController,
+    TrackerController,
+    SettingsController,
+    DiaryController,
+    AnalyticsController,
+    PublicEventsController,
+    QuizController,
+    JourneyController,
+    PracticeSessionsController,
+    HealthController,
+    ClientErrorsController,
+  ],
+  providers: [TelegramAuthGuard],
+})
+export class ApiModule {}

@@ -1,0 +1,231 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { localDate } from '../utils/tz';
+import { encrypt, decrypt, decryptRecord } from '../utils/crypto';
+import {
+  writeUserSettings,
+  type UserSettingsPatch,
+} from './user-settings-write';
+import { assertDayNoteFits } from './day-note-limit';
+import { NEED_NAMES } from './need-names';
+
+export const NEED_IDS = [
+  'attachment',
+  'autonomy',
+  'expression',
+  'play',
+  'limits',
+] as const;
+export type NeedId = (typeof NEED_IDS)[number];
+
+export interface Need {
+  id: NeedId;
+  emoji: string; // для сводки и идентификации
+  title: string; // короткое — для кнопок
+  fullTitle: string; // полное — для экрана оценки и FAQ
+  chartLabel: string; // для диаграммы (без эмодзи)
+}
+
+// Ядро: потребности, их оценки, дневная заметка и настройки юзера. Остальные домены —
+// в соседних сервисах (account/ysq/pairs/practices/exercises/notes.service.ts, bot.module.ts).
+@Injectable()
+export class BotService {
+  private readonly needs: Need[] = [
+    {
+      id: 'attachment',
+      emoji: '🤝',
+      title: `🤝 ${NEED_NAMES.attachment}`,
+      fullTitle:
+        'Безопасная привязанность\n(безопасность, стабильность, забота, принятие)',
+      chartLabel: NEED_NAMES.attachment,
+    },
+    {
+      id: 'autonomy',
+      emoji: '🚀',
+      title: `🚀 ${NEED_NAMES.autonomy}`,
+      fullTitle: 'Автономия, компетентность и чувство идентичности',
+      chartLabel: NEED_NAMES.autonomy,
+    },
+    {
+      id: 'expression',
+      emoji: '💬',
+      title: `💬 ${NEED_NAMES.expression}`,
+      fullTitle: 'Свобода выражать потребности и эмоции',
+      chartLabel: NEED_NAMES.expression,
+    },
+    {
+      id: 'play',
+      emoji: '🎉',
+      title: `🎉 ${NEED_NAMES.play}`,
+      fullTitle: 'Спонтанность и игра',
+      chartLabel: NEED_NAMES.play,
+    },
+    {
+      id: 'limits',
+      emoji: '⚖️',
+      title: `⚖️ ${NEED_NAMES.limits}`,
+      fullTitle: 'Реалистичные границы и самоконтроль',
+      chartLabel: NEED_NAMES.limits,
+    },
+  ];
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  getNeeds(): Need[] {
+    return this.needs;
+  }
+
+  // Единый источник — utils/tz.localDate: свой Intl.DateTimeFormat здесь не заводить.
+  private localDateString(tz: string, base = new Date()): string {
+    return localDate(tz, base);
+  }
+
+  /** Сегодня юзера — в его поясе уведомлений (у сайта и мини-аппа это пояс устройства). */
+  async userToday(userId: bigint): Promise<string> {
+    return this.localDateString(await this.userTimezone(userId));
+  }
+
+  private async userTimezone(userId: bigint): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notifyTimezone: true },
+    });
+    return user?.notifyTimezone ?? 'Europe/Moscow';
+  }
+
+  // viaApp — экран согласий кабинета: он ещё и завершает онбординг (/stats).
+  async acceptDisclaimer(userId: bigint, viaApp = false): Promise<void> {
+    const done = viaApp ? { onboardingV2Done: true } : {};
+    const data = { disclaimerAccepted: true, ...done };
+    await this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  async hasAcceptedDisclaimer(userId: bigint): Promise<boolean> {
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { disclaimerAccepted: true },
+    });
+    return u?.disclaimerAccepted ?? false;
+  }
+
+  async getUserSettings(userId: bigint) {
+    // Явный select: новая настройка — сюда И в SettingsController.getSettings().
+    const row = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        notifyEnabled: true,
+        notifyLocalHour: true,
+        notifyTimezone: true,
+        notifyReminderEnabled: true,
+        notifySummaryEnabled: true,
+        notifyFrequency: true,
+        notifyQuietStart: true,
+        notifyQuietEnd: true,
+        notifyGamified: true,
+        notifyPausedUntil: true,
+        notifyNextRemindDate: true,
+        disclaimerAccepted: true, // не настройка: без согласия rescheduleForUser молчит
+        addressForm: true,
+        pairCardDismissed: true,
+        mySchemaIds: true,
+        myModeIds: true,
+        therapistShareCards: true,
+        therapistShareProfile: true,
+        uiPrefs: true,
+      },
+    });
+    if (!row) return row;
+    // Decrypt clinical labels if encrypted (forward-compat with plaintext rows).
+    return decryptRecord(row, {
+      jsonArrays: ['mySchemaIds', 'myModeIds'],
+    });
+  }
+
+  // Нечитаемые mySchemaIds/myModeIds не перезаписываются — 409 (см. файл).
+  async updateUserSettings(userId: bigint, data: UserSettingsPatch) {
+    await writeUserSettings(this.prisma, userId, data);
+  }
+
+  async getNote(
+    userId: bigint,
+    date: string,
+  ): Promise<{ text: string | null; tags: string[] }> {
+    const note = await this.prisma.note.findUnique({
+      where: { userId_date: { userId, date } },
+    });
+    return {
+      text: note?.text ? decrypt(note.text) : null,
+      // Tags: new rows store comma-joined encrypted blob; legacy rows store
+      // comma-joined plaintext. decrypt() returns plaintext unchanged.
+      tags: note?.tags
+        ? (decrypt(note.tags) ?? '').split(',').filter(Boolean)
+        : [],
+    };
+  }
+
+  async saveNote(userId: bigint, date: string, text: string, tags?: string[]) {
+    const stored = () => this.getNote(userId, date).then((n) => n.text);
+    await assertDayNoteFits(text, stored); // слитая заметка — правка без роста
+    const tagsPlain = tags ? tags.join(',') : '';
+    const encText = encrypt(text) ?? text;
+    const encTags = encrypt(tagsPlain) ?? tagsPlain;
+    await this.prisma.note.upsert({
+      where: { userId_date: { userId, date } },
+      update: { text: encText, tags: encTags },
+      create: { userId, date, text: encText, tags: encTags },
+    });
+  }
+
+  async saveRating(
+    userId: bigint,
+    needId: NeedId,
+    value: number,
+    date?: string,
+  ) {
+    if (!Number.isInteger(value) || value < 0 || value > 10) {
+      throw new Error('Rating must be integer 0..10');
+    }
+    const dt = date ?? this.localDateString(await this.userTimezone(userId));
+    await this.prisma.rating.upsert({
+      where: { userId_date_needId: { userId, date: dt, needId } },
+      update: { value },
+      create: { userId, date: dt, needId, value },
+    });
+  }
+
+  async getRatings(userId: bigint, date?: string) {
+    const dt = date ?? this.localDateString(await this.userTimezone(userId));
+    const rows = await this.prisma.rating.findMany({
+      where: { userId, date: dt },
+    });
+    return Object.fromEntries(rows.map((r) => [r.needId, r.value])) as Partial<
+      Record<NeedId, number>
+    >;
+  }
+
+  async getChildhoodRatings(
+    userId: bigint,
+  ): Promise<Partial<Record<string, number>>> {
+    const rows = await this.prisma.childhoodRating.findMany({
+      where: { userId },
+    });
+    const result: Partial<Record<string, number>> = {};
+    for (const row of rows) result[row.needId] = row.value;
+    return result;
+  }
+
+  async saveChildhoodRatings(
+    userId: bigint,
+    ratings: Record<string, number>,
+  ): Promise<void> {
+    await this.prisma.$transaction(
+      Object.entries(ratings).map(([needId, value]) =>
+        this.prisma.childhoodRating.upsert({
+          where: { userId_needId: { userId, needId } },
+          create: { userId, needId, value },
+          update: { value },
+        }),
+      ),
+    );
+  }
+}

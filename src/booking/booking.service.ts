@@ -1,0 +1,287 @@
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  Optional,
+} from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
+import { BookingNotifyService } from './booking-notify.service';
+import { MeetingService } from './meeting.service';
+import { RobokassaService } from './robokassa.service';
+import { decryptRecord } from '../utils/crypto';
+import { PricingService } from './pricing.service';
+import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
+import { BookingStatus, SessionType } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import { assertWithinAvailability } from './booking.availability';
+import { completeCheckout } from './booking.checkout';
+import { createBookingGuarded } from './booking.create';
+import { buildBookingData } from './booking-data';
+import {
+  pathLabel,
+  resolveBookingPrice,
+  trackExplicitCurrency,
+} from './booking-pricing-path';
+import { assertBookingPayable } from './payment-guard';
+import { assertPaidAmount } from './booking-amount';
+import { BOOKING_SCHEMA } from './booking.schema';
+import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
+import {
+  listBookings,
+  getBookingById,
+  getPublicBookingByToken,
+} from './booking.queries';
+import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import {
+  claimCancel,
+  expireHeldBookings,
+  paymentAfterCancel,
+} from './booking.transitions';
+import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
+import type { BookingAccount, CreateBookingDto } from './booking.types';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { CalDavService } from './caldav.service';
+import { calendarGuard } from './booking-calendar-guard';
+
+export type { CreateBookingDto };
+export { PaymentAmountMismatchError } from './booking-amount';
+
+@Injectable()
+export class BookingService {
+  private readonly logger = new Logger(BookingService.name);
+  private readonly siteUrl: string;
+  private readonly calendar: ReturnType<typeof calendarGuard>;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notify: BookingNotifyService,
+    private readonly meeting: MeetingService,
+    private readonly robokassa: RobokassaService,
+    private readonly pricing: PricingService,
+    config: ConfigService,
+    private readonly cronLeader: CronLeaderService,
+    @Optional() private readonly analytics?: AnalyticsService,
+    @Optional() calDav?: CalDavService,
+  ) {
+    this.calendar = calendarGuard(config, calDav);
+    this.siteUrl = (
+      config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
+    ).replace(/\/$/, '');
+  }
+
+  /**
+   * Create a booking. Currency comes from the visitor's time zone (booking-pricing-path.ts).
+   *
+   * INTRO_15 (free): confirmed immediately, admin + CalDAV notified.
+   * SESSION_50 not in rubles: confirmed immediately too, no Robokassa — the
+   * admin gets the price in the notification and arranges payment himself.
+   * SESSION_50 in rubles: HELD for 15 min; with Robokassa configured returns a
+   * paymentUrl, the webhook calls confirm(). Without Robokassa: production
+   * refuses (503) before the INSERT, dev confirms at once (payment-guard.ts).
+   * `account` — только запись клиента из приложения (client-booking.service.ts).
+   */
+  async book(dto: CreateBookingDto, account?: BookingAccount) {
+    if (!dto.clientName || !dto.clientContact) {
+      throw new BadRequestException('Name and contact required');
+    }
+    // The public offer must be accepted before we take any booking — this is the
+    // legal basis for the (paid) session. Enforced server-side, not just in UI.
+    if (!dto.acceptedOffer) {
+      throw new BadRequestException('OFFER_NOT_ACCEPTED');
+    }
+    // security#19: ответ не зависит от того, клиент ли этот контакт (раньше
+    // 400 CLIENT_NOT_FOUND vs 200 HELD — оракул). Несовпадение — пометка
+    // админу. INTRO_15 — всегда первая встреча: returning игнорируем.
+    const returningUnmatched =
+      !!dto.returning &&
+      dto.type !== SessionType.INTRO_15 &&
+      !(await this.meeting.hasMeetingForContact(dto.clientContact));
+    // No last-minute bookings: the slot must be at least MIN_BOOK_LEAD_HOURS away.
+    if (dto.startsAt.getTime() < Date.now() + MIN_BOOK_LEAD_HOURS * 3_600_000) {
+      throw new BadRequestException('TOO_SOON');
+    }
+    // P-5 (аудит 2026-07): расписание проверялось только при ОТОБРАЖЕНИИ
+    // слотов — прямой POST мог забронировать 3 часа ночи любой длительности.
+    await assertWithinAvailability(this.prisma, dto.startsAt, dto.durationMin);
+    const price = await resolveBookingPrice(this.pricing, dto);
+    const { isFree, manual, amount, heldUntil } = price;
+    // Прод без Robokassa или платная цена не задана: отказ ДО INSERT (иначе
+    // HELD держит слот 15 минут). Вне рублей Robokassa не нужна (manual).
+    await assertBookingPayable(
+      this.robokassa,
+      this.notify,
+      dto,
+      amount,
+      manual,
+    );
+    const cancelToken = randomUUID();
+
+    const data = buildBookingData(dto, { ...price, cancelToken }, account);
+
+    // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
+    // случай падения (лид уходит админу) — см. booking.create.ts.
+    const booking = await createBookingGuarded(
+      {
+        prisma: this.prisma,
+        notify: this.notify,
+        logger: this.logger,
+        analytics: this.analytics,
+        calendar: this.calendar,
+      },
+      data,
+      dto,
+    );
+    this.logger.log(`Booking ${booking.id} created (${pathLabel(price)})`);
+    await trackExplicitCurrency(this.analytics, price);
+
+    return completeCheckout(
+      {
+        prisma: this.prisma,
+        notify: this.notify,
+        robokassa: this.robokassa,
+        siteUrl: this.siteUrl,
+        schema: BOOKING_SCHEMA,
+        logger: this.logger,
+      },
+      booking,
+      {
+        isFree,
+        manual,
+        cancelToken,
+        heldUntil,
+        startsAt: dto.startsAt,
+        clientContact: dto.clientContact,
+        adminNote: returningUnmatched ? RETURNING_NOT_FOUND_NOTE : undefined,
+      },
+    );
+  }
+
+  /** Confirm a HELD booking (e.g. after payment or manual admin action).
+   * @param paidAmount  when confirming from a payment webhook, the amount paid —
+   *                    verified against the invoiced Booking.amount (defense in depth). */
+  async confirm(id: number, paidAmount?: number) {
+    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
+    // P-4 (аудит 2026-07): расхождение суммы блокирует авто-подтверждение (HELD).
+    if (paidAmount != null) {
+      await assertPaidAmount(
+        { pricing: this.pricing, notify: this.notify },
+        booking,
+        paidAmount,
+      );
+    }
+
+    // P-2: атомарный CAS вместо check-then-act — параллельные ретраи webhook
+    // не задваивают side-effects: updateMany выигрывает ровно один вызов.
+    // paidAt — только при оплате вебхуком; ручное подтверждение — не оплата.
+    const claimed = await this.prisma.booking.updateMany({
+      where: { id, status: BookingStatus.HELD },
+      data: {
+        status: BookingStatus.CONFIRMED,
+        heldUntil: null,
+        ...(paidAmount != null && { paidAt: new Date() }),
+      },
+    });
+    if (claimed.count === 0) {
+      const now = await this.prisma.booking.findUnique({ where: { id } });
+      // Повтор webhook / ручное подтверждение: эффекты доделываем, если флаг
+      // пуст и проход не идёт прямо сейчас (security#21), иначе просто успех.
+      if (now?.status === BookingStatus.CONFIRMED) {
+        await rerunEffects(this.notify, now);
+        return { ok: true };
+      }
+      // Деньги пришли, а бронь CANCELLED: факт оплаты в БД, затем сигнал.
+      if (now?.status === BookingStatus.CANCELLED && paidAmount != null) {
+        throw await paymentAfterCancel(
+          this.prisma,
+          decryptRecord(booking, BOOKING_SCHEMA),
+          paidAmount,
+        );
+      }
+      throw new ConflictException(
+        `Cannot confirm booking in status ${now?.status ?? 'UNKNOWN'}`,
+      );
+    }
+
+    await finishConfirmEffects(this.notify, booking);
+    this.logger.log(`Booking ${id} CONFIRMED`);
+    return { ok: true };
+  }
+
+  /**
+   * Cancel via self-service token (client link).
+   * @param enforceCutoff  when true (client path), block cancellation inside the
+   *                       MIN_CANCEL_LEAD_HOURS window. Admin flows can pass false.
+   */
+  async cancel(cancelToken: string, enforceCutoff = true) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { cancelToken },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.status === BookingStatus.CANCELLED) return { ok: true };
+    if (booking.status === BookingStatus.COMPLETED) {
+      throw new BadRequestException('Cannot cancel completed session');
+    }
+    // Too late to self-cancel — the client must contact the therapist directly.
+    if (
+      enforceCutoff &&
+      booking.startsAt.getTime() <
+        Date.now() + MIN_CANCEL_LEAD_HOURS * 3_600_000
+    ) {
+      throw new BadRequestException('CANCEL_TOO_LATE');
+    }
+
+    // CAS (аудит 2026-10-11): параллельные отмены не задваивают эффекты; они
+    // идут по свежей строке (calDavUid мог записать выигравший confirm).
+    const claimed = await claimCancel(this.prisma, cancelToken, booking);
+    if (!claimed) return { ok: true };
+
+    await this.notify.onCancelled(
+      decryptRecord(claimed.row, BOOKING_SCHEMA),
+      claimed.eventUid,
+    );
+    this.logger.log(`Booking ${booking.id} CANCELLED`);
+    return { ok: true };
+  }
+
+  /** Список броней для админки — см. listBookings. */
+  async list(filter: 'upcoming' | 'past' | 'cancelled' | 'all' = 'upcoming') {
+    return listBookings(this.prisma, BOOKING_SCHEMA, filter);
+  }
+
+  async getById(id: number) {
+    return getBookingById(this.prisma, BOOKING_SCHEMA, id);
+  }
+
+  /** Публичная проекция брони по cancel-токену (без PII). */
+  async getPublicByToken(token: string) {
+    return getPublicBookingByToken(this.prisma, token);
+  }
+
+  /** Expire HELD bookings whose hold window has passed. Runs every minute. */
+  @Cron('* * * * *')
+  async expireHolds() {
+    // Без аренды второй инстанс рассылает notifyExpired по тем же броням —
+    // админ получает дубли DM про одну истёкшую бронь.
+    if (
+      !(await this.cronLeader.claimRun(
+        'bookingExpireHolds',
+        LEASE_WINDOW.everyMinute,
+      ))
+    )
+      return;
+    // CAS построчно (аудит 2026-10-11, r2-1#0): оплаченную за миллисекунды до
+    // тика бронь крон не перекрашивает, а «истекла без оплаты» шлётся только
+    // по строкам, которые перевёл именно этот тик.
+    const expired = await expireHeldBookings(this.prisma);
+    if (!expired.length) return;
+    this.logger.log(`Expired ${expired.length} HELD booking(s)`);
+    await this.notify.notifyExpired(
+      expired.map((b) => decryptRecord(b, BOOKING_SCHEMA)),
+    );
+  }
+}
