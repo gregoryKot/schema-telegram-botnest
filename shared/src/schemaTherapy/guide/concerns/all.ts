@@ -9,6 +9,7 @@ import { buildCouplesGuide } from './couples';
 import { buildDepressionGuide } from './depression';
 import { buildEatingDisordersGuide } from './eating_disorders';
 import { buildNarcissismGuide } from './narcissism';
+import { buildNeurodivergenceGuide } from './neurodivergence';
 import { buildOcdGuide } from './ocd';
 import { buildOtherPersonalityDisordersGuide } from './other_personality_disorders';
 import { buildPtsdGuide } from './ptsd';
@@ -30,6 +31,7 @@ export const CONCERN_BUILDERS: ConcernGuideBuilder[] = [
   buildCouplesGuide,
   buildPtsdGuide,
   buildEatingDisordersGuide,
+  buildNeurodivergenceGuide,
 ];
 
 /** Все статьи вкладки «Запросы и расстройства». */
