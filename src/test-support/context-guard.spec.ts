@@ -139,7 +139,9 @@ describe('хук context-guard.mjs', () => {
     const out = JSON.parse(res.stdout);
     expect(out.hookSpecificOutput.hookEventName).toBe('PostToolUse');
     const ctx: string = out.hookSpecificOutput.additionalContext;
-    expect(ctx).toContain('PR вмержен: проверь деплой');
+    expect(ctx).toContain(
+      'PR вмержен: задача закрыта, прод обновится в 20:00 UTC',
+    );
     expect(ctx).toContain('start_session');
     expect(ctx).not.toContain('остановись');
   });
@@ -149,7 +151,7 @@ describe('хук context-guard.mjs', () => {
       JSON.parse(run(bash(command), [usageLine(130_000)]).stdout)
         .hookSpecificOutput.additionalContext as string;
     expect(context('gh pr merge 12 --squash')).toContain(
-      'PR вмержен: проверь деплой',
+      'PR вмержен: задача закрыта, прод обновится в 20:00 UTC',
     );
     const auto = context('cd /repo && gh pr merge 12 --squash --auto');
     expect(auto).toContain('ждёт автомержа: дождись мержа');
@@ -189,7 +191,9 @@ describe('хук context-guard.mjs', () => {
         PIPED,
         fakeGh(`echo '{"state":"MERGED","autoMergeRequest":null}'`),
       );
-      expect(context(out)).toContain('PR вмержен: проверь деплой');
+      expect(context(out)).toContain(
+        'PR вмержен: задача закрыта, прод обновится в 20:00 UTC',
+      );
       expect(calls().trim()).toBe('pr view 12 --json state,autoMergeRequest');
     });
 
@@ -222,7 +226,9 @@ describe('хук context-guard.mjs', () => {
 
     it('без пайпа — сигнал по коду выхода, gh не вызывается', () => {
       const out = guard('gh pr merge 12 --squash', fakeGh('exit 1'));
-      expect(context(out)).toContain('PR вмержен: проверь деплой');
+      expect(context(out)).toContain(
+        'PR вмержен: задача закрыта, прод обновится в 20:00 UTC',
+      );
       expect(calls()).toBe('');
     });
 
