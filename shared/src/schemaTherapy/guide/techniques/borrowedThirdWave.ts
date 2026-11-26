@@ -87,6 +87,6 @@ export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Желание поскорее исправить клиента вызывает спор: чем сильнее терапевт давит, тем убедительнее клиент защищает то, что есть. Если терапевт уже решил за клиента, это не мотивационное интервью.',
     sources:
-      'Miller W. R., Rollnick S. Motivational Interviewing: Helping People Change. 3rd ed. Guilford Press, 2013. [Рёдигер, гл. 5]',
+      'Miller W. R., Rollnick S. Motivational Interviewing: Helping People Change. 3rd ed. Guilford Press, 2013. FRAMES как баланс сессии: [Рёдигер, гл. 5].',
   },
 ];
