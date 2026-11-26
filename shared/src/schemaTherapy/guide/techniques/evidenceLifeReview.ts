@@ -1,7 +1,9 @@
 import type { TechniqueGuideBuilder } from '../types';
 
 /** Исторический обзор жизни: доводы за и против схемы по этапам (Рафаэли, гл. 21). */
-export const buildEvidenceLifeReviewTechniques: TechniqueGuideBuilder = (tr) => [
+export const buildEvidenceLifeReviewTechniques: TechniqueGuideBuilder = (
+  tr,
+) => [
   {
     id: 'historical_life_review',
     group: 'cognitive',

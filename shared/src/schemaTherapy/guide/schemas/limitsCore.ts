@@ -1,6 +1,7 @@
 import type { SchemaGuide, Tr } from '../types';
 import { SCHEMA_COPING } from './coping';
-import { limitsCambridgeBMore } from './limitsCambridgeB'; import { entitlementRafaeli } from './limitsRafaeli';
+import { limitsCambridgeBMore } from './limitsCambridgeB';
+import { entitlementRafaeli } from './limitsRafaeli';
 
 /** Домен limits: Привилегированность / Грандиозность. */
 export const buildEntitlementGuide = (tr: Tr): SchemaGuide => ({

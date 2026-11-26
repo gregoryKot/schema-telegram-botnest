@@ -2,7 +2,10 @@ import type { RafaeliTechniqueId } from '../../schemaTherapy/guide/techniqueIds'
 import type { TechniqueWorkDef } from './techniqueWork';
 
 /** «Что делали»: техники из книги Рафаэли, Бернштейн и Янга. */
-export const RAFAELI_TECHNIQUE_WORK: Record<RafaeliTechniqueId, TechniqueWorkDef> = {
+export const RAFAELI_TECHNIQUE_WORK: Record<
+  RafaeliTechniqueId,
+  TechniqueWorkDef
+> = {
   rupture_repair: {
     name: 'Ремонт разрыва с терапевтом',
     fields: [

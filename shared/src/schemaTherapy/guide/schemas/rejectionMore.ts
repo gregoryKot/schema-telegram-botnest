@@ -1,6 +1,7 @@
 import type { SchemaGuide, Tr } from '../types';
 import { SCHEMA_COPING } from './coping';
-import { abandonmentYoungMore, mistrustYoungMore } from './rejectionMoreYoung'; import { mistrustRafaeliMore } from './rejectionRafaeli';
+import { abandonmentYoungMore, mistrustYoungMore } from './rejectionMoreYoung';
+import { mistrustRafaeliMore } from './rejectionRafaeli';
 
 /** Домен rejection: Покинутость (пилот живого языка: четыре пункта «Что делать», остальное — в «Подробнее»). */
 export const buildAbandonmentGuide = (tr: Tr): SchemaGuide => ({
@@ -104,7 +105,8 @@ export const buildMistrustGuide = (tr: Tr): SchemaGuide => ({
     'Когнитивно: клиент перестаёт оправдывать обидчика и брать на себя его вину. Если рядом Дефективность, разбирают и мысль, что такое обращение заслужено [Янг, гл. 7].',
     'Гнев в образе адресуют тем, кто причинил вред тогда. Перед этим явно разводят людей из прошлого и нынешних, которым достаётся чужая злость [Янг, гл. 7].',
     'Ещё два образа: безопасное место вдали от обидчика (из памяти или придуманное вместе) и сам клиент, открытый с близким человеком [Янг, гл. 7].',
-    ...mistrustYoungMore, ...mistrustRafaeliMore,
+    ...mistrustYoungMore,
+    ...mistrustRafaeliMore,
   ],
   techniques: [
     'imagery_rescripting',

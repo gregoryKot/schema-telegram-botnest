@@ -1,5 +1,8 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { behavioralExperimentMore, positiveDataLogSteps } from './arntzTechniqueMore';
+import {
+  behavioralExperimentMore,
+  positiveDataLogSteps,
+} from './arntzTechniqueMore';
 import { positiveDataLogRafaeli } from './relationalCognitiveRafaeli';
 
 /** Проверка убеждения фактами и делом: positive_data_log, behavioral_experiment. */

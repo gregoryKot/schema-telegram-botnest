@@ -38,8 +38,14 @@ const positiveDataLogRafaeli: string[] = [
 ];
 
 export const schemaDiaryAll: string[] = [...schemaDiaryMore, ...diaryRafaeli];
-export const schemaDialogueAll: string[] = [...schemaDialogueMore, ...dialogueRafaeli];
-export const flashcardsAll: string[] = [...homework.flashcardsMore, ...flashcardsRafaeli];
+export const schemaDialogueAll: string[] = [
+  ...schemaDialogueMore,
+  ...dialogueRafaeli,
+];
+export const flashcardsAll: string[] = [
+  ...homework.flashcardsMore,
+  ...flashcardsRafaeli,
+];
 export const cognitiveWorkAll: string[] = [
   ...homework.cognitiveWorkMore,
   ...cambB.cognitiveWorkCambridgeBMore,
