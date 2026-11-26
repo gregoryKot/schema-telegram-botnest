@@ -22,6 +22,9 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'know_your_healthy_adult',
     'therapist_happy_child',
     'therapist_modes_walk',
+    'self_monitoring_cycle',
+    'problem_analysis_modes',
+    'self_mode_management_plan',
     'group_mode_roleplay',
     'deliberate_practice',
     'online_format',
@@ -75,6 +78,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'self_practice_reflection',
     'self_practice_review',
     'attachment_assertiveness_poles',
+    'session_balance_axes',
+    'mode_states',
   ].map(w),
   {
     id: 'session_frequency',
@@ -141,13 +146,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['прил. А'],
   },
   {
-    id: 'session_balance_axes',
-    title: 'Баланс сессии: активация и рефлексия, забота и конфронтация',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 5'],
-  },
-  {
     id: 'healthy_adult_six_processes',
     title: 'Здоровый Взрослый по шести процессам ACT',
     status: 'planned',
@@ -174,13 +172,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 15'],
-  },
-  {
-    id: 'mode_states',
-    title: 'Режим — состояние, схема — черта; здоровое переключение режимов',
-    status: 'planned',
-    source: 'Рафаэли',
-    chapters: ['гл. 8'],
   },
   {
     id: 'supervision',

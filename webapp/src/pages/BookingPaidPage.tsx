@@ -6,9 +6,8 @@ import { BookingPaidSkeleton } from '../components/booking/BookingPaidSkeleton';
 import { BookingCancelledView, BookingCompletedView } from '../components/booking/BookingEndedViews';
 import { useBookingByToken } from '../components/booking/useBookingByToken';
 import { isManageLink, paidPhase } from '../components/booking/paidPageModel';
-import { page, h1, sub, backLink } from '../components/booking/bookingPageStyles';
-import { icon } from '../components/booking/bookingPaidStyles';
-import { Btn } from '../components/landing-kit';
+import { backLink } from '../components/booking/bookingPageStyles';
+import { OutcomeBody } from '../components/paper/OutcomeBody';
 
 // Where the client lands after returning from Robokassa. /api/payment/success
 // validates the signature and redirects here with ?token=… (the booking's
@@ -37,12 +36,11 @@ export function BookingPaidPage() {
     // Токена на FailURL нет (адрес не подписан), срок холда проверить нечем —
     // поэтому не обещаем, что время ещё держится.
     body = (
-      <>
-        <div style={icon}>×</div>
-        <h1 style={h1}>Оплата не прошла</h1>
-        <p style={sub}>Деньги не списаны. Выберите время и попробуйте ещё раз – если оно уже занято, найдётся другое.</p>
-        <Btn href="/#booking" full size="lg">Вернуться к записи</Btn>
-      </>
+      <OutcomeBody
+        title="Оплата не прошла"
+        lead="Деньги не списаны. Выберите время и попробуйте ещё раз – если оно уже занято, найдётся другое."
+        action={{ label: 'Вернуться к записи', href: '/#booking' }}
+      />
     );
   } else if (!token && isManageLink()) {
     // Без токена с оплаты приходят законно (неподписанный редирект) — им
@@ -65,13 +63,11 @@ export function BookingPaidPage() {
   }
 
   return (
-    <div style={page}>
-      <div className="ym-hide-content" style={inner}>
+    <div className="pa-outcome">
+      <div className="pa-outcome-card ym-hide-content">
         {body}
         <a href="/" style={backLink}>← На главную</a>
       </div>
     </div>
   );
 }
-
-const inner: React.CSSProperties = { width: '100%', maxWidth: 400, textAlign: 'center' };

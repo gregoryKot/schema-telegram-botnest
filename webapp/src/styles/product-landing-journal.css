@@ -53,7 +53,7 @@
 .pl2-trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .pl2-tile {
   display: flex; flex-direction: column; gap: 20px; min-width: 0; box-sizing: border-box;
-  padding: 26px 24px 28px; border-radius: 26px;
+  padding: 26px 24px 28px; border-radius: var(--r-16);
 }
 .pl2-tile-art { display: flex; align-items: center; justify-content: center; height: 150px; }
 .pl2-tile-art .scn { width: auto; height: 100%; max-width: 100%; }

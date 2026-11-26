@@ -26,14 +26,14 @@ function Mark({ mark }: { mark: CmdMark }) {
   );
 }
 
-/** Примеры запросов чипами: тап подставляет запрос в поле. */
+/** Примеры запросов текстом через «·», с переносом: тап подставляет запрос в поле. */
 function Examples({ examples, onExample }: { examples: string[]; onExample: (query: string) => void }) {
   if (examples.length === 0) return null;
   return (
     <div className="cmd-examples">
       <span className="ds-sub">Например:</span>
-      {examples.map((e) => (
-        <button key={e} type="button" className="ds-chip ds-chip--toggle cmd-chip" onClick={() => onExample(e)}>{e}</button>
+      {examples.map((e, i) => (
+        <Fragment key={e}>{i > 0 && <span className="ds-sub" aria-hidden="true">·</span>}<button type="button" className="cmd-example" onClick={() => onExample(e)}>{e}</button></Fragment>
       ))}
     </div>
   );

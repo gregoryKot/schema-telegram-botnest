@@ -166,12 +166,12 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 }
 .ds-btn:hover { background: var(--accent-hi); }
 /* Неактивная хранит силуэт своего варианта и гасит содержимое, без прозрачности (терракота на 50%
-   читалась розовой и активной). Залитая — контур --line-strong без заливки и --text-faint: бежевая
-   плашка лежала на бумаге коробкой; подпись занятости («Сохраняю…») — статус, её читают.
+   читалась розовой и активной). Залитая — тот же текст без заливки и контура, --text-muted: рамка
+   читалась белой капсулой; подпись занятости («Сохраняю…») — статус, её читают.
    Текстовая (--secondary) — подпись --text-faint 60% и бледная линия; занятая (aria-busy) — --text-faint
    (≥4.5:1). Знак (--icon) — --text-ghost. Своя заливка у .ds-btn.x — с :not(:disabled) или с парой
    .ds-btn.x:disabled (paperPrimitives.test). */
-.ds-btn:disabled, .ds-btn:disabled:hover { background: transparent; color: var(--text-faint); box-shadow: inset 0 0 0 1px var(--line-strong); cursor: default; }
+.ds-btn:disabled, .ds-btn:disabled:hover { background: transparent; color: var(--text-muted); box-shadow: none; cursor: default; }
 .ds-btn:disabled[aria-busy='true'] { cursor: progress; }
 .ds-btn.ds-btn--secondary:disabled, .ds-btn.ds-btn--secondary:disabled:hover { background: transparent; box-shadow: none; color: color-mix(in srgb, var(--text-faint) 60%, transparent); text-decoration-color: var(--line); }
 .ds-btn.ds-btn--secondary:disabled[aria-busy='true'], .ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover { color: var(--text-faint); }
