@@ -66,7 +66,7 @@ export function orderTasks<T extends Pick<UserTask, 'done' | 'dueDate'>>(
 /**
  * Подпись под заданием: у закрытых — когда закрыто (срок уже не важен, «до
  * …» у выполненного путало), у открытых — срок или дата назначения; у серии
- * — прогресс «1 из 7 дней», который клиент видит у себя полосой. Месяц — словом целиком («20 ноября»).
+ * — прогресс «1 из 7 дней», который клиент видит у себя полосой.
  */
 export function taskMeta(t: UserTask, status: TaskStatus): string {
   const closedOn = t.completedAt ? momentDayKey(t.completedAt) : '';

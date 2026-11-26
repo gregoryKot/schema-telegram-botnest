@@ -17,6 +17,7 @@ const pin2026 = () => {
 };
 
 describe('fmtDateFull', () => {
+  beforeEach(pin2026);
   it('месяц словом целиком; год — только чужой', () => {
     expect(fmtDateFull('2026-11-20')).toBe('20 ноября');
     expect(fmtDateFull('2099-01-10')).toBe('10 января 2099');
