@@ -56,7 +56,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   // ─── Hooks ────────────────────────────────────────────────────────────────────
   const detail = useClientDetail({ onOpenClient, switchView, setClients });
   const addClient = useAddClient({ setClients });
-  const { routeTab, listTab, setListTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
+  const { routeTab, listTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────────
   const loadRoster = () => { // повтор: скелетон (loading) идёт раньше алерта, loadFailed снимает ответ
@@ -126,7 +126,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           clients={clients}
           loading={loading}
           loadFailed={loadFailed} onRetry={() => { setLoading(true); loadRoster(); }}
-          listTab={listTab} setListTab={setListTab}
+          listTab={listTab}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           filterStatus={filterStatus} setFilterStatus={setFilterStatus}
           onSearch={onOpenPalette}

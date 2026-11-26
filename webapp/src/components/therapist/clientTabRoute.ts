@@ -1,6 +1,6 @@
 // Вкладки кабинета живут в адресе (владелец, 2026-11): перезагрузка и ссылка
 // открывают ту же вкладку. Карточка клиента — /cabinet/<код>/<слаг> («Обзор» —
-// без слага), доска «Задания» списка — /cabinet/tasks. Единственное место, где
+// без слага), доска «Задания» — /cabinet/tasks (вход из меню). Единственное место, где
 // живёт соответствие вкладки и слага; синхронизация с состоянием карточки —
 // useClientTabRoute, часть адреса с клиентом — shared/src/utils/clientRef.
 import type { ClientTab } from './clientSheetTypes';
@@ -44,8 +44,4 @@ export function isClientListPath(pathname: string): boolean {
 
 export function listTabFromPath(pathname: string): ListTab {
   return pathname === LIST_TASKS_PATH ? 'kanban' : 'clients';
-}
-
-export function listTabPath(tab: ListTab): string {
-  return tab === 'kanban' ? LIST_TASKS_PATH : '/cabinet';
 }
