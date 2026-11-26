@@ -94,13 +94,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (тема farewell_imagery)',
   },
   {
-    id: 'body_mode_positions',
-    title: 'Положение тела для режима (контекстуальная схема-терапия)',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 5', 'гл. 6', 'гл. 8', 'гл. 9', 'гл. 10', 'гл. 13'],
-  },
-  {
     id: 'perspective_change',
     title: 'Смена точки зрения: наблюдатель, расширение, замещение',
     status: 'planned',
