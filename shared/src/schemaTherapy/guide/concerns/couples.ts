@@ -32,7 +32,7 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'subjugation',
   ],
   evidence: d.couplesEvidence,
-  techniques: d.couplesTechniques,
+  techniques: [...d.couplesTechniques, 'mode_map', 'empathic_confrontation'],
   voice: d.couplesVoice(tr),
   ...COUPLES_SESSION,
   course: d.couplesCourse,
