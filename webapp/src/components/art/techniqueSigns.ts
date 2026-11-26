@@ -3,6 +3,7 @@
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
   YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId, RoedigerTechniqueId,
+  VreeswijkTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -103,6 +104,11 @@ const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
   genogram: 'family_tree', perspective_change: 'stand_above',
 };
 
+const VREESWIJK_TECHNIQUE_SIGN: Record<VreeswijkTechniqueId, GuideSign> = {
+  three_minute_breathing_space: 'breathing_space',
+  mindfulness_practices: 'body_scan',
+};
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
@@ -113,5 +119,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...FARRELL_TECHNIQUE_SIGN,
   ...HEATH_TECHNIQUE_SIGN,
   ...ROEDIGER_TECHNIQUE_SIGN,
+  ...VREESWIJK_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };
