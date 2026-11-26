@@ -42,6 +42,8 @@ import { buildChildModePlayTechniques } from './childModePlay';
 import { buildPerspectiveChangeTechniques } from './perspectiveChange';
 import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
+import { buildSchemaAwarenessTechniques } from './schemaAwareness';
+import { buildHealthyModesMindfulnessTechniques } from './healthyModesMindfulness';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -58,6 +60,8 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildModeFiguresTechniques,
   buildStanceTechniques,
   buildMindfulnessPracticesTechniques,
+  buildSchemaAwarenessTechniques,
+  buildHealthyModesMindfulnessTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
   buildLimitedReparentingTechniques,
