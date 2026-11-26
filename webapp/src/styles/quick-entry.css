@@ -11,12 +11,12 @@
   display: flex; flex-direction: column; gap: var(--space-16);
 }
 
-/* Поле — общий поле-лист .pa-field (paper-app.css), как у заметки и разбора: белый лист Literata, тень
-   сплошным слоем тоном персика героя (--h листа), фокус — кромкой. Здесь — только высота (сведение с g2). */
+/* Поле — общий .pa-field в виде линии ввода (.pa-field--line, paper-app.css) прямо на листе дневника,
+   без белой коробки. Здесь — только стартовая высота в три строки; дальше поле растёт с текстом. */
 .qe-page { margin-top: 6px; }
 /* Широкий лист: камешки — внизу справа, как на плитке «Дневник» главной, а не в середине поля. */
 @container pa-sheet (min-width: 720px) { .qe-sheet > .pa-sheet-art { align-self: end; margin-bottom: 4px; } }
-.pa-field.qe-area { min-height: 200px; }
+.pa-field.qe-area { min-height: 104px; }
 
 /* Под листом: теги и подсказка, справа (на телефоне — ниже) «Сохранить» и тихая ссылка. */
 .qe-foot { display: flex; flex-direction: column; gap: var(--space-16); }
@@ -50,7 +50,7 @@
 
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .qe-flow { padding-top: 40px; gap: 20px; }
-  .pa-field.qe-area { min-height: 240px; }
+  .pa-field.qe-area { min-height: 132px; }
   .qe-acts--row { flex-direction: row; align-items: center; gap: var(--space-16); }
   .qe-acts--row > .ds-btn.qe-cta { width: 260px; }
   .qe-schemas { display: block; columns: 2; column-gap: 32px; }

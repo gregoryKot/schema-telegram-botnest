@@ -1,4 +1,4 @@
-// Значки площадок-зеркал пункта: круги 40px с заливным знаком, зона нажатия 44. Площадка текстом
+// Значки площадок-зеркал пункта: знак без круга-подложки, зона нажатия 44. Площадка текстом
 // не подписана — доступное имя даёт aria-label. MAX — надпись в круге, не логотип.
 import type { ReactNode } from 'react';
 import { hitboxStyle } from '../../../../shared/src/utils/hitbox';
@@ -25,7 +25,7 @@ export function PlaceIcons({ link }: { link: ReadyLink }) {
           <a key={p.id} className="lk-place" style={hit.outer} href={p.href} aria-label={name} title={name} onClick={() => trackLinksClick(p.id)}>
             <span className="lk-place-dot" style={hit.inner}>
               {p.title === 'MAX' ? <span className="lk-place-max" aria-hidden>MAX</span> : (
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden>{GLYPH[p.title]}</svg>
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden>{GLYPH[p.title]}</svg>
               )}
             </span>
           </a>

@@ -59,7 +59,7 @@ describe('знак строки ленты', () => {
     expect(laidNo(t)).toBe(2);
   });
 
-  it('незнакомый тип — пустая бумажка без знака', () => {
+  it('незнакомый тип — пустое место без знака', () => {
     const { container } = render(<JourneySign look={null} />);
     const s = container.querySelector('.jr-sign') as HTMLElement;
     expect(s.dataset.sign).toBeUndefined();
@@ -67,14 +67,15 @@ describe('знак строки ленты', () => {
   });
 });
 
-describe('плитка счётчика', () => {
-  it('знак занятия, число и подпись на бумаге занятия', () => {
+describe('счётчик', () => {
+  it('знак занятия, число и подпись — без цветной плитки', () => {
     const { container } = render(<JourneyStat row={{ type: 'breathing', label: 'Дыхательные практики', count: 6 }} />);
     expect(screen.getByText('6')).toBeTruthy();
     expect(screen.getByText('Дыхательные практики')).toBeTruthy();
     const tile = container.querySelector('.jr-stat') as HTMLElement;
     expect(tile.style.getPropertyValue('--h')).toBe(String(ENTITY_LOOK.breathing.hue));
     expect(tile.querySelector('svg')).not.toBeNull();
+    expect(tile.classList.contains('pp-paper')).toBe(false);
     expect(container.textContent).not.toMatch(EMOJI);
   });
 });

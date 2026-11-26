@@ -47,7 +47,7 @@ describe('CookieBanner — не закрывает нижнюю навигаци
     render(<CookieBanner />);
     expect(document.querySelector('.cookie-banner-wrap')).not.toBeNull();
     expect(css).toMatch(/body:has\(\.mobile-nav\) \.cookie-banner-wrap \{ bottom: calc\(var\(--mobile-nav-h\) \+ var\(--safe-bottom\)\)/);
-    expect(css).toMatch(/\.cookie-banner-wrap \{[^}]*padding: 0 16px calc\(20px \+ var\(--safe-bottom\)\)/);
+    expect(css).toMatch(/\.cookie-banner-wrap \{[^}]*padding: 0 0 var\(--safe-bottom\)/);
   });
 });
 

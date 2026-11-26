@@ -10,7 +10,6 @@ const SRC = join(__dirname, '..');
 const EXEMPT = /(^|\/)product-(landing|tests)[\w-]*\.css$/;
 
 const ANCHORS = [
-  'index.css|.cookie-banner', // плавающий слой; окна и палитра — лист с контуром --line, без тени
   'styles/client-profile.css|.cpf-paper-dlg', // цветной лист-герой диалога достижения
   'styles/auth-service.css|.as-card', 'styles/auth-service.css|.as-card--skel', // главная карточка входа
   'styles/paper.css|.pp-leaf--anchor', 'styles/paper.css|.pp-leaf--anchor[style*="--h"]', // опорный лист
