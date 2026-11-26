@@ -3,7 +3,7 @@
 // семь дней на телефоне 390 встают целиком — иначе лента шире себя на поле под тень, и седьмой день
 // затухал, обещая дни, которых нет (ревью g2). CSS в jsdom не исполняется — сверка по исходнику.
 import { describe, it, expect } from 'vitest';
-import { stripEdges } from './dayStrip';
+import { edgeFadeMask, stripEdges } from './dayStrip';
 import { readCss } from '../../styles/cssRules.test-helpers';
 
 const base = readCss('history.css').filter((r) => r.media === '');
@@ -48,4 +48,12 @@ describe('лента дат: 7 дней на 390', () => {
     const day = Math.max(46, (client - 4 - 40) / 7);
     expect(stripEdges(0, client, 7 * day + 36 + 4).end).toBe(true);
   });
+});
+
+describe('edgeFadeMask: затухание ленты дней записи', () => {
+  it('всё влезло — маски нет', () => expect(edgeFadeMask({ start: false, end: false })).toBeUndefined());
+  it('дальше есть дни — гаснет только правый край', () =>
+    expect(edgeFadeMask({ start: false, end: true }, 20)).toBe('linear-gradient(to right, #000, #000 calc(100% - 20px), transparent)'));
+  it('прокручено в середину — гаснут оба края', () =>
+    expect(edgeFadeMask({ start: true, end: true }, 20)).toBe('linear-gradient(to right, transparent, #000 20px, #000 calc(100% - 20px), transparent)'));
 });
