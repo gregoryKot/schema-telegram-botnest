@@ -210,7 +210,7 @@ export const FEATURES: readonly FeatureDef[] = [
   {
     id: 'self_map',
     title: 'Карта себя',
-    events: ['self_map_link'],
+    events: ['self_map_link', 'weekly_repeat_queued'],
   },
   {
     id: 'game',

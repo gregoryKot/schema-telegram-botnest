@@ -7,7 +7,7 @@ import {
 } from '../../../shared/src/host/startParam';
 
 /** Куда ведёт действие само по себе, без экрана поверх: «Записи», «Ещё» (там «Задания»), сверка входа на сайт. */
-const PATH_OF: Partial<Record<StartAction['kind'], string>> = { diaries: '/diary', tasks: '/more' };
+const PATH_OF: Partial<Record<StartAction['kind'], string>> = { diaries: '/diary', tasks: '/more', selfmap: '/more' };
 const pathOf = (a: StartAction): string | undefined =>
   a.kind === 'login' ? `/auth/confirm?code=${a.code}` : PATH_OF[a.kind];
 

@@ -118,6 +118,7 @@ export class BotService {
         notifyTimezone: true,
         notifyReminderEnabled: true,
         notifySummaryEnabled: true,
+        notifyWeeklyRepeatEnabled: true,
         notifyFrequency: true,
         notifyQuietStart: true,
         notifyQuietEnd: true,

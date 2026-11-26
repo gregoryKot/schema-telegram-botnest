@@ -17,6 +17,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { TherapyModule } from '../therapy/therapy.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { AuthModule } from '../auth/auth.module';
+import { WeeklyRepeatScheduler } from '../notification/weekly-repeat.scheduler';
 import { PushModule } from '../push/push.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { PushModule } from '../push/push.module';
     TelegramSummaryToggleService,
     TelegramQuizService,
     TelegramLinkService,
+    WeeklyRepeatScheduler,
     ...TELEGRAM_PROVIDERS,
     ...CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание
   ],
