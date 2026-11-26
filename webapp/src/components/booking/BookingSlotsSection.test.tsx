@@ -103,3 +103,25 @@ describe('BookingSlotsSection — форма обращения', () => {
     cleanup();
   });
 });
+
+describe('BookingSlotsSection: лента дней визитки затухает у края', () => {
+  const sizes = (scroll: number) => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300);
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(scroll);
+  };
+  const strip = () => screen.getAllByRole('button')[0].parentElement as HTMLElement;
+
+  it('дни не влезли — правый край гаснет маской', () => {
+    sizes(900);
+    render(<Harness initialTz="Europe/Moscow" />);
+    expect(strip().style.maskImage).toContain('transparent');
+    vi.restoreAllMocks();
+  });
+
+  it('контрольный образец: всё влезло — маски нет', () => {
+    sizes(300);
+    render(<Harness initialTz="Europe/Moscow" />);
+    expect(strip().style.maskImage).toBe('');
+    vi.restoreAllMocks();
+  });
+});

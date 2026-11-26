@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { BookingSlot } from '../../api';
 import { trackGoalOnce } from '../../lib/metrika';
 import { TimeZonePicker } from './TimeZonePicker';
+import { edgeFadeMask, useStripEdges } from '../history/dayStrip';
 import { Chip } from './Chip';
 import { SignChip } from '../paper/SignChip';
 import { VY, type Tr } from './slotsCopy';
@@ -35,12 +36,15 @@ export function BookingSlotsSection({ slots, tz, onTzChange, day, onDayChange, s
   const days = useMemo(() => groupByLocalDay(slots, tz), [slots, tz]);
   const dayList = [...days.keys()];
   const daySlots = days.get(day) ?? [];
+  const { ref: strip, edges, measure } = useStripEdges(dayList.length);
+  const fade = paper ? undefined : edgeFadeMask(edges);
 
   return (
     <>
       <div>
         <div style={labelSt}>{tr('Выбери день', 'Выберите день')}</div>
-        <div className={paper ? 'cbk-days' : undefined} style={paper ? undefined : { display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' }}>
+        <div ref={strip} onScroll={paper ? undefined : measure} className={paper ? 'cbk-days' : undefined}
+          style={paper ? undefined : { display: 'flex', gap: 'var(--space-8)', overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch', maskImage: fade, WebkitMaskImage: fade }}>
           {dayList.map((k) => (
             <Pick key={k} active={k === day} onClick={() => {
               trackGoalOnce('booking_start');
