@@ -51,14 +51,13 @@ export async function stubApi(
   page: Page,
   { session = 'client' }: { session?: StubSession } = {},
 ): Promise<StubApiHandle> {
-  // CookieBanner — fixed-position оверлей поверх всего приложения, пока нет
-  // согласия в localStorage; в реальном браузере это первый тап пользователя,
-  // но смок проверяет не его, а кризисный путь/трекер — заранее отвечаем
-  // «необходимые куки» и гасим подсказку о напоминании (шаг очереди входов до автопоказов). addInitScript
-  // выполняется до кода страницы на КАЖДОЙ навигации, включая page.reload().
+  // CookieBanner и подсказка о напоминании (шаг очереди входов до автопоказов) перекрывают
+  // смок, который проверяет кризисный путь/трекер — заранее отвечаем «необходимые куки» и гасим
+  // подсказку. addInitScript выполняется до кода страницы на КАЖДОЙ навигации, включая reload().
   await page.addInitScript(() => {
     try {
-      localStorage.setItem('cookie_consent', 'necessary'); localStorage.setItem('reminder_hint_seen', '1');
+      localStorage.setItem('cookie_consent', 'necessary');
+      localStorage.setItem('reminder_hint_seen', '1');
     } catch {
       // about:blank до первой навигации: у документа нет хранилища.
     }
