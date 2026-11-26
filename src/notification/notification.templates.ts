@@ -2,6 +2,7 @@ import { Markup } from 'telegraf';
 import { NotificationType } from './notification.service';
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
+import { renderWeeklyRepeat } from './weekly-repeat.template';
 import { renderActivityTemplate } from './notification.templates.activity';
 import { renderSecurityNotice } from '../auth/security-notice.texts';
 import {
@@ -27,6 +28,7 @@ export function renderTemplate(
   type: NotificationType,
   payload?: Record<string, unknown>,
   form: AddressForm = 'ty',
+  channel: 'push' | 'telegram' = 'telegram',
 ): NotificationTemplate | null {
   switch (type) {
     case 'reminder': {
@@ -126,6 +128,9 @@ export function renderTemplate(
         text: '📊 Итоги недели готовы — они ждут в приложении.',
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };
+
+    case 'weekly_repeat':
+      return renderWeeklyRepeat(payload, channel);
 
     case 'summary':
       return {

@@ -8,7 +8,7 @@ import { NotifyScheduleRows } from './NotifyScheduleRows';
 import { PushDeviceRow } from './PushDeviceRow';
 import { usePushDevice } from '../../push/usePushDevice';
 import { notifyChannelHint, notifyChannelOf, notifyUnreachableCopy } from '../../../../shared/src/settings/notifyReach';
-import { remindersOn, remindersPatch, summaryOn } from '../../../../shared/src/settings/notifyToggles';
+import { remindersOn, remindersPatch, summaryOn, weeklyRepeatOn } from '../../../../shared/src/settings/notifyToggles';
 
 interface Props {
   settings: UserSettings;
@@ -27,6 +27,7 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
   const channel = notifyChannelOf(settings);
   const push = usePushDevice(channel, reloadSettings);
   const [reminders, summary] = [remindersOn(settings), summaryOn(settings)];
+  const weeklyRepeat = weeklyRepeatOn(settings);
   const unreachable = notifyUnreachableCopy(tr, push.state !== 'unsupported');
   return (
     <SSection id="s-notifications" label="Уведомления" hint={notifyChannelHint(channel, botHandle)}
@@ -43,6 +44,10 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
       {channel ? (<>
         <SRow title="Напоминания" sub="Заполнить трекер в выбранный час" right={<Toggle label="Напоминания" on={reminders} onClick={() => patch(remindersPatch(!reminders))} />} />
         <SRow title="Итоги дня" sub="Сводка и вехи после заполнения трекера" right={<Toggle label="Итоги дня" on={summary} onClick={() => patch({ notifySummaryEnabled: !summary })} />} />
+        {settings.notifyEnabled && (
+          <SRow title="Повторы недели" sub={tr('Раз в неделю: что чаще всего повторялось в твоих записях. Ведёт в «Карту себя»', 'Раз в неделю: что чаще всего повторялось в ваших записях. Ведёт в «Карту себя»')}
+            right={<Toggle label="Повторы недели" on={weeklyRepeat} onClick={() => patch({ notifyWeeklyRepeatEnabled: !weeklyRepeat })} />} />
+        )}
       </>) : (
         <div className="st-body-block" role="note">
           <p className="st-text">{unreachable.text}</p>

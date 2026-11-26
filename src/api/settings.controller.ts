@@ -37,6 +37,7 @@ export class SettingsController {
       notifyTimezone: s?.notifyTimezone ?? 'Europe/Moscow',
       notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
       notifySummaryEnabled: s?.notifySummaryEnabled ?? true,
+      notifyWeeklyRepeatEnabled: s?.notifyWeeklyRepeatEnabled ?? true,
       notifyFrequency: s?.notifyFrequency ?? 0,
       notifyQuietStart: s?.notifyQuietStart ?? 22,
       notifyQuietEnd: s?.notifyQuietEnd ?? 8,

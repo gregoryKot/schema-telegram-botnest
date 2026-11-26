@@ -3,21 +3,19 @@ import { Skeleton } from '../Skeleton';
 import '../../styles/shell-skeletons.css';
 
 const paper = (hue: number) => ({ '--h': hue } as CSSProperties);
-/** Бумага счётчиков и листа сессий — литералы, а не импорт cabinetLook: силуэт живёт в главном чанке, и
- *  cabinetLook (entityLook, справочник схем) утащил бы туда лишнее (docs/open/frontend-ux.md, раскрой
- *  чанков). Сверка с cabinetLook — TodaySkeletonBody.test.tsx. */
-const SKELETON_COUNTER_HUES = [135, 240, 45] as const;
+/** Бумага листа сессий — литерал, а не импорт cabinetLook: силуэт живёт в главном чанке, и cabinetLook
+ *  (entityLook, справочник схем) утащил бы туда лишнее. Сверка с cabinetLook — TodaySkeletonBody.test.tsx. */
 const SKELETON_SESSIONS_HUE = 240;
 
-/** Тело силуэта «Сегодня» терапевта по форме экрана (b29): три плитки бумаги счётчиков, лист неба
+/** Тело силуэта «Сегодня» терапевта по форме экрана (b29): три счётчика на бумаге экрана, лист неба
  *  «Сессий» с двумя строками, справа заголовок и строки активности. Одно на загрузку раздела
  *  (TherapistTodaySkeleton, Suspense оболочки) и на загрузку клиентов самим экраном — под шапкой. */
 export function TodaySkeletonBody({ label }: { label?: string }) {
   return (
     <div className="sks-today-th" role={label ? 'status' : undefined} aria-label={label}>
       <div className="sks-counters">
-        {SKELETON_COUNTER_HUES.map((hue) => (
-          <div key={hue} className="pp-paper sks-counter" style={paper(hue)}>
+        {[0, 1, 2].map((k) => (
+          <div key={k} className="sks-counter">
             <Skeleton width={44} height={24} radius={8} /><Skeleton width={48} height={30} radius={8} /><Skeleton width="60%" height={11} />
           </div>
         ))}

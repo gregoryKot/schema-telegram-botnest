@@ -12,6 +12,7 @@ import { useMoreRows } from './more/useMoreRows';
 import { MoreRows } from './more/MoreRows';
 import { TasksHub } from './tasks/TasksHub';
 import { useTasksSheet } from './tasks/tasksLaunch';
+import { useSelfMapLaunch } from './selfMapLaunch';
 import { CaseFlowHost } from '../components/caseFlow/CaseFlowHost';
 import { CrisisContactsSheet } from './practice/CrisisContactsSheet';
 import '../styles/client-more.css';
@@ -39,7 +40,7 @@ export function MoreSection(p: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
   const tasks = useTasksSheet(); // открывается и ссылкой из уведомления (tasksLaunch)
-  const [selfMap, setSelfMap] = useState(false);
+  const [selfMap, setSelfMap] = useSelfMapLaunch(); // открывается и ссылкой из уведомления (selfMapLaunch)
   const [crisis, setCrisis] = useState(false);
   const { modeEntries } = useTodayDiaries(p.refreshKey);
   // Мост к терапевту терапевту не нужен. Роль из профиля приходит раньше кэша контакта
