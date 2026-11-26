@@ -17,7 +17,7 @@ export function ProjectCard({ link }: { link: ReadyLink }) {
       </div>
       <div className="lk-card-go">
         {main && link.cta && (
-          <a className="lk-open" href={main.href} onClick={() => trackLinksClick(main.id)}>{link.cta} <span aria-hidden>→</span></a>
+          <a className="lk-open" href={main.href} onClick={() => trackLinksClick(main.id)}>{link.cta} <span className="lk-go" aria-hidden>→</span></a>
         )}
         {link.places.length > 0 && <span className="lk-or">или бот:</span>}
         <PlaceIcons link={link} />

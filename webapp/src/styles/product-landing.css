@@ -2,17 +2,17 @@
    язык «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md),
    свёрстанный как иллюстрированный журнал: бумага --bg, заголовки --serif,
    кнопки ds-btn, у каждой секции своя цветная бумага (oklch по --h, как
-   .pp-paper) и крупная сцена (styles/paper-scenes.css). Глубина — сплошной
-   сдвинутый слой бумаги (box-shadow без размытия), не стекло и не блюр.
+   .pp-paper) и крупная сцена (styles/paper-scenes.css). Листы лежат плоско:
+   смещённых теней-подложек нет ни у макета, ни у сцен (К28).
    До 2026-11 здесь была «ночная» айдентика (тёмный холст, аврора, неон) —
    владелец: «вырвиглаз»; после неё — «тускло и серо, нет рисуночков», отсюда
    цвет и сцены. Корень на .light-lock: бумага только в светлой теме, как кабинет.
    Полосы бумаги, разворот шагов и плитки — product-landing-journal.css, мобильное меню —
-   product-landing-menu.css, мини-тесты — product-tests.css. Сдвинутая тень (сплошной слой) — только у опорных элементов:
-   макет на первом экране, фото автора, финальный лист и фигуры сцен; обычные
-   карточки — плоская бумага кабинета (.pp-paper). */
+   product-landing-menu.css, мини-тесты — product-tests.css. Карточки — плоская бумага кабинета (.pp-paper). */
 
 html:has(.pl2-root) { scroll-behavior: smooth; }
+/* Сцены и коллаж героя на лендинге без сдвинутых слоёв: в кабинете те же сцены остаются с глубиной. */
+.pl2-root :is(.scn-sheet-under, .scn-patch-under, .scn-shade, .hc-under) { display: none; }
 
 .pl2-root {
   position: relative; display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 100dvh;
@@ -105,7 +105,7 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 .pl2-faq-art {
   --h: 45; display: flex; align-items: center; justify-content: center; box-sizing: border-box;
   width: 200px; height: 144px; border-radius: var(--r-16); transform: rotate(-3deg);
-  background: oklch(0.885 0.06 var(--h)); box-shadow: 8px 9px 0 oklch(0.79 0.07 var(--h));
+  background: oklch(0.885 0.06 var(--h));
 }
 .pl2-faq-art .scn-sign { width: 144px; }
 .pl2-faq { border-top: 1px solid var(--paper-sunk); }
@@ -126,9 +126,9 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 /* Сдвинутая тень входит в ширину контента: лист уже на сдвиг и смещён на полсдвига —
    лист вместе с тенью стоит по центру, поля слева и справа равны. */
 .pl2-final {
-  --h: 58; position: relative; left: -6px; width: calc(100% - 12px); max-width: 1148px; overflow: hidden; box-sizing: border-box;
+  --h: 58; position: relative; max-width: 1148px; overflow: hidden; box-sizing: border-box;
   padding: 84px 210px; text-align: center;
-  border-radius: var(--r-16); background: oklch(0.865 0.085 var(--h)); box-shadow: 12px 12px 0 oklch(0.75 0.1 48);
+  border-radius: var(--r-16); background: oklch(0.865 0.085 var(--h));
 }
 .pl2-final > :not(.scn) { position: relative; }
 .pl2-final-title {
@@ -193,8 +193,7 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
   .pl2-sec { padding: 56px 16px; }
   .pl2-sec--tight { padding-top: 12px; }
   .pl2-final {
-    left: -4px; width: calc(100% - 8px); padding: 120px 22px 132px;
-    box-shadow: 8px 8px 0 oklch(0.75 0.1 48);
+    padding: 120px 22px 132px;
   }
   .pl2-final-corner--a { left: 18px; width: 100px; }
   .pl2-final-corner--b { right: 14px; top: 16px; width: 100px; }
@@ -203,7 +202,6 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
   .pl2-faq-side { grid-template-columns: minmax(0, 1fr); grid-template-areas: "art" "eyebrow" "title"; }
   .pl2-faq-art {
     justify-self: start; width: 120px; height: 88px; margin: 0 0 36px 4px; border-radius: var(--r-16);
-    box-shadow: 6px 7px 0 oklch(0.79 0.07 var(--h));
   }
   .pl2-faq-art .scn-sign { width: 88px; }
 }

@@ -9,9 +9,9 @@ import { CrisisCardView } from '../../../shared/src/components/CrisisCard';
 import { Heart } from './art/PaperArtSigns';
 import { api } from '../api';
 
-type Props = { surface?: string; standing?: boolean; compact?: boolean; flat?: boolean; signless?: boolean; label?: ReactNode; labelAs?: 'span' | 'h2' | 'h3'; children?: ReactNode };
+type Props = { surface?: string; standing?: boolean; compact?: boolean; flat?: boolean; keepArt?: boolean; signless?: boolean; label?: ReactNode; labelAs?: 'span' | 'h2' | 'h3'; children?: ReactNode };
 
-export function CrisisCard({ signless, ...p }: Props = {}) {
+export function CrisisCard({ signless, keepArt, ...p }: Props = {}) {
   const tr = useTr();
-  return <CrisisCardView {...p} art={p.flat || signless ? undefined : <Heart size="row" />} tr={tr} track={api.trackEvent} />;
+  return <CrisisCardView {...p} art={(p.flat && !keepArt) || signless ? undefined : <Heart size="row" />} tr={tr} track={api.trackEvent} />;
 }

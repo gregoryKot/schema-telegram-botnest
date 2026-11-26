@@ -18,13 +18,6 @@ export const TODAY_COUNTER_LOOK = {
 /** «Сессии сегодня» — небо терапевта с Talk один раз на блок (не в каждой строке). */
 export const SESSIONS_LOOK: Look = ENTITY_LOOK.therapist;
 
-/** Доска «Задания»: бумага колонки; знак — только у «Выполнено» (Check). */
-export const BOARD_COLUMN_LOOK = {
-  open: { hue: 70 },
-  done: { hue: 135, sign: 'check' },
-  failed: { hue: 45 },
-} as const satisfies Record<string, { hue: PaperHue; sign?: SignKey }>;
-
 /** Знак плитки дисклеймера: ключ реестра SignArt или знак продукта (вход — BrandMark). */
 export type PrivacySign = SignKey | 'brand';
 export type PrivacyTile = 'encrypt' | 'access' | 'login' | 'delete';
