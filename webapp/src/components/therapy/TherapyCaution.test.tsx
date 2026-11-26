@@ -41,11 +41,11 @@ describe('TherapyCaution', () => {
   it('compact: знак Limits у фразы, пояснение со ссылкой в конце строки; shown так же', () => {
     render(<MemoryRouter><TherapyCaution place="exercise_start" compact /></MemoryRouter>);
     const note = screen.getByRole('note');
-    expect(note.className).toBe('th-caution th-caution--compact');
+    expect(note.className).toBe('ds-aside th-caution th-caution--compact');
     expect(note.querySelector('.th-caution-sign')?.getAttribute('aria-hidden')).toBe('true');
     // строчный размер, не nav: в 24×14 рамка Limits с точкой читалась пятном (ревью волны 0, круг 2)
     expect(note.querySelector('.th-caution-sign svg.pp-art--row')).toBeTruthy();
-    expect(screen.getByText('Это самопомощь, не замена терапии.').className).toBe('th-caution-lead');
+    expect(screen.getByText('Это самопомощь, не замена терапии.').className).toBe('ds-aside-lead');
     const body = note.querySelector('.th-caution-body')!;
     expect(body.textContent).toMatch(/^Станет тяжело\s— остановись, это нормально\..* Поговорить →$/);
     // ревью g2 r3: склеено glue — тире не начинает строку, предлог не висит («с терапевтом»)
@@ -57,7 +57,7 @@ describe('TherapyCaution', () => {
 
   it('по умолчанию — полное предупреждение с пояснением, без знака', () => {
     const { container } = renderCaution();
-    expect(screen.getByRole('note').className).toBe('th-caution');
+    expect(screen.getByRole('note').className).toBe('ds-aside th-caution');
     expect(container.querySelector('.th-caution-body')).toBeTruthy();
     expect(container.querySelector('.th-caution-sign')).toBeNull();
   });

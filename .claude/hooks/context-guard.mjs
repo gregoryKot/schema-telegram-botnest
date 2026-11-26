@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { bashMerge, pipedMerge, verifyMerge } from './gh-merge.mjs';
 
 export const LIMIT = Number(process.env.CLAUDE_CONTEXT_GUARD_TOKENS) || 120_000;
-const AUTO_MERGE = 'PR вмержен или ждёт автомержа: дождись мержа и проверь деплой.';
+const AUTO_MERGE = 'PR вмержен или ждёт автомержа: дождись мержа (прод обновится в 20:00 UTC).';
 const TAIL = 512 * 1024;
 const BOUNDARY = '"subtype":"compact_boundary"';
 
@@ -66,10 +66,10 @@ export function verdict({ event, source, tokens, compactions, merge }) {
     'Остаток начатой задачи передай: записка по .claude/skills/handoff/SKILL.md, затем 1) start_session (user_asked, fresh, бриф со ссылкой на записку) и архив этой сессии; ' +
     '2) отказ, а тебя запустила другая сессия — закончи ход отчётом «нужно продолжение: записка <путь>», продолжение запустит она; ' +
     '3) не вышло и это — доводи здесь до мержа. Владельца не жди ни в одном случае.';
-  const merged = merge === 'auto' ? AUTO_MERGE : 'PR вмержен: проверь деплой.';
+  const merged = merge === 'auto' ? AUTO_MERGE : 'PR вмержен: задача закрыта, прод обновится в 20:00 UTC.';
   if (event === 'PostToolUse') return `${head} ${merged} ${pass}`;
   return (
-    `${head} Начатая задача не новая: её доводят до мержа и деплоя; осталась пара шагов ` +
+    `${head} Начатая задача не новая: её доводят до мержа; осталась пара шагов ` +
     `(CI, мерж) — доведи здесь. ${pass} Новую задачу здесь не начинай — запусти её в новой ` +
     'сессии; не дают — скажи владельцу одной строкой и остановись. ' +
     'Владелец написал «продолжай здесь» — продолжай.'

@@ -46,6 +46,9 @@
   font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--accent); font-weight: 600;
 }
+/* Врезка: линия слева на бумаге, без заливки и рамки (как .gst-about-body); заголовок врезки — .ds-aside-lead. */
+.ds-aside { margin: 12px 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.ds-aside-lead { margin: 0 0 2px; font-weight: 600; color: var(--text); }
 .ds-label {
   font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--text-faint); font-weight: 600;
@@ -105,10 +108,6 @@
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-accent); }
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
 .ds-card--warn { background: var(--warn-bg); border-color: var(--warn-bg); color: var(--warn-ink); }
-/* Кризисный вход: tint D1 (hue 28), без заливки --err. */
-.ds-card--crisis { --h: 28; background: oklch(0.94 0.035 var(--h)); border-color: oklch(0.88 0.05 var(--h)); color: oklch(0.38 0.1 var(--h)); }
-.ds-card--crisis .ds-list-title, .ds-card--crisis .ds-sub, .ds-card--crisis .ds-chev { color: inherit; }
-.ds-card--crisis .ds-sub { opacity: .85; }
 .ds-list-row {
   display: grid; align-items: center; gap: 14px;
   padding: 14px 18px; border-bottom: 1px solid var(--paper-sunk);

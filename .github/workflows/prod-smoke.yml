@@ -2,7 +2,7 @@
 # ci.yml проверяет код и сборку ДО деплоя; nightly.yml ловит флаки тестов и
 # mutation-регрессии — тоже до прода, и его browser-smoke гоняет `vite
 # preview` на ЛОКАЛЬНО собранном бандле (playwright.config.ts) — Amvera там
-# вообще не участвует. Деплой = push в main, Amvera тянет из GitHub сама
+# вообще не участвует. Прод = ветка production (release.yml), Amvera тянет её из GitHub сама
 # (CLAUDE.md «Деплой webapp») — до этой джобы ни одна не спрашивала «а
 # реально ли открылся сайт у живого пользователя»: протухший деплой на
 # стороне хостинга, упавший контейнер, битый DNS/сертификат видны только
@@ -90,10 +90,16 @@ jobs:
       # Инцидент 2026-09-16: #494/#495 смержены в main, а прод сутки отдавал
       # старый образ — CI и /health-выше были зелёными оба дня, потому что
       # проверяли «жив», не «свеж». Грейс — в scripts/check-deploy-lag.mjs.
-      - name: /health — образ на проде не старее последнего коммита main
+      # Прод собирается из ветки production (release.yml): время её коммита —
+      # момент выкатки. Ветки ещё нет — сверка с main, как раньше.
+      - name: /health — образ на проде не старее последней выкатки
         run: |
           built=$(jq -r '.builtAt // empty' health.json)
-          commit=$(git log -1 --format=%cI)
+          if git fetch --depth=1 origin production; then
+            commit=$(git log -1 --format=%cI FETCH_HEAD)
+          else
+            commit=$(git log -1 --format=%cI)
+          fi
           node scripts/check-deploy-lag.mjs --built-at="$built" --commit-at="$commit"
       - name: / — 200 и похоже на сайт (стабильный маркер, не весь HTML)
         run: |
