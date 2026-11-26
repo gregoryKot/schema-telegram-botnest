@@ -49,6 +49,8 @@ export const buildEmotionalDeprivationGuide = (tr: Tr): SchemaGuide => ({
     'limited_reparenting',
     'intimacy_dialogue',
     'transitional_objects',
+    'rupture_repair',
+    'historical_life_review',
   ],
   betweenSessions: [
     {

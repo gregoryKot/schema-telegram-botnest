@@ -25,6 +25,8 @@ import { buildModeFiguresTechniques } from './modeFigures';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
 import { buildEvidenceWorkTechniques } from './evidenceWork';
+import { buildEvidenceLifeReviewTechniques } from './evidenceLifeReview';
+import { buildRuptureRepairTechniques } from './ruptureRepair';
 import { buildChildCareTechniques } from './childCare';
 import { buildBodyGroundingTechniques } from './bodyGrounding';
 import { buildBodyValuesTechniques } from './bodyValues';
@@ -75,6 +77,8 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildPerspectiveChangeTechniques,
   buildBodyModePositionsTechniques,
   buildEvidenceWorkTechniques,
+  buildEvidenceLifeReviewTechniques,
+  buildRuptureRepairTechniques,
   buildChildCareTechniques,
   buildHealthyAdultPlanTechniques,
   buildBodyGroundingTechniques,

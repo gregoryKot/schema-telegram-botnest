@@ -2,7 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import { uniqueItems } from '../uniqueItems';
 import { mapMore } from './arntzBpdRelationMore';
 import { modeMapMore } from './modeMapMoreLuz';
-import { schemaDiaryMore } from './schemaDiaryMore';
+import { schemaDiaryAll } from './relationalCognitiveRafaeli';
 import {
   modeMapCambridgeMore,
   modeMapCambridgeVoice,
@@ -54,10 +54,10 @@ export const buildFormulationTechniques: TechniqueGuideBuilder = (tr) => [
       'На сессии разбирать записи: что повторяется, где здоровый взгляд не находится.',
     ],
     voice: cc.schemaDiaryVoice(tr),
-    more: schemaDiaryMore,
+    more: schemaDiaryAll,
     cautions:
       'Клиент с Жёсткими Стандартами превращает дневник в экзамен, клиент с Карающим Критиком — в список улик против себя. Пустой бланк — тоже материал: что помешало, какой режим не дал писать. Неделю клиент отмечает режим трижды в день. Нет детского воспоминания — переходят к потребности: мост в детство бывает закрыт Отстранённым Защитником или опыт довербальный (тогда речь о потребности в безопасности). Пробел не заполняют догадками, чтобы не создать ложных воспоминаний [Фаррелл, 4.4].',
     sources:
-      '[Янг, гл. 3]. Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, приложение B «Cognitive Logbook for Modes»; [Кембридж, гл. 7, 10, 12]; [Арнтц ПРЛ, гл. 6]; [Фаррелл, 4.4].',
+      '[Янг, гл. 3]. Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, приложение B «Cognitive Logbook for Modes»; [Кембридж, гл. 7, 10, 12]; [Арнтц ПРЛ, гл. 6]; [Фаррелл, 4.4]; [Рафаэли, гл. 16, 21].',
   },
 ];

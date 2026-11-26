@@ -1,8 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
-import {
-  behavioralExperimentMore,
-  positiveDataLogSteps,
-} from './arntzTechniqueMore';
+import { behavioralExperimentMore, positiveDataLogSteps } from './arntzTechniqueMore';
+import { positiveDataLogRafaeli } from './relationalCognitiveRafaeli';
 
 /** Проверка убеждения фактами и делом: positive_data_log, behavioral_experiment. */
 export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
@@ -14,6 +12,7 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
       'Клиент каждый день записывает факты, которые не сходятся со схемой, а крайнюю оценку себя переносит на шкалу от 0 до 100 рядом с другими людьми.',
     when: 'Середина терапии: схема уже названа, а клиент «головой понимает, но не верит». Схема отсеивает всё, что с ней не сходится, — журнал собирает именно это [Падески, 1994; Арнц и ван Гендерен, гл. 6]. Шкала особенно нужна против Карающего Критика с его глобальным вердиктом «я плохая мать», «со мной нельзя иметь дело» [Кембридж, гл. 7].',
     steps: positiveDataLogSteps,
+    more: positiveDataLogRafaeli,
     voice: [
       tr(
         'Что за эту неделю не сходится с мыслью «со мной что-то не так»? Годится любая мелочь — запиши её.',
@@ -27,7 +26,7 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Журнал не требует «думать позитивно»: в него идут факты, а не похвала себе. Пустая страница — материал для сессии: чаще всего факты были, но схема их не пропустила. Схема не пропускает и мелочи — вкусный ужин, тренировку, отправленное резюме — и поступки, где клиент повёл себя смело, а исход не задался по чужой вине или случайно: их тоже записывают, сказать непривычное — уже шаг. Журнал просят показать на каждой сессии, иначе интерес к нему гаснет [Арнтц ПРЛ, гл. 6].',
     sources:
-      'Padesky C. A. Schema change processes in cognitive therapy. Clinical Psychology & Psychotherapy, 1994, 1(5), 267–278. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 6 «Cognitive Techniques»: «Positive Logbook», «Evaluation on a Visual Analogue Scale»; [Кембридж, гл. 7]; [Арнтц ПРЛ, гл. 6].',
+      'Padesky C. A. Schema change processes in cognitive therapy. Clinical Psychology & Psychotherapy, 1994, 1(5), 267–278. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 6 «Cognitive Techniques»: «Positive Logbook», «Evaluation on a Visual Analogue Scale»; [Кембридж, гл. 7]; [Арнтц ПРЛ, гл. 6]; [Рафаэли, гл. 21].',
   },
   {
     id: 'behavioral_experiment',
