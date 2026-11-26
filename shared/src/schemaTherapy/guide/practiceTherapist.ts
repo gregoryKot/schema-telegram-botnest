@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { therapistWellbeingMoreFull } from './practiceTherapistHeath';
+import * as care from './practiceTherapistCare';
 import { buildPracticeTherapistCulture } from './practiceTherapistCulture';
 import { buildPracticeTherapistSchemas } from './practiceTherapistSchemas';
 import { buildPracticeTherapistArntz } from './practiceTherapistArntz';
@@ -24,13 +24,11 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
       'Беречь себя в онлайн-работе. Делать перерывы и каждый день бывать на природе. Перед включением компьютера встать, подышать, почувствовать стопы на полу, размять суставы. В кадре двигаться, как вживую: вставать, пересаживаться, обращаясь к Критику или к Уязвимому Ребёнку [Кембридж, бокс 20.1].',
     ],
     voice: cc.therapistWellbeingVoice(tr),
-    more: [
-      ...therapistWellbeingMoreFull,
-      ...cc.therapistWellbeingCambridgeCMore,
-    ],
+    more: care.therapistWellbeingMore,
     sources:
       '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12], [Фаррелл-Шоу, гл. 3]',
   },
+  ...care.buildPracticeTherapistCare(tr),
   ...buildPracticeSelfPractice(tr),
   ...buildPracticeTherapistCulture(tr),
 ];
