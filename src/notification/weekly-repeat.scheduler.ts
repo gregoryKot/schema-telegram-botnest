@@ -105,7 +105,7 @@ export class WeeklyRepeatScheduler {
       if (!repeat) return;
       if (await this.notifications.hasPending(userId, 'weekly_repeat')) return;
       await this.notifications.schedule(userId, 'weekly_repeat', now, repeat);
-      await this.analytics?.track(userId, 'weekly_repeat_sent', {
+      await this.analytics?.track(userId, 'weekly_repeat_queued', {
         kind: repeat.kind,
       });
     } catch (err) {

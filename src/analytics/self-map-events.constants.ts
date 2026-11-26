@@ -4,9 +4,9 @@
  *
  * Шлёт сайт литералом: api.trackEvent('self_map_link', { to }) — так его видит
  * analytics-sync. Санитайзер — src/api/analytics-meta.sanitize-self-map.ts,
- * блок /stats — src/bot/self-map-metrics.format.ts. weekly_repeat_sent — серверное, meta.kind mode|need.
+ * блок /stats — src/bot/self-map-metrics.format.ts. weekly_repeat_queued — серверное, meta.kind mode|need.
  */
-export const SELF_MAP_EVENTS = ['self_map_link', 'weekly_repeat_sent'] as const;
+export const SELF_MAP_EVENTS = ['self_map_link', 'weekly_repeat_queued'] as const;
 
 /** Куда ведёт переход: meta.to. */
 export const SELF_MAP_LINK_TARGETS = [

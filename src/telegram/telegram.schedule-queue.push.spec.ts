@@ -7,6 +7,7 @@
 import { Logger } from '@nestjs/common';
 import { generateVAPIDKeys } from 'web-push';
 import { runProcessQueue, type QueueDeps } from './telegram.schedule-queue';
+import { renderForQueue } from './telegram.schedule-queue.render';
 import { RejectCounter, MAX_REJECTS } from './telegram.schedule-queue.rejects';
 import type { SendSettings } from '../bot/send-settings';
 import { AccountService } from '../bot/account.service';
@@ -136,6 +137,46 @@ describe('очередь: канал «уведомление в приложе�
     expect(t.notificationService.cancelOne).toHaveBeenCalledWith(1);
     expect(t.notificationService.markSent).not.toHaveBeenCalled();
     expect(t.accountService.markUserBlocked).not.toHaveBeenCalled();
+  });
+
+  // Шов РКН (#1135): названия потребностей и режимов уходят только в приложение.
+  describe('weekly_repeat — текст зависит от канала', () => {
+    const weekly = () => ({
+      ...row(1, 5n, 'weekly_repeat'),
+      payload: { kind: 'need', key: 'play', count: 2 },
+    });
+
+    it('пуш: текст с названием потребности', async () => {
+      const t = deps({
+        due: [weekly()],
+        s: new Map([['5', settings({ chatId: 777n })]]),
+      });
+      await runProcessQueue(t.d);
+      expect(t.push.sendToUser).toHaveBeenCalledWith(
+        5n,
+        expect.objectContaining({
+          body: expect.stringContaining('«Спонтанность» — 2 дня'),
+          url: '/today?startapp=selfmap',
+        }),
+      );
+    });
+
+    it('Telegram (канал не передан): общий текст без названия', async () => {
+      const t = deps({
+        due: [weekly()],
+        s: new Map([['5', settings({ chatId: 777n, hasPush: false })]]),
+      });
+      await runProcessQueue(t.d);
+      const sent = t.bot.telegram.callApi.mock.calls[0][1] as { text: string };
+      expect(sent.text).toContain('что-то повторилось');
+      expect(sent.text).not.toContain('Спонтанность');
+    });
+
+    it('renderForQueue без channel — telegram-текст без названия', async () => {
+      const { d } = deps({ due: [], s: new Map() });
+      const msg = await renderForQueue(d, weekly(), 'ty');
+      expect(msg?.text).not.toContain('Спонтанность');
+    });
   });
 
   // Инсайт выведен из оценок (PUSH_ONLY_TYPES): в Telegram не уходит ни у

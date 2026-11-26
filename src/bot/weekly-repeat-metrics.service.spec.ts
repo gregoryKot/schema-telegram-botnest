@@ -29,6 +29,25 @@ describe('getWeeklyRepeatMetrics', () => {
   });
 });
 
+describe('getWeeklyRepeatMetrics: только строки с meta.kind', () => {
+  it('запрос фильтрует по событию и meta.kind — клиентские строки без meta не считаются', async () => {
+    const count = jest.fn().mockResolvedValue(0);
+    await run(count);
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        name: 'weekly_repeat_queued',
+        createdAt: { gte: expect.any(Date) },
+        meta: { path: ['kind'], equals: 'mode' },
+      },
+    });
+    expect(count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        meta: { path: ['kind'], equals: 'need' },
+      }),
+    });
+  });
+});
+
 describe('selfMapBlocks', () => {
   it('склеивает переходы карты и «Повторы недели»', async () => {
     const out = await selfMapBlocks(

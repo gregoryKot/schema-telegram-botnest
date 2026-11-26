@@ -46,14 +46,14 @@ describe('WeeklyRepeatScheduler', () => {
   it('аренду не взяли — ничего не ставит и базу не читает', async () => {
     const t = build({ claim: false, modes: twoModes });
     await t.sched.run();
-    expect(t.prisma.user.findMany).not.toHaveBeenCalled();
-    expect(t.notifications.schedule).not.toHaveBeenCalled();
+    expect(t.prisma.user.findMany.mock.calls).toEqual([]);
+    expect(t.notifications.schedule.mock.calls).toEqual([]);
   });
 
   it('без бота аренду не берёт', async () => {
     const t = build({ bot: null });
     await t.sched.run();
-    expect(t.cronLeader.claimRun).not.toHaveBeenCalled();
+    expect(t.cronLeader.claimRun.mock.calls).toEqual([]);
   });
 
   it('повтор — строка очереди с ключами и событие', async () => {
@@ -65,7 +65,7 @@ describe('WeeklyRepeatScheduler', () => {
       expect.any(Date),
       { kind: 'mode', key: 'punitive_critic', count: 2 },
     );
-    expect(t.analytics.track).toHaveBeenCalledWith(1n, 'weekly_repeat_sent', {
+    expect(t.analytics.track).toHaveBeenCalledWith(1n, 'weekly_repeat_queued', {
       kind: 'mode',
     });
   });
@@ -73,12 +73,12 @@ describe('WeeklyRepeatScheduler', () => {
   it('повторов нет — не ставит', async () => {
     const t = build({ modes: [twoModes[0]] });
     await t.sched.run();
-    expect(t.notifications.schedule).not.toHaveBeenCalled();
+    expect(t.notifications.schedule.mock.calls).toEqual([]);
   });
 
   it('уже есть неотправленное — не ставит второе', async () => {
     const t = build({ modes: twoModes, pending: true });
     await t.sched.run();
-    expect(t.notifications.schedule).not.toHaveBeenCalled();
+    expect(t.notifications.schedule.mock.calls).toEqual([]);
   });
 });

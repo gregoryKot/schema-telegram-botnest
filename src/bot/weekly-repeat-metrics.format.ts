@@ -15,6 +15,6 @@ export const EMPTY_WEEKLY_REPEAT_METRICS: WeeklyRepeatMetrics = {
 /** Текстовый блок для /stats. Язык без терминов. */
 export function formatWeeklyRepeatMetrics(m: WeeklyRepeatMetrics): string {
   const head = '🔁 <b>Повторы недели</b> (за месяц)';
-  if (m.total === 0) return `${head}\nПока ничего не отправлено`;
-  return `${head}\nОтправлено ${m.total} (режимы ${m.mode}, потребности ${m.need})`;
+  if (m.total === 0) return `${head}\nПока ничего не поставлено в очередь`;
+  return `${head}\nПоставлено в очередь ${m.total} (режимы ${m.mode}, потребности ${m.need})`;
 }

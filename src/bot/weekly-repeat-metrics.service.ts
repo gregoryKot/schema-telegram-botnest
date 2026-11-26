@@ -6,7 +6,7 @@ import {
 import { formatSelfMapMetrics } from './self-map-metrics.format';
 import type { SelfMapMetrics } from './self-map-metrics.format';
 
-/** Счётчики «Повторов недели» для /stats: weekly_repeat_sent за 30 дней по meta.kind. */
+/** Счётчики «Повторов недели» для /stats: weekly_repeat_queued за 30 дней по meta.kind. */
 export async function getWeeklyRepeatMetrics(
   prisma: Pick<PrismaService, 'analyticsEvent'>,
 ): Promise<WeeklyRepeatMetrics> {
@@ -14,7 +14,7 @@ export async function getWeeklyRepeatMetrics(
   const byKind = (kind: 'mode' | 'need') =>
     prisma.analyticsEvent.count({
       where: {
-        name: 'weekly_repeat_sent',
+        name: 'weekly_repeat_queued',
         createdAt,
         meta: { path: ['kind'], equals: kind },
       },
