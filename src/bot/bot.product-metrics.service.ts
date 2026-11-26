@@ -13,7 +13,7 @@ import { LinksPageMetricsService } from './links-page-metrics.service';
 import { formatPracticeMetrics } from './practice-metrics.format';
 import { PracticeMetricsService } from './practice-metrics.service';
 import { formatCaseMetrics } from './case-metrics.format';
-import { formatSelfMapMetrics } from './self-map-metrics.format';
+import { selfMapBlocks } from './weekly-repeat-metrics.service';
 import { CaseMetricsService } from './case-metrics.service';
 import {
   ONBOARDING_STEPS,
@@ -48,10 +48,10 @@ export class ProductMetricsService {
         this.practiceLink.getMetrics(),
         this.practiceMetrics.getMetrics(),
         this.caseMetrics.getMetrics(),
-        this.caseMetrics.getSelfMapLinks(),
+        selfMapBlocks(this.caseMetrics, this.prisma),
         this.linksPage.getMetrics(),
       ]);
-    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatLinksPageMetrics(links)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}\n\n${formatSelfMapMetrics(selfMap)}`;
+    return `${formatProductMetrics(metrics)}\n\n${formatQuizMetrics(quiz)}\n\n${formatPracticeLinkMetrics(practice)}\n\n${formatLinksPageMetrics(links)}\n\n${formatPracticeMetrics(practiceSessions)}\n\n${formatCaseMetrics(cases)}\n\n${selfMap}`;
   }
 
   async getMetrics(): Promise<ProductMetrics> {

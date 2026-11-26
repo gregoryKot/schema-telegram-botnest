@@ -85,6 +85,17 @@ describe('NotificationsSection (сайт)', () => {
       expect(screen.getByText('Время')).toBeTruthy();
     });
 
+    it('«Повторы недели» — свой флаг; при выключенных напоминаниях тумблера нет', () => {
+      const patch = vi.fn();
+      renderSection(settings(), vi.fn(), patch);
+      expect(switchOf('Повторы недели').getAttribute('aria-checked')).toBe('true');
+      fireEvent.click(switchOf('Повторы недели'));
+      expect(patch).toHaveBeenCalledWith({ notifyWeeklyRepeatEnabled: false });
+      cleanup();
+      renderSection(settings({ notifyEnabled: false }));
+      expect(screen.queryByRole('switch', { name: 'Повторы недели' })).toBeNull();
+    });
+
     it('оба выключены — время и частота скрыты, пояс остаётся', () => {
       renderSection(settings({ notifyEnabled: false, notifySummaryEnabled: false }));
       expect(screen.queryByText('Время')).toBeNull();

@@ -25,6 +25,7 @@ export async function renderForQueue(
   },
   notif: DueRow,
   form: string | null | undefined,
+  channel: 'push' | 'telegram' = 'telegram',
 ): Promise<{ text: string; extra: SendExtra } | null> {
   const { logger, notificationService } = deps;
   const payload = notif.payload as Record<string, unknown> | null;
@@ -34,6 +35,7 @@ export async function renderForQueue(
       notif.type as NotificationType,
       payload ?? undefined,
       normalizeAddressForm(form),
+      channel,
     );
   } catch (renderErr) {
     logger.error(

@@ -266,6 +266,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
     "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
     'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
+  weekly_repeat_sent:
+    'серверное событие: пишет WeeklyRepeatScheduler при постановке в очередь ' +
+    'уведомления «Повторы недели», meta.kind — mode|need; с клиента meta ' +
+    'отбрасывается (sanitizeMeta без ветки), /stats считает строки с kind',
   guide_mark_added:
     'серверное событие: пишет GuideMarksService.trackAdded при создании ' +
     'отметки «Про клиента» (PUT /api/therapy/guide-marks/:clientId); meta с ' +
@@ -401,7 +405,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 53 — links_page_click: константа, шлёт страница ссылок через trackPublicEvent.
     // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
     // 56 — done_next_step (DONE_NEXT_STEP_EVENT, как home_tile) и diary_jump (DIARY_JUMP_EVENT, вкладка «Записи»).
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(56);
+    // 57 — weekly_repeat_sent («Повторы недели»): серверное, ставит крон в очередь.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(57);
   });
 });
 
