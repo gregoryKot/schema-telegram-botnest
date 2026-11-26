@@ -38,6 +38,7 @@ import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
 import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
 import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 import { buildGenogramTechniques } from './genogram';
+import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
 
 /** Вся библиотека техник в порядке показа. */
@@ -64,6 +65,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryModeDialogueTechniques,
   buildFormulationTechniques,
   buildGenogramTechniques,
+  buildBodyModePositionsTechniques,
   buildEvidenceWorkTechniques,
   buildChildCareTechniques,
   buildHealthyAdultPlanTechniques,
