@@ -4,11 +4,11 @@
    без него — тон бумаги --h). Десятисегментная шкала с сегментами 16–22px снята
    (бэклог «Одна механика оценки», 2026-11). Ответ — строка на линии с кружком-маркером слева, не коробка;
    выбранный — маркер-кольцо акцентом (APP_2026-11.md, принцип 5). */
-.ns-words { display: flex; flex-direction: column; min-width: 0; border-top: 1px solid var(--line); }
+.ns-words { display: flex; flex-direction: column; min-width: 0; border-top: 1px solid var(--paper-sunk); }
 .ns-word {
   display: flex; align-items: center; gap: 14px;
   min-height: 56px; padding: 0 4px 0 0; box-sizing: border-box;
-  background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--text);
+  background: none; border: 0; border-bottom: 1px solid var(--paper-sunk); color: var(--text);
   font: 600 16px/1.2 var(--sans); text-align: left; cursor: pointer;
 }
 .ns-word::before {
