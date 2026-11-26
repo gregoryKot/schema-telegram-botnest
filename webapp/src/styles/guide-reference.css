@@ -15,14 +15,16 @@
 .gr-row .ds-list-sub { line-height: 1.45; }
 /* Лист с подгруппами (три копинга на одном листе неба): общий список снят, у подгруппы своя шапка
    (знак 44, как у трёх знаков копингов справочника клиента) и свои строки. */
-.sg-rows.gr-parts { gap: 14px; border-radius: 0; background: none; overflow: visible; }
+.sg-rows.gr-parts { gap: 28px; border-radius: 0; background: none; overflow: visible; }
 .gr-part-head.sg-head { margin-bottom: 8px; }
 /* Знак у подписи листа — 44, как у подгрупп: шапки соседних листов одной высоты, строки начинаются на одной линии. */
 .gr-list .sg-head .sg-sign, .gr-list .sg-head .sg-sign .pp-art--square { width: 44px; }
 /* Строки лежат прямо на листе группы между линиями: белый список SignGroup снят, наведение красит
-   название, а не фон (решение В1 #1674; гейт guideLeafRows.test.ts). */
-.gr-list .pp-paper .sg-rows.gr-rows { border-top: 1px solid var(--paper-sunk); border-radius: 0; background: none; overflow: visible; }
-.gr-list .pp-paper .gr-rows > .ds-list-row { padding-left: 4px; padding-right: 4px; }
+   название, а не фон (решение В1 #1674; гейт guideLeafRows.test.ts). Линии — чернилом поверх оттенка листа:
+   светлая --paper-sunk на цветном листе пропадала, колонка сливалась в плашку. Под подписью группы — линия плотнее. */
+.gr-list .pp-paper { --gr-rule: color-mix(in srgb, var(--text) 13%, transparent); --gr-rule-head: color-mix(in srgb, var(--text) 38%, transparent); }
+.gr-list .pp-paper .sg-rows.gr-rows { border-top: 1px solid var(--gr-rule-head); border-radius: 0; background: none; overflow: visible; }
+.gr-list .pp-paper .gr-rows > .ds-list-row { padding-left: 4px; padding-right: 4px; border-bottom-color: var(--gr-rule); }
 .gr-list .pp-paper .gr-rows > .ds-list-row--hover:hover { background: none; }
 .gr-list .pp-paper .gr-rows > .ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
 /* Силуэт загрузки: подпись и строки группы — в тех же колонках, что листы. */
@@ -45,7 +47,7 @@
   .gr-list--tiles .pp-paper .sg-rows.gr-rows { border-top: none; }
   .gr-list--tiles .gr-rows > .gr-row {
     grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px 14px;
-    padding: 16px 4px; border: none; border-top: 1px solid var(--paper-sunk); border-radius: 0; background: none;
+    padding: 16px 4px; border: none; border-top: 1px solid var(--gr-rule); border-radius: 0; background: none;
   }
   .gr-list--tiles .gr-row .ds-list-title { font-size: 15px; }
   .gr-list--tiles .gr-row > .ds-chev { display: none; }

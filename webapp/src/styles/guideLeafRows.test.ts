@@ -13,9 +13,10 @@ const LEAF_ROWS = '.gr-list .pp-paper .sg-rows.gr-rows';
 const whiteRows = (rules: Rule[]): string[] => rules
   .filter((r) => r.selectors.some((s) => ROW.test(s) && !s.includes('--paper')) && (WHITE.test(r.body) || SHADOW.test(r.body)))
   .map((r) => r.selectors.join(', '));
-/** Белый список примитива SignGroup (.sg-rows) на листе группы снят правилом справочника. */
+/** Белый список примитива SignGroup (.sg-rows) на листе группы снят правилом справочника. Линия — не светлая
+ *  --paper-sunk: на цветном листе её не видно, колонка сливалась в сплошную плашку (жалоба 2026-11-26). */
 const leafCleared = (rules: Rule[]): boolean =>
-  rules.some((r) => r.selectors.includes(LEAF_ROWS) && /background:\s*none/.test(r.body) && /border-top:/.test(r.body));
+  rules.some((r) => r.selectors.includes(LEAF_ROWS) && /background:\s*none/.test(r.body) && /border-top:/.test(r.body) && !/paper-sunk/.test(r.body));
 
 describe('справочник: строки на листе группы без белой коробки и тени', () => {
   const rules = [...readCss('guide-reference.css'), ...readCss('therapist-guide.css')];
@@ -25,8 +26,8 @@ describe('справочник: строки на листе группы без
   it('белый список SignGroup на листе снят, строки отделены линией', () => {
     expect(leafCleared(rules)).toBe(true);
   });
-  it('красный образец: белая коробка с тенью и лист без снятого списка', () => {
-    const bad = parseRules('.gd-rows { background: var(--surface); box-shadow: var(--shadow-1); } .gr-list--tiles .gr-rows > .gr-row:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }');
+  it('красный образец: белая коробка с тенью и линия --paper-sunk на цветном листе', () => {
+    const bad = parseRules(`.gd-rows { background: var(--surface); box-shadow: var(--shadow-1); } .gr-list--tiles .gr-rows > .gr-row:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); } ${LEAF_ROWS} { border-top: 1px solid var(--paper-sunk); background: none; }`);
     expect(whiteRows(bad)).toEqual(['.gd-rows', '.gr-list--tiles .gr-rows > .gr-row:hover']);
     expect(leafCleared(bad)).toBe(false);
   });
