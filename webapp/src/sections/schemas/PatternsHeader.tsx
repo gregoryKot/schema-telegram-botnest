@@ -1,7 +1,7 @@
 import { SettingsGear, CustomizeLink } from '../../components/customize/CustomizeGear';
 interface Props { mobile: boolean; onOpenLibrary: () => void; onCustomize: () => void; onOpenSettings?: () => void }
 
-// Шапка «Паттернов» — один состав на любой ширине (#906); на телефоне «Настроить экран» и шестерёнка — в строке надписи (css).
+// Шапка «Паттернов» — один состав на любой ширине (#906); на телефоне «Библиотека», «Настроить экран» и шестерёнка — одной строкой под подписью (css).
 export function PatternsHeader({ mobile, onOpenLibrary, onCustomize, onOpenSettings }: Props) {
   return (
     <div className="ds-head-row cs-head">

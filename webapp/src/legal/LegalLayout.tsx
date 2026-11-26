@@ -39,18 +39,18 @@ export function Ul({ items }: { items: string[] }) {
   );
 }
 
-const cellWrap: CSSProperties = { minWidth: 0, overflowWrap: 'anywhere' };
+// hyphens — перенос по слогам («персо-нальных»), anywhere — только неразрывное (почта, cookie).
+const cellWrap: CSSProperties = { minWidth: 0, overflowWrap: 'anywhere', hyphens: 'auto', padding: '12px 0' };
 
 export function Table({ rows }: { rows: [string, string][] }) {
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-12)', overflow: 'hidden' }}>
+    <div style={{ borderBottom: '1px solid var(--paper-sunk)' }}>
       {rows.map(([label, value], i) => (
         <div key={i} data-testid="legal-table-row" style={{
-          display: 'grid', gridTemplateColumns: TABLE_ROW_COLUMNS,
-          borderBottom: i < rows.length - 1 ? '1px solid var(--line)' : 'none',
+          display: 'grid', gridTemplateColumns: TABLE_ROW_COLUMNS, columnGap: 16, borderTop: '1px solid var(--paper-sunk)',
         }}>
-          <div style={{ ...cellWrap, padding: '12px 16px', background: 'rgba(var(--fg-rgb),.03)', fontSize: 13, fontWeight: 600, color: 'var(--text-faint)', borderRight: '1px solid var(--line)' }}>{label}</div>
-          <div style={{ ...cellWrap, padding: '12px 16px', fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{value}</div>
+          <div style={{ ...cellWrap, fontSize: 13, fontWeight: 600, color: 'var(--text-faint)' }}>{label}</div>
+          <div style={{ ...cellWrap, fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{value}</div>
         </div>
       ))}
     </div>

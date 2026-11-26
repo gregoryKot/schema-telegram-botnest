@@ -25,3 +25,11 @@ export function useStripEdges(days: number) {
   }, [measure, days]);
   return { ref, edges, measure };
 }
+
+/** Маска затухания для ленты со стилем инлайн (ряд дней записи визитки): края, за которыми есть ещё. */
+export function edgeFadeMask(edges: { start: boolean; end: boolean }, px = 32): string | undefined {
+  if (!edges.start && !edges.end) return undefined;
+  const from = edges.start ? `transparent, #000 ${px}px` : '#000';
+  const to = edges.end ? `#000 calc(100% - ${px}px), transparent` : '#000';
+  return `linear-gradient(to right, ${from}, ${to})`;
+}

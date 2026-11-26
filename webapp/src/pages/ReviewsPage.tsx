@@ -42,11 +42,12 @@ export function ReviewsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, margin: '48px 0 0' }}>
           {REASONS.map((r) => (
             <div key={r.n} style={{
-              display: 'grid', gridTemplateColumns: '64px 1fr', gap: '0 20px',
+              // Перенос вместо медиа-запроса: на телефоне номер встаёт над заголовком и не ест ширину текста.
+              display: 'flex', flexWrap: 'wrap', gap: '14px 20px',
               padding: '28px 0', borderTop: '1px solid var(--line)',
             }}>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em' }}>{r.n}</span>
-              <div>
+              <span style={{ flex: '0 0 64px', fontFamily: 'var(--serif)', fontSize: 32, fontWeight: 400, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-.02em' }}>{r.n}</span>
+              <div style={{ flex: '1 1 360px', minWidth: 0 }}>
                 <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 400, letterSpacing: '-0.01em', color: 'var(--text)', margin: '0 0 10px', lineHeight: 1.2 }}>{r.title}</h2>
                 <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.75, margin: 0 }}>{r.text}</p>
               </div>
