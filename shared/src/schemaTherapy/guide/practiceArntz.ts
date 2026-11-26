@@ -72,6 +72,6 @@ export const buildPracticeArntz: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: modeFlippingMoreBpd,
-    sources: '[Арнтц ПРЛ, гл. 2, 9], [Арнтц, 1.4]',
+    sources: '[Арнтц ПРЛ, гл. 2, 9], [Арнтц, 1.4], [Фаррелл-Шоу, гл. 2]',
   },
 ];

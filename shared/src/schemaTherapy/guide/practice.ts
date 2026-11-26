@@ -16,6 +16,7 @@ import { buildPracticeTherapistHeath } from './practiceModeReset';
 import { buildPracticeModelRoediger } from './practiceModelRoediger';
 import { buildPracticeSessionRoediger } from './practiceSessionRoediger';
 import { buildPracticeModeStates } from './practiceModeStates';
+import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
 
 /**
  * «Для терапевта»: что добавляют к рамке другие книги, три источника
@@ -66,4 +67,5 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeModelRoediger(tr),
   ...buildPracticeSessionRoediger(tr),
   ...buildPracticeModeStates(tr),
+  ...buildPracticeMethodFarrellShaw(tr),
 ];

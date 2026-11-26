@@ -1,6 +1,7 @@
 import { complaintToModeMore } from './practiceAssessMore';
 import { modeFlippingMore } from './practiceMoreArntzIntro';
 import { modeFlippingCh9 } from './practiceModeFlippingBpd';
+import { modeFlippingFarrellShawMore } from './practiceMethodFarrellShaw';
 
 /** «Подробнее» к заметкам «Для терапевта» по гл. 2–3 Арнца и ван Гендерен о ПРЛ. */
 export const modeFlippingMoreBpd: string[] = [
@@ -8,6 +9,7 @@ export const modeFlippingMoreBpd: string[] = [
   'Один повод, разные режимы: терапевт отменяет встречу. Сердитый Защитник высмеивает «дурацкую модель» и говорит, что ему никто не нужен. Терапевт называет режим и повод: клиенту кажется, что его оставят одного [Арнтц ПРЛ, гл. 2].',
   'Самовозвеличиватель требует перенести отпуск. Терапевт не переносит и спрашивает, какая сторона клиента считает, что терапевт должен подстраиваться [Арнтц ПРЛ, гл. 2].',
   ...modeFlippingCh9,
+  ...modeFlippingFarrellShawMore,
 ];
 
 export const complaintToModeMoreBpd: string[] = [
