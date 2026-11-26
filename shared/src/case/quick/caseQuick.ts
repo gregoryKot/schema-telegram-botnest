@@ -11,7 +11,7 @@
 import { FEEL_GATES } from '../../mode/modeFeelGates';
 import { MODE_DESC } from '../../mode/modePickerDesc';
 import { getModeCard } from '../../mode/modeCards';
-import { getModeById } from '../../schemaTherapy/schemaTherapyData';
+import { modeClinicalName } from '../../mode/modeDisplayName';
 import type { ModeEntrySaveData } from '../../mode/modeDiarySteps';
 import type { CaseChip } from '../caseBodyChips';
 import { IMPULSE_SECOND_DOOR } from '../caseImpulses';
@@ -124,7 +124,7 @@ export function resolveModeId(f: CaseQuickFields): string {
 
 /** Имя режима для заголовка: «Уязвимый Ребёнок» (оба слова с заглавной). */
 export function quickModeName(modeId: string): string {
-  return getModeById(modeId)?.name ?? modeId;
+  return modeClinicalName(modeId);
 }
 
 export interface QuickResultRow {

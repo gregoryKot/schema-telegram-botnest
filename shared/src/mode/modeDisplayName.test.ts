@@ -12,7 +12,9 @@ import {
   hasOwnName,
   modeClinicalName,
 } from './modeDisplayName';
-import { getModeLeafLabel } from './modeFeelGates';
+import { getModeById } from '../schemaTherapy/schemaTherapyData';
+
+const canonical = (id: string) => getModeById(id)?.name;
 
 const KNOWN = 'detached_protector';
 
@@ -22,13 +24,13 @@ describe('modeDisplayName', () => {
   });
 
   it('без своего имени показывает клиническое', () => {
-    expect(modeDisplayName(KNOWN)).toBe(getModeLeafLabel(KNOWN));
+    expect(modeDisplayName(KNOWN)).toBe(canonical(KNOWN));
   });
 
   it('пустой и пробельный алиас именем не считается', () => {
-    expect(modeDisplayName(KNOWN, '')).toBe(getModeLeafLabel(KNOWN));
-    expect(modeDisplayName(KNOWN, '   ')).toBe(getModeLeafLabel(KNOWN));
-    expect(modeDisplayName(KNOWN, null)).toBe(getModeLeafLabel(KNOWN));
+    expect(modeDisplayName(KNOWN, '')).toBe(canonical(KNOWN));
+    expect(modeDisplayName(KNOWN, '   ')).toBe(canonical(KNOWN));
+    expect(modeDisplayName(KNOWN, null)).toBe(canonical(KNOWN));
   });
 
   it('алиас обрезается по краям', () => {
@@ -47,12 +49,12 @@ describe('hasOwnName', () => {
     expect(hasOwnName(KNOWN, 'Стена')).toBe(true);
     expect(hasOwnName(KNOWN)).toBe(false);
     expect(hasOwnName(KNOWN, '  ')).toBe(false);
-    expect(hasOwnName(KNOWN, getModeLeafLabel(KNOWN))).toBe(false);
+    expect(hasOwnName(KNOWN, canonical(KNOWN))).toBe(false);
   });
 });
 
 describe('modeClinicalName', () => {
   it('всегда возвращает клиническое имя, игнорируя своё', () => {
-    expect(modeClinicalName(KNOWN)).toBe(getModeLeafLabel(KNOWN));
+    expect(modeClinicalName(KNOWN)).toBe(canonical(KNOWN));
   });
 });
