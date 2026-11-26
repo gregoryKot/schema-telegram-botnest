@@ -6,12 +6,10 @@
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
-/* Оговорка (TherapistGuideSection): тексты из разных источников, куда писать об ошибке. На компьютере —
-   под шапкой, ближе зазора страницы; на телефоне — под списком, а шапка без знака и плотнее: вкладки
-   и первые листы видны без прокрутки. */
-.gr-page > .gr-note { margin: -14px 0 0; max-width: 65ch; line-height: 1.45; }
+/* Оговорка (TherapistGuideSection): тексты из разных источников, куда писать об ошибке — под списком: сверху поиск
+   и вкладки сразу под шапкой. На телефоне шапка без знака и плотнее: вкладки и первые листы видны без прокрутки. */
+.gr-page > .gr-note { order: 1; margin: 0; max-width: 65ch; line-height: 1.45; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .gr-page > .gr-note { order: 1; margin: 0; }
   .gr-head { padding-bottom: 0; }
   .gr-head .pp-hero { grid-template-columns: minmax(0, 1fr); }
   .gr-head .pp-art--hero { display: none; }
@@ -46,9 +44,13 @@
      на середине высоты, под ней — пустая колонка (как у .sg-cols--rows в sheet-schemas.css). */
   .gr-list--groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
   /* Лист с подгруппами (копинги) выше соседей в разы: в ряду с ним под коротким листом оставалась пустота.
-     Он занимает вторую колонку на все ряды, остальные листы встают рядом; излишек высоты уходит в последний ряд (1fr). */
+     Он занимает вторую колонку на все ряды, остальные листы встают рядом; последний из них — в ряду 1fr и тянется
+     до низа: колонки кончаются вровень. На колонке подгруппы — отдельные листы: на одном листе их подписи тонули. */
   .gr-list--groups.has-tall { grid-template-rows: repeat(var(--gr-rows), auto) 1fr; }
-  .gr-list--groups > .sg-group:has(> .gr-parts) { grid-column: 2; grid-row: 1 / -1; }
+  .gr-list--groups.has-tall > .sg-group { align-self: stretch; }
+  .gr-list--groups > .sg-group:has(> .gr-parts) { grid-column: 2; grid-row: 1 / -1; padding: 0; border-radius: 0; background: none; }
+  .gr-list--groups .sg-rows.gr-parts { gap: 16px; }
+  .gr-list--groups .gr-parts > .gr-part { padding: 12px; border-radius: var(--r-16); background: oklch(0.915 0.03 var(--h)); }
 
   /* Плитки по две в ряд на листе — знак, название, суть; каждая под линией, без белой заливки. */
   .gr-list--tiles .gr-rows {
@@ -66,6 +68,7 @@
 /* Широкий монитор: колонка кабинета до 1440 — листы и карточки встают по три, строки не растягиваются. */
 @container (min-width: 1080px) {
   .gr-list--groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .gr-list--groups.has-tall > .sg-group { align-self: start; } /* по три в ряд короткий лист встал бы рядом с длинным */
   .gr-list--tiles .gr-rows { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
