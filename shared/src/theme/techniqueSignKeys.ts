@@ -47,6 +47,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'three_parts',
   // TechniqueSignsRoediger.tsx — техники из книги Рёдигера, Стивенс и Брокмана
   'family_tree',
+  'side_seat',
   // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
   'breathing_space',
   'body_scan',
