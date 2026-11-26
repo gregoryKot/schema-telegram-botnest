@@ -78,13 +78,14 @@ describe('check-radius-scale.mjs', () => {
     expect(res.stdout).toContain('до PR визитки');
     expect(res.stdout).toContain('админка');
   });
-  it('EXEMPT гасит визитку и админку, но не соседний экран', () => {
+  it('EXEMPT гасит визитку и админку, но не стили лендинга и не соседний экран', () => {
     const ex = loadNamedPatterns('check-radius-scale-rules.mjs', 'EXEMPT').map(
       (p) => new RegExp(p.source, p.flags),
     );
     const hit = (f: string) => ex.some((re) => re.test(f));
     expect(hit('webapp/src/pages/landing/HeroSection.tsx')).toBe(true);
-    expect(hit('webapp/src/styles/product-landing-hero.css')).toBe(true);
+    expect(hit('webapp/src/styles/product-landing-hero.css')).toBe(false);
+    expect(hit('webapp/src/styles/product-tests.css')).toBe(false);
     expect(hit('webapp/src/pages/admin/BookingsManager.tsx')).toBe(true);
     expect(hit('webapp/src/pages/ReviewsPage.tsx')).toBe(false);
     expect(hit('webapp/src/styles/paper.css')).toBe(false);
