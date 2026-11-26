@@ -12,6 +12,8 @@ import { SignArt } from '../art/SignArt';
 import { EntitySheet } from '../paper/EntitySheet';
 import { HealthyVoice } from '../paper/HealthyVoice';
 import { modeLookById } from '../diary/modeLookById';
+import type { JourneyChipProps } from '../../../../shared/src/journey/journeyKit';
+import '../../styles/line-tabs.css';
 
 const modeSign = (modeId: string) => modeLookById(modeId).sign;
 const itemLook = (item: JourneyItem): JourneyLook | null => journeyItemLook(item, modeSign);
@@ -49,4 +51,9 @@ export function JourneyDetailHead({ item, label, line }: { item: JourneyItem; la
 /** Голос Здорового Взрослого в детали — вставка мха. */
 export function JourneyVoice({ title, text }: { title: string; text: string }) {
   return <HealthyVoice label={title} text={glueSpaces(text)} className="jr-voice" />;
+}
+
+/** Фильтр ленты — тихий переключатель текстом (.lt-q, как отбор «Клиентов»): выбранный — основным цветом с чертой. */
+export function JourneyFilter({ label, on, onToggle }: JourneyChipProps) {
+  return <button type="button" className="lt-q jr-filter" aria-pressed={on} onClick={onToggle}>{label}</button>;
 }
