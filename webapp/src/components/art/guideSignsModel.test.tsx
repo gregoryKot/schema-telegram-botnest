@@ -35,6 +35,7 @@ const NOTE_IDS = [
   'childhood_experience_types',
   'self_practice_why', 'self_practice_safety', 'self_practice_formats', 'self_practice_reflection', 'self_practice_review',
   'self_practice_group_day', 'therapist_critic', 'difficult_client_my_coping',
+  'know_your_healthy_adult', 'therapist_happy_child', 'therapist_modes_walk',
   'attachment_assertiveness_poles',
 ];
 
