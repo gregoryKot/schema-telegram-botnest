@@ -4,7 +4,7 @@
 # Использование: scripts/playwright-install-retry.sh chromium webkit
 set -uo pipefail
 
-ATTEMPT_SECONDS="${PLAYWRIGHT_INSTALL_ATTEMPT_SECONDS:-180}"
+ATTEMPT_SECONDS="${PLAYWRIGHT_INSTALL_ATTEMPT_SECONDS:-300}"
 
 attempt() {
   timeout -k 10 "$ATTEMPT_SECONDS" npx playwright install --with-deps "$@"
