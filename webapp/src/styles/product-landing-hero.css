@@ -30,7 +30,7 @@
 .pl2-preview { position: relative; z-index: 1; display: flex; justify-content: center; }
 .pl2-phone {
   width: 300px; box-sizing: border-box; padding: 22px 20px 20px; transform: rotate(-1.5deg);
-  background: var(--surface); border-radius: 32px; box-shadow: 12px 14px 0 oklch(0.8 0.07 45);
+  background: var(--surface); border-radius: var(--r-16); box-shadow: 12px 14px 0 oklch(0.8 0.07 45);
 }
 .pl2-phone-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
 .pl2-phone-sub { margin: 4px 0 18px; font-size: 12.5px; color: var(--text-sub); }
@@ -104,7 +104,7 @@
   .pl2-hero-art { margin-top: 36px; }
   .pl2-note-card--a { top: -46px; }
   .pl2-hero .pl2-h1 { font-size: 10.6vw; }
-  .pl2-hero .pl2-pill { gap: 6px; padding: 6px 12px; font-size: 12px; }
+  .pl2-hero .pl2-pill { gap: 6px; font-size: 12px; }
 }
 /* 320–340: узкий коллаж мельчает с шириной, а высота мокапа нет — шалфей и петля уходили под мокап. Своя сцена
    (--xs, 1 ед. = 1px) прижата к низу блока: квадратик и петля — в полосе 80px под мокапом при любой его высоте. */
