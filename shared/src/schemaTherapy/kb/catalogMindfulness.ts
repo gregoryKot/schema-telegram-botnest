@@ -16,15 +16,8 @@ const vf = (id: string, title: string, chapters: string[]): CatalogTopic => ({
 });
 
 export const VF_TECHNIQUES: readonly CatalogTopic[] = [
-  vf('three_minute_breathing_space', 'Трёхминутная дыхательная пауза', [
-    'гл. 3',
-    'гл. 9',
-  ]),
-  vf(
-    'mindfulness_practices',
-    'Практики осознанности: изюм, скан тела, дыхание, ходьба',
-    ['гл. 3', 'гл. 9'],
-  ),
+  w('three_minute_breathing_space'),
+  w('mindfulness_practices'),
   vf(
     'schema_awareness_practice',
     'Осознанность к схеме: узнать, принять, увидеть как мысль',
