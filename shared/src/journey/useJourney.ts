@@ -78,7 +78,10 @@ export function useJourney(deps: JourneyDeps) {
       .catch(() => setFailed(true));
   }, [deps, bump]);
 
-  const reload = useCallback(() => { setFailed(false); setBump((b) => b + 1); }, []); // failed — чтобы «Попробовать снова» показал скелетон
+  const reload = useCallback(() => {
+    setFailed(false);
+    setBump((b) => b + 1);
+  }, []); // failed — чтобы «Попробовать снова» показал скелетон
 
   const stats = useMemo(
     () => (data ? journeyStatRows(data.counts) : []),
