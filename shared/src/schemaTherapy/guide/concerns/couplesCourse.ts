@@ -1,4 +1,8 @@
 import * as d from './couplesDosbor';
+import {
+  couplesRafaeliCourse,
+  couplesRafaeliPsychoeducation,
+} from './couplesRafaeli';
 import type { ConcernGuide } from './types';
 
 /** Работа с парами: курс, контракт, форматы, психообразование — карта Пары.md, пачка 3 (гл. 1–5, 7–11). */
@@ -38,7 +42,11 @@ export const COUPLES_COURSE: Pick<
   ConcernGuide,
   'course' | 'psychoeducation' | 'formats'
 > = {
-  course: [...d.couplesCourse, ...course],
-  psychoeducation: [...psychoeducation, ...d.couplesPsychoeducation],
+  course: [...d.couplesCourse, ...course, ...couplesRafaeliCourse],
+  psychoeducation: [
+    ...psychoeducation,
+    ...d.couplesPsychoeducation,
+    ...couplesRafaeliPsychoeducation,
+  ],
   formats: [...formats, ...d.couplesFormats],
 };

@@ -54,11 +54,14 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'mode_map',
     'empathic_confrontation',
     'motivational_interviewing',
+    'flashcards',
+    'schema_diary',
+    'behavioral_activation',
   ],
   voice: d.couplesVoice(tr),
   ...COUPLES_SESSION,
   ...COUPLES_CRISIS,
   ...COUPLES_COURSE,
   sources:
-    '[Пары, введение, гл. 1–11] [Хис, гл. 13] [Бехари, гл. 2, 4, 6–7] [Арнтц ПРЛ, гл. 10] [Янг, гл. 2–3, 5, 7, 10] [Кембридж, гл. 9]',
+    '[Пары, введение, гл. 1–11] [Хис, гл. 13] [Бехари, гл. 2, 4, 6–7] [Арнтц ПРЛ, гл. 10] [Янг, гл. 2–3, 5, 7, 10] [Кембридж, гл. 9] [Рафаэли, гл. 27]',
 });
