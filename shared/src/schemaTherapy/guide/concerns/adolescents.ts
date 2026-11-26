@@ -5,9 +5,14 @@ import {
 } from './adolescentsModes';
 import { ADOLESCENTS_PSYCHOEDUCATION } from './adolescentsEducation';
 import { ADOLESCENTS_SESSIONS } from './adolescentsSessions';
+import {
+  ADOLESCENTS_CARE,
+  ADOLESCENTS_CARE_COURSE,
+  ADOLESCENTS_CARE_DIFFERENTIAL,
+} from './adolescentsCare';
 import type { ConcernGuideBuilder } from './types';
 
-/** Дети и подростки (0–23 года): ядро статьи по карте docs/guide-sources/Дети.md, пачки 1–2 (Луз, гл. 0–3, 5–10, 12, 14). */
+/** Дети и подростки (0–23 года): ядро статьи по карте docs/guide-sources/Дети.md, пачки 1–3 (Луз, гл. 0–10, 12, 14, 15). */
 export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
   id: 'adolescents',
   name: 'Дети и подростки',
@@ -20,9 +25,12 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
   modeModel: ADOLESCENTS_MODE_MODEL,
   schemaIds: ADOLESCENTS_SCHEMA_IDS,
   ...ADOLESCENTS_SESSIONS,
+  ...ADOLESCENTS_CARE,
+  course: [...(ADOLESCENTS_SESSIONS.course ?? []), ...ADOLESCENTS_CARE_COURSE],
   differential: [
     '«Крутость» подростка — сдержанность, нежелание показывать чувства — социально желаема и бывает просто возрастной уверенностью. За Отстранённого Защитника её принимают, глядя на функцию и частоту: от чего она бережёт и как часто держится [Луз, гл. 7]. Уход в игры и экраны закрывает потребности на время, но оставляет дефицит навыков и неготовность к взрослой жизни [Луз, гл. 7].',
     'Вспышки раздражения у 17–23-летних — нередко вариант нормы; кризис не оценивают поспешно [Луз, гл. 8]. Нестабильность этого возраста отчасти совпадает с картиной ПРЛ, и к ней подходят приёмы из работы с ПРЛ [Луз, гл. 3].',
+    ...ADOLESCENTS_CARE_DIFFERENTIAL,
   ],
   comorbidity: [
     'Эмоциональная нестабильность подростков меньше, чем считалось; главный стресс — романтические отношения, а недовольство телом связано с подавленностью, особенно у девочек [Луз, гл. 7]. Подробнее о работе при ПРЛ — запрос «Пограничное расстройство личности».',
@@ -45,6 +53,7 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
     'play_and_joy',
     'chairwork',
     'imagery_rescripting',
+    'empathic_confrontation',
   ],
   voice: [
     tr(
@@ -52,5 +61,5 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
       'Давайте посмотрим, кто сейчас в вашей команде у руля: Стена или та часть, которой страшно?',
     ),
   ],
-  sources: '[Луз, гл. 0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 14]',
+  sources: '[Луз, гл. 0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 14, 15]',
 });
