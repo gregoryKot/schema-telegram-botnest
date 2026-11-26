@@ -85,6 +85,10 @@ export type HeathTechniqueId =
 /** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
 export type RoedigerTechniqueId = 'genogram' | 'body_mode_positions';
 
+/** Техники из книги ван Фресвайк, Брурсен и Шуринк (карта «ван Фресвайк»). */
+export type VreeswijkTechniqueId =
+  'three_minute_breathing_space' | 'mindfulness_practices';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -96,4 +100,5 @@ export type TechniqueId =
   | FarrellTechniqueId
   | HeathTechniqueId
   | RoedigerTechniqueId
+  | VreeswijkTechniqueId
   | BorrowedTechniqueId;
