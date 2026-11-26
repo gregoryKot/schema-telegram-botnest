@@ -225,7 +225,7 @@ jobs:
   # Движки: Chromium (проект webapp) и WebKit на iPhone 13 (проект webkit-iphone).
   browser-smoke:
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -247,7 +247,7 @@ jobs:
       # WebKit с системными зависимостями. Путь к Chromium конфиг выбирает сам по
       # факту наличия файла: предустановленного нет, берётся скачанный.
       - name: браузеры Playwright (потолок времени и одна повторная попытка)
-        timeout-minutes: 7
+        timeout-minutes: 12
         run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
@@ -339,7 +339,7 @@ jobs:
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
       - name: браузеры Playwright (потолок времени и одна повторная попытка)
-        timeout-minutes: 7
+        timeout-minutes: 12
         run: bash scripts/playwright-install-retry.sh chromium
       # Готовность — по факту ответа: /health отвечает после app.listen(3000),
       # вход :3001 поднимается следом (404 на чужой путь — сервер уже слушает).

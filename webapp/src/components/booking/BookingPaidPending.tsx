@@ -2,8 +2,7 @@ import { Skeleton } from '../Skeleton';
 import { BookingSessionCard } from './BookingSessionCard';
 import type { PublicBooking } from './useBookingByToken';
 import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from './cancelPolicy';
-import { h1, sub } from './bookingPageStyles';
-import { icon, ghostBtn } from './bookingPaidStyles';
+import { OutcomeBody } from '../paper/OutcomeBody';
 import { BookingRefreshFailedNote } from './BookingRefreshFailedNote';
 
 /**
@@ -15,24 +14,19 @@ export function BookingPaidPending({ booking, timedOut, refreshFailed, onRetry }
   booking: PublicBooking; timedOut: boolean; refreshFailed: boolean; onRetry: () => void;
 }) {
   return (
-    <>
-      <div style={icon}>…</div>
-      <h1 style={h1}>{timedOut ? 'Подтверждение задерживается' : 'Оплата принята'}</h1>
-      {timedOut ? (
-        <p style={sub}>
+    <OutcomeBody
+      title={timedOut ? 'Подтверждение задерживается' : 'Оплата принята'}
+      lead={timedOut ? (
+        <>
           Запись пока не подтвердилась. Напишите мне в Telegram, проверю оплату и запись:{' '}
           <a href={CANCEL_SUPPORT_LINK} style={{ color: 'inherit', textDecoration: 'underline' }}>{CANCEL_SUPPORT_HANDLE}</a>.
-        </p>
-      ) : (
-        <p style={sub}>Подтверждаю запись, это занимает меньше минуты. Страница обновится сама.</p>
-      )}
-
+        </>
+      ) : 'Подтверждаю запись, это занимает меньше минуты. Страница обновится сама.'}
+      action={timedOut ? { label: 'Проверить ещё раз', onClick: onRetry } : undefined}
+    >
       <BookingSessionCard type={booking.type} durationMin={booking.durationMin} startsAt={booking.startsAt} />
       {refreshFailed && <BookingRefreshFailedNote showRetry={!timedOut} onRetry={onRetry} />}
-
-      {timedOut
-        ? <button onClick={onRetry} style={ghostBtn}>Проверить ещё раз</button>
-        : <Skeleton height={48} radius={12} />}
-    </>
+      {!timedOut && <Skeleton height={48} radius={12} />}
+    </OutcomeBody>
   );
 }

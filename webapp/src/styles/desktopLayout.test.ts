@@ -14,7 +14,7 @@ const WIDE = /(^|;|\s)width:\s*100%/;
 /** Телефонная раскладка примитивов: растяжение на колонку — только ≤767 (на компьютере по содержимому). */
 const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE]];
 /** Примитивы и раскладки, у которых на ≥768 обязано быть своё правило; ':файл' — искать только в нём, по точному селектору. */
-const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.cw-thing', '.cm-page > .cm-group', '.pa-spread.ap-main'];
+const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.cw-thing', '.cm-body > .cm-group', '.pa-spread.ap-main'];
 /** Скрытие телефонных элементов: display: none только под точным ≤767. */
 const PHONE_HIDDEN: [string, string][] = [['concept-graph.css', '.tcp-head-title'], ['concept-graph.css', '.tcp-more-txt']];
 /** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
@@ -32,7 +32,7 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/booking/ClientBookingSheet.tsx': ['own', '.cbk-actions .ds-btn'], // колонка листа до 560 (client-booking.css)
   'components/settingsSheet/AboutSheet.tsx': ['own', '.st-done'],
   'components/paper/DoneSheet.tsx': ['own', '.ds-btn.pa-done-primary'], // во весь лист «готово» 480–540
-  'components/paper/PaperOutcome.tsx': ['own', '.ds-btn.pa-outcome-action'], // во всю карточку исхода 440
+  'components/paper/OutcomeBody.tsx': ['own', '.ds-btn.pa-outcome-action'], // во всю карточку исхода 440
   'components/ErrorBoundary.tsx': ['own', '.ds-btn.pa-outcome-action'], // своя кнопка в листе исхода (под ней «Детали»)
   'components/AuthGateViews.tsx': ['own', '.ds-btn.pa-outcome-action'], // занятая «Проверяем…» в листе исхода
   // b26: своя кнопка в листе исхода (children PaperOutcome) — то же правило во всю карточку

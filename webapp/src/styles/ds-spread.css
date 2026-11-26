@@ -1,0 +1,11 @@
+/* Разворот (ds-spread): на ≥1024 слева треть — ярлык капсом и пояснение (ds-spread__aside),
+   справа две трети — содержимое (ds-spread__body); на телефоне и в узком окне — колонкой.
+   Текст для чтения в теле — ds-prose, не шире 65ch. Один примитив: экран свою раскладку не пишет. */
+@media (min-width: 1024px) {
+  .ds-spread {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); column-gap: clamp(32px, 4vw, 64px);
+    align-items: start; width: 100%; box-sizing: border-box;
+  }
+  .ds-spread__aside, .ds-spread__body { min-width: 0; }
+}
+.ds-prose { max-width: 65ch; }

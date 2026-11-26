@@ -18,7 +18,7 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Интро теста YSQ: герой со сценой (лист глины, веер вопросов с Layers), три факта одной карточкой, шкала,
+/** Интро теста YSQ: на ≥1024 разворот ds-spread — герой слева, остальное справа; герой со сценой (лист глины, веер вопросов с Layers), три факта одной карточкой, шкала,
  *  старт/продолжение — одна залитая кнопка; «самопомощь» наклейкой под кнопками (APP_2026-11.md, принцип 5). */
 export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed, retryResumeCheck, onContinue, onStartFresh, onCancel }: Props) {
   const facts = [
@@ -27,16 +27,16 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
     ['20 схем', 'Результат с описанием и советом для каждой'],
   ];
   return (
-    <>
-      <EntitySheet look="ysq" title="Тест на схемы" sub="Убеждения о себе и других вместе с их чувствами, сложившиеся в детстве"
-        art={<YsqQuizScene />} titleAs="h1" className="ss-hero ss-ysq-hero" />
-      <div className="ss-facts">
+    <div className="ss-intro ds-spread">
+      <div className="ds-spread__aside"><EntitySheet look="ysq" title="Тест на схемы" sub="Убеждения о себе и других вместе с их чувствами, сложившиеся в детстве"
+        art={<YsqQuizScene />} titleAs="h1" className="ss-hero ss-ysq-hero" /></div>
+      <div className="ss-intro-body ds-spread__body"><div className="ss-facts">
         {facts.map(([title, desc]) => (
           <div key={title} className="ss-fact"><b>{title}</b><span>{desc}</span></div>
         ))}
       </div>
 
-      <div className="ds-card ss-card-stack ss-legend-card">
+      <div className="ss-card-stack ss-legend-card">
         <div className="ds-label">Шкала ответов</div>
         <div className="ss-legend">
           {[1, 2, 3, 4, 5, 6].map(n => <div key={n} className={`ss-legend-n${n >= 4 ? ' is-high' : ''}`}>{n}</div>)}
@@ -59,7 +59,7 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
       <TherapyCaution place="test_start" compact />
 
       <p className="ss-note">Ответы привязаны к аккаунту и не передаются третьим лицам.</p>
-      <YsqDisclaimer mt={4} />
-    </>
+      <YsqDisclaimer mt={4} /></div>
+    </div>
   );
 }

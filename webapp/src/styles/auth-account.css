@@ -191,3 +191,7 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
 }
 .aa-email-code { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 10px; }
 .aa-email-code-err { flex-basis: 100%; } /* под полем кода, кнопка — следующей строкой */
+/* Без аватара (вход ещё грузится) пустая колонка с зазором сдвигала надпись на 12px от заголовка. */
+@media (max-width: 479px) {
+  .aa-head:not(:has(.aa-avatar)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'eyebrow sign' 'title title' 'lead lead'; }
+}

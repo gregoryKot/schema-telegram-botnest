@@ -87,3 +87,16 @@ describe('playwright-install-retry.sh', () => {
     }
   });
 });
+
+describe('browser-smoke в PR-CI', () => {
+  it('образ контейнера Playwright закреплён версией из package-lock.json', () => {
+    const lock = JSON.parse(
+      readFileSync(join(ROOT, 'package-lock.json'), 'utf8'),
+    );
+    const version = lock.packages['node_modules/@playwright/test'].version;
+    const ci = readFileSync(join(WORKFLOWS, 'ci.yml'), 'utf8');
+    expect(ci).toContain(
+      `image: mcr.microsoft.com/playwright:v${version}-noble`,
+    );
+  });
+});

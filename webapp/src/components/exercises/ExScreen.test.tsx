@@ -125,26 +125,26 @@ describe('ExScreen — герой и раскладки', () => {
     const { container, rerender } = render(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution foot={foot}><textarea /></ExScreen>);
     let main = container.querySelector('.ex2-main')!;
     expect(main.querySelector('.pa-sheet')!.nextElementSibling?.tagName).toBe('TEXTAREA');
-    expect(tail(main).className).toBe('th-caution th-caution--compact');
+    expect(tail(main).className).toBe('ds-aside th-caution th-caution--compact');
     expect(tail(main).previousElementSibling?.textContent).toBe('Запечатать');
 
     rerender(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution foot={foot} aside={aside} hintBeforeField><textarea /></ExScreen>);
     expect(container.querySelector('.ex2-head .th-caution')).toBeNull();
     main = container.querySelector('.ex2-body--split > .ex2-main')!;
-    expect(tail(main).className).toBe('th-caution th-caution--compact');
+    expect(tail(main).className).toBe('ds-aside th-caution th-caution--compact');
 
     rerender(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution foot={foot} aside={aside} spread><textarea /></ExScreen>);
     const [side, spreadMain] = [...container.querySelector('.pa-spread')!.children];
     expect(side.querySelector('.th-caution')).toBeNull();
-    expect(tail(spreadMain).className).toBe('th-caution th-caution--compact');
+    expect(tail(spreadMain).className).toBe('ds-aside th-caution th-caution--compact');
   });
 
   it('cautionAt="head" — наклейка под листом, если экран так выбрал; без look — полное под шапкой', () => {
     localStorage.clear();
     const { container, rerender } = render(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution cautionAt="head">поле</ExScreen>);
-    expect(container.querySelector('.pa-sheet')!.nextElementSibling?.className).toBe('th-caution th-caution--compact');
+    expect(container.querySelector('.pa-sheet')!.nextElementSibling?.className).toBe('ds-aside th-caution th-caution--compact');
     rerender(<ExScreen onBack={vi.fn()} eyebrow="Письмо" title="Себе" lede="Подводка" caution>поле</ExScreen>);
-    expect(container.querySelector('.ex2-lede')!.nextElementSibling?.className).toBe('th-caution');
+    expect(container.querySelector('.ex2-lede')!.nextElementSibling?.className).toBe('ds-aside th-caution');
   });
 
   it('hintBeforeField: шапка, подсказка, поле — по порядку (на телефоне подсказка до поля)', () => {

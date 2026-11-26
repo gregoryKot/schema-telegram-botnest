@@ -6,8 +6,19 @@
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
-/* Оговорка под шапкой (TherapistGuideSection): тексты из разных источников, куда писать об ошибке. */
-.gr-note { margin: 10px 0 0; line-height: 1.45; }
+/* Оговорка (TherapistGuideSection): тексты из разных источников, куда писать об ошибке. На компьютере —
+   под шапкой, ближе зазора страницы; на телефоне — под списком, а шапка без знака и плотнее: вкладки
+   и первые листы видны без прокрутки. */
+.gr-page > .gr-note { margin: -14px 0 0; max-width: 65ch; line-height: 1.45; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .gr-page > .gr-note { order: 1; margin: 0; }
+  .gr-head { padding-bottom: 0; }
+  .gr-head .pp-hero { grid-template-columns: minmax(0, 1fr); }
+  .gr-head .pp-art--hero { display: none; }
+  .gr-head .pp-hero-body { gap: 6px; }
+  .gr-head .pp-hero-title { font-size: 28px; }
+  .gr-head .pp-hero-text { font-size: 14px; line-height: 1.4; }
+}
 /* Строка со знаком: знак у названия, название с сутью, шеврон по центру. */
 .gr-row { grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; min-height: 56px; }
 .gr-row > .pp-row-art { padding-top: 1px; }
