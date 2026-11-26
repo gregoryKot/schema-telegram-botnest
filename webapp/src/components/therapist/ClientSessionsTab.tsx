@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import '../../styles/therapist-tabs.css';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
-import { todayStr } from '../../utils/format';
+import { todayStr } from '../../utils/format'; import { DateField } from '../DateField';
 import type { ClientDetail } from './clientSheetTypes';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
@@ -27,7 +27,7 @@ export function ClientSessionsTab({ detail, takeFocus }: Props) {
       <div className="tb-composer" style={{ '--h': ENTITY_LOOK.note.hue } as CSSProperties}>
         <div className="tb-composer-head">
           <SignHead kind="pebbles" as="div" className="ds-h3">Новая заметка</SignHead>
-          <input type="date" lang="ru" className="ds-input ds-input--sm" aria-label="Дата заметки" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)} />
+          <DateField label="Дата заметки" value={newNoteDate || todayStr()} onChange={setNewNoteDate} />
         </div>
         <LimitedTextarea
           max={SESSION_NOTE_MAX}

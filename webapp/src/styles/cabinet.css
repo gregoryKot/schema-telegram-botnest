@@ -273,6 +273,12 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-textarea { resize: none; min-height: calc(3em + 25px); }
 .ds-input--search { height: 40px; padding: 0; }
 .ds-input--sm { width: auto; height: 40px; padding: 0; }
+/* Поле даты (DateField): подпись «26 ноября» на линии, нативный input прозрачен поверх — календарь устройства. */
+.ds-date { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding-right: 8px; border-bottom: 1px solid var(--panel-line); font: 14px/1.5 var(--sans); color: var(--text); cursor: pointer; }
+.ds-date-input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 44px; margin: 0; padding: 0; border: none; opacity: 0; cursor: pointer; }
+/* Значок календаря (Chromium) растянут на всё поле: клик в любом месте открывает календарь. */
+.ds-date-input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: auto; height: auto; margin: 0; padding: 0; cursor: pointer; }
+.ds-date:focus-within { border-color: var(--accent); }
 .ds-input:focus, .ds-textarea:focus { outline: none; border-color: var(--accent); }
 .ds-input:focus-visible, .ds-textarea:focus-visible { box-shadow: 0 1px 0 var(--accent); }
 .ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-ghost); }
