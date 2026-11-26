@@ -30,7 +30,7 @@
 .pl2-preview { position: relative; z-index: 1; display: flex; justify-content: center; }
 .pl2-phone {
   width: 300px; box-sizing: border-box; padding: 22px 20px 20px; transform: rotate(-1.5deg);
-  background: var(--surface); border-radius: var(--r-16); box-shadow: 12px 14px 0 oklch(0.8 0.07 45);
+  background: var(--surface); border-radius: var(--r-16);
 }
 .pl2-phone-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
 .pl2-phone-sub { margin: 4px 0 18px; font-size: 12.5px; color: var(--text-sub); }
@@ -43,14 +43,13 @@
 .pl2-need-v { margin-left: auto; font-weight: 700; }
 .pl2-track { height: 7px; border-radius: 4px; background: var(--paper-sunk); }
 .pl2-track > span { display: block; height: 100%; border-radius: 4px; }
-.pl2-spark { margin-top: 18px; padding: 12px 14px; border-radius: 16px; background: var(--paper-tint); }
+.pl2-spark { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--paper-sunk); }
 .pl2-spark-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px; }
 .pl2-spark-head b { color: var(--text); }
 .pl2-spark-head span { color: var(--text-faint); }
 .pl2-note-card {
   position: absolute; z-index: 2; padding: 10px 14px; border-radius: 14px;
   background: var(--surface); font-size: 12px; font-weight: 700;
-  box-shadow: 6px 7px 0 oklch(0.82 0.06 var(--h));
 }
 .pl2-note-card small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--text-sub); }
 .pl2-note-card--a { --h: 25; top: -14px; right: -18px; transform: rotate(3deg); color: var(--accent); }

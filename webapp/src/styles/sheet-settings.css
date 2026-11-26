@@ -46,10 +46,14 @@
 }
 .st-help:hover { color: var(--accent); text-decoration-color: currentColor; }
 .st-hint { font-size: 13px; color: var(--text-sub); margin-top: 4px; line-height: 1.5; text-wrap: pretty; }
+.st-hint-line { display: block; }
 .st-rows { display: flex; flex-direction: column; }
 .st-body-block { padding: 14px 0; display: flex; flex-direction: column; gap: 12px; }
 .st-body-block + .ds-list-row, .st-body-block + .st-body-block { border-top: 1px solid var(--panel-line); } /* после строки линия уже есть — её нижняя граница */
 .st-body-block .st-body-block { padding: 0; }
+/* Режим: черта вкладок и есть линия над «Аккаунтом» — без второй линии и пустой полосы между ними (К30). */
+.st-body-block.st-mode-block { padding-bottom: 0; }
+.st-body-block.st-mode-block + .ds-list-row { border-top: 0; }
 /* Выбор значения («На «ты»/«вы»): варианты текстом на линии, у выбранного — черта акцента, как .lt-tab. */
 .st-pick { display: flex; gap: 28px; border-bottom: 1px solid var(--panel-line); }
 .st-pick-opt {

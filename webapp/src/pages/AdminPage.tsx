@@ -43,7 +43,7 @@ export function AdminPage() {
   // shouldRecordSession), и админка технически внутри её allow-list —
   // экран редактирования сайта не должен уйти в запись сессии.
   if (!authed) return (
-    <div className="ym-hide-content" style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--sans)' }}>
+    <div className="ym-hide-content" style={{ flex: 1, minHeight: '100dvh', display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box', maxWidth: 420, margin: '0 auto', padding: '40px 20px', fontFamily: 'var(--sans)' }}>
       <h1 style={{ fontFamily: 'var(--serif)', fontSize: 28, fontWeight: 400, color: 'var(--text)' }}>Админка</h1>
       <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Введите ключ доступа (ADMIN_BOOKING_KEY).</p>
       <div style={{ display: 'flex', gap: 'var(--space-8)', marginTop: 12 }}>

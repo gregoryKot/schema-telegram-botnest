@@ -239,7 +239,7 @@
   .cpf-heat-legend { justify-content: flex-start; }
 }
 
-/* Сцена портрета в герое листа на узком листе — крупнее знака (96): пять полосок со слоями читают, а не узнают. */
+/* Сцена портрета в герое листа на узком листе — вдвое меньше прежних 132 (К26): герой не съедает первый экран. */
 @container pa-sheet (max-width: 440px) {
-  .pa-sheet.pa-sheet--scene:has(.scn-portrait) > .pa-sheet-art { width: 132px; }
+  .pa-sheet.pa-sheet--scene:has(.scn-portrait) > .pa-sheet-art { width: 66px; }
 }

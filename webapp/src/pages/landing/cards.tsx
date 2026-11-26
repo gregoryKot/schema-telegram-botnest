@@ -1,19 +1,13 @@
 import { useId, useState } from 'react';
 import { FAQ_ITEMS } from './constants';
 import { faqAnswer } from './faqAnswer';
-// ─── Approach cards ───────────────────────────────────────────────────────────
-export function BentoCard({ num, title, text, accent = false }: { num: string; title: string; text: string; accent?: boolean }) {
+// ─── Approach rows: строка на бумаге под тонкой линией, номер — акцентом ─────
+export function BentoCard({ num, title, text }: { num: string; title: string; text: string }) {
   return (
-    <div style={{
-      background: accent ? 'var(--accent)' : 'var(--bg-elev)',
-      border: accent ? 'none' : '1px solid var(--line)',
-      color: accent ? 'var(--on-accent)' : undefined,
-      borderRadius: 'var(--r-16)', padding: '32px',
-      display: 'flex', flexDirection: 'column', gap: 12,
-    }}>
-      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', opacity: accent ? .65 : 1, color: accent ? 'var(--on-accent)' : 'var(--text-faint)' }}>{num}</span>
-      <h3 style={{ fontFamily: 'var(--serif)', fontSize: accent ? 28 : 21, fontWeight: 400, lineHeight: 1.2, margin: 0, color: accent ? 'var(--on-accent)' : 'var(--text)', whiteSpace: 'pre-line' }}>{title}</h3>
-      <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, opacity: accent ? .85 : 1, color: accent ? 'var(--on-accent)' : 'var(--text-sub)' }}>{text}</p>
+    <div style={{ borderTop: '1px solid var(--line)', paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.12em', color: 'var(--accent)' }}>{num}</span>
+      <h3 style={{ fontFamily: 'var(--serif)', fontSize: 23, fontWeight: 400, lineHeight: 1.2, margin: 0, color: 'var(--text)' }}>{title}</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, color: 'var(--text-sub)', maxWidth: '65ch' }}>{text}</p>
     </div>
   );
 }
@@ -41,12 +35,11 @@ export function FaqList({ price, online = true }: { price: string; online?: bool
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
             >
               <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{item.q}</span>
-              <span style={{
-                flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
-                background: isOpen ? 'var(--accent)' : 'rgba(var(--fg-rgb),.07)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, color: isOpen ? 'var(--on-accent)' : 'var(--text-sub)',
-                transition: 'background .2s, transform .2s',
+              {/* Знак без круга: тап-цель — вся строка-кнопка. */}
+              <span aria-hidden style={{
+                flexShrink: 0, fontSize: 24, fontWeight: 300, lineHeight: 1,
+                color: isOpen ? 'var(--accent)' : 'var(--text-sub)',
+                transition: 'color .2s, transform .2s',
                 transform: isOpen ? 'rotate(45deg)' : 'none',
               }}>+</span>
             </button>

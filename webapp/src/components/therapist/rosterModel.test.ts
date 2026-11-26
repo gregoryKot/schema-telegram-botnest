@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
-import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips } from './rosterModel';
+import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaLine } from './rosterModel';
 
 const TODAY = '2026-10-03';
 
@@ -253,7 +253,7 @@ describe('clientStatus', () => {
   });
 });
 
-describe('domainBar / schemaChips', () => {
+describe('domainBar / schemaLine', () => {
   const [d1, d2] = SCHEMA_DOMAINS;
   const ids = [d2.schemas[0].id, d1.schemas[0].id, d1.schemas[1].id, 'unknown'];
 
@@ -268,10 +268,19 @@ describe('domainBar / schemaChips', () => {
     expect(domainBar([])).toEqual([]);
   });
 
-  it('чипы: все известные схемы по доменам, неизвестные id пропущены', () => {
-    const chips = schemaChips(ids);
-    expect(chips.map((c) => c.id)).toEqual([d1.schemas[0].id, d1.schemas[1].id, d2.schemas[0].id]);
-    expect(chips[0]).toEqual({ id: d1.schemas[0].id, name: d1.schemas[0].name, domainId: d1.id });
+  it('схемы строкой: по доменам, неизвестные id пропущены', () => {
+    expect(schemaLine(ids)).toBe([d1.schemas[0].name, d1.schemas[1].name, d2.schemas[0].name].join(' · '));
   });
 });
 
+
+describe('schemaLine', () => {
+  const names = SCHEMA_DOMAINS.flatMap((d) => d.schemas).slice(0, 5);
+  it('до трёх схем — все через «·», пусто — пустая строка', () => {
+    expect(schemaLine([])).toBe('');
+    expect(schemaLine(names.slice(0, 3).map((s) => s.id))).toBe(names.slice(0, 3).map((s) => s.name).join(' · '));
+  });
+  it('больше трёх — две и «ещё N»', () => {
+    expect(schemaLine(names.map((s) => s.id))).toBe(`${names[0].name} · ${names[1].name} · ещё 3`);
+  });
+});

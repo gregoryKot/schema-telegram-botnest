@@ -12,7 +12,7 @@ import { clientRef, matchesClientRef } from '../../../../shared/src/utils/client
 import type { ClientTab } from './clientSheetTypes';
 import type { TasksBoard } from './useTasksBoard';
 import { keepLayoutSearch } from './plan/keepLayoutSearch';
-import { clientCardPath, clientTabFromPath, listTabFromPath, listTabPath, type ListTab } from './clientTabRoute';
+import { clientCardPath, clientTabFromPath, listTabFromPath } from './clientTabRoute';
 
 interface Params {
   view: 'list' | 'client';
@@ -43,13 +43,9 @@ export function useClientTabRoute({ view, openClientRef, detail, board }: Params
     // адрес /cabinet/<код> приходит следующим рендером — без него вкладка из адреса терялась.
   }, [clientTab, selectedClient, onCard]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Прямой вход на /cabinet/tasks: доска грузится так же, как по кнопке.
+  // Вход на /cabinet/tasks (пункт меню «Задания» или ссылка) — доска грузится.
   useEffect(() => {
     if (listTab === 'kanban') board.open();
   }, [listTab]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const setListTab = (t: ListTab) => {
-    if (t !== listTab) navigate(listTabPath(t));
-  };
-  return { routeTab, listTab, setListTab };
+  return { routeTab, listTab };
 }
