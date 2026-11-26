@@ -1,10 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
-import { therapistSchemasMoreFull } from './practiceTherapistHeath';
 import * as cc from './practiceTherapistCambridgeC';
-import {
-  buildPracticeTherapistCritic,
-  therapistSchemasFarrellShaw,
-} from './practiceTherapistCritic';
+import { therapistSchemasMoreAll } from './practiceTherapistSchemasRafaeli';
+import { buildPracticeTherapistCritic } from './practiceTherapistCritic';
 
 /** «Для терапевта»: схемы терапевта и супервизия. Собирает practiceTherapist.ts. */
 export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
@@ -22,13 +19,9 @@ export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
       'Не продлевать терапию из-за отката перед концом. Клиент раздражается на модель и язык режимов, делает знакомые нездоровые выборы, а у терапевта поднимаются тревога, досада, уныние — часто от Требовательного Критика терапевта, по которому тот «должен» снять все проблемы клиента. Сначала с сочувствием признать свои чувства и посмотреть, из какой своей истории и схем они растут. Клиенту сказать о своей тревоге за его план, выбор оставить ему и предложить проверить, от Здорового Взрослого ли решение. Такой случай — на супервизию [Кембридж, гл. 12].',
     ],
     voice: cc.therapistSchemasVoice(tr),
-    more: [
-      ...therapistSchemasMoreFull,
-      ...cc.therapistSchemasCambridgeCMore,
-      ...therapistSchemasFarrellShaw,
-    ],
+    more: therapistSchemasMoreAll,
     sources:
-      '[Хис, гл. 1, 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5], [Фаррелл-Шоу, гл. 1–3, модули 5, 7, 20]',
+      '[Хис, гл. 1, 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5], [Фаррелл-Шоу, гл. 1–3, модули 5, 7, 20], [Рафаэли, гл. 30]',
   },
   ...buildPracticeTherapistCritic(tr),
 ];
