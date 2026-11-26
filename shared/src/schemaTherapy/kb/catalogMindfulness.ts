@@ -33,11 +33,7 @@ export const VF_TECHNIQUES: readonly CatalogTopic[] = [
 ];
 
 export const VF_PRACTICE: readonly CatalogTopic[] = [
-  vf(
-    'mbst_protocol',
-    'Протокол «Осознанность и схема-терапия»: устройство, оценка, ведение',
-    ['гл. 1', 'гл. 4', 'гл. 6'],
-  ),
+  w('mbst_protocol'),
   vf('mbst_sessions', 'Протокол осознанности: сессии 1–8 и контрольные', [
     'гл. 4',
     'гл. 6',
