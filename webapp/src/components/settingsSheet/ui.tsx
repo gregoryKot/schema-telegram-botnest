@@ -28,8 +28,8 @@ export function SSection({ id, label, hint, help, children }: {
   id: string; label?: string; hint?: string; help?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
-    <section className="st-section">
-      <div id={id} className="st-sec-head">
+    <section className="st-section ds-spread">
+      <div id={id} className="st-sec-head ds-spread__aside">
         {label && (
           <div className="st-sec-title">
             <div className="ds-label">{label}</div>
@@ -38,7 +38,7 @@ export function SSection({ id, label, hint, help, children }: {
         )}
         {hint && <div className="st-hint">{hint}</div>}
       </div>
-      <div className="st-rows">{children}</div>
+      <div className="st-rows ds-spread__body">{children}</div>
     </section>
   );
 }

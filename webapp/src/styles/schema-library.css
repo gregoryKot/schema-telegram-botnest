@@ -147,6 +147,8 @@
   .pa-spread-side .pa-sheet.ss-res-hero .pa-sheet-title { font-size: 27px; }
   .pa-sheet.pa-sheet--scene.ss-ysq-hero > .pa-sheet-art { grid-column: 1 / -1; grid-row: 1; justify-self: center; width: min(240px, 84%); margin-bottom: 2px; }
 }
+.ss-intro-body { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+@media (max-width: 1023px) { .ss-intro { display: flex; flex-direction: column; gap: 24px; } }
 .ss-facts { display: grid; grid-template-columns: minmax(0, 1fr); border-block: 1px solid var(--panel-line); }
 .ss-fact { display: flex; flex-direction: column; gap: 2px; padding: 12px 4px; }
 .ss-fact + .ss-fact { border-top: 1px solid var(--panel-line); }
