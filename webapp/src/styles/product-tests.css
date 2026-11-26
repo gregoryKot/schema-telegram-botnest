@@ -67,7 +67,9 @@
   background: var(--surface); border: 1px solid var(--line); cursor: pointer; text-align: left;
   font: 600 15px/1.5 var(--sans); color: var(--text); transition: border-color .12s, background .12s;
 }
-.pl2-option:hover, .pl2-option:focus-visible { border-color: var(--line-hover); background: var(--paper-tint); }
+/* Выбор — акцентом (рамка и текст), не серой заливкой; наведение только там, где оно есть (на тач залипало). */
+.pl2-option:focus-visible, .pl2-option:active { border-color: var(--accent); color: var(--accent); outline: none; }
+@media (hover: hover) { .pl2-option:hover { border-color: var(--accent); color: var(--accent); } }
 .pl2-progress { height: 8px; border-radius: 4px; background: var(--paper-sunk); }
 .pl2-progress > span { display: block; height: 100%; border-radius: 4px; background: var(--c-amber); transition: width .25s; }
 

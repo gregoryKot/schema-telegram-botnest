@@ -61,9 +61,10 @@ describe('BentoCard', () => {
     expect(card.style.transform).toBe('');
   });
 
-  it('на акцентной заливке текст — var(--on-accent), а не захардкоженный белый', () => {
-    const { container } = render(<BentoCard num="01" title="Заголовок" text="Текст" accent />);
-    expect((container.firstChild as HTMLElement).style.color).toBe('var(--on-accent)');
-    expect(screen.getByText('Текст').style.color).toBe('var(--on-accent)');
+  it('строка на бумаге: без заливки и рамки-коробки, только линия сверху', () => {
+    const { container } = render(<BentoCard num="01" title="Заголовок" text="Текст" />);
+    const card = container.firstChild as HTMLElement;
+    expect(card.style.background).toBe('');
+    expect(card.style.borderTop).toBe('1px solid var(--line)');
   });
 });
