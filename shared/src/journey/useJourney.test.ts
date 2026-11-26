@@ -97,6 +97,21 @@ describe('useJourney', () => {
     expect(result.current.data).toBeNull();
   });
 
+  it('reload() после сбоя снимает failed и тянет ленту заново', async () => {
+    const getJourney = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ counts: zeroCounts(), items: ITEMS });
+    const deps: JourneyDeps = { getJourney, trackEvent: vi.fn() };
+    const { result } = renderHook(() => useJourney(deps));
+    await waitFor(() => expect(result.current.failed).toBe(true));
+
+    act(() => result.current.reload());
+    expect(result.current.failed).toBe(false);
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+    expect(result.current.failed).toBe(false);
+  });
+
   it('период «неделя» фильтрует старые записи из items', async () => {
     const deps: JourneyDeps = {
       getJourney: vi

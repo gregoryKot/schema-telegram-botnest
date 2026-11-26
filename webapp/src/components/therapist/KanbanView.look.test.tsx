@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Вид доски «Задания» (b29): колонка — бумага своего статуса, знак Check — только у «Выполнено»;
+// Вид доски «Задания» (К30): группа — eyebrow с линией, задания — строки на бумаге, знак Check — только у «Выполнено»;
 // у карточки — знак типа задания (TaskSign, как у клиента), Talk на каждой карточке больше нет;
 // сбой — PaperAlert с «Попробовать ещё раз», пусто — знак и строка без сцены.
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -19,13 +19,14 @@ const view = (allTasks: ReturnType<typeof board> | null, failed = false, onRetry
   render(<KanbanView allTasks={allTasks} loading={false} loadFailed={failed} onRetry={onRetry} onOpenClient={vi.fn()} />);
 
 describe('KanbanView — вид', () => {
-  it('колонки — бумага 70 / 135 / 45; Check только у «Выполнено»; на карточке знак типа, а не Talk', () => {
+  it('группы — без бумажной заливки, задания — строки .ds-rows; Check только у «Выполнено»; знак типа, а не Talk', () => {
     const { container } = view(board([
       task(1, { type: 'tracker_streak', text: 'трекер' }),
       task(2, { text: 'сделано', done: true, completedAt: '2026-10-05T12:00:00Z' }),
     ]));
     const cols = [...container.querySelectorAll<HTMLElement>('.tc-kcol')];
-    expect(cols.map((c) => c.style.getPropertyValue('--h'))).toEqual(['70', '135', '45']);
+    expect(cols.map((c) => c.classList.contains('pp-paper') || c.style.getPropertyValue('--h') !== '')).toEqual([false, false, false]);
+    expect(container.querySelectorAll('.ds-rows > .ds-list-row.tc-task')).toHaveLength(2);
     expect(cols.map((c) => c.querySelector('.tc-kcol-sign') !== null)).toEqual([false, true, false]);
     const signs = [...container.querySelectorAll('.tc-task-sign svg')].map(paperSignName);
     expect(signs).toEqual(['Strokes', 'Check']);

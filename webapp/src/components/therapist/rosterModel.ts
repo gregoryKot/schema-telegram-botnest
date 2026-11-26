@@ -62,13 +62,9 @@ export function domainBar(schemaIds: string[]): DomainSegment[] {
     .filter((seg) => seg.count > 0);
 }
 
-export interface SchemaChip { id: string; name: string; domainId: string }
-
-/** Чипы всех известных схем клиента, сгруппированно по доменам. Неизвестные id пропускаем. */
-export function schemaChips(schemaIds: string[]): SchemaChip[] {
+/** Схемы клиента тихой строкой по доменам (К30): до трёх — все, больше — две и «ещё N»; неизвестные id пропускаем. */
+export function schemaLine(schemaIds: string[]): string {
   const ids = new Set(schemaIds);
-  return SCHEMA_DOMAINS.flatMap((d) =>
-    d.schemas.filter((s) => ids.has(s.id)).map((s) => ({ id: s.id, name: s.name, domainId: d.id })),
-  );
+  const names = SCHEMA_DOMAINS.flatMap((d) => d.schemas.filter((s) => ids.has(s.id)).map((s) => s.name));
+  return (names.length <= 3 ? names : [...names.slice(0, 2), `ещё ${names.length - 2}`]).join(' · ');
 }
-

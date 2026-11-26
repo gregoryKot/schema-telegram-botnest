@@ -10,8 +10,8 @@ export function CrisisContactsSheet({ onClose, zIndex = 320, overSheet = false }
   const goBack = useHistorySheet(onClose);
   return (
     <BottomSheetShell goBack={goBack} zIndex={zIndex} label="Помощь рядом">
-      <div className={overSheet ? 'cr-sheet cr-sheet--fill' : 'cr-sheet'}>
-        <CrisisBlock />
+      <div className={overSheet ? 'cr-sheet cr-sheet--fill light-lock' : 'cr-sheet light-lock'}>
+        <CrisisBlock onSheet />
         <button type="button" className="ds-btn ds-btn--secondary sh-close" onClick={goBack}>
           Закрыть
         </button>
