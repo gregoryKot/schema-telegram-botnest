@@ -19,6 +19,7 @@ export const angryChildMoreAll: string[] = [
 
 /** «Ещё техники» angry_child: «за и против» и сократовский диалог — по Арнтц, 7.5. */
 export const angryChildMoreTechniques: TechniqueId[] = [
+  'body_mode_positions',
   'flashcards',
   'distress_tolerance',
   'pros_cons',

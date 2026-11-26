@@ -49,6 +49,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'family_tree',
   // TechniqueSignsLuz.tsx — техники из книги Луз и соавторов о детях и подростках
   'finger_puppets',
+  'side_seat',
   // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
   'breathing_space',
   'body_scan',

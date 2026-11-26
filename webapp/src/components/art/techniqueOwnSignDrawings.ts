@@ -16,7 +16,7 @@ import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
 import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
-import { Genogram } from './TechniqueSignsRoediger';
+import { BodyModePositions, Genogram } from './TechniqueSignsRoediger';
 import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace } from './TechniqueSignsVreeswijk';
 
@@ -32,5 +32,6 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
   trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
   finger_puppets: FingerPuppets,
+  side_seat: BodyModePositions,
   breathing_space: BreathingSpace, body_scan: BodyScan,
 };

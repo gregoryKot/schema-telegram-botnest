@@ -25,6 +25,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
     'pros_cons',
   ],
   moreTechniques: [
+    'body_mode_positions',
     'mindfulness',
     'socratic_dialogue',
     'mode_management_plan',

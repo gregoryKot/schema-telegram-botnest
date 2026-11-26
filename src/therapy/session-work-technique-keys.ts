@@ -75,6 +75,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:life_line': ['stones', 'flowers', 'noticed', 'next'],
   'technique:genogram': ['patterns', 'roles', 'schemas', 'next'],
   'technique:child_mode_play': ['format', 'modes', 'needs', 'next'],
+  'technique:body_mode_positions': ['position', 'body', 'mode', 'next'],
   'technique:three_minute_breathing_space': ['moment', 'noticed', 'choice'],
   'technique:mindfulness_practices': ['practice', 'noticed', 'schemas', 'home'],
   'technique:online_chairwork': ['variant', 'modes', 'result'],

@@ -101,7 +101,10 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
   three_parts_check_in: 'three_parts',
 };
 
-const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = { genogram: 'family_tree' };
+const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
+  genogram: 'family_tree',
+  body_mode_positions: 'side_seat',
+};
 
 const LUZ_TECHNIQUE_SIGN: Record<LuzTechniqueId, GuideSign> = { child_mode_play: 'finger_puppets' };
 const VREESWIJK_TECHNIQUE_SIGN: Record<VreeswijkTechniqueId, GuideSign> = {
