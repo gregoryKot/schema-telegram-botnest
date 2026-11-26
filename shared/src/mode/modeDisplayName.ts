@@ -14,7 +14,7 @@
  * Алиас шифруется в БД (свободный текст), поэтому в `/stats` и в любую
  * аналитику уходит modeId, а не имя.
  */
-import { getModeLeafLabel } from './modeFeelGates';
+import { getModeById } from '../schemaTherapy/schemaTherapyData';
 
 /** Пустой и пробельный алиас — не имя: показываем клиническое. */
 function cleanAlias(alias?: string | null): string | null {
@@ -27,16 +27,16 @@ function cleanAlias(alias?: string | null): string | null {
  * записи о режиме, выпавшем из реестра, чтобы экран не показал пустоту).
  */
 export function modeDisplayName(modeId: string, alias?: string | null): string {
-  return cleanAlias(alias) ?? getModeLeafLabel(modeId) ?? modeId;
+  return cleanAlias(alias) ?? modeClinicalName(modeId);
+}
+
+/** Каноническое имя (docs/TERMINOLOGY.md) — один источник для всех экранов; фраза ворот — не имя. */
+export function modeClinicalName(modeId: string): string {
+  return getModeById(modeId)?.name ?? modeId;
 }
 
 /** Показывать ли клиническое имя справкой — только когда своё отличается. */
 export function hasOwnName(modeId: string, alias?: string | null): boolean {
   const own = cleanAlias(alias);
-  return own !== null && own !== getModeLeafLabel(modeId);
-}
-
-/** Клиническое имя для карточки и портрета. */
-export function modeClinicalName(modeId: string): string {
-  return getModeLeafLabel(modeId) ?? modeId;
+  return own !== null && own !== modeClinicalName(modeId);
 }
