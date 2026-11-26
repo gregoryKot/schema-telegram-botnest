@@ -5,7 +5,7 @@
 export const EXEMPT = [
   [
     'визитка и запись/оплата — до PR визитки (#1639)',
-    /^webapp\/src\/(pages\/landing\/|pages\/LandingPage\.tsx$|pages\/BookingPaidPage\.tsx$|components\/landing-kit|components\/booking\/|components\/BookingPicker\.tsx$|styles\/product-(landing|tests)[\w-]*\.css$|styles\/auth-pay\.css$)/,
+    /^webapp\/src\/(pages\/landing\/|pages\/LandingPage\.tsx$|pages\/BookingPaidPage\.tsx$|components\/landing-kit|components\/booking\/|components\/BookingPicker\.tsx$|styles\/auth-pay\.css$)/,
   ],
   ['админка вне охвата редизайна (#1619, решение 6)', /^webapp\/src\/pages\/(AdminPage\.tsx$|admin\/)/],
 ];

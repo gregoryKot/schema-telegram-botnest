@@ -31,7 +31,8 @@
 /* ── «Сессии сегодня»: лист неба, белые строки. Знака у заголовка нет (r1): Talk уже у счётчика «Сессий сегодня». */
 .tt-sessions { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 18px; border-radius: var(--r-16); }
 .tt-sessions-title { margin: 0; padding-inline: 2px; text-wrap: balance; }
-.tt-sessions > .ds-empty { padding-inline: 2px; }
+.tt-sessions-empty { gap: 8px; padding: 20px 0 24px; }
+.tt-sessions-empty .ds-h2 { margin: 0; }
 .tt-session-list { display: flex; flex-direction: column; gap: 8px; }
 .tt-session {
   display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center;

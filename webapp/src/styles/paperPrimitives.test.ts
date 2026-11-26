@@ -31,11 +31,12 @@ describe('глобальные правки примитивов (cabinet.css)',
     expect(on).not.toContain('--ok');
   });
 
-  it('неактивная залитая — контур без заливки и бледный текст, без прозрачности; наведение её не красит', () => {
+  it('неактивная залитая — без капсулы и рамки, приглушённый текст, без прозрачности; наведение её не красит', () => {
     const off = decls(cabinet, '.ds-btn:disabled');
     expect(off).toContain('background: transparent');
-    expect(off).toContain('box-shadow: inset 0 0 0 1px var(--line-strong)');
-    expect(off).toContain('color: var(--text-faint)');
+    expect(off).toContain('box-shadow: none');
+    expect(off).toContain('color: var(--text-muted)');
+    expect(off).not.toMatch(/line-strong|border/);
     expect(off).not.toMatch(/opacity|--paper-sunk/);
     expect(decls(cabinet, '.ds-btn:disabled:hover')).toBe(off);
   });
@@ -131,10 +132,13 @@ describe('диалоги (dialogs.css)', () => {
     expect(scrim).not.toContain('--fg-rgb');
   });
 
-  it('коробка — сплошной сдвинутый слой бумаги из токена, без мягкой тени с размытием', () => {
+  it('коробка окна и палитры — лист с контуром --line (.ds-card), без тени-подложки', () => {
     const box = decls(dialogs, '.sk-dialog-box');
-    expect(box).toMatch(/box-shadow: \d+px \d+px 0 var\(--[\w-]+\)/);
-    expect(box).not.toMatch(/rgba\(/);
+    expect(box).not.toMatch(/box-shadow/);
+    expect(decls(rules('command-palette.css'), '.cmd-panel')).not.toMatch(/box-shadow|border: 0/);
+    const modal = [...read('../index.css').matchAll(/\.sheet-modal-box \{([^}]*)\}/g)].map((m) => m[1]).join('');
+    expect(modal).toContain('border: 1px solid var(--line)');
+    expect(modal).not.toMatch(/box-shadow/);
   });
 
   it('«тихое» окно и лист (useQuietFocus) гасят кольцо и у кнопок внутри, и у себя — правило в index.css', () => {
