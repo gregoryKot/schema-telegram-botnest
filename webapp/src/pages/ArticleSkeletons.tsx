@@ -8,12 +8,12 @@ export function ArticleGridSkeleton() {
   return (
     <div className="art-grid" aria-hidden="true">
       {[0, 1, 2, 3].map((k) => (
-        <div key={k} className="ds-card ds-card--flush ac-card">
-          <Skeleton className="ac-skel-cover" height="auto" radius={0} />
+        <div key={k} className="ac-card">
+          <Skeleton className="ac-skel-cover" height="auto" radius={12} />
           <div className="ac-body">
+            <Skeleton width={120} height={11} />
             <SkeletonLines widths={['84%', '52%']} height={18} gap={7} />
             <SkeletonLines widths={['96%', '70%']} />
-            <Skeleton width={120} height={11} />
           </div>
         </div>
       ))}
