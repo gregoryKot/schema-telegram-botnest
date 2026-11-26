@@ -356,7 +356,7 @@ describe('CaseFlowScreen — «Чего не хватило?» и мост в т
     click('Не пойму — дальше');
     click('Сохранить');
     await screen.findByText('Записано');
-    expect(p.onSave.mock.calls[0][0].actualNeed).toBeUndefined();
+    expect(vi.mocked(p.onSave).mock.calls[0][0].actualNeed).toBeUndefined();
     expect(screen.queryByText(/в трекере:/)).toBeNull();
   });
 
