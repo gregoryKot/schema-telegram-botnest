@@ -1,8 +1,9 @@
 import * as d from './couplesDosbor';
+import { COUPLES_COURSE } from './couplesCourse';
 import { COUPLES_SESSION } from './couplesSession';
 import type { ConcernGuideBuilder } from './types';
 
-/** Работа с парами: основа статьи по карте docs/guide-sources/Пары.md, пачка 1 (введение, гл. 1, 4, 5, 6); разделы сессии — couplesSession.ts. */
+/** Работа с парами: основа статьи по карте docs/guide-sources/Пары.md, пачка 1 (введение, гл. 1, 4, 5, 6); сессия — couplesSession.ts, курс — couplesCourse.ts. */
 export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
   id: 'couples',
   name: 'Работа с парами',
@@ -17,6 +18,7 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'detached_protector',
     'punitive_critic',
     'demanding_critic',
+    'compliant_surrenderer',
     'healthy_adult',
     'happy_child',
   ],
@@ -35,10 +37,8 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
   techniques: [...d.couplesTechniques, 'mode_map', 'empathic_confrontation'],
   voice: d.couplesVoice(tr),
   ...COUPLES_SESSION,
-  course: d.couplesCourse,
   crisis: d.couplesCrisis,
-  psychoeducation: d.couplesPsychoeducation,
-  formats: d.couplesFormats,
+  ...COUPLES_COURSE,
   sources:
-    '[Пары, введение, гл. 1, 2, 4–7, 9, 10] [Хис, гл. 13] [Бехари, гл. 2, 4, 6–7] [Арнтц ПРЛ, гл. 10] [Янг, гл. 2–3, 5, 7, 10] [Кембридж, гл. 9]',
+    '[Пары, введение, гл. 1–11] [Хис, гл. 13] [Бехари, гл. 2, 4, 6–7] [Арнтц ПРЛ, гл. 10] [Янг, гл. 2–3, 5, 7, 10] [Кембридж, гл. 9]',
 });
