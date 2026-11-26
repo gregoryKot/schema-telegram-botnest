@@ -52,9 +52,8 @@ function Wrapper() {
 }
 
 async function openBoardTask(text: string) {
-  render(<MemoryRouter><Wrapper /></MemoryRouter>);
-  await screen.findByText('Анна');
-  fireEvent.click(screen.getByRole('tab', { name: 'Задания' }));
+  // Доска — свой адрес /cabinet/tasks (пункт меню «Задания»), со списка клиентов вкладки нет (К30).
+  render(<MemoryRouter initialEntries={['/cabinet/tasks']}><Wrapper /></MemoryRouter>);
   fireEvent.click(await screen.findByText(text));
 }
 

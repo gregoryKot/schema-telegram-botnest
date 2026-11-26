@@ -1,9 +1,7 @@
-import type { CSSProperties } from 'react';
 import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
-import { DOMAIN_HUE } from '../../lib/tone';
 import { NextSessionLine } from './NextSessionLine';
-import { clientCaption, clientStatus, meetingLabel, schemaChips } from './rosterModel';
+import { clientCaption, clientStatus, meetingLabel, schemaLine } from './rosterModel';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import { clientSign } from './cabinetLook';
 import { DomainMark } from '../DomainMark';
@@ -18,13 +16,14 @@ interface Props {
 
 // Строка в «Все клиенты» (#1674, К5): на бумаге между линиями списка .ds-rows, без белого листа. Аватар
 // — общий Avatar (буква в кольце); знак — DomainArt ведущего домена или BrandMark офлайн-клиента — в строке имени; «в приложении» /
-// «офлайн» — тихий текст. Встреча и чипы схем — вторая колонка на компьютере, под именем на телефоне; справа «→».
+// «офлайн» — тихий текст. Встреча и схемы (тихий текст через «·», К30) — вторая колонка на компьютере, под именем на телефоне; справа «→».
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = clientDisplayName(client);
   const status = clientStatus(client);
   const caption = clientCaption(client);
   const meeting = meetingLabel(client, today);
   const sign = clientSign(client);
+  const schemas = schemaLine(client.schemaIds);
   return (
     <div className="ds-list-row ds-list-row--hover tc-row" {...pressable(() => onOpen(client))}>
       <Avatar initials={clientAvatarInitials(client)} className="tc-avatar" />
@@ -44,13 +43,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
       </div>
       <div className="tc-more">
         <NextSessionLine label={meeting} />
-        {client.schemaIds.length > 0 && (
-          <div className="tc-chips">
-            {schemaChips(client.schemaIds).map((ch) => (
-              <span key={ch.id} className="tc-chip" style={{ '--h': DOMAIN_HUE[ch.domainId] } as CSSProperties}>{ch.name}</span>
-            ))}
-          </div>
-        )}
+        {schemas && <div className="tc-schemas">{schemas}</div>}
       </div>
       <span className="tc-go" aria-hidden="true">→</span>
     </div>
