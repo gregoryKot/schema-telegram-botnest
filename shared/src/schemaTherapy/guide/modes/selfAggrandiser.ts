@@ -28,7 +28,9 @@ export const buildSelfAggrandiserGuide = (tr: Tr): ModeGuide => ({
     ...copingFarrellAggr,
     ...selfAggrandiserMore,
     ...cc.aggrandiserFlatteryMore,
-  ].concat(aggrandiserHeathDosbor, SELF_AGGRANDISER_MORE, aggrYoung3),
+  ].concat(aggrandiserHeathDosbor, SELF_AGGRANDISER_MORE, aggrYoung3, [
+    'Гиперкомпенсация складывается ещё в детстве: ребёнок, которому не хватало внимания, добывает его обаянием, игрой, артистизмом; стыдящийся себя рвётся обогнать сверстников или командовать ими; запуганный прячет страх за напускной крутизной. Нарциссизм — образец этого стиля: статус, внешность и успех поверх пустоты, одиночества и неполноценности; родители часто не замечали эмоциональных потребностей ребёнка и использовали его для своих. Триумф облегчает ненадолго, а схему не лечит: кажется, что всё решит ещё один успех, но при серьёзной неудаче схема включается и грандиозность рассыпается [Рафаэли, гл. 7].',
+  ]),
   techniques: [
     'empathic_confrontation',
     'chairwork',
