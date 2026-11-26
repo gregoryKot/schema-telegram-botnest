@@ -14,6 +14,7 @@ export interface UserSettings {
   notifyTimezone: string;
   notifyReminderEnabled: boolean;
   notifySummaryEnabled?: boolean; // «Итоги дня»: сводка, вехи, «с возвращением»; нет поля = включены
+  notifyWeeklyRepeatEnabled?: boolean; // «Повторы недели»: раз в неделю — что чаще всего повторялось; нет поля = включены
   notifyFrequency?: number; // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
   notifyQuietStart?: number; // тихие часы: начало (локальный час)
   notifyQuietEnd?: number; // тихие часы: конец; start===end → выключены

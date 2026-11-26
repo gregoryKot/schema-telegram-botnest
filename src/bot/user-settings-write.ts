@@ -12,6 +12,7 @@ export interface UserSettingsPatch {
   notifyTimezone?: string;
   notifyReminderEnabled?: boolean;
   notifySummaryEnabled?: boolean;
+  notifyWeeklyRepeatEnabled?: boolean;
   notifyFrequency?: number;
   notifyQuietStart?: number;
   notifyQuietEnd?: number;

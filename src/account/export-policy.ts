@@ -208,6 +208,7 @@ export const USER_EXPORT_SELECT = {
   notifyTimezoneChosen: true,
   notifyReminderEnabled: true,
   notifySummaryEnabled: true,
+  notifyWeeklyRepeatEnabled: true,
   notifyFrequency: true,
   notifyAdaptiveLevel: true,
   notifyIgnoredCount: true,

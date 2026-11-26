@@ -35,6 +35,8 @@ describe('parseStartParam', () => {
     expect(parseStartParam('tasks')).toEqual({ kind: 'tasks' });
     expect(parseStartParam('tasks_42')).toEqual({ kind: 'tasks', taskId: 42 });
     expect(parseStartParam('ysq')).toEqual({ kind: 'ysq' });
+    expect(parseStartParam('selfmap')).toEqual({ kind: 'selfmap' });
+    expect(parseStartParam('selfmapX')).toBeNull();
   });
   it('id задания — только целое положительное число', () => {
     for (const bad of [

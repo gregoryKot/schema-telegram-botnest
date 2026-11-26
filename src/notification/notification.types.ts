@@ -19,6 +19,7 @@ export type NotificationType =
   | 'value_recap'
   | 'reengagement_30'
   | 'weekly'
+  | 'weekly_repeat'
   | 'donate_reminder'
   | 'anniversary_30'
   | 'anniversary_60'
@@ -46,6 +47,7 @@ export const PROACTIVE_TYPES: NotificationType[] = [
   'reengagement_30',
   'nudge',
   'weekly',
+  'weekly_repeat',
   'donate_reminder',
   'practice_missed',
   'low_streak_insight',
