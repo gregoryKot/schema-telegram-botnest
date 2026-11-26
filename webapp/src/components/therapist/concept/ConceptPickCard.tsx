@@ -19,7 +19,7 @@ export function ConceptPickCard({
 }) {
   const [editing, setEditing] = useState(false);
   return (
-    <section className="ds-card tcp-pick">
+    <section className="tcp-pick">
       <div className="ds-head-row tcp-pick-head">
         <div className="tcp-pick-title">
           <h3 className="ds-h3">{title}</h3>
