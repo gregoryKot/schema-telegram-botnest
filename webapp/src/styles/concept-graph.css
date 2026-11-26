@@ -138,8 +138,8 @@
    раскрывашка по содержимому без рамки (как до волны #906: маленькая ссылка);
    открытая — на ширину колонки, чтобы читался текст. */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tcp-graph [data-export-skip] > .ds-fold { width: fit-content; max-width: 100%; background: transparent; border-color: transparent; }
-  .tcp-graph [data-export-skip] > .ds-fold:has(> .ds-fold-btn[aria-expanded="true"]) { width: 100%; background: var(--surface); border-color: var(--line); }
+  .tcp-graph [data-export-skip] > .ds-fold { width: fit-content; max-width: 100%; border-color: transparent; }
+  .tcp-graph [data-export-skip] > .ds-fold:has(> .ds-fold-btn[aria-expanded="true"]) { width: 100%; border-color: var(--line); }
   .tcp-graph [data-export-skip] > .ds-fold > .ds-fold-btn { width: auto; padding: 0 8px; }
 }
 /* Вид «Схема»: четыре колонки схеме нужны от 960px (WIDE_MIN). Ноутбук 1280 минус

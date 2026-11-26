@@ -22,7 +22,7 @@ export function GuideCard({ title, text = '', action, address, footer }: {
       <div className="gd-card-head">
         {fold ? (
           <button type="button" className="gd-card-toggle" aria-expanded={open} onClick={toggle}>
-            <span className="gd-card-title">{title}</span><span className="ds-chev" aria-hidden="true" />
+            <span className="gd-card-title">{title}</span><span className="ds-fold-chev" aria-hidden="true" />
           </button>
         ) : <span className="gd-card-title">{mark ? mark.title(title) : title}</span>}
         {action}
