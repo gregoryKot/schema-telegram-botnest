@@ -6,5 +6,6 @@ export const WRITTEN_TECHNIQUES_MORE = [
   'mode_figures',
   'genogram',
   'perspective_change',
+  'body_mode_positions',
   'problem_solving',
 ].map(w);

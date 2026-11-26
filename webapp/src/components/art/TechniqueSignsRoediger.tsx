@@ -47,3 +47,16 @@ export function BalanceAxes({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Тело и место терапевта: клиент на стуле, терапевт рядом и чуть позади; пустое место «напротив» — пунктиром. */
+export function BodyModePositions({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d="M50 52 H80 M54 52 V40 H76 V52" {...ROUND} stroke={PAPER.sage} strokeWidth="3" />
+      <circle cx="65" cy="26" r="10" fill={PAPER.clay} />
+      <circle cx="38" cy="32" r="8" fill={PAPER.moss} />
+      <path d="M40 46 Q48 52 54 46" {...ROUND} stroke={PAPER.amber} strokeWidth="3" />
+      <circle cx="102" cy="28" r="9" fill="none" stroke={PAPER.plum} strokeWidth="3" strokeDasharray="4 5" />
+    </Svg>
+  );
+}

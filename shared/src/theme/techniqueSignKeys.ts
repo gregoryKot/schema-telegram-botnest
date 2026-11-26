@@ -49,6 +49,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'family_tree',
   'stand_above',
   'balance_axes',
+  'side_seat',
   // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
   'breathing_space',
   'body_scan',

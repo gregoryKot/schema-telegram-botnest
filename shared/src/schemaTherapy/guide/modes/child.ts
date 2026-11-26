@@ -29,6 +29,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'self_compassion',
     ],
     moreTechniques: [
+      'body_mode_positions',
       'transitional_objects',
       'play_and_joy',
       'creative_mode_work',

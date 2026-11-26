@@ -101,7 +101,9 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
 };
 
 const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
-  genogram: 'family_tree', perspective_change: 'stand_above',
+  genogram: 'family_tree',
+  perspective_change: 'stand_above',
+  body_mode_positions: 'side_seat',
 };
 
 const VREESWIJK_TECHNIQUE_SIGN: Record<VreeswijkTechniqueId, GuideSign> = {
