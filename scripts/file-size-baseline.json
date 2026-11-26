@@ -2120,7 +2120,7 @@
   "src/main.ts": 72,
   "src/notification/address-form.ts": 21,
   "src/notification/missed-plan.ts": 63,
-  "src/notification/mode-phrases.ts": 41,
+  "src/notification/mode-names.ts": 41,
   "src/notification/notification-channels.ts": 100,
   "src/notification/notification-claim.ts": 46,
   "src/notification/notification-payload.crypto.ts": 26,

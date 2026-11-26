@@ -18,10 +18,10 @@ describe('weekly_repeat template', () => {
     expect(t?.text).toContain('«Спонтанность» — 2 дня');
   });
 
-  it('push: режим с фразой без вложенных кавычек и склонением раз/раза', () => {
+  it('push: режим с каноническим именем и склонением раз/раза', () => {
     const t = renderTemplate('weekly_repeat', mode, 'ty', 'push');
     expect(t?.text).toContain('— 3 раза');
-    expect(t?.text).not.toContain('««');
+    expect(t?.text).toContain('«Карающий Критик»');
     expect(
       renderTemplate(
         'weekly_repeat',
