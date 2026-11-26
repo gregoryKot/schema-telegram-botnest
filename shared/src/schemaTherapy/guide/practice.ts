@@ -17,14 +17,14 @@ import { buildPracticeModelRoediger } from './practiceModelRoediger';
 import { buildPracticeSessionRoediger } from './practiceSessionRoediger';
 import { buildPracticeModeStates } from './practiceModeStates';
 import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
+import { buildPracticeMindfulness } from './practiceMindfulness';
+import { buildPracticeMbst } from './practiceMbst';
 
 /**
  * «Для терапевта»: что добавляют к рамке другие книги, три источника
  * тупиков, «болтовня» вместо терапии, ошибки в методе; схемы терапевта,
  * супервизия и выгорание — в practiceTherapist.ts. Трудные ситуации в сессии, групповой формат и намеренная
  * практика — в practiceSituations.ts, порядок разделов на листе — этот.
- * Источник — разделы справочника (версия на 65 страниц) «Что добавляют к рамке другие книги»,
- * «Частые ошибки терапевта», «Трудные ситуации в сессии», «Групповая схема-терапия», «Намеренная практика».
  * Форма листа: суть, 3–5 пунктов, «Как это звучит» и «Подробнее» — как у режимов и схем.
  */
 export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
@@ -68,4 +68,6 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeSessionRoediger(tr),
   ...buildPracticeModeStates(tr),
   ...buildPracticeMethodFarrellShaw(tr),
+  ...buildPracticeMindfulness(tr),
+  ...buildPracticeMbst(tr),
 ];
