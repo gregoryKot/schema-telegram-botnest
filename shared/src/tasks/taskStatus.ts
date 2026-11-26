@@ -5,7 +5,7 @@
 // карточка считала активным и «В работе», а доска — «Не вышло»: одно задание
 // жило у терапевта в двух статусах (QA-проход 2026-10-26).
 import type { UserTask } from '../apiTypes';
-import { fmtDate } from '../utils/format';
+import { fmtDateFull } from '../utils/format';
 import { momentDayKey } from '../utils/momentDate';
 import { taskProgressLabel } from './taskProgress';
 
@@ -72,11 +72,11 @@ export function taskMeta(t: UserTask, status: TaskStatus): string {
   const closedOn = t.completedAt ? momentDayKey(t.completedAt) : '';
   let head: string;
   if (status === 'done')
-    head = closedOn ? `выполнено ${fmtDate(closedOn)}` : 'выполнено';
+    head = closedOn ? `выполнено ${fmtDateFull(closedOn)}` : 'выполнено';
   else if (status === 'failed')
-    head = closedOn ? `закрыто ${fmtDate(closedOn)}` : 'закрыто';
-  else if (t.dueDate) head = `до ${fmtDate(t.dueDate)}`;
-  else head = `назначено ${fmtDate(momentDayKey(t.createdAt))}`;
+    head = closedOn ? `закрыто ${fmtDateFull(closedOn)}` : 'закрыто';
+  else if (t.dueDate) head = `до ${fmtDateFull(t.dueDate)}`;
+  else head = `назначено ${fmtDateFull(momentDayKey(t.createdAt))}`;
   const progress = taskProgressLabel(t);
   return progress ? `${head} · ${progress}` : head;
 }

@@ -37,7 +37,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
   const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
   const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged); // успех перечитывает доску «Задания»
-  // Одна залитая кнопка: на компьютере — «+ Задание» в шапке (ClientHeader), на телефоне её там нет.
+  // Одна кнопка назначения: на компьютере — «+ Задание» в шапке (ClientHeader), на вкладке своей нет; на телефоне — здесь.
   const phone = useIsMobile();
   const [confirmDelete, setConfirmDelete] = useState<UserTask | null>(null);
   // Офлайн-клиенту — только «Своё задание»: упражнения приложения ему не подходят (shared/tasks/assignCopy).
@@ -61,7 +61,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
         {clientTasks.length === 0 ? (
           <div>
             <PaperEmpty art={Check}>Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.</PaperEmpty>
-            <button onClick={() => onAssign()} className={phone ? 'ds-btn tb-mt16' : 'ds-btn ds-btn--secondary tb-mt16'}>Назначить первое задание</button>
+            {phone && <button onClick={() => onAssign()} className="ds-btn tb-mt16">Назначить первое задание</button>}
           </div>
         ) : (
           <div className="pp-leaf cp-task-list tb-task-list">
@@ -103,7 +103,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
             <AssignTemplateTiles onAssign={onAssign} />
           </>
         )}
-        {clientTasks.length > 0 && <button onClick={() => onAssign()} className="ds-btn ds-btn--secondary">+ Назначить</button>}
+        {phone && clientTasks.length > 0 && <button onClick={() => onAssign()} className="ds-btn ds-btn--secondary">+ Назначить</button>}
       </div>
 
       {confirmDelete && (

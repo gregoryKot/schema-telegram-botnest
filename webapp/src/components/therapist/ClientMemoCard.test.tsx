@@ -14,10 +14,18 @@ const clientWith = (memo: string | null) => ({ telegramId: 5, memo }) as unknown
 const setup = (memo: string | null, ok = true) => {
   const saveSessionInfo = vi.fn().mockResolvedValue(ok);
   render(<ClientMemoCard client={clientWith(memo)} detail={{ saveSessionInfo }} />);
+  if (!memo) fireEvent.click(screen.getByRole('button', { name: '+ Добавить о клиенте' }));
   return { saveSessionInfo, field: screen.getByRole('textbox') as HTMLTextAreaElement, save: screen.getByRole('button', { name: 'Сохранить заметку' }) };
 };
 
 describe('ClientMemoCard', () => {
+  it('пустая заметка свёрнута в строку «Добавить о клиенте»; тап раскрывает поле', () => {
+    render(<ClientMemoCard client={clientWith(null)} detail={{ saveSessionInfo: vi.fn() }} />);
+    expect(screen.queryByRole('textbox')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '+ Добавить о клиенте' }));
+    expect(screen.getByRole('textbox')).toBe(document.activeElement);
+  });
+
   it('показывает сохранённый текст; «Сохранить заметку» неактивна, пока текст не изменён', () => {
     const { field, save } = setup('любит рисовать');
     expect(field.value).toBe('любит рисовать');

@@ -17,7 +17,6 @@
 .pl2-edge-under { fill: oklch(0.83 calc(var(--band-c) + 0.02) var(--h)); }
 /* Разделители на цветной бумаге — тон панели, а не бумаги страницы (иначе светлее фона). */
 .pl2-band .pl2-faq, .pl2-band .pl2-faq-item { border-color: var(--panel-line); }
-.pl2-band .ds-card.pl2-install { border-color: transparent; }
 
 /* «Приложение»: заголовок слева, сцена «значок на экране» справа (на телефоне — над ним). */
 .pl2-app-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 280px); gap: 40px; align-items: center; }
