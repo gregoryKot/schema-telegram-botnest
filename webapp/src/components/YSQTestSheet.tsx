@@ -65,7 +65,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   const result = phase === 'result' && scores && resultView ? resultView : null;
   return (
     <>
-      <SsSheet onBack={goBack} zIndex={300} spread={!!result}
+      <SsSheet onBack={goBack} zIndex={300} spread={!!result} wide={phase === 'intro'}
         hero={result ? <YsqResultHero tr={tr} view={result} onShare={() => setShowShare(true)} /> : undefined}>
         {phase === 'intro' && (
           <YsqIntro

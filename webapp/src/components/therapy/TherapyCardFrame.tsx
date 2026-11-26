@@ -33,12 +33,12 @@ export function TherapyCardFrame({
   const t = useTherapyBridgeTexts();
   const sub = cardSub(t, target);
   return (
-    <section className="pp-block pp-block--note th-card" aria-label={t.cardTalk} style={{ '--h': hue } as CSSProperties}>
-      <div className="pp-block-head">
+    <section className="pp-block pp-block--note th-card ds-spread" aria-label={t.cardTalk} style={{ '--h': hue } as CSSProperties}>
+      <div className="pp-block-head ds-spread__aside">
         <div className="ds-eyebrow">{glue(eyebrow)}</div>
         <span className="pp-block-sign" aria-hidden="true">{sign}</span>
       </div>
-      <h2 className="pp-block-title">{glueBridge(title)}</h2>
+      <div className="th-card-body ds-spread__body"><h2 className="pp-block-title">{glueBridge(title)}</h2>
       {sub && <p className="pp-block-text">{glue(sub)}</p>}
       <div className="th-card-acts">
         {target.write ? (
@@ -51,7 +51,7 @@ export function TherapyCardFrame({
           </button>
         )}
         {extra}
-      </div>
+      </div></div>
       {target.sheet}
     </section>
   );
@@ -69,11 +69,11 @@ export function TherapyCardSkeleton({ target }: { target: TherapyTarget }) {
   const t = useTherapyBridgeTexts();
   const sub = cardSub(t, target);
   return (
-    <div className="pp-block pp-block--note th-card th-card--skel" aria-hidden="true" data-testid="therapy-card-skeleton">
-      <div className="pp-block-head"><div className="ds-eyebrow">{t.cardEyebrowCalm}</div></div>
-      <div className="pp-block-title skel">{glueBridge(t.cardTitleCalm)}</div>
-      {sub && <p className="pp-block-text skel">{glue(sub)}</p>}
-      <div className="th-card-acts"><span className="ds-btn th-btn">{target.write ? t.cardWrite : t.cardTalk}</span></div>
+    <div className="pp-block pp-block--note th-card th-card--skel ds-spread" aria-hidden="true" data-testid="therapy-card-skeleton">
+      <div className="pp-block-head ds-spread__aside"><div className="ds-eyebrow">{t.cardEyebrowCalm}</div></div>
+      <div className="th-card-body ds-spread__body"><div className="pp-block-title skel">{glueBridge(t.cardTitleCalm)}</div>
+        {sub && <p className="pp-block-text skel">{glue(sub)}</p>}
+        <div className="th-card-acts"><span className="ds-btn th-btn">{target.write ? t.cardWrite : t.cardTalk}</span></div></div>
     </div>
   );
 }
