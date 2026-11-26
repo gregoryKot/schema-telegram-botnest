@@ -23,4 +23,10 @@ export const MORE_SOURCES: GuideSource[] = [
     author: 'В. Бехари',
     title: 'Обезоружить нарцисса, 2-е изд., 2013 (рус. изд. 2019)',
   },
+  {
+    key: 'Кахья',
+    author: 'Х. Кахья (ред.)',
+    title:
+      'Neuro-affirming Approaches in Schema Therapy: Working Affirmatively with Neurodevelopmental Differences, 2027',
+  },
 ];
