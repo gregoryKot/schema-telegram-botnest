@@ -46,6 +46,9 @@
   font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--accent); font-weight: 600;
 }
+/* Врезка: линия слева на бумаге, без заливки и рамки (как .gst-about-body); заголовок врезки — .ds-aside-lead. */
+.ds-aside { margin: 12px 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--line); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.ds-aside-lead { margin: 0 0 2px; font-weight: 600; color: var(--text); }
 .ds-label {
   font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
   color: var(--text-faint); font-weight: 600;
@@ -94,6 +97,9 @@
 /* Строки прямо на бумаге между тонкими линиями (как «Аккаунт»); вместо белой коробки ds-card--flush. */
 .ds-rows { min-width: 0; border-top: 1px solid var(--panel-line); }
 .ds-rows > .ds-list-row, .ds-rows > button.ds-list-row, .ds-rows > a.ds-list-row { padding-left: 4px; padding-right: 4px; border-bottom: 1px solid var(--panel-line); }
+/* Строка-карточка на бумаге: без заливки, рамки и скругления, снизу тонкая линия (контейнер — .ds-rows; #1674, К14). */
+.ds-card.ds-card--line { background: none; border: 0; border-bottom: 1px solid var(--panel-line); border-radius: 0; padding: 14px 4px; }
+.ds-card.ds-card--line.ds-card--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, transparent); }
 .ds-card--hover { cursor: pointer; transition: border-color .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); }
 .ds-card--panel { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); }
@@ -102,10 +108,6 @@
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-accent); }
 .ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
 .ds-card--warn { background: var(--warn-bg); border-color: var(--warn-bg); color: var(--warn-ink); }
-/* Кризисный вход: tint D1 (hue 28), без заливки --err. */
-.ds-card--crisis { --h: 28; background: oklch(0.94 0.035 var(--h)); border-color: oklch(0.88 0.05 var(--h)); color: oklch(0.38 0.1 var(--h)); }
-.ds-card--crisis .ds-list-title, .ds-card--crisis .ds-sub, .ds-card--crisis .ds-chev { color: inherit; }
-.ds-card--crisis .ds-sub { opacity: .85; }
 .ds-list-row {
   display: grid; align-items: center; gap: 14px;
   padding: 14px 18px; border-bottom: 1px solid var(--paper-sunk);
@@ -124,26 +126,28 @@
 button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; }
 /* SVG-шеврон вправо (путь 16×16) — один для всех строк-переходов. */
 :root { --chev-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3l5 5-5 5' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-/* Правый слот строки-перехода: один глиф «›». Пустой <span class="ds-chev" aria-hidden>
-   получает глиф из ::before; span с «›» внутри (старая разметка) рисуется так же. */
-.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s; }
-.ds-chev:empty::before, .ds-fold-chev::before {
+/* Правый слот строки-перехода: тонкая стрелка «→» (журнальный вид, как в «Настройках»), не шеврон «›».
+   Пустой <span class="ds-chev" aria-hidden> получает её из ::before. Раскрывашки — .ds-fold-chev (шеврон остаётся). */
+.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 16px; line-height: 1; color: var(--text-sub); transition: transform .15s, color .15s; }
+.ds-chev:empty::before { content: '→'; content: '→' / ''; }
+@media (hover: hover) { .ds-list-row--hover:hover > .ds-chev { color: var(--accent); } }
+.ds-fold-chev::before {
   content: ''; display: block; width: 16px; height: 16px; background: currentColor;
   -webkit-mask: var(--chev-mask) center / contain no-repeat; mask: var(--chev-mask) center / contain no-repeat;
 }
-[aria-expanded='true'] > .ds-chev { transform: rotate(90deg); }
 
 /* ── Раскрывашка ─────────────────────────────────────────────────────────── */
 /* <div class="ds-fold"><button class="ds-fold-btn" aria-expanded="…"><span class="ds-label">…</span>
    <span class="ds-fold-chev" aria-hidden></span></button><div class="ds-fold-body">…</div></div>
-   Контейнер = ds-card--row без отступов; шеврон — тот же глиф «›», повёрнутый вниз,
-   при aria-expanded="true" переворачивается вверх. Span шеврона пустой.
+   Без коробки: заголовок на линии --line сверху и снизу, тело под ним между тонкими линиями;
+   шеврон «›» (повёрнут вниз) показывает «раскрыть», при aria-expanded="true" — вверх. Span шеврона пустой.
    Без overflow: hidden — кольцо фокуса кнопки во всю ширину (outline-offset
    3px, index.css) рисуется снаружи её рамки и обрезалось бы. */
-.ds-fold { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-sizing: border-box; min-width: 0; }
+.ds-fold { background: none; border: 0; border-block: 1px solid var(--line); border-radius: 0; box-sizing: border-box; min-width: 0; }
+.ds-fold + .ds-fold { border-top: 0; }
 .ds-fold-btn {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  width: 100%; min-height: 48px; padding: 0 16px; box-sizing: border-box;
+  width: 100%; min-height: 48px; padding: 0; box-sizing: border-box;
   border: none; background: transparent; color: inherit; font-family: inherit; text-align: left; cursor: pointer;
 }
 .ds-fold-chev {
@@ -153,7 +157,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-fold-chev::before { transform: rotate(90deg); }
 /* Шеврон в кнопке-ссылке (ds-link) переворачивается так же — по aria-expanded своей кнопки. */
 .ds-fold-btn[aria-expanded="true"] .ds-fold-chev, [aria-expanded="true"] > .ds-fold-chev { transform: rotate(180deg); }
-.ds-fold-body { padding: 0 16px 16px; }
+.ds-fold-body { padding: 12px 0 16px; border-top: 1px solid var(--paper-sunk); }
 
 /* ── Кнопки ──────────────────────────────────────────────────────────────── */
 .ds-btn {
@@ -165,12 +169,12 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 }
 .ds-btn:hover { background: var(--accent-hi); }
 /* Неактивная хранит силуэт своего варианта и гасит содержимое, без прозрачности (терракота на 50%
-   читалась розовой и активной). Залитая — контур --line-strong без заливки и --text-faint: бежевая
-   плашка лежала на бумаге коробкой; подпись занятости («Сохраняю…») — статус, её читают.
+   читалась розовой и активной). Залитая — тот же текст без заливки и контура, --text-muted: рамка
+   читалась белой капсулой; подпись занятости («Сохраняю…») — статус, её читают.
    Текстовая (--secondary) — подпись --text-faint 60% и бледная линия; занятая (aria-busy) — --text-faint
    (≥4.5:1). Знак (--icon) — --text-ghost. Своя заливка у .ds-btn.x — с :not(:disabled) или с парой
    .ds-btn.x:disabled (paperPrimitives.test). */
-.ds-btn:disabled, .ds-btn:disabled:hover { background: transparent; color: var(--text-faint); box-shadow: inset 0 0 0 1px var(--line-strong); cursor: default; }
+.ds-btn:disabled, .ds-btn:disabled:hover { background: transparent; color: var(--text-muted); box-shadow: none; cursor: default; }
 .ds-btn:disabled[aria-busy='true'] { cursor: progress; }
 .ds-btn.ds-btn--secondary:disabled, .ds-btn.ds-btn--secondary:disabled:hover { background: transparent; box-shadow: none; color: color-mix(in srgb, var(--text-faint) 60%, transparent); text-decoration-color: var(--line); }
 .ds-btn.ds-btn--secondary:disabled[aria-busy='true'], .ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover { color: var(--text-faint); }

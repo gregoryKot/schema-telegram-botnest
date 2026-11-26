@@ -12,8 +12,8 @@
 .cr-line { margin: 0; font-size: 14.5px; line-height: 44px; color: var(--text); }
 .cr-112 {
   display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px;
-  box-sizing: border-box; padding: 0 12px; margin-left: 2px; vertical-align: middle; border-radius: 14px;
-  background: var(--surface); color: var(--accent); font: 700 17px/1 var(--sans); text-decoration: none;
+  box-sizing: border-box; padding: 0 4px; margin-left: 2px; vertical-align: middle;
+  color: var(--accent); font: 700 17px/1 var(--sans); text-decoration: underline; text-underline-offset: 3px;
 }
 .cr-text { margin: 0; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
 

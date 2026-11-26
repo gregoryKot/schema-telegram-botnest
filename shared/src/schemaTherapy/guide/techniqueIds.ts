@@ -83,8 +83,11 @@ export type HeathTechniqueId =
   | 'mental_contrasting_imagery';
 
 /** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
-export type RoedigerTechniqueId = 'genogram' | 'body_mode_positions';
+export type RoedigerTechniqueId =
+  'genogram' | 'perspective_change' | 'body_mode_positions';
 
+/** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
+export type LuzTechniqueId = 'child_mode_play';
 /** Техники из книги ван Фресвайк, Брурсен и Шуринк (карта «ван Фресвайк»). */
 export type VreeswijkTechniqueId =
   'three_minute_breathing_space' | 'mindfulness_practices';
@@ -100,5 +103,6 @@ export type TechniqueId =
   | FarrellTechniqueId
   | HeathTechniqueId
   | RoedigerTechniqueId
+  | LuzTechniqueId
   | VreeswijkTechniqueId
   | BorrowedTechniqueId;

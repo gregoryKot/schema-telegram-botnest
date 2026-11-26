@@ -1,5 +1,5 @@
 import { sessionStructureMore } from './practiceMoreArntz';
-import { therapyAimsMore } from './practiceMoreFarrell';
+import { therapyAimsMoreAll as therapyAimsMore } from './practiceTherapistCare';
 import { therapyAimsYoung } from './practiceCourseYoung';
 
 /** «Подробнее» к ходу терапии с дополнениями Арнтц и Якоб (пачка 3): вынесено, чтобы practiceCourse.ts не рос. */

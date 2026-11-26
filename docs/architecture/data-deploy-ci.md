@@ -55,7 +55,7 @@
 
 Состояние держит `supervisor-status.mjs`; парковка (упавший `migrate deploy`, исчерпанный лимит перезапусков, база не поднялась) шлёт DM владельцу через Bot API по `BOT_TOKEN`/`ADMIN_ID` с троттлом как у DM о перезапуске (1, 2, 4, 8… остановка по причине за сутки); без них молчит. Настройки из env — `entrypoint-config.mjs`. SIGTERM/SIGINT пробрасываются приложению.
 
-- `amvera.yml`: `environment: docker`, `toolchain: docker`, `run.containerPort: 3000`. Amvera сама тянет main из GitHub и собирает Dockerfile (README).
+- `amvera.yml`: `environment: docker`, `toolchain: docker`, `run.containerPort: 3000`. Amvera сама тянет из GitHub ветку `production` и собирает Dockerfile; ветку ведёт `release.yml` (ниже), руками в неё не пушат.
 - `branch-cleanup.yml`: ручной `workflow_dispatch`, чистка веток смерженных PR (`scripts/branch-cleanup.mjs`): без `apply` — только список, с `apply` — удаление веток, чья голова совпадает с head смерженного PR и без открытого PR. Права на запись в refs — только у этой джобы; тест — `src/test-support/gates/branch-cleanup.spec.ts`.
 - Остальное в `deploy/`:
   - `threads-relay/` — Cloudflare Worker (`worker.js` + README), ретранслятор запросов к `graph.threads.net`;
@@ -102,6 +102,8 @@
 **mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, храповик `check-mutation-ratchet` с полом `scripts/mutation-bot-baseline.json`, отчёт артефактом; `alarm` — вызов `alarm.yml` со своим заголовком issue.
 
 **alarm.yml** (`workflow_call`, зовут `nightly.yml` и `mutation-bot.yml`): `alarm` — issue `ci-alarm` (одна открытая на заголовок, зелёный прогон её закрывает) и DM владельцу; результаты джоб приходят входом `needs` (`toJSON(needs)`), секреты бота — `secrets: inherit`. Шаги исполняет `src/infra/alarm-workflow.spec.ts`, вызов сверяет `src/infra/alarm-call.spec.ts`; у `prod-smoke.yml` своя джоба `alarm`.
+
+**release.yml** (cron `0 20 * * *`, плюс dispatch с полем `sha`): `release` — `scripts/release-pick.mjs` берёт самый новый коммит `main` с зелёным `ci.yml` новее выкаченного и пушит в `production` коммит с его деревом без `.github/workflows` (токен раннера правки воркфлоу пушить не вправе) и трейлером `Main-Commit`; красный `main` — джоба красная, `alarm` заводит `ci-alarm`. Группа `release` — одна выкатка за раз.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
 - `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`; тело — `src/api/health-report.ts`, в нём и `startedAt`/`launch`/`crashesDay` — старт процесса и рестарты в контейнере), `/`, `/app/`, `/game/` по маркерам (маркер игры сверяет с `game/index.html` `src/test-support/gates/game-smoke-marker.spec.ts`).

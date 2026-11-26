@@ -53,7 +53,7 @@ CI гоняет джобы `backend`, `migrations` (реальный Postgres), 
 
 ## Деплой
 
-`git push origin main` — Amvera сама тянет из GitHub и пересобирает.
+Мерж в `main` — предпрод; прод раз в сутки (20:00 UTC) собирается из ветки `production` (`release.yml`), Amvera тянет её из GitHub сама.
 Отдельный push в remote `amvera` не нужен.
 
 Сайт собирает Docker; `dist` в git нет.
