@@ -27,18 +27,19 @@ describe('LoginConsentNote', () => {
     expect(note.textContent).toMatch(/не ставят клинический диагноз/);
   });
 
-  it('все три пункта видны без «Подробнее»: свёрнут только полный текст', () => {
-    const note = renderFor('ty');
+  it.each(['ty', 'vy'] as const)('%s: все пункты видны без «Подробнее», свёрнут только полный текст', (form) => {
+    const note = renderFor(form);
     const visible = note.querySelector(':scope > p')?.textContent ?? '';
     expect(visible).toMatch(/18 лет/);
-    expect(visible).toMatch(/Политикой конфиденциальности/);
+    expect(visible).toMatch(/согласие на обработку персональных данных/);
+    expect(visible).toMatch(/Политике конфиденциальности/);
     expect(visible).toMatch(/не ставит диагноз/);
     expect(note.querySelector('details summary')?.textContent).toBe('Подробнее');
   });
 
   it('ведёт на политику конфиденциальности', () => {
     renderFor('ty');
-    expect(screen.getByRole('link', { name: 'Политикой конфиденциальности' }).getAttribute('href')).toBe('/privacy');
+    expect(screen.getByRole('link', { name: 'Политике конфиденциальности' }).getAttribute('href')).toBe('/privacy');
   });
 
   it('звучит в обеих формах: в «вы» нет «ты»-форм', () => {
