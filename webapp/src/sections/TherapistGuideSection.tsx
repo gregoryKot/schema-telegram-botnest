@@ -13,8 +13,8 @@ import { supportContact } from '../../../shared/src/utils/supportContact';
  * отвечает «откуда это и зачем» до первого тапа. Тексты — отдельный чанк
  * (guideLoader): не доехал — «Повторить» монтирует список заново, и загрузка
  * начинается сначала. Событие открытия — cabinet_guide_open
- * (src/analytics/cabinet-events.constants.ts), без меты. Под ней — оговорка, что тексты собраны из
- * разных источников, и куда написать об ошибке (supportContact: в MAX — почта, иначе Telegram).
+ * (src/analytics/cabinet-events.constants.ts), без меты. Оговорка об источниках и куда писать об ошибке
+ * (supportContact: в MAX — почта, иначе Telegram) — под шапкой, на телефоне под списком (guide-reference.css).
  */
 export function TherapistGuideSection() {
   const [attempt, setAttempt] = useState(0);
@@ -22,8 +22,8 @@ export function TherapistGuideSection() {
   const contact = supportContact(useHostId());
   useEffect(() => { api.trackEvent('cabinet_guide_open'); }, []);
   return (
-    <div className="ds-page animate-fade">
-      <div className="pp-block pp-block--head">
+    <div className="ds-page animate-fade gr-page">
+      <div className="pp-block pp-block--head gr-head">
         <div className="pp-hero">
           <div className="pp-hero-body">
             <div className="ds-label">Практика</div>
@@ -32,17 +32,17 @@ export function TherapistGuideSection() {
               Что обычно делают с каждой схемой и каждым режимом — по книгам схема-терапии.
               Те же подсказки — в концептуализации клиента
             </p>
-            <p className="ds-sub gr-note">
-              {tr(
-                'Тексты собраны из книг и статей по схема-терапии и могут содержать ошибки. Нашлась ошибка или неточность — обязательно напиши: ',
-                'Тексты собраны из книг и статей по схема-терапии и могут содержать ошибки. Нашлась ошибка или неточность — обязательно напишите: ',
-              )}
-              <a href={contact.url} target="_blank" rel="noopener noreferrer" className="u-accent">{contact.label}</a>
-            </p>
           </div>
           <Layers size="hero" />
         </div>
       </div>
+      <p className="ds-sub gr-note">
+        {tr(
+          'Тексты собраны из книг и статей по схема-терапии и могут содержать ошибки. Нашлась ошибка или неточность — обязательно напиши: ',
+          'Тексты собраны из книг и статей по схема-терапии и могут содержать ошибки. Нашлась ошибка или неточность — обязательно напишите: ',
+        )}
+        <a href={contact.url} target="_blank" rel="noopener noreferrer" className="u-accent">{contact.label}</a>
+      </p>
       <GuideReference key={attempt} onRetry={() => setAttempt((a) => a + 1)} />
     </div>
   );
