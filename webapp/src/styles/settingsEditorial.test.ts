@@ -38,7 +38,7 @@ describe('лист «Настройки» на компьютере — во в�
   });
   it('секция на ≥1024 — две колонки 1:2 с линией во всю ширину', () => {
     const sec = body(css, '.settings-content-inner.st-inner:not(.st-inner--sub) > .st-section', 'min-width: 1024px');
-    expect(sec).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)');
+    expect(read('ds-spread.css')).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)');
     expect(sec).toContain('border-top: 1px solid var(--panel-line)');
   });
   it('оглавление без плашек: активный пункт — черта акцента, наведение не красит фон', () => {
@@ -49,6 +49,23 @@ describe('лист «Настройки» на компьютере — во в�
     const help = body(css, '.st-help');
     expect(help).toContain('min-height: 44px');
     expect(help).not.toMatch(/border-radius|border: 1px/);
+  });
+});
+
+describe('разворот ds-spread — один примитив для «Настроек» и экранов (К23)', () => {
+  const spread = read('ds-spread.css');
+  it('на ≥1024 две колонки 1fr/2fr; вне компьютера правила сетки нет', () => {
+    expect(body(spread, '.ds-spread', 'min-width: 1024px')).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)');
+    expect(body(spread, '.ds-spread')).toBe('');
+  });
+  it('текст для чтения — не шире 65ch', () => {
+    expect(body(spread, '.ds-prose')).toContain('max-width: 65ch');
+  });
+  it('«Настройки» и «Ещё» берут примитив, своей сетки 1fr/2fr не держат', () => {
+    expect(read('../components/settingsSheet/ui.tsx')).toContain('st-section ds-spread');
+    expect(read('../sections/MoreSection.tsx')).toContain('cm-page ds-spread');
+    const own = ['settings-nav.css', 'sheet-settings.css', 'client-more.css'].filter((f) => /minmax\(0, 1fr\) minmax\(0, 2fr\)/.test(read(f)));
+    expect(own).toEqual([]);
   });
 });
 
