@@ -3,6 +3,7 @@
 // день самопрактики в группе — линия времени (упражнения дня по порядку); Критик терапевта — внутренний голос;
 // трудный клиент и мой копинг — «за и против»; свой Здоровый Взрослый — фигуры частей; Счастливый Ребёнок — копилка
 // радостей; вечерний обход — план на режим; цикл самомониторинга — круг; анализ проблемы — проба; план на себе — шаг.
+// Метод (гл. 2): стиль родительства — место рядом; два уровня опыта — линза; кому подходит — подход; культура — россыпь.
 import type { GuideSign } from './guideSignsModel';
 
 export const FARRELL_SHAW_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
@@ -20,4 +21,8 @@ export const FARRELL_SHAW_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   self_monitoring_cycle: 'pie',
   problem_analysis_modes: 'probe',
   self_mode_management_plan: 'try_step',
+  limited_reparenting_style: 'side_seat',
+  two_levels_of_experience: 'schema_lens',
+  schema_therapy_fit: 'approach',
+  culture_and_needs: 'scatter',
 };

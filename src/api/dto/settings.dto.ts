@@ -45,6 +45,10 @@ export class UpdateSettingsDto {
   @IsBoolean()
   notifySummaryEnabled?: boolean;
 
+  @IsOptional() // «Повторы недели»: раз в неделю — что чаще всего повторялось
+  @IsBoolean()
+  notifyWeeklyRepeatEnabled?: boolean;
+
   @IsOptional()
   @IsInt()
   @Min(0)

@@ -57,6 +57,10 @@ const PART = (table: string) =>
 
 /** Файлы, где обнаружитель видит ≥4 id, но своей таблицы по id нет. */
 export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
+  {
+    file: 'src/notification/mode-names.ts',
+    why: 'копия канонических имён режимов для бэкенда (rootDir src): сверка с modeClinicalName — mode/modeNamesSync.test.ts',
+  },
   { file: 'shared/src/schemaTherapy/guide/modes/', why: LINKS_CHECKED },
   { file: 'shared/src/schemaTherapy/guide/schemas/', why: LINKS_CHECKED },
   { file: 'shared/src/schemaTherapy/guide/concerns/', why: LINKS_CHECKED },

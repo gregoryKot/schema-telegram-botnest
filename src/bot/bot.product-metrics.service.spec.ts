@@ -252,7 +252,7 @@ describe('ProductMetricsService.getMetrics', () => {
       })),
     } as never;
     const service = new ProductMetricsService(
-      {} as never,
+      { analyticsEvent: { count: jest.fn(async () => 0) } } as never,
       quizMetrics,
       practiceLink,
       practiceMetrics,
@@ -272,6 +272,7 @@ describe('ProductMetricsService.getMetrics', () => {
     expect(text).toContain('Мини-тесты без регистрации');
     expect(text).toContain('Начали: 7 · дошли до результата: 5');
     expect(text).toContain('Переходы к автору-терапевту');
+    expect(text).toContain('Повторы недели');
     expect(text).toContain('Переходили на сайт практики: 3');
     expect(text).toContain('Страница ссылок');
     // Продуктовый блок тоже на месте (склейка ничего не потеряла).

@@ -16,6 +16,7 @@ import { buildPracticeTherapistHeath } from './practiceModeReset';
 import { buildPracticeModelRoediger } from './practiceModelRoediger';
 import { buildPracticeSessionRoediger } from './practiceSessionRoediger';
 import { buildPracticeModeStates } from './practiceModeStates';
+import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
 import { buildPracticeMindfulness } from './practiceMindfulness';
 import { buildPracticeMbst } from './practiceMbst';
 
@@ -66,6 +67,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeModelRoediger(tr),
   ...buildPracticeSessionRoediger(tr),
   ...buildPracticeModeStates(tr),
+  ...buildPracticeMethodFarrellShaw(tr),
   ...buildPracticeMindfulness(tr),
   ...buildPracticeMbst(tr),
 ];

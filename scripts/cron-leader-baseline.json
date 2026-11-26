@@ -83,6 +83,10 @@
     "status": "exempt",
     "reason": "deleteMany идемпотентен, второй инстанс на том же тике удалит 0 строк (уже удалены), дублирования наружу нет."
   },
+  "src/notification/weekly-repeat.scheduler.ts::run": {
+    "status": "leader",
+    "reason": "Еженедельный «Повтор недели» ставит в очередь уведомление: на двух инстансах человеку ушло бы два одинаковых сообщения (дедуп по hasPending — второй барьер)."
+  },
   "src/subscription/subscription.service.ts::chargeDue": {
     "status": "leader",
     "reason": "Рекуррентные списания в Robokassa — второй инстанс на том же тике повторил бы выборку должников и pending-алерты владельцу; построчный захват UPDATE Subscription SET nextChargeAt (subscription.charges.ts) остаётся вторым барьером."

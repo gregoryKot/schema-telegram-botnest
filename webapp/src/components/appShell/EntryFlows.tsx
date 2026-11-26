@@ -4,6 +4,7 @@ import { useConsentGate } from '../../hooks/useConsentGate';
 import { useStartParam } from '../../hooks/useStartParam';
 import { cacheClientRelation } from '../../utils/therapistContact';
 import { requestTasksOpen } from '../../sections/tasks/tasksLaunch';
+import { requestSelfMapOpen } from '../../sections/selfMapLaunch';
 import { AddressFormPicker } from '../AddressFormPicker';
 import { ConsentScreen } from '../ConsentScreen';
 import { JoinConfirmSheet } from '../JoinConfirmSheet';
@@ -34,6 +35,7 @@ export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>;
     if (a.kind === 'join') setJoin({ joinKind: a.joinKind, joinCode: a.code });
     else if (a.kind === 'tracker') { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }
     else if (a.kind === 'ysq') ov.openSchema({ startTest: true });
+    else if (a.kind === 'selfmap') requestSelfMapOpen(); // useStartParam уже увёл на /more
     else if (a.kind === 'tasks') requestTasksOpen(a.taskId); // useStartParam уже увёл на /more
   }, () => setLinkHandled(true));
 

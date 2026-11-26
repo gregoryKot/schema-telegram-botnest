@@ -67,6 +67,7 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   notifyTimezoneChosen: flag,
   notifyReminderEnabled: pref(true),
   notifySummaryEnabled: pref(true),
+  notifyWeeklyRepeatEnabled: pref(true),
   notifyFrequency: pref(0),
   notifyQuietStart: pref(22),
   notifyQuietEnd: pref(8),
