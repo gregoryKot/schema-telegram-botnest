@@ -4,6 +4,7 @@ import { buildPracticeConceptualization } from './practiceConceptualization';
 import { buildPracticeCourse } from './practiceCourse';
 import { buildPracticeChange } from './practiceChange';
 import { buildPracticeEmdr } from './practiceEmdr';
+import { buildPracticeTeen } from './practiceTeen';
 import { buildPracticeEndingAll } from './practiceEndingAll';
 import { buildPracticeOnline } from './practiceOnline';
 import { buildPracticeSituations } from './practiceSituations';
@@ -58,6 +59,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeChange(tr),
   ...buildPracticeEndingAll(tr),
   ...buildPracticeEmdr(tr),
+  ...buildPracticeTeen(tr),
   ...buildPracticeYoungStart(tr),
   ...buildPracticeYoungSession(tr),
   ...buildPracticeModelRoediger(tr),
