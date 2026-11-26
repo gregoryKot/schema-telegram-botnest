@@ -12,16 +12,15 @@
 .ip-note { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .ds-btn.ip-cta { width: 100%; text-decoration: none; }
 
-/* Шаги установки — блок на бумаге под тонкой линией, без белого листа; номера — кружками небесной бумаги. */
+/* Шаги установки — блок на бумаге под тонкой линией, без белого листа; номер — текстом акцента, без кружка. */
 .pp-paper.ib-card { padding: 18px 0 0; border-radius: 0; background: none; border-top: 1px solid var(--panel-line); }
 .ib-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
 .ib-meta { margin: 2px 0 0; font-size: 14px; color: var(--text-sub); }
 .ib-steps { list-style: none; counter-reset: ib; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; }
 .ib-steps li { counter-increment: ib; position: relative; padding-left: 40px; min-height: 28px; font-size: 15px; line-height: 1.5; color: var(--text); }
 .ib-steps li::before {
-  content: counter(ib); position: absolute; left: 0; top: -1px; width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
-  background: oklch(0.915 0.03 var(--h)); color: var(--text-sub);
+  content: counter(ib); position: absolute; left: 0; top: 0; width: 28px;
+  font: 400 20px/1.1 var(--serif); font-variant-numeric: tabular-nums; color: var(--accent);
 }
 /* Ролик тех же шагов: кадр телефона 9:16 по центру листа, кнопка звука под ним во всю его ширину. */
 .ib-video { margin: 18px auto 0; width: 100%; max-width: 260px; display: grid; gap: 10px; }
