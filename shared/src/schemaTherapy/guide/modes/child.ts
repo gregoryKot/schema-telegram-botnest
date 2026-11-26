@@ -32,6 +32,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
       'transitional_objects',
       'play_and_joy',
       'creative_mode_work',
+      'child_mode_play',
       'safe_place_imagery',
       'exposure',
       'limited_reparenting',

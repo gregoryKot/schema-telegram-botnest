@@ -24,4 +24,5 @@ export const angryChildMoreTechniques: TechniqueId[] = [
   'pros_cons',
   'socratic_dialogue',
   'play_and_joy',
+  'child_mode_play',
 ];

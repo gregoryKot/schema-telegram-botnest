@@ -85,6 +85,9 @@ export type HeathTechniqueId =
 /** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
 export type RoedigerTechniqueId = 'genogram';
 
+/** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
+export type LuzTechniqueId = 'child_mode_play';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -96,4 +99,5 @@ export type TechniqueId =
   | FarrellTechniqueId
   | HeathTechniqueId
   | RoedigerTechniqueId
+  | LuzTechniqueId
   | BorrowedTechniqueId;

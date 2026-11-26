@@ -174,13 +174,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 9', 'гл. 10'],
   },
   {
-    id: 'child_mode_play',
-    title: 'Режимы в игре с ребёнком: куклы, истории, рисунки',
-    status: 'planned',
-    source: 'Луз',
-    chapters: ['гл. 5', 'гл. 9', 'гл. 10', 'гл. 11', 'гл. 12'],
-  },
-  {
     id: 'inner_house',
     title: '«Внутренний дом»: режимы, схемы и опыт на трёх этажах',
     status: 'planned',

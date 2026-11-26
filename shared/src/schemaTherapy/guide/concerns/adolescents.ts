@@ -38,6 +38,7 @@ export const buildAdolescentsGuide: ConcernGuideBuilder = (tr) => ({
     'Плюс работы в этом возрасте: схемы и режимы ещё не так жёстки, их корни ближе по времени, легче менять среду, учёбу и отношения; минус — эмоциональная нестабильность [Луз, гл. 8].',
   ],
   techniques: [
+    'child_mode_play',
     'mode_figures',
     'creative_mode_work',
     'limited_reparenting',
