@@ -51,6 +51,7 @@ export const buildPracticeMbst: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: mbstMore,
-    sources: '[ван Фресвайк, гл. 1, 4, 6], [ван Фресвайк, предисловие научного редактора]',
+    sources:
+      '[ван Фресвайк, гл. 1, 4, 6], [ван Фресвайк, предисловие научного редактора]',
   },
 ];
