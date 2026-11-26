@@ -20,7 +20,7 @@ const text = (f: string) => readFileSync(join(STYLES, f), 'utf8');
 
 /** Файл → его @import по порядку. Порядок — порядок правил в сборке: не переставлять. */
 const SPLIT: Record<string, string[]> = {
-  'index-tail.css': ['therapist-sheet.css', 'settings-nav.css', 'dialog-center.css', 'ex-legacy.css', 'modemap-handles.css'],
+  'index-tail.css': ['therapist-sheet.css', 'ds-spread.css', 'settings-nav.css', 'dialog-center.css', 'ex-legacy.css', 'modemap-handles.css'],
   'sheet-tasks.css': ['plans.css', 'feeds.css', 'flashcard.css', 'dialogs.css', 'celebration.css', 'error-screen.css', 'all-tasks.css', 'nudges.css', 'therapist-disclaimer.css'],
   'sheet-diary.css': ['history.css', 'diary-explainer.css', 'card-tone.css', 'diary-wizard.css', 'diary-mode.css', 'diary-gratitude.css', 'note-sheet.css', 'share-sheet.css', 'journey.css'],
   'sheet-exercises.css': ['ex-cards.css', 'ex-belief.css', 'ex-letter.css', 'ex-phrase.css', 'ex-wheel.css', 'ex-case.css', 'ex-warm.css', 'ex-done.css', 'ex-hint.css'],

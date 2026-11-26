@@ -33,7 +33,7 @@
 .st-skel-pick { display: flex; align-items: center; }
 
 /* Группа: ярлык, пояснение, линия; строки — без рамок и теней */
-.st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
+.st-section { scroll-margin-top: 16px; }
 .st-sec-head { padding-bottom: 10px; border-bottom: 1px solid var(--panel-line); scroll-margin-top: 16px; }
 .st-sec-head:empty { padding: 0; }
 .st-sec-title { display: flex; align-items: center; gap: 6px; }

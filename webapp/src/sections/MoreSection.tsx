@@ -54,16 +54,15 @@ export function MoreSection(p: Props) {
   });
 
   return (
-    <div className="ds-page cm-page">
-      <header className="pp-block pp-block--head cm-head">
+    <div className="ds-page cm-page ds-spread">
+      <header className="pp-block pp-block--head cm-head ds-spread__aside">
         <div className="ds-eyebrow">Ещё</div>
         <h1 className="ds-h1">Всё остальное</h1>
       </header>
-
+      <div className="cm-body ds-spread__body">
       <SiteAccessCard />
       {bridge && <TherapyNudgeCard refreshKey={p.refreshKey} modeEntries={modeEntries} />}
       <MoreRows rows={rows} />
-
       <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => setCrisis(true)}>
         <span className="pp-row-art"><Heart size="row" /></span>
         <span className="ds-list-title">Мне очень плохо</span>
@@ -72,6 +71,7 @@ export function MoreSection(p: Props) {
 
       <HomeScreenOfferCard />
       {bridge && <HomeTherapyLine />}
+      </div>
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
       {crisis && <CrisisContactsSheet onClose={() => setCrisis(false)} />}
