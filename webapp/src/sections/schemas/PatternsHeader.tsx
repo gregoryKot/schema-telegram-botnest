@@ -1,7 +1,7 @@
 import { SettingsGear, CustomizeLink } from '../../components/customize/CustomizeGear';
 interface Props { mobile: boolean; onOpenLibrary: () => void; onCustomize: () => void; onOpenSettings?: () => void }
 
-// Шапка «Паттернов» — один состав на любой ширине (#906): надпись, заголовок, подпись; справа «Настроить экран», шестерёнка «Настройки» и «Библиотека» (на телефоне — второй строкой, css). Телефон меняет только слова.
+// Шапка «Паттернов» — один состав на любой ширине (#906); на телефоне «Настроить экран» и шестерёнка — в строке надписи (css).
 export function PatternsHeader({ mobile, onOpenLibrary, onCustomize, onOpenSettings }: Props) {
   return (
     <div className="ds-head-row cs-head">
@@ -11,9 +11,8 @@ export function PatternsHeader({ mobile, onOpenLibrary, onCustomize, onOpenSetti
         <div className="ds-sub cs-head-sub">{mobile ? 'Привычные реакции родом из детства' : 'Схемы, режимы, потребности'}</div>
       </div>
       <div className="cs-head-actions">
-        <CustomizeLink onClick={onCustomize} />
-        {onOpenSettings && <SettingsGear onClick={onOpenSettings} />}
-        <button type="button" onClick={onOpenLibrary} className="ds-btn ds-btn--secondary">Библиотека</button>
+        <div className="cs-head-tools"><CustomizeLink onClick={onCustomize} />{onOpenSettings && <SettingsGear onClick={onOpenSettings} />}</div>
+        <button type="button" onClick={onOpenLibrary} className="ds-btn ds-btn--secondary cs-head-lib">Библиотека</button>
       </div>
     </div>
   );

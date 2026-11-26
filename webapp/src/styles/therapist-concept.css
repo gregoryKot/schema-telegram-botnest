@@ -3,7 +3,7 @@
    начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './concept-graph.css';
-.tcp-fields { display: flex; flex-direction: column; gap: 52px; min-width: 0; max-width: 880px; }
+.tcp-fields { display: flex; flex-direction: column; gap: 52px; min-width: 0; }
 
 /* ── Прогресс и якоря ── */
 .tcp-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
@@ -20,7 +20,9 @@
 .tcp-anchor.is-filled:hover { background: oklch(0.895 0.04 70); }
 
 /* ── Раздел ── */
-.tcp-sec { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; min-width: 0; }
+.tcp-sec { scroll-margin-top: 16px; min-width: 0; }
+.tcp-sec-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 1023px) { .tcp-sec { display: flex; flex-direction: column; gap: 16px; } }
 .tcp-sec-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 14px; }
 .tcp-sec-head > .ds-label { line-height: 28px; }
 /* Знак раздела строчного размера; у «Стилей совладания» три знака копингов вплотную. */
@@ -82,7 +84,7 @@
 .tcp-menu-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tcp-menu-hint { font-size: 11px; line-height: 1.35; color: var(--text-faint); white-space: normal; }
 /* Раскрывашки — общий ds-fold (Disclosure) строками одной ds-card: между ними тонкая линия, своей рамки у строки нет. */
-.ds-card.tcp-folds { margin-top: 40px; max-width: 880px; padding: 4px 8px; }
+.ds-card.tcp-folds { margin-top: 40px; padding: 4px 8px; }
 .ds-fold.tcp-fold { background: none; border: 0; border-radius: 0; }
 .ds-fold.tcp-fold + .tcp-fold { border-top: 1px solid var(--paper-sunk); }
 /* «Ещё N» сверки с YSQ: короткая ссылка, зона нажатия 44×44. */

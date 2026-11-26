@@ -4,6 +4,8 @@
 /* Тело — колонкой с зазором страницы (на телефоне: дети были детьми .ds-page). */
 .cm-body { display: flex; flex-direction: column; gap: inherit; }
 @media (min-width: 1024px) { .cm-page { max-width: 1200px; } }
+/* Мост к терапевту в теле «Ещё» (уже 2/3 разворота): колонкой, как на телефоне. */
+@media (min-width: 1024px) { .cm-body .th-card.ds-spread { display: flex; } .cm-body .th-card .th-card-body { display: contents; } .cm-body .th-card > .pp-block-head { justify-content: space-between; } }
 /* Подпись строки: последняя строка — не из одного слова. Знак продукта у «Зачем это всё» — без плитки, в габарите
    колонки знаков 44×24 (рисунок 36 выступает в поля строки, высоту строки не меняет). Строка моста внизу —
    зазор даёт колонка страницы, своего отступа сверху нет. */

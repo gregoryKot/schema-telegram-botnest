@@ -74,6 +74,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:stop_rewind_explore': ['moment', 'rewind', 'explored', 'result'],
   'technique:life_line': ['stones', 'flowers', 'noticed', 'next'],
   'technique:genogram': ['patterns', 'roles', 'schemas', 'next'],
+  'technique:perspective_change': ['view', 'resource', 'self', 'next'],
   'technique:body_mode_positions': ['position', 'body', 'mode', 'next'],
   'technique:three_minute_breathing_space': ['moment', 'noticed', 'choice'],
   'technique:mindfulness_practices': ['practice', 'noticed', 'schemas', 'home'],

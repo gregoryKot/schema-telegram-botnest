@@ -25,13 +25,6 @@ interface Props {
   tz: string;
 }
 
-const rowSt: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 'var(--space-10)', margin: '8px 0 0' };
-const btnSt: React.CSSProperties = {
-  minHeight: 44, padding: '10px 16px', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
-  borderRadius: 'var(--r-10)', border: '1.5px solid var(--line-strong)', background: 'transparent',
-  color: 'var(--text)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center',
-};
-
 export function BookingSaveBlock({ cancelToken, startsAt, durationMin, type, tz }: Props) {
   const manageUrl = `${window.location.origin}/booking/manage?token=${cancelToken}`;
   const icsUrl = `${BASE}/api/booking/ics/${cancelToken}`;
@@ -58,25 +51,19 @@ export function BookingSaveBlock({ cancelToken, startsAt, durationMin, type, tz 
   };
 
   return (
-    <div className="ym-hide-content" style={{ margin: '18px auto 0', maxWidth: 420, textAlign: 'left' }}>
-      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: 0 }}>
-        Сохраните запись
-      </p>
-      <div style={rowSt}>
-        <a href={googleUrl} target="_blank" rel="noopener noreferrer" style={btnSt} onClick={() => trackGoal('booking_calendar_add', { kind: 'google' })}>
-          Google Календарь
-        </a>
-        <a href={icsUrl} style={btnSt} onClick={() => trackGoal('booking_calendar_add', { kind: 'ics' })}>
-          Apple / Outlook (.ics)
-        </a>
-      </div>
-      <div style={rowSt}>
-        <a href={telegramShareUrl} target="_blank" rel="noopener noreferrer" style={btnSt} onClick={() => trackGoal('booking_link_saved', { via: 'telegram' })}>
-          Отправить себе в Telegram
-        </a>
-        <button type="button" style={btnSt} onClick={onCopy}>{copied ? 'Скопировано ✓' : 'Скопировать ссылку'}</button>
-        {canShare && <button type="button" style={btnSt} onClick={onShare}>Поделиться…</button>}
-      </div>
+    <div className="ym-hide-content pa-outcome-rows">
+      <span className="ds-eyebrow pa-outcome-eyebrow">Сохраните запись</span>
+      <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="pa-outcome-row" onClick={() => trackGoal('booking_calendar_add', { kind: 'google' })}>
+        Google Календарь
+      </a>
+      <a href={icsUrl} className="pa-outcome-row" onClick={() => trackGoal('booking_calendar_add', { kind: 'ics' })}>
+        Apple / Outlook (.ics)
+      </a>
+      <a href={telegramShareUrl} target="_blank" rel="noopener noreferrer" className="pa-outcome-row" onClick={() => trackGoal('booking_link_saved', { via: 'telegram' })}>
+        Отправить себе в Telegram
+      </a>
+      <button type="button" className="pa-outcome-row" onClick={onCopy}>{copied ? 'Скопировано ✓' : 'Скопировать ссылку'}</button>
+      {canShare && <button type="button" className="pa-outcome-row" onClick={onShare}>Поделиться…</button>}
       {failed && (
         <p style={{ fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' }}>
           Не удалось скопировать — выделите ссылку и скопируйте вручную.

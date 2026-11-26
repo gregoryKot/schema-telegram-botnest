@@ -61,10 +61,13 @@ describe('разворот ds-spread — один примитив для «На
   it('текст для чтения — не шире 65ch', () => {
     expect(body(spread, '.ds-prose')).toContain('max-width: 65ch');
   });
-  it('«Настройки» и «Ещё» берут примитив, своей сетки 1fr/2fr не держат', () => {
+  it('«Настройки», «Ещё», «Терапия», концептуализация и вход в тест на схемы берут примитив, своей сетки 1fr/2fr не держат', () => {
     expect(read('../components/settingsSheet/ui.tsx')).toContain('st-section ds-spread');
     expect(read('../sections/MoreSection.tsx')).toContain('cm-page ds-spread');
-    const own = ['settings-nav.css', 'sheet-settings.css', 'client-more.css'].filter((f) => /minmax\(0, 1fr\) minmax\(0, 2fr\)/.test(read(f)));
+    expect(read('../components/therapy/TherapyCardFrame.tsx')).toContain('th-card ds-spread');
+    expect(read('../components/therapist/concept/ConceptSectionShell.tsx')).toContain('tcp-sec ds-spread');
+    expect(read('../components/ysq/YsqIntro.tsx')).toContain('ss-intro ds-spread');
+    const own = ['settings-nav.css', 'sheet-settings.css', 'client-more.css', 'therapy-bridge.css', 'therapist-concept.css', 'schema-library.css'].filter((f) => /minmax\(0, 1fr\) minmax\(0, 2fr\)/.test(read(f)));
     expect(own).toEqual([]);
   });
 });
