@@ -5,6 +5,7 @@ import type {
   YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId, RoedigerTechniqueId,
   LuzTechniqueId,
   VreeswijkTechniqueId,
+  RafaeliTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -115,6 +116,11 @@ const VREESWIJK_TECHNIQUE_SIGN: Record<VreeswijkTechniqueId, GuideSign> = {
   healthy_modes_mindfulness: 'healthy_light',
 };
 
+const RAFAELI_TECHNIQUE_SIGN: Record<RafaeliTechniqueId, GuideSign> = {
+  rupture_repair: 'rupture_mend',
+  historical_life_review: 'life_columns',
+};
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
@@ -127,5 +133,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...ROEDIGER_TECHNIQUE_SIGN,
   ...LUZ_TECHNIQUE_SIGN,
   ...VREESWIJK_TECHNIQUE_SIGN,
+  ...RAFAELI_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

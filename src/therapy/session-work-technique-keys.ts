@@ -99,6 +99,8 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:need_now_question': ['need', 'done', 'mood'],
   'technique:downward_arrow': ['thought', 'bottom', 'schema'],
   'technique:schema_dialogue': ['schema', 'arguments', 'answers', 'who'],
+  'technique:rupture_repair': ['moment', 'named', 'link', 'next'],
+  'technique:historical_life_review': ['schema', 'pro', 'contra', 'result'],
   'technique:current_role_play': ['scene', 'oldView', 'newView', 'newStep'],
   'technique:two_axis_check': ['rule', 'picture', 'newView'],
   'technique:need_cycle': ['scene', 'mode', 'need', 'action'],

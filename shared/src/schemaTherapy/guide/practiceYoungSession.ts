@@ -4,7 +4,7 @@ import { modeWorkWhenMore } from './practiceMoreArntzJacob';
 import { therapistScenariosAll } from './practiceTherapistCare';
 import { sameMoreYoung, sameVoiceYoung } from './practiceSameBehaviorYoung';
 import { buildPracticeChannelsYoung } from './practiceChannelsYoung';
-
+import { buildPracticeReparentingForms } from './practiceReparentingForms';
 /**
  * «Для терапевта» по гл. 6 и 8 Янга: схемы клиента и терапевта на сессии, одно поведение
  * при разных схемах, когда и как работать с режимами. Собирает practice.ts.
@@ -118,4 +118,5 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
     sources: '[Янг, гл. 8], [Хис, гл. 11]',
   },
   ...buildPracticeChannelsYoung(tr),
+  ...buildPracticeReparentingForms(tr),
 ];

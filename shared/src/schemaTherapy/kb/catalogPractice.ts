@@ -84,6 +84,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'attachment_assertiveness_poles',
     'session_balance_axes',
     'mode_states',
+    'reparenting_forms',
   ].map(w),
   {
     id: 'session_frequency',

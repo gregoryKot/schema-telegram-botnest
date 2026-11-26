@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { methodErrorsMore } from './practiceMoreHeath';
-import { impassesMore } from './practiceMoreArntzJacob';
+import { buildImpassesMore } from './practiceStuckRafaeli';
 import { chattingMore } from './practiceStuckCambridge';
 import * as cc from './practiceTherapistCambridgeC';
 
@@ -25,9 +25,9 @@ export const buildPracticeStuck: PracticeNotesBuilder = (tr) => [
         'Похоже, мы оба ушли в рассуждения, и чувства остались в стороне. Давайте остановимся: что с вами сейчас?',
       ),
     ],
-    more: impassesMore,
+    more: buildImpassesMore(tr),
     sources:
-      '[Хис, гл. 12], [Рёдигер, табл. 15.1], [Кембридж, гл. 5], [Янг, гл. 1], [Арнтц, 5.5]',
+      '[Хис, гл. 12], [Рёдигер, табл. 15.1], [Кембридж, гл. 5], [Янг, гл. 1], [Арнтц, 5.5], [Рафаэли, гл. 23]',
   },
   {
     id: 'chatting',

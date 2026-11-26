@@ -1,11 +1,11 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { patternBreakingMore, prosConsMore } from './patternBreakingBehary';
+import { prosConsMore } from './patternBreakingBehary';
+import { buildPatternBreakingMore } from './patternBreakingRafaeli';
 import * as cambB from './patternBreakingCambridgeB';
 
 /** Техники: pattern_breaking, pros_cons. */
 export const buildPatternBreakingTechniques: TechniqueGuideBuilder = (tr) => [
   {
-    // Пилот живого языка (2026-11): короткие фразы, до пяти шагов, «Как это звучит» и «Подробнее».
     id: 'pattern_breaking',
     group: 'behavioral',
     name: 'Прорыв паттерна: новое поведение по шагам',
@@ -25,7 +25,7 @@ export const buildPatternBreakingTechniques: TechniqueGuideBuilder = (tr) => [
         '.',
     ],
     voice: cambB.patternBreakingVoice(tr),
-    more: [...patternBreakingMore, ...cambB.patternBreakingCambridgeBMore],
+    more: buildPatternBreakingMore(tr),
     cautions:
       'Сначала малые шаги, а не развод или увольнение. Крупное решение проверяют «за и против» двух путей — действовать сейчас или подождать; уходить из отношений — после попыток решить конкретное внутри них, кроме ситуаций насилия. Внезапное необъяснимое улучшение бывает избегающим или гиперкомпенсаторным режимом, который выдаёт себя за Здорового Взрослого. Шаги режут тонко и ставят ради потребности клиента, а не ради привыкания, как в экспозиции [Кембридж, гл. 9].',
     sources:
