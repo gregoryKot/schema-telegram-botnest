@@ -283,39 +283,19 @@
 .mm2-kind-name { font: 700 13px var(--sans); }
 .mm2-kind-hint { font-size: 11.5px; line-height: 1.35; color: var(--text-sub); }
 /* Строка о связи карт с концептуализацией под типами (MapKindPicker, #963): в карточках — во всю ширину ряда, в меню — последней строкой. */
-.mm2-kinds-note { grid-column: 1 / -1; justify-self: center; max-width: 640px; margin: 6px 0 0; text-align: center; color: var(--text-faint); }
+.mm2-kinds-note { max-width: 640px; margin: 6px 0 0; text-align: center; color: var(--text-faint); }
 .mm2-kind-menu .mm2-kinds-note { padding: 8px 12px 4px; text-align: left; }
 .mm2-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text-sub); text-align: center; }
-/* Типы первой карты — плитки бумаги (.pp-square) со знаком типа: пять в ряд на широком окне, 3 + 2 по центру
-   на узком (сетка из шести долей, плитка — две; четвёртая начинает второй ряд со сдвигом на долю). */
-/* Кегль названия — по самому длинному слову: «Концептуализация» в Literata 16 — 157px, а у плитки на 1280 с открытым
-   меню (колонка 1040) под текст 168px. На 18px название упиралось в край плитки и обрезалось. */
-.mm2-kinds { display: grid; grid-template-columns: repeat(5, minmax(0, 200px)); gap: 12px; margin-top: 8px; justify-content: center; width: 100%; box-sizing: border-box; padding: 0 16px; }
-.mm2-kind-card.pp-square { min-height: 208px; padding: 18px 12px 16px; color: var(--text); }
-.mm2-kind-card .mm2-kind-text { gap: 6px; }
-.mm2-kind-card .mm2-kind-name { font: 400 16px/1.2 var(--serif); overflow-wrap: anywhere; }
-.mm2-kind-card .mm2-kind-hint { font-size: 13px; line-height: 1.4; }
-.mm2-kind-card .pp-art { order: 2; width: 84px; height: 45px; }
-.mm2-kind-card:disabled { cursor: default; }
-.mm2-kind-card:disabled > * { opacity: .5; }
-.mm2-kind-card:disabled:hover { background: oklch(0.915 0.03 var(--h)); } /* та же бумага .pp-paper: недоступная плитка под курсором не темнеет */
-@media (max-width: 1279px) {
-  .mm2-kinds { grid-template-columns: repeat(6, minmax(0, 95px)); gap: 10px; padding: 0 12px; }
-  .mm2-kind-card.pp-square { padding: 16px 12px 14px; }
-  .mm2-kind-card .mm2-kind-name { font-size: 15px; }
-  .mm2-kind-card { grid-column: span 2; }
-  .mm2-kind-card:nth-child(4) { grid-column: 2 / span 2; }
-}
-/* Уже 1024 (планшет с открытым меню — колонка 528): те же 3 + 2, плитки во всю колонку с полем шапки
-   (а не 2 + 2 + 1 узкой стопкой); «Концептуализация» входит в плитку 148px кеглем 13 при поле 8. */
-@media (max-width: 1023px) {
-  .mm2-kinds { grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 0; }
-  .mm2-center--kinds { padding-inline: 16px; } /* в карточке клиента — поле шапки (therapist-card.css) */
-  .mm2-kind-card.pp-square { min-height: 168px; padding: 14px 8px 12px; }
-  .mm2-kind-card .mm2-kind-name { font-size: 13px; }
-  .mm2-kind-card .mm2-kind-hint { font-size: 12px; }
-  .mm2-kind-card .pp-art { width: 64px; height: 34px; }
-}
+/* Типы первой карты — строки на линии со знаком на бумаге типа (MapKindButton cards, К31), колонкой до 640 по центру. */
+.mm2-kinds { display: flex; flex-direction: column; width: 100%; max-width: 640px; margin-top: 8px; border-top: 1px solid var(--line); text-align: left; }
+.ds-list-row.mm2-kind-row { min-height: 64px; padding-block: 10px; border-bottom-color: var(--line); cursor: pointer; }
+.mm2-kind-row .mm2-kind-name { font: 400 17px/1.25 var(--serif); }
+.mm2-kind-row .mm2-kind-hint { font-size: 13px; line-height: 1.4; }
+.pp-row-art.mm2-kind-sign { height: 36px; border-radius: 10px; background: oklch(0.915 0.03 var(--h)); }
+.mm2-kind-row:disabled { cursor: default; }
+.mm2-kind-row:disabled > * { opacity: .5; }
+.mm2-kinds .mm2-kinds-note { max-width: none; margin-top: 12px; text-align: left; }
+@media (max-width: 1023px) { .mm2-center--kinds { padding-inline: 16px; } } /* в карточке клиента — поле шапки (therapist-card.css) */
 /* Пустые «Графические карты»: заголовок без знака (знак режимов уже в плитке «Карта режимов»), блок —
    от верха вкладки, а не по центру высоты (над ним оставалось ~200px пустоты). */
 .mm2-center--kinds { justify-content: flex-start; box-sizing: border-box; padding-top: 28px; }

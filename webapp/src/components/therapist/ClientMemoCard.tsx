@@ -13,7 +13,8 @@ interface Props {
   detail: Pick<ClientDetail, 'saveSessionInfo'>;
 }
 
-/** «О клиенте»: одна свободная заметка терапевта, клиент её не видит. Пустой текст при сохранении стирает заметку. */
+/** «О клиенте»: одна свободная заметка терапевта, клиент её не видит. Пустой текст при сохранении стирает заметку.
+ *  Пустая заметка свёрнута в строку «Добавить о клиенте»: поле не занимает первый экран телефона (К31). */
 export function ClientMemoCard({ client, detail }: Props) {
   const tr = useTr();
   const [stored, setStored] = useState(client.memo ?? '');
@@ -21,6 +22,7 @@ export function ClientMemoCard({ client, detail }: Props) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [done, setDone] = useState(false);
+  const [open, setOpen] = useState(stored !== '');
   const dirty = text.trim() !== stored;
 
   async function save() {
@@ -40,10 +42,13 @@ export function ClientMemoCard({ client, detail }: Props) {
   return (
     <section className="pp-block tk-leaf">
       <SignHead kind="pebbles" className="ds-label">О клиенте</SignHead>
+      {!open ? (
+        <button type="button" className="ds-link tk-memo-add" onClick={() => setOpen(true)}>+ Добавить о клиенте</button>
+      ) : <>
       <p className="ds-sub">{tr('Любой текст о клиенте. Видишь только ты.', 'Любой текст о клиенте. Видите только вы.')}</p>
       <LimitedTextarea
         max={CLIENT_MEMO_MAX} className="ds-textarea" rows={4} value={text}
-        aria-label="О клиенте" onChange={(e) => { setText(e.target.value); setDone(false); }}
+        aria-label="О клиенте" autoFocus={stored === ''} onChange={(e) => { setText(e.target.value); setDone(false); }}
       />
       {detectCrisisAny(text) && <CrisisCard surface="note" compact />}
       <div className="gd-acts">
@@ -51,6 +56,7 @@ export function ClientMemoCard({ client, detail }: Props) {
         {done && !dirty && <span className="ds-sub" role="status">Сохранено</span>}
         {failed && <span className="tb-error" role="alert">{tr('Не удалось сохранить. Текст остался в поле, попробуй ещё раз.', 'Не удалось сохранить. Текст остался в поле, попробуйте ещё раз.')}</span>}
       </div>
+      </>}
     </section>
   );
 }

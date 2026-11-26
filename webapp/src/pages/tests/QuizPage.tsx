@@ -80,7 +80,7 @@ export function QuizPage() {
         <div>
           <QuizProgress index={runner.index} total={runner.total} />
           <h2 className="pl2-h2 pl2-question">{runner.question.text}</h2>
-          <div className="u-col12">
+          <div className="pl2-options">
             {runner.question.options.map((o, idx) => (
               <button key={o.label} onClick={() => runner.answer(idx)} className="pl2-option">
                 {o.label}

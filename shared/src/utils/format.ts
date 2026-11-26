@@ -41,6 +41,12 @@ export function fmtDateLong(dateStr: string): string {
   return `${parseInt(d)} ${MONTHS_LONG[parseInt(m) - 1]}`;
 }
 
+/** "20 ноября" из "2026-11-20"; чужой год дописывается: "10 января 2099". Без сдвига зоны. */
+export function fmtDateFull(dateStr: string): string {
+  const y = dateStr.slice(0, 4);
+  return y === todayStr().slice(0, 4) ? fmtDateLong(dateStr) : `${fmtDateLong(dateStr)} ${parseInt(y)}`;
+}
+
 /** YYYY-MM-DD произвольной даты в ЛОКАЛЬНОЙ зоне. Нужен всем, кто считает
  *  «сегодня/вчера» рядом с todayStr(): смешивать его с
  *  `toISOString().split('T')[0]` (UTC) нельзя — в зонах, где локальная дата

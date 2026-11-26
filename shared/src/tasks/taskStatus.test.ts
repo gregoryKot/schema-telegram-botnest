@@ -91,7 +91,7 @@ describe('taskMeta', () => {
       dueDate: '2026-10-20',
       completedAt: '2026-10-05T12:00:00Z',
     });
-    expect(taskMeta(done, 'done')).toBe('выполнено 5 окт');
+    expect(taskMeta(done, 'done')).toBe('выполнено 5 октября');
   });
   it('«не вышло» — когда закрыто, с прогрессом серии', () => {
     const failed = t({
@@ -101,11 +101,11 @@ describe('taskMeta', () => {
       progress: 1,
       completedAt: '2026-10-05T12:00:00Z',
     });
-    expect(taskMeta(failed, 'failed')).toBe('закрыто 5 окт · 1 из 3 дней');
+    expect(taskMeta(failed, 'failed')).toBe('закрыто 5 октября · 1 из 3 дней');
   });
   it('у открытого — срок или дата назначения; у серии — «N из M дней»', () => {
-    expect(taskMeta(t({ dueDate: '2026-10-20' }), 'active')).toBe('до 20 окт');
+    expect(taskMeta(t({ dueDate: '2026-10-20' }), 'active')).toBe('до 20 октября');
     const streak = t({ type: 'diary_streak', targetDays: 7, progress: 1 });
-    expect(taskMeta(streak, 'active')).toBe('назначено 1 окт · 1 из 7 дней');
+    expect(taskMeta(streak, 'active')).toBe('назначено 1 октября · 1 из 7 дней');
   });
 });

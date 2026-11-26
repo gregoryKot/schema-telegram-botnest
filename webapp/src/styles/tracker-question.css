@@ -104,9 +104,6 @@
     grid-column: 1 / -1; margin-top: 8px; font-size: 14.5px; line-height: 1.45;
   }
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { grid-column: 1 / -1; margin-top: 2px; }
-  /* Ответы — поле 16, а не 20: подписи склеены glue (круг 4), и у «Выражения чувств» средняя уходила в третью
-     строку — «Полностью» 822 → 839, под сгиб; с полем 16 — снова 822. */
-  .tq-ask .ns-word { padding-inline: 16px; }
   /* Первый показ: «откуда это» плотнее и ближе к листу — низ «Полностью» на 390×844 855 → ~841, в окне
      (в main 928); до 830 — только короче сам текст (раздел b07, «Не сделано»). */
   .tq-note, .tq-note-x { font-size: 13px; line-height: 1.4; }
@@ -126,8 +123,7 @@
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { margin-top: 4px; }
   .tq-examples .tq-desc { padding-bottom: var(--space-8); font-size: 14px; line-height: 1.45; }
   .tq-ask .tq-question { font-size: 15px; line-height: 1.4; }
-  .tq-ask .ns-words { gap: 6px; }
-  .tq-ask .ns-word { min-height: 48px; padding-inline: 14px; }
+  .tq-ask .ns-word { min-height: 48px; }
   .tq-ask .ns-word-main { gap: 2px; padding: 4px 0; }
 }
 /* Узкий телефон (поле листа ≤300 — окно ≤372): название 22, знак 88; ≤260 (окно 320) — название 20:
