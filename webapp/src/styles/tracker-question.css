@@ -123,7 +123,10 @@
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { margin-top: 4px; }
   .tq-examples .tq-desc { padding-bottom: var(--space-8); font-size: 14px; line-height: 1.45; }
   .tq-ask .tq-question { font-size: 15px; line-height: 1.4; }
-  .tq-ask .ns-word { min-height: 48px; }
+  /* Маркер 16 и промежутки 10: подпись получает ширину старой коробки с полем 14 (tracker-fit.spec.ts, 360×640). */
+  .tq-ask .ns-word { min-height: 48px; gap: 10px; padding-right: 0; }
+  .tq-ask .ns-word::before { width: 16px; height: 16px; }
+  .tq-ask .ns-word.is-selected::before { border-width: 5px; }
   .tq-ask .ns-word-main { gap: 2px; padding: 4px 0; }
 }
 /* Узкий телефон (поле листа ≤300 — окно ≤372): название 22, знак 88; ≤260 (окно 320) — название 20:
