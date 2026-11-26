@@ -11,11 +11,11 @@ import { QUICK_TAGS, QUICK_TAG_ENTITY, type QuickTag } from './quickEntryModel';
 
 export function QuickTagChips({ tag, onTag }: { tag: QuickTag; onTag: (t: QuickTag) => void }) {
   return (
-    <div className="qe-tags" role="radiogroup" aria-label="Тег записи">
+    <div className="pa-chips-line qe-tags" role="radiogroup" aria-label="Тег записи">
       {QUICK_TAGS.map((t) => {
         const look = ENTITY_LOOK[QUICK_TAG_ENTITY[t.id]];
         return (
-          <SignChip key={t.id} label={t.label} on={tag === t.id} radio hue={look.hue} sign={look.sign} className="qe-tag"
+          <SignChip key={t.id} label={t.label} on={tag === t.id} radio hue={look.hue} sign={look.sign} className="pa-chip--line qe-tag"
             art={t.id === 'gratitude' ? <Pebbles size="nav" filled={1} /> : undefined}
             onToggle={() => { haptic.select(); onTag(t.id); }} />
         );
