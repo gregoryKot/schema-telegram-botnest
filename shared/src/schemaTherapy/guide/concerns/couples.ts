@@ -22,7 +22,6 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'compliant_surrenderer',
     'healthy_adult',
     'happy_child',
-    'compliant_surrenderer',
     'detached_self_soother',
     'self_aggrandiser',
     'bully_attack',
