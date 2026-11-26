@@ -1,3 +1,4 @@
+import { caseConceptFarrellShawMore } from './practiceMethodFarrellShaw';
 import { historyInterviewMore } from './practiceConceptHeath';
 import { conceptMoreRoediger } from './practiceConceptRoediger';
 import * as cam from './practiceConceptCambridge';
@@ -16,6 +17,7 @@ export const historyInterviewMoreAll: string[] = [
 ];
 
 export const caseConceptMoreAll: string[] = [
+  ...caseConceptFarrellShawMore,
   ...conceptMoreRoediger,
   ...cam.caseConceptualizationCambridgeMore,
   'Схемы под хроническими симптомами [Рафаэли, гл. 2]. Схемы вместе с копингом часто стоят за хронической тревогой, депрессией, употреблением веществ, психосоматикой и за устойчивыми чертами: зависимостью от других, избеганием, перфекционизмом.',
