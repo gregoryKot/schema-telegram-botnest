@@ -37,6 +37,7 @@ const NOTE_IDS = [
   'self_practice_group_day', 'therapist_critic', 'difficult_client_my_coping',
   'know_your_healthy_adult', 'therapist_happy_child', 'therapist_modes_walk',
   'attachment_assertiveness_poles',
+  'teen_parent_triangle',
 ];
 
 describe('знаки листов подсказок', () => {

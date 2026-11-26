@@ -38,13 +38,7 @@ export const PRACTICE_CATALOG_CHILDREN: readonly CatalogTopic[] = [
     source: 'Луз',
     chapters: ['гл. 18'],
   },
-  {
-    id: 'teen_parent_triangle',
-    title: 'Терапевт между подростком и родителем',
-    status: 'planned',
-    source: 'Луз',
-    chapters: ['гл. 7', 'гл. 8', 'гл. 9'],
-  },
+  { id: 'teen_parent_triangle', status: 'written' },
 ];
 
 /** Весь каталог «Для терапевта»: общий плюс темы книги «Луз». */
