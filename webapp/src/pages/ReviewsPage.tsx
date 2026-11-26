@@ -54,10 +54,7 @@ export function ReviewsPage() {
           ))}
         </div>
 
-        <div style={{
-          marginTop: 48, padding: '28px 32px',
-          background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 'var(--r-16)',
-        }}>
+        <div className="ds-aside" style={{ marginTop: 48, paddingLeft: 24 }}>
           <p style={{ fontSize: 16, color: 'var(--text)', lineHeight: 1.75, margin: '0 0 8px', fontWeight: 600 }}>
             Как же тогда понять, подхожу ли я вам?
           </p>

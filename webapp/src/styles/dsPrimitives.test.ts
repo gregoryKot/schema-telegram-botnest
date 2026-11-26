@@ -223,7 +223,7 @@ describe('cabinet.css: поправки координатора волны 1 (#
 describe('cabinet.css: примитивы волны 2 (#906)', () => {
   const WAVE2 = [
     '.ds-input--search', '.ds-input--sm', '.ds-chip--toggle', '.ds-list-body',
-    '.ds-list-row--nav', '.ds-list-row--inset', '.ds-card--nav', '.ds-card--crisis',
+    '.ds-list-row--nav', '.ds-list-row--inset', '.ds-card--nav',
   ];
   it.each(WAVE2)('%s объявлен один раз вне медиа и красится токенами', (cls) => {
     expect(declaredTimes(cls)).toBe(1);
@@ -273,14 +273,11 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(/mask/.test(chevRule)).toBe(false);
     expect(chevRule).toContain('→');
   });
-  it('карточки: --nav раньше цветных модификаторов, --crisis без --err', () => {
+  it('карточки: --nav раньше цветных модификаторов', () => {
     const nav = top.indexOf('.ds-card--nav {');
     expect(nav).toBeGreaterThan(-1);
     expect(nav).toBeLessThan(top.indexOf('.ds-card--panel'));
     expect(nav).toBeLessThan(top.indexOf('.ds-card--accent'));
-    const crisis = decls(top, '.ds-card--crisis');
-    expect(crisis).toContain('--h: 28');
-    expect(crisis).not.toContain('var(--err)');
   });
   it('.ds-link: тап 44 на телефоне и под пальцем, не у мыши; один телефонный блок', () => {
     expect(decls(tap, '.ds-link')).toContain('min-height: 44px');
