@@ -103,7 +103,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
             <AssignTemplateTiles onAssign={onAssign} />
           </>
         )}
-        <button onClick={() => onAssign()} className="ds-btn ds-btn--secondary">+ Назначить</button>
+        {clientTasks.length > 0 && <button onClick={() => onAssign()} className="ds-btn ds-btn--secondary">+ Назначить</button>}
       </div>
 
       {confirmDelete && (

@@ -44,7 +44,7 @@ describe('ClientTasksTab', () => {
     expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self', origin: 'template' });
     fireEvent.click(screen.getByText('Дневник режима'));
     expect(onAssign).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'custom', text: expect.stringContaining('Дневник режима') }));
-    fireEvent.click(screen.getByText('+ Назначить'));
+    fireEvent.click(screen.getByText('Назначить первое задание'));
     expect(onAssign).toHaveBeenLastCalledWith();
     expect(screen.queryByText('Imagery rescripting')).toBeNull();
   });

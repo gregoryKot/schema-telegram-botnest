@@ -1,5 +1,5 @@
 import type { TherapyClientSummary } from '../../api';
-import { fmtDate, todayStr } from '../../utils/format';
+import { fmtDate, todayStr } from '../../utils/format'; import { DateField } from '../DateField';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { SessionDateTimeFields } from '../../../../shared/src/therapy/SessionDateTimeFields';
 import { sessionInputHint, sessionToSave, startDateHint } from '../../../../shared/src/therapy/sessionInput';
@@ -47,7 +47,7 @@ export function StartDateCard({ selectedClient, detail }: Props) {
       <h2 className="ds-label">Начало терапии</h2>
       {editingStartDate ? (
         <div className="tk-edit-form">
-          <input className="ds-input" type="date" lang="ru" aria-label="Начало терапии" max={todayStr()} value={localStartDate} onChange={e => setLocalStartDate(e.target.value)} />
+          <DateField label="Начало терапии" max={todayStr()} value={localStartDate} onChange={setLocalStartDate} />
           <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} hint={hint} onCancel={() => setEditingStartDate(false)}
             onSave={async () => { if (await saveSessionInfo({ therapyStartDate: localStartDate || null })) setEditingStartDate(false); }} />
         </div>

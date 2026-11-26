@@ -31,3 +31,23 @@ describe('ClientTasksTab — «Назначить первое задание»'
     expect(firstTask()).not.toContain('ds-btn--secondary');
   });
 });
+
+// Одна кнопка назначения на вкладке (К25): пустой список — «Назначить первое задание», есть задания — «+ Назначить».
+describe('ClientTasksTab — одна кнопка назначения', () => {
+  const task = { id: 1, userId: '7', assignedBy: '2', type: 'custom', text: 'Прогулка', targetDays: null, needId: null, dueDate: '2099-01-10', done: null, completedAt: null, createdAt: '2026-11-01T09:00:00.000Z' };
+  const assignButtons = (clientTasks: unknown[]) => {
+    const d = makeClientDetail({ selectedClient: makeClient({ telegramId: 7 }), clientTasks: clientTasks as never });
+    render(<MemoryRouter><ClientTasksTab detail={d} onAssign={vi.fn()} /></MemoryRouter>);
+    return screen.queryAllByRole('button', { name: /Назначить/ }).map((b) => b.textContent);
+  };
+
+  it.each([true, false])('пусто — только «Назначить первое задание» (телефон: %s)', (isPhone) => {
+    phone.value = isPhone;
+    expect(assignButtons([])).toEqual(['Назначить первое задание']);
+  });
+
+  it('есть задания — только «+ Назначить»', () => {
+    phone.value = true;
+    expect(assignButtons([task])).toEqual(['+ Назначить']);
+  });
+});

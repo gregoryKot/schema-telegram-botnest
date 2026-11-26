@@ -13,7 +13,7 @@ export function tabsFade(scrollLeft: number, scrollWidth: number, clientWidth: n
 }
 
 /** Ширина маски у края — та же, что --tk-fade в therapist-card.css (сверка — clientTabsScroll.test.ts). */
-export const TAB_FADE = 40;
+export const TAB_FADE = 56;
 
 /** Прокрутка полосы для активной вкладки: уже видна целиком (не под маской) — полоса стоит (b34: на 768 лента
  *  прыгала вбок при каждом переходе); иначе — по центру, в пределах [0, max]. Без `current` — всегда по центру. */

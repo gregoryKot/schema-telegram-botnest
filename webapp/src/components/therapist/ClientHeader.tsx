@@ -7,7 +7,7 @@ import { ClientTabs } from './ClientTabs';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import type { ClientDetail } from './clientSheetTypes';
 import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
-import { useClientHead } from './useClientHead';
+import { useIsMobile } from '../useIsMobile';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import { clientNameClass } from './clientNameFit';
@@ -25,7 +25,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
     renamingAlias, setRenamingAlias, aliasInput, setAliasInput, aliasSaving, aliasError,
     deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias,
   } = detail;
-  const { phone, headClass } = useClientHead(detail.clientTab);
+  const phone = useIsMobile();
   const removeCopy = removeClientConfirmCopy(selectedClient);
   const aliasInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (renamingAlias) aliasInputRef.current?.focus(); }, [renamingAlias]);
@@ -33,7 +33,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const startRename = () => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); };
 
   return (
-    <div className={headClass}>
+    <div className="tk-head">
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
         <Avatar initials={clientAvatarInitials(selectedClient)} className="tk-avatar" />
