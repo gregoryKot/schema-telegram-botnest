@@ -94,13 +94,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (тема farewell_imagery)',
   },
   {
-    id: 'perspective_change',
-    title: 'Смена точки зрения: наблюдатель, расширение, замещение',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 5', 'гл. 8'],
-  },
-  {
     id: 'emotional_resonance_sphere',
     title: 'Сфера эмоционального резонанса',
     status: 'planned',
