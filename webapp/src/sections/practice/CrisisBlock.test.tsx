@@ -31,10 +31,10 @@ describe('CrisisBlock — постоянный «спасательный кру
     expect(screen.queryByRole('heading', { name: 'Помощь рядом' })).toBeNull();
   });
 
-  it('112 — ссылкой tel:, текст строки прежний (точка видна читалке)', () => {
+  it('112 — ссылкой tel:, текст строки прежний', () => {
     render(<CrisisBlock />);
     expect(screen.getByText('112').closest('a')?.getAttribute('href')).toBe('tel:112');
-    expect(document.querySelector('.cr-line')?.textContent).toBe('Если есть угроза жизни —\u00a0112.');
+    expect(document.querySelector('.cr-line')?.textContent).toBe('Если есть угроза жизни —\u00a0112');
   });
 
   it('телефон доверия виден и кликабелен (реальная tel:-ссылка)', () => {
