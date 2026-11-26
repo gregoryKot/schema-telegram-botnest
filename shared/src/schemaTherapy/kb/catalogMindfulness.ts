@@ -44,9 +44,5 @@ export const VF_PRACTICE: readonly CatalogTopic[] = [
     'гл. 5',
   ]),
   vf('mbst_group_difficulties', 'Трудности в группе осознанности', ['гл. 7']),
-  vf(
-    'mindfulness_programs',
-    'Программы осознанности: MBSR, MBCT, данные и механизмы',
-    ['гл. 3'],
-  ),
+  w('mindfulness_programs'),
 ];
