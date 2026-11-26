@@ -18,6 +18,10 @@
       "owner": "webapp/src/utils/theme.ts",
       "kind": "local"
     },
+    "reminder_hint_seen": {
+      "owner": "webapp/src/components/appShell/reminderHintSeen.ts",
+      "kind": "local"
+    },
     "auth_seen": {
       "owner": "shared/src/auth/authSeen.ts",
       "kind": "local"
