@@ -184,6 +184,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
     'api.trackEvent(DONE_NEXT_STEP_EVENT, { from, to }) по тапу на «Что ' +
     'дальше» после трекера или дневника; тот же приём, что у home_tile',
+  case_need_tracker:
+    'шлётся через импортируемую константу CASE_NEED_TRACKER_EVENT ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — ' +
+    'webapp/src/components/caseFlow/CaseNeedBridge.tsx зовёт ' +
+    'api.trackEvent(CASE_NEED_TRACKER_EVENT, { needId }) с «Записано» ' +
+    'быстрого разбора; тот же приём, что у home_tile',
   therapy_nudge:
     'шлётся через импортируемую константу THERAPY_NUDGE_EVENT (shared/), ' +
     'не строковым литералом — строки «это самопомощь, не замена терапии» ' +
@@ -406,7 +412,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 54 — guide_mark_added (#1484): серверное, отметку создаёт ручка, а не trackEvent.
     // 56 — done_next_step (DONE_NEXT_STEP_EVENT, как home_tile) и diary_jump (DIARY_JUMP_EVENT, вкладка «Записи»).
     // 57 — weekly_repeat_queued («Повторы недели»): серверное, ставит крон в очередь.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(57);
+    // 58 — case_need_tracker (CASE_NEED_TRACKER_EVENT, мост «в трекере» быстрого разбора): константа, как home_tile.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(58);
   });
 });
 

@@ -128,4 +128,8 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     file: 'webapp/src/components/trackerOverlay/DayBars.tsx',
     why: 'подписи столбиков с мягкими переносами для длинных названий, остальные — NEED_NAMES; не таблица знаний',
   },
+  {
+    file: 'src/analytics/case-steps.constants.ts',
+    why: 'допустимые meta.needId у case_need_tracker (= NEED_ORDER сайта): белый список аналитики, не таблица знаний',
+  },
 ];

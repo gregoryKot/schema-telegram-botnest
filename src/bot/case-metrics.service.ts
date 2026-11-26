@@ -48,6 +48,7 @@ export class CaseMetricsService {
     const [
       started,
       finished,
+      needTracker,
       scene,
       recognized,
       peopleRows,
@@ -57,6 +58,7 @@ export class CaseMetricsService {
     ] = await Promise.all([
       count('case_started'),
       count('case_finished'),
+      count('case_need_tracker'),
       byMetaKey('case_scene', 'source'),
       byMetaKey('case_recognized', 'agreed'),
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
@@ -87,6 +89,7 @@ export class CaseMetricsService {
       peopleReturned: Number(returnedRows[0]?.c ?? 0),
       mapOpenedRepeat: mapOpened('true'),
       mapOpenedFirst: mapOpened('false'),
+      needTracker,
     };
   }
 

@@ -15,6 +15,15 @@ describe('useOverlays.runQuickAction', () => {
     expect(result.current.quickAction).toBeNull();
   });
 
+  it('openTracker с id открывает трекер сразу на потребности, без id — на общем виде', () => {
+    const { result } = renderHook(() => useOverlays());
+    act(() => result.current.openTracker('play'));
+    expect(result.current.showTrackerOverlay).toBe(true);
+    expect(result.current.trackerNeedId).toBe('play');
+    act(() => result.current.openTracker());
+    expect(result.current.trackerNeedId).toBeNull();
+  });
+
   it('оверлейное действие попадает в quickAction', () => {
     const { result } = renderHook(() => useOverlays());
     act(() => result.current.runQuickAction('diary_mode'));

@@ -107,6 +107,16 @@ describe('sanitizeCaseMeta', () => {
     });
   });
 
+  describe('case_need_tracker', () => {
+    it('пропускает только известную потребность', () => {
+      expect(call('case_need_tracker', { needId: 'play', x: 1 })).toEqual({
+        needId: 'play',
+      });
+      expect(call('case_need_tracker', { needId: 'ты плох' })).toBeUndefined();
+      expect(call('case_need_tracker', { needId: 'toString' })).toBeUndefined();
+    });
+  });
+
   it('case_started меты не имеет — всё присланное отбрасывается', () => {
     expect(call('case_started', { scene: 'что-то личное' })).toBeUndefined();
   });

@@ -49,7 +49,10 @@ function initialState(): { step: CaseQuickStep; fields: CaseQuickFields } {
   if (step === 'steady' || fields.gateId === STEADY_GATE_ID) {
     return { step: 'feel', fields: { ...fields, gateId: null } };
   }
-  if ((step === 'result' || step === 'modes') && !fields.gateId) {
+  if (
+    (step === 'need' || step === 'result' || step === 'modes') &&
+    !fields.gateId
+  ) {
     return { step: 'feel', fields };
   }
   if (step === 'modes' || step === 'done') return { step: 'result', fields };
@@ -57,8 +60,8 @@ function initialState(): { step: CaseQuickStep; fields: CaseQuickFields } {
 }
 
 /**
- * Состояние потока «Что случилось» в три шага (сайт): момент → что внутри →
- * что хотелось сделать → итог. Все переходы и сохранение здесь; экраны —
+ * Состояние потока «Что случилось» в четыре шага (сайт): момент → что внутри →
+ * что хотелось сделать → чего не хватило → итог. Все переходы и сохранение здесь; экраны —
  * только разметка. Старый useCaseFlowState остался мини-аппу.
  *
  * Инвариант «Своё…»: непустой bodyOwn/impulseOwn = «своё выбрано», id `*_own`
@@ -159,6 +162,11 @@ export function useCaseQuickFlow(
     patch({ impulseChipIds: next, modeId: '' });
   };
 
+  const pickNeed = (id: string) => {
+    haptic.select();
+    patch({ needId: id === fields.needId ? '' : id });
+  };
+
   const pickMode = (modeId: string) => {
     haptic.select();
     patch({ modeId });
@@ -172,7 +180,8 @@ export function useCaseQuickFlow(
       feel: 'scene',
       steady: 'feel',
       impulse: 'feel',
-      result: 'impulse',
+      need: 'impulse',
+      result: 'need',
       modes: 'result',
     };
     goStep(prev[step]);
@@ -253,7 +262,9 @@ export function useCaseQuickFlow(
     toggleBodyChip,
     toggleImpulseChip,
     feelNext: () => goStep('impulse'),
-    impulseNext: () => goStep('result'),
+    impulseNext: () => goStep('need'),
+    pickNeed,
+    needNext: () => goStep('result'),
     openModes: () => goStep('modes'),
     pickMode,
     back,

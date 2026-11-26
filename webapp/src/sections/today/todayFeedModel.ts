@@ -72,7 +72,7 @@ export function diaryEntriesToday(feed: FeedEntry[]): number {
 /** Есть разборы за сегодня (запись режима с fromCase) — считаем их; нет — обещание. */
 export function caseTileMeta(casesToday = 0): string {
   if (casesToday > 0) return `Сегодня: ${casesToday} ${pluralRu(casesToday, 'разбор', 'разбора', 'разборов')}`;
-  return '≈3 мин';
+  return '≈4 мин';
 }
 
 /** Сколько разборов записано за сегодня. */

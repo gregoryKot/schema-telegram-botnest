@@ -17,9 +17,7 @@ import type { SignKey } from '../../../../shared/src/theme/entityLook';
  *  Итог рисует свои строки сам; на «Других режимах» листа нет — там те же чувства чипами, и
  *  «Страшно, тревожно» стояло бы на экране дважды. */
 const KEEP: Partial<Record<CaseQuickStep, { feel: boolean }>> = {
-  feel: { feel: false },
-  steady: { feel: false },
-  impulse: { feel: true },
+  feel: { feel: false }, steady: { feel: false }, impulse: { feel: true }, need: { feel: true },
 };
 
 export function collectedRows(step: CaseQuickStep, f: CaseQuickFields, bodyChips: CaseChip[]): QuickResultRow[] {

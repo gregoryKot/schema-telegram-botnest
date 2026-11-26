@@ -3,7 +3,7 @@ import { CaseChipGrid } from './CaseChipGrid';
 import { CaseFlowFoot } from './caseFlowUi';
 import { CASE_IMPULSES } from '../../../../shared/src/case/caseImpulses';
 
-/** Шаг 3 из 3 — «Что хотелось сделать?»: порывы, до трёх, нужен хотя бы один. */
+/** Шаг 3 из 4 — «Что хотелось сделать?»: порывы, до трёх, нужен хотя бы один. */
 export function CaseImpulseStep({
   selectedIds,
   ownValue,
@@ -26,7 +26,7 @@ export function CaseImpulseStep({
   return (
     <CaseStepScreen
       onBack={onBack} compact
-      eyebrow="Что случилось · 3 из 3"
+      eyebrow="Что случилось · 3 из 4"
       title="Что хотелось сделать?"
       lede="Не то, что получилось, а первый импульс."
     >
@@ -39,7 +39,7 @@ export function CaseImpulseStep({
         ownPlaceholder="Например: хотелось всё бросить"
       />
       <CaseFlowFoot
-        primaryLabel="Что это было?"
+        primaryLabel="Дальше"
         primaryDisabled={selectedIds.length === 0}
         onPrimary={onNext}
         crisis={crisis}

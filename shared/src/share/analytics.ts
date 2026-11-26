@@ -194,6 +194,12 @@ export interface CaseMapOpenedMeta {
   repeat: boolean;
 }
 
+/** С «Записано» открыли трекер на потребности разбора: meta.needId — id из NEED_ORDER. */
+export const CASE_NEED_TRACKER_EVENT = 'case_need_tracker';
+export interface CaseNeedTrackerMeta {
+  needId: string;
+}
+
 /** Переход-мост «Карты себя»: meta.to. Шлётся литералом api.trackEvent('self_map_link', { to }). */
 export const SELF_MAP_LINK_EVENT = 'self_map_link';
 export type SelfMapLinkTarget =
