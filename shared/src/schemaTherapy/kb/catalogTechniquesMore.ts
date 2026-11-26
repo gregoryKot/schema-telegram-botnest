@@ -8,4 +8,5 @@ export const WRITTEN_TECHNIQUES_MORE = [
   'perspective_change',
   'body_mode_positions',
   'problem_solving',
+  'child_mode_play',
 ].map(w);
