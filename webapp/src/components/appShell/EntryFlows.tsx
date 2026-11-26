@@ -8,6 +8,8 @@ import { AddressFormPicker } from '../AddressFormPicker';
 import { ConsentScreen } from '../ConsentScreen';
 import { JoinConfirmSheet } from '../JoinConfirmSheet';
 import { entryStep } from './entryQueue';
+import { ReminderHint } from './ReminderHint';
+import { useReminderHint } from './useReminderHint';
 import type { useOverlays } from './useOverlays';
 
 interface Join { joinKind: 'pair' | 'therapy'; joinCode: string }
@@ -21,7 +23,12 @@ export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>;
   const [addressDone, setAddressDone] = useState(false);
   const [linkHandled, setLinkHandled] = useState(false);
   const [join, setJoin] = useState<Join | null>(null);
-  const step = entryStep({ addressDone, consent: consent.state, linkHandled, join: join !== null });
+  const [hintClosed, setHintClosed] = useState(false);
+  const hint = useReminderHint(addressDone && consent.state === 'done' && linkHandled && join === null);
+  const step = entryStep({
+    addressDone, consent: consent.state, linkHandled, join: join !== null,
+    reminderHint: hintClosed ? 'skip' : hint.state,
+  });
 
   useStartParam(addressDone && consent.state === 'done', (a) => {
     if (a.kind === 'join') setJoin({ joinKind: a.joinKind, joinCode: a.code });
@@ -48,5 +55,6 @@ export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>;
     {step === 'address' && <AddressFormPicker onDone={onAddressDone} />}
     {step === 'consent' && <ConsentScreen onAccept={consent.accept} failed={consent.failed} />}
     {step === 'join' && join && <JoinConfirmSheet {...join} onClose={() => setJoin(null)} onJoined={onJoined} />}
+    {step === 'reminder' && hint.settings && <ReminderHint settings={hint.settings} onClose={() => setHintClosed(true)} />}
   </>);
 }

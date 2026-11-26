@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { entryStep } from './entryQueue';
 
-const base = { addressDone: true, consent: 'done' as const, linkHandled: true, join: false };
+const base = { addressDone: true, consent: 'done' as const, linkHandled: true, join: false, reminderHint: 'skip' as const };
 
 describe('entryStep', () => {
   it('вопрос «ты/вы» раньше всего, даже если согласия ещё нужны', () => {
@@ -19,6 +19,12 @@ describe('entryStep', () => {
   it('ссылка разбирается после согласий; пока не разобрана — очередь не кончилась', () => {
     expect(entryStep({ ...base, linkHandled: false })).toBe('wait');
     expect(entryStep({ ...base, join: true })).toBe('join');
+  });
+
+  it('подсказка про напоминание — после ссылки, перед концом; пока проверяем — ждём', () => {
+    expect(entryStep({ ...base, reminderHint: 'checking' })).toBe('wait');
+    expect(entryStep({ ...base, reminderHint: 'show' })).toBe('reminder');
+    expect(entryStep({ ...base, reminderHint: 'show', join: true })).toBe('join');
   });
 
   it('всё решено — конец очереди', () => {
