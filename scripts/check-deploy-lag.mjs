@@ -86,7 +86,7 @@ export function assessDeployLag({ builtAt, commitAt, now, graceMinutes }) {
     return {
       ok: true,
       code: 'fresh',
-      message: `образ собран ${builtDate.toISOString()} — не старее последнего коммита main ${commitDate.toISOString()}`,
+      message: `образ собран ${builtDate.toISOString()} — не старее последней выкатки ${commitDate.toISOString()}`,
     };
   }
 
