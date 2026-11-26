@@ -42,9 +42,10 @@
   .settings-content-inner.st-inner:not(.st-inner--sub) { gap: 0; padding-bottom: clamp(80px, calc(100vh - 300px), 900px); }
   .settings-content-inner.st-inner:not(.st-inner--sub) > .st-h { margin-bottom: 24px; }
   .settings-content-inner.st-inner:not(.st-inner--sub) > .st-section {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); column-gap: clamp(32px, 4vw, 64px);
-    align-items: start; padding: 22px 0 30px; border-top: 1px solid var(--panel-line);
+    padding: 22px 0 30px; border-top: 1px solid var(--panel-line);
   }
   .settings-content-inner.st-inner:not(.st-inner--sub) > .st-section > .st-sec-head { padding: 14px 0 0; border-bottom: none; }
+  /* Подэкран узкий (720): разворот не нужен, секция колонкой. */
+  .st-inner--sub .st-section.ds-spread { display: block; }
   .settings-content-inner.st-inner:not(.st-inner--sub) .st-hint { margin-top: 8px; max-width: 34ch; }
 }
