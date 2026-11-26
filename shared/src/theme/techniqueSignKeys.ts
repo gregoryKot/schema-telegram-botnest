@@ -49,5 +49,8 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'family_tree',
   // TechniqueSignsLuz.tsx — техники из книги Луз и соавторов о детях и подростках
   'finger_puppets',
+  // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
+  'breathing_space',
+  'body_scan',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];
