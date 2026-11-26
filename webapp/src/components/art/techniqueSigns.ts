@@ -106,6 +106,7 @@ const VREESWIJK_TECHNIQUE_SIGN: Record<VreeswijkTechniqueId, GuideSign> = {
   three_minute_breathing_space: 'breathing_space',
   mindfulness_practices: 'body_scan',
   schema_awareness_practice: 'schema_lens',
+  healthy_modes_mindfulness: 'healthy_light',
 };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {

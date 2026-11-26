@@ -82,6 +82,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
     'counter',
     'statements',
   ],
+  'technique:healthy_modes_mindfulness': ['variant', 'body', 'needs', 'home'],
   'technique:online_chairwork': ['variant', 'modes', 'result'],
   'technique:schema_attunement': ['moment', 'feeling', 'schema', 'bridge'],
   'technique:responsibility_pie': ['belief', 'causes', 'share'],

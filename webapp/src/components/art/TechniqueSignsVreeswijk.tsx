@@ -40,3 +40,16 @@ export function SchemaLens({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Осознанность к здоровым режимам: взрослый и ребёнок рядом, над ними тёплый луч, под ними линия дыхания. */
+export function HealthyLight({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <circle cx="46" cy="22" r="8" fill={PAPER.sage} />
+      <circle cx="74" cy="32" r="6" fill={PAPER.amber} />
+      <path d="M36 52 Q46 34 56 52 M66 52 Q74 40 82 52" {...ROUND} stroke={PAPER.slate} strokeWidth="3" />
+      <path d="M30 8 Q60 -2 90 8" {...ROUND} stroke={PAPER.amber} strokeWidth="3" strokeDasharray="4 5" />
+      <path d="M24 58 H96" {...ROUND} stroke={PAPER.moss} strokeWidth="3" />
+    </Svg>
+  );
+}

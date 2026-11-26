@@ -40,6 +40,7 @@ import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 import { buildGenogramTechniques } from './genogram';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
 import { buildSchemaAwarenessTechniques } from './schemaAwareness';
+import { buildHealthyModesMindfulnessTechniques } from './healthyModesMindfulness';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -57,6 +58,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildStanceTechniques,
   buildMindfulnessPracticesTechniques,
   buildSchemaAwarenessTechniques,
+  buildHealthyModesMindfulnessTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
   buildLimitedReparentingTechniques,

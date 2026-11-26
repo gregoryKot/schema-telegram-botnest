@@ -89,7 +89,8 @@ export type RoedigerTechniqueId = 'genogram';
 export type VreeswijkTechniqueId =
   | 'three_minute_breathing_space'
   | 'mindfulness_practices'
-  | 'schema_awareness_practice';
+  | 'schema_awareness_practice'
+  | 'healthy_modes_mindfulness';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =

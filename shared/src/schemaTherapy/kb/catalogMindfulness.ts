@@ -19,11 +19,7 @@ export const VF_TECHNIQUES: readonly CatalogTopic[] = [
   w('three_minute_breathing_space'),
   w('mindfulness_practices'),
   w('schema_awareness_practice'),
-  vf(
-    'healthy_modes_mindfulness',
-    'Осознанность к Здоровому Взрослому и Счастливому Ребёнку',
-    ['гл. 9'],
-  ),
+  w('healthy_modes_mindfulness'),
   vf(
     'mindful_juggling',
     'Осознанное жонглирование: копинг и схемы в действии',

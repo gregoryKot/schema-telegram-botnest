@@ -32,4 +32,13 @@ export const VREESWIJK_TECHNIQUE_WORK: Record<
       ['statements', 'Принимающие утверждения'],
     ],
   },
+  healthy_modes_mindfulness: {
+    name: 'Осознанность к здоровым режимам',
+    fields: [
+      ['variant', 'Какой вариант практики'],
+      ['body', 'Где в теле ощущались режимы'],
+      ['needs', 'Что и кто нужны режимам'],
+      ['home', 'Практика между сессиями'],
+    ],
+  },
 };

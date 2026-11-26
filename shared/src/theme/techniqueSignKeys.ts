@@ -51,5 +51,6 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'breathing_space',
   'body_scan',
   'schema_lens',
+  'healthy_light',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];
