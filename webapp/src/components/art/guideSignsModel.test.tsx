@@ -36,6 +36,7 @@ const NOTE_IDS = [
   'self_practice_why', 'self_practice_safety', 'self_practice_formats', 'self_practice_reflection', 'self_practice_review',
   'self_practice_group_day', 'therapist_critic', 'difficult_client_my_coping',
   'know_your_healthy_adult', 'therapist_happy_child', 'therapist_modes_walk',
+  'self_monitoring_cycle', 'problem_analysis_modes', 'self_mode_management_plan',
   'attachment_assertiveness_poles',
   'mode_states',
   'teen_parent_triangle',
