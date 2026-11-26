@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Гейт: образ на проде не отстаёт от последнего коммита main (правило №14
+// Гейт: образ на проде не старее коммита ветки production (release.yml) (правило №14
 // CLAUDE.md, «Отставший деплой виден без рук»).
 //
 // Класс: инцидент 2026-09-16 — два мержа в main (#494 фикс чтения
@@ -86,7 +86,7 @@ export function assessDeployLag({ builtAt, commitAt, now, graceMinutes }) {
     return {
       ok: true,
       code: 'fresh',
-      message: `образ собран ${builtDate.toISOString()} — не старее последнего коммита main ${commitDate.toISOString()}`,
+      message: `образ собран ${builtDate.toISOString()} — не старее последней выкатки ${commitDate.toISOString()}`,
     };
   }
 

@@ -31,14 +31,14 @@ export function SessionsBlock({ sessions, onOpen, plain }: {
   const head = <h2 className="ds-h2 tt-sessions-title">Сессии сегодня</h2>;
   const empty = <p className="ds-empty">Сессий не запланировано</p>;
   if (plain) return <div className="tt-sub">{head}{empty}</div>;
+  // Пусто — строка на бумаге между линиями, без цветного листа: лист нужен только строкам сессий.
+  if (sessions.length === 0) return <section className="pp-block tt-sessions-empty">{head}{empty}</section>;
   return (
     <section className="pp-paper tt-sessions" style={{ '--h': SESSIONS_LOOK.hue } as CSSProperties}>
       {head}
-      {sessions.length === 0 ? empty : (
-        <div className="tt-session-list">
-          {sessions.map(c => <SessionRow key={c.telegramId} client={c} onOpen={onOpen} />)}
-        </div>
-      )}
+      <div className="tt-session-list">
+        {sessions.map(c => <SessionRow key={c.telegramId} client={c} onOpen={onOpen} />)}
+      </div>
     </section>
   );
 }
