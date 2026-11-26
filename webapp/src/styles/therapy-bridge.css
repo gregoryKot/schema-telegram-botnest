@@ -16,16 +16,19 @@
 .th-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 /* Карточка моста (TherapyCardFrame): заметка между линиями (pp-block--note в paper.css), знак — справа от
-   надзаголовка. Надзаголовок — тоном текста. Не шире 720 — колонка списка «Ещё».
+   надзаголовка. Надзаголовок — тоном текста. Раскладка — разворот ds-spread (ярлык слева, текст и действие справа); в «Ещё» (тело уже в 2/3) — колонкой.
    --th-card-h — высота спокойной карточки без подзаголовка на своей ширине: её же берёт силуэт загрузки
    (TherapyCardSkeleton) — список под ней не прыгает, когда приходит история. */
 :root { --th-card-h: 173px; }
-.th-card { max-width: 720px; min-height: var(--th-card-h); }
+.th-card { min-height: var(--th-card-h); }
+.th-card-body { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+@media (max-width: 1023px) { .th-card .th-card-body { display: contents; } }
+@media (min-width: 1024px) { .th-card > .pp-block-head { justify-content: flex-start; gap: 16px; } }
 .th-card .ds-eyebrow { color: var(--text-sub); text-wrap: balance; }
 .th-card-acts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: auto; padding-top: 6px; }
 /* Силуэт загрузки (TherapyCardSkeleton): заголовок и строка мерцают по своей форме, остальное невидимо. */
-.th-card--skel > :not(.skel) { visibility: hidden; }
-.th-card--skel > .skel { color: transparent; border-radius: var(--r-6); }
+.th-card--skel .pp-block-head, .th-card--skel .th-card-acts { visibility: hidden; }
+.th-card--skel .skel { color: transparent; border-radius: var(--r-6); }
 /* Текстовая кнопка карточки: линия под подписью — тоном её оттенка (--h). */
 .th-card .ds-btn--secondary.th-btn { text-decoration-color: oklch(0.7 0.05 var(--h)); }
 @media (max-width: 1023px) { :root { --th-card-h: 198px; } }
