@@ -30,7 +30,7 @@ export function ContactChannelField({
   return (
     <div>
       <label style={labelStyle} htmlFor={id}>Где вам удобнее отвечать *</label>
-      <div style={{ display: 'flex', gap: 'var(--space-8)', flexWrap: 'wrap', marginBottom: 'var(--space-10)' }}>
+      <div className="pa-chips-line u-mb10">
         {CONTACT_CHANNELS.map((c) => (
           <Chip key={c} active={c === channel} onClick={() => onChannelChange(c)}>{contactChannelLabel(c)}</Chip>
         ))}
