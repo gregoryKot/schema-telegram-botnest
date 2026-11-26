@@ -196,7 +196,7 @@
 /* Мост на «Карту себя» во вкладке «Режимы» — тихая ссылка, зона нажатия ≥44. */
 .ds-link.cs-selfmap-link { align-self: flex-start; min-height: 44px; margin: 4px 0 12px; }
 
-/* Телефон: «Настроить экран» и шестерёнка — в строке надписи справа (как «Практики»); «Библиотека» — под подписью. */
+/* Телефон: «Библиотека», «Настроить экран» и шестерёнка — одна строка под подписью. */
 .cs-head-tools { display: contents; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cs-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; row-gap: 0; }
@@ -204,7 +204,8 @@
   .cs-head .ds-eyebrow { grid-column: 1; grid-row: 1; align-self: center; }
   .cs-head .ds-h1 { grid-column: 1 / -1; grid-row: 2; }
   .cs-head-sub { grid-column: 1 / -1; grid-row: 3; }
-  .cs-head-actions { display: contents; }
-  .cs-head-tools { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 4px; margin-block: -6px; }
-  .cs-head-lib { grid-column: 1 / -1; grid-row: 4; justify-self: start; margin-top: var(--space-12); }
+  /* «Библиотека» и «Настроить экран» с шестерёнкой — одной строкой под подписью: слева и справа. */
+  .cs-head-actions { grid-column: 1 / -1; grid-row: 4; margin-left: 0; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; margin-top: var(--space-12); }
+  .cs-head-tools { display: flex; align-items: center; gap: 4px; }
+  .cs-head-lib { order: -1; }
 }

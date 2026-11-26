@@ -17,6 +17,6 @@ export interface JourneyKit {
   EmptyHero: ComponentType<JourneyEmptyHeroProps>;
   Stat: ComponentType<{ row: JourneyStatRow }>;
   Chip: ComponentType<JourneyChipProps>;
-  /** Знак строки ленты; без него строка рисуется без картинки (не эмодзи). */
-  rowArt?: (item: JourneyItem) => ReactNode;
+  Alert: ComponentType<{ text: string; onRetry: () => void }>; // сбой загрузки с кнопкой повтора
+  rowArt?: (item: JourneyItem) => ReactNode; // знак строки ленты; без него — без картинки
 }

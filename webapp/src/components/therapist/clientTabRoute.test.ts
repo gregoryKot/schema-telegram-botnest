@@ -2,8 +2,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   slugOfTab, tabFromSlug, clientCardPath, clientTabFromPath,
-  isClientListPath, listTabFromPath, listTabPath, LIST_TASKS_PATH,
+  isClientListPath, listTabFromPath, LIST_TASKS_PATH,
 } from './clientTabRoute';
+import { THERAPIST_NAV } from '../appShell/navLook';
 import type { ClientTab } from './clientSheetTypes';
 import { parseClientRef } from '../../../../shared/src/utils/clientRef';
 
@@ -42,10 +43,9 @@ describe('clientTabFromPath', () => {
   });
 });
 
-describe('вкладки списка', () => {
-  it('«Задания» — /cabinet/tasks, «Клиенты» — /cabinet, туда и обратно', () => {
-    expect(listTabPath('kanban')).toBe(LIST_TASKS_PATH);
-    expect(listTabPath('clients')).toBe('/cabinet');
+describe('список и доска', () => {
+  it('доска — один маршрут /cabinet/tasks, на него ведёт пункт меню «Задания» (К30)', () => {
+    expect(THERAPIST_NAV.tasks.to).toBe(LIST_TASKS_PATH);
     expect(listTabFromPath(LIST_TASKS_PATH)).toBe('kanban');
     expect(listTabFromPath('/cabinet')).toBe('clients');
     expect(listTabFromPath('/cabinet/abcdefgh/tasks')).toBe('clients');

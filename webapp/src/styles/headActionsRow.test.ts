@@ -8,10 +8,10 @@ const decl = (rules: Rule[], sel: string): string => rules.filter((r) => r.selec
 const inEyebrowRow = (body: string): boolean => /grid-row:\s*1\b/.test(body);
 
 describe('шапка раздела на телефоне: действия в строке надписи', () => {
-  it('«Паттерны»: «Настроить экран» и шестерёнка — в строке 1, «Библиотека» — ниже', () => {
+  it('«Паттерны» (К26): «Библиотека», «Настроить экран» и шестерёнка — одной строкой под подписью (строка 4)', () => {
     const rules = readCss('client-schemas.css');
-    expect(inEyebrowRow(decl(rules, '.cs-head-tools'))).toBe(true);
-    expect(decl(rules, '.cs-head-lib')).toMatch(/grid-row:\s*4/);
+    expect(decl(rules, '.cs-head-actions')).toMatch(/grid-row:\s*4/);
+    expect(inEyebrowRow(decl(rules, '.cs-head-tools'))).toBe(false);
   });
   it('«Мой путь»: действия — в строке надписи', () => {
     expect(inEyebrowRow(decl(readCss('client-profile-mobile.css'), '.cpf-head-actions'))).toBe(true);

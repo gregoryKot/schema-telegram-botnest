@@ -14,13 +14,13 @@ import { CrisisCard } from '../../components/CrisisCard';
 import { glue } from '../../../../shared/src/utils/typo';
 
 /** heading — блок раздела: надпись «Помощь рядом» — заголовок h3, как у соседних блоков страницы.
- *  signless — без своего сердца: вплотную выше стоит квадрат «Мне плохо» со своим (ревью g4 r3). */
-export function CrisisBlock({ inset, heading, signless }: { inset?: boolean; heading?: boolean; signless?: boolean }) {
+ *  onSheet — на розовом листе-окне (бумагу даёт сам лист), знак остаётся. signless — без своего сердца: вплотную выше стоит квадрат «Мне плохо» со своим (ревью g4 r3). */
+export function CrisisBlock({ inset, heading, signless, onSheet }: { inset?: boolean; heading?: boolean; signless?: boolean; onSheet?: boolean }) {
   return (
-    <CrisisCard standing flat={inset} signless={signless} label="Помощь рядом" labelAs={heading ? 'h3' : 'span'}>
+    <CrisisCard standing flat={inset || onSheet} keepArt={onSheet} signless={signless} label="Помощь рядом" labelAs={heading ? 'h3' : 'span'}>
       <div className="cr-more">
         <p className="cr-line">
-          Если есть угроза жизни —{'\u00a0'}<a className="cr-112" href="tel:112">112</a><span className="cr-dot">.</span>
+          Если есть угроза жизни —{'\u00a0'}<a className="cr-112" href="tel:112">112</a>
         </p>
         <p className="cr-text">{glue('Разговор с близким человеком тоже считается: иногда одно сообщение «мне плохо» — уже первый шаг.')}</p>
       </div>

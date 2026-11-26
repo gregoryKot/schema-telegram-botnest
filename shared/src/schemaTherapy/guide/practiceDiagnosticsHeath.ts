@@ -1,8 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
 import { positivePatternsNote } from './practicePatternsHeath';
-import { questionnairesYoung, temperamentYoung } from './diagnosticsYoung';
-import { ysqHeathDosbor } from './heathDosborMore';
-import { questionnairesMoreRoediger } from './practiceConceptRoediger';
+import { temperamentYoung } from './diagnosticsYoung';
+import { questionnairesMoreAll } from './questionnairesMore';
 
 /** «Для терапевта»: опросники, темперамент, семь паттернов заботы [Хис, гл. 1, 4]. Собирает practiceAssessAll.ts. */
 export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
@@ -36,10 +35,9 @@ export const buildPracticeDiagnosticsHeath: PracticeNotesBuilder = (tr) => [
       'Перед разбором YPI спросить о чувствах [Хис, гл. 1]: боль, гнев, вина за то, что родитель выглядит в плохом свете. Вопрос опросника иногда открывает то, о чём клиент иначе бы не сказал, вплоть до насилия в детстве.',
       'Когда давать — два взгляда. У Хис YSQ — в конце первой сессии, YPI — после второй, чтобы не грузить длинными анкетами с порога [Хис, гл. 1]. У Янга YPI дают на 5–6-й сессии, когда расспрос о детстве уже идёт [Янг, гл. 2].',
       'С 17–23-летними опросники подбирают под случай: полный набор утомляет и отбивает охоту [Луз, гл. 8]. YSQ молодые обычно заполняют сами; YCI добавляют при склонности к гиперкомпенсации, YRAI — при сильном избегании. Перед YPI предупреждают о конфликте лояльности к родителям. Заранее прикидывают, как копинг исказит самоотчёт.',
-      ...questionnairesMoreRoediger,
-      ...questionnairesYoung,
-    ].concat(ysqHeathDosbor),
-    sources: '[Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4]; [Луз, гл. 8]',
+    ].concat(questionnairesMoreAll),
+    sources:
+      '[Хис, гл. 1], [Янг, гл. 2], [Рёдигер, гл. 4], [Рафаэли, гл. 16, 25]; [Луз, гл. 8]',
   },
   {
     id: 'temperament',

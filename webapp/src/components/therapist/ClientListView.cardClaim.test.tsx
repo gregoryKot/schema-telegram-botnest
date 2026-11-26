@@ -30,7 +30,6 @@ const claim = { clientId: 500, clientName: 'Борис', cardId: 9, cardName: '�
 
 function Host() {
   const [clients, setClients] = useState<TherapyClientSummary[]>([card, boris]);
-  const [listTab, setListTab] = useState<'clients' | 'kanban'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<RosterStatus>('all');
   const addClient = useAddClient({ setClients });
@@ -38,7 +37,7 @@ function Host() {
   return (
     <ClientListView
       animKey={0} clients={clients} loading={false} loadFailed={false} onRetry={vi.fn()}
-      listTab={listTab} setListTab={setListTab} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+      listTab="clients" searchQuery={searchQuery} setSearchQuery={setSearchQuery}
       filterStatus={filterStatus} setFilterStatus={setFilterStatus}
       board={board} openClient={vi.fn()} addClient={addClient}
     />

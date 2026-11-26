@@ -191,10 +191,7 @@ export function LandingPage() {
                   }
                 }} />
             </div>
-            <div style={{ position: 'absolute', bottom: 20, left: -16, background: 'var(--bg-elev)', border: '1px solid var(--line-strong)', borderRadius: 'var(--r-14)', padding: '12px 18px' }}>
-              <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: '0 0 2px' }}>50 мин</p>
-              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>онлайн · сессия</p>
-            </div>
+            <p style={{ margin: '14px 0 0', fontSize: 13, color: 'var(--text-sub)' }}><b className="u-fg">50 мин</b> · онлайн-сессия</p>
           </div>
           <div style={{ paddingTop: 16 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 18px' }}>Обо мне</p>
@@ -210,11 +207,7 @@ export function LandingPage() {
             <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: '0 0 32px' }}>
               Веду частную практику с 2025 года и регулярно разбираю случаи с супервизором. Шестой год прохожу личную терапию: убеждён, что сопровождать другого можно, только зная этот путь изнутри.
             </p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {['Схема-терапия', 'КПТ', 'Онлайн'].map(tag => (
-                <span key={tag} style={{ padding: '8px 16px', background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', borderRadius: 100, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{tag}</span>
-              ))}
-            </div>
+            <p style={{ margin: 0, paddingTop: 16, borderTop: '1px solid var(--line)', fontSize: 13, fontWeight: 600, letterSpacing: '.02em', color: 'var(--accent)' }}>Схема-терапия · КПТ · Онлайн</p>
           </div>
         </div>
       </section>
