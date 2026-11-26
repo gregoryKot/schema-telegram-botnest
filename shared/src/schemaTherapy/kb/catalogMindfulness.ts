@@ -33,11 +33,7 @@ export const VF_TECHNIQUES: readonly CatalogTopic[] = [
 ];
 
 export const VF_PRACTICE: readonly CatalogTopic[] = [
-  vf(
-    'mbst_protocol',
-    'Протокол «Осознанность и схема-терапия»: устройство, оценка, ведение',
-    ['гл. 1', 'гл. 4', 'гл. 6'],
-  ),
+  w('mbst_protocol'),
   vf('mbst_sessions', 'Протокол осознанности: сессии 1–8 и контрольные', [
     'гл. 4',
     'гл. 6',
@@ -48,9 +44,5 @@ export const VF_PRACTICE: readonly CatalogTopic[] = [
     'гл. 5',
   ]),
   vf('mbst_group_difficulties', 'Трудности в группе осознанности', ['гл. 7']),
-  vf(
-    'mindfulness_programs',
-    'Программы осознанности: MBSR, MBCT, данные и механизмы',
-    ['гл. 3'],
-  ),
+  w('mindfulness_programs'),
 ];

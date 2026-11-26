@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildPracticeArntz } from './practiceArntz';
-import { experientialAvoidanceMore } from './practiceMoreArntz';
+import { experientialAvoidanceMore } from './practiceMindfulnessMore';
 import { changeBlocksYoung } from './practiceChangeYoung';
 
 /** «Для терапевта»: работа с чувствами и поведением (гл. 8, 9). Карта — docs/guide-sources/Кембридж.md; заметки по Арнцу — practiceArntz.ts. */
