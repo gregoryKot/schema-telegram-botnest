@@ -1185,7 +1185,7 @@ jobs:
   # на main и кричит через alarm. Сборка сайта + Chromium и WebKit из кэша.
   browser-smoke:
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1230,7 +1230,7 @@ jobs:
       # (apt) ставятся всегда. WebKit — проект webkit-iphone (playwright.config.ts).
       - name: браузеры Playwright (потолок времени и одна повторная попытка)
         if: steps.scope.outputs.docs_only != 'true'
-        timeout-minutes: 7
+        timeout-minutes: 12
         run: bash scripts/playwright-install-retry.sh chromium webkit
       - name: браузерный smoke прод-сборки (Chromium и WebKit)
         if: steps.scope.outputs.docs_only != 'true'
