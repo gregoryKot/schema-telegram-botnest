@@ -29,7 +29,7 @@ const NOTE_IDS = [
   'homework_not_done', 'crisis_call', 'mode_flipping', 'group_orientation', 'group_plan_vs_mode',
   'group_mode_roleplay', 'dangerous_partner', 'emdr', 'coping_style_in_session', 'mode_family_by_feeling',
   'schema_vs_mode_vs_belief', 'dependence_in_reparenting', 'therapist_discomfort_rescripting',
-  'taboo_topics', 'sexuality_and_modes', 'body_cues_therapist', 'premature_ending', 'cbt_with_schemas', 'questionnaires', 'temperament', 'positive_patterns_in_session',
+  'taboo_topics', 'sexuality_and_modes', 'body_cues_therapist', 'premature_ending', 'cbt_with_schemas', 'questionnaires', 'reparenting_forms', 'temperament', 'positive_patterns_in_session',
   'therapist_mode_reset',
   'therapist_culture_and_schemas',
   'childhood_experience_types',
