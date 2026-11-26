@@ -87,7 +87,9 @@ export type RoedigerTechniqueId = 'genogram';
 
 /** Техники из книги ван Фресвайк, Брурсен и Шуринк (карта «ван Фресвайк»). */
 export type VreeswijkTechniqueId =
-  'three_minute_breathing_space' | 'mindfulness_practices';
+  | 'three_minute_breathing_space'
+  | 'mindfulness_practices'
+  | 'schema_awareness_practice';
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =

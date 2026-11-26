@@ -39,6 +39,7 @@ import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
 import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 import { buildGenogramTechniques } from './genogram';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
+import { buildSchemaAwarenessTechniques } from './schemaAwareness';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -55,6 +56,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildModeFiguresTechniques,
   buildStanceTechniques,
   buildMindfulnessPracticesTechniques,
+  buildSchemaAwarenessTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
   buildLimitedReparentingTechniques,

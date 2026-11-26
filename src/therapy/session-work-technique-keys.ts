@@ -76,6 +76,12 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:genogram': ['patterns', 'roles', 'schemas', 'next'],
   'technique:three_minute_breathing_space': ['moment', 'noticed', 'choice'],
   'technique:mindfulness_practices': ['practice', 'noticed', 'schemas', 'home'],
+  'technique:schema_awareness_practice': [
+    'schema',
+    'signal',
+    'counter',
+    'statements',
+  ],
   'technique:online_chairwork': ['variant', 'modes', 'result'],
   'technique:schema_attunement': ['moment', 'feeling', 'schema', 'bridge'],
   'technique:responsibility_pie': ['belief', 'causes', 'share'],

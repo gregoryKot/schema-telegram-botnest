@@ -28,3 +28,15 @@ export function BodyScan({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Осознанность к схеме: очки с цветными линзами — левая окрашена схемой, правая снята, за ней видно больше. */
+export function SchemaLens({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <circle cx="40" cy="34" r="16" fill={PAPER.clay} stroke={PAPER.slate} strokeWidth="3" />
+      <circle cx="80" cy="34" r="16" {...ROUND} stroke={PAPER.slate} strokeWidth="3" />
+      <path d="M56 32 Q60 27 64 32 M24 30 L14 24 M96 30 L106 24" {...ROUND} stroke={PAPER.slate} strokeWidth="3" />
+      <path d="M72 34 H88 M76 42 H84" {...ROUND} stroke={PAPER.moss} strokeWidth="3" strokeDasharray="4 5" />
+    </Svg>
+  );
+}

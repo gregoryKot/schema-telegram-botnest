@@ -23,4 +23,13 @@ export const VREESWIJK_TECHNIQUE_WORK: Record<
       ['home', 'Практика между сессиями'],
     ],
   },
+  schema_awareness_practice: {
+    name: 'Осознанность к схеме',
+    fields: [
+      ['schema', 'Какая схема или режим узнаны'],
+      ['signal', 'По какому чувству и телу'],
+      ['counter', 'Что противоречит схеме'],
+      ['statements', 'Принимающие утверждения'],
+    ],
+  },
 };

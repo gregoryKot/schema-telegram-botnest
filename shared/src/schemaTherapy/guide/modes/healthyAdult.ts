@@ -38,6 +38,7 @@ export const buildHealthyAdultGuide = (tr: Tr): ModeGuide => ({
     'mental_contrasting_imagery',
     'three_minute_breathing_space',
     'mindfulness_practices',
+    'schema_awareness_practice',
   ],
   betweenSessions: extra.healthyAdultBetween,
   stuck:
