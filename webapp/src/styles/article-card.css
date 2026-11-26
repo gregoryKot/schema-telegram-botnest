@@ -2,18 +2,19 @@
    /articles, и обложка шапки статьи. Обложка — сцена статьи на цветной бумаге по --h
    (components/art/ArticleCover.tsx; docs/design/PAPER_MOTIFS_2026-11.md, «Обложки статей»).
    Префикс ac-. Раскладку 601–900 на лендинге держит product-landing.css. */
-.ac-card { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+/* Статья — блок на бумаге страницы: тонкая линия сверху, без белой коробки, рамки и тени (#1674, К22). */
+.ac-card { display: flex; flex-direction: column; gap: 16px; padding-top: 20px; border-top: 1px solid var(--panel-line); text-decoration: none; color: inherit; }
+.ac-card:hover .ac-title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .ac-cover {
   display: flex; align-items: center; justify-content: center;
-  overflow: hidden; background: oklch(0.9 0.045 var(--h));
+  overflow: hidden; background: oklch(0.9 0.045 var(--h)); border-radius: var(--r-12);
 }
 /* Пропорция — одним правилом у обложки и у её силуэта загрузки (ArticlesPage): форма не прыгает. */
 .ac-cover, .ac-skel-cover { aspect-ratio: 16 / 9; }
 .ac-cover .scn { width: auto; height: 88%; }
-.ac-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 18px 20px 20px; }
-.ac-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.25; color: var(--text); }
-.ac-desc { flex: 1; margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
-.ac-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
+.ac-body { display: flex; flex-direction: column; flex: 1; gap: 8px; min-width: 0; }
+.ac-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.25; color: var(--text); }
+.ac-desc { flex: 1; margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 
 /* Шапка статьи: та же обложка, шире и со скруглением, как блок страницы; у силуэта — та же рамка. */
 .ac-cover--hero, .ac-skel-hero { aspect-ratio: 5 / 2; border-radius: var(--r-16); margin: 0 0 44px; }
@@ -36,7 +37,10 @@
 .art-head > .ds-h1 { margin: 0 0 8px; line-height: 1.1; text-wrap: balance; } /* заголовок статьи — в две-три строки */
 .art-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-faint); }
 .art-text { margin: 0; max-width: 600px; font-size: 16px; line-height: 1.7; color: var(--text-sub); }
-.art-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+/* Список статей — колонка блоков с линиями: обложка слева, текст справа. */
+.art-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.art-grid > .ac-card { flex-direction: row; align-items: flex-start; gap: 28px; }
+.art-grid > .ac-card .ac-cover, .art-grid > .ac-card .ac-skel-cover { flex: 0 0 300px; width: 300px; }
 .pp-block.art-cta { gap: 12px; margin-top: 64px; }
 .art-cta-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
 /* Сбой загрузки и 404: текст и действие; у статьи — посреди экрана. */
@@ -46,5 +50,7 @@
 .art-404 { font-size: 48px; }
 @media (max-width: 720px) {
   .art-page { padding: 40px 20px 72px; }
-  .art-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .art-grid { gap: 20px; }
+  .art-grid > .ac-card { flex-direction: column; gap: 16px; }
+  .art-grid > .ac-card .ac-cover, .art-grid > .ac-card .ac-skel-cover { flex: none; width: 100%; }
 }
