@@ -69,7 +69,7 @@ export const buildHealthyGuides: ModeGuideBuilder = (tr) => [
       'flashcards',
       'compassionate_self',
     ],
-    moreTechniques: ['pros_cons'],
+    moreTechniques: ['pros_cons', 'good_parent_script'],
     betweenSessions: [
       {
         kind: 'custom',
