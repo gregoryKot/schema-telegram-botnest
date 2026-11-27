@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { localDateStr } from '../../../shared/src/utils/format';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
-import { clientCaption } from '../components/therapist/rosterModel';
+import { rosterActivity } from '../components/therapist/rosterModel';
 import {
   activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
   sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, trackedClients,
@@ -72,11 +72,11 @@ describe('therapistTodayModel', () => {
 
   // QA 2026-11: две функции подписывали одну давность по-разному — «Сегодня»
   // «нет активности 12 дн.», список клиентов «активность 24 окт». Сверка
-  // (правило №4): для клиента без срока в работе и стрика строки совпадают.
+  // (правило №4): строки совпадают.
   it('«Сегодня» и список клиентов подписывают давность одной строкой', () => {
     for (const o of [{}, { todayIndex: 6 }, ago(0), ago(1), ago(2), ago(5), ago(14)]) {
       const client = c(o);
-      expect(activityStatus(client).text, JSON.stringify(o)).toBe(clientCaption(client));
+      expect(activityStatus(client).text, JSON.stringify(o)).toBe(rosterActivity(client));
     }
   });
 
