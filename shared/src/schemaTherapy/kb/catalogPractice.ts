@@ -4,6 +4,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   ...[
     'frame_additions',
     'impasses',
+    'infant_modes',
     'chatting',
     'method_errors',
     'therapist_schemas',
@@ -124,13 +125,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Пары',
     chapters: ['гл. 7'],
-  },
-  {
-    id: 'infant_modes',
-    title: 'Младенческие режимы',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 6'],
   },
   {
     id: 'forgiveness_after_betrayal',

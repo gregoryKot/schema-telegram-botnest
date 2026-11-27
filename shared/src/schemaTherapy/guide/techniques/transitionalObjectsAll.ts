@@ -1,6 +1,6 @@
 import * as base from './transitionalObjects';
 import { transitionalHeathMore } from './transitionalObjectsHeath';
-
+import { transitionalObjectsCouples } from './reparentingCouples';
 /** Шаги и «Подробнее» к transitional_objects с дополнениями Хис (гл. 19, 20): вынесено, чтобы файл не рос. */
 export const transitionalObjectsSteps: string[] = base.transitionalObjectsSteps;
 
@@ -11,4 +11,4 @@ export const transitionalObjectsMore: string[] = [
   ...transitionalHeathMore,
   'Терапевту тоже нужен переходный объект [Фаррелл-Шоу, модуль 1]. На самопрактике его выбирают сами и привязывают к образу безопасного места: бусина на шнурке или брелке, лоскут мягкой ткани, шарф. Участники учебных групп приносили бусины и лоскуты, полученные год назад: утешение Уязвимому Ребёнку нужно у каждого.',
   'Откуда сила вещи [Фаррелл-Шоу, модуль 17]. Малыш сначала знает, что родитель есть, даже когда его не видно, потом научается вызывать в себе его успокаивающий образ: так растёт самоуспокоение, и одеяло или игрушка помогают на этом пути. Для себя берут вещь с личным смыслом, которую легко связать с фразами своего Хорошего Родителя.',
-];
+].concat(transitionalObjectsCouples);

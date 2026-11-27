@@ -2,7 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import { uniqueItems } from '../uniqueItems';
 import { buildAngerExpressionTechniques } from './angerExpression';
 import { limitMore, limitVoice } from './arntzBpdRelationMore';
-import { limitSettingMore } from './relationshipHeath';
+import { limitSettingMore } from './couplesTechniquesMore';
 import * as camb from './limitSettingCambridge';
 
 /** Техники отношений: limit_setting и anger_expression (angerExpression.ts). */
