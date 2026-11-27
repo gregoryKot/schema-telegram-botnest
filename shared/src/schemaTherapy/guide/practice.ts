@@ -19,6 +19,7 @@ import { buildPracticeModeStates } from './practiceModeStates';
 import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
 import { buildPracticeMindfulness } from './practiceMindfulness';
 import { buildPracticeMbst } from './practiceMbst';
+import { buildPracticeCouples } from './practiceCouples';
 import { buildPracticeInfantModes } from './practiceInfantModes';
 
 /**
@@ -69,5 +70,6 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeMethodFarrellShaw(tr),
   ...buildPracticeMindfulness(tr),
   ...buildPracticeMbst(tr),
+  ...buildPracticeCouples(tr),
   ...buildPracticeInfantModes(tr),
 ];
