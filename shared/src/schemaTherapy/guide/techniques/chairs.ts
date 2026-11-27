@@ -3,9 +3,9 @@ import { uniqueItems } from '../uniqueItems';
 import { historicalMore } from './arntzBpdImageryMore';
 import { historicalRolePlaySteps } from './rolePlayArntz';
 import {
-  modeInterviewMoreArntzJacob as ijMore,
+  modeInterviewMoreArnJacChild as ijMore,
   modeInterviewWhenArntzJacob as ijWhen,
-} from './modeInterviewArntzJacob';
+} from './modeInterviewChild';
 import { historicalRoleFarrell } from './historicalRoleFarrell';
 import { interviewHeathDosbor } from '../heathDosborMore';
 import * as cambB from './chairsCambridgeB';
@@ -69,6 +69,6 @@ export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'С Карающим Критиком так не разговаривают: с ним не договариваются, ему ставят границу [Келлогг, гл. 6].',
     sources:
-      '[Арнтц, 5.3.1, прил. 5.1], [Кембридж, гл. 11, 13, 15, табл. 8.1, боксы 11.2, 11.4, 13.3], [Келлогг, гл. 6], [Хис, гл. 2, 11]',
+      '[Арнтц, 5.3.1, прил. 5.1], [Кембридж, гл. 11, 13, 15, табл. 8.1, боксы 11.2, 11.4, 13.3], [Келлогг, гл. 6], [Хис, гл. 2, 11], [Луз, гл. 8, 12]',
   },
 ];

@@ -12,4 +12,13 @@ export const LUZ_TECHNIQUE_WORK: Record<LuzTechniqueId, TechniqueWorkDef> = {
       ['next', 'Что перенести в жизнь'],
     ],
   },
+  inner_house: {
+    name: 'Внутренний дом',
+    fields: [
+      ['floors', 'Какие этажи собрали'],
+      ['modes', 'Какие режимы и их порядок'],
+      ['schemes', 'Какие схемы и предметы'],
+      ['next', 'К чему вернуться'],
+    ],
+  },
 };

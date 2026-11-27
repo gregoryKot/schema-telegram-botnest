@@ -51,6 +51,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'family_tree',
   // TechniqueSignsLuz.tsx — техники из книги Луз и соавторов о детях и подростках
   'finger_puppets',
+  'house_floors',
   'stand_above',
   'balance_axes',
   'side_seat',

@@ -117,13 +117,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   },
   ...VF_TECHNIQUES,
   {
-    id: 'inner_house',
-    title: '«Внутренний дом»: режимы, схемы и опыт на трёх этажах',
-    status: 'planned',
-    source: 'Луз',
-    chapters: ['гл. 13'],
-  },
-  {
     id: 'family_mapping',
     title: 'Семейная доска, круги, скульптура, генограмма посланий',
     status: 'planned',

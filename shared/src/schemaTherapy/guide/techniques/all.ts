@@ -4,7 +4,7 @@ import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
 import { buildCoupleChairworkTechniques } from './coupleChairwork';
 import { buildChairTechniques } from './chairs';
-import { buildCreativeModeWorkTechniques } from './creativeModeWork';
+import { buildCreativeModeWorkWithLuz as buildCreativeModeWorkTechniques } from '../luzSourcesWrap';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
 import { buildFarrellPlanTechniques } from './farrellPlans';
@@ -42,10 +42,11 @@ import { buildSchemaDialogueTechniques } from './schemaDialogue';
 import { buildBorrowedCbtTechniques } from './borrowedCbt';
 import { buildBorrowedDbtTechniques } from './borrowedDbt';
 import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
-import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
+import { buildBorrowedTraumaWithChild as buildBorrowedTraumaTechniques } from './borrowedTraumaChild';
 import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 import { buildGenogramTechniques } from './genogram';
 import { buildChildModePlayTechniques } from './childModePlay';
+import { buildInnerHouseTechniques } from './innerHouse';
 import { buildPerspectiveChangeTechniques } from './perspectiveChange';
 import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
@@ -82,6 +83,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildFormulationTechniques,
   buildGenogramTechniques,
   buildChildModePlayTechniques,
+  buildInnerHouseTechniques,
   buildPerspectiveChangeTechniques,
   buildBodyModePositionsTechniques,
   buildEvidenceWorkTechniques,

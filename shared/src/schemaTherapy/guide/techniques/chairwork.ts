@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { buildChairworkMoreRafaeli } from './chairworkRafaeli';
+import { buildChairworkMoreChild } from './chairworkMoreChild';
 import * as camb from './chairworkCambridgeB';
 import * as cpl from './chairworkCouple';
 
@@ -24,11 +24,7 @@ export const buildChairworkTechniques: TechniqueGuideBuilder = (tr) => [
       ...cpl.chairworkCoupleSteps(tr),
     ],
     voice: camb.chairworkVoice(tr),
-    more: [
-      ...buildChairworkMoreRafaeli(tr),
-      ...camb.chairworkCambridgeMore,
-      ...cpl.chairworkCoupleMore,
-    ],
+    more: buildChairworkMoreChild(tr),
     cautions:
       'При сильном Карающем Критике клиента на его стул не сажают: так клиент сольётся с Критиком ещё крепче. Пусть со своего места пересказывает, что тот говорит [Арнтц, 8.3].' +
       cpl.chairworkCoupleCautions +
@@ -36,6 +32,6 @@ export const buildChairworkTechniques: TechniqueGuideBuilder = (tr) => [
     evidence:
       'Данные пока предварительные (обзор Пью, 2017). Отдельных контролируемых исследований мало: в схема-терапии стулья изучают в составе полного протокола. Сильнее обычной беседы они поднимают чувства — ради этого их и берут, чтобы обойти избегающий копинг, — а как способ когнитивного сдвига работают не хуже рациональной переработки мыслей. Выгода не так велика, чтобы стулья были обязательны [Кембридж, гл. 2].',
     sources:
-      '[Кембридж, гл. 2, 8, 9, 11, 12, табл. 8.1, боксы 8.17, 9.11, 11.5, 12.3, рис. 11.1], [Келлогг, гл. 10], [Арнтц, 5.3.1, 8.3, 8.3.1, 8.5, 9.1.5, гл. 9], [Рёдигер, гл. 6, 10], [Арнтц ПРЛ, гл. 5, 9, табл. 5.5], [Хис, введение, гл. 1, 2, 3, 9, 11, 17], [Рафаэли, гл. 22, 24]',
+      '[Кембридж, гл. 2, 8, 9, 11, 12, табл. 8.1, боксы 8.17, 9.11, 11.5, 12.3, рис. 11.1], [Келлогг, гл. 10], [Арнтц, 5.3.1, 8.3, 8.3.1, 8.5, 9.1.5, гл. 9], [Рёдигер, гл. 6, 10], [Арнтц ПРЛ, гл. 5, 9, табл. 5.5], [Хис, введение, гл. 1, 2, 3, 9, 11, 17], [Рафаэли, гл. 22, 24], [Луз, гл. 7, 8, 12]',
   },
 ];

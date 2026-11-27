@@ -17,7 +17,7 @@ import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
 import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './TechniqueSignsRoediger';
-import { FingerPuppets } from './TechniqueSignsLuz';
+import { FingerPuppets, InnerHouse } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
 import { LifeColumns, RuptureMend } from './TechniqueSignsRafaeli';
 import * as couples from './TechniqueSignsCouples';
@@ -35,7 +35,7 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   storm_need: StormNeed, mask: CriticMask,
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
   trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
-  finger_puppets: FingerPuppets, stand_above: StandAbove, balance_axes: BalanceAxes, side_seat: BodyModePositions,
+  finger_puppets: FingerPuppets, house_floors: InnerHouse, stand_above: StandAbove, balance_axes: BalanceAxes, side_seat: BodyModePositions,
   breathing_space: BreathingSpace, body_scan: BodyScan, schema_lens: SchemaLens,
   healthy_light: HealthyLight,
   rupture_mend: RuptureMend, life_columns: LifeColumns,
