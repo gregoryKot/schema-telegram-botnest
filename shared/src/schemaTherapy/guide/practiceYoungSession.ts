@@ -93,7 +93,8 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
       'Следить за скачками состояния. Частые резкие переходы — от гнева к печали, от печали к самонаказанию, от него к оцепенению, как нередко при ПРЛ, — повод держать режимы в центре [Янг, гл. 8].',
     ],
     more: modeWorkWhenMore,
-    sources: '[Янг, гл. 8], [Арнтц, гл. 1, 1.1, 1.4.4, 2.4]',
+    sources:
+      '[Янг, гл. 8], [Арнтц, гл. 1, 1.1, 1.4.4, 2.4], [Фаррелл-Шоу, модуль 11]',
   },
   {
     id: 'mode_work_steps',
@@ -115,7 +116,7 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: modeWorkStepsMore,
-    sources: '[Янг, гл. 8], [Хис, гл. 11]',
+    sources: '[Янг, гл. 8], [Хис, гл. 11], [Фаррелл-Шоу, модули 8–11]',
   },
   ...buildPracticeChannelsYoung(tr),
   ...buildPracticeReparentingForms(tr),

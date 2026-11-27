@@ -4,6 +4,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   ...[
     'frame_additions',
     'impasses',
+    'infant_modes',
     'chatting',
     'method_errors',
     'therapist_schemas',
@@ -115,13 +116,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   ...VF_PRACTICE,
   w('couple_therapy_stages'),
   w('couple_session_setup'),
-  {
-    id: 'infant_modes',
-    title: 'Младенческие режимы',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 6'],
-  },
   w('couples_therapist_safety'),
   {
     id: 'healthy_adult_six_processes',
