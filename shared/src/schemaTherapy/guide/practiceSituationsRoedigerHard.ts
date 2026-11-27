@@ -1,4 +1,4 @@
-import { romancePartnerMore as romancePartnerMoreBase } from './practiceRelationshipMore';
+import { romancePartnerMore as romancePartnerMoreBase } from './practiceRomancePary';
 
 /** «Подробнее» к «Влюблённость в терапевта»: второй взгляд Рёдигера (гл. 13). */
 export const romancePartnerMore: string[] = [

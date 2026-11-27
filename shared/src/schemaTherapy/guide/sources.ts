@@ -5,7 +5,7 @@
  * Новая книга — строка здесь; как книга попадает в справочник —
  * навык .claude/skills/book-to-guide/. `title` ставится только сверенный с книгой.
  */
-import { MORE_SOURCES } from './sourcesMore';
+import { MORE_SOURCES } from './sourcesShelf';
 
 export interface GuideSource {
   /** Метка, которой книгу цитируют в тексте. */
