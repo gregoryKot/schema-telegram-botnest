@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// Строка клиента в списке (#1674): радужной полосы доменов нет; знак — DomainArt ведущего домена,
-// у офлайн-клиента — знак продукта; без ведущего домена — без знака. Схемы — тихий текст через «·» (К30).
+// Строка клиента в списке (К31): ритм оглавления — имя, встреча, тихая строка «активность · схемы».
+// Без пилюль схем, без аватара и знака-домена; справа «→».
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import type { TherapyClientSummary } from '../../api';
@@ -9,41 +9,41 @@ import { ClientCard } from './ClientCard';
 
 afterEach(cleanup);
 
-const [d1, d2] = SCHEMA_DOMAINS;
+const schemas = SCHEMA_DOMAINS.flatMap((d) => d.schemas).slice(0, 6);
 const client = (over: Partial<TherapyClientSummary>) => ({
   telegramId: 5, name: 'Аня', clientAlias: null, streak: 0, lastActiveDate: null, todayIndex: null,
   recentIndexHistory: [], relationCreatedAt: '2026-01-01', therapyStartDate: null, nextSession: null,
   meetingDays: [], schemaIds: [], ...over,
 }) as TherapyClientSummary;
-const card = (c: TherapyClientSummary) => render(<ClientCard client={c} today="2026-11-12" onOpen={vi.fn()} />).container;
+const card = (c: TherapyClientSummary, tasksMark?: string) =>
+  render(<ClientCard client={c} today="2026-11-12" onOpen={vi.fn()} tasksMark={tasksMark} />).container;
+const text = (root: HTMLElement, sel: string) => root.querySelector(sel)?.textContent;
 
 describe('ClientCard — вид', () => {
-  it('ведущий домен: знак домена; схемы — строка текста без пилюль; полосы нет; справа «→», без шеврона', () => {
-    const ids = [d1.schemas[0].id, d1.schemas[1].id, d2.schemas[0].id];
-    const root = card(client({ schemaIds: ids }));
-    expect(root.querySelector('.tc-sign')?.getAttribute('data-sign')).toBe(d1.id);
-    expect(root.querySelector('.tc-bar')).toBeNull();
-    expect(root.querySelector('.tc-chip')).toBeNull();
-    expect(root.querySelector('.tc-schemas')?.textContent).toBe([d1.schemas[0], d1.schemas[1], d2.schemas[0]].map((s) => s.name).join(' · '));
-    expect(root.querySelector('.tc-go')?.textContent).toBe('→');
-    expect(root.querySelector('.ds-chev')).toBeNull();
+  it('шесть схем — одна строка текста «две · ещё 4», ни одной пилюли, аватара и знака', () => {
+    const root = card(client({ schemaIds: schemas.map((s) => s.id) }));
+    expect(text(root, '.tc-schemas')).toMatch(/^[^·]+\u00a0· [^·]+\u00a0· ещё\u00a04$/);
+    expect(root.querySelectorAll('.tc-schemas *')).toHaveLength(0);
+    expect(root.querySelector('[class*="chip"], [class*="pill"], .tc-avatar, .tc-sign, svg')).toBeNull();
+    expect(text(root, '.tc-go')).toBe('→');
   });
 
-  it('офлайн — знак продукта; без схем — без знака и без строки схем', () => {
-    expect(card(client({ telegramId: -3 })).querySelector('.tc-sign [data-brand-mark]')).not.toBeNull();
+  it('встреча — подписью или «—»; активность — без рода; офлайн — словом', () => {
+    const app = card(client({ meetingDays: [4], lastActiveDate: '2026-11-12', daysSinceActive: 0 }));
+    expect(text(app, '.tc-when')).toBe('по Чт');
+    expect(text(app, '.tc-activity')).toBe('активность сегодня');
     cleanup();
-    const root = card(client({}));
-    expect(root.querySelector('.tc-sign')).toBeNull();
-    expect(root.querySelector('.tc-schemas')).toBeNull();
+    const off = card(client({ telegramId: -3 }));
+    expect(text(off, '.tc-when')).toBe('—');
+    expect(text(off, '.tc-activity')).toBe('офлайн');
+    expect(off.querySelector('.tc-schemas')).toBeNull();
   });
 
-  it('отметка о заданиях — в строке клиента; без пропа её нет', () => {
-    const c = client({});
+  it('отметка о заданиях — рядом с активностью; без пропа её нет', () => {
     const mark = 'выполнено с прошлой встречи: 2';
-    const withMark = render(<ClientCard client={c} today="2026-11-12" onOpen={vi.fn()} tasksMark={mark} />).container;
-    expect(withMark.querySelector('.tc-meta')?.textContent).toContain(mark);
+    expect(text(card(client({}), mark), '.tc-tasks')).toBe(mark);
     cleanup();
-    expect(card(c).textContent).not.toContain('выполнено');
+    expect(card(client({})).textContent).not.toContain('выполнено');
   });
 
   it('строка нажимается целиком: Enter открывает клиента', () => {

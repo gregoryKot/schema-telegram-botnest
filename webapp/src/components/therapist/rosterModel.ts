@@ -5,7 +5,6 @@ import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import {
   DAY_NAMES,
-  calcTherapyDuration,
   isActiveToday,
   isVirtualClient,
   nextSessionLabel,
@@ -42,29 +41,17 @@ export function meetingLabel(c: TherapyClientSummary, today: string): string | n
   return `по ${days.map((d) => DAY_NAMES[d]).join(', ')}`;
 }
 
-/** Подпись под именем: срок в работе или (для бот-клиента) активность — та же, что на «Сегодня». */
-export function clientCaption(c: TherapyClientSummary): string | null {
-  const duration = c.therapyStartDate ? calcTherapyDuration(c.therapyStartDate) : '';
-  if (duration === 'сегодня') return 'с сегодняшнего дня';
-  if (duration) return `в работе ${duration}`;
-  const activity = clientActivityLabel(c); // офлайн-клиент — null
-  if (!activity) return null;
-  return c.streak > 0 ? `${activity} · стрик ${c.streak} дн.` : activity;
+/** Активность в строке клиента: давность по календарю клиента («активность сегодня»); у офлайн-карточки — «офлайн». */
+export function rosterActivity(c: TherapyClientSummary): string {
+  return clientActivityLabel(c) ?? 'офлайн';
 }
 
-export interface DomainSegment { domainId: string; count: number }
+/** Ближайшая встреча в строке клиента; нет — «—». */
+export const rosterMeeting = (c: TherapyClientSummary, today: string): string => meetingLabel(c, today) ?? '—';
 
-/** Полоса доменов: сегменты в порядке доменов, flex = число схем клиента в домене. */
-export function domainBar(schemaIds: string[]): DomainSegment[] {
+/** Схемы строкой (К31): до двух — именем до «/», остальные — «ещё N»; неизвестные id пропускаем. */
+export function rosterSchemas(schemaIds: string[]): string {
   const ids = new Set(schemaIds);
-  return SCHEMA_DOMAINS
-    .map((d) => ({ domainId: d.id, count: d.schemas.filter((s) => ids.has(s.id)).length }))
-    .filter((seg) => seg.count > 0);
-}
-
-/** Схемы клиента тихой строкой по доменам (К30): до трёх — все, больше — две и «ещё N»; неизвестные id пропускаем. */
-export function schemaLine(schemaIds: string[]): string {
-  const ids = new Set(schemaIds);
-  const names = SCHEMA_DOMAINS.flatMap((d) => d.schemas.filter((s) => ids.has(s.id)).map((s) => s.name));
-  return (names.length <= 3 ? names : [...names.slice(0, 2), `ещё ${names.length - 2}`]).join(' · ');
+  const names = SCHEMA_DOMAINS.flatMap((d) => d.schemas.filter((s) => ids.has(s.id)).map((s) => s.name.split(' / ')[0]));
+  return (names.length <= 2 ? names : [...names.slice(0, 2), `ещё\u00a0${names.length - 2}`]).join('\u00a0· ');
 }

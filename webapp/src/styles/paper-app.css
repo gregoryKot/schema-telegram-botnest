@@ -229,6 +229,9 @@
 .ds-chip.pa-chip.pa-chip--line.is-on { background: none; border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
 .ds-chip.pa-chip.pa-chip--line.pa-chip--mark { padding-left: 0; }
 .pa-chip--line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Чип с подписью (формат встречи на визитке): название и тихая строка под ним, выбор — тем же подчёркиванием. */
+.ds-chip.pa-chip.pa-chip--line.pa-chip--note { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 8px 2px; text-align: left; }
+.pa-chip--note .pa-chip-note { font-size: 13px; font-weight: 400; color: var(--text-faint); }
 
 /* ── Голос Здорового Взрослого (HealthyVoice) ────────────────────────────── */
 /* Вставка мха со знаком группы «здоровые» колонкой слева: ответ в раскрытой записи ленты и пример на
