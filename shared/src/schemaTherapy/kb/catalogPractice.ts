@@ -117,13 +117,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   w('couple_therapy_stages'),
   w('couple_session_setup'),
   w('couples_therapist_safety'),
-  {
-    id: 'healthy_adult_six_processes',
-    title: 'Здоровый Взрослый по шести процессам ACT',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 4', 'гл. 7'],
-  },
+  w('healthy_adult_six_processes'),
   {
     id: 'stabilization_first',
     title: 'Стабилизация до глубокой работы',

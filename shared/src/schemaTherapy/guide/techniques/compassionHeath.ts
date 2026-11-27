@@ -1,9 +1,7 @@
 import type { Tr } from '../../../needs/types';
 import { mindfulnessVanVreeswijkMore } from './mindfulnessMore';
-import {
-  compassionHeathMore,
-  mindfulnessHeathMore,
-} from './compassionHeathMore';
+import { compassionHeathMore, mindfulnessHeathMore } from './compassionHeathMore';
+import { mindfulnessRoedigerMore } from './mindfulnessRoediger';
 
 /** «Подробнее» к mindfulness и compassionate_self (Хис, гл. 17; ван Фресвайк) — вынесено, чтобы stance.ts не рос. */
 export const mindfulnessMore: string[] = [
@@ -11,6 +9,7 @@ export const mindfulnessMore: string[] = [
   'Лево и право в ритуале — те же, что на карте режимов, которую расставляли стульями на сессии [Рёдигер, гл. 11].',
   'Практика Бехари [Бехари, гл. 5]: пять минут дважды в день где угодно, лишь бы не прерывали. Дыхание (живот, лёгкие, температура воздуха), затем по очереди зрение, звуки, запахи, вкус, касания и скан тела — замечать и называть без оценки. Мысль-суждение заметить и отпустить. Вторгшуюся схемную мысль провести через четыре шага: заметить, что она знакома; связать с жизненной темой; назвать схему и откуда она; развести «тогда» и «сейчас» — и вернуться к дыханию.',
   ...mindfulnessHeathMore,
+  ...mindfulnessRoedigerMore,
   ...mindfulnessVanVreeswijkMore,
 ];
 
