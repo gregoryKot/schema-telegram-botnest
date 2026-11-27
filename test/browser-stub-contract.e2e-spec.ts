@@ -21,7 +21,7 @@ import {
   OFFLINE_CLIENT,
   THERAPIST_NAME,
 } from '../e2e-browser/support/therapistCabinet';
-import { CONSENT_VERSION } from '../shared/src/onboarding/consents';
+import { CONSENT_VERSION } from '../e2e-browser/support/consentVersion';
 import { ANALYTICS_EVENTS } from '../src/analytics/analytics.constants';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
 import { TestApp } from './e2e-support/build-test-app';

@@ -12,7 +12,7 @@
 import { ARTICLE_DIAGRAM_KEYS } from '../../src/articles/article-diagrams';
 import { ARTICLE_SEED } from '../../src/articles/articles.seed';
 import { SCREEN_FIXTURES } from './stubScreens';
-import { CONSENT_VERSION } from '../../shared/src/onboarding/consents';
+import { CONSENT_VERSION } from './consentVersion';
 
 /** GET /api/needs — список BotService.needs (src/bot/bot.service.ts). */
 export const STUB_NEEDS = [
