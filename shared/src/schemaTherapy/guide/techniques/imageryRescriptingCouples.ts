@@ -1,4 +1,4 @@
-import { rescriptingTail } from './imageryRescriptingRafaeli';
+import { rescriptingTail } from './imageryRescriptingRoedigerRescript';
 
 /** Рескриптинг рядом с партнёром и под гнев: дополнение к imagery_rescripting [Пары, гл. 2, 9]. */
 const rescriptingCouples: string[] = [

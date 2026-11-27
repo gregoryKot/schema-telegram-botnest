@@ -17,7 +17,7 @@ import { buildHomeworkTechniques } from './homework';
 import { buildPatternBreakingTechniques } from './patternBreaking';
 import { buildLimitedReparentingTechniques } from './limitedReparenting';
 import { buildRelationshipTechniques } from './relationship';
-import { buildImageryMoreTechniques } from './imageryMore';
+import { buildImageryMoreTechniques } from './imageryMoreRoedigerImg';
 import { buildSafetyBubbleTechniques } from './safetyBubble';
 import { buildProbePhrasesTechniques } from './probePhrases';
 import { buildIntimacyDialogueTechniques } from './intimacyDialogue';
@@ -51,6 +51,7 @@ import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
 import { buildSchemaAwarenessTechniques } from './schemaAwareness';
 import { buildHealthyModesMindfulnessTechniques } from './healthyModesMindfulness';
+import { buildEmotionalResonanceSphereTechniques } from './emotionalResonanceSphereRoedigerChairs';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
@@ -71,6 +72,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildMindfulnessPracticesTechniques,
   buildSchemaAwarenessTechniques,
   buildHealthyModesMindfulnessTechniques,
+  buildEmotionalResonanceSphereTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
   buildLimitedReparentingTechniques,

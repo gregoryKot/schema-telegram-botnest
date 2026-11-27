@@ -1,6 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { bodyMore } from './arntzBpdImageryMore';
-import { groundingFS } from './imageryFarrellShaw';
+import { groundingFS } from './bodyGroundingRoedigerImg';
 
 /** Тело: body_grounding. */
 export const buildBodyGroundingTechniques: TechniqueGuideBuilder = (tr) => [
@@ -33,6 +33,6 @@ export const buildBodyGroundingTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'У клиентов с травмой внимание к телу само бывает триггером: начинают с коротких отрезков и нейтральных ощущений. Заземление возвращает контакт, но не заменяет работу с тем, от чего клиент ушёл.',
     sources:
-      '[Хис, гл. 3, 17]; [Кембридж, гл. 15, бокс 14.2]; [Арнтц ПРЛ, гл. 5]; [Бехари, гл. 4]; [Фаррелл, гл. 4.1]; [Фаррелл-Шоу, модуль 1].',
+      '[Хис, гл. 3, 17]; [Кембридж, гл. 15, бокс 14.2]; [Арнтц ПРЛ, гл. 5]; [Бехари, гл. 4]; [Фаррелл, гл. 4.1]; [Фаррелл-Шоу, модуль 1]; [Рёдигер, гл. 9].',
   },
 ];

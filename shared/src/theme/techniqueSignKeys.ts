@@ -54,6 +54,9 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'stand_above',
   'balance_axes',
   'side_seat',
+  // TechniqueSignsRoedigerChairs.tsx — сфера эмоционального резонанса (Рёдигер, гл. 10)
+  'resonance_sphere',
+  'farewell_chair',
   // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
   'breathing_space',
   'body_scan',

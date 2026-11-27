@@ -1,5 +1,5 @@
 import { rescriptingMoreArntzJacobAll as rescriptingMoreArntzJacob } from './imageryArntzJacobMore';
-import { rescriptingHeathMore } from './imageryRescriptingHeath';
+import { rescriptingHeathMore } from './imageryHeathRoedigerRescript';
 
 /** «Подробнее» к рескриптингу с дополнениями по Хис и Стартап: вынесено, чтобы файлы не росли. */
 export const rescriptingMoreHeath: string[] = [
