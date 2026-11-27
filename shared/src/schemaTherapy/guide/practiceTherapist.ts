@@ -4,6 +4,7 @@ import { buildPracticeTherapistCulture } from './practiceTherapistCulture';
 import { buildPracticeTherapistSchemas } from './practiceTherapistSchemas';
 import { buildPracticeTherapistArntz } from './practiceTherapistArntz';
 import { buildPracticeSelfPractice } from './practiceSelfPractice';
+import { buildPracticeTherapistSelf } from './practiceTherapistSelf';
 import * as cc from './practiceTherapistCambridgeC';
 
 /** «Для терапевта»: схемы терапевта, выгорание, самопрактика, заметки Арнтц и Якоб. Собирает practice.ts, порядок на листе прежний. */
@@ -30,5 +31,6 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
   },
   ...care.buildPracticeTherapistCare(tr),
   ...buildPracticeSelfPractice(tr),
+  ...buildPracticeTherapistSelf(tr),
   ...buildPracticeTherapistCulture(tr),
 ];
