@@ -62,7 +62,7 @@ export function ClientListView({
         <PendingInvitesList pending={addClient.pending} className="pp-block tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
         {!noClients && (
           <div className="tc-toolbar">
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} type="search"
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                    placeholder="Найти клиента" aria-label="Найти клиента" className="ds-input ds-input--search tc-search" />
             <StatusFilter value={filterStatus} onChange={setFilterStatus} />
           </div>
