@@ -29,6 +29,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m
 import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
+const ConsentPage = lazy(() => import('./pages/ConsentPage').then(m => ({ default: m.ConsentPage })));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
 const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
 
@@ -103,6 +104,7 @@ const appRoutes = [
   { path: '/donate',         lazy: donateRoute },
   // Юрстраницы — на обоих хостах (инцидент 2026-10-22); сверка: sitemap.middleware.spec.ts.
   { path: '/privacy',        element: <PrivacyPage /> },
+  { path: '/consent',        element: <ConsentPage /> },
   { path: '/offer',          element: <OfferPage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
   // on the app domain too — otherwise /admin here falls through to the login/app.

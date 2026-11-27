@@ -22,3 +22,11 @@ export class CheckinDto {
   @IsBoolean()
   done!: boolean;
 }
+
+/** POST /api/disclaimer: редакция текста согласия, которую отметил человек (CONSENT_VERSION). */
+export class AcceptDisclaimerDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  version?: string;
+}

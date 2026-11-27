@@ -1,25 +1,19 @@
-// Экран входа сайта показывает текст согласия («Нажимая „Войти“…»). Кто его
-// видел, тот согласился осознанно, и экран согласий в кабинете ему не нужен.
-// Кто вошёл автоматически по подписи Telegram/MAX, экрана входа не видел.
-// Флаг живёт в localStorage этого браузера; без него (приватное окно, запрет
-// хранилища) безопаснее показать экран, чем принять согласие молча. Память
-// страницы закрывает только вход без перезагрузки.
-const KEY = 'login_consent_shown';
-let shownInMemory = false;
+// Отметка согласия на входе сайта: галочка + редакция текста. После входа кабинет забирает её
+// один раз (`takeLoginConsent`) и пишет на сервер. Без localStorage отметка живёт в памяти страницы.
+const KEY = 'login_consent_given';
+let mem: string | null = null;
 
-export function markLoginConsentShown(): void {
-  shownInMemory = true;
-  try {
-    localStorage.setItem(KEY, '1');
-  } catch {
-    shownInMemory = true;
-  }
+export function rememberLoginConsent(version: string): void {
+  mem = null;
+  try { localStorage.setItem(KEY, version); } catch { mem = version; }
 }
 
-export function wasLoginConsentShown(): boolean {
-  try {
-    return localStorage.getItem(KEY) === '1';
-  } catch {
-    return shownInMemory;
-  }
+export function forgetLoginConsent(): void {
+  mem = null;
+  try { localStorage.removeItem(KEY); } catch { mem = null; }
+}
+
+/** Редакция, отмеченная на входе, или null; второй вызов вернёт null. */
+export function takeLoginConsent(): string | null {
+  try { return localStorage.getItem(KEY) ?? mem; } catch { return mem; } finally { forgetLoginConsent(); }
 }

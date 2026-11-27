@@ -81,6 +81,8 @@ model User {
   firstName              String?
   role                   UserRole @default(CLIENT)
   disclaimerAccepted     Boolean  @default(false)
+  disclaimerAcceptedAt   DateTime? // когда дано последнее согласие на обработку ПДн; null — до учёта даты
+  consentVersion         String?   // редакция текста согласия (CONSENT_VERSION); null — бот или согласие до учёта версии
   notifyEnabled          Boolean  @default(true)
   notifyLocalHour        Int      @default(21)
   notifyTimezone         String   @default("Europe/Moscow")

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { CONSENT_VERSION } from '../../../../shared/src/onboarding/consents';
 
 let startParam: string | null = null;
 vi.mock('../../../../shared/src/host', () => ({
@@ -39,7 +40,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   startParam = null;
-  m.getDisclaimer.mockResolvedValue({ accepted: true });
+  m.getDisclaimer.mockResolvedValue({ accepted: true, version: CONSENT_VERSION });
   m.acceptDisclaimer.mockResolvedValue(undefined);
   m.joinTherapy.mockResolvedValue(undefined);
   m.getTherapyRelation.mockResolvedValue({ partnerId: '7', partnerName: 'Т' });
@@ -86,7 +87,7 @@ describe('EntryFlows', () => {
 
   it('ссылка ждёт согласий: пока экран согласий открыт, присоединения нет', async () => {
     startParam = 'pair_Z';
-    m.getDisclaimer.mockResolvedValue({ accepted: false });
+    m.getDisclaimer.mockResolvedValue({ accepted: false, version: null });
     setup();
     // Экран согласий открывается приветствием: ссылка ждёт и на нём.
     await screen.findByText('БЕТА-ВЕРСИЯ');
@@ -107,7 +108,7 @@ describe('EntryFlows — очередь: вопрос «ты/вы» первым
   }
 
   it('вопрос «ты/вы» до согласий: пока он открыт, согласий нет; после ответа — согласия', async () => {
-    m.getDisclaimer.mockResolvedValue({ accepted: false });
+    m.getDisclaimer.mockResolvedValue({ accepted: false, version: null });
     m.getSettings.mockResolvedValue({ addressForm: null });
     const ov = setup();
     await pickerShown();
@@ -129,7 +130,7 @@ describe('EntryFlows — очередь: вопрос «ты/вы» первым
   });
 
   it('«Позже» тоже пропускает к согласиям', async () => {
-    m.getDisclaimer.mockResolvedValue({ accepted: false });
+    m.getDisclaimer.mockResolvedValue({ accepted: false, version: null });
     m.getSettings.mockResolvedValue({ addressForm: null });
     setup();
     await pickerShown();
@@ -138,7 +139,7 @@ describe('EntryFlows — очередь: вопрос «ты/вы» первым
   });
 
   it('настройки не загрузились — вопрос не запирает вход: сразу согласия, сбой в отчёт', async () => {
-    m.getDisclaimer.mockResolvedValue({ accepted: false });
+    m.getDisclaimer.mockResolvedValue({ accepted: false, version: null });
     m.getSettings.mockRejectedValue(new Error('offline'));
     setup();
     expect(await screen.findByText('БЕТА-ВЕРСИЯ')).toBeTruthy();

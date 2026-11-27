@@ -26,7 +26,9 @@ function makeController(
   } = {},
 ) {
   const botService = {
-    hasAcceptedDisclaimer: jest.fn().mockResolvedValue(false),
+    getConsentState: jest
+      .fn()
+      .mockResolvedValue({ accepted: false, version: null }),
     acceptDisclaimer: jest.fn().mockResolvedValue(undefined),
     ...overrides.botService,
   } as unknown as BotService;
@@ -183,15 +185,24 @@ describe('ApiController profile / name / init / disclaimer', () => {
 
   it('disclaimer GET/POST делегируют с userId из req', async () => {
     const { controller, botService } = makeController({
-      botService: { hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true) },
+      botService: {
+        getConsentState: jest
+          .fn()
+          .mockResolvedValue({ accepted: true, version: '2026-11-27' }),
+      },
     });
     await expect(controller.getDisclaimer(makeReq(3n))).resolves.toEqual({
       accepted: true,
+      version: '2026-11-27',
     });
-    expect(botService.hasAcceptedDisclaimer).toHaveBeenCalledWith(3n);
+    expect(botService.getConsentState).toHaveBeenCalledWith(3n);
 
-    await controller.acceptDisclaimer(makeReq(3n));
-    // Экран согласий кабинета закрывает и онбординг (метрика /stats).
-    expect(botService.acceptDisclaimer).toHaveBeenCalledWith(3n, true);
+    await controller.acceptDisclaimer(makeReq(3n), { version: '2026-11-27' });
+    // Экран согласий кабинета закрывает и онбординг (метрика /stats); версия — редакция отмеченного текста.
+    expect(botService.acceptDisclaimer).toHaveBeenCalledWith(
+      3n,
+      true,
+      '2026-11-27',
+    );
   });
 });

@@ -18,6 +18,7 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { AddressFormContext } from '../utils/addressForm';
 import { LoginPage } from './LoginPage';
+import { CONSENT_VERSION } from '../../../shared/src/onboarding/consents';
 import { rememberReturnTo, AUTH_RETURN_KEY } from '../auth/returnTo';
 import { wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
 
@@ -141,10 +142,32 @@ describe('LoginPage — уже вошедший пользователь', () =>
 });
 
 describe('LoginPage — обычный браузер (не Telegram)', () => {
-  it('показывает способы входа сайта: ВКонтакте и Яндекс', () => {
+  it('показывает способы входа сайта: ВКонтакте и Яндекс — после отметки согласия', () => {
     renderPage();
+    fireEvent.click(screen.getByRole('checkbox'));
     expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Войти через Яндекс/ }).getAttribute('href')).toBe('/api/auth/yandex');
+  });
+
+  // 152-ФЗ ст. 9: согласие — отдельная пустая галочка, без неё входа нет; отметка запоминается для кабинета.
+  it('без галочки согласия кнопки входа мертвы; отметка включает их и ложится для кабинета, снятие убирает', () => {
+    renderPage();
+    const box = screen.getByRole('checkbox') as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    expect(screen.queryByRole('link', { name: /Войти через/ })).toBeNull(); // без href ссылка — не link
+    expect(screen.getByText(/Войти через ВКонтакте/).closest('a')?.getAttribute('aria-disabled')).toBe('true');
+    expect(localStorage.getItem('login_consent_given')).toBeNull();
+    fireEvent.click(box);
+    expect(localStorage.getItem('login_consent_given')).toBe(CONSENT_VERSION);
+    fireEvent.click(box);
+    expect(localStorage.getItem('login_consent_given')).toBeNull();
+  });
+
+  it('старая отметка прошлого визита при открытии входа сбрасывается', () => {
+    localStorage.setItem('login_consent_given', CONSENT_VERSION);
+    renderPage();
+    expect(localStorage.getItem('login_consent_given')).toBeNull();
+    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
   });
 
   // Вход по почте отключён (решение владельца, ч. 10 ст. 8 149-ФЗ): ни кнопки, ни поля адреса.
@@ -196,6 +219,7 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
   // Ревью b26: сбой стоит у того, к чему относится, — над кнопками входа, выше сгиба.
   it('провал OAuth — над кнопками входа, одно сообщение', () => {
     renderPage(authValue(), '/login?error=no_token');
+    fireEvent.click(screen.getByRole('checkbox'));
     const alert = screen.getByRole('alert');
     const vk = screen.getByRole('link', { name: /Войти через ВКонтакте/ });
     expect(alert.compareDocumentPosition(vk) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

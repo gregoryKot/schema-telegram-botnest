@@ -70,8 +70,10 @@ export const buildSharedApi = (t: ApiTransport) => ({
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
   trackPublicEvent: (...a: EventArgs): void =>
     void postEvent(t, ...a).catch(() => undefined),
-  getDisclaimer: () => t.get<{ accepted: boolean }>('/api/disclaimer'),
-  acceptDisclaimer: () => t.post('/api/disclaimer', {}),
+  getDisclaimer: () =>
+    t.get<{ accepted: boolean; version: string | null }>('/api/disclaimer'),
+  acceptDisclaimer: (version?: string) =>
+    t.post('/api/disclaimer', version ? { version } : {}),
   // Только чтение: сервер отдаёт все UI-флаги (UserFlagsDto), здесь типизирован
   // срез, который читает вызывающая сторона. therapistMode — серверное
   // предпочтение терапевта «кабинет vs клиент», источник дефолтного роутинга.

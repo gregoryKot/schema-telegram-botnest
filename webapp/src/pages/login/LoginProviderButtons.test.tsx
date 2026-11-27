@@ -47,6 +47,20 @@ function standalone() {
 }
 afterEach(() => vi.unstubAllGlobals());
 
+describe('без согласия на ПДн', () => {
+  it('VK и Яндекс без href и aria-disabled, MAX отключена; со включённым согласием — прежние ссылки', () => {
+    maxBot.name = 'testbot';
+    render(<LoginProviderButtons onSession={vi.fn()} consented={false} />);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.getByText(VK).closest('a')?.getAttribute('aria-disabled')).toBe('true');
+    expect((screen.getByRole('button', { name: /MAX/ }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    expect(screen.getByRole('link', { name: VK }).getAttribute('href')).toBe('/api/auth/vk');
+    maxBot.name = '';
+  });
+});
+
 describe('способы входа', () => {
   // Запрос РКН №08-1063539 (2026-11): пользователей из России нельзя
   // авторизовать на сайте через иностранный сервис. Ни кнопки Telegram, ни
