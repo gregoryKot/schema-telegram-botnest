@@ -8,6 +8,7 @@ export const couplesTechniques: TechniqueId[] = [
   'chairwork',
   'pattern_breaking',
   'mindfulness',
+  'need_vs_wish',
 ];
 
 export const couplesEvidence: string[] = [

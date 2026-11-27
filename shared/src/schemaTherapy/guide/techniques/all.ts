@@ -32,6 +32,7 @@ import { buildChildCareTechniques } from './childCare';
 import { buildBodyGroundingTechniques } from './bodyGrounding';
 import { buildBodyValuesTechniques } from './bodyValues';
 import { buildOnlineTechniques } from './online';
+import { buildNeedVsWishTechniques } from './needVsWish';
 import { buildAttunementNeedsTechniques } from './attunementNeeds';
 import { buildMeaningGuiltTechniques } from './meaningGuilt';
 import { buildSchemaDialogueTechniques } from './schemaDialogue';
@@ -92,6 +93,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryRecentTechniques,
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
+  buildNeedVsWishTechniques,
   buildMeaningGuiltTechniques,
   buildSchemaDialogueTechniques,
   buildBorrowedCbtTechniques,

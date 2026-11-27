@@ -61,5 +61,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsRafaeli.tsx — техники из книги Рафаэли, Бернштейн и Янга
   'rupture_mend',
   'life_columns',
+  // TechniqueSignsCouples.tsx — техника из книги о схема-терапии пар
+  'need_wish',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

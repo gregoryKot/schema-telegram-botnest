@@ -71,6 +71,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'three_parts_check_in',
     'rupture_repair',
     'historical_life_review',
+    'need_vs_wish',
   ].map(w),
   ...WRITTEN_TECHNIQUES_MORE,
   {
@@ -117,13 +118,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     source: 'Пары',
     chapters: ['гл. 8'],
     note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
-  },
-  {
-    id: 'need_vs_wish',
-    title: 'Потребность и желание: диаграмма, «стрельба по мишени»',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 5', 'гл. 8', 'гл. 11'],
   },
   {
     id: 'mutual_reparenting',

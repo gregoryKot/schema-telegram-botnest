@@ -98,6 +98,9 @@ export type VreeswijkTechniqueId =
 /** Техники из книги Рафаэли, Бернштейн и Янга (карта «Рафаэли»). */
 export type RafaeliTechniqueId = 'rupture_repair' | 'historical_life_review';
 
+/** Техники из книги Симеоне-ДиФранческо, Редигер, Стивенс о парах (карта «Пары»). */
+export type CouplesTechniqueId = 'need_vs_wish';
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -112,4 +115,5 @@ export type TechniqueId =
   | LuzTechniqueId
   | VreeswijkTechniqueId
   | RafaeliTechniqueId
+  | CouplesTechniqueId
   | BorrowedTechniqueId;
