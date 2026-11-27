@@ -77,7 +77,6 @@ const personalRoutes = [
       // Робокасса, а новая capability-ссылка ведёт на другой путь.
       { path: '/booking/manage', element: <BookingPaidRoute /> },
       { path: '/privacy',        element: <Suspense fallback={null}><PrivacyPage /></Suspense> },
-      { path: '/consent',        element: <Suspense fallback={null}><ConsentPage /></Suspense> },
       { path: '/offer',          element: <Suspense fallback={null}><OfferPage /></Suspense> },
       { path: '/privet',         lazy: linksRoute },
       ...LINKS_PAGE_ALIASES.map((path) => ({ path, lazy: linksMovedRoute })), // синонимы → /privet с query и хешем
