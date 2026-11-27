@@ -71,7 +71,6 @@ export type ArntzTechniqueId =
 export type ArntzJacobTechniqueId = 'coping_bypass' | 'mode_figures';
 
 export type { FarrellTechniqueId };
-
 /** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
 export type HeathTechniqueId =
   | 'creative_mode_work'
@@ -112,4 +111,5 @@ export type TechniqueId =
   | LuzTechniqueId
   | VreeswijkTechniqueId
   | RafaeliTechniqueId
+  | import('./techniqueIdsCouples').CouplesTechniqueId
   | BorrowedTechniqueId;

@@ -3,11 +3,11 @@ import type { TechniqueId, Tr } from '../types';
 /** Досбор статьи couples: Хис, гл. 13; Бехари, Арнц, Янг, Кембридж. Первые пункты evidence и voice перенесены из couples.ts. */
 export const couplesTechniques: TechniqueId[] = [
   'couple_mode_cycle',
-  'limited_reparenting',
+  'mutual_reparenting',
   'imagery_rescripting',
   'chairwork',
   'pattern_breaking',
-  'mindfulness',
+  'couple_friendship',
 ];
 
 export const couplesEvidence: string[] = [
