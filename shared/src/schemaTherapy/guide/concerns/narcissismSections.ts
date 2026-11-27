@@ -9,7 +9,10 @@ import {
   narcissismRelationshipRafaeli,
 } from './narcissismRafaeli';
 import type { ConcernGuide } from './types';
-import { narcissismCourseYoungAll } from './narcissismYoung5';
+import {
+  NARCISSISM_TECHNIQUES,
+  narcissismCourseYoungAll,
+} from './narcissismYoung5';
 // Нарциссизм: режимы (narcissismModes.ts), курс, кабинет, отношения, психообразование, ошибки (карта Бехари, пачка 3).
 
 export const NARCISSISM_COURSE: string[] = [
@@ -63,12 +66,5 @@ export const NARCISSISM_SECTIONS: Pick<
   ],
   psychoeducation: [...NARCISSISM_PSYCHOEDUCATION, ...more.PSYCHOEDUCATION],
   stuck: NARCISSISM_STUCK,
-  techniques: [
-    'limited_reparenting',
-    'empathic_confrontation',
-    'limit_setting',
-    'mode_map',
-    'imagery_rescripting',
-    'chairwork',
-  ],
+  techniques: NARCISSISM_TECHNIQUES,
 };
