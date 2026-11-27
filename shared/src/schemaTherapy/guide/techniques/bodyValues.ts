@@ -48,6 +48,6 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
     more: coupleModeCycleMore,
     cautions: cycleCautions,
     sources:
-      'Simeone-DiFrancesco C., Roediger E., Stevens B. A. Schema Therapy with Couples: A Practitioner’s Guide to Healing Relationships. Wiley-Blackwell, 2015, гл. 8 «Mode Mapping and Mode Cycle Clash-cards»; [Янг, гл. 7]; [Арнтц ПРЛ, гл. 10]; [Хис, гл. 13]; [Пары, гл. 2, 6–12].'
+      'Simeone-DiFrancesco C., Roediger E., Stevens B. A. Schema Therapy with Couples: A Practitioner’s Guide to Healing Relationships. Wiley-Blackwell, 2015, гл. 8 «Mode Mapping and Mode Cycle Clash-cards»; [Янг, гл. 7]; [Арнтц ПРЛ, гл. 10]; [Хис, гл. 13]; [Пары, гл. 2, 6–12].',
   },
 ];
