@@ -86,6 +86,9 @@ export type HeathTechniqueId =
 export type RoedigerTechniqueId =
   'genogram' | 'perspective_change' | 'body_mode_positions';
 
+/** Техники из книги о схема-терапии пар (карта «Пары»). */
+export type CoupleTechniqueId = 'couple_chairwork';
+
 /** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
 export type LuzTechniqueId = 'child_mode_play';
 /** Техники из книги ван Фресвайк, Брурсен и Шуринк (карта «ван Фресвайк»). */
@@ -110,6 +113,7 @@ export type TechniqueId =
   | HeathTechniqueId
   | RoedigerTechniqueId
   | LuzTechniqueId
+  | CoupleTechniqueId
   | VreeswijkTechniqueId
   | RafaeliTechniqueId
   | BorrowedTechniqueId;

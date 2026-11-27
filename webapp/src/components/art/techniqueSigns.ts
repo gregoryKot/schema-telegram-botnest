@@ -6,6 +6,7 @@ import type {
   LuzTechniqueId,
   VreeswijkTechniqueId,
   RafaeliTechniqueId,
+  CoupleTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -122,6 +123,8 @@ const RAFAELI_TECHNIQUE_SIGN: Record<RafaeliTechniqueId, GuideSign> = {
   historical_life_review: 'life_columns',
 };
 
+const COUPLE_TECHNIQUE_SIGN: Record<CoupleTechniqueId, GuideSign> = { couple_chairwork: 'couple_chairs' };
+
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
   ...SCHEMA_TECHNIQUE_SIGN,
@@ -135,5 +138,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...LUZ_TECHNIQUE_SIGN,
   ...VREESWIJK_TECHNIQUE_SIGN,
   ...RAFAELI_TECHNIQUE_SIGN,
+  ...COUPLE_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

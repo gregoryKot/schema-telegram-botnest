@@ -141,13 +141,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 5', 'гл. 9', 'гл. 12'],
   },
   {
-    id: 'couple_chairwork',
-    title: 'Стулья в паре: режимы обоих при партнёре',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 9', 'гл. 10'],
-  },
-  {
     id: 'inner_house',
     title: '«Внутренний дом»: режимы, схемы и опыт на трёх этажах',
     status: 'planned',

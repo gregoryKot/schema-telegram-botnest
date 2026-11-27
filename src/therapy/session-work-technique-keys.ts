@@ -46,6 +46,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:body_grounding': ['noticed', 'mode', 'grounding', 'result'],
   'technique:values_overview': ['situation', 'values', 'step', 'obstacle'],
   'technique:couple_mode_cycle': ['conflict', 'cycle', 'needs', 'exit'],
+  'technique:couple_chairwork': ['modes', 'view', 'need'],
   'technique:behavioral_activation': [
     'monitoring',
     'activities',

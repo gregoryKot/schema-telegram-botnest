@@ -56,7 +56,7 @@ export const buildCouplesGuide: ConcernGuideBuilder = (tr) => ({
     'motivational_interviewing',
     'flashcards',
     'schema_diary',
-    'behavioral_activation',
+    'behavioral_activation', 'couple_chairwork',
   ],
   voice: d.couplesVoice(tr),
   ...COUPLES_SESSION,

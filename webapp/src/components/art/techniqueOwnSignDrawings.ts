@@ -19,6 +19,7 @@ import {
 import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './TechniqueSignsRoediger';
 import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
+import { CoupleChairs } from './TechniqueSignsCouple';
 import { LifeColumns, RuptureMend } from './TechniqueSignsRafaeli';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
@@ -37,5 +38,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   side_seat: BodyModePositions,
   breathing_space: BreathingSpace, body_scan: BodyScan, schema_lens: SchemaLens,
   healthy_light: HealthyLight,
-  rupture_mend: RuptureMend, life_columns: LifeColumns,
+  rupture_mend: RuptureMend, life_columns: LifeColumns, couple_chairs: CoupleChairs,
 };
