@@ -1,5 +1,5 @@
 import type { Tr } from '../types';
-import { punitiveCriticMore } from './punitiveCriticMore';
+import { punitiveCriticMore } from './punitiveCriticRoediger';
 import { punitiveCriticYoung3 } from './punitiveCriticYoung3';
 
 /** «Подробнее» и реплики к punitive_critic по гл. 2 и 5 Арнца и ван Гендерен о ПРЛ. */

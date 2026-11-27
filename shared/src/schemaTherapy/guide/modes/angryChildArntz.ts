@@ -1,5 +1,5 @@
 import type { TechniqueId } from '../techniqueIds';
-import { angryChildMore } from './angryChildMore';
+import { angryChildMore } from './angryChildRoediger';
 
 /** «Подробнее» к angry_child по Арнтц и Якоб, гл. 2.2.4, 7.1.4, 7.5, 8.3.1, 8.5. */
 const angryChildArntzMore: string[] = [
