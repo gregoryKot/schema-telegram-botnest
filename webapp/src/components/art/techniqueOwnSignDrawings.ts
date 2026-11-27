@@ -20,7 +20,7 @@ import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './Techniqu
 import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
 import { LifeColumns, RuptureMend } from './TechniqueSignsRafaeli';
-import { NeedWish } from './TechniqueSignsCouples';
+import * as couples from './TechniqueSignsCouples';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -33,11 +33,10 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, storm_need: StormNeed, mask: CriticMask,
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
   trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
-  finger_puppets: FingerPuppets,
-  stand_above: StandAbove, balance_axes: BalanceAxes,
-  side_seat: BodyModePositions,
+  finger_puppets: FingerPuppets, stand_above: StandAbove, balance_axes: BalanceAxes, side_seat: BodyModePositions,
   breathing_space: BreathingSpace, body_scan: BodyScan, schema_lens: SchemaLens,
   healthy_light: HealthyLight,
   rupture_mend: RuptureMend, life_columns: LifeColumns,
-  need_wish: NeedWish,
+  need_wish: couples.NeedWish, mutual_hold: couples.MutualHold,
+  friend_pair: couples.FriendPair, couple_chairs: couples.CoupleChairs,
 };

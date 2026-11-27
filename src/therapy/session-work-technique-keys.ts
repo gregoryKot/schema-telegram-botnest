@@ -1,7 +1,7 @@
-// Серверная копия ключей полей техник «Что делали» (session-work.ts): сверка — session-work.sync.spec.ts.
-type KeyMap = Readonly<Record<string, readonly string[]>>;
-
-export const TECHNIQUE_WORK_KEYS: KeyMap = {
+// Серверная копия ключей полей техник «Что делали» (session-work.ts): сверка — session-work.sync.spec.ts. Техники пар 'mutual_reparenting', 'couple_friendship' — в -couples.ts.
+import { COUPLES_TECHNIQUE_KEYS } from './session-work-technique-keys-couples';
+export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> = {
+  ...COUPLES_TECHNIQUE_KEYS,
   'technique:imagery_rescripting': ['trigger', 'image', 'rewrite', 'ending'],
   'technique:future_imagery': ['situation', 'rehearsal', 'obstacle', 'result'],
   'technique:chairwork': ['theme', 'modeVoice', 'adultVoice', 'ending'],

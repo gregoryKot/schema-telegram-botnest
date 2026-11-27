@@ -72,6 +72,8 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'rupture_repair',
     'historical_life_review',
     'need_vs_wish',
+    'mutual_reparenting',
+    'couple_friendship',
   ].map(w),
   ...WRITTEN_TECHNIQUES_MORE,
   {
@@ -118,21 +120,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     source: 'Пары',
     chapters: ['гл. 8'],
     note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
-  },
-  {
-    id: 'mutual_reparenting',
-    title: 'Взаимный репарентинг пары',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 11'],
-  },
-  {
-    id: 'couple_friendship',
-    title:
-      'Дружба пары: признание чувств, примирение, правила разговора, заботливое поведение',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 5', 'гл. 9', 'гл. 12'],
   },
   {
     id: 'couple_chairwork',

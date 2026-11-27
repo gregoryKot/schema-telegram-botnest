@@ -71,7 +71,6 @@ export type ArntzTechniqueId =
 export type ArntzJacobTechniqueId = 'coping_bypass' | 'mode_figures';
 
 export type { FarrellTechniqueId };
-
 /** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
 export type HeathTechniqueId =
   | 'creative_mode_work'
@@ -98,8 +97,8 @@ export type VreeswijkTechniqueId =
 /** Техники из книги Рафаэли, Бернштейн и Янга (карта «Рафаэли»). */
 export type RafaeliTechniqueId = 'rupture_repair' | 'historical_life_review';
 
-/** Техники из книги Симеоне-ДиФранческо, Редигер, Стивенс о парах (карта «Пары»). */
-export type CouplesTechniqueId = 'need_vs_wish';
+import type { CouplesTechniqueId } from './techniqueIdsCouples';
+export type { CouplesTechniqueId };
 
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =

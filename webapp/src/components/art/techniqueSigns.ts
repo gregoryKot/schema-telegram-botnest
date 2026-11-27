@@ -1,14 +1,12 @@
-// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx).
+// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx). Техники пар 'mutual_reparenting', 'couple_friendship' — в couplesTechniqueSign.ts.
 // Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
   YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId, RoedigerTechniqueId,
-  LuzTechniqueId,
-  VreeswijkTechniqueId,
-  RafaeliTechniqueId,
-  CouplesTechniqueId,
+  LuzTechniqueId, VreeswijkTechniqueId, RafaeliTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
+import { COUPLES_TECHNIQUE_SIGN } from './couplesTechniqueSign';
 
 export const CORE_TECHNIQUE_SIGN: Record<CoreTechniqueId, GuideSign> = {
   imagery_rescripting: 'rescript',
@@ -122,8 +120,6 @@ const RAFAELI_TECHNIQUE_SIGN: Record<RafaeliTechniqueId, GuideSign> = {
   rupture_repair: 'rupture_mend',
   historical_life_review: 'life_columns',
 };
-
-const COUPLES_TECHNIQUE_SIGN: Record<CouplesTechniqueId, GuideSign> = { need_vs_wish: 'need_wish' };
 
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...CORE_TECHNIQUE_SIGN,
