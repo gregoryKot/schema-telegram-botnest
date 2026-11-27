@@ -66,5 +66,9 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'mutual_hold',
   'friend_pair',
   'couple_chairs',
+  // TechniqueSignsFarrellShaw.tsx — техники из тетради Фаррелл и Шоу
+  'monitor_ring',
+  'mode_page',
+  'review_rows',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

@@ -2,7 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import {
   behavioralExperimentMore,
   positiveDataLogSteps,
-} from './arntzTechniqueMore';
+} from './couplesTechniquesMore';
 import { positiveDataLogRafaeli } from './relationalCognitiveRafaeli';
 
 /** Проверка убеждения фактами и делом: positive_data_log, behavioral_experiment. */
@@ -55,6 +55,6 @@ export const buildEvidenceWorkTechniques: TechniqueGuideBuilder = (tr) => [
       'Эксперимент — проверка, а не испытание на смелость: слишком большой шаг заканчивается избеганием и новым доводом для схемы. Предсказание сбылось — это тоже данные: смотрим, что именно произошло и как клиент с этим справился. Где спотыкаются [Арнтц ПРЛ, прил. Д]: важную часть нового поведения не выполнили; исход ничего не говорит о проверяемой мысли; мысль записана не так, как думает клиент; клиент отвергает результат — тогда ищут, почему, и просят придумать проверку, которая убедит его самого; терапевту слишком важно, чем всё кончится.',
     more: behavioralExperimentMore,
     sources:
-      'Bennett-Levy J., Butler G., Fennell M., Hackmann A., Mueller M., Westbrook D. (eds.). Oxford Guide to Behavioural Experiments in Cognitive Therapy. Oxford University Press, 2004. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 7, раздел «Experiments»; [Арнтц ПРЛ, гл. 4, 7, прил. Д]; [Фаррелл, 5.2.1].',
+      'Bennett-Levy J., Butler G., Fennell M., Hackmann A., Mueller M., Westbrook D. (eds.). Oxford Guide to Behavioural Experiments in Cognitive Therapy. Oxford University Press, 2004. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 7, раздел «Experiments»; [Арнтц ПРЛ, гл. 4, 7, прил. Д]; [Фаррелл, 5.2.1]., [Пары, гл. 9]',
   },
 ];

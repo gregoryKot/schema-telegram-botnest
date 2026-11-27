@@ -3,7 +3,10 @@
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
   YoungTechniqueId, ArntzTechniqueId, ArntzJacobTechniqueId, FarrellTechniqueId, HeathTechniqueId, RoedigerTechniqueId,
-  LuzTechniqueId, VreeswijkTechniqueId, RafaeliTechniqueId,
+  LuzTechniqueId,
+  VreeswijkTechniqueId,
+  RafaeliTechniqueId,
+  FarrellShawTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 import { COUPLES_TECHNIQUE_SIGN } from './couplesTechniqueSign';
@@ -92,6 +95,12 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   story_unmet_need: 'storm_need',
 };
 
+const FARRELL_SHAW_TECHNIQUE_SIGN: Record<FarrellShawTechniqueId, GuideSign> = {
+  monitoring_cycle: 'monitor_ring',
+  mode_awareness_summary: 'mode_page',
+  progress_by_mode: 'review_rows',
+};
+
 const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
   creative_mode_work: 'mask',
   probe_phrases: 'probe',
@@ -135,5 +144,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...VREESWIJK_TECHNIQUE_SIGN,
   ...RAFAELI_TECHNIQUE_SIGN,
   ...COUPLES_TECHNIQUE_SIGN,
+  ...FARRELL_SHAW_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

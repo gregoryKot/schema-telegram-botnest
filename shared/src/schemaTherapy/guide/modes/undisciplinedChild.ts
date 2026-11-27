@@ -1,5 +1,5 @@
 import type { ModeGuide, Tr } from '../types';
-import { undisciplinedMore } from './undisciplinedChildMore';
+import { undisciplinedMore } from './couplesModes';
 
 /** Импульсивные детские режимы: Недисциплинированный Ребёнок. */
 export const buildUndisciplinedChildGuide = (tr: Tr): ModeGuide => ({
@@ -26,7 +26,7 @@ export const buildUndisciplinedChildGuide = (tr: Tr): ModeGuide => ({
   ],
   more: undisciplinedMore,
   techniques: ['chairwork', 'pattern_breaking', 'flashcards', 'pros_cons'],
-  moreTechniques: ['problem_solving'],
+  moreTechniques: ['problem_solving', 'limit_setting'],
   betweenSessions: [
     {
       kind: 'custom',
@@ -42,5 +42,5 @@ export const buildUndisciplinedChildGuide = (tr: Tr): ModeGuide => ({
   stuck:
     'Домашние задания раз за разом не делаются, а терапевт продолжает как ни в чём не бывало. Ещё две ловушки: терапевт вместе с клиентом обходит неприятное и уводит разговор от трудных тем или ставит задачи по принципу «всё или ничего», вместо того чтобы наращивать нагрузку по шагам [Кембридж, табл. 3.3].',
   sources:
-    '[Арнтц, 3.1, 7.1.2–7.1.3, табл. 7.2, 7.2.2, 7.3–7.4], [Кембридж, табл. 3.1, 9.1, табл. 3.3], [Рафаэли, гл. 9], [Фаррелл, 5.5.1], [Арнтц ПРЛ, гл. 9, прил. Ж], [Статьи]',
+    '[Арнтц, 3.1, 7.1.2–7.1.3, табл. 7.2, 7.2.2, 7.3–7.4], [Кембридж, табл. 3.1, 9.1, табл. 3.3], [Рафаэли, гл. 9], [Фаррелл, 5.5.1], [Арнтц ПРЛ, гл. 9, прил. Ж], [Статьи], [Пары, гл. 9]',
 });

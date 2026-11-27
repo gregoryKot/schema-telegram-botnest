@@ -21,6 +21,7 @@ import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
 import { LifeColumns, RuptureMend } from './TechniqueSignsRafaeli';
 import * as couples from './TechniqueSignsCouples';
+import { ModePage, MonitorRing, ReviewRows } from './TechniqueSignsFarrellShaw';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -39,4 +40,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   rupture_mend: RuptureMend, life_columns: LifeColumns,
   need_wish: couples.NeedWish, mutual_hold: couples.MutualHold,
   friend_pair: couples.FriendPair, couple_chairs: couples.CoupleChairs,
+  monitor_ring: MonitorRing, mode_page: ModePage, review_rows: ReviewRows,
 };
