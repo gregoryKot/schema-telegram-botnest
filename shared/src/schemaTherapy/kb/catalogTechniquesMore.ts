@@ -10,4 +10,5 @@ export const WRITTEN_TECHNIQUES_MORE = [
   'problem_solving',
   'child_mode_play',
   'couple_chairwork',
+  'good_parent_script',
 ].map(w);
