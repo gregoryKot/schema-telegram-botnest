@@ -71,7 +71,7 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   complex_trauma: 'shield',
   deliberate_practice: 'beads', emdr: 'window',
   ending_phase: 'horizon',
-  teen_parent_triangle: 'family_tree', child_imagery_precautions: 'shelter',
+  teen_parent_triangle: 'family_tree', child_imagery_precautions: 'activation',
   evidence_limits: 'scales',
   exact_scene: 'pebbles',
   experiential_avoidance: 'rescript',
