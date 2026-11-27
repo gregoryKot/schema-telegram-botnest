@@ -33,7 +33,7 @@ export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
     evidence:
       'Как отдельный приём не изучалось. «Аффективный мост» описал Джон Уоткинс в 1971 году как гипноаналитическую технику; схема-терапия взяла ход от чувства к воспоминанию без гипноза.',
     sources:
-      '[Янг, гл. 1, 2, 4, 5, 10]. Watkins J. G. The affect bridge: a hypnoanalytic technique. International Journal of Clinical and Experimental Hypnosis, 1971, 19(1), 21–27. [Кембридж, гл. 3, 8, боксы 3.5, 8.4], [Арнтц ПРЛ, гл. 3, 5], [Арнтц, 6.3.2, 6.5], [Хис, гл. 2, 5], [Бехари, гл. 4], [Рафаэли, гл. 17, 22], [Фаррелл-Шоу, модуль 4]',
+      '[Янг, гл. 1, 2, 4, 5, 10]. Watkins J. G. The affect bridge: a hypnoanalytic technique. International Journal of Clinical and Experimental Hypnosis, 1971, 19(1), 21–27. [Кембридж, гл. 3, 8, боксы 3.5, 8.4], [Арнтц ПРЛ, гл. 3, 5], [Арнтц, 6.3.2, 6.5], [Хис, гл. 2, 5], [Бехари, гл. 4], [Рафаэли, гл. 17, 22], [Фаррелл-Шоу, модуль 4], [Луз, гл. 8, 13]',
   },
   {
     id: 'safe_place_imagery',
@@ -59,6 +59,6 @@ export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'У части клиентов с тяжёлой травмой безопасного места нет ни в памяти, ни в фантазии. Тогда его не выжимают: местом становится кабинет или образ, построенный вместе с терапевтом. И наоборот, часто безопасное место не нужно: им легко уходить от чувств, и тогда упражнение само становится избеганием и откладывает важную работу. Его берут, только чтобы удержать возбуждение в окне толерантности [Кембридж, гл. 8].',
     sources:
-      '[Янг, гл. 2, 4]. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5, раздел «Imagery of a safe place». [Кембридж, гл. 8, боксы 8.1, 8.2], [Фаррелл, 4.2, 4.6.1], [Хис, гл. 2, 9, 17, 20], [Фаррелл-Шоу, модуль 1]',
+      '[Янг, гл. 2, 4]. Arntz A., van Genderen H. Schema Therapy for Borderline Personality Disorder. Wiley-Blackwell, 2009, гл. 5, раздел «Imagery of a safe place». [Кембридж, гл. 8, боксы 8.1, 8.2], [Фаррелл, 4.2, 4.6.1], [Хис, гл. 2, 9, 17, 20], [Фаррелл-Шоу, модуль 1], [Луз, гл. 13]',
   },
 ];

@@ -10,7 +10,7 @@ import { buildPracticeOnline } from './practiceOnline';
 import { buildPracticeSituations } from './practiceSituations';
 import { buildPracticeTherapist } from './practiceTherapist';
 import { buildPracticeStuck } from './practiceStuck';
-import { buildPracticeYoungSession } from './practiceYoungSession';
+import { buildPracticeYoungSessionWithLuz as buildPracticeYoungSession } from './luzSourcesWrap';
 import { buildPracticeYoungStart } from './practiceYoungStart';
 import { buildPracticeTherapistHeath } from './practiceModeReset';
 import { buildPracticeModelRoediger } from './practiceModelRoediger';

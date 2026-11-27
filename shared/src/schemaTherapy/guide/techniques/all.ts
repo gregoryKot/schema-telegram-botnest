@@ -4,7 +4,7 @@ import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
 import { buildCoupleChairworkTechniques } from './coupleChairwork';
 import { buildChairTechniques } from './chairs';
-import { buildCreativeModeWorkTechniques } from './creativeModeWork';
+import { buildCreativeModeWorkWithLuz as buildCreativeModeWorkTechniques } from '../luzSourcesWrap';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
 import { buildFarrellPlanTechniques } from './farrellPlans';
