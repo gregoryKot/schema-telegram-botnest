@@ -52,6 +52,7 @@
 
 ## Следующее
 
+- ⬜ **«Начало терапии» в правке открывается пустой**: `ClientSessionInfoCards.tsx:57` кладёт `therapyStartDate` как есть, а `DateField` (input type=date) принимает только `YYYY-MM-DD`; на стабе с ISO `2026-09-03T00:00:00.000Z` поле — «Выбрать дату» (снимок PR #1803). Проверить форму ответа сервера; если ISO — `utcCalendarDay(start)`.
 - ⬜ **Дата по-русски в админке**: нативный `mm/dd/yyyy` остался у `webapp/src/pages/admin/ArticleEditor.tsx` и `webapp/src/pages/admin/ScheduleSection.tsx` (вне хвоста К25 — только владелец); перевести на `DateField`.
 - ⬜ **«Повторы недели» не доходят до MAX** — крон `src/notification/weekly-repeat.scheduler.ts` ставит строку в общую очередь (push, затем Telegram); у MAX очереди уведомлений нет, пользователь только MAX-входа ничего не получит. Доказано: `src/telegram/telegram.schedule-queue.ts` шлёт только push и Telegram.
 - ⬜ **«Повторы недели»: даты оценок считаются по UTC, а не по поясу человека** — окно 7 дней в `weekly-repeat.scheduler.ts` режет `Rating.date` по дате UTC (крон один на всех, понедельник 09:23 UTC); на краю недели возможен сдвиг на день.
