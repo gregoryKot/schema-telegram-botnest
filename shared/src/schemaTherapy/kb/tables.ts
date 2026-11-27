@@ -40,6 +40,7 @@ export const KB_GROUP_IDS: readonly string[] = [
 export const KB_SOURCES: readonly string[] = [
   'shared/src/schemaTherapy/content/',
   'shared/src/schemaTherapy/guide/techniqueIds.ts',
+  'shared/src/schemaTherapy/guide/techniqueIdsFarrell.ts',
   'shared/src/needs/types.ts',
   'shared/src/needs/content/',
 ];
