@@ -1,4 +1,4 @@
-import { cognitiveWorkYoungMore, flashcardsYoungMore } from './homeworkYoung';
+import { cognitiveWorkYoungMore, flashcardsYoungMore } from './couplesTechniquesMore';
 import { cognitiveWorkBpd } from './cognitiveWorkBpd';
 /** «Подробнее» к техникам flashcards, cognitive_work, letters: вынесено, чтобы записи не росли. */
 export const flashcardsMore: string[] = [

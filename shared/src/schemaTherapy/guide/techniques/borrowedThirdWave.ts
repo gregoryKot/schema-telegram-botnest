@@ -4,7 +4,7 @@ import {
   compassionateSelfVoice,
 } from './compassionHeath';
 import { motivationalFramesMore } from './motivationalFrames';
-import { defusionMore, defusionVoice } from './defusionMore';
+import { defusionMore, defusionVoice } from './couplesTechniquesMore';
 
 /** Из ACT, CFT и мотивационного интервью: defusion, compassionate_self, motivational_interviewing. */
 export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
@@ -30,7 +30,7 @@ export const buildBorrowedThirdWaveTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Дефузия — не способ отмахнуться от чувства: Уязвимому Ребёнку нужна забота, а не дистанция. Игра с формой мысли о травме или вине звучит как насмешка — тут техника не к месту.',
     sources:
-      'Hayes S. C., Strosahl K. D., Wilson K. G. Acceptance and Commitment Therapy: The Process and Practice of Mindful Change. 2nd ed. Guilford Press, 2012, гл. 9 «Defusion». Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy. Context Press / New Harbinger, 2018. [ван Фресвайк, гл. 3].',
+      'Hayes S. C., Strosahl K. D., Wilson K. G. Acceptance and Commitment Therapy: The Process and Practice of Mindful Change. 2nd ed. Guilford Press, 2012, гл. 9 «Defusion». Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy. Context Press / New Harbinger, 2018. [ван Фресвайк, гл. 3]., [Пары, гл. 8]',
   },
   {
     id: 'compassionate_self',
