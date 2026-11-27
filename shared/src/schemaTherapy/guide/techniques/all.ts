@@ -2,6 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import { buildImageryRescriptingTechniques } from './imageryRescripting';
 import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
+import { buildCoupleChairworkTechniques } from './coupleChairwork';
 import { buildChairTechniques } from './chairs';
 import { buildCreativeModeWorkTechniques } from './creativeModeWork';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
@@ -54,6 +55,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryRescriptingTechniques,
   buildImageryTechniques,
   buildChairworkTechniques,
+  buildCoupleChairworkTechniques,
   buildChairTechniques,
   buildCreativeModeWorkTechniques,
   buildRolePlayArntzTechniques,

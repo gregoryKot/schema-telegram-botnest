@@ -122,13 +122,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
   },
   {
-    id: 'couple_chairwork',
-    title: 'Стулья в паре: режимы обоих при партнёре',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 9', 'гл. 10'],
-  },
-  {
     id: 'inner_house',
     title: '«Внутренний дом»: режимы, схемы и опыт на трёх этажах',
     status: 'planned',
