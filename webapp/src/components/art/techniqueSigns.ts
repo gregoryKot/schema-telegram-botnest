@@ -117,6 +117,8 @@ const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
   perspective_change: 'stand_above',
   emotional_resonance_sphere: 'resonance_sphere',
   farewell_imagery: 'farewell_chair',
+  self_regulation_toolkit: 'skill_ladder',
+  mode_diary_tools: 'diary_columns',
   body_mode_positions: 'side_seat',
 };
 

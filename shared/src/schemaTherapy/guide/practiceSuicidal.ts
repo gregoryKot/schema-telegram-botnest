@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { suicidalThoughtsMore } from './practiceMoreArntz';
+import { suicidalThoughtsMore } from './practiceSuicidalRoedigerHard';
 
 /** «Для терапевта»: суицидальные мысли. Собирает practiceSituations.ts после раздела о злости. */
 export const buildPracticeSuicidal: PracticeNotesBuilder = (tr) => [
@@ -26,7 +26,7 @@ export const buildPracticeSuicidal: PracticeNotesBuilder = (tr) => [
         'Давайте посмотрим, какая часть вас хочет, чтобы вам стало больно. Что она пытается для вас сделать?',
       ),
     ],
-    more: suicidalThoughtsMore,
+    more: suicidalThoughtsMore(tr),
     sources:
       '[Рёдигер, гл. 13], [Кембридж, гл. 3], [Янг, гл. 6, 9], [Арнтц ПРЛ, гл. 8], [Хис, гл. 1]',
   },

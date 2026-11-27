@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { selfDisclosureCouples as selfDisclosureMoreAuth } from './practiceCouplesMore';
+import { selfDisclosureHard as selfDisclosureMoreAuth } from './practiceStuckRoedigerHard';
 /** «Для терапевта»: самораскрытие терапевта. Собирает practiceCourse.ts. */
 export const buildPracticeSelfDisclosure: PracticeNotesBuilder = (tr) => [
   {
@@ -27,6 +27,6 @@ export const buildPracticeSelfDisclosure: PracticeNotesBuilder = (tr) => [
     ],
     more: selfDisclosureMoreAuth,
     sources:
-      '[Кембридж, гл. 6, бокс 6.10], [Янг, гл. 6, 9, 10], [Фаррелл, 4.6.3], [Хис, гл. 15, 20]',
+      '[Кембридж, гл. 6, бокс 6.10], [Янг, гл. 6, 9, 10], [Фаррелл, 4.6.3], [Хис, гл. 15, 20], [Рёдигер, гл. 13]',
   },
 ];

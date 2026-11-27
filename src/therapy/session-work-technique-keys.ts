@@ -87,6 +87,8 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
     'suds',
     'lesson',
   ],
+  'technique:self_regulation_toolkit': ['skills', 'suds', 'worked', 'next'],
+  'technique:mode_diary_tools': ['form', 'seen', 'stuck', 'next'],
   'technique:three_minute_breathing_space': ['moment', 'noticed', 'choice'],
   'technique:mindfulness_practices': ['practice', 'noticed', 'schemas', 'home'],
   'technique:schema_awareness_practice': [

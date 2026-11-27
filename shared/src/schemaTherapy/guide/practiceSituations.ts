@@ -3,7 +3,7 @@ import { buildPracticeGroup } from './practiceGroup';
 import { buildPracticeAngry } from './practiceAngry';
 import { buildPracticeSuicidal } from './practiceSuicidal';
 import { buildPracticeCouplesBetrayal } from './practiceCouplesBetrayal';
-import { romancePartnerMore } from './practiceRelationshipMore';
+import { romancePartnerMore } from './practiceSituationsRoedigerHard';
 import * as cc from './practiceTherapistCambridgeC';
 
 /** «Для терапевта», вторая половина: трудные ситуации (злость, суицидальные мысли, влюблённость, опасный партнёр —

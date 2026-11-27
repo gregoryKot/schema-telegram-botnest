@@ -2,6 +2,7 @@ import type { ModeGuide, Tr } from '../types';
 import * as extra from './couplesModes';
 import * as cambB from './healthyCambridgeB';
 import { healthyAdultRoedigerMore } from './healthyAdultRoediger';
+import { healthyAdultSkillsTechniques } from './healthyAdultRoedigerSkills';
 /** Здоровые режимы: Здоровый Взрослый. */
 export const buildHealthyAdultGuide = (tr: Tr): ModeGuide => ({
   modeId: 'healthy_adult',
@@ -42,8 +43,7 @@ export const buildHealthyAdultGuide = (tr: Tr): ModeGuide => ({
     'mental_contrasting_imagery',
     'three_minute_breathing_space',
     'mindfulness_practices',
-    'schema_awareness_practice',
-    'healthy_modes_mindfulness',
+    ...healthyAdultSkillsTechniques,
   ],
   betweenSessions: extra.healthyAdultBetween,
   stuck:
