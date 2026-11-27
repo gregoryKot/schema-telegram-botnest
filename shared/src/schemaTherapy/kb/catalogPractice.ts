@@ -119,20 +119,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
   w('couples_therapist_safety'),
   w('healthy_adult_six_processes'),
   w('stabilization_first'),
-  {
-    id: 'partner_in_individual_therapy',
-    title: 'Партнёр клиента в индивидуальной терапии',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 14'],
-  },
-  {
-    id: 'therapist_attraction_to_client',
-    title: 'Влечение терапевта к клиенту',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 15'],
-  },
+  w('partner_in_individual_therapy'),
+  w('therapist_attraction_to_client'),
   {
     id: 'supervision',
     title: 'Супервизия',

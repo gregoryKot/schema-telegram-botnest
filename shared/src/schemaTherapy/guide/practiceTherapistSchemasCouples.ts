@@ -1,4 +1,4 @@
-import { therapistSchemasMoreAll as base } from './practiceTherapistSchemasRafaeli';
+import { therapistSchemasMoreAll as base } from './practiceTherapistRoedigerPartner';
 
 /** therapist_schemas: «Подробнее» с дополнениями по книге о парах (гл. 3, прил. А); вынесено из practiceRelationshipMore.ts. */
 export const therapistSchemasMoreAll: string[] = [

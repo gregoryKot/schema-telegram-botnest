@@ -1,5 +1,5 @@
 import { therapistWellbeingVoice } from './practiceTherapistCambridgeC';
-import { therapistWellbeingMore } from './practiceTherapistCare';
+import { therapistWellbeingMore } from './practiceTherapistRoedigerPartner';
 
 /** therapist_wellbeing: голос прежний, «Подробнее» с самопомощью терапевта пар [Пары, прил. А]; вынесено из practiceTherapist.ts. */
 export const wellbeingVoice = therapistWellbeingVoice;

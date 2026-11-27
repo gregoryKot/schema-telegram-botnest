@@ -27,7 +27,7 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
     voice: wb.wellbeingVoice(tr),
     more: wb.wellbeingMoreAll,
     sources:
-      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12], [Фаррелл-Шоу, гл. 3], [Пары, прил. А]',
+      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12], [Фаррелл-Шоу, гл. 3], [Пары, прил. А], [Рёдигер, гл. 15]',
   },
   ...care.buildPracticeTherapistCare(tr),
   ...buildPracticeSelfPractice(tr),

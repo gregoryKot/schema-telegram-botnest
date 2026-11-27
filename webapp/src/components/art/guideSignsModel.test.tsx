@@ -43,6 +43,7 @@ const NOTE_IDS = [
   'session_balance_axes', 'healthy_adult_six_processes', 'stabilization_first',
   'mode_states', 'forgiveness_after_betrayal', 'couple_separation_decision', 'infant_modes',
   'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs', 'couple_therapy_stages', 'couple_session_setup', 'couples_therapist_safety',
+  'partner_in_individual_therapy', 'therapist_attraction_to_client',
 ];
 
 describe('знаки листов подсказок', () => {
