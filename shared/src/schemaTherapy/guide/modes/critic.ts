@@ -41,7 +41,8 @@ export const buildCriticGuides: ModeGuideBuilder = (tr) => [
       'pattern_breaking',
     ],
     moreTechniques: [
-      'behavioral_experiment', 'defusion',
+      'behavioral_experiment',
+      'defusion',
       'flashcards',
       'play_and_joy',
       'creative_mode_work',

@@ -1,6 +1,9 @@
 import type { Tr } from '../../../needs/types';
 import { mindfulnessVanVreeswijkMore } from './mindfulnessMore';
-import { compassionHeathMore, mindfulnessHeathMore } from './compassionHeathMore';
+import {
+  compassionHeathMore,
+  mindfulnessHeathMore,
+} from './compassionHeathMore';
 import { mindfulnessRoedigerMore } from './mindfulnessRoediger';
 
 /** «Подробнее» к mindfulness и compassionate_self (Хис, гл. 17; ван Фресвайк) — вынесено, чтобы stance.ts не рос. */
