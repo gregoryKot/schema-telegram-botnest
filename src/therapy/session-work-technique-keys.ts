@@ -108,6 +108,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:mode_management_plan': ['mode', 'now', 'later', 'schema'],
   'technique:healthy_adult_plan': ['scene', 'goodParent', 'plan', 'result'],
   'technique:safety_bubble': ['image', 'effect', 'home'],
+  'technique:story_unmet_need': ['need', 'message', 'goodParent', 'own'],
   'technique:creative_mode_work': ['mode', 'form', 'dialogue', 'ending'],
   'technique:probe_phrases': ['belief', 'phrase', 'body', 'home'],
   'technique:intimacy_dialogue': ['need', 'coping', 'response', 'home'],

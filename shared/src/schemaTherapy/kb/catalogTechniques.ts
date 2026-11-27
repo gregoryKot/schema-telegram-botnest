@@ -61,6 +61,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'healthy_adult_plan',
     'mode_management_plan',
     'safety_bubble',
+    'story_unmet_need',
     'creative_mode_work',
     'probe_phrases',
     'intimacy_dialogue',
