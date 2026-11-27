@@ -1,5 +1,5 @@
 import type { Tr } from '../../../needs/types';
-import { chairworkArntzMore } from './rolePlayArntz';
+import { chairworkArntzMore } from './chairworkRoedigerChairs';
 import { chairworkHeathDosbor } from '../heathDosborMore';
 export const buildChairworkMore = (tr: Tr): string[] =>
   [

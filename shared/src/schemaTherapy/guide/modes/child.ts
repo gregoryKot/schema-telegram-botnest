@@ -30,6 +30,7 @@ export const buildVulnerableChildGuides: ModeGuideBuilder = (tr) => [
     ],
     moreTechniques: [
       'body_mode_positions',
+      'farewell_imagery',
       'transitional_objects',
       'good_parent_script',
       'play_and_joy',

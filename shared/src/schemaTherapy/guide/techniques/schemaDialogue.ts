@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { schemaDialogueAll } from './relationalCognitiveRafaeli';
+import { schemaDialogueAll } from './schemaDialogueRoedigerImg';
 
 /** Техники из книги Янга: schema_dialogue. Карта — docs/guide-sources/Янг.md. */
 export const buildSchemaDialogueTechniques: TechniqueGuideBuilder = (tr) => [
@@ -26,6 +26,7 @@ export const buildSchemaDialogueTechniques: TechniqueGuideBuilder = (tr) => [
     more: schemaDialogueAll,
     cautions:
       '«Умом понимаю, но не верю» — норма этого этапа, а не провал. Терапевт так и говорит: сейчас достаточно говорить логически верно, а чувство подтянется позже. Тем, у кого здоровая сторона почти не звучала, нужно много подсказок и времени [Янг, гл. 3].',
-    sources: '[Янг, гл. 3], [Хис, гл. 19], [Рафаэли, гл. 21, 24]',
+    sources:
+      '[Янг, гл. 3], [Хис, гл. 19], [Рафаэли, гл. 21, 24], [Рёдигер, гл. 8]',
   },
 ];

@@ -133,6 +133,10 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
   },
   {
+    file: 'shared/src/therapy/sessionWork/techniqueWorkRoediger.ts',
+    why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
+  },
+  {
     file: 'webapp/src/components/art/SignArt.tsx',
     why: 'ключи — знаки SignKey (need_*), полноту держит тип Record<SignKey, Art> (tsc)',
   },

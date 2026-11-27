@@ -8,7 +8,7 @@ import {
 } from './modeInterviewArntzJacob';
 import { historicalRoleFarrell } from './historicalRoleFarrell';
 import { interviewHeathDosbor } from '../heathDosborMore';
-import * as cambB from './chairsCambridgeB';
+import * as cambB from './chairsRoedigerChairs';
 import * as cc from './techniquesCambridgeC';
 /** Техники: historical_role_play, mode_interview. */
 export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
@@ -33,7 +33,7 @@ export const buildChairTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Не для воспоминаний о насилии — словесном, физическом, сексуальном, — где ребёнку не хватило безопасности. Там нужен рескриптинг [Кембридж, гл. 8]. Агрессора в игре не играет никто: терапевт эту роль не берёт, а если клиенту не даётся роль агрессивного родителя, смену ролей пропускают и сразу пробуют новое поведение или переходят к рескриптингу [Арнтц ПРЛ, гл. 5].',
     sources:
-      '[Кембридж, гл. 8, боксы 8.18–8.22], [Арнтц ПРЛ, гл. 5, 9, прил. Л], [Фаррелл, гл. 5.3.1]',
+      '[Кембридж, гл. 8, боксы 8.18–8.22], [Арнтц ПРЛ, гл. 5, 9, прил. Л], [Фаррелл, гл. 5.3.1], [Рёдигер, гл. 10]',
   },
   {
     id: 'mode_interview',

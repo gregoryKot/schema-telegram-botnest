@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { futureMoreHeath, healthyAdultImageryMore } from './imageryHeathMore';
+import { futureMoreHeath, healthyAdultImageryMore } from './imageryRoedigerImg';
 import * as cambB from './imageryCambridgeB';
 
 export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
@@ -22,7 +22,7 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Не требовать здорового ответа слишком рано: самому планировать здоровое действие клиент учится постепенно [Кембридж, гл. 10].',
     sources:
-      '[Кембридж, гл. 9, 10, 12, боксы 9.12, 12.2], [Янг, гл. 4, 5], [Арнтц, 9.4], [Арнтц ПРЛ, гл. 5], [Бехари, гл. 4], [Хис, гл. 5, 8, 20]',
+      '[Кембридж, гл. 9, 10, 12, боксы 9.12, 12.2], [Янг, гл. 4, 5], [Арнтц, 9.4], [Арнтц ПРЛ, гл. 5], [Бехари, гл. 4], [Хис, гл. 5, 8, 20], [Рёдигер, гл. 9]',
   },
   {
     id: 'healthy_adult_imagery',
@@ -48,6 +48,6 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Рассудительность без контакта с чувствами — чаще Отстранённый Защитник или Гиперконтролёр, чем Здоровый Взрослый.',
     sources:
-      '[Кембридж, бокс 10.3], [Фаррелл, 5.7.3], [Арнтц, 9.5], [Хис, гл. 5, 17], [Фаррелл-Шоу, модуль 20]',
+      '[Кембридж, бокс 10.3], [Фаррелл, 5.7.3], [Арнтц, 9.5], [Хис, гл. 5, 17], [Фаррелл-Шоу, модуль 20], [Рёдигер, гл. 9]',
   },
 ];
