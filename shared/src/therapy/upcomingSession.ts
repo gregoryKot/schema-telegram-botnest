@@ -34,6 +34,29 @@ export function upcomingSession(
   return null;
 }
 
+/**
+ * День прошлой встречи: прошедшая дата nextSession (её никто не двигает после
+ * встречи) или ближайший прошлый день недельного ритма — что позже. null — не знаем.
+ */
+export function previousSessionDay(
+  nextSession: string | null | undefined,
+  meetingDays: readonly number[] | null | undefined,
+  today: string = todayStr(),
+): string | null {
+  const dated =
+    nextSession && nextSession.slice(0, 10) < today
+      ? nextSession.slice(0, 10)
+      : null;
+  const days = meetingDays ?? [];
+  for (let i = 1; i <= 7 && days.length > 0; i++) {
+    const day = new Date(dateStringMs(today) - i * DAY_MS);
+    if (!days.includes(day.getUTCDay())) continue;
+    const ymd = day.toISOString().slice(0, 10);
+    return dated && dated > ymd ? dated : ymd;
+  }
+  return dated;
+}
+
 /** Встреча (день или день со временем) — сегодня у того, кто смотрит (momentDayKey, как «Сегодня» кабинета). */
 export function isSessionToday(
   at: string | null | undefined,

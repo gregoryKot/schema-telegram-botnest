@@ -36,23 +36,20 @@ const badge = () => screen.getByText('Все клиенты').closest('a')!.quer
 const toggle = () => screen.getByRole('switch', { name: /Показ экрана/ });
 const visibleNames = (root: HTMLElement) => NAMES.filter((n) => root.textContent!.includes(n));
 
-// Решение 9 (docs/design/APP_2026-11.md): у доски «Задания» свой пункт меню — «Все клиенты» горит на списке.
-describe('Sidebar — «Все клиенты» и «Задания»', () => {
-  it.each([['/cabinet', true, false], ['/cabinet/tasks', false, true], ['/cabinet/1', false, false], ['/cabinet/today', false, false]])(
-    '%s: «Все клиенты» — %s, «Задания» — %s', (path, all, tasks) => {
+describe('Sidebar — «Все клиенты»', () => {
+  it.each([['/cabinet', true], ['/cabinet/tasks', false], ['/cabinet/1', false], ['/cabinet/today', false]])(
+    '%s: «Все клиенты» — %s; пункта «Задания» нет', (path, all) => {
       renderSidebar(path);
       const a = screen.getByText('Все клиенты').closest('a')!;
       expect(a.className.includes('is-active')).toBe(all);
       expect(a.getAttribute('aria-current')).toBe(all ? 'page' : null);
-      const t = screen.getByText('Задания').closest('a')!;
-      expect(t.getAttribute('href')).toBe('/cabinet/tasks');
-      expect(t.className.includes('is-active')).toBe(tasks);
+      expect(screen.queryByText('Задания')).toBeNull();
     });
 
   it('у каждого пункта меню — знак раздела, а не цветная точка', () => {
     renderSidebar('/cabinet');
     const items = Array.from(document.querySelectorAll('.sb-nav > .sb-item'));
-    expect(items.length).toBe(4);
+    expect(items.length).toBe(3);
     expect(items.every((n) => n.querySelector('svg.pp-art--nav'))).toBe(true);
     expect(document.querySelector('.sb-dot')).toBeNull();
   });
@@ -111,7 +108,7 @@ describe('Sidebar — «Показ экрана»', () => {
     expect(toggle().getAttribute('aria-checked')).toBe('true');
     expect(visibleNames(container)).toEqual([]);
     expect(container.querySelectorAll('.sb-client-item, .sb-client-av')).toHaveLength(0);
-    expect(container.querySelector('a[href^="/cabinet/"]:not([href="/cabinet"]):not([href="/cabinet/today"]):not([href="/cabinet/guide"]):not([href="/cabinet/tasks"])')).toBeNull();
+    expect(container.querySelector('a[href^="/cabinet/"]:not([href="/cabinet"]):not([href="/cabinet/today"]):not([href="/cabinet/guide"])')).toBeNull();
     expect(screen.queryByPlaceholderText('Поиск клиента…')).toBeNull();
     expect(badge()).toBe('');
     expect(screen.getByText('Имена клиентов скрыты')).toBeTruthy();

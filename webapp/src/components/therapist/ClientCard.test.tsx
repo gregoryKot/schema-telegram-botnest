@@ -37,6 +37,15 @@ describe('ClientCard — вид', () => {
     expect(root.querySelector('.tc-schemas')).toBeNull();
   });
 
+  it('отметка о заданиях — в строке клиента; без пропа её нет', () => {
+    const c = client({});
+    const mark = 'выполнено с прошлой встречи: 2';
+    const withMark = render(<ClientCard client={c} today="2026-11-12" onOpen={vi.fn()} tasksMark={mark} />).container;
+    expect(withMark.querySelector('.tc-meta')?.textContent).toContain(mark);
+    cleanup();
+    expect(card(c).textContent).not.toContain('выполнено');
+  });
+
   it('строка нажимается целиком: Enter открывает клиента', () => {
     const onOpen = vi.fn();
     const c = client({});

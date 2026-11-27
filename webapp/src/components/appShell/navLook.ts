@@ -1,7 +1,6 @@
 // Знаки пунктов меню (docs/design/APP_2026-11.md, «Меню, ⌘K, объединение»): язык знаков — навигация, а не
 // украшение. Раздел клиента берёт знак своей сущности из ENTITY_LOOK; одна таблица на меню, полоску и панель телефона.
 import { ENTITY_LOOK, type EntityId } from '../../../../shared/src/theme/entityLook';
-import { LIST_TASKS_PATH } from '../therapist/clientTabRoute';
 import type { NavSignKey } from './NavSign';
 import type { Section } from './navigation';
 
@@ -22,15 +21,13 @@ export interface TherapistNavItem {
   label: string;
   short?: string;
   sign: NavSignKey;
-  /** Горит только на своём адресе: «Все клиенты» не горит на доске «Задания» (/cabinet/tasks). */
+  /** Горит только на своём адресе: «Все клиенты» не горит в карточке клиента. */
   end?: boolean;
 }
 
-/** Кабинет терапевта: Сегодня — Talk (встречи), Справочник — Layers, доска «Задания» — Check
- *  (решение 9: свой пункт меню вместо переключателя на «Клиентах»), клиенты — Cluster. */
+/** Кабинет терапевта: Сегодня — Talk (встречи), Справочник — Layers, клиенты — Cluster. */
 export const THERAPIST_NAV = {
   today: { to: '/cabinet/today', label: 'Сегодня', sign: 'talk' },
   guide: { to: '/cabinet/guide', label: 'Справочник', sign: 'layers' },
-  tasks: { to: LIST_TASKS_PATH, label: 'Задания', sign: 'check' },
   clients: { to: '/cabinet', label: 'Все клиенты', short: 'Клиенты', sign: 'cluster', end: true },
 } as const satisfies Record<string, TherapistNavItem>;

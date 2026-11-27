@@ -225,7 +225,7 @@ describe('check-next-session-reads.mjs', () => {
       ]);
     });
 
-    it('список мест — те же пять файлов, по месту на файл', () => {
+    it('список мест — те же шесть файлов, по месту на файл', () => {
       // Записи — объекты; loadStringList отдаёт список как есть.
       const entries = (
         loadStringList(
@@ -239,6 +239,7 @@ describe('check-next-session-reads.mjs', () => {
         'src/therapy/therapy-relation-info.ts#getRelationInfo:1',
         'src/therapy/therapy-invite-attach.ts#attachOfflineCard:2',
         'src/therapy/session-info-data.ts#sessionInfoData:2',
+        'shared/src/tasks/taskDigest.ts#taskDigest:1',
       ]);
     });
   });

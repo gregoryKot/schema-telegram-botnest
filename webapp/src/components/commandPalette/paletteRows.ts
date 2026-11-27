@@ -48,7 +48,7 @@ function sectionRows({ therapistMode, run }: PaletteInput): CmdRow[] {
   if (therapistMode) {
     return Object.values(THERAPIST_NAV).map((n) => ({
       key: `section:${n.to}`, kind: 'section', group: GROUP.sections, label: n.label, mark: { sign: n.sign },
-      search: n === THERAPIST_NAV.tasks ? `${n.label} доска задания клиентов` : n.label,
+      search: n.label,
       action: () => run.path(n.to),
     }));
   }

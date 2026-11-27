@@ -1,10 +1,9 @@
-// Вкладки кабинета в адресе (clientTabRoute.ts): слаги карточки и доска «Задания».
+// Вкладки кабинета в адресе (clientTabRoute.ts): слаги карточки и список клиентов.
 import { describe, it, expect } from 'vitest';
 import {
   slugOfTab, tabFromSlug, clientCardPath, clientTabFromPath,
-  isClientListPath, listTabFromPath, LIST_TASKS_PATH,
+  isClientListPath, LEGACY_TASKS_PATH,
 } from './clientTabRoute';
-import { THERAPIST_NAV } from '../appShell/navLook';
 import type { ClientTab } from './clientSheetTypes';
 import { parseClientRef } from '../../../../shared/src/utils/clientRef';
 
@@ -43,16 +42,11 @@ describe('clientTabFromPath', () => {
   });
 });
 
-describe('список и доска', () => {
-  it('доска — один маршрут /cabinet/tasks, на него ведёт пункт меню «Задания» (К30)', () => {
-    expect(THERAPIST_NAV.tasks.to).toBe(LIST_TASKS_PATH);
-    expect(listTabFromPath(LIST_TASKS_PATH)).toBe('kanban');
-    expect(listTabFromPath('/cabinet')).toBe('clients');
-    expect(listTabFromPath('/cabinet/abcdefgh/tasks')).toBe('clients');
-  });
-  it('список — /cabinet и доска; карточка и «Сегодня» — нет', () => {
+describe('список клиентов', () => {
+  it('список — только /cabinet; старый /cabinet/tasks, карточка и «Сегодня» — нет', () => {
     expect(isClientListPath('/cabinet')).toBe(true);
-    expect(isClientListPath('/cabinet/tasks')).toBe(true);
+    expect(LEGACY_TASKS_PATH).toBe('/cabinet/tasks');
+    expect(isClientListPath(LEGACY_TASKS_PATH)).toBe(false);
     expect(isClientListPath('/cabinet/today')).toBe(false);
     expect(isClientListPath('/cabinet/abcdefgh')).toBe(false);
   });

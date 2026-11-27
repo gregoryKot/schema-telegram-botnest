@@ -25,7 +25,7 @@ export function navItemOf(path: string): Section {
 }
 
 // ── Открытие и закрытие карточки клиента кабинета (QA 2026-11, T-12, T-13) ──────
-// Карточка — /cabinet/<код>[/<вкладка>]; список — /cabinet и доска /cabinet/tasks.
+// Карточка — /cabinet/<код>[/<вкладка>]; список — /cabinet.
 // Прямой вход по ссылке и «Все клиенты» раньше пушили лишние записи истории.
 export interface ClientRoute { to: string; state?: { fromList: true } }
 
@@ -33,7 +33,7 @@ export interface ClientRoute { to: string; state?: { fromList: true } }
 export function openClientRoute(pathname: string, id: string | number, clients: readonly ClientRefSource[] = []): ClientRoute | null {
   if (isClientCardOpen(pathname, id, clients)) return null;
   const to = clientPath(id, clients);
-  // Метка «пришли из списка» (и с доски «Задания») нужна кнопке «Все клиенты»: вернуться записью истории.
+  // Метка «пришли из списка» нужна кнопке «Все клиенты»: вернуться записью истории.
   return isClientListPath(pathname) ? { to, state: { fromList: true } } : { to };
 }
 

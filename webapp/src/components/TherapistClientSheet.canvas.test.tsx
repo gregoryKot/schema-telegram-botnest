@@ -17,6 +17,7 @@ vi.mock('../api', () => ({
     getCardClaims: vi.fn(() => Promise.resolve([])),
     revokeTherapyInvite: vi.fn(),
     getTherapyTasksForClient: vi.fn(),
+    getAllTherapyTasks: vi.fn(() => Promise.resolve([])),
     getTherapistNotes: vi.fn(),
     getConceptualization: vi.fn(),
     getTherapyClientData: vi.fn(),

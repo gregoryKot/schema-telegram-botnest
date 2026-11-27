@@ -4,7 +4,6 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ClientTasksTab } from './ClientTasksTab';
 import { ClientNotesTab } from './ClientNotesTab';
 import { ClientYSQTab } from './ClientYSQTab';
-import { KanbanView } from './KanbanView';
 import type { ClientData, TherapyClientSummary, UserTask } from '../../api';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -83,8 +82,7 @@ describe('ClientTasksTab', () => {
 });
 
 // QA 2026-10-26: серия «Трекер 3 дн» просрочилась, бэкенд закрыл её
-// (done=false). Доска показывала «Не вышло», а карточка — «1 активное … В
-// работе». Теперь обе берут одну модель статусов (shared/tasks/taskStatus).
+// (done=false): статус — одна модель (shared/tasks/taskStatus) для карточки и сводок.
 describe('ClientTasksTab — «не вышло» и прогресс серии', () => {
   it('закрытая серия — «Не вышло», в активные не считается, стоит после открытых', () => {
     const detail = detailOf({
@@ -109,30 +107,6 @@ describe('ClientTasksTab — «не вышло» и прогресс серии'
     });
     render(<ClientTasksTab detail={detail} onAssign={vi.fn()} />);
     expect(screen.getByText(/1 из 7 дней/)).toBeTruthy();
-  });
-});
-
-describe('KanbanView — та же модель статусов', () => {
-  it('«не вышло» в своей колонке, у выполненного — дата выполнения, просроченное помечено', () => {
-    const allTasks = [{ clientId: 1, clientName: 'Анна', tasks: [
-      task(1, { text: 'сделано', done: true, dueDate: '2026-10-20', completedAt: '2026-10-05T12:00:00Z' }),
-      task(2, { text: 'не вышло', done: false, completedAt: '2026-10-06T12:00:00Z' }),
-      task(3, { text: 'просрочено', dueDate: '2020-01-01' }),
-    ] }];
-    render(<KanbanView allTasks={allTasks} loading={false} loadFailed={false} onRetry={vi.fn()} onOpenClient={vi.fn()} />);
-    expect(screen.getByText('выполнено 5 октября')).toBeTruthy();
-    expect(screen.queryByText('до 20 окт')).toBeNull();
-    expect(screen.getByText('закрыто 6 октября')).toBeTruthy();
-    expect(screen.getByText('Просрочено')).toBeTruthy();
-  });
-});
-
-describe('KanbanView', () => {
-  it('mode_intro — название режима, сырой id не виден', () => {
-    const allTasks = [{ clientId: 1, clientName: 'Анна', tasks: [task(1, { type: 'mode_intro', text: 'invincible_oc' })] }];
-    render(<KanbanView allTasks={allTasks} loading={false} loadFailed={false} onRetry={vi.fn()} onOpenClient={vi.fn()} />);
-    expect(screen.getByText('Карточка режима: Неуязвимый Гиперконтролёр')).toBeTruthy();
-    expect(screen.queryByText(/invincible_oc/)).toBeNull();
   });
 });
 
