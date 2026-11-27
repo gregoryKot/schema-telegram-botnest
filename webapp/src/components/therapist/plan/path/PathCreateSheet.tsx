@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState } from 'react'; import { DateField } from '../../../DateField';
 import { isCalendarDate } from '../../../../../../shared/src/utils/calendarDate';
 import { todayStr } from '../../../../../../shared/src/utils/format';
 import type { PathTemplate } from '../../../../../../shared/src/therapy/path/templates';
@@ -55,10 +55,10 @@ export function PathCreateSheet({ templates, busy, error, onCreate, onClose }: P
             </label>
           ))}
         </fieldset>
-        <label className="ph-date">
+        <div className="ph-date">
           <span className="ds-label">Старт пути</span>
-          <input type="date" className="ds-input" value={start} onChange={(e) => setStart(e.target.value)} />
-        </label>
+          <DateField label="Старт пути" value={start} onChange={setStart} />
+        </div>
         {error && <div className="tb-error" role="alert">{error}</div>}
         <div>
           <button type="button" className="ds-btn" disabled={!valid || busy} aria-busy={busy || undefined} onClick={() => void save()}>Собрать</button>

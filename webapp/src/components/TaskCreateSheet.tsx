@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react'; import { DateField } from './DateField';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { EntitySheet } from './paper/EntitySheet';
 import { PaperAlert } from './paper/PaperAlert';
@@ -133,7 +133,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
             {(type === 'custom' || clientId) && (
               <div className="sk-field">
                 <div className="ds-label">Срок (необязательно)</div>
-                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="ds-input" />
+                <DateField label="Срок" value={dueDate} onChange={setDueDate} />
               </div>
             )}
           </div>
