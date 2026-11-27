@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { SEXUALITY_COUPLES_MORE, SEXUALITY_COUPLES_POINTS } from './practiceSexualityCouples';
+import * as sx from './practiceSexualityCouples';
 
 /** «Для терапевта» по Арнтц и Якоб (2.3.10–2.4; карта Арнтц-Якоб.md, пачка 3) и Пары, гл. 12: о чём молчат, секс через режимы. */
 export const buildAssessArntz: PracticeNotesBuilder = (tr) => [
@@ -50,7 +50,7 @@ export const buildAssessArntz: PracticeNotesBuilder = (tr) => [
     more: [
       'Самонаказание отличают от мазохистских предпочтений по возбуждению: при них болезненные практики возбуждают, а фантазии такого рода обычно появляются с начала пубертата. При Карающем Критике возбуждения нет, есть чувство «так мне и надо, большего не положено» [Арнтц, 2.3.10].',
       'Не всякое необычное сексуальное поведение — проблема. Исследуют осторожно и в то же время максимально прямо: о сексе в терапии часто молчат обе стороны, хотя для клиента это бывает очень важно [Арнтц, 2.3.10].',
-    ].concat(SEXUALITY_COUPLES_POINTS, SEXUALITY_COUPLES_MORE),
+    ].concat(sx.SEXUALITY_COUPLES_POINTS, sx.SEXUALITY_COUPLES_MORE),
     sources: '[Арнтц, 2.3.10], [Пары, гл. 12]',
   },
 ];
