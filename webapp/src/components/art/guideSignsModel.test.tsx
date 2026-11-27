@@ -41,7 +41,7 @@ const NOTE_IDS = [
   'limited_reparenting_style', 'two_levels_of_experience', 'schema_therapy_fit', 'culture_and_needs',
   'attachment_assertiveness_poles',
   'session_balance_axes',
-  'mode_states',
+  'mode_states', 'forgiveness_after_betrayal', 'couple_separation_decision',
   'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs', 'couple_therapy_stages', 'couple_session_setup',
 ];
 

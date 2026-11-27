@@ -88,6 +88,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     'session_balance_axes',
     'mode_states',
     'reparenting_forms',
+    'forgiveness_after_betrayal',
+    'couple_separation_decision',
   ].map(w),
   {
     id: 'session_frequency',
@@ -119,20 +121,6 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Пары',
     chapters: ['гл. 6'],
-  },
-  {
-    id: 'forgiveness_after_betrayal',
-    title: 'Прощение после измены, тайна и восстановление доверия',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 10', 'гл. 12'],
-  },
-  {
-    id: 'couple_separation_decision',
-    title: 'Решение о расставании в терапии пары',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 10'],
   },
   {
     id: 'couples_therapist_safety',
