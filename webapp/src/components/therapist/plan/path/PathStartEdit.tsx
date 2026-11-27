@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'; import { DateField } from '../../../DateField';
 import { formatDateString, isCalendarDate } from '../../../../../../shared/src/utils/calendarDate';
 
 interface Props {
@@ -25,10 +25,10 @@ export function PathStartEdit({ startDate, busy, onSave }: Props) {
   }
   return (
     <div className="ph-start">
-      <label className="ph-date">
+      <div className="ph-date">
         <span className="ds-label">Старт пути</span>
-        <input type="date" className="ds-input" value={value} onChange={(e) => setValue(e.target.value)} />
-      </label>
+        <DateField label="Старт пути" value={value} onChange={setValue} />
+      </div>
       <button type="button" className="ds-btn ds-btn--sm ph-quiet" disabled={!isCalendarDate(value) || busy} aria-busy={busy || undefined} onClick={() => void save()}>Сохранить</button>
       <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary ph-quiet" disabled={busy} onClick={() => setValue(null)}>Отмена</button>
     </div>

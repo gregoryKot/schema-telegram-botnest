@@ -87,21 +87,32 @@ function Harness({ initial }: { initial: string }) {
   const [value, setValue] = useState(initial);
   return (
     <>
-      <SessionDateTimeFields value={value} onChange={setValue} />
+      <SessionDateTimeFields
+        value={value}
+        onChange={setValue}
+        renderDate={(d) => (
+          <input
+            type="date"
+            aria-label={d.label}
+            value={d.value}
+            onChange={(e) => d.onChange(e.target.value)}
+          />
+        )}
+      />
       <output data-testid="value">{value}</output>
     </>
   );
 }
 
 describe('SessionDateTimeFields', () => {
-  // b30: поля по-русски (lang="ru") — отображение браузера; отправляемое значение то же ISO.
-  it('поля дня и времени — lang="ru", значение по-прежнему ISO', () => {
+  // b30: время по-русски (lang="ru") — отображение браузера; отправляемое значение то же ISO.
+  it('время — lang="ru", смена дня из поля экрана — значение по-прежнему ISO', () => {
     render(<Harness initial="2026-10-27T18:30" />);
     const date = screen.getByLabelText<HTMLInputElement>('День сессии');
     const time = screen.getByLabelText<HTMLInputElement>(
       'Время сессии, необязательно',
     );
-    expect([date.lang, time.lang]).toEqual(['ru', 'ru']);
+    expect(time.lang).toBe('ru');
     fireEvent.change(date, { target: { value: '2026-11-03' } });
     const value = screen.getByTestId('value').textContent ?? '';
     expect(value).toBe('2026-11-03T18:30');

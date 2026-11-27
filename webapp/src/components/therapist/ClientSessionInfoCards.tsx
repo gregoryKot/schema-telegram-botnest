@@ -22,7 +22,7 @@ export function NextSessionCard({ selectedClient, detail }: Props) {
       <SignHead kind="talk" className="ds-label">Следующая сессия</SignHead>
       {editingNextSession ? (
         <div className="tk-edit-form">
-          <SessionDateTimeFields className="ds-input" value={localNextSession} onChange={setLocalNextSession} />
+          <SessionDateTimeFields className="ds-input" value={localNextSession} onChange={setLocalNextSession} renderDate={(d) => <DateField {...d} />} />
           <EditFormActions saving={sessionInfoSaving} error={sessionInfoError} hint={hint} onCancel={() => setEditingNextSession(false)}
             onSave={async () => { if (await saveSessionInfo({ nextSession: sessionToSave(localNextSession) })) setEditingNextSession(false); }} />
         </div>

@@ -141,7 +141,7 @@ describe('TherapistClientSheet — список клиентов: загрузк
     mockApi.getTherapyClients.mockResolvedValue([]);
     renderSheet();
 
-    await screen.findByText(/Введи имя клиента выше, чтобы добавить первую карточку/);
+    await screen.findByText(/Введи имя клиента выше — появится первая карточка/);
     // Счётчик в заголовке берётся из ответа api: при 0 клиентов его нет, а не
     // «зависшее» число из другого места (правило CLAUDE.md про хардкод-заглушки).
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Клиенты');
@@ -824,6 +824,6 @@ describe('TherapistClientSheet — встречи в списке клиенто
     const boris = screen.getByText('Борис');
 
     expect(anna.compareDocumentPosition(boris) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByText(/не назначена/)).toHaveLength(1);
+    expect(screen.getAllByText('—')).toHaveLength(1);
   });
 });
