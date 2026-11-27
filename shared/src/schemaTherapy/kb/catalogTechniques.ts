@@ -64,6 +64,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'monitoring_cycle',
     'mode_awareness_summary',
     'progress_by_mode',
+    'story_unmet_need',
     'creative_mode_work',
     'probe_phrases',
     'intimacy_dialogue',

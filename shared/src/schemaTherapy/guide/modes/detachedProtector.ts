@@ -34,6 +34,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
     'mode_figures',
     'child_mode_play',
     'safety_bubble',
+    'story_unmet_need',
     'rupture_repair',
     'behavioral_activation',
     'exposure',

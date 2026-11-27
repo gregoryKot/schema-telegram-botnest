@@ -111,6 +111,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:monitoring_cycle': ['scene', 'mode', 'need', 'result'],
   'technique:mode_awareness_summary': ['mode', 'signs', 'roots', 'need'],
   'technique:progress_by_mode': ['changed', 'ahead', 'aims'],
+  'technique:story_unmet_need': ['need', 'message', 'goodParent', 'own'],
   'technique:creative_mode_work': ['mode', 'form', 'dialogue', 'ending'],
   'technique:probe_phrases': ['belief', 'phrase', 'body', 'home'],
   'technique:intimacy_dialogue': ['need', 'coping', 'response', 'home'],
