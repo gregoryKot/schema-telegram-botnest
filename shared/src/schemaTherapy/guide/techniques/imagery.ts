@@ -1,7 +1,7 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { futureMoreHeath, healthyAdultImageryMore } from './imageryHeathMore';
 import * as cambB from './imageryCambridgeB';
-
+import { futureImageryStevensMore as stv } from './imageryStevens';
 export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'future_imagery',
@@ -18,11 +18,11 @@ export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
       'Обсудить и выбрать шаг. Что стало понятно, что мешает и какой шаг с лестницы клиент берёт на эту неделю. Сцену, отрепетированную в образе, клиент проживает в жизни как домашнее задание [Хис, гл. 8].',
     ],
     voice: cambB.futureImageryVoice(tr),
-    more: [...futureMoreHeath, ...cambB.futureImageryCambridgeBMore],
+    more: [...futureMoreHeath, ...cambB.futureImageryCambridgeBMore, ...stv],
     cautions:
       'Не требовать здорового ответа слишком рано: самому планировать здоровое действие клиент учится постепенно [Кембридж, гл. 10].',
     sources:
-      '[Кембридж, гл. 9, 10, 12, боксы 9.12, 12.2], [Янг, гл. 4, 5], [Арнтц, 9.4], [Арнтц ПРЛ, гл. 5], [Бехари, гл. 4], [Хис, гл. 5, 8, 20]',
+      '[Кембридж, гл. 9, 10, 12, боксы 9.12, 12.2], [Янг, гл. 4, 5], [Арнтц, 9.4], [Арнтц ПРЛ, гл. 5], [Бехари, гл. 4], [Хис, гл. 5, 8, 20], [Стивенс-Рёдигер, гл. 1]',
   },
   {
     id: 'healthy_adult_imagery',
