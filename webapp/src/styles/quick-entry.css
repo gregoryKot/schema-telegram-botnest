@@ -24,11 +24,10 @@
 .pa-chips-line.qe-tags { column-gap: var(--space-12); border-bottom-color: var(--panel-line); }
 /* Теги — чипы на линии (.pa-chip--line, paper-app.css); здесь — только размер текста и отступ под знак. */
 .ds-chip.pa-chip.pa-chip--line.qe-tag { padding: 0 4px 0 0; font-size: 14px; }
-/* Знак тега — на плашке бумаги своей сущности и у невыбранного чипа: «Просто мысль» и «Благодарность» несут
-   один мотив (Pebbles), и без плашки различались только числом залитых камешков (ревью g3 r2). Плашка
-   различает их цветом (персик против бирюзы); слот один у обоих состояний — чип при выборе не прыгает. */
-.ds-chip.qe-tag .pa-chip-sign { width: 30px; height: 30px; border-radius: 9px; }
-.ds-chip.qe-tag:not(.is-on) .pa-chip-sign { background: oklch(0.915 0.03 var(--h)); }
+/* Знак тега — без плашки, как у всех чипов на линии. «Просто мысль» и «Благодарность» несут один мотив
+   (Pebbles); у благодарности уложенный камешек — оттенка своей бумаги (--h, бирюза), у мысли — тёплые
+   камешки палитры: различие — цветом самого знака, а не квадратом под ним. */
+.ds-chip.qe-tag:not(.is-on) .pa-chip-sign [data-laid="yes"] { fill: oklch(0.62 0.07 var(--h)); }
 .qe-hint { margin: 0; }
 .qe-acts { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
 .ds-btn.qe-cta { width: 100%; height: auto; min-height: 52px; border-radius: var(--r-12); font-size: 16px; }
