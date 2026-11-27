@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { prosConsMore } from './patternBreakingBehary';
+import { prosConsMore } from './patternBreakingRoediger';
 import {
   patternBreakingFarrellShaw,
   prosConsFarrellShaw,

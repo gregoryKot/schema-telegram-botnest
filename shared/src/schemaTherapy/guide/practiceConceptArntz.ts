@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { copingStyleYoungMore } from './practiceCopingYoung';
+import { copingStyleMore } from './practiceCopingRoediger';
 
 /** «Для терапевта» по Арнтц и Якоб, гл. 1–2: как на сессии узнать стиль копинга и семью режима,
  *  чем схема отличается от режима и установки. Карта — docs/guide-sources/Арнтц-Якоб.md, пачка 2. */
@@ -24,9 +24,9 @@ export const buildConceptArntz: PracticeNotesBuilder = (tr) => [
     ],
     more: [
       'Гиперкомпенсация ведёт себя так, будто верно обратное: при Неуспешности выставляют достижения напоказ, при Недоверии / Ожидании жестокого обращения нападают первыми, при Покорности заставляют подчиняться других [Арнтц, 1.3.3].',
-      ...copingStyleYoungMore,
+      ...copingStyleMore,
     ],
-    sources: '[Арнтц, 1.3], [Янг, гл. 2]',
+    sources: '[Арнтц, 1.3], [Рёдигер, гл. 3, 4, 6], [Янг, гл. 2]',
   },
   {
     id: 'mode_family_by_feeling',
