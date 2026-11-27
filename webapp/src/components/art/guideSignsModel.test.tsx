@@ -42,7 +42,7 @@ const NOTE_IDS = [
   'attachment_assertiveness_poles',
   'session_balance_axes',
   'mode_states', 'forgiveness_after_betrayal', 'couple_separation_decision',
-  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs', 'couple_therapy_stages', 'couple_session_setup',
+  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs', 'couple_therapy_stages', 'couple_session_setup', 'couples_therapist_safety',
 ];
 
 describe('знаки листов подсказок', () => {
