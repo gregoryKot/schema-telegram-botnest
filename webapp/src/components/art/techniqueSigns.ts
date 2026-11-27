@@ -115,6 +115,8 @@ const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
 const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
   genogram: 'family_tree',
   perspective_change: 'stand_above',
+  emotional_resonance_sphere: 'resonance_sphere',
+  farewell_imagery: 'farewell_chair',
   body_mode_positions: 'side_seat',
 };
 

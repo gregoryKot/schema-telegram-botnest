@@ -10,6 +10,8 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'healthy_adult_imagery',
     'chairwork',
     'historical_role_play',
+    'emotional_resonance_sphere',
+    'farewell_imagery',
     'mode_interview',
     'current_role_play',
     'two_axis_check',
@@ -85,14 +87,7 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Келлогг',
     chapters: [],
-    note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (тема farewell_imagery)',
-  },
-  {
-    id: 'emotional_resonance_sphere',
-    title: 'Сфера эмоционального резонанса',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 10'],
+    note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (техника farewell_imagery)',
   },
   {
     id: 'self_regulation_toolkit',
@@ -107,13 +102,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     status: 'planned',
     source: 'Рёдигер',
     chapters: ['гл. 4', 'гл. 7', 'гл. 11'],
-  },
-  {
-    id: 'farewell_imagery',
-    title: 'Образ прощания с умершим и режимы горя',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 9'],
   },
   ...VF_TECHNIQUES,
   {

@@ -87,7 +87,11 @@ export type HeathTechniqueId =
 
 /** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
 export type RoedigerTechniqueId =
-  'genogram' | 'perspective_change' | 'body_mode_positions';
+  | 'genogram'
+  | 'perspective_change'
+  | 'body_mode_positions'
+  | 'farewell_imagery'
+  | 'emotional_resonance_sphere';
 
 /** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
 export type LuzTechniqueId = 'child_mode_play';

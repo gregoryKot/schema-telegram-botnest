@@ -17,6 +17,8 @@ import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
 import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './TechniqueSignsRoediger';
+import { FarewellChair } from './TechniqueSignsRoedigerImg';
+import { ResonanceSphere } from './TechniqueSignsRoedigerChairs';
 import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
 import { LifeColumns, RuptureMend } from './TechniqueSignsRafaeli';
@@ -42,4 +44,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   need_wish: couples.NeedWish, mutual_hold: couples.MutualHold,
   friend_pair: couples.FriendPair, couple_chairs: couples.CoupleChairs,
   monitor_ring: MonitorRing, mode_page: ModePage, review_rows: ReviewRows,
+  resonance_sphere: ResonanceSphere, farewell_chair: FarewellChair,
 };
