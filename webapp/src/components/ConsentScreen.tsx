@@ -3,13 +3,14 @@ import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { hueStyle } from '../lib/tone';
 import { Dialog } from './Dialog';
+import { ConsentCheckLabel } from './ConsentCheckLabel';
 import { ConsentWelcome } from './ConsentWelcome';
 import { EntryHead, EntrySteps } from './paper/EntryHead';
 import { PaperAlert } from './paper/PaperAlert';
 import { CONSENT_HUES, CONSENT_LOOK, CONSENT_STEPS, type ConsentStep as Step } from './paper/entryLook';
 import {
   CONSENT_NOT_THERAPY_CHECK, CONSENT_NOT_THERAPY_TEXT, CONSENT_NOT_THERAPY_TITLE,
-  CONSENT_PRIVACY_CHECK, CONSENT_PRIVACY_PARAGRAPHS, CONSENT_PRIVACY_TITLE,
+  CONSENT_PRIVACY_PARAGRAPHS, CONSENT_PRIVACY_TITLE,
   consentHint, consentsReady,
 } from '../../../shared/src/onboarding/consents';
 import { ONBOARDING_STEP_EVENT, type OnboardingStep } from '../../../shared/src/share/analytics';
@@ -19,6 +20,8 @@ interface Props {
   onAccept: () => void;
   /** Принять не удалось (сеть): показываем честную ошибку, экран остаётся. */
   failed: boolean;
+  /** С какого шага начать: `privacy` — у согласившихся на прежнюю редакцию, приветствие они уже видели. */
+  startAt?: Step;
 }
 
 // Первый вход из Telegram/MAX: приветствие и два согласия вместо тихого
@@ -28,9 +31,9 @@ interface Props {
 // Шаги уходят в `onboarding_step` теми же именами, что в мини-аппе (воронка общая).
 // Вид: окно с шапкой-листом бумаги шага (EntryHead, вид — paper/entryLook.ts), галочка — на
 // плашке той же бумаги, сбой сохранения — PaperAlert, а не красная строка.
-export function ConsentScreen({ onAccept, failed }: Props) {
+export function ConsentScreen({ onAccept, failed, startAt = 'welcome' }: Props) {
   const tr = useTr();
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>(startAt);
   const [privacy, setPrivacy] = useState(false);
   const [notTherapy, setNotTherapy] = useState(false);
   const sent = useRef<Set<OnboardingStep>>(new Set());
@@ -67,9 +70,11 @@ export function ConsentScreen({ onAccept, failed }: Props) {
           ? CONSENT_PRIVACY_PARAGRAPHS.map((p) => <p key={p}>{p}</p>)
           : <p>{CONSENT_NOT_THERAPY_TEXT}</p>}
         {isPrivacy && (
-          <a className="ds-link ds-link--inline" href="/privacy" target="_blank" rel="noopener noreferrer">
-            Политика конфиденциальности →
-          </a>
+          <p>
+            <a className="ds-link ds-link--inline" href="/consent" target="_blank" rel="noopener noreferrer">Текст согласия →</a>
+            {' '}
+            <a className="ds-link ds-link--inline" href="/privacy" target="_blank" rel="noopener noreferrer">Политика конфиденциальности →</a>
+          </p>
         )}
       </div>
       <label className="pp-paper ef-check" style={hueStyle(CONSENT_LOOK[step].hue)}>
@@ -78,16 +83,18 @@ export function ConsentScreen({ onAccept, failed }: Props) {
           checked={isPrivacy ? privacy : notTherapy}
           onChange={(e) => (isPrivacy ? setPrivacy(e.target.checked) : setNotTherapy(e.target.checked))}
         />
-        <span>{isPrivacy ? CONSENT_PRIVACY_CHECK : CONSENT_NOT_THERAPY_CHECK}</span>
+        {isPrivacy ? <ConsentCheckLabel /> : <span>{CONSENT_NOT_THERAPY_CHECK}</span>}
       </label>
       {hint && <p className="ef-hint">{hint}</p>}
       {failed && (
         <PaperAlert className="ef-alert" title="Не получилось сохранить согласие." text={tr('Проверь сеть и попробуй ещё раз.', 'Проверьте сеть и попробуйте ещё раз.')} />
       )}
       <div className="sk-dialog-actions">
-        <button type="button" className="ds-btn ds-btn--secondary" onClick={() => setStep(isPrivacy ? 'welcome' : 'privacy')}>
-          Назад
-        </button>
+        {(!isPrivacy || startAt === 'welcome') && (
+          <button type="button" className="ds-btn ds-btn--secondary" onClick={() => setStep(isPrivacy ? 'welcome' : 'privacy')}>
+            Назад
+          </button>
+        )}
         {isPrivacy ? (
           <button type="button" className="ds-btn" disabled={!privacy} onClick={() => setStep('not_therapy')}>
             Далее

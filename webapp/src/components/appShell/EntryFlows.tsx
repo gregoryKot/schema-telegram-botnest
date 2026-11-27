@@ -55,7 +55,7 @@ export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>;
 
   return (<>
     {step === 'address' && <AddressFormPicker onDone={onAddressDone} />}
-    {step === 'consent' && <ConsentScreen onAccept={consent.accept} failed={consent.failed} />}
+    {step === 'consent' && <ConsentScreen onAccept={consent.accept} failed={consent.failed} startAt={consent.state === 'renew' ? 'privacy' : 'welcome'} />}
     {step === 'join' && join && <JoinConfirmSheet {...join} onClose={() => setJoin(null)} onJoined={onJoined} />}
     {step === 'reminder' && hint.settings && <ReminderHint settings={hint.settings} onClose={() => setHintClosed(true)} />}
   </>);

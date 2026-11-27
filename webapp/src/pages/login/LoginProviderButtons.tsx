@@ -39,8 +39,11 @@ const ticketUrl = (p: LoginProvider, c: string, d: { apiBase: string }) =>
 
 export function LoginProviderButtons({
   onSession,
+  consented = true,
 }: {
   onSession: (accessToken: string, expiresIn: number) => void;
+  /** Отмечено ли согласие на ПДн: без него кнопки неактивны (вход сайта; привязка из кабинета — всегда true). */
+  consented?: boolean;
 }) {
   const standalone = isStandalone();
   const started = useRef(false);
@@ -83,9 +86,12 @@ export function LoginProviderButtons({
 
   const code = state.kind === 'waiting' ? state.code : null;
   const urlFor = (id: OAuthId, c: string) => loginUrl(id, c, { apiBase: API_BASE });
-  const oauthLink = (id: OAuthId) => standalone
-    ? { href: code ? urlFor(id, code) : undefined, target: '_blank', rel: 'noopener noreferrer', onClick: () => setChosen(id) }
-    : { href: DIRECT[id] };
+  const oauthLink = (id: OAuthId) => {
+    if (!consented) return { 'aria-disabled': true, className: 'ds-btn ds-btn--lg al-btn-main al-btn-off' };
+    return standalone
+      ? { href: code ? urlFor(id, code) : undefined, target: '_blank', rel: 'noopener noreferrer', onClick: () => setChosen(id) }
+      : { href: DIRECT[id] };
+  };
   const maxWait = chosen === 'max' && state.kind === 'waiting' && state.provider === 'max' ? state : null;
   const waiting = state.kind === 'waiting' && chosen !== 'max' ? { ...state, provider: chosen, url: urlFor(chosen, state.code) } : state;
 
@@ -101,7 +107,7 @@ export function LoginProviderButtons({
         Войти через Яндекс
       </a>
       {maxBotUsername ? (
-        <button type="button" className="ds-btn ds-btn--lg al-btn-main" onClick={startMax} disabled={state.kind === 'starting'}>
+        <button type="button" className="ds-btn ds-btn--lg al-btn-main" onClick={startMax} disabled={!consented || state.kind === 'starting'}>
           <span className="al-ico al-max" aria-hidden="true">M</span>
           {state.kind === 'starting' && chosen === 'max' ? 'Готовлю код…' : 'Войти через MAX'}
         </button>

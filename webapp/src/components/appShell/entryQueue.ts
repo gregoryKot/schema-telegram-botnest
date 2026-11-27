@@ -23,7 +23,7 @@ export function entryStep(s: {
 }): EntryStep {
   if (!s.addressDone) return 'address';
   if (s.consent === 'checking') return 'wait';
-  if (s.consent === 'needed') return 'consent';
+  if (s.consent === 'needed' || s.consent === 'renew') return 'consent';
   if (!s.linkHandled) return 'wait';
   if (s.join) return 'join';
   if (s.reminderHint === 'checking') return 'wait';

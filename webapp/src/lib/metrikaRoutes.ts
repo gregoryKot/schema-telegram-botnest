@@ -17,7 +17,7 @@ export const METRIKA_PUBLIC_PATHS: ReadonlySet<string> = new Set([
   '/tests',
   '/subscribe',
   '/donate',
-  '/privacy', '/offer',
+  '/privacy', '/offer', '/consent',
   '/install', // рекламная посадочная; фрагмент с кодом передачи analyticsUrl режет
   '/book', // ссылка для клиентов: цель booking_link_open и цели пикера
   '/booking/paid', '/booking/manage',

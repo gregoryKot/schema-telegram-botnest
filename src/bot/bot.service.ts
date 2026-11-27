@@ -94,10 +94,24 @@ export class BotService {
   }
 
   // viaApp — экран согласий кабинета: он ещё и завершает онбординг (/stats).
-  async acceptDisclaimer(userId: bigint, viaApp = false): Promise<void> {
+  // version — редакция текста согласия, которую человек отметил (кабинет); бот зовёт без неё.
+  async acceptDisclaimer(userId: bigint, viaApp = false, version?: string): Promise<void> {
     const done = viaApp ? { onboardingV2Done: true } : {};
-    const data = { disclaimerAccepted: true, ...done };
+    const data = {
+      disclaimerAccepted: true,
+      disclaimerAcceptedAt: new Date(),
+      consentVersion: version ?? null,
+      ...done,
+    };
     await this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  async getConsentState(userId: bigint): Promise<{ accepted: boolean; version: string | null }> {
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { disclaimerAccepted: true, consentVersion: true },
+    });
+    return { accepted: u?.disclaimerAccepted ?? false, version: u?.consentVersion ?? null };
   }
 
   async hasAcceptedDisclaimer(userId: bigint): Promise<boolean> {

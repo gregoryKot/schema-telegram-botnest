@@ -53,6 +53,8 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   role: skip('переносится отдельной веткой: THERAPIST побеждает'),
   therapistMode: skip('идёт вместе с role, той же веткой'),
   disclaimerAccepted: skip('переносится отдельной веткой: true побеждает'),
+  disclaimerAcceptedAt: skip('у target своя дата согласия: чужое согласие не продлевает редакцию'),
+  consentVersion: skip('у target своя редакция: после слияния без версии экран согласия спросит заново'),
   recoveryEmail: skip('@unique — отдельная ветка со снятием слота у source'),
   recoveryEmailVerifiedAt: skip('идёт вместе с recoveryEmail'),
 

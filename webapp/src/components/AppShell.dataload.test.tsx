@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell } from './AppShell.test-helpers';
 import { api } from '../api';
+import { CONSENT_VERSION } from '../../../shared/src/onboarding/consents';
 import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -60,16 +61,16 @@ describe('AppShell — согласия: молча не принимаем, н�
     await waitFor(() => expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":true'));
   });
 
-  it('accepted: false, но экран входа сайта был показан — принимается без экрана', async () => {
-    localStorage.setItem('login_consent_shown', '1');
-    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+  it('accepted: false, но на входе сайта отмечена галочка согласия — принимается без экрана', async () => {
+    localStorage.setItem('login_consent_given', CONSENT_VERSION);
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false, version: null });
     renderAppShell('/today');
     await waitFor(() => expect(mockApi.acceptDisclaimer).toHaveBeenCalledTimes(1));
     expect(screen.queryByText('Данные и конфиденциальность')).toBeNull();
   });
 
   it('accepted: true — экрана нет и вызова нет', async () => {
-    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: true });
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: true, version: CONSENT_VERSION });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     expect(screen.queryByText('Данные и конфиденциальность')).toBeNull();

@@ -17,7 +17,7 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
-import { UpdateNameDto, InitDto } from './dto/misc.dto';
+import { UpdateNameDto, InitDto, AcceptDisclaimerDto } from './dto/misc.dto';
 import { FLAG_FIELDS } from './flag-fields';
 
 interface AuthRequest extends Request {
@@ -101,13 +101,12 @@ export class ApiController {
 
   @Get('disclaimer')
   async getDisclaimer(@Req() req: AuthRequest) {
-    const accepted = await this.botService.hasAcceptedDisclaimer(uid(req));
-    return { accepted };
+    return this.botService.getConsentState(uid(req));
   }
 
   @Post('disclaimer')
-  async acceptDisclaimer(@Req() req: AuthRequest) {
-    await this.botService.acceptDisclaimer(uid(req), true);
+  async acceptDisclaimer(@Req() req: AuthRequest, @Body() dto: AcceptDisclaimerDto) {
+    await this.botService.acceptDisclaimer(uid(req), true, dto.version);
     return { ok: true };
   }
 

@@ -75,4 +75,13 @@ describe('ConsentScreen', () => {
     toPrivacy();
     expect(plainText(screen.getByRole('alert'))).toMatch(/Не получилось сохранить/);
   });
+
+  it('startAt="privacy" (согласие на старую редакцию): приветствия нет, «Назад» нет, ссылка на текст согласия', () => {
+    render(<ConsentScreen onAccept={vi.fn()} failed={false} startAt="privacy" />);
+    expect(screen.getByText('Данные и конфиденциальность')).toBeTruthy();
+    expect(screen.queryByText('БЕТА-ВЕРСИЯ')).toBeNull();
+    expect(screen.queryByText('Назад')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Даю согласие' }).getAttribute('href')).toBe('/consent');
+    expect(track.mock.calls.map((c) => c[1].step)).toEqual(['privacy']);
+  });
 });

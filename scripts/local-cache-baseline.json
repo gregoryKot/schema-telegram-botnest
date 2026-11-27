@@ -121,7 +121,7 @@
       "owner": "shared/src/host/startParam.ts",
       "kind": "local"
     },
-    "login_consent_shown": {
+    "login_consent_given": {
       "owner": "webapp/src/auth/loginConsent.ts",
       "kind": "local"
     },
