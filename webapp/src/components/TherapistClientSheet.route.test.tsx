@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Карточка клиента и вкладки кабинета живут в адресе (владелец, 2026-11):
-// /cabinet/<код>[/<вкладка>], доска «Задания» — /cabinet/tasks. Код постоянный —
+// /cabinet/<код>[/<вкладка>]. Код постоянный —
 // у офлайн-клиента id менялся при подключении карточки к аккаунту, и старая
 // ссылка вела в никуда. Обвязка — настоящие AppSections и лист кабинета: адрес,
 // канонический редирект и «← Все клиенты» работают так же, как в приложении.
@@ -114,34 +114,12 @@ describe('адрес карточки клиента: код и вкладка',
   });
 });
 
-describe('доска «Задания» — /cabinet/tasks, вход только из меню (К30)', () => {
-  it('прямой вход на /cabinet/tasks открывает доску со своей шапкой и грузит её один раз', async () => {
+describe('старый адрес доски /cabinet/tasks', () => {
+  it('прямой вход заменяется на /cabinet, виден список клиентов, «назад» к доске не ведёт', async () => {
     renderAt('/cabinet/tasks');
-    await act(async () => {});
-    expect(screen.getByRole('heading', { level: 1, name: 'Задания' })).toBeTruthy();
-    expect(screen.queryByRole('tab')).toBeNull();
-    expect(mockApi.getAllTherapyTasks).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('heading', { level: 1, name: 'Анна' })).toBeNull();
-  });
-
-  it('задание с доски открывает карточку на «Заданиях», и адрес несёт вкладку', async () => {
-    mockApi.getAllTherapyTasks.mockResolvedValue([{ clientId: -142, clientName: 'Анна', tasks: [
-      { id: 1, userId: -142, type: 'custom', text: 'Дневник режимов', status: 'pending', dueDate: null, createdAt: '2026-11-01T00:00:00Z' },
-    ] }]);
-    renderAt('/cabinet/tasks');
-    await act(async () => {});
-    await act(async () => { fireEvent.click(screen.getByText('Дневник режимов')); });
-    await act(async () => {});
-    expect(selectedTab()).toBe('Задания');
-    expect(path()).toBe('/cabinet/abcdefgh/tasks');
-    expect(screen.getByTestId('state').textContent).toBe('{"fromList":true}');
-  });
-
-  it('на «Клиентах» переключателя «Клиенты | Задания» нет, доска не грузится', async () => {
-    renderAt('/cabinet');
     await screen.findByText('Анна');
-    expect(screen.queryByRole('tablist', { name: 'Список' })).toBeNull();
-    expect(screen.queryByRole('tab', { name: 'Задания' })).toBeNull();
-    expect(mockApi.getAllTherapyTasks).not.toHaveBeenCalled();
+    expect(path()).toBe('/cabinet');
+    fireEvent.click(screen.getByText('браузер: назад'));
+    expect(path()).toBe('/cabinet');
   });
 });

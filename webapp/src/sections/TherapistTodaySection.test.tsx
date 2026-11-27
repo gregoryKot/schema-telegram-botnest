@@ -12,11 +12,12 @@ import { forEachTimeZoneAsync, withTimeZone } from '../../../shared/src/utils/ti
 
 vi.mock('../api', () => ({
   api: {
-    getTherapyClients: vi.fn(),
+    getTherapyClients: vi.fn(), getAllTherapyTasks: vi.fn(),
   },
+  reportClientError: vi.fn(),
 }));
 import { api } from '../api';
-const mockApi = api as unknown as { getTherapyClients: ReturnType<typeof vi.fn> };
+const mockApi = api as unknown as { getTherapyClients: ReturnType<typeof vi.fn>; getAllTherapyTasks: ReturnType<typeof vi.fn> };
 
 /** Последняя оценка N дней назад по календарю клиента — так её отдаёт
  *  сервер (daysSinceActive); дата для показа — любая прошедшая. */
@@ -38,6 +39,7 @@ function client(overrides: Partial<{
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockApi.getAllTherapyTasks.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -149,6 +151,23 @@ describe('TherapistTodaySection — реальные данные клиенто
 });
 
 describe('TherapistTodaySection — сессии сегодня', () => {
+  it('у сессии — строка заданий клиента; у клиента без заданий её нет', async () => {
+    const today = localDateStr(new Date());
+    const task = (id: number, done: boolean | null) => ({
+      id, userId: 1, assignedBy: 9, type: 'note', text: 'т', targetDays: null, needId: null, dueDate: null,
+      done, completedAt: done ? new Date().toISOString() : null, createdAt: '2026-07-01',
+    });
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 1, name: 'Клиент А', nextSession: `${today}T14:30` }),
+      client({ telegramId: 2, name: 'Клиент Б', nextSession: `${today}T16:00` }),
+    ]);
+    mockApi.getAllTherapyTasks.mockResolvedValue([{ clientId: 1, clientName: 'Клиент А', tasks: [task(1, null), task(2, true)] }]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('задания: 1 выполнено · 1 ждёт');
+    expect(screen.getAllByText(/задания:/)).toHaveLength(1);
+  });
+
   it('сессия с nextSession = сегодня показывается во "Сессии сегодня" с временем', async () => {
     const today = localDateStr(new Date()); // встреча — стенные часы терапевта
     mockApi.getTherapyClients.mockResolvedValue([

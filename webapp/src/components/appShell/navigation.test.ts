@@ -106,9 +106,6 @@ describe('открытие и закрытие карточки клиента (
     expect(openClientRoute('/cabinet/abcdefgh/tasks', -16, withCode)).toBeNull();
     expect(openClientRoute('/cabinet/-16/tasks', -16, withCode)).toBeNull();
   });
-  it('с доски «Задания» (/cabinet/tasks) — тоже с меткой fromList: «Все клиенты» вернёт на доску', () => {
-    expect(openClientRoute('/cabinet/tasks', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh', state: { fromList: true } });
-  });
   it('«Все клиенты»: пришли из списка — шаг назад, иначе — на список', () => {
     expect(leaveClientTarget({ fromList: true, __sheetStack: [] })).toBe(-1);
     expect(leaveClientTarget(null)).toBe('/cabinet');

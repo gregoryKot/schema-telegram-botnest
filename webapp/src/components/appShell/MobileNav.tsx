@@ -9,9 +9,7 @@ import { SECTION_LOOK, THERAPIST_NAV } from './navLook';
 // (правило №10: файл в храповике размера растёт только дроблением).
 // Пункт — знак сущности раздела (navLook.ts, те же, что в меню компьютера) и подпись;
 // неактивный знак тише, активный — в полную силу, подпись акцентом.
-// В режиме терапевта — свои пять пунктов (редизайн 2026-10, «Справочник» — #995;
-// «Задания» вместо «Поиска» — решение 9 docs/design/APP_2026-11.md: у доски не было
-// пункта меню, а поиск клиентов есть в «Клиентах»).
+// В режиме терапевта — свои четыре пункта: Сегодня, Клиенты, Справочник, Профиль.
 // «Профиль» с onProfile открывает лист настроек, а не /account (#902): в нём
 // единственный переключатель режима и остальные настройки, а сайдбар на
 // телефоне скрыт — иначе из кабинета нельзя вернуться в режим клиента.
@@ -46,10 +44,10 @@ export function MobileNav({ items, therapist = false, onProfile }: {
   const moreDot = useNewTasksCount(!therapist) > 0;
   if (typing) return null;
   if (therapist) {
-    const { today, clients, guide, tasks } = THERAPIST_NAV;
+    const { today, clients, guide } = THERAPIST_NAV;
     return (
       <nav className="mobile-nav">
-        {[today, { ...clients, label: clients.short }, guide, tasks].map(link)}
+        {[today, { ...clients, label: clients.short }, guide].map(link)}
         {onProfile ? (
           <button type="button" className="mobile-nav-item" onClick={onProfile}>
             <NavSign sign={PROFILE.sign} />{PROFILE.label}

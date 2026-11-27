@@ -10,21 +10,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { TherapyClientSummary } from '../../api';
 import { clientRef, matchesClientRef } from '../../../../shared/src/utils/clientRef';
 import type { ClientTab } from './clientSheetTypes';
-import type { TasksBoard } from './useTasksBoard';
 import { keepLayoutSearch } from './plan/keepLayoutSearch';
-import { clientCardPath, clientTabFromPath, listTabFromPath } from './clientTabRoute';
+import { clientCardPath, clientTabFromPath, LEGACY_TASKS_PATH } from './clientTabRoute';
 
 interface Params {
   view: 'list' | 'client';
   openClientRef?: string | null;
   detail: { selectedClient: TherapyClientSummary | null; clientTab: ClientTab; setClientTab: (t: ClientTab) => void };
-  board: Pick<TasksBoard, 'open'>;
 }
 
-export function useClientTabRoute({ view, openClientRef, detail, board }: Params) {
+export function useClientTabRoute({ view, openClientRef, detail }: Params) {
   const { pathname, search, state } = useLocation();
   const navigate = useNavigate();
-  const [routeTab, listTab] = [clientTabFromPath(pathname), listTabFromPath(pathname)];
+  const routeTab = clientTabFromPath(pathname);
   const { selectedClient, clientTab } = detail;
   // Открыта карточка именно того клиента, что в адресе (не прежний, не без адреса в тестах).
   const onCard = view === 'client' && selectedClient != null && matchesClientRef(selectedClient, openClientRef);
@@ -39,13 +37,13 @@ export function useClientTabRoute({ view, openClientRef, detail, board }: Params
     if (!onCard) return;
     const to = clientCardPath(clientRef(selectedClient), clientTab);
     if (to !== pathname) navigate({ pathname: to, search: keepLayoutSearch(search) }, { replace: true, state });
-    // onCard — в зависимостях: с доски карточку открывают сразу на «Заданиях», а
+    // onCard — в зависимостях: карточку открывают и сразу на вкладке (палитра → «Задания»), а
     // адрес /cabinet/<код> приходит следующим рендером — без него вкладка из адреса терялась.
   }, [clientTab, selectedClient, onCard]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Вход на /cabinet/tasks (пункт меню «Задания» или ссылка) — доска грузится.
+  // Доски «Задания» больше нет: её адрес из старых закладок и уведомлений ведёт на список клиентов.
   useEffect(() => {
-    if (listTab === 'kanban') board.open();
-  }, [listTab]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { routeTab, listTab };
+    if (pathname === LEGACY_TASKS_PATH) navigate('/cabinet', { replace: true });
+  }, [pathname, navigate]);
+  return { routeTab };
 }

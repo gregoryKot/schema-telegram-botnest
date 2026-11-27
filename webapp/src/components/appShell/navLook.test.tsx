@@ -9,7 +9,6 @@ import { SignArt } from '../art/SignArt';
 import { NAV_ART, NavSign, type NavSignKey } from './NavSign';
 import { SECTION_LOOK, THERAPIST_NAV } from './navLook';
 import { DESKTOP_NAV_ITEMS, MOBILE_NAV_ITEMS } from './navItems';
-import { LIST_TASKS_PATH } from '../therapist/clientTabRoute';
 
 describe('navLook — знак раздела = знак его сущности', () => {
   it.each(Object.entries(SECTION_LOOK))('%s: знак — ENTITY_LOOK[%s]', (_, look) => {
@@ -30,11 +29,11 @@ describe('navLook — знак раздела = знак его сущности
     expect(Object.values(SECTION_LOOK).map(l => l.sign)).not.toContain('heart');
   });
 
-  it('кабинет: Сегодня — Talk, Справочник — Layers, доска «Задания» — Check, клиенты — Cluster (решение 9)', () => {
+  it('кабинет: Сегодня — Talk, Справочник — Layers, клиенты — Cluster (решение 9)', () => {
     expect(Object.values(THERAPIST_NAV).map(i => [i.to, i.sign])).toEqual([
-      ['/cabinet/today', 'talk'], ['/cabinet/guide', 'layers'], [LIST_TASKS_PATH, 'check'], ['/cabinet', 'cluster'],
+      ['/cabinet/today', 'talk'], ['/cabinet/guide', 'layers'], ['/cabinet', 'cluster'],
     ]);
-    expect(THERAPIST_NAV.clients.end).toBe(true); // «Все клиенты» не горит на доске
+    expect(THERAPIST_NAV.clients.end).toBe(true); // «Все клиенты» горит только на списке
   });
 });
 

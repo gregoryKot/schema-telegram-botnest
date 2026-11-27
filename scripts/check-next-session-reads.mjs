@@ -26,13 +26,31 @@ const ROOT = resolve(import.meta.dirname, '..');
 
 export const ALLOWED_READS = [
   // Форма правки даты: поле заполняется сохранённым значением.
-  { file: 'shared/src/therapy/useSessionAliasEditing.ts', fn: 'resetSessionAlias', count: 1 },
+  {
+    file: 'shared/src/therapy/useSessionAliasEditing.ts',
+    fn: 'resetSessionAlias',
+    count: 1,
+  },
   // Сервер отдаёт дату в API как есть, ближайшую считает сайт; слияние карточки
   // и правка терапевтом переносят сохранённое значение.
-  { file: 'src/therapy/therapy-relations.service.ts', fn: 'getClients', count: 2 },
-  { file: 'src/therapy/therapy-relation-info.ts', fn: 'getRelationInfo', count: 1 },
-  { file: 'src/therapy/therapy-invite-attach.ts', fn: 'attachOfflineCard', count: 2 },
+  {
+    file: 'src/therapy/therapy-relations.service.ts',
+    fn: 'getClients',
+    count: 2,
+  },
+  {
+    file: 'src/therapy/therapy-relation-info.ts',
+    fn: 'getRelationInfo',
+    count: 1,
+  },
+  {
+    file: 'src/therapy/therapy-invite-attach.ts',
+    fn: 'attachOfflineCard',
+    count: 2,
+  },
   { file: 'src/therapy/session-info-data.ts', fn: 'sessionInfoData', count: 2 },
+  // Сводке заданий нужна ПРОШЛАЯ встреча: сохранённая дата уходит в previousSessionDay как есть.
+  { file: 'shared/src/tasks/taskDigest.ts', fn: 'taskDigest', count: 1 },
 ];
 
 function walk(rel, acc = []) {
@@ -40,8 +58,16 @@ function walk(rel, acc = []) {
   for (const name of readdirSync(join(ROOT, rel))) {
     const r = `${rel}/${name}`;
     if (statSync(join(ROOT, r)).isDirectory()) {
-      if (!name.startsWith('.') && !['node_modules', 'dist', 'test-support'].includes(name)) walk(r, acc);
-    } else if (/\.tsx?$/.test(name) && !/\.(test|spec)\.tsx?$|\.d\.ts$|test-helpers/.test(name)) acc.push(r);
+      if (
+        !name.startsWith('.') &&
+        !['node_modules', 'dist', 'test-support'].includes(name)
+      )
+        walk(r, acc);
+    } else if (
+      /\.tsx?$/.test(name) &&
+      !/\.(test|spec)\.tsx?$|\.d\.ts$|test-helpers/.test(name)
+    )
+      acc.push(r);
   }
   return acc;
 }
@@ -55,7 +81,10 @@ export function judgeFile(rel, sites, allowed = ALLOWED_READS) {
   for (const [fn, lines] of byFn) {
     const entry = mine.find((a) => a.fn === fn);
     if (!entry) {
-      for (const line of lines) problems.push(`${rel}:${line}: nextSession читается мимо upcomingSession`);
+      for (const line of lines)
+        problems.push(
+          `${rel}:${line}: nextSession читается мимо upcomingSession`,
+        );
     } else if (entry.count !== lines.length) {
       problems.push(
         `${rel}:${lines[0]}: в ${fn} чтений nextSession ${lines.length}, разрешено ${entry.count} (ALLOWED_READS)`,
@@ -64,7 +93,9 @@ export function judgeFile(rel, sites, allowed = ALLOWED_READS) {
   }
   for (const entry of mine) {
     if (!byFn.has(entry.fn)) {
-      problems.push(`${rel}: в ${entry.fn} чтений nextSession нет, а разрешено ${entry.count} — снимите запись ALLOWED_READS`);
+      problems.push(
+        `${rel}: в ${entry.fn} чтений nextSession нет, а разрешено ${entry.count} — снимите запись ALLOWED_READS`,
+      );
     }
   }
   return problems;
@@ -72,13 +103,17 @@ export function judgeFile(rel, sites, allowed = ALLOWED_READS) {
 
 function main() {
   const problems = [];
-  for (const rel of ['webapp/src', 'shared/src', 'src'].flatMap((d) => walk(d))) {
+  for (const rel of ['webapp/src', 'shared/src', 'src'].flatMap((d) =>
+    walk(d),
+  )) {
     const raw = readFileSync(join(ROOT, rel), 'utf8');
     const sites = raw.includes('nextSession') ? readSites(raw) : [];
     problems.push(...judgeFile(rel, sites));
   }
   if (problems.length) {
-    console.error('❌ Прямое чтение nextSession (класс 17 INCIDENTS: «следующее» стареет):\n');
+    console.error(
+      '❌ Прямое чтение nextSession (класс 17 INCIDENTS: «следующее» стареет):\n',
+    );
     for (const p of problems) console.error(`   ${p}`);
     console.error(
       '\nБлижайшая встреча — upcomingSession(x.nextSession, x.meetingDays)\n' +
@@ -88,7 +123,9 @@ function main() {
     );
     process.exit(1);
   }
-  console.log('✓ nextSession: все чтения в сайте, shared и сервере идут через upcomingSession.');
+  console.log(
+    '✓ nextSession: все чтения в сайте, shared и сервере идут через upcomingSession.',
+  );
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) main();

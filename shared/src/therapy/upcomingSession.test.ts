@@ -1,7 +1,11 @@
 // Прошедшая nextSession не должна жить «следующей сессией»: при днях встреч
 // она переезжает на ближайший такой день с тем же временем.
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { isSessionToday, upcomingSession } from './upcomingSession';
+import {
+  isSessionToday,
+  previousSessionDay,
+  upcomingSession,
+} from './upcomingSession';
 import { forEachTimeZone, withTimeZone } from '../utils/timeZone.test-helpers';
 
 // 2026-10-26 — понедельник, 2026-10-17 и 2026-10-31 — субботы.
@@ -105,5 +109,31 @@ describe('upcomingSession / isSessionToday — сегодня по местно�
     expect(isSessionToday('', '2026-10-27')).toBe(false);
     expect(isSessionToday('2026-10-27', '2026-10-27')).toBe(true);
     expect(isSessionToday('2026-10-27T09:00', '2026-10-28')).toBe(false);
+  });
+});
+const PREV_TODAY = '2026-11-27'; // пятница
+describe('previousSessionDay', () => {
+  it('прошедшая дата встречи — она и есть прошлая', () => {
+    expect(previousSessionDay('2026-11-20T10:00', [], PREV_TODAY)).toBe(
+      '2026-11-20',
+    );
+  });
+  it('по недельному ритму — ближайший прошлый день встреч, сегодняшний не в счёт', () => {
+    expect(previousSessionDay(null, [5], PREV_TODAY)).toBe('2026-11-20');
+    expect(previousSessionDay(null, [1, 3], PREV_TODAY)).toBe('2026-11-25');
+  });
+  it('и дата, и ритм — берётся более поздний день', () => {
+    expect(previousSessionDay('2026-11-10T10:00', [2], PREV_TODAY)).toBe(
+      '2026-11-24',
+    );
+    expect(previousSessionDay('2026-11-26', [2], PREV_TODAY)).toBe(
+      '2026-11-26',
+    );
+  });
+  it('будущая встреча без ритма — прошлой не знаем', () => {
+    expect(
+      previousSessionDay('2026-11-27T10:00', undefined, PREV_TODAY),
+    ).toBeNull();
+    expect(previousSessionDay(null, null, PREV_TODAY)).toBeNull();
   });
 });

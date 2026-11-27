@@ -78,14 +78,14 @@ interface RailProps {
 export function SidebarRail({ items, therapistMode, displayName, clients = [] }: RailProps) {
   const account = displayName || 'Профиль';
   const screenShare = useScreenShare();
-  const { today, guide, tasks, clients: all } = THERAPIST_NAV;
+  const { today, guide, clients: all } = THERAPIST_NAV;
   const shown = therapistMode && !screenShare ? sortRoster(clients, todayStr()).slice(0, RAIL_CLIENTS) : [];
   return (
     <aside className="sidebar is-collapsed">
       <RailHead menu={{ therapistMode }} />
       <nav className="sb-nav">
         {therapistMode
-          ? [today, guide, tasks, all].map(railLink)
+          ? [today, guide, all].map(railLink)
           : items.map((i) => railLink({ to: '/' + i.id, sign: SECTION_LOOK[i.id].sign, label: i.label }))}
         {shown.length > 0 && <span className="sb-rail-rule" aria-hidden="true" />}
         {shown.map(c => {

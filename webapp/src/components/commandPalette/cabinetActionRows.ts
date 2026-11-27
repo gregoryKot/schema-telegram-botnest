@@ -1,5 +1,6 @@
 // Действия кабинета терапевта в общем поиске: дать задание (второй шаг «Кому?»), добавить клиента,
 // переключить «Показ экрана» — при том же условии, что переключатель в меню: есть клиенты.
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { THERAPIST_NAV } from '../appShell/navLook';
 import type { CmdRow } from './cmdRow';
 import type { PaletteInput } from './paletteRows';
@@ -13,7 +14,7 @@ export function cabinetActionRows(input: PaletteInput, group: string): CmdRow[] 
   const rows: (CmdRow | false)[] = [
     canAssign(input) && {
       key: 'action:assign-task', kind: 'action', group, label: 'Дать задание', sub: 'Выбрать клиента и задание',
-      mark: { sign: THERAPIST_NAV.tasks.sign }, search: 'Дать задание Выбрать клиента и задание назначить',
+      mark: { sign: ENTITY_LOOK.task.sign }, search: 'Дать задание Выбрать клиента и задание назначить',
       stay: true, action: () => run.pickAssignee(null),
     },
     {

@@ -85,8 +85,8 @@ describe('CommandPalette — листы справочника', () => {
     expect(input.value).toBe(SCHEMA);
     expect(screen.getByText('Справочник', { selector: '.cmd-group' })).toBeTruthy();
     fireEvent.change(input, { target: { value: '' } });
-    fireEvent.click(screen.getByText('Задания'));
-    expect(screen.getByTestId('where').textContent).toBe('/cabinet/tasks null');
+    fireEvent.click(screen.getByText('Сегодня'));
+    expect(screen.getByTestId('where').textContent).toBe('/cabinet/today null');
     expect(trackEvent).toHaveBeenCalledWith(SEARCH_RESULT_OPEN_EVENT, { kind: 'section', typed: false, recent: false });
   });
 

@@ -7,7 +7,7 @@ import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
 import { useAddClient } from './therapist/useAddClient';
-import { useTasksBoard } from './therapist/useTasksBoard';
+import { useClientTaskDigests } from './therapist/useClientTaskDigests';
 import { ModeMapTab } from './modeMap/ModeMapTab';
 import { ClientListView } from './therapist/ClientListView';
 import { ClientHeader } from './therapist/ClientHeader';
@@ -43,8 +43,8 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   const [loadFailed, setLoadFailed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'wait' | 'virtual'>('all');
-  // Доска «Задания»: любое изменение заданий в карточке её перечитывает.
-  const board = useTasksBoard();
+  // Сводки заданий в списке клиентов: любое изменение заданий в карточке их перечитывает.
+  const digests = useClientTaskDigests();
   const [animKey, setAnimKey] = useState(0);
   const [canvasMapId, setCanvasMapId] = useState<number | null>(null); // карта, созданная кнопкой «Открыть на холсте»
 
@@ -56,7 +56,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   // ─── Hooks ────────────────────────────────────────────────────────────────────
   const detail = useClientDetail({ onOpenClient, switchView, setClients });
   const addClient = useAddClient({ setClients });
-  const { routeTab, listTab } = useClientTabRoute({ view, openClientRef, detail, board }); // вкладки в адресе
+  const { routeTab } = useClientTabRoute({ view, openClientRef, detail }); // вкладки в адресе
 
   // ─── Bootstrap ────────────────────────────────────────────────────────────────
   const loadRoster = () => { // повтор: скелетон (loading) идёт раньше алерта, loadFailed снимает ответ
@@ -126,11 +126,10 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           clients={clients}
           loading={loading}
           loadFailed={loadFailed} onRetry={() => { setLoading(true); loadRoster(); }}
-          listTab={listTab}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           filterStatus={filterStatus} setFilterStatus={setFilterStatus}
           onSearch={onOpenPalette}
-          board={board}
+          digestOf={digests.digestOf}
           openClient={detail.openClient}
           addClient={addClient}
         />
@@ -157,7 +156,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
               <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} onAssign={openAssign} onOpenJournal={openJournal} />
             )}
 
-            {clientTab === 'plan' && <ClientPlanTab key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} onTasksChanged={board.invalidate} onOpenSession={openSession} />}
+            {clientTab === 'plan' && <ClientPlanTab key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} onTasksChanged={digests.invalidate} onOpenSession={openSession} />}
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
             {selectedClient != null && clientTab === 'mode_map' && (
               <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -173,7 +172,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
             {clientTab === 'tasks' && (
               <ClientTasksTab
-                detail={detail} onAssign={openAssign} onTasksChanged={board.invalidate}
+                detail={detail} onAssign={openAssign} onTasksChanged={digests.invalidate}
                 onOpenConcept={() => detail.setClientTab('concept')} takeJournalFocus={takeJournalFocus} onOpenSession={openSession}
               />
             )}
@@ -215,7 +214,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           defaultType={assignPreset?.type}
           defaultText={assignPreset?.text} defaultCatalogId={assignPreset?.catalogId} assignOrigin={assignPreset?.origin}
           zIndex={clientTab === 'concept' ? CONCEPT_SHEET_Z : undefined}
-          onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); board.invalidate(); }}
+          onCreated={() => { setAssignPreset(undefined); detail.onTaskAssigned(); digests.invalidate(); }}
           onClose={() => { setShowAssign(false); setAssignPreset(undefined); }}
         />
       )}

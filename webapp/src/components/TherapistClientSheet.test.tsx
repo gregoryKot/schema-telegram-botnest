@@ -74,6 +74,7 @@ function client(overrides: Partial<TherapyClientSummary>): TherapyClientSummary 
 // концептуализации, дневника. Переопределяется per-test через mockImplementation.
 function emptyClientDetailMocks() {
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
+  mockApi.getAllTherapyTasks.mockResolvedValue([]);
   mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue(null);
   mockApi.getTherapyClientData.mockResolvedValue({
@@ -824,61 +825,5 @@ describe('TherapistClientSheet — встречи в списке клиенто
 
     expect(anna.compareDocumentPosition(boris) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByText(/не назначена/)).toHaveLength(1);
-  });
-});
-
-describe('TherapistClientSheet — доска «Задания» /cabinet/tasks (канбан по всем клиентам)', () => {
-  it('без заданий у всех клиентов — "Назначенных заданий пока нет"', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
-    mockApi.getAllTherapyTasks.mockResolvedValue([{ clientId: 1, clientName: 'Анна', tasks: [] }]);
-    renderSheet('/cabinet/tasks');
-
-    await screen.findByText('Назначенных заданий пока нет');
-  });
-
-  it('задания разных клиентов раскладываются по колонкам "Назначено/Выполнено/Не вышло"', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
-    mockApi.getAllTherapyTasks.mockResolvedValue([{
-      clientId: 1, clientName: 'Анна',
-      tasks: [
-        { id: 1, userId: 1, assignedBy: 9, type: 'note', text: 'Задание в работе', targetDays: null, needId: null, dueDate: null, done: null, completedAt: null, createdAt: '2026-07-01' },
-        { id: 2, userId: 1, assignedBy: 9, type: 'note', text: 'Задание выполнено', targetDays: null, needId: null, dueDate: null, done: true, completedAt: '2026-07-02', createdAt: '2026-07-01' },
-      ],
-    }]);
-    renderSheet('/cabinet/tasks');
-
-    await screen.findByText('Задание в работе');
-    expect(screen.getByText('Задание выполнено')).toBeTruthy();
-    expect(screen.getByText('Назначено')).toBeTruthy();
-    expect(screen.getByText('Выполнено')).toBeTruthy();
-  });
-
-  // Сбой ≠ пусто (CLAUDE.md): отказ getAllTherapyTasks раньше рисовал
-  // терапевту пустую канбан-доску («Назначенных заданий пока нет»), как
-  // будто у клиентов реально нет заданий.
-  it('провал getAllTherapyTasks показывает явную ошибку, а не пустую доску', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
-    mockApi.getAllTherapyTasks.mockRejectedValue(new Error('network'));
-    renderSheet('/cabinet/tasks');
-
-    const alert = await screen.findByRole('alert');
-    expect(alert.textContent!.replace(/\u00a0/g, ' ')).toMatch(/Не удалось загрузить задания/);
-    expect(screen.queryByText('Назначенных заданий пока нет')).toBeNull();
-  });
-
-  it('«Попробовать ещё раз» в канбане перезапрашивает задания и убирает ошибку при успехе', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 1, name: 'Анна' })]);
-    mockApi.getAllTherapyTasks.mockRejectedValueOnce(new Error('network'));
-    renderSheet('/cabinet/tasks');
-    await screen.findByRole('alert');
-
-    mockApi.getAllTherapyTasks.mockResolvedValueOnce([{
-      clientId: 1, clientName: 'Анна',
-      tasks: [{ id: 1, userId: 1, assignedBy: 9, type: 'note', text: 'Задание после повтора', targetDays: null, needId: null, dueDate: null, done: null, completedAt: null, createdAt: '2026-07-01' }],
-    }]);
-    fireEvent.click(screen.getByText('Попробовать ещё раз'));
-
-    await screen.findByText('Задание после повтора');
-    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

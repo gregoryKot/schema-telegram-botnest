@@ -130,9 +130,6 @@
   "webapp/src/components/therapist/useSessionPlan.ts::setError": {
     "status": "reports"
   },
-  "webapp/src/components/therapist/useTasksBoard.ts::setFailed": {
-    "status": "reports"
-  },
   "webapp/src/components/therapy/useTherapySignal.ts::setLoaded": {
     "status": "exempt",
     "reason": "необязательная карточка-сигнал: без истории она просто не показывается, экран рабочий; ложного сигнала нет"
