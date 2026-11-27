@@ -1,7 +1,10 @@
 // Серверная копия ключей полей техник «Что делали» (session-work.ts): сверка — session-work.sync.spec.ts.
+// Техники пар 'need_vs_wish', 'mutual_reparenting', 'couple_friendship', 'couple_chairwork' — в -couples.ts.
+import { COUPLES_TECHNIQUE_KEYS } from './session-work-technique-keys-couples';
 type KeyMap = Readonly<Record<string, readonly string[]>>;
 
 export const TECHNIQUE_WORK_KEYS: KeyMap = {
+  ...COUPLES_TECHNIQUE_KEYS,
   'technique:imagery_rescripting': ['trigger', 'image', 'rewrite', 'ending'],
   'technique:future_imagery': ['situation', 'rehearsal', 'obstacle', 'result'],
   'technique:chairwork': ['theme', 'modeVoice', 'adultVoice', 'ending'],
@@ -108,6 +111,10 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:mode_management_plan': ['mode', 'now', 'later', 'schema'],
   'technique:healthy_adult_plan': ['scene', 'goodParent', 'plan', 'result'],
   'technique:safety_bubble': ['image', 'effect', 'home'],
+  'technique:good_parent_script': ['phrases', 'listen', 'critic'],
+  'technique:monitoring_cycle': ['scene', 'mode', 'need', 'result'],
+  'technique:mode_awareness_summary': ['mode', 'signs', 'roots', 'need'],
+  'technique:progress_by_mode': ['changed', 'ahead', 'aims'],
   'technique:story_unmet_need': ['need', 'message', 'goodParent', 'own'],
   'technique:creative_mode_work': ['mode', 'form', 'dialogue', 'ending'],
   'technique:probe_phrases': ['belief', 'phrase', 'body', 'home'],

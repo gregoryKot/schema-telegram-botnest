@@ -46,6 +46,17 @@ export function ModePlan({ size }: ArtProps) {
   );
 }
 
+/** Сценарий Хорошего Родителя: сердце заботы, от него волны голоса к маленькому кругу-ребёнку. */
+export function ParentVoice({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d={HEART_PATH} transform="translate(28 32) scale(.42) translate(-60 -32)" fill={PAPER.clay} />
+      <path d="M52 22 Q58 32 52 42 M62 16 Q72 32 62 48 M72 10 Q86 32 72 54" {...ROUND} stroke={PAPER.sage} strokeWidth="4" />
+      <circle cx="100" cy="36" r="9" fill={PAPER.amber} />
+    </Svg>
+  );
+}
+
 /** История о ребёнке и потребности: туча с молнией над маленьким кругом, рядом — сердце ответа, которого он ждал. */
 export function StormNeed({ size }: ArtProps) {
   return (

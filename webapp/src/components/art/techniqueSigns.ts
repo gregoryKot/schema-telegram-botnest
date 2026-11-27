@@ -1,4 +1,4 @@
-// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx).
+// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx). Техники пар 'need_vs_wish', 'mutual_reparenting', 'couple_friendship', 'couple_chairwork' — в couplesTechniqueSign.ts.
 // Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,
@@ -6,8 +6,10 @@ import type {
   LuzTechniqueId,
   VreeswijkTechniqueId,
   RafaeliTechniqueId,
+  FarrellShawTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
+import { COUPLES_TECHNIQUE_SIGN } from './couplesTechniqueSign';
 
 export const CORE_TECHNIQUE_SIGN: Record<CoreTechniqueId, GuideSign> = {
   imagery_rescripting: 'rescript',
@@ -90,7 +92,14 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   mode_management_plan: 'mode_plan',
   healthy_adult_plan: 'plan_ahead',
   safety_bubble: 'bubble',
+  good_parent_script: 'parent_voice',
   story_unmet_need: 'storm_need',
+};
+
+const FARRELL_SHAW_TECHNIQUE_SIGN: Record<FarrellShawTechniqueId, GuideSign> = {
+  monitoring_cycle: 'monitor_ring',
+  mode_awareness_summary: 'mode_page',
+  progress_by_mode: 'review_rows',
 };
 
 const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
@@ -135,5 +144,7 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...LUZ_TECHNIQUE_SIGN,
   ...VREESWIJK_TECHNIQUE_SIGN,
   ...RAFAELI_TECHNIQUE_SIGN,
+  ...COUPLES_TECHNIQUE_SIGN,
+  ...FARRELL_SHAW_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

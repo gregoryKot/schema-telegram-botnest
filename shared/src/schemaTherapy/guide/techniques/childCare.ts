@@ -1,8 +1,11 @@
 import type { TechniqueGuideBuilder } from '../types';
 import * as extra from './reparentingPatterns';
 import * as to from './transitionalObjectsAll';
-
-/** Забота о детских режимах: transitional_objects, play_and_joy. */
+import {
+  buildCouplesTechniques,
+  playAndJoyCouplesMore,
+} from './couplesTechniques';
+/** Забота о детских режимах: transitional_objects, play_and_joy; взаимная забота пары — mutual_reparenting, couple_friendship (карта «Пары»). */
 export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
   {
     id: 'transitional_objects',
@@ -22,7 +25,7 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
     cautions:
       'Объект напоминает о связи, но не заменяет ни сессию, ни кризисный план. Что именно клиент получает, терапевт решает заранее — это часть границ ограниченного родительства. Если «сундук сокровищ» будит Карающего Критика, терапевт хранит коробку у себя, пока Критик не ослабнет [Фаррелл, гл. 4.6.5].',
     sources:
-      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 12, бокс 12.5]; [Арнтц ПРЛ, гл. 10]; [Фаррелл, гл. 4.2, 4.6.2, 4.6.5, 4.6.6]; [Хис, гл. 10, 19, 20].',
+      'Young J. E., Klosko J. S., Weishaar M. E. Schema Therapy: A Practitioner’s Guide. Guilford Press, 2003 (рус. изд.: Янг, Клоско, Вайсхаар. Схема-терапия. Практическое руководство. Диалектика, 2020); [Кембридж, гл. 12, бокс 12.5]; [Арнтц ПРЛ, гл. 10]; [Фаррелл, гл. 4.2, 4.6.2, 4.6.5, 4.6.6]; [Хис, гл. 10, 19, 20]; [Фаррелл-Шоу, модули 1, 17].',
   },
   {
     id: 'play_and_joy',
@@ -38,10 +41,11 @@ export const buildChildCareTechniques: TechniqueGuideBuilder = (tr) => [
         'У этого занятия не будет никакой пользы — в этом и смысл. Что вам хотелось бы сделать просто потому, что нравится?',
       ),
     ],
-    more: extra.playAndJoyMore,
+    more: [...extra.playAndJoyMore, ...playAndJoyCouplesMore],
     cautions:
-      'Игра не к месту, когда клиент в остром горе или в Уязвимом Ребёнке и ждёт, что его услышат: шутка тогда звучит как отказ слушать. Хис смотрит шире: игра, подобранная под потребность ребёнка, — безопасный вход к Уязвимому и Сердитому Ребёнку, а обход копинга почти всегда будит копинг или Критика, и за этим следят [Хис, гл. 10]. Клиенту со стыдом игра поначалу кажется проверкой — тут терапевт дурачится первым. Неуверенность терапевта клиент считывает сразу, поэтому упражнение вводят с энтузиазмом и приглашают в него, а не спрашивают, хочет ли клиент. Включились Критик или копинг — их называют и выгоняют: это часть работы, а не срыв упражнения [Фаррелл, 4.6.5].',
+      'Игра не к месту, когда клиент в остром горе или в Уязвимом Ребёнке и ждёт, что его услышат: шутка тогда звучит как отказ слушать. Хис смотрит шире: игра, подобранная под потребность ребёнка, — безопасный вход к Уязвимому и Сердитому Ребёнку, а обход копинга почти всегда будит копинг или Критика, и за этим следят [Хис, гл. 10]. Клиенту со стыдом игра поначалу кажется проверкой — тут терапевт дурачится первым. Неуверенность терапевта клиент считывает сразу, поэтому упражнение вводят с энтузиазмом и приглашают в него, а не спрашивают, хочет ли клиент. Включились Критик или копинг — их называют и выгоняют: это часть работы, а не срыв упражнения [Фаррелл, 4.6.5], [Пары, гл. 12]. Если Критик перебивает удовольствие («надо визуализировать идеально»), упражнение прерывают и делают то, что по-настоящему приятно; клиенту образ радости легче дать аудиозаписью. Обычно игру приглашают, но в стационарной группе Фаррелл и Шоу, где клиенты всё спрашивали, обязательно ли это, радость прямо «прописали» и повесили на дверь «Вход Критикам воспрещён» [Фаррелл-Шоу, модуль 19].',
     sources:
-      'Lockwood G., Shaw I. Schema Therapy and the Role of Joy and Play. В: van Vreeswijk M., Broersen J., Nadort M. (eds.). The Wiley-Blackwell Handbook of Schema Therapy. Wiley-Blackwell, 2012, ч. III, гл. 5. Heath G., Startup H. (eds.). Creative Methods in Schema Therapy. Routledge, 2020, гл. 10 «Spontaneity and Play in Schema Therapy». [Хис, гл. 10], [Арнтц ПРЛ, гл. 5, 10], [Фаррелл, 4.6.5].',
+      'Lockwood G., Shaw I. Schema Therapy and the Role of Joy and Play. В: van Vreeswijk M., Broersen J., Nadort M. (eds.). The Wiley-Blackwell Handbook of Schema Therapy. Wiley-Blackwell, 2012, ч. III, гл. 5. Heath G., Startup H. (eds.). Creative Methods in Schema Therapy. Routledge, 2020, гл. 10 «Spontaneity and Play in Schema Therapy». [Хис, гл. 10], [Арнтц ПРЛ, гл. 5, 10], [Фаррелл, 4.6.5], [Фаррелл-Шоу, модуль 19].',
   },
+  ...buildCouplesTechniques(tr),
 ];

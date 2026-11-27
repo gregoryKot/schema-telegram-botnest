@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { selfDisclosureMoreAuth } from './practiceTherapistHeath';
+import { selfDisclosureCouples as selfDisclosureMoreAuth } from './practiceCouplesMore';
 /** «Для терапевта»: самораскрытие терапевта. Собирает practiceCourse.ts. */
 export const buildPracticeSelfDisclosure: PracticeNotesBuilder = (tr) => [
   {
