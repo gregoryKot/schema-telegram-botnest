@@ -62,6 +62,11 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsRafaeli.tsx — техники из книги Рафаэли, Бернштейн и Янга
   'rupture_mend',
   'life_columns',
+  // TechniqueSignsCouples.tsx — техники из книги о схема-терапии пар
+  'need_wish',
+  'mutual_hold',
+  'friend_pair',
+  'couple_chairs',
   // TechniqueSignsFarrellShaw.tsx — техники из тетради Фаррелл и Шоу
   'monitor_ring',
   'mode_page',

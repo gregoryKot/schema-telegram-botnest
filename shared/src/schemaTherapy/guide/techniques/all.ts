@@ -2,6 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import { buildImageryRescriptingTechniques } from './imageryRescripting';
 import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
+import { buildCoupleChairworkTechniques } from './coupleChairwork';
 import { buildChairTechniques } from './chairs';
 import { buildCreativeModeWorkTechniques } from './creativeModeWork';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
@@ -34,6 +35,7 @@ import { buildChildCareTechniques } from './childCare';
 import { buildBodyGroundingTechniques } from './bodyGrounding';
 import { buildBodyValuesTechniques } from './bodyValues';
 import { buildOnlineTechniques } from './online';
+import { buildNeedVsWishTechniques } from './needVsWish';
 import { buildAttunementNeedsTechniques } from './attunementNeeds';
 import { buildMeaningGuiltTechniques } from './meaningGuilt';
 import { buildSchemaDialogueTechniques } from './schemaDialogue';
@@ -55,6 +57,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryRescriptingTechniques,
   buildImageryTechniques,
   buildChairworkTechniques,
+  buildCoupleChairworkTechniques,
   buildChairTechniques,
   buildCreativeModeWorkTechniques,
   buildRolePlayArntzTechniques,
@@ -96,6 +99,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryRecentTechniques,
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
+  buildNeedVsWishTechniques,
   buildMeaningGuiltTechniques,
   buildSchemaDialogueTechniques,
   buildBorrowedCbtTechniques,
