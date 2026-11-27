@@ -105,7 +105,10 @@ export class ApiController {
   }
 
   @Post('disclaimer')
-  async acceptDisclaimer(@Req() req: AuthRequest, @Body() dto: AcceptDisclaimerDto) {
+  async acceptDisclaimer(
+    @Req() req: AuthRequest,
+    @Body() dto: AcceptDisclaimerDto,
+  ) {
     await this.botService.acceptDisclaimer(uid(req), true, dto.version);
     return { ok: true };
   }

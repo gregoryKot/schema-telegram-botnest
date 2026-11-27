@@ -2,7 +2,12 @@
 // (аудит 2026-07, 2г / правило №6 CLAUDE.md).
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { UpdateNameDto, InitDto, CheckinDto, AcceptDisclaimerDto } from './misc.dto';
+import {
+  UpdateNameDto,
+  InitDto,
+  CheckinDto,
+  AcceptDisclaimerDto,
+} from './misc.dto';
 
 async function errorsFor(
   cls: new () => object,
@@ -51,8 +56,12 @@ describe('InitDto / CheckinDto', () => {
 
 describe('AcceptDisclaimerDto', () => {
   it('версия длиннее 32 — отказ; без версии (старый клиент) и обычная — проходят', async () => {
-    await expect(errorsFor(AcceptDisclaimerDto, { version: 'x'.repeat(33) })).resolves.toContain('version');
+    await expect(
+      errorsFor(AcceptDisclaimerDto, { version: 'x'.repeat(33) }),
+    ).resolves.toContain('version');
     await expect(errorsFor(AcceptDisclaimerDto, {})).resolves.toEqual([]);
-    await expect(errorsFor(AcceptDisclaimerDto, { version: '2026-11-27' })).resolves.toEqual([]);
+    await expect(
+      errorsFor(AcceptDisclaimerDto, { version: '2026-11-27' }),
+    ).resolves.toEqual([]);
   });
 });
