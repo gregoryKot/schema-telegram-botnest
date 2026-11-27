@@ -2,6 +2,6 @@
 import type { GuideSign } from './guideSignsModel';
 export const VREESWIJK_PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
   mbst_protocol: 'breathing_space',
-  mbst_sessions: 'horizon',
+  mbst_sessions: 'plan_ahead',
   mindfulness_programs: 'body_scan',
 };
