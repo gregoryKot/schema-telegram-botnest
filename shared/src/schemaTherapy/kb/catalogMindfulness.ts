@@ -34,11 +34,7 @@ export const VF_TECHNIQUES: readonly CatalogTopic[] = [
 
 export const VF_PRACTICE: readonly CatalogTopic[] = [
   w('mbst_protocol'),
-  vf('mbst_sessions', 'Протокол осознанности: сессии 1–8 и контрольные', [
-    'гл. 4',
-    'гл. 6',
-    'гл. 9',
-  ]),
+  w('mbst_sessions'),
   vf('mbst_suitability', 'Кому подходит тренинг осознанности', [
     'гл. 1',
     'гл. 5',
