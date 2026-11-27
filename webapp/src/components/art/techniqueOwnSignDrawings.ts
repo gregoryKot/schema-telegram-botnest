@@ -12,7 +12,7 @@ import {
   TryStep, Values,
 } from './TechniqueSignsSteps';
 import { CopingBypass, GuessMode, ModeFigures, NeedCycle, Scatter } from './TechniqueSignsArntz';
-import { ModePlan, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
+import { ModePlan, PlanAhead, SafetyBubble, StormNeed } from './TechniqueSignsFarrell';
 import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
@@ -29,7 +29,7 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   approach: Approach, values: Values, life_line: LifeLine, window: ToleranceWindow,
   levels_heart: LevelsHeart, defusion: Defusion, pie: Pie, rewind: Rewind,
   scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode, bypass: CopingBypass, figures: ModeFigures,
-  mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, mask: CriticMask,
+  mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, storm_need: StormNeed, mask: CriticMask,
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
   trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
   finger_puppets: FingerPuppets,

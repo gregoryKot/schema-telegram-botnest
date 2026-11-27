@@ -1,5 +1,6 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { bubbleFarrell } from './safetyBubbleFarrell';
+import { bubbleFS } from './imageryFarrellShaw';
 
 /** Техника: safety_bubble — первый образ безопасности по Фаррелл. */
 export const buildSafetyBubbleTechniques: TechniqueGuideBuilder = (tr) => [
@@ -23,9 +24,10 @@ export const buildSafetyBubbleTechniques: TechniqueGuideBuilder = (tr) => [
         'Вокруг нас большой прозрачный пузырь. Ни один критикующий голос сквозь его стенки не пройдёт, а вы можете выйти и вернуться, когда захотите. Мы рядом и не дадим вас в обиду.',
       ),
     ],
-    more: [...bubbleFarrell],
+    more: [...bubbleFarrell, ...bubbleFS],
     cautions:
       'Безопасность в образе обещает терапевт, значит, держать её надо и на деле: карающие высказывания в группе прерывают сразу. Как и безопасное место, пузырь может стать уходом от чувств; его берут, чтобы остаться в контакте, а не вместо работы [Кембридж, гл. 8].',
-    sources: '[Фаррелл, 4.2, 4.6.1], [Кембридж, гл. 8]',
+    sources:
+      '[Фаррелл, 4.2, 4.6.1], [Кембридж, гл. 8], [Фаррелл-Шоу, модуль 1]',
   },
 ];

@@ -90,6 +90,7 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   mode_management_plan: 'mode_plan',
   healthy_adult_plan: 'plan_ahead',
   safety_bubble: 'bubble',
+  story_unmet_need: 'storm_need',
 };
 
 const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
