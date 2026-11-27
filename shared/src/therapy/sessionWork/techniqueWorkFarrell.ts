@@ -1,4 +1,7 @@
-import type { FarrellTechniqueId } from '../../schemaTherapy/guide/techniqueIds';
+import type {
+  FarrellShawTechniqueId,
+  FarrellTechniqueId,
+} from '../../schemaTherapy/guide/techniqueIds';
 import type { TechniqueWorkDef } from './techniqueWork';
 
 /** «Что делали»: техники из книги Фаррелл, Рейсс и Шоу о групповой схема-терапии. */
@@ -38,6 +41,48 @@ export const FARRELL_TECHNIQUE_WORK: Record<
       ['phrases', 'Фразы сценария'],
       ['listen', 'Как слушали и что почувствовали'],
       ['critic', 'Что мешало, голос Критика'],
+    ],
+  },
+  story_unmet_need: {
+    name: 'История о ребёнке и потребности',
+    fields: [
+      ['need', 'Что чувствовал ребёнок и что ему было нужно'],
+      ['message', 'Какое послание он унёс, какие режимы'],
+      ['goodParent', 'Ответ Хорошего Родителя'],
+      ['own', 'Своё воспоминание клиента'],
+    ],
+  },
+};
+
+/** «Что делали»: техники из тетради Фаррелл и Шоу. */
+export const FARRELL_SHAW_TECHNIQUE_WORK: Record<
+  FarrellShawTechniqueId,
+  TechniqueWorkDef
+> = {
+  monitoring_cycle: {
+    name: 'Цикл самомониторинга',
+    fields: [
+      ['scene', 'Эпизод'],
+      ['mode', 'Схема и режим'],
+      ['need', 'Потребность'],
+      ['result', 'Что сделано и итог'],
+    ],
+  },
+  mode_awareness_summary: {
+    name: 'Резюме осознания режима',
+    fields: [
+      ['mode', 'Режим'],
+      ['signs', 'Ранние признаки'],
+      ['roots', 'Схема и воспоминание'],
+      ['need', 'Потребность и привычное действие'],
+    ],
+  },
+  progress_by_mode: {
+    name: 'Обзор прогресса по режимам',
+    fields: [
+      ['changed', 'Что изменилось'],
+      ['ahead', 'Что впереди'],
+      ['aims', 'Новые цели'],
     ],
   },
 };

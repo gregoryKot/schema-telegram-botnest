@@ -6,6 +6,7 @@ import type {
   LuzTechniqueId,
   VreeswijkTechniqueId,
   RafaeliTechniqueId,
+  FarrellShawTechniqueId,
 } from '../../../../shared/src/schemaTherapy/guide/techniqueIds';
 import type { GuideSign } from './guideSignsModel';
 
@@ -91,6 +92,13 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   healthy_adult_plan: 'plan_ahead',
   safety_bubble: 'bubble',
   good_parent_script: 'parent_voice',
+  story_unmet_need: 'storm_need',
+};
+
+const FARRELL_SHAW_TECHNIQUE_SIGN: Record<FarrellShawTechniqueId, GuideSign> = {
+  monitoring_cycle: 'monitor_ring',
+  mode_awareness_summary: 'mode_page',
+  progress_by_mode: 'review_rows',
 };
 
 const HEATH_TECHNIQUE_SIGN: Record<HeathTechniqueId, GuideSign> = {
@@ -135,5 +143,6 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   ...LUZ_TECHNIQUE_SIGN,
   ...VREESWIJK_TECHNIQUE_SIGN,
   ...RAFAELI_TECHNIQUE_SIGN,
+  ...FARRELL_SHAW_TECHNIQUE_SIGN,
   ...BORROWED_TECHNIQUE_SIGN,
 };

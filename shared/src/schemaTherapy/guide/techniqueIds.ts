@@ -15,7 +15,10 @@ export type CoreTechniqueId =
   | 'self_compassion'
   | 'healthy_adult_imagery';
 
-import type { FarrellTechniqueId } from './techniqueIdsFarrell';
+import type {
+  FarrellShawTechniqueId,
+  FarrellTechniqueId,
+} from './techniqueIdsFarrell';
 /** Техники схема-терапии, добавленные позже (#1366). */
 export type SchemaTechniqueId =
   | 'limited_reparenting'
@@ -70,7 +73,7 @@ export type ArntzTechniqueId =
 /** Техники из книги Арнтц и Якоб «Практическое руководство» (карта «Арнтц-Якоб»). */
 export type ArntzJacobTechniqueId = 'coping_bypass' | 'mode_figures';
 
-export type { FarrellTechniqueId };
+export type { FarrellShawTechniqueId, FarrellTechniqueId };
 
 /** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
 export type HeathTechniqueId =
@@ -107,6 +110,7 @@ export type TechniqueId =
   | ArntzTechniqueId
   | ArntzJacobTechniqueId
   | FarrellTechniqueId
+  | FarrellShawTechniqueId
   | HeathTechniqueId
   | RoedigerTechniqueId
   | LuzTechniqueId

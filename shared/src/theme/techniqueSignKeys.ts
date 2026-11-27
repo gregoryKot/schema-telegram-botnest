@@ -38,6 +38,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'plan_ahead',
   'bubble',
   'parent_voice',
+  'storm_need',
   // TechniqueSignsHeath.tsx — техники из книги Хис и Стартап
   'mask',
   'probe',
@@ -61,5 +62,9 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsRafaeli.tsx — техники из книги Рафаэли, Бернштейн и Янга
   'rupture_mend',
   'life_columns',
+  // TechniqueSignsFarrellShaw.tsx — техники из тетради Фаррелл и Шоу
+  'monitor_ring',
+  'mode_page',
+  'review_rows',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

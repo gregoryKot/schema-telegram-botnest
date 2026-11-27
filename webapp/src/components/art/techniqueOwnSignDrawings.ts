@@ -12,7 +12,7 @@ import {
   TryStep, Values,
 } from './TechniqueSignsSteps';
 import { CopingBypass, GuessMode, ModeFigures, NeedCycle, Scatter } from './TechniqueSignsArntz';
-import { ModePlan, ParentVoice, PlanAhead, SafetyBubble } from './TechniqueSignsFarrell';
+import { ModePlan, ParentVoice, PlanAhead, SafetyBubble, StormNeed } from './TechniqueSignsFarrell';
 import {
   CriticMask, IfThen, IntimacyDialogue, ProbePhrase, RecentScene, ThreeParts, TraumaMap,
 } from './TechniqueSignsHeath';
@@ -20,6 +20,7 @@ import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './Techniqu
 import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
 import { LifeColumns, RuptureMend } from './TechniqueSignsRafaeli';
+import { ModePage, MonitorRing, ReviewRows } from './TechniqueSignsFarrellShaw';
 
 export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => ReactElement> = {
   scene_look: SceneLook, talk_inner: TalkInner, talk_screen: TalkScreen, talk_schema: TalkSchema,
@@ -29,7 +30,8 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   approach: Approach, values: Values, life_line: LifeLine, window: ToleranceWindow,
   levels_heart: LevelsHeart, defusion: Defusion, pie: Pie, rewind: Rewind,
   scatter: Scatter, need_ring: NeedCycle, guess_mode: GuessMode, bypass: CopingBypass, figures: ModeFigures,
-  mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, parent_voice: ParentVoice, mask: CriticMask,
+  mode_plan: ModePlan, plan_ahead: PlanAhead, bubble: SafetyBubble, parent_voice: ParentVoice,
+  storm_need: StormNeed, mask: CriticMask,
   probe: ProbePhrase, intimacy: IntimacyDialogue, three_parts: ThreeParts,
   trauma_lines: TraumaMap, recent_scene: RecentScene, if_then: IfThen, family_tree: Genogram,
   finger_puppets: FingerPuppets,
@@ -38,4 +40,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   breathing_space: BreathingSpace, body_scan: BodyScan, schema_lens: SchemaLens,
   healthy_light: HealthyLight,
   rupture_mend: RuptureMend, life_columns: LifeColumns,
+  monitor_ring: MonitorRing, mode_page: ModePage, review_rows: ReviewRows,
 };
