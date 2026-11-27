@@ -42,7 +42,7 @@ const NOTE_IDS = [
   'attachment_assertiveness_poles',
   'session_balance_axes',
   'mode_states',
-  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs',
+  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs', 'infant_modes',
 ];
 
 describe('знаки листов подсказок', () => {
