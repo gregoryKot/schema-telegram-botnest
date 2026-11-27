@@ -27,6 +27,15 @@ describe('ближайшая сессия в карточке клиента', (
     expect(setLocal).toHaveBeenCalledWith('2026-10-31T07:00');
   });
 
+  it('«Следующая сессия» в правке — день словами, не mm/dd/yyyy; смена дня сохраняет время', () => {
+    const setLocal = vi.fn();
+    const d = makeClientDetail({ editingNextSession: true, localNextSession: '2026-11-03T18:30', setLocalNextSession: setLocal });
+    const { container } = render(<NextSessionCard selectedClient={client({})} detail={d} />);
+    expect(container.querySelector('.ds-date')?.textContent).toBe('3 ноября');
+    fireEvent.change(screen.getByLabelText('День сессии'), { target: { value: '2026-11-26' } });
+    expect(setLocal).toHaveBeenCalledWith('2026-11-26T18:30');
+  });
+
   it('прошедшая дата без дней встреч — «Не установлена», строки «Встреча» в шапке нет', () => {
     const c = client({ nextSession: '2026-10-17T07:00' });
     render(<><NextSessionCard selectedClient={c} detail={detail()} /><ClientHeaderBadges client={c} /></>);
