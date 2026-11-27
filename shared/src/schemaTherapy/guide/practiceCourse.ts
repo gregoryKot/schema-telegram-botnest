@@ -1,7 +1,7 @@
 import type { PracticeNotesBuilder } from './types';
-import { sessionStructureFull, therapyAimsFull } from './practiceCourseMore';
+import { therapyAimsFull } from './practiceCourseMore';
 import { buildPracticeSelfDisclosure } from './practiceSelfDisclosure';
-import * as cam from './practiceCourseCambridge';
+import * as cam from './practiceCourseRoediger';
 
 /** «Для терапевта»: ход терапии (гл. 1, 2, 5, 6). Карты — docs/guide-sources/Кембридж.md, Арнц-ПРЛ.md (вариант сессии при ПРЛ). */
 export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
@@ -18,9 +18,9 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
       'Рост Здорового Взрослого. Первые цели закрывают дефициты, эта строит сильные стороны личности: после терапии клиенту нужен крепкий Здоровый Взрослый, чтобы самому заботиться о своих чувствах. Рост Здорового Взрослого идёт параллельно с работой над схемами, на всём протяжении терапии [Кембридж, гл. 1].',
       'Четыре группы методов. Основа — ограниченное родительство: тепло, подстройка, эмпатическая конфронтация и границы. Когнитивные техники разбирают схемные убеждения рассудком и готовят почву, хотя сами по себе не всегда дают стойкую перемену. Эмпирические техники дают корректирующий эмоциональный опыт. Разрыв поведенческих паттернов часто занимает больше всего времени, и без него схемы остаются уязвимы к рецидиву [Кембридж, гл. 1].',
     ],
-    more: [...therapyAimsFull, ...cam.therapyAimsCambridgeMore],
+    more: [...therapyAimsFull, ...cam.therapyAimsMore],
     sources:
-      '[Кембридж, гл. 1, 5, бокс 5.8], [Янг, гл. 1], [Фаррелл, 2.2], [Арнтц, гл. 1, 9.5.1], [Рафаэли, гл. 1], [Фаррелл-Шоу, модуль 20]',
+      '[Кембридж, гл. 1, 5, бокс 5.8], [Янг, гл. 1], [Фаррелл, 2.2], [Арнтц, гл. 1, 9.5.1], [Рафаэли, гл. 1], [Фаррелл-Шоу, модуль 20], [Рёдигер, гл. 12]',
   },
   {
     id: 'evidence_limits',
@@ -61,8 +61,8 @@ export const buildPracticeCourse: PracticeNotesBuilder = (tr) => [
         'Что вы забираете с сегодняшней встречи?',
       ),
     ],
-    more: sessionStructureFull,
-    sources: '[Кембридж, гл. 5, бокс 5.10], [Арнтц ПРЛ, гл. 3], [Арнтц, 4.4]',
+    more: cam.sessionStructureMore,
+    sources: cam.sessionStructureSources,
   },
   ...buildPracticeSelfDisclosure(tr),
 ];

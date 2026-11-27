@@ -1,6 +1,7 @@
 import type { BetweenSessionsItem, ModeGuide, Tr } from '../types';
 import { punitiveMore, punitiveVoice } from './couplesModes';
 import * as cc from './modesCambridgeC';
+import { punitiveSkillsTechniques } from './punitiveCriticRoedigerSkills';
 
 /** Текст выполним на бумаге: задание из каталога получает и клиент без аккаунта, у него «Практик» нет. */
 export const PHRASE_CHECK: BetweenSessionsItem = {
@@ -34,8 +35,7 @@ export const buildPunitiveCriticGuide = (tr: Tr): ModeGuide => ({
   moreTechniques: [
     'pros_cons',
     'mode_awareness_summary',
-    'courtroom',
-    'responsibility_pie',
+    ...punitiveSkillsTechniques,
     'mindfulness',
     'defusion',
     'behavioral_experiment',

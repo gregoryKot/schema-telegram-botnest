@@ -91,7 +91,9 @@ export type RoedigerTechniqueId =
   | 'perspective_change'
   | 'body_mode_positions'
   | 'farewell_imagery'
-  | 'emotional_resonance_sphere';
+  | 'emotional_resonance_sphere'
+  | 'self_regulation_toolkit'
+  | 'mode_diary_tools';
 
 /** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
 export type LuzTechniqueId = 'child_mode_play';

@@ -18,6 +18,7 @@ import {
 } from './TechniqueSignsHeath';
 import { BalanceAxes, BodyModePositions, Genogram, StandAbove } from './TechniqueSignsRoediger';
 import { FarewellChair } from './TechniqueSignsRoedigerImg';
+import { DiaryColumns, SkillLadder } from './TechniqueSignsRoedigerSkills';
 import { ResonanceSphere } from './TechniqueSignsRoedigerChairs';
 import { FingerPuppets } from './TechniqueSignsLuz';
 import { BodyScan, BreathingSpace, HealthyLight, SchemaLens } from './TechniqueSignsVreeswijk';
@@ -45,4 +46,5 @@ export const TECHNIQUE_OWN_SIGN_ART: Record<TechniqueOwnSign, (p: ArtProps) => R
   friend_pair: couples.FriendPair, couple_chairs: couples.CoupleChairs,
   monitor_ring: MonitorRing, mode_page: ModePage, review_rows: ReviewRows,
   resonance_sphere: ResonanceSphere, farewell_chair: FarewellChair,
+  skill_ladder: SkillLadder, diary_columns: DiaryColumns,
 };

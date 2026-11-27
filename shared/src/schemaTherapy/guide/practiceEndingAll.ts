@@ -1,10 +1,8 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildPracticeEnding } from './practiceEnding';
-import {
-  cbtWithSchemasHeathMore,
-  prematureEndingHeathMore,
-} from './practiceEndingHeathMore';
-import { cbtWithSchemasRafaeli } from './practiceEndingRafaeli';
+import { cbtWithSchemasHeathMore } from './practiceEndingHeathMore';
+import * as rd from './practiceEndingRoediger';
+import { prematureEndingHard } from './practiceEndingRoediger';
 
 /** «Для терапевта» по Хис (гл. 19, 20): трудное завершение и схема-приёмы в краткой КПТ. Карта — docs/guide-sources/Хис-Стартап.md, пачка 9. */
 export const buildPracticeEndingAll: PracticeNotesBuilder = (tr) => [
@@ -33,10 +31,11 @@ export const buildPracticeEndingAll: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: [
-      ...prematureEndingHeathMore,
+      ...rd.prematureEndingMore,
+      ...prematureEndingHard,
       'Плановое завершение — в «Завершении терапии»; как прощаться при ПРЛ — в статье «Пограничное расстройство личности», раздел «Курс терапии» [Хис, гл. 20].',
     ],
-    sources: '[Хис, гл. 20, Ванко и Робертс], [Арнтц ПРЛ, гл. 3]',
+    sources: `${rd.prematureEndingSources}, [Рёдигер, гл. 13]`,
   },
   {
     id: 'cbt_with_schemas',
@@ -59,9 +58,9 @@ export const buildPracticeEndingAll: PracticeNotesBuilder = (tr) => [
     ],
     more: [
       ...cbtWithSchemasHeathMore,
-      ...cbtWithSchemasRafaeli,
+      ...rd.cbtWithSchemasMore,
       'Пробные варианты короткой схема-терапии, около 20 сессий, при смешанных расстройствах личности уже описаны, но это пилотные работы, а не доказательная база [Хис, гл. 19].',
     ],
-    sources: '[Хис, гл. 19, Мурей, Бирн и Руте], [Рафаэли, гл. 28]',
+    sources: rd.cbtWithSchemasSources,
   },
 ];

@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { imageryAvoidanceMore } from './practiceMoreHeath';
+import { imageryAvoidanceMore } from './practiceYoungStartRoediger';
 import { suitabilityMoreAll } from './practiceRafaeliAssess';
 /**
  * «Для терапевта» по гл. 2, 4 и 5 Янга: кому метод подходит, клиент «ничего не видит»
@@ -43,7 +43,7 @@ export const buildPracticeYoungStart: PracticeNotesBuilder = (tr) => [
       ),
     ],
     more: imageryAvoidanceMore,
-    sources: '[Янг, гл. 2, 4], [Хис, гл. 2, 14]',
+    sources: '[Янг, гл. 2, 4], [Хис, гл. 2, 14], [Рёдигер, гл. 12]',
   },
   {
     id: 'life_decisions',

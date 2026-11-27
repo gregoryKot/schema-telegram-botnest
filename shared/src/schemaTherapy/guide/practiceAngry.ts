@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { angryClientMore } from './practiceMoreHeath';
+import { angryClientMore } from './practiceAngryRoedigerHard';
 
 /** «Для терапевта»: клиент злится. Собирает practiceSituations.ts первым разделом. */
 export const buildPracticeAngry: PracticeNotesBuilder = (tr) => [
@@ -30,7 +30,7 @@ export const buildPracticeAngry: PracticeNotesBuilder = (tr) => [
         'Мне не до конца ясно, что вы злитесь именно на меня. Давайте посмотрим.',
       ),
     ],
-    more: angryClientMore,
+    more: angryClientMore(tr),
     sources:
       '[Рёдигер, гл. 13], [Янг, гл. 6, 9], [Арнтц ПРЛ, гл. 9], [Хис, гл. 12]',
   },
