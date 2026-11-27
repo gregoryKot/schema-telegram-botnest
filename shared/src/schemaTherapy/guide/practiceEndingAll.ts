@@ -2,7 +2,7 @@ import type { PracticeNotesBuilder } from './types';
 import { buildPracticeEnding } from './practiceEnding';
 import { cbtWithSchemasHeathMore } from './practiceEndingHeathMore';
 import * as rd from './practiceEndingRoediger';
-import { prematureEndingHard } from './practiceEndingRoedigerHard';
+import { prematureEndingHard } from './practiceEndingRoediger';
 
 /** «Для терапевта» по Хис (гл. 19, 20): трудное завершение и схема-приёмы в краткой КПТ. Карта — docs/guide-sources/Хис-Стартап.md, пачка 9. */
 export const buildPracticeEndingAll: PracticeNotesBuilder = (tr) => [
