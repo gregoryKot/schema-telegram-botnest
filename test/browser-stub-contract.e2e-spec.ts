@@ -21,6 +21,7 @@ import {
   OFFLINE_CLIENT,
   THERAPIST_NAME,
 } from '../e2e-browser/support/therapistCabinet';
+import { CONSENT_VERSION } from '../shared/src/onboarding/consents';
 import { ANALYTICS_EVENTS } from '../src/analytics/analytics.constants';
 import { LoginTicketService } from '../src/auth/login-ticket/login-ticket.service';
 import { TestApp } from './e2e-support/build-test-app';
@@ -224,6 +225,7 @@ describe('заглушка браузерного смока ↔ настоящ�
           role: 'CLIENT',
           addressForm: 'ty',
           disclaimerAccepted: true,
+          consentVersion: CONSENT_VERSION,
         },
       });
       // Куку выдаём ДО построения запроса: supertest держит один сервер на запрос.

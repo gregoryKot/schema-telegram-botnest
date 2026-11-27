@@ -18,6 +18,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { createServer } from 'http';
 import { buildTestApp } from './build-test-app';
+import { CONSENT_VERSION } from '../../shared/src/onboarding/consents';
 import { cleanupOwnershipFixtures } from './cleanup-fixtures';
 import { AuthService } from '../../src/auth/auth.service';
 import { REFRESH_COOKIE } from '../../src/auth/auth-http.util';
@@ -46,6 +47,7 @@ describe('stand', () => {
     const seen = {
       addressForm: 'ty',
       disclaimerAccepted: true,
+      consentVersion: CONSENT_VERSION,
       onboardingV2Done: true,
       practicesOnboardingDone: true,
     };

@@ -12,6 +12,7 @@
 import { ARTICLE_DIAGRAM_KEYS } from '../../src/articles/article-diagrams';
 import { ARTICLE_SEED } from '../../src/articles/articles.seed';
 import { SCREEN_FIXTURES } from './stubScreens';
+import { CONSENT_VERSION } from '../../shared/src/onboarding/consents';
 
 /** GET /api/needs — список BotService.needs (src/bot/bot.service.ts). */
 export const STUB_NEEDS = [
@@ -152,7 +153,7 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/diary/page/mode': { items: [], hasMore: false },
   'GET /api/diary/page/schema': { items: [], hasMore: false },
   'GET /api/diary/schema': [],
-  'GET /api/disclaimer': { accepted: true }, // согласие уже дано
+  'GET /api/disclaimer': { accepted: true, version: CONSENT_VERSION }, // согласие текущей редакции уже дано
   'GET /api/flashcards/count': { count: 0 }, // exercises.controller.ts: мета квадрата «Мне плохо» в «Практиках» (b14)
   'GET /api/letters': [], // exercises.controller.ts
   'GET /api/mode-notes': [], // notes.controller.ts
