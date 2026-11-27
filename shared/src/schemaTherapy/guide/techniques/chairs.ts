@@ -3,9 +3,9 @@ import { uniqueItems } from '../uniqueItems';
 import { historicalMore } from './arntzBpdImageryMore';
 import { historicalRolePlaySteps } from './rolePlayArntz';
 import {
-  modeInterviewMoreArntzJacob as ijMore,
+  modeInterviewMoreArnJacChild as ijMore,
   modeInterviewWhenArntzJacob as ijWhen,
-} from './modeInterviewArntzJacob';
+} from './modeInterviewChild';
 import { historicalRoleFarrell } from './historicalRoleFarrell';
 import { interviewHeathDosbor } from '../heathDosborMore';
 import * as cambB from './chairsCambridgeB';

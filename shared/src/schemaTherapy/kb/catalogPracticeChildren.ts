@@ -24,13 +24,7 @@ export const PRACTICE_CATALOG_CHILDREN: readonly CatalogTopic[] = [
     source: 'Луз',
     chapters: ['гл. 6'],
   },
-  {
-    id: 'child_imagery_precautions',
-    title: 'Образы с детьми: готовность, противопоказания',
-    status: 'planned',
-    source: 'Луз',
-    chapters: ['гл. 13'],
-  },
+  { id: 'child_imagery_precautions', status: 'written' },
   {
     id: 'child_group',
     title: 'Группа для детей и подростков',

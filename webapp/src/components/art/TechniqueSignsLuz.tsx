@@ -38,3 +38,18 @@ export function FingerPuppets({ size }: ArtProps) {
     </Svg>
   );
 }
+
+/** Внутренний дом: три этажа под крышей, на верхнем три куклы, между этажами нить. */
+export function InnerHouse({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d="M26 24 L60 4 L94 24" {...ROUND} stroke={PAPER.clay} strokeWidth="3" />
+      <path d="M30 26 H90 M30 44 H90 M30 62 H90 M34 26 V62 M86 26 V62" {...ROUND} stroke={PAPER.sage} strokeWidth="3" />
+      <circle cx="48" cy="35" r="4" fill={PAPER.slate} />
+      <circle cx="60" cy="35" r="4" fill={PAPER.clay} />
+      <circle cx="72" cy="35" r="4" fill={PAPER.moss} />
+      <path d="M60 39 V54" {...ROUND} stroke={PAPER.plum} strokeWidth="2" strokeDasharray="3 3" />
+      <circle cx="60" cy="53" r="3" fill={PAPER.amber} />
+    </Svg>
+  );
+}

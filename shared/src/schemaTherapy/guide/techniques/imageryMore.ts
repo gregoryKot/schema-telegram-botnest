@@ -2,7 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import { uniqueItems } from '../uniqueItems';
 import { diagMore, diagVoice } from './arntzBpdImageryMore';
 import { diagnosticMoreWhy, safePlaceMoreHeath } from './imageryRafaeliWhy';
-import { diagnosticFS, safePlaceFS } from './imageryFarrellShaw';
+import { diagnosticFS, safePlaceFS } from './imageryChild';
 
 /** Воображение: diagnostic_imagery, safe_place_imagery. */
 export const buildImageryMoreTechniques: TechniqueGuideBuilder = (tr) => [

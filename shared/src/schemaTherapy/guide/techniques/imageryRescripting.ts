@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { rescriptMore } from './arntzBpdImageryMore';
+import { rescriptMore } from './imageryRescriptingChild';
 import { imageryTraumaBpd, imageryVoice } from './imageryTraumaBpd';
 import * as cc from './imageryRescriptingCambridgeC';
 

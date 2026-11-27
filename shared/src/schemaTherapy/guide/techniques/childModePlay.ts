@@ -1,8 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import {
-  childModePlayMore,
-  childModePlayStoriesMore,
-} from './childModePlayMore';
+import { childModePlayAllMore } from './creativeModeWorkChild';
 
 /** Техника: child_mode_play — игра, куклы и истории с режимами ребёнка [Луз] (карта «Дети», пачка 4). */
 export const buildChildModePlayTechniques: TechniqueGuideBuilder = (tr) => [
@@ -31,7 +28,7 @@ export const buildChildModePlayTechniques: TechniqueGuideBuilder = (tr) => [
         'Злиться можно, обижать нельзя. Скажите словами, что вам не нравится, — я послушаю.',
       ),
     ],
-    more: [...childModePlayMore, ...childModePlayStoriesMore],
+    more: childModePlayAllMore,
     cautions:
       'Фигуру не привязывают к ребёнку напрямую: сравнение ребёнка с гориллой из игры стыдит и уводит из игры, а малышам такие толкования ничего не дают [Луз, гл. 11]. Грубая игра сама по себе не патология. Режим не «убивают»: копинг ограничивают, а не удаляют [Луз, гл. 12]. Без яркого эмоционального отклика куклы мало что дают [Луз, гл. 12].',
     sources: '[Луз, гл. 2, 3, 5, 6, 7, 8, 9, 10, 11, 12]',

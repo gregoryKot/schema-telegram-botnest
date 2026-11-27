@@ -1,4 +1,4 @@
-import { modeMapMore as modeMapMoreLuz } from './modeMapMoreLuz';
+import { modeMapMore as modeMapMoreLuz } from './modeMapMoreLuzChild';
 
 /** «Подробнее» к mode_map из книги о парах: вынесено, чтобы запись не росла. */
 export const modeMapMore: string[] = [

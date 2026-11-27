@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { modeWorkStepsMore } from './practiceMoreHeath';
+import { modeWorkStepsAllMore } from './techniques/creativeModeWorkChild';
 import { modeWorkWhenMore } from './practiceMoreArntzJacob';
 import { therapistScenariosAll } from './practiceTherapistCare';
 import { sameMoreYoung, sameVoiceYoung } from './practiceSameBehaviorYoung';
@@ -115,7 +115,7 @@ export const buildPracticeYoungSession: PracticeNotesBuilder = (tr) => [
         'Похоже, сейчас говорит та часть вас, которая держит людей на расстоянии. Как её можно назвать?',
       ),
     ],
-    more: modeWorkStepsMore,
+    more: modeWorkStepsAllMore,
     sources: '[Янг, гл. 8], [Хис, гл. 11], [Фаррелл-Шоу, модули 8–11]',
   },
   ...buildPracticeChannelsYoung(tr),

@@ -118,7 +118,10 @@ const ROEDIGER_TECHNIQUE_SIGN: Record<RoedigerTechniqueId, GuideSign> = {
   body_mode_positions: 'side_seat',
 };
 
-const LUZ_TECHNIQUE_SIGN: Record<LuzTechniqueId, GuideSign> = { child_mode_play: 'finger_puppets' };
+const LUZ_TECHNIQUE_SIGN: Record<LuzTechniqueId, GuideSign> = {
+  child_mode_play: 'finger_puppets',
+  inner_house: 'house_floors',
+};
 const VREESWIJK_TECHNIQUE_SIGN: Record<VreeswijkTechniqueId, GuideSign> = {
   three_minute_breathing_space: 'breathing_space',
   mindfulness_practices: 'body_scan',

@@ -90,7 +90,7 @@ export type RoedigerTechniqueId =
   'genogram' | 'perspective_change' | 'body_mode_positions';
 
 /** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
-export type LuzTechniqueId = 'child_mode_play';
+export type LuzTechniqueId = 'child_mode_play' | 'inner_house';
 /** Техники из книги ван Фресвайк, Брурсен и Шуринк (карта «ван Фресвайк»). */
 export type VreeswijkTechniqueId =
   | 'three_minute_breathing_space'

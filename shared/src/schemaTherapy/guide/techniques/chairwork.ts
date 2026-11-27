@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { buildChairworkMoreRafaeli } from './chairworkRafaeli';
+import { buildChairworkMoreChild } from './chairworkMoreChild';
 import * as camb from './chairworkCambridgeB';
 import * as cpl from './chairworkCouple';
 
@@ -24,11 +24,7 @@ export const buildChairworkTechniques: TechniqueGuideBuilder = (tr) => [
       ...cpl.chairworkCoupleSteps(tr),
     ],
     voice: camb.chairworkVoice(tr),
-    more: [
-      ...buildChairworkMoreRafaeli(tr),
-      ...camb.chairworkCambridgeMore,
-      ...cpl.chairworkCoupleMore,
-    ],
+    more: buildChairworkMoreChild(tr),
     cautions:
       'При сильном Карающем Критике клиента на его стул не сажают: так клиент сольётся с Критиком ещё крепче. Пусть со своего места пересказывает, что тот говорит [Арнтц, 8.3].' +
       cpl.chairworkCoupleCautions +

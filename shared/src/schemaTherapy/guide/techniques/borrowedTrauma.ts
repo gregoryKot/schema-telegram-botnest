@@ -89,6 +89,6 @@ export const buildBorrowedTraumaTechniques: TechniqueGuideBuilder = (tr) => [
     evidence:
       'Метаанализ Лели и соавт. (2019) — о нарративной экспозиционной терапии целиком: метод снижает симптомы посттравматического стресса. Линия жизни — его первый шаг.',
     sources:
-      'Schauer M., Neuner F., Elbert T. Narrative Exposure Therapy: A Short-Term Treatment for Traumatic Stress Disorders. 2nd ed. Hogrefe, 2011. Lely J. C. G. et al. The effectiveness of narrative exposure therapy: a review, meta-analysis and meta-regression analysis. European Journal of Psychotraumatology, 2019.',
+      'Schauer M., Neuner F., Elbert T. Narrative Exposure Therapy: A Short-Term Treatment for Traumatic Stress Disorders. 2nd ed. Hogrefe, 2011. Lely J. C. G. et al. The effectiveness of narrative exposure therapy: a review, meta-analysis and meta-regression analysis. European Journal of Psychotraumatology, 2019. Для детей: Луз К. и др., гл. 12 [Луз, гл. 12].',
   },
 ];

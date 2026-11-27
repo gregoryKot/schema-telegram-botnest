@@ -42,10 +42,11 @@ import { buildSchemaDialogueTechniques } from './schemaDialogue';
 import { buildBorrowedCbtTechniques } from './borrowedCbt';
 import { buildBorrowedDbtTechniques } from './borrowedDbt';
 import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
-import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
+import { buildBorrowedTraumaWithChild as buildBorrowedTraumaTechniques } from './borrowedTraumaChild';
 import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
 import { buildGenogramTechniques } from './genogram';
 import { buildChildModePlayTechniques } from './childModePlay';
+import { buildInnerHouseTechniques } from './innerHouse';
 import { buildPerspectiveChangeTechniques } from './perspectiveChange';
 import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
@@ -82,6 +83,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildFormulationTechniques,
   buildGenogramTechniques,
   buildChildModePlayTechniques,
+  buildInnerHouseTechniques,
   buildPerspectiveChangeTechniques,
   buildBodyModePositionsTechniques,
   buildEvidenceWorkTechniques,

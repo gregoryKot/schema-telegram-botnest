@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { futureMoreHeath, healthyAdultImageryMore } from './imageryHeathMore';
+import { futureMoreHeath, healthyAdultImageryMore } from './imageryChild';
 import * as cambB from './imageryCambridgeB';
 
 export const buildImageryTechniques: TechniqueGuideBuilder = (tr) => [
