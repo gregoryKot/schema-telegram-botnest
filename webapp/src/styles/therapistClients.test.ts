@@ -32,14 +32,13 @@ describe('therapist-clients.css: имя в карточке клиента', () 
     const list = readFileSync(join(__dirname, '../components/therapist/ClientListView.tsx'), 'utf8');
     expect(list).not.toContain('pp-leaf');
   });
-  it('лупа палитры видна только там, где нет строки .topbar (телефон)', () => {
-    // Общая кнопка FindButton (.find-btn, index.css) — у кабинета с классом-меткой .tc-find.
-    const shell = readFileSync(join(__dirname, '../index.css'), 'utf8');
-    expect(shell).toMatch(/\.ds-btn\.find-btn \{ display: none;/);
-    expect(shell).toMatch(/\.topbar \{ display: none; \}\s*\.ds-btn\.find-btn \{ display: inline-flex; \}/);
-    expect(readFileSync(join(__dirname, '../components/therapist/ClientListHero.tsx'), 'utf8')).toContain('className="tc-find"');
+  it('К31: схемы — тихий текст, не пилюля: без фона, рамки и скругления; на телефоне шапка колонок скрыта', () => {
+    const d = rule('.tc-schemas');
+    expect(d).not.toMatch(/background|border|radius|padding/);
+    expect(css).not.toMatch(/\.tc-(chip|avatar|sign)\b/);
+    expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*\.tc-head \{ display: none; \}/);
   });
-  it('колонка имени во flex-строке сжимается: .tc-who — min-width: 0', () => {
-    expect(rule('.tc-who')).toContain('min-width: 0');
+  it('колонка имени в сетке сжимается: .tc-name — min-width: 0', () => {
+    expect(rule('.tc-name')).toContain('min-width: 0');
   });
 });

@@ -30,11 +30,9 @@ interface Props {
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
-  /** Палитра «Перейти к…» — лупа в шапке списка (оболочка, ov.setCmdOpen). */
-  onOpenPalette?: () => void;
 }
 
-export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange, onOpenPalette }: Props) {
+export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +126,6 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           loadFailed={loadFailed} onRetry={() => { setLoading(true); loadRoster(); }}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           filterStatus={filterStatus} setFilterStatus={setFilterStatus}
-          onSearch={onOpenPalette}
           digestOf={digests.digestOf}
           openClient={detail.openClient}
           addClient={addClient}

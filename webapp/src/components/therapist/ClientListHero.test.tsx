@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Шапка «Клиенты»: счётчик только при клиентах, кнопка знает, открыта ли форма.
+// Шапка «Клиенты»: счётчик только при клиентах, кнопка знает, открыта ли форма; кнопка — текст на линии.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ClientListHero } from './ClientListHero';
@@ -19,11 +19,13 @@ describe('ClientListHero', () => {
     fireEvent.click(btn);
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
-  it('одна залитая кнопка: при открытой форме главное — «Создать карточку», «+ Новый клиент» вторична', () => {
-    const { rerender } = render(<ClientListHero count={1} formVisible={false} onToggle={() => {}} />);
+  it('К31: залитой кнопки в шапке нет — «+ Новый клиент» текстом на линии при закрытой и открытой форме; лупы нет', () => {
+    const { rerender, container } = render(<ClientListHero count={1} formVisible={false} onToggle={() => {}} />);
     const btn = () => screen.getByRole('button', { name: /Новый клиент/ });
-    expect(btn().className).not.toContain('ds-btn--secondary');
+    expect(btn().className).toContain('ds-btn--secondary');
     rerender(<ClientListHero count={1} formVisible onToggle={() => {}} />);
     expect(btn().className).toContain('ds-btn--secondary');
+    expect(container.querySelectorAll('button')).toHaveLength(1);
+    expect(container.querySelector('svg')).toBeNull();
   });
 });

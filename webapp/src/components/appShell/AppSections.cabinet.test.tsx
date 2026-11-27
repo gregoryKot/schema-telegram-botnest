@@ -2,16 +2,15 @@
 // Кабинет терапевта в оболочке (b29):
 //  • «Сегодня» и «Справочник» лежат в обёртке .page — своя прокрутка: на ≥768 .canvas режет
 //    переполнение (overflow: hidden), и без неё низ экрана был недостижим (на 1280×900 «Сегодня»
-//    прятал 123px — третью строку «Требуют внимания», «Справочник» — 581px);
-//  • лупа списка клиентов открывает палитру оболочки (ov.setCmdOpen(true)).
+//    прятал 123px — третью строку «Требуют внимания», «Справочник» — 581px).
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, useNavigate, useLocation } from 'react-router-dom';
 import { useRef } from 'react';
 import { AppSections } from './AppSections';
 
 vi.mock('../TherapistClientSheet', () => ({
-  TherapistClientSheet: (p: { onOpenPalette?: () => void }) => <button onClick={p.onOpenPalette}>лупа</button>,
+  TherapistClientSheet: () => <h1>Клиенты</h1>,
 }));
 vi.mock('../../sections/TherapistTodaySection', () => ({ TherapistTodaySection: () => <h1>Сегодня</h1> }));
 vi.mock('../../sections/TherapistGuideSection', () => ({ TherapistGuideSection: () => <h1>Справочник</h1> }));
@@ -37,13 +36,5 @@ describe('AppSections: кабинет терапевта', () => {
     mount(path);
     const h = await screen.findByRole('heading', { name: title });
     expect(h.parentElement?.classList.contains('page')).toBe(true);
-  });
-
-  it('лупа списка клиентов открывает палитру оболочки', async () => {
-    const setCmdOpen = vi.fn();
-    mount('/cabinet', { setCmdOpen });
-    const loupe = await screen.findByText('лупа');
-    act(() => { loupe.click(); });
-    expect(setCmdOpen).toHaveBeenCalledWith(true);
   });
 });

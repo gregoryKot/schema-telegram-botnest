@@ -95,7 +95,7 @@ export function AppSections({
           onOpenClient={openClient}
           onClose={() => switchTherapistMode(false)}
           backHandlerRef={therapistBackHandlerRef}
-          onClientsChange={setTherapistClients} onOpenPalette={() => ov.setCmdOpen(true)}
+          onClientsChange={setTherapistClients}
         />
       </ErrorBoundary>
     )}
