@@ -1,39 +1,38 @@
-import type { CSSProperties, Ref } from 'react';
+import type { ReactNode } from 'react';
 import { joinSession, splitSession } from './sessionInput';
 
-// Поля «следующей сессии»: день и необязательное время — один компонент на
-// оба фронтенда (правило «одна механика — один компонент»); почему не datetime-local —
-// sessionInput.ts. Оформление задаёт экран (`className`/`style`); `lang="ru"` — день и
-// время по-русски, значение то же ISO (b30, сверка — sessionInput.test.tsx).
+export type SessionDayField = (day: {
+  value: string;
+  onChange: (day: string) => void;
+  label: string;
+}) => ReactNode;
+
+// День и необязательное время сессии (почему не datetime-local — sessionInput.ts); день рисует
+// экран через `renderDate` (сайт — DateField «26 ноября»): shared не импортирует webapp.
 export function SessionDateTimeFields({
   value,
   onChange,
   className,
-  style,
-  dateRef,
+  renderDate,
 }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
-  style?: CSSProperties;
-  dateRef?: Ref<HTMLInputElement>;
+  renderDate: SessionDayField;
 }) {
   const { date, time } = splitSession(value);
-  const field = { className, style, lang: 'ru' };
   return (
     <>
-      <input
-        type="date"
-        aria-label="День сессии"
-        {...field}
-        ref={dateRef}
-        value={date}
-        onChange={(e) => onChange(joinSession(e.target.value, time))}
-      />
+      {renderDate({
+        value: date,
+        onChange: (d) => onChange(joinSession(d, time)),
+        label: 'День сессии',
+      })}
       <input
         type="time"
         aria-label="Время сессии, необязательно"
-        {...field}
+        className={className}
+        lang="ru"
         value={time}
         onChange={(e) => onChange(joinSession(date, e.target.value))}
       />
