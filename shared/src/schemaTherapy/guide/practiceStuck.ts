@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { methodErrorsMore } from './practiceMoreHeath';
-import { buildImpassesMore } from './practiceStuckRafaeli';
+import { buildImpassesCouples as buildImpassesMore } from './practiceCouplesMore';
 import { chattingMore } from './practiceStuckCambridge';
 import * as cc from './practiceTherapistCambridgeC';
 

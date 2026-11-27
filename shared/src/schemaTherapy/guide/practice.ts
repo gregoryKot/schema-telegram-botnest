@@ -19,6 +19,7 @@ import { buildPracticeModeStates } from './practiceModeStates';
 import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
 import { buildPracticeMindfulness } from './practiceMindfulness';
 import { buildPracticeMbst } from './practiceMbst';
+import { buildPracticeCouples } from './practiceCouples';
 
 /**
  * «Для терапевта»: что добавляют к рамке другие книги, три источника
@@ -70,4 +71,5 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeMethodFarrellShaw(tr),
   ...buildPracticeMindfulness(tr),
   ...buildPracticeMbst(tr),
+  ...buildPracticeCouples(tr),
 ];
