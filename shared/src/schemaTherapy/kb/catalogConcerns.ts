@@ -18,14 +18,7 @@ export const CONCERN_CATALOG: readonly CatalogTopic[] = [
   w('ptsd'),
   w('eating_disorders'),
   w('neurodivergence'),
-  {
-    id: 'relationship_patterns',
-    title: 'Повторяющиеся паттерны в отношениях, выбор партнёра',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 4'],
-    note: 'пачка 15 карты; «химия схем» при выборе партнёра — ещё Young, Klosko «Reinventing Your Life» (на полке нет)',
-  },
+  w('relationship_patterns'),
   {
     id: 'infant_regulation',
     title: 'Родитель и младенец: плач, сон, кормление',

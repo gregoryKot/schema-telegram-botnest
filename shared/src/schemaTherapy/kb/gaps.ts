@@ -67,10 +67,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
     kind: 'theory',
     why: 'разбор любой расстроившей ситуации от чувства к потребности [Арнтц ПРЛ, гл. 6]: не зависит от режима или схемы',
   },
-  genogram: {
-    kind: 'theory',
-    why: 'сбор семейной истории в начале терапии у любого клиента [Рёдигер, гл. 4]: конкретного режима или схемы книга не называет',
-  },
   guess_the_mode: {
     kind: 'theory',
     why:
