@@ -29,6 +29,7 @@ export const buildDetachedProtectorGuide = (tr: Tr): ModeGuide => ({
     'mindfulness',
     'socratic_dialogue',
     'mode_management_plan',
+    'mode_awareness_summary',
     'coping_bypass',
     'mode_figures',
     'child_mode_play',

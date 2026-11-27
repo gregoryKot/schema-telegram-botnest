@@ -1,5 +1,5 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { planFarrell } from './farrellPlansMore';
+import { planFarrell, planFarrellShaw } from './farrellPlansMore';
 
 /** Планы из книги Фаррелл, Рейсс и Шоу: mode_management_plan. */
 export const buildFarrellPlanTechniques: TechniqueGuideBuilder = (tr) => [
@@ -27,10 +27,11 @@ export const buildFarrellPlanTechniques: TechniqueGuideBuilder = (tr) => [
         'Этот план не будет срабатывать каждый раз. Но он сработает лучше старого способа и обойдётся вам дешевле.',
       ),
     ],
-    more: [...planFarrell],
+    more: [...planFarrell, ...planFarrellShaw],
     cautions:
       'План с первого раза не будет готовым: его пополняют всю терапию. Стопроцентного результата не обещают, обещают другое: план сработает лучше привычного копинга и с меньшей ценой. Сначала план дополняют терапевт и группа, потом его держит сам Здоровый Взрослый клиента. Копинг не убирают целиком: план делает его меньше и даёт выбор [Фаррелл, гл. 4.5].',
-    sources: '[Фаррелл, гл. 4.5, 5.2]',
+    sources:
+      '[Фаррелл, гл. 4.5, 5.2], [Фаррелл-Шоу, модули 7, 9, 11, 14, 16, 20]',
   },
 ];
 

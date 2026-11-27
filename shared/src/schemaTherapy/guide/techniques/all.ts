@@ -7,6 +7,7 @@ import { buildCreativeModeWorkTechniques } from './creativeModeWork';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
 import { buildFarrellPlanTechniques } from './farrellPlans';
+import { buildFarrellShawMonitoringTechniques } from './farrellShawMonitoring';
 import { buildStoryUnmetNeedTechniques } from './storyUnmetNeed';
 import { buildEmpathicConfrontationTechniques } from './empathicConfrontation';
 import { buildStanceTechniques } from './stance';
@@ -58,6 +59,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildRolePlayArntzTechniques,
   buildCognitiveArntzTechniques,
   buildFarrellPlanTechniques,
+  buildFarrellShawMonitoringTechniques,
   buildEmpathicConfrontationTechniques,
   buildCopingBypassTechniques,
   buildModeFiguresTechniques,

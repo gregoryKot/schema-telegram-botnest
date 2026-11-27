@@ -28,6 +28,7 @@ export const buildBpdTail = (
     'limit_setting',
     'downward_arrow',
     'current_role_play',
+    'monitoring_cycle',
   ],
   voice: [
     tr(
