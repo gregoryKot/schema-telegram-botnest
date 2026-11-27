@@ -8,7 +8,10 @@ import { BORROWED_TECHNIQUE_WORK } from './techniqueWorkBorrowed';
 import { CAMBRIDGE_TECHNIQUE_WORK } from './techniqueWorkCambridge';
 import { YOUNG_TECHNIQUE_WORK } from './techniqueWorkYoung';
 import { ARNTZ_TECHNIQUE_WORK } from './techniqueWorkArntz';
-import { FARRELL_TECHNIQUE_WORK } from './techniqueWorkFarrell';
+import {
+  FARRELL_SHAW_TECHNIQUE_WORK,
+  FARRELL_TECHNIQUE_WORK,
+} from './techniqueWorkFarrell';
 import { HEATH_TECHNIQUE_WORK } from './techniqueWorkHeath';
 import { ARNTZ_JACOB_TECHNIQUE_WORK } from './techniqueWorkArntzJacob';
 import { ROEDIGER_TECHNIQUE_WORK } from './techniqueWorkRoediger';
@@ -153,6 +156,7 @@ export const TECHNIQUE_WORK: Record<TechniqueId, TechniqueWorkDef> = {
   ...YOUNG_TECHNIQUE_WORK,
   ...ARNTZ_TECHNIQUE_WORK,
   ...FARRELL_TECHNIQUE_WORK,
+  ...FARRELL_SHAW_TECHNIQUE_WORK,
   ...HEATH_TECHNIQUE_WORK,
   ...ARNTZ_JACOB_TECHNIQUE_WORK,
   ...ROEDIGER_TECHNIQUE_WORK,

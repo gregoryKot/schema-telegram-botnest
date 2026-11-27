@@ -4,3 +4,7 @@ export type FarrellTechniqueId =
   | 'healthy_adult_plan'
   | 'safety_bubble'
   | 'story_unmet_need';
+
+/** Техники из тетради Фаррелл и Шоу (карта «Фаррелл-Шоу»). */
+export type FarrellShawTechniqueId =
+  'monitoring_cycle' | 'mode_awareness_summary' | 'progress_by_mode';
