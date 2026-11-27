@@ -35,6 +35,14 @@ export const FARRELL_TECHNIQUE_WORK: Record<
       ['home', 'Как практиковать дома'],
     ],
   },
+  good_parent_script: {
+    name: 'Сценарий Хорошего Родителя',
+    fields: [
+      ['phrases', 'Фразы сценария'],
+      ['listen', 'Как слушали и что почувствовали'],
+      ['critic', 'Что мешало, голос Критика'],
+    ],
+  },
   story_unmet_need: {
     name: 'История о ребёнке и потребности',
     fields: [

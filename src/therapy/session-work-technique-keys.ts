@@ -108,6 +108,7 @@ export const TECHNIQUE_WORK_KEYS: KeyMap = {
   'technique:mode_management_plan': ['mode', 'now', 'later', 'schema'],
   'technique:healthy_adult_plan': ['scene', 'goodParent', 'plan', 'result'],
   'technique:safety_bubble': ['image', 'effect', 'home'],
+  'technique:good_parent_script': ['phrases', 'listen', 'critic'],
   'technique:monitoring_cycle': ['scene', 'mode', 'need', 'result'],
   'technique:mode_awareness_summary': ['mode', 'signs', 'roots', 'need'],
   'technique:progress_by_mode': ['changed', 'ahead', 'aims'],

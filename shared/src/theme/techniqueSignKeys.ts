@@ -37,6 +37,7 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'mode_plan',
   'plan_ahead',
   'bubble',
+  'parent_voice',
   'storm_need',
   // TechniqueSignsHeath.tsx — техники из книги Хис и Стартап
   'mask',

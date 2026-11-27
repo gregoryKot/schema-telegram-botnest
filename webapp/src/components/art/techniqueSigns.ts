@@ -91,6 +91,7 @@ const FARRELL_TECHNIQUE_SIGN: Record<FarrellTechniqueId, GuideSign> = {
   mode_management_plan: 'mode_plan',
   healthy_adult_plan: 'plan_ahead',
   safety_bubble: 'bubble',
+  good_parent_script: 'parent_voice',
   story_unmet_need: 'storm_need',
 };
 
