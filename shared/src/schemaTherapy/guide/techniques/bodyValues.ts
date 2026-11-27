@@ -1,8 +1,7 @@
 import type { TechniqueGuideBuilder } from '../types';
-import {
-  coupleModeCycleSteps,
-  coupleModeCycleMore,
-} from './coupleModeCycleMore';
+import { coupleModeCycleSteps } from './coupleModeCycleSteps';
+import { coupleModeCycleMore } from './coupleModeCycleMore';
+import { cycleWhen, cycleCautions, valuesMore } from './coupleModeCycleFrame';
 
 /** Ценности и пара: values_overview, couple_mode_cycle. */
 export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
@@ -28,8 +27,9 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
     ],
     cautions:
       'Требовательный Критик легко выдаёт свои «надо» за ценности: ценность выбирают, от правила устают. «Взгляд сверху» — не способ отключиться: клиент смотрит со стороны и ничего не чувствует — это Отстранённый Защитник, а не Здоровый Взрослый.',
+    more: valuesMore,
     sources:
-      'Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy: An Integrative Approach to Personality Disorders, Emotional Dysregulation, and Interpersonal Functioning. Context Press / New Harbinger, 2018.',
+      'Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy: An Integrative Approach to Personality Disorders, Emotional Dysregulation, and Interpersonal Functioning. Context Press / New Harbinger, 2018; [Пары, гл. 12].',
   },
   {
     id: 'couple_mode_cycle',
@@ -37,7 +37,7 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
     name: 'Цикл столкновения режимов в паре',
     summary:
       'Терапевт и пара рисуют круг ссоры: режим одного запускает режим другого, тот отвечает — и так по кругу. Противником становится цикл, а не партнёр.',
-    when: 'Работа с парой, когда ссоры идут по одному сценарию. И индивидуальная терапия — чтобы разобрать повторяющийся конфликт клиента с партнёром [Симеоне-ДиФранческо и соавт., 2015, гл. 8]. Типичные сцепки схем в паре: Самопожертвование с Привилегированностью или с Зависимостью; Подавление эмоций с эмоциональным, импульсивным партнёром — со временем двое расходятся всё дальше к полюсам. Терапия пары подтягивает обоих к середине [Янг, гл. 7].',
+    when: cycleWhen,
     steps: coupleModeCycleSteps,
     voice: [
       tr(
@@ -46,9 +46,8 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
       ),
     ],
     more: coupleModeCycleMore,
-    cautions:
-      'Насилие в паре — не «цикл режимов»: сначала безопасность. Круг рисуют про обоих поровну; если на листе виноват кто-то один, пара получила ещё один довод в ссоре. В индивидуальной работе режимы партнёра остаются гипотезой — его в кабинете нет. Если партнёр отвечает на Уязвимого Ребёнка другого Критиком, терапевт останавливает это прямо и объясняет, что так повторяется детская рана. Когда ПРЛ у одного, легко решить, что у второго проблем нет, — тогда партнёр и терапевт вместе подкармливают Карающего Критика клиента. Мешают и соматические жалобы, зависимости, секреты, а ещё схемы самого терапевта, которые запускают сразу двое [Арнтц ПРЛ, гл. 10].',
+    cautions: cycleCautions,
     sources:
-      'Simeone-DiFrancesco C., Roediger E., Stevens B. A. Schema Therapy with Couples: A Practitioner’s Guide to Healing Relationships. Wiley-Blackwell, 2015, гл. 8 «Mode Mapping and Mode Cycle Clash-cards»; [Янг, гл. 7]; [Арнтц ПРЛ, гл. 10]; [Хис, гл. 13].',
+      'Simeone-DiFrancesco C., Roediger E., Stevens B. A. Schema Therapy with Couples: A Practitioner’s Guide to Healing Relationships. Wiley-Blackwell, 2015, гл. 8 «Mode Mapping and Mode Cycle Clash-cards»; [Янг, гл. 7]; [Арнтц ПРЛ, гл. 10]; [Хис, гл. 13]; [Пары, гл. 2, 6–12].'
   },
 ];
