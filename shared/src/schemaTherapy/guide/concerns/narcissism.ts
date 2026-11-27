@@ -32,5 +32,5 @@ export const buildNarcissismGuide: ConcernGuideBuilder = () => ({
   ...NARCISSISM_SECTIONS,
   formats: NARCISSISM_FORMATS,
   sources:
-    '[Бехари, введение, гл. 1–8], [Янг, гл. 10], [Рафаэли, гл. 26], [Рёдигер, гл. 3]',
+    '[Бехари, введение, гл. 1–8], [Янг, гл. 5, 10], [Рафаэли, гл. 26], [Рёдигер, гл. 3]',
 });
