@@ -12,6 +12,8 @@ import { TodaySkeletonBody } from '../components/therapist/TodaySkeletonBody';
 import { PaperAlert } from '../components/paper/PaperAlert';
 import { CabinetEmpty } from '../components/therapist/CabinetEmpty';
 import { asArray } from './today/safeData';
+import { useClientTaskDigests } from '../components/therapist/useClientTaskDigests';
+import { sessionTasksLine } from '../../../shared/src/tasks/taskDigest';
 
 interface Props {
   displayName: string | null;
@@ -31,6 +33,7 @@ export function TherapistTodaySection({ displayName, onOpenClient, onAddClient }
   const tr = useTr();
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [status, setStatus] = useState<Status>('loading');
+  const { digestOf } = useClientTaskDigests(); // статус заданий у строки сессии — к встрече
 
   const fetchClients = useCallback(() => api.getTherapyClients()
     .then(c => { setClients(asArray(c)); setStatus('ready'); })
@@ -77,7 +80,8 @@ export function TherapistTodaySection({ displayName, onOpenClient, onAddClient }
 
       <div className="tt-cols">
         <div className="tt-col">
-          <SessionsBlock sessions={sessions} onOpen={onOpenClient} plain={empty} />
+          <SessionsBlock sessions={sessions} onOpen={onOpenClient} plain={empty}
+            tasksLineOf={(c) => { const d = digestOf(c); return d ? sessionTasksLine(d) : null; }} />
           {attention.length > 0 && (
             <div className="tt-sub">
               <h2 className="ds-h2">Требуют внимания</h2>

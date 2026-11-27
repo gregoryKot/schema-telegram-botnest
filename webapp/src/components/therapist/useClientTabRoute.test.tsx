@@ -12,7 +12,7 @@ function useBoth() {
   const [clientTab, setClientTab] = useState<ClientTab>('plan');
   useClientTabRoute({
     view: 'client', openClientRef: 'abcdefgh',
-    detail: { selectedClient: client, clientTab, setClientTab }, board: { open: () => {} },
+    detail: { selectedClient: client, clientTab, setClientTab },
   });
   return { setClientTab, loc: useLocation() };
 }

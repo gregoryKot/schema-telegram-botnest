@@ -69,12 +69,12 @@ describe('боковое меню — свернуть и развернуть',
     expect(screen.getByRole('link', { name: 'Григорий' }).getAttribute('href')).toBe('/profile');
   });
 
-  // Решение 9 (docs/design/APP_2026-11.md): у доски «Задания» свой пункт; «Все клиенты» горит на списке.
-  it.each([['/cabinet', 'Все клиенты'], ['/cabinet/tasks', 'Задания']])('терапевт на %s: пункты кабинета со знаками, горит «%s»', (path, on) => {
-    renderSidebar({ therapist: true, path });
+  it('терапевт на /cabinet: пункты кабинета со знаками, горит «Все клиенты»', () => {
+    const on = 'Все клиенты';
+    renderSidebar({ therapist: true, path: '/cabinet' });
     fireEvent.click(screen.getByRole('button', { name: 'Свернуть меню' }));
-    expect(navLinks().map((a) => a.getAttribute('aria-label'))).toEqual(['Сегодня', 'Справочник', 'Задания', 'Все клиенты']);
-    expect(navLinks().map((a) => a.getAttribute('href'))).toEqual(['/cabinet/today', '/cabinet/guide', '/cabinet/tasks', '/cabinet']);
+    expect(navLinks().map((a) => a.getAttribute('aria-label'))).toEqual(['Сегодня', 'Справочник', 'Все клиенты']);
+    expect(navLinks().map((a) => a.getAttribute('href'))).toEqual(['/cabinet/today', '/cabinet/guide', '/cabinet']);
     expect(navLinks().every((a) => a.querySelector('svg.pp-art--nav'))).toBe(true);
     const active = navLinks().filter((a) => a.getAttribute('aria-current') === 'page');
     expect(active.map((a) => a.getAttribute('title'))).toEqual([on]);

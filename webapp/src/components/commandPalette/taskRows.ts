@@ -2,7 +2,7 @@
 // Без клиентов и при «Показе экрана» строк нет: выбирать некого или имена скрыты.
 import { ROW_SCORE, rowScore } from '../../../../shared/src/search/rankRows';
 import { CATALOG_GROUP_TITLES, type CatalogTask } from '../../../../shared/src/tasks/catalog/taskCatalog';
-import { THERAPIST_NAV } from '../appShell/navLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import type { CmdRow } from './cmdRow';
 import type { PaletteInput } from './paletteRows';
 
@@ -18,7 +18,7 @@ export function canAssign({ clients, screenShare }: Pick<PaletteInput, 'clients'
 function taskRow(task: CatalogTask, run: PaletteInput['run']): CmdRow {
   return {
     key: `task:${task.id}`, kind: 'task', group: TASK_GROUP, label: task.title,
-    sub: `Дать клиенту · ${CATALOG_GROUP_TITLES[task.group]}`, mark: { sign: THERAPIST_NAV.tasks.sign },
+    sub: `Дать клиенту · ${CATALOG_GROUP_TITLES[task.group]}`, mark: { sign: ENTITY_LOOK.task.sign },
     search: task.title, stay: true, action: () => run.pickAssignee(task.id),
   };
 }

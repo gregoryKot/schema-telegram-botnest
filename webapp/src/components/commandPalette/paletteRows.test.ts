@@ -51,7 +51,7 @@ describe('buildPaletteRows — без запроса', () => {
     const clients = rows.filter((r) => r.kind === 'client');
     expect(labels(clients)).toEqual(['Анна', 'Борис', 'Вера', 'Глеб', 'Дина']);
     expect(clients[CLIENTS_SHOWN - 1].after).toBe('Ещё 2 — начни вводить имя');
-    expect(labels(rows.filter((r) => r.kind === 'section'))).toEqual(['Сегодня', 'Справочник', 'Задания', 'Все клиенты']);
+    expect(labels(rows.filter((r) => r.kind === 'section'))).toEqual(['Сегодня', 'Справочник', 'Все клиенты']);
     expect(rows.some((r) => r.kind === 'guide')).toBe(false);
   });
 
@@ -161,7 +161,7 @@ describe('подсказки', () => {
 });
 
 describe('«Недавнее»', () => {
-  const RECENT = ['client:7', 'guide:schema:abandonment', 'section:/cabinet/tasks', 'client:999', 'action:toggle-mode'];
+  const RECENT = ['client:7', 'guide:schema:abandonment', 'section:/cabinet/today', 'client:999', 'action:toggle-mode'];
 
   it('первая группа без запроса: строки по ключу среди всех доступных, порядок ключей; неразрешимый ключ пропущен', () => {
     const handlers = run();
@@ -169,7 +169,7 @@ describe('«Недавнее»', () => {
     expect(groups(rows)).toEqual([GROUP.recent, GROUP.clients, GROUP.sections, GROUP.actions]);
     const recent = rows.filter((r) => r.group === GROUP.recent);
     // «Клим» — седьмой клиент, вне первых пяти; лист справочника без запроса виден только здесь
-    expect(labels(recent)).toEqual(['Клим', SCHEMA, 'Задания', 'Переключиться в режим клиента']);
+    expect(labels(recent)).toEqual(['Клим', SCHEMA, 'Сегодня', 'Переключиться в режим клиента']);
     expect(recent.map((r) => r.kind)).toEqual(['client', 'guide', 'section', 'action']);
     expect(recent.some((r) => r.after)).toBe(false);
     recent[0].action();
@@ -178,7 +178,7 @@ describe('«Недавнее»', () => {
 
   it('«Показ экрана» прячет клиента; другой режим и незагруженный справочник — строки нет; пусто — группы нет', () => {
     expect(labels(buildPaletteRows(input({ recent: RECENT, screenShare: true })).filter((r) => r.group === GROUP.recent)))
-      .toEqual([SCHEMA, 'Задания', 'Переключиться в режим клиента']);
+      .toEqual([SCHEMA, 'Сегодня', 'Переключиться в режим клиента']);
     expect(labels(buildPaletteRows(input({ recent: RECENT, guide: null, therapistMode: false })).filter((r) => r.group === GROUP.recent)))
       .toEqual(['Клим', 'Переключиться в кабинет терапевта']);
     expect(groups(buildPaletteRows(input({ recent: ['client:999'] })))).not.toContain(GROUP.recent);
@@ -198,7 +198,7 @@ describe('buildPaletteRows — кабинет: вкладки, задания, �
     expect(labels(buildPaletteRows(input({ query: 'дать задание' })))[0]).toBe('Дать задание');
     expect(labels(buildPaletteRows(input({ query: 'добавить' })))).toContain('Добавить клиента');
     expect(labels(buildPaletteRows(input({ query: 'показ экрана' })))).toContain('Включить показ экрана');
-    expect(labels(buildPaletteRows(input({ query: 'доска' })))).toContain('Задания');
+    expect(labels(buildPaletteRows(input({ query: 'доска' })))).not.toContain('Задания'); // раздела-доски нет
     for (const mode of [{ therapist: false, therapistMode: false, clients: [] }, { therapistMode: false }]) {
       expect(keys(buildPaletteRows(input(mode))).filter((k) => ACTIONS.includes(k))).toEqual([]);
     }

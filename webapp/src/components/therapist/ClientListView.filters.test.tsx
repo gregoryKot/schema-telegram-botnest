@@ -7,13 +7,12 @@ import { useState } from 'react';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ClientListView } from './ClientListView';
 import { useAddClient } from './useAddClient';
-import { useTasksBoard } from './useTasksBoard';
 import type { RosterStatus } from './rosterModel';
 import type { TherapyClientSummary } from '../../api';
 
 vi.mock('../../api', () => ({
   api: {
-    addVirtualClient: vi.fn(), createTherapyInvite: vi.fn(), getAllTherapyTasks: vi.fn(),
+    addVirtualClient: vi.fn(), createTherapyInvite: vi.fn(),
     getTherapyInvites: vi.fn(() => Promise.resolve([])), revokeTherapyInvite: vi.fn(),
     getCardClaims: vi.fn(() => Promise.resolve([])), resolveCardClaim: vi.fn(),
   },
@@ -31,13 +30,12 @@ function Host() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<RosterStatus>('all');
   const addClient = useAddClient({ setClients });
-  const board = useTasksBoard();
   return (
     <ClientListView
       animKey={0} clients={clients} loading={false} loadFailed={false} onRetry={vi.fn()}
-      listTab="clients" searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+      searchQuery={searchQuery} setSearchQuery={setSearchQuery}
       filterStatus={filterStatus} setFilterStatus={setFilterStatus}
-      board={board} openClient={vi.fn()} addClient={addClient}
+      openClient={vi.fn()} addClient={addClient}
     />
   );
 }

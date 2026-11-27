@@ -1,6 +1,6 @@
 // Вкладки кабинета живут в адресе (владелец, 2026-11): перезагрузка и ссылка
 // открывают ту же вкладку. Карточка клиента — /cabinet/<код>/<слаг> («Обзор» —
-// без слага), доска «Задания» — /cabinet/tasks (вход из меню). Единственное место, где
+// без слага). Единственное место, где
 // живёт соответствие вкладки и слага; синхронизация с состоянием карточки —
 // useClientTabRoute, часть адреса с клиентом — shared/src/utils/clientRef.
 import type { ClientTab } from './clientSheetTypes';
@@ -11,9 +11,8 @@ const SLUG: Record<ClientTab, string> = {
   tasks: 'tasks', ysq: 'schemas', client_notes: 'notes',
 };
 
-export type ListTab = 'clients' | 'kanban';
-/** Доска «Задания» списка клиентов. `tasks` не пройдёт как клиент: parseClientRef('tasks') — null. */
-export const LIST_TASKS_PATH = '/cabinet/tasks';
+/** Адрес убранной доски «Задания»: остался в закладках и старых уведомлениях, ведёт на список. */
+export const LEGACY_TASKS_PATH = '/cabinet/tasks';
 
 export function slugOfTab(tab: ClientTab): string {
   return SLUG[tab];
@@ -37,11 +36,7 @@ export function clientTabFromPath(pathname: string): ClientTab | null {
   return m && parseClientRef(m[1]) ? tabFromSlug(m[2]) : null;
 }
 
-/** Адрес — список клиентов (на любой его вкладке). */
+/** Адрес — список клиентов. */
 export function isClientListPath(pathname: string): boolean {
-  return pathname === '/cabinet' || pathname === LIST_TASKS_PATH;
-}
-
-export function listTabFromPath(pathname: string): ListTab {
-  return pathname === LIST_TASKS_PATH ? 'kanban' : 'clients';
+  return pathname === '/cabinet';
 }

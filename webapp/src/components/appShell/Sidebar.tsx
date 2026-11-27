@@ -42,7 +42,7 @@ export function Sidebar({
   const collapsed = useSidebarCollapsed();
   const newTasks = useNewTasksCount(!therapistMode); // «Задания» лежат в «Ещё» (U2)
   if (collapsed) return <SidebarRail items={items} therapistMode={therapistMode} displayName={displayName} clients={therapistClients} />;
-  const { today, guide, tasks, clients } = THERAPIST_NAV;
+  const { today, guide, clients } = THERAPIST_NAV;
   return (
     <aside className="sidebar">
       <SidebarBrand menu={{ therapistMode }} />
@@ -59,8 +59,8 @@ export function Sidebar({
           </NavLink>
         ))}
         {therapistMode && (<>
-          {/* «Справочник» и доска — до клиентов: их список под «Все клиенты» бывает длинным. */}
-          {[today, guide, tasks].map(therapistLink)}
+          {/* «Справочник» — до клиентов: их список под «Все клиенты» бывает длинным. */}
+          {[today, guide].map(therapistLink)}
           <NavLink to={clients.to} end className={itemClass}>
             <NavSign sign={clients.sign} /><span>{clients.label}</span>
             <span className="badge">{screenShare ? '' : therapistClients.length || ''}</span>

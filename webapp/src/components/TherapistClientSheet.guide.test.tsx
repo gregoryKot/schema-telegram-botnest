@@ -39,7 +39,7 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
 });
 vi.mock('../api', () => ({
   api: Object.fromEntries([
-    'getTherapyClients', 'getTherapyInvites', 'getCardClaims', 'getTherapyTasksForClient', 'getTherapistNotes',
+    'getTherapyClients', 'getTherapyInvites', 'getCardClaims', 'getTherapyTasksForClient', 'getAllTherapyTasks', 'getTherapistNotes',
     'getConceptualization', 'getTherapyClientData', 'getClientSchemaNotes', 'getClientModeNotes',
     'getTherapyClientHistory', 'getClientDiary', 'saveConceptualization', 'createTask', 'trackEvent', 'getGuideMarks',
   ].map((k) => [k, vi.fn()])),
@@ -60,6 +60,7 @@ beforeEach(() => {
   }]);
   mockApi.getTherapyInvites.mockResolvedValue([]);
   mockApi.getTherapyTasksForClient.mockResolvedValue([]);
+  mockApi.getAllTherapyTasks.mockResolvedValue([]);
   mockApi.getTherapistNotes.mockResolvedValue({ notes: [], total: 0 });
   mockApi.getConceptualization.mockResolvedValue({
     id: 1, therapistId: 1, clientId: 7, schemaIds: ['abandonment'], modeIds: ['vulnerable_child'],
