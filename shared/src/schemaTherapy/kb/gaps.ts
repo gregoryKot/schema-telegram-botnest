@@ -73,10 +73,6 @@ export const TECHNIQUES_WITHOUT_SECTION: Readonly<Record<string, KbGap>> = {
       'плановый обзор курса у любого клиента [Фаррелл-Шоу, модуль 13]; ' +
       PHASE,
   },
-  genogram: {
-    kind: 'theory',
-    why: 'сбор семейной истории в начале терапии у любого клиента [Рёдигер, гл. 4]: конкретного режима или схемы книга не называет',
-  },
   guess_the_mode: {
     kind: 'theory',
     why:
