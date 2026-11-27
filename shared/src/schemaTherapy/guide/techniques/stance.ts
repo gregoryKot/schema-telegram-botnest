@@ -1,7 +1,7 @@
 import type { TechniqueGuideBuilder } from '../types';
 import { buildMindfulnessTechnique } from './mindfulness';
 import * as cambB from './stanceCambridgeB';
-
+import { selfCompassionRoedigerMore } from './stanceRoediger';
 /** Техники: self_compassion, mindfulness. */
 export const buildStanceTechniques: TechniqueGuideBuilder = (tr) => [
   {
@@ -26,6 +26,7 @@ export const buildStanceTechniques: TechniqueGuideBuilder = (tr) => [
       'Храбрость и сила входят в сострадание наравне с добротой. Клиент говорит, что их нет, — попросить представить, что изменится, когда они появятся [Хис, гл. 17].',
       'Упражнение Рёдигера с опорой на самосострадание [Рёдигер, гл. 10]. С открытыми глазами описать ситуацию-триггер и найти «горячую точку» — можно по шкале от 0 до 100. Войти в самосострадание через позу, стопы и дыхание по Гилберту. Дать схеме включиться и остаться в контакте с клиентом. Не пустить старые защиты, перейти в позицию наблюдателя и дать появиться здоровому решению. В конце — какие уроки клиент забирает.',
       ...cambB.selfCompassionCambridgeBMore,
+      ...selfCompassionRoedigerMore,
     ],
     cautions:
       'Сострадание может включить Критика — тогда он и становится работой этой сессии. Упражнения через чувства дают такими порциями, какие клиент выдержит [Кембридж, гл. 10].',

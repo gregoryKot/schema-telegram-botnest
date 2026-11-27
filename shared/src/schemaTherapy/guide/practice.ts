@@ -13,8 +13,7 @@ import { buildPracticeStuck } from './practiceStuck';
 import { buildPracticeYoungSession } from './practiceYoungSession';
 import { buildPracticeYoungStart } from './practiceYoungStart';
 import { buildPracticeTherapistHeath } from './practiceModeReset';
-import { buildPracticeModelRoediger } from './practiceModelRoediger';
-import { buildPracticeSessionRoediger } from './practiceSessionRoediger';
+import { buildPracticeRoedigerAll } from './practiceRoedigerAll';
 import { buildPracticeModeStates } from './practiceModeStates';
 import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
 import { buildPracticeMindfulness } from './practiceMindfulness';
@@ -64,8 +63,7 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeTeen(tr),
   ...buildPracticeYoungStart(tr),
   ...buildPracticeYoungSession(tr),
-  ...buildPracticeModelRoediger(tr),
-  ...buildPracticeSessionRoediger(tr),
+  ...buildPracticeRoedigerAll(tr),
   ...buildPracticeModeStates(tr),
   ...buildPracticeMethodFarrellShaw(tr),
   ...buildPracticeMindfulness(tr),

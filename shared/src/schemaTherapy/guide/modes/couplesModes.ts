@@ -1,7 +1,7 @@
 import { healthyAdultMore as healthyAdultBase } from './healthyAdultArntz';
 import { detachedMore as detachedBase } from './detachedProtectorArntz';
 import { punitiveMore as punitiveBase } from './punitiveCriticArntz';
-import { vulnerableChildMore as vulnerableBase } from './vulnerableChildMore';
+import { vulnerableChildMore as vulnerableBase } from './vulnerableChildRoediger';
 import { angryChildMoreBpd as angryBase } from './angryChildBpd';
 import { undisciplinedMore as undisciplinedBase } from './undisciplinedChildMore';
 import { demandingCriticFarrell as demandingBase } from './criticFarrell';

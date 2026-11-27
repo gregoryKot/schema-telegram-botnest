@@ -2,7 +2,7 @@ import type { TechniqueGuideBuilder } from '../types';
 import { coupleModeCycleSteps } from './coupleModeCycleSteps';
 import { coupleModeCycleMore } from './coupleModeCycleMore';
 import { cycleWhen, cycleCautions, valuesMore } from './coupleModeCycleFrame';
-
+import { valuesRoedigerMore } from './valuesRoediger';
 /** Ценности и пара: values_overview, couple_mode_cycle. */
 export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
   {
@@ -16,7 +16,7 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
       'Расспросить о ценностях по сферам: отношения, работа, здоровье, отдых. Вопрос — как хочется жить, а не чего достичь.',
       'Взять недавнюю ситуацию и посмотреть на неё со стороны: какие режимы там были, что каждый говорил и чего хотел.',
       'Спросить из позиции Здорового Взрослого: что здесь важно мне, а не схеме? Какой шаг был бы в эту сторону?',
-      'Выбрать один небольшой шаг на неделю и заранее назвать, какой режим будет мешать.',
+      'От ценности к цели: текущий и целевой уровень по шкале 0–10, важность, один шаг-обязательство на неделю; заранее назвать режим, который будет мешать [Рёдигер, гл. 7].',
       'На следующей сессии разобрать, получилось ли отойти и посмотреть: что помогло, что сбило.',
     ],
     voice: [
@@ -27,9 +27,9 @@ export const buildBodyValuesTechniques: TechniqueGuideBuilder = (tr) => [
     ],
     cautions:
       'Требовательный Критик легко выдаёт свои «надо» за ценности: ценность выбирают, от правила устают. «Взгляд сверху» — не способ отключиться: клиент смотрит со стороны и ничего не чувствует — это Отстранённый Защитник, а не Здоровый Взрослый.',
-    more: valuesMore,
+    more: [...valuesMore, ...valuesRoedigerMore],
     sources:
-      'Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy: An Integrative Approach to Personality Disorders, Emotional Dysregulation, and Interpersonal Functioning. Context Press / New Harbinger, 2018; [Пары, гл. 12].',
+      'Roediger E., Stevens B. A., Brockman R. Contextual Schema Therapy: An Integrative Approach to Personality Disorders, Emotional Dysregulation, and Interpersonal Functioning. Context Press / New Harbinger, 2018; [Рёдигер, гл. 7]; [Пары, гл. 12].',
   },
   {
     id: 'couple_mode_cycle',
