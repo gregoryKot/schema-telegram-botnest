@@ -7,9 +7,8 @@ export type SessionDayField = (day: {
   label: string;
 }) => ReactNode;
 
-// Поля «следующей сессии»: день и необязательное время — один компонент на
-// оба фронтенда; почему не datetime-local — sessionInput.ts. День рисует экран
-// (`renderDate`; сайт — DateField «26 ноября»), время — нативное с `lang="ru"`; значение то же ISO (сверка — sessionInput.test.tsx).
+// День и необязательное время сессии (почему не datetime-local — sessionInput.ts); день рисует
+// экран через `renderDate` (сайт — DateField «26 ноября»): shared не импортирует webapp.
 export function SessionDateTimeFields({
   value,
   onChange,

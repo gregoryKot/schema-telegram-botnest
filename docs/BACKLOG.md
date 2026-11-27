@@ -52,6 +52,7 @@
 
 ## Следующее
 
+- ⬜ **Дата по-русски в админке**: нативный `mm/dd/yyyy` остался у `webapp/src/pages/admin/ArticleEditor.tsx` и `webapp/src/pages/admin/ScheduleSection.tsx` (вне хвоста К25 — только владелец); перевести на `DateField`.
 - ⬜ **«Повторы недели» не доходят до MAX** — крон `src/notification/weekly-repeat.scheduler.ts` ставит строку в общую очередь (push, затем Telegram); у MAX очереди уведомлений нет, пользователь только MAX-входа ничего не получит. Доказано: `src/telegram/telegram.schedule-queue.ts` шлёт только push и Telegram.
 - ⬜ **«Повторы недели»: даты оценок считаются по UTC, а не по поясу человека** — окно 7 дней в `weekly-repeat.scheduler.ts` режет `Rating.date` по дате UTC (крон один на всех, понедельник 09:23 UTC); на краю недели возможен сдвиг на день.
 - ⬜ **Merge-драйвер бейслайна бандла не сводит `webapp:largest-chunk`** — два PR справочника растят один чанк `guide-*.js`; после мержа первого `update-branch` у второго суммирует `webapp:total-js`, а `largest-chunk` берёт с одной стороны, и `check-bundle-size-ratchet` краснеет на джобе `webapp` (2026-11-26: #1761 после #1753, прогон 45842963316; #1762 после #1761 — воспроизведено локально, +24 КБ). Лечилось руками: сборка и `--update` в ветке. Смотреть `scripts/bundle-size-baseline.json` в `.gitattributes` и его драйвер.
