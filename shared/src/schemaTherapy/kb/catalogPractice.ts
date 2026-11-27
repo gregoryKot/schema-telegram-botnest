@@ -113,6 +113,13 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     source: 'Кембридж',
     chapters: ['гл. 10'],
   },
+  {
+    id: 'emotional_learning',
+    title: 'Эмоциональное обучение: когерентная терапия Экера',
+    status: 'planned',
+    source: 'Стивенс-Рёдигер',
+    chapters: ['гл. 1', 'гл. 16'],
+  },
   ...VF_PRACTICE,
   w('couple_therapy_stages'),
   w('couple_session_setup'),
