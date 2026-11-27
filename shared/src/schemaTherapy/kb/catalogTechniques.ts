@@ -114,14 +114,6 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   },
   ...VF_TECHNIQUES,
   {
-    id: 'couple_mode_clash',
-    title: 'Столкновение режимов пары: карта и выход из цикла',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 8'],
-    note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
-  },
-  {
     id: 'need_vs_wish',
     title: 'Потребность и желание: диаграмма, «стрельба по мишени»',
     status: 'planned',
