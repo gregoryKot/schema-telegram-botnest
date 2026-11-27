@@ -1,5 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import { buildPracticeDangerous } from './practiceDangerous';
+import { buildPracticeCouplesTherapist } from './practiceCouplesTherapist';
 
 /** «Для терапевта»: измена, доверие и решение о расставании в работе с парой (Пары, гл. 2, 10, 12; карта Пары.md, пачка 9).
  *  Вместе с опасным партнёром собирает practiceSituations.ts. */
@@ -75,4 +76,5 @@ export const buildPracticeCouplesBetrayal: PracticeNotesBuilder = (tr) => [
     ],
     sources: '[Пары, гл. 2, 10]',
   },
+  ...buildPracticeCouplesTherapist(tr),
 ];
