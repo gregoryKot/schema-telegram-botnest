@@ -2,7 +2,7 @@ import type { PracticeNotesBuilder } from './types';
 import { buildPracticeGroup } from './practiceGroup';
 import { buildPracticeAngry } from './practiceAngry';
 import { buildPracticeSuicidal } from './practiceSuicidal';
-import { buildPracticeDangerous } from './practiceDangerous';
+import { buildPracticeDangerousAll } from './practiceDangerousAll';
 import { romancePartnerMore } from './practiceRelationshipMore';
 import * as cc from './practiceTherapistCambridgeC';
 
@@ -29,7 +29,7 @@ export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
     sources:
       '[Рёдигер, гл. 13–14], [Кембридж, бокс 6.7, гл. 18, бокс 18.2], [Янг, гл. 6, 10]',
   },
-  ...buildPracticeDangerous(tr),
+  ...buildPracticeDangerousAll(tr),
   ...buildPracticeGroup(tr),
   {
     id: 'deliberate_practice',

@@ -143,13 +143,7 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     source: 'Пары',
     chapters: ['гл. 10'],
   },
-  {
-    id: 'couples_therapist_safety',
-    title: 'Безопасность терапевта пары: втягивание, психопатические черты',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['прил. А'],
-  },
+  w('couples_therapist_safety'),
   {
     id: 'healthy_adult_six_processes',
     title: 'Здоровый Взрослый по шести процессам ACT',
