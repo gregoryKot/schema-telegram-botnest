@@ -1,4 +1,4 @@
-// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx). Техники пар 'mutual_reparenting', 'couple_friendship' — в couplesTechniqueSign.ts.
+// Знак листа техники: у каждой свой, общих между техниками нет (guideSignsModel.test.tsx). Техники пар 'need_vs_wish', 'mutual_reparenting', 'couple_friendship', 'couple_chairwork' — в couplesTechniqueSign.ts.
 // Первые 14 — GuideSignsTechniques.tsx и мотивы кабинета, остальные — TechniqueSigns*.tsx.
 import type {
   BorrowedTechniqueId, CambridgeTechniqueId, CoreTechniqueId, SchemaTechniqueId, TechniqueId,

@@ -1,6 +1,9 @@
-// Серверная копия ключей полей техник «Что делали» (session-work.ts): сверка — session-work.sync.spec.ts. Техники пар 'mutual_reparenting', 'couple_friendship' — в -couples.ts.
+// Серверная копия ключей полей техник «Что делали» (session-work.ts): сверка — session-work.sync.spec.ts.
+// Техники пар 'need_vs_wish', 'mutual_reparenting', 'couple_friendship', 'couple_chairwork' — в -couples.ts.
 import { COUPLES_TECHNIQUE_KEYS } from './session-work-technique-keys-couples';
-export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> = {
+type KeyMap = Readonly<Record<string, readonly string[]>>;
+
+export const TECHNIQUE_WORK_KEYS: KeyMap = {
   ...COUPLES_TECHNIQUE_KEYS,
   'technique:imagery_rescripting': ['trigger', 'image', 'rewrite', 'ending'],
   'technique:future_imagery': ['situation', 'rehearsal', 'obstacle', 'result'],
@@ -46,7 +49,6 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> = 
   'technique:body_grounding': ['noticed', 'mode', 'grounding', 'result'],
   'technique:values_overview': ['situation', 'values', 'step', 'obstacle'],
   'technique:couple_mode_cycle': ['conflict', 'cycle', 'needs', 'exit'],
-  'technique:couple_chairwork': ['modes', 'view', 'need'],
   'technique:behavioral_activation': [
     'monitoring',
     'activities',
@@ -101,7 +103,6 @@ export const TECHNIQUE_WORK_KEYS: Readonly<Record<string, readonly string[]>> = 
   'technique:downward_arrow': ['thought', 'bottom', 'schema'],
   'technique:schema_dialogue': ['schema', 'arguments', 'answers', 'who'],
   'technique:rupture_repair': ['moment', 'named', 'link', 'next'],
-  'technique:need_vs_wish': ['need', 'wish', 'ask', 'next'],
   'technique:historical_life_review': ['schema', 'pro', 'contra', 'result'],
   'technique:current_role_play': ['scene', 'oldView', 'newView', 'newStep'],
   'technique:two_axis_check': ['rule', 'picture', 'newView'],
