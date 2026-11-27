@@ -111,20 +111,8 @@ export const PRACTICE_CATALOG: readonly CatalogTopic[] = [
     chapters: ['гл. 10'],
   },
   ...VF_PRACTICE,
-  {
-    id: 'couple_therapy_stages',
-    title: 'Этапы схема-терапии пары',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 1'],
-  },
-  {
-    id: 'couple_session_setup',
-    title: 'Парная сессия: расстановка, баланс внимания, тон, накал',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 7'],
-  },
+  w('couple_therapy_stages'),
+  w('couple_session_setup'),
   {
     id: 'infant_modes',
     title: 'Младенческие режимы',
