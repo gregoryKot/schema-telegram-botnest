@@ -1,5 +1,9 @@
 import type { TechniqueGuideBuilder } from '../types';
-import { prosConsMore } from './patternBreakingBehary';
+import { prosConsMore } from './patternBreakingRoediger';
+import {
+  patternBreakingFarrellShaw,
+  prosConsFarrellShaw,
+} from './farrellShawMore';
 import { buildPatternBreakingMore } from './patternBreakingRafaeli';
 import * as cambB from './patternBreakingCambridgeB';
 
@@ -25,11 +29,11 @@ export const buildPatternBreakingTechniques: TechniqueGuideBuilder = (tr) => [
         '.',
     ],
     voice: cambB.patternBreakingVoice(tr),
-    more: buildPatternBreakingMore(tr),
+    more: [...buildPatternBreakingMore(tr), ...patternBreakingFarrellShaw],
     cautions:
       'Сначала малые шаги, а не развод или увольнение. Крупное решение проверяют «за и против» двух путей — действовать сейчас или подождать; уходить из отношений — после попыток решить конкретное внутри них, кроме ситуаций насилия. Внезапное необъяснимое улучшение бывает избегающим или гиперкомпенсаторным режимом, который выдаёт себя за Здорового Взрослого. Шаги режут тонко и ставят ради потребности клиента, а не ради привыкания, как в экспозиции [Кембридж, гл. 9].',
     sources:
-      '[Кембридж, гл. 9, 12, табл. 9.1, боксы 9.7, 9.9, 12.4, рис. 9.1–9.2], [Янг, гл. 5], [Рёдигер, гл. 11], [Арнтц, 5.4, 5.4.2, 9.4], [Арнтц ПРЛ, гл. 7, 11, прил. Е, З], [Рафаэли, гл. 6, 23], [Бехари, гл. 4, 7]',
+      '[Кембридж, гл. 9, 12, табл. 9.1, боксы 9.7, 9.9, 12.4, рис. 9.1–9.2], [Янг, гл. 5], [Рёдигер, гл. 11], [Арнтц, 5.4, 5.4.2, 9.4], [Арнтц ПРЛ, гл. 7, 11, прил. Е, З], [Рафаэли, гл. 6, 23], [Бехари, гл. 4, 7], [Фаррелл-Шоу, модуль 11]',
   },
   {
     id: 'pros_cons',
@@ -51,10 +55,10 @@ export const buildPatternBreakingTechniques: TechniqueGuideBuilder = (tr) => [
         'Давайте честно: что этот режим вам даёт? И чего он вам стоит — в силах, в отношениях?',
       ),
     ],
-    more: prosConsMore,
+    more: [...prosConsMore, ...prosConsFarrellShaw],
     cautions:
       'Перед самосостраданием этот шаг пропускают чаще всего — и добрые слова потом не приживаются [Кембридж, гл. 10].',
     sources:
-      '[Арнтц, 5.2, 5.2.3, 5.5, 9.2], [Кембридж, гл. 9–10], [Янг, гл. 3, 5], [Хис, гл. 11]',
+      '[Арнтц, 5.2, 5.2.3, 5.5, 9.2], [Кембридж, гл. 9–10], [Янг, гл. 3, 5], [Хис, гл. 11], [Фаррелл-Шоу, модуль 8]',
   },
 ];

@@ -15,7 +15,10 @@ export type CoreTechniqueId =
   | 'self_compassion'
   | 'healthy_adult_imagery';
 
-import type { FarrellTechniqueId } from './techniqueIdsFarrell';
+import type {
+  FarrellShawTechniqueId,
+  FarrellTechniqueId,
+} from './techniqueIdsFarrell';
 /** Техники схема-терапии, добавленные позже (#1366). */
 export type SchemaTechniqueId =
   | 'limited_reparenting'
@@ -70,7 +73,7 @@ export type ArntzTechniqueId =
 /** Техники из книги Арнтц и Якоб «Практическое руководство» (карта «Арнтц-Якоб»). */
 export type ArntzJacobTechniqueId = 'coping_bypass' | 'mode_figures';
 
-export type { FarrellTechniqueId };
+export type { FarrellShawTechniqueId, FarrellTechniqueId };
 
 /** Техники из книги Хис и Стартап о креативных методах (карта «Хис-Стартап»). */
 export type HeathTechniqueId =
@@ -84,7 +87,13 @@ export type HeathTechniqueId =
 
 /** Техники из книги Рёдигера, Стивенс и Брокмана (карта «Редигер»). */
 export type RoedigerTechniqueId =
-  'genogram' | 'perspective_change' | 'body_mode_positions';
+  | 'genogram'
+  | 'perspective_change'
+  | 'body_mode_positions'
+  | 'farewell_imagery'
+  | 'emotional_resonance_sphere'
+  | 'self_regulation_toolkit'
+  | 'mode_diary_tools';
 
 /** Техники из книги Луз и соавторов о схема-терапии с детьми и подростками (карта «Дети»). */
 export type LuzTechniqueId = 'child_mode_play';
@@ -98,6 +107,9 @@ export type VreeswijkTechniqueId =
 /** Техники из книги Рафаэли, Бернштейн и Янга (карта «Рафаэли»). */
 export type RafaeliTechniqueId = 'rupture_repair' | 'historical_life_review';
 
+import type { CouplesTechniqueId } from './techniqueIdsCouples';
+export type { CouplesTechniqueId };
+
 /** Техника из библиотеки (guide/techniques/*). */
 export type TechniqueId =
   | CoreTechniqueId
@@ -107,9 +119,11 @@ export type TechniqueId =
   | ArntzTechniqueId
   | ArntzJacobTechniqueId
   | FarrellTechniqueId
+  | FarrellShawTechniqueId
   | HeathTechniqueId
   | RoedigerTechniqueId
   | LuzTechniqueId
   | VreeswijkTechniqueId
   | RafaeliTechniqueId
+  | CouplesTechniqueId
   | BorrowedTechniqueId;

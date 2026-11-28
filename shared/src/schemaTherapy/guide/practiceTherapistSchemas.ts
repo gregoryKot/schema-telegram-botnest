@@ -1,6 +1,6 @@
 import type { PracticeNotesBuilder } from './types';
 import * as cc from './practiceTherapistCambridgeC';
-import { therapistSchemasMoreAll } from './practiceTherapistSchemasRafaeli';
+import { therapistSchemasMoreAll } from './practiceTherapistSchemasCouples';
 import { buildPracticeTherapistCritic } from './practiceTherapistCritic';
 
 /** «Для терапевта»: схемы терапевта и супервизия. Собирает practiceTherapist.ts. */
@@ -21,7 +21,7 @@ export const buildPracticeTherapistSchemas: PracticeNotesBuilder = (tr) => [
     voice: cc.therapistSchemasVoice(tr),
     more: therapistSchemasMoreAll,
     sources:
-      '[Хис, гл. 1, 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5], [Фаррелл-Шоу, гл. 1–3, модули 5, 7, 20], [Рафаэли, гл. 30]',
+      '[Хис, гл. 1, 14–16, 20], [Кембридж, бокс 4.1, гл. 9, 12, 18, 19], [Янг, гл. 6, 7, 9], [Арнтц, 2.1.2, 5.5], [Фаррелл-Шоу, гл. 1–3, модули 5, 7, 20], [Рафаэли, гл. 30], [Пары, гл. 3, прил. А]',
   },
   ...buildPracticeTherapistCritic(tr),
 ];

@@ -37,11 +37,12 @@ const NOTE_IDS = [
   'self_practice_group_day', 'therapist_critic', 'difficult_client_my_coping',
   'know_your_healthy_adult', 'therapist_happy_child', 'therapist_modes_walk',
   'self_monitoring_cycle', 'problem_analysis_modes', 'self_mode_management_plan',
+  'self_baseline_assessment', 'therapist_focus_problem', 'therapist_self_conceptualization',
   'limited_reparenting_style', 'two_levels_of_experience', 'schema_therapy_fit', 'culture_and_needs',
   'attachment_assertiveness_poles',
-  'session_balance_axes',
-  'mode_states',
-  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs',
+  'session_balance_axes', 'healthy_adult_six_processes', 'stabilization_first',
+  'mode_states', 'forgiveness_after_betrayal', 'couple_separation_decision', 'infant_modes',
+  'teen_parent_triangle', 'mbst_protocol', 'mindfulness_programs', 'couple_therapy_stages', 'couple_session_setup', 'couples_therapist_safety',
 ];
 
 describe('знаки листов подсказок', () => {

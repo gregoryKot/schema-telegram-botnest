@@ -42,7 +42,7 @@ export const buildAngryChildGuides: ModeGuideBuilder = (tr) => [
       'imagery_rescripting',
       'distress_tolerance',
     ],
-    moreTechniques: ['safe_place_imagery'],
+    moreTechniques: ['safe_place_imagery', 'farewell_imagery'],
     betweenSessions: [
       {
         kind: 'custom',

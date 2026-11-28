@@ -1,5 +1,5 @@
 // Лупа → общий поиск (палитра ⌘K) в шапке экрана: только там, где строки .topbar с «Перейти к…» нет
-// (телефон, index.css). Одна кнопка на кабинет («Клиенты», .tc-find) и на «Сегодня» клиента (.search-find).
+// (телефон, index.css). Сейчас — на «Сегодня» клиента (.search-find).
 export function FindButton({ className, label, onClick }: { className: string; label: string; onClick: () => void }) {
   return (
     <button type="button" className={`ds-btn ds-btn--icon find-btn ${className}`} aria-label={label} onClick={onClick}>

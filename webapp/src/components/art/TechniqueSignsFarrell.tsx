@@ -1,4 +1,4 @@
-// Знаки техник «Справочника» из книги Фаррелл, Рейсс и Шоу. Язык тот же: круг — режим, сердце —
+// Знаки техник «Справочника» из книги Фаррелл, Рейсс и Шоу и тетради Фаррелл–Шоу. Язык тот же: круг — режим, сердце —
 // забота, стрелка — шаг вперёд. Какой знак у какой техники — techniqueSigns.ts.
 import { HEART_PATH } from './PaperArtSigns';
 import { PAPER, type ArtProps } from './paper';
@@ -42,6 +42,29 @@ export function ModePlan({ size }: ArtProps) {
       <rect x="48" y="22" width="24" height="34" rx="4" fill={PAPER.slate} />
       <rect x="80" y="18" width="24" height="34" rx="4" fill={PAPER.plum} />
       <path d={LINES} {...ROUND} stroke={PAPER.clay} strokeWidth="3" />
+    </Svg>
+  );
+}
+
+/** Сценарий Хорошего Родителя: сердце заботы, от него волны голоса к маленькому кругу-ребёнку. */
+export function ParentVoice({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d={HEART_PATH} transform="translate(28 32) scale(.42) translate(-60 -32)" fill={PAPER.clay} />
+      <path d="M52 22 Q58 32 52 42 M62 16 Q72 32 62 48 M72 10 Q86 32 72 54" {...ROUND} stroke={PAPER.sage} strokeWidth="4" />
+      <circle cx="100" cy="36" r="9" fill={PAPER.amber} />
+    </Svg>
+  );
+}
+
+/** История о ребёнке и потребности: туча с молнией над маленьким кругом, рядом — сердце ответа, которого он ждал. */
+export function StormNeed({ size }: ArtProps) {
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      <path d="M14 26 Q14 12 28 14 Q34 4 46 10 Q58 8 58 22 Q58 30 48 30 H22 Q14 30 14 26 Z" fill={PAPER.slate} />
+      <path d="M36 32 L30 44 H38 L33 56" {...ROUND} stroke={PAPER.amber} strokeWidth="4" />
+      <circle cx="56" cy="50" r="8" fill={PAPER.plum} />
+      <path d={HEART_PATH} transform="translate(94 38) scale(.36) translate(-60 -32)" fill={PAPER.clay} />
     </Svg>
   );
 }

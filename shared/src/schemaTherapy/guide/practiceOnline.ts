@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import * as cc from './practiceOnlineCambridgeC';
+import * as cc from './practiceOnlineRoedigerHard';
 
 /** «Для терапевта»: онлайн-формат (online_format). Карта — docs/guide-sources/Кембридж.md. */
 export const buildPracticeOnline: PracticeNotesBuilder = (tr) => [
@@ -27,6 +27,6 @@ export const buildPracticeOnline: PracticeNotesBuilder = (tr) => [
       'Усталость от экрана у терапевта. Перерывы между сессиями и время на улице каждый день. Перед включением компьютера встать, подышать, почувствовать стопы на полу. В кадре можно вставать и двигаться, как в кабинете [Кембридж, бокс 20.1].',
       ...cc.onlineCambridgeCMore,
     ],
-    sources: '[Кембридж, гл. 20, боксы 20.1, 8.8]',
+    sources: '[Кембридж, гл. 20, боксы 20.1, 8.8], [Рёдигер, гл. 13]',
   },
 ];

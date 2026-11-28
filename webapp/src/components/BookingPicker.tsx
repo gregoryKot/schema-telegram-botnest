@@ -22,6 +22,7 @@ import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen, type BookedSession }
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
 import { usePriceCurrency } from './booking/priceCurrency';
 import { CurrencyChoice } from './booking/CurrencyChoice';
+import { Chip } from './booking/Chip';
 import { fieldLabel as labelSt } from './booking/fieldLabelStyle';
 import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
 import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
@@ -162,27 +163,14 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
       {options.length > 1 && !lockedType && (
         <div>
           <div style={labelSt}>Формат встречи</div>
-          <div style={{ display: 'flex', gap: 'var(--space-10)', flexWrap: 'wrap' }}>
-            {options.map((o) => {
-              const active = o.type === sessionType;
-              return (
-                <button key={o.type} type="button" aria-pressed={active} onClick={() => {
-                  setSessionType(o.type);
-                  if (o.type === 'INTRO_15') { setReturning(false); } // знакомство — всегда первая встреча
-                  trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
-                }} style={{
-                  flex: '1 1 180px', textAlign: 'left', padding: '14px 16px', cursor: 'pointer',
-                  borderRadius: 'var(--r-12)', fontFamily: 'inherit', transition: 'all .15s',
-                  background: active ? 'rgba(var(--accent-rgb),0.08)' : 'transparent',
-                  border: `1.5px solid ${active ? 'var(--accent)' : 'var(--line-strong)'}`,
-                }}>
-                  <div className="u-h15">
-                    {o.label} {formatPriceSuffix(o, currency)}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2 }}>{o.note}</div>
-                </button>
-              );
-            })}
+          <div className="pa-chips-line" role="group" aria-label="Формат встречи">
+            {options.map((o) => (
+              <Chip key={o.type} active={o.type === sessionType} note={o.note} onClick={() => {
+                setSessionType(o.type);
+                if (o.type === 'INTRO_15') { setReturning(false); } // знакомство — всегда первая встреча
+                trackGoalOnce('booking_format', { format: o.type === 'SESSION_50' ? 'session' : 'intro' });
+              }}>{o.label} {formatPriceSuffix(o, currency)}</Chip>
+            ))}
           </div>
         </div>
       )}

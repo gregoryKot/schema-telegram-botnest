@@ -1,7 +1,7 @@
 // Каталог-цель вкладки «Техники» (kb/catalog.ts): написанные техники и те, что литература даёт сверх них.
 // Новая техника — строка здесь в том же PR (планировалась — статус planned → written с тем же id).
 import { type CatalogTopic, w, VF_TECHNIQUES } from './catalogMindfulness';
-import { WRITTEN_TECHNIQUES_MORE } from './catalogTechniquesMore';
+import { MORE_TECHNIQUES } from './catalogTechniquesAll';
 
 export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
   ...[
@@ -10,6 +10,10 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'healthy_adult_imagery',
     'chairwork',
     'historical_role_play',
+    'emotional_resonance_sphere',
+    'farewell_imagery',
+    'self_regulation_toolkit',
+    'mode_diary_tools',
     'mode_interview',
     'current_role_play',
     'two_axis_check',
@@ -61,6 +65,10 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'healthy_adult_plan',
     'mode_management_plan',
     'safety_bubble',
+    'monitoring_cycle',
+    'mode_awareness_summary',
+    'progress_by_mode',
+    'story_unmet_need',
     'creative_mode_work',
     'probe_phrases',
     'intimacy_dialogue',
@@ -70,82 +78,20 @@ export const TECHNIQUE_CATALOG: readonly CatalogTopic[] = [
     'three_parts_check_in',
     'rupture_repair',
     'historical_life_review',
+    'need_vs_wish',
+    'mutual_reparenting',
+    'couple_friendship',
   ].map(w),
-  ...WRITTEN_TECHNIQUES_MORE,
+  ...MORE_TECHNIQUES,
   {
     id: 'grief_chairwork',
     title: 'Стулья для горя и прощания',
     status: 'planned',
     source: 'Келлогг',
     chapters: [],
-    note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (тема farewell_imagery)',
-  },
-  {
-    id: 'emotional_resonance_sphere',
-    title: 'Сфера эмоционального резонанса',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 10'],
-  },
-  {
-    id: 'self_regulation_toolkit',
-    title: 'Навыки эмоциональной регуляции: набор и иерархия',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 11'],
-  },
-  {
-    id: 'mode_diary_tools',
-    title: 'Дневники режимов: от смайлика до дневниковой карточки',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 4', 'гл. 7', 'гл. 11'],
-  },
-  {
-    id: 'farewell_imagery',
-    title: 'Образ прощания с умершим и режимы горя',
-    status: 'planned',
-    source: 'Рёдигер',
-    chapters: ['гл. 9'],
+    note: 'карты книги нет; образ прощания с умершим — Рёдигер, гл. 9 (техника farewell_imagery)',
   },
   ...VF_TECHNIQUES,
-  {
-    id: 'couple_mode_clash',
-    title: 'Столкновение режимов пары: карта и выход из цикла',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 8'],
-    note: 'пишется дополнением couple_mode_cycle (пачка 5 карты), после неё строка снимается',
-  },
-  {
-    id: 'need_vs_wish',
-    title: 'Потребность и желание: диаграмма, «стрельба по мишени»',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 5', 'гл. 8', 'гл. 11'],
-  },
-  {
-    id: 'mutual_reparenting',
-    title: 'Взаимный репарентинг пары',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 11'],
-  },
-  {
-    id: 'couple_friendship',
-    title:
-      'Дружба пары: признание чувств, примирение, правила разговора, заботливое поведение',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 5', 'гл. 9', 'гл. 12'],
-  },
-  {
-    id: 'couple_chairwork',
-    title: 'Стулья в паре: режимы обоих при партнёре',
-    status: 'planned',
-    source: 'Пары',
-    chapters: ['гл. 9', 'гл. 10'],
-  },
   {
     id: 'inner_house',
     title: '«Внутренний дом»: режимы, схемы и опыт на трёх этажах',

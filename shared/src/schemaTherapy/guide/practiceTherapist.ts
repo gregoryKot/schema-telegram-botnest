@@ -4,7 +4,8 @@ import { buildPracticeTherapistCulture } from './practiceTherapistCulture';
 import { buildPracticeTherapistSchemas } from './practiceTherapistSchemas';
 import { buildPracticeTherapistArntz } from './practiceTherapistArntz';
 import { buildPracticeSelfPractice } from './practiceSelfPractice';
-import * as cc from './practiceTherapistCambridgeC';
+import { buildPracticeTherapistSelf } from './practiceTherapistSelf';
+import * as wb from './practiceTherapistWellbeingCouples';
 
 /** «Для терапевта»: схемы терапевта, выгорание, самопрактика, заметки Арнтц и Якоб. Собирает practice.ts, порядок на листе прежний. */
 export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
@@ -23,12 +24,13 @@ export const buildPracticeTherapist: PracticeNotesBuilder = (tr) => [
       'Заботиться о себе с четырёх сторон. Профессиональная подпитка: учёба, сообщество коллег. Своя терапия и самопрактика по рабочей тетради (SP/SR). Супервизия с вниманием к своим схемам. Свои базовые потребности: друзья и коллеги, осознанность и самосострадание, движение, природа [Кембридж, рис. 18.1].',
       'Беречь себя в онлайн-работе. Делать перерывы и каждый день бывать на природе. Перед включением компьютера встать, подышать, почувствовать стопы на полу, размять суставы. В кадре двигаться, как вживую: вставать, пересаживаться, обращаясь к Критику или к Уязвимому Ребёнку [Кембридж, бокс 20.1].',
     ],
-    voice: cc.therapistWellbeingVoice(tr),
-    more: care.therapistWellbeingMore,
+    voice: wb.wellbeingVoice(tr),
+    more: wb.wellbeingMoreAll,
     sources:
-      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12], [Фаррелл-Шоу, гл. 3]',
+      '[Кембридж, гл. 18, рис. 18.1, бокс 20.1], [Хис, гл. 15, 16], [Арнтц ПРЛ, гл. 12], [Фаррелл-Шоу, гл. 3], [Пары, прил. А]',
   },
   ...care.buildPracticeTherapistCare(tr),
   ...buildPracticeSelfPractice(tr),
+  ...buildPracticeTherapistSelf(tr),
   ...buildPracticeTherapistCulture(tr),
 ];

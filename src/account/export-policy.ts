@@ -200,6 +200,8 @@ export const USER_EXPORT_SELECT = {
   firstName: true,
   role: true,
   disclaimerAccepted: true,
+  disclaimerAcceptedAt: true,
+  consentVersion: true,
   addressForm: true,
   // Настройки уведомлений и счётчики движка: почему сообщения приходят так часто — тоже данные о человеке.
   notifyEnabled: true,

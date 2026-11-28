@@ -9,11 +9,12 @@ import { LoginShell } from './login/LoginShell';
 import { PaperAlert } from '../components/paper/PaperAlert';
 import { LoginFormerNote } from './login/LoginFormerNote';
 import { TelegramRetry } from './login/TelegramRetry';
-import { LoginConsentNote } from './login/LoginConsentNote';
+import { LoginConsentCheck, LoginConsentNote } from './login/LoginConsentNote';
 import { exchangeErrorText, exchangeThrownText } from './login/exchangeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
-import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
+import { forgetLoginConsent, rememberLoginConsent } from '../auth/loginConsent';
+import { CONSENT_VERSION } from '../../../shared/src/onboarding/consents';
 import { useAfterLoginPath } from '../auth/returnTo';
 import { useTr } from '../utils/addressForm';
 import '../styles/auth-login.css';
@@ -23,7 +24,14 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const afterLogin = useAfterLoginPath(); // адрес, с которого увели на вход (E14)
-  useLoginConsentMark();
+  // Вход каждый раз с пустой галочкой: согласие — действие этого входа, а не прошлого визита.
+  const [consented, setConsented] = useState(false);
+  useEffect(() => { forgetLoginConsent(); }, []);
+  const setConsent = (v: boolean) => {
+    setConsented(v);
+    if (v) rememberLoginConsent(CONSENT_VERSION);
+    else forgetLoginConsent();
+  };
   const tr = useTr();
   // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
   const [error, setError] = useState<string | null>(() =>
@@ -97,7 +105,8 @@ export function LoginPage() {
       </p>
 
       {errorAlert}
-      <LoginProviderButtons onSession={enter} />
+      <LoginConsentCheck checked={consented} onChange={setConsent} />
+      <LoginProviderButtons onSession={enter} consented={consented} />
 
       <LoginFormerNote />
 

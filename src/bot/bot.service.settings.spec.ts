@@ -228,15 +228,42 @@ describe('BotService.acceptDisclaimer / hasAcceptedDisclaimer', () => {
     await svc.acceptDisclaimer(1n);
     expect(db.user.update).toHaveBeenLastCalledWith({
       where: { id: 1n },
-      data: { disclaimerAccepted: true },
+      data: {
+        disclaimerAccepted: true,
+        disclaimerAcceptedAt: expect.any(Date),
+        consentVersion: null,
+      },
     });
 
     await svc.acceptDisclaimer(1n, true);
     expect(db.user.update).toHaveBeenLastCalledWith({
       where: { id: 1n },
-      data: { disclaimerAccepted: true, onboardingV2Done: true },
+      data: {
+        disclaimerAccepted: true,
+        disclaimerAcceptedAt: expect.any(Date),
+        consentVersion: null,
+        onboardingV2Done: true,
+      },
     });
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
+  });
+
+  it('acceptDisclaimer с версией пишет редакцию; getConsentState отдаёт её обратно', async () => {
+    const db = makeDb({ disclaimerAccepted: false });
+    const svc = new BotService(db);
+
+    await svc.acceptDisclaimer(1n, true, '2026-11-27');
+    expect(db.user.update).toHaveBeenLastCalledWith({
+      where: { id: 1n },
+      data: expect.objectContaining({
+        consentVersion: '2026-11-27',
+        disclaimerAcceptedAt: expect.any(Date),
+      }),
+    });
+    expect(await svc.getConsentState(1n)).toEqual({
+      accepted: true,
+      version: '2026-11-27',
+    });
   });
 
   // Поле отсутствует (undefined), а не явно false — только этот случай реально

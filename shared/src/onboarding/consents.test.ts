@@ -4,6 +4,9 @@ import {
   consentHint,
   CONSENT_ANALYTICS_STEPS,
   welcomeTexts,
+  CONSENT_VERSION,
+  CONSENT_PRIVACY_CHECK,
+  CONSENT_NOT_THERAPY_CHECK,
 } from './consents';
 import { hasTyForms } from '../utils/tyFormsSweep';
 
@@ -41,5 +44,10 @@ describe('consents', () => {
     expect(hasTyForms([vy.greeting, vy.intro, vy.outro].join(' '))).toBe(false);
     expect(ty.intro).toBe(vy.intro);
     expect(ty.beta).toBe('БЕТА-ВЕРСИЯ');
+  });
+  it('18+ стоит в галочке «Важно знать», а не в согласии на обработку данных', () => {
+    expect(CONSENT_PRIVACY_CHECK).not.toMatch(/18/);
+    expect(CONSENT_NOT_THERAPY_CHECK).toMatch(/18 лет/);
+    expect(CONSENT_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

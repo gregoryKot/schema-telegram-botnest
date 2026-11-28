@@ -40,6 +40,8 @@ export const KB_GROUP_IDS: readonly string[] = [
 export const KB_SOURCES: readonly string[] = [
   'shared/src/schemaTherapy/content/',
   'shared/src/schemaTherapy/guide/techniqueIds.ts',
+  'shared/src/schemaTherapy/guide/techniqueIdsFarrell.ts',
+  'shared/src/schemaTherapy/guide/techniqueIdsCouples.ts',
   'shared/src/needs/types.ts',
   'shared/src/needs/content/',
 ];
@@ -113,7 +115,25 @@ export const KB_SCAN_IGNORE: readonly KbIgnore[] = [
     why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
   },
   {
+    file: 'shared/src/therapy/sessionWork/techniqueWorkCouples.ts',
+    why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
+  },
+  {
+    file: 'src/therapy/session-work-technique-keys-couples.ts',
+    why: PART(
+      'TECHNIQUE_WORK_KEYS (src/therapy/session-work-technique-keys.ts)',
+    ),
+  },
+  {
+    file: 'webapp/src/components/art/couplesTechniqueSign.ts',
+    why: PART('TECHNIQUE_SIGN (art/techniqueSigns.ts)'),
+  },
+  {
     file: 'shared/src/therapy/sessionWork/techniqueWorkVreeswijk.ts',
+    why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
+  },
+  {
+    file: 'shared/src/therapy/sessionWork/techniqueWorkRoediger.ts',
     why: PART('TECHNIQUE_WORK (sessionWork/techniqueWork.ts)'),
   },
   {

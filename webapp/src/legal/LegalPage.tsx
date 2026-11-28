@@ -1,7 +1,7 @@
 // Страница юридического документа (политика, оферта; они же на визитке ?site=personal): корень тянется на
 // всю ширину flex-ряда #root (flex: 1 — без него страница липла к левому краю на 1280), колонка чтения по
 // центру, шапка — «На главную» со стрелкой, редакция, заголовок, вводная часть. Текст документа страница передаёт
-// как есть: оформление здесь и в styles/legal.css, слова — только в pages/PrivacyPage.tsx и OfferPage.tsx.
+// как есть: оформление здесь и в styles/legal.css, слова — только в pages/PrivacyPage.tsx, OfferPage.tsx и ConsentPage.tsx.
 import type { ReactNode } from 'react';
 import '../styles/legal.css';
 import { column, backLink, eyebrow, h1, lead as leadSt } from './legalStyles';

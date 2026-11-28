@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
-import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaLine } from './rosterModel';
+import { filterRoster, sortRoster, meetingLabel, clientStatus, rosterActivity, rosterMeeting, rosterSchemas } from './rosterModel';
 
 const TODAY = '2026-10-03';
 
@@ -161,85 +160,20 @@ describe('meetingLabel', () => {
   });
 });
 
-describe('clientCaption', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    // 12:00 UTC — 3 октября во всех зонах прогона (срок считается от местного дня).
-    vi.setSystemTime(new Date('2026-10-03T12:00:00Z'));
+describe('rosterActivity', () => {
+  // Давность — по календарю клиента (daysSinceActive от сервера, №25), без рода о клиенте.
+  it('клиент в приложении — давность; без записей — «нет активности»; офлайн — «офлайн»', () => {
+    expect(rosterActivity(client({ lastActiveDate: TODAY, daysSinceActive: 0, streak: 4 }))).toBe('активность сегодня');
+    expect(rosterActivity(client({ lastActiveDate: '2026-10-01', daysSinceActive: 2 }))).toBe('активность 2 дн. назад');
+    expect(rosterActivity(client({}))).toBe('нет активности');
+    expect(rosterActivity(offline({ streak: 5, lastActiveDate: TODAY, therapyStartDate: '2026-07-03' }))).toBe('офлайн');
   });
-  afterEach(() => vi.useRealTimers());
+});
 
-  // Аудит 2026-10: подписи были в мужском роде («активен сегодня», «был
-  // недавно», «не активен») о человеке, чей пол неизвестен.
-  // «Сегодня/вчера/N дн. назад» — по календарю клиента: daysSinceActive отдаёт
-  // сервер (QA 2026-10-26, №25); день терапевта в подпись не входит.
-  it('Telegram-клиент: активность сегодня — только при daysSinceActive === 0', () => {
-    expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 0 }))).toBe('активность сегодня');
-    // у терапевта уже 3-е, у клиента (западнее) ещё вчера по его календарю — «вчера», не «сегодня»
-    expect(clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 1 }))).toBe('активность вчера');
-  });
-
-  it('Telegram-клиент: давность активности + стрик', () => {
-    expect(clientCaption(client({ lastActiveDate: '2026-10-01', daysSinceActive: 2, streak: 4 }))).toBe(
-      'активность 2 дн. назад · стрик 4 дн.',
-    );
-    expect(clientCaption(client({ lastActiveDate: '2026-10-02', daysSinceActive: 1 }))).toBe('активность вчера');
-  });
-
-  // Раньше любая не сегодняшняя дата читалась «активность недавно» — и для
-  // месячной давности тоже; мини-апп в той же роли показывает дату.
-  it('месячная давность — дата, а не «недавно», в любой зоне', () => {
-    forEachTimeZone((tz) => {
-      expect(clientCaption(client({ lastActiveDate: '2026-09-01', daysSinceActive: 32 })), tz).toBe('активность 1 сен');
-    });
-  });
-
-  it('старый кэш без daysSinceActive — дата, без «сегодня» по дню терапевта', () => {
-    expect(clientCaption(client({ lastActiveDate: TODAY }))).toBe('активность 3 окт');
-    expect(clientCaption(client({ lastActiveDate: '2026-09-01' }))).toBe('активность 1 сен');
-  });
-
-  it('Telegram-клиент: нет активности, без стрика', () => {
-    expect(clientCaption(client({}))).toBe('нет активности');
-  });
-
-  it('нечитаемая дата активности — «нет активности», а не «активность » с хвостом', () => {
-    expect(clientCaption(client({ lastActiveDate: 'мусор' }))).toBe('нет активности');
-    expect(clientCaption(client({ lastActiveDate: 'мусор', daysSinceActive: 0, streak: 3 }))).toBe(
-      'нет активности · стрик 3 дн.',
-    );
-  });
-
-  it('ни в одной ветке активности нет мужского рода о клиенте', () => {
-    const captions = [
-      clientCaption(client({ lastActiveDate: TODAY, daysSinceActive: 0, streak: 2 })),
-      clientCaption(client({ lastActiveDate: '2026-09-01' })),
-      clientCaption(client({})),
-    ];
-    for (const caption of captions) {
-      expect(caption).not.toMatch(/активен|был|заходил/);
-    }
-  });
-
-  it('офлайн без даты начала — подписи нет', () => {
-    expect(clientCaption(offline())).toBeNull();
-  });
-
-  it('срок работы', () => {
-    expect(clientCaption(offline({ therapyStartDate: '2026-07-03' }))).toBe('в работе 3 месяца');
-    expect(clientCaption(offline({ therapyStartDate: '2026-10-01' }))).toBe('в работе 2 дня');
-  });
-
-  it('начали сегодня', () => {
-    expect(clientCaption(offline({ therapyStartDate: TODAY }))).toBe('с сегодняшнего дня');
-  });
-
-  it('офлайн: стрик и активность не показываются, даже если поля заполнены', () => {
-    expect(clientCaption(offline({ streak: 5, lastActiveDate: TODAY }))).toBeNull();
-  });
-
-  it('офлайн с непарсящейся датой начала — подписи нет', () => {
-    expect(clientCaption(offline({ therapyStartDate: 'мусор' }))).toBeNull();
+describe('rosterMeeting', () => {
+  it('есть встреча — её подпись, нет — «—»', () => {
+    expect(rosterMeeting(client({ meetingDays: [4] }), TODAY)).toBe('по Чт');
+    expect(rosterMeeting(client({}), TODAY)).toBe('—');
   });
 });
 
@@ -253,34 +187,19 @@ describe('clientStatus', () => {
   });
 });
 
-describe('domainBar / schemaLine', () => {
-  const [d1, d2] = SCHEMA_DOMAINS;
-  const ids = [d2.schemas[0].id, d1.schemas[0].id, d1.schemas[1].id, 'unknown'];
-
-  it('сегменты в порядке доменов, count = число схем клиента в домене', () => {
-    expect(domainBar(ids)).toEqual([
-      { domainId: d1.id, count: 2 },
-      { domainId: d2.id, count: 1 },
-    ]);
-  });
-
-  it('нет схем — нет сегментов', () => {
-    expect(domainBar([])).toEqual([]);
-  });
-
-  it('схемы строкой: по доменам, неизвестные id пропущены', () => {
-    expect(schemaLine(ids)).toBe([d1.schemas[0].name, d1.schemas[1].name, d2.schemas[0].name].join(' · '));
-  });
-});
-
-
-describe('schemaLine', () => {
+describe('rosterSchemas', () => {
   const names = SCHEMA_DOMAINS.flatMap((d) => d.schemas).slice(0, 5);
-  it('до трёх схем — все через «·», пусто — пустая строка', () => {
-    expect(schemaLine([])).toBe('');
-    expect(schemaLine(names.slice(0, 3).map((s) => s.id))).toBe(names.slice(0, 3).map((s) => s.name).join(' · '));
+  const short = (n: string) => n.split(' / ')[0];
+  it('пусто — пустая строка; до двух — обе коротким именем', () => {
+    expect(rosterSchemas([])).toBe('');
+    expect(rosterSchemas([names[1].id, 'unknown'])).toBe(short(names[1].name));
+    expect(rosterSchemas([names[2].id, names[1].id])).toBe(`${short(names[1].name)}\u00a0· ${short(names[2].name)}`);
   });
-  it('больше трёх — две и «ещё N»', () => {
-    expect(schemaLine(names.map((s) => s.id))).toBe(`${names[0].name} · ${names[1].name} · ещё 3`);
+  it('больше двух — две по порядку доменов и «ещё N»', () => {
+    expect(rosterSchemas(names.slice(0, 3).map((s) => s.id))).toBe(`${short(names[0].name)}\u00a0· ${short(names[1].name)}\u00a0· ещё\u00a01`);
+    expect(rosterSchemas(names.map((s) => s.id))).toMatch(/\u00a0· ещё\u00a03$/);
+  });
+  it('короткое имя без хвоста через «/»', () => {
+    expect(rosterSchemas(['mistrust'])).toBe('Недоверие');
   });
 });

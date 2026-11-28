@@ -29,6 +29,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     notifyLastEvalDate: DATE,
     notifyLastFillDate: DATE,
     addressForm: plain("'ty'|'vy' — настройка обращения"),
+    consentVersion: plain('редакция текста согласия ПДн, не контент'),
     mySchemaIds: enc(`${BOT}/bot.service.ts`),
     myModeIds: enc(`${BOT}/bot.service.ts`),
     totpSecret: enc('src/auth/totp.service.ts'),

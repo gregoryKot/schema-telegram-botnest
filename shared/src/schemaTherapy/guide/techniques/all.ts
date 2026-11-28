@@ -2,18 +2,22 @@ import type { TechniqueGuideBuilder } from '../types';
 import { buildImageryRescriptingTechniques } from './imageryRescripting';
 import { buildImageryTechniques } from './imagery';
 import { buildChairworkTechniques } from './chairwork';
+import { buildCoupleChairworkTechniques } from './coupleChairwork';
 import { buildChairTechniques } from './chairs';
 import { buildCreativeModeWorkTechniques } from './creativeModeWork';
 import { buildRolePlayArntzTechniques } from './rolePlayArntz';
 import { buildCognitiveArntzTechniques } from './cognitiveArntz';
 import { buildFarrellPlanTechniques } from './farrellPlans';
+import { buildGoodParentScriptTechniques } from './goodParentScript';
+import { buildFarrellShawMonitoringTechniques } from './farrellShawMonitoring';
+import { buildStoryUnmetNeedTechniques } from './storyUnmetNeed';
 import { buildEmpathicConfrontationTechniques } from './empathicConfrontation';
 import { buildStanceTechniques } from './stance';
-import { buildHomeworkTechniques } from './homework';
+import { buildHomeworkTechniques } from './homeworkRoedigerSkills';
 import { buildPatternBreakingTechniques } from './patternBreaking';
 import { buildLimitedReparentingTechniques } from './limitedReparenting';
 import { buildRelationshipTechniques } from './relationship';
-import { buildImageryMoreTechniques } from './imageryMore';
+import { buildImageryMoreTechniques } from './imageryMoreRoedigerImg';
 import { buildSafetyBubbleTechniques } from './safetyBubble';
 import { buildProbePhrasesTechniques } from './probePhrases';
 import { buildIntimacyDialogueTechniques } from './intimacyDialogue';
@@ -24,18 +28,19 @@ import { buildCopingBypassTechniques } from './copingBypass';
 import { buildModeFiguresTechniques } from './modeFigures';
 import { buildImageryModeDialogueTechniques } from './imageryModeDialogue';
 import { buildFormulationTechniques } from './formulation';
-import { buildEvidenceWorkTechniques } from './evidenceWork';
+import { buildEvidenceWorkTechniques } from './evidenceWorkRoedigerSkills';
 import { buildEvidenceLifeReviewTechniques } from './evidenceLifeReview';
 import { buildRuptureRepairTechniques } from './ruptureRepair';
 import { buildChildCareTechniques } from './childCare';
 import { buildBodyGroundingTechniques } from './bodyGrounding';
 import { buildBodyValuesTechniques } from './bodyValues';
 import { buildOnlineTechniques } from './online';
+import { buildNeedVsWishTechniques } from './needVsWish';
 import { buildAttunementNeedsTechniques } from './attunementNeeds';
 import { buildMeaningGuiltTechniques } from './meaningGuilt';
 import { buildSchemaDialogueTechniques } from './schemaDialogue';
 import { buildBorrowedCbtTechniques } from './borrowedCbt';
-import { buildBorrowedDbtTechniques } from './borrowedDbt';
+import { buildBorrowedDbtTechniques } from './borrowedDbtRoedigerSkills';
 import { buildBorrowedThirdWaveTechniques } from './borrowedThirdWave';
 import { buildBorrowedTraumaTechniques } from './borrowedTrauma';
 import { buildHealthyAdultPlanTechniques } from './healthyAdultPlan';
@@ -46,17 +51,20 @@ import { buildBodyModePositionsTechniques } from './bodyModePositions';
 import { buildMindfulnessPracticesTechniques } from './mindfulnessPractices';
 import { buildSchemaAwarenessTechniques } from './schemaAwareness';
 import { buildHealthyModesMindfulnessTechniques } from './healthyModesMindfulness';
+import { buildEmotionalResonanceSphereTechniques } from './emotionalResonanceSphereRoedigerChairs';
 
 /** Вся библиотека техник в порядке показа. */
 export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryRescriptingTechniques,
   buildImageryTechniques,
   buildChairworkTechniques,
+  buildCoupleChairworkTechniques,
   buildChairTechniques,
   buildCreativeModeWorkTechniques,
   buildRolePlayArntzTechniques,
   buildCognitiveArntzTechniques,
   buildFarrellPlanTechniques,
+  buildFarrellShawMonitoringTechniques,
   buildEmpathicConfrontationTechniques,
   buildCopingBypassTechniques,
   buildModeFiguresTechniques,
@@ -64,11 +72,13 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildMindfulnessPracticesTechniques,
   buildSchemaAwarenessTechniques,
   buildHealthyModesMindfulnessTechniques,
+  buildEmotionalResonanceSphereTechniques,
   buildHomeworkTechniques,
   buildPatternBreakingTechniques,
   buildLimitedReparentingTechniques,
   buildRelationshipTechniques,
   buildImageryMoreTechniques,
+  buildStoryUnmetNeedTechniques,
   buildSafetyBubbleTechniques,
   buildImageryModeDialogueTechniques,
   buildFormulationTechniques,
@@ -80,6 +90,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildEvidenceLifeReviewTechniques,
   buildRuptureRepairTechniques,
   buildChildCareTechniques,
+  buildGoodParentScriptTechniques,
   buildHealthyAdultPlanTechniques,
   buildBodyGroundingTechniques,
   buildProbePhrasesTechniques,
@@ -90,6 +101,7 @@ export const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildImageryRecentTechniques,
   buildOnlineTechniques,
   buildAttunementNeedsTechniques,
+  buildNeedVsWishTechniques,
   buildMeaningGuiltTechniques,
   buildSchemaDialogueTechniques,
   buildBorrowedCbtTechniques,

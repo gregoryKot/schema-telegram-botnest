@@ -1,5 +1,5 @@
 import type { PracticeNotesBuilder } from './types';
-import { endingPhaseMoreFull } from './practiceEndingHeath';
+import { endingPhaseMoreFull } from './practiceEndingRoediger';
 import * as cambB from './practiceCambridgeB';
 /** «Для терапевта»: завершение терапии (гл. 12) и сложная травма (гл. 14). Карта — docs/guide-sources/Кембридж.md. */
 export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
@@ -19,7 +19,7 @@ export const buildPracticeEnding: PracticeNotesBuilder = (tr) => [
     voice: cambB.endingPhaseVoice(tr),
     more: [...endingPhaseMoreFull, ...cambB.endingPhaseCambridgeBMore],
     sources:
-      '[Кембридж, гл. 12, бокс 12.5], [Арнтц ПРЛ, гл. 11–12], [Фаррелл, 4.6.6], [Арнтц, 9.5.1], [Хис, гл. 18, 20], [Пары, гл. 11]',
+      '[Кембридж, гл. 12, бокс 12.5], [Арнтц ПРЛ, гл. 11–12], [Фаррелл, 4.6.6], [Арнтц, 9.5.1], [Хис, гл. 18, 20], [Пары, гл. 11], [Рёдигер, гл. 12]',
   },
   {
     id: 'complex_trauma',

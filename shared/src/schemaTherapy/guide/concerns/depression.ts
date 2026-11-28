@@ -1,15 +1,15 @@
 import {
   depressionComorbidityMore,
   depressionCourse,
-  depressionMore,
 } from './depressionCambridge';
 import {
   depressionModeIds,
   depressionSchemaIds,
   depressionTechniques,
 } from './depressionLists';
+import { depressionMoreAll } from './depressionYoung';
 import type { ConcernGuideBuilder } from './types';
-/** Депрессия по главам полки (Кембридж гл. 2, 3, 10, 13; Янг гл. 1, 2, 6–8, 10); досбор — depressionCambridge.ts. */
+/** Депрессия по главам полки (Кембридж гл. 2, 3, 10, 13; Янг гл. 1, 2, 5–8, 10); досбор — depressionCambridge.ts. */
 export const buildDepressionGuide: ConcernGuideBuilder = (tr) => ({
   id: 'depression',
   name: 'Депрессия',
@@ -39,7 +39,7 @@ export const buildDepressionGuide: ConcernGuideBuilder = (tr) => ({
       'Чего вам хочется прямо сейчас? Пусть совсем немного — выглянуть в окно, налить чаю.',
     ),
   ],
-  more: depressionMore,
+  more: depressionMoreAll,
   sources:
-    '[Кембридж, гл. 2, 3, 10, 13], [Янг, гл. 1, 2, 6, 7, 8, 10], [Касьяник], [Хис, гл. 1, 19], [Арнтц ПРЛ, гл. 8], [Фаррелл, гл. 4.5]',
+    '[Кембридж, гл. 2, 3, 10, 13], [Янг, гл. 1, 2, 5, 6, 7, 8, 10], [Касьяник], [Хис, гл. 1, 19], [Арнтц ПРЛ, гл. 8], [Фаррелл, гл. 4.5]',
 });

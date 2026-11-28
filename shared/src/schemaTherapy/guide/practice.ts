@@ -13,18 +13,17 @@ import { buildPracticeStuck } from './practiceStuck';
 import { buildPracticeYoungSession } from './practiceYoungSession';
 import { buildPracticeYoungStart } from './practiceYoungStart';
 import { buildPracticeTherapistHeath } from './practiceModeReset';
-import { buildPracticeModelRoediger } from './practiceModelRoediger';
-import { buildPracticeSessionRoediger } from './practiceSessionRoediger';
+import { buildPracticeRoedigerAll } from './practiceRoedigerAll';
 import { buildPracticeModeStates } from './practiceModeStates';
 import { buildPracticeMethodFarrellShaw } from './practiceMethodFarrellShaw';
 import { buildPracticeMindfulness } from './practiceMindfulness';
 import { buildPracticeMbst } from './practiceMbst';
+import { buildPracticeCouples } from './practiceCouples';
+import { buildPracticeInfantModes } from './practiceInfantModes';
 
 /**
- * «Для терапевта»: что добавляют к рамке другие книги, три источника
- * тупиков, «болтовня» вместо терапии, ошибки в методе; схемы терапевта,
- * супервизия и выгорание — в practiceTherapist.ts. Трудные ситуации в сессии, групповой формат и намеренная
- * практика — в practiceSituations.ts, порядок разделов на листе — этот.
+ * «Для терапевта»: рамка метода, тупики, «болтовня», ошибки в методе; схемы терапевта и выгорание —
+ * practiceTherapist.ts, трудные ситуации и группа — practiceSituations.ts; порядок разделов — здесь.
  * Форма листа: суть, 3–5 пунктов, «Как это звучит» и «Подробнее» — как у режимов и схем.
  */
 export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
@@ -64,10 +63,11 @@ export const buildPracticeNotes: PracticeNotesBuilder = (tr) => [
   ...buildPracticeTeen(tr),
   ...buildPracticeYoungStart(tr),
   ...buildPracticeYoungSession(tr),
-  ...buildPracticeModelRoediger(tr),
-  ...buildPracticeSessionRoediger(tr),
+  ...buildPracticeRoedigerAll(tr),
   ...buildPracticeModeStates(tr),
   ...buildPracticeMethodFarrellShaw(tr),
   ...buildPracticeMindfulness(tr),
   ...buildPracticeMbst(tr),
+  ...buildPracticeCouples(tr),
+  ...buildPracticeInfantModes(tr),
 ];

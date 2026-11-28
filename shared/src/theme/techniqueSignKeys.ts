@@ -37,6 +37,8 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'mode_plan',
   'plan_ahead',
   'bubble',
+  'parent_voice',
+  'storm_need',
   // TechniqueSignsHeath.tsx — техники из книги Хис и Стартап
   'mask',
   'probe',
@@ -52,6 +54,12 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   'stand_above',
   'balance_axes',
   'side_seat',
+  // TechniqueSignsRoedigerChairs.tsx — сфера эмоционального резонанса (Рёдигер, гл. 10)
+  'resonance_sphere',
+  'farewell_chair',
+  // TechniqueSignsRoedigerSkills.tsx — навыки регуляции и дневники режимов (Рёдигер, гл. 11)
+  'skill_ladder',
+  'diary_columns',
   // TechniqueSignsVreeswijk.tsx — практики осознанности из книги ван Фресвайк
   'breathing_space',
   'body_scan',
@@ -60,5 +68,14 @@ export const TECHNIQUE_OWN_SIGN_KEYS = [
   // TechniqueSignsRafaeli.tsx — техники из книги Рафаэли, Бернштейн и Янга
   'rupture_mend',
   'life_columns',
+  // TechniqueSignsCouples.tsx — техники из книги о схема-терапии пар
+  'need_wish',
+  'mutual_hold',
+  'friend_pair',
+  'couple_chairs',
+  // TechniqueSignsFarrellShaw.tsx — техники из тетради Фаррелл и Шоу
+  'monitor_ring',
+  'mode_page',
+  'review_rows',
 ] as const;
 export type TechniqueOwnSign = (typeof TECHNIQUE_OWN_SIGN_KEYS)[number];

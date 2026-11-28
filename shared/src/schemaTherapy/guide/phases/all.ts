@@ -4,7 +4,7 @@ import { buildPathOverview } from './overview';
 import { EARLY_PHASES } from './early';
 import { LATE_PHASES } from './late';
 import { buildTemplateSheets } from './templateSheets';
-import { WORK_TOPICS } from './topics';
+import { WORK_TOPICS } from './topicsRoediger';
 import { COURSE_TOPICS } from './topicsCourse';
 import type { PhaseGuide, PhaseGuideBuilder } from './types';
 

@@ -2,8 +2,8 @@ import type { PracticeNotesBuilder } from './types';
 import { buildPracticeGroup } from './practiceGroup';
 import { buildPracticeAngry } from './practiceAngry';
 import { buildPracticeSuicidal } from './practiceSuicidal';
-import { buildPracticeDangerous } from './practiceDangerous';
-import { romancePartnerMore } from './practiceRelationshipMore';
+import { buildPracticeCouplesBetrayal } from './practiceCouplesBetrayal';
+import { romancePartnerMore } from './practiceSituationsRoedigerHard';
 import * as cc from './practiceTherapistCambridgeC';
 
 /** «Для терапевта», вторая половина: трудные ситуации (злость, суицидальные мысли, влюблённость, опасный партнёр —
@@ -29,7 +29,7 @@ export const buildPracticeSituations: PracticeNotesBuilder = (tr) => [
     sources:
       '[Рёдигер, гл. 13–14], [Кембридж, бокс 6.7, гл. 18, бокс 18.2], [Янг, гл. 6, 10]',
   },
-  ...buildPracticeDangerous(tr),
+  ...buildPracticeCouplesBetrayal(tr),
   ...buildPracticeGroup(tr),
   {
     id: 'deliberate_practice',
